@@ -1,0 +1,4 @@
+.github/
+.vscode/
+.venv/
+.DS_Store
