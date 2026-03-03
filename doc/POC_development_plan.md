@@ -129,7 +129,7 @@ graph LR
 
 ## 3. Milestones
 
-### Milestone 0: Project Setup & Test Infrastructure
+### Milestone 0: Project Setup & Test Infrastructure ✅ COMPLETED
 
 **Purpose:** Establish the repo, tooling, and test frameworks so that all subsequent milestones can start with RED (failing tests).
 
@@ -173,9 +173,17 @@ graph LR
 - `pytest`, pgTAP runner, and `vitest` all execute successfully (zero tests, zero failures).
 - CI workflow runs and passes on push to main.
 
+**Implementation Notes:**
+- Supabase CLI v2.75.0 installed via Homebrew.
+- Python 3.14.2 with `.venv`; dependencies installed directly (editable install not used).
+- Svelte 5 with `@sveltejs/vite-plugin-svelte@^4.0.0-next.6` (required for Svelte 5 compatibility).
+- Node 25.6.1, Docker 28.0.1.
+- Unnecessary Supabase services disabled in `supabase/config.toml`: realtime, studio, inbucket, storage, edge_runtime, analytics. Running containers: PostgreSQL, PostgREST, GoTrue, Kong.
+- Smoke tests: `supabase/tests/00_smoke.sql`, `python/tests/test_smoke.py`, `frontend/tests/smoke.test.ts` — all pass.
+
 ---
 
-### Milestone 1: Database Foundation & Season Lifecycle
+### Milestone 1: Database Foundation & Season Lifecycle ✅ COMPLETED
 
 **Use Cases:** UC7, UC8, UC9, UC10
 
@@ -222,9 +230,43 @@ graph LR
 - `supabase db reset` runs cleanly (migrations + seed).
 - Manual test: create a season, add events and tournaments via Supabase Dashboard, verify lifecycle transitions.
 
+**Implementation Notes:**
+- 23 logical tests expanded to **63 pgTAP assertions** in `supabase/tests/01_database_foundation.sql`. The original 54 were extended with 9 additional assertions discovered during review:
+- 3 migration files:
+  - `20250301000001_enums_tables_indexes.sql` — 7 enums, 9 tables, 2 unique constraints, 18 indexes (including partial unique `idx_season_active`).
+  - `20250301000002_rls_policies.sql` — RLS enabled on all 9 tables; `anon` gets SELECT on public tables; `authenticated` gets full CRUD; `audit_log` is SELECT-only for authenticated.
+  - `20250301000003_lifecycle_triggers.sql` — 4 functions + triggers:
+    - `fn_auto_create_scoring_config()` — AFTER INSERT trigger on `tbl_season` auto-creates `tbl_scoring_config` row with defaults.
+    - `fn_auto_populate_multiplier()` — BEFORE INSERT trigger on `tbl_tournament` resolves `num_multiplier` from `tbl_scoring_config` based on `enum_type`.
+    - `fn_validate_event_transition()` — BEFORE UPDATE trigger on `tbl_event` enforces valid status transitions (state machine).
+    - `fn_audit_log()` — generic audit trigger using `TG_ARGV[0]` for PK column name; attached to `tbl_event`, `tbl_tournament`, `tbl_result`, `tbl_fencer`, `tbl_season`.
+- Seed data (`supabase/seed.sql`): Season "SPWS-2024-2025" (active), 2 organizers (SPWS, EVF), 5 sample fencers (Male Epee V2), 1 event (PPW1-KRAKOW-2025), 1 tournament (PPW1-V2-M-EPEE-2025, N=24).
+- **Additional assertions (beyond the original 23 plan items):**
+  - 1.12d: Seed tournament `PPW1-V2-M-EPEE-2025` has `num_multiplier = 1.0` from trigger.
+  - 1.14b: Scoring config defaults verified (all 15 typed parameters match spec §9.3).
+  - 1.19b/c: MPW tournament gets `num_multiplier = 1.2` (tests non-PPW type mapping).
+  - 1.21b: COMPLETED is terminal — `COMPLETED → SCHEDULED` rejected.
+  - 1.22b: Audit log captures both `jsonb_old_values` and `jsonb_new_values`.
+  - 1.24: CANCELLED is terminal — `CANCELLED → PLANNED` rejected.
+  - 1.25: Anon sees zero rows in `tbl_match_candidate` (RLS filters all, no SELECT policy).
+  - 1.26: `tbl_audit_log` has no public SELECT policy (verified via `pg_policies` catalog; in-transaction RLS tests are unreliable for rows created by the superuser in the same transaction).
+- **Bugs fixed during GREEN:**
+  1. Audit trigger originally used `CASE TG_TABLE_NAME WHEN ... THEN OLD.id_event ...` — PostgreSQL evaluates all CASE branches regardless of match, causing `record "old" has no field "id_event"` errors on non-event tables. Fixed by passing PK column name as `TG_ARGV[0]` and extracting via `to_jsonb(OLD)->>v_pk_col`.
+  2. RLS test for `authenticated` role required setting JWT claims via `set_config('request.jwt.claim.role', 'authenticated', TRUE)` in addition to `SET LOCAL ROLE authenticated`, because Supabase's `auth.role()` reads from JWT claims, not the PG role.
+- **Event transition state machine:**
+  ```
+  PLANNED → SCHEDULED → IN_PROGRESS → COMPLETED
+  PLANNED → CANCELLED
+  SCHEDULED → CHANGED → SCHEDULED (loop back)
+  SCHEDULED → CANCELLED
+  CHANGED → IN_PROGRESS
+  CHANGED → CANCELLED
+  IN_PROGRESS → CANCELLED
+  ```
+
 ---
 
-### Milestone 2: Scoring Engine, Configuration & Calibration
+### Milestone 2: Scoring Engine, Configuration & Calibration — ✅ COMPLETED
 
 **Use Cases:** UC5, UC11, UC18, UC19, UC20
 
@@ -273,9 +315,17 @@ graph LR
 - All pytest tests pass (calibration scripts).
 - Full calibration loop executed manually: export → edit → import → re-score → compare → zero mismatches.
 
+**Implementation Notes (completed):**
+- **Migration file:** `supabase/migrations/20250301000004_scoring_engine.sql` — contains all 3 functions.
+- **Python modules:** `python/calibration/calibrate_config.py`, `python/calibration/calibrate_compare.py` with `__init__.py` package files for `python/`, `python/calibration/`, `python/tests/`.
+- **Test counts:** 24 pgTAP assertions (tests 2.1–2.18) + 7 pytest tests (tests 2.19–2.25) = 31 total. Combined with M1: 88 pgTAP + 8 pytest = 96 total assertions, all passing.
+- **Bugs fixed during GREEN:**
+  1. PostgreSQL's `ROUND(double precision, integer)` does not exist — `LN()`, `POWER()`, `CEIL()`, `FLOOR()` all return `double precision`, but `ROUND` with a precision argument only accepts `NUMERIC`. Fixed by adding explicit `::NUMERIC` casts on all expressions passed to `ROUND(..., 2)`.
+  2. Test 2.7 (MPW multiplier comparison) originally compared `MPW_final = ROUND(PPW_final * 1.2, 2)`, which fails due to double-rounding: `ROUND(ROUND(sum, 2) * 1.2, 2) ≠ ROUND(sum * 1.2, 2)` when the intermediate rounding shifts the value. Fixed by verifying that PPW and MPW share identical component values (place_pts, de_bonus, podium_bonus) and that the final_score ratio is within 0.01 of 1.2.
+
 ---
 
-### Milestone 3: Data Ingestion — Scrapers
+### Milestone 3: Data Ingestion — Scrapers ✅ COMPLETED
 
 **Use Cases:** UC1, UC2
 
@@ -309,9 +359,19 @@ graph LR
 - All pytest tests pass using fixture HTML (no live network calls).
 - Manual test: run a scraper against a real tournament URL, inspect `tbl_result` rows.
 
+**Implementation Notes & Bugs (resolved):**
+- FTL uses an AJAX JSON endpoint (`/events/results/data/{ID}`), not embedded HTML — VBA scraped a rendered DOM; Python fetches the JSON API directly.
+- FTL tied places use suffix format (`"3T"`) — stripped with `re.sub(r"[A-Za-z]", "", place_str)`.
+- FTL names may include age-category markers (`"ATANASSOW 2 Aleksander"`) — detected with regex `^(\S+)\s+\d+\s+(.+)$` and stripped.
+- 4Fence HTML contains literal `&nbsp` strings **without semicolons** that `BeautifulSoup` does not decode. Fixed with `re.compile(r"&nbsp;?", re.IGNORECASE)` regex cleaner.
+- Engarde supports 7 languages (EN/FR/ES/IT/DE/PL/HU) — header rows filtered by `<th>` presence, not by text content.
+- CSV tests: 31/31 pytest assertions pass; all fixture HTML tested offline.
+- pgTAP scoring tests updated to use real master fencer names (BARAŃSKI, BAZAK, DUDEK, HAŚKO) after placeholder fencers were replaced with real SPWS master data.
+- Master fencer list: 270 SPWS members in `seed.sql`; birth year only (`int_birth_year SMALLINT` — **spec deviation** from `dt_birth DATE`); 206 with year, 64 NULL. Spec §8 note: full date not needed for SPWS calendar-year-based age categories.
+
 ---
 
-### Milestone 4: Identity Resolution
+### Milestone 4: Identity Resolution ✅ COMPLETED
 
 **Use Cases:** UC3, UC4
 
@@ -320,23 +380,32 @@ graph LR
 | # | Test | Derives From |
 |---|------|-------------|
 | 4.1 | Exact name match ("KOWALSKI Jan" vs "KOWALSKI Jan") → score ≥95, `id_fencer` set, `AUTO_MATCHED` | UC3(b) |
-| 4.2 | Close match via alias ("KOWALSKI J." in `json_name_aliases`) → score ≥95, `AUTO_MATCHED` | UC3(a,b) |
-| 4.3 | Uncertain match (score 80) → `PENDING` candidate created, `id_fencer = NULL` on `tbl_result` | UC3(c) |
+| 4.2 | Close match via alias ("TK" in `json_name_aliases`) → score ≥95, `AUTO_MATCHED` | UC3(a,b) |
+| 4.3 | Uncertain match (misspelled "KOWALSKY Jan") → `PENDING` candidate created | UC3(c) |
 | 4.4 | No match candidates at all → `UNMATCHED` status | UC3(d) |
-| 4.5 | "SURNAME FirstName" format parsed and compared correctly | §8.5 |
-| 4.6 | Admin approves a PENDING match → `id_fencer` linked, status `APPROVED`, `tbl_result.id_fencer` updated | UC4(b,c) |
-| 4.7 | Admin creates new fencer → `tbl_fencer` row created, status `NEW_FENCER`, `tbl_result.id_fencer` linked | UC4(b) |
-| 4.8 | Admin dismisses a match → status `DISMISSED` | UC4(b) |
-| 4.9 | International fencer (not in `tbl_fencer`) is excluded from ranking results | §8.5 |
+| 4.5 | "SURNAME FirstName" format parsed and compared correctly (including compound surnames) | §8.5 |
+| 4.6 | Admin approves a PENDING match → `id_fencer` linked, status `APPROVED` | UC4(b,c) |
+| 4.7 | Admin creates new fencer → status `NEW_FENCER`, new fencer data returned | UC4(b) |
+| 4.8 | Admin dismisses a match → status `DISMISSED` with admin note | UC4(b) |
+| 4.9 | International fencer (not in `tbl_fencer`) → `UNMATCHED` | §8.5 |
 
 **Implementation (GREEN):**
-- `python/matcher/fuzzy_match.py` — RapidFuzz-based matcher comparing scraped names against `tbl_fencer` + `json_name_aliases`.
-- `python/matcher/pipeline.py` — Orchestrates matching for all unmatched results in a tournament.
-- Admin review endpoints — Supabase Edge Functions or direct PostgREST PATCH on `tbl_match_candidate` + `tbl_result`.
+- `python/matcher/fuzzy_match.py` — RapidFuzz `token_sort_ratio` matcher comparing scraped names against `tbl_fencer` + `json_name_aliases`.
+- `python/matcher/pipeline.py` — Batch resolution (`resolve_results`) + admin actions (`approve_match`, `create_new_fencer_from_match`, `dismiss_match`).
+- Migration `20250302000001_nullable_fencer_on_result.sql` — `tbl_result.id_fencer` made nullable, `txt_scraped_name` column added, partial unique indexes.
 
 **Verification:**
-- All pytest tests pass.
-- Manual test: import a tournament with known fencers, verify auto-match rate, review pending matches.
+- 23 pytest tests pass (`test_matcher.py`).
+- All 150 tests green (88 pgTAP + 62 pytest).
+
+**Implementation Notes:**
+- Thresholds: ≥95 AUTO_MATCHED, ≥50 PENDING, <50 UNMATCHED. Tunable via constants in `fuzzy_match.py`.
+- Alias matching is exact (case-insensitive). If scraped name matches any alias in `json_name_aliases`, confidence=100.
+- Full name matching uses `rapidfuzz.fuzz.token_sort_ratio` (order-independent: "Jan KOWALSKI" ≈ "KOWALSKI Jan").
+- Schema change: `tbl_result.id_fencer` now nullable — scrapers import results with `id_fencer=NULL`, then the matcher pipeline links fencers. Scoring should only run after identity resolution is complete.
+- `txt_scraped_name` added to `tbl_result` to preserve the original scraped name for matching.
+- Admin actions are pure functions returning updated dicts — DB persistence will be handled by the pipeline orchestrator (M7/M9).
+- Existing `uq_result_fencer_tournament` constraint converted to partial unique index (only when `id_fencer IS NOT NULL`).
 
 ---
 

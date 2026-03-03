@@ -1,0 +1,30 @@
+{
+  "event_listings": {
+    "ftl": [
+      "https://www.fencingtimelive.com/tournaments/eventSchedule/9CC8D1BC59084DC0852659F9B68D97DB#today",
+      "https://www.fencingtimelive.com/tournaments/eventSchedule/D050FA69743A43B590473A6442DF7AF7#today",
+      "https://www.fencingtimelive.com/tournaments/eventSchedule/2E0379194C1947DCA5BC8B72F76D31A5#today"
+    ],
+    "engarde": [
+      "https://engarde-service.com/tournament/aeve_esgrima/evf_madrid_2025",
+      "https://engarde-service.com/competition/hunfencing/2025_09_20_pbt/me50/clasfinal.htm"
+    ],
+    "fourfence": [
+      "https://www.4fence.it/FIS/Risultati/2025-02-02-01_Terni_(TR)_-_4_Prova_Naz.le_Master_-_EVF_Circuit/"
+    ]
+  },
+  "v2_men_epee_results": {
+    "ftl": [
+      "https://www.fencingtimelive.com/events/results/EEC7379682834E588E5B267447C7266A",
+      "https://www.fencingtimelive.com/events/results/1DAD5541330547AC9204125523A0C1A9",
+      "https://www.fencingtimelive.com/events/results/F335344201F74762AED57ADC339F65EF"
+    ],
+    "engarde": [
+      "https://engarde-service.com/competition/hunfencing/2025_09_20_pbt/me50/clasfinal.htm",
+      "https://engarde-service.com/competition/aeve_esgrima/evf_madrid_2025/em-2"
+    ],
+    "fourfence": [
+      "https://www.4fence.it/FIS/Risultati/2025-02-02-01_Terni_(TR)_-_4_Prova_Naz.le_Master_-_EVF_Circuit/index.php?a=SP&s=M&c=7&f=clafinale"
+    ]
+  }
+}
