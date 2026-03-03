@@ -899,13 +899,17 @@ erDiagram
     tbl_event ||--o{ tbl_tournament : "groups tournaments"
 ```
 
+**Audit log trigger (`fn_audit_log`):**
+
+A generic `AFTER UPDATE OR DELETE` trigger function is attached to `tbl_event`, `tbl_tournament`, `tbl_result`, `tbl_fencer`, and `tbl_season`. The PK column name is passed as `TG_ARGV[0]` (e.g., `'id_event'`), and the PK value is extracted dynamically via `to_jsonb(OLD)->>pk_col`. This avoids referencing table-specific columns in the function body (PostgreSQL evaluates all `CASE` branches, so `OLD.id_event` would fail when the trigger fires on `tbl_result`). The `txt_admin_user` is populated from `current_setting('request.jwt.claims')::JSONB->>'sub'`.
+
 **Unique constraints:**
 - `UNIQUE(id_fencer, id_tournament)` on `tbl_result` — one result per fencer per tournament.
 - `UNIQUE(id_result, txt_scraped_name)` on `tbl_match_candidate` — one match candidate per scraped name per result.
 
 > **Global uniqueness assumption:** The `txt_code` columns on `tbl_event`, `tbl_tournament`, `tbl_organizer`, and `tbl_season` are enforced as **globally unique** (not just per-season). This simplifies lookups and URL routing — a code like `PPW1-V2-M-EPEE-2025` unambiguously identifies one tournament across the entire database. The year suffix in the code convention naturally prevents cross-season collisions.
 
-> **`num_multiplier` cache column:** The `tbl_tournament.num_multiplier` column is a **denormalized read-only cache** populated by the application layer (Admin UI or API) at tournament creation time (UC9). The app resolves the multiplier from `tbl_scoring_config` based on `enum_type` and writes it to `num_multiplier` for display convenience. The scoring engine does **not** use this column — it always reads the authoritative multiplier from `tbl_scoring_config` via a `CASE` on `enum_type` (see UC5(d) and §9.5.2). The exact population mechanism (trigger, API middleware, or Admin UI logic) will be specified during the MVP stage (Phase 2).
+> **`num_multiplier` cache column:** The `tbl_tournament.num_multiplier` column is a **denormalized read-only cache** populated automatically by a `BEFORE INSERT` trigger (`fn_auto_populate_multiplier`) at tournament creation time (UC9). The trigger resolves the season via the event FK, looks up `tbl_scoring_config`, and applies a `CASE` on `enum_type` to set the appropriate multiplier (`num_ppw_multiplier`, `num_mpw_multiplier`, `num_pew_multiplier`, `num_mew_multiplier`, or `num_msw_multiplier`). The scoring engine does **not** use this column — it always reads the authoritative multiplier from `tbl_scoring_config` via a `CASE` on `enum_type` (see UC5(d) and §9.5.2).
 
 **Stored point columns in `tbl_result`:**
 
@@ -955,19 +959,31 @@ The system uses **Supabase Auth** (free built-in) with **Row-Level Security (RLS
 
 | Role | Access | Details |
 |------|--------|---------|
-| **anon** (public) | `SELECT` on ranking views | `vw_score`, `vw_ranking_ppw`, `vw_ranking_kadra`. No access to raw tables. |
+| **anon** (public) | `SELECT` on public tables and ranking views | `tbl_season`, `tbl_scoring_config`, `tbl_fencer`, `tbl_organizer`, `tbl_event`, `tbl_tournament`, `tbl_result`, and ranking views (`vw_score`, `vw_ranking_ppw`, `vw_ranking_kadra`). No access to `tbl_match_candidate` or `tbl_audit_log`. |
 | **authenticated** (admin) | Full CRUD on all tables | Season setup, fencer management, match candidate review, result corrections. |
 | **service_role** | Full access (bypasses RLS) | Used by GitHub Actions ingestion pipeline. API key stored as GH Actions secret. |
 
 **RLS policy pattern:**
 
-```sql
--- Public read on views (views bypass RLS, so grant SELECT on underlying tables via security-definer functions)
-ALTER TABLE tbl_result ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public read results" ON tbl_result FOR SELECT USING (true);
-CREATE POLICY "Admin write results" ON tbl_result FOR ALL USING (auth.role() = 'authenticated');
+RLS is enabled on all 9 tables. Public (anon) tables get a `FOR SELECT USING (true)` policy. Authenticated admin policies use `FOR ALL` with both `USING` and `WITH CHECK` clauses. The `tbl_match_candidate` and `tbl_audit_log` tables are not publicly readable (admin-only data).
 
--- Audit log is append-only for service_role, read-only for admin
+```sql
+-- Enable RLS on all tables
+ALTER TABLE tbl_result ENABLE ROW LEVEL SECURITY;
+-- (repeated for all 9 tables)
+
+-- Public read on data tables (anon can SELECT)
+CREATE POLICY "Public read results" ON tbl_result FOR SELECT USING (true);
+-- (similar for tbl_season, tbl_scoring_config, tbl_fencer, tbl_organizer, tbl_event, tbl_tournament)
+-- No public read on tbl_match_candidate or tbl_audit_log
+
+-- Admin full CRUD (authenticated role)
+CREATE POLICY "Admin all results" ON tbl_result FOR ALL
+    USING (auth.role() = 'authenticated')
+    WITH CHECK (auth.role() = 'authenticated');
+-- (similar for all tables except tbl_audit_log)
+
+-- Audit log is read-only for admin (writes are via SECURITY DEFINER triggers only)
 CREATE POLICY "Admin read audit" ON tbl_audit_log FOR SELECT USING (auth.role() = 'authenticated');
 ```
 
@@ -979,16 +995,16 @@ CREATE POLICY "Admin read audit" ON tbl_audit_log FOR SELECT USING (auth.role() 
 erDiagram
     tbl_season {
         SERIAL id_season PK
-        TEXT txt_code UK "e.g. 2024-2025"
-        DATE dt_start "Season start (e.g. late August)"
-        DATE dt_end "Season end (e.g. July next year)"
+        TEXT txt_code UK "SPWS 2024-2025"
+        DATE dt_start "2024/08/01"
+        DATE dt_end "2025/07/15"
         BOOLEAN bool_active "Only one season active at a time"
         TIMESTAMPTZ ts_created
     }
 
     tbl_scoring_config {
         SERIAL id_config PK
-        INT id_season FK UK "→ tbl_season (one config per season, UNIQUE)"
+        INT id_season FK "→ tbl_season (one config per season, UNIQUE)"
         INT int_mp_value "DEFAULT 50 — max place points"
         INT int_podium_gold "DEFAULT 3 — gold podium multiplier"
         INT int_podium_silver "DEFAULT 2 — silver podium multiplier"
@@ -1012,6 +1028,8 @@ erDiagram
 
     tbl_season ||--|| tbl_scoring_config : "has config"
 ```
+
+> **Auto-creation:** When a new `tbl_season` row is inserted, an `AFTER INSERT` trigger (`fn_auto_create_scoring_config`) automatically creates a corresponding `tbl_scoring_config` row with all default values. This ensures every season always has a scoring configuration, preventing orphan seasons without config.
 
 > **Design rationale — Hybrid Configuration (Table + JSON Export/Import):** The system uses a hybrid approach combining a database table with JSON export/import for local editing. The database table is the **single source of truth** because: (1) the config is per-season, so it naturally belongs alongside the season row; (2) the scoring engine function can join directly to it during calculation; (3) it's version-controlled via `ts_updated` timestamps; (4) admins can tweak parameters via the same Supabase dashboard used for other data; (5) RLS protects it in production. The `json_extra` JSONB column provides an escape hatch for ad-hoc parameters without schema migrations.
 >
@@ -1206,6 +1224,7 @@ $$;
 > - `int_participant_count` (N) is read from `tbl_tournament` via the `p_tournament_id` parameter — it is **not** recounted from `tbl_result` rows. The admin-entered N is the authoritative value.
 > - The multiplier is resolved via a `CASE` on `enum_type`, reading the corresponding column from `tbl_scoring_config`. This avoids using the denormalized `tbl_tournament.num_multiplier` cache column, per UC5(d).
 > - DE bonus uses `CEIL(LN(place)/LN(2))` for $\lceil \log_2(place) \rceil$. For `place = 1`, `LN(1) = 0` so `CEIL(0) = 0`, correctly awarding all DE rounds to the winner.
+> - **`ROUND` type casting:** PostgreSQL's `ROUND(value, precision)` only accepts `NUMERIC` as the first argument — not `double precision`. Since `LN()`, `POWER()`, `CEIL()`, and `FLOOR()` all return `double precision`, every expression passed to `ROUND(..., 2)` must be explicitly cast with `::NUMERIC`. The actual migration uses e.g. `ROUND((v_mp - (v_mp - 1) * LN(r.int_place) / LN(v_n))::NUMERIC, 2)`. The SQL listing above shows the logical formula without these casts for readability.
 > - **Minimum-participant validation** is an **import-time** concern, not a scoring-engine concern. The import pipeline checks `int_participant_count` against `int_min_participants_evf` / `int_min_participants_ppw` (§8.5) and sets `enum_import_status = 'REJECTED'` before scoring is ever invoked. The scoring engine assumes all tournaments it receives have already passed this gate.
 
 ### 9.6 Design Rationale — Identity by FK, not by Name
@@ -1225,10 +1244,23 @@ Events and tournaments follow a defined lifecycle tracked by `enum_status` / `en
 
 **Event lifecycle** (`tbl_event.enum_status`):
 
-```
-PLANNED → SCHEDULED → IN_PROGRESS → COMPLETED
-                ↕                        ↘
-            CHANGED                   CANCELLED
+Enforced by `fn_validate_event_transition()` — a `BEFORE UPDATE OF enum_status` trigger on `tbl_event`. Invalid transitions raise an exception.
+
+```mermaid
+stateDiagram-v2
+    [*] --> PLANNED
+    PLANNED --> SCHEDULED
+    PLANNED --> CANCELLED
+    SCHEDULED --> CHANGED
+    SCHEDULED --> IN_PROGRESS
+    SCHEDULED --> CANCELLED
+    CHANGED --> SCHEDULED
+    CHANGED --> IN_PROGRESS
+    CHANGED --> CANCELLED
+    IN_PROGRESS --> COMPLETED
+    IN_PROGRESS --> CANCELLED
+    COMPLETED --> [*]
+    CANCELLED --> [*]
 ```
 
 | Status | Meaning |
@@ -1238,7 +1270,7 @@ PLANNED → SCHEDULED → IN_PROGRESS → COMPLETED
 | `CHANGED` | Date or location has changed after scheduling; returns to `SCHEDULED` once the update is recorded |
 | `IN_PROGRESS` | Event is currently happening (multi-day events) |
 | `COMPLETED` | Event finished; all tournaments within are either COMPLETED or CANCELLED |
-| `CANCELLED` | Event will not take place |
+| `CANCELLED` | Event will not take place; reachable from any pre-completion state |
 
 **Tournament lifecycle** (`tbl_tournament.enum_import_status`):
 
@@ -1305,7 +1337,7 @@ erDiagram
 | Seed | Description |
 |------|-------------|
 | `tbl_organizer` | Pre-populate SPWS, EVF, FIE, PZSz with codes and names |
-| `tbl_season` | One test season (e.g., 2024–2025) with `bool_active = TRUE` |
+| `tbl_season` | One test season (e.g., 2024–2025) with bool_active = FALSE and a second test season (e.g., 2025–2026) with bool_active = TRUE |
 | `tbl_scoring_config` | Default config for the test season (MP=50, PPW best-of=4, multipliers per §8.2) |
 | `tbl_fencer` | Import from existing SPWS Excel Master Table (CSV → SQL INSERT) |
 
