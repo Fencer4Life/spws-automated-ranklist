@@ -3,7 +3,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(63);
+SELECT plan(64);
 
 -- ---------------------------------------------------------------------------
 -- 1.1  All 7 enum types exist with correct values
@@ -520,6 +520,14 @@ SELECT ok(
    WHERE tablename = 'tbl_audit_log'
      AND policyname ILIKE '%public%'),
   '1.26 tbl_audit_log has no public/anon SELECT policy'
+);
+
+-- ---------------------------------------------------------------------------
+-- 1.27  tbl_fencer has bool_birth_year_estimated column (intake rules)
+-- ---------------------------------------------------------------------------
+SELECT has_column(
+  'public', 'tbl_fencer', 'bool_birth_year_estimated',
+  '1.27 tbl_fencer has bool_birth_year_estimated column for intake rules'
 );
 
 SELECT * FROM finish();

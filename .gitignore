@@ -8,3 +8,12 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+node_modules/
+dist/
+build/
+*.lock
+.svelte2tsx-language-server-files/
+.vite/
+~$*.xlsx
+~$*.xls
+*.xlsx.tmp

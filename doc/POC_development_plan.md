@@ -322,6 +322,7 @@ graph LR
 - **Bugs fixed during GREEN:**
   1. PostgreSQL's `ROUND(double precision, integer)` does not exist — `LN()`, `POWER()`, `CEIL()`, `FLOOR()` all return `double precision`, but `ROUND` with a precision argument only accepts `NUMERIC`. Fixed by adding explicit `::NUMERIC` casts on all expressions passed to `ROUND(..., 2)`.
   2. Test 2.7 (MPW multiplier comparison) originally compared `MPW_final = ROUND(PPW_final * 1.2, 2)`, which fails due to double-rounding: `ROUND(ROUND(sum, 2) * 1.2, 2) ≠ ROUND(sum * 1.2, 2)` when the intermediate rounding shifts the value. Fixed by verifying that PPW and MPW share identical component values (place_pts, de_bonus, podium_bonus) and that the final_score ratio is within 0.01 of 1.2.
+- **Formula revision (post-M2):** The original M2 implementation used `3×N^(1/3)` as the per-DE-round bonus multiplier. After comparing against the SPWS reference Excel (`Bonus za rundę = 10`, a fixed scoring parameter), this was changed to a flat **10 pts per DE round** via migration `20250304000001_fix_de_bonus_formula.sql`. The podium bonus formula (`gold/silver/bronze × 3×N^(1/3)`) was not changed — it matches the Excel's dynamic formula. Tests 2.4 and 2.5 were updated accordingly (expected values changed from `~30` to `40` and `~43` to `50`). All existing tournament scores were recomputed.
 
 ---
 
@@ -388,15 +389,44 @@ graph LR
 | 4.7 | Admin creates new fencer → status `NEW_FENCER`, new fencer data returned | UC4(b) |
 | 4.8 | Admin dismisses a match → status `DISMISSED` with admin note | UC4(b) |
 | 4.9 | International fencer (not in `tbl_fencer`) → `UNMATCHED` | §8.5 |
+| 4.10 | PPW exact match → AUTO_MATCHED, in matched list | UC3(b) |
+| 4.11 | PPW PENDING → provisionally linked to best match, in matched list | UC3(c) |
+| 4.12 | PPW UNMATCHED → auto_created list has new fencer with estimated birth year | UC3(d) |
+| 4.13 | PPW auto-created fencer has `bool_birth_year_estimated=TRUE` | UC3(d) |
+| 4.14 | PPW auto-created fencer birth_year uses youngest boundary for category | UC3(d) |
+| 4.15 | PEW exact match → AUTO_MATCHED, in matched list | UC3(b) |
+| 4.16 | PEW PENDING → provisionally linked, in matched list | UC3(c) |
+| 4.17 | PEW UNMATCHED → in skipped list, NOT in matched or auto_created | UC3(e) |
+| 4.18 | MEW UNMATCHED → in skipped list (same as PEW) | UC3(e) |
+| 4.19 | Birth year estimation: V0 → tournament_year − 30 | §8.5 |
+| 4.20 | Birth year estimation: V2 → tournament_year − 50 | §8.5 |
+| 4.21 | Birth year estimation: V4 → tournament_year − 70 | §8.5 |
+| 4.22 | Auto-create fencer: parsed name fields correct | §8.5 |
+| 4.23 | Auto-create fencer: returns all required tbl_fencer fields | §8.5 |
+| 4.24 | Auto-create fencer: bool_birth_year_estimated is True | §8.5 |
+| 4.25 | KRAWCZYK Paweł in V4 (2024) → picks born 1954 (age 70) | §8.5(5) |
+| 4.26 | KRAWCZYK Paweł in V0 (2024) → picks born 1989 (age 35) | §8.5(5) |
+| 4.27 | MŁYNEK Janusz in V1 (2024) → picks born 1984 (age 40) | §8.5(5) |
+| 4.28 | MŁYNEK Janusz in V4 (2024) → picks born 1951 (age 73) | §8.5(5) |
+| 4.29 | Duplicate with no age_category → PENDING (ambiguous) | §8.5(5) |
+| 4.30 | Duplicate where neither fits category → PENDING | §8.5(5) |
+| 4.31 | Duplicate where both have NULL birth_year → PENDING | §8.5(5) |
+| 4.32 | `birth_year_matches_category`: age 55 in V2 → True | §8.5(5) |
+| 4.33 | `birth_year_matches_category`: age 35 in V2 → False | §8.5(5) |
+| 4.34 | `birth_year_matches_category`: age 75 in V4 → True | §8.5(5) |
+| 4.35 | `birth_year_matches_category`: NULL birth year → False | §8.5(5) |
+| 4.36 | PPW tournament with duplicate name → correct fencer resolved via category | §8.5(5) |
+| 4.37 | PEW tournament with duplicate name → correct fencer resolved via category | §8.5(5) |
 
 **Implementation (GREEN):**
 - `python/matcher/fuzzy_match.py` — RapidFuzz `token_sort_ratio` matcher comparing scraped names against `tbl_fencer` + `json_name_aliases`.
-- `python/matcher/pipeline.py` — Batch resolution (`resolve_results`) + admin actions (`approve_match`, `create_new_fencer_from_match`, `dismiss_match`).
+- `python/matcher/pipeline.py` — Tournament-type-aware resolution (`resolve_tournament_results`) + auto-create fencer logic + admin actions (`approve_match`, `create_new_fencer_from_match`, `dismiss_match`). Legacy `resolve_results()` preserved for backwards compatibility.
 - Migration `20250302000001_nullable_fencer_on_result.sql` — `tbl_result.id_fencer` made nullable, `txt_scraped_name` column added, partial unique indexes.
+- Migration `20250303000001_intake_rules.sql` — `tbl_fencer.bool_birth_year_estimated` column added.
 
 **Verification:**
-- 23 pytest tests pass (`test_matcher.py`).
-- All 150 tests green (88 pgTAP + 62 pytest).
+- 53 pytest tests pass (`test_matcher.py`).
+- All pgTAP + pytest tests green.
 
 **Implementation Notes:**
 - Thresholds: ≥95 AUTO_MATCHED, ≥50 PENDING, <50 UNMATCHED. Tunable via constants in `fuzzy_match.py`.
@@ -406,10 +436,15 @@ graph LR
 - `txt_scraped_name` added to `tbl_result` to preserve the original scraped name for matching.
 - Admin actions are pure functions returning updated dicts — DB persistence will be handled by the pipeline orchestrator (M7/M9).
 - Existing `uq_result_fencer_tournament` constraint converted to partial unique index (only when `id_fencer IS NOT NULL`).
+- **Tournament-type-based intake rules (added post-M4):**
+  - **PPW/MPW (domestic):** All results always enter the ranklist. UNMATCHED fencers are auto-created in `tbl_fencer` with estimated birth year (youngest boundary for category) and `bool_birth_year_estimated = TRUE`. PENDING matches are provisionally linked to the best match candidate and scored immediately.
+  - **PEW/MEW (international):** Only results for fencers already in the master data are imported. UNMATCHED fencers are skipped entirely (result not imported). PENDING matches are provisionally linked.
+  - Birth year estimation (using season end year): V0→end_year−30, V1→end_year−40, V2→end_year−50, V3→end_year−60, V4→end_year−70.
+  - `resolve_tournament_results()` replaces `resolve_results()` as the primary pipeline function. Returns `ResolvedTournament` dataclass with `matched`, `auto_created`, and `skipped` lists.
 
 ---
 
-### Milestone 5: SQL Views & API
+### Milestone 5: SQL Views & API ✅ COMPLETED
 
 **Use Cases:** UC12, UC13
 
@@ -426,10 +461,12 @@ graph LR
 | 5.7 | Ranking ordered by total descending | UC12(d) |
 | 5.8 | Filter by weapon: passing 'FOIL' excludes EPEE results | UC12(b) |
 | 5.9 | Filter by gender: passing 'F' excludes male results | UC12(b) |
-| 5.10 | Filter by category: passing 'V2' excludes V1/V3 results | UC12(b) |
+| 5.10 | Filter by category: passing 'V1' returns only fencers whose birth-year-derived category is V1 | UC12(b) |
 | 5.11 | Only scored results included (`num_final_score IS NOT NULL`) | §9.5 |
 | 5.12 | International fencer (unlinked `id_fencer`) does not appear in ranking output | §8.5 |
 | 5.13 | PostgREST RPC endpoint `/rpc/fn_ranking_ppw` returns valid JSON array | UC12(a) |
+| 5.14 | Cross-category carryover: V3 fencer (BARAŃSKI, born 1964) with V2 tournament results appears in V3 ranking | §8.5(2) |
+| 5.15 | Cross-category exclusion: V3 fencer (BARAŃSKI) does NOT appear in V2 ranking | §8.5(2) |
 
 **Implementation (GREEN):**
 - `vw_score` — standard SQL view joining `tbl_result`, `tbl_tournament`, `tbl_event`, `tbl_season`, `tbl_fencer`.
@@ -439,6 +476,15 @@ graph LR
 **Verification:**
 - All pgTAP tests pass.
 - Manual test: call PostgREST endpoint from curl/browser, verify JSON response matches expected ranking.
+
+**Implementation Notes:**
+- Migration file: `supabase/migrations/20250302000002_views_ranking.sql` — `vw_score` view + `fn_ranking_ppw` function.
+- Migration file: `supabase/migrations/20250303000002_age_category_by_season.sql` — `fn_age_category()` helper + updated `fn_ranking_ppw` with fencer-based category filtering.
+- Test file: `supabase/tests/03_views_api.sql` — 17 pgTAP assertions.
+- **Age-category by season end year (added post-M5):** The ranking function `fn_ranking_ppw` now uses `fn_age_category(birth_year, season_end_year)` to compute each fencer's home category from their birth year and the season's end year (not the tournament's `enum_age_category`). This enables cross-category point carryover: a fencer who moved from V2 to V3 has all their tournament results (including V2 tournaments) appear in V3 ranking. Fencers with NULL birth year fall back to tournament category. Python matcher functions also use `season_end_year` (not `tournament_year`) for disambiguation and birth year estimation.
+- `vw_score` excludes `id_fencer IS NULL` rows (unlinked results from PEW/MEW unmatched or pre-matching).
+- `fn_ranking_ppw` uses CTEs for best-K PPW selection + conditional MPW drop logic.
+- Test 5.12 verifies that unlinked results (NULL `id_fencer`) are excluded from ranking output — aligned with intake rules where PPW/MPW auto-create fencers (so no NULL `id_fencer` for domestic) and PEW/MEW skip unmatched (so skipped results never reach the view).
 
 ---
 
@@ -454,23 +500,113 @@ graph LR
 | 6.2 | Four filter dropdowns rendered: weapon, gender, age category, season | UC12(b) |
 | 6.3 | Default view loads active season, sorted by total descending | UC12(d) |
 | 6.4 | Changing weapon filter refreshes the ranking table with filtered data | UC12(b) |
-| 6.5 | Clicking a fencer row expands to show drill-down detail | UC13(a) |
-| 6.6 | Drill-down shows per-tournament breakdown: name, date, place, N, place points, DE bonus, podium bonus, multiplier, final score | UC13(b) |
+| 6.5 | Clicking a fencer row opens drill-down modal | UC13(a) |
+| 6.6 | Drill-down shows per-tournament breakdown: code (linked), location, date, place, N, multiplier, final score | UC13(b) |
 | 6.7 | Shadow DOM isolation: component styles do not leak to host page | §5 |
 | 6.8 | Skeleton loader visible while API data is loading | §7 |
 | 6.9 | Component is responsive (usable on mobile viewport widths) | §5 |
+| 6.10 | PPW/Kadra toggle rendered, PPW is default | UC12 |
+| 6.11 | Switching to Kadra shows PEW/MEW columns and calls fn_ranking_kadra | UC12 |
+| 6.12 | V0 category disables Kadra toggle (grayed out) | §8.3.2 |
+| 6.13 | [⎙] export button downloads .ods file for main ranking | UC12 |
+| 6.14 | [⎙] export in drill-down downloads fencer's tournament breakdown as .ods | UC13 |
+| 6.15 | Drill-down in PPW mode shows domestic tournaments only | UC13 |
+| 6.16 | Drill-down in Kadra mode shows domestic + international tournaments | UC13 |
+
+**UI Design — Full-Width Table + Modal Drill-Down with PPW/Kadra Toggle:**
+
+Main view: full-width ranking table with season filter in header, PPW/Kadra toggle + weapon/gender/category dropdowns in second row. Table columns adapt to mode. [⎙] ODS export button. Footer shows fencer count, mode/filter summary, last-updated timestamp.
+
+PPW mode (default):
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  SPWS Ranklist                                   Season: [SPWS-2024-2025 ▾]    │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│  [PPW ●│Kadra]  Weapon: [EPEE ▾]  Gender: [Male ▾]  Category: [V2 (50+) ▾]   │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│  Rank │ Fencer              │ Best-4 PPW │ MPW    │ Total                 [⎙]  │
+│    1  │ ATANASSOW Aleksander│       375  │  +45   │   420                      │
+│    2  │ DUDEK Jarosław      │       375  │   —    │   375                      │
+│    3  │ BAZAK Piotr         │       280  │   —    │   280                      │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│  3 fencers │ PPW Ranking │ Male Epee V2 │ Updated: 2025-03-01                  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+Kadra mode:
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  [PPW│Kadra ●]  Weapon: [EPEE ▾]  Gender: [Male ▾]  Category: [V2 (50+) ▾]   │
+│  Rank │ Fencer              │ PPW(4) │ MPW  │ PEW(3) │ MEW  │ Total      [⎙]  │
+│    1  │ ATANASSOW Aleksander│   375  │ +45  │   310  │ +180 │   910           │
+│  3 fencers │ Kadra Ranking │ Male Epee V2 │ Updated: 2025-03-01                │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+Drill-down modal (Option B) — adapts to toggle mode. [PPW●│Kadra] toggle synced with main view. [⎙] exports fencer breakdown as .ods. Tournament code links to `url_results`. Location from `tbl_event.txt_location`. ★ = counted in best-K, ✓ = MPW/MEW included.
+
+Kadra drill-down (toggle = Kadra):
+```
+┌─── Drill-Down ─────────────────────────────────────────────────────────────┐
+│  ATANASSOW Aleksander                                  [PPW│Kadra ●] [✕]  │
+│  Rank #1 │ V2 (born 1969, age 56) │ Kadra Total: 910 pts            [⎙]  │
+│                                                                            │
+│  Score Breakdown                                                           │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  Domestic (PPW + MPW)              International (PEW + MEW)        │   │
+│  │  120 ██████████████████ ★ PPW1     180 █████████████████████████ ✓  │   │
+│  │  105 ████████████████   ★ PPW2     120 ██████████████████ ★ PEW1   │   │
+│  │  100 ███████████████    ★ PPW4     100 ████████████████   ★ PEW2   │   │
+│  │   95 ██████████████     ★ PPW3      90 █████████████      ★ PEW3   │   │
+│  │   60 █████████            PPW5      65 █████████            PEW4   │   │
+│  │   45 ███████            ✓ MPW1                                      │   │
+│  │                                                                     │   │
+│  │  Domestic: 420+45 = 465            International: 310+180 = 490     │   │
+│  │                                    Grand Total: 910                 │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                            │
+│  Domestic Tournaments                                                      │
+│  ┌──────────┬────────────┬────────┬─────┬──────┬──────┬────────┐           │
+│  │ Code     │ Location   │ Date   │ Plc │ Part │ ×    │ Score  │           │
+│  │ VW-PPW1  │ Warszawa   │ 24.Sep │  1  │  32  │ 1.0  │ 120 ★  │          │
+│  │ ...      │            │        │     │      │      │        │           │
+│  │ VW-MPW1  │ Budapest   │ 25.Feb │  2  │  40  │ 1.2  │  45 ✓  │          │
+│  └──────────┴────────────┴────────┴─────┴──────┴──────┴────────┘           │
+│                                                                            │
+│  International Tournaments (EVF)                                           │
+│  ┌──────────┬────────────┬────────┬─────┬──────┬──────┬────────┐           │
+│  │ Code     │ Location   │ Date   │ Plc │ Part │ ×    │ Score  │           │
+│  │ EVF-PEW1 │ Keszthely  │ 24.Oct │  5  │  48  │ 1.0  │ 120 ★  │          │
+│  │ ...      │            │        │     │      │      │        │           │
+│  │ EVF-MEW1 │ Krems      │ 25.May │  3  │  45  │ 2.0  │ 180 ✓  │          │
+│  └──────────┴────────────┴────────┴─────┴──────┴──────┴────────┘           │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+PPW drill-down (toggle = PPW): same layout, no International section, summary shows "Domestic: PPW + MPW = Total".
+
+**Pre-requisite — SQL migration `20250303000003_ranking_kadra.sql`:**
+- Update `fn_ranking_ppw` return type: add `ppw_score`, `mpw_score` columns (separate from `total_score`)
+- Create `fn_ranking_kadra(p_weapon, p_gender, p_category, p_season)`: domestic totals from fn_ranking_ppw + best-J PEW + conditional MEW. V0 returns empty (no EVF equivalent).
+- pgTAP tests 5.16–5.19: fn_ranking_ppw column shape, fn_ranking_kadra totals, V0 guard, domestic-only fencer
 
 **Implementation (GREEN):**
-- Svelte application compiled to a custom element (Web Component) with Shadow DOM.
-- Shadow Wrapper (`public/index.html`): standalone HTML page with sample WordPress-like CSS to test isolation.
-- API client module: fetches from Supabase PostgREST (configurable URL via attribute/env).
-- Components: RanklistTable, FilterBar, DrilldownPanel, SkeletonLoader.
-- Build tooling: Vite + Svelte plugin, outputs a single `.js` bundle.
+- Svelte 5 application using direct `mount()` into a host `<div>` (not a custom element — see Shadow DOM note below).
+- Standalone `index.html` with `demo` attribute for mock data preview without live database.
+- API client module (`api.ts`): fetches from Supabase PostgREST (configurable URL via attributes on host element).
+- Components: FilterBar (with PPW/Kadra toggle), RanklistTable, DrilldownModal, ScoreChart, SkeletonLoader.
+- ODS export module (`export.ts`): SheetJS (`xlsx` package) for .ods file generation from both ranking table and drill-down.
+- Mock data module (`mock-data.ts`): demo mode with 12 fencers, PPW/Kadra rankings, drilldown context, and detailed tournament scores.
+- Build tooling: Vite + `@sveltejs/vite-plugin-svelte`, outputs a single `.js` bundle.
+- Responsive CSS: `@media (max-width: 600px)` breakpoints on all components for mobile support.
+- Dependencies: `@supabase/supabase-js`, `xlsx` (SheetJS)
+
+**Shadow DOM tradeoff (test 6.7):**
+The spec originally called for a Svelte custom element with Shadow DOM for CSS isolation when embedded in WordPress. During implementation, this was deferred because Svelte 5's `customElement: true` compiler option is incompatible with `@testing-library/svelte` (which uses the Svelte 4 `new Component()` API via `compatibility.componentApi: 4`). Enabling `customElement: true` globally breaks all unit tests. The POC uses direct `mount()` instead, trading Shadow DOM isolation for a full unit test suite (33 vitest tests). **Shadow DOM isolation is a hard requirement for MVP (Phase 2)** — the component must ship as a proper `<spws-ranklist>` custom element with encapsulated styles before WordPress deployment. See §6.2 of the Project Specification.
 
 **Verification:**
-- Vitest unit tests pass for component logic.
-- Playwright E2E tests pass (renders table, filters work, drill-down opens).
-- Manual test: open Shadow Wrapper in browser, verify ranklist loads with real data from Supabase.
+- Vitest unit tests pass for component logic (33 tests across 6 test files).
+- Manual test: open `index.html` in browser with `demo` attribute, verify ranklist loads with mock data, drilldown modal shows score breakdown with markers and summary rows.
 
 ---
 
