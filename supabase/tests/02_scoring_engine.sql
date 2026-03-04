@@ -118,11 +118,11 @@ SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_co
 -- ---------------------------------------------------------------------------
 -- For N=24, place=1, MP=50, PPW multiplier=1.0:
 --   PlacePoints = 50 (1st place always gets MP)
---   bonus_per_round = 3 * 24^(1/3) = 3 * 2.8845 = 8.65
 --   DE_rounds = floor(ln(24)/ln(2)) - ceil(ln(1)/ln(2)) + 1 = 4 - 0 + 1 = 5
---   DE_bonus = 5 * 8.65 = 43.27
+--   DE_bonus = 5 rounds × 10 pts/round = 50 (fixed formula, matches Excel "Bonus za rundę = 10")
+--   bonus_per_round (podium) = 3 * 24^(1/3) = 3 * 2.8845 = 8.65
 --   Podium_bonus = 3 * 8.65 = 25.96
---   Final = (50 + 43.27 + 25.96) * 1.0 = 119.23
+--   Final = (50 + 50 + 25.96) * 1.0 = 125.96
 SELECT ok(
   (SELECT num_place_pts IS NOT NULL
       AND num_de_bonus IS NOT NULL
@@ -216,32 +216,30 @@ SELECT is(
 -- 2.4  Power-of-2 N (N=16): DE bonus correction factor c=0
 -- ---------------------------------------------------------------------------
 -- For N=16, place=1: DE_rounds = floor(log2(16)) - ceil(log2(1)) + 0 = 4 - 0 + 0 = 4
--- bonus_per_round = 3 * 16^(1/3) = 3 * 2.5198 = 7.56
--- DE_bonus = 4 * 7.56 = 30.24
+-- DE bonus = 4 rounds × 10 pts/round = 40 (fixed formula, matches Excel "Bonus za rundę = 10")
 SELECT is(
   (SELECT num_de_bonus
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
    WHERE t.txt_code = 'SCORE-PPW-N16' AND f.txt_surname = 'ATANASSOW'),
-  (SELECT ROUND(4 * (3 * POWER(16, 1.0/3)), 2))::NUMERIC,
-  '2.4 Power-of-2 N=16: 1st place DE bonus with c=0'
+  40.00::NUMERIC,
+  '2.4 Power-of-2 N=16: 1st place DE bonus = 4 rounds × 10 = 40'
 );
 
 -- ---------------------------------------------------------------------------
 -- 2.5  Non-power-of-2 N (N=24): DE bonus correction factor c=1
 -- ---------------------------------------------------------------------------
 -- For N=24, place=1: DE_rounds = floor(log2(24)) - ceil(log2(1)) + 1 = 4 - 0 + 1 = 5
--- bonus_per_round = 3 * 24^(1/3) = 8.65
--- DE_bonus = 5 * 8.65 = 43.27
+-- DE bonus = 5 rounds × 10 pts/round = 50 (fixed formula, matches Excel "Bonus za rundę = 10")
 SELECT is(
   (SELECT num_de_bonus
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
    WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'ATANASSOW'),
-  (SELECT ROUND(5 * (3 * POWER(24, 1.0/3)), 2))::NUMERIC,
-  '2.5 Non-power-of-2 N=24: 1st place DE bonus with c=1'
+  50.00::NUMERIC,
+  '2.5 Non-power-of-2 N=24: 1st place DE bonus = 5 rounds × 10 = 50'
 );
 
 -- ---------------------------------------------------------------------------
