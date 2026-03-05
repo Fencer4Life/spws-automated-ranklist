@@ -1,7 +1,18 @@
 export type WeaponType = 'EPEE' | 'FOIL' | 'SABRE'
 export type GenderType = 'M' | 'F'
 export type AgeCategory = 'V0' | 'V1' | 'V2' | 'V3' | 'V4'
-export type TournamentType = 'PPW' | 'MPW' | 'PEW' | 'MEW' | 'MSW'
+export type TournamentType = 'PPW' | 'MPW' | 'PEW' | 'MEW' | 'MSW' | 'PSW'
+
+export interface RankingBucket {
+  types: string[]
+  best?: number
+  always?: boolean
+}
+
+export interface RankingRules {
+  domestic: RankingBucket[]
+  international: RankingBucket[]
+}
 export type RankingMode = 'PPW' | 'KADRA'
 
 export interface Season {
@@ -52,6 +63,8 @@ export interface ScoreRow {
   ts_points_calc: string | null
   id_season: number
   txt_season_code: string
+  url_results: string | null
+  txt_location: string | null
 }
 
 export interface TournamentDetail {

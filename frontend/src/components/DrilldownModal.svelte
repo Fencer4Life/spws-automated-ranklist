@@ -23,13 +23,19 @@
         </div>
       </div>
 
-      {#if context}
+      {#if context || seasonCode}
         <div class="subheader">
-          <span>Rank #{context.rank}</span>
+          {#if context}
+            <span>Rank #{context.rank}</span>
+            <span class="sep">|</span>
+          {/if}
+          <span>
+            {context?.category ?? scores[0]?.enum_age_category ?? ''}
+            {#if seasonCode} · {seasonCode}{/if}
+            {#if context?.birthYear} (born {context.birthYear}{#if context.age}, age {context.age}{/if}){/if}
+          </span>
           <span class="sep">|</span>
-          <span>{context.category}{#if context.birthYear} (born {context.birthYear}{#if context.age}, age {context.age}{/if}){/if}</span>
-          <span class="sep">|</span>
-          <span class="total-label">{mode === 'KADRA' ? 'Kadra' : 'PPW'} Total: {mode === 'KADRA' ? fmt(context.totalScore) : fmt(ppwModeTotal)} pts</span>
+          <span class="total-label">{mode === 'KADRA' ? 'Kadra' : 'PPW'} Total: {mode === 'KADRA' ? fmt(context?.totalScore ?? grandTotal) : fmt(ppwModeTotal)} pts</span>
           <button class="btn-export-sub" title="Export to ODS" onclick={handleExport}>&#9113;</button>
         </div>
       {/if}
@@ -40,7 +46,7 @@
         <div class="empty">No tournament results</div>
       {:else}
         <div class="breakdown-section">
-          <h3>Score Breakdown</h3>
+          <h3>Points Breakdown</h3>
           <div class="breakdown-grid" class:single-col={mode === 'PPW'}>
             <div class="breakdown-col">
               <h4>Domestic (PPW + MPW)</h4>
@@ -65,7 +71,7 @@
 
             {#if mode === 'KADRA'}
               <div class="breakdown-col">
-                <h4>International (PEW + MEW)</h4>
+                <h4>International (EVF)</h4>
                 <div class="chart-area">
                   {#each internationalChart as item}
                     <div class="chart-row">
@@ -80,14 +86,27 @@
                     </div>
                   {/each}
                 </div>
-                <div class="breakdown-summary">
-                  International: {fmt(pewSum)}{#if mewIncluded > 0}+{fmt(mewIncluded)}{/if} = {fmt(internationalTotal)}
-                </div>
+                {#if useJsonbRules}
+                  <div class="breakdown-summary">
+                    International (best {bestJ}): {fmt(internationalTotal)}
+                  </div>
+                {:else}
+                  <div class="breakdown-summary">
+                    International: {fmt(pewSum)}{#if mewIncluded > 0}+{fmt(mewIncluded)}{/if} = {fmt(internationalTotal)}
+                  </div>
+                {/if}
                 <div class="breakdown-summary grand-total">
                   Grand Total: {fmt(grandTotal)}
                 </div>
               </div>
             {/if}
+          </div>
+          <div class="type-legend">
+            <span><strong>PPW</strong> — Puchar Polski Weteranów (Polish Veterans Cup)</span>
+            <span><strong>MPW</strong> — Mistrzostwa Polski Weteranów (Polish Veterans Championship)</span>
+            <span><strong>PEW</strong> — Puchar Europy Weteranów (European Veterans Cup)</span>
+            <span><strong>MEW</strong> — Mistrzostwa Europy Weteranów (European Veterans Championship)</span>
+            <span><strong>MSW</strong> — Mistrzostwa Świata Weteranów (World Veterans Championship)</span>
           </div>
         </div>
 
@@ -100,6 +119,12 @@
           {/if}
         </div>
       {/if}
+
+      <div class="modal-footer">
+        <span><strong>N</strong> — number of participants</span>
+        <span class="sep">·</span>
+        <span><strong>Mult</strong> — tournament type multiplier applied to the raw score (place points + DE bonus + podium bonus)</span>
+      </div>
     </div>
   </div>
 {/if}
@@ -114,16 +139,25 @@
         <th class="num">Place</th>
         <th class="num">N</th>
         <th class="num">Mult</th>
-        <th class="num total">Score</th>
+        <th class="num total">Points</th>
       </tr>
     </thead>
     <tbody>
       {#each rows as s}
         <tr>
-          <td>{s.txt_tournament_code}</td>
+          <td>
+            {#if s.url_results}
+              <a href={s.url_results} target="_blank" rel="noopener">{s.txt_tournament_code}</a>
+            {:else}
+              {s.txt_tournament_code}
+            {/if}
+            {#if s.txt_location}
+              <div class="location">{s.txt_location}</div>
+            {/if}
+          </td>
           <td>{formatDate(s.dt_tournament)}</td>
-          <td><span class="type-badge" class:domestic={s.enum_type === 'PPW' || s.enum_type === 'MPW'} class:international={s.enum_type === 'PEW' || s.enum_type === 'MEW'}>{s.enum_type}</span></td>
-          <td class="num">{s.int_place}</td>
+          <td><span class="type-badge" class:domestic={s.enum_type === 'PPW' || s.enum_type === 'MPW'} class:international={INTL_TYPES.includes(s.enum_type as (typeof INTL_TYPES)[number])}>{s.enum_type}</span></td>
+          <td class="num place">{s.int_place}</td>
           <td class="num">{s.int_participant_count ?? '—'}</td>
           <td class="num">{s.num_multiplier != null ? Number(s.num_multiplier).toFixed(1) : '—'}</td>
           <td class="num total">{fmt(s.num_final_score)} {getMarker(s)}</td>
@@ -134,8 +168,10 @@
 {/snippet}
 
 <script lang="ts">
-  import type { ScoreRow, RankingMode, DrilldownContext } from '../lib/types'
+  import type { ScoreRow, RankingMode, DrilldownContext, RankingRules } from '../lib/types'
   import { exportDrilldown } from '../lib/export'
+
+  const INTL_TYPES = ['PEW', 'MEW', 'MSW', 'PSW'] as const
 
   let {
     open = false,
@@ -145,6 +181,7 @@
     kadraDisabled = false,
     loading = false,
     context = null as DrilldownContext | null,
+    rankingRules = null as RankingRules | null,
     onclose,
   }: {
     open?: boolean
@@ -154,10 +191,13 @@
     kadraDisabled?: boolean
     loading?: boolean
     context?: DrilldownContext | null
+    rankingRules?: RankingRules | null
     onclose?: () => void
   } = $props()
 
   // --- Derived data ---
+
+  let seasonCode = $derived(scores[0]?.txt_season_code ?? null)
 
   let filteredScores = $derived(
     mode === 'PPW'
@@ -168,14 +208,23 @@
   let domesticScores = $derived(
     scores
       .filter((s) => s.enum_type === 'PPW' || s.enum_type === 'MPW')
-      .sort((a, b) => (b.num_final_score ?? 0) - (a.num_final_score ?? 0))
+      .sort((a, b) => (a.dt_tournament ?? '').localeCompare(b.dt_tournament ?? ''))
   )
 
   let internationalScores = $derived(
     scores
-      .filter((s) => s.enum_type === 'PEW' || s.enum_type === 'MEW')
+      .filter((s) => INTL_TYPES.includes(s.enum_type as (typeof INTL_TYPES)[number]))
+      .sort((a, b) => (a.dt_tournament ?? '').localeCompare(b.dt_tournament ?? ''))
+  )
+
+  // Pool selection for JSONB rules: all international scores sorted desc
+  let intlPoolSorted = $derived(
+    scores
+      .filter((s) => INTL_TYPES.includes(s.enum_type as (typeof INTL_TYPES)[number]))
       .sort((a, b) => (b.num_final_score ?? 0) - (a.num_final_score ?? 0))
   )
+
+  let intlPoolBestIds = $derived(new Set(intlPoolSorted.slice(0, bestJ).map((s) => s.id_result)))
 
   // Best-K PPW scores
   let ppwScoresSorted = $derived(
@@ -184,8 +233,25 @@
       .sort((a, b) => (b.num_final_score ?? 0) - (a.num_final_score ?? 0))
   )
 
-  let bestK = $derived(context?.ppwBestCount ?? 4)
-  let bestJ = $derived(context?.pewBestCount ?? 3)
+  let useJsonbRules = $derived(rankingRules != null)
+
+  let bestK = $derived.by(() => {
+    if (rankingRules) {
+      const bucket = rankingRules.domestic.find((b) => b.types.includes('PPW'))
+      return bucket?.best ?? 4
+    }
+    return context?.ppwBestCount ?? 4
+  })
+
+  let bestJ = $derived.by(() => {
+    if (rankingRules) {
+      const bucket = rankingRules.international.find((b) =>
+        b.types.some((t) => INTL_TYPES.includes(t as (typeof INTL_TYPES)[number])),
+      )
+      return bucket?.best ?? 3
+    }
+    return context?.pewBestCount ?? 3
+  })
 
   let ppwBestIds = $derived(new Set(ppwScoresSorted.slice(0, bestK).map((s) => s.id_result)))
   let ppwSum = $derived(
@@ -213,7 +279,15 @@
   let mewScore = $derived(scores.find((s) => s.enum_type === 'MEW'))
   let mewIncluded = $derived(Math.round((mewScore?.num_final_score ?? 0) * 10) / 10)
 
-  let internationalTotal = $derived(Math.round((pewSum + mewIncluded) * 10) / 10)
+  let internationalTotal = $derived(
+    useJsonbRules
+      ? Math.round(
+          intlPoolSorted
+            .slice(0, bestJ)
+            .reduce((acc, s) => acc + (s.num_final_score ?? 0), 0) * 10,
+        ) / 10
+      : Math.round((pewSum + mewIncluded) * 10) / 10,
+  )
   let grandTotal = $derived(Math.round((domesticTotal + internationalTotal) * 10) / 10)
 
   let ppwModeTotal = $derived(domesticTotal)
@@ -248,6 +322,15 @@
   })
 
   let internationalChart = $derived.by((): ChartItem[] => {
+    if (useJsonbRules) {
+      return intlPoolSorted.map((s) => ({
+        score: s.num_final_score ?? 0,
+        code: s.txt_tournament_code,
+        marker: intlPoolBestIds.has(s.id_result) ? '★' : '',
+        type: s.enum_type,
+      }))
+    }
+    // Legacy path
     const items: ChartItem[] = []
     if (mewScore) {
       items.push({
@@ -265,7 +348,6 @@
         type: 'PEW',
       })
     }
-    // Sort descending by score
     items.sort((a, b) => b.score - a.score)
     return items
   })
@@ -290,9 +372,10 @@
     if (!dt) return '—'
     try {
       const d = new Date(dt)
+      const day = d.getDate()
       const month = d.toLocaleString('en', { month: 'short' })
       const year = String(d.getFullYear()).slice(2)
-      return `${year}.${month}`
+      return `${day} ${month} ${year}`
     } catch {
       return dt
     }
@@ -300,8 +383,15 @@
 
   function getMarker(s: ScoreRow): string {
     if (s.enum_type === 'PPW' && ppwBestIds.has(s.id_result)) return '★'
-    if (s.enum_type === 'PEW' && pewBestIds.has(s.id_result)) return '★'
     if (s.enum_type === 'MPW') return '✓'
+    if (useJsonbRules) {
+      if (INTL_TYPES.includes(s.enum_type as (typeof INTL_TYPES)[number])) {
+        return intlPoolBestIds.has(s.id_result) ? '★' : ''
+      }
+      return ''
+    }
+    // Legacy
+    if (s.enum_type === 'PEW' && pewBestIds.has(s.id_result)) return '★'
     if (s.enum_type === 'MEW') return '✓'
     return ''
   }
@@ -506,6 +596,17 @@
     font-weight: 600;
     color: #444;
   }
+  .type-legend {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 11px;
+    color: #999;
+  }
+  .type-legend strong {
+    color: #666;
+  }
   .grand-total {
     margin-top: 4px;
     font-size: 14px;
@@ -543,6 +644,10 @@
   .total {
     font-weight: 700;
   }
+  .place {
+    font-weight: 700;
+    font-size: 15px;
+  }
   .type-badge {
     display: inline-block;
     padding: 1px 6px;
@@ -557,6 +662,35 @@
   .type-badge.international {
     background: #fdf3e1;
     color: #b07d2b;
+  }
+
+  .location {
+    font-size: 11px;
+    color: #999;
+    margin-top: 2px;
+  }
+  td a {
+    color: #2c6fad;
+    text-decoration: underline;
+    text-decoration-color: #b0c8e8;
+  }
+  td a:hover {
+    text-decoration-color: #2c6fad;
+  }
+
+  .modal-footer {
+    margin-top: 16px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    font-size: 12px;
+    color: #888;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+  }
+  .modal-footer .sep {
+    color: #ccc;
   }
 
   /* Tables scroll horizontally on mobile */

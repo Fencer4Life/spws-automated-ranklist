@@ -1,7 +1,7 @@
 -- =============================================================================
 -- M5/M6: SQL Views, API & Kadra Ranking — Acceptance Tests
 -- =============================================================================
--- Tests 5.1–5.19 from the POC development plan.
+-- Tests 5.1–5.23 from the POC development plan.
 -- Uses pre-scored results (num_final_score set directly) to test
 -- vw_score, fn_ranking_ppw, and fn_ranking_kadra independently of the
 -- scoring engine.
@@ -19,7 +19,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(21);
+SELECT plan(25);
 
 -- ===== SETUP: Create test tournaments and pre-scored results =====
 DO $setup$
@@ -43,6 +43,18 @@ DECLARE
 BEGIN
   SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+
+  -- Clear pre-loaded tournament data for the test season so tests are isolated.
+  -- This runs inside BEGIN...ROLLBACK, so real seed data is restored after tests.
+  DELETE FROM tbl_result
+  WHERE id_tournament IN (
+    SELECT t.id_tournament FROM tbl_tournament t
+    JOIN tbl_event e ON t.id_event = e.id_event
+    WHERE e.id_season = v_season
+  );
+  DELETE FROM tbl_tournament
+  WHERE id_event IN (SELECT id_event FROM tbl_event WHERE id_season = v_season);
+  DELETE FROM tbl_event WHERE id_season = v_season;
 
   -- Create test event for views
   INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
@@ -139,8 +151,7 @@ BEGIN
   -- -----------------------------------------------------------------------
   -- Fencer B (BARAŃSKI, V3 by birth year): PPW=[95,85,75,65,55], MPW=36
   -- in V2 tournaments — cross-category carryover to V3 ranking
-  -- Best 4 PPW = 95+85+75+65=320, worst=65, MPW=36<65 → drop, use PPW5=55
-  -- Total = 320+55 = 375
+  -- JSONB: best 4 PPW=320 + always MPW=36 → total=356
   -- -----------------------------------------------------------------------
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
     (v_fencer_b, v_ppw1, 2, 95.00,  NOW()),
@@ -160,8 +171,7 @@ BEGIN
 
   -- -----------------------------------------------------------------------
   -- Fencer D (DUDEK, V2): PPW=[95,85,75,65,55], MPW=36  (same pattern as B)
-  -- Best 4 PPW = 95+85+75+65=320, worst=65, MPW=36<65 → drop, use PPW5=55
-  -- Total = 320+55 = 375
+  -- JSONB: best 4 PPW=320 + always MPW=36 → total=356
   -- Also has FOIL result for weapon filter test 5.8
   -- -----------------------------------------------------------------------
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
@@ -204,9 +214,8 @@ BEGIN
   -- -----------------------------------------------------------------------
 
   -- Fencer A (ATANASSOW, V2): PEW=[120,100,90,65], MEW=80
-  -- Best 3 PEW = 120+100+90=310, worst=90, MEW=80<90 → drop, use PEW4=65
-  -- PEW total = 310+65 = 375
-  -- Kadra total = PPW(420) + PEW(375) = 795
+  -- JSONB pool {PEW, MEW}: sorted [120,100,90,80,65] → best 3 = 120+100+90=310
+  -- ppw_total=420, pew_total=310, kadra total=730
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
     (v_fencer_a, v_pew1, 5,  120.00, NOW()),
     (v_fencer_a, v_pew2, 8,  100.00, NOW()),
@@ -215,9 +224,8 @@ BEGIN
     (v_fencer_a, v_mew1, 3,   80.00, NOW());
 
   -- Fencer D (DUDEK, V2): PEW=[110,85], no MEW — domestic-only comparison
-  -- Best 3 PEW (only 2 available) = 110+85=195
-  -- PEW total = 195
-  -- Kadra total = PPW(375) + PEW(195) = 570
+  -- JSONB pool {PEW}: best 3 (only 2 available) = 110+85=195
+  -- ppw_total=356, pew_total=195, kadra total=551
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
     (v_fencer_d, v_pew1, 7,  110.00, NOW()),
     (v_fencer_d, v_pew2, 10,  85.00, NOW());
@@ -279,35 +287,35 @@ SELECT is(
 -- 5.4  Best-K selection: with K=4 and 5 PPW scores, only top 4 are summed
 -- ---------------------------------------------------------------------------
 -- Fencer D (DUDEK, V2): PPW=[95,85,75,65,55], MPW=36
--- Best 4 PPW = 95+85+75+65 = 320, MPW dropped (36<65), 5th PPW=55 used
--- Total = 320+55 = 375
+-- JSONB: best 4 PPW bucket = 95+85+75+65=320, MPW always bucket = 36
+-- Total = 320+36 = 356 (PPW5=55 is dropped — only top 4 selected by bucket)
 SELECT is(
   (SELECT total_score
    FROM fn_ranking_ppw('EPEE', 'M', 'V2')
    WHERE fencer_name = 'DUDEK Mariusz'),
-  375.00::NUMERIC,
-  '5.4 Best-K: DUDEK total=375 (best 4 PPW + 5th PPW replacing dropped MPW)'
+  356.00::NUMERIC,
+  '5.4 Best-K: DUDEK total=356 (best 4 PPW=320 + always MPW=36)'
 );
 
 -- ---------------------------------------------------------------------------
--- 5.5  MPW included: MPW (80) ≥ worst included PPW (70) → total includes MPW
+-- 5.5  MPW always included (JSONB always-bucket): unconditional regardless of score
 -- ---------------------------------------------------------------------------
 SELECT is(
   (SELECT total_score
    FROM fn_ranking_ppw('EPEE', 'M', 'V2')
    WHERE fencer_name = 'ATANASSOW Aleksander'),
   420.00::NUMERIC,
-  '5.5 MPW included: ATANASSOW total=420 (best 4 PPW=340 + MPW=80)'
+  '5.5 MPW always included (JSONB): ATANASSOW total=420 (best 4 PPW=340 + always MPW=80)'
 );
 
 -- ---------------------------------------------------------------------------
--- 5.6  MPW dropped: MPW (36) < worst included PPW (65) → use 5th PPW (55)
+-- 5.6  MPW always included (JSONB): even when lower than every PPW score
 -- ---------------------------------------------------------------------------
 SELECT ok(
-  (SELECT total_score = 375.00
+  (SELECT total_score = 356.00
    FROM fn_ranking_ppw('EPEE', 'M', 'V2')
    WHERE fencer_name = 'DUDEK Mariusz'),
-  '5.6 MPW dropped: DUDEK total=375 (MPW=36 < worst PPW=65, replaced by PPW5=55)'
+  '5.6 MPW always included (JSONB): DUDEK total=356 (MPW=36 always counted, PPW5=55 dropped)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -399,8 +407,8 @@ SELECT is(
   (SELECT total_score
    FROM fn_ranking_ppw('EPEE', 'M', 'V3')
    WHERE fencer_name = 'BARAŃSKI Wacław'),
-  375.00::NUMERIC,
-  '5.14 Cross-category: BARAŃSKI (V3) total=375 from V2 tournament results in V3 ranking'
+  356.00::NUMERIC,
+  '5.14 Cross-category: BARAŃSKI (V3) total=356 from V2 tournament results in V3 ranking'
 );
 
 -- ---------------------------------------------------------------------------
@@ -425,18 +433,17 @@ SELECT ok(
 );
 
 -- ---------------------------------------------------------------------------
--- 5.17  fn_ranking_kadra: correct total (PPW+MPW+PEW+MEW) for V2
+-- 5.17  fn_ranking_kadra: correct total (JSONB pool logic) for V2
 -- ---------------------------------------------------------------------------
--- ATANASSOW: PPW total=420, PEW=[120,100,90,65], MEW=80
--- Best 3 PEW=310, worst=90, MEW=80<90 → drop, use PEW4=65
--- PEW total = 310+65 = 375
--- Kadra total = 420 + 375 = 795
+-- ATANASSOW: ppw_total=420, PEW=[120,100,90,65], MEW=80
+-- JSONB pool {PEW, MEW}: sorted [120,100,90,80,65] → best 3 = 120+100+90=310
+-- pew_total=310, kadra total = 420+310 = 730
 SELECT is(
   (SELECT total_score
    FROM fn_ranking_kadra('EPEE', 'M', 'V2')
    WHERE fencer_name = 'ATANASSOW Aleksander'),
-  795.00::NUMERIC,
-  '5.17 fn_ranking_kadra: ATANASSOW total=795 (PPW=420 + PEW=375)'
+  730.00::NUMERIC,
+  '5.17 fn_ranking_kadra: ATANASSOW total=730 (ppw_total=420 + pew_total=310)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -459,6 +466,97 @@ SELECT is(
    WHERE fencer_name = 'BAZAK Jacek'),
   90.00::NUMERIC,
   '5.19 fn_ranking_kadra: BAZAK (domestic only) total=90, pew_total=0'
+);
+
+-- ---------------------------------------------------------------------------
+-- 5.20  fn_ranking_ppw JSONB: ppw_score = sum of best-4 PPW bucket only
+-- ---------------------------------------------------------------------------
+SELECT is(
+  (SELECT ppw_score
+   FROM fn_ranking_ppw('EPEE', 'M', 'V2')
+   WHERE fencer_name = 'ATANASSOW Aleksander'),
+  340.00::NUMERIC,
+  '5.20 fn_ranking_ppw JSONB: ATANASSOW ppw_score=340 (best 4 PPW: 100+90+80+70)'
+);
+
+-- ---------------------------------------------------------------------------
+-- 5.21  fn_ranking_ppw JSONB: MPW always-bucket included regardless of score
+-- ---------------------------------------------------------------------------
+-- DUDEK MPW=36 < worst included PPW=65, but with JSONB "always" bucket it IS included
+SELECT is(
+  (SELECT mpw_score
+   FROM fn_ranking_ppw('EPEE', 'M', 'V2')
+   WHERE fencer_name = 'DUDEK Mariusz'),
+  36.00::NUMERIC,
+  '5.21 fn_ranking_ppw JSONB: DUDEK mpw_score=36 (always-bucket, even though < worst PPW)'
+);
+
+-- ---------------------------------------------------------------------------
+-- 5.22  fn_ranking_kadra JSONB: pew_total = best 3 from pooled {PEW, MEW}
+-- ---------------------------------------------------------------------------
+-- ATANASSOW: pool [120,100,90,80,65], best 3 = 120+100+90 = 310
+SELECT is(
+  (SELECT pew_total
+   FROM fn_ranking_kadra('EPEE', 'M', 'V2')
+   WHERE fencer_name = 'ATANASSOW Aleksander'),
+  310.00::NUMERIC,
+  '5.22 fn_ranking_kadra JSONB: ATANASSOW pew_total=310 (best 3 from PEW+MEW pool)'
+);
+
+-- ---------------------------------------------------------------------------
+-- 5.23  Legacy path (NULL json_ranking_rules): MPW dropped when < worst PPW
+-- ---------------------------------------------------------------------------
+-- Uses SPWS-2023-2024 season (no season_config.sql → json_ranking_rules=NULL).
+-- A temporary fencer with 5 PPW + 1 MPW is inserted in that season.
+-- MPW=50 < worst included PPW=70 → legacy logic drops MPW, uses PPW5=60.
+-- Expected total = 100+90+80+70+60 = 400 (best 4 PPW + 5th PPW substituted)
+DO $setup_legacy$
+DECLARE
+  v_season_23  INT;
+  v_org        INT;
+  v_event_23   INT;
+  v_fencer_leg INT;
+BEGIN
+  SELECT id_season INTO v_season_23 FROM tbl_season WHERE txt_code = 'SPWS-2023-2024';
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year)
+  VALUES ('LEGACY-TEST', 'Fencer', 'PL', 1969)
+  RETURNING id_fencer INTO v_fencer_leg;
+
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+  VALUES ('VW-LEGACY-EVT', 'Legacy Test Event', v_season_23, v_org, 'COMPLETED');
+  SELECT id_event INTO v_event_23 FROM tbl_event WHERE txt_code = 'VW-LEGACY-EVT';
+
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category, dt_tournament,
+    int_participant_count, enum_import_status)
+  VALUES
+    (v_event_23, 'VW-L-PPW1', 'Legacy PPW1', 'PPW', 'EPEE', 'M', 'V2', '2023-09-01', 24, 'SCORED'),
+    (v_event_23, 'VW-L-PPW2', 'Legacy PPW2', 'PPW', 'EPEE', 'M', 'V2', '2023-10-01', 24, 'SCORED'),
+    (v_event_23, 'VW-L-PPW3', 'Legacy PPW3', 'PPW', 'EPEE', 'M', 'V2', '2023-11-01', 24, 'SCORED'),
+    (v_event_23, 'VW-L-PPW4', 'Legacy PPW4', 'PPW', 'EPEE', 'M', 'V2', '2023-12-01', 24, 'SCORED'),
+    (v_event_23, 'VW-L-PPW5', 'Legacy PPW5', 'PPW', 'EPEE', 'M', 'V2', '2024-01-01', 24, 'SCORED'),
+    (v_event_23, 'VW-L-MPW1', 'Legacy MPW1', 'MPW', 'EPEE', 'M', 'V2', '2024-02-01', 24, 'SCORED');
+
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc)
+  VALUES
+    (v_fencer_leg, (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'VW-L-PPW1'), 1, 100.00, NOW()),
+    (v_fencer_leg, (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'VW-L-PPW2'), 1,  90.00, NOW()),
+    (v_fencer_leg, (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'VW-L-PPW3'), 1,  80.00, NOW()),
+    (v_fencer_leg, (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'VW-L-PPW4'), 1,  70.00, NOW()),
+    (v_fencer_leg, (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'VW-L-PPW5'), 1,  60.00, NOW()),
+    (v_fencer_leg, (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'VW-L-MPW1'), 1,  50.00, NOW());
+END;
+$setup_legacy$;
+
+SELECT is(
+  (SELECT total_score
+   FROM fn_ranking_ppw('EPEE', 'M', 'V2',
+     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2023-2024'))
+   WHERE fencer_name = 'LEGACY-TEST Fencer'),
+  400.00::NUMERIC,
+  '5.23 Legacy path (NULL json_ranking_rules): MPW=50 dropped (< worst PPW=70), total=400'
 );
 
 SELECT * FROM finish();

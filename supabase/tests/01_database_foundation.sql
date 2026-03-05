@@ -31,7 +31,7 @@ SELECT is(
    FROM pg_type t
    JOIN pg_enum e ON e.enumtypid = t.oid
    WHERE t.typname = 'enum_tournament_type'),
-  'PPW,MPW,PEW,MEW,MSW',
+  'PPW,MPW,PEW,MEW,MSW,PSW',
   '1.1c enum_tournament_type values'
 );
 
@@ -257,9 +257,9 @@ SELECT ok(
 -- 1.12d  Seed tournament multiplier auto-populated by trigger
 -- ---------------------------------------------------------------------------
 SELECT is(
-  (SELECT num_multiplier FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-EPEE-2025'),
+  (SELECT num_multiplier FROM tbl_tournament WHERE txt_code = 'PP1-V2-M-EPEE-2024-2025'),
   1.0::NUMERIC,
-  '1.12d Seed tournament PPW1-V2-M-EPEE-2025 has multiplier 1.0 from trigger'
+  '1.12d Seed tournament PP1-V2-M-EPEE-2024-2025 has multiplier 1.0 from trigger'
 );
 
 -- ---------------------------------------------------------------------------

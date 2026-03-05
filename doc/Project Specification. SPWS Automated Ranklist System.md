@@ -333,23 +333,24 @@ Alternatively, if MPW were 80:
 
 Combines domestic and international results:
 
-$$\text{Kadra\_Total} = \text{PPW\_Total} + \text{best } J \text{ of PEW scores} + \text{MEW (conditional)}$$
+$$\text{Kadra\_Total} = \text{PPW\_Total} + \text{best } J \text{ of (PEW + MEW + MSW [+ PSW]) scores}$$
 
-Where $J$ = `int_pew_best_count` from `tbl_scoring_config` (default 3).
+Where $J$ is defined in `json_ranking_rules` (default 3; see §8.6.6) and the international pool contains all results of types PEW, MEW, MSW, and — when applicable — PSW.
 
-The same conditional logic as the domestic ranking applies to the MEW (European Championship) score: the system selects the best $J$ PEW scores, then checks whether MEW ≥ the lowest included PEW. If yes, MEW is added. If no, MEW is dropped and the $(J+1)$-th best PEW replaces it.
+**International pool:** Results from PEW, MEW, MSW, and PSW are pooled together. The system selects the best $J$ scores from the combined pool, ranked by `num_final_score` descending. Because each tournament type's multiplier is already embedded in `num_final_score` at calculation time (MEW × 2.0, MSW × 2.0, PSW × 2.0, PEW × 1.0), a single high MEW or MSW score naturally ranks above lower PEW scores — no separate conditional-drop algorithm is needed.
 
-**PEW pool:** EVF organizes a variable number of international circuit events each season (typically up to 12). The system considers all available PEW results and selects the best $J$.
+**MEW frequency:** The European Veterans Championship (MEW) occurs every **odd-numbered** year. In even years, no MEW result exists — only PEW (and MSW/PSW if applicable) contribute to the pool.
 
-**MEW frequency:** The European Veterans Championship (MEW) occurs every **odd-numbered** year. In even years, no MEW score exists for the Kadra calculation — only PEW results contribute.
+**Example (MEW and PEW results both available):**
+- PEW scores (after × 1.0 multiplier): 95, 88, 72
+- MEW score (after × 2.0 multiplier): 144
+- Combined pool, sorted: 144, 95, 88, 72
+- Best 3 selected: 144 + 95 + 88 = **327**
 
-**Example (odd year, MEW exists):**
-- Best 3 PEW: 95, 88, 72
-- MEW: 60 → 60 < 72 → MEW dropped, take 4th PEW instead
-- International contribution = best 4 PEW scores
+**Example (PEW results only, no MEW/MSW/PSW):**
+- Best 3 PEW: 95 + 88 + 72 = **255**
 
-**Example (even year, no MEW):**
-- International contribution = best 3 PEW scores only
+> **Legacy behavior (SPWS-2023-2024):** When `json_ranking_rules` is `NULL`, the system uses the original separate-bucket algorithm: best $J$ PEW scores + conditional MEW drop (MEW is dropped and replaced by the $(J+1)$-th PEW if MEW < worst included PEW). This path is preserved for historical seasons and not used for SPWS-2024-2025 onwards. See §8.6.6.
 
 ### 8.4 Tournament Type Taxonomy
 
@@ -361,9 +362,12 @@ The Excel reveals a structured tournament classification not fully documented pr
 | MPW | Mistrzostwa Polski Weteranów | National Championship | 1.2 | 1 |
 | PEW1–PEW12 | International EVF circuit events | International | 1.0 | variable, up to ~12 |
 | MEW | Mistrzostwa Europy Weteranów (European Veterans Championship) | International | 2.0 | 0 or 1 (odd years only) |
-| MSW | Mistrzostwa Świata Weteranów (World Veterans Championship) | International | 2.0 | 1 (yearly, Oct/Nov) |
+| MSW | Mistrzostwa Świata Weteranów (FIE Veterans World Championships) | International | 2.0 | 1 (yearly, Oct/Nov) |
+| PSW | Puchar Świata Weteranów (FIE Veterans World Cup) | International | 2.0 | variable — not yet held; future |
 
 > **Note:** Earlier Excel sheets used "PP" as a tab name for some PPW rounds — this was merely a naming inconsistency in the spreadsheet. PP and PPW are the same tournament type. The system uses only **PPW** as the canonical code.
+
+> **MSW vs PSW:** MSW (Mistrzostwa Świata — World Championships) is a single annual FIE event held Oct/Nov. PSW (Puchar Świata — World Cup) is a FIE circuit series that had not yet occurred as of the 2025-26 season. Both types are in `enum_tournament_type` and both use multiplier 2.0. PSW results are included in the international ranking pool via `json_ranking_rules` the moment they are added to that season's config file (§8.6.6).
 
 ### 8.5 Additional Implementation Requirements (from Excel analysis)
 
@@ -408,10 +412,12 @@ Every number in the scoring formulas (§8.1–§8.3) that isn't derived from liv
 | 11 | `int_pew_best_count` | How many international PEW rounds count ($J$) | 3 | best $J$ of PEW scores (§8.3.2) |
 | 12 | `num_mew_multiplier` | European championship score multiplier | 2.0 | Total × 2.0 (§8.2) |
 | 13 | `bool_mew_droppable` | Can MEW be replaced by next-best PEW? | TRUE | Conditional drop logic (§8.3.2) |
-| 14 | `num_msw_multiplier` | World championship score multiplier | 2.0 | Total × 2.0 (§8.2) — Phase 2+ |
-| 15 | `int_min_participants_evf` | Minimum $N$ for PEW/MEW/MSW to count | 5 | Eligibility filter (§8.5) |
-| 16 | `int_min_participants_ppw` | Minimum $N$ for PPW/MPW to count | 1 | Eligibility filter (§8.5) |
-| 17 | `json_extra` | Overflow JSONB for future parameters | `{}` | Phase 3 Kadra tier thresholds, etc. |
+| 14 | `num_msw_multiplier` | World Championships score multiplier | 2.0 | Total × 2.0 (§8.2) |
+| 15 | `num_psw_multiplier` | World Cup score multiplier | 2.0 | Total × 2.0 (§8.2) — PSW (§8.4) |
+| 16 | `int_min_participants_evf` | Minimum $N$ for PEW/MEW/MSW/PSW to count | 5 | Eligibility filter (§8.5) |
+| 17 | `int_min_participants_ppw` | Minimum $N$ for PPW/MPW to count | 1 | Eligibility filter (§8.5) |
+| 18 | `json_ranking_rules` | JSONB per-season bucket rules | NULL | NULL = legacy K/J logic; populated = JSONB-driven pool logic. See §8.6.6. |
+| 19 | `json_extra` | Overflow JSONB for future parameters | `{}` | Phase 3 Kadra tier thresholds, etc. Distinct from `json_ranking_rules`. |
 
 **Complexity note:** The individual parameters are simple numbers and booleans. The complexity arises from three factors:
 1. **Per-season versioning** — Season 2024-25 might use $K=4$, while 2025-26 switches to $K=3$.
@@ -481,6 +487,131 @@ The typical calibration loop during Phase 1 development:
 ```
 
 > **Tip:** Most parameters are independent. If PlacePoints are off, tweak `int_mp_value`. If podium bonuses are off, tweak `int_podium_gold/silver/bronze`. The DE bonus is a fixed 10 pts per round — it is not configurable. The only interplay is in the aggregation rules (best-of, drop logic) which affect ranking totals, not individual tournament scores.
+
+#### 8.6.6 Per-Season Ranking Rules (`json_ranking_rules`)
+
+Starting from SPWS-2024-2025, the **structural logic** of how tournament results are grouped and counted in the ranking is expressed as a JSONB value in `tbl_scoring_config.json_ranking_rules`.
+
+When `json_ranking_rules` is `NULL` (as for SPWS-2023-2024), the system falls back to the legacy hardcoded K/J logic described in §8.3.1–§8.3.2. All seasons from SPWS-2024-2025 onwards carry an explicit JSONB value.
+
+##### Format
+
+```json
+{
+  "domestic": [
+    {"types": ["PPW"], "best": 4},
+    {"types": ["MPW"], "always": true}
+  ],
+  "international": [
+    {"types": ["PPW"], "best": 4},
+    {"types": ["MPW"], "always": true},
+    {"types": ["PEW", "MEW", "MSW"], "best": 3}
+  ]
+}
+```
+
+The top-level keys `"domestic"` and `"international"` correspond to `fn_ranking_ppw` and `fn_ranking_kadra` respectively. Each value is an ordered array of **buckets** — groups of tournament types with a selection rule.
+
+**Bucket fields:**
+
+| Field | Type | Required | Meaning |
+|-------|------|----------|---------|
+| `types` | string array | yes | Tournament type codes from `enum_tournament_type` — e.g. `["PPW"]`, `["PEW","MEW","MSW"]` |
+| `best` | integer | one of `best`/`always` | Take the top N results (by `num_final_score` DESC) from this bucket per fencer |
+| `always` | boolean | one of `best`/`always` | Include **all** results of these types regardless of score — equivalent to `best = ∞` |
+
+Each fencer's ranking total = sum of selected scores across all buckets. Multipliers are already embedded in `num_final_score` at tournament-score-calculation time — they do not appear in the bucket rules. When multiple tournament types are listed in the same bucket (e.g. `["PEW","MEW","MSW"]`), results from all listed types compete together and the top N are selected from the combined pool.
+
+##### Where Rules Are Stored on Disk
+
+Each season that uses JSONB rules has a dedicated config file co-located with its tournament data:
+
+```
+supabase/data/
+  2023_24/
+      v2_m_epee.sql          ← no season_config.sql → json_ranking_rules = NULL (legacy)
+  2024_25/
+      season_config.sql      ← sets json_ranking_rules for SPWS-2024-2025
+      v2_m_epee.sql
+  2025_26/
+      season_config.sql      ← sets json_ranking_rules for SPWS-2025-2026
+      v2_m_epee.sql
+```
+
+These files are loaded automatically via the `data/**/*.sql` glob in `supabase/config.toml` every time `supabase db reset` runs. Alphabetically, `season_config.sql` loads before `v2_m_epee.sql` (`s` < `v`), ensuring the config is set before tournament data is inserted.
+
+##### How to Change Counting Rules
+
+**Option A — Change rules before a database reset (typical for local dev):**
+
+1. Open `supabase/data/{season_folder}/season_config.sql`.
+2. Edit the `json_ranking_rules` JSONB value. For example, to reduce the international pool to best 2:
+   ```sql
+   {"types": ["PEW", "MEW", "MSW"], "best": 2}
+   ```
+3. Run `supabase db reset` — the new rules apply immediately to all ranking queries.
+4. Commit `season_config.sql` — the change is version-controlled alongside the season's tournament data.
+
+**Option B — Change rules on a live/running database (no reset):**
+
+Execute in the Supabase SQL editor or via `fn_import_scoring_config`:
+
+```sql
+UPDATE tbl_scoring_config
+SET json_ranking_rules = '{
+  "domestic": [
+    {"types": ["PPW"], "best": 4},
+    {"types": ["MPW"], "always": true}
+  ],
+  "international": [
+    {"types": ["PPW"], "best": 4},
+    {"types": ["MPW"], "always": true},
+    {"types": ["PEW", "MEW", "MSW"], "best": 3}
+  ]
+}'::JSONB
+WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026');
+```
+
+Then **also update the disk file** (`season_config.sql`) to keep it in sync for the next reset.
+
+**Option C — Add a new tournament type to the international pool (e.g. PSW):**
+
+No schema migration required — add the type code to the `types` array in `season_config.sql`:
+
+```sql
+{"types": ["PEW", "MEW", "MSW", "PSW"], "best": 3}
+```
+
+This takes effect the next time `supabase db reset` runs (or immediately via Option B). PSW results that were already scored will be included automatically — the pool query reads `num_final_score` from whichever types are listed in `types`.
+
+**Option D — Change the number of best results to count:**
+
+Edit the `"best"` value in the relevant bucket. For example, to count best 4 from the international pool instead of 3:
+```json
+{"types": ["PEW", "MEW", "MSW"], "best": 4}
+```
+
+**Option E — Make a tournament type always count (no drop):**
+
+Replace `"best"` with `"always": true`:
+```json
+{"types": ["MPW"], "always": true}
+```
+
+##### Notes on Historical Seasons
+
+`json_ranking_rules` is a regular column — there is no automatic lock preventing edits to historical seasons. By convention:
+- Historical seasons (e.g. SPWS-2023-2024) have `json_ranking_rules = NULL`, relying on the legacy code path.
+- No `season_config.sql` file is created for historical seasons unless rules need to change.
+- Any rule change to a completed historical season retroactively changes the published ranking — this must be deliberate and communicated to stakeholders.
+
+##### How Ranking Functions Consume Rules
+
+At query time, `fn_ranking_ppw` and `fn_ranking_kadra` read `json_ranking_rules` from `tbl_scoring_config` for the requested season:
+- If `NULL` → legacy code path (uses `int_ppw_best_count`, `bool_mpw_droppable`, `int_pew_best_count`, `bool_mew_droppable`)
+- If populated → JSONB-driven path: PostgreSQL's `jsonb_array_elements` iterates over buckets dynamically
+
+No redeployment or code change is required when `json_ranking_rules` changes.
 
 ## 9. Database Schema Design
 
@@ -1174,23 +1305,53 @@ erDiagram
 | 3 | Test locally: `supabase db reset` (drops + replays all migrations + seeds) |
 | 4 | Apply to remote: `supabase db push` |
 
-**Seed data (`supabase/seed.sql`):**
+**Seed data — file layout and load order:**
 
-| Seed | Description |
-|------|-------------|
-| `tbl_organizer` | Pre-populate SPWS, EVF, FIE, PZSz with codes and names |
-| `tbl_season` | One test season (e.g., 2024–2025) with bool_active = FALSE and a second test season (e.g., 2025–2026) with bool_active = TRUE |
-| `tbl_scoring_config` | Default config for the test season (MP=50, PPW best-of=4, multipliers per §8.2) |
-| `tbl_fencer` | Import from existing SPWS Excel Master Table (CSV → SQL INSERT) |
+`supabase/config.toml` controls loading via `[db.seed] sql_paths`. Every `supabase db reset` loads these files in order:
 
-**Historical data import (Phase 2):**
+| # | File / Glob | Content |
+|---|-------------|---------|
+| 1 | `supabase/seed.sql` | Bootstrap: seasons (`tbl_season`), organizers (`tbl_organizer`). Scoring config auto-created by trigger. |
+| 2 | `supabase/seed_tbl_fencer.sql` | SPWS master fencer list — 270 members, birth year only. Includes name aliases for identity resolution. |
+| 3 | `supabase/data/**/*.sql` | Season data — one file per age category per season (auto-discovered by glob, loaded alphabetically). |
 
-Past seasons' data will be imported from the existing Excel workbooks using a one-time Python migration script:
-1. Parse each season's Excel file (multiple sheets per weapon/gender/category)
-2. Create `tbl_season` + `tbl_scoring_config` rows for each historical season
-3. Create `tbl_event` + `tbl_tournament` entries from sheet metadata
-4. Import `tbl_result` rows with pre-computed `num_final_score` values from the Excel (not re-calculated, to preserve historical accuracy)
-5. Set `ts_points_calc` to the original season end date as a best-effort timestamp
+**Season data file layout:**
+
+```
+supabase/data/
+  2024_25/
+    v2_m_epee.sql          ← Season 2024-25, Male Epee V2
+    v0_m_epee.sql          ← added as each category is scraped
+    ...                    ← 30 files total when complete
+  2025_26/
+    v2_m_epee.sql
+    ...
+  2023_24/                 ← historical seasons added over time
+    ...
+```
+
+File naming: `{age_cat}_{gender}_{weapon}.sql` (e.g. `v2_m_epee.sql`, `v1_f_sabre.sql`).
+Season folder naming: `{start_year}_{end_year_short}` (e.g. `2024_25`).
+
+Each file contains: `UPDATE tbl_season` (season-level adjustments), then `INSERT` blocks for `tbl_event`, `tbl_tournament`, `tbl_result`, and `SELECT fn_calc_tournament_scores(...)` calls for that category.
+
+**Generating season data files:**
+
+Use `python/tools/generate_season_seed.py` — one invocation per age category:
+
+```bash
+python python/tools/generate_season_seed.py \
+    --xlsx reference/SZPADA-2-2024-2025.xlsx \
+    --season SPWS-2024-2025 \
+    --weapon EPEE \
+    --gender M \
+    --age-cat V2
+# → writes supabase/data/2024_25/v2_m_epee.sql
+```
+
+The script reads the Excel workbook, fuzzy-matches scraped names against `tbl_fencer`, and generates idempotent SQL. Output path is derived from the CLI arguments.
+
+**Scale:** 30 age categories × N seasons → 30 files per season folder, all auto-loaded by `db reset`. No config changes required when adding new files.
 
 > **Rollback policy:** Each migration file must be paired with a reverse migration comment block documenting the rollback SQL. For POC, `supabase db reset` is the primary rollback mechanism.
 

@@ -168,4 +168,24 @@ describe('DrilldownModal', () => {
     })
     expect(container.textContent).toContain('Loading')
   })
+
+  it('tournament code link opens in new tab and does not point to a CSV download URL', () => {
+    const scores = [
+      makeScore({
+        id_result: 1,
+        enum_type: 'PPW',
+        txt_tournament_code: 'PP2-V2-M-EPEE-2025-2026',
+        url_results: 'https://www.fencingtimelive.com/events/results/0387CC20A25B4EBA9BDAFAB148E8C12B',
+        num_final_score: 100,
+      }),
+    ]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    const link = container.querySelector('tbody a') as HTMLAnchorElement
+    expect(link).not.toBeNull()
+    expect(link.target).toBe('_blank')
+    expect(link.href).not.toContain('/download/')
+    expect(link.href).toMatch(/^https?:\/\//)
+  })
 })

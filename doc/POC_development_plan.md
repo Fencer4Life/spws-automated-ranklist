@@ -543,13 +543,13 @@ Kadra mode:
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Drill-down modal (Option B) — adapts to toggle mode. [PPW●│Kadra] toggle synced with main view. [⎙] exports fencer breakdown as .ods. Tournament code links to `url_results`. Location from `tbl_event.txt_location`. ★ = counted in best-K, ✓ = MPW/MEW included.
+Drill-down modal — adapts to toggle mode. [PPW●│Kadra] toggle synced with main view. [⎙] exports fencer breakdown as .ods. Tournament code is a clickable link to `url_results` (opens in new tab). Location from `tbl_event.txt_location` shown in small grey text below the code in the same cell. ★ = counted in best-K, ✓ = MPW/MEW included. Season code shown in subheader derived from `txt_season_code`. Dates shown as `15 Jan 25`. Table rows ordered by date ascending; chart bars ordered by score descending.
 
 Kadra drill-down (toggle = Kadra):
 ```
 ┌─── Drill-Down ─────────────────────────────────────────────────────────────┐
 │  ATANASSOW Aleksander                                  [PPW│Kadra ●] [✕]  │
-│  Rank #1 │ V2 (born 1969, age 56) │ Kadra Total: 910 pts            [⎙]  │
+│  Rank #1 │ V2 · SPWS-2024-2025 (born 1969, age 56) │ Kadra Total: 910 pts [⎙] │
 │                                                                            │
 │  Score Breakdown                                                           │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
@@ -566,20 +566,24 @@ Kadra drill-down (toggle = Kadra):
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                            │
 │  Domestic Tournaments                                                      │
-│  ┌──────────┬────────────┬────────┬─────┬──────┬──────┬────────┐           │
-│  │ Code     │ Location   │ Date   │ Plc │ Part │ ×    │ Score  │           │
-│  │ VW-PPW1  │ Warszawa   │ 24.Sep │  1  │  32  │ 1.0  │ 120 ★  │          │
-│  │ ...      │            │        │     │      │      │        │           │
-│  │ VW-MPW1  │ Budapest   │ 25.Feb │  2  │  40  │ 1.2  │  45 ✓  │          │
-│  └──────────┴────────────┴────────┴─────┴──────┴──────┴────────┘           │
+│  ┌──────────────────────┬──────────┬─────┬──────┬──────┬────────┐          │
+│  │ Code                 │ Date     │ Plc │ Part │ ×    │ Score  │          │
+│  │ PP1-V2-M-EPEE-...↗   │ 20 Sep 24│  1  │  32  │ 1.0  │ 120 ★  │         │
+│  │ Warszawa             │          │     │      │      │        │          │
+│  │ PP2-V2-M-EPEE-...↗   │ 14 Oct 24│  3  │  28  │ 1.0  │  95 ★  │         │
+│  │ Bytom                │          │     │      │      │        │          │
+│  │ MPW-V2-M-EPEE-...↗   │ 12 Feb 25│  2  │  40  │ 1.2  │  45 ✓  │         │
+│  │ Warszawa             │          │     │      │      │        │          │
+│  └──────────────────────┴──────────┴─────┴──────┴──────┴────────┘          │
 │                                                                            │
 │  International Tournaments (EVF)                                           │
-│  ┌──────────┬────────────┬────────┬─────┬──────┬──────┬────────┐           │
-│  │ Code     │ Location   │ Date   │ Plc │ Part │ ×    │ Score  │           │
-│  │ EVF-PEW1 │ Keszthely  │ 24.Oct │  5  │  48  │ 1.0  │ 120 ★  │          │
-│  │ ...      │            │        │     │      │      │        │           │
-│  │ EVF-MEW1 │ Krems      │ 25.May │  3  │  45  │ 2.0  │ 180 ✓  │          │
-│  └──────────┴────────────┴────────┴─────┴──────┴──────┴────────┘           │
+│  ┌──────────────────────┬──────────┬─────┬──────┬──────┬────────┐          │
+│  │ Code                 │ Date     │ Plc │ Part │ ×    │ Score  │          │
+│  │ PEW1-V2-M-EPEE-...↗  │ 18 Oct 24│  5  │  48  │ 1.0  │ 120 ★  │         │
+│  │ Budapeszt            │          │     │      │      │        │          │
+│  │ IMEW-V2-M-EPEE-...↗  │ 20 May 25│  3  │  45  │ 2.0  │ 180 ✓  │         │
+│  │ Ateny                │          │     │      │      │        │          │
+│  └──────────────────────┴──────────┴─────┴──────┴──────┴────────┘          │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 

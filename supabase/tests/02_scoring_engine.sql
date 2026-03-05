@@ -1,12 +1,12 @@
 -- =============================================================================
 -- M2: Scoring Engine, Configuration & Calibration — Acceptance Tests
 -- =============================================================================
--- Tests 2.1–2.18 from the POC development plan.
+-- Tests 2.1–2.19 from the POC development plan.
 -- Relies on seed data from M1 + test data created within this file.
 -- =============================================================================
 
 BEGIN;
-SELECT plan(24);
+SELECT plan(25);
 
 -- ===== SETUP: Create test data for scoring tests =====
 -- We use the seed season (SPWS-2024-2025) and its scoring config.
@@ -22,6 +22,7 @@ DECLARE
   v_tourn_mpw INT;
   v_tourn_n1 INT;
   v_tourn_n16 INT;
+  v_tourn_psw INT;
   v_fencer1 INT;
   v_fencer2 INT;
   v_fencer3 INT;
@@ -64,10 +65,18 @@ BEGIN
   VALUES (v_event, 'SCORE-PPW-N16', 'Test PPW N=16', 'PPW',
     'EPEE', 'M', 'V2', '2025-01-01', 16, 'IMPORTED');
 
+  -- Tournament E: PSW, N=24 (for PSW multiplier test — multiplier=2.0)
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count,
+    enum_import_status)
+  VALUES (v_event, 'SCORE-PSW-N24', 'Test PSW N=24', 'PSW',
+    'EPEE', 'M', 'V2', '2025-02-01', 24, 'IMPORTED');
+
   SELECT id_tournament INTO v_tourn_ppw FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N24';
   SELECT id_tournament INTO v_tourn_mpw FROM tbl_tournament WHERE txt_code = 'SCORE-MPW-N24';
   SELECT id_tournament INTO v_tourn_n1  FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N1';
   SELECT id_tournament INTO v_tourn_n16 FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N16';
+  SELECT id_tournament INTO v_tourn_psw FROM tbl_tournament WHERE txt_code = 'SCORE-PSW-N24';
 
   -- Get fencer IDs from seed data (master fencer list)
   SELECT id_fencer INTO v_fencer1 FROM tbl_fencer WHERE txt_surname = 'ATANASSOW';
@@ -103,6 +112,11 @@ BEGIN
     (v_fencer3, v_tourn_n16, 3),
     (v_fencer4, v_tourn_n16, 4),
     (v_fencer5, v_tourn_n16, 16);
+
+  -- Insert results for PSW N=24: places 1,2 (for PSW multiplier comparison with PPW)
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES
+    (v_fencer1, v_tourn_psw, 1),
+    (v_fencer2, v_tourn_psw, 2);
 END;
 $setup$;
 
@@ -112,6 +126,7 @@ SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_co
 SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-MPW-N24';
 SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N1';
 SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N16';
+SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PSW-N24';
 
 -- ---------------------------------------------------------------------------
 -- 2.1  fn_calc_tournament_scores: N=24 PPW → point columns populated
@@ -421,12 +436,14 @@ SELECT ok(
     AND result->>'min_participants_evf' IS NOT NULL
     AND result->>'min_participants_ppw' IS NOT NULL
     AND result->'extra' IS NOT NULL
+    AND result->>'psw_multiplier' IS NOT NULL
+    AND result ? 'ranking_rules'
    FROM (
      SELECT fn_export_scoring_config(
        (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025')
      ) AS result
    ) sub),
-  '2.12 fn_export_scoring_config returns JSON with all 17 parameters + id_season + season_code'
+  '2.12 fn_export_scoring_config returns JSON with all 19 parameters + id_season + season_code'
 );
 
 -- ---------------------------------------------------------------------------
@@ -547,6 +564,32 @@ SELECT throws_ok(
   NULL,
   NULL,
   '2.18 Import for non-existent season raises exception'
+);
+
+-- ---------------------------------------------------------------------------
+-- 2.19  PSW tournament uses num_psw_multiplier (2.0)
+-- ---------------------------------------------------------------------------
+-- Same fencer, same N=24, same place: PPW (mult=1.0) vs PSW (mult=2.0).
+-- Components (place_pts, de_bonus, podium_bonus) should be identical.
+-- Final scores differ by multiplier (rounding applied at the end).
+SELECT ok(
+  (SELECT
+    ppw.num_place_pts = psw.num_place_pts
+    AND ppw.num_de_bonus = psw.num_de_bonus
+    AND ppw.num_podium_bonus = psw.num_podium_bonus
+    AND psw.num_final_score > ppw.num_final_score
+    AND ABS(psw.num_final_score / ppw.num_final_score - 2.0) < 0.01
+   FROM
+    (SELECT r.* FROM tbl_result r
+     JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
+     JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
+     WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'ATANASSOW') ppw,
+    (SELECT r.* FROM tbl_result r
+     JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
+     JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
+     WHERE t.txt_code = 'SCORE-PSW-N24' AND f.txt_surname = 'ATANASSOW') psw
+  ),
+  '2.19 PSW has same components as PPW but final_score scaled by 2.0 multiplier'
 );
 
 SELECT * FROM finish();

@@ -1,13 +1,25 @@
 """
 generate_season_seed.py
 -----------------------
-Reads reference/SZPADA-2-2024-2025.xlsx and generates
-supabase/data/season_2024_25.sql with real tournament and result data
-for the SPWS 2024/25 season (Male Epee V2 scope).
+Reads an SPWS season Excel workbook and generates a seed SQL file for one
+age category, written to supabase/data/{season_folder}/{age_cat}_{gender}_{weapon}.sql.
 
-Run: python python/tools/generate_season_seed.py
+Usage:
+    python python/tools/generate_season_seed.py \\
+        --xlsx reference/SZPADA-2-2024-2025.xlsx \\
+        --season SPWS-2024-2025 \\
+        --weapon EPEE \\
+        --gender M \\
+        --age-cat V2
+
+Output path is derived automatically:
+    season SPWS-2024-2025 + weapon EPEE + gender M + age-cat V2
+    → supabase/data/2024_25/v2_m_epee.sql
+
+The file is auto-loaded by `supabase db reset` via config.toml sql_paths glob.
 """
 
+import argparse
 import re
 import sys
 import math
@@ -21,19 +33,16 @@ from rapidfuzz import fuzz
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-XLSX_PATH = Path("reference/SZPADA-2-2024-2025.xlsx")
-OUT_PATH   = Path("supabase/data/season_2024_25.sql")
-
 DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 
 # Map sheet name → (tournament_type, event_code_prefix, human_name)
 SHEET_MAP = {
-    "PP1":  ("PPW", "PP1",  "I Puchar Polski Weteranów — Szpada M"),
-    "PP2":  ("PPW", "PP2",  "II Puchar Polski Weteranów — Szpada M"),
-    "PP3":  ("PPW", "PP3",  "III Puchar Polski Weteranów — Szpada M"),
-    "GP7":  ("PPW", "GP7",  "Grand Prix — Szpada M (runda 7)"),
-    "GP8":  ("PPW", "GP8",  "Grand Prix — Szpada M (runda 8)"),
-    "MPW":  ("MPW", "MPW",  "Mistrzostwa Polski Weteranów — Szpada M"),
+    "PP1":  ("PPW", "PP1",  "I Puchar Polski Weteranów"),
+    "PP2":  ("PPW", "PP2",  "II Puchar Polski Weteranów"),
+    "PP3":  ("PPW", "PP3",  "III Puchar Polski Weteranów"),
+    "GP7":  ("PPW", "GP7",  "Grand Prix (runda 7)"),
+    "GP8":  ("PPW", "GP8",  "Grand Prix (runda 8)"),
+    "MPW":  ("MPW", "MPW",  "Mistrzostwa Polski Weteranów"),
     "PEW1": ("PEW", "PEW1", "EVF Grand Prix 1 — Budapeszt"),
     "PEW2": ("PEW", "PEW2", "EVF Grand Prix 2 — Madryt"),
     "PEW7": ("PEW", "PEW7", "EVF Grand Prix 7 — Terni"),
@@ -42,7 +51,7 @@ SHEET_MAP = {
     "PEW10":("PEW", "PEW10","EVF Grand Prix 10 — Graz"),
     "PEW11":("PEW", "PEW11","EVF Grand Prix 11 — Gdańsk"),
     "PEW12":("PEW", "PEW12","EVF Grand Prix 12 — Ateny"),
-    "IMEW": ("MEW", "IMEW", "Indywidualne Mistrzostwa Europy Weteranów — Thionville"),
+    "IMEW": ("MEW", "IMEW", "Indywidualne Mistrzostwa Europy Weteranów"),
 }
 
 MATCH_THRESHOLD = 80  # minimum fuzzy score to accept a match
@@ -168,13 +177,56 @@ def extract_sheet(wb_data, wb_links, sheet_name: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Derive output path and SQL identifiers from CLI args
+# ---------------------------------------------------------------------------
+
+def derive_paths(season: str, weapon: str, gender: str, age_cat: str) -> tuple[Path, str, str]:
+    """
+    Return (out_path, season_folder, year_suffix).
+    season:   e.g. 'SPWS-2024-2025'
+    weapon:   e.g. 'EPEE'
+    gender:   e.g. 'M'
+    age_cat:  e.g. 'V2'
+    """
+    # 'SPWS-2024-2025' → '2024_25'
+    parts = season.removeprefix("SPWS-").split("-")
+    season_folder = f"{parts[0]}_{parts[1][2:]}"
+    # 'SPWS-2024-2025' → '2024-2025'
+    year_suffix = season.removeprefix("SPWS-")
+    # 'V2', 'M', 'EPEE' → 'v2_m_epee'
+    category_slug = f"{age_cat}_{gender}_{weapon}".lower()
+    out_path = Path(f"supabase/data/{season_folder}/{category_slug}.sql")
+    return out_path, season_folder, year_suffix
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 def main():
-    print(f"Reading {XLSX_PATH} ...")
-    wb_data  = openpyxl.load_workbook(XLSX_PATH, data_only=True)
-    wb_links = openpyxl.load_workbook(XLSX_PATH)  # for hyperlinks
+    parser = argparse.ArgumentParser(
+        description="Generate per-category season seed SQL from an SPWS Excel workbook."
+    )
+    parser.add_argument("--xlsx",    required=True, help="Path to the Excel workbook")
+    parser.add_argument("--season",  required=True, help="Season code, e.g. SPWS-2024-2025")
+    parser.add_argument("--weapon",  required=True, choices=["EPEE", "FOIL", "SABRE"])
+    parser.add_argument("--gender",  required=True, choices=["M", "F"])
+    parser.add_argument("--age-cat", required=True, choices=["V0", "V1", "V2", "V3", "V4"],
+                        dest="age_cat")
+    args = parser.parse_args()
+
+    xlsx_path = Path(args.xlsx)
+    season    = args.season
+    weapon    = args.weapon
+    gender    = args.gender
+    age_cat   = args.age_cat
+
+    out_path, season_folder, year_suffix = derive_paths(season, weapon, gender, age_cat)
+    category_slug = f"{age_cat}_{gender}_{weapon}".lower()
+
+    print(f"Reading {xlsx_path} ...")
+    wb_data  = openpyxl.load_workbook(xlsx_path, data_only=True)
+    wb_links = openpyxl.load_workbook(xlsx_path)  # for hyperlinks
 
     print(f"Connecting to DB ...")
     conn = psycopg2.connect(DB_URL)
@@ -182,25 +234,16 @@ def main():
     print(f"  Loaded {len(fencers)} fencers from DB")
     conn.close()
 
-    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
 
+    xlsx_name = xlsx_path.name
     lines = []
     lines += [
         "-- =========================================================================",
-        "-- Season 2024/25 real data — generated from SZPADA-2-2024-2025.xlsx",
-        "-- Run AFTER seed.sql (which creates the season and organizers).",
+        f"-- Season {year_suffix} — {age_cat} {gender} {weapon} — generated from {xlsx_name}",
+        "-- Auto-loaded by supabase db reset via config.toml sql_paths glob.",
+        "-- One file per age category per season; see supabase/data/{season}/{cat}.sql",
         "-- =========================================================================",
-        "",
-        "-- Expand season start to cover EVF rounds from Dec 2023 / early 2024",
-        "UPDATE tbl_season",
-        "   SET dt_start = '2023-06-01'",
-        " WHERE txt_code = 'SPWS-2024-2025';",
-        "",
-        "-- Remove the placeholder sample event/tournament from seed.sql",
-        "DELETE FROM tbl_tournament",
-        " WHERE txt_code = 'PPW1-V2-M-EPEE-2025';",
-        "DELETE FROM tbl_event",
-        " WHERE txt_code = 'PPW1-KRAKOW-2025';",
         "",
     ]
 
@@ -228,24 +271,26 @@ def main():
             ]
             continue
 
-        event_code = f"{code}-2024-2025"
-        tourn_code = f"{code}-V2-M-EPEE-2024-2025"
+        event_code = f"{code}-{year_suffix}"
+        tourn_code = f"{code}-{age_cat}-{gender}-{weapon}-{year_suffix}"
         tournament_codes.append(tourn_code)
 
         dt_sql   = sq(dt)
         url_sql  = sq(url)
-        loc_sql  = sq(loc)
+        loc_raw  = data["location"]
+        loc_sql  = sq(loc_raw) if loc_raw else "NULL"
 
-        organizer = "'EVF'" if ttype in ("PEW", "MEW") else "(SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS')"
         organizer_raw = "EVF" if ttype in ("PEW", "MEW") else "SPWS"
+        loc_comment = f" ({loc})" if loc and loc != "?" else ""
 
         lines += [
-            f"-- ---- {sheet_name}: {human_name} ----",
-            f"INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)",
+            f"-- ---- {sheet_name}: {human_name}{loc_comment} ----",
+            f"INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)",
             f"VALUES (",
             f"    {sq(event_code)},",
             f"    {sq(human_name)},",
-            f"    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),",
+            f"    {loc_sql},",
+            f"    (SELECT id_season FROM tbl_season WHERE txt_code = {sq(season)}),",
             f"    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = {sq(organizer_raw)}),",
             f"    'COMPLETED'",
             f");",
@@ -259,7 +304,7 @@ def main():
             f"    {sq(tourn_code)},",
             f"    {sq(human_name)},",
             f"    '{ttype}',",
-            f"    'EPEE', 'M', 'V2',",
+            f"    '{weapon}', '{gender}', '{age_cat}',",
             f"    {dt_sql}, {n}, {url_sql},",
             f"    'SCORED'",
             f");",
@@ -311,8 +356,8 @@ def main():
     ]
 
     sql = "\n".join(lines)
-    OUT_PATH.write_text(sql, encoding="utf-8")
-    print(f"\nWrote {OUT_PATH}")
+    out_path.write_text(sql, encoding="utf-8")
+    print(f"\nWrote {out_path}")
     print(f"Total matched: {total_matched}, unmatched: {total_unmatched}")
 
 
