@@ -8,6 +8,7 @@ import type {
   WeaponType,
   GenderType,
   AgeCategory,
+  RankingRules,
 } from './types'
 
 let client: SupabaseClient | null = null
@@ -81,6 +82,16 @@ export async function fetchFencerScores(
     .order('num_final_score', { ascending: false })
   if (error) throw error
   return data ?? []
+}
+
+export async function fetchRankingRules(seasonId: number): Promise<RankingRules | null> {
+  const { data, error } = await getClient()
+    .from('tbl_scoring_config')
+    .select('json_ranking_rules')
+    .eq('id_season', seasonId)
+    .single()
+  if (error) return null
+  return (data?.json_ranking_rules as RankingRules | null) ?? null
 }
 
 export async function fetchTournamentDetail(

@@ -38,6 +38,7 @@
     kadraDisabled={filters.category === 'V0'}
     loading={modalLoading}
     context={modalContext}
+    rankingRules={rankingRules}
     onclose={closeDrilldown}
   />
 
@@ -58,6 +59,7 @@
     AgeCategory,
     RankingMode,
     Filters,
+    RankingRules,
   } from './lib/types'
   import {
     initClient,
@@ -65,6 +67,7 @@
     fetchRankingPpw,
     fetchRankingKadra,
     fetchFencerScores,
+    fetchRankingRules,
   } from './lib/api'
   import {
     MOCK_SEASONS,
@@ -102,6 +105,8 @@
   let kadraRows: RankingKadraRow[] = $state([])
   let loading = $state(false)
   let error: string | null = $state(null)
+
+  let rankingRules: RankingRules | null = $state(null)
 
   let modalOpen = $state(false)
   let modalFencerName = $state('')
@@ -165,6 +170,9 @@
           selectedSeasonId,
         )
         kadraRows = []
+        if (selectedSeasonId != null) {
+          rankingRules = await fetchRankingRules(selectedSeasonId)
+        }
       } else {
         kadraRows = await fetchRankingKadra(
           filters.weapon,
@@ -173,6 +181,9 @@
           selectedSeasonId,
         )
         ppwRows = []
+        if (selectedSeasonId != null) {
+          rankingRules = await fetchRankingRules(selectedSeasonId)
+        }
       }
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
