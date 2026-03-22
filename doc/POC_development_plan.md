@@ -123,7 +123,7 @@ graph LR
 - **Cloud backend** on Supabase free tier: full schema, scoring engine, ranking views, RLS policies.
 - **Automated pipeline** via GitHub Actions: scheduled scraping, identity resolution, scoring, Discord alerts on failure.
 - **Local Web Component** in a Shadow Wrapper HTML page mimicking WordPress CSS, fetching live data from the Supabase PostgREST API.
-- **Kadra ranking** view: `fn_ranking_kadra` combining domestic + international scores, with PPW/Kadra toggle in the Web Component and mode-aware drill-down. V0 guard prevents Kadra for youngest category.
+- **+EVF ranking** view: `fn_ranking_kadra` combining domestic + international scores, with PPW/+EVF toggle in the Web Component and mode-aware drill-down. V0 guard prevents +EVF for youngest category.
 - **Calibration tooling**: Python CLI scripts for config export/import and Excel comparison.
 - **CERT + PROD sites** on GitHub Pages: Vite-built frontend deployed via GitHub Actions with runtime environment toggle. CERT backend for staging new data; PROD backend for verified data. Single GitHub Pages URL serves both via in-app selector.
 
@@ -511,7 +511,7 @@ graph LR
 
 | # | Test | Derives From |
 |---|------|-------------|
-| 6.1 | Component renders a table with columns: rank, fencer name, total score, tournament breakdown | UC12(c) |
+| 6.1 | Component renders a table with rank, fencer name, and points (PPW) or score-breakdown columns (+EVF) | UC12(c) |
 | 6.2 | Four filter dropdowns rendered: weapon, gender, age category, season | UC12(b) |
 | 6.3 | Default view loads active season, sorted by total descending | UC12(d) |
 | 6.4 | Changing weapon filter refreshes the ranking table with filtered data | UC12(b) |
@@ -520,55 +520,55 @@ graph LR
 | 6.7 | Shadow DOM isolation: component styles do not leak to host page | §5 |
 | 6.8 | Skeleton loader visible while API data is loading | §7 |
 | 6.9 | Component is responsive (usable on mobile viewport widths) | §5 |
-| 6.10 | PPW/Kadra toggle rendered, PPW is default | UC12 |
-| 6.11 | Switching to Kadra shows PEW/MEW columns and calls fn_ranking_kadra | UC12 |
-| 6.12 | V0 category disables Kadra toggle (grayed out) | §8.3.2 |
+| 6.10 | PPW/+EVF toggle rendered, PPW is default | UC12 |
+| 6.11 | Switching to +EVF shows PEW/MEW columns and calls fn_ranking_kadra | UC12 |
+| 6.12 | V0 category disables +EVF toggle (grayed out) | §8.3.2 |
 | 6.13 | [⎙] export button downloads .ods file for main ranking | UC12 |
 | 6.14 | [⎙] export in drill-down downloads fencer's tournament breakdown as .ods | UC13 |
 | 6.15 | Drill-down in PPW mode shows domestic tournaments only | UC13 |
-| 6.16 | Drill-down in Kadra mode shows domestic + international tournaments | UC13 |
+| 6.16 | Drill-down in +EVF mode shows domestic + international tournaments | UC13 |
 | 6.17 | Env toggle hidden when only one environment configured (dualEnv=false) | §2.2 |
 | 6.18 | Env toggle rendered when dualEnv=true, CERT active by default | §2.2 |
 | 6.19 | Switching env emits onenvchange callback | §2.2 |
 | 6.20 | Env badge shows CERT and PROD labels | §2.2 |
 
-**UI Design — Full-Width Table + Modal Drill-Down with PPW/Kadra Toggle:**
+**UI Design — Full-Width Table + Modal Drill-Down with PPW/+EVF Toggle:**
 
-Main view: full-width ranking table with season filter in header, PPW/Kadra toggle + weapon/gender/category dropdowns in second row. Table columns adapt to mode. [⎙] ODS export button. Footer shows fencer count, mode/filter summary, last-updated timestamp.
+Main view: full-width ranking table with season filter in header, PPW/+EVF toggle + weapon/gender/category dropdowns in second row. Table columns adapt to mode. [⎙] ODS export button. Footer shows fencer count, mode/filter summary, last-updated timestamp.
 
 PPW mode (default):
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
 │  SPWS Ranklist                                   Season: [SPWS-2024-2025 ▾]    │
 ├──────────────────────────────────────────────────────────────────────────────────┤
-│  [PPW ●│Kadra]  Weapon: [EPEE ▾]  Gender: [Male ▾]  Category: [V2 (50+) ▾]   │
+│  [PPW ●│+EVF]  Weapon: [EPEE ▾]  Gender: [Male ▾]  Category: [V2 (50+) ▾]    │
 ├──────────────────────────────────────────────────────────────────────────────────┤
-│  Rank │ Fencer              │ Best-4 PPW │ MPW    │ Total                 [⎙]  │
-│    1  │ ATANASSOW Aleksander│       375  │  +45   │   420                      │
-│    2  │ DUDEK Jarosław      │       375  │   —    │   375                      │
-│    3  │ BAZAK Piotr         │       280  │   —    │   280                      │
+│  Rank │ Fencer                        │ Points                        [⎙]  │
+│    1  │ ATANASSOW Aleksander          │    420                             │
+│    2  │ DUDEK Jarosław                │    375                             │
+│    3  │ BAZAK Piotr                   │    280                             │
 ├──────────────────────────────────────────────────────────────────────────────────┤
 │  3 fencers │ PPW Ranking │ Male Epee V2 │ Updated: 2025-03-01                  │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Kadra mode:
++EVF mode:
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│  [PPW│Kadra ●]  Weapon: [EPEE ▾]  Gender: [Male ▾]  Category: [V2 (50+) ▾]   │
+│  [PPW│+EVF ●]  Weapon: [EPEE ▾]  Gender: [Male ▾]  Category: [V2 (50+) ▾]    │
 │  Rank │ Fencer              │ PPW(4) │ MPW  │ PEW(3) │ MEW  │ Total      [⎙]  │
 │    1  │ ATANASSOW Aleksander│   375  │ +45  │   310  │ +180 │   910           │
-│  3 fencers │ Kadra Ranking │ Male Epee V2 │ Updated: 2025-03-01                │
+│  3 fencers │ +EVF Ranking │ Male Epee V2 │ Updated: 2025-03-01                 │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Drill-down modal — adapts to toggle mode. [PPW●│Kadra] toggle synced with main view. [⎙] exports fencer breakdown as .ods. Tournament code is a clickable link to `url_results` (opens in new tab). Location from `tbl_event.txt_location` shown in small grey text below the code in the same cell. ★ = counted in best-K, ✓ = MPW/MEW included. Season code shown in subheader derived from `txt_season_code`. Dates shown as `15 Jan 25`. Table rows ordered by date ascending; chart bars ordered by score descending.
+Drill-down modal — adapts to toggle mode. [PPW●│+EVF] toggle synced with main view. [⎙] exports fencer breakdown as .ods. Tournament code is a clickable link to `url_results` (opens in new tab). Location from `tbl_event.txt_location` shown in small grey text below the code in the same cell. ★ = counted in best-K, ✓ = MPW/MEW included. Season code shown in subheader derived from `txt_season_code`. Dates shown as `15 Jan 25`. Table rows ordered by date ascending; chart bars ordered by score descending.
 
-Kadra drill-down (toggle = Kadra):
++EVF drill-down (toggle = +EVF):
 ```
 ┌─── Drill-Down ─────────────────────────────────────────────────────────────┐
-│  ATANASSOW Aleksander                                  [PPW│Kadra ●] [✕]  │
-│  Rank #1 │ V2 · SPWS-2024-2025 (born 1969, age 56) │ Kadra Total: 910 pts [⎙] │
+│  ATANASSOW Aleksander                                  [PPW│+EVF ●] [✕]   │
+│  Rank #1 │ V2 · SPWS-2024-2025 (born 1969, age 56) │ +EVF Total: 910 pts [⎙] │
 │                                                                            │
 │  Score Breakdown                                                           │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
@@ -617,9 +617,9 @@ PPW drill-down (toggle = PPW): same layout, no International section, summary sh
 - Svelte 5 application using direct `mount()` into a host `<div>` (not a custom element — see Shadow DOM note below).
 - Standalone `index.html` with `demo` attribute for mock data preview without live database.
 - API client module (`api.ts`): fetches from Supabase PostgREST (configurable URL via attributes on host element).
-- Components: FilterBar (with PPW/Kadra toggle), RanklistTable, DrilldownModal, ScoreChart, SkeletonLoader.
+- Components: FilterBar (with PPW/+EVF toggle), RanklistTable, DrilldownModal, ScoreChart, SkeletonLoader.
 - ODS export module (`export.ts`): SheetJS (`xlsx` package) for .ods file generation from both ranking table and drill-down.
-- Mock data module (`mock-data.ts`): demo mode with 12 fencers, PPW/Kadra rankings, drilldown context, and detailed tournament scores.
+- Mock data module (`mock-data.ts`): demo mode with 12 fencers, PPW/+EVF rankings, drilldown context, and detailed tournament scores.
 - Build tooling: Vite + `@sveltejs/vite-plugin-svelte`, outputs a single `.js` bundle.
 - Responsive CSS: `@media (max-width: 600px)` breakpoints on all components for mobile support.
 - Dependencies: `@supabase/supabase-js`, `xlsx` (SheetJS)

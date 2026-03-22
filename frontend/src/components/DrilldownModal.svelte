@@ -35,7 +35,7 @@
               class:active={mode === 'KADRA'}
               disabled={kadraDisabled}
               onclick={() => setMode('KADRA')}
-            >Kadra</button>
+            >+EVF</button>
           </div>
           <button class="btn-export-sub" title={t('export_to_ods')} onclick={handleExport}>&#9113;</button>
         </div>

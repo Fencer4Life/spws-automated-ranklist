@@ -5,7 +5,7 @@ export type Locale = 'en' | 'pl'
 
 const locales: Record<Locale, Record<string, string>> = { en, pl }
 
-let current = $state<Locale>('en')
+let current = $state<Locale>('pl')
 
 export function getLocale(): Locale {
   return current

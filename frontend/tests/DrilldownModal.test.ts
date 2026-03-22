@@ -1,10 +1,15 @@
 // Plan tests: 6.5, 6.6, 6.8, 6.10, 6.11, 6.12, 6.15, 6.16 — DrilldownModal component.
 // See doc/POC_development_plan.md §M6 test table.
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render } from '@testing-library/svelte'
 import DrilldownModal from '../src/components/DrilldownModal.svelte'
 import type { ScoreRow, DrilldownContext } from '../src/lib/types'
+import { setLocale } from '../src/lib/locale.svelte'
+
+beforeEach(() => {
+  setLocale('en')
+})
 
 vi.mock('../src/lib/export', () => ({
   exportDrilldown: vi.fn(),
@@ -172,13 +177,13 @@ describe('DrilldownModal', () => {
     expect(grandTotal?.textContent).toContain('Grand Total: 285')
   })
 
-  // 6.12 — V0 disables Kadra in drill-down
-  it('disables Kadra toggle when kadraDisabled is true', () => {
+  // 6.12 — V0 disables +EVF in drill-down
+  it('disables +EVF toggle when kadraDisabled is true', () => {
     const { container } = render(DrilldownModal, {
       props: { open: true, fencerName: 'Test', kadraDisabled: true, context: CTX },
     })
     const btns = container.querySelectorAll('.toggle-btn')
-    // [0]=🇬🇧, [1]=🇵🇱 (LangToggle in modal-actions), [2]=PPW, [3]=Kadra (toggle in subheader)
+    // [0]=🇬🇧, [1]=🇵🇱 (LangToggle in modal-actions), [2]=PPW, [3]=+EVF (toggle in subheader)
     const kadraBtn = btns[3] as HTMLButtonElement
     expect(kadraBtn.disabled).toBe(true)
   })
@@ -239,12 +244,12 @@ describe('DrilldownModal', () => {
     expect(container.querySelector('.subheader')?.textContent).toContain('PPW Total')
   })
 
-  // 6.11 — Kadra total label
-  it('D — subheader shows Kadra Total label in KADRA mode', () => {
+  // 6.11 — +EVF total label
+  it('D — subheader shows +EVF Total label in KADRA mode', () => {
     const { container } = render(DrilldownModal, {
       props: { open: true, fencerName: 'Test', context: CTX, mode: 'KADRA' },
     })
-    expect(container.querySelector('.subheader')?.textContent).toContain('Kadra Total')
+    expect(container.querySelector('.subheader')?.textContent).toContain('+EVF Total')
   })
 
   // 6.6 — breakdown section heading

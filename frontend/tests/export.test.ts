@@ -30,7 +30,7 @@ describe('exportRankingPpw', () => {
     exportRankingPpw(rows, 'test')
 
     expect(XLSX.utils.json_to_sheet).toHaveBeenCalledWith([
-      { Rank: 1, Fencer: 'SMITH John', 'Best-4 PPW': 300, MPW: 80, Total: 380 },
+      { Rank: 1, Fencer: 'SMITH John', Points: 380 },
     ])
     expect(XLSX.writeFile).toHaveBeenCalledWith(
       expect.any(Object),
@@ -40,9 +40,9 @@ describe('exportRankingPpw', () => {
   })
 })
 
-// 6.13 — Kadra ranking ODS export
+// 6.13 — +EVF ranking ODS export
 describe('exportRankingKadra', () => {
-  it('creates ODS file with Kadra columns', () => {
+  it('creates ODS file with +EVF columns', () => {
     const rows: RankingKadraRow[] = [
       { rank: 1, id_fencer: 1, fencer_name: 'SMITH John', ppw_total: 400, pew_total: 200, total_score: 600 },
     ]

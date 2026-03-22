@@ -9,9 +9,7 @@ export function exportRankingPpw(rows: RankingPpwRow[], title: string): void {
   const data = rows.map((r) => ({
     Rank: r.rank,
     Fencer: r.fencer_name,
-    'Best-4 PPW': Number(r.ppw_score),
-    MPW: Number(r.mpw_score),
-    Total: Number(r.total_score),
+    Points: Number(r.total_score),
   }))
   const ws = XLSX.utils.json_to_sheet(data)
   const wb = XLSX.utils.book_new()
@@ -29,7 +27,7 @@ export function exportRankingKadra(rows: RankingKadraRow[], title: string): void
   }))
   const ws = XLSX.utils.json_to_sheet(data)
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Kadra Ranking')
+  XLSX.utils.book_append_sheet(wb, ws, 'plusEVF Ranking')
   triggerDownload(wb, `${title}.ods`)
 }
 

@@ -9,7 +9,7 @@
   "sabre": "Szabla",
   "men": "Mężczyźni",
   "women": "Kobiety",
-  "kadra_title": "Ranking Kadra",
+  "kadra_title": "Ranking +EVF",
   "kadra_disabled_title": "Brak odpowiednika EVF dla V0",
   "environment": "Środowisko",
 
@@ -29,7 +29,7 @@
   "age": "wiek",
   "pts": "pkt",
   "ppw_total_label": "PPW Suma",
-  "kadra_total_label": "Kadra Suma",
+  "kadra_total_label": "+EVF Suma",
 
   "loading": "Ładowanie...",
   "no_tournament_results": "Brak wyników zawodów",
