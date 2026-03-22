@@ -399,6 +399,8 @@ The Excel reveals a structured tournament classification not fully documented pr
 
 6. **Reprocessing after Master Table updates:** When a new fencer is added to the Master Fencer Table (or a name alias is corrected), the system must support re-importing / reprocessing previously ingested tournament data so that the newly recognized fencer's results are linked and their ranking recalculated.
 
+7. **Domestic-participation requirement:** A fencer must have at least one scored domestic result (PPW or MPW) with `total_score > 0` to appear in any ranking view. Fencers who only participated in international tournaments (PEW/MEW/MSW/PSW) are excluded from both `fn_ranking_ppw` and `fn_ranking_kadra` output. Their results remain in `tbl_result` for audit purposes.
+
 ### 8.6 Scoring Configuration: What, Why, and How
 
 Every number in the scoring formulas (§8.1–§8.3) that isn't derived from live data (`int_place`, `int_participant_count`) is a **tunable parameter** stored in `tbl_scoring_config`. This section documents what each parameter controls, why configuration matters, and how the hybrid table + JSON workflow enables rapid calibration during POC.
@@ -1508,6 +1510,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-38 | API client: fetch seasons, rankings, fencer scores | UC12(a) | api.test.ts (6 tests) | Covered |
 | FR-39 | EN/PL internationalisation with reactive toggle | §11 | DrilldownModal.test.ts (test K) | Covered |
 | FR-40 | Import status transitions (PLANNED → IMPORTED → SCORED) | UC1(b), UC5(c) | 2.9 (SCORED only) | Gap — IMPORTED transition untested |
+| FR-41 | Domestic-participation requirement: fencers with 0 domestic points excluded from ranking views | §8.5(7) | 5.24–5.25 | Covered |
 
 ### Non-Functional Requirements
 
