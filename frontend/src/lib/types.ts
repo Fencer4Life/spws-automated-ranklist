@@ -14,6 +14,7 @@ export interface RankingRules {
   international: RankingBucket[]
 }
 export type RankingMode = 'PPW' | 'KADRA'
+export type Environment = 'CERT' | 'PROD'
 
 export interface Season {
   id_season: number

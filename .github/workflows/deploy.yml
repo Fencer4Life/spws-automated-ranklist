@@ -1,4 +1,4 @@
-name: Deploy CERT to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
@@ -30,11 +30,13 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Inject CERT Supabase credentials
+      - name: Inject Supabase credentials (CERT + PROD)
         working-directory: frontend
         run: |
-          sed -i 's|supabase-url="[^"]*"|supabase-url="${{ secrets.SUPABASE_URL }}"|' index.html
-          sed -i 's|supabase-key="[^"]*"|supabase-key="${{ secrets.SUPABASE_ANON_KEY }}"|' index.html
+          sed -i 's|supabase-cert-url="[^"]*"|supabase-cert-url="${{ secrets.SUPABASE_CERT_URL }}"|' index.html
+          sed -i 's|supabase-cert-key="[^"]*"|supabase-cert-key="${{ secrets.SUPABASE_CERT_ANON_KEY }}"|' index.html
+          sed -i 's|supabase-prod-url="[^"]*"|supabase-prod-url="${{ secrets.SUPABASE_PROD_URL }}"|' index.html
+          sed -i 's|supabase-prod-key="[^"]*"|supabase-prod-key="${{ secrets.SUPABASE_PROD_ANON_KEY }}"|' index.html
 
       - name: Build with relative base path
         working-directory: frontend

@@ -50,4 +50,45 @@ describe('FilterBar', () => {
     const call = handler.mock.calls[handler.mock.calls.length - 1][0]
     expect(call.mode).toBe('PPW')
   })
+
+  // 6.17 — env toggle hidden when dualEnv=false
+  it('hides env toggle when dualEnv is false', () => {
+    const { container } = render(FilterBar, { props: { dualEnv: false } })
+    const toggleGroups = container.querySelectorAll('.toggle-group')
+    expect(toggleGroups.length).toBe(1) // only PPW/Kadra toggle
+  })
+
+  // 6.18 — env toggle visible when dualEnv=true, CERT active by default
+  it('shows env toggle when dualEnv is true with CERT active', () => {
+    const { container } = render(FilterBar, { props: { dualEnv: true } })
+    const toggleGroups = container.querySelectorAll('.toggle-group')
+    expect(toggleGroups.length).toBe(2) // PPW/Kadra + CERT/PROD
+    const envBtns = toggleGroups[1].querySelectorAll('.toggle-btn')
+    expect(envBtns[0].textContent).toBe('CERT')
+    expect(envBtns[0].classList.contains('active')).toBe(true)
+    expect(envBtns[1].textContent).toBe('PROD')
+    expect(envBtns[1].classList.contains('active')).toBe(false)
+  })
+
+  // 6.19 — switching env emits onenvchange callback
+  it('emits onenvchange when PROD is clicked', async () => {
+    const handler = vi.fn()
+    const { container } = render(FilterBar, {
+      props: { dualEnv: true, onenvchange: handler },
+    })
+    const toggleGroups = container.querySelectorAll('.toggle-group')
+    const prodBtn = toggleGroups[1].querySelectorAll('.toggle-btn')[1]
+    await fireEvent.click(prodBtn)
+    expect(handler).toHaveBeenCalledWith('PROD')
+  })
+
+  // 6.20 — env toggle shows CERT and PROD labels
+  it('env toggle displays CERT and PROD labels', () => {
+    const { container } = render(FilterBar, { props: { dualEnv: true } })
+    const toggleGroups = container.querySelectorAll('.toggle-group')
+    const envBtns = toggleGroups[1].querySelectorAll('.toggle-btn')
+    expect(envBtns.length).toBe(2)
+    expect(envBtns[0].textContent).toBe('CERT')
+    expect(envBtns[1].textContent).toBe('PROD')
+  })
 })

@@ -46,12 +46,24 @@
       </div>
     </div>
 
+    {#if dualEnv}
+      <div class="filter-group toggle-group">
+        <span class="filter-label">{t('environment')}</span>
+        <div class="toggle">
+          <button class="toggle-btn" class:active={env === 'CERT'}
+            onclick={() => onenvchange?.('CERT')}>CERT</button>
+          <button class="toggle-btn" class:active={env === 'PROD'}
+            onclick={() => onenvchange?.('PROD')}>PROD</button>
+        </div>
+      </div>
+    {/if}
+
     <button class="btn-export" title={t('export_to_ods')} onclick={onexport}>&#9113;</button>
   </div>
 </div>
 
 <script lang="ts">
-  import type { WeaponType, GenderType, AgeCategory, RankingMode, Filters } from '../lib/types'
+  import type { WeaponType, GenderType, AgeCategory, RankingMode, Environment, Filters } from '../lib/types'
   import { t } from '../lib/locale.svelte'
 
   let {
@@ -59,14 +71,20 @@
     gender = 'M' as GenderType,
     category = 'V2' as AgeCategory,
     mode = 'PPW' as RankingMode,
+    env = 'CERT' as Environment,
+    dualEnv = false,
     onfilterchange,
+    onenvchange,
     onexport,
   }: {
     weapon?: WeaponType
     gender?: GenderType
     category?: AgeCategory
     mode?: RankingMode
+    env?: Environment
+    dualEnv?: boolean
     onfilterchange?: (filters: Omit<Filters, 'season'>) => void
+    onenvchange?: (env: Environment) => void
     onexport?: () => void
   } = $props()
 
