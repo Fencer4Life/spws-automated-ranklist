@@ -501,7 +501,7 @@ graph LR
 - `vw_score` excludes `id_fencer IS NULL` rows (unlinked results from PEW/MEW unmatched or pre-matching).
 - `fn_ranking_ppw` uses CTEs for best-K PPW selection + conditional MPW drop logic.
 - Test 5.12 verifies that unlinked results (NULL `id_fencer`) are excluded from ranking output — aligned with intake rules where PPW/MPW auto-create fencers (so no NULL `id_fencer` for domestic) and PEW/MEW skip unmatched (so skipped results never reach the view).
-- **Design decisions:** Identity by FK, not by name — see [ADR-003](adr/003-identity-by-fk-not-name.md). JSONB bucket-based ranking rules — see [ADR-006](adr/006-jsonb-ranking-rules.md).
+- **Design decisions:** Identity by FK, not by name — see [ADR-003](adr/003-identity-by-fk-not-name.md). JSONB bucket-based ranking rules — see [ADR-006](adr/006-jsonb-ranking-rules.md). Age category by birth year (cross-category carryover) — see [ADR-010](adr/010-age-category-by-birth-year.md).
 - Migration file: `supabase/migrations/20250306000002_exclude_zero_domestic.sql` — domestic-participation requirement (§8.5(7)): adds `WHERE total_score > 0` to `fn_ranking_ppw` and `WHERE COALESCE(d.ppw_total, 0) > 0` to `fn_ranking_kadra`. Tests 5.24–5.25 (2 additional pgTAP assertions, total now 19).
 
 ---
@@ -520,9 +520,9 @@ graph LR
 | 6.4 | Changing weapon filter refreshes the ranking table with filtered data | UC12(b) |
 | 6.5 | Clicking a fencer row opens drill-down modal | UC13(a) |
 | 6.6 | Drill-down shows per-tournament breakdown: code (linked), location, date, place, N, multiplier, final score | UC13(b) |
-| 6.7 | Shadow DOM isolation: component styles do not leak to host page | §5 |
+| 6.7 | ~~Shadow DOM isolation: component styles do not leak to host page~~ **(deferred — ADR-007)** | §5 |
 | 6.8 | Skeleton loader visible while API data is loading | §7 |
-| 6.9 | Component is responsive (usable on mobile viewport widths) | §5 |
+| 6.9 | ~~Component is responsive (usable on mobile viewport widths)~~ **(deferred to MVP)** | §5 |
 | 6.10 | PPW/+EVF toggle rendered, PPW is default | UC12 |
 | 6.11 | Switching to +EVF shows PEW/MEW columns and calls fn_ranking_kadra | UC12 |
 | 6.12 | V0 category disables +EVF toggle (grayed out) | §8.3.2 |
@@ -530,10 +530,10 @@ graph LR
 | 6.14 | [⎙] export in drill-down downloads fencer's tournament breakdown as .ods | UC13 |
 | 6.15 | Drill-down in PPW mode shows domestic tournaments only | UC13 |
 | 6.16 | Drill-down in +EVF mode shows domestic + international tournaments | UC13 |
-| 6.17 | Env toggle hidden when only one environment configured (dualEnv=false) | §2.2 |
-| 6.18 | Env toggle rendered when dualEnv=true, CERT active by default | §2.2 |
-| 6.19 | Switching env emits onenvchange callback | §2.2 |
-| 6.20 | Env badge shows CERT and PROD labels | §2.2 |
+| 6.17 | Env toggle hidden when only one environment configured (dualEnv=false) **(not yet tested)** | §2.2 |
+| 6.18 | Env toggle rendered when dualEnv=true, CERT active by default **(not yet tested)** | §2.2 |
+| 6.19 | Switching env emits onenvchange callback **(not yet tested)** | §2.2 |
+| 6.20 | Env badge shows CERT and PROD labels **(not yet tested)** | §2.2 |
 
 **UI Design — Full-Width Table + Modal Drill-Down with PPW/+EVF Toggle:**
 
@@ -611,7 +611,15 @@ PPW drill-down (toggle = PPW): same layout, no International section. Domestic c
 **Pre-requisite — SQL migration `20250303000003_ranking_kadra.sql`:**
 - Update `fn_ranking_ppw` return type: add `ppw_score`, `mpw_score` columns (separate from `total_score`)
 - Create `fn_ranking_kadra(p_weapon, p_gender, p_category, p_season)`: domestic totals from fn_ranking_ppw + best-J PEW + conditional MEW. V0 returns empty (no EVF equivalent).
-- pgTAP tests 5.16–5.19: fn_ranking_ppw column shape, fn_ranking_kadra totals, V0 guard, domestic-only fencer
+- pgTAP tests 5.16–5.23 (8 assertions):
+  - 5.16: `fn_ranking_ppw` returns ppw_score + mpw_score = total_score (§8.3.1)
+  - 5.17: `fn_ranking_kadra`: ATANASSOW total=730 (ppw_total=420 + pew_total=310) (§8.3.2)
+  - 5.18: `fn_ranking_kadra` returns empty for V0 — no EVF equivalent (§8.3.2)
+  - 5.19: `fn_ranking_kadra`: BAZAK (domestic only) total=90, pew_total=0 (§8.3.2)
+  - 5.20: `fn_ranking_ppw` JSONB: ATANASSOW ppw_score=340 (best 4 PPW) (§8.6.6)
+  - 5.21: `fn_ranking_ppw` JSONB: DUDEK mpw_score=36 (always-bucket) (§8.6.6)
+  - 5.22: `fn_ranking_kadra` JSONB: ATANASSOW pew_total=310 (best 3 PEW+MEW) (§8.6.6)
+  - 5.23: Legacy path (NULL json_ranking_rules): MPW=50 dropped, total=400 (§8.6.6)
 
 **Implementation (GREEN):**
 - Svelte 5 application using direct `mount()` into a host `<div>` (not a custom element — see Shadow DOM note below).
@@ -630,10 +638,11 @@ The spec originally called for a Svelte custom element with Shadow DOM for CSS i
 **Design decisions:** Shadow DOM deferred to MVP — see [ADR-007](adr/007-shadow-dom-deferred.md). Svelte 5 `$state` for i18n — see [ADR-005](adr/005-svelte-state-i18n.md). PSW/MSW in international ranking pool — see [ADR-008](adr/008-psw-msw-international-pool.md).
 
 **Verification:**
-- Vitest unit tests pass for component logic (33 tests across 6 test files).
+- Vitest unit tests pass for component logic (28 tests across 6 test files).
+- pgTAP total: 117 assertions (1 smoke + 64 M1 + 25 M2 + 27 M5/M6 views).
 - Manual test: open `index.html` in browser with `demo` attribute, verify ranklist loads with mock data, drilldown modal shows score breakdown with markers and summary rows.
 
-**CERT/PROD Deployment (infrastructure — not a plan test):**
+**CERT/PROD Deployment (infrastructure — not a plan test):** See [ADR-009](adr/009-cert-prod-runtime-toggle.md) for architectural rationale.
 - GitHub Actions workflow `.github/workflows/deploy.yml` builds and deploys to GitHub Pages on push to main.
 - Supabase cloud CERT + PROD projects provisioned manually. Migrations applied via Management API (port 5432 blocked).
 - Runtime CERT/PROD environment toggle in FilterBar — hidden when only one backend configured.
