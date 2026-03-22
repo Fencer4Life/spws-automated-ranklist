@@ -125,6 +125,7 @@ graph LR
 - **Local Web Component** in a Shadow Wrapper HTML page mimicking WordPress CSS, fetching live data from the Supabase PostgREST API.
 - **Kadra ranking** view: `fn_ranking_kadra` combining domestic + international scores, with PPW/Kadra toggle in the Web Component and mode-aware drill-down. V0 guard prevents Kadra for youngest category.
 - **Calibration tooling**: Python CLI scripts for config export/import and Excel comparison.
+- **CERT site** on GitHub Pages: Vite-built frontend deployed via GitHub Actions, connected to a Supabase cloud CERT instance. Publicly accessible URL for team feedback. Exercises UC12/UC13 with live data.
 
 ### 2.3 What the POC Does NOT Include
 
@@ -133,6 +134,8 @@ graph LR
 - Historical season snapshots (Phase 2).
 - Result corrections & reprocessing workflow (Phase 2 — UC6, UC14–UC17).
 - SuperFive / pool-level data (Phase 3).
+- Production Supabase instance or custom domain (CERT only — Supabase free tier).
+- Automated schema migration CI/CD to cloud (manual `supabase db push` for CERT).
 
 ---
 
@@ -626,6 +629,12 @@ The spec originally called for a Svelte custom element with Shadow DOM for CSS i
 - Vitest unit tests pass for component logic (33 tests across 6 test files).
 - Manual test: open `index.html` in browser with `demo` attribute, verify ranklist loads with mock data, drilldown modal shows score breakdown with markers and summary rows.
 
+**CERT Deployment (infrastructure — not a plan test):**
+- GitHub Actions workflow `.github/workflows/deploy.yml` builds and deploys to GitHub Pages on push to main.
+- Supabase cloud CERT project provisioned manually. Migrations applied via `supabase db push`.
+- RLS audit completed — all 9 tables protected, anon = SELECT-only. Verified against NFR-05, tests 1.10a–b, 1.25.
+- Build verification step ensures no `service_role` key or localhost URL in deployed assets.
+
 ---
 
 ### Milestone 7: GitHub Actions Pipeline
@@ -773,3 +782,5 @@ The following requirements from the [RTM (Appendix C)](Project%20Specification.%
 | NFR-08 | Browser compatibility | Manual testing — deferred to MVP |
 | NFR-09 | Mobile responsive ≥ 375 px | Plan test 6.9 — deferred to MVP |
 | NFR-12 | Data integrity (backups) | Supabase managed — not testable in POC |
+| CERT-01 | GitHub Pages serves correct build | Infrastructure — verified by deploy workflow |
+| CERT-02 | Supabase cloud CERT reachable from Pages | Infrastructure — verified manually post-deploy |
