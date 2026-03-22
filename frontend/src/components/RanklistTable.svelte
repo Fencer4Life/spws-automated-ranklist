@@ -5,25 +5,22 @@
         <th class="col-rank">#</th>
         <th class="col-fencer">{t('col_fencer')}</th>
         {#if mode === 'PPW'}
-          <th class="col-score">{t('col_best4_ppw')}</th>
-          <th class="col-score">{t('col_mpw')}</th>
+          <th class="col-score col-total">{t('col_points')}</th>
         {:else}
           <th class="col-score">{t('col_ppw_total')}</th>
           <th class="col-score">{t('col_pew_total')}</th>
+          <th class="col-score col-total">{t('col_total')}</th>
         {/if}
-        <th class="col-score col-total">{t('col_total')}</th>
       </tr>
     </thead>
     <tbody>
       {#if ppwRows.length === 0 && kadraRows.length === 0}
-        <tr><td colspan={5} class="empty-state">{t('no_results')}</td></tr>
+        <tr><td colspan={mode === 'PPW' ? 3 : 5} class="empty-state">{t('no_results')}</td></tr>
       {:else if mode === 'PPW'}
         {#each ppwRows as row}
           <tr class="data-row" onclick={() => onrowclick?.(row.id_fencer, row.fencer_name)}>
             <td class="col-rank">{row.rank}</td>
             <td class="col-fencer">{row.fencer_name}</td>
-            <td class="col-score">{fmt(row.ppw_score)}</td>
-            <td class="col-score">{fmt(row.mpw_score)}</td>
             <td class="col-score col-total">{fmt(row.total_score)}</td>
           </tr>
         {/each}

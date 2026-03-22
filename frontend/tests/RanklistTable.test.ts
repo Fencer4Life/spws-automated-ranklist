@@ -1,10 +1,15 @@
 // Plan tests: 6.1, 6.5, 6.11 — RanklistTable component.
 // See doc/POC_development_plan.md §M6 test table.
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
 import RanklistTable from '../src/components/RanklistTable.svelte'
 import type { RankingPpwRow, RankingKadraRow } from '../src/lib/types'
+import { setLocale } from '../src/lib/locale.svelte'
+
+beforeEach(() => {
+  setLocale('en')
+})
 
 const ppwData: RankingPpwRow[] = [
   { rank: 1, id_fencer: 1, fencer_name: 'ALPHA Test', ppw_score: 300, mpw_score: 80, total_score: 380 },
@@ -22,8 +27,9 @@ describe('RanklistTable', () => {
       props: { mode: 'PPW', ppwRows: ppwData },
     })
     const headers = Array.from(container.querySelectorAll('th')).map((th) => th.textContent)
-    expect(headers).toContain('Best-4 PPW')
-    expect(headers).toContain('MPW')
+    expect(headers).toContain('Points')
+    expect(headers).not.toContain('Best-4 PPW')
+    expect(headers).not.toContain('MPW')
     expect(headers).not.toContain('PEW Total')
   })
 

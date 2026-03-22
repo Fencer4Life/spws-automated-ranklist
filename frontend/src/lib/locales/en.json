@@ -9,7 +9,7 @@
   "sabre": "Sabre",
   "men": "Men",
   "women": "Women",
-  "kadra_title": "Kadra ranking",
+  "kadra_title": "+EVF ranking",
   "kadra_disabled_title": "No EVF equivalent for V0",
   "environment": "Environment",
 
@@ -29,7 +29,7 @@
   "age": "age",
   "pts": "pts",
   "ppw_total_label": "PPW Total",
-  "kadra_total_label": "Kadra Total",
+  "kadra_total_label": "+EVF Total",
 
   "loading": "Loading...",
   "no_tournament_results": "No tournament results",

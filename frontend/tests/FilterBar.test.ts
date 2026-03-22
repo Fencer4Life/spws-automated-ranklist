@@ -23,8 +23,8 @@ describe('FilterBar', () => {
     expect(btns[1].classList.contains('active')).toBe(false)
   })
 
-  // 6.12 — V0 disables Kadra toggle
-  it('disables Kadra button when category is V0', () => {
+  // 6.12 — V0 disables +EVF toggle
+  it('disables +EVF button when category is V0', () => {
     const { container } = render(FilterBar, { props: { category: 'V0' } })
     const kadraBtn = container.querySelectorAll('.toggle-btn')[1] as HTMLButtonElement
     expect(kadraBtn.disabled).toBe(true)
