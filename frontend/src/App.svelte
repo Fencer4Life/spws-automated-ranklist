@@ -9,6 +9,11 @@
       </select>
     </div>
     <div class="header-right">
+      {#if dualEnv}
+        <span class="env-badge" class:cert={activeEnv === 'CERT'} class:prod={activeEnv === 'PROD'}>
+          {activeEnv}
+        </span>
+      {/if}
       <LangToggle />
     </div>
   </header>
@@ -18,7 +23,10 @@
     gender={filters.gender}
     category={filters.category}
     mode={filters.mode}
+    env={activeEnv}
+    {dualEnv}
     onfilterchange={onFilterChange}
+    onenvchange={(e) => { activeEnv = e }}
     onexport={handleMainExport}
   />
 
@@ -61,6 +69,7 @@
     GenderType,
     AgeCategory,
     RankingMode,
+    Environment,
     Filters,
     RankingRules,
   } from './lib/types'
@@ -88,14 +97,23 @@
   import SkeletonLoader from './components/SkeletonLoader.svelte'
 
   let {
-    'supabase-url': supabaseUrl = '',
-    'supabase-key': supabaseKey = '',
+    'supabase-cert-url': certUrl = '',
+    'supabase-cert-key': certKey = '',
+    'supabase-prod-url': prodUrl = '',
+    'supabase-prod-key': prodKey = '',
     demo = false,
   }: {
-    'supabase-url'?: string
-    'supabase-key'?: string
+    'supabase-cert-url'?: string
+    'supabase-cert-key'?: string
+    'supabase-prod-url'?: string
+    'supabase-prod-key'?: string
     demo?: boolean
   } = $props()
+
+  let activeEnv: Environment = $state('CERT')
+  let dualEnv = $derived(!!(certUrl && certKey && prodUrl && prodKey))
+  let supabaseUrl = $derived(activeEnv === 'PROD' && prodUrl ? prodUrl : certUrl)
+  let supabaseKey = $derived(activeEnv === 'PROD' && prodKey ? prodKey : certKey)
 
   let seasons: Season[] = $state([])
   let selectedSeasonId: number | null = $state(null)
@@ -292,6 +310,24 @@
     align-items: center;
     gap: 8px;
     margin-left: auto;
+  }
+  .env-badge {
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .env-badge.cert {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffc107;
+  }
+  .env-badge.prod {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #28a745;
   }
   .error-banner {
     margin-top: 16px;

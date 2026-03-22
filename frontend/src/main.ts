@@ -6,8 +6,10 @@ if (target) {
   mount(App, {
     target,
     props: {
-      'supabase-url': target.getAttribute('supabase-url') ?? '',
-      'supabase-key': target.getAttribute('supabase-key') ?? '',
+      'supabase-cert-url': target.getAttribute('supabase-cert-url') ?? '',
+      'supabase-cert-key': target.getAttribute('supabase-cert-key') ?? '',
+      'supabase-prod-url': target.getAttribute('supabase-prod-url') ?? '',
+      'supabase-prod-key': target.getAttribute('supabase-prod-key') ?? '',
       demo: target.hasAttribute('demo'),
     },
   })
