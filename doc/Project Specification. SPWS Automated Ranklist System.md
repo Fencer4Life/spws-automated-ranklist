@@ -1484,7 +1484,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-12 | Score computation: DE round bonus | §8.1.2 | 2.4–2.5 | Covered |
 | FR-13 | Score computation: podium bonus | §8.1.3 | 2.6a–d | Covered |
 | FR-14 | Tournament multipliers (PPW, MPW, PEW, MEW, MSW, PSW) | §8.2 | 2.7, 2.19 | Partial — no MSW scoring test |
-| FR-15 | PPW ranking: best-K domestic + always-include MPW | §8.3.1 | 5.4–5.7, 5.20–5.21, 5.23 | Covered |
+| FR-15 | PPW ranking: best-K domestic + always-include MPW | §8.3.1 | 5.2–5.13, 5.16, 5.20–5.21, 5.23 | Covered |
 | FR-16 | Kadra ranking: domestic + best-J international pool | §8.3.2 | 5.17, 5.19, 5.22 | Covered |
 | FR-17 | V0 guard: no Kadra ranking for V0 | §8.3.2 | 5.18 | Covered |
 | FR-18 | Cross-category carryover (fencer ranked by birth-year category) | §8.5(2) | 5.14–5.15 | Covered |
@@ -1507,10 +1507,11 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-35 | Web Component: ranking table with mode-specific columns | UC12(c) | RanklistTable.test.ts (5 tests) | Covered |
 | FR-36 | Web Component: fencer drilldown modal with score breakdown | UC13(a,b) | DrilldownModal.test.ts (24 tests) | Covered |
 | FR-37 | ODS export (ranking + drilldown) | UC12, UC13 | export.test.ts (5 tests) | Covered |
-| FR-38 | API client: fetch seasons, rankings, fencer scores | UC12(a) | api.test.ts (6 tests) | Covered |
+| FR-38 | API client: fetch seasons, rankings, fencer scores | UC12(a) | 5.1a–b, api.test.ts (6 tests) | Covered |
 | FR-39 | EN/PL internationalisation with reactive toggle | §11 | DrilldownModal.test.ts (test K) | Covered |
 | FR-40 | Import status transitions (PLANNED → IMPORTED → SCORED) | UC1(b), UC5(c) | 2.9 (SCORED only) | Gap — IMPORTED transition untested |
 | FR-41 | Domestic-participation requirement: fencers with 0 domestic points excluded from ranking views | §8.5(7) | 5.24–5.25 | Covered |
+| FR-42 | CERT/PROD environment toggle with runtime switching | §2.2 | 6.17–6.20 | Gap — implemented but not yet tested |
 
 ### Non-Functional Requirements
 
@@ -1542,3 +1543,5 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-006](adr/006-jsonb-ranking-rules.md) | JSONB Bucket-Based Ranking Rules | §8.6.6 |
 | [ADR-007](adr/007-shadow-dom-deferred.md) | Shadow DOM Deferred to MVP | §6 Phase 2 |
 | [ADR-008](adr/008-psw-msw-international-pool.md) | PSW and MSW in International Pool | §8.2 |
+| [ADR-009](adr/009-cert-prod-runtime-toggle.md) | CERT/PROD Runtime Toggle (Single Site) | §2.2 |
+| [ADR-010](adr/010-age-category-by-birth-year.md) | Age Category by Birth Year (Cross-Category Carryover) | §8.5(2) |
