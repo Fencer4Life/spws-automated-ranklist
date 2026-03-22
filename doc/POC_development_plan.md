@@ -481,6 +481,8 @@ graph LR
 | 5.13 | PostgREST RPC endpoint `/rpc/fn_ranking_ppw` returns valid JSON array | UC12(a) |
 | 5.14 | Cross-category carryover: V3 fencer (BARAŃSKI, born 1964) with V2 tournament results appears in V3 ranking | §8.5(2) |
 | 5.15 | Cross-category exclusion: V3 fencer (BARAŃSKI) does NOT appear in V2 ranking | §8.5(2) |
+| 5.24 | `fn_ranking_ppw`: fencer with `total_score = 0` (defensive) does not appear in output | §8.5(7) |
+| 5.25 | `fn_ranking_kadra`: fencer with only PEW/MEW results (no PPW/MPW) does not appear in output | §8.5(7) |
 
 **Implementation (GREEN):**
 - `vw_score` — standard SQL view joining `tbl_result`, `tbl_tournament`, `tbl_event`, `tbl_season`, `tbl_fencer`.
@@ -500,6 +502,7 @@ graph LR
 - `fn_ranking_ppw` uses CTEs for best-K PPW selection + conditional MPW drop logic.
 - Test 5.12 verifies that unlinked results (NULL `id_fencer`) are excluded from ranking output — aligned with intake rules where PPW/MPW auto-create fencers (so no NULL `id_fencer` for domestic) and PEW/MEW skip unmatched (so skipped results never reach the view).
 - **Design decisions:** Identity by FK, not by name — see [ADR-003](adr/003-identity-by-fk-not-name.md). JSONB bucket-based ranking rules — see [ADR-006](adr/006-jsonb-ranking-rules.md).
+- Migration file: `supabase/migrations/20250306000002_exclude_zero_domestic.sql` — domestic-participation requirement (§8.5(7)): adds `WHERE total_score > 0` to `fn_ranking_ppw` and `WHERE COALESCE(d.ppw_total, 0) > 0` to `fn_ranking_kadra`. Tests 5.24–5.25 (2 additional pgTAP assertions, total now 19).
 
 ---
 

@@ -1,7 +1,7 @@
 -- =============================================================================
 -- M5/M6: SQL Views, API & Kadra Ranking — Acceptance Tests
 -- =============================================================================
--- Tests 5.1–5.23 from the POC development plan.
+-- Tests 5.1–5.25 from the POC development plan.
 -- Uses pre-scored results (num_final_score set directly) to test
 -- vw_score, fn_ranking_ppw, and fn_ranking_kadra independently of the
 -- scoring engine.
@@ -19,7 +19,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(25);
+SELECT plan(27);
 
 -- ===== SETUP: Create test tournaments and pre-scored results =====
 DO $setup$
@@ -40,6 +40,8 @@ DECLARE
   v_fencer_d INT;  -- DUDEK     (V2)
   v_fencer_e INT;  -- HAŚKO     (V2 — unscored)
   v_fencer_f INT;  -- FORAJTER  (V1)
+  v_fencer_g INT;  -- INTL-ONLY (V2 — international only, no domestic results)
+  v_fencer_h INT;  -- ZERO-DOM  (V2 — domestic result with 0 score)
 BEGIN
   SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
@@ -229,6 +231,29 @@ BEGIN
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
     (v_fencer_d, v_pew1, 7,  110.00, NOW()),
     (v_fencer_d, v_pew2, 10,  85.00, NOW());
+
+  -- -----------------------------------------------------------------------
+  -- Fencer G (INTL-ONLY, V2): PEW only — no domestic results (5.25)
+  -- Should be excluded from both fn_ranking_ppw and fn_ranking_kadra
+  -- -----------------------------------------------------------------------
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year)
+  VALUES ('INTL-ONLY', 'Tester', 'PL', 1970)
+  RETURNING id_fencer INTO v_fencer_g;
+
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
+    (v_fencer_g, v_pew1, 20, 100.00, NOW()),
+    (v_fencer_g, v_pew2, 25,  90.00, NOW());
+
+  -- -----------------------------------------------------------------------
+  -- Fencer H (ZERO-DOM, V2): PPW result with 0 score — edge case (5.24)
+  -- Should be excluded from fn_ranking_ppw (total_score = 0)
+  -- -----------------------------------------------------------------------
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year)
+  VALUES ('ZERO-DOM', 'Tester', 'PL', 1971)
+  RETURNING id_fencer INTO v_fencer_h;
+
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
+    (v_fencer_h, v_ppw1, 24, 0.00, NOW());
 END;
 $setup$;
 
@@ -557,6 +582,27 @@ SELECT is(
    WHERE fencer_name = 'LEGACY-TEST Fencer'),
   400.00::NUMERIC,
   '5.23 Legacy path (NULL json_ranking_rules): MPW=50 dropped (< worst PPW=70), total=400'
+);
+
+-- ---------------------------------------------------------------------------
+-- 5.24  fn_ranking_ppw: fencer with total_score = 0 excluded from output
+-- ---------------------------------------------------------------------------
+SELECT is(
+  (SELECT COUNT(*)::INT FROM fn_ranking_ppw('EPEE', 'M', 'V2')
+   WHERE fencer_name = 'ZERO-DOM Tester'),
+  0,
+  '5.24 fn_ranking_ppw: fencer with total_score=0 excluded from output'
+);
+
+-- ---------------------------------------------------------------------------
+-- 5.25  fn_ranking_kadra: fencer with only PEW/MEW results (no domestic)
+--       does not appear in output
+-- ---------------------------------------------------------------------------
+SELECT is(
+  (SELECT COUNT(*)::INT FROM fn_ranking_kadra('EPEE', 'M', 'V2')
+   WHERE fencer_name = 'INTL-ONLY Tester'),
+  0,
+  '5.25 fn_ranking_kadra: fencer with only PEW results (no domestic) excluded'
 );
 
 SELECT * FROM finish();
