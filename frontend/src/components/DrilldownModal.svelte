@@ -6,6 +6,24 @@
       <div class="modal-header">
         <h2>{fencerName}</h2>
         <div class="modal-actions">
+          <LangToggle />
+          <button class="btn-close" onclick={onClose}>&times;</button>
+        </div>
+      </div>
+
+      {#if context || seasonCode}
+        <div class="subheader">
+          {#if context}
+            <span>{t('rank')} #{context.rank}</span>
+            <span class="sep">|</span>
+          {/if}
+          <span>
+            {context?.category ?? scores[0]?.enum_age_category ?? ''}
+            {#if seasonCode} · {seasonCode}{/if}
+            {#if context?.birthYear} ({t('born')} {context.birthYear}{#if context.age}, {t('age')} {context.age}{/if}){/if}
+          </span>
+          <span class="sep">|</span>
+          <span class="total-label">{mode === 'KADRA' ? t('kadra_total_label') : t('ppw_total_label')}: {mode === 'KADRA' ? fmt(grandTotal) : fmt(ppwModeTotal)} {t('pts')}</span>
           <div class="toggle" class:kadra-disabled={kadraDisabled}>
             <button
               class="toggle-btn"
@@ -19,37 +37,20 @@
               onclick={() => setMode('KADRA')}
             >Kadra</button>
           </div>
-          <button class="btn-close" onclick={onClose}>&times;</button>
-        </div>
-      </div>
-
-      {#if context || seasonCode}
-        <div class="subheader">
-          {#if context}
-            <span>Rank #{context.rank}</span>
-            <span class="sep">|</span>
-          {/if}
-          <span>
-            {context?.category ?? scores[0]?.enum_age_category ?? ''}
-            {#if seasonCode} · {seasonCode}{/if}
-            {#if context?.birthYear} (born {context.birthYear}{#if context.age}, age {context.age}{/if}){/if}
-          </span>
-          <span class="sep">|</span>
-          <span class="total-label">{mode === 'KADRA' ? 'Kadra' : 'PPW'} Total: {mode === 'KADRA' ? fmt(context?.totalScore ?? grandTotal) : fmt(ppwModeTotal)} pts</span>
-          <button class="btn-export-sub" title="Export to ODS" onclick={handleExport}>&#9113;</button>
+          <button class="btn-export-sub" title={t('export_to_ods')} onclick={handleExport}>&#9113;</button>
         </div>
       {/if}
 
       {#if loading}
-        <div class="loading">Loading...</div>
+        <div class="loading">{t('loading')}</div>
       {:else if filteredScores.length === 0}
-        <div class="empty">No tournament results</div>
+        <div class="empty">{t('no_tournament_results')}</div>
       {:else}
         <div class="breakdown-section">
-          <h3>Points Breakdown</h3>
+          <h3>{t('points_breakdown')}</h3>
           <div class="breakdown-grid" class:single-col={mode === 'PPW'}>
             <div class="breakdown-col">
-              <h4>Domestic (PPW + MPW)</h4>
+              <h4>{t('domestic_ppw_mpw')}</h4>
               <div class="chart-area">
                 {#each domesticChart as item}
                   <div class="chart-row">
@@ -65,13 +66,13 @@
                 {/each}
               </div>
               <div class="breakdown-summary">
-                Domestic: {fmt(ppwSum)}{#if mpwIncluded > 0}+{fmt(mpwIncluded)}{/if} = {fmt(domesticTotal)}
+                {t('domestic_summary')} {fmt(ppwSum)}{#if mpwIncluded > 0}+{fmt(mpwIncluded)}{/if} = {fmt(domesticTotal)}
               </div>
             </div>
 
             {#if mode === 'KADRA'}
               <div class="breakdown-col">
-                <h4>International (EVF)</h4>
+                <h4>{t('international_evf')}</h4>
                 <div class="chart-area">
                   {#each internationalChart as item}
                     <div class="chart-row">
@@ -88,42 +89,41 @@
                 </div>
                 {#if useJsonbRules}
                   <div class="breakdown-summary">
-                    International (best {bestJ}): {fmt(internationalTotal)}
+                    {t('international_summary', { J: bestJ })} {fmt(internationalTotal)}
                   </div>
                 {:else}
                   <div class="breakdown-summary">
-                    International: {fmt(pewSum)}{#if mewIncluded > 0}+{fmt(mewIncluded)}{/if} = {fmt(internationalTotal)}
+                    {t('international_summary_legacy')} {fmt(pewSum)}{#if mewIncluded > 0}+{fmt(mewIncluded)}{/if} = {fmt(internationalTotal)}
                   </div>
                 {/if}
                 <div class="breakdown-summary grand-total">
-                  Grand Total: {fmt(grandTotal)}
+                  {t('grand_total')} {fmt(grandTotal)}
                 </div>
               </div>
             {/if}
           </div>
           <div class="type-legend">
-            <span><strong>PPW</strong> — Puchar Polski Weteranów (Polish Veterans Cup)</span>
-            <span><strong>MPW</strong> — Mistrzostwa Polski Weteranów (Polish Veterans Championship)</span>
-            <span><strong>PEW</strong> — Puchar Europy Weteranów (European Veterans Cup)</span>
-            <span><strong>MEW</strong> — Mistrzostwa Europy Weteranów (European Veterans Championship)</span>
-            <span><strong>MSW</strong> — Mistrzostwa Świata Weteranów (World Veterans Championship)</span>
+            {#each ['legend_ppw', 'legend_mpw', 'legend_pew', 'legend_mew', 'legend_msw'] as key}
+              {@const parts = t(key).split(' — ')}
+              <span><strong>{parts[0]}</strong> — {parts.slice(1).join(' — ')}</span>
+            {/each}
           </div>
         </div>
 
         <div class="table-section">
-          <h3>Domestic Tournaments</h3>
+          <h3>{t('domestic_tournaments')}</h3>
           {@render tournamentTable(domesticScores)}
           {#if mode === 'KADRA' && internationalScores.length > 0}
-            <h3>International Tournaments (EVF)</h3>
+            <h3>{t('international_tournaments_evf')}</h3>
             {@render tournamentTable(internationalScores)}
           {/if}
         </div>
       {/if}
 
       <div class="modal-footer">
-        <span><strong>N</strong> — number of participants</span>
+        <span><strong>{footerN[0]}</strong> — {footerN.slice(1).join(' — ')}</span>
         <span class="sep">·</span>
-        <span><strong>Mult</strong> — tournament type multiplier applied to the raw score (place points + DE bonus + podium bonus)</span>
+        <span><strong>{footerMult[0]}</strong> — {footerMult.slice(1).join(' — ')}</span>
       </div>
     </div>
   </div>
@@ -133,13 +133,13 @@
   <table>
     <thead>
       <tr>
-        <th>Tournament</th>
-        <th>Date</th>
-        <th>Type</th>
-        <th class="num">Place</th>
+        <th>{t('col_tournament')}</th>
+        <th>{t('col_date')}</th>
+        <th>{t('col_type')}</th>
+        <th class="num">{t('col_place')}</th>
         <th class="num">N</th>
-        <th class="num">Mult</th>
-        <th class="num total">Points</th>
+        <th class="num">{t('col_mult')}</th>
+        <th class="num total">{t('col_points')}</th>
       </tr>
     </thead>
     <tbody>
@@ -170,6 +170,8 @@
 <script lang="ts">
   import type { ScoreRow, RankingMode, DrilldownContext, RankingRules } from '../lib/types'
   import { exportDrilldown } from '../lib/export'
+  import { t, getLocale } from '../lib/locale.svelte'
+  import LangToggle from './LangToggle.svelte'
 
   const INTL_TYPES = ['PEW', 'MEW', 'MSW', 'PSW'] as const
 
@@ -360,6 +362,10 @@
     )
   )
 
+  // --- i18n derived ---
+  let footerN = $derived(t('footer_n').split(' — '))
+  let footerMult = $derived(t('footer_mult').split(' — '))
+
   // --- Helpers ---
 
   function fmt(v: number | null): string {
@@ -373,7 +379,7 @@
     try {
       const d = new Date(dt)
       const day = d.getDate()
-      const month = d.toLocaleString('en', { month: 'short' })
+      const month = d.toLocaleString(getLocale() === 'pl' ? 'pl-PL' : 'en', { month: 'short' })
       const year = String(d.getFullYear()).slice(2)
       return `${day} ${month} ${year}`
     } catch {

@@ -1,3 +1,6 @@
+// Plan tests: 6.5, 6.6, 6.8, 6.10, 6.11, 6.12, 6.15, 6.16 — DrilldownModal component.
+// See doc/POC_development_plan.md §M6 test table.
+
 import { describe, it, expect, vi } from 'vitest'
 import { render } from '@testing-library/svelte'
 import DrilldownModal from '../src/components/DrilldownModal.svelte'
@@ -11,6 +14,7 @@ const makeScore = (overrides: Partial<ScoreRow> = {}): ScoreRow => ({
   id_result: 1,
   id_fencer: 1,
   fencer_name: 'TEST User',
+  int_birth_year: null,
   id_tournament: 10,
   txt_tournament_code: 'PPW-01',
   txt_tournament_name: 'Test PPW',
@@ -29,6 +33,8 @@ const makeScore = (overrides: Partial<ScoreRow> = {}): ScoreRow => ({
   ts_points_calc: null,
   id_season: 1,
   txt_season_code: '2024/25',
+  url_results: null,
+  txt_location: null,
   ...overrides,
 })
 
@@ -43,11 +49,13 @@ const CTX: DrilldownContext = {
 }
 
 describe('DrilldownModal', () => {
+  // 6.5 — modal visibility
   it('is hidden when open=false', () => {
     const { container } = render(DrilldownModal, { props: { open: false } })
     expect(container.querySelector('.modal-overlay')).toBeNull()
   })
 
+  // 6.5 — modal shows fencer identity
   it('shows fencer name when open', () => {
     const { container } = render(DrilldownModal, {
       props: { open: true, fencerName: 'SMITH John' },
@@ -55,9 +63,14 @@ describe('DrilldownModal', () => {
     expect(container.textContent).toContain('SMITH John')
   })
 
+  // 6.6 — drill-down per-tournament breakdown header
   it('renders subheader with rank, category, birth year, and total', () => {
+    const scores = [
+      makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 500 }),
+      makeScore({ id_result: 2, enum_type: 'PEW', num_final_score: 410, id_tournament: 20 }),
+    ]
     const { container } = render(DrilldownModal, {
-      props: { open: true, fencerName: 'ATANASSOW Aleksander', context: CTX, mode: 'KADRA' },
+      props: { open: true, fencerName: 'ATANASSOW Aleksander', scores, context: CTX, mode: 'KADRA' },
     })
     const sub = container.querySelector('.subheader')
     expect(sub?.textContent).toContain('Rank #1')
@@ -67,6 +80,7 @@ describe('DrilldownModal', () => {
     expect(sub?.textContent).toContain('910 pts')
   })
 
+  // 6.15 — PPW drill-down: domestic only
   it('PPW mode shows only domestic tournaments', () => {
     const scores = [
       makeScore({ id_result: 1, txt_tournament_code: 'PPW-01', enum_type: 'PPW' }),
@@ -80,6 +94,7 @@ describe('DrilldownModal', () => {
     expect(rows[0].textContent).toContain('PPW-01')
   })
 
+  // 6.16 — Kadra drill-down: domestic + international
   it('KADRA mode shows all tournaments', () => {
     const scores = [
       makeScore({ id_result: 1, txt_tournament_code: 'PPW-01', enum_type: 'PPW' }),
@@ -94,6 +109,7 @@ describe('DrilldownModal', () => {
     expect(codeTexts).toContain('PEW-01')
   })
 
+  // 6.6 — score markers (best-K)
   it('marks best-K PPW scores with star', () => {
     const scores = [
       makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 120 }),
@@ -111,6 +127,7 @@ describe('DrilldownModal', () => {
     expect(starCount).toBe(4)
   })
 
+  // 6.6 — MPW marker
   it('shows MPW with check marker', () => {
     const scores = [
       makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100 }),
@@ -124,6 +141,7 @@ describe('DrilldownModal', () => {
     expect(checkCount).toBe(1)
   })
 
+  // 6.6 — score summary
   it('shows summary rows with correct sums', () => {
     const scores = [
       makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 120 }),
@@ -138,6 +156,7 @@ describe('DrilldownModal', () => {
     expect(summaries[0]?.textContent).toContain('220+45 = 265')
   })
 
+  // 6.6 — Kadra grand total
   it('KADRA mode shows grand total', () => {
     const scores = [
       makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100 }),
@@ -153,15 +172,18 @@ describe('DrilldownModal', () => {
     expect(grandTotal?.textContent).toContain('Grand Total: 285')
   })
 
+  // 6.12 — V0 disables Kadra in drill-down
   it('disables Kadra toggle when kadraDisabled is true', () => {
     const { container } = render(DrilldownModal, {
-      props: { open: true, fencerName: 'Test', kadraDisabled: true },
+      props: { open: true, fencerName: 'Test', kadraDisabled: true, context: CTX },
     })
     const btns = container.querySelectorAll('.toggle-btn')
-    const kadraBtn = btns[1] as HTMLButtonElement
+    // [0]=🇬🇧, [1]=🇵🇱 (LangToggle in modal-actions), [2]=PPW, [3]=Kadra (toggle in subheader)
+    const kadraBtn = btns[3] as HTMLButtonElement
     expect(kadraBtn.disabled).toBe(true)
   })
 
+  // 6.8 — skeleton/loading indicator
   it('shows loading state', () => {
     const { container } = render(DrilldownModal, {
       props: { open: true, fencerName: 'Test', loading: true },
@@ -169,6 +191,7 @@ describe('DrilldownModal', () => {
     expect(container.textContent).toContain('Loading')
   })
 
+  // 6.6 — tournament code linked
   it('tournament code link opens in new tab and does not point to a CSV download URL', () => {
     const scores = [
       makeScore({
@@ -187,5 +210,143 @@ describe('DrilldownModal', () => {
     expect(link.target).toBe('_blank')
     expect(link.href).not.toContain('/download/')
     expect(link.href).toMatch(/^https?:\/\//)
+  })
+
+  // ── Comprehensive UI coverage ──────────────────────────────────────────────
+
+  // 6.6 — season code in subheader
+  it('A — subheader shows season code from scores', () => {
+    const scores = [makeScore({ txt_season_code: '2024/25' })]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, context: CTX, mode: 'PPW' },
+    })
+    expect(container.querySelector('.subheader')?.textContent).toContain('2024/25')
+  })
+
+  // 6.5 — subheader absent when no data
+  it('B — subheader hidden when context is null and scores empty', () => {
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores: [], context: null },
+    })
+    expect(container.querySelector('.subheader')).toBeNull()
+  })
+
+  // 6.10 — PPW total label
+  it('C — subheader shows PPW Total label in PPW mode', () => {
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', context: CTX, mode: 'PPW' },
+    })
+    expect(container.querySelector('.subheader')?.textContent).toContain('PPW Total')
+  })
+
+  // 6.11 — Kadra total label
+  it('D — subheader shows Kadra Total label in KADRA mode', () => {
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', context: CTX, mode: 'KADRA' },
+    })
+    expect(container.querySelector('.subheader')?.textContent).toContain('Kadra Total')
+  })
+
+  // 6.6 — breakdown section heading
+  it('E — Points Breakdown heading present when scores exist', () => {
+    const scores = [makeScore({ enum_type: 'PPW', num_final_score: 100 })]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    const h3 = Array.from(container.querySelectorAll('.breakdown-section h3'))
+    expect(h3.some((el) => el.textContent?.includes('Points Breakdown'))).toBe(true)
+  })
+
+  // 6.15 — domestic column heading
+  it('F — domestic column heading contains Domestic', () => {
+    const scores = [makeScore({ enum_type: 'PPW', num_final_score: 100 })]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    const h4 = container.querySelector('.breakdown-col h4')
+    expect(h4?.textContent).toContain('Domestic')
+  })
+
+  // 6.16 — international column in Kadra only
+  it('G — international column only visible in KADRA mode', () => {
+    const scores = [
+      makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100 }),
+      makeScore({ id_result: 2, enum_type: 'PEW', num_final_score: 80, id_tournament: 20 }),
+    ]
+    const { container: cPpw } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    expect(cPpw.querySelectorAll('.breakdown-col').length).toBe(1)
+
+    const { container: cKadra } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'KADRA' },
+    })
+    expect(cKadra.querySelectorAll('.breakdown-col').length).toBe(2)
+  })
+
+  // 6.6 — tournament type legend
+  it('H — all 5 tournament type abbreviations present in legend', () => {
+    const scores = [makeScore({ enum_type: 'PPW', num_final_score: 100 })]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    const legend = container.querySelector('.type-legend')
+    for (const abbr of ['PPW', 'MPW', 'PEW', 'MEW', 'MSW']) {
+      expect(legend?.textContent).toContain(abbr)
+    }
+  })
+
+  // 6.6 — breakdown table headers
+  it('I — table headers present', () => {
+    const scores = [makeScore({ enum_type: 'PPW', num_final_score: 100 })]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    const headers = Array.from(container.querySelectorAll('th')).map((th) => th.textContent?.trim())
+    for (const label of ['Tournament', 'Date', 'Type', 'Place', 'Mult', 'Points']) {
+      expect(headers).toContain(label)
+    }
+  })
+
+  // 6.6 — footer definitions
+  it('J — footer contains N and Mult definitions', () => {
+    const scores = [makeScore({ enum_type: 'PPW', num_final_score: 100 })]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    const footer = container.querySelector('.modal-footer')
+    expect(footer?.textContent).toContain('N —')
+    expect(footer?.textContent).toContain('Mult —')
+  })
+
+  // No plan ID — i18n (added post-plan)
+  it('K — LangToggle flag buttons present in modal', () => {
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test' },
+    })
+    const text = container.textContent ?? ''
+    expect(text).toContain('🇬🇧')
+    expect(text).toContain('🇵🇱')
+  })
+
+  // 6.10 — toggle placement
+  it('L — PPW/Kadra toggle is in subheader (second row), LangToggle is in modal-actions (top row)', () => {
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', context: CTX },
+    })
+    const subheader = container.querySelector('.subheader')
+    const actions = container.querySelector('.modal-actions')
+    // LangToggle root also carries class="toggle", so use :not(.lang-toggle) to target PPW/Kadra toggle
+    expect(subheader?.querySelector('.toggle:not(.lang-toggle)')).not.toBeNull()
+    expect(actions?.querySelector('.toggle:not(.lang-toggle)')).toBeNull()
+    expect(actions?.textContent).toContain('🇬🇧')
+  })
+
+  // 6.5 — close button
+  it('M — close button present', () => {
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test' },
+    })
+    expect(container.querySelector('.btn-close')).not.toBeNull()
   })
 })

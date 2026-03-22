@@ -1,3 +1,6 @@
+// Plan tests: 6.1, 6.5, 6.11 — RanklistTable component.
+// See doc/POC_development_plan.md §M6 test table.
+
 import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
 import RanklistTable from '../src/components/RanklistTable.svelte'
@@ -13,6 +16,7 @@ const kadraData: RankingKadraRow[] = [
 ]
 
 describe('RanklistTable', () => {
+  // 6.1 — table renders rank, name, score columns
   it('renders PPW columns in PPW mode', () => {
     const { container } = render(RanklistTable, {
       props: { mode: 'PPW', ppwRows: ppwData },
@@ -23,6 +27,7 @@ describe('RanklistTable', () => {
     expect(headers).not.toContain('PEW Total')
   })
 
+  // 6.11 — Kadra mode shows PEW/MEW columns
   it('renders Kadra columns in KADRA mode', () => {
     const { container } = render(RanklistTable, {
       props: { mode: 'KADRA', kadraRows: kadraData },
@@ -33,6 +38,7 @@ describe('RanklistTable', () => {
     expect(headers).not.toContain('Best-4 PPW')
   })
 
+  // 6.1 — data rows rendered
   it('renders correct number of data rows', () => {
     const { container } = render(RanklistTable, {
       props: { mode: 'PPW', ppwRows: ppwData },
@@ -41,6 +47,7 @@ describe('RanklistTable', () => {
     expect(rows.length).toBe(2)
   })
 
+  // 6.5 — row click opens drill-down
   it('calls onrowclick when row is clicked', async () => {
     const handler = vi.fn()
     const { container } = render(RanklistTable, {

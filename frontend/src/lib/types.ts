@@ -45,6 +45,7 @@ export interface ScoreRow {
   id_result: number
   id_fencer: number
   fencer_name: string
+  int_birth_year: number | null
   id_tournament: number
   txt_tournament_code: string
   txt_tournament_name: string | null

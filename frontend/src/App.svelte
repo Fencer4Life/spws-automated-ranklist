@@ -1,14 +1,16 @@
 <div class="ranklist-app">
   <header class="app-header">
-    <h1>SPWS Ranklist</h1>
+    <h1>{t('app_title')}</h1>
     <div class="season-selector">
       <select bind:value={selectedSeasonId} onchange={loadRanking}>
         {#each seasons as s}
-          <option value={s.id_season}>{s.txt_code}{s.bool_active ? ' (active)' : ''}</option>
+          <option value={s.id_season}>{s.txt_code}{s.bool_active ? ' ' + t('season_active') : ''}</option>
         {/each}
       </select>
     </div>
-    <button class="btn-export" title="Export to ODS" onclick={handleMainExport}>&#9113;</button>
+    <div class="header-right">
+      <LangToggle />
+    </div>
   </header>
 
   <FilterBar
@@ -17,6 +19,7 @@
     category={filters.category}
     mode={filters.mode}
     onfilterchange={onFilterChange}
+    onexport={handleMainExport}
   />
 
   {#if loading}
@@ -77,7 +80,9 @@
     MOCK_DRILLDOWN,
   } from './lib/mock-data'
   import { exportRankingPpw, exportRankingKadra } from './lib/export'
+  import { t } from './lib/locale.svelte'
   import FilterBar from './components/FilterBar.svelte'
+  import LangToggle from './components/LangToggle.svelte'
   import RanklistTable from './components/RanklistTable.svelte'
   import DrilldownModal from './components/DrilldownModal.svelte'
   import SkeletonLoader from './components/SkeletonLoader.svelte'
@@ -210,6 +215,26 @@
           filters.weapon,
           filters.gender,
         )
+        const row =
+          filters.mode === 'PPW'
+            ? ppwRows.find((r) => r.id_fencer === fencerId)
+            : kadraRows.find((r) => r.id_fencer === fencerId)
+        if (row) {
+          const birthYear = modalScores[0]?.int_birth_year ?? null
+          const season = seasons.find((s) => s.id_season === selectedSeasonId)
+          const seasonEndYear = season ? parseInt(season.dt_end.split('-')[0]) : null
+          const age =
+            birthYear != null && seasonEndYear != null ? seasonEndYear - birthYear : null
+          modalContext = {
+            rank: row.rank,
+            birthYear,
+            age,
+            category: filters.category,
+            totalScore: row.total_score,
+            ppwBestCount: 4,
+            pewBestCount: 3,
+          }
+        }
       }
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
@@ -262,18 +287,11 @@
     font-size: 14px;
     background: #fff;
   }
-  .btn-export {
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-left: auto;
-    background: none;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 6px 12px;
-    font-size: 16px;
-    cursor: pointer;
-    color: #555;
-  }
-  .btn-export:hover {
-    background: #f0f0f0;
   }
   .error-banner {
     margin-top: 16px;

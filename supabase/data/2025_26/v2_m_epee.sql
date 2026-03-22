@@ -619,8 +619,9 @@ SELECT fn_calc_tournament_scores(
 UPDATE tbl_event SET txt_location = 'Opole'     WHERE txt_code = 'PP1-2025-2026';
 UPDATE tbl_event SET txt_location = 'Poznań'    WHERE txt_code = 'PP2-2025-2026';
 UPDATE tbl_event SET txt_location = 'Warszawa'  WHERE txt_code = 'PP3-2025-2026';
-UPDATE tbl_event SET txt_location = 'Budapeszt' WHERE txt_code = 'PEW1-2025-2026';
-UPDATE tbl_event SET txt_location = 'Madryt'    WHERE txt_code = 'PEW2-2025-2026';
+UPDATE tbl_event SET txt_location = 'Budapeszt'      WHERE txt_code = 'PEW1-2025-2026';
+UPDATE tbl_event SET txt_location = 'Madryt'         WHERE txt_code = 'PEW2-2025-2026';
+UPDATE tbl_event SET txt_location = 'Manama, Bahrain' WHERE txt_code = 'IMSW-2025-2026';
 
 -- Summary
 -- Domestic:     PP1, PP2, PP3
