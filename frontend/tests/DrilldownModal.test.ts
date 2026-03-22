@@ -69,20 +69,18 @@ describe('DrilldownModal', () => {
   })
 
   // 6.6 — drill-down per-tournament breakdown header
-  it('renders subheader with rank, category, birth year, and total', () => {
+  it('renders subheader with rank, category, and birth year', () => {
     const scores = [
       makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 500 }),
-      makeScore({ id_result: 2, enum_type: 'PEW', num_final_score: 410, id_tournament: 20 }),
     ]
     const { container } = render(DrilldownModal, {
-      props: { open: true, fencerName: 'ATANASSOW Aleksander', scores, context: CTX, mode: 'KADRA' },
+      props: { open: true, fencerName: 'ATANASSOW Aleksander', scores, context: CTX, mode: 'PPW' },
     })
     const sub = container.querySelector('.subheader')
     expect(sub?.textContent).toContain('Rank #1')
     expect(sub?.textContent).toContain('V2')
     expect(sub?.textContent).toContain('born 1969')
-    expect(sub?.textContent).toContain('age 56')
-    expect(sub?.textContent).toContain('910 pts')
+    expect(sub?.textContent).not.toContain('pts')
   })
 
   // 6.15 — PPW drill-down: domestic only
@@ -146,8 +144,8 @@ describe('DrilldownModal', () => {
     expect(checkCount).toBe(1)
   })
 
-  // 6.6 — score summary
-  it('shows summary rows with correct sums', () => {
+  // 6.6 — domestic total in chart heading
+  it('shows domestic total in chart heading', () => {
     const scores = [
       makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 120 }),
       makeScore({ id_result: 2, enum_type: 'PPW', num_final_score: 100, id_tournament: 11 }),
@@ -157,12 +155,12 @@ describe('DrilldownModal', () => {
     const { container } = render(DrilldownModal, {
       props: { open: true, fencerName: 'Test', scores, mode: 'PPW', context: ctx },
     })
-    const summaries = container.querySelectorAll('.breakdown-summary')
-    expect(summaries[0]?.textContent).toContain('220+45 = 265')
+    const h4 = container.querySelector('.breakdown-col h4')
+    expect(h4?.textContent).toContain('265')
   })
 
-  // 6.6 — Kadra grand total
-  it('KADRA mode shows grand total', () => {
+  // 6.6 — Kadra grand total in table-total
+  it('KADRA mode shows grand total in table-total', () => {
     const scores = [
       makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100 }),
       makeScore({ id_result: 2, enum_type: 'MPW', num_final_score: 45, id_tournament: 20 }),
@@ -173,8 +171,8 @@ describe('DrilldownModal', () => {
     const { container } = render(DrilldownModal, {
       props: { open: true, fencerName: 'Test', scores, mode: 'KADRA', context: ctx },
     })
-    const grandTotal = container.querySelector('.grand-total')
-    expect(grandTotal?.textContent).toContain('Grand Total: 285')
+    const tableTotal = container.querySelector('.table-total')
+    expect(tableTotal?.textContent).toContain('285')
   })
 
   // 6.12 — V0 disables +EVF in drill-down
@@ -237,19 +235,21 @@ describe('DrilldownModal', () => {
   })
 
   // 6.10 — PPW total label
-  it('C — subheader shows PPW Total label in PPW mode', () => {
+  it('C — table-total shows PPW Total label in PPW mode', () => {
+    const scores = [makeScore({ enum_type: 'PPW', num_final_score: 100 })]
     const { container } = render(DrilldownModal, {
-      props: { open: true, fencerName: 'Test', context: CTX, mode: 'PPW' },
+      props: { open: true, fencerName: 'Test', scores, context: CTX, mode: 'PPW' },
     })
-    expect(container.querySelector('.subheader')?.textContent).toContain('PPW Total')
+    expect(container.querySelector('.table-total')?.textContent).toContain('PPW Total')
   })
 
   // 6.11 — +EVF total label
-  it('D — subheader shows +EVF Total label in KADRA mode', () => {
+  it('D — table-total shows +EVF Total label in KADRA mode', () => {
+    const scores = [makeScore({ enum_type: 'PPW', num_final_score: 100 })]
     const { container } = render(DrilldownModal, {
-      props: { open: true, fencerName: 'Test', context: CTX, mode: 'KADRA' },
+      props: { open: true, fencerName: 'Test', scores, context: CTX, mode: 'KADRA' },
     })
-    expect(container.querySelector('.subheader')?.textContent).toContain('+EVF Total')
+    expect(container.querySelector('.table-total')?.textContent).toContain('+EVF Total')
   })
 
   // 6.6 — breakdown section heading

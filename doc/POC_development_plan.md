@@ -568,22 +568,19 @@ Drill-down modal — adapts to toggle mode. [PPW●│+EVF] toggle synced with m
 ```
 ┌─── Drill-Down ─────────────────────────────────────────────────────────────┐
 │  ATANASSOW Aleksander                                  [PPW│+EVF ●] [✕]   │
-│  Rank #1 │ V2 · SPWS-2024-2025 (born 1969, age 56) │ +EVF Total: 910 pts [⎙] │
+│  Rank #1 │ V2 · SPWS-2024-2025 (born 1969)                          [⎙]   │
 │                                                                            │
 │  Score Breakdown                                                           │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  Domestic (PPW + MPW)              International (PEW + MEW)        │   │
+│  │  Domestic (PPW + MPW): 465 pts    International (EVF): 490 pts     │   │
 │  │  120 ██████████████████ ★ PPW1     180 █████████████████████████ ✓  │   │
 │  │  105 ████████████████   ★ PPW2     120 ██████████████████ ★ PEW1   │   │
 │  │  100 ███████████████    ★ PPW4     100 ████████████████   ★ PEW2   │   │
 │  │   95 ██████████████     ★ PPW3      90 █████████████      ★ PEW3   │   │
 │  │   60 █████████            PPW5      65 █████████            PEW4   │   │
 │  │   45 ███████            ✓ MPW1                                      │   │
-│  │                                                                     │   │
-│  │  Domestic: 420+45 = 465            International: 310+180 = 490     │   │
-│  │                                    Grand Total: 910                 │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                            │
+│                                                        +EVF Total: 910 pts │
 │  Domestic Tournaments                                                      │
 │  ┌──────────────────────┬──────────┬─────┬──────┬──────┬────────┐          │
 │  │ Code                 │ Date     │ Plc │ Part │ ×    │ Score  │          │
@@ -606,7 +603,7 @@ Drill-down modal — adapts to toggle mode. [PPW●│+EVF] toggle synced with m
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
-PPW drill-down (toggle = PPW): same layout, no International section, summary shows "Domestic: PPW + MPW = Total".
+PPW drill-down (toggle = PPW): same layout, no International section. Domestic chart header shows total. Right-aligned "PPW Total: X pts" above tables.
 
 **Pre-requisite — SQL migration `20250303000003_ranking_kadra.sql`:**
 - Update `fn_ranking_ppw` return type: add `ppw_score`, `mpw_score` columns (separate from `total_score`)

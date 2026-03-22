@@ -20,10 +20,8 @@
           <span>
             {context?.category ?? scores[0]?.enum_age_category ?? ''}
             {#if seasonCode} · {seasonCode}{/if}
-            {#if context?.birthYear} ({t('born')} {context.birthYear}{#if context.age}, {t('age')} {context.age}{/if}){/if}
+            {#if context?.birthYear} ({t('born')} {context.birthYear}){/if}
           </span>
-          <span class="sep">|</span>
-          <span class="total-label">{mode === 'KADRA' ? t('kadra_total_label') : t('ppw_total_label')}: {mode === 'KADRA' ? fmt(grandTotal) : fmt(ppwModeTotal)} {t('pts')}</span>
           <div class="toggle" class:kadra-disabled={kadraDisabled}>
             <button
               class="toggle-btn"
@@ -50,7 +48,7 @@
           <h3>{t('points_breakdown')}</h3>
           <div class="breakdown-grid" class:single-col={mode === 'PPW'}>
             <div class="breakdown-col">
-              <h4>{t('domestic_ppw_mpw')}</h4>
+              <h4>{t('domestic_ppw_mpw')}: {fmt(domesticTotal)} {t('pts')}</h4>
               <div class="chart-area">
                 {#each domesticChart as item}
                   <div class="chart-row">
@@ -65,14 +63,11 @@
                   </div>
                 {/each}
               </div>
-              <div class="breakdown-summary">
-                {t('domestic_summary')} {fmt(ppwSum)}{#if mpwIncluded > 0}+{fmt(mpwIncluded)}{/if} = {fmt(domesticTotal)}
-              </div>
             </div>
 
             {#if mode === 'KADRA'}
               <div class="breakdown-col">
-                <h4>{t('international_evf')}</h4>
+                <h4>{t('international_evf')}: {fmt(internationalTotal)} {t('pts')}</h4>
                 <div class="chart-area">
                   {#each internationalChart as item}
                     <div class="chart-row">
@@ -87,18 +82,6 @@
                     </div>
                   {/each}
                 </div>
-                {#if useJsonbRules}
-                  <div class="breakdown-summary">
-                    {t('international_summary', { J: bestJ })} {fmt(internationalTotal)}
-                  </div>
-                {:else}
-                  <div class="breakdown-summary">
-                    {t('international_summary_legacy')} {fmt(pewSum)}{#if mewIncluded > 0}+{fmt(mewIncluded)}{/if} = {fmt(internationalTotal)}
-                  </div>
-                {/if}
-                <div class="breakdown-summary grand-total">
-                  {t('grand_total')} {fmt(grandTotal)}
-                </div>
               </div>
             {/if}
           </div>
@@ -108,6 +91,10 @@
               <span><strong>{parts[0]}</strong> — {parts.slice(1).join(' — ')}</span>
             {/each}
           </div>
+        </div>
+
+        <div class="table-total">
+          {mode === 'KADRA' ? t('kadra_total_label') : t('ppw_total_label')}: {mode === 'KADRA' ? fmt(grandTotal) : fmt(ppwModeTotal)} {t('pts')}
         </div>
 
         <div class="table-section">
@@ -509,10 +496,6 @@
   .subheader .sep {
     color: #ccc;
   }
-  .subheader .total-label {
-    font-weight: 600;
-    color: #333;
-  }
   .btn-export-sub {
     margin-left: auto;
     background: none;
@@ -596,12 +579,6 @@
     text-align: center;
     font-size: 13px;
   }
-  .breakdown-summary {
-    margin-top: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #444;
-  }
   .type-legend {
     margin-top: 12px;
     display: flex;
@@ -613,10 +590,12 @@
   .type-legend strong {
     color: #666;
   }
-  .grand-total {
-    margin-top: 4px;
-    font-size: 14px;
+  .table-total {
+    text-align: right;
+    font-size: 15px;
+    font-weight: 700;
     color: #222;
+    margin-bottom: 4px;
   }
 
   /* Tables */
@@ -744,9 +723,6 @@
     }
     .chart-bar-bg {
       height: 16px;
-    }
-    .breakdown-summary {
-      font-size: 12px;
     }
     table {
       font-size: 12px;
