@@ -3,9 +3,9 @@
     {#if dualEnv}
       <div class="env-toggle">
         <button class="env-btn" class:active={activeEnv === 'CERT'}
-          onclick={() => { activeEnv = 'CERT' }}>CERT</button>
+          onclick={() => { activeEnv = 'CERT' }}>CT</button>
         <button class="env-btn" class:active={activeEnv === 'PROD'}
-          onclick={() => { activeEnv = 'PROD' }}>PROD</button>
+          onclick={() => { activeEnv = 'PROD' }}>PD</button>
       </div>
     {/if}
     <h1>{t('app_title')}</h1>
