@@ -78,7 +78,7 @@ The system must scrape tournament results from the following platforms:
 
 ### Technical Assumptions
 * **Scraping Feasibility:** Target platforms (FencingTimeLive, Engarde, 4Fence) will not implement aggressive anti-bot measures (like Captchas) that block basic Python HTTP requests.
-* **Scraper Versioning:** External platforms will change their HTML structure or API responses over time. When a scraper breaks due to a format change, a **new version** of the parsing script must be created to handle the updated format. Old scraper versions are retained for re-processing historical data if needed. The automated alerting system (§7) will notify admins immediately when an import fails, triggering the development of the new scraper version.
+* **Scraper Versioning:** External platforms will change their HTML structure or API responses over time. When a scraper breaks due to a format change, a **new version** of the parsing script must be created to handle the updated format. Old scraper versions are retained for re-processing historical data if needed. The automated alerting system (GitHub Actions pipeline, §9.5) will notify admins immediately when an import fails, triggering the development of the new scraper version.
 * **Cloud Constraints:** The system will operate comfortably within the Supabase Free Tier limits (500MB DB storage, sufficient API requests), Github.
 * **CMS Independence:** The WordPress site allows the embedding of custom `<script>` tags and HTML custom elements (Web Components). WordPress CMS may be changed in a future iteration to an alternative solution. Therefore the Automated Ranklist System must be independent, separate, and ready to be ported to another site.
 
@@ -149,6 +149,21 @@ graph TD
     AdminUI -->|Config & Season CRUD| DB
 ```
 
+### 5.1 Architecture Decision Log
+
+Key design decisions are recorded as Architecture Decision Records in [`doc/adr/`](adr/):
+
+| ADR | Decision | Status |
+|-----|----------|--------|
+| [001](adr/001-hybrid-scoring-config.md) | Hybrid scoring config (DB table + JSON export/import) | Accepted |
+| [002](adr/002-calculate-once-store-forever.md) | Calculate once, store forever (immutable scores) | Accepted |
+| [003](adr/003-identity-by-fk-not-name.md) | Identity by FK, not by name (replacing Excel XLOOKUP) | Accepted |
+| [004](adr/004-single-admin-account.md) | Single admin account for POC | Accepted |
+| [005](adr/005-svelte-state-i18n.md) | Svelte 5 `$state` for internationalisation | Accepted |
+| [006](adr/006-jsonb-ranking-rules.md) | JSONB bucket-based ranking rules | Accepted |
+| [007](adr/007-shadow-dom-deferred.md) | Shadow DOM deferred to MVP | Accepted |
+| [008](adr/008-psw-msw-international-pool.md) | PSW and MSW in international ranking pool | Accepted |
+
 ## 6. Implementation Phasing & Solution Approach
 
 To manage complexity, the system will be built iteratively, ensuring value is delivered at each stage while keeping the final, holistic requirements in mind.
@@ -189,7 +204,7 @@ To manage complexity, the system will be built iteratively, ensuring value is de
 
 - **Goal:** Replace the Excel system for domestic + international rankings across all categories.
 
-- **Scope:** All 30 sub-rankings (3 Weapons × 2 Genders × 5 Categories). Note: V0 (30–39) is a domestic SPWS category with no EVF international equivalent, so V0 fencers have PPW rankings only (no Kadra ranking).
+- **Scope:** All 30 sub-rankings (3 Weapons × 2 Genders × 5 Categories V0–V4; see §9.1.1 for age brackets). V0 is domestic-only — no Kadra ranking (see §9.4).
 
 - **Use Cases:** UC6 (manual recalculation), UC14 (historical seasons), UC15–UC17 (corrections, master table updates, reprocessing).
 
@@ -207,7 +222,7 @@ To manage complexity, the system will be built iteratively, ensuring value is de
 
     - **Result corrections & reprocessing workflow** with full audit trail.
 
-    - **Shadow DOM isolation:** Rebuild the Web Component with `customElement: true` and Shadow DOM encapsulation so host page CSS (WordPress themes) cannot bleed into the ranklist. The POC deferred this due to incompatibility between Svelte's `customElement` compiler mode and `@testing-library/svelte`. For MVP, the component must be built as a proper `<spws-ranklist>` custom element with isolated styles. Unit tests for the custom element build will use a separate test harness or Playwright E2E tests instead of `@testing-library/svelte`.
+    - **Shadow DOM isolation:** Rebuild the Web Component with `customElement: true` and Shadow DOM encapsulation so host page CSS (WordPress themes) cannot bleed into the ranklist. See [ADR-007](adr/007-shadow-dom-deferred.md) for why this was deferred from POC and the planned MVP resolution.
 
     - Deploy Web Component to the live WordPress site.
 
@@ -221,22 +236,13 @@ To manage complexity, the system will be built iteratively, ensuring value is de
 
     - **Kadra Tier Classification:** Add `vw_kadra_tiers` view that classifies fencers into Kadra A, B, C, or D based on configurable thresholds (start counts and point thresholds stored in `tbl_scoring_config.json_extra`). This is used only for National Team nomination discussions and is kept as a separate view from `vw_ranking_kadra`.
 
-### Future Enhancements (Post-Phase 3)
+## 7. Future Enhancements
 
 - **National Team Builder:** An algorithmic tool that suggests legal 4-person team lineups optimizing for total points while strictly adhering to the EVF age-balance rules (requiring specific ratios of Cat 2 and Cat 4 fencers).
-    
 
-## 7. Elegance & Optimization considerations (Making it Better)
+- **API Caching:** Implement stale-while-revalidate caching on PostgREST API calls. Historical rankings rarely change, so caching reduces Supabase free-tier load and ensures instant UI loads.
 
-To ensure the solution is not just functional, but professional and resilient:
-
-- **API Caching:** Because historical rankings rarely change, we should implement stale-while-revalidate caching on the API calls. This ensures the WordPress UI loads instantly and reduces the load on the Supabase free tier.
-    
-- **Automated Alerting:** Integrate a Discord or Slack Webhook into the Python GitHub Actions. If a scraper fails (e.g., Engarde changes their HTML structure), the admin gets a message immediately rather than realizing data is missing weeks later.
-    
-- **Historical Snapshots:** At end-of-season, a trigger saves a static JSON snapshot of the final rankings. This preserves history immutably before the new season begins.
-    
-- **Skeleton Loaders in UI:** The Web Component will display a highly polished "shimmering" skeleton layout matching the table structure while data is being fetched, preventing layout shift on the WordPress page.
+- **Historical Snapshots:** At end-of-season, save a static JSON snapshot of the final rankings, preserving history immutably before the new season begins.
 
 ## 8. Detailed Scoring Mathematics (Derived from Legacy Excel)
 
@@ -302,7 +308,7 @@ Certain tournament types apply a multiplier to the **total** tournament score (P
 | MEW (Mistrzostwa Europy Weteranów — European Veterans Championship, odd years only) | **2.0** | `num_mew_multiplier` | Total × 2.0 |
 | MSW (Mistrzostwa Świata Weteranów — World Veterans Championship, yearly Oct/Nov) | **2.0** | `num_msw_multiplier` | Total × 2.0 |
 
-> **Note:** All multipliers are configurable via `tbl_scoring_config`. PPW and PEW default to 1.0 but are stored as explicit columns to allow future adjustment without code changes. MSW is Phase 2+ — the scoring engine recognises the tournament type but MSW-specific Kadra aggregation rules are deferred.
+> **Note:** All multipliers are configurable via `tbl_scoring_config`. PPW and PEW default to 1.0 but are stored as explicit columns to allow future adjustment without code changes. MSW and PSW are included in the international ranking pool via `json_ranking_rules` (§8.6.6); see [ADR-008](adr/008-psw-msw-international-pool.md) for rationale.
 
 ### 8.3 Ranking Aggregation Rules
 
@@ -356,14 +362,16 @@ Where $J$ is defined in `json_ranking_rules` (default 3; see §8.6.6) and the in
 
 The Excel reveals a structured tournament classification not fully documented previously:
 
-| Code | Full Name | Type | Multiplier | Count per Season |
-|------|-----------|------|-----------|-----------------|
-| PPW1–PPW5 | Puchar Polski Weteranów (rounds I–V) | Domestic Cup | 1.0 | 5 (typical) |
-| MPW | Mistrzostwa Polski Weteranów | National Championship | 1.2 | 1 |
-| PEW1–PEW12 | International EVF circuit events | International | 1.0 | variable, up to ~12 |
-| MEW | Mistrzostwa Europy Weteranów (European Veterans Championship) | International | 2.0 | 0 or 1 (odd years only) |
-| MSW | Mistrzostwa Świata Weteranów (FIE Veterans World Championships) | International | 2.0 | 1 (yearly, Oct/Nov) |
-| PSW | Puchar Świata Weteranów (FIE Veterans World Cup) | International | 2.0 | variable — not yet held; future |
+| Code | Full Name | Type | Count per Season |
+|------|-----------|------|-----------------|
+| PPW1–PPW5 | Puchar Polski Weteranów (rounds I–V) | Domestic Cup | 5 (typical) |
+| MPW | Mistrzostwa Polski Weteranów | National Championship | 1 |
+| PEW1–PEW12 | International EVF circuit events | International | variable, up to ~12 |
+| MEW | Mistrzostwa Europy Weteranów (European Veterans Championship) | International | 0 or 1 (odd years only) |
+| MSW | Mistrzostwa Świata Weteranów (FIE Veterans World Championships) | International | 1 (yearly, Oct/Nov) |
+| PSW | Puchar Świata Weteranów (FIE Veterans World Cup) | International | variable — not yet held; future |
+
+> Multipliers for each type are in §8.2 (`tbl_scoring_config` parameter table, §8.6.1 rows 5–15).
 
 > **Note:** Earlier Excel sheets used "PP" as a tab name for some PPW rounds — this was merely a naming inconsistency in the spreadsheet. PP and PPW are the same tournament type. The system uses only **PPW** as the canonical code.
 
@@ -371,7 +379,7 @@ The Excel reveals a structured tournament classification not fully documented pr
 
 ### 8.5 Additional Implementation Requirements (from Excel analysis)
 
-1. **Minimum-participant threshold (international only):** When a PEW/MEW/MSW tournament has fewer than the configured minimum number of participants (default: 5), its results are imported but flagged with `enum_import_status = 'REJECTED'` and a reason text. Rejected tournaments are excluded from ranking views. PPW/MPW domestic tournaments have no minimum — any participant count > 0 is valid.
+1. **Minimum-participant threshold (international only):** When a PEW/MEW/MSW/PSW tournament has fewer than the configured minimum number of participants (default: 5), its results are imported but flagged with `enum_import_status = 'REJECTED'` and a reason text. Rejected tournaments are excluded from ranking views. PPW/MPW domestic tournaments have a configurable minimum (default: 1 via `int_min_participants_ppw`).
 
 2. **Cross-category participation and point carryover:** A fencer's age category (home category) is determined by the **season end year**: `age = EXTRACT(YEAR FROM tbl_season.dt_end) - int_birth_year`. When a fencer ages into a new category (e.g., V2 → V3), their home category is fixed for the entire season. Results from tournaments whose `enum_age_category` differs from the fencer's home category are marked `txt_cross_cat = 'k1'` in `tbl_result`. **Cross-category results count toward the fencer's home category ranking**, not the tournament's category. This means a V3 fencer who competed in V2 tournaments earlier in the season (or before category update) has those V2 results appear in the V3 ranking. The ranking function `fn_ranking_ppw` uses `fn_age_category(birth_year, season_end_year)` to compute each fencer's home category. Fencers with NULL birth year fall back to the tournament's `enum_age_category`. The `enum_fencer_age_category` column on `tbl_result` records the fencer's home category for auditing.
 
@@ -384,7 +392,7 @@ The Excel reveals a structured tournament classification not fully documented pr
 
 5. **Duplicate name disambiguation:** The SPWS master data contains fencers who share the same surname and first name but are different people (e.g., KRAWCZYK Paweł born 1954 vs 1989; MŁYNEK Janusz born 1951 vs 1984). When a scraped name matches multiple fencers with the same score, the tournament's `enum_age_category` is used as a tiebreaker:
    - The system checks each tied candidate's `int_birth_year` against the category's age range (`birth_year_matches_category(birth_year, category, season_end_year)`).
-   - **Age ranges** (relative to season end year): V0: 30–39, V1: 40–49, V2: 50–59, V3: 60–69, V4: 70+.
+   - **Age ranges:** See §9.1.1 for V0–V4 bracket definitions.
    - If **exactly one** candidate's birth year falls within the range → that fencer is selected (disambiguated).
    - If **zero or multiple** candidates fit (or birth years are NULL) → match is forced to `PENDING` for admin review, regardless of name-match confidence score.
    - This mechanism is applied transparently by `find_best_match()` when `age_category` and `season_end_year` parameters are provided.
@@ -426,32 +434,9 @@ Every number in the scoring formulas (§8.1–§8.3) that isn't derived from liv
 
 #### 8.6.2 Hybrid Configuration Approach (Table + JSON Export/Import)
 
-The system uses a **hybrid** approach that combines the engineering rigour of a database table with the editing convenience of a JSON file:
+The system uses a **hybrid** approach: production truth lives in `tbl_scoring_config` (typed columns, FK to season, RLS-protected), while local editing is enabled via `fn_export_scoring_config` / `fn_import_scoring_config` SQL functions that convert the row to/from JSON.
 
-**Production truth** lives in `tbl_scoring_config` (the database table):
-- Scoring engine functions join directly to it during calculation
-- Per-season versioning via FK to `tbl_season`
-- Typed columns provide schema validation
-- RLS protects it in production
-- `ts_updated` provides change tracking
-
-**Local editing** is enabled via export/import functions:
-- `fn_export_scoring_config(id_season)` returns the full config row as a JSON object
-- `fn_import_scoring_config(json)` validates and upserts the JSON back into the table
-- The exported JSON can be edited in VS Code, diffed in Git, and shared between developers
-
-**Why not a pure JSON file?**
-- A file on disk isn't queryable by SQL — the scoring engine can't `SELECT` it
-- Two sources of truth (file + DB) inevitably drift
-- The deployed app can't read a local file
-- No schema validation unless you build it yourself
-
-**Why not a pure database table (edit via Supabase UI only)?**
-- The Supabase Table Editor is clunky for rapid iteration during calibration
-- Every tweak requires a browser round-trip
-- No local diff/history in your editor
-
-**The hybrid gives both:** Edit locally in JSON for speed → import into the DB for truth.
+> For the full rationale (why not pure JSON, why not pure DB table), see [ADR-001](adr/001-hybrid-scoring-config.md).
 
 #### 8.6.3 Export/Import SQL Functions
 
@@ -607,11 +592,16 @@ Replace `"best"` with `"always": true`:
 
 ##### How Ranking Functions Consume Rules
 
-At query time, `fn_ranking_ppw` and `fn_ranking_kadra` read `json_ranking_rules` from `tbl_scoring_config` for the requested season:
-- If `NULL` → legacy code path (uses `int_ppw_best_count`, `bool_mpw_droppable`, `int_pew_best_count`, `bool_mew_droppable`)
-- If populated → JSONB-driven path: PostgreSQL's `jsonb_array_elements` iterates over buckets dynamically
+At query time, `fn_ranking_ppw` and `fn_ranking_kadra` read `json_ranking_rules` from `tbl_scoring_config` for the requested season. A dual code path handles both legacy (`NULL`) and JSONB-driven seasons. No redeployment is required when rules change.
 
-No redeployment or code change is required when `json_ranking_rules` changes.
+> For the full rationale, dual code path details, and consequences, see [ADR-006](adr/006-jsonb-ranking-rules.md).
+
+##### Season Code Path Summary
+
+| Season | `json_ranking_rules` | Code Path | Notes |
+|--------|---------------------|-----------|-------|
+| SPWS-2023-2024 | `NULL` | Legacy (K/J/droppable) | Historical season; no `season_config.sql` |
+| SPWS-2024-2025+ | JSONB value | JSONB bucket selection | `season_config.sql` sets rules per season |
 
 ## 9. Database Schema Design
 
@@ -643,10 +633,15 @@ erDiagram
         INT int_mp_value
         INT int_ppw_best_count
         INT int_pew_best_count
+        NUMERIC num_ppw_multiplier
         NUMERIC num_mpw_multiplier
+        NUMERIC num_pew_multiplier
         NUMERIC num_mew_multiplier
+        NUMERIC num_msw_multiplier
+        NUMERIC num_psw_multiplier
         BOOLEAN bool_mpw_droppable
         BOOLEAN bool_mew_droppable
+        JSONB json_ranking_rules "NULL=legacy, non-NULL=JSONB buckets"
     }
     tbl_organizer {
         SERIAL id_organizer PK
@@ -668,7 +663,9 @@ erDiagram
         SERIAL id_tournament PK
         INT id_event FK
         TEXT txt_code UK
-        enum_tournament_type enum_type
+        TEXT txt_name
+        enum_tournament_type enum_type "PPW MPW PEW MEW MSW PSW"
+        NUMERIC num_multiplier "Denormalized cache from scoring config"
         enum_weapon_type enum_weapon
         enum_gender_type enum_gender
         enum_age_category enum_age_category
@@ -676,6 +673,7 @@ erDiagram
         DATE dt_tournament
         TEXT url_results
         enum_import_status enum_import_status
+        TEXT txt_import_status_reason
     }
     tbl_fencer {
         SERIAL id_fencer PK
@@ -687,11 +685,12 @@ erDiagram
     }
     tbl_result {
         SERIAL id_result PK
-        INT id_fencer FK
+        INT id_fencer FK "NULLABLE — NULL before identity resolution"
         INT id_tournament FK
         INT int_place
-        TEXT txt_scraped_name
+        TEXT txt_scraped_name "Original scraped name"
         enum_age_category enum_fencer_age_category
+        TEXT txt_cross_cat "Cross-category marker"
         NUMERIC num_place_pts
         NUMERIC num_de_bonus
         NUMERIC num_podium_bonus
@@ -705,6 +704,7 @@ erDiagram
         TEXT txt_scraped_name
         NUMERIC num_confidence
         enum_match_status enum_status
+        TEXT txt_admin_note
     }
     tbl_audit_log {
         SERIAL id_log PK
@@ -757,10 +757,37 @@ Column names use `snake_case` after the prefix. The `id_` prefix is used for **b
 
 All enum columns use PostgreSQL `CREATE TYPE` enums for type safety:
 
-- **Tournament classification:** `enum_weapon_type` (EPEE, FOIL, SABRE), `enum_gender_type` (M, F), `enum_tournament_type` (PPW, MPW, PEW, MEW, MSW), `enum_age_category` (V0, V1, V2, V3, V4)
+- **Tournament classification:** `enum_weapon_type` (EPEE, FOIL, SABRE), `enum_gender_type` (M, F), `enum_tournament_type` (PPW, MPW, PEW, MEW, MSW, PSW), `enum_age_category` (V0, V1, V2, V3, V4)
 - **Lifecycle statuses:** `enum_event_status` (PLANNED, SCHEDULED, CHANGED, IN_PROGRESS, COMPLETED, CANCELLED), `enum_import_status` (PLANNED, PENDING, IMPORTED, SCORED, REJECTED), `enum_match_status` (PENDING, AUTO_MATCHED, APPROVED, NEW_FENCER, DISMISSED, UNMATCHED)
 
 > **Implementation:** See `supabase/migrations/` for the CREATE TYPE statements.
+
+#### 9.1.2 Event Code Convention
+
+Events use the pattern `<TYPE><N>-<LOCATION>-<YEAR>`:
+
+| Component | Description | Examples |
+|-----------|-------------|---------|
+| `<TYPE>` | Tournament type prefix (PPW, PEW, MEW, MSW) | `PPW1`, `MEW`, `PEW3` |
+| `<N>` | Round number (omitted for one-off championships) | `1`–`5` for PPW, `1`–`12` for PEW |
+| `<LOCATION>` | City name (uppercase, no diacritics) | `KRAKOW`, `THIONVILLE` |
+| `<YEAR>` | Calendar year of the event | `2025` |
+
+**Examples:** `PPW1-KRAKOW-2025`, `MEW-THIONVILLE-2025`, `PEW3-TAUBERBISCHOFSHEIM-2025`
+
+#### 9.1.3 Tournament Code Convention
+
+Tournaments use the pattern `<TYPE><N>-<AGE_CAT>-<GENDER>-<WEAPON>-<YEAR>`:
+
+| Component | Description | Examples |
+|-----------|-------------|---------|
+| `<TYPE><N>` | Same as event code | `PPW1`, `MPW`, `PEW3` |
+| `<AGE_CAT>` | Age category enum value | `V0`, `V1`, `V2`, `V3`, `V4` |
+| `<GENDER>` | Gender code | `M`, `F` |
+| `<WEAPON>` | Weapon type (uppercase) | `EPEE`, `FOIL`, `SABRE` |
+| `<YEAR>` | Calendar year | `2025` |
+
+**Examples:** `PPW1-V2-M-EPEE-2025`, `MPW-V1-F-SABRE-2025`, `MEW-V3-M-FOIL-2025`
 
 > **Note:** `enum_age_category` values correspond to age brackets relative to the **season end year** (`EXTRACT(YEAR FROM dt_end)`): **V0** (30–39), **V1** (40–49), **V2** (50–59), **V3** (60–69), **V4** (70+). A fencer enters a category if they turn the minimum age during the season's end year. The `enum_age_category` columns on `tbl_tournament` and `tbl_result` use this enum type.
 
@@ -808,7 +835,7 @@ erDiagram
         INT id_event FK "→ tbl_event"
         TEXT txt_code UK "Season-scoped, e.g. PPW1-V2-M-EPEE-2025"
         TEXT txt_name "e.g. I Puchar Polski Weteranów"
-        enum_tournament_type enum_type "PPW, MPW, PEW, MEW, MSW"
+        enum_tournament_type enum_type "PPW, MPW, PEW, MEW, MSW, PSW"
         NUMERIC num_multiplier "Denormalized from tbl_scoring_config; read-only cache"
         DATE dt_tournament "Specific competition day"
         INT int_participant_count "N for formula"
@@ -824,9 +851,10 @@ erDiagram
 
     tbl_result {
         SERIAL id_result PK
-        INT id_fencer FK "→ tbl_fencer"
+        INT id_fencer FK "→ tbl_fencer (NULLABLE — NULL before identity resolution)"
         INT id_tournament FK "→ tbl_tournament"
         INT int_place "NOT NULL"
+        TEXT txt_scraped_name "Original name from scraper"
         enum_age_category enum_fencer_age_category "Fencer's season category (V0-V4)"
         TEXT txt_cross_cat "k1 if tournament category ≠ fencer category"
         NUMERIC num_place_pts "Place points (log formula)"
@@ -880,7 +908,7 @@ A generic `AFTER UPDATE OR DELETE` trigger function is attached to `tbl_event`, 
 
 > **Global uniqueness assumption:** The `txt_code` columns on `tbl_event`, `tbl_tournament`, `tbl_organizer`, and `tbl_season` are enforced as **globally unique** (not just per-season). This simplifies lookups and URL routing — a code like `PPW1-V2-M-EPEE-2025` unambiguously identifies one tournament across the entire database. The year suffix in the code convention naturally prevents cross-season collisions.
 
-> **`num_multiplier` cache column:** The `tbl_tournament.num_multiplier` column is a **denormalized read-only cache** populated automatically by a `BEFORE INSERT` trigger (`fn_auto_populate_multiplier`) at tournament creation time (UC9). The trigger resolves the season via the event FK, looks up `tbl_scoring_config`, and applies a `CASE` on `enum_type` to set the appropriate multiplier (`num_ppw_multiplier`, `num_mpw_multiplier`, `num_pew_multiplier`, `num_mew_multiplier`, or `num_msw_multiplier`). The scoring engine does **not** use this column — it always reads the authoritative multiplier from `tbl_scoring_config` via a `CASE` on `enum_type` (see UC5(d) and §9.5.2).
+> **`num_multiplier` cache column:** The `tbl_tournament.num_multiplier` column is a **denormalized read-only cache** populated automatically by a `BEFORE INSERT` trigger (`fn_auto_populate_multiplier`) at tournament creation time (UC9). The trigger resolves the season via the event FK, looks up `tbl_scoring_config`, and applies a `CASE` on `enum_type` to set the appropriate multiplier (`num_ppw_multiplier`, `num_mpw_multiplier`, `num_pew_multiplier`, `num_mew_multiplier`, `num_msw_multiplier`, or `num_psw_multiplier`). The scoring engine does **not** use this column — it always reads the authoritative multiplier from `tbl_scoring_config` via a `CASE` on `enum_type` (see UC5(d) and §9.5.2).
 
 **Stored point columns in `tbl_result`:**
 
@@ -935,7 +963,7 @@ RLS is enabled on all 9 tables. Public (anon) tables get a `FOR SELECT USING (tr
 
 > **Implementation:** See `supabase/migrations/` for the RLS policy definitions.
 
-> **Design note:** During POC (Phase 1), a single admin account is sufficient. The Supabase Dashboard acts as the admin UI for season/config management. If multi-admin support is needed later, Supabase supports custom claims and role-based policies.
+> **Design note:** See [ADR-004](adr/004-single-admin-account.md) for the single-admin-account rationale and MVP migration path.
 
 ### 9.3 Season & Scoring Configuration
 
@@ -966,9 +994,11 @@ erDiagram
         INT int_pew_best_count "DEFAULT 3 — best J of PEW events"
         NUMERIC num_mew_multiplier "DEFAULT 2.0"
         BOOLEAN bool_mew_droppable "DEFAULT TRUE — drop MEW if worse than worst included PEW"
-        NUMERIC num_msw_multiplier "DEFAULT 2.0 — world championship multiplier (Phase 2+)"
-        INT int_min_participants_evf "DEFAULT 5 — minimum N for PEW/MEW/MSW import"
+        NUMERIC num_msw_multiplier "DEFAULT 2.0 — world championship multiplier"
+        NUMERIC num_psw_multiplier "DEFAULT 2.0 — FIE world cup multiplier"
+        INT int_min_participants_evf "DEFAULT 5 — minimum N for PEW/MEW/MSW/PSW import"
         INT int_min_participants_ppw "DEFAULT 1 — minimum N for PPW/MPW import"
+        JSONB json_ranking_rules "NULL=legacy K/J/droppable, non-NULL=JSONB bucket rules (§8.6.6)"
         JSONB json_extra "Overflow for future parameters"
         TIMESTAMPTZ ts_created
         TIMESTAMPTZ ts_updated
@@ -979,11 +1009,9 @@ erDiagram
 
 > **Auto-creation:** When a new `tbl_season` row is inserted, an `AFTER INSERT` trigger (`fn_auto_create_scoring_config`) automatically creates a corresponding `tbl_scoring_config` row with all default values. This ensures every season always has a scoring configuration, preventing orphan seasons without config.
 
-> **Design rationale — Hybrid Configuration (Table + JSON Export/Import):** The system uses a hybrid approach combining a database table with JSON export/import for local editing. The database table is the **single source of truth** because: (1) the config is per-season, so it naturally belongs alongside the season row; (2) the scoring engine function can join directly to it during calculation; (3) it's version-controlled via `ts_updated` timestamps; (4) admins can tweak parameters via the same Supabase dashboard used for other data; (5) RLS protects it in production. The `json_extra` JSONB column provides an escape hatch for ad-hoc parameters without schema migrations.
->
-> **Local editing** is enabled via `fn_export_scoring_config(id_season)` (returns config as JSON) and `fn_import_scoring_config(json)` (validates and upserts). During POC calibration, the developer exports → edits JSON in VS Code → imports → re-scores → compares against the reference Excel. This gives the speed and familiarity of editing a JSON file while the database remains the authority. See §8.6 for the full parameter inventory, SQL function definitions, Python calibration helpers, and the step-by-step calibration workflow. Use cases: UC18 (export), UC19 (import), UC20 (calibration comparison).
+> **Hybrid Configuration (Table + JSON Export/Import):** The database table is the single source of truth; local JSON editing enables rapid calibration. See §8.6.2 for rationale, §8.6.3–§8.6.5 for SQL functions and Python helpers. Use cases: UC18 (export), UC19 (import), UC20 (calibration comparison).
 
-> **Age-category assignment:** A fencer's category (V0–V4) is determined by the **season end year**: `age = EXTRACT(YEAR FROM tbl_season.dt_end) - int_birth_year`. A fencer enters a category if they turn the minimum age during the end year of the season. The boundaries are: **V0** 30–39, **V1** 40–49, **V2** 50–59, **V3** 60–69, **V4** 70+. For season SPWS-2024-2025 (`dt_end = 2025-07-15`), the end year is 2025. A fencer born 1975 turns 50 in 2025 → V2. Birth year alone is sufficient — no full birth date needed. The SQL helper `fn_age_category(birth_year, season_end_year)` computes this. Fencers with NULL birth year fall back to the tournament's `enum_age_category` in ranking functions.
+> **Age-category assignment:** Computed via `fn_age_category(birth_year, season_end_year)` — see §9.1.1 for bracket definitions. Example: season SPWS-2024-2025 (`dt_end = 2025-07-15`), fencer born 1975 turns 50 in 2025 → V2. Birth year alone is sufficient — no full birth date needed. Fencers with NULL birth year fall back to the tournament's `enum_age_category` in ranking functions.
 >
 > **EVF eligibility rules (from EVF Handbook):** To be eligible for EVF Veterans competitions, a fencer must hold the citizenship of the country they represent. If a fencer holds dual citizenship, they may fence for either country but must choose one per season. Additionally, a fencer must have resided in the country they represent for at least 12 months prior to the competition, unless granted an exemption by the EVF Executive Committee. National federations are responsible for verifying passport and residency documentation.
 
@@ -997,21 +1025,19 @@ The views now **read pre-computed point values** from `tbl_result` rather than d
 - One row per fencer per tournament — the primary data source for the UI drill-down
 - `id_season` enables client-side or server-side filtering by season
 
-**`vw_ranking_ppw`** — PPW Ranking (§8.3.1):
-- **Parameterized by:** `enum_weapon` (epee/foil/sabre), `enum_gender` (M/F), `enum_age_category` (V0–V4)
-- **Category filtering by fencer, not tournament:** Uses `fn_age_category(birth_year, season_end_year)` to compute each fencer's home category from their birth year and the season's end year. Fencers with NULL birth year fall back to the tournament's `enum_age_category`. This enables cross-category point carryover: a V3 fencer's results from V2 tournaments count in V3 ranking.
-- Filters to domestic tournaments (PPW, MPW) for the active season via `tbl_event.id_season`
-- Selects best $K$ PPW scores per fencer (where $K$ = `int_ppw_best_count` from `tbl_scoring_config`)
-- Applies the conditional MPW inclusion rule: include MPW if it beats the worst selected PPW, otherwise replace with next-best PPW
-- Orders by total descending
+**`fn_ranking_ppw`** — PPW Ranking (§8.3.1):
+- **Parameters:** `p_weapon`, `p_gender`, `p_category`, `p_season` (defaults to active season)
+- **Category filtering by fencer, not tournament:** Uses `fn_age_category(birth_year, season_end_year)` for cross-category carryover (see §8.5 item 2). NULL birth year falls back to tournament category.
+- **Returns:** `(rank, id_fencer, fencer_name, ppw_score, mpw_score, total_score)`
+- **Legacy path** (`json_ranking_rules` IS NULL): Best $K$ PPW + conditional MPW drop (§8.3.1)
+- **JSONB path** (`json_ranking_rules` non-NULL): Bucket-based selection from `json_ranking_rules->'domestic'` (§8.6.6)
 
-**`vw_ranking_kadra`** — Kadra Ranking (§8.3.2):
-- **Parameterized by:** `enum_weapon`, `enum_gender`, `enum_age_category` (same 3 filters)
-- **Excludes V0:** V0 (30–39) is a domestic SPWS category with no EVF international equivalent — V0 fencers have PPW rankings only, no Kadra ranking (see Phase 2 scope)
-- Starts from `vw_ranking_ppw` totals
-- Adds best $J$ PEW `num_final_score` values (where $J$ = `int_pew_best_count`)
-- Applies the conditional MEW inclusion rule (same logic as MPW)
-- **MSW (Phase 3):** MSW tournament scores are calculated and stored (§8.2), but MSW-specific Kadra aggregation rules are deferred to Phase 3. Until then, MSW results appear in `vw_score` but are not included in the Kadra total.
+**`fn_ranking_kadra`** — Kadra Ranking (§8.3.2):
+- **Parameters:** same as `fn_ranking_ppw`
+- **Excludes V0:** V0 is a domestic SPWS category with no EVF international equivalent — returns empty for V0.
+- **Returns:** `(rank, id_fencer, fencer_name, ppw_total, pew_total, total_score)`
+- **Legacy path** (`json_ranking_rules` IS NULL): Calls `fn_ranking_ppw` for domestic totals + best $J$ PEW + conditional MEW drop
+- **JSONB path** (`json_ranking_rules` non-NULL): Fully self-contained — processes `json_ranking_rules->'international'` buckets without calling `fn_ranking_ppw`. Domestic-type buckets (PPW/MPW) → `ppw_total`; international-type buckets (PEW/MEW/MSW/PSW) → `pew_total`
 - Orders by grand total descending
 
 > **Implementation note — view parameterization:** Since PostgreSQL views cannot accept parameters, the ranking views will be implemented as **security-definer functions** (e.g., `fn_ranking_ppw(p_weapon, p_gender, p_category)`) that return table types. These are exposed via PostgREST as RPC endpoints and called by the Web Component with the user's filter selections. The `vw_score` view remains a standard view (no parameters needed — the UI filters client-side for drill-down).
@@ -1021,7 +1047,7 @@ The views now **read pre-computed point values** from `tbl_result` rather than d
 2. **PPW/Kadra toggle:** Two-way radio switch controlling ranking mode. PPW (default) shows domestic rankings only; Kadra shows combined domestic + international. V0 category disables Kadra (grayed out — no EVF equivalent).
 3. **Weapon:** Epee, Foil, Sabre
 4. **Gender:** Male, Female
-5. **Age Category:** V0 (30–39), V1 (40–49), V2 (50–59), V3 (60–69), V4 (70+)
+5. **Age Category:** V0–V4 (see §9.1.1 for brackets)
 
 Changing any filter or the toggle triggers a new RPC call to refresh the ranking table.
 
@@ -1160,19 +1186,14 @@ Kadra mode:
 
 ### 9.5 Scoring Workflow — Calculate Once, Store Forever
 
-Points are computed **once** at import time and persisted in `tbl_result`. This is a deliberate design choice:
+Points are computed **once** at import time by `fn_calc_tournament_scores` and persisted in `tbl_result` (`num_place_pts`, `num_de_bonus`, `num_podium_bonus`, `num_final_score`). The import pipeline has two explicit steps:
 
-1. **Historical integrity** — The multiplier, MP value, or even the formula itself may change between seasons. Once a competition's points are calculated and recorded, they represent the **official score under the rules in effect at that moment**. Recalculating later with changed parameters would silently rewrite history.
+- **Step 1 — Import raw results:** Scrape/upload place data into `tbl_result` (point columns remain NULL).
+- **Step 2 — Run scoring engine:** `fn_calc_tournament_scores` reads formula inputs, computes all four point columns, and sets `ts_points_calc = NOW()`.
 
-2. **Audit trail** — `ts_points_calc` records exactly when the scoring happened. An admin or auditor can see that a tournament's points were awarded on a specific date, using the formula and parameters valid at that time.
+> **Rule:** `num_final_score IS NULL` means the result has been imported but not yet scored. The ranking views exclude such rows (`WHERE num_final_score IS NOT NULL`).
 
-3. **Decoupled import pipeline** — The import process has two explicit steps:
-   - **Step 1 — Import raw results:** Scrape/upload place data into `tbl_result` (point columns remain NULL).
-   - **Step 2 — Run scoring engine:** A dedicated function (`fn_calc_tournament_scores`) reads the formula inputs from `tbl_tournament`, `tbl_event`, `tbl_season`, and `tbl_scoring_config`, computes all four point columns, and sets `ts_points_calc = NOW()`.
-
-4. **Explicit recalculation** — If an admin corrects `int_participant_count` or `int_place` after the fact, they must **explicitly** trigger a recalculation for the affected tournament. This is intentional — accidental recalcs are prevented. The `ts_points_calc` timestamp updates to reflect the new calculation date.
-
-> **Rule:** `num_final_score IS NULL` means the result has been imported but not yet scored. The ranking views should exclude such rows (WHERE `num_final_score IS NOT NULL`), or the UI should flag them as "pending scoring".
+> For the full rationale (historical integrity, audit trail, explicit recalculation), see [ADR-002](adr/002-calculate-once-store-forever.md).
 
 ### 9.5.1 Ingestion Pipeline Error Handling (GitHub Actions)
 
@@ -1202,14 +1223,9 @@ The GitHub Actions pipeline must be robust against transient and permanent failu
 
 ### 9.6 Design Rationale — Identity by FK, not by Name
 
-The Excel workbook uses **name-based lookups** (XLOOKUP on fencer name strings) to cross-reference a fencer's result across tournament sheets. This is fragile — a typo or name variation breaks the link silently.
+The database replaces the legacy Excel XLOOKUP (name-string matching) with an **`id_fencer` foreign key** in `tbl_result` pointing to `tbl_fencer`. A fuzzy matching pipeline (RapidFuzz) resolves scraped names to fencer IDs at import time.
 
-The database replaces this with an **`id_fencer` foreign key** in `tbl_result` pointing to `tbl_fencer`. This means:
-- A fencer is identified by a stable numeric ID, not by string matching
-- The Master Fencer Table (`tbl_fencer`) is the single source of truth for identity
-- When the admin adds a new fencer or corrects a name, the `id_fencer` link in `tbl_result` remains valid
-- The ranking views join on `id_fencer` (an integer key join) — fast, unambiguous, and immune to name spelling variations
-- Re-importing tournament data after a Master Table update simply means re-running the identity matcher to assign `id_fencer` to any previously unmatched rows
+> For the full rationale, alternatives considered, and consequences, see [ADR-003](adr/003-identity-by-fk-not-name.md).
 
 ### 9.7 Event & Tournament Lifecycle
 
@@ -1261,36 +1277,9 @@ PLANNED → PENDING → IMPORTED → SCORED → REJECTED
 
 > **Transitions:** A tournament's `enum_import_status` can move backwards (e.g., SCORED → IMPORTED) when an admin triggers a re-score after correcting data. The `ts_points_calc` timestamp always reflects the most recent scoring run. An event's `CHANGED` status is a transient flag — once the admin records the new date/location, the event returns to `SCHEDULED`. This status may be removed in a future iteration if a simpler audit-based approach suffices.
 
-### 9.8 SuperFive Pool Results (Phase 3 — Placeholder)
+### 9.8 SuperFive Pool Results
 
-SuperFive is a separate ranking based on **pool-round performance** (not DE/placement results). It relates only to PPW pool rounds (Pool 1 and Pool 2). A dedicated table will store pool-level metrics:
-
-```mermaid
-erDiagram
-    tbl_pool_result {
-        SERIAL id_pool_result PK
-        INT id_fencer FK "→ tbl_fencer"
-        INT id_tournament FK "→ tbl_tournament (PPW only)"
-        INT int_pool_number "1 or 2"
-        INT int_victories "Wins in the pool"
-        INT int_matches "Total bouts in the pool"
-        INT int_touches_scored "TS"
-        INT int_touches_received "TR"
-        INT int_indicator "TS − TR"
-        NUMERIC num_vm_ratio "V/M — victories ÷ matches"
-        TIMESTAMPTZ ts_created
-    }
-
-    tbl_fencer ||--o{ tbl_pool_result : "has pool results"
-    tbl_tournament ||--o{ tbl_pool_result : "contains pool results"
-```
-
-**`vw_ranking_superfive`** — SuperFive Ranking (Phase 3):
-- Filters to PPW tournaments only
-- Aggregates pool metrics across the season
-- Ranking criteria and aggregation rules to be defined during Phase 3 implementation
-
-> **Note:** SuperFive scraping requires different parsing logic than DE/placement results. Separate scraper modules will be developed in Phase 3.
+> Phase 3 placeholder — see **Appendix B** for the proposed `tbl_pool_result` schema and `vw_ranking_superfive` view.
 
 ### 9.9 Database Migration & Seed Data Strategy
 
@@ -1355,36 +1344,7 @@ The script reads the Excel workbook, fuzzy-matches scraped names against `tbl_fe
 
 > **Rollback policy:** Each migration file must be paired with a reverse migration comment block documenting the rollback SQL. For POC, `supabase db reset` is the primary rollback mechanism.
 
-## 10. Code & Naming Conventions
-
-### 10.1 Event Code Convention
-
-Events use the pattern `<TYPE><N>-<LOCATION>-<YEAR>`:
-
-| Component | Description | Examples |
-|-----------|-------------|---------|
-| `<TYPE>` | Tournament type prefix (PPW, PEW, MEW, MSW) | `PPW1`, `MEW`, `PEW3` |
-| `<N>` | Round number (omitted for one-off championships) | `1`–`5` for PPW, `1`–`12` for PEW |
-| `<LOCATION>` | City name (uppercase, no diacritics) | `KRAKOW`, `THIONVILLE` |
-| `<YEAR>` | Calendar year of the event | `2025` |
-
-**Examples:** `PPW1-KRAKOW-2025`, `MEW-THIONVILLE-2025`, `PEW3-TAUBERBISCHOFSHEIM-2025`
-
-### 10.2 Tournament Code Convention
-
-Tournaments use the pattern `<TYPE><N>-<AGE_CAT>-<GENDER>-<WEAPON>-<YEAR>`:
-
-| Component | Description | Examples |
-|-----------|-------------|---------|
-| `<TYPE><N>` | Same as event code | `PPW1`, `MPW`, `PEW3` |
-| `<AGE_CAT>` | Age category enum value | `V0`, `V1`, `V2`, `V3`, `V4` |
-| `<GENDER>` | Gender code | `M`, `F` |
-| `<WEAPON>` | Weapon type (uppercase) | `EPEE`, `FOIL`, `SABRE` |
-| `<YEAR>` | Calendar year | `2025` |
-
-**Examples:** `PPW1-V2-M-EPEE-2025`, `MPW-V1-F-SABRE-2025`, `MEW-V3-M-FOIL-2025`
-
-## 11. Non-Functional Requirements
+## 10. Non-Functional Requirements
 
 | Category | Requirement | Target |
 |----------|-------------|--------|
@@ -1401,6 +1361,53 @@ Tournaments use the pattern `<TYPE><N>-<AGE_CAT>-<GENDER>-<WEAPON>-<YEAR>`:
 | **Maintainability** | Migration strategy | All schema changes via Supabase CLI migrations, version-controlled |
 | **Data integrity** | Backup | Supabase daily automated backups (free tier: 7-day retention) |
 
+## 11. Internationalisation
+
+### 11.1 Overview
+
+The Web Component UI supports two display languages: **English (EN)** — the default — and **Polish (PL)**. A visible `[EN][PL]` pill toggle is rendered in every modal header and in the main application header. The language selection is global and reactive: switching locale immediately re-renders all visible strings without a page reload.
+
+Export files (ODS spreadsheets) always use English column headers regardless of the active UI locale. They are data-format labels consumed by external tools, not UI text.
+
+### 11.2 Architecture
+
+| Layer | Technology | Rationale |
+|-------|-----------|-----------|
+| Locale store | Svelte 5 module-level `$state` in `locale.svelte.ts` | Zero extra dependencies; reactive by default in Svelte 5 template expressions |
+| Translation source | Two flat JSON files (`en.json`, `pl.json`) | Plain-text files are hand-editable by a non-developer terminology owner |
+| Translation function | `t(key, vars?)` | Signature intentionally mirrors i18next — call sites are portable if the store is replaced |
+| Toggle component | `LangToggle.svelte` (reusable) | Placed once in the app header and once in every modal header |
+| Date localisation | `toLocaleString(locale, { month: 'short' })` | Month abbreviations switch automatically (e.g., "Sep" → "wrz") |
+
+> For key decisions, tradeoffs, and migration path rationale, see [ADR-005](adr/005-svelte-state-i18n.md).
+
+### 11.3 Locale Key Inventory (46 keys)
+
+Keys are grouped by the component that uses them. All keys exist in both `en.json` and `pl.json`.
+
+| Group | Keys |
+|-------|------|
+| FilterBar | `weapon`, `gender`, `category`, `ranking`, `epee`, `foil`, `sabre`, `men`, `women`, `kadra_title`, `kadra_disabled_title` |
+| App | `season_active`, `export_to_ods` |
+| RanklistTable | `col_fencer`, `col_best4_ppw`, `col_mpw`, `col_ppw_total`, `col_pew_total`, `col_total`, `no_results` |
+| DrilldownModal subheader | `rank`, `born`, `age`, `ppw_total_label`, `kadra_total_label`, `pts` |
+| DrilldownModal body | `loading`, `no_tournament_results`, `points_breakdown`, `domestic_ppw_mpw`, `international_evf` |
+| DrilldownModal breakdown | `domestic_summary`, `international_summary` *(interpolated: `{J}`)*, `international_summary_legacy`, `grand_total` |
+| DrilldownModal tables | `domestic_tournaments`, `international_tournaments_evf`, `col_tournament`, `col_date`, `col_type`, `col_place`, `col_mult`, `col_points` |
+| Legends | `legend_ppw`, `legend_mpw`, `legend_pew`, `legend_mew`, `legend_msw` |
+| Footer | `footer_n`, `footer_mult` |
+
+### 11.4 Future Migration Path
+
+If the project outgrows the current approach, the migration path is:
+
+1. Install `i18next` + `i18next-resources-to-backend` (or equivalent).
+2. Replace `locale.svelte.ts` with a thin adapter that wraps `i18next.t`.
+3. The existing `en.json` / `pl.json` files are already valid i18next resource files.
+4. All `t(key, vars?)` call sites require no changes.
+
+---
+
 ## Appendix A — Glossary
 
 | Abbreviation | Full Name | Description |
@@ -1415,9 +1422,120 @@ Tournaments use the pattern `<TYPE><N>-<AGE_CAT>-<GENDER>-<WEAPON>-<YEAR>`:
 | **MEW** | Mistrzostwa Europy Weteranów | European Veterans Championship — held in odd-numbered years |
 | **MSW** | Mistrzostwa Świata Weteranów | World Veterans Championship — held yearly in Oct/Nov (Phase 2+) |
 | **DE** | Direct Elimination | The knockout bracket phase of a fencing tournament |
-| **V0–V4** | Veteran age categories | V0 (30–39), V1 (40–49), V2 (50–59), V3 (60–69), V4 (70+) |
+| **V0–V4** | Veteran age categories | V0 (30–39), V1 (40–49), V2 (50–59), V3 (60–69), V4 (70+) — see §9.1.1 |
 | **Kadra** | National Team Selection Ranking | Combined domestic + international ranking used for team nomination |
 | **POC** | Proof of Concept | Phase 1 deliverable — Male Epee V2 only |
 | **MVP** | Minimum Viable Product | Phase 2 deliverable — all 30 sub-rankings |
 | **RLS** | Row-Level Security | PostgreSQL/Supabase access control mechanism |
 | **PostgREST** | — | Auto-generated REST API from PostgreSQL schema (built into Supabase) |
+
+## Appendix B — SuperFive Pool Results (Phase 3)
+
+SuperFive is a separate ranking based on **pool-round performance** (not DE/placement results). It relates only to PPW pool rounds (Pool 1 and Pool 2). A dedicated table will store pool-level metrics:
+
+```mermaid
+erDiagram
+    tbl_pool_result {
+        SERIAL id_pool_result PK
+        INT id_fencer FK "→ tbl_fencer"
+        INT id_tournament FK "→ tbl_tournament (PPW only)"
+        INT int_pool_number "1 or 2"
+        INT int_victories "Wins in the pool"
+        INT int_matches "Total bouts in the pool"
+        INT int_touches_scored "TS"
+        INT int_touches_received "TR"
+        INT int_indicator "TS − TR"
+        NUMERIC num_vm_ratio "V/M — victories ÷ matches"
+        TIMESTAMPTZ ts_created
+    }
+
+    tbl_fencer ||--o{ tbl_pool_result : "has pool results"
+    tbl_tournament ||--o{ tbl_pool_result : "contains pool results"
+```
+
+**`vw_ranking_superfive`** — SuperFive Ranking (Phase 3):
+- Filters to PPW tournaments only
+- Aggregates pool metrics across the season
+- Ranking criteria and aggregation rules to be defined during Phase 3 implementation
+
+> **Note:** SuperFive scraping requires different parsing logic than DE/placement results. Separate scraper modules will be developed in Phase 3.
+
+## Appendix C — Requirements Traceability Matrix
+
+Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the POC development plan test numbering; test files are in `supabase/tests/`, `python/tests/`, and `frontend/tests/`.
+
+### Functional Requirements
+
+| ID | Requirement | Source | Tests | Status |
+|----|-------------|--------|-------|--------|
+| FR-01 | Scrape results from FTL (JSON + CSV), Engarde (HTML), 4Fence (HTML) | UC1(a) | 3.1a–g, 3.2a–f, 3.3a–e | Covered |
+| FR-02 | Import results via CSV upload | UC2(a,b) | 3.7 | Covered |
+| FR-03 | Auto-detect scraper platform from URL | UC1(a) | 3.1–3.3 URL dispatcher tests | Covered |
+| FR-04 | Fuzzy match scraped names to master fencer list | UC3(a–f) | 4.1–4.5 | Covered |
+| FR-05 | Alias matching (json_name_aliases) | UC3(a,b) | 4.2 (alias tests) | Covered |
+| FR-06 | Duplicate name disambiguation via age category | §8.5(5) | 4.25–4.37 | Covered |
+| FR-07 | Admin approve / dismiss / create-new-fencer for match candidates | UC4(b,c) | 4.6–4.8 | Covered |
+| FR-08 | Domestic intake: auto-create fencer for UNMATCHED PPW/MPW | §8.5 | 4.10–4.14b | Covered |
+| FR-09 | International intake: skip UNMATCHED PEW/MEW fencers | §8.5 | 4.15–4.18 | Covered |
+| FR-10 | Birth year estimation (youngest boundary per category) | §8.5 | 4.19–4.21 | Partial — V1, V3 not tested |
+| FR-11 | Score computation: place points (log formula) | §8.1.1 | 2.1–2.3, 2.2a–b | Covered |
+| FR-12 | Score computation: DE round bonus | §8.1.2 | 2.4–2.5 | Covered |
+| FR-13 | Score computation: podium bonus | §8.1.3 | 2.6a–d | Covered |
+| FR-14 | Tournament multipliers (PPW, MPW, PEW, MEW, MSW, PSW) | §8.2 | 2.7, 2.19 | Partial — no MSW scoring test |
+| FR-15 | PPW ranking: best-K domestic + always-include MPW | §8.3.1 | 5.4–5.7, 5.20–5.21, 5.23 | Covered |
+| FR-16 | Kadra ranking: domestic + best-J international pool | §8.3.2 | 5.17, 5.19, 5.22 | Covered |
+| FR-17 | V0 guard: no Kadra ranking for V0 | §8.3.2 | 5.18 | Covered |
+| FR-18 | Cross-category carryover (fencer ranked by birth-year category) | §8.5(2) | 5.14–5.15 | Covered |
+| FR-19 | JSONB bucket-based ranking rules | §8.6.6 | 5.4–5.7, 5.20–5.22 | Covered |
+| FR-20 | Legacy code path (NULL json_ranking_rules) | §8.6.6 | 5.23 | Covered |
+| FR-21 | Season lifecycle: create season, auto-create scoring config | UC7(a,b) | 1.13–1.14b | Covered |
+| FR-22 | Single active season constraint | UC7(c) | 1.15 | Covered |
+| FR-23 | Event lifecycle state machine | UC10(a,b) | 1.20–1.24 | Partial — CHANGED state untested |
+| FR-24 | Audit logging for status changes | UC10(c) | 1.22a–b | Covered |
+| FR-25 | Tournament multiplier auto-population (trigger) | UC9(c) | 1.19, 1.19c | Covered |
+| FR-26 | Scoring config export/import (JSON) | UC18, UC19 | 2.12–2.18 | Covered |
+| FR-27 | Calibration comparison against reference Excel | UC20 | 2.19–2.23 (pytest) | Covered |
+| FR-28 | Minimum participant threshold (configurable per type) | §8.5(1) | 3.10–3.11 | Covered |
+| FR-29 | Idempotent re-import (skip existing results) | §9.5.1 | 3.9 | Covered |
+| FR-30 | Retry on transient network failure | §9.5.1 | 3.12 | Covered |
+| FR-31 | Partial scrape detection (abort on incomplete data) | §9.5.1 | 3.13, 3.13b | Covered |
+| FR-32 | Discord alerting on pipeline failure | UC1(d) | 3.6 | Covered |
+| FR-33 | Web Component: weapon/gender/category filters | UC12(b) | FilterBar.test.ts (5 tests) | Covered |
+| FR-34 | Web Component: PPW/Kadra toggle with V0 guard | UC12(b) | FilterBar.test.ts, DrilldownModal.test.ts | Covered |
+| FR-35 | Web Component: ranking table with mode-specific columns | UC12(c) | RanklistTable.test.ts (5 tests) | Covered |
+| FR-36 | Web Component: fencer drilldown modal with score breakdown | UC13(a,b) | DrilldownModal.test.ts (24 tests) | Covered |
+| FR-37 | ODS export (ranking + drilldown) | UC12, UC13 | export.test.ts (5 tests) | Covered |
+| FR-38 | API client: fetch seasons, rankings, fencer scores | UC12(a) | api.test.ts (6 tests) | Covered |
+| FR-39 | EN/PL internationalisation with reactive toggle | §11 | DrilldownModal.test.ts (test K) | Covered |
+| FR-40 | Import status transitions (PLANNED → IMPORTED → SCORED) | UC1(b), UC5(c) | 2.9 (SCORED only) | Gap — IMPORTED transition untested |
+
+### Non-Functional Requirements
+
+| ID | Requirement | Source | Tests | Status |
+|----|-------------|--------|-------|--------|
+| NFR-01 | API response < 500 ms; scoring engine < 2 s per tournament | §10 | — | Not tested |
+| NFR-02 | 99.9% availability via Supabase managed hosting | §10 | — | Infrastructure (not testable) |
+| NFR-03 | Storage < 100 MB for 5 seasons | §10 | — | Not tested |
+| NFR-04 | 50 concurrent users | §10 | — | Not tested |
+| NFR-05 | RLS: anon read-only on public tables | §9.2.1 | 1.10a–b, 1.25 | Covered |
+| NFR-06 | RLS: authenticated full CRUD | §9.2.1 | 1.11 | Covered |
+| NFR-07 | RLS: audit log not publicly readable | §9.2.1 | 1.26 | Covered |
+| NFR-08 | Browser compatibility (Chrome, Firefox, Safari, Edge) | §10 | — | Not tested |
+| NFR-09 | Mobile responsive ≥ 375 px | §10 | — | Not tested (plan test 6.9) |
+| NFR-10 | Pipeline observability (structured logs + Discord) | §10 | 3.6 (Discord only) | Partial |
+| NFR-11 | Database migration strategy (numbered SQL files) | §9.9 | 1.1a–1.2i (schema verification) | Covered |
+| NFR-12 | Data integrity (Supabase daily backups) | §10 | — | Infrastructure (not testable) |
+| NFR-13 | Shadow DOM isolation (host CSS does not leak) | §5, §6 | — | Gap — deferred to MVP (ADR-007) |
+
+### Architecture Decisions
+
+| ADR | Title | Source Section |
+|-----|-------|---------------|
+| [ADR-001](adr/001-hybrid-scoring-config.md) | Hybrid Scoring Configuration | §8.6.2 |
+| [ADR-002](adr/002-calculate-once-store-forever.md) | Calculate Once, Store Forever | §9.5 |
+| [ADR-003](adr/003-identity-by-fk-not-name.md) | Identity by FK, not by Name | §9.6 |
+| [ADR-004](adr/004-single-admin-account.md) | Single Admin Account for POC | §9.2.1 |
+| [ADR-005](adr/005-svelte-state-i18n.md) | Svelte 5 $state for i18n | §11.2 |
+| [ADR-006](adr/006-jsonb-ranking-rules.md) | JSONB Bucket-Based Ranking Rules | §8.6.6 |
+| [ADR-007](adr/007-shadow-dom-deferred.md) | Shadow DOM Deferred to MVP | §6 Phase 2 |
+| [ADR-008](adr/008-psw-msw-international-pool.md) | PSW and MSW in International Pool | §8.2 |

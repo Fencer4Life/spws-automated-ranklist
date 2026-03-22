@@ -3,20 +3,20 @@
     <thead>
       <tr>
         <th class="col-rank">#</th>
-        <th class="col-fencer">Fencer</th>
+        <th class="col-fencer">{t('col_fencer')}</th>
         {#if mode === 'PPW'}
-          <th class="col-score">Best-4 PPW</th>
-          <th class="col-score">MPW</th>
+          <th class="col-score">{t('col_best4_ppw')}</th>
+          <th class="col-score">{t('col_mpw')}</th>
         {:else}
-          <th class="col-score">PPW Total</th>
-          <th class="col-score">PEW Total</th>
+          <th class="col-score">{t('col_ppw_total')}</th>
+          <th class="col-score">{t('col_pew_total')}</th>
         {/if}
-        <th class="col-score col-total">Total</th>
+        <th class="col-score col-total">{t('col_total')}</th>
       </tr>
     </thead>
     <tbody>
       {#if ppwRows.length === 0 && kadraRows.length === 0}
-        <tr><td colspan={5} class="empty-state">No results found</td></tr>
+        <tr><td colspan={5} class="empty-state">{t('no_results')}</td></tr>
       {:else if mode === 'PPW'}
         {#each ppwRows as row}
           <tr class="data-row" onclick={() => onrowclick?.(row.id_fencer, row.fencer_name)}>
@@ -44,6 +44,7 @@
 
 <script lang="ts">
   import type { RankingPpwRow, RankingKadraRow, RankingMode } from '../lib/types'
+  import { t } from '../lib/locale.svelte'
 
   let {
     mode = 'PPW' as RankingMode,

@@ -70,6 +70,15 @@ Every milestone follows the **Red-Green-Refactor** cycle:
 
 Tests are the living specification. If a test doesn't exist for a requirement, the requirement isn't verified.
 
+### 1.7 Cross-References
+
+This plan is the implementation companion to the [Project Specification](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). The following specification artifacts provide traceability and decision context:
+
+- **Requirements Traceability Matrix (Appendix C)** — maps 40 Functional Requirements (FR-01–FR-40) and 13 Non-Functional Requirements (NFR-01–NFR-13) to their verifying tests. Test IDs in the RTM (e.g., `3.1a–g`, `5.4–5.7`) reference the numbered tests in this plan's milestone tables.
+- **Architecture Decision Records ([`doc/adr/`](adr/))** — 8 ADRs documenting key design decisions with rationale and tradeoffs. Referenced in milestone implementation notes below where relevant.
+
+The "Derives From" column in each milestone's test table maps tests → spec sections (§ references and UC IDs). The RTM provides the reverse mapping: spec requirements → tests.
+
 ---
 
 ## 2. POC End State
@@ -114,13 +123,13 @@ graph LR
 - **Cloud backend** on Supabase free tier: full schema, scoring engine, ranking views, RLS policies.
 - **Automated pipeline** via GitHub Actions: scheduled scraping, identity resolution, scoring, Discord alerts on failure.
 - **Local Web Component** in a Shadow Wrapper HTML page mimicking WordPress CSS, fetching live data from the Supabase PostgREST API.
+- **Kadra ranking** view: `fn_ranking_kadra` combining domestic + international scores, with PPW/Kadra toggle in the Web Component and mode-aware drill-down. V0 guard prevents Kadra for youngest category.
 - **Calibration tooling**: Python CLI scripts for config export/import and Excel comparison.
 
 ### 2.3 What the POC Does NOT Include
 
 - WordPress deployment (Phase 2).
 - Categories beyond Male Epee V2 (Phase 2).
-- Kadra ranking view (Phase 2).
 - Historical season snapshots (Phase 2).
 - Result corrections & reprocessing workflow (Phase 2 — UC6, UC14–UC17).
 - SuperFive / pool-level data (Phase 3).
@@ -253,6 +262,7 @@ graph LR
 - **Bugs fixed during GREEN:**
   1. Audit trigger originally used `CASE TG_TABLE_NAME WHEN ... THEN OLD.id_event ...` — PostgreSQL evaluates all CASE branches regardless of match, causing `record "old" has no field "id_event"` errors on non-event tables. Fixed by passing PK column name as `TG_ARGV[0]` and extracting via `to_jsonb(OLD)->>v_pk_col`.
   2. RLS test for `authenticated` role required setting JWT claims via `set_config('request.jwt.claim.role', 'authenticated', TRUE)` in addition to `SET LOCAL ROLE authenticated`, because Supabase's `auth.role()` reads from JWT claims, not the PG role.
+- **Design decision:** Single admin account with three RLS roles — see [ADR-004](adr/004-single-admin-account.md).
 - **Event transition state machine:**
   ```
   PLANNED → SCHEDULED → IN_PROGRESS → COMPLETED
@@ -323,6 +333,7 @@ graph LR
   1. PostgreSQL's `ROUND(double precision, integer)` does not exist — `LN()`, `POWER()`, `CEIL()`, `FLOOR()` all return `double precision`, but `ROUND` with a precision argument only accepts `NUMERIC`. Fixed by adding explicit `::NUMERIC` casts on all expressions passed to `ROUND(..., 2)`.
   2. Test 2.7 (MPW multiplier comparison) originally compared `MPW_final = ROUND(PPW_final * 1.2, 2)`, which fails due to double-rounding: `ROUND(ROUND(sum, 2) * 1.2, 2) ≠ ROUND(sum * 1.2, 2)` when the intermediate rounding shifts the value. Fixed by verifying that PPW and MPW share identical component values (place_pts, de_bonus, podium_bonus) and that the final_score ratio is within 0.01 of 1.2.
 - **Formula revision (post-M2):** The original M2 implementation used `3×N^(1/3)` as the per-DE-round bonus multiplier. After comparing against the SPWS reference Excel (`Bonus za rundę = 10`, a fixed scoring parameter), this was changed to a flat **10 pts per DE round** via migration `20250304000001_fix_de_bonus_formula.sql`. The podium bonus formula (`gold/silver/bronze × 3×N^(1/3)`) was not changed — it matches the Excel's dynamic formula. Tests 2.4 and 2.5 were updated accordingly (expected values changed from `~30` to `40` and `~43` to `50`). All existing tournament scores were recomputed.
+- **Design decisions:** Hybrid scoring config (DB table + JSON export/import) — see [ADR-001](adr/001-hybrid-scoring-config.md). Calculate-once-store-forever (immutable scores) — see [ADR-002](adr/002-calculate-once-store-forever.md).
 
 ---
 
@@ -485,6 +496,7 @@ graph LR
 - `vw_score` excludes `id_fencer IS NULL` rows (unlinked results from PEW/MEW unmatched or pre-matching).
 - `fn_ranking_ppw` uses CTEs for best-K PPW selection + conditional MPW drop logic.
 - Test 5.12 verifies that unlinked results (NULL `id_fencer`) are excluded from ranking output — aligned with intake rules where PPW/MPW auto-create fencers (so no NULL `id_fencer` for domestic) and PEW/MEW skip unmatched (so skipped results never reach the view).
+- **Design decisions:** Identity by FK, not by name — see [ADR-003](adr/003-identity-by-fk-not-name.md). JSONB bucket-based ranking rules — see [ADR-006](adr/006-jsonb-ranking-rules.md).
 
 ---
 
@@ -608,6 +620,8 @@ PPW drill-down (toggle = PPW): same layout, no International section, summary sh
 **Shadow DOM tradeoff (test 6.7):**
 The spec originally called for a Svelte custom element with Shadow DOM for CSS isolation when embedded in WordPress. During implementation, this was deferred because Svelte 5's `customElement: true` compiler option is incompatible with `@testing-library/svelte` (which uses the Svelte 4 `new Component()` API via `compatibility.componentApi: 4`). Enabling `customElement: true` globally breaks all unit tests. The POC uses direct `mount()` instead, trading Shadow DOM isolation for a full unit test suite (33 vitest tests). **Shadow DOM isolation is a hard requirement for MVP (Phase 2)** — the component must ship as a proper `<spws-ranklist>` custom element with encapsulated styles before WordPress deployment. See §6.2 of the Project Specification.
 
+**Design decisions:** Shadow DOM deferred to MVP — see [ADR-007](adr/007-shadow-dom-deferred.md). Svelte 5 `$state` for i18n — see [ADR-005](adr/005-svelte-state-i18n.md). PSW/MSW in international ranking pool — see [ADR-008](adr/008-psw-msw-international-pool.md).
+
 **Verification:**
 - Vitest unit tests pass for component logic (33 tests across 6 test files).
 - Manual test: open `index.html` in browser with `demo` attribute, verify ranklist loads with mock data, drilldown modal shows score breakdown with markers and summary rows.
@@ -724,3 +738,38 @@ The POC is considered complete when ALL of the following are true:
 - [ ] Web Component renders ranking table with working filters and drill-down in the local Shadow Wrapper.
 - [ ] GitHub Actions pipeline runs on schedule, scrapes → matches → scores, and sends Discord alert on failure.
 - [ ] All 15 Phase 1 use cases (UC1–5, UC7–13, UC18–20) have at least one passing acceptance test.
+- [ ] Requirements Traceability Matrix (Appendix C) reviewed — all "Gap" and "Partial" items tracked below.
+
+---
+
+## 7. Known Test Gaps
+
+The following requirements from the [RTM (Appendix C)](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#appendix-c--requirements-traceability-matrix) have incomplete or missing test coverage. Items marked M7 are planned for Milestone 7; MVP items are deferred to Phase 2.
+
+### Gaps (no test)
+
+| RTM ID | Requirement | Target |
+|--------|-------------|--------|
+| FR-40 | Import status transition to IMPORTED (plan tests 3.5, 3.8) | M7 |
+| NFR-13 | Shadow DOM isolation (plan test 6.7) | MVP (ADR-007) |
+
+### Partial Coverage
+
+| RTM ID | Requirement | Missing | Target |
+|--------|-------------|---------|--------|
+| FR-10 | Birth year estimation | V1, V3 categories not tested (only V0, V2, V4) | M7 |
+| FR-14 | Tournament multipliers | No MSW scoring test (PSW covered by 2.19) | M7 |
+| FR-23 | Event lifecycle state machine | CHANGED state transition untested | M7 |
+| NFR-10 | Pipeline observability | Only Discord tested; structured logs not verified | M7 |
+
+### Not Testable (infrastructure)
+
+| RTM ID | Requirement | Reason |
+|--------|-------------|--------|
+| NFR-01 | API response < 500 ms | Load testing — deferred to MVP |
+| NFR-02 | 99.9% availability | Supabase managed — not testable in POC |
+| NFR-03 | Storage < 100 MB | Monitoring — verified manually |
+| NFR-04 | 50 concurrent users | Load testing — deferred to MVP |
+| NFR-08 | Browser compatibility | Manual testing — deferred to MVP |
+| NFR-09 | Mobile responsive ≥ 375 px | Plan test 6.9 — deferred to MVP |
+| NFR-12 | Data integrity (backups) | Supabase managed — not testable in POC |

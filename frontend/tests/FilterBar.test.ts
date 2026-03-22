@@ -1,8 +1,12 @@
+// Plan tests: 6.2, 6.4, 6.10, 6.12 — FilterBar component.
+// See doc/POC_development_plan.md §M6 test table.
+
 import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
 import FilterBar from '../src/components/FilterBar.svelte'
 
 describe('FilterBar', () => {
+  // 6.2 — filter dropdowns rendered
   it('renders all filter controls', () => {
     const { container } = render(FilterBar)
     const selects = container.querySelectorAll('select')
@@ -11,6 +15,7 @@ describe('FilterBar', () => {
     expect(toggleBtns.length).toBe(2) // PPW, Kadra
   })
 
+  // 6.10 — PPW/Kadra toggle, PPW default
   it('PPW is active by default', () => {
     const { container } = render(FilterBar)
     const btns = container.querySelectorAll('.toggle-btn')
@@ -18,12 +23,14 @@ describe('FilterBar', () => {
     expect(btns[1].classList.contains('active')).toBe(false)
   })
 
+  // 6.12 — V0 disables Kadra toggle
   it('disables Kadra button when category is V0', () => {
     const { container } = render(FilterBar, { props: { category: 'V0' } })
     const kadraBtn = container.querySelectorAll('.toggle-btn')[1] as HTMLButtonElement
     expect(kadraBtn.disabled).toBe(true)
   })
 
+  // 6.4 — filter change refreshes data
   it('emits filter change on weapon select', async () => {
     const handler = vi.fn()
     const { container } = render(FilterBar, { props: { onfilterchange: handler } })
@@ -32,6 +39,7 @@ describe('FilterBar', () => {
     expect(handler).toHaveBeenCalled()
   })
 
+  // 6.12 — V0 forces PPW mode
   it('switches to PPW when V0 selected while in Kadra mode', async () => {
     const handler = vi.fn()
     const { container } = render(FilterBar, {

@@ -1,3 +1,6 @@
+// Plan tests: 6.13, 6.14 — ODS export functions.
+// See doc/POC_development_plan.md §M6 test table.
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock XLSX
@@ -18,6 +21,7 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
+// 6.13 — main ranking ODS export
 describe('exportRankingPpw', () => {
   it('creates ODS file with correct columns', () => {
     const rows: RankingPpwRow[] = [
@@ -36,6 +40,7 @@ describe('exportRankingPpw', () => {
   })
 })
 
+// 6.13 — Kadra ranking ODS export
 describe('exportRankingKadra', () => {
   it('creates ODS file with Kadra columns', () => {
     const rows: RankingKadraRow[] = [
@@ -54,6 +59,7 @@ describe('exportRankingKadra', () => {
   })
 })
 
+// 6.14 — drill-down ODS export
 describe('exportDrilldown', () => {
   const score: ScoreRow = {
     id_result: 1,

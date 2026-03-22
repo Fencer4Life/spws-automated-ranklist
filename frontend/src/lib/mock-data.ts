@@ -57,6 +57,7 @@ function makeScore(overrides: Partial<ScoreRow>): ScoreRow {
     id_result: 1,
     id_fencer: 1,
     fencer_name: 'ATANASSOW Aleksander',
+    int_birth_year: null,
     id_tournament: 1,
     txt_tournament_code: 'PPW-01',
     txt_tournament_name: 'PPW Warszawa',

@@ -1,24 +1,24 @@
 <div class="filter-bar">
   <div class="filter-row">
     <label class="filter-group">
-      <span class="filter-label">Weapon</span>
+      <span class="filter-label">{t('weapon')}</span>
       <select bind:value={weapon} onchange={emitChange}>
-        <option value="EPEE">Epee</option>
-        <option value="FOIL">Foil</option>
-        <option value="SABRE">Sabre</option>
+        <option value="EPEE">{t('epee')}</option>
+        <option value="FOIL">{t('foil')}</option>
+        <option value="SABRE">{t('sabre')}</option>
       </select>
     </label>
 
     <label class="filter-group">
-      <span class="filter-label">Gender</span>
+      <span class="filter-label">{t('gender')}</span>
       <select bind:value={gender} onchange={emitChange}>
-        <option value="M">Men</option>
-        <option value="F">Women</option>
+        <option value="M">{t('men')}</option>
+        <option value="F">{t('women')}</option>
       </select>
     </label>
 
     <label class="filter-group">
-      <span class="filter-label">Category</span>
+      <span class="filter-label">{t('category')}</span>
       <select bind:value={category} onchange={onCategoryChange}>
         <option value="V0">V0 (30+)</option>
         <option value="V1">V1 (40+)</option>
@@ -29,7 +29,7 @@
     </label>
 
     <div class="filter-group toggle-group">
-      <span class="filter-label">Ranking</span>
+      <span class="filter-label">{t('ranking')}</span>
       <div class="toggle" class:kadra-disabled={category === 'V0'}>
         <button
           class="toggle-btn"
@@ -40,16 +40,19 @@
           class="toggle-btn"
           class:active={mode === 'KADRA'}
           disabled={category === 'V0'}
-          title={category === 'V0' ? 'No EVF equivalent for V0' : 'Kadra ranking'}
+          title={category === 'V0' ? t('kadra_disabled_title') : t('kadra_title')}
           onclick={() => setMode('KADRA')}
         >Kadra</button>
       </div>
     </div>
+
+    <button class="btn-export" title={t('export_to_ods')} onclick={onexport}>&#9113;</button>
   </div>
 </div>
 
 <script lang="ts">
   import type { WeaponType, GenderType, AgeCategory, RankingMode, Filters } from '../lib/types'
+  import { t } from '../lib/locale.svelte'
 
   let {
     weapon = 'EPEE' as WeaponType,
@@ -57,12 +60,14 @@
     category = 'V2' as AgeCategory,
     mode = 'PPW' as RankingMode,
     onfilterchange,
+    onexport,
   }: {
     weapon?: WeaponType
     gender?: GenderType
     category?: AgeCategory
     mode?: RankingMode
     onfilterchange?: (filters: Omit<Filters, 'season'>) => void
+    onexport?: () => void
   } = $props()
 
   function emitChange() {
@@ -92,6 +97,20 @@
     gap: 16px;
     align-items: flex-end;
     flex-wrap: wrap;
+  }
+  .btn-export {
+    margin-left: auto;
+    align-self: flex-end;
+    background: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 16px;
+    cursor: pointer;
+    color: #555;
+  }
+  .btn-export:hover {
+    background: #f0f0f0;
   }
   .filter-group {
     display: flex;

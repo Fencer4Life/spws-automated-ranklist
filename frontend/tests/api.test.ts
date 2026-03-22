@@ -1,3 +1,6 @@
+// Plan tests: 6.1, 6.3, 6.5, 6.6, 6.11 — Supabase API client functions.
+// See doc/POC_development_plan.md §M6 test table.
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock @supabase/supabase-js
@@ -25,6 +28,7 @@ beforeEach(() => {
   initClient('http://localhost:54321', 'test-key')
 })
 
+// 6.3 — season list for default view
 describe('fetchSeasons', () => {
   it('queries tbl_season ordered by dt_start desc', async () => {
     const seasons = [
@@ -40,6 +44,7 @@ describe('fetchSeasons', () => {
   })
 })
 
+// 6.1, 6.3 — PPW ranking data
 describe('fetchRankingPpw', () => {
   it('calls fn_ranking_ppw RPC with correct params', async () => {
     const rows = [{ rank: 1, id_fencer: 1, fencer_name: 'TEST User', ppw_score: 100, mpw_score: 50, total_score: 150 }]
@@ -72,6 +77,7 @@ describe('fetchRankingPpw', () => {
   })
 })
 
+// 6.11 — Kadra ranking data
 describe('fetchRankingKadra', () => {
   it('calls fn_ranking_kadra RPC with correct params', async () => {
     const rows = [{ rank: 1, id_fencer: 1, fencer_name: 'TEST', ppw_total: 200, pew_total: 100, total_score: 300 }]
@@ -88,6 +94,7 @@ describe('fetchRankingKadra', () => {
   })
 })
 
+// 6.5, 6.6 — fencer drill-down scores
 describe('fetchFencerScores', () => {
   it('queries vw_score with fencer and season filters', async () => {
     const scores = [{ id_result: 1, num_final_score: 100 }]
