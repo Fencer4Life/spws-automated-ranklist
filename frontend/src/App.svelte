@@ -1,5 +1,13 @@
 <div class="ranklist-app">
   <header class="app-header">
+    {#if dualEnv}
+      <div class="env-toggle">
+        <button class="env-btn" class:active={activeEnv === 'CERT'}
+          onclick={() => { activeEnv = 'CERT' }}>CERT</button>
+        <button class="env-btn" class:active={activeEnv === 'PROD'}
+          onclick={() => { activeEnv = 'PROD' }}>PROD</button>
+      </div>
+    {/if}
     <h1>{t('app_title')}</h1>
     <div class="season-selector">
       <select bind:value={selectedSeasonId} onchange={loadRanking}>
@@ -9,11 +17,6 @@
       </select>
     </div>
     <div class="header-right">
-      {#if dualEnv}
-        <span class="env-badge" class:cert={activeEnv === 'CERT'} class:prod={activeEnv === 'PROD'}>
-          {activeEnv}
-        </span>
-      {/if}
       <LangToggle />
     </div>
   </header>
@@ -23,10 +26,7 @@
     gender={filters.gender}
     category={filters.category}
     mode={filters.mode}
-    env={activeEnv}
-    {dualEnv}
     onfilterchange={onFilterChange}
-    onenvchange={(e) => { activeEnv = e }}
     onexport={handleMainExport}
   />
 
@@ -311,23 +311,28 @@
     gap: 8px;
     margin-left: auto;
   }
-  .env-badge {
-    padding: 3px 10px;
+  .env-toggle {
+    display: flex;
+    border: 1px solid #ccc;
     border-radius: 4px;
-    font-size: 11px;
-    font-weight: 700;
+    overflow: hidden;
+  }
+  .env-btn {
+    padding: 4px 10px;
+    border: none;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
     letter-spacing: 0.5px;
-    text-transform: uppercase;
+    transition: all 0.15s;
   }
-  .env-badge.cert {
-    background: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffc107;
+  .env-btn:first-child {
+    border-right: 1px solid #ccc;
   }
-  .env-badge.prod {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #28a745;
+  .env-btn.active {
+    background: #4a90d9;
+    color: #fff;
   }
   .error-banner {
     margin-top: 16px;
