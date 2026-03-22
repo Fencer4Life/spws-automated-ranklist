@@ -59,3 +59,14 @@ jobs:
       - name: Run Vitest
         working-directory: frontend
         run: npm test
+
+  coherence:
+    name: Coherence Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run coherence checks
+        run: bash scripts/check-coherence.sh

@@ -1,0 +1,19 @@
+{
+  "version": "0.1.0",
+  "sha": "faa1d40",
+  "created": "2026-03-22T00:00:00Z",
+  "schema_fingerprint": null,
+  "migrations": {
+    "total": 14,
+    "new_since_last": []
+  },
+  "tests": {
+    "pgtap": { "files": 4, "assertions": 117 },
+    "pytest": { "files": 4 },
+    "vitest": { "files": 6 }
+  },
+  "deployed": {
+    "cert": { "at": "2026-03-22T00:00:00Z", "sha": "faa1d40", "schema_fingerprint": null },
+    "prod": { "at": "2026-03-22T00:00:00Z", "sha": "faa1d40", "schema_fingerprint": null }
+  }
+}

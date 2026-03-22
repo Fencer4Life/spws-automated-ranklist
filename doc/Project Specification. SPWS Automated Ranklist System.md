@@ -1545,3 +1545,4 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-008](adr/008-psw-msw-international-pool.md) | PSW and MSW in International Pool | §8.2 |
 | [ADR-009](adr/009-cert-prod-runtime-toggle.md) | CERT/PROD Runtime Toggle (Single Site) | §2.2 |
 | [ADR-010](adr/010-age-category-by-birth-year.md) | Age Category by Birth Year (Cross-Category Carryover) | §8.5(2) |
+| [ADR-011](adr/011-artifact-release-pipeline.md) | Three-Tier Artifact Release Pipeline with Schema Fingerprinting | §2.2 |

@@ -1,0 +1,42 @@
+{
+  "cert": {
+    "last_updated": "2026-03-22T00:00:00Z",
+    "last_sha": "faa1d40",
+    "applied": [
+      "20250301000001_enums_tables_indexes.sql",
+      "20250301000002_rls_policies.sql",
+      "20250301000003_lifecycle_triggers.sql",
+      "20250301000004_scoring_engine.sql",
+      "20250302000001_nullable_fencer_on_result.sql",
+      "20250302000002_views_ranking.sql",
+      "20250303000001_intake_rules.sql",
+      "20250303000002_age_category_by_season.sql",
+      "20250303000003_ranking_kadra.sql",
+      "20250304000001_fix_de_bonus_formula.sql",
+      "20250305000001_vw_score_url_location.sql",
+      "20250305000002_jsonb_ranking_rules.sql",
+      "20250306000001_vw_score_birth_year.sql",
+      "20250306000002_exclude_zero_domestic.sql"
+    ]
+  },
+  "prod": {
+    "last_updated": "2026-03-22T00:00:00Z",
+    "last_sha": "faa1d40",
+    "applied": [
+      "20250301000001_enums_tables_indexes.sql",
+      "20250301000002_rls_policies.sql",
+      "20250301000003_lifecycle_triggers.sql",
+      "20250301000004_scoring_engine.sql",
+      "20250302000001_nullable_fencer_on_result.sql",
+      "20250302000002_views_ranking.sql",
+      "20250303000001_intake_rules.sql",
+      "20250303000002_age_category_by_season.sql",
+      "20250303000003_ranking_kadra.sql",
+      "20250304000001_fix_de_bonus_formula.sql",
+      "20250305000001_vw_score_url_location.sql",
+      "20250305000002_jsonb_ranking_rules.sql",
+      "20250306000001_vw_score_birth_year.sql",
+      "20250306000002_exclude_zero_domestic.sql"
+    ]
+  }
+}

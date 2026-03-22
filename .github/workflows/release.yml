@@ -1,0 +1,211 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "release"
+  cancel-in-progress: false
+
+jobs:
+  # ─── Build ────────────────────────────────────────────────────────
+  build:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    outputs:
+      schema_fingerprint: ${{ steps.fingerprint.outputs.fingerprint }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- Schema fingerprint from LOCAL Docker Supabase ---
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase local stack
+        run: supabase start
+
+      - name: Compute LOCAL schema fingerprint
+        id: fingerprint
+        run: |
+          FP=$(bash scripts/schema-fingerprint.sh local)
+          echo "fingerprint=$FP" >> "$GITHUB_OUTPUT"
+          echo "Schema fingerprint: $FP"
+
+      - name: Stop Supabase
+        run: supabase stop
+
+      # --- Generate release manifest ---
+      - name: Generate release manifest
+        run: bash scripts/generate-manifest.sh "${{ steps.fingerprint.outputs.fingerprint }}"
+
+      # --- Frontend build ---
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Inject Supabase credentials (CERT + PROD)
+        working-directory: frontend
+        run: |
+          sed -i 's|supabase-cert-url="[^"]*"|supabase-cert-url="${{ secrets.SUPABASE_CERT_URL }}"|' index.html
+          sed -i 's|supabase-cert-key="[^"]*"|supabase-cert-key="${{ secrets.SUPABASE_CERT_ANON_KEY }}"|' index.html
+          sed -i 's|supabase-prod-url="[^"]*"|supabase-prod-url="${{ secrets.SUPABASE_PROD_URL }}"|' index.html
+          sed -i 's|supabase-prod-key="[^"]*"|supabase-prod-key="${{ secrets.SUPABASE_PROD_ANON_KEY }}"|' index.html
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npx vite build --base ./
+
+      - name: Verify no secrets or localhost in build
+        run: |
+          ! grep -r 'service_role' frontend/dist/
+          ! grep -r '127.0.0.1' frontend/dist/
+          ! grep -r 'supabase-demo' frontend/dist/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  # ─── Deploy Pages ─────────────────────────────────────────────────
+  deploy-pages:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ─── Deploy CERT ──────────────────────────────────────────────────
+  deploy-cert:
+    needs: build
+    environment: cert
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for pending CERT migrations
+        id: check
+        run: bash scripts/check-new-migrations.sh cert
+
+      - name: Apply migrations to CERT
+        if: steps.check.outputs.has_new_migrations == 'true'
+        id: apply
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_REF: ${{ secrets.SUPABASE_CERT_REF }}
+        run: |
+          bash scripts/apply-migrations.sh cert "${{ needs.build.outputs.schema_fingerprint }}"
+
+      - name: Verify CERT fingerprint (no new migrations)
+        if: steps.check.outputs.has_new_migrations != 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_REF: ${{ secrets.SUPABASE_CERT_REF }}
+        run: |
+          CLOUD_FP=$(bash scripts/schema-fingerprint.sh cloud "$SUPABASE_REF")
+          LOCAL_FP="${{ needs.build.outputs.schema_fingerprint }}"
+          if [ "$CLOUD_FP" != "$LOCAL_FP" ]; then
+            echo "ERROR: CERT fingerprint mismatch!" >&2
+            echo "  LOCAL: $LOCAL_FP" >&2
+            echo "  CERT:  $CLOUD_FP" >&2
+            exit 1
+          fi
+          echo "CERT fingerprint verified: $CLOUD_FP"
+
+      - name: Update tracking files
+        if: steps.check.outputs.has_new_migrations == 'true'
+        run: |
+          bash scripts/update-tracking.sh cert \
+            "${{ github.sha }}" \
+            "${{ needs.build.outputs.schema_fingerprint }}" \
+            '${{ steps.check.outputs.new_migrations }}'
+
+      - name: Commit tracking update
+        if: steps.check.outputs.has_new_migrations == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+          git add deployed_migrations.json release-manifest.json
+          git commit -m "chore: update CERT tracking [skip ci]"
+          git push
+
+  # ─── Deploy PROD ──────────────────────────────────────────────────
+  deploy-prod:
+    needs: [build, deploy-cert, deploy-pages]
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Pull latest (includes CERT tracking commit)
+        run: git pull origin main
+
+      - name: Check for pending PROD migrations
+        id: check
+        run: bash scripts/check-new-migrations.sh prod
+
+      - name: Apply migrations to PROD
+        if: steps.check.outputs.has_new_migrations == 'true'
+        id: apply
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_REF: ${{ secrets.SUPABASE_PROD_REF }}
+        run: |
+          bash scripts/apply-migrations.sh prod "${{ needs.build.outputs.schema_fingerprint }}"
+
+      - name: Verify PROD fingerprint (no new migrations)
+        if: steps.check.outputs.has_new_migrations != 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_REF: ${{ secrets.SUPABASE_PROD_REF }}
+        run: |
+          CLOUD_FP=$(bash scripts/schema-fingerprint.sh cloud "$SUPABASE_REF")
+          LOCAL_FP="${{ needs.build.outputs.schema_fingerprint }}"
+          if [ "$CLOUD_FP" != "$LOCAL_FP" ]; then
+            echo "ERROR: PROD fingerprint mismatch!" >&2
+            echo "  LOCAL: $LOCAL_FP" >&2
+            echo "  PROD:  $CLOUD_FP" >&2
+            exit 1
+          fi
+          echo "PROD fingerprint verified: $CLOUD_FP"
+
+      - name: Update tracking files
+        if: steps.check.outputs.has_new_migrations == 'true'
+        run: |
+          bash scripts/update-tracking.sh prod \
+            "${{ github.sha }}" \
+            "${{ needs.build.outputs.schema_fingerprint }}" \
+            '${{ steps.check.outputs.new_migrations }}'
+
+      - name: Commit tracking update
+        if: steps.check.outputs.has_new_migrations == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+          git add deployed_migrations.json release-manifest.json
+          git commit -m "chore: update PROD tracking [skip ci]"
+          git push

@@ -642,8 +642,12 @@ The spec originally called for a Svelte custom element with Shadow DOM for CSS i
 - pgTAP total: 117 assertions (1 smoke + 64 M1 + 25 M2 + 27 M5/M6 views).
 - Manual test: open `index.html` in browser with `demo` attribute, verify ranklist loads with mock data, drilldown modal shows score breakdown with markers and summary rows.
 
-**CERT/PROD Deployment (infrastructure — not a plan test):** See [ADR-009](adr/009-cert-prod-runtime-toggle.md) for architectural rationale.
-- GitHub Actions workflow `.github/workflows/deploy.yml` builds and deploys to GitHub Pages on push to main.
+**CERT/PROD Deployment (infrastructure — not a plan test):** See [ADR-009](adr/009-cert-prod-runtime-toggle.md) for architectural rationale, [ADR-011](adr/011-artifact-release-pipeline.md) for release pipeline design.
+- Three-tier release pipeline: LOCAL (Docker) → CERT (cloud) → PROD (cloud). See [CI/CD Operations Manual](cicd-operations-manual.md).
+- `.github/workflows/release.yml` replaces `deploy.yml` — triggered by CI success, deploys Pages + CERT (auto) + PROD (manual approval).
+- Schema fingerprint verification ensures LOCAL/CERT/PROD parity after each deployment.
+- `deployed_migrations.json` tracks applied migrations per environment. `release-manifest.json` provides audit trail.
+- Coherence checks (CI gate): version sync, ADR count, pgTAP total, migration↔doc correlation.
 - Supabase cloud CERT + PROD projects provisioned manually. Migrations applied via Management API (port 5432 blocked).
 - Runtime CERT/PROD environment toggle in FilterBar — hidden when only one backend configured.
 - RLS audit completed — all 9 tables protected, anon = SELECT-only. Verified against NFR-05, tests 1.10a–b, 1.25.
@@ -651,11 +655,11 @@ The spec originally called for a Svelte custom element with Shadow DOM for CSS i
 
 ---
 
-### Milestone 7: GitHub Actions Pipeline
+### Milestone 7: GitHub Actions — Ingestion Pipeline
 
 **Use Cases:** UC1 (automation), §7 (alerting)
 
-**Purpose:** Wire everything together into an automated scheduled pipeline. Tests here focus on orchestration logic — individual scraper, matcher, and scoring behaviors are already tested in M3, M4, and M2 respectively.
+**Purpose:** Wire everything together into an automated scheduled ingestion pipeline. The release pipeline (schema deployment + frontend) is already implemented in M6 via `release.yml` — see [ADR-011](adr/011-artifact-release-pipeline.md). Tests here focus on orchestration logic — individual scraper, matcher, and scoring behaviors are already tested in M3, M4, and M2 respectively.
 
 **Acceptance Tests (RED):**
 
