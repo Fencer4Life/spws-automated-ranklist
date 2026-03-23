@@ -165,9 +165,61 @@ After the Release workflow deploys to CERT, the PROD job waits for your approval
 
 GitHub environment approvals wait for **30 days** by default. No rush — approve when you're ready after verifying CERT.
 
+### Quick reference
+
+To approve the PROD deployment, go to your repo's **Actions** tab, click the "Release" run, click `deploy-prod`, then "Review deployments" → check `production` → "Approve and deploy".
+
 ---
 
-## 4. Checking Deployment Status
+## 4. Rollback & Skipping Releases
+
+Rollback is **forward-only** — you push a new corrective migration through the full pipeline. There is no "undo" button.
+
+### Why forward-only?
+
+The Supabase Management API only supports running SQL queries — there is no `DROP MIGRATION` or `ROLLBACK` command. And since migrations may have already modified data (not just schema), reversing them safely requires explicit corrective SQL.
+
+### Can I skip a release that has a bug?
+
+You can skip the **PROD promotion** — just don't approve it. Click **"Reject"** in the GitHub Actions UI and PROD stays untouched. But you cannot skip a migration once it's applied to CERT, because CERT auto-deploys.
+
+**Typical bug-fix flow:**
+
+1. Push to main → CI passes → CERT gets the migration automatically
+2. You notice a bug on CERT
+3. You **reject** the PROD deployment → PROD is safe
+4. You write a corrective migration, push again
+5. New pipeline: CI → CERT gets the fix → you verify → approve PROD
+
+CERT is your safety net — it receives everything automatically so you can catch problems before they reach PROD.
+
+### How to write a corrective migration
+
+1. **Create a new migration file:**
+   ```bash
+   touch supabase/migrations/20250307000002_revert_bad_change.sql
+   ```
+   Write the reverse SQL (e.g., `DROP COLUMN`, `ALTER TABLE`, recreate the old function, etc.)
+
+2. **Test locally:**
+   ```bash
+   supabase db reset      # Applies all migrations including the fix
+   supabase test db        # Verify pgTAP tests pass
+   ```
+
+3. **Push:** `git push origin main`
+
+4. The pipeline runs the fix through all tiers — CI validates, CERT gets the corrective migration, you verify, then approve PROD.
+
+### What you cannot do
+
+- **Roll back to a previous git SHA** — the cloud DB already has the old migration applied
+- **Skip a migration** — they are applied in order
+- **Delete a migration file** — the coherence checks and tracking would break
+
+---
+
+## 5. Checking Deployment Status
 
 ### Quick: What's deployed where?
 
@@ -216,7 +268,7 @@ Go to **Actions** tab → click the latest **Release** run → see all job statu
 
 ---
 
-## 5. What To Do When Things Go Wrong
+## 6. What To Do When Things Go Wrong
 
 | Scenario | What you see | What to do |
 |----------|-------------|------------|
@@ -236,7 +288,7 @@ Go to **Actions** tab → click the latest **Release** run → see all job statu
 
 ---
 
-## 6. How to Add a New Database Migration
+## 7. How to Add a New Database Migration
 
 1. **Create the migration file:**
    ```bash
@@ -273,7 +325,7 @@ Go to **Actions** tab → click the latest **Release** run → see all job statu
 
 ---
 
-## 7. Coherence Checks Explained
+## 8. Coherence Checks Explained
 
 The coherence job runs 4 gates during CI:
 
@@ -286,7 +338,7 @@ The coherence job runs 4 gates during CI:
 
 ---
 
-## 8. Schema Fingerprint
+## 9. Schema Fingerprint
 
 The schema fingerprint is an MD5 hash computed from your database's public schema (function definitions + table/column structure). It ensures that LOCAL, CERT, and PROD all have the exact same schema.
 
@@ -301,7 +353,7 @@ The schema fingerprint is an MD5 hash computed from your database's public schem
 
 ---
 
-## 9. Files Reference
+## 10. Files Reference
 
 | File | Purpose |
 |------|---------|
