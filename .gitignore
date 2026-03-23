@@ -16,3 +16,4 @@ build/
 ~$*.xlsx
 ~$*.xls
 *.xlsx.tmp
+*.egg-info/
