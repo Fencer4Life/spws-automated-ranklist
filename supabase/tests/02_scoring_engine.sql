@@ -6,7 +6,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(25);
+SELECT plan(28);
 
 -- ===== SETUP: Create test data for scoring tests =====
 -- We use the seed season (SPWS-2024-2025) and its scoring config.
@@ -23,6 +23,7 @@ DECLARE
   v_tourn_n1 INT;
   v_tourn_n16 INT;
   v_tourn_psw INT;
+  v_tourn_msw INT;
   v_fencer1 INT;
   v_fencer2 INT;
   v_fencer3 INT;
@@ -72,11 +73,19 @@ BEGIN
   VALUES (v_event, 'SCORE-PSW-N24', 'Test PSW N=24', 'PSW',
     'EPEE', 'M', 'V2', '2025-02-01', 24, 'IMPORTED');
 
+  -- Tournament F: MSW, N=24 (for MSW multiplier test — multiplier=2.0)
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count,
+    enum_import_status)
+  VALUES (v_event, 'SCORE-MSW-N24', 'Test MSW N=24', 'MSW',
+    'EPEE', 'M', 'V2', '2025-03-01', 24, 'IMPORTED');
+
   SELECT id_tournament INTO v_tourn_ppw FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N24';
   SELECT id_tournament INTO v_tourn_mpw FROM tbl_tournament WHERE txt_code = 'SCORE-MPW-N24';
   SELECT id_tournament INTO v_tourn_n1  FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N1';
   SELECT id_tournament INTO v_tourn_n16 FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N16';
   SELECT id_tournament INTO v_tourn_psw FROM tbl_tournament WHERE txt_code = 'SCORE-PSW-N24';
+  SELECT id_tournament INTO v_tourn_msw FROM tbl_tournament WHERE txt_code = 'SCORE-MSW-N24';
 
   -- Get fencer IDs from seed data (master fencer list)
   SELECT id_fencer INTO v_fencer1 FROM tbl_fencer WHERE txt_surname = 'ATANASSOW';
@@ -117,6 +126,11 @@ BEGIN
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES
     (v_fencer1, v_tourn_psw, 1),
     (v_fencer2, v_tourn_psw, 2);
+
+  -- Insert results for MSW N=24: places 1,2 (for MSW multiplier test)
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES
+    (v_fencer1, v_tourn_msw, 1),
+    (v_fencer2, v_tourn_msw, 2);
 END;
 $setup$;
 
@@ -127,6 +141,7 @@ SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_co
 SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N1';
 SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N16';
 SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PSW-N24';
+SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-MSW-N24';
 
 -- ---------------------------------------------------------------------------
 -- 2.1  fn_calc_tournament_scores: N=24 PPW → point columns populated
@@ -590,6 +605,63 @@ SELECT ok(
      WHERE t.txt_code = 'SCORE-PSW-N24' AND f.txt_surname = 'ATANASSOW') psw
   ),
   '2.19 PSW has same components as PPW but final_score scaled by 2.0 multiplier'
+);
+
+-- ---------------------------------------------------------------------------
+-- 9.85  MSW tournament: multiplier = 2.0, final_score scaled correctly
+-- ---------------------------------------------------------------------------
+SELECT ok(
+  (SELECT
+    ppw.num_place_pts = msw.num_place_pts
+    AND ppw.num_de_bonus = msw.num_de_bonus
+    AND ppw.num_podium_bonus = msw.num_podium_bonus
+    AND msw.num_final_score > ppw.num_final_score
+    AND ABS(msw.num_final_score / ppw.num_final_score - 2.0) < 0.01
+   FROM
+    (SELECT r.* FROM tbl_result r
+     JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
+     JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
+     WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'ATANASSOW') ppw,
+    (SELECT r.* FROM tbl_result r
+     JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
+     JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
+     WHERE t.txt_code = 'SCORE-MSW-N24' AND f.txt_surname = 'ATANASSOW') msw
+  ),
+  '9.85 MSW has same components as PPW but final_score scaled by 2.0 multiplier'
+);
+
+-- ---------------------------------------------------------------------------
+-- 9.91  Import status: tournament created with IMPORTED status persists
+-- ---------------------------------------------------------------------------
+-- Create a separate unscored tournament to verify IMPORTED status
+SELECT lives_ok(
+  $test991$DO $body$
+  DECLARE v_event INT; v_season INT; v_org INT;
+  BEGIN
+    SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025';
+    SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+    SELECT id_event INTO v_event FROM tbl_event WHERE txt_code = 'SCORE-TEST-EVT';
+    INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type,
+      enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count,
+      enum_import_status)
+    VALUES (v_event, 'SCORE-IMPORT-TEST', 'Import Status Test', 'PPW',
+      'EPEE', 'M', 'V2', '2025-04-01', 10, 'IMPORTED');
+    IF (SELECT enum_import_status FROM tbl_tournament WHERE txt_code = 'SCORE-IMPORT-TEST') <> 'IMPORTED' THEN
+      RAISE EXCEPTION 'Expected IMPORTED status';
+    END IF;
+  END;
+  $body$$test991$,
+  '9.91 Tournament with enum_import_status = IMPORTED persists correctly'
+);
+
+-- ---------------------------------------------------------------------------
+-- 9.92  Import status transition: IMPORTED → SCORED after fn_calc_tournament_scores
+-- ---------------------------------------------------------------------------
+SELECT ok(
+  (SELECT enum_import_status = 'SCORED'
+   FROM tbl_tournament
+   WHERE txt_code = 'SCORE-PPW-N24'),
+  '9.92 After fn_calc_tournament_scores, enum_import_status = SCORED'
 );
 
 SELECT * FROM finish();

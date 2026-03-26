@@ -3,7 +3,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(64);
+SELECT plan(69);
 
 -- ---------------------------------------------------------------------------
 -- 1.1  All 7 enum types exist with correct values
@@ -487,6 +487,82 @@ SELECT throws_ok(
   NULL,
   NULL,
   '1.24 CANCELLED is terminal: CANCELLED->PLANNED rejected'
+);
+
+-- ---------------------------------------------------------------------------
+-- 9.86  CHANGED state: SCHEDULED → CHANGED succeeds
+-- ---------------------------------------------------------------------------
+SELECT lives_ok(
+  $test986$DO $body$
+  BEGIN
+    -- Reset to PLANNED first, then walk through valid path
+    INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+    SELECT 'TEST-EVT-CHANGED', 'Changed Test', s.id_season, o.id_organizer, 'PLANNED'
+    FROM tbl_season s, tbl_organizer o
+    WHERE s.txt_code = 'SPWS-2024-2025' AND o.txt_code = 'SPWS';
+    UPDATE tbl_event SET enum_status = 'SCHEDULED' WHERE txt_code = 'TEST-EVT-CHANGED';
+    UPDATE tbl_event SET enum_status = 'CHANGED' WHERE txt_code = 'TEST-EVT-CHANGED';
+  END;
+  $body$$test986$,
+  '9.86 SCHEDULED->CHANGED succeeds'
+);
+
+-- ---------------------------------------------------------------------------
+-- 9.87  CHANGED → SCHEDULED succeeds
+-- ---------------------------------------------------------------------------
+SELECT lives_ok(
+  $test987$UPDATE tbl_event SET enum_status = 'SCHEDULED' WHERE txt_code = 'TEST-EVT-CHANGED'$test987$,
+  '9.87 CHANGED->SCHEDULED succeeds'
+);
+
+-- ---------------------------------------------------------------------------
+-- 9.88  CHANGED → IN_PROGRESS succeeds
+-- ---------------------------------------------------------------------------
+SELECT lives_ok(
+  $test988$DO $body$
+  BEGIN
+    UPDATE tbl_event SET enum_status = 'CHANGED' WHERE txt_code = 'TEST-EVT-CHANGED';
+    UPDATE tbl_event SET enum_status = 'IN_PROGRESS' WHERE txt_code = 'TEST-EVT-CHANGED';
+  END;
+  $body$$test988$,
+  '9.88 CHANGED->IN_PROGRESS succeeds'
+);
+
+-- ---------------------------------------------------------------------------
+-- 9.89  CHANGED → CANCELLED succeeds
+-- ---------------------------------------------------------------------------
+SELECT lives_ok(
+  $test989$DO $body$
+  BEGIN
+    -- Create a new event since previous one is now IN_PROGRESS
+    INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+    SELECT 'TEST-EVT-CHANGED2', 'Changed Test 2', s.id_season, o.id_organizer, 'PLANNED'
+    FROM tbl_season s, tbl_organizer o
+    WHERE s.txt_code = 'SPWS-2024-2025' AND o.txt_code = 'SPWS';
+    UPDATE tbl_event SET enum_status = 'SCHEDULED' WHERE txt_code = 'TEST-EVT-CHANGED2';
+    UPDATE tbl_event SET enum_status = 'CHANGED' WHERE txt_code = 'TEST-EVT-CHANGED2';
+    UPDATE tbl_event SET enum_status = 'CANCELLED' WHERE txt_code = 'TEST-EVT-CHANGED2';
+  END;
+  $body$$test989$,
+  '9.89 CHANGED->CANCELLED succeeds'
+);
+
+-- ---------------------------------------------------------------------------
+-- 9.90  PLANNED → CHANGED rejected (invalid transition)
+-- ---------------------------------------------------------------------------
+SELECT throws_ok(
+  $test990$DO $body$
+  BEGIN
+    INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+    SELECT 'TEST-EVT-CHANGED3', 'Changed Test 3', s.id_season, o.id_organizer, 'PLANNED'
+    FROM tbl_season s, tbl_organizer o
+    WHERE s.txt_code = 'SPWS-2024-2025' AND o.txt_code = 'SPWS';
+    UPDATE tbl_event SET enum_status = 'CHANGED' WHERE txt_code = 'TEST-EVT-CHANGED3';
+  END;
+  $body$$test990$,
+  NULL,
+  NULL,
+  '9.90 PLANNED->CHANGED rejected'
 );
 
 -- ---------------------------------------------------------------------------
