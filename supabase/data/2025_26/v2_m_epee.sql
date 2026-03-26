@@ -5,13 +5,15 @@
 -- =========================================================================
 
 -- ---- PP1: I Puchar Polski Weteranów — Szpada M (OPOLE) ----
-INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country, url_invitation, num_entry_fee, url_event)
 VALUES (
     'PP1-2025-2026',
-    'I Puchar Polski Weteranów — Szpada M',
+    'I Puchar Polski Weteranów',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
-    'COMPLETED'
+    'COMPLETED',
+    '2025-09-28', 'Opole', 'Polska', 'https://spws.fencing.pl/pp1-2025', 80,
+    'https://www.fightingtimelive.com/pp1-2025'
 );
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
@@ -89,13 +91,15 @@ SELECT fn_calc_tournament_scores(
 );
 
 -- ---- PP2: II Puchar Polski Weteranów — Szpada M (II Puchar Weteranów Poznań) ----
-INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country, url_invitation, num_entry_fee, url_event)
 VALUES (
     'PP2-2025-2026',
-    'II Puchar Polski Weteranów — Szpada M',
+    'II Puchar Polski Weteranów',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
-    'COMPLETED'
+    'COMPLETED',
+    '2025-11-23', 'Warszawa', 'Polska', 'https://spws.fencing.pl/pp2-2025', 80,
+    'https://www.fightingtimelive.com/pp2-2025'
 );
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
@@ -173,13 +177,15 @@ SELECT fn_calc_tournament_scores(
 );
 
 -- ---- PP3: III Puchar Polski Weteranów — Szpada M (Warsaw Epee Open) ----
-INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country, url_invitation, num_entry_fee, url_event)
 VALUES (
     'PP3-2025-2026',
-    'III Puchar Polski Weteranów — Szpada M',
+    'III Puchar Polski Weteranów',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
-    'COMPLETED'
+    'COMPLETED',
+    '2026-02-15', 'Kraków', 'Polska', 'https://spws.fencing.pl/pp3-2026', 90,
+    'https://www.fightingtimelive.com/pp3-2026'
 );
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
@@ -304,13 +310,16 @@ SELECT fn_calc_tournament_scores(
 );
 
 -- ---- PEW1: EVF Grand Prix 1 — Budapeszt (BUDAPEST CUP 2025.09.20) ----
-INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country, url_invitation, num_entry_fee, url_event)
 VALUES (
     'PEW1-2025-2026',
     'EVF Grand Prix 1 — Budapeszt',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
-    'COMPLETED'
+    'COMPLETED',
+    '2025-10-12', 'Budapeszt', 'Węgry',
+    'https://veteransfencing.eu/gp1-budapest-2025', 50,
+    'https://veteransfencing.eu/gp1-budapest-2025/results'
 );
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
@@ -413,13 +422,16 @@ SELECT fn_calc_tournament_scores(
 );
 
 -- ---- PEW2: EVF Grand Prix 2 — Madryt (MADRID _x000D_) ----
-INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country, url_invitation, num_entry_fee, url_event)
 VALUES (
     'PEW2-2025-2026',
     'EVF Grand Prix 2 — Madryt',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
-    'COMPLETED'
+    'COMPLETED',
+    '2025-12-07', 'Madryt', 'Hiszpania',
+    'https://veteransfencing.eu/gp2-madrid-2025', 60,
+    'https://veteransfencing.eu/gp2-madrid-2025/results'
 );
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
@@ -486,13 +498,16 @@ SELECT fn_calc_tournament_scores(
 );
 
 -- ---- IMSW: Indywidualne Mistrzostwa Świata Weteranów (2025 Veteran World Championships) ----
-INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country, url_invitation, num_entry_fee, url_event)
 VALUES (
     'IMSW-2025-2026',
     'Indywidualne Mistrzostwa Świata Weteranów',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
-    'COMPLETED'
+    'COMPLETED',
+    '2026-04-18', 'Dubaj', 'Zjednoczone Emiraty Arabskie',
+    'https://veteransfencing.eu/wch-dubai-2026', 100,
+    'https://veteransfencing.eu/wch-dubai-2026/results'
 );
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,

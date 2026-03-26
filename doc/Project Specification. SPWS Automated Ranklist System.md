@@ -47,7 +47,7 @@ To engineer a platform-independent, fully automated data pipeline and ranking en
 | :- | :---- | :---- | :------------------- | :------------------ |
 | **UC15** | 2 | **Admin** | **Result Correction:** Admin edits a fencer's placement or participant count for a tournament after import. The correction is logged and requires explicit re-scoring (UC6). | (a) Admin edits result via Admin UI. (b) Old values logged in `tbl_audit_log` with timestamp and admin identity. (c) `tbl_tournament.enum_import_status` reverts to `IMPORTED` until re-scored. |
 | **UC16** | 2 | **Admin** | **Fencer Master Table Update:** Admin adds a new fencer, corrects a name/alias, or merges duplicate records. Previously unmatched results are then re-processed by the identity matcher to link them to the correct `id_fencer`. | (a) Admin can add/edit fencers and their `json_name_aliases`. (b) Merge operation re-points all `tbl_result.id_fencer` references from the duplicate to the canonical fencer. (c) Unmatched `tbl_match_candidate` rows are re-evaluated against updated Master Table. |
-| **UC17** | 2 | **Admin** | **Reprocessing:** Admin triggers a bulk re-import of a tournament's data (e.g., after a scraper fix or Master Table update). The system re-runs identity resolution and optionally re-scores. | (a) Admin selects a tournament and triggers "Re-import". (b) Existing `tbl_result` rows for that tournament are soft-deleted or overwritten. (c) Identity resolution re-runs. (d) Optionally re-scores if admin confirms. |
+| **UC17** | 2 | **Admin** | **Reprocessing:** Admin triggers a bulk re-import of a tournament's data (e.g., after a scraper fix or Master Table update). The system re-runs identity resolution and optionally re-scores. Superseded by UC23 for the transactional re-import workflow — see [ADR-014](adr/014-delete-reimport-strategy.md). | (a) Admin selects a tournament and triggers "Re-import". (b) Existing `tbl_result` rows for that tournament are deleted and re-imported in a single transaction. (c) Identity resolution re-runs. (d) Scoring re-runs. (e) On failure, transaction rolls back (old data preserved). |
 
 ### 3.5 Scoring Configuration Workflow
 
@@ -56,6 +56,14 @@ To engineer a platform-independent, fully automated data pipeline and ranking en
 | **UC18** | 1 | **Admin / Developer** | **Export Scoring Config as JSON:** Admin exports the active season's scoring configuration to a local JSON file via `fn_export_scoring_config` (called via Python helper or Supabase SQL editor). The JSON file can be edited in any text editor and version-controlled in Git. See §8.6.3 for the SQL function and §8.6.4 for the Python helper. | (a) `fn_export_scoring_config(id_season)` returns a valid JSON object containing all 17 parameters (16 typed columns + `json_extra`) plus `id_season` and `season_code` metadata. (b) Python helper `calibrate_config.py export` writes the JSON to a local file. (c) Exported JSON is human-readable (indented, named keys matching §8.6.1). (d) Export is idempotent — repeated calls return the same data if config unchanged. |
 | **UC19** | 1 | **Admin / Developer** | **Import Scoring Config from JSON:** Admin imports a locally-edited JSON config file back into the database via `fn_import_scoring_config` (called via Python helper or Supabase SQL editor). The function validates and upserts the config, updating `ts_updated`. See §8.6.3. | (a) `fn_import_scoring_config(json)` upserts all 16 typed columns + `json_extra` into `tbl_scoring_config`. (b) `ts_updated` is set to `NOW()`. (c) Missing JSON keys use existing DB values (partial update supported). (d) Invalid types (e.g., string for `mp_value`) raise a clear error. (e) Python helper `calibrate_config.py import` reads a local file and calls the RPC. |
 | **UC20** | 1 | **Admin / Developer** | **Calibration — Compare Scoring Output vs Excel:** Developer runs the comparison script (`calibrate_compare.py`) to verify that the database scoring output matches the reference Excel spreadsheet row-by-row. Mismatches are reported with fencer name, tournament, expected vs actual values, and the diff. See §8.6.4–§8.6.5. | (a) Script loads Excel reference data and DB scores for the same season. (b) Each fencer × tournament score is compared within a configurable tolerance (default 0.01). (c) Mismatches printed as structured output (fencer, tournament, excel value, db value, diff). (d) Zero mismatches prints a success message. (e) Missing fencers or scores are reported separately. |
+
+### 3.6 MVP UI & Admin Workflow
+
+| ID | Phase | Actor | Action / Description | Acceptance Criteria |
+| :- | :---- | :---- | :------------------- | :------------------ |
+| **UC21** | 2 | **End User (Fencer)** | **Calendar View:** User browses events in a vertical chronological list, filtering by season and past/future/all. Each event shows date, name, location, and tournament count. | (a) Vertical scrollable list of events, ordered chronologically. (b) Season filter dropdown. (c) Past/future/all toggle. (d) Each event card shows date, name, location, and number of tournaments. (e) Mobile-friendly layout (≥ 375 px). (f) Accessible as `<spws-calendar>` custom element. |
+| **UC22** | 2 | **Admin** | **Admin CRUD:** Admin creates, edits, and deletes seasons, events, and tournaments via an authenticated web UI ([ADR-016](adr/016-supabase-auth-totp-mfa.md)). Replaces Supabase Dashboard as the admin interface. **Two import paths:** event-level batch import (multi-select modal using event URL) and tournament-level single import (using tournament's own URL or file upload). Both support URL scraping and file upload (Excel/JSON/CSV). Manual tournament creation supported via "+ Dodaj turniej". | (a) Admin authentication via Supabase Auth (email + password) with mandatory TOTP MFA ([ADR-016](adr/016-supabase-auth-totp-mfa.md)). Write functions REVOKE'd from `anon`; require `authenticated` JWT. Multiple admins supported. 59-minute inactivity timeout. (b) Season CRUD with automatic `tbl_scoring_config` creation. (c) Event CRUD with 4 new fields (`txt_country`, `txt_venue_address`, `url_invitation`, `num_entry_fee`). (d) Tournament CRUD nested under events, including manual creation. (e) Delete cascades to child records (event → tournaments → results). (f) All changes logged in `tbl_audit_log`. (g) Event-level import: modal with tournament checklist, multi-select, uses event URL. (h) Tournament-level import: modal for single tournament, editable URL field or file upload. (i) File import supports .xlsx, .xls, .json, .csv formats. |
+| **UC23** | 2 | **Admin** | **Tournament Re-import:** Admin triggers a re-import for a tournament via either the event-level batch import modal or the tournament-level single import modal. The system deletes existing results and re-imports from the source URL or uploaded file in a single database transaction ([ADR-014](adr/014-delete-reimport-strategy.md)). | (a) Admin triggers re-import for a specific tournament (event-level or tournament-level). (b) Existing `tbl_result` and `tbl_match_candidate` rows deleted. (c) Scraper re-runs for the tournament's `url_results`, or results parsed from uploaded file. (d) Identity resolution re-runs for new results. (e) Scoring engine re-runs. (f) On failure, transaction rolls back — original data preserved. (g) REIMPORT status tag shown in import modal when tournament has existing results. |
 
 ## 4. Solution Assumptions
 
@@ -168,11 +176,13 @@ Key design decisions are recorded as Architecture Decision Records in [`doc/adr/
 
 To manage complexity, the system will be built iteratively, ensuring value is delivered at each stage while keeping the final, holistic requirements in mind.
 
-### Phase 1: Proof of Concept (POC)
+### Phase 1: Proof of Concept (POC) — COMPLETED (2026-03-25)
 
 - **Goal:** Validate the core math, scraping viability, admin workflow, and UI portability.
 
 - **Scope:** Male Epee V2 (50+) category only.
+
+- **Status:** All deliverables complete except automated ingestion pipeline (deferred to MVP M9). See [POC Development Plan](POC_development_plan.md#poc-completion-summary) and [ADR-013](adr/013-poc-mvp-transition.md).
 
 - **Use Cases:** UC1–UC5 (ingestion, matching, scoring), UC7–UC11 (season/config management), UC12–UC13 (public ranklist + drill-down), UC18–UC20 (scoring config export/import/calibration).
 
@@ -202,29 +212,38 @@ To manage complexity, the system will be built iteratively, ensuring value is de
 
 ### Phase 2: Minimum Viable Product (MVP)
 
-- **Goal:** Replace the Excel system for domestic + international rankings across all categories.
+- **Goal:** Full operational system replacing the Excel system for all 30 sub-rankings.
 
-- **Scope:** All 30 sub-rankings (3 Weapons × 2 Genders × 5 Categories V0–V4; see §9.1.1 for age brackets). V0 is domestic-only — no Kadra ranking (see §9.4).
+- **Scope:** All 30 sub-rankings (3 Weapons × 2 Genders × 5 Categories V0–V4; see §9.1.1 for age brackets). Combined V3+4-F category for women. V0 is domestic-only — no Kadra ranking (see §9.4).
 
-- **Use Cases:** UC6 (manual recalculation), UC14 (historical seasons), UC15–UC17 (corrections, master table updates, reprocessing).
+- **Use Cases:** UC1 (automation — deferred from POC), UC4 (admin UI — deferred from POC), UC6 (manual recalculation), UC14 (historical seasons), UC15–UC17 (corrections, master table updates, reprocessing), UC21–UC23 (calendar view, admin CRUD, re-import).
+
+- **Milestones:**
+
+    | # | Milestone | Key Deliverables |
+    |---|-----------|-----------------|
+    | M8 | Multi-Category Data + Calendar UI + Schema Extensions | 30-category seed data, Calendar view (`<spws-calendar>`), 4 new `tbl_event` columns, Shadow DOM for `<spws-ranklist>` + `<spws-calendar>`, admin password gate |
+    | M9 | Ingestion Pipeline + Admin CRUD + Identity Resolution Admin | `ingest.yml`, orchestration script, CRUD UI for seasons/events/tournaments, identity admin UI, re-import, Discord alerts |
 
 - **Deliverables:**
 
-    - Scale scrapers to handle all weapon/gender/category combinations across all 3 platforms.
+    - All 30 categories seeded (3 weapons × 2 genders × 5 age categories) with data from `doc/external_files/` Excel files.
 
-    - Implement the continuous age-category migration logic (automatic movement between V0–V4 based on fencer's age at the **end year** of the active `tbl_season`).
+    - **Calendar view** (`<spws-calendar>` custom element): vertical chronological event browser with season filter, past/future/all toggle, mobile-friendly layout. Two-view app: Ranklist | Calendar.
 
-    - **MSW Tournament Type:** Recognise MSW (World Veterans Championship) results with a configurable multiplier (default 2.0). MSW-specific Kadra aggregation rules are deferred to Phase 3.
+    - **Schema extensions:** 4 new columns on `tbl_event`: `txt_country`, `txt_venue_address`, `url_invitation`, `num_entry_fee`.
 
-    - **Kadra Ranking View:** Implement `vw_ranking_kadra` combining domestic PPW totals with best international PEW/MEW/MSW results per the configurable aggregation rules (§8.3.2).
+    - **Admin CRUD UI:** Password-gated (ADR-004) web interface for season, event, and tournament management. Replaces Supabase Dashboard as admin UI. Delete cascades to child records. Two import paths: event-level batch (multi-select from event URL) and tournament-level single (own URL or file upload). Manual tournament creation via "+ Dodaj turniej". File import supports Excel/JSON/CSV.
 
-    - **Historical Season View:** Season selector with frozen JSON snapshots for past seasons.
+    - **Automated ingestion pipeline** (`ingest.yml`): scheduled + manual dispatch. Orchestration script scrapes → matches → scores. Discord alerting on failure or new pending matches. Run summary artifact.
 
-    - **Result corrections & reprocessing workflow** with full audit trail.
+    - **Identity resolution admin UI:** Web interface for approving/dismissing/creating fencers from `tbl_match_candidate`. Replaces Python-only workflow from POC.
 
-    - **Shadow DOM isolation:** Rebuild the Web Component with `customElement: true` and Shadow DOM encapsulation so host page CSS (WordPress themes) cannot bleed into the ranklist. See [ADR-007](adr/007-shadow-dom-deferred.md) for why this was deferred from POC and the planned MVP resolution.
+    - **Tournament re-import:** Delete + re-import in a single DB transaction ([ADR-014](adr/014-delete-reimport-strategy.md)). Rollback on failure preserves original data.
 
-    - Deploy Web Component to the live WordPress site.
+    - **Shadow DOM isolation:** Both `<spws-ranklist>` and `<spws-calendar>` ship as custom elements with Shadow DOM encapsulation ([ADR-007](adr/007-shadow-dom-deferred.md)).
+
+    - Deploy both Web Components to the live WordPress site.
 
 ### Phase 3: Advanced Integrations
 
@@ -660,6 +679,10 @@ erDiagram
         DATE dt_start
         DATE dt_end
         enum_event_status enum_status
+        TEXT txt_country "e.g. France, Poland (M8)"
+        TEXT txt_venue_address "Full venue address (M8)"
+        TEXT url_invitation "Link to invitation PDF/page (M8)"
+        NUMERIC num_entry_fee "Entry fee amount (M8)"
     }
     tbl_tournament {
         SERIAL id_tournament PK
@@ -824,6 +847,10 @@ erDiagram
         INT id_season FK "→ tbl_season"
         INT id_organizer FK "→ tbl_organizer"
         TEXT txt_location "e.g. Thionville, France"
+        TEXT txt_country "e.g. France, Poland (MVP)"
+        TEXT txt_venue_address "Full venue address (MVP)"
+        TEXT url_invitation "Link to invitation PDF/page (MVP)"
+        NUMERIC num_entry_fee "Entry fee amount (MVP)"
         DATE dt_start "First day of the event"
         DATE dt_end "Last day of the event"
         TEXT url_event "Link to event page"
@@ -965,7 +992,7 @@ RLS is enabled on all 9 tables. Public (anon) tables get a `FOR SELECT USING (tr
 
 > **Implementation:** See `supabase/migrations/` for the RLS policy definitions.
 
-> **Design note:** See [ADR-004](adr/004-single-admin-account.md) for the single-admin-account rationale and MVP migration path.
+> **Design note:** See [ADR-016](adr/016-supabase-auth-totp-mfa.md) for the Supabase Auth + TOTP MFA decision (supersedes [ADR-004](adr/004-single-admin-account.md)). Admin access requires email + password + 6-digit TOTP code. Write functions are REVOKE'd from `anon`/`PUBLIC` and GRANT'd to `authenticated` only. Multiple admins supported — each with independent credentials and MFA enrollment. 59-minute inactivity timeout; no token refresh logic.
 
 ### 9.3 Season & Scoring Configuration
 
@@ -1511,7 +1538,27 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-39 | EN/PL internationalisation with reactive toggle | §11 | DrilldownModal.test.ts (test K) | Covered |
 | FR-40 | Import status transitions (PLANNED → IMPORTED → SCORED) | UC1(b), UC5(c) | 2.9 (SCORED only) | Gap — IMPORTED transition untested |
 | FR-41 | Domestic-participation requirement: fencers with 0 domestic points excluded from ranking views | §8.5(7) | 5.24–5.25 | Covered |
-| FR-42 | CERT/PROD environment toggle with runtime switching | §2.2 | 6.17–6.20 | Gap — implemented but not yet tested |
+| FR-42 | CERT/PROD environment toggle with runtime switching | §2.2 | 8.01–8.04 | Covered (M8) |
+| FR-43 | Calendar view: chronological event list with season filter | UC21(a,b) | 8.11–8.19, 8.38–8.43, 8.47 | Covered (M8) |
+| FR-44 | Calendar view: past/future/all toggle | UC21(c) | 8.44–8.45 | Covered (M8) |
+| FR-45 | Calendar view: mobile-friendly layout | UC21(e) | 8.46 | Covered (M8) |
+| FR-46 | Admin authentication: Supabase Auth + TOTP MFA (supersedes client-side password gate) | UC22(a), ADR-016 | 8.48–8.54 (M8, to be rewritten M9) | Covered (M8) → Rewrite (M9) |
+| FR-47 | Season CRUD via web UI | UC22(b) | — | Planned (M9) |
+| FR-48 | tbl_event schema extension: 4 new columns (txt_country, txt_venue_address, url_invitation, num_entry_fee) | UC22(c), UC21(d) | 8.05–8.10 | Covered (M8) |
+| FR-49 | Tournament CRUD nested under events | UC22(d) | — | Planned (M9) |
+| FR-50 | Delete cascade (event → tournaments → results) | UC22(e) | — | Planned (M9) |
+| FR-51 | Tournament re-import in single transaction | UC23(a-f) | — | Planned (M9) |
+| FR-52 | Multi-category expansion (30 sub-rankings) | §6.2 | 8.20–8.26 | Covered (M8) |
+| FR-53 | Event-level batch import: multi-select tournament checklist modal | UC22(g) | — | Planned (M9) |
+| FR-54 | Tournament-level single import: own URL or file upload | UC22(h) | — | Planned (M9) |
+| FR-55 | File import: parse results from .xlsx, .xls, .json, .csv | UC22(i), UC23(c) | — | Planned (M9) |
+| FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new | UC4(a-e) | — | Planned (M9) |
+| FR-57 | Identity resolution: disambiguation modal for same-name fencers with age category fit | UC3(f), UC4(b) | — | Planned (M9) |
+| FR-58 | EVF calendar import: fetch veteransfencing.eu, deduplication, create events+tournaments | UC8, UC9 | — | Planned (M9) |
+| FR-59 | Two-view app shell: sidebar drawer with Ranklista + Kalendarz navigation | UC12, UC21 | 8.27–8.37 | Covered (M8) |
+| FR-60 | Event CRUD via web UI (create, edit, delete events with all fields) | UC22(c) | — | Planned (M9) |
+| FR-61 | Scoring config editor (admin, per-season, structured form) | UC22(f) | 8.62–8.75 | Covered (M8) |
+| FR-62 | Calendar view: completed events show "Wyniki" link to event results URL | UC21 | 8.76–8.77 | Covered (M8) |
 
 ### Non-Functional Requirements
 
@@ -1529,7 +1576,7 @@ Every functional and non-functional requirement is listed below with its source 
 | NFR-10 | Pipeline observability (structured logs + Discord) | §10 | 3.6 (Discord only) | Partial |
 | NFR-11 | Database migration strategy (numbered SQL files) | §9.9 | 1.1a–1.2i (schema verification) | Covered |
 | NFR-12 | Data integrity (Supabase daily backups) | §10 | — | Infrastructure (not testable) |
-| NFR-13 | Shadow DOM isolation (host CSS does not leak) | §5, §6 | — | Gap — deferred to MVP (ADR-007) |
+| NFR-13 | Shadow DOM isolation (host CSS does not leak) | §5, §6 | 8.55–8.61 | Covered (M8) |
 
 ### Architecture Decisions
 
@@ -1538,11 +1585,16 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-001](adr/001-hybrid-scoring-config.md) | Hybrid Scoring Configuration | §8.6.2 |
 | [ADR-002](adr/002-calculate-once-store-forever.md) | Calculate Once, Store Forever | §9.5 |
 | [ADR-003](adr/003-identity-by-fk-not-name.md) | Identity by FK, not by Name | §9.6 |
-| [ADR-004](adr/004-single-admin-account.md) | Single Admin Account for POC | §9.2.1 |
+| [ADR-004](adr/004-single-admin-account.md) | ~~Single Admin Account for POC~~ (Superseded by ADR-016) | §9.2.1 |
+| [ADR-016](adr/016-supabase-auth-totp-mfa.md) | Supabase Auth + TOTP MFA for Admin Access | §9.2.1 |
 | [ADR-005](adr/005-svelte-state-i18n.md) | Svelte 5 $state for i18n | §11.2 |
 | [ADR-006](adr/006-jsonb-ranking-rules.md) | JSONB Bucket-Based Ranking Rules | §8.6.6 |
-| [ADR-007](adr/007-shadow-dom-deferred.md) | Shadow DOM Deferred to MVP | §6 Phase 2 |
+| [ADR-007](adr/007-shadow-dom-deferred.md) | Shadow DOM (Implemented M8) | §6 Phase 2 |
 | [ADR-008](adr/008-psw-msw-international-pool.md) | PSW and MSW in International Pool | §8.2 |
 | [ADR-009](adr/009-cert-prod-runtime-toggle.md) | CERT/PROD Runtime Toggle (Single Site) | §2.2 |
 | [ADR-010](adr/010-age-category-by-birth-year.md) | Age Category by Birth Year (Cross-Category Carryover) | §8.5(2) |
 | [ADR-011](adr/011-artifact-release-pipeline.md) | Three-Tier Artifact Release Pipeline with Schema Fingerprinting | §2.2 |
+| [ADR-012](adr/012-sql-pre-deploy-snapshots.md) | SQL-Level Pre-Deploy Snapshots for PROD (Deferred) | §9.9 |
+| [ADR-013](adr/013-poc-mvp-transition.md) | POC-to-MVP Transition | §6 |
+| [ADR-014](adr/014-delete-reimport-strategy.md) | Delete + Re-import in Transaction | UC23 |
+| [ADR-015](adr/015-m8-ui-design-decisions.md) | M8 UI Design Decisions | §6.2 M8 |

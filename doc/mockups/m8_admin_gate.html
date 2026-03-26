@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M8 Admin Password Gate Mockups — 3 Options</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+  h1.page-title { text-align: center; margin-bottom: 10px; font-size: 28px; color: #222; }
+  .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 30px; }
+  .option-label { font-size: 20px; font-weight: 700; margin: 30px 0 6px; color: #1a1a1a; }
+  .option-desc { font-size: 14px; color: #666; margin-bottom: 14px; max-width: 700px; }
+
+  .view-box { background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; width: 460px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 20px; }
+  .view-label { background: #e8ecf1; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Header bar */
+  .header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f5f7fa; border-bottom: 1px solid #ddd; }
+  .hamburger { font-size: 20px; cursor: pointer; padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; line-height: 1; }
+  .header h2 { font-size: 18px; color: #222; margin: 0; white-space: nowrap; }
+  .season-select { padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: #fff; }
+  .env-toggle { display: flex; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+  .env-btn { padding: 3px 8px; border: none; background: #fff; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .env-btn.active { background: #4a90d9; color: #fff; }
+  .env-btn + .env-btn { border-left: 1px solid #ccc; }
+  .lang-toggle { display: flex; gap: 4px; }
+  .lang-btn { padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 14px; cursor: pointer; }
+  .lang-btn.active { background: #4a90d9; border-color: #4a90d9; }
+  .spacer { flex: 1; }
+
+  /* Modal overlay */
+  .modal-overlay { background: rgba(0,0,0,0.4); padding: 40px 20px; display: flex; justify-content: center; min-height: 280px; }
+  .modal-box { background: #fff; border-radius: 10px; padding: 30px; width: 340px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); height: fit-content; }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: #222; }
+  .modal-subtitle { font-size: 13px; color: #888; margin-bottom: 20px; }
+  .modal-input { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; margin-bottom: 14px; }
+  .modal-input:focus { outline: none; border-color: #4a90d9; box-shadow: 0 0 0 2px rgba(74,144,217,0.2); }
+  .modal-btn { width: 100%; padding: 10px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .modal-btn-primary { background: #4a90d9; color: #fff; }
+  .modal-btn-primary:hover { background: #3a7bc8; }
+  .modal-error { color: #c33; font-size: 13px; margin-bottom: 10px; display: none; }
+  .modal-error.show { display: block; }
+
+  /* Admin mode indicator */
+  .admin-badge { background: #ff6b35; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; letter-spacing: 0.5px; }
+  .admin-badge-subtle { background: transparent; color: #ff6b35; font-size: 10px; font-weight: 700; padding: 2px 6px; border: 1px solid #ff6b35; border-radius: 3px; }
+
+  /* Edit controls */
+  .edit-icon { color: #ff6b35; font-size: 14px; cursor: pointer; opacity: 0.7; }
+  .edit-icon:hover { opacity: 1; }
+  .add-btn { color: #ff6b35; font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px; border: 1px dashed #ff6b35; border-radius: 4px; background: transparent; margin: 8px 14px; }
+
+  /* Ranking table */
+  .rank-table { width: 100%; border-collapse: collapse; }
+  .rank-table th { text-align: left; padding: 8px 14px; font-size: 11px; text-transform: uppercase; color: #888; border-bottom: 2px solid #eee; }
+  .rank-table td { padding: 10px 14px; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
+  .rank-table .num { text-align: right; }
+
+  /* Timeline event for calendar admin */
+  .timeline-event { display: flex; gap: 14px; margin-bottom: 14px; position: relative; padding-left: 20px; padding-right: 14px; }
+  .timeline-event::before { content: ''; position: absolute; left: 0; top: 8px; width: 10px; height: 10px; border-radius: 50%; background: #1a7f37; border: 2px solid #fff; box-shadow: 0 0 0 1px #1a7f37; }
+  .timeline-date { font-weight: 700; font-size: 13px; color: #4a90d9; white-space: nowrap; min-width: 50px; padding-top: 2px; }
+  .timeline-info { flex: 1; }
+  .timeline-name { font-size: 14px; font-weight: 600; color: #222; }
+  .timeline-loc { font-size: 12px; color: #888; margin-top: 2px; }
+
+  /* Sidebar */
+  .sidebar-demo { display: flex; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; width: 460px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  .sidebar-panel { width: 160px; background: #2c3e50; color: #fff; padding: 16px; flex-shrink: 0; }
+  .sidebar-panel h3 { font-size: 16px; margin-bottom: 20px; }
+  .sidebar-item { padding: 8px 0; font-size: 14px; cursor: pointer; }
+  .sidebar-item.active { font-weight: 700; color: #4a90d9; }
+  .sidebar-item:hover { color: #7db8f0; }
+  .sidebar-admin-section { border-top: 1px solid rgba(255,255,255,0.15); margin-top: 12px; padding-top: 12px; }
+  .sidebar-admin-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #ff6b35; margin-bottom: 6px; }
+
+  .side-by-side { display: flex; gap: 24px; flex-wrap: wrap; }
+  hr.sep { border: none; border-top: 2px solid #4a90d9; margin: 40px 0 10px; }
+  .note { font-size: 13px; color: #888; margin-top: 8px; padding: 8px 12px; background: #fff8e1; border-radius: 4px; border-left: 3px solid #f5a623; margin-bottom: 20px; }
+
+  /* Timeout bar */
+  .timeout-bar { background: #fff4e6; border-bottom: 1px solid #ffd6a0; padding: 4px 14px; font-size: 11px; color: #b35c00; display: flex; align-items: center; gap: 6px; }
+  .timeout-bar .time { font-weight: 700; }
+
+  /* Flow diagram */
+  .flow { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; width: 700px; }
+  .flow-title { font-size: 14px; font-weight: 700; margin-bottom: 14px; color: #444; }
+  .flow-steps { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .flow-step { background: #f5f7fa; border: 1px solid #ddd; border-radius: 6px; padding: 8px 12px; font-size: 12px; text-align: center; min-width: 100px; }
+  .flow-step.highlight { background: #e1f0ff; border-color: #4a90d9; color: #1a6fbf; font-weight: 600; }
+  .flow-step.admin { background: #fff4e6; border-color: #ff6b35; color: #b35c00; }
+  .flow-arrow { font-size: 18px; color: #aaa; }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">M8 Admin Password Gate — 3 Options</h1>
+<p class="subtitle">Hidden admin mode via <code>?admin=1</code> URL parameter. No visible lock icon for end users. 120-minute inactivity timeout.</p>
+
+<!-- ==================== FLOW DIAGRAM ==================== -->
+<div class="flow">
+  <div class="flow-title">Admin Entry Flow (same for all options)</div>
+  <div class="flow-steps">
+    <div class="flow-step">User opens<br><code>?admin=1</code></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step highlight">Password<br>modal appears</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">Correct password</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step admin">Admin mode<br>activated</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">Edit controls<br>visible</div>
+  </div>
+  <div class="flow-steps" style="margin-top:10px;">
+    <div class="flow-step" style="min-width:140px;">120 min no activity</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step highlight">Password modal<br>reappears</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">Re-authenticate<br>or close</div>
+  </div>
+</div>
+
+
+<!-- ==================== PASSWORD MODAL ==================== -->
+<hr class="sep">
+<div class="option-label" style="margin-bottom:14px;">Password Modal (same for all options)</div>
+
+<div class="view-box" style="width:460px;">
+  <div class="view-label">Password prompt — appears on page load when ?admin=1</div>
+  <div class="header" style="opacity:0.4;">
+    <button class="hamburger">☰</button>
+    <div class="env-toggle"><button class="env-btn active">CT</button><button class="env-btn">PD</button></div>
+    <h2>SPWS Ranklist</h2>
+    <span class="spacer"></span>
+  </div>
+  <div class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title">🔒 Tryb administratora</div>
+      <div class="modal-subtitle">Podaj hasło aby kontynuować</div>
+      <div class="modal-error show">Nieprawidłowe hasło</div>
+      <input type="password" class="modal-input" value="••••••••" disabled>
+      <button class="modal-btn modal-btn-primary">Zaloguj</button>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  Password modal is centered over dimmed app. Header visible but non-interactive. Error message appears after wrong password. Modal blocks all interaction until correct password entered. <strong>EN version:</strong> "Administrator mode" / "Enter password to continue" / "Incorrect password" / "Log in".
+</div>
+
+
+<!-- ==================== OPTION A ==================== -->
+<hr class="sep">
+<div class="option-label">OPTION A: Header Badge + Inline Edit Icons</div>
+<div class="option-desc">Small orange "ADMIN" badge in header. Edit icons (✏️) appear inline next to editable items. Add buttons appear below lists. Timeout countdown in a slim bar below header.</div>
+
+<div class="side-by-side">
+  <!-- Ranklist admin -->
+  <div class="view-box">
+    <div class="view-label">Ranklist — admin mode active</div>
+    <div class="header">
+      <button class="hamburger">☰</button>
+      <div class="env-toggle"><button class="env-btn active">CT</button><button class="env-btn">PD</button></div>
+      <h2>SPWS Ranklist</h2>
+      <span class="admin-badge">ADMIN</span>
+      <select class="season-select"><option>2025-2026 ●</option></select>
+      <span class="spacer"></span>
+      <div class="lang-toggle">
+        <button class="lang-btn">🇬🇧</button>
+        <button class="lang-btn active">🇵🇱</button>
+      </div>
+    </div>
+    <div class="timeout-bar">
+      <span>Sesja admin:</span>
+      <span class="time">1h 47m</span>
+      <span>pozostało</span>
+    </div>
+    <table class="rank-table">
+      <tr><th>#</th><th>Zawodnik</th><th class="num">Punkty</th><th></th></tr>
+      <tr><td>1</td><td>ATANASSOW Aleksander</td><td class="num">245.3</td><td><span class="edit-icon">✏️</span></td></tr>
+      <tr><td>2</td><td>DUDEK Piotr</td><td class="num">198.7</td><td><span class="edit-icon">✏️</span></td></tr>
+      <tr><td>3</td><td>BAZAK Tomasz</td><td class="num">187.2</td><td><span class="edit-icon">✏️</span></td></tr>
+    </table>
+  </div>
+
+  <!-- Calendar admin -->
+  <div class="view-box">
+    <div class="view-label">Calendar — admin mode active</div>
+    <div class="header">
+      <button class="hamburger">☰</button>
+      <div class="env-toggle"><button class="env-btn active">CT</button><button class="env-btn">PD</button></div>
+      <h2>SPWS Kalendarz</h2>
+      <span class="admin-badge">ADMIN</span>
+      <select class="season-select"><option>2025-2026 ●</option></select>
+      <span class="spacer"></span>
+      <div class="lang-toggle">
+        <button class="lang-btn">🇬🇧</button>
+        <button class="lang-btn active">🇵🇱</button>
+      </div>
+    </div>
+    <div class="timeout-bar">
+      <span>Sesja admin:</span>
+      <span class="time">1h 47m</span>
+      <span>pozostało</span>
+    </div>
+    <div style="padding:14px 14px 0 24px;">
+      <div class="timeline-event" style="position:relative;">
+        <div class="timeline-date">28.09</div>
+        <div class="timeline-info">
+          <div class="timeline-name">I Puchar Polski Weteranów <span class="edit-icon">✏️</span></div>
+          <div class="timeline-loc">Konin, Polska · 5 turniejów</div>
+        </div>
+      </div>
+      <div class="timeline-event" style="position:relative;">
+        <div class="timeline-date">25.10</div>
+        <div class="timeline-info">
+          <div class="timeline-name">II Puchar Polski Weteranów <span class="edit-icon">✏️</span></div>
+          <div class="timeline-loc">Kraków, Polska · 8 turniejów</div>
+        </div>
+      </div>
+    </div>
+    <button class="add-btn">+ Dodaj wydarzenie</button>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Option A:</strong> Orange "ADMIN" badge next to title. Timeout countdown bar below header. Edit icons (✏️) on each item. "+ Dodaj wydarzenie" button at bottom of calendar. Clean, minimal admin overlay. Ranklist edit icons could open fencer or result editor (M9).
+</div>
+
+
+<!-- ==================== OPTION B ==================== -->
+<hr class="sep">
+<div class="option-label">OPTION B: Sidebar Admin Section</div>
+<div class="option-desc">Admin tools live in the sidebar drawer. When admin mode is active, sidebar gets an "Admin" section with management links. No badge in header — admin state is only visible when sidebar is open. Timeout shown in sidebar.</div>
+
+<div class="side-by-side">
+  <!-- Sidebar with admin section -->
+  <div>
+    <div style="font-size:13px; color:#888; margin-bottom:6px;">Sidebar when admin mode active:</div>
+    <div class="sidebar-demo" style="height:280px;">
+      <div class="sidebar-panel">
+        <h3>SPWS</h3>
+        <div class="sidebar-item active">▶ Ranklista</div>
+        <div class="sidebar-item">Kalendarz</div>
+        <div class="sidebar-admin-section">
+          <div class="sidebar-admin-label">Admin</div>
+          <div class="sidebar-item" style="color:#ff6b35;">Sezony</div>
+          <div class="sidebar-item" style="color:#ff6b35;">Wydarzenia</div>
+          <div class="sidebar-item" style="color:#ff6b35;">Tożsamości</div>
+        </div>
+        <div style="margin-top:auto; padding-top:16px; font-size:10px; color:#aaa;">
+          Sesja: 1h 47m
+        </div>
+      </div>
+      <div style="flex:1; background:rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">(content dimmed)</div>
+    </div>
+  </div>
+
+  <!-- Calendar with inline edits -->
+  <div class="view-box">
+    <div class="view-label">Calendar — admin mode (no header badge)</div>
+    <div class="header">
+      <button class="hamburger">☰</button>
+      <div class="env-toggle"><button class="env-btn active">CT</button><button class="env-btn">PD</button></div>
+      <h2>SPWS Kalendarz</h2>
+      <select class="season-select"><option>2025-2026 ●</option></select>
+      <span class="spacer"></span>
+      <div class="lang-toggle">
+        <button class="lang-btn">🇬🇧</button>
+        <button class="lang-btn active">🇵🇱</button>
+      </div>
+    </div>
+    <div style="padding:14px 14px 0 24px;">
+      <div class="timeline-event" style="position:relative;">
+        <div class="timeline-date">28.09</div>
+        <div class="timeline-info">
+          <div class="timeline-name">I Puchar Polski Weteranów <span class="edit-icon">✏️</span></div>
+          <div class="timeline-loc">Konin, Polska · 5 turniejów</div>
+        </div>
+      </div>
+      <div class="timeline-event" style="position:relative;">
+        <div class="timeline-date">25.10</div>
+        <div class="timeline-info">
+          <div class="timeline-name">II Puchar Polski Weteranów <span class="edit-icon">✏️</span></div>
+          <div class="timeline-loc">Kraków, Polska · 8 turniejów</div>
+        </div>
+      </div>
+    </div>
+    <button class="add-btn">+ Dodaj wydarzenie</button>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Option B:</strong> Admin tools in sidebar — Sezony, Wydarzenia, Tożsamości (M9 items). No orange badge in header — cleaner look. Admin state discoverable only via sidebar. Timeout shown at sidebar bottom. Edit icons still appear inline on Calendar/Ranklist items. Future-proof: sidebar can grow with more admin sections.
+</div>
+
+
+<!-- ==================== OPTION C ==================== -->
+<hr class="sep">
+<div class="option-label">OPTION C: Floating Admin Toolbar</div>
+<div class="option-desc">A small floating toolbar appears at the bottom-right corner when admin mode is active. Contains admin actions and session timer. No header modifications. Edit icons appear on hover only.</div>
+
+<div class="side-by-side">
+  <!-- Ranklist with floating toolbar -->
+  <div class="view-box" style="position:relative; min-height:340px;">
+    <div class="view-label">Ranklist — admin mode (floating toolbar)</div>
+    <div class="header">
+      <button class="hamburger">☰</button>
+      <div class="env-toggle"><button class="env-btn active">CT</button><button class="env-btn">PD</button></div>
+      <h2>SPWS Ranklist</h2>
+      <select class="season-select"><option>2025-2026 ●</option></select>
+      <span class="spacer"></span>
+      <div class="lang-toggle">
+        <button class="lang-btn">🇬🇧</button>
+        <button class="lang-btn active">🇵🇱</button>
+      </div>
+    </div>
+    <table class="rank-table">
+      <tr><th>#</th><th>Zawodnik</th><th class="num">Punkty</th></tr>
+      <tr><td>1</td><td>ATANASSOW Aleksander</td><td class="num">245.3</td></tr>
+      <tr><td>2</td><td>DUDEK Piotr</td><td class="num">198.7</td></tr>
+      <tr><td>3</td><td>BAZAK Tomasz</td><td class="num">187.2</td></tr>
+      <tr><td>4</td><td>HAŚKO Jan</td><td class="num">165.0</td></tr>
+    </table>
+    <!-- Floating toolbar -->
+    <div style="position:absolute; bottom:12px; right:12px; background:#2c3e50; color:#fff; border-radius:8px; padding:10px 14px; box-shadow:0 4px 12px rgba(0,0,0,0.3); font-size:12px; display:flex; align-items:center; gap:12px;">
+      <span class="admin-badge" style="background:#ff6b35;">ADMIN</span>
+      <span style="color:#aaa;">1h 47m</span>
+      <span style="color:#ff6b35; cursor:pointer;">Wyloguj</span>
+    </div>
+  </div>
+
+  <!-- Calendar with floating toolbar -->
+  <div class="view-box" style="position:relative; min-height:340px;">
+    <div class="view-label">Calendar — admin mode (floating toolbar)</div>
+    <div class="header">
+      <button class="hamburger">☰</button>
+      <div class="env-toggle"><button class="env-btn active">CT</button><button class="env-btn">PD</button></div>
+      <h2>SPWS Kalendarz</h2>
+      <select class="season-select"><option>2025-2026 ●</option></select>
+      <span class="spacer"></span>
+      <div class="lang-toggle">
+        <button class="lang-btn">🇬🇧</button>
+        <button class="lang-btn active">🇵🇱</button>
+      </div>
+    </div>
+    <div style="padding:14px 14px 0 24px;">
+      <div class="timeline-event" style="position:relative;">
+        <div class="timeline-date">28.09</div>
+        <div class="timeline-info">
+          <div class="timeline-name">I Puchar Polski Weteranów</div>
+          <div class="timeline-loc">Konin, Polska · 5 turniejów</div>
+        </div>
+      </div>
+      <div class="timeline-event" style="position:relative;">
+        <div class="timeline-date">25.10</div>
+        <div class="timeline-info">
+          <div class="timeline-name">II Puchar Polski Weteranów</div>
+          <div class="timeline-loc">Kraków, Polska · 8 turniejów</div>
+        </div>
+      </div>
+    </div>
+    <button class="add-btn">+ Dodaj wydarzenie</button>
+    <!-- Floating toolbar -->
+    <div style="position:absolute; bottom:12px; right:12px; background:#2c3e50; color:#fff; border-radius:8px; padding:10px 14px; box-shadow:0 4px 12px rgba(0,0,0,0.3); font-size:12px; display:flex; align-items:center; gap:12px;">
+      <span class="admin-badge" style="background:#ff6b35;">ADMIN</span>
+      <span style="color:#aaa;">1h 47m</span>
+      <span style="color:#ff6b35; cursor:pointer;">Wyloguj</span>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Option C:</strong> Floating dark toolbar in bottom-right corner. Shows ADMIN badge, countdown, and logout. Header stays clean — no badge. Edit controls appear on hover (not shown in static mockup). "+ Dodaj wydarzenie" still visible. Minimally invasive. Could be draggable in future.
+</div>
+
+
+<!-- ==================== SUMMARY ==================== -->
+<hr class="sep" style="margin-top:50px;">
+<h2 style="font-size:18px; margin:20px 0 14px;">Shared Admin Behavior (all options)</h2>
+<div style="background:#fff; border:1px solid #ddd; border-radius:8px; padding:14px; width:520px; margin-bottom:30px;">
+  <table style="width:100%; border-collapse:collapse; font-size:13px;">
+    <tr style="border-bottom:2px solid #eee;">
+      <th style="text-align:left; padding:8px;">Behavior</th>
+      <th style="text-align:left; padding:8px;">Details</th>
+    </tr>
+    <tr style="border-bottom:1px solid #f0f0f0;">
+      <td style="padding:8px;"><strong>Entry</strong></td>
+      <td style="padding:8px;">URL param <code>?admin=1</code> — no visible lock icon</td>
+    </tr>
+    <tr style="border-bottom:1px solid #f0f0f0;">
+      <td style="padding:8px;"><strong>Authentication</strong></td>
+      <td style="padding:8px;">Password modal on page load (client-side, ADR-004)</td>
+    </tr>
+    <tr style="border-bottom:1px solid #f0f0f0;">
+      <td style="padding:8px;"><strong>Timeout</strong></td>
+      <td style="padding:8px;">120 min inactivity → re-authenticate</td>
+    </tr>
+    <tr style="border-bottom:1px solid #f0f0f0;">
+      <td style="padding:8px;"><strong>Edit controls</strong></td>
+      <td style="padding:8px;">✏️ pencil on events, "+ Dodaj" buttons</td>
+    </tr>
+    <tr style="border-bottom:1px solid #f0f0f0;">
+      <td style="padding:8px;"><strong>M8 scope</strong></td>
+      <td style="padding:8px;">Password gate only. CRUD UI is M9.</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;"><strong>Normal users</strong></td>
+      <td style="padding:8px;">See no admin UI — <code>?admin=1</code> is hidden</td>
+    </tr>
+  </table>
+</div>
+
+<div style="text-align:center; padding: 20px; color: #888; font-size: 13px;">
+  Password modal + 120-min timeout are M8 scope. Admin CRUD (Seasons, Events, Tournaments, Identity) is M9.
+</div>
+
+</body>
+</html>

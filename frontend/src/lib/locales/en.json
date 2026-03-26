@@ -1,5 +1,5 @@
 {
-  "app_title": "SPWS Ranklist",
+  "app_title": "Ranklist",
   "weapon": "Weapon",
   "gender": "Gender",
   "category": "Category",
@@ -14,6 +14,7 @@
   "environment": "Environment",
 
   "season_active": "(active)",
+  "season_label": "Season",
   "export_to_ods": "Export to ODS",
 
   "col_fencer": "Fencer",
@@ -56,5 +57,29 @@
   "legend_mew": "MEW — Mistrzostwa Europy Weteranów (European Veterans Championship)",
   "legend_msw": "MSW — Mistrzostwa Świata Weteranów (World Veterans Championship)",
   "footer_n": "N — number of participants",
-  "footer_mult": "Mult — tournament type multiplier applied to the raw score (place points + DE bonus + podium bonus)"
+  "footer_mult": "Mult — tournament type multiplier applied to the raw score (place points + DE bonus + podium bonus)",
+
+  "nav_ranklist": "Ranklist",
+  "nav_calendar": "Calendar",
+  "nav_admin_seasons": "Seasons",
+  "nav_admin_events": "Events",
+  "nav_admin_identities": "Identities",
+  "nav_admin_scoring": "Scoring",
+  "admin_section": "Administration",
+  "admin_logout": "Logout",
+  "admin_session": "Session",
+
+  "calendar_title": "Calendar",
+  "filter_all": "All",
+  "filter_past": "Past",
+  "filter_future": "Future",
+  "status_completed": "Completed",
+  "status_scheduled": "Scheduled",
+  "status_planned": "Planned",
+  "status_cancelled": "Cancelled",
+  "status_in_progress": "In Progress",
+  "organizer_announcement": "Organizer announcement",
+  "tournaments_count": "tournaments",
+  "entry_fee": "Entry fee",
+  "event_results": "Results"
 }

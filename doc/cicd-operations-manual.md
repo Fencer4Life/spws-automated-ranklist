@@ -4,18 +4,13 @@ This guide covers the three-tier release pipeline for the SPWS Automated Ranklis
 
 ## Architecture Overview
 
-```
-               DATABASE (promoted tier-by-tier)
- LOCAL (Docker)              CERT (Cloud)              PROD (Cloud)
-┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
-│ supabase db reset │    │ Mgmt API apply   │    │ Mgmt API apply   │
-│ all migrations    │    │ same SQL files   │    │ same SQL files   │
-│ + seed data       │    │ (incremental)    │    │ (incremental)    │
-│ + pgTAP tests     │    │                  │    │                  │
-│ schema_fingerprint│───▶│ schema_fingerprint│───▶│ schema_fingerprint│
-│ = abc123          │    │ must = abc123    │    │ must = abc123    │
-└──────────────────┘    └──────────────────┘    └──────────────────┘
-       CI validates            auto-deploy          manual approval
+```mermaid
+graph LR
+    LOCAL["<b>LOCAL (Docker)</b><br/>supabase db reset<br/>all migrations + seed data<br/>+ pgTAP tests<br/>schema_fingerprint = abc123<br/><i>CI validates</i>"]
+    CERT["<b>CERT (Cloud)</b><br/>Mgmt API apply<br/>same SQL files (incremental)<br/>schema_fingerprint must = abc123<br/><i>auto-deploy</i>"]
+    PROD["<b>PROD (Cloud)</b><br/>Mgmt API apply<br/>same SQL files (incremental)<br/>schema_fingerprint must = abc123<br/><i>manual approval</i>"]
+
+    LOCAL -->|fingerprint check| CERT -->|fingerprint check| PROD
 ```
 
 Two GitHub Actions workflows drive the pipeline:
@@ -78,31 +73,29 @@ These steps are done once in the GitHub web UI.
 
 ### What happens when you push to main
 
-```
-You: git push origin main
-         │
-         ▼
-┌─── CI Workflow ────────────────────────────────┐
-│  4 parallel jobs:                              │
-│  ✓ pgTAP (database tests in Docker)           │
-│  ✓ pytest (Python tests)                       │
-│  ✓ vitest (frontend tests)                     │
-│  ✓ coherence (version sync, ADR count, etc.)   │
-└────────────────────────────────────────────────┘
-         │ all green ✓
-         ▼
-┌─── Release Workflow ───────────────────────────┐
-│  build:                                        │
-│    1. Start Docker Supabase                    │
-│    2. Compute LOCAL schema fingerprint         │
-│    3. Generate release-manifest.json           │
-│    4. Build frontend (vite build)              │
-│    5. Upload Pages artifact                    │
-│                                                │
-│  deploy-pages:  ──▶ GitHub Pages updated       │
-│  deploy-cert:   ──▶ CERT DB updated            │
-│  deploy-prod:   ──▶ ⏳ Waiting for approval    │
-└────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    PUSH["git push origin main"]
+
+    subgraph CI["CI Workflow (4 parallel jobs)"]
+        PGTAP["pgTAP — database tests in Docker"]
+        PYTEST["pytest — Python tests"]
+        VITEST["vitest — frontend tests"]
+        COHERENCE["coherence — version sync, ADR count, etc."]
+    end
+
+    subgraph RELEASE["Release Workflow"]
+        BUILD["build:<br/>1. Start Docker Supabase<br/>2. Compute LOCAL schema fingerprint<br/>3. Generate release-manifest.json<br/>4. Build frontend (vite build)<br/>5. Upload Pages artifact"]
+        PAGES["deploy-pages → GitHub Pages updated"]
+        CERT["deploy-cert → CERT DB updated"]
+        PROD["deploy-prod → Waiting for approval"]
+    end
+
+    PUSH --> CI
+    CI -->|all green| BUILD
+    BUILD --> PAGES
+    BUILD --> CERT
+    BUILD --> PROD
 ```
 
 ### Step by step
@@ -178,6 +171,8 @@ Rollback is **forward-only** — you push a new corrective migration through the
 ### Why forward-only?
 
 The Supabase Management API only supports running SQL queries — there is no `DROP MIGRATION` or `ROLLBACK` command. And since migrations may have already modified data (not just schema), reversing them safely requires explicit corrective SQL.
+
+A SQL-level snapshot mechanism (automated pre-deploy backups in a `_backup` schema) was designed and evaluated but deferred — the complexity outweighed the practical value given that most migrations change the schema, which would block rollback. See [ADR-012](../doc/adr/012-sql-pre-deploy-snapshots.md) for the full analysis and preserved design.
 
 ### Can I skip a release that has a bug?
 

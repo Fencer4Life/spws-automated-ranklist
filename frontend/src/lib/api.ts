@@ -5,10 +5,12 @@ import type {
   RankingKadraRow,
   ScoreRow,
   TournamentDetail,
+  CalendarEvent,
   WeaponType,
   GenderType,
   AgeCategory,
   RankingRules,
+  ScoringConfig,
 } from './types'
 
 let client: SupabaseClient | null = null
@@ -94,6 +96,16 @@ export async function fetchRankingRules(seasonId: number): Promise<RankingRules 
   return (data?.json_ranking_rules as RankingRules | null) ?? null
 }
 
+export async function fetchCalendarEvents(seasonId: number): Promise<CalendarEvent[]> {
+  const { data, error } = await getClient()
+    .from('vw_calendar')
+    .select('*')
+    .eq('id_season', seasonId)
+    .order('dt_start', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
 export async function fetchTournamentDetail(
   tournamentId: number,
 ): Promise<TournamentDetail | null> {
@@ -121,4 +133,19 @@ export async function fetchTournamentDetail(
   }
 
   return { url_results: data?.url_results ?? null, txt_location }
+}
+
+export async function fetchScoringConfig(seasonId: number): Promise<ScoringConfig | null> {
+  const { data, error } = await getClient().rpc('fn_export_scoring_config', {
+    p_id_season: seasonId,
+  })
+  if (error) return null
+  return (data as ScoringConfig | null) ?? null
+}
+
+export async function saveScoringConfig(config: Record<string, unknown>): Promise<void> {
+  const { error } = await getClient().rpc('fn_import_scoring_config', {
+    p_config: config,
+  })
+  if (error) throw error
 }

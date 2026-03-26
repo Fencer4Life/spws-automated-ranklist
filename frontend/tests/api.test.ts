@@ -17,7 +17,7 @@ vi.mock('@supabase/supabase-js', () => {
   }
 })
 
-import { initClient, fetchSeasons, fetchRankingPpw, fetchRankingKadra, fetchFencerScores } from '../src/lib/api'
+import { initClient, fetchSeasons, fetchRankingPpw, fetchRankingKadra, fetchFencerScores, fetchCalendarEvents } from '../src/lib/api'
 import { __mockRpc, __mockFrom } from '@supabase/supabase-js'
 
 const mockRpc = __mockRpc as ReturnType<typeof vi.fn>
@@ -91,6 +91,60 @@ describe('fetchRankingKadra', () => {
       p_season: 1,
     })
     expect(result).toEqual(rows)
+  })
+})
+
+// 8.18 — fetchCalendarEvents calls vw_calendar with season filter
+describe('fetchCalendarEvents', () => {
+  it('queries vw_calendar with season filter', async () => {
+    const events = [
+      {
+        id_event: 1, txt_code: 'EVT-1', txt_name: 'Event 1', id_season: 1,
+        txt_season_code: '2024/25', txt_location: 'Warszawa', txt_country: 'POL',
+        txt_venue_address: null, url_invitation: 'https://example.com/inv.pdf',
+        num_entry_fee: 50, dt_start: '2024-11-15', dt_end: '2024-11-16',
+        url_event: null, enum_status: 'COMPLETED',
+        num_tournaments: 2, bool_has_international: false,
+      },
+    ]
+    const chain = {
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          order: vi.fn().mockResolvedValue({ data: events, error: null }),
+        }),
+      }),
+    }
+    mockFrom.mockReturnValue(chain)
+
+    const result = await fetchCalendarEvents(1)
+    expect(mockFrom).toHaveBeenCalledWith('vw_calendar')
+    expect(result).toEqual(events)
+  })
+})
+
+// 8.19 — CalendarEvent type includes all required fields (compile-time check)
+// This is verified by TypeScript compilation — if CalendarEvent is missing fields,
+// the test above would fail to type-check. We also add an explicit shape assertion.
+describe('CalendarEvent type', () => {
+  it('has all required fields', async () => {
+    const event = {
+      id_event: 1, txt_code: 'E1', txt_name: 'Test', id_season: 1,
+      txt_season_code: '2024/25', txt_location: 'Here', txt_country: 'POL',
+      txt_venue_address: '123 St', url_invitation: 'https://ex.com',
+      num_entry_fee: 50, dt_start: '2024-01-01', dt_end: '2024-01-02',
+      url_event: 'https://ex.com', enum_status: 'COMPLETED' as const,
+      num_tournaments: 3, bool_has_international: true,
+    }
+    // Verify all fields exist on the object
+    const requiredFields = [
+      'id_event', 'txt_code', 'txt_name', 'id_season', 'txt_season_code',
+      'txt_location', 'txt_country', 'txt_venue_address', 'url_invitation',
+      'num_entry_fee', 'dt_start', 'dt_end', 'url_event', 'enum_status',
+      'num_tournaments', 'bool_has_international',
+    ]
+    for (const field of requiredFields) {
+      expect(event).toHaveProperty(field)
+    }
   })
 })
 

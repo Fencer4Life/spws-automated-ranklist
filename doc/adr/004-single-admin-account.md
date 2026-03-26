@@ -1,6 +1,6 @@
 # ADR-004: Single Admin Account for POC
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-016](016-supabase-auth-totp-mfa.md)
 **Date:** 2025-03-01 (M1)
 
 ## Context
@@ -22,3 +22,5 @@ RLS policies define three roles:
 - The Supabase Dashboard is the admin UI — no custom admin frontend needed for POC
 - `tbl_match_candidate` and `tbl_audit_log` are not publicly readable (admin-only)
 - If multi-admin support is needed later, Supabase supports custom claims and role-based policies — the RLS foundation is already in place
+- ~~**Extended to MVP (ADR-013):** The client-side password gate pattern (no server-side auth for admin actions) continues for M8-M9. Admin CRUD UI uses the same single-account model. Full Supabase Auth with multi-user support deferred to Phase 3~~
+- **Superseded (2026-03-26):** Security audit revealed `anon` role can call SECURITY DEFINER write functions (no REVOKE applied). Client-side password gate provides no real protection. Replaced by [ADR-016](016-supabase-auth-totp-mfa.md): Supabase Auth + TOTP MFA with server-enforced REVOKE on write RPCs.

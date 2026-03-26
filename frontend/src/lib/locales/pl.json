@@ -1,5 +1,5 @@
 {
-  "app_title": "Ranking SPWS",
+  "app_title": "Ranking",
   "weapon": "Broń",
   "gender": "Płeć",
   "category": "Kategoria",
@@ -14,6 +14,7 @@
   "environment": "Środowisko",
 
   "season_active": "(aktywny)",
+  "season_label": "Sezon",
   "export_to_ods": "Eksportuj do ODS",
 
   "col_fencer": "Zawodnik",
@@ -56,5 +57,29 @@
   "legend_mew": "MEW — Mistrzostwa Europy Weteranów",
   "legend_msw": "MSW — Mistrzostwa Świata Weteranów",
   "footer_n": "N — liczba uczestników",
-  "footer_mult": "Mnożnik — mnożnik typu zawodów stosowany do wyniku surowego (punkty za miejsce + bonus DE + bonus podium)"
+  "footer_mult": "Mnożnik — mnożnik typu zawodów stosowany do wyniku surowego (punkty za miejsce + bonus DE + bonus podium)",
+
+  "nav_ranklist": "Ranklista",
+  "nav_calendar": "Kalendarz",
+  "nav_admin_seasons": "Sezony",
+  "nav_admin_events": "Wydarzenia",
+  "nav_admin_identities": "Tożsamości",
+  "nav_admin_scoring": "Punktacja",
+  "admin_section": "Administracja",
+  "admin_logout": "Wyloguj",
+  "admin_session": "Sesja",
+
+  "calendar_title": "Kalendarz",
+  "filter_all": "Wszystkie",
+  "filter_past": "Minione",
+  "filter_future": "Przyszłe",
+  "status_completed": "Zakończone",
+  "status_scheduled": "Potwierdzone",
+  "status_planned": "Zaplanowane",
+  "status_cancelled": "Odwołane",
+  "status_in_progress": "W trakcie",
+  "organizer_announcement": "Komunikat organizatora",
+  "tournaments_count": "turniejów",
+  "entry_fee": "Opłata startowa",
+  "event_results": "Wyniki"
 }

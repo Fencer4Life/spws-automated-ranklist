@@ -1,0 +1,427 @@
+-- =========================================================================
+-- Season 2024-2025 — V1 M FOIL — generated from FLORET-1-2024-2025.xlsx
+-- Auto-loaded by supabase db reset via config.toml sql_paths glob.
+-- One file per age category per season; see supabase/data/{season}/{cat}.sql
+-- =========================================================================
+
+-- ---- PP1: I Puchar Polski Weteranów (KONIN) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PP1-2024-2025',
+    'I Puchar Polski Weteranów',
+    'KONIN',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PP1-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PP1-2024-2025'),
+    'PP1-V1-M-FOIL-2024-2025',
+    'I Puchar Polski Weteranów',
+    'PPW',
+    'FOIL', 'M', 'V1',
+    '2024-09-29', 4, 'https://www.fencingtimelive.com/events/results/9CCBFFBAAD2F4D97B13E1CB414FD9D4D',
+    'SCORED'
+);
+-- UNMATCHED (score<80): 'MOCEK Sławomir' place=1
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    145,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V1-M-FOIL-2024-2025'),
+    2,
+    'MALINOWSKI Piotr'
+); -- matched: MALINOWSKI Piotr (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    189,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V1-M-FOIL-2024-2025'),
+    3,
+    'PRZYSTAJKO Daniel'
+); -- matched: PRZYSTAJKO Daniel (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    117,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V1-M-FOIL-2024-2025'),
+    4,
+    'KORONA Przemysław'
+); -- matched: KORONA Przemysław (score=100.0)
+-- Compute scores for PP1-V1-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V1-M-FOIL-2024-2025')
+);
+
+-- ---- PP2: II Puchar Polski Weteranów (BYTOM) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PP2-2024-2025',
+    'II Puchar Polski Weteranów',
+    'BYTOM',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PP2-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PP2-2024-2025'),
+    'PP2-V1-M-FOIL-2024-2025',
+    'II Puchar Polski Weteranów',
+    'PPW',
+    'FOIL', 'M', 'V1',
+    '2024-10-27', 3, 'https://www.fencingtimelive.com/events/results/B322C8D0DA8E405F86082A16BA020B10',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    189,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP2-V1-M-FOIL-2024-2025'),
+    1,
+    'PRZYSTAJKO Daniel'
+); -- matched: PRZYSTAJKO Daniel (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    117,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP2-V1-M-FOIL-2024-2025'),
+    2,
+    'KORONA Przemysław'
+); -- matched: KORONA Przemysław (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    174,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP2-V1-M-FOIL-2024-2025'),
+    3,
+    'PAKUŁA Łukasz'
+); -- matched: PAKUŁA Łukasz (score=100.0)
+-- Compute scores for PP2-V1-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP2-V1-M-FOIL-2024-2025')
+);
+
+-- ---- PP3: III Puchar Polski Weteranów (KRAKÓW) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PP3-2024-2025',
+    'III Puchar Polski Weteranów',
+    'KRAKÓW',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PP3-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PP3-2024-2025'),
+    'PP3-V1-M-FOIL-2024-2025',
+    'III Puchar Polski Weteranów',
+    'PPW',
+    'FOIL', 'M', 'V1',
+    '2024-12-01', 3, 'https://www.fencingtimelive.com/events/results/D062FFAED68C4577BF8F8D0554E151B0',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    145,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V1-M-FOIL-2024-2025'),
+    1,
+    'MALINOWSKI Piotr'
+); -- matched: MALINOWSKI Piotr (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    91,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V1-M-FOIL-2024-2025'),
+    2,
+    'JADCZUK Wojciech'
+); -- matched: JADCZUK Wojciech (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    117,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V1-M-FOIL-2024-2025'),
+    3,
+    'KORONA Przemysław'
+); -- matched: KORONA Przemysław (score=100.0)
+-- Compute scores for PP3-V1-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V1-M-FOIL-2024-2025')
+);
+
+-- ---- MPW: Mistrzostwa Polski Weteranów (PABIANICE) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'MPW-2024-2025',
+    'Mistrzostwa Polski Weteranów',
+    'PABIANICE',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'MPW-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'MPW-2024-2025'),
+    'MPW-V1-M-FOIL-2024-2025',
+    'Mistrzostwa Polski Weteranów',
+    'MPW',
+    'FOIL', 'M', 'V1',
+    '2025-06-08', 2, 'https://www.fencingtimelive.com/tournaments/eventSchedule/B2C615704AB84D0F85BBFF395C07BA41',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    117,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-M-FOIL-2024-2025'),
+    1,
+    'KORONA Przemysław'
+); -- matched: KORONA Przemysław (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    145,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-M-FOIL-2024-2025'),
+    2,
+    'MALINOWSKI Piotr'
+); -- matched: MALINOWSKI Piotr (score=100.0)
+-- Compute scores for MPW-V1-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-M-FOIL-2024-2025')
+);
+
+-- ---- PEW1: EVF Grand Prix 1 — Budapeszt (Budapest) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW1-2024-2025',
+    'EVF Grand Prix 1 — Budapeszt',
+    'Budapest',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW1-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1-2024-2025'),
+    'PEW1-V1-M-FOIL-2024-2025',
+    'EVF Grand Prix 1 — Budapeszt',
+    'PEW',
+    'FOIL', 'M', 'V1',
+    '2024-09-22', 11, 'https://engarde-service.com/app.php?id=4209S1',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    32,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-M-FOIL-2024-2025'),
+    1,
+    'CIEPŁY Tomasz'
+); -- matched: CIEPŁY Tomasz (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    189,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-M-FOIL-2024-2025'),
+    2,
+    'PRZYSTAJKO Daniel'
+); -- matched: PRZYSTAJKO Daniel (score=100.0)
+-- UNMATCHED (score<80): 'MOCEK Sławomir' place=3
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    145,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-M-FOIL-2024-2025'),
+    5,
+    'MALINOWSKI Piotr'
+); -- matched: MALINOWSKI Piotr (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    117,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-M-FOIL-2024-2025'),
+    7,
+    'KORONA Przemysław'
+); -- matched: KORONA Przemysław (score=100.0)
+-- Compute scores for PEW1-V1-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-M-FOIL-2024-2025')
+);
+
+-- ---- PEW2: EVF Grand Prix 2 — Madryt (Madrid) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW2-2024-2025',
+    'EVF Grand Prix 2 — Madryt',
+    'Madrid',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW2-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW2-2024-2025'),
+    'PEW2-V1-M-FOIL-2024-2025',
+    'EVF Grand Prix 2 — Madryt',
+    'PEW',
+    'FOIL', 'M', 'V1',
+    '2024-11-17', 13, 'https://engarde-service.com/competition/aeve_esgrima/evf_madrid_2024/fm-1',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    189,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V1-M-FOIL-2024-2025'),
+    3,
+    'PRZYSTAJKO Daniel'
+); -- matched: PRZYSTAJKO Daniel (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    117,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V1-M-FOIL-2024-2025'),
+    10,
+    'KORONA Przemysław'
+); -- matched: KORONA Przemysław (score=100.0)
+-- Compute scores for PEW2-V1-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V1-M-FOIL-2024-2025')
+);
+
+-- ---- PEW7: EVF Grand Prix 7 — Terni (Stockholm) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW7-2024-2025',
+    'EVF Grand Prix 7 — Terni',
+    'Stockholm',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW7-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW7-2024-2025'),
+    'PEW7-V1-M-FOIL-2024-2025',
+    'EVF Grand Prix 7 — Terni',
+    'PEW',
+    'FOIL', 'M', 'V1',
+    '2025-05-15', 5, 'https://fencing.ophardt.online/en/search/results/30279',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    117,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V1-M-FOIL-2024-2025'),
+    3,
+    'KORONA Przemysław'
+); -- matched: KORONA Przemysław (score=100.0)
+-- Compute scores for PEW7-V1-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V1-M-FOIL-2024-2025')
+);
+
+-- ---- PEW8: EVF Grand Prix 8 — Guildford (WARSZAWA) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW8-2024-2025',
+    'EVF Grand Prix 8 — Guildford',
+    'WARSZAWA',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW8-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW8-2024-2025'),
+    'PEW8-V1-M-FOIL-2024-2025',
+    'EVF Grand Prix 8 — Guildford',
+    'PEW',
+    'FOIL', 'M', 'V1',
+    '2025-03-30', 16, 'https://www.fencingtimelive.com/events/results/9BB61AAFB8D6411DBC4AB4D594D59754',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    189,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V1-M-FOIL-2024-2025'),
+    1,
+    'PRZYSTAJKO Daniel'
+); -- matched: PRZYSTAJKO Daniel (score=100.0)
+-- UNMATCHED (score<80): 'SERAFIN Błażej' place=6
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    117,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V1-M-FOIL-2024-2025'),
+    13,
+    'KORONA Przemysław'
+); -- matched: KORONA Przemysław (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    145,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V1-M-FOIL-2024-2025'),
+    15,
+    'MALINOWSKI Piotr'
+); -- matched: MALINOWSKI Piotr (score=100.0)
+-- Compute scores for PEW8-V1-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V1-M-FOIL-2024-2025')
+);
+
+-- ---- IMEW: Indywidualne Mistrzostwa Europy Weteranów (Płowdiw) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'IMEW-2024-2025',
+    'Indywidualne Mistrzostwa Europy Weteranów',
+    'Płowdiw',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'IMEW-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'IMEW-2024-2025'),
+    'IMEW-V1-M-FOIL-2024-2025',
+    'Indywidualne Mistrzostwa Europy Weteranów',
+    'MEW',
+    'FOIL', 'M', 'V1',
+    '2025-05-29', 29, 'https://www.fencingtimelive.com/events/results/ABAADCA376B1472397749EEA732DC198',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    117,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V1-M-FOIL-2024-2025'),
+    22,
+    'KORONA Przemysław'
+); -- matched: KORONA Przemysław (score=100.0)
+-- Compute scores for IMEW-V1-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V1-M-FOIL-2024-2025')
+);
+
+-- Summary
+-- Total results matched:   22
+-- Total results unmatched: 3

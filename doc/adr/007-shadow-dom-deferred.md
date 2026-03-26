@@ -1,7 +1,7 @@
-# ADR-007: Shadow DOM Deferred to MVP
+# ADR-007: Shadow DOM (Implemented M8)
 
-**Status:** Accepted
-**Date:** 2025-03-01 (M6)
+**Status:** Implemented (M8, 2026-03-26)
+**Date:** 2025-03-01 (M6) · **Resolved:** 2026-03-26 (M8)
 
 ## Context
 
@@ -19,9 +19,17 @@ Svelte's `customElement: true` compiler option is incompatible with `@testing-li
 
 For MVP, build the component as a proper `<spws-ranklist>` custom element with isolated styles. Unit tests for the custom element build will use a separate test harness or Playwright E2E tests instead of `@testing-library/svelte`.
 
+## Resolution (M8)
+
+Implemented in T8.7 via dual-build strategy:
+- **Dev/Test** (`vite.config.ts`): `compatibility.componentApi: 4` — `@testing-library/svelte` works for 97 vitest tests
+- **Production CE** (`vite.config.ce.ts`): `customElement: true` — outputs bundle registering `<spws-ranklist>` and `<spws-calendar>` with Shadow DOM
+- **Playwright E2E** (`e2e/shadow-dom.spec.ts`): 7 assertions verify Shadow DOM isolation, CE registration, and host CSS leak prevention
+
 ## Consequences
 
 - POC: component styles may conflict with host page CSS — acceptable for dev/demo environments
 - POC: no `<spws-ranklist>` custom element tag — component is mounted via Svelte's `mount()` API
 - All unit tests work with `@testing-library/svelte` during POC
-- MVP must resolve this before WordPress deployment
+- ~~MVP must resolve this before WordPress deployment~~ **Resolved in M8**
+- Both `<spws-ranklist>` and `<spws-calendar>` now ship as custom elements with Shadow DOM isolation (NFR-13 covered, test IDs 8.55–8.61)

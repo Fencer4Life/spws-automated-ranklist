@@ -10,6 +10,7 @@ if (target) {
       'supabase-cert-key': target.getAttribute('supabase-cert-key') ?? '',
       'supabase-prod-url': target.getAttribute('supabase-prod-url') ?? '',
       'supabase-prod-key': target.getAttribute('supabase-prod-key') ?? '',
+      'admin-password': target.getAttribute('admin-password') ?? '',
       demo: target.hasAttribute('demo'),
     },
   })

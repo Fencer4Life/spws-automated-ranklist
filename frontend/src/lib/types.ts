@@ -14,6 +14,7 @@ export interface RankingRules {
   international: RankingBucket[]
 }
 export type RankingMode = 'PPW' | 'KADRA'
+export type AppView = 'ranklist' | 'calendar'
 export type Environment = 'CERT' | 'PROD'
 
 export interface Season {
@@ -82,6 +83,49 @@ export interface DrilldownContext {
   totalScore: number
   ppwBestCount: number
   pewBestCount: number
+}
+
+export type EventStatus = 'PLANNED' | 'SCHEDULED' | 'CHANGED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+
+export interface CalendarEvent {
+  id_event: number
+  txt_code: string
+  txt_name: string
+  id_season: number
+  txt_season_code: string
+  txt_location: string | null
+  txt_country: string | null
+  txt_venue_address: string | null
+  url_invitation: string | null
+  num_entry_fee: number | null
+  dt_start: string | null
+  dt_end: string | null
+  url_event: string | null
+  enum_status: EventStatus
+  num_tournaments: number
+  bool_has_international: boolean
+}
+
+export interface ScoringConfig {
+  season_code: string
+  mp_value: number
+  podium_gold: number
+  podium_silver: number
+  podium_bronze: number
+  ppw_multiplier: number
+  ppw_best_count: number
+  ppw_total_rounds: number
+  mpw_multiplier: number
+  mpw_droppable: boolean
+  pew_multiplier: number
+  pew_best_count: number
+  mew_multiplier: number
+  mew_droppable: boolean
+  msw_multiplier: number
+  psw_multiplier: number
+  min_participants_evf: number
+  min_participants_ppw: number
+  ranking_rules: RankingRules | null
 }
 
 export interface Filters {
