@@ -23,6 +23,7 @@ dev = [
     "pytest-asyncio>=0.23",
     "pytest-httpx>=0.30",
     "respx>=0.21",
+    "psycopg2-binary>=2.9",
 ]
 
 [tool.pytest.ini_options]
