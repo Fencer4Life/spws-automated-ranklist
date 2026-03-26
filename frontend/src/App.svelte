@@ -172,12 +172,6 @@
   const auth = getAuthState()
   let isAdmin = $derived(auth.step === 'authenticated')
 
-  $effect(() => {
-    if (adminRequested && auth.step === 'idle') {
-      startAuth()
-    }
-  })
-
   let activeEnv: Environment = $state('CERT')
   let dualEnv = $derived(!!(certUrl && certKey && prodUrl && prodKey))
   let supabaseUrl = $derived(activeEnv === 'PROD' && prodUrl ? prodUrl : certUrl)
@@ -213,6 +207,8 @@
       initDemo()
     } else if (supabaseUrl && supabaseKey) {
       initClient(supabaseUrl, supabaseKey)
+      resetAuth()
+      if (adminRequested) startAuth()
       init()
     }
   })
