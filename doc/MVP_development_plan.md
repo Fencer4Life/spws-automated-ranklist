@@ -19,7 +19,8 @@ The POC (M0-M6) established the foundation. **236 test assertions** across 3 sui
 | pgTAP | 117 | `supabase/tests/` — 00_smoke, 01_database_foundation, 02_scoring_engine, 03_views_api |
 | pytest | 91 | `python/tests/` — test_smoke, test_calibration, test_scrapers, test_matcher |
 | vitest | 28 | `frontend/tests/` — smoke, api, export, FilterBar, RanklistTable, DrilldownModal |
-| **Post-M8** | **331** | **+95 assertions (135 pgTAP, 94 pytest, 95 vitest, 7 Playwright)** |
+| **Post-M8** | **333** | **+97 assertions (135 pgTAP, 94 pytest, 97 vitest, 7 Playwright)** |
+| **Post-T9.2** | **370** | **+37 assertions (159 pgTAP, 94 pytest, 110 vitest, 7 Playwright)** |
 
 **Validated capabilities:**
 - **Scoring engine** — log-formula place points, DE bonus, podium bonus, multipliers; calibrated against `reference/SZPADA-2-2024-2025.xlsx` within 0.01 tolerance
@@ -133,22 +134,121 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 
 ### M9: Ingestion Pipeline + Admin CRUD + Identity Resolution Admin
 
-**TBD** — Detailed acceptance tests, implementation plan, and verification criteria to be defined in a separate planning session.
+- Detailed plan in `.claude/plans/rosy-bouncing-kitten.md` — 125 acceptance tests across M9a (UI) + M9b (Pipeline)
+- Split: **M9a** (T9.0–T9.8) Auth + CRUD SQL + Admin UI; **M9b** (T9.9–T9.14) Pipeline + Test Gaps
 
-**High-level scope:**
-- **Admin auth migration (ADR-016):** Replace client-side password gate with Supabase Auth + TOTP MFA. REVOKE write functions from `anon`/`PUBLIC`. Multi-admin support. 59-min inactivity timeout. Rewrite tests 8.48–8.54. Mockup: `m9_auth_mfa_flow.html`
-- Automated ingestion pipeline (`ingest.yml`): scheduled + manual dispatch
-- Orchestration script: scrape → match → score for all categories
-- Discord alerting on failure or new pending matches
-- Run summary JSON artifact
-- Admin CRUD UI for seasons, events, tournaments (auth-gated via ADR-016) — UI designed in M8 mockups (`m8_tournaments.html`)
-- Identity resolution admin UI (approve/dismiss/create-new from `tbl_match_candidate`) — UI designed in M8 mockups (`m8_identity_resolution.html`)
-- Tournament re-import: delete + re-import in transaction (ADR-014) — two paths: event-level batch + tournament-level single
-- Import from file (Excel/JSON/CSV) alongside URL scraping
-- Delete cascade (event → tournaments → results)
-- Manual tournament creation (+ Dodaj turniej)
-- EVF calendar import: fetch veteransfencing.eu, deduplication, create events+tournaments — UI designed in M8 mockups (`m8_evf_import.html`)
-- POC test gap coverage (FR-10, FR-14, FR-23, FR-40, NFR-10)
+**Test results after T9.5:**
+
+| Suite | Post-M8 | M9 New | Total |
+|-------|---------|--------|-------|
+| pgTAP | 135 | 24 | 159 |
+| pytest | 94 | 0 | 94 |
+| vitest | 97 | 34 | 131 |
+| Playwright | 7 | 0 | 7 |
+| **Total** | **333** | **58** | **391**
+
+**Test results after T9.6:**
+
+| Suite | Post-M8 | M9 New | Total |
+|-------|---------|--------|-------|
+| pgTAP | 135 | 24 | 159 |
+| pytest | 94 | 0 | 94 |
+| vitest | 97 | 40 | 137 |
+| Playwright | 7 | 0 | 7 |
+| **Total** | **333** | **64** | **397** |
+
+**Test results after T9.10 (current):**
+
+| Suite | Post-M8 | M9 New | Total |
+|-------|---------|--------|-------|
+| pgTAP | 135 | 32 | 167 |
+| pytest | 94 | 10 | 104 |
+| vitest | 97 | 55 | 152 |
+| Playwright | 7 | 0 | 7 |
+| **Total** | **333** | **97** | **430** |
+
+**Tasks completed:**
+
+| Task | Scope | Key Files |
+|------|-------|-----------|
+| T9.0 | Admin Auth Migration (FR-46, ADR-016): REVOKE write functions from anon, Supabase Auth + TOTP MFA sign-in flow, 59min timeout | `migrations/20260327000001_revoke_write_functions.sql`, `tests/07_auth_revoke.sql`, `admin-auth.svelte.ts`, `AdminSignInModal.svelte`, `AdminMfaEnrollModal.svelte`, `AdminMfaChallengeModal.svelte` |
+| T9.1 | CRUD SQL + Delete Cascade (FR-47, FR-49, FR-50, FR-60): 7 CRUD functions + 2 cascade functions, all SECURITY DEFINER + REVOKE/GRANT | `migrations/20260327000002_crud_functions.sql`, `migrations/20260327000003_delete_cascade.sql`, `tests/08_crud_functions.sql` |
+| T9.2 | Season CRUD UI (FR-47): SeasonManager component with list/create/edit/delete, 3 API functions, admin guard | `SeasonManager.svelte`, `SeasonManager.test.ts`, `api.ts` |
+| T9.3 | Event CRUD UI (FR-60): EventManager component with list/create/edit/delete, status transitions, organizer select, 5 API functions, admin guard | `EventManager.svelte`, `EventManager.test.ts`, `api.ts`, `types.ts` |
+| T9.4 | Tournament CRUD UI (FR-49): TournamentManager component with list/create/edit/delete, enum selects, import status badges, edit restricted to import fields, 4 API functions, admin guard | `TournamentManager.svelte`, `TournamentManager.test.ts`, `api.ts`, `types.ts` |
+| T9.5 | Tournament File Import UI (FR-54 partial): TournamentImportModal with file drop zone, NOWY/REIMPORT badges, ADR-014 warning banner, drag-and-drop + browse, .xlsx/.xls/.json/.csv support | `TournamentImportModal.svelte`, `TournamentImportModal.test.ts`, `pl.json`, `en.json` |
+| T9.6 | Event Batch Import UI | `EventImportModal.svelte` | 6 vitest (9.62–9.67) |
+| T9.7 | Identity Resolution Admin UI | IdentityManager.svelte, DisambiguationModal.svelte | 10 vitest (9.68–9.77) |
+| T9.8 | Sidebar Wiring + Admin View Routing: Extended AppView type, added click handlers to 4 admin sidebar buttons, active state highlighting | `Sidebar.svelte`, `types.ts`, `AdminRouting.test.ts` | 5 vitest (9.78–9.82) |
+| T9.9 | POC Test Gap Coverage: V1/V3 birth year (FR-10), MSW multiplier (FR-14), CHANGED event state (FR-23), import status transitions (FR-40) | `test_matcher.py`, `01_database_foundation.sql`, `02_scoring_engine.sql` | 2 pytest (9.83–9.84), 8 pgTAP (9.85–9.92) |
+| T9.10 | File Import Parsers (FR-55): parse_file dispatcher (.csv/.xlsx/.xls/.json), xlsx_parser (openpyxl + xlrd), json_parser with key normalization, xlrd dep added | `file_import.py`, `xlsx_parser.py`, `json_parser.py`, `test_file_import.py` | 8 pytest (9.93–9.100) |
+
+**Implementation notes (T9.4):**
+- Props-driven component pattern (same as EventManager): `tournaments`, `eventId`, `isAdmin`, `oncreate`/`onupdate`/`ondelete` callbacks
+- Create form has 6 enum selects (type, weapon, gender, age_category) + code, name, date, participants, url_results
+- Edit form restricted to import-related fields only: `url_results`, `import_status`, `status_reason` (core metadata immutable)
+- Import status badges: SCORED=green, IMPORTED=blue, PENDING=yellow, PLANNED=gray, REJECTED=red
+
+**Implementation notes (T9.5):**
+- File-only import modal (URL scraping deferred to later task)
+- Props: `tournament`, `open`, `onimport(tournamentId, file)`, `onclose` — callback passes file to parent for actual parsing/DB work
+- `isReimport` derived from `enum_import_status === 'IMPORTED' || 'SCORED'` — shows yellow ADR-014 warning banner explaining existing results will be deleted before re-import
+- File drop zone with drag-and-drop + click-to-browse, hidden `<input type="file">` with accept=".xlsx,.xls,.json,.csv"
+- 8 new i18n keys (import_title, import_file_drop, import_file_formats, import_btn, import_cancel, import_status_new, import_status_reimport, import_reimport_warning)
+- Type badges: PPW=green, MPW=blue, PEW/MEW/MSW/PSW=gold
+- 4 new API functions: `fetchTournaments`, `createTournament`, `updateTournament`, `deleteTournamentCascade`
+- 4 new types: `Tournament`, `ImportStatus`, `CreateTournamentParams`, `UpdateTournamentParams`
+- 14 new i18n keys in both `pl.json` and `en.json`
+- Component not yet wired into App.svelte routing (deferred to T9.8)
+
+**T9.6 — Event Batch Import UI (2026-03-26)**
+- Created `EventImportModal.svelte` — multi-select tournament checklist with file drop zone
+- Props-driven: `event`, `tournaments[]`, `open`, `onimport(ids[], file)`, `onclose`
+- Features: select-all toggle, per-tournament NOWY/REIMPORT badges, ADR-014 warning when reimport selected
+- Selection summary in footer, import button disabled when no file or no tournaments selected
+- URL scraping deferred (consistent with T9.5)
+- 5 new i18n keys in both pl.json and en.json
+- 6 vitest assertions (9.62–9.67), 397 total (159 pgTAP + 94 pytest + 137 vitest + 7 Playwright)
+
+**T9.7 — Identity Resolution Admin UI (2026-03-26)**
+- Created `IdentityManager.svelte` — match candidate queue with status filter, confidence color coding, approve/dismiss/create-new actions
+- Created `DisambiguationModal.svelte` — fencer selection with radio buttons, birth year display, age category match indicator
+- Added `MatchStatus`, `MatchCandidate`, `FencerCandidate` types to `types.ts`
+- Props-driven: callbacks for `onapprove`, `oncreatenew`, `ondismiss` — DB wiring deferred to orchestration
+- 10 new i18n keys in both pl.json and en.json
+- 10 vitest assertions (9.68–9.77), 407 total (159 pgTAP + 94 pytest + 147 vitest + 7 Playwright)
+
+**Implementation notes (T9.3):**
+- Props-driven component pattern (same as SeasonManager): `events`, `organizers`, `seasons`, `selectedSeasonId`, `isAdmin`, callbacks
+- Status transition map mirrors `fn_validate_event_transition` trigger (PLANNED→SCHEDULED/CANCELLED, etc.)
+- Status dropdown shows only valid next states per current status
+- 5 new API functions: `fetchOrganizers`, `createEvent`, `updateEvent`, `updateEventStatus`, `deleteEventCascade`
+- 3 new types: `Organizer`, `CreateEventParams`, `UpdateEventParams`
+- 12 new i18n keys in both `pl.json` and `en.json`
+- `updateEventStatus` uses direct table UPDATE (trigger validates transitions)
+- Component not yet wired into App.svelte routing (deferred to T9.8)
+
+**Implementation notes (T9.2):**
+- Props-driven component pattern (same as ScoringConfigEditor): `seasons`, `isAdmin`, `oncreate`/`onupdate`/`ondelete` callbacks
+- `data-field` attributes on all interactive elements for test selection
+- 3 new API functions: `createSeason`, `updateSeason`, `deleteSeason` using `.rpc()` to T9.1 SQL functions
+- 8 new i18n keys in both `pl.json` and `en.json`
+- Component not yet wired into App.svelte routing (deferred to T9.8)
+
+**Implementation notes (T9.1):**
+- `fn_delete_season` deletes `tbl_scoring_config` first (auto-created by trigger), then season row; FK RESTRICT on `tbl_event` raises if events exist
+- `fn_delete_event_cascade` loops child tournaments via `fn_delete_tournament_cascade` (manual cascade, not FK CASCADE, preserves audit trail per ADR-014)
+- All 9 functions: REVOKE from `anon, PUBLIC`, GRANT to `authenticated` (ADR-016)
+
+**Remaining scope:**
+- Tournament import UI: URL scraping tab (deferred), event batch import (T9.6)
+- Identity resolution admin UI (T9.7) — UI designed in M8 mockups (`m8_identity_resolution.html`)
+- Sidebar wiring + admin view routing (T9.8)
+- Automated ingestion pipeline (`ingest.yml`): scheduled + manual dispatch (T9.14)
+- Orchestration script: scrape → match → score (T9.11)
+- File import parsers: .xlsx, .xls, .json, .csv (T9.10)
+- EVF calendar import (T9.12, T9.13) — UI designed in M8 mockups (`m8_evf_import.html`)
+- POC test gap coverage: FR-10, FR-14, FR-23, FR-40, NFR-10 (T9.9)
 
 ---
 
