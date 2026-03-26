@@ -34,7 +34,7 @@ API_URL="https://api.supabase.com/v1/projects/${SUPABASE_REF}/database/query"
 echo "=== Checking pending migrations for $TARGET_ENV ==="
 PENDING_OUTPUT=$("$SCRIPT_DIR/check-new-migrations.sh" "$TARGET_ENV")
 HAS_NEW=$(echo "$PENDING_OUTPUT" | grep "has_new_migrations=" | cut -d= -f2)
-NEW_MIGRATIONS=$(echo "$PENDING_OUTPUT" | grep "new_migrations=" | sed 's/^new_migrations=//')
+NEW_MIGRATIONS=$(echo "$PENDING_OUTPUT" | grep "^new_migrations=" | sed 's/^new_migrations=//')
 
 if [ "$HAS_NEW" = "false" ]; then
   echo "No pending migrations for $TARGET_ENV."
@@ -118,8 +118,8 @@ else
 fi
 
 # Output applied migrations for tracking
-echo "applied_migrations=$(printf '%s\n' "${APPLIED[@]}" | jq -R . | jq -s .)"
+echo "applied_migrations=$(printf '%s\n' "${APPLIED[@]}" | jq -R . | jq -sc .)"
 if [ -n "${GITHUB_OUTPUT:-}" ]; then
-  echo "applied_migrations=$(printf '%s\n' "${APPLIED[@]}" | jq -R . | jq -s .)" >> "$GITHUB_OUTPUT"
+  echo "applied_migrations=$(printf '%s\n' "${APPLIED[@]}" | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
   echo "cloud_fingerprint=$CLOUD_FP" >> "$GITHUB_OUTPUT"
 fi
