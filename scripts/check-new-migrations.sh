@@ -43,7 +43,7 @@ if [ "$COUNT" -eq 0 ]; then
   JSON_ARRAY="[]"
 else
   HAS_NEW="true"
-  JSON_ARRAY=$(printf '%s\n' "${NEW_MIGRATIONS[@]}" | jq -R . | jq -s .)
+  JSON_ARRAY=$(printf '%s\n' "${NEW_MIGRATIONS[@]}" | jq -R . | jq -sc .)
 fi
 
 echo "has_new_migrations=$HAS_NEW"
