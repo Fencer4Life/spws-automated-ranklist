@@ -3,10 +3,13 @@ T8.3: Multi-Category Seed Data — pytest tests for generate_season_seed.py.
 Tests 8.25–8.26 from doc/m8_implementation_plan.md §T8.3.
 """
 
+import socket
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+import pytest
 
 SCRIPT = Path(__file__).parent.parent / "tools" / "generate_season_seed.py"
 EPEE_M_V1_XLSX = (
@@ -16,7 +19,23 @@ EPEE_M_V1_XLSX = (
 )
 
 
+def _local_db_reachable() -> bool:
+    """Check if local Supabase PostgreSQL is listening on port 54322."""
+    try:
+        with socket.create_connection(("127.0.0.1", 54322), timeout=1):
+            return True
+    except OSError:
+        return False
+
+
+skip_no_db = pytest.mark.skipif(
+    not _local_db_reachable(),
+    reason="Local Supabase DB not running (port 54322)",
+)
+
+
 # 8.25 — generate_season_seed.py exits 0 for a valid combination
+@skip_no_db
 def test_generator_exits_zero():
     """8.25: generate_season_seed.py exits 0 for a valid combination."""
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -38,6 +57,7 @@ def test_generator_exits_zero():
 
 
 # 8.26 — generate_season_seed.py produces valid SQL (no syntax errors)
+@skip_no_db
 def test_generator_produces_valid_sql():
     """8.26: generate_season_seed.py produces valid SQL."""
     with tempfile.TemporaryDirectory() as tmpdir:
