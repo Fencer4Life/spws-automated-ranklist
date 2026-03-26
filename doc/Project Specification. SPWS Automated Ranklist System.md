@@ -1506,11 +1506,11 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-07 | Admin approve / dismiss / create-new-fencer for match candidates | UC4(b,c) | 4.6–4.8 | Covered |
 | FR-08 | Domestic intake: auto-create fencer for UNMATCHED PPW/MPW | §8.5 | 4.10–4.14b | Covered |
 | FR-09 | International intake: skip UNMATCHED PEW/MEW fencers | §8.5 | 4.15–4.18 | Covered |
-| FR-10 | Birth year estimation (youngest boundary per category) | §8.5 | 4.19–4.21 | Partial — V1, V3 not tested |
+| FR-10 | Birth year estimation (youngest boundary per category) | §8.5 | 4.19–4.21, 9.83–9.84 | Covered (M9, T9.9) |
 | FR-11 | Score computation: place points (log formula) | §8.1.1 | 2.1–2.3, 2.2a–b | Covered |
 | FR-12 | Score computation: DE round bonus | §8.1.2 | 2.4–2.5 | Covered |
 | FR-13 | Score computation: podium bonus | §8.1.3 | 2.6a–d | Covered |
-| FR-14 | Tournament multipliers (PPW, MPW, PEW, MEW, MSW, PSW) | §8.2 | 2.7, 2.19 | Partial — no MSW scoring test |
+| FR-14 | Tournament multipliers (PPW, MPW, PEW, MEW, MSW, PSW) | §8.2 | 2.7, 2.19, 9.85 | Covered (M9, T9.9) |
 | FR-15 | PPW ranking: best-K domestic + always-include MPW | §8.3.1 | 5.2–5.13, 5.16, 5.20–5.21, 5.23 | Covered |
 | FR-16 | Kadra ranking: domestic + best-J international pool | §8.3.2 | 5.17, 5.19, 5.22 | Covered |
 | FR-17 | V0 guard: no Kadra ranking for V0 | §8.3.2 | 5.18 | Covered |
@@ -1519,7 +1519,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-20 | Legacy code path (NULL json_ranking_rules) | §8.6.6 | 5.23 | Covered |
 | FR-21 | Season lifecycle: create season, auto-create scoring config | UC7(a,b) | 1.13–1.14b | Covered |
 | FR-22 | Single active season constraint | UC7(c) | 1.15 | Covered |
-| FR-23 | Event lifecycle state machine | UC10(a,b) | 1.20–1.24 | Partial — CHANGED state untested |
+| FR-23 | Event lifecycle state machine | UC10(a,b) | 1.20–1.24, 9.86–9.90 | Covered (M9, T9.9) |
 | FR-24 | Audit logging for status changes | UC10(c) | 1.22a–b | Covered |
 | FR-25 | Tournament multiplier auto-population (trigger) | UC9(c) | 1.19, 1.19c | Covered |
 | FR-26 | Scoring config export/import (JSON) | UC18, UC19 | 2.12–2.18 | Covered |
@@ -1536,27 +1536,27 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-37 | ODS export (ranking + drilldown) | UC12, UC13 | export.test.ts (5 tests) | Covered |
 | FR-38 | API client: fetch seasons, rankings, fencer scores | UC12(a) | 5.1a–b, api.test.ts (6 tests) | Covered |
 | FR-39 | EN/PL internationalisation with reactive toggle | §11 | DrilldownModal.test.ts (test K) | Covered |
-| FR-40 | Import status transitions (PLANNED → IMPORTED → SCORED) | UC1(b), UC5(c) | 2.9 (SCORED only) | Gap — IMPORTED transition untested |
+| FR-40 | Import status transitions (PLANNED → IMPORTED → SCORED) | UC1(b), UC5(c) | 2.9, 9.91–9.92 | Covered (M9, T9.9) |
 | FR-41 | Domestic-participation requirement: fencers with 0 domestic points excluded from ranking views | §8.5(7) | 5.24–5.25 | Covered |
 | FR-42 | CERT/PROD environment toggle with runtime switching | §2.2 | 8.01–8.04 | Covered (M8) |
 | FR-43 | Calendar view: chronological event list with season filter | UC21(a,b) | 8.11–8.19, 8.38–8.43, 8.47 | Covered (M8) |
 | FR-44 | Calendar view: past/future/all toggle | UC21(c) | 8.44–8.45 | Covered (M8) |
 | FR-45 | Calendar view: mobile-friendly layout | UC21(e) | 8.46 | Covered (M8) |
-| FR-46 | Admin authentication: Supabase Auth + TOTP MFA (supersedes client-side password gate) | UC22(a), ADR-016 | 8.48–8.54 (M8, to be rewritten M9) | Covered (M8) → Rewrite (M9) |
-| FR-47 | Season CRUD via web UI | UC22(b) | — | Planned (M9) |
+| FR-46 | Admin authentication: Supabase Auth + TOTP MFA (supersedes client-side password gate) | UC22(a), ADR-016 | 9.01–9.17 | Covered (M9, T9.0) |
+| FR-47 | Season CRUD via web UI | UC22(b) | 9.18–9.22, 9.27, 9.37–9.42 | Covered (M9, T9.1 SQL + T9.2 UI) |
 | FR-48 | tbl_event schema extension: 4 new columns (txt_country, txt_venue_address, url_invitation, num_entry_fee) | UC22(c), UC21(d) | 8.05–8.10 | Covered (M8) |
-| FR-49 | Tournament CRUD nested under events | UC22(d) | — | Planned (M9) |
-| FR-50 | Delete cascade (event → tournaments → results) | UC22(e) | — | Planned (M9) |
+| FR-49 | Tournament CRUD nested under events | UC22(d) | 9.25–9.26, 9.29, 9.50–9.55 | Covered (M9, T9.1 SQL + T9.4 UI) |
+| FR-50 | Delete cascade (event → tournaments → results) | UC22(e) | 9.30–9.36 | Covered (M9, T9.1) |
 | FR-51 | Tournament re-import in single transaction | UC23(a-f) | — | Planned (M9) |
 | FR-52 | Multi-category expansion (30 sub-rankings) | §6.2 | 8.20–8.26 | Covered (M8) |
-| FR-53 | Event-level batch import: multi-select tournament checklist modal | UC22(g) | — | Planned (M9) |
-| FR-54 | Tournament-level single import: own URL or file upload | UC22(h) | — | Planned (M9) |
-| FR-55 | File import: parse results from .xlsx, .xls, .json, .csv | UC22(i), UC23(c) | — | Planned (M9) |
-| FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new | UC4(a-e) | — | Planned (M9) |
-| FR-57 | Identity resolution: disambiguation modal for same-name fencers with age category fit | UC3(f), UC4(b) | — | Planned (M9) |
+| FR-53 | Event-level batch import: multi-select tournament checklist modal | UC22(g) | 9.62–9.67 | Partial (M9, T9.6 file UI; URL deferred) |
+| FR-54 | Tournament-level single import: own URL or file upload | UC22(h) | 9.56–9.61 | Partial (M9, T9.5 file UI; URL deferred) |
+| FR-55 | File import: parse results from .xlsx, .xls, .json, .csv | UC22(i), UC23(c) | 9.58, 9.93–9.100 | Covered (M9, T9.5 UI + T9.10 parsers) |
+| FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new | UC4(a-e) | 9.68–9.73, 9.77 | Partial (M9, T9.7 UI) |
+| FR-57 | Identity resolution: disambiguation modal for same-name fencers with age category fit | UC3(f), UC4(b) | 9.74–9.76 | Partial (M9, T9.7 disambiguation UI) |
 | FR-58 | EVF calendar import: fetch veteransfencing.eu, deduplication, create events+tournaments | UC8, UC9 | — | Planned (M9) |
 | FR-59 | Two-view app shell: sidebar drawer with Ranklista + Kalendarz navigation | UC12, UC21 | 8.27–8.37 | Covered (M8) |
-| FR-60 | Event CRUD via web UI (create, edit, delete events with all fields) | UC22(c) | — | Planned (M9) |
+| FR-60 | Event CRUD via web UI (create, edit, delete events with all fields) | UC22(c) | 9.23–9.24, 9.28, 9.43–9.49 | Covered (M9, T9.1 SQL + T9.3 UI) |
 | FR-61 | Scoring config editor (admin, per-season, structured form) | UC22(f) | 8.62–8.75 | Covered (M8) |
 | FR-62 | Calendar view: completed events show "Wyniki" link to event results URL | UC21 | 8.76–8.77 | Covered (M8) |
 
