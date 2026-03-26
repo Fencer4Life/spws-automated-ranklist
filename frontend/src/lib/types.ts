@@ -14,7 +14,7 @@ export interface RankingRules {
   international: RankingBucket[]
 }
 export type RankingMode = 'PPW' | 'KADRA'
-export type AppView = 'ranklist' | 'calendar'
+export type AppView = 'ranklist' | 'calendar' | 'admin_seasons' | 'admin_events' | 'admin_identities' | 'admin_scoring'
 export type Environment = 'CERT' | 'PROD'
 
 export interface Season {
@@ -126,6 +126,102 @@ export interface ScoringConfig {
   min_participants_evf: number
   min_participants_ppw: number
   ranking_rules: RankingRules | null
+}
+
+export type ImportStatus = 'PLANNED' | 'PENDING' | 'IMPORTED' | 'SCORED' | 'REJECTED'
+
+export interface Tournament {
+  id_tournament: number
+  id_event: number
+  txt_code: string
+  txt_name: string | null
+  enum_type: TournamentType
+  enum_weapon: WeaponType
+  enum_gender: GenderType
+  enum_age_category: AgeCategory
+  dt_tournament: string | null
+  int_participant_count: number | null
+  num_multiplier: number | null
+  url_results: string | null
+  enum_import_status: ImportStatus
+  txt_import_status_reason: string | null
+}
+
+export interface CreateTournamentParams {
+  idEvent: number
+  code: string
+  name: string
+  type: TournamentType
+  weapon: WeaponType
+  gender: GenderType
+  ageCategory: AgeCategory
+  dtTournament?: string
+  participantCount?: number
+  urlResults?: string
+}
+
+export interface UpdateTournamentParams {
+  urlResults?: string
+  importStatus?: ImportStatus
+  statusReason?: string
+}
+
+export interface Organizer {
+  id_organizer: number
+  txt_code: string
+  txt_name: string
+}
+
+export interface CreateEventParams {
+  code: string
+  name: string
+  seasonId: number
+  organizerId: number
+  location?: string
+  dtStart?: string
+  dtEnd?: string
+  urlEvent?: string
+  country?: string
+  venueAddress?: string
+  invitation?: string
+  entryFee?: number
+}
+
+export interface UpdateEventParams {
+  name: string
+  location?: string
+  dtStart?: string
+  dtEnd?: string
+  urlEvent?: string
+  country?: string
+  venueAddress?: string
+  invitation?: string
+  entryFee?: number
+}
+
+export type MatchStatus = 'PENDING' | 'AUTO_MATCHED' | 'UNMATCHED' | 'APPROVED' | 'NEW_FENCER' | 'DISMISSED'
+
+export interface MatchCandidate {
+  id_match: number
+  id_result: number
+  txt_scraped_name: string
+  id_fencer: number | null
+  txt_fencer_name: string | null
+  num_confidence: number | null
+  enum_status: MatchStatus
+  txt_admin_note: string | null
+  txt_tournament_code: string | null
+  enum_type: TournamentType | null
+}
+
+export interface FencerCandidate {
+  id_fencer: number
+  txt_surname: string
+  txt_first_name: string
+  int_birth_year: number | null
+  txt_club: string | null
+  num_confidence: number
+  bool_age_match: boolean
 }
 
 export interface Filters {
