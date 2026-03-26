@@ -76,15 +76,29 @@
 </div>
 
 <AdminSignInModal
-  open={showAdminModal}
-  error={signInError}
-  onsubmit={(email, password) => { isAdmin = true; showAdminModal = false }}
+  open={auth.step === 'sign_in'}
+  error={auth.error}
+  onsubmit={(email, password) => { signIn(email, password) }}
+/>
+
+<AdminMfaEnrollModal
+  open={auth.step === 'mfa_enroll'}
+  qrCode={auth.qrCode}
+  secret={auth.secret}
+  error={auth.error}
+  onconfirm={(code) => { confirmEnroll(code) }}
+/>
+
+<AdminMfaChallengeModal
+  open={auth.step === 'mfa_challenge'}
+  error={auth.error}
+  onverify={(code) => { verifyChallenge(code) }}
 />
 
 {#if isAdmin}
   <AdminFloatingToolbar
-    onlogout={() => { isAdmin = false }}
-    ontimeout={() => { isAdmin = false; showAdminModal = true }}
+    onlogout={() => { signOut() }}
+    ontimeout={() => { signOut(); startAuth() }}
     timeoutMs={59 * 60 * 1000}
   />
 {/if}
@@ -132,7 +146,10 @@
   import DrilldownModal from './components/DrilldownModal.svelte'
   import SkeletonLoader from './components/SkeletonLoader.svelte'
   import AdminSignInModal from './components/AdminSignInModal.svelte'
+  import AdminMfaEnrollModal from './components/AdminMfaEnrollModal.svelte'
+  import AdminMfaChallengeModal from './components/AdminMfaChallengeModal.svelte'
   import AdminFloatingToolbar from './components/AdminFloatingToolbar.svelte'
+  import { getAuthState, startAuth, signIn, confirmEnroll, verifyChallenge, signOut, reset as resetAuth } from './lib/admin-auth.svelte'
 
   let {
     'supabase-cert-url': certUrl = '',
@@ -152,9 +169,14 @@
   let sidebarOpen = $state(false)
 
   const adminRequested = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('admin') === '1'
-  let isAdmin = $state(false)
-  let showAdminModal = $state(adminRequested)
-  let signInError = $state('')
+  const auth = getAuthState()
+  let isAdmin = $derived(auth.step === 'authenticated')
+
+  $effect(() => {
+    if (adminRequested && auth.step === 'idle') {
+      startAuth()
+    }
+  })
 
   let activeEnv: Environment = $state('CERT')
   let dualEnv = $derived(!!(certUrl && certKey && prodUrl && prodKey))
