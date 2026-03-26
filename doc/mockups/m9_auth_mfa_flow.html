@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Auth — Supabase Auth + TOTP MFA Flow</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+  h1.page-title { text-align: center; margin-bottom: 10px; font-size: 28px; color: #222; }
+  .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 30px; }
+
+  .step-container { margin-bottom: 40px; }
+  .step-label { font-size: 16px; font-weight: 700; color: #4a90d9; margin-bottom: 6px; }
+  .step-desc { font-size: 13px; color: #666; margin-bottom: 14px; line-height: 1.5; }
+
+  /* Shared app frame */
+  .app-frame { background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; width: 480px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); position: relative; }
+
+  /* Header bar */
+  .header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f5f7fa; border-bottom: 1px solid #ddd; }
+  .hamburger { font-size: 20px; cursor: pointer; padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; line-height: 1; }
+  .header-title { display: flex; align-items: center; gap: 8px; font-size: 18px; color: #222; margin: 0; white-space: nowrap; }
+  .header-logo { height: 22px; width: auto; }
+  .spacer { flex: 1; }
+  .lang-toggle { display: flex; gap: 4px; }
+  .lang-btn { padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 14px; cursor: pointer; }
+  .lang-btn.active { background: #4a90d9; border-color: #4a90d9; }
+
+  /* Modal overlay */
+  .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; min-height: 340px; }
+  .modal-box { background: #fff; border-radius: 10px; padding: 28px 32px; width: 340px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); text-align: center; }
+  .modal-box h3 { font-size: 18px; color: #222; margin-bottom: 4px; }
+  .modal-box .modal-subtitle { font-size: 13px; color: #888; margin-bottom: 20px; }
+
+  /* Form inputs */
+  .form-group { margin-bottom: 14px; text-align: left; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; }
+  .form-group input { width: 100%; padding: 9px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; background: #fafbfc; }
+  .form-group input:focus { outline: none; border-color: #4a90d9; box-shadow: 0 0 0 2px rgba(74,144,217,0.15); }
+
+  .btn-primary { width: 100%; padding: 10px 0; background: #4a90d9; color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 4px; }
+  .btn-primary:hover { background: #3a7fc8; }
+  .btn-primary.orange { background: #ff6b35; }
+  .btn-primary.orange:hover { background: #e55a28; }
+  .btn-primary.green { background: #1a7f37; }
+  .btn-primary.green:hover { background: #15692d; }
+
+  .error-msg { font-size: 12px; color: #c33; margin-top: 8px; background: #fff0f0; padding: 6px 10px; border-radius: 4px; border: 1px solid #fcc; }
+
+  /* TOTP code input */
+  .totp-input { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
+  .totp-input .digit { width: 40px; height: 48px; text-align: center; font-size: 22px; font-weight: 700; border: 2px solid #ccc; border-radius: 8px; background: #fafbfc; color: #222; }
+  .totp-input .digit:focus { border-color: #4a90d9; outline: none; }
+  .totp-input .digit.filled { border-color: #4a90d9; background: #e8f0fe; }
+
+  /* QR code placeholder */
+  .qr-placeholder { width: 180px; height: 180px; background: #f0f2f5; border: 2px dashed #ccc; border-radius: 8px; margin: 16px auto; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+  .qr-placeholder .qr-icon { font-size: 48px; color: #aaa; }
+  .qr-placeholder .qr-label { font-size: 11px; color: #999; margin-top: 6px; }
+
+  .secret-key { font-family: 'Courier New', monospace; font-size: 13px; background: #f5f5f5; padding: 6px 10px; border-radius: 4px; color: #444; margin: 8px 0; letter-spacing: 1px; word-break: break-all; }
+  .secret-hint { font-size: 11px; color: #999; margin-bottom: 12px; }
+
+  /* Shield icon */
+  .shield { font-size: 36px; margin-bottom: 8px; }
+
+  /* Floating admin toolbar */
+  .admin-toolbar { position: absolute; bottom: 12px; left: 12px; display: flex; align-items: center; gap: 10px; background: rgba(255,107,53,0.95); color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+  .admin-toolbar .badge { background: #fff; color: #ff6b35; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+  .admin-toolbar .timer { opacity: 0.85; font-size: 12px; }
+  .admin-toolbar .logout-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: #fff; padding: 3px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+
+  /* Content placeholder */
+  .content-placeholder { padding: 20px; min-height: 200px; }
+  .placeholder-line { height: 12px; background: #eee; border-radius: 4px; margin-bottom: 10px; }
+  .placeholder-line.w60 { width: 60%; }
+  .placeholder-line.w80 { width: 80%; }
+  .placeholder-line.w40 { width: 40%; }
+
+  /* Sidebar */
+  .sidebar-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.3); z-index: 10; }
+  .sidebar { position: absolute; top: 0; left: 0; width: 220px; height: 100%; background: #fff; z-index: 11; box-shadow: 4px 0 16px rgba(0,0,0,0.1); }
+  .sidebar-brand { padding: 16px; border-bottom: 1px solid #eee; }
+  .sidebar-logo { width: 120px; height: auto; }
+  .sidebar-item { padding: 10px 16px; font-size: 14px; color: #333; cursor: pointer; }
+  .sidebar-item:hover { background: #f5f7fa; }
+  .sidebar-item.active { color: #4a90d9; font-weight: 600; background: #e8f0fe; }
+  .sidebar-section { padding: 6px 16px 4px; font-size: 11px; font-weight: 700; color: #ff6b35; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 8px; }
+  .sidebar-item.admin { color: #ff6b35; }
+
+  /* Flow arrow */
+  .flow-arrow { text-align: center; font-size: 28px; color: #4a90d9; margin: 20px 0; }
+
+  hr.sep { border: none; border-top: 2px solid #4a90d9; margin: 40px 0 10px; }
+  .note { font-size: 13px; color: #888; margin-top: 8px; padding: 8px 12px; background: #fff8e1; border-radius: 4px; border-left: 3px solid #f5a623; margin-bottom: 20px; }
+
+  .comparison { display: flex; gap: 20px; margin: 20px 0; flex-wrap: wrap; }
+  .comparison .col { flex: 1; min-width: 220px; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; }
+  .comparison .col h4 { font-size: 14px; margin-bottom: 8px; }
+  .comparison .col.bad { border-color: #fcc; }
+  .comparison .col.bad h4 { color: #c33; }
+  .comparison .col.good { border-color: #b7e4c7; }
+  .comparison .col.good h4 { color: #1a7f37; }
+  .comparison ul { font-size: 13px; color: #555; padding-left: 18px; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">Admin Auth — Supabase Auth + TOTP MFA</h1>
+<p class="subtitle">Replaces client-side password gate (ADR-004). Server-enforced authentication with two-factor verification. Multiple admins supported.</p>
+
+<!-- ==================== COMPARISON ==================== -->
+<div class="comparison">
+  <div class="col bad">
+    <h4>Before (ADR-004)</h4>
+    <ul>
+      <li>Password in HTML attribute</li>
+      <li>Client-side comparison only</li>
+      <li>anon can call write RPCs</li>
+      <li>Trivially bypassable via DevTools</li>
+    </ul>
+  </div>
+  <div class="col good">
+    <h4>After (Supabase Auth + TOTP)</h4>
+    <ul>
+      <li>Credentials never in client bundle</li>
+      <li>Server verifies JWT on every request</li>
+      <li>Write RPCs require authenticated role</li>
+      <li>Email + password + rotating 6-digit code</li>
+      <li>Multiple admins, each with own 2FA</li>
+    </ul>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Flow:</strong> User visits <code>?admin=1</code> &rarr; Sign-in (email + password) &rarr; TOTP challenge (6-digit code) &rarr; Authenticated admin session.
+  First-time only: MFA enrollment (scan QR code) happens between sign-in and TOTP challenge.<br>
+  <strong>Multi-admin:</strong> Each admin has their own email + password + authenticator app. No limit on Supabase free tier (50k MAU). Independent sessions.
+</div>
+
+<!-- ==================== STEP 1: SIGN-IN ==================== -->
+<div class="step-container">
+  <div class="step-label">Step 1 — Sign In (email + password)</div>
+  <div class="step-desc">
+    User navigates to <code>?admin=1</code>. The app detects no active session and shows the sign-in modal.<br>
+    This replaces the old single-password modal. Credentials are sent to Supabase GoTrue (server-side), never compared client-side.
+  </div>
+
+  <div class="app-frame">
+    <div class="header">
+      <button class="hamburger">&#9776;</button>
+      <h2 class="header-title">
+        <img src="../../frontend/public/SPWS-logo.png" alt="SPWS" class="header-logo">
+        Ranking
+      </h2>
+      <span class="spacer"></span>
+      <div class="lang-toggle">
+        <button class="lang-btn">&#127468;&#127463;</button>
+        <button class="lang-btn active">&#127477;&#127473;</button>
+      </div>
+    </div>
+    <div class="modal-overlay" style="min-height: 380px;">
+      <div class="modal-box">
+        <div class="shield">&#128274;</div>
+        <h3>Logowanie administratora</h3>
+        <p class="modal-subtitle">Wymagane uwierzytelnienie</p>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" placeholder="admin@spws.pl" value="admin@spws.pl">
+        </div>
+        <div class="form-group">
+          <label>Hasło</label>
+          <input type="password" value="••••••••••">
+        </div>
+        <button class="btn-primary">Zaloguj się</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow">&#8595;</div>
+
+<!-- ==================== STEP 2a: MFA ENROLLMENT (first time only) ==================== -->
+<div class="step-container">
+  <div class="step-label">Step 2a — MFA Enrollment (first time only)</div>
+  <div class="step-desc">
+    After first successful sign-in, Supabase detects no TOTP factor enrolled. The app shows a QR code to scan with any authenticator app
+    (Google Authenticator, Authy, 1Password, etc.). This screen appears <strong>only once</strong> — on the very first login.
+  </div>
+
+  <div class="app-frame">
+    <div class="header">
+      <button class="hamburger">&#9776;</button>
+      <h2 class="header-title">
+        <img src="../../frontend/public/SPWS-logo.png" alt="SPWS" class="header-logo">
+        Ranking
+      </h2>
+      <span class="spacer"></span>
+      <div class="lang-toggle">
+        <button class="lang-btn">&#127468;&#127463;</button>
+        <button class="lang-btn active">&#127477;&#127473;</button>
+      </div>
+    </div>
+    <div class="modal-overlay" style="min-height: 520px;">
+      <div class="modal-box" style="width: 360px;">
+        <div class="shield">&#128241;</div>
+        <h3>Konfiguracja 2FA</h3>
+        <p class="modal-subtitle">Zeskanuj kod QR aplikacją uwierzytelniającą</p>
+
+        <div class="qr-placeholder">
+          <div class="qr-icon">&#9641;&#9641;<br>&#9641;&#9641;</div>
+          <div class="qr-label">QR Code</div>
+        </div>
+
+        <div class="secret-hint">Nie możesz zeskanować? Wpisz klucz ręcznie:</div>
+        <div class="secret-key">JBSW Y3DP EHPK 3PXP</div>
+
+        <p class="modal-subtitle" style="margin-top: 16px; margin-bottom: 12px;">Wpisz 6-cyfrowy kod z aplikacji aby potwierdzić:</p>
+        <div class="totp-input">
+          <input class="digit filled" value="7" maxlength="1">
+          <input class="digit filled" value="2" maxlength="1">
+          <input class="digit filled" value="9" maxlength="1">
+          <input class="digit" value="" maxlength="1">
+          <input class="digit" value="" maxlength="1">
+          <input class="digit" value="" maxlength="1">
+        </div>
+        <button class="btn-primary green">Potwierdź i aktywuj 2FA</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow">&#8595;</div>
+
+<!-- ==================== STEP 2b: TOTP CHALLENGE (every login) ==================== -->
+<div class="step-container">
+  <div class="step-label">Step 2b — TOTP Challenge (every login)</div>
+  <div class="step-desc">
+    On every subsequent login, after email+password succeeds, Supabase returns a partial session requiring MFA verification.
+    The app shows this screen. The user opens their authenticator app, reads the current 6-digit code, and enters it.
+    Code rotates every 30 seconds.
+  </div>
+
+  <div class="app-frame">
+    <div class="header">
+      <button class="hamburger">&#9776;</button>
+      <h2 class="header-title">
+        <img src="../../frontend/public/SPWS-logo.png" alt="SPWS" class="header-logo">
+        Ranking
+      </h2>
+      <span class="spacer"></span>
+      <div class="lang-toggle">
+        <button class="lang-btn">&#127468;&#127463;</button>
+        <button class="lang-btn active">&#127477;&#127473;</button>
+      </div>
+    </div>
+    <div class="modal-overlay" style="min-height: 360px;">
+      <div class="modal-box">
+        <div class="shield">&#128272;</div>
+        <h3>Weryfikacja dwuetapowa</h3>
+        <p class="modal-subtitle">Wpisz 6-cyfrowy kod z aplikacji uwierzytelniającej</p>
+        <div class="totp-input">
+          <input class="digit filled" value="4" maxlength="1">
+          <input class="digit filled" value="8" maxlength="1">
+          <input class="digit filled" value="3" maxlength="1">
+          <input class="digit filled" value="9" maxlength="1">
+          <input class="digit filled" value="1" maxlength="1">
+          <input class="digit" value="" maxlength="1">
+        </div>
+        <button class="btn-primary">Weryfikuj</button>
+
+        <!-- Error state example -->
+        <div class="error-msg" style="margin-top: 12px;">Nieprawidłowy kod. Sprawdź aplikację i spróbuj ponownie.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top: 12px; width: 480px;">
+    <strong>Error state:</strong> If the code is wrong, the error message appears below the button. The user can try again immediately — no lockout on first few attempts.
+  </div>
+</div>
+
+<div class="flow-arrow">&#8595;</div>
+
+<!-- ==================== STEP 3: AUTHENTICATED ADMIN ==================== -->
+<div class="step-container">
+  <div class="step-label">Step 3 — Authenticated Admin Session</div>
+  <div class="step-desc">
+    After successful TOTP verification, Supabase issues a full <code>authenticated</code> JWT. The admin UI unlocks:
+    floating toolbar (bottom-left), admin sidebar section (orange items), and all write RPCs are now authorized.
+    Client-side inactivity timer: <strong>59 minutes</strong>. On timeout → <code>signOut()</code> → JWT destroyed → sign-in modal reappears.
+    JWT expiry set to 1h server-side, so the 59-min client timeout fires first — no token refresh logic needed.
+  </div>
+
+  <div class="app-frame" style="min-height: 400px;">
+    <div class="header">
+      <button class="hamburger">&#9776;</button>
+      <h2 class="header-title">
+        <img src="../../frontend/public/SPWS-logo.png" alt="SPWS" class="header-logo">
+        Ranking
+      </h2>
+      <span class="spacer"></span>
+      <div class="lang-toggle">
+        <button class="lang-btn">&#127468;&#127463;</button>
+        <button class="lang-btn active">&#127477;&#127473;</button>
+      </div>
+    </div>
+
+    <!-- Sidebar open showing admin section -->
+    <div style="position: relative; min-height: 340px;">
+      <div class="sidebar-overlay"></div>
+      <div class="sidebar" style="height: 340px;">
+        <div class="sidebar-brand">
+          <img src="../../frontend/public/SPWS-logo.png" alt="SPWS" class="sidebar-logo">
+        </div>
+        <div class="sidebar-item active">Ranking</div>
+        <div class="sidebar-item">Kalendarz</div>
+        <div class="sidebar-section">Administracja</div>
+        <div class="sidebar-item admin">Sezony</div>
+        <div class="sidebar-item admin">Wydarzenia</div>
+        <div class="sidebar-item admin">Tożsamości</div>
+        <div class="sidebar-item admin">Punktacja</div>
+      </div>
+    </div>
+
+    <!-- Floating admin toolbar -->
+    <div class="admin-toolbar">
+      <span class="badge">ADMIN</span>
+      <span class="timer">47 min</span>
+      <button class="logout-btn">Wyloguj</button>
+    </div>
+  </div>
+</div>
+
+<hr class="sep">
+
+<!-- ==================== SEQUENCE DIAGRAM ==================== -->
+<div class="step-container">
+  <div class="step-label">Technical Flow — What Happens Under the Hood</div>
+  <div class="step-desc" style="line-height: 1.8; max-width: 600px;">
+    <strong>1. Sign-in:</strong> <code>supabase.auth.signInWithPassword({ email, password })</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;→ GoTrue verifies credentials, returns partial session (MFA required)<br><br>
+
+    <strong>2. Check MFA enrollment:</strong> <code>supabase.auth.mfa.listFactors()</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;→ If empty → enrollment flow (Step 2a)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;→ If TOTP factor exists → challenge flow (Step 2b)<br><br>
+
+    <strong>3a. Enrollment:</strong><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<code>supabase.auth.mfa.enroll({ factorType: 'totp' })</code> → returns QR URI + secret<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<code>supabase.auth.mfa.challengeAndVerify({ factorId, code })</code> → activates factor + issues JWT<br><br>
+
+    <strong>3b. Challenge:</strong><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<code>supabase.auth.mfa.challenge({ factorId })</code> → returns challengeId<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<code>supabase.auth.mfa.verify({ factorId, challengeId, code })</code> → issues full JWT<br><br>
+
+    <strong>4. Server-side enforcement:</strong><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<code>REVOKE EXECUTE ON FUNCTION fn_import_scoring_config FROM anon, PUBLIC;</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;PostgREST checks JWT → role = <code>authenticated</code> → function executes<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Without JWT (or anon JWT) → <code>permission denied</code><br><br>
+
+    <strong>5. Session management (no refresh needed):</strong><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;JWT expiry = 1h (Supabase dashboard setting)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Client inactivity timer = 59 min (fires before JWT expires)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;On timeout or "Wyloguj" → <code>supabase.auth.signOut()</code> → JWT destroyed<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;No <code>onAuthStateChange</code> refresh listener — single-use session, simple code<br><br>
+
+    <strong>6. Multiple admins:</strong><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Each admin created in Supabase Dashboard → Auth → Users<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Each enrolls their own TOTP factor independently<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;All <code>authenticated</code> users get admin privileges (no role table needed)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Supabase free tier: 50,000 MAU — effectively unlimited
+  </div>
+</div>
+
+<hr class="sep">
+
+<!-- ==================== DATA MAPPING ==================== -->
+<div class="step-container">
+  <div class="step-label">Implementation Scope</div>
+  <table style="border-collapse: collapse; font-size: 13px; width: 100%; max-width: 600px;">
+    <thead>
+      <tr style="background: #f5f7fa;">
+        <th style="padding: 8px 12px; text-align: left; border: 1px solid #ddd;">Layer</th>
+        <th style="padding: 8px 12px; text-align: left; border: 1px solid #ddd;">Change</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding: 8px 12px; border: 1px solid #ddd; font-weight: 600;">Supabase Dashboard</td>
+        <td style="padding: 8px 12px; border: 1px solid #ddd;">Create admin user(s) (email + password each), enable MFA in Auth settings, set JWT expiry to 3600s</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; border: 1px solid #ddd; font-weight: 600;">SQL Migration</td>
+        <td style="padding: 8px 12px; border: 1px solid #ddd;">
+          <code>REVOKE EXECUTE</code> on all write functions from <code>anon</code> and <code>PUBLIC</code><br>
+          <code>GRANT EXECUTE</code> to <code>authenticated</code> only
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; border: 1px solid #ddd; font-weight: 600;">Frontend — Remove</td>
+        <td style="padding: 8px 12px; border: 1px solid #ddd;">
+          Delete <code>AdminPasswordModal.svelte</code><br>
+          Remove <code>admin-password</code> prop from <code>&lt;spws-ranklist&gt;</code>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; border: 1px solid #ddd; font-weight: 600;">Frontend — Add</td>
+        <td style="padding: 8px 12px; border: 1px solid #ddd;">
+          <code>AdminSignInModal.svelte</code> — email + password form<br>
+          <code>AdminMfaEnrollModal.svelte</code> — QR code + confirm code<br>
+          <code>AdminMfaChallengeModal.svelte</code> — 6-digit TOTP input<br>
+          <code>src/lib/admin-auth.svelte.ts</code> — auth state + MFA flow logic
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; border: 1px solid #ddd; font-weight: 600;">ADR</td>
+        <td style="padding: 8px 12px; border: 1px solid #ddd;">ADR-016 supersedes ADR-004 (Single Admin Account → Supabase Auth + TOTP MFA)</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; border: 1px solid #ddd; font-weight: 600;">Web Component</td>
+        <td style="padding: 8px 12px; border: 1px solid #ddd;">
+          Remove <code>admin-password</code> attribute<br>
+          Admin mode triggered by <code>?admin=1</code> URL param (unchanged)
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>

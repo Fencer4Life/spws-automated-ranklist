@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M8 Mockup — Identity Resolution (Admin)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; }
+
+  h1 { text-align: center; color: #00d4ff; margin-bottom: 8px; font-size: 1.6em; }
+  .subtitle { text-align: center; color: #888; margin-bottom: 30px; font-size: 0.95em; }
+
+  .section-label {
+    background: #00d4ff; color: #1a1a2e; padding: 8px 16px; border-radius: 8px 8px 0 0;
+    font-weight: 700; font-size: 1.1em; display: inline-block; margin-top: 30px;
+  }
+  .section-desc {
+    color: #aaa; font-size: 0.85em; padding: 6px 0 10px 0; max-width: 960px;
+  }
+
+  /* ── Shared app chrome ── */
+  .app-frame {
+    background: #16213e; border-radius: 0 8px 8px 8px; overflow: hidden;
+    max-width: 960px; border: 1px solid #0f3460;
+  }
+  .header {
+    background: #0f3460; padding: 10px 16px; display: flex; align-items: center; gap: 12px;
+    font-size: 0.9em; border-bottom: 1px solid #1a4a8a;
+  }
+  .hamburger { font-size: 1.3em; cursor: pointer; color: #00d4ff; }
+  .header-title { font-weight: 700; color: #fff; flex: 1; }
+  .header-pill {
+    background: #1a4a8a; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; color: #7fbadc;
+  }
+  .header-env {
+    background: #ff6b35; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 0.75em; font-weight: 700;
+  }
+  .lang-toggle { font-size: 1.1em; cursor: pointer; }
+
+  /* ── Sidebar ── */
+  .app-body { display: flex; position: relative; }
+  .sidebar {
+    width: 240px; background: #0d1b2a; border-right: 1px solid #1a4a8a;
+    display: flex; flex-direction: column; flex-shrink: 0; min-height: 520px;
+  }
+  .sidebar-brand {
+    padding: 16px 18px; font-weight: 800; font-size: 1.2em; color: #00d4ff;
+    border-bottom: 1px solid #1a4a8a; letter-spacing: 1px;
+  }
+  .sidebar-nav { padding: 8px 0; }
+  .sidebar-item {
+    padding: 10px 18px; font-size: 0.88em; color: #7fbadc; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sidebar-item:hover { background: #1a2744; color: #fff; }
+  .sidebar-divider {
+    border: none; border-top: 1px solid #1a4a8a; margin: 8px 0;
+  }
+  .sidebar-section-label {
+    padding: 6px 18px; font-size: 0.7em; color: #555; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .sidebar-admin-item {
+    padding: 10px 18px; font-size: 0.88em; color: #ff6b35; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sidebar-admin-item:hover { background: #1a2744; }
+  .sidebar-admin-item.active { background: #1a2744; font-weight: 600; border-left: 3px solid #ff6b35; }
+  .sidebar-footer {
+    margin-top: auto; padding: 14px 18px; border-top: 1px solid #1a4a8a;
+    font-size: 0.8em; color: #888;
+  }
+  .sidebar-footer .logout { color: #ff6b35; cursor: pointer; }
+
+  .content { padding: 16px; min-height: 460px; position: relative; flex: 1; }
+
+  /* ── Floating toolbar ── */
+  .floating-toolbar {
+    position: absolute; bottom: 12px; right: 16px;
+    background: rgba(255, 107, 53, 0.15); border: 1px solid #ff6b35;
+    border-radius: 20px; padding: 4px 14px; font-size: 0.75em;
+    display: flex; align-items: center; gap: 8px; color: #ff6b35;
+  }
+  .admin-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff6b35; }
+
+  /* ── Filter bar ── */
+  .filter-bar {
+    display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .filter-select {
+    background: #1a2744; border: 1px solid #1a4a8a; color: #7fbadc;
+    padding: 6px 10px; border-radius: 6px; font-size: 0.82em;
+  }
+  .filter-search {
+    background: #1a2744; border: 1px solid #1a4a8a; color: #e0e0e0;
+    padding: 6px 10px; border-radius: 6px; font-size: 0.82em; flex: 1; min-width: 140px;
+  }
+  .filter-search::placeholder { color: #555; }
+
+  /* ── Stats bar ── */
+  .stats-bar {
+    display: flex; gap: 14px; margin-bottom: 14px; font-size: 0.78em;
+  }
+  .stat-chip {
+    padding: 3px 10px; border-radius: 10px; font-weight: 600;
+  }
+  .stat-pending { background: #3a2a0a; color: #fbbf24; }
+  .stat-auto { background: #0a2a4a; color: #60a5fa; }
+  .stat-unmatched { background: #3a0a0a; color: #f87171; }
+  .stat-approved { background: #0a3622; color: #4ade80; }
+  .stat-new-fencer { background: #2a0a3a; color: #c084fc; }
+  .stat-dismissed { background: #2a2a2a; color: #888; }
+
+  /* ── Match candidate table ── */
+  .match-table {
+    width: 100%; border-collapse: collapse; font-size: 0.82em;
+  }
+  .match-table th {
+    text-align: left; padding: 8px 8px; color: #7fbadc; font-size: 0.85em;
+    border-bottom: 2px solid #1a4a8a; font-weight: 600;
+  }
+  .match-table td {
+    padding: 10px 8px; border-bottom: 1px solid #1a2744; vertical-align: middle;
+  }
+  .match-table tr:hover td { background: #1a2744; }
+
+  .scraped-name { color: #fff; font-weight: 600; }
+  .scraped-tournament { color: #888; font-size: 0.85em; }
+
+  .confidence-bar {
+    width: 50px; height: 6px; background: #1a2744; border-radius: 3px; display: inline-block;
+    vertical-align: middle; margin-right: 4px;
+  }
+  .confidence-fill {
+    height: 100%; border-radius: 3px;
+  }
+  .conf-high { background: #4ade80; }
+  .conf-mid { background: #fbbf24; }
+  .conf-low { background: #f87171; }
+  .confidence-pct { font-size: 0.9em; }
+
+  .suggested-fencer { color: #00d4ff; }
+  .suggested-meta { color: #888; font-size: 0.85em; }
+
+  .status-badge {
+    font-size: 0.7em; padding: 2px 8px; border-radius: 10px; font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge-pending { background: #3a2a0a; color: #fbbf24; }
+  .badge-auto { background: #0a2a4a; color: #60a5fa; }
+  .badge-approved { background: #0a3622; color: #4ade80; }
+  .badge-unmatched { background: #3a0a0a; color: #f87171; }
+  .badge-new-fencer { background: #2a0a3a; color: #c084fc; }
+  .badge-dismissed { background: #2a2a2a; color: #888; }
+
+  /* ── Action buttons ── */
+  .action-group { display: flex; gap: 4px; }
+  .btn-approve {
+    background: #0a3622; color: #4ade80; border: 1px solid #4ade80;
+    padding: 3px 8px; border-radius: 4px; font-size: 0.78em; cursor: pointer; font-weight: 600;
+  }
+  .btn-approve:hover { background: #0f4a2e; }
+  .btn-new-fencer {
+    background: #2a0a3a; color: #c084fc; border: 1px solid #c084fc;
+    padding: 3px 8px; border-radius: 4px; font-size: 0.78em; cursor: pointer; font-weight: 600;
+  }
+  .btn-new-fencer:hover { background: #3a1a4a; }
+  .btn-dismiss {
+    background: none; color: #888; border: 1px solid #555;
+    padding: 3px 8px; border-radius: 4px; font-size: 0.78em; cursor: pointer; font-weight: 600;
+  }
+  .btn-dismiss:hover { background: #2a2a2a; color: #ccc; }
+
+  /* ═══════════════════════════════════════════
+     Approve / Link Modal
+     ═══════════════════════════════════════════ */
+  .modal-overlay {
+    background: rgba(0,0,0,0.7); border-radius: 8px; padding: 30px;
+    max-width: 960px; margin-top: 20px; border: 1px solid #0f3460;
+  }
+  .modal-box {
+    background: #16213e; border: 1px solid #1a4a8a; border-radius: 12px;
+    max-width: 640px; margin: 0 auto; overflow: hidden;
+  }
+  .modal-header {
+    background: #0f3460; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-weight: 700; color: #fff; font-size: 1em; }
+  .modal-close { color: #888; cursor: pointer; font-size: 1.2em; }
+  .modal-close:hover { color: #fff; }
+  .modal-body { padding: 20px; }
+
+  .modal-footer {
+    padding: 14px 20px; background: #121d33; border-top: 1px solid #1a4a8a;
+    display: flex; justify-content: flex-end; align-items: center; gap: 8px;
+  }
+  .btn-cancel {
+    background: none; border: 1px solid #555; color: #888;
+    padding: 6px 16px; border-radius: 6px; font-size: 0.85em; cursor: pointer;
+  }
+  .btn-cancel:hover { border-color: #888; color: #ccc; }
+  .btn-confirm-approve {
+    background: #0a3622; color: #4ade80; border: 1px solid #4ade80;
+    padding: 6px 20px; border-radius: 6px; font-size: 0.85em; cursor: pointer; font-weight: 700;
+  }
+  .btn-confirm-approve:hover { background: #0f4a2e; }
+  .btn-confirm-create {
+    background: #2a0a3a; color: #c084fc; border: 1px solid #c084fc;
+    padding: 6px 20px; border-radius: 6px; font-size: 0.85em; cursor: pointer; font-weight: 700;
+  }
+  .btn-confirm-create:hover { background: #3a1a4a; }
+
+  /* ── Scraped info panel ── */
+  .scraped-panel {
+    background: #1a2744; border: 1px solid #1a4a8a; border-radius: 8px;
+    padding: 14px; margin-bottom: 16px;
+  }
+  .scraped-panel-label { font-size: 0.75em; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .scraped-panel-name { font-size: 1.1em; font-weight: 700; color: #fff; }
+  .scraped-panel-meta { font-size: 0.82em; color: #7fbadc; margin-top: 4px; }
+
+  /* ── Fencer candidate list ── */
+  .candidate-list { list-style: none; padding: 0; margin: 0; }
+  .candidate-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px;
+    border: 1px solid #1a4a8a; border-radius: 8px; margin-bottom: 8px; cursor: pointer;
+  }
+  .candidate-item:hover { background: #1a2744; border-color: #00d4ff; }
+  .candidate-item.selected { background: #0a2a4a; border-color: #00d4ff; }
+  .candidate-radio { accent-color: #00d4ff; width: 16px; height: 16px; }
+  .candidate-info { flex: 1; }
+  .candidate-name { font-weight: 600; color: #fff; }
+  .candidate-details { font-size: 0.8em; color: #888; margin-top: 2px; }
+  .candidate-confidence {
+    font-size: 0.85em; font-weight: 600; min-width: 40px; text-align: right;
+  }
+  .candidate-aliases { font-size: 0.75em; color: #555; margin-top: 2px; }
+
+  .no-match-msg {
+    background: #2a2a2a; border: 1px dashed #555; border-radius: 8px;
+    padding: 14px; text-align: center; color: #888; font-size: 0.85em; margin-top: 10px;
+  }
+
+  /* ── Admin note ── */
+  .admin-note-field {
+    width: 100%; background: #1a2744; border: 1px solid #1a4a8a; color: #e0e0e0;
+    padding: 8px 10px; border-radius: 6px; font-size: 0.82em; margin-top: 12px;
+    resize: vertical; min-height: 40px;
+  }
+  .admin-note-field::placeholder { color: #555; }
+  .field-label {
+    font-size: 0.75em; color: #888; text-transform: uppercase; letter-spacing: 1px;
+    margin-top: 12px; margin-bottom: 4px;
+  }
+
+  /* ═══════════════════════════════════════════
+     New Fencer Form
+     ═══════════════════════════════════════════ */
+  .form-row {
+    display: flex; gap: 12px; margin-bottom: 10px;
+  }
+  .form-group { flex: 1; }
+  .form-group label {
+    display: block; font-size: 0.75em; color: #888; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 4px;
+  }
+  .form-input {
+    width: 100%; background: #1a2744; border: 1px solid #1a4a8a; color: #e0e0e0;
+    padding: 8px 10px; border-radius: 6px; font-size: 0.85em;
+  }
+  .form-input::placeholder { color: #555; }
+  .form-input.prefilled { border-color: #00d4ff; }
+  .estimated-warning {
+    display: flex; align-items: center; gap: 6px;
+    background: #3a2a0a; border: 1px solid #fbbf24; border-radius: 6px;
+    padding: 8px 12px; font-size: 0.8em; color: #fbbf24; margin-top: 10px;
+  }
+
+  /* ── Notes section ── */
+  .notes {
+    background: #0d1b2a; border: 1px solid #1a4a8a; border-radius: 8px;
+    padding: 16px; margin-top: 30px; max-width: 960px;
+  }
+  .notes h3 { color: #00d4ff; font-size: 0.95em; margin-bottom: 8px; }
+  .notes ul { padding-left: 20px; font-size: 0.82em; color: #aaa; }
+  .notes li { margin-bottom: 4px; }
+  .notes code { background: #1a2744; padding: 1px 4px; border-radius: 3px; color: #fbbf24; font-size: 0.9em; }
+</style>
+</head>
+<body>
+
+<h1>M8 — Identity Resolution (Admin View)</h1>
+<p class="subtitle">Match candidate queue with approve / create new fencer / dismiss workflow. Sidebar: Tożsamości active.</p>
+
+<!-- ═══════════════════════════════════════════════════════
+     PART 1 — Match Candidate Queue (main list)
+     ═══════════════════════════════════════════════════════ -->
+<div class="section-label">Kolejka dopasowań — Match Candidate Queue</div>
+<p class="section-desc">Filterable list of all match candidates. Admin reviews PENDING items, can also browse AUTO_MATCHED and resolved entries.</p>
+
+<div class="app-frame">
+  <div class="header">
+    <span class="hamburger">☰</span>
+    <span class="header-title">SPWS Tożsamości</span>
+    <span class="header-env">CT</span>
+    <select class="header-pill" style="background:#1a4a8a; color:#7fbadc; border:none; font-size:0.85em;">
+      <option>SPWS-2025-2026</option>
+      <option>SPWS-2024-2025</option>
+    </select>
+    <span class="lang-toggle">🇬🇧 🇵🇱</span>
+  </div>
+
+  <div class="app-body">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-brand">SPWS</div>
+      <div class="sidebar-nav">
+        <div class="sidebar-item">Ranklista</div>
+        <div class="sidebar-item">Kalendarz</div>
+      </div>
+      <hr class="sidebar-divider">
+      <div class="sidebar-section-label">Administracja</div>
+      <div class="sidebar-admin-item">Sezony</div>
+      <div class="sidebar-admin-item">Wydarzenia</div>
+      <div class="sidebar-admin-item active">Tożsamości</div>
+      <div class="sidebar-footer">
+        Sesja: 1h 47m<br>
+        <span class="logout">Wyloguj</span>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="content">
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <select class="filter-select">
+        <option>Status: Oczekujące (PENDING)</option>
+        <option>Status: Wszystkie</option>
+        <option>Status: Auto (AUTO_MATCHED)</option>
+        <option>Status: Brak dopasowania (UNMATCHED)</option>
+        <option>Status: Zatwierdzone (APPROVED)</option>
+        <option>Status: Nowy zawodnik (NEW_FENCER)</option>
+        <option>Status: Odrzucone (DISMISSED)</option>
+      </select>
+      <select class="filter-select">
+        <option>Turniej: Wszystkie</option>
+        <option>PP1 — Puchar Polski #1</option>
+        <option>PEW1 — Puchar Europy #1</option>
+        <option>PP2 — Puchar Polski #2</option>
+      </select>
+      <input class="filter-search" type="text" placeholder="Szukaj nazwiska...">
+    </div>
+
+    <!-- Stats bar -->
+    <div class="stats-bar">
+      <span class="stat-chip stat-pending">7 oczekujących</span>
+      <span class="stat-chip stat-auto">42 auto</span>
+      <span class="stat-chip stat-unmatched">3 brak</span>
+      <span class="stat-chip stat-approved">12 zatw.</span>
+      <span class="stat-chip stat-new-fencer">2 nowi</span>
+      <span class="stat-chip stat-dismissed">1 odrz.</span>
+    </div>
+
+    <!-- Match candidate table -->
+    <table class="match-table">
+      <thead>
+        <tr>
+          <th>Nazwa ze scrapera</th>
+          <th>Turniej</th>
+          <th>Pewność</th>
+          <th>Sugerowany zawodnik</th>
+          <th>Status</th>
+          <th>Akcje</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- Row 1: PENDING — high confidence, needs confirmation -->
+        <tr>
+          <td>
+            <div class="scraped-name">KOWALSKI Andrzej</div>
+          </td>
+          <td><span class="scraped-tournament">PP1 · Epee V2 M</span></td>
+          <td>
+            <span class="confidence-bar"><span class="confidence-fill conf-mid" style="width:88%"></span></span>
+            <span class="confidence-pct" style="color:#fbbf24;">88%</span>
+          </td>
+          <td>
+            <div class="suggested-fencer">KOWALSKI Andrzej</div>
+            <div class="suggested-meta">ur. 1971 · KS Lancer · PL</div>
+          </td>
+          <td><span class="status-badge badge-pending">PENDING</span></td>
+          <td>
+            <div class="action-group">
+              <button class="btn-approve">Zatwierdź</button>
+              <button class="btn-dismiss">Odrzuć</button>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Row 2: PENDING — ambiguous, two candidates same name -->
+        <tr>
+          <td>
+            <div class="scraped-name">KRAWCZYK Paweł</div>
+          </td>
+          <td><span class="scraped-tournament">PP1 · Epee V2 M</span></td>
+          <td>
+            <span class="confidence-bar"><span class="confidence-fill conf-mid" style="width:72%"></span></span>
+            <span class="confidence-pct" style="color:#fbbf24;">72%</span>
+          </td>
+          <td>
+            <div class="suggested-fencer">KRAWCZYK Paweł <span style="color:#fbbf24; font-size:0.8em;">(2 kandydatów)</span></div>
+            <div class="suggested-meta">ur. 1954 lub 1989 · wymaga disambiguacji</div>
+          </td>
+          <td><span class="status-badge badge-pending">PENDING</span></td>
+          <td>
+            <div class="action-group">
+              <button class="btn-approve">Wybierz</button>
+              <button class="btn-dismiss">Odrzuć</button>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Row 3: PENDING — low confidence -->
+        <tr>
+          <td>
+            <div class="scraped-name">MÜLLER Hans</div>
+          </td>
+          <td><span class="scraped-tournament">PEW1 · Epee V1 M</span></td>
+          <td>
+            <span class="confidence-bar"><span class="confidence-fill conf-mid" style="width:62%"></span></span>
+            <span class="confidence-pct" style="color:#fbbf24;">62%</span>
+          </td>
+          <td>
+            <div class="suggested-fencer">MULLER Hans</div>
+            <div class="suggested-meta">ur. 1978 · SV Freiburg · DE</div>
+          </td>
+          <td><span class="status-badge badge-pending">PENDING</span></td>
+          <td>
+            <div class="action-group">
+              <button class="btn-approve">Zatwierdź</button>
+              <button class="btn-dismiss">Odrzuć</button>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Row 4: UNMATCHED — no viable match (international) -->
+        <tr>
+          <td>
+            <div class="scraped-name">DUPONT Jean-Pierre</div>
+          </td>
+          <td><span class="scraped-tournament">PEW1 · Sabre V3 M</span></td>
+          <td>
+            <span class="confidence-bar"><span class="confidence-fill conf-low" style="width:18%"></span></span>
+            <span class="confidence-pct" style="color:#f87171;">18%</span>
+          </td>
+          <td>
+            <div style="color:#888; font-style:italic;">brak dopasowania</div>
+          </td>
+          <td><span class="status-badge badge-unmatched">UNMATCHED</span></td>
+          <td>
+            <div class="action-group">
+              <button class="btn-dismiss">Odrzuć</button>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Row 5: PENDING — unmatched domestic, auto-created candidate -->
+        <tr>
+          <td>
+            <div class="scraped-name">WIŚNIEWSKI Tomek</div>
+          </td>
+          <td><span class="scraped-tournament">PP1 · Foil V0 M</span></td>
+          <td>
+            <span class="confidence-bar"><span class="confidence-fill conf-low" style="width:30%"></span></span>
+            <span class="confidence-pct" style="color:#f87171;">30%</span>
+          </td>
+          <td>
+            <div style="color:#888; font-style:italic;">brak dopasowania (PPW)</div>
+          </td>
+          <td><span class="status-badge badge-pending">PENDING</span></td>
+          <td>
+            <div class="action-group">
+              <button class="btn-new-fencer">Nowy zawodnik</button>
+              <button class="btn-approve">Wybierz</button>
+              <button class="btn-dismiss">Odrzuć</button>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Row 6: AUTO_MATCHED — resolved, shown for reference -->
+        <tr style="opacity:0.6;">
+          <td>
+            <div class="scraped-name">NOWAK Marek</div>
+          </td>
+          <td><span class="scraped-tournament">PP1 · Epee V2 M</span></td>
+          <td>
+            <span class="confidence-bar"><span class="confidence-fill conf-high" style="width:98%"></span></span>
+            <span class="confidence-pct" style="color:#4ade80;">98%</span>
+          </td>
+          <td>
+            <div class="suggested-fencer">NOWAK Marek</div>
+            <div class="suggested-meta">ur. 1968 · AZS AWF Poznań · PL</div>
+          </td>
+          <td><span class="status-badge badge-auto">AUTO</span></td>
+          <td>
+            <div class="action-group" style="opacity:0.5;">
+              <button class="btn-approve" disabled>—</button>
+            </div>
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+
+    <div class="floating-toolbar">
+      <span class="admin-dot"></span> ADMIN <span style="opacity:0.7">· 1h 47m</span>
+    </div>
+  </div>
+  </div><!-- /app-body -->
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PART 2 — Approve / Link Modal (single candidate)
+     ═══════════════════════════════════════════════════════ -->
+<div class="section-label">Modal — Zatwierdź dopasowanie (single match)</div>
+<p class="section-desc">Opened by clicking "Zatwierdź" on KOWALSKI row. Shows scraped name, suggested fencer, and option to pick a different fencer.</p>
+
+<div class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Zatwierdź dopasowanie</span>
+      <span class="modal-close">✕</span>
+    </div>
+    <div class="modal-body">
+
+      <!-- Scraped info -->
+      <div class="scraped-panel">
+        <div class="scraped-panel-label">Nazwa ze scrapera</div>
+        <div class="scraped-panel-name">KOWALSKI Andrzej</div>
+        <div class="scraped-panel-meta">PP1 · Epee V2 M · PP1-V2-M-EPEE-2025-2026 · Pewność: 88%</div>
+      </div>
+
+      <!-- Fencer candidate list -->
+      <div class="field-label">Wybierz zawodnika</div>
+      <ul class="candidate-list">
+        <li class="candidate-item selected">
+          <input type="radio" name="fencer" class="candidate-radio" checked>
+          <div class="candidate-info">
+            <div class="candidate-name">KOWALSKI Andrzej</div>
+            <div class="candidate-details">id: 14 · ur. 1971 · KS Lancer Warszawa · PL</div>
+            <div class="candidate-aliases">Aliasy: —</div>
+          </div>
+          <div class="candidate-confidence" style="color:#fbbf24;">88%</div>
+        </li>
+        <li class="candidate-item">
+          <input type="radio" name="fencer" class="candidate-radio">
+          <div class="candidate-info">
+            <div class="candidate-name">KOWALSKI Andrzej</div>
+            <div class="candidate-details">id: 47 · ur. 1992 · AZS Kraków · PL</div>
+            <div class="candidate-aliases">Aliasy: —</div>
+          </div>
+          <div class="candidate-confidence" style="color:#f87171;">41%</div>
+        </li>
+      </ul>
+
+      <!-- Admin note -->
+      <textarea class="admin-note-field" placeholder="Notatka admina (opcjonalnie)..."></textarea>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel">Anuluj</button>
+      <button class="btn-confirm-approve">Zatwierdź dopasowanie</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PART 3 — Approve / Link Modal (disambiguation — 2 candidates)
+     ═══════════════════════════════════════════════════════ -->
+<div class="section-label">Modal — Disambiguacja (two candidates, same name)</div>
+<p class="section-desc">Opened by clicking "Wybierz" on KRAWCZYK row. Two fencers share the same name — admin picks the correct one based on birth year / age category.</p>
+
+<div class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Disambiguacja — KRAWCZYK Paweł</span>
+      <span class="modal-close">✕</span>
+    </div>
+    <div class="modal-body">
+
+      <!-- Scraped info -->
+      <div class="scraped-panel">
+        <div class="scraped-panel-label">Nazwa ze scrapera</div>
+        <div class="scraped-panel-name">KRAWCZYK Paweł</div>
+        <div class="scraped-panel-meta">PP1 · Epee V2 M · kategoria wiekowa: V2 (50–59 lat) · Pewność: 72%</div>
+      </div>
+
+      <!-- Fencer candidate list -->
+      <div class="field-label">Dwóch zawodników o tym nazwisku — wybierz właściwego</div>
+      <ul class="candidate-list">
+        <li class="candidate-item selected">
+          <input type="radio" name="fencer2" class="candidate-radio" checked>
+          <div class="candidate-info">
+            <div class="candidate-name">KRAWCZYK Paweł <span style="color:#4ade80; font-size:0.8em;">← pasuje do V2</span></div>
+            <div class="candidate-details">id: 6 · ur. 1971 (wiek: 54) · WKS Wawel Kraków · PL</div>
+            <div class="candidate-aliases">Aliasy: —</div>
+          </div>
+          <div class="candidate-confidence" style="color:#fbbf24;">72%</div>
+        </li>
+        <li class="candidate-item">
+          <input type="radio" name="fencer2" class="candidate-radio">
+          <div class="candidate-info">
+            <div class="candidate-name">KRAWCZYK Paweł <span style="color:#f87171; font-size:0.8em;">V0 (30–39)</span></div>
+            <div class="candidate-details">id: 7 · ur. 1989 (wiek: 36) · AZS AWF Poznań · PL</div>
+            <div class="candidate-aliases">Aliasy: —</div>
+          </div>
+          <div class="candidate-confidence" style="color:#f87171;">72%</div>
+        </li>
+      </ul>
+
+      <!-- Admin note -->
+      <textarea class="admin-note-field" placeholder="Notatka admina (opcjonalnie)..."></textarea>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel">Anuluj</button>
+      <button class="btn-confirm-approve">Zatwierdź dopasowanie</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PART 4 — Create New Fencer Modal
+     ═══════════════════════════════════════════════════════ -->
+<div class="section-label">Modal — Nowy zawodnik (Create New Fencer)</div>
+<p class="section-desc">Opened by clicking "Nowy zawodnik" for an UNMATCHED domestic result. Pre-fills from parsed scraped name. Birth year estimated from age category.</p>
+
+<div class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Utwórz nowego zawodnika</span>
+      <span class="modal-close">✕</span>
+    </div>
+    <div class="modal-body">
+
+      <!-- Scraped info -->
+      <div class="scraped-panel">
+        <div class="scraped-panel-label">Nazwa ze scrapera</div>
+        <div class="scraped-panel-name">WIŚNIEWSKI Tomek</div>
+        <div class="scraped-panel-meta">PP1 · Foil V0 M · PPW (krajowy — automatyczne tworzenie)</div>
+      </div>
+
+      <!-- Form -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nazwisko</label>
+          <input class="form-input prefilled" type="text" value="WIŚNIEWSKI">
+        </div>
+        <div class="form-group">
+          <label>Imię</label>
+          <input class="form-input prefilled" type="text" value="Tomek">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Rok urodzenia</label>
+          <input class="form-input prefilled" type="text" value="1996" style="border-color:#fbbf24;">
+        </div>
+        <div class="form-group">
+          <label>Klub</label>
+          <input class="form-input" type="text" placeholder="(nieznany)">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Narodowość</label>
+          <input class="form-input" type="text" value="PL">
+        </div>
+        <div class="form-group">
+          <label>Aliasy (JSON)</label>
+          <input class="form-input" type="text" placeholder='["WISNIEWSKI Tomek"]'>
+        </div>
+      </div>
+
+      <div class="estimated-warning">
+        ⚠ Rok urodzenia szacowany z kategorii V0 (sezon 2025/26, najmłodsza granica: 30 lat → 1996). Wymaga weryfikacji.
+      </div>
+
+      <!-- Admin note -->
+      <textarea class="admin-note-field" placeholder="Notatka admina (opcjonalnie)..."></textarea>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel">Anuluj</button>
+      <button class="btn-confirm-create">Utwórz zawodnika i powiąż</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PART 5 — Dismiss Confirmation
+     ═══════════════════════════════════════════════════════ -->
+<div class="section-label">Modal — Odrzuć (Dismiss)</div>
+<p class="section-desc">Quick confirmation before dismissing a match candidate. Optional admin note for reason.</p>
+
+<div class="modal-overlay">
+  <div class="modal-box" style="max-width:460px;">
+    <div class="modal-header">
+      <span class="modal-title">Odrzuć dopasowanie</span>
+      <span class="modal-close">✕</span>
+    </div>
+    <div class="modal-body">
+
+      <div class="scraped-panel">
+        <div class="scraped-panel-label">Nazwa ze scrapera</div>
+        <div class="scraped-panel-name">DUPONT Jean-Pierre</div>
+        <div class="scraped-panel-meta">PEW1 · Sabre V3 M · PEW (międzynarodowy)</div>
+      </div>
+
+      <div class="field-label">Powód odrzucenia</div>
+      <select class="filter-select" style="width:100%; margin-bottom:8px;">
+        <option>Nie jest członkiem SPWS</option>
+        <option>Duplikat</option>
+        <option>Błędne dane ze scrapera</option>
+        <option>Inny (opisz poniżej)</option>
+      </select>
+
+      <textarea class="admin-note-field" placeholder="Dodatkowa notatka (opcjonalnie)..."></textarea>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel">Anuluj</button>
+      <button class="btn-dismiss" style="padding:6px 20px; font-size:0.85em;">Odrzuć</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     NOTES
+     ═══════════════════════════════════════════════════════ -->
+<div class="notes">
+  <h3>Design Notes</h3>
+  <ul>
+    <li><strong>Main queue</strong> shows all <code>tbl_match_candidate</code> rows, filterable by status and tournament.</li>
+    <li><strong>Default filter:</strong> PENDING only — the items requiring admin action.</li>
+    <li><strong>Stats bar</strong> shows breakdown across all statuses for the current season.</li>
+    <li><strong>Confidence %</strong> from <code>num_confidence</code> (0–100). Color-coded: green ≥95, yellow 50–94, red &lt;50.</li>
+    <li><strong>Three admin actions:</strong></li>
+    <li style="padding-left:20px;"><strong>Zatwierdź / Wybierz</strong> → opens Approve modal. Shows fencer candidates with radio buttons. "Wybierz" label when multiple candidates need disambiguation.</li>
+    <li style="padding-left:20px;"><strong>Nowy zawodnik</strong> → opens Create New Fencer form. Pre-filled from scraped name. Birth year estimated (yellow warning). Only for domestic (PPW/MPW) tournaments.</li>
+    <li style="padding-left:20px;"><strong>Odrzuć</strong> → opens Dismiss confirmation with reason dropdown and optional note. Used for international fencers not in SPWS, duplicates, bad data.</li>
+    <li><strong>Disambiguation</strong> (Part 3): when 2+ fencers share the same name, the modal highlights which one matches the age category (V0–V4 bracket shown).</li>
+    <li><strong>AUTO_MATCHED rows</strong> are dimmed (opacity) in the queue — resolved, shown for reference only.</li>
+    <li><strong>UNMATCHED + international</strong> (PEW/MEW/MSW): only Dismiss available (cannot create fencer for international events).</li>
+    <li><strong>UNMATCHED + domestic</strong> (PPW/MPW): "Nowy zawodnik" button available (auto-create from intake rules).</li>
+    <li><strong>Admin note:</strong> optional free-text stored in <code>txt_admin_note</code> for audit trail.</li>
+    <li><strong>Aliases</strong> shown in candidate list — helps admin recognize alternative spellings (e.g., "TK" alias for KOŃCZYŁO Tomasz).</li>
+  </ul>
+</div>
+
+</body>
+</html>

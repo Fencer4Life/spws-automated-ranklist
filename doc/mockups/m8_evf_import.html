@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M8 EVF Calendar Import — Admin Feature</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+  h1.page-title { text-align: center; margin-bottom: 10px; font-size: 28px; color: #222; }
+  .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 30px; max-width: 700px; margin-left: auto; margin-right: auto; }
+  .section-title { font-size: 18px; font-weight: 700; margin: 30px 0 10px; color: #1a1a1a; }
+  .section-desc { font-size: 14px; color: #666; margin-bottom: 14px; max-width: 700px; }
+
+  .view-box { background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 20px; }
+  .view-label { background: #e8ecf1; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Header */
+  .header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f5f7fa; border-bottom: 1px solid #ddd; }
+  .hamburger { font-size: 20px; cursor: pointer; padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; line-height: 1; }
+  .header h2 { font-size: 18px; color: #222; margin: 0; white-space: nowrap; }
+  .season-select { padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: #fff; }
+  .env-toggle { display: flex; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+  .env-btn { padding: 3px 8px; border: none; background: #fff; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .env-btn.active { background: #4a90d9; color: #fff; }
+  .env-btn + .env-btn { border-left: 1px solid #ccc; }
+  .lang-toggle { display: flex; gap: 4px; }
+  .lang-btn { padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 14px; cursor: pointer; }
+  .lang-btn.active { background: #4a90d9; border-color: #4a90d9; }
+  .spacer { flex: 1; }
+  .filter-bar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fafbfc; border-bottom: 1px solid #eee; }
+  .mode-toggle { display: flex; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+  .mode-btn { padding: 4px 10px; border: none; background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .mode-btn.active { background: #4a90d9; color: #fff; }
+  .mode-btn + .mode-btn { border-left: 1px solid #ccc; }
+  .filter-select { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: #fff; }
+
+  /* Floating toolbar */
+  .floating-toolbar { position: absolute; bottom: 12px; right: 12px; background: #2c3e50; color: #fff; border-radius: 8px; padding: 10px 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 12px; display: flex; align-items: center; gap: 12px; }
+  .admin-badge { background: #ff6b35; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
+
+  /* Sidebar */
+  .sidebar-demo { display: flex; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  .sidebar-panel { width: 180px; background: #2c3e50; color: #fff; padding: 16px; flex-shrink: 0; display: flex; flex-direction: column; }
+  .sidebar-panel h3 { font-size: 16px; margin-bottom: 20px; }
+  .sidebar-item { padding: 8px 0; font-size: 14px; cursor: pointer; }
+  .sidebar-item.active { font-weight: 700; color: #4a90d9; }
+  .sidebar-item:hover { color: #7db8f0; }
+  .sidebar-admin-section { border-top: 1px solid rgba(255,255,255,0.15); margin-top: 14px; padding-top: 12px; }
+  .sidebar-admin-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #ff6b35; margin-bottom: 6px; font-weight: 600; }
+  .sidebar-admin-item { padding: 6px 0; font-size: 13px; color: #ff6b35; cursor: pointer; }
+  .sidebar-admin-item:hover { color: #ffa070; }
+  .sidebar-admin-item.highlighted { color: #d4a017; font-weight: 600; }
+  .sidebar-dimmed { flex: 1; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: #999; font-size: 13px; }
+
+  /* Import modal */
+  .import-overlay { background: rgba(0,0,0,0.5); padding: 30px 20px; display: flex; justify-content: center; }
+  .import-modal { background: #fff; border-radius: 10px; width: 620px; box-shadow: 0 8px 30px rgba(0,0,0,0.25); overflow: hidden; }
+  .import-header { display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid #eee; background: #fafbfc; }
+  .import-header h3 { font-size: 16px; color: #222; flex: 1; }
+  .import-close { font-size: 20px; color: #999; cursor: pointer; border: none; background: none; }
+  .import-source { display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: #f8f9fb; border-bottom: 1px solid #eee; font-size: 12px; color: #888; }
+  .import-source a { color: #4a90d9; text-decoration: none; }
+  .import-season-bar { display: flex; align-items: center; gap: 10px; padding: 10px 20px; border-bottom: 1px solid #eee; }
+  .import-season-bar label { font-size: 12px; font-weight: 600; color: #666; }
+  .import-status { padding: 8px 20px; font-size: 12px; color: #888; border-bottom: 1px solid #eee; background: #f8faf8; }
+  .import-status .count { font-weight: 700; color: #1a7f37; }
+
+  /* Event list in import modal */
+  .import-list { max-height: 400px; overflow-y: auto; }
+  .import-event { display: flex; align-items: flex-start; gap: 12px; padding: 12px 20px; border-bottom: 1px solid #f0f0f0; transition: background 0.15s; }
+  .import-event:hover { background: #f8f9fb; }
+  .import-event.already-imported { background: #f0f8f0; opacity: 0.6; }
+  .import-check { margin-top: 3px; width: 18px; height: 18px; accent-color: #4a90d9; cursor: pointer; }
+  .import-event-info { flex: 1; }
+  .import-event-name { font-size: 14px; font-weight: 600; color: #222; }
+  .import-event-details { font-size: 12px; color: #888; margin-top: 2px; }
+  .import-event-details span { display: inline-block; margin-right: 12px; }
+  .import-event-weapons { font-size: 11px; color: #4a90d9; margin-top: 3px; }
+  .import-event-fee { font-size: 11px; color: #666; }
+  .import-already-tag { font-size: 10px; background: #e6f4ea; color: #1a7f37; padding: 2px 6px; border-radius: 8px; font-weight: 600; margin-left: 6px; }
+  .import-new-tag { font-size: 10px; background: #e1f0ff; color: #1a6fbf; padding: 2px 6px; border-radius: 8px; font-weight: 600; margin-left: 6px; }
+
+  /* Import footer */
+  .import-footer { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: #fafbfc; border-top: 1px solid #eee; }
+  .import-footer .selected-count { font-size: 13px; color: #666; }
+  .import-footer .selected-count strong { color: #222; }
+  .import-btn { padding: 8px 20px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .import-btn-primary { background: #4a90d9; color: #fff; }
+  .import-btn-primary:hover { background: #3a7bc8; }
+  .import-btn-cancel { background: #fff; color: #666; border: 1px solid #ccc; margin-right: 8px; }
+
+  /* Success state */
+  .import-success { padding: 30px 20px; text-align: center; }
+  .import-success .checkmark { font-size: 48px; margin-bottom: 10px; }
+  .import-success h3 { font-size: 18px; color: #1a7f37; margin-bottom: 6px; }
+  .import-success p { font-size: 13px; color: #888; }
+
+  /* Calendar add button */
+  .add-btn { color: #ff6b35; font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px; border: 1px dashed #ff6b35; border-radius: 4px; background: transparent; margin: 8px 14px; }
+  .evf-import-btn { color: #d4a017; font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px; border: 1px solid #d4a017; border-radius: 4px; background: #fffbf0; margin: 8px 14px; display: inline-block; }
+  .evf-import-btn:hover { background: #fff4d6; }
+
+  /* Timeline event */
+  .timeline-content { padding: 14px 14px 0 24px; }
+  .timeline-event { display: flex; gap: 14px; margin-bottom: 14px; position: relative; padding-left: 20px; }
+  .timeline-event::before { content: ''; position: absolute; left: 0; top: 8px; width: 10px; height: 10px; border-radius: 50%; background: #4a90d9; border: 2px solid #fff; box-shadow: 0 0 0 1px #4a90d9; }
+  .timeline-event.completed::before { background: #1a7f37; box-shadow: 0 0 0 1px #1a7f37; }
+  .timeline-event.international::before { background: #d4a017; box-shadow: 0 0 0 1px #d4a017; }
+  .timeline-line { position: absolute; left: 4px; top: 20px; bottom: -14px; width: 2px; background: #e0e0e0; }
+  .timeline-date { font-weight: 700; font-size: 13px; color: #4a90d9; white-space: nowrap; min-width: 50px; padding-top: 2px; }
+  .timeline-info { flex: 1; }
+  .timeline-name { font-size: 14px; font-weight: 600; color: #222; }
+  .timeline-loc { font-size: 12px; color: #888; margin-top: 2px; }
+  .timeline-meta { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+  .timeline-month { font-size: 13px; font-weight: 700; color: #888; letter-spacing: 1px; text-transform: uppercase; padding: 12px 0 8px; }
+  .status-badge { font-size: 12px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .status-completed { background: #e6f4ea; color: #1a7f37; }
+  .status-scheduled { background: #e1f0ff; color: #1a6fbf; }
+  .status-planned { background: #f0f0f0; color: #666; }
+  .edit-icon { color: #ff6b35; font-size: 14px; cursor: pointer; opacity: 0.7; }
+
+  .side-by-side { display: flex; gap: 24px; flex-wrap: wrap; }
+  hr.sep { border: none; border-top: 2px solid #4a90d9; margin: 40px 0 10px; }
+  .note { font-size: 13px; color: #888; margin-top: 8px; padding: 8px 12px; background: #fff8e1; border-radius: 4px; border-left: 3px solid #f5a623; margin-bottom: 20px; max-width: 700px; }
+
+  /* Mapping table */
+  .mapping-table { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 14px; margin-bottom: 20px; width: 620px; }
+  .mapping-table h3 { font-size: 14px; margin-bottom: 10px; color: #444; }
+  .mapping-table table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .mapping-table th { text-align: left; padding: 6px 10px; border-bottom: 2px solid #eee; color: #888; font-size: 11px; text-transform: uppercase; }
+  .mapping-table td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; }
+  .mapping-table code { background: #f5f7fa; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">M8 EVF Calendar Import</h1>
+<p class="subtitle">Admin feature to import international events from <strong>veteransfencing.eu/calendar</strong> into the SPWS calendar. Available in admin mode only.</p>
+
+
+<!-- ==================== SIDEBAR ENTRY POINT ==================== -->
+<hr class="sep">
+<div class="section-title">Entry Point: Sidebar + Calendar Button</div>
+<div class="section-desc">Two ways to trigger the import: (1) "Import EVF" item in sidebar admin section, or (2) gold "Import EVF" button on the Calendar view next to "+ Dodaj wydarzenie".</div>
+
+<div class="side-by-side">
+  <!-- Sidebar with Import EVF -->
+  <div>
+    <div style="font-size:12px; font-weight:600; color:#888; text-transform:uppercase; margin-bottom:6px;">Sidebar — admin section</div>
+    <div class="sidebar-demo" style="height:320px; width:240px;">
+      <div class="sidebar-panel" style="width:100%;">
+        <h3>SPWS</h3>
+        <div class="sidebar-item active">▶ Ranklista</div>
+        <div class="sidebar-item">Kalendarz</div>
+        <div class="sidebar-admin-section">
+          <div class="sidebar-admin-label">Admin</div>
+          <div class="sidebar-admin-item">Sezony</div>
+          <div class="sidebar-admin-item">Wydarzenia</div>
+          <div class="sidebar-admin-item">Tożsamości</div>
+        </div>
+        <div style="margin-top: auto; padding-top: 12px; font-size: 10px; color: #aaa;">
+          Sesja: 1h 47m<br>
+          <span style="color:#ff6b35; cursor:pointer;">Wyloguj</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar with both buttons -->
+  <div class="view-box" style="position:relative; width:480px; min-height:320px;">
+    <div class="view-label">Calendar view — admin mode — both action buttons</div>
+    <div class="header">
+      <button class="hamburger">☰</button>
+      <div class="env-toggle"><button class="env-btn active">CT</button><button class="env-btn">PD</button></div>
+      <h2>SPWS Kalendarz</h2>
+      <select class="season-select"><option>2025-2026 ●</option></select>
+      <span class="spacer"></span>
+      <div class="lang-toggle"><button class="lang-btn">🇬🇧</button><button class="lang-btn active">🇵🇱</button></div>
+    </div>
+    <div class="filter-bar">
+      <div class="mode-toggle">
+        <button class="mode-btn">PPW</button>
+        <button class="mode-btn active">+EVF</button>
+      </div>
+      <select class="filter-select"><option>Wszystkie</option><option>Przyszłe</option><option>Zakończone</option></select>
+    </div>
+    <div class="timeline-content">
+      <div class="timeline-month">Wrzesień 2025</div>
+      <div class="timeline-event completed" style="position:relative;">
+        <div class="timeline-line"></div>
+        <div class="timeline-date">28.09</div>
+        <div class="timeline-info">
+          <div class="timeline-name">I Puchar Polski Weteranów <span class="edit-icon">✏️</span></div>
+          <div class="timeline-loc">Konin, Polska · 5 turniejów</div>
+          <div class="timeline-meta">
+            <span class="status-badge status-completed">● Zakończone</span>
+            <a href="#" style="font-size:11px; color:#4a90d9; text-decoration:none;">Komunikat org. →</a>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-month">Październik 2025</div>
+      <div class="timeline-event international" style="position:relative;">
+        <div class="timeline-date">11.10</div>
+        <div class="timeline-info">
+          <div class="timeline-name">PEW — Kraków 🌍 <span class="edit-icon">✏️</span></div>
+          <div class="timeline-loc">Kraków, Polska · 3 turnieje</div>
+          <div class="timeline-meta">
+            <span class="status-badge status-completed">● Zakończone</span>
+            <a href="#" style="font-size:11px; color:#4a90d9; text-decoration:none;">Komunikat org. →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="padding: 4px 14px 60px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+      <button class="add-btn">+ Dodaj wydarzenie</button>
+      <button class="evf-import-btn">🌍 Import EVF</button>
+    </div>
+    <div class="floating-toolbar" style="bottom: 12px; right: 12px;">
+      <span class="admin-badge">ADMIN</span>
+      <span style="color:#aaa;">1h 47m</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== IMPORT MODAL ==================== -->
+<hr class="sep">
+<div class="section-title">Import Modal — Event Selection</div>
+<div class="section-desc">Fetches events from veteransfencing.eu/calendar, shows them in a checklist. Already-imported events are grayed out. Admin selects which new events to import into the selected season.</div>
+
+<div class="view-box" style="width:660px;">
+  <div class="view-label">Import EVF Events modal</div>
+  <div class="import-modal" style="width:100%; border-radius:0; box-shadow:none;">
+    <div class="import-header">
+      <h3>🌍 Import z kalendarza EVF</h3>
+      <button class="import-close">✕</button>
+    </div>
+    <div class="import-source">
+      Źródło: <a href="https://www.veteransfencing.eu/calendar/" target="_blank">veteransfencing.eu/calendar</a>
+      <span class="spacer"></span>
+      <span style="color:#1a7f37;">● Pobrano 8 wydarzeń</span>
+    </div>
+    <div class="import-season-bar">
+      <label>Sezon docelowy:</label>
+      <select class="season-select"><option>SPWS-2025-2026 ●</option><option>SPWS-2024-2025</option></select>
+      <span class="spacer"></span>
+      <span style="font-size:11px; color:#888;">Daty sezonu: 01.08.2025 — 15.07.2026</span>
+    </div>
+    <div class="import-status">
+      Znaleziono <span class="count">8</span> wydarzeń w okresie sezonu · <span style="color:#4a90d9;">5 nowych</span> · <span style="color:#1a7f37;">3 już zaimportowane</span>
+    </div>
+
+    <div class="import-list">
+      <!-- New event 1 -->
+      <div class="import-event">
+        <input type="checkbox" class="import-check" checked>
+        <div class="import-event-info">
+          <div class="import-event-name">
+            EVF Circuit — Salzburg
+            <span class="import-new-tag">NOWE</span>
+          </div>
+          <div class="import-event-details">
+            <span>📅 18-19.04.2026</span>
+            <span>📍 Salzburg, Austria</span>
+          </div>
+          <div class="import-event-details">
+            <span>🏟️ Sporthalle HAK 2</span>
+          </div>
+          <div class="import-event-weapons">Szpada + Floret · €50</div>
+        </div>
+      </div>
+
+      <!-- New event 2 -->
+      <div class="import-event">
+        <input type="checkbox" class="import-check" checked>
+        <div class="import-event-info">
+          <div class="import-event-name">
+            European Team Championships 2026
+            <span class="import-new-tag">NOWE</span>
+          </div>
+          <div class="import-event-details">
+            <span>📅 14-17.05.2026</span>
+            <span>📍 Cognac, France</span>
+          </div>
+          <div class="import-event-details">
+            <span>🏟️ Complexe Sportif Omnisports</span>
+          </div>
+          <div class="import-event-weapons">Drużynowe · €450</div>
+        </div>
+      </div>
+
+      <!-- New event 3 -->
+      <div class="import-event">
+        <input type="checkbox" class="import-check" checked>
+        <div class="import-event-info">
+          <div class="import-event-name">
+            IMEW 2026
+            <span class="import-new-tag">NOWE</span>
+          </div>
+          <div class="import-event-details">
+            <span>📅 02-04.05.2026</span>
+            <span>📍 Thionville, France</span>
+          </div>
+          <div class="import-event-details">
+            <span>🏟️ Complexe sportif Pierre Sommer</span>
+          </div>
+          <div class="import-event-weapons">Szpada + Floret + Szabla · €60</div>
+        </div>
+      </div>
+
+      <!-- New event 4 -->
+      <div class="import-event">
+        <input type="checkbox" class="import-check">
+        <div class="import-event-info">
+          <div class="import-event-name">
+            Critérium de Paris 2026
+            <span class="import-new-tag">NOWE</span>
+          </div>
+          <div class="import-event-details">
+            <span>📅 04-06.07.2026</span>
+            <span>📍 Paris, France</span>
+          </div>
+          <div class="import-event-details">
+            <span>🏟️ Halle Georges Carpentier</span>
+          </div>
+          <div class="import-event-weapons">Szpada + Floret + Szabla · €60</div>
+        </div>
+      </div>
+
+      <!-- New event 5 -->
+      <div class="import-event">
+        <input type="checkbox" class="import-check">
+        <div class="import-event-info">
+          <div class="import-event-name">
+            EVF Circuit — Budapest
+            <span class="import-new-tag">NOWE</span>
+          </div>
+          <div class="import-event-details">
+            <span>📅 15-16.11.2025</span>
+            <span>📍 Budapest, Hungary</span>
+          </div>
+          <div class="import-event-details">
+            <span>🏟️ BOK Sportcsarnok</span>
+          </div>
+          <div class="import-event-weapons">Szpada + Floret · €50</div>
+        </div>
+      </div>
+
+      <!-- Already imported 1 -->
+      <div class="import-event already-imported">
+        <input type="checkbox" class="import-check" checked disabled>
+        <div class="import-event-info">
+          <div class="import-event-name">
+            PEW — Kraków
+            <span class="import-already-tag">ZAIMPORTOWANE</span>
+          </div>
+          <div class="import-event-details">
+            <span>📅 11.10.2025</span>
+            <span>📍 Kraków, Polska</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Already imported 2 -->
+      <div class="import-event already-imported">
+        <input type="checkbox" class="import-check" checked disabled>
+        <div class="import-event-info">
+          <div class="import-event-name">
+            PEW — Warszawa
+            <span class="import-already-tag">ZAIMPORTOWANE</span>
+          </div>
+          <div class="import-event-details">
+            <span>📅 06.12.2025</span>
+            <span>📍 Warszawa, Polska</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Already imported 3 -->
+      <div class="import-event already-imported">
+        <input type="checkbox" class="import-check" checked disabled>
+        <div class="import-event-info">
+          <div class="import-event-name">
+            PEW — Gdańsk
+            <span class="import-already-tag">ZAIMPORTOWANE</span>
+          </div>
+          <div class="import-event-details">
+            <span>📅 24.01.2026</span>
+            <span>📍 Gdańsk, Polska</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="import-footer">
+      <div class="selected-count"><strong>3</strong> z 5 nowych zaznaczonych</div>
+      <div>
+        <button class="import-btn import-btn-cancel">Anuluj</button>
+        <button class="import-btn import-btn-primary">Importuj 3 wydarzenia</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>How it works:</strong> (1) Admin clicks "Import EVF" → fetches veteransfencing.eu/calendar. (2) Events within selected season's date range are shown. (3) Already-imported events are grayed out with "ZAIMPORTOWANE" tag. (4) Admin checks new events to import → "Importuj N wydarzenia". (5) Each imported event creates a <code>tbl_event</code> row with PLANNED status + child <code>tbl_tournament</code> entries based on weapons.
+</div>
+
+
+<!-- ==================== SUCCESS STATE ==================== -->
+<hr class="sep">
+<div class="section-title">After Import — Success</div>
+
+<div class="view-box" style="width:660px;">
+  <div class="view-label">Import complete</div>
+  <div class="import-modal" style="width:100%; border-radius:0; box-shadow:none;">
+    <div class="import-header">
+      <h3>🌍 Import z kalendarza EVF</h3>
+      <button class="import-close">✕</button>
+    </div>
+    <div class="import-success">
+      <div class="checkmark">✅</div>
+      <h3>Zaimportowano 3 wydarzenia</h3>
+      <p style="margin-bottom: 12px;">EVF Circuit — Salzburg, European Team Championships 2026, IMEW 2026</p>
+      <p>Dodano do sezonu SPWS-2025-2026 ze statusem <span class="status-badge status-planned">○ Zaplanowane</span></p>
+      <div style="margin-top: 16px;">
+        <button class="import-btn import-btn-primary" style="width:auto;">Zamknij</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== DATA MAPPING ==================== -->
+<hr class="sep">
+<div class="section-title">Data Mapping: EVF → tbl_event</div>
+
+<div class="mapping-table">
+  <h3>Field Mapping</h3>
+  <table>
+    <tr>
+      <th>EVF Calendar Field</th>
+      <th>→</th>
+      <th>tbl_event Column</th>
+      <th>Notes</th>
+    </tr>
+    <tr>
+      <td>Event name</td>
+      <td>→</td>
+      <td><code>txt_event_name</code></td>
+      <td>As-is from EVF</td>
+    </tr>
+    <tr>
+      <td>Start date</td>
+      <td>→</td>
+      <td><code>dt_event_date</code></td>
+      <td>First day of event</td>
+    </tr>
+    <tr>
+      <td>City</td>
+      <td>→</td>
+      <td><code>txt_city</code></td>
+      <td>Extracted from location</td>
+    </tr>
+    <tr>
+      <td>Country</td>
+      <td>→</td>
+      <td><code>txt_country</code> (M8 new)</td>
+      <td>From venue address</td>
+    </tr>
+    <tr>
+      <td>Venue + address</td>
+      <td>→</td>
+      <td><code>txt_venue_address</code> (M8 new)</td>
+      <td>Full address string</td>
+    </tr>
+    <tr>
+      <td>Registration link</td>
+      <td>→</td>
+      <td><code>url_invitation</code> (M8 new)</td>
+      <td>EVF event page URL</td>
+    </tr>
+    <tr>
+      <td>Price</td>
+      <td>→</td>
+      <td><code>num_entry_fee</code> (M8 new)</td>
+      <td>Numeric value (€)</td>
+    </tr>
+    <tr>
+      <td>Weapons list</td>
+      <td>→</td>
+      <td><code>tbl_tournament</code> children</td>
+      <td>Create PEW/MEW tournaments per weapon</td>
+    </tr>
+    <tr>
+      <td>—</td>
+      <td>→</td>
+      <td><code>enum_event_status</code></td>
+      <td>Always PLANNED on import</td>
+    </tr>
+    <tr>
+      <td>—</td>
+      <td>→</td>
+      <td><code>enum_tournament_type</code></td>
+      <td>Always PEW/MEW (international)</td>
+    </tr>
+  </table>
+</div>
+
+<div class="note">
+  <strong>Deduplication:</strong> Events already in <code>tbl_event</code> for the target season are matched by name similarity (fuzzy) + date proximity (±7 days). Matches are shown as "ZAIMPORTOWANE" and cannot be re-imported. This prevents duplicate entries.
+</div>
+
+<div style="text-align:center; padding: 20px; color: #888; font-size: 13px;">
+  EVF import is an admin-only feature (M8 scope). Tournament child creation is automatic based on weapons detected.
+</div>
+
+</body>
+</html>

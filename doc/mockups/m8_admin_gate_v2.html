@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M8 Admin Gate — Combined B+C</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+  h1.page-title { text-align: center; margin-bottom: 10px; font-size: 28px; color: #222; }
+  .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 30px; }
+  .section-title { font-size: 18px; font-weight: 700; margin: 30px 0 10px; color: #1a1a1a; }
+  .section-desc { font-size: 14px; color: #666; margin-bottom: 14px; max-width: 700px; }
+
+  .view-box { background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; width: 480px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 20px; }
+  .view-label { background: #e8ecf1; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Header */
+  .header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f5f7fa; border-bottom: 1px solid #ddd; }
+  .hamburger { font-size: 20px; cursor: pointer; padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; line-height: 1; }
+  .header h2 { font-size: 18px; color: #222; margin: 0; white-space: nowrap; }
+  .season-select { padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: #fff; }
+  .env-toggle { display: flex; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+  .env-btn { padding: 3px 8px; border: none; background: #fff; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .env-btn.active { background: #4a90d9; color: #fff; }
+  .env-btn + .env-btn { border-left: 1px solid #ccc; }
+  .lang-toggle { display: flex; gap: 4px; }
+  .lang-btn { padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 14px; cursor: pointer; }
+  .lang-btn.active { background: #4a90d9; border-color: #4a90d9; }
+  .spacer { flex: 1; }
+
+  /* Filter bar */
+  .filter-bar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fafbfc; border-bottom: 1px solid #eee; }
+  .filter-select { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: #fff; }
+  .mode-toggle { display: flex; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+  .mode-btn { padding: 4px 10px; border: none; background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .mode-btn.active { background: #4a90d9; color: #fff; }
+  .mode-btn + .mode-btn { border-left: 1px solid #ccc; }
+  .export-btn { padding: 4px 10px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 13px; cursor: pointer; }
+
+  /* Modal overlay */
+  .modal-overlay { background: rgba(0,0,0,0.4); padding: 40px 20px; display: flex; justify-content: center; min-height: 280px; }
+  .modal-box { background: #fff; border-radius: 10px; padding: 30px; width: 340px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); height: fit-content; }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: #222; }
+  .modal-subtitle { font-size: 13px; color: #888; margin-bottom: 20px; }
+  .modal-input { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; margin-bottom: 14px; }
+  .modal-btn { width: 100%; padding: 10px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; background: #4a90d9; color: #fff; }
+  .modal-error { color: #c33; font-size: 13px; margin-bottom: 10px; }
+
+  /* Admin elements */
+  .admin-badge { background: #ff6b35; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
+  .edit-icon { color: #ff6b35; font-size: 14px; cursor: pointer; opacity: 0.7; }
+  .edit-icon:hover { opacity: 1; }
+  .add-btn { color: #ff6b35; font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px; border: 1px dashed #ff6b35; border-radius: 4px; background: transparent; margin: 8px 14px; }
+
+  /* Floating toolbar */
+  .floating-toolbar { position: absolute; bottom: 12px; right: 12px; background: #2c3e50; color: #fff; border-radius: 8px; padding: 10px 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 12px; display: flex; align-items: center; gap: 12px; }
+  .floating-toolbar .time { color: #aaa; }
+  .floating-toolbar .logout { color: #ff6b35; cursor: pointer; text-decoration: none; }
+  .floating-toolbar .logout:hover { text-decoration: underline; }
+
+  /* Sidebar */
+  .sidebar-demo { display: flex; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; width: 480px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  .sidebar-panel { width: 170px; background: #2c3e50; color: #fff; padding: 16px; flex-shrink: 0; display: flex; flex-direction: column; }
+  .sidebar-panel h3 { font-size: 16px; margin-bottom: 20px; }
+  .sidebar-item { padding: 8px 0; font-size: 14px; cursor: pointer; }
+  .sidebar-item.active { font-weight: 700; color: #4a90d9; }
+  .sidebar-item:hover { color: #7db8f0; }
+  .sidebar-admin-section { border-top: 1px solid rgba(255,255,255,0.15); margin-top: 14px; padding-top: 12px; }
+  .sidebar-admin-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #ff6b35; margin-bottom: 6px; font-weight: 600; }
+  .sidebar-admin-item { padding: 6px 0; font-size: 13px; color: #ff6b35; cursor: pointer; }
+  .sidebar-admin-item:hover { color: #ffa070; }
+  .sidebar-session { margin-top: auto; font-size: 10px; color: #aaa; padding-top: 12px; }
+  .sidebar-dimmed { flex: 1; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: #999; font-size: 13px; }
+
+  /* Ranking table */
+  .rank-table { width: 100%; border-collapse: collapse; }
+  .rank-table th { text-align: left; padding: 8px 14px; font-size: 11px; text-transform: uppercase; color: #888; border-bottom: 2px solid #eee; }
+  .rank-table td { padding: 10px 14px; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
+  .rank-table .num { text-align: right; }
+
+  /* Timeline */
+  .timeline-content { padding: 14px 14px 0 24px; }
+  .timeline-event { display: flex; gap: 14px; margin-bottom: 14px; position: relative; padding-left: 20px; }
+  .timeline-event::before { content: ''; position: absolute; left: 0; top: 8px; width: 10px; height: 10px; border-radius: 50%; background: #1a7f37; border: 2px solid #fff; box-shadow: 0 0 0 1px #1a7f37; }
+  .timeline-line { position: absolute; left: 4px; top: 20px; bottom: -14px; width: 2px; background: #e0e0e0; }
+  .timeline-date { font-weight: 700; font-size: 13px; color: #4a90d9; white-space: nowrap; min-width: 50px; padding-top: 2px; }
+  .timeline-info { flex: 1; }
+  .timeline-name { font-size: 14px; font-weight: 600; color: #222; }
+  .timeline-loc { font-size: 12px; color: #888; margin-top: 2px; }
+  .timeline-meta { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+  .timeline-month { font-size: 13px; font-weight: 700; color: #888; letter-spacing: 1px; text-transform: uppercase; padding: 12px 0 8px; }
+  .status-badge { font-size: 12px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .status-completed { background: #e6f4ea; color: #1a7f37; }
+  .status-scheduled { background: #e1f0ff; color: #1a6fbf; }
+  .status-planned { background: #f0f0f0; color: #666; }
+
+  .side-by-side { display: flex; gap: 24px; flex-wrap: wrap; }
+  hr.sep { border: none; border-top: 2px solid #4a90d9; margin: 40px 0 10px; }
+  .note { font-size: 13px; color: #888; margin-top: 8px; padding: 8px 12px; background: #fff8e1; border-radius: 4px; border-left: 3px solid #f5a623; margin-bottom: 20px; }
+
+  /* Flow diagram */
+  .flow { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; width: 700px; }
+  .flow-title { font-size: 14px; font-weight: 700; margin-bottom: 14px; color: #444; }
+  .flow-steps { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .flow-step { background: #f5f7fa; border: 1px solid #ddd; border-radius: 6px; padding: 8px 12px; font-size: 12px; text-align: center; min-width: 100px; }
+  .flow-step.highlight { background: #e1f0ff; border-color: #4a90d9; color: #1a6fbf; font-weight: 600; }
+  .flow-step.admin { background: #fff4e6; border-color: #ff6b35; color: #b35c00; }
+  .flow-arrow { font-size: 18px; color: #aaa; }
+
+  .comparison { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 14px; margin-bottom: 20px; }
+  .comparison h3 { font-size: 14px; margin-bottom: 10px; color: #444; }
+  .comparison table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .comparison th { text-align: left; padding: 6px 10px; border-bottom: 2px solid #eee; color: #888; font-size: 11px; text-transform: uppercase; }
+  .comparison td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; }
+  .check { color: #1a7f37; }
+  .cross { color: #c33; }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">M8 Admin Gate — Combined B+C</h1>
+<p class="subtitle">Sidebar admin section (B) + Floating toolbar (C). No badge in header. Admin tools in sidebar, quick status in floating bar.</p>
+
+
+<!-- ==================== FLOW ==================== -->
+<div class="flow">
+  <div class="flow-title">Admin Entry Flow</div>
+  <div class="flow-steps">
+    <div class="flow-step">User opens<br><code>?admin=1</code></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step highlight">Password<br>modal</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">Correct password</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step admin">Admin active</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">Floating toolbar<br>+ sidebar admin<br>+ edit icons</div>
+  </div>
+  <div class="flow-steps" style="margin-top:10px;">
+    <div class="flow-step" style="min-width:140px;">120 min no activity</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step highlight">Password modal<br>reappears</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">Re-authenticate<br>or close</div>
+  </div>
+</div>
+
+
+<!-- ==================== PASSWORD MODAL ==================== -->
+<hr class="sep">
+<div class="section-title">Step 1: Password Modal</div>
+<div class="section-desc">Appears on page load when <code>?admin=1</code> is in URL. Blocks all interaction until correct password.</div>
+
+<div class="view-box" style="width:480px;">
+  <div class="view-label">Password prompt over dimmed app</div>
+  <div class="header" style="opacity:0.4;">
+    <button class="hamburger">☰</button>
+    <div class="env-toggle"><button class="env-btn active">CT</button><button class="env-btn">PD</button></div>
+    <h2>SPWS Ranklist</h2>
+    <span class="spacer"></span>
+    <div class="lang-toggle"><button class="lang-btn">🇬🇧</button><button class="lang-btn active">🇵🇱</button></div>
+  </div>
+  <div class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title">🔒 Tryb administratora</div>
+      <div class="modal-subtitle">Podaj hasło aby kontynuować</div>
+      <div class="modal-error">Nieprawidłowe hasło</div>
+      <input type="password" class="modal-input" value="••••••••" disabled>
+      <button class="modal-btn">Zaloguj</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== RANKLIST ADMIN VIEW ==================== -->
+<hr class="sep">
+<div class="section-title">Step 2: Ranklist — Admin Mode Active</div>
+<div class="section-desc">Header is clean (no ADMIN badge). Floating toolbar at bottom-right shows admin status + timer. Sidebar has admin section when opened.</div>
+
+<div class="side-by-side">
+  <!-- Ranklist with floating toolbar -->
+  <div class="view-box" style="position:relative; min-height:380px; width:480px;">
+    <div class="view-label">Ranklist view — admin mode</div>
+    <div class="header">
+      <button class="hamburger">☰</button>
+      <div class="env-toggle"><button class="env-btn active">CT</button><button class="env-btn">PD</button></div>
+      <h2>SPWS Ranklist</h2>
+      <select class="season-select"><option>2025-2026 ●</option></select>
+      <span class="spacer"></span>
+      <div class="lang-toggle">
+        <button class="lang-btn">🇬🇧</button>
+        <button class="lang-btn active">🇵🇱</button>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <select class="filter-select"><option>Szpada</option></select>
+      <select class="filter-select"><option>Mężczyźni</option></select>
+      <select class="filter-select"><option>V2</option></select>
+      <div class="mode-toggle">
+        <button class="mode-btn active">PPW</button>
+        <button class="mode-btn">+EVF</button>
+      </div>
+      <span class="spacer"></span>
+      <button class="export-btn">⊕ Eksport</button>
+    </div>
+    <table class="rank-table">
+      <tr><th>#</th><th>Zawodnik</th><th class="num">Punkty</th></tr>
+      <tr><td>1</td><td>ATANASSOW Aleksander</td><td class="num">245.3</td></tr>
+      <tr><td>2</td><td>DUDEK Piotr</td><td class="num">198.7</td></tr>
+      <tr><td>3</td><td>BAZAK Tomasz</td><td class="num">187.2</td></tr>
+      <tr><td>4</td><td>HAŚKO Jan</td><td class="num">165.0</td></tr>
+      <tr><td>5</td><td>BARAŃSKI Włodzimierz</td><td class="num">142.8</td></tr>
+    </table>
+    <div class="floating-toolbar">
+      <span class="admin-badge">ADMIN</span>
+      <span class="time">1h 47m</span>
+      <span class="logout">Wyloguj</span>
+    </div>
+  </div>
+
+  <!-- Sidebar open -->
+  <div>
+    <div style="font-size:12px; font-weight:600; color:#888; text-transform:uppercase; margin-bottom:6px;">☰ Sidebar with admin section</div>
+    <div class="sidebar-demo" style="height:320px;">
+      <div class="sidebar-panel">
+        <h3>SPWS</h3>
+        <div class="sidebar-item active">▶ Ranklista</div>
+        <div class="sidebar-item">Kalendarz</div>
+        <div class="sidebar-admin-section">
+          <div class="sidebar-admin-label">Admin</div>
+          <div class="sidebar-admin-item">Sezony</div>
+          <div class="sidebar-admin-item">Wydarzenia</div>
+          <div class="sidebar-admin-item">Tożsamości</div>
+        </div>
+        <div class="sidebar-session">
+          Sesja: 1h 47m<br>
+          <span style="color:#ff6b35; cursor:pointer;">Wyloguj</span>
+        </div>
+      </div>
+      <div class="sidebar-dimmed">(content dimmed)</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== CALENDAR ADMIN VIEW ==================== -->
+<hr class="sep">
+<div class="section-title">Step 3: Calendar — Admin Mode Active</div>
+<div class="section-desc">Edit icons (✏️) appear next to each event. "+ Dodaj wydarzenie" button at the bottom. Floating toolbar persists.</div>
+
+<div class="side-by-side">
+  <div class="view-box" style="position:relative; min-height:420px; width:480px;">
+    <div class="view-label">Calendar view — admin mode</div>
+    <div class="header">
+      <button class="hamburger">☰</button>
+      <div class="env-toggle"><button class="env-btn active">CT</button><button class="env-btn">PD</button></div>
+      <h2>SPWS Kalendarz</h2>
+      <select class="season-select"><option>2025-2026 ●</option></select>
+      <span class="spacer"></span>
+      <div class="lang-toggle">
+        <button class="lang-btn">🇬🇧</button>
+        <button class="lang-btn active">🇵🇱</button>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <div class="mode-toggle">
+        <button class="mode-btn active">PPW</button>
+        <button class="mode-btn">+EVF</button>
+      </div>
+      <select class="filter-select"><option>Wszystkie</option></select>
+    </div>
+    <div class="timeline-content">
+      <div class="timeline-month">Wrzesień 2025</div>
+      <div class="timeline-event" style="position:relative;">
+        <div class="timeline-line"></div>
+        <div class="timeline-date">28.09</div>
+        <div class="timeline-info">
+          <div class="timeline-name">I Puchar Polski Weteranów <span class="edit-icon">✏️</span></div>
+          <div class="timeline-loc">Konin, Polska · 5 turniejów</div>
+          <div class="timeline-meta">
+            <span class="status-badge status-completed">● Zakończone</span>
+            <a href="#" style="font-size:11px; color:#4a90d9; text-decoration:none;">Komunikat org. →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="timeline-month">Październik 2025</div>
+      <div class="timeline-event" style="position:relative;">
+        <div class="timeline-line"></div>
+        <div class="timeline-date">25.10</div>
+        <div class="timeline-info">
+          <div class="timeline-name">II Puchar Polski Weteranów <span class="edit-icon">✏️</span></div>
+          <div class="timeline-loc">Kraków, Polska · 8 turniejów</div>
+          <div class="timeline-meta">
+            <span class="status-badge status-completed">● Zakończone</span>
+            <a href="#" style="font-size:11px; color:#4a90d9; text-decoration:none;">Komunikat org. →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="timeline-month">Styczeń 2026</div>
+      <div class="timeline-event" style="position:relative;">
+        <div class="timeline-line"></div>
+        <div class="timeline-date">17.01</div>
+        <div class="timeline-info">
+          <div class="timeline-name">IV Puchar Polski Weteranów <span class="edit-icon">✏️</span></div>
+          <div class="timeline-loc">Gdańsk, Polska · 8 turniejów</div>
+          <div class="timeline-meta">
+            <span class="status-badge status-scheduled">● Potwierdzone</span>
+            <a href="#" style="font-size:11px; color:#4a90d9; text-decoration:none;">Komunikat org. →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="timeline-month">Maj 2026</div>
+      <div class="timeline-event" style="position:relative;">
+        <div class="timeline-date">30.05</div>
+        <div class="timeline-info">
+          <div class="timeline-name">Mistrzostwa Polski Weteranów <span class="edit-icon">✏️</span></div>
+          <div class="timeline-loc">Poznań, Polska · 12 turniejów</div>
+          <div class="timeline-meta">
+            <span class="status-badge status-planned">○ Zaplanowane</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="add-btn">+ Dodaj wydarzenie</button>
+    <div style="height:30px;"></div>
+    <div class="floating-toolbar">
+      <span class="admin-badge">ADMIN</span>
+      <span class="time">1h 47m</span>
+      <span class="logout">Wyloguj</span>
+    </div>
+  </div>
+
+  <!-- Normal user comparison -->
+  <div class="view-box" style="position:relative; min-height:420px; width:480px;">
+    <div class="view-label">Calendar view — normal user (no ?admin=1)</div>
+    <div class="header">
+      <button class="hamburger">☰</button>
+      <div class="env-toggle"><button class="env-btn active">CT</button><button class="env-btn">PD</button></div>
+      <h2>SPWS Kalendarz</h2>
+      <select class="season-select"><option>2025-2026 ●</option></select>
+      <span class="spacer"></span>
+      <div class="lang-toggle">
+        <button class="lang-btn">🇬🇧</button>
+        <button class="lang-btn active">🇵🇱</button>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <div class="mode-toggle">
+        <button class="mode-btn active">PPW</button>
+        <button class="mode-btn">+EVF</button>
+      </div>
+      <select class="filter-select"><option>Wszystkie</option></select>
+    </div>
+    <div class="timeline-content">
+      <div class="timeline-month">Wrzesień 2025</div>
+      <div class="timeline-event" style="position:relative;">
+        <div class="timeline-line"></div>
+        <div class="timeline-date">28.09</div>
+        <div class="timeline-info">
+          <div class="timeline-name">I Puchar Polski Weteranów</div>
+          <div class="timeline-loc">Konin, Polska · 5 turniejów</div>
+          <div class="timeline-meta">
+            <span class="status-badge status-completed">● Zakończone</span>
+            <a href="#" style="font-size:11px; color:#4a90d9; text-decoration:none;">Komunikat org. →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="timeline-month">Październik 2025</div>
+      <div class="timeline-event" style="position:relative;">
+        <div class="timeline-line"></div>
+        <div class="timeline-date">25.10</div>
+        <div class="timeline-info">
+          <div class="timeline-name">II Puchar Polski Weteranów</div>
+          <div class="timeline-loc">Kraków, Polska · 8 turniejów</div>
+          <div class="timeline-meta">
+            <span class="status-badge status-completed">● Zakończone</span>
+            <a href="#" style="font-size:11px; color:#4a90d9; text-decoration:none;">Komunikat org. →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="timeline-month">Styczeń 2026</div>
+      <div class="timeline-event" style="position:relative;">
+        <div class="timeline-line"></div>
+        <div class="timeline-date">17.01</div>
+        <div class="timeline-info">
+          <div class="timeline-name">IV Puchar Polski Weteranów</div>
+          <div class="timeline-loc">Gdańsk, Polska · 8 turniejów</div>
+          <div class="timeline-meta">
+            <span class="status-badge status-scheduled">● Potwierdzone</span>
+            <a href="#" style="font-size:11px; color:#4a90d9; text-decoration:none;">Komunikat org. →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="timeline-month">Maj 2026</div>
+      <div class="timeline-event" style="position:relative;">
+        <div class="timeline-date">30.05</div>
+        <div class="timeline-info">
+          <div class="timeline-name">Mistrzostwa Polski Weteranów</div>
+          <div class="timeline-loc">Poznań, Polska · 12 turniejów</div>
+          <div class="timeline-meta">
+            <span class="status-badge status-planned">○ Zaplanowane</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:10px 14px; font-size:11px; color:#bbb; text-align:center; font-style:italic;">No floating toolbar · No edit icons · No admin sidebar section</div>
+  </div>
+</div>
+
+
+<!-- ==================== SUMMARY ==================== -->
+<hr class="sep">
+<div class="section-title">What the Admin Sees vs. Normal User</div>
+
+<div class="comparison" style="width:600px;">
+  <table>
+    <tr>
+      <th>Element</th>
+      <th>Normal user</th>
+      <th>Admin (?admin=1)</th>
+    </tr>
+    <tr>
+      <td>Header</td>
+      <td>Clean — no admin indicators</td>
+      <td>Clean — no admin indicators</td>
+    </tr>
+    <tr>
+      <td>Floating toolbar</td>
+      <td><span class="cross">✕</span> Hidden</td>
+      <td><span class="check">✓</span> ADMIN badge + timer + Wyloguj</td>
+    </tr>
+    <tr>
+      <td>Sidebar</td>
+      <td>Ranklist + Kalendarz only</td>
+      <td>Ranklist + Kalendarz + <strong>Admin section</strong> (Sezony, Wydarzenia, Tożsamości)</td>
+    </tr>
+    <tr>
+      <td>Edit icons (✏️)</td>
+      <td><span class="cross">✕</span> Hidden</td>
+      <td><span class="check">✓</span> Next to each event/item</td>
+    </tr>
+    <tr>
+      <td>"+ Dodaj" buttons</td>
+      <td><span class="cross">✕</span> Hidden</td>
+      <td><span class="check">✓</span> Below event lists</td>
+    </tr>
+    <tr>
+      <td>Password modal</td>
+      <td><span class="cross">✕</span> Never shown</td>
+      <td><span class="check">✓</span> On page load + after 120min timeout</td>
+    </tr>
+  </table>
+</div>
+
+<div class="note">
+  <strong>Combined B+C:</strong> Clean header (no badge). Floating toolbar at bottom-right for quick admin status/timer/logout. Sidebar admin section for management tools (M9 scope: Sezony, Wydarzenia, Tożsamości). Edit icons (✏️) and "+ Dodaj" buttons appear in both views. Normal users see none of this.
+</div>
+
+<div style="text-align:center; padding: 20px; color: #888; font-size: 13px;">
+  M8 scope: Password gate + floating toolbar + edit icons (visual only). Admin CRUD UI is M9.
+</div>
+
+</body>
+</html>

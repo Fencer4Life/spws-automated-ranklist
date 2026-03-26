@@ -74,8 +74,8 @@ Tests are the living specification. If a test doesn't exist for a requirement, t
 
 This plan is the implementation companion to the [Project Specification](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). The following specification artifacts provide traceability and decision context:
 
-- **Requirements Traceability Matrix (Appendix C)** — maps 40 Functional Requirements (FR-01–FR-40) and 13 Non-Functional Requirements (NFR-01–NFR-13) to their verifying tests. Test IDs in the RTM (e.g., `3.1a–g`, `5.4–5.7`) reference the numbered tests in this plan's milestone tables.
-- **Architecture Decision Records ([`doc/adr/`](adr/))** — 8 ADRs documenting key design decisions with rationale and tradeoffs. Referenced in milestone implementation notes below where relevant.
+- **Requirements Traceability Matrix (Appendix C)** — maps 52 Functional Requirements (FR-01–FR-52) and 13 Non-Functional Requirements (NFR-01–NFR-13) to their verifying tests. Test IDs in the RTM (e.g., `3.1a–g`, `5.4–5.7`) reference the numbered tests in this plan's milestone tables.
+- **Architecture Decision Records ([`doc/adr/`](adr/))** — 14 ADRs documenting key design decisions with rationale and tradeoffs. Referenced in milestone implementation notes below where relevant.
 
 The "Derives From" column in each milestone's test table maps tests → spec sections (§ references and UC IDs). The RTM provides the reverse mapping: spec requirements → tests.
 
@@ -506,7 +506,7 @@ graph LR
 
 ---
 
-### Milestone 6: Web Component (Local UI)
+### Milestone 6: Web Component (Local UI) ✅ COMPLETED
 
 **Use Cases:** UC12, UC13 (presentation layer)
 
@@ -639,7 +639,7 @@ The spec originally called for a Svelte custom element with Shadow DOM for CSS i
 
 **Verification:**
 - Vitest unit tests pass for component logic (28 tests across 6 test files).
-- pgTAP total: 117 assertions (1 smoke + 64 M1 + 25 M2 + 27 M5/M6 views).
+- pgTAP total: 140 assertions (1 smoke + 64 M1 + 25 M2 + 27 M5/M6 views + 6 T8.1 + 7 T8.2 + 5 T8.3 + 5 T9.0).
 - Manual test: open `index.html` in browser with `demo` attribute, verify ranklist loads with mock data, drilldown modal shows score breakdown with markers and summary rows.
 
 **CERT/PROD Deployment (infrastructure — not a plan test):** See [ADR-009](adr/009-cert-prod-runtime-toggle.md) for architectural rationale, [ADR-011](adr/011-artifact-release-pipeline.md) for release pipeline design.
@@ -655,9 +655,11 @@ The spec originally called for a Svelte custom element with Shadow DOM for CSS i
 
 ---
 
-### Milestone 7: GitHub Actions — Ingestion Pipeline
+### Milestone 7: GitHub Actions — Ingestion Pipeline ⏸️ DEFERRED TO MVP
 
 **Use Cases:** UC1 (automation), §7 (alerting)
+
+**Status:** Deferred to MVP M9. Individual components (scrapers M3, matcher M4, scoring M2) are complete and tested. Orchestration pipeline, admin CRUD UI, and identity resolution admin UI will be implemented in M9. See [ADR-013](adr/013-poc-mvp-transition.md).
 
 **Purpose:** Wire everything together into an automated scheduled ingestion pipeline. The release pipeline (schema deployment + frontend) is already implemented in M6 via `release.yml` — see [ADR-011](adr/011-artifact-release-pipeline.md). Tests here focus on orchestration logic — individual scraper, matcher, and scoring behaviors are already tested in M3, M4, and M2 respectively.
 
@@ -687,6 +689,8 @@ The spec originally called for a Svelte custom element with Shadow DOM for CSS i
 - `python/pipeline/discord.py` — Discord webhook integration.
 - GitHub Actions secrets: `SUPABASE_URL`, `SUPABASE_KEY` (service_role), `DISCORD_WEBHOOK_URL`.
 
+**Deferred:** Data rollback snapshots evaluated and deferred — see [ADR-012](adr/012-sql-pre-deploy-snapshots.md).
+
 **Verification:**
 - All pytest tests pass (pipeline logic tested with mocked DB and HTTP calls).
 - Manual test: trigger workflow via `workflow_dispatch`, verify end-to-end data flow.
@@ -704,7 +708,7 @@ graph TD
     M4["<b>M4</b><br/>Identity<br/>Resolution"]
     M5["<b>M5</b><br/>SQL Views<br/>& API"]
     M6["<b>M6</b><br/>Web<br/>Component"]
-    M7["<b>M7</b><br/>GitHub Actions<br/>Pipeline"]
+    M7["<b>M7</b><br/>GitHub Actions<br/>Pipeline<br/><i>(deferred → M9)</i>"]
 
     M0 --> M1
     M1 --> M2
@@ -724,7 +728,7 @@ graph TD
     style M4 fill:#dcfce7,stroke:#22c55e
     style M5 fill:#ede9fe,stroke:#8b5cf6
     style M6 fill:#fce7f3,stroke:#ec4899
-    style M7 fill:#fce7f3,stroke:#ec4899
+    style M7 fill:#fef3c7,stroke:#f59e0b,stroke-dasharray: 5 5
 ```
 
 **Parallelism opportunities:**
@@ -732,7 +736,7 @@ graph TD
 - M4 (identity resolution) can start as soon as M3 is done.
 - M5 (views & API) requires M2 + M4 to be complete.
 - M6 (web component) depends on M5.
-- M7 (pipeline) depends on M2 + M3 + M4, but is independent of M5 and M6.
+- M7 (pipeline) depends on M2 + M3 + M4, but is independent of M5 and M6. **Deferred to MVP M9.**
 
 ---
 
@@ -754,40 +758,69 @@ graph TD
 
 The POC is considered complete when ALL of the following are true:
 
-- [ ] All acceptance tests pass across all three test suites (pgTAP, pytest, Vitest/Playwright).
-- [ ] CI pipeline (GitHub Actions) runs all tests on push and reports green.
-- [ ] Scoring engine output matches the reference Excel (`SZPADA-2-2024-2025.xlsx`) for Male Epee V2 within 0.01 tolerance per score.
-- [ ] Calibration loop demonstrated: export config → edit → import → re-score → compare → zero mismatches.
-- [ ] At least one tournament successfully scraped from each platform (FencingTimeLive, Engarde, 4Fence).
-- [ ] Identity resolution demonstrated: auto-match, pending review, admin approve/create/dismiss.
-- [ ] Season and tournament lifecycle management working via Supabase Dashboard.
-- [ ] Public ranking view accessible via PostgREST API (anonymous read).
-- [ ] Web Component renders ranking table with working filters and drill-down in the local Shadow Wrapper.
-- [ ] GitHub Actions pipeline runs on schedule, scrapes → matches → scores, and sends Discord alert on failure.
-- [ ] All 15 Phase 1 use cases (UC1–5, UC7–13, UC18–20) have at least one passing acceptance test.
-- [ ] Requirements Traceability Matrix (Appendix C) reviewed — all "Gap" and "Partial" items tracked below.
+- [x] All acceptance tests pass across all three test suites (pgTAP, pytest, Vitest/Playwright).
+- [x] CI pipeline (GitHub Actions) runs all tests on push and reports green.
+- [x] Scoring engine output matches the reference Excel (`SZPADA-2-2024-2025.xlsx`) for Male Epee V2 within 0.01 tolerance per score.
+- [x] Calibration loop demonstrated: export config → edit → import → re-score → compare → zero mismatches.
+- [x] At least one tournament successfully scraped from each platform (FencingTimeLive, Engarde, 4Fence).
+- [x] Identity resolution demonstrated: auto-match, pending review, admin approve/create/dismiss.
+- [x] Season and tournament lifecycle management working via Supabase Dashboard.
+- [x] Public ranking view accessible via PostgREST API (anonymous read).
+- [x] Web Component renders ranking table with working filters and drill-down in the local Shadow Wrapper.
+- [ ] ~~GitHub Actions pipeline runs on schedule, scrapes → matches → scores, and sends Discord alert on failure.~~ **Deferred to MVP M9** — see [ADR-013](adr/013-poc-mvp-transition.md).
+- [x] All 15 Phase 1 use cases (UC1–5, UC7–13, UC18–20) have at least one passing acceptance test. *(UC1 automation and UC4 admin UI deferred to M9; all other UCs covered.)*
+- [x] Requirements Traceability Matrix (Appendix C) reviewed — all "Gap" and "Partial" items tracked below.
+
+---
+
+## POC Completion Summary
+
+**Completed:** 2026-03-25
+**Milestones:** M0-M6 (7 of 8 milestones)
+**Deferred:** M7 Ingestion Pipeline → MVP M9
+
+### Test Coverage
+
+- pgTAP: 117 assertions (4 test files)
+- pytest: 91 assertions (4 test files)
+- vitest: 28 assertions (6 test files)
+- Total: 236 assertions
+
+### Key Outcomes
+
+1. Scoring engine matches reference Excel within 0.01 tolerance
+2. Three scraper platforms operational (FTL, Engarde, 4Fence)
+3. Identity resolution with fuzzy matching + age-category disambiguation
+4. Web Component with PPW/Kadra toggle, drilldown, ODS export, i18n
+5. Three-tier release pipeline (LOCAL→CERT→PROD) with schema fingerprinting
+6. JSONB bucket-based ranking rules for flexible configuration
+
+### Transition to MVP
+
+See [ADR-013](adr/013-poc-mvp-transition.md). MVP scope documented in [MVP Development Plan](MVP_development_plan.md) and [Project Specification §6.2](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#phase-2-minimum-viable-product-mvp).
 
 ---
 
 ## 7. Known Test Gaps
 
-The following requirements from the [RTM (Appendix C)](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#appendix-c--requirements-traceability-matrix) have incomplete or missing test coverage. Items marked M7 are planned for Milestone 7; MVP items are deferred to Phase 2.
+The following requirements from the [RTM (Appendix C)](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#appendix-c--requirements-traceability-matrix) have incomplete or missing test coverage. All items carry forward to MVP — see [ADR-013](adr/013-poc-mvp-transition.md).
 
 ### Gaps (no test)
 
 | RTM ID | Requirement | Target |
 |--------|-------------|--------|
-| FR-40 | Import status transition to IMPORTED (plan tests 3.5, 3.8) | M7 |
-| NFR-13 | Shadow DOM isolation (plan test 6.7) | MVP (ADR-007) |
+| FR-40 | Import status transition to IMPORTED (plan tests 3.5, 3.8) | MVP (M9) |
+| FR-42 | CERT/PROD environment toggle tests (plan tests 6.17–6.20) | MVP (M8) |
+| NFR-13 | Shadow DOM isolation (plan test 6.7) | MVP M8 (ADR-007) |
 
 ### Partial Coverage
 
 | RTM ID | Requirement | Missing | Target |
 |--------|-------------|---------|--------|
-| FR-10 | Birth year estimation | V1, V3 categories not tested (only V0, V2, V4) | M7 |
-| FR-14 | Tournament multipliers | No MSW scoring test (PSW covered by 2.19) | M7 |
-| FR-23 | Event lifecycle state machine | CHANGED state transition untested | M7 |
-| NFR-10 | Pipeline observability | Only Discord tested; structured logs not verified | M7 |
+| FR-10 | Birth year estimation | V1, V3 categories not tested (only V0, V2, V4) | MVP (M9) |
+| FR-14 | Tournament multipliers | No MSW scoring test (PSW covered by 2.19) | MVP (M9) |
+| FR-23 | Event lifecycle state machine | CHANGED state transition untested | MVP (M9) |
+| NFR-10 | Pipeline observability | Only Discord tested; structured logs not verified | MVP (M9) |
 
 ### Not Testable (infrastructure)
 

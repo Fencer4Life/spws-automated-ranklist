@@ -1,5 +1,14 @@
+<Sidebar
+  open={sidebarOpen}
+  currentView={currentView}
+  isAdmin={isAdmin}
+  onnavigate={(view) => { currentView = view; if (view === 'calendar') loadCalendar() }}
+  onclose={() => { sidebarOpen = false }}
+/>
+
 <div class="ranklist-app">
   <header class="app-header">
+    <button class="hamburger-btn" onclick={() => { sidebarOpen = true }} aria-label="Menu">&#9776;</button>
     {#if dualEnv}
       <div class="env-toggle">
         <button class="env-btn" class:active={activeEnv === 'CERT'}
@@ -8,55 +17,77 @@
           onclick={() => { activeEnv = 'PROD' }}>PD</button>
       </div>
     {/if}
-    <h1>{t('app_title')}</h1>
+    <h2 class="app-title">
+      <img src="SPWS-logo.png" alt="SPWS" class="header-logo" />
+      {currentView === 'ranklist' ? t('app_title') : t('calendar_title')}
+    </h2>
     <div class="season-selector">
       <select bind:value={selectedSeasonId} onchange={loadRanking}>
         {#each seasons as s}
           <option value={s.id_season}>{s.txt_code}{s.bool_active ? ' ' + t('season_active') : ''}</option>
         {/each}
       </select>
+      <label class="season-label">{t('season_label')}</label>
     </div>
     <div class="header-right">
       <LangToggle />
     </div>
   </header>
 
-  <FilterBar
-    weapon={filters.weapon}
-    gender={filters.gender}
-    category={filters.category}
-    mode={filters.mode}
-    onfilterchange={onFilterChange}
-    onexport={handleMainExport}
-  />
-
-  {#if loading}
-    <SkeletonLoader rows={10} />
-  {:else}
-    <RanklistTable
+  {#if currentView === 'ranklist'}
+    <FilterBar
+      weapon={filters.weapon}
+      gender={filters.gender}
+      category={filters.category}
       mode={filters.mode}
-      ppwRows={ppwRows}
-      kadraRows={kadraRows}
-      onrowclick={openDrilldown}
+      onfilterchange={onFilterChange}
+      onexport={handleMainExport}
     />
-  {/if}
 
-  <DrilldownModal
-    open={modalOpen}
-    fencerName={modalFencerName}
-    scores={modalScores}
-    mode={filters.mode}
-    kadraDisabled={filters.category === 'V0'}
-    loading={modalLoading}
-    context={modalContext}
-    rankingRules={rankingRules}
-    onclose={closeDrilldown}
-  />
+    {#if loading}
+      <SkeletonLoader rows={10} />
+    {:else}
+      <RanklistTable
+        mode={filters.mode}
+        ppwRows={ppwRows}
+        kadraRows={kadraRows}
+        onrowclick={openDrilldown}
+      />
+    {/if}
+
+    <DrilldownModal
+      open={modalOpen}
+      fencerName={modalFencerName}
+      scores={modalScores}
+      mode={filters.mode}
+      kadraDisabled={filters.category === 'V0'}
+      loading={modalLoading}
+      context={modalContext}
+      rankingRules={rankingRules}
+      onclose={closeDrilldown}
+    />
+  {:else if currentView === 'calendar'}
+    <CalendarView events={calendarEvents} />
+  {/if}
 
   {#if error}
     <div class="error-banner">{error}</div>
   {/if}
 </div>
+
+<AdminSignInModal
+  open={showAdminModal}
+  error={signInError}
+  onsubmit={(email, password) => { isAdmin = true; showAdminModal = false }}
+/>
+
+{#if isAdmin}
+  <AdminFloatingToolbar
+    onlogout={() => { isAdmin = false }}
+    ontimeout={() => { isAdmin = false; showAdminModal = true }}
+    timeoutMs={59 * 60 * 1000}
+  />
+{/if}
 
 <script lang="ts">
   import type {
@@ -72,6 +103,8 @@
     Environment,
     Filters,
     RankingRules,
+    AppView,
+    CalendarEvent,
   } from './lib/types'
   import {
     initClient,
@@ -80,6 +113,7 @@
     fetchRankingKadra,
     fetchFencerScores,
     fetchRankingRules,
+    fetchCalendarEvents,
   } from './lib/api'
   import {
     MOCK_SEASONS,
@@ -90,11 +124,15 @@
   } from './lib/mock-data'
   import { exportRankingPpw, exportRankingKadra } from './lib/export'
   import { t } from './lib/locale.svelte'
+  import Sidebar from './components/Sidebar.svelte'
+  import CalendarView from './components/CalendarView.svelte'
   import FilterBar from './components/FilterBar.svelte'
   import LangToggle from './components/LangToggle.svelte'
   import RanklistTable from './components/RanklistTable.svelte'
   import DrilldownModal from './components/DrilldownModal.svelte'
   import SkeletonLoader from './components/SkeletonLoader.svelte'
+  import AdminSignInModal from './components/AdminSignInModal.svelte'
+  import AdminFloatingToolbar from './components/AdminFloatingToolbar.svelte'
 
   let {
     'supabase-cert-url': certUrl = '',
@@ -109,6 +147,14 @@
     'supabase-prod-key'?: string
     demo?: boolean
   } = $props()
+
+  let currentView: AppView = $state('ranklist')
+  let sidebarOpen = $state(false)
+
+  const adminRequested = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('admin') === '1'
+  let isAdmin = $state(false)
+  let showAdminModal = $state(adminRequested)
+  let signInError = $state('')
 
   let activeEnv: Environment = $state('CERT')
   let dualEnv = $derived(!!(certUrl && certKey && prodUrl && prodKey))
@@ -130,6 +176,8 @@
   let error: string | null = $state(null)
 
   let rankingRules: RankingRules | null = $state(null)
+
+  let calendarEvents: CalendarEvent[] = $state([])
 
   let modalOpen = $state(false)
   let modalFencerName = $state('')
@@ -268,6 +316,15 @@
     modalContext = null
   }
 
+  async function loadCalendar() {
+    if (demo || !selectedSeasonId) return
+    try {
+      calendarEvents = await fetchCalendarEvents(selectedSeasonId)
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
   function handleMainExport() {
     const title = `SPWS_${filters.mode}_${filters.weapon}_${filters.gender}_${filters.category}`
     if (filters.mode === 'PPW') {
@@ -293,10 +350,37 @@
     margin-bottom: 8px;
     flex-wrap: wrap;
   }
-  .app-header h1 {
-    margin: 0;
+  .hamburger-btn {
+    border: none;
+    background: none;
     font-size: 22px;
+    cursor: pointer;
+    padding: 4px 8px;
+    color: #333;
+    line-height: 1;
+  }
+  .app-title {
+    margin: 0;
+    font-size: 20px;
     color: #222;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-logo {
+    height: 22px;
+    width: auto;
+  }
+  .season-selector {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .season-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    white-space: nowrap;
   }
   .season-selector select {
     padding: 6px 10px;
@@ -348,8 +432,11 @@
     .ranklist-app {
       padding: 10px;
     }
-    .app-header h1 {
-      font-size: 18px;
+    .app-title {
+      font-size: 16px;
+    }
+    .header-logo {
+      height: 18px;
     }
     .app-header {
       gap: 10px;

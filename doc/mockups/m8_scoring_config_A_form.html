@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M8 Scoring Config — Approach A: Structured Form</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+  h1.page-title { text-align: center; margin-bottom: 10px; font-size: 28px; color: #222; }
+  .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 30px; }
+  .section-title { font-size: 18px; font-weight: 700; margin: 30px 0 10px; color: #1a1a1a; }
+  .section-desc { font-size: 14px; color: #666; margin-bottom: 14px; max-width: 700px; }
+  hr.sep { border: none; border-top: 2px solid #4a90d9; margin: 40px 0 10px; }
+  .note { font-size: 13px; color: #888; margin-top: 8px; padding: 8px 12px; background: #fff8e1; border-radius: 4px; border-left: 3px solid #f5a623; margin-bottom: 20px; max-width: 700px; }
+
+  .side-by-side { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+
+  /* View boxes */
+  .view-box { background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  .view-label { background: #e8ecf1; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Header */
+  .header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f5f7fa; border-bottom: 1px solid #ddd; }
+  .hamburger { font-size: 20px; cursor: pointer; padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; line-height: 1; }
+  .header h2 { font-size: 18px; color: #222; margin: 0; white-space: nowrap; }
+  .season-select { padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: #fff; }
+  .env-toggle { display: flex; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+  .env-btn { padding: 3px 8px; border: none; background: #fff; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .env-btn.active { background: #4a90d9; color: #fff; }
+  .env-btn + .env-btn { border-left: 1px solid #ccc; }
+  .lang-toggle { display: flex; gap: 4px; }
+  .lang-btn { padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 14px; cursor: pointer; }
+  .lang-btn.active { background: #4a90d9; border-color: #4a90d9; }
+  .spacer { flex: 1; }
+
+  /* Sidebar */
+  .sidebar-demo { display: flex; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; width: 480px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  .sidebar-panel { width: 170px; background: #2c3e50; color: #fff; padding: 16px; flex-shrink: 0; display: flex; flex-direction: column; }
+  .sidebar-panel h3 { font-size: 16px; margin-bottom: 20px; }
+  .sidebar-item { padding: 8px 0; font-size: 14px; cursor: pointer; }
+  .sidebar-item.active { font-weight: 700; color: #4a90d9; }
+  .sidebar-item:hover { color: #7db8f0; }
+  .sidebar-admin-section { border-top: 1px solid rgba(255,255,255,0.15); margin-top: 14px; padding-top: 12px; }
+  .sidebar-admin-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #ff6b35; margin-bottom: 6px; font-weight: 600; }
+  .sidebar-admin-item { padding: 6px 0; font-size: 13px; color: #ff6b35; cursor: pointer; }
+  .sidebar-admin-item:hover { color: #ffa070; }
+  .sidebar-admin-item.active { font-weight: 700; border-left: 3px solid #ff6b35; padding-left: 8px; }
+  .sidebar-session { margin-top: auto; font-size: 10px; color: #aaa; padding-top: 12px; }
+  .sidebar-dimmed { flex: 1; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: #999; font-size: 13px; }
+
+  /* Floating toolbar */
+  .floating-toolbar { position: fixed; bottom: 60px; left: 20px; background: #2c3e50; color: #fff; border-radius: 8px; padding: 10px 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 12px; display: flex; align-items: center; gap: 12px; z-index: 100; }
+  .admin-badge { background: #ff6b35; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
+  .floating-toolbar .time { color: #aaa; }
+  .floating-toolbar .logout { color: #ff6b35; cursor: pointer; text-decoration: none; }
+
+  /* ── Scoring config form ── */
+  .config-content { padding: 14px; }
+  .config-info {
+    background: #e1f0ff;
+    border: 1px solid #b3d4f0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #1a6fbf;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .config-section {
+    background: #fafbfc;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .config-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: #f0f2f5;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #444;
+    cursor: pointer;
+  }
+  .config-section-body { padding: 12px 14px; }
+
+  /* Field rows */
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .field-row label {
+    flex: 0 0 200px;
+    font-size: 13px;
+    color: #555;
+    text-align: right;
+  }
+  .field-row input, .field-row select {
+    width: 100px;
+    padding: 5px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: monospace;
+    background: #fff;
+  }
+  .field-row input:focus, .field-row select:focus { outline: none; border-color: #4a90d9; }
+  .field-row .hint { font-size: 11px; color: #aaa; font-style: italic; }
+
+  /* Multiplier grid */
+  .mult-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .mult-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+    text-align: center;
+  }
+  .mult-card .type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .mult-card .type-badge.domestic { background: #e6f4ea; color: #1a7f37; }
+  .mult-card .type-badge.international { background: #fff8e1; color: #b8860b; }
+  .mult-card input {
+    width: 80px;
+    padding: 5px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: monospace;
+    text-align: center;
+  }
+  .mult-card input:focus { outline: none; border-color: #4a90d9; }
+  .mult-card .card-label { font-size: 11px; color: #888; margin-top: 4px; }
+
+  /* Bucket rules */
+  .pool-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 8px 0 6px;
+  }
+  .bucket-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+  .bucket-types { display: flex; gap: 4px; flex: 1; }
+  .bucket-types .tag {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .bucket-types .tag.domestic { background: #e6f4ea; color: #1a7f37; }
+  .bucket-types .tag.international { background: #fff8e1; color: #b8860b; }
+  .bucket-rule { display: flex; align-items: center; gap: 6px; }
+  .bucket-rule select {
+    padding: 3px 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 12px;
+    background: #fff;
+  }
+  .bucket-rule input {
+    width: 40px;
+    padding: 3px 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: monospace;
+    text-align: center;
+  }
+  .bucket-rule .rule-label { font-size: 12px; color: #888; }
+  .bucket-rule .always-label { font-size: 12px; color: #1a7f37; font-weight: 600; }
+  .btn-remove { background: none; border: none; color: #c33; cursor: pointer; font-size: 14px; padding: 2px 4px; }
+  .btn-add-bucket {
+    color: #ff6b35;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 8px;
+    border: 1px dashed #ff6b35;
+    border-radius: 4px;
+    background: transparent;
+    margin-top: 4px;
+  }
+  .btn-add-bucket:hover { background: #fff4e6; }
+  .bucket-divider { border: none; border-top: 1px solid #e0e0e0; margin: 10px 0; }
+
+  /* Footer */
+  .config-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 10px 14px;
+    border-top: 1px solid #ddd;
+    background: #fafbfc;
+  }
+  .btn-cancel {
+    padding: 8px 16px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    color: #666;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .btn-cancel:hover { border-color: #999; color: #333; }
+  .btn-save {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    background: #4a90d9;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-save:hover { background: #3a7bc8; }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">M8 Scoring Config — Approach A: Structured Form</h1>
+<p class="subtitle">Grouped sections with labeled inputs. Navigate via Sidebar → Administracja → Punktacja.</p>
+
+<!-- ==================== NAVIGATION CONTEXT ==================== -->
+<hr class="sep">
+<div class="section-title">Navigation: Sidebar → Punktacja</div>
+<div class="section-desc">Admin sidebar gains a 4th item <strong>"Punktacja"</strong> under Administracja. Config is per-season — tied to the season selected in the header dropdown.</div>
+
+<div class="sidebar-demo" style="height: 300px;">
+  <div class="sidebar-panel">
+    <h3>SPWS</h3>
+    <div class="sidebar-item">Ranklista</div>
+    <div class="sidebar-item">Kalendarz</div>
+    <div class="sidebar-admin-section">
+      <div class="sidebar-admin-label">Administracja</div>
+      <div class="sidebar-admin-item">Sezony</div>
+      <div class="sidebar-admin-item">Wydarzenia</div>
+      <div class="sidebar-admin-item">Tożsamości</div>
+      <div class="sidebar-admin-item active">Punktacja</div>
+    </div>
+    <div class="sidebar-session">
+      Sesja: 1h 47m<br>
+      <span style="color:#ff6b35; cursor:pointer;">Wyloguj</span>
+    </div>
+  </div>
+  <div class="sidebar-dimmed">(content dimmed)</div>
+</div>
+
+<!-- ==================== SCORING CONFIG VIEW ==================== -->
+<hr class="sep">
+<div class="section-title">Scoring Config — Approach A: Structured Form</div>
+<div class="section-desc">All 19 config parameters organized into 5 collapsible sections. Season context shown in header. Bucket editor has add/remove with dropdown rule selector.</div>
+
+<div class="view-box" style="width: 580px; position: relative; min-height: 500px;">
+  <div class="view-label">Scoring config — admin mode (Approach A)</div>
+  <div class="header">
+    <button class="hamburger">☰</button>
+    <div class="env-toggle"><button class="env-btn active">CT</button><button class="env-btn">PD</button></div>
+    <h2>SPWS Punktacja</h2>
+    <select class="season-select"><option>2024-2025 ●</option></select>
+    <span class="spacer"></span>
+    <div class="lang-toggle">
+      <button class="lang-btn">🇬🇧</button>
+      <button class="lang-btn active">🇵🇱</button>
+    </div>
+  </div>
+
+  <div class="config-content">
+    <div class="config-info">
+      ℹ️ Konfiguracja punktacji dla sezonu <strong>SPWS-2024-2025</strong>. Zmiany wymagają przeliczenia wyników.
+    </div>
+
+    <!-- Section 1: Base params -->
+    <div class="config-section">
+      <div class="config-section-header">⚙️ Parametry bazowe</div>
+      <div class="config-section-body">
+        <div class="field-row">
+          <label>Wartość pkt meczowych (MP)</label>
+          <input type="number" value="50">
+          <span class="hint">baza wzoru logarytmicznego</span>
+        </div>
+        <div class="field-row">
+          <label>Oczekiwana liczba rund</label>
+          <input type="number" value="5">
+          <span class="hint">reguła intake PPW</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Podium -->
+    <div class="config-section">
+      <div class="config-section-header">🏆 Bonus podium</div>
+      <div class="config-section-body">
+        <div class="field-row">
+          <label>🥇 Złoto (mnożnik)</label>
+          <input type="number" value="3">
+          <span class="hint">bonus = mnożnik × N^(1/3)</span>
+        </div>
+        <div class="field-row">
+          <label>🥈 Srebro (mnożnik)</label>
+          <input type="number" value="2">
+        </div>
+        <div class="field-row">
+          <label>🥉 Brąz (mnożnik)</label>
+          <input type="number" value="1">
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Tournament multipliers -->
+    <div class="config-section">
+      <div class="config-section-header">📊 Mnożniki turniejów</div>
+      <div class="config-section-body">
+        <div class="mult-grid">
+          <div class="mult-card">
+            <div><span class="type-badge domestic">PPW</span></div>
+            <input type="number" value="1.0000" step="0.0001">
+            <div class="card-label">Puchar Polski Wet.</div>
+          </div>
+          <div class="mult-card">
+            <div><span class="type-badge domestic">MPW</span></div>
+            <input type="number" value="1.2000" step="0.0001">
+            <div class="card-label">Mistrzostwa Polski Wet.</div>
+          </div>
+          <div class="mult-card">
+            <div><span class="type-badge international">PEW</span></div>
+            <input type="number" value="1.0000" step="0.0001">
+            <div class="card-label">Puchar Europy Wet.</div>
+          </div>
+          <div class="mult-card">
+            <div><span class="type-badge international">MEW</span></div>
+            <input type="number" value="2.0000" step="0.0001">
+            <div class="card-label">Mistrzostwa Europy Wet.</div>
+          </div>
+          <div class="mult-card">
+            <div><span class="type-badge international">MSW</span></div>
+            <input type="number" value="2.0000" step="0.0001">
+            <div class="card-label">Mistrzostwa Świata Wet.</div>
+          </div>
+          <div class="mult-card">
+            <div><span class="type-badge international">PSW</span></div>
+            <input type="number" value="2.0000" step="0.0001">
+            <div class="card-label">Puchar Świata Wet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Intake -->
+    <div class="config-section">
+      <div class="config-section-header">🚦 Reguły kwalifikacji (intake)</div>
+      <div class="config-section-body">
+        <div class="field-row">
+          <label>Min. uczestników — PPW</label>
+          <input type="number" value="1">
+        </div>
+        <div class="field-row">
+          <label>Min. uczestników — EVF</label>
+          <input type="number" value="5">
+          <span class="hint">PEW / MEW</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5: Ranking rules (JSONB buckets) -->
+    <div class="config-section">
+      <div class="config-section-header">🪣 Reguły rankingowe (kubełki)</div>
+      <div class="config-section-body">
+
+        <div class="pool-label">🏠 Pula krajowa (PPW ranking)</div>
+        <div class="bucket-row">
+          <div class="bucket-types"><span class="tag domestic">PPW</span></div>
+          <div class="bucket-rule">
+            <select><option selected>najlepsze</option><option>wszystkie</option></select>
+            <input type="number" value="4">
+            <span class="rule-label">wyników</span>
+          </div>
+          <button class="btn-remove" title="Usuń">✕</button>
+        </div>
+        <div class="bucket-row">
+          <div class="bucket-types"><span class="tag domestic">MPW</span></div>
+          <div class="bucket-rule">
+            <select><option>najlepsze</option><option selected>wszystkie</option></select>
+            <span class="always-label">zawsze wliczane</span>
+          </div>
+          <button class="btn-remove" title="Usuń">✕</button>
+        </div>
+        <button class="btn-add-bucket">+ Dodaj kubełek</button>
+
+        <hr class="bucket-divider">
+
+        <div class="pool-label">🌍 Pula międzynarodowa (Kadra ranking)</div>
+        <div class="bucket-row">
+          <div class="bucket-types"><span class="tag domestic">PPW</span></div>
+          <div class="bucket-rule">
+            <select><option selected>najlepsze</option><option>wszystkie</option></select>
+            <input type="number" value="4">
+            <span class="rule-label">wyników</span>
+          </div>
+          <button class="btn-remove" title="Usuń">✕</button>
+        </div>
+        <div class="bucket-row">
+          <div class="bucket-types"><span class="tag domestic">MPW</span></div>
+          <div class="bucket-rule">
+            <select><option>najlepsze</option><option selected>wszystkie</option></select>
+            <span class="always-label">zawsze wliczane</span>
+          </div>
+          <button class="btn-remove" title="Usuń">✕</button>
+        </div>
+        <div class="bucket-row">
+          <div class="bucket-types">
+            <span class="tag international">PEW</span>
+            <span class="tag international">MEW</span>
+            <span class="tag international">MSW</span>
+          </div>
+          <div class="bucket-rule">
+            <select><option selected>najlepsze</option><option>wszystkie</option></select>
+            <input type="number" value="3">
+            <span class="rule-label">wyników</span>
+          </div>
+          <button class="btn-remove" title="Usuń">✕</button>
+        </div>
+        <button class="btn-add-bucket">+ Dodaj kubełek</button>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="config-footer">
+    <button class="btn-cancel">Anuluj</button>
+    <button class="btn-save">Zapisz i przelicz</button>
+  </div>
+
+  <div class="floating-toolbar">
+    <span class="admin-badge">ADMIN</span>
+    <span class="time">1h 47m</span>
+    <span class="logout">Wyloguj</span>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Approach A:</strong> Traditional grouped form. Most discoverable — every field labeled and visible. Non-technical admin can understand all options. Bucket rules edited separately from tournament type cards (slight mental disconnect). Long vertical scroll for all 19 parameters.
+</div>
+
+</body>
+</html>
