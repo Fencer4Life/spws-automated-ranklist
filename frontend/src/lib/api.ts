@@ -11,6 +11,12 @@ import type {
   AgeCategory,
   RankingRules,
   ScoringConfig,
+  Organizer,
+  CreateEventParams,
+  UpdateEventParams,
+  Tournament,
+  CreateTournamentParams,
+  UpdateTournamentParams,
 } from './types'
 
 let client: SupabaseClient | null = null
@@ -147,5 +153,129 @@ export async function saveScoringConfig(config: Record<string, unknown>): Promis
   const { error } = await getClient().rpc('fn_import_scoring_config', {
     p_config: config,
   })
+  if (error) throw error
+}
+
+export async function createSeason(code: string, dtStart: string, dtEnd: string): Promise<number> {
+  const { data, error } = await getClient().rpc('fn_create_season', {
+    p_code: code,
+    p_dt_start: dtStart,
+    p_dt_end: dtEnd,
+  })
+  if (error) throw error
+  return data as number
+}
+
+export async function updateSeason(id: number, code: string, dtStart: string, dtEnd: string): Promise<void> {
+  const { error } = await getClient().rpc('fn_update_season', {
+    p_id: id,
+    p_code: code,
+    p_dt_start: dtStart,
+    p_dt_end: dtEnd,
+  })
+  if (error) throw error
+}
+
+export async function deleteSeason(id: number): Promise<void> {
+  const { error } = await getClient().rpc('fn_delete_season', { p_id: id })
+  if (error) throw error
+}
+
+export async function fetchOrganizers(): Promise<Organizer[]> {
+  const { data, error } = await getClient()
+    .from('tbl_organizer')
+    .select('id_organizer, txt_code, txt_name')
+    .order('txt_name')
+  if (error) throw error
+  return data ?? []
+}
+
+export async function createEvent(params: CreateEventParams): Promise<number> {
+  const { data, error } = await getClient().rpc('fn_create_event', {
+    p_code: params.code,
+    p_name: params.name,
+    p_id_season: params.seasonId,
+    p_id_organizer: params.organizerId,
+    p_location: params.location ?? null,
+    p_dt_start: params.dtStart ?? null,
+    p_dt_end: params.dtEnd ?? null,
+    p_url_event: params.urlEvent ?? null,
+    p_country: params.country ?? null,
+    p_venue_address: params.venueAddress ?? null,
+    p_invitation: params.invitation ?? null,
+    p_entry_fee: params.entryFee ?? null,
+  })
+  if (error) throw error
+  return data as number
+}
+
+export async function updateEvent(id: number, params: UpdateEventParams): Promise<void> {
+  const { error } = await getClient().rpc('fn_update_event', {
+    p_id: id,
+    p_name: params.name,
+    p_location: params.location ?? null,
+    p_dt_start: params.dtStart ?? null,
+    p_dt_end: params.dtEnd ?? null,
+    p_url_event: params.urlEvent ?? null,
+    p_country: params.country ?? null,
+    p_venue_address: params.venueAddress ?? null,
+    p_invitation: params.invitation ?? null,
+    p_entry_fee: params.entryFee ?? null,
+  })
+  if (error) throw error
+}
+
+export async function updateEventStatus(id: number, status: string): Promise<void> {
+  const { error } = await getClient()
+    .from('tbl_event')
+    .update({ enum_status: status })
+    .eq('id_event', id)
+  if (error) throw error
+}
+
+export async function deleteEventCascade(id: number): Promise<void> {
+  const { error } = await getClient().rpc('fn_delete_event_cascade', { p_id: id })
+  if (error) throw error
+}
+
+export async function fetchTournaments(eventId: number): Promise<Tournament[]> {
+  const { data, error } = await getClient()
+    .from('tbl_tournament')
+    .select('*')
+    .eq('id_event', eventId)
+    .order('dt_tournament')
+  if (error) throw error
+  return data ?? []
+}
+
+export async function createTournament(params: CreateTournamentParams): Promise<number> {
+  const { data, error } = await getClient().rpc('fn_create_tournament', {
+    p_id_event: params.idEvent,
+    p_code: params.code,
+    p_name: params.name,
+    p_type: params.type,
+    p_weapon: params.weapon,
+    p_gender: params.gender,
+    p_age_category: params.ageCategory,
+    p_dt_tournament: params.dtTournament ?? null,
+    p_participant_count: params.participantCount ?? null,
+    p_url_results: params.urlResults ?? null,
+  })
+  if (error) throw error
+  return data as number
+}
+
+export async function updateTournament(id: number, params: UpdateTournamentParams): Promise<void> {
+  const { error } = await getClient().rpc('fn_update_tournament', {
+    p_id: id,
+    p_url_results: params.urlResults ?? null,
+    p_import_status: params.importStatus ?? null,
+    p_status_reason: params.statusReason ?? null,
+  })
+  if (error) throw error
+}
+
+export async function deleteTournamentCascade(id: number): Promise<void> {
+  const { error } = await getClient().rpc('fn_delete_tournament_cascade', { p_id: id })
   if (error) throw error
 }
