@@ -454,6 +454,14 @@ class TestBirthYearEstimation:
         """4.21 V4 → season_end_year - 70."""
         assert estimate_birth_year("V4", 2025) == 1955
 
+    def test_v1_category(self):
+        """9.83 V1 → season_end_year - 40."""
+        assert estimate_birth_year("V1", 2025) == 1985
+
+    def test_v3_category(self):
+        """9.84 V3 → season_end_year - 60."""
+        assert estimate_birth_year("V3", 2025) == 1965
+
     def test_unknown_category_raises(self):
         """Unknown category raises ValueError."""
         with pytest.raises(ValueError, match="Unknown age category"):
