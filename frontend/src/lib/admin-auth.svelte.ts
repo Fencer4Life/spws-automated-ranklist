@@ -47,6 +47,13 @@ export async function signIn(email: string, password: string) {
       return
     }
 
+    // Skip MFA entirely on localhost (local dev convenience)
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    if (isLocalhost) {
+      step = 'authenticated'
+      return
+    }
+
     // Check MFA enrollment
     const { data: factors, error: factorError } = await getClient().auth.mfa.listFactors()
     if (factorError) {

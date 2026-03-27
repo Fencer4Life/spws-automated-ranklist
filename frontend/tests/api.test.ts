@@ -102,7 +102,7 @@ describe('fetchCalendarEvents', () => {
         id_event: 1, txt_code: 'EVT-1', txt_name: 'Event 1', id_season: 1,
         txt_season_code: '2024/25', txt_location: 'Warszawa', txt_country: 'POL',
         txt_venue_address: null, url_invitation: 'https://example.com/inv.pdf',
-        num_entry_fee: 50, dt_start: '2024-11-15', dt_end: '2024-11-16',
+        num_entry_fee: 50, txt_entry_fee_currency: 'PLN', dt_start: '2024-11-15', dt_end: '2024-11-16',
         url_event: null, enum_status: 'COMPLETED',
         num_tournaments: 2, bool_has_international: false,
       },
@@ -131,7 +131,8 @@ describe('CalendarEvent type', () => {
       id_event: 1, txt_code: 'E1', txt_name: 'Test', id_season: 1,
       txt_season_code: '2024/25', txt_location: 'Here', txt_country: 'POL',
       txt_venue_address: '123 St', url_invitation: 'https://ex.com',
-      num_entry_fee: 50, dt_start: '2024-01-01', dt_end: '2024-01-02',
+      num_entry_fee: 50, txt_entry_fee_currency: 'PLN',
+      dt_start: '2024-01-01', dt_end: '2024-01-02',
       url_event: 'https://ex.com', enum_status: 'COMPLETED' as const,
       num_tournaments: 3, bool_has_international: true,
     }
@@ -139,7 +140,7 @@ describe('CalendarEvent type', () => {
     const requiredFields = [
       'id_event', 'txt_code', 'txt_name', 'id_season', 'txt_season_code',
       'txt_location', 'txt_country', 'txt_venue_address', 'url_invitation',
-      'num_entry_fee', 'dt_start', 'dt_end', 'url_event', 'enum_status',
+      'num_entry_fee', 'txt_entry_fee_currency', 'dt_start', 'dt_end', 'url_event', 'enum_status',
       'num_tournaments', 'bool_has_international',
     ]
     for (const field of requiredFields) {

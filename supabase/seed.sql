@@ -25,7 +25,8 @@ VALUES ('SPWS-2025-2026', '2025-08-01', '2026-07-15', TRUE);   -- active (no tou
 -- Organizers
 INSERT INTO tbl_organizer (txt_code, txt_name) VALUES
     ('SPWS', 'Stowarzyszenie Polskich Weteranów Szermierki'),
-    ('EVF',  'European Veterans Fencing');
+    ('EVF',  'European Veterans Fencing'),
+    ('FIE',  'Fédération Internationale d''Escrime');
 
 -- Master fencer list (270 members) loaded from seed_tbl_fencer.sql via config.toml
 -- Sample events/tournaments removed; real data auto-loaded from data/**/

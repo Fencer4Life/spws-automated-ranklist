@@ -1544,7 +1544,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-45 | Calendar view: mobile-friendly layout | UC21(e) | 8.46 | Covered (M8) |
 | FR-46 | Admin authentication: Supabase Auth + TOTP MFA (supersedes client-side password gate) | UC22(a), ADR-016 | 9.01–9.17 | Covered (M9, T9.0) |
 | FR-47 | Season CRUD via web UI | UC22(b) | 9.18–9.22, 9.27, 9.37–9.42 | Covered (M9, T9.1 SQL + T9.2 UI) |
-| FR-48 | tbl_event schema extension: 4 new columns (txt_country, txt_venue_address, url_invitation, num_entry_fee) | UC22(c), UC21(d) | 8.05–8.10 | Covered (M8) |
+| FR-48 | tbl_event schema extension: 6 columns (txt_country, txt_venue_address, url_invitation, num_entry_fee, txt_entry_fee_currency, arr_weapons) | UC22(c), UC21(d) | 8.05–8.10 | Covered (M8+M9) |
 | FR-49 | Tournament CRUD nested under events | UC22(d) | 9.25–9.26, 9.29, 9.50–9.55 | Covered (M9, T9.1 SQL + T9.4 UI) |
 | FR-50 | Delete cascade (event → tournaments → results) | UC22(e) | 9.30–9.36 | Covered (M9, T9.1) |
 | FR-51 | Tournament re-import in single transaction | UC23(a-f) | — | Planned (M9) |

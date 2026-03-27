@@ -17,6 +17,7 @@ const makeEvent = (overrides: Partial<CalendarEvent> = {}): CalendarEvent => ({
   txt_venue_address: null,
   url_invitation: null,
   num_entry_fee: null,
+  txt_entry_fee_currency: null,
   dt_start: '2024-09-28',
   dt_end: '2024-09-28',
   url_event: null,
@@ -58,6 +59,8 @@ const EVENTS: CalendarEvent[] = [
     bool_has_international: true,
     url_invitation: 'https://example.com/invite',
     url_event: 'https://example.com/results',
+    num_entry_fee: 50,
+    txt_entry_fee_currency: 'EUR',
   }),
   makeEvent({
     id_event: 4,
@@ -75,29 +78,29 @@ describe('CalendarView (T8.5)', () => {
   // 8.38 — Renders events in chronological order
   it('renders events in chronological order', () => {
     const { container } = render(CalendarView, { props: { events: EVENTS } })
-    const cards = container.querySelectorAll('.event-card')
-    expect(cards.length).toBeGreaterThanOrEqual(3)
-    // First card should be September (earliest)
-    expect(cards[0].textContent).toContain('I Puchar Polski')
+    const items = container.querySelectorAll('.timeline-event')
+    expect(items.length).toBeGreaterThanOrEqual(3)
+    // First item should be September (earliest)
+    expect(items[0].textContent).toContain('I Puchar Polski')
   })
 
   // 8.39 — Groups events by month with month headers
   it('groups events by month with month headers', () => {
     const { container } = render(CalendarView, { props: { events: EVENTS } })
-    const monthHeaders = container.querySelectorAll('.month-header')
+    const monthHeaders = container.querySelectorAll('.timeline-month')
     expect(monthHeaders.length).toBeGreaterThanOrEqual(2)
   })
 
   // 8.40 — Event card shows date, name, location, tournament count
-  it('shows date, name, location, tournament count on event card', () => {
+  it('shows date, name, location, tournament count on timeline event', () => {
     const { container } = render(CalendarView, {
       props: { events: [EVENTS[0]] },
     })
-    const card = container.querySelector('.event-card')
-    expect(card).not.toBeNull()
-    expect(card!.textContent).toContain('I Puchar Polski')
-    expect(card!.textContent).toContain('Konin')
-    expect(card!.textContent).toContain('5')
+    const item = container.querySelector('.timeline-event')
+    expect(item).not.toBeNull()
+    expect(item!.textContent).toContain('I Puchar Polski')
+    expect(item!.textContent).toContain('Konin')
+    expect(item!.textContent).toContain('5')
   })
 
   // 8.41 — Status badge color-coded
@@ -134,18 +137,18 @@ describe('CalendarView (T8.5)', () => {
     const { container } = render(CalendarView, { props: { events: EVENTS } })
 
     // Default: all events shown
-    let cards = container.querySelectorAll('.event-card')
-    expect(cards.length).toBe(4)
+    let items = container.querySelectorAll('.timeline-event')
+    expect(items.length).toBe(4)
 
     // Select "future" filter
     const select = container.querySelector('.time-filter-select') as HTMLSelectElement
     expect(select).not.toBeNull()
     await fireEvent.change(select, { target: { value: 'future' } })
 
-    // Only future events (dt_start > today 2026-03-26)
-    cards = container.querySelectorAll('.event-card')
-    expect(cards.length).toBe(1)
-    expect(cards[0].textContent).toContain('IV Puchar Polski')
+    // Only future events (dt_start > today 2026-03-27)
+    items = container.querySelectorAll('.timeline-event')
+    expect(items.length).toBe(1)
+    expect(items[0].textContent).toContain('IV Puchar Polski')
   })
 
   // 8.45 — PPW shows domestic only; +EVF shows all events
@@ -161,8 +164,8 @@ describe('CalendarView (T8.5)', () => {
     await fireEvent.click(ppwBtn!)
 
     // Only domestic events (3 out of 4)
-    let cards = container.querySelectorAll('.event-card')
-    expect(cards.length).toBe(3)
+    let items = container.querySelectorAll('.timeline-event')
+    expect(items.length).toBe(3)
 
     // Click +EVF filter
     const evfBtn = Array.from(modeBtns).find((btn) =>
@@ -171,20 +174,18 @@ describe('CalendarView (T8.5)', () => {
     await fireEvent.click(evfBtn!)
 
     // All events shown
-    cards = container.querySelectorAll('.event-card')
-    expect(cards.length).toBe(4)
+    items = container.querySelectorAll('.timeline-event')
+    expect(items.length).toBe(4)
   })
 
   // 8.46 — Mobile layout: cards stack at 375px viewport
-  it('renders event cards as block elements (stackable)', () => {
+  it('renders timeline events as block elements (stackable)', () => {
     const { container } = render(CalendarView, {
       props: { events: [EVENTS[0]] },
     })
-    const card = container.querySelector('.event-card')
-    expect(card).not.toBeNull()
-    // Card should be a block-level element (no inline/flex wrapping)
-    // This is a structural check — actual responsive behavior tested in Playwright
-    expect(card!.tagName).toBe('DIV')
+    const item = container.querySelector('.timeline-event')
+    expect(item).not.toBeNull()
+    expect(item!.tagName).toBe('DIV')
   })
 
   // 8.76 — Results link shown when COMPLETED + url_event set
@@ -217,12 +218,12 @@ describe('CalendarView (T8.5)', () => {
     const { container, rerender } = render(CalendarView, {
       props: { events: EVENTS },
     })
-    let cards = container.querySelectorAll('.event-card')
-    expect(cards.length).toBe(4)
+    let items = container.querySelectorAll('.timeline-event')
+    expect(items.length).toBe(4)
 
     // Simulate season change: pass only 1 event
     rerender({ events: [EVENTS[0]] })
-    cards = container.querySelectorAll('.event-card')
-    expect(cards.length).toBe(1)
+    items = container.querySelectorAll('.timeline-event')
+    expect(items.length).toBe(1)
   })
 })
