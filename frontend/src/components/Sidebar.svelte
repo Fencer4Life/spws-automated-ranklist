@@ -27,6 +27,11 @@
   </ul>
 
   {#if isAdmin}
+    <div class="admin-session">
+      <span class="admin-badge">ADMIN</span>
+      <span class="admin-timer">{adminTimerText}</span>
+      <button class="admin-logout-btn" onclick={onlogout}>{t('admin_logout')}</button>
+    </div>
     <div class="admin-section">
       <div class="admin-section-title">{t('admin_section')}</div>
       <ul class="nav-list">
@@ -47,14 +52,18 @@
     open = false,
     currentView = 'ranklist' as AppView,
     isAdmin = false,
+    adminTimerText = '',
     onnavigate = (_view: AppView) => {},
     onclose = () => {},
+    onlogout = () => {},
   }: {
     open?: boolean
     currentView?: AppView
     isAdmin?: boolean
+    adminTimerText?: string
     onnavigate?: (view: AppView) => void
     onclose?: () => void
+    onlogout?: () => void
   } = $props()
 </script>
 
@@ -115,7 +124,6 @@
     background: #eef3fb;
   }
   .admin-section {
-    margin-top: auto;
     border-top: 1px solid #e0e0e0;
     padding-top: 8px;
   }
@@ -129,5 +137,37 @@
   }
   .admin-item {
     color: #ff6b35;
+  }
+  .admin-session {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-top: 1px solid #e0e0e0;
+    margin-top: auto;
+  }
+  .admin-badge {
+    background: #ff6b35;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+  .admin-timer {
+    font-size: 11px;
+    color: #999;
+  }
+  .admin-logout-btn {
+    margin-left: auto;
+    color: #ff6b35;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .admin-logout-btn:hover {
+    text-decoration: underline;
   }
 </style>

@@ -240,15 +240,26 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 - `fn_delete_event_cascade` loops child tournaments via `fn_delete_tournament_cascade` (manual cascade, not FK CASCADE, preserves audit trail per ADR-014)
 - All 9 functions: REVOKE from `anon, PUBLIC`, GRANT to `authenticated` (ADR-016)
 
-**Remaining scope:**
-- Tournament import UI: URL scraping tab (deferred), event batch import (T9.6)
-- Identity resolution admin UI (T9.7) — UI designed in M8 mockups (`m8_identity_resolution.html`)
-- Sidebar wiring + admin view routing (T9.8)
+**Post-T9.10 schema extensions (2026-03-27):**
+- Added `txt_entry_fee_currency TEXT` to `tbl_event` (migration 000004) + updated CRUD functions (migration 000005)
+- Added `arr_weapons enum_weapon_type[]` to `tbl_event` with default `{EPEE,FOIL,SABRE}` (migration 000006) + updated CRUD functions (migration 000007)
+- Recreated `vw_calendar` to include both new columns + organizer name join
+- Updated `EventManager.svelte`: weapon checkboxes (3× EPEE/FOIL/SABRE), currency select (PLN/EUR/USD), weapons display in event rows
+- Updated `CalendarView.svelte`: weapons display below location ("Szpada + Floret + Szabla" format)
+- Updated `api.ts` and `types.ts`: `p_weapons` and `p_entry_fee_currency` params in create/update RPC calls
+- FR-48 expanded from 4 to 6 columns (RTM updated)
+
+**Admin view wiring completion (2026-03-27):**
+- Wired all 4 admin views in `App.svelte` with actual data loading (seasons, events, scoring config, identity candidates)
+- Admin session timer moved from `AdminFloatingToolbar` to `Sidebar` (59min countdown + logout button)
+- `ScoringConfigEditor` fully i18n-ized (34 new `sc_*` keys in pl.json/en.json)
+- Season selector context-aware: triggers appropriate reload per active view
+
+**Remaining scope (M9b):**
 - Automated ingestion pipeline (`ingest.yml`): scheduled + manual dispatch (T9.14)
 - Orchestration script: scrape → match → score (T9.11)
-- File import parsers: .xlsx, .xls, .json, .csv (T9.10)
 - EVF calendar import (T9.12, T9.13) — UI designed in M8 mockups (`m8_evf_import.html`)
-- POC test gap coverage: FR-10, FR-14, FR-23, FR-40, NFR-10 (T9.9)
+- Tournament import UI: URL scraping tab (deferred from T9.5/T9.6)
 
 ---
 

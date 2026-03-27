@@ -20,34 +20,45 @@
   </div>
 
   {#each monthGroups as group}
-    <div class="month-header">{group.label}</div>
-    {#each group.events as event}
-      <div class="event-card" class:international={event.bool_has_international}>
-        <div class="event-top">
-          <span class="event-date">{formatDate(event.dt_start)}</span>
-          <span class="event-name">{event.txt_name}</span>
-        </div>
-        {#if event.txt_location}
-          <div class="event-loc">{event.txt_location}{event.txt_country ? ', ' + event.txt_country : ''}</div>
+    <div class="timeline-month">{group.label}</div>
+    {#each group.events as event, i}
+      <div
+        class="timeline-event"
+        class:completed={event.enum_status === 'COMPLETED'}
+        class:international={event.bool_has_international}
+      >
+        {#if i < group.events.length - 1}
+          <div class="timeline-line"></div>
         {/if}
-        <div class="event-meta">
-          {#if event.enum_status === 'COMPLETED' && event.url_event}
-            <a class="results-link" href={event.url_event} target="_blank" rel="noopener">
-              {t('event_results')} &rarr;
-            </a>
+        <div class="timeline-date">{formatDate(event.dt_start)}</div>
+        <div class="timeline-info">
+          <div class="timeline-name">{event.txt_name}</div>
+          {#if event.txt_location}
+            <div class="timeline-loc">
+              {event.txt_location}{event.txt_country ? ', ' + event.txt_country : ''} · {event.num_tournaments} {t('tournaments_count')}
+            </div>
+          {:else}
+            <div class="timeline-loc">{event.num_tournaments} {t('tournaments_count')}</div>
           {/if}
-          {#if event.url_invitation}
-            <a class="invitation-link" href={event.url_invitation} target="_blank" rel="noopener">
-              {t('organizer_announcement')} &rarr;
-            </a>
+          {#if event.arr_weapons?.length}
+            <div class="timeline-weapons">{formatWeapons(event.arr_weapons)}</div>
           {/if}
+          <div class="timeline-meta">
+            <span class="status-badge {statusClass(event.enum_status)}">{statusLabel(event.enum_status)}</span>
+            {#if event.enum_status === 'COMPLETED' && event.url_event}
+              <a class="results-link" href={event.url_event} target="_blank" rel="noopener">
+                {t('event_results')} &rarr;
+              </a>
+            {/if}
+            {#if event.url_invitation}
+              <a class="invitation-link" href={event.url_invitation} target="_blank" rel="noopener">
+                {t('organizer_announcement')} &rarr;
+              </a>
+            {/if}
+          </div>
           {#if event.num_entry_fee != null}
-            <span class="entry-fee">{t('entry_fee')}: {event.num_entry_fee} PLN</span>
+            <div class="timeline-fee">{t('entry_fee')}: {event.num_entry_fee} {event.txt_entry_fee_currency ?? 'PLN'}</div>
           {/if}
-        </div>
-        <div class="event-bottom">
-          <span class="tournament-count">{event.num_tournaments} {t('tournaments_count')}</span>
-          <span class="status-badge {statusClass(event.enum_status)}">{statusLabel(event.enum_status)}</span>
         </div>
       </div>
     {/each}
@@ -59,8 +70,20 @@
 </div>
 
 <script lang="ts">
-  import type { CalendarEvent, EventStatus } from '../lib/types'
+  import type { CalendarEvent, EventStatus, WeaponType } from '../lib/types'
   import { t } from '../lib/locale.svelte'
+
+  function weaponLabel(w: WeaponType): string {
+    switch (w) {
+      case 'EPEE': return t('epee')
+      case 'FOIL': return t('foil')
+      case 'SABRE': return t('sabre')
+    }
+  }
+
+  function formatWeapons(weapons: WeaponType[]): string {
+    return weapons.map(weaponLabel).join(' + ')
+  }
 
   let {
     events = [] as CalendarEvent[],
@@ -109,7 +132,7 @@
     if (yearMonth === 'unknown') return '—'
     const [y, m] = yearMonth.split('-')
     const monthIdx = parseInt(m, 10) - 1
-    return `— ${MONTH_NAMES_PL[monthIdx]} ${y} —`
+    return `${MONTH_NAMES_PL[monthIdx]} ${y}`
   }
 
   function formatDate(dt: string | null): string {
@@ -185,57 +208,86 @@
     background: #fff;
     cursor: pointer;
   }
-  .month-header {
+  .timeline-month {
     font-size: 13px;
     font-weight: 700;
     color: #888;
     letter-spacing: 1px;
     text-transform: uppercase;
-    padding: 12px 0 8px;
-    text-align: center;
-    border-bottom: 1px solid #eee;
-    margin-bottom: 10px;
+    padding: 14px 0 8px;
   }
-  .event-card {
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 12px 14px;
-    margin-bottom: 10px;
-    background: #fff;
-  }
-  .event-card.international {
-    border-left: 4px solid #d4a017;
-  }
-  .event-top {
+  .timeline-event {
     display: flex;
-    gap: 10px;
-    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 14px;
+    position: relative;
+    padding-left: 20px;
   }
-  .event-date {
+  .timeline-event::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #4a90d9;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px #4a90d9;
+  }
+  .timeline-event.completed::before {
+    background: #1a7f37;
+    box-shadow: 0 0 0 1px #1a7f37;
+  }
+  .timeline-event.international::before {
+    background: #d4a017;
+    box-shadow: 0 0 0 1px #d4a017;
+  }
+  .timeline-line {
+    position: absolute;
+    left: 4px;
+    top: 20px;
+    bottom: -14px;
+    width: 2px;
+    background: #e0e0e0;
+  }
+  .timeline-date {
     font-weight: 700;
-    font-size: 14px;
+    font-size: 13px;
     color: #4a90d9;
     white-space: nowrap;
+    min-width: 50px;
+    padding-top: 2px;
   }
-  .event-name {
+  .timeline-info {
+    flex: 1;
+  }
+  .timeline-name {
     font-size: 14px;
     font-weight: 600;
     color: #222;
   }
-  .event-loc {
-    font-size: 13px;
-    color: #666;
-    margin-top: 3px;
-  }
-  .event-bottom {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 6px;
-  }
-  .tournament-count {
+  .timeline-loc {
     font-size: 12px;
     color: #888;
+    margin-top: 2px;
+  }
+  .timeline-weapons {
+    font-size: 11px;
+    color: #4a90d9;
+    margin-top: 3px;
+  }
+  .timeline-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+  .timeline-fee {
+    font-size: 11px;
+    color: #666;
+    margin-top: 3px;
   }
   .status-badge {
     font-size: 12px;
@@ -249,14 +301,8 @@
   .status-planned { background: #f0f0f0; color: #666; }
   .status-cancelled { background: #ffeef0; color: #c33; }
   .status-inprogress { background: #fff4e6; color: #b35c00; }
-  .event-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-top: 4px;
-    font-size: 12px;
-  }
   .results-link {
+    font-size: 11px;
     color: #1a7f37;
     text-decoration: none;
     font-weight: 600;
@@ -265,14 +311,12 @@
     text-decoration: underline;
   }
   .invitation-link {
+    font-size: 11px;
     color: #4a90d9;
     text-decoration: none;
   }
   .invitation-link:hover {
     text-decoration: underline;
-  }
-  .entry-fee {
-    color: #666;
   }
   .no-events {
     text-align: center;

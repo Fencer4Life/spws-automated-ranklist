@@ -27,6 +27,7 @@ const MOCK_EVENTS: CalendarEvent[] = [
     txt_venue_address: 'ul. Pułaskiego 15',
     url_invitation: 'https://example.com/invite',
     num_entry_fee: 80,
+    txt_entry_fee_currency: 'PLN',
     dt_start: '2025-01-15',
     dt_end: '2025-01-15',
     url_event: 'https://example.com/event',
@@ -45,6 +46,7 @@ const MOCK_EVENTS: CalendarEvent[] = [
     txt_venue_address: null,
     url_invitation: null,
     num_entry_fee: null,
+    txt_entry_fee_currency: null,
     dt_start: '2025-02-20',
     dt_end: '2025-02-20',
     url_event: null,
@@ -105,6 +107,8 @@ describe('EventManager (T9.3)', () => {
     expect(form.querySelector('[data-field="form-venue"]')).not.toBeNull()
     expect(form.querySelector('[data-field="form-invitation"]')).not.toBeNull()
     expect(form.querySelector('[data-field="form-entry-fee"]')).not.toBeNull()
+    expect(form.querySelector('[data-field="form-url-event"]')).not.toBeNull()
+    expect(form.querySelector('[data-field="form-currency"]')).not.toBeNull()
 
     const orgSelect = form.querySelector('[data-field="form-organizer"]') as HTMLSelectElement
     expect(orgSelect).not.toBeNull()
@@ -128,6 +132,12 @@ describe('EventManager (T9.3)', () => {
     expect(nameInput.value).toBe('PPW Wrocław Szpada')
     expect(locationInput.value).toBe('Wrocław')
     expect(countryInput.value).toBe('PL')
+
+    const urlEventInput = form.querySelector('[data-field="form-url-event"]') as HTMLInputElement
+    expect(urlEventInput.value).toBe('https://example.com/event')
+
+    const currencySelect = form.querySelector('[data-field="form-currency"]') as HTMLSelectElement
+    expect(currencySelect.value).toBe('PLN')
   })
 
   // 9.47 — Delete button calls ondelete with event id

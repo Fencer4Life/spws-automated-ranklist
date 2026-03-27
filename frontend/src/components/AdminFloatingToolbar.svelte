@@ -49,17 +49,17 @@
 <style>
   .floating-toolbar {
     position: fixed;
-    bottom: 12px;
-    left: 12px;
+    top: 6px;
+    right: 12px;
     background: #2c3e50;
     color: #fff;
     border-radius: 8px;
-    padding: 10px 14px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    font-size: 12px;
+    padding: 6px 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    font-size: 11px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     z-index: 150;
   }
   .admin-badge {

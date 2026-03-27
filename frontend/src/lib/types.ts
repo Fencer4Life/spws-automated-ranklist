@@ -93,13 +93,17 @@ export interface CalendarEvent {
   txt_name: string
   id_season: number
   txt_season_code: string
+  id_organizer: number | null
+  txt_organizer_name: string | null
   txt_location: string | null
   txt_country: string | null
   txt_venue_address: string | null
   url_invitation: string | null
   num_entry_fee: number | null
+  txt_entry_fee_currency: string | null
   dt_start: string | null
   dt_end: string | null
+  arr_weapons: WeaponType[]
   url_event: string | null
   enum_status: EventStatus
   num_tournaments: number
@@ -185,6 +189,8 @@ export interface CreateEventParams {
   venueAddress?: string
   invitation?: string
   entryFee?: number
+  entryFeeCurrency?: string
+  weapons?: WeaponType[]
 }
 
 export interface UpdateEventParams {
@@ -197,6 +203,9 @@ export interface UpdateEventParams {
   venueAddress?: string
   invitation?: string
   entryFee?: number
+  entryFeeCurrency?: string
+  organizerId?: number
+  weapons?: WeaponType[]
 }
 
 export type MatchStatus = 'PENDING' | 'AUTO_MATCHED' | 'UNMATCHED' | 'APPROVED' | 'NEW_FENCER' | 'DISMISSED'

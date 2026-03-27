@@ -17,6 +17,7 @@ const MOCK_EVENT: CalendarEvent = {
   txt_venue_address: null,
   url_invitation: null,
   num_entry_fee: null,
+  txt_entry_fee_currency: null,
   dt_start: '2025-01-15',
   dt_end: '2025-01-16',
   url_event: 'https://example.com/pp1',

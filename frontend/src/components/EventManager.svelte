@@ -34,21 +34,43 @@
           <input data-field="form-venue" type="text" bind:value={draftVenue} />
         </label>
         <label>
+          {t('event_results_url_label')}
+          <input data-field="form-url-event" type="text" bind:value={draftUrlEvent} />
+        </label>
+        <label>
           {t('event_invitation_label')}
           <input data-field="form-invitation" type="text" bind:value={draftInvitation} />
         </label>
         <label>
           {t('event_entry_fee_label')}
-          <input data-field="form-entry-fee" type="number" bind:value={draftEntryFee} />
+          <div class="fee-row">
+            <input data-field="form-entry-fee" type="number" bind:value={draftEntryFee} />
+            <select data-field="form-currency" bind:value={draftCurrency}>
+              <option value="PLN">PLN</option>
+              <option value="EUR">EUR</option>
+              <option value="USD">USD</option>
+            </select>
+          </div>
         </label>
         <label>
           {t('event_organizer_label')}
           <select data-field="form-organizer" bind:value={draftOrganizerId}>
             <option value={0}>--</option>
             {#each organizers as org}
-              <option value={org.id_organizer}>{org.txt_name}</option>
+              <option value={org.id_organizer}>{org.txt_code}</option>
             {/each}
           </select>
+        </label>
+        <label>
+          {t('event_weapons_label')}
+          <div data-field="form-weapons" class="weapons-row">
+            {#each WEAPON_OPTIONS as w}
+              <label class="weapon-check">
+                <input type="checkbox" checked={draftWeapons.has(w)} onchange={() => { toggleWeapon(w) }} />
+                {weaponLabel(w)}
+              </label>
+            {/each}
+          </div>
         </label>
         <div class="form-actions">
           <button data-field="form-save-btn" class="save-btn" onclick={() => { handleSave() }}>
@@ -66,6 +88,7 @@
         <div data-field="event-row" class="event-row">
           <span data-field="event-name" class="event-cell">{event.txt_name}</span>
           <span data-field="event-location" class="event-cell">{event.txt_location ?? ''}</span>
+          <span data-field="event-weapons" class="event-cell event-weapons">{formatWeapons(event.arr_weapons ?? [])}</span>
           <span data-field="event-dates" class="event-cell">{event.dt_start ?? ''}{event.dt_end && event.dt_end !== event.dt_start ? ` – ${event.dt_end}` : ''}</span>
           <span data-field="event-status-badge" class="event-cell status-badge {statusClass(event.enum_status)}">{event.enum_status}</span>
           <span class="event-cell">
@@ -89,7 +112,7 @@
 {/if}
 
 <script lang="ts">
-  import type { CalendarEvent, Season, Organizer } from '../lib/types'
+  import type { CalendarEvent, Season, Organizer, WeaponType } from '../lib/types'
   import { t } from '../lib/locale.svelte'
 
   const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -133,7 +156,34 @@
   let draftVenue = $state('')
   let draftInvitation = $state('')
   let draftEntryFee: number | null = $state(null)
+  let draftCurrency = $state('PLN')
+  let draftUrlEvent = $state('')
   let draftOrganizerId = $state(0)
+  let draftWeapons: Set<WeaponType> = $state(new Set(['EPEE', 'FOIL', 'SABRE']))
+
+  const WEAPON_OPTIONS: WeaponType[] = ['EPEE', 'FOIL', 'SABRE']
+
+  function toggleWeapon(w: WeaponType) {
+    const next = new Set(draftWeapons)
+    if (next.has(w)) {
+      if (next.size > 1) next.delete(w)  // keep at least one
+    } else {
+      next.add(w)
+    }
+    draftWeapons = next
+  }
+
+  function weaponLabel(w: WeaponType): string {
+    switch (w) {
+      case 'EPEE': return t('epee')
+      case 'FOIL': return t('foil')
+      case 'SABRE': return t('sabre')
+    }
+  }
+
+  function formatWeapons(weapons: WeaponType[]): string {
+    return weapons.map(weaponLabel).join(' + ')
+  }
 
   let filteredEvents = $derived(
     selectedSeasonId != null
@@ -163,7 +213,10 @@
     draftVenue = ''
     draftInvitation = ''
     draftEntryFee = null
+    draftCurrency = 'PLN'
+    draftUrlEvent = ''
     draftOrganizerId = 0
+    draftWeapons = new Set(['EPEE', 'FOIL', 'SABRE'] as WeaponType[])
     showForm = true
   }
 
@@ -177,7 +230,10 @@
     draftVenue = event.txt_venue_address ?? ''
     draftInvitation = event.url_invitation ?? ''
     draftEntryFee = event.num_entry_fee
-    draftOrganizerId = 0
+    draftCurrency = event.txt_entry_fee_currency ?? 'PLN'
+    draftUrlEvent = event.url_event ?? ''
+    draftOrganizerId = event.id_organizer ?? 0
+    draftWeapons = new Set((event.arr_weapons ?? ['EPEE', 'FOIL', 'SABRE']) as WeaponType[])
     showForm = true
   }
 
@@ -192,11 +248,14 @@
       location: draftLocation || undefined,
       dtStart: draftDtStart || undefined,
       dtEnd: draftDtEnd || undefined,
+      urlEvent: draftUrlEvent || undefined,
       country: draftCountry || undefined,
       venueAddress: draftVenue || undefined,
       invitation: draftInvitation || undefined,
       entryFee: draftEntryFee ?? undefined,
+      entryFeeCurrency: draftCurrency || undefined,
       organizerId: draftOrganizerId || undefined,
+      weapons: [...draftWeapons],
     }
     if (editingId != null) {
       onupdate(editingId, params)
@@ -264,6 +323,33 @@
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 14px;
+  }
+  .weapons-row {
+    display: flex;
+    gap: 10px;
+  }
+  .weapon-check {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .event-weapons {
+    font-size: 12px;
+    color: #4a90d9;
+  }
+  .fee-row {
+    display: flex;
+    gap: 6px;
+  }
+  .fee-row input {
+    flex: 1;
+    min-width: 80px;
+  }
+  .fee-row select {
+    width: 70px;
   }
   .form-actions {
     display: flex;

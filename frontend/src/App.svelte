@@ -2,8 +2,10 @@
   open={sidebarOpen}
   currentView={currentView}
   isAdmin={isAdmin}
-  onnavigate={(view) => { currentView = view; if (view === 'calendar') loadCalendar() }}
+  {adminTimerText}
+  onnavigate={(view) => { navigateTo(view) }}
   onclose={() => { sidebarOpen = false }}
+  onlogout={() => { signOut() }}
 />
 
 <div class="ranklist-app">
@@ -19,10 +21,10 @@
     {/if}
     <h2 class="app-title">
       <img src="SPWS-logo.png" alt="SPWS" class="header-logo" />
-      {currentView === 'ranklist' ? t('app_title') : t('calendar_title')}
+      {currentView === 'ranklist' ? t('app_title') : currentView === 'calendar' ? t('calendar_title') : currentView === 'admin_seasons' ? t('nav_admin_seasons') : currentView === 'admin_events' ? t('nav_admin_events') : currentView === 'admin_identities' ? t('nav_admin_identities') : currentView === 'admin_scoring' ? t('nav_admin_scoring') : t('app_title')}
     </h2>
     <div class="season-selector">
-      <select bind:value={selectedSeasonId} onchange={loadRanking}>
+      <select bind:value={selectedSeasonId} onchange={handleSeasonChange}>
         {#each seasons as s}
           <option value={s.id_season}>{s.txt_code}{s.bool_active ? ' ' + t('season_active') : ''}</option>
         {/each}
@@ -68,6 +70,41 @@
     />
   {:else if currentView === 'calendar'}
     <CalendarView events={calendarEvents} />
+  {:else if currentView === 'admin_seasons'}
+    <SeasonManager
+      {seasons}
+      isAdmin={isAdmin}
+      oncreate={handleCreateSeason}
+      onupdate={handleUpdateSeason}
+      ondelete={handleDeleteSeason}
+    />
+  {:else if currentView === 'admin_events'}
+    <EventManager
+      events={calendarEvents}
+      {seasons}
+      {organizers}
+      selectedSeasonId={selectedSeasonId}
+      isAdmin={isAdmin}
+      oncreate={handleCreateEvent}
+      onupdate={handleUpdateEvent}
+      onupdatestatus={handleUpdateEventStatus}
+      ondelete={handleDeleteEvent}
+    />
+  {:else if currentView === 'admin_identities'}
+    <IdentityManager
+      candidates={matchCandidates}
+      isAdmin={isAdmin}
+    />
+  {:else if currentView === 'admin_scoring'}
+    {#if scoringConfig}
+      <ScoringConfigEditor
+        config={scoringConfig}
+        seasonCode={seasons.find(s => s.id_season === selectedSeasonId)?.txt_code ?? ''}
+        onsave={handleSaveScoringConfig}
+      />
+    {:else}
+      <p style="padding: 20px; color: #999;">Ładowanie konfiguracji punktacji…</p>
+    {/if}
   {/if}
 
   {#if error}
@@ -95,13 +132,6 @@
   onverify={(code) => { verifyChallenge(code) }}
 />
 
-{#if isAdmin}
-  <AdminFloatingToolbar
-    onlogout={() => { signOut() }}
-    ontimeout={() => { signOut(); startAuth() }}
-    timeoutMs={59 * 60 * 1000}
-  />
-{/if}
 
 <script lang="ts">
   import type {
@@ -120,6 +150,7 @@
     AppView,
     CalendarEvent,
   } from './lib/types'
+  import type { Organizer, ScoringConfig, MatchCandidate, CreateEventParams, UpdateEventParams } from './lib/types'
   import {
     initClient,
     fetchSeasons,
@@ -128,6 +159,16 @@
     fetchFencerScores,
     fetchRankingRules,
     fetchCalendarEvents,
+    fetchOrganizers,
+    createSeason,
+    updateSeason,
+    deleteSeason,
+    createEvent,
+    updateEvent,
+    updateEventStatus,
+    deleteEventCascade,
+    fetchScoringConfig,
+    saveScoringConfig,
   } from './lib/api'
   import {
     MOCK_SEASONS,
@@ -148,7 +189,10 @@
   import AdminSignInModal from './components/AdminSignInModal.svelte'
   import AdminMfaEnrollModal from './components/AdminMfaEnrollModal.svelte'
   import AdminMfaChallengeModal from './components/AdminMfaChallengeModal.svelte'
-  import AdminFloatingToolbar from './components/AdminFloatingToolbar.svelte'
+  import SeasonManager from './components/SeasonManager.svelte'
+  import EventManager from './components/EventManager.svelte'
+  import IdentityManager from './components/IdentityManager.svelte'
+  import ScoringConfigEditor from './components/ScoringConfigEditor.svelte'
   import { getAuthState, startAuth, signIn, confirmEnroll, verifyChallenge, signOut, reset as resetAuth } from './lib/admin-auth.svelte'
 
   let {
@@ -172,6 +216,37 @@
   const auth = getAuthState()
   let isAdmin = $derived(auth.step === 'authenticated')
 
+  // Admin session timer
+  const ADMIN_TIMEOUT_MS = 59 * 60 * 1000
+  let adminStartTime: number | null = $state(null)
+  let adminRemainingMs = $state(ADMIN_TIMEOUT_MS)
+  let adminTimerId: ReturnType<typeof setInterval> | null = null
+  let adminTimeoutId: ReturnType<typeof setTimeout> | null = null
+
+  function startAdminTimer() {
+    stopAdminTimer()
+    adminStartTime = Date.now()
+    adminRemainingMs = ADMIN_TIMEOUT_MS
+    adminTimerId = setInterval(() => {
+      adminRemainingMs = Math.max(0, ADMIN_TIMEOUT_MS - (Date.now() - (adminStartTime ?? Date.now())))
+    }, 1000)
+    adminTimeoutId = setTimeout(() => { signOut(); startAuth() }, ADMIN_TIMEOUT_MS)
+  }
+
+  function stopAdminTimer() {
+    if (adminTimerId) { clearInterval(adminTimerId); adminTimerId = null }
+    if (adminTimeoutId) { clearTimeout(adminTimeoutId); adminTimeoutId = null }
+  }
+
+  function formatAdminTimer(ms: number): string {
+    const totalMin = Math.floor(ms / 60000)
+    const h = Math.floor(totalMin / 60)
+    const m = totalMin % 60
+    return h > 0 ? `${h}h ${m}m` : `${m}m`
+  }
+
+  let adminTimerText = $derived(formatAdminTimer(adminRemainingMs))
+
   let activeEnv: Environment = $state('CERT')
   let dualEnv = $derived(!!(certUrl && certKey && prodUrl && prodKey))
   let supabaseUrl = $derived(activeEnv === 'PROD' && prodUrl ? prodUrl : certUrl)
@@ -194,6 +269,9 @@
   let rankingRules: RankingRules | null = $state(null)
 
   let calendarEvents: CalendarEvent[] = $state([])
+  let organizers: Organizer[] = $state([])
+  let scoringConfig: ScoringConfig | null = $state(null)
+  let matchCandidates: MatchCandidate[] = $state([])
 
   let modalOpen = $state(false)
   let modalFencerName = $state('')
@@ -211,6 +289,10 @@
       if (adminRequested) startAuth()
       init()
     }
+  })
+
+  $effect(() => {
+    if (isAdmin) { startAdminTimer() } else { stopAdminTimer() }
   })
 
   function initDemo() {
@@ -237,6 +319,20 @@
   function onFilterChange(f: Omit<Filters, 'season'>) {
     filters = { ...filters, ...f }
     loadRanking()
+  }
+
+  async function handleSeasonChange() {
+    if (currentView === 'ranklist') {
+      loadRanking()
+    } else if (currentView === 'calendar') {
+      loadCalendar()
+    } else if (currentView === 'admin_events') {
+      loadAdminEvents()
+    } else if (currentView === 'admin_scoring') {
+      loadScoringConfig()
+    } else {
+      loadRanking()
+    }
   }
 
   async function loadRanking() {
@@ -332,6 +428,113 @@
     modalFencerId = null
     modalScores = []
     modalContext = null
+  }
+
+  async function navigateTo(view: AppView) {
+    // Guard: admin views require auth
+    if (!isAdmin && view.startsWith('admin_')) {
+      currentView = 'ranklist'
+      return
+    }
+    currentView = view
+    if (view === 'calendar') loadCalendar()
+    else if (view === 'admin_events') loadAdminEvents()
+    else if (view === 'admin_scoring') loadScoringConfig()
+  }
+
+  async function loadAdminEvents() {
+    if (demo) return
+    try {
+      if (organizers.length === 0) {
+        organizers = await fetchOrganizers()
+      }
+      if (selectedSeasonId) {
+        calendarEvents = await fetchCalendarEvents(selectedSeasonId)
+      }
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function loadScoringConfig() {
+    if (demo || !selectedSeasonId) return
+    try {
+      scoringConfig = await fetchScoringConfig(selectedSeasonId)
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleCreateSeason(code: string, start: string, end: string) {
+    try {
+      await createSeason(code, start, end)
+      seasons = await fetchSeasons()
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleUpdateSeason(id: number, code: string, start: string, end: string) {
+    try {
+      await updateSeason(id, code, start, end)
+      seasons = await fetchSeasons()
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleDeleteSeason(id: number) {
+    try {
+      await deleteSeason(id)
+      seasons = await fetchSeasons()
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleCreateEvent(params: Record<string, unknown>) {
+    try {
+      await createEvent(params as unknown as CreateEventParams)
+      if (selectedSeasonId) calendarEvents = await fetchCalendarEvents(selectedSeasonId)
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleUpdateEvent(id: number, params: Record<string, unknown>) {
+    try {
+      await updateEvent(id, params as unknown as UpdateEventParams)
+      if (selectedSeasonId) calendarEvents = await fetchCalendarEvents(selectedSeasonId)
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleUpdateEventStatus(id: number, status: string) {
+    try {
+      await updateEventStatus(id, status)
+      if (selectedSeasonId) calendarEvents = await fetchCalendarEvents(selectedSeasonId)
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleDeleteEvent(id: number) {
+    try {
+      await deleteEventCascade(id)
+      if (selectedSeasonId) calendarEvents = await fetchCalendarEvents(selectedSeasonId)
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleSaveScoringConfig(config: ScoringConfig) {
+    try {
+      await saveScoringConfig(config as unknown as Record<string, unknown>)
+      if (selectedSeasonId) scoringConfig = await fetchScoringConfig(selectedSeasonId)
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
   }
 
   async function loadCalendar() {
