@@ -25,6 +25,7 @@ const MOCK_CONFIG: ScoringConfig = {
   psw_multiplier: 2.0,
   min_participants_evf: 5,
   min_participants_ppw: 1,
+  show_evf_toggle: false,
   ranking_rules: {
     domestic: [
       { types: ['PPW'], best: 4 },
@@ -185,4 +186,5 @@ describe('ScoringConfigEditor (T8.8)', () => {
     expect(banner).not.toBeNull()
     expect(banner!.textContent).toContain('SPWS-2024-2025')
   })
+
 })

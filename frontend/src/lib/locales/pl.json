@@ -181,6 +181,8 @@
   "sc_rule_always": "zawsze wliczane",
   "sc_add_bucket": "+ Dodaj regułę",
   "sc_export": "Eksport JSON",
+  "sc_show_evf_toggle": "Pokaż przełącznik +EVF/Kadra",
+  "sc_show_evf_hint": "Gdy włączone, przełącznik PPW/+EVF jest widoczny w widoku Rankingu i Kalendarza",
   "sc_cancel": "Anuluj",
   "sc_save": "Zapisz i przelicz"
 }

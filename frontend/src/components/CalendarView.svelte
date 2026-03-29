@@ -1,17 +1,19 @@
 <div class="calendar-view">
   <div class="calendar-filters">
-    <div class="scope-filters">
-      <button
-        class="scope-filter-btn"
-        class:active={scopeFilter === 'ppw'}
-        onclick={() => { scopeFilter = 'ppw' }}
-      >PPW</button>
-      <button
-        class="scope-filter-btn"
-        class:active={scopeFilter === 'all'}
-        onclick={() => { scopeFilter = 'all' }}
-      >+EVF</button>
-    </div>
+    {#if showEvfToggle}
+      <div class="scope-filters">
+        <button
+          class="scope-filter-btn"
+          class:active={scopeFilter === 'ppw'}
+          onclick={() => { scopeFilter = 'ppw' }}
+        >PPW</button>
+        <button
+          class="scope-filter-btn"
+          class:active={scopeFilter === 'all'}
+          onclick={() => { scopeFilter = 'all' }}
+        >+EVF</button>
+      </div>
+    {/if}
     <select class="time-filter-select" bind:value={timeFilter}>
       <option value="all">{t('filter_all')}</option>
       <option value="past">{t('filter_past')}</option>
@@ -45,17 +47,21 @@
           {/if}
           <div class="timeline-meta">
             <span class="status-badge {statusClass(event.enum_status)}">{statusLabel(event.enum_status)}</span>
-            {#if event.enum_status === 'COMPLETED' && event.url_event}
-              <a class="results-link" href={event.url_event} target="_blank" rel="noopener">
-                {t('event_results')} &rarr;
-              </a>
-            {/if}
-            {#if event.url_invitation}
-              <a class="invitation-link" href={event.url_invitation} target="_blank" rel="noopener">
-                {t('organizer_announcement')} &rarr;
-              </a>
-            {/if}
           </div>
+          {#if (event.enum_status === 'COMPLETED' && event.url_event) || event.url_invitation}
+            <div class="timeline-links">
+              {#if event.enum_status === 'COMPLETED' && event.url_event}
+                <a class="results-link" href={event.url_event} target="_blank" rel="noopener">
+                  {t('event_results')} &rarr;
+                </a>
+              {/if}
+              {#if event.url_invitation}
+                <a class="invitation-link" href={event.url_invitation} target="_blank" rel="noopener">
+                  {t('organizer_announcement')} &rarr;
+                </a>
+              {/if}
+            </div>
+          {/if}
           {#if event.num_entry_fee != null}
             <div class="timeline-fee">{t('entry_fee')}: {event.num_entry_fee} {event.txt_entry_fee_currency ?? 'PLN'}</div>
           {/if}
@@ -87,18 +93,20 @@
 
   let {
     events = [] as CalendarEvent[],
+    showEvfToggle = false,
   }: {
     events?: CalendarEvent[]
+    showEvfToggle?: boolean
   } = $props()
 
   let timeFilter: 'all' | 'past' | 'future' = $state('all')
-  let scopeFilter: 'all' | 'ppw' = $state('all')
+  let scopeFilter: 'all' | 'ppw' = $state('ppw')
 
   const today = new Date().toISOString().slice(0, 10)
 
   let filteredEvents = $derived.by(() => {
     let result = events
-    if (scopeFilter === 'ppw') {
+    if (!showEvfToggle || scopeFilter === 'ppw') {
       result = result.filter((e) => !e.bool_has_international)
     }
     if (timeFilter === 'past') {
@@ -301,6 +309,13 @@
   .status-planned { background: #f0f0f0; color: #666; }
   .status-cancelled { background: #ffeef0; color: #c33; }
   .status-inprogress { background: #fff4e6; color: #b35c00; }
+  .timeline-links {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+    margin-top: 4px;
+  }
   .results-link {
     font-size: 11px;
     color: #1a7f37;

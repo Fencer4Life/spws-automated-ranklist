@@ -42,6 +42,7 @@
       gender={filters.gender}
       category={filters.category}
       mode={filters.mode}
+      {showEvfToggle}
       onfilterchange={onFilterChange}
       onexport={handleMainExport}
     />
@@ -63,13 +64,14 @@
       scores={modalScores}
       mode={filters.mode}
       kadraDisabled={filters.category === 'V0'}
+      {showEvfToggle}
       loading={modalLoading}
       context={modalContext}
       rankingRules={rankingRules}
       onclose={closeDrilldown}
     />
   {:else if currentView === 'calendar'}
-    <CalendarView events={calendarEvents} />
+    <CalendarView events={calendarEvents} {showEvfToggle} />
   {:else if currentView === 'admin_seasons'}
     <SeasonManager
       {seasons}
@@ -77,6 +79,7 @@
       oncreate={handleCreateSeason}
       onupdate={handleUpdateSeason}
       ondelete={handleDeleteSeason}
+      onfetchevf={handleFetchEvfToggle}
     />
   {:else if currentView === 'admin_events'}
     <EventManager
@@ -271,6 +274,7 @@
   let calendarEvents: CalendarEvent[] = $state([])
   let organizers: Organizer[] = $state([])
   let scoringConfig: ScoringConfig | null = $state(null)
+  let showEvfToggle = $state(false)
   let matchCandidates: MatchCandidate[] = $state([])
 
   let modalOpen = $state(false)
@@ -310,6 +314,7 @@
       } else if (seasons.length > 0) {
         selectedSeasonId = seasons[0].id_season
       }
+      await refreshEvfToggle()
       await loadRanking()
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
@@ -321,7 +326,24 @@
     loadRanking()
   }
 
+  async function refreshEvfToggle() {
+    if (demo || selectedSeasonId == null) {
+      showEvfToggle = false
+      return
+    }
+    try {
+      scoringConfig = await fetchScoringConfig(selectedSeasonId)
+      showEvfToggle = scoringConfig?.show_evf_toggle ?? false
+    } catch {
+      showEvfToggle = false
+    }
+    if (filters.mode === 'KADRA') {
+      filters = { ...filters, mode: 'PPW' }
+    }
+  }
+
   async function handleSeasonChange() {
+    await refreshEvfToggle()
     if (currentView === 'ranklist') {
       loadRanking()
     } else if (currentView === 'calendar') {
@@ -329,7 +351,7 @@
     } else if (currentView === 'admin_events') {
       loadAdminEvents()
     } else if (currentView === 'admin_scoring') {
-      loadScoringConfig()
+      // scoringConfig already fetched by refreshEvfToggle
     } else {
       loadRanking()
     }
@@ -474,12 +496,26 @@
     }
   }
 
-  async function handleUpdateSeason(id: number, code: string, start: string, end: string) {
+  async function handleUpdateSeason(id: number, code: string, start: string, end: string, showEvf: boolean) {
     try {
       await updateSeason(id, code, start, end)
+      const cfg = await fetchScoringConfig(id)
+      if (cfg && cfg.show_evf_toggle !== showEvf) {
+        await saveScoringConfig({ ...cfg, show_evf_toggle: showEvf } as unknown as Record<string, unknown>)
+      }
       seasons = await fetchSeasons()
+      if (id === selectedSeasonId) await refreshEvfToggle()
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleFetchEvfToggle(seasonId: number): Promise<boolean> {
+    try {
+      const cfg = await fetchScoringConfig(seasonId)
+      return cfg?.show_evf_toggle ?? false
+    } catch {
+      return false
     }
   }
 
@@ -531,7 +567,7 @@
   async function handleSaveScoringConfig(config: ScoringConfig) {
     try {
       await saveScoringConfig(config as unknown as Record<string, unknown>)
-      if (selectedSeasonId) scoringConfig = await fetchScoringConfig(selectedSeasonId)
+      await refreshEvfToggle()
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
     }

@@ -181,6 +181,8 @@
   "sc_rule_always": "always included",
   "sc_add_bucket": "+ Add rule",
   "sc_export": "Export JSON",
+  "sc_show_evf_toggle": "Show +EVF/Kadra toggle",
+  "sc_show_evf_hint": "When enabled, the PPW/+EVF scope toggle is visible in Ranklist and Calendar views",
   "sc_cancel": "Cancel",
   "sc_save": "Save & recalculate"
 }

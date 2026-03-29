@@ -28,23 +28,25 @@
       </select>
     </label>
 
-    <div class="filter-group toggle-group">
-      <span class="filter-label">{t('ranking')}</span>
-      <div class="toggle" class:kadra-disabled={category === 'V0'}>
-        <button
-          class="toggle-btn"
-          class:active={mode === 'PPW'}
-          onclick={() => setMode('PPW')}
-        >PPW</button>
-        <button
-          class="toggle-btn"
-          class:active={mode === 'KADRA'}
-          disabled={category === 'V0'}
-          title={category === 'V0' ? t('kadra_disabled_title') : t('kadra_title')}
-          onclick={() => setMode('KADRA')}
-        >+EVF</button>
+    {#if showEvfToggle}
+      <div class="filter-group toggle-group">
+        <span class="filter-label">{t('ranking')}</span>
+        <div class="toggle" class:kadra-disabled={category === 'V0'}>
+          <button
+            class="toggle-btn"
+            class:active={mode === 'PPW'}
+            onclick={() => setMode('PPW')}
+          >PPW</button>
+          <button
+            class="toggle-btn"
+            class:active={mode === 'KADRA'}
+            disabled={category === 'V0'}
+            title={category === 'V0' ? t('kadra_disabled_title') : t('kadra_title')}
+            onclick={() => setMode('KADRA')}
+          >+EVF</button>
+        </div>
       </div>
-    </div>
+    {/if}
 
     <button class="btn-export" title={t('export_to_ods')} onclick={onexport}>&#9113;</button>
   </div>
@@ -59,6 +61,7 @@
     gender = 'M' as GenderType,
     category = 'V2' as AgeCategory,
     mode = 'PPW' as RankingMode,
+    showEvfToggle = false,
     onfilterchange,
     onexport,
   }: {
@@ -66,6 +69,7 @@
     gender?: GenderType
     category?: AgeCategory
     mode?: RankingMode
+    showEvfToggle?: boolean
     onfilterchange?: (filters: Omit<Filters, 'season'>) => void
     onexport?: () => void
   } = $props()

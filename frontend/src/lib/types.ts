@@ -129,6 +129,7 @@ export interface ScoringConfig {
   psw_multiplier: number
   min_participants_evf: number
   min_participants_ppw: number
+  show_evf_toggle: boolean
   ranking_rules: RankingRules | null
 }
 

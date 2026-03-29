@@ -157,7 +157,7 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 | Playwright | 7 | 0 | 7 |
 | **Total** | **333** | **64** | **397** |
 
-**Test results after T9.10 (current):**
+**Test results after T9.10:**
 
 | Suite | Post-M8 | M9 New | Total |
 |-------|---------|--------|-------|
@@ -166,6 +166,16 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 | vitest | 97 | 55 | 152 |
 | Playwright | 7 | 0 | 7 |
 | **Total** | **333** | **97** | **430** |
+
+**Test results after EVF toggle scope change (current):**
+
+| Suite | Post-T9.10 | EVF Toggle | Total |
+|-------|------------|------------|-------|
+| pgTAP | 167 | +4 | 171 |
+| pytest | 104 | 0 | 104 |
+| vitest | 152 | +7 | 159 |
+| Playwright | 7 | 0 | 7 |
+| **Total** | **430** | **+11** | **441** |
 
 **Tasks completed:**
 
@@ -239,6 +249,21 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 - `fn_delete_season` deletes `tbl_scoring_config` first (auto-created by trigger), then season row; FK RESTRICT on `tbl_event` raises if events exist
 - `fn_delete_event_cascade` loops child tournaments via `fn_delete_tournament_cascade` (manual cascade, not FK CASCADE, preserves audit trail per ADR-014)
 - All 9 functions: REVOKE from `anon, PUBLIC`, GRANT to `authenticated` (ADR-016)
+
+**Scope change (2026-03-29): Season-configurable EVF toggle (ADR-017)**
+- FR-34 modified: PPW/Kadra toggle conditional on `bool_show_evf_toggle` in `tbl_scoring_config` (default FALSE = hidden)
+- FR-44 modified: Calendar scope filter conditional on same flag
+- FR-63 added: Calendar event links (Wyniki + Komunikat) stacked vertically
+- FR-64 added: `bool_show_evf_toggle` column + export/import support; admin checkbox in SeasonManager edit form
+- New tests: 9.37–9.39 (pgTAP), 8.78–8.83 (vitest); existing 6.10, 6.12, 8.45 modified for config flag
+- 8.81–8.83: SeasonManager edit-form checkbox for `show_evf_toggle` (render unchecked, render checked, toggle+save payload)
+- Migration: `20260329000002_evf_toggle_config.sql`
+- **UI behavior rules** (see ADR-017 for full matrix):
+  - Toggle OFF (default): all PPW/Kadra toggles hidden; Ranklist locked to PPW; Calendar shows PPW events only
+  - Toggle ON: toggles appear in FilterBar, CalendarView, DrilldownModal; **PPW always default**
+  - Mode resets to PPW on every state transition (season change, config save, page load)
+  - CalendarView: `!showEvfToggle || scopeFilter === 'ppw'` → filter out international events
+  - Admin checkbox lives in SeasonManager edit form (not ScoringConfigEditor); only visible in edit mode, not create
 
 **Post-T9.10 schema extensions (2026-03-27):**
 - Added `txt_entry_fee_currency TEXT` to `tbl_event` (migration 000004) + updated CRUD functions (migration 000005)
