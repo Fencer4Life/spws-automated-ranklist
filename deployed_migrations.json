@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-03-29T16:41:49Z",
-    "last_sha": "515c147435c89ecc8b02706264581a6c05888f95",
+    "last_updated": "2026-03-29T19:03:20Z",
+    "last_sha": "e387dfb4c26f10fa127e6f497d4af8ac0ae01026",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -26,9 +26,10 @@
       "20260327000005_crud_entry_fee_currency.sql",
       "20260327000006_event_weapons.sql",
       "20260327000007_crud_weapons.sql",
-      "20260329000001_drop_old_overloads.sql"
+      "20260329000001_drop_old_overloads.sql",
+      "20260329000002_evf_toggle_config.sql"
     ],
-    "schema_fingerprint": "8e927c390f5afff8ea48264af035293c"
+    "schema_fingerprint": "cc839ba0798a4d30ad948c1323b0cab8"
   },
   "prod": {
     "last_updated": "2026-03-26T18:17:43Z",
