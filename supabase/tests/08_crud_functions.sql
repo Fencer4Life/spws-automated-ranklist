@@ -146,7 +146,8 @@ BEGIN
   v_eid := fn_create_event(
     'CRUD-EVT-NEW', 'New CRUD Event', v_sid, v_org,
     'Warszawa', '2025-12-01', '2025-12-02', 'https://example.com',
-    'PL', 'ul. Testowa 1', 'https://example.com/invite', 80.00
+    'PL', 'ul. Testowa 1', 'https://example.com/invite', 80.00,
+    'PLN', '{EPEE,FOIL,SABRE}'::enum_weapon_type[]
   );
 END;
 $t923$;
@@ -172,7 +173,8 @@ BEGIN
   SELECT COUNT(*) INTO v_audit_before FROM tbl_audit_log WHERE txt_table_name = 'tbl_event' AND id_row = v_eid;
   PERFORM fn_update_event(
     v_eid, 'Updated Event', 'Kraków', '2025-12-10', '2025-12-11',
-    'https://updated.com', 'PL', 'ul. Nowa 2', 'https://updated.com/invite', 100.00
+    'https://updated.com', 'PL', 'ul. Nowa 2', 'https://updated.com/invite', 100.00,
+    'EUR', NULL, '{EPEE,SABRE}'::enum_weapon_type[]
   );
 END;
 $t924$;
@@ -189,7 +191,7 @@ SELECT ok(
 -- 9.28 — fn_create_event permission denied for anon
 SET LOCAL ROLE anon;
 SELECT throws_ok(
-  $$SELECT fn_create_event('ANON-EVT', 'Anon Event', 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)$$,
+  $$SELECT fn_create_event('ANON-EVT', 'Anon Event', 1, 1, NULL, NULL::DATE, NULL::DATE, NULL, NULL, NULL, NULL, NULL::NUMERIC, NULL, NULL::enum_weapon_type[])$$,
   '42501',
   NULL,
   '9.28: fn_create_event permission denied for anon'
