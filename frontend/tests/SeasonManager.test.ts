@@ -1,4 +1,4 @@
-// Plan tests: 9.37, 9.38, 9.39, 9.40, 9.41, 9.42
+// Plan tests: 9.37, 9.38, 9.39, 9.40, 9.41, 9.42, 8.81, 8.82, 8.83
 // See .claude/plans/rosy-bouncing-kitten.md §T9.2.
 
 import { describe, it, expect, vi } from 'vitest'
@@ -18,6 +18,7 @@ describe('SeasonManager (T9.2)', () => {
     oncreate: vi.fn(),
     onupdate: vi.fn(),
     ondelete: vi.fn(),
+    onfetchevf: vi.fn().mockResolvedValue(false),
   }
 
   // 9.37 — Renders season list with txt_code, dt_start, dt_end
@@ -72,22 +73,26 @@ describe('SeasonManager (T9.2)', () => {
 
   // 9.40 — Edit button opens form with pre-filled values
   it('opens form pre-filled with season values on edit', async () => {
-    const { container } = render(SeasonManager, { props: defaultProps })
+    const onfetchevf = vi.fn().mockResolvedValue(false)
+    const { container } = render(SeasonManager, { props: { ...defaultProps, onfetchevf } })
     const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
     expect(editBtns.length).toBe(2)
 
     await fireEvent.click(editBtns[0])
+    // Wait for async onfetchevf to resolve
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-field="season-form"]')).not.toBeNull()
+    })
 
-    const form = container.querySelector('[data-field="season-form"]')
-    expect(form).not.toBeNull()
-
-    const codeInput = form!.querySelector('[data-field="form-code"]') as HTMLInputElement
-    const startInput = form!.querySelector('[data-field="form-start"]') as HTMLInputElement
-    const endInput = form!.querySelector('[data-field="form-end"]') as HTMLInputElement
+    const form = container.querySelector('[data-field="season-form"]')!
+    const codeInput = form.querySelector('[data-field="form-code"]') as HTMLInputElement
+    const startInput = form.querySelector('[data-field="form-start"]') as HTMLInputElement
+    const endInput = form.querySelector('[data-field="form-end"]') as HTMLInputElement
 
     expect(codeInput.value).toBe('SPWS-2024-2025')
     expect(startInput.value).toBe('2024-09-01')
     expect(endInput.value).toBe('2025-06-30')
+    expect(onfetchevf).toHaveBeenCalledWith(1)
   })
 
   // 9.41 — Delete calls ondelete with season id
@@ -106,5 +111,63 @@ describe('SeasonManager (T9.2)', () => {
     const { container } = render(SeasonManager, { props: { ...defaultProps, isAdmin: false } })
     expect(container.querySelector('[data-field="season-list"]')).toBeNull()
     expect(container.querySelector('[data-field="add-season-btn"]')).toBeNull()
+  })
+
+  // 8.81 — EVF checkbox renders in edit form but NOT in create form
+  it('shows EVF checkbox in edit form, not in create form', async () => {
+    const onfetchevf = vi.fn().mockResolvedValue(false)
+    const { container } = render(SeasonManager, { props: { ...defaultProps, onfetchevf } })
+
+    // Open CREATE form — no checkbox
+    await fireEvent.click(container.querySelector('[data-field="add-season-btn"]')!)
+    expect(container.querySelector('[data-field="form-evf-toggle"]')).toBeNull()
+
+    // Cancel and open EDIT form — checkbox appears
+    await fireEvent.click(container.querySelector('[data-field="form-cancel-btn"]')!)
+    const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
+    await fireEvent.click(editBtns[0])
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-field="form-evf-toggle"]')).not.toBeNull()
+    })
+
+    const checkbox = container.querySelector('[data-field="form-evf-toggle"]') as HTMLInputElement
+    expect(checkbox.checked).toBe(false)
+  })
+
+  // 8.82 — EVF checkbox reflects true when onfetchevf returns true
+  it('EVF checkbox checked when onfetchevf returns true', async () => {
+    const onfetchevf = vi.fn().mockResolvedValue(true)
+    const { container } = render(SeasonManager, { props: { ...defaultProps, onfetchevf } })
+
+    const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
+    await fireEvent.click(editBtns[0])
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-field="form-evf-toggle"]')).not.toBeNull()
+    })
+
+    const checkbox = container.querySelector('[data-field="form-evf-toggle"]') as HTMLInputElement
+    expect(checkbox.checked).toBe(true)
+  })
+
+  // 8.83 — Saving edit form calls onupdate with showEvf param
+  it('calls onupdate with showEvf=true after toggling checkbox', async () => {
+    const onfetchevf = vi.fn().mockResolvedValue(false)
+    const onupdate = vi.fn()
+    const { container } = render(SeasonManager, { props: { ...defaultProps, onfetchevf, onupdate } })
+
+    const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
+    await fireEvent.click(editBtns[0])
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-field="form-evf-toggle"]')).not.toBeNull()
+    })
+
+    // Toggle checkbox on
+    const checkbox = container.querySelector('[data-field="form-evf-toggle"]') as HTMLInputElement
+    await fireEvent.click(checkbox)
+    expect(checkbox.checked).toBe(true)
+
+    // Save
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+    expect(onupdate).toHaveBeenCalledWith(1, 'SPWS-2024-2025', '2024-09-01', '2025-06-30', true)
   })
 })

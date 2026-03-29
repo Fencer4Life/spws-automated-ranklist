@@ -22,19 +22,21 @@
             {#if seasonCode} · {seasonCode}{/if}
             {#if context?.birthYear} ({t('born')} {context.birthYear}){/if}
           </span>
-          <div class="toggle" class:kadra-disabled={kadraDisabled}>
-            <button
-              class="toggle-btn"
-              class:active={mode === 'PPW'}
-              onclick={() => setMode('PPW')}
-            >PPW</button>
-            <button
-              class="toggle-btn"
-              class:active={mode === 'KADRA'}
-              disabled={kadraDisabled}
-              onclick={() => setMode('KADRA')}
-            >+EVF</button>
-          </div>
+          {#if showEvfToggle}
+            <div class="toggle" class:kadra-disabled={kadraDisabled}>
+              <button
+                class="toggle-btn"
+                class:active={mode === 'PPW'}
+                onclick={() => setMode('PPW')}
+              >PPW</button>
+              <button
+                class="toggle-btn"
+                class:active={mode === 'KADRA'}
+                disabled={kadraDisabled}
+                onclick={() => setMode('KADRA')}
+              >+EVF</button>
+            </div>
+          {/if}
           <button class="btn-export-sub" title={t('export_to_ods')} onclick={handleExport}>&#9113;</button>
         </div>
       {/if}
@@ -168,6 +170,7 @@
     scores = [] as ScoreRow[],
     mode = 'PPW' as RankingMode,
     kadraDisabled = false,
+    showEvfToggle = false,
     loading = false,
     context = null as DrilldownContext | null,
     rankingRules = null as RankingRules | null,
@@ -178,6 +181,7 @@
     scores?: ScoreRow[]
     mode?: RankingMode
     kadraDisabled?: boolean
+    showEvfToggle?: boolean
     loading?: boolean
     context?: DrilldownContext | null
     rankingRules?: RankingRules | null

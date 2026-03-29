@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SeasonManager — show_evf_toggle checkbox mockup</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
+  .season-manager { max-width: 700px; margin: 0 auto; }
+  .season-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .season-header h3 { margin: 0; font-size: 18px; color: #333; }
+  .add-btn {
+    padding: 8px 16px; border: none; border-radius: 4px;
+    background: #4a90d9; color: #fff; font-size: 14px; cursor: pointer;
+  }
+  .season-form {
+    display: flex; gap: 12px; align-items: flex-end; padding: 12px;
+    margin-bottom: 16px; background: #f8f9fa; border: 1px solid #e0e0e0;
+    border-radius: 4px; flex-wrap: wrap;
+  }
+  .season-form label {
+    display: flex; flex-direction: column; gap: 4px;
+    font-size: 13px; color: #555;
+  }
+  .season-form input[type="text"],
+  .season-form input[type="date"] {
+    padding: 6px 10px; border: 1px solid #ccc;
+    border-radius: 4px; font-size: 14px;
+  }
+  .form-actions { display: flex; gap: 8px; align-items: flex-end; }
+  .save-btn {
+    padding: 6px 14px; border: none; border-radius: 4px;
+    background: #2ecc71; color: #fff; font-size: 13px; cursor: pointer;
+  }
+  .cancel-btn {
+    padding: 6px 14px; border: 1px solid #ccc; border-radius: 4px;
+    background: #fff; color: #555; font-size: 13px; cursor: pointer;
+  }
+  .season-list { display: flex; flex-direction: column; gap: 2px; }
+  .season-row {
+    display: flex; align-items: center; gap: 16px; padding: 10px 12px;
+    background: #fff; border: 1px solid #e8e8e8; border-radius: 4px;
+  }
+  .season-cell { font-size: 14px; color: #333; }
+  .season-cell.actions { margin-left: auto; display: flex; gap: 6px; }
+  .active-badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    background: #d4edda; color: #155724; font-weight: 600;
+  }
+  .icon-btn {
+    border: none; background: none; cursor: pointer;
+    font-size: 16px; padding: 4px; color: #666;
+  }
+
+  /* Highlight the new checkbox element */
+  .checkbox-label {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: #555; cursor: pointer; white-space: nowrap;
+  }
+  .checkbox-label input[type="checkbox"] {
+    accent-color: #4a90d9; cursor: pointer; transform: scale(1.15);
+  }
+  .new-field { position: relative; }
+  .new-field::before {
+    content: 'NEW';
+    position: absolute; left: -38px; top: 50%; transform: translateY(-50%);
+    background: #e53e3e; color: #fff; font-size: 9px; font-weight: 700;
+    padding: 2px 5px; border-radius: 3px; letter-spacing: 0.5px;
+  }
+  .new-field .checkbox-label {
+    background: #fffbeb; border: 1px dashed #d4a017; border-radius: 4px;
+    padding: 6px 10px;
+  }
+  .hint { font-size: 11px; color: #aaa; font-style: italic; margin-left: 4px; }
+
+  /* Lang toggle */
+  .lang-toggle {
+    position: absolute; top: 16px; right: 20px;
+    display: flex; gap: 6px; font-size: 14px; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">&#127468;&#127463; / &#127477;&#127473;</div>
+
+<div class="season-manager">
+  <div class="season-header">
+    <h3>Sezony</h3>
+    <button class="add-btn">+ Dodaj sezon</button>
+  </div>
+
+  <!-- EDIT form — open for SPWS-2024-2025 -->
+  <div class="season-form">
+    <label>
+      Kod sezonu
+      <input type="text" value="SPWS-2024-2025">
+    </label>
+    <label>
+      Data rozpoczęcia
+      <input type="date" value="2024-09-01">
+    </label>
+    <label>
+      Data zakończenia
+      <input type="date" value="2025-06-30">
+    </label>
+
+    <!-- ★ NEW CHECKBOX — only in edit mode ★ -->
+    <div class="new-field">
+      <label class="checkbox-label">
+        <input type="checkbox">
+        Pokaż przełącznik +EVF/Kadra
+      </label>
+    </div>
+    <span class="hint">Gdy włączone, przełącznik PPW/+EVF jest widoczny w widoku Rankingu i Kalendarza</span>
+
+    <div class="form-actions">
+      <button class="save-btn">Zapisz</button>
+      <button class="cancel-btn">Anuluj</button>
+    </div>
+  </div>
+
+  <!-- Season list -->
+  <div class="season-list">
+    <div class="season-row">
+      <span class="season-cell">SPWS-2024-2025</span>
+      <span class="season-cell">2024-09-01</span>
+      <span class="season-cell">2025-06-30</span>
+      <span class="season-cell"><span class="active-badge">Aktywny</span></span>
+      <span class="season-cell actions">
+        <button class="icon-btn">&#9998;</button>
+        <button class="icon-btn" style="color:#c33;">&#128465;</button>
+      </span>
+    </div>
+    <div class="season-row">
+      <span class="season-cell">SPWS-2023-2024</span>
+      <span class="season-cell">2023-09-01</span>
+      <span class="season-cell">2024-06-30</span>
+      <span class="season-cell"></span>
+      <span class="season-cell actions">
+        <button class="icon-btn">&#9998;</button>
+        <button class="icon-btn" style="color:#c33;">&#128465;</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

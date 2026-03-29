@@ -7,7 +7,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(19);
+SELECT plan(23);
 
 -- ===== SETUP: create test data for CRUD and cascade tests =====
 
@@ -354,6 +354,49 @@ SELECT throws_ok(
   '9.36: fn_delete_event_cascade permission denied for anon'
 );
 RESET ROLE;
+
+
+-- =========================================================================
+-- EVF Toggle Config (9.37–9.39, ADR-017)
+-- =========================================================================
+
+-- 9.37 — bool_show_evf_toggle column exists with default FALSE
+SELECT has_column(
+  'tbl_scoring_config', 'bool_show_evf_toggle',
+  '9.37: tbl_scoring_config has bool_show_evf_toggle column'
+);
+SELECT is(
+  (SELECT bool_show_evf_toggle FROM tbl_scoring_config LIMIT 1),
+  FALSE,
+  '9.37b: bool_show_evf_toggle defaults to FALSE'
+);
+
+-- 9.38 — fn_export_scoring_config includes show_evf_toggle key
+SELECT ok(
+  (SELECT fn_export_scoring_config(
+    (SELECT id_season FROM tbl_season WHERE bool_active LIMIT 1)
+  ) ? 'show_evf_toggle'),
+  '9.38: fn_export_scoring_config includes show_evf_toggle key'
+);
+
+-- 9.39 — fn_import_scoring_config accepts and persists show_evf_toggle
+DO $t939$
+DECLARE
+  v_sid INT;
+BEGIN
+  SELECT id_season INTO v_sid FROM tbl_season WHERE bool_active LIMIT 1;
+  PERFORM fn_import_scoring_config(
+    jsonb_build_object('id_season', v_sid, 'show_evf_toggle', true)
+  );
+END;
+$t939$;
+SELECT is(
+  (SELECT (fn_export_scoring_config(
+    (SELECT id_season FROM tbl_season WHERE bool_active LIMIT 1)
+  ))->>'show_evf_toggle'),
+  'true',
+  '9.39: fn_import_scoring_config persists show_evf_toggle = true'
+);
 
 
 SELECT * FROM finish();

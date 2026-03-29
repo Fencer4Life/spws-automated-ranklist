@@ -178,7 +178,7 @@ describe('DrilldownModal', () => {
   // 6.12 — V0 disables +EVF in drill-down
   it('disables +EVF toggle when kadraDisabled is true', () => {
     const { container } = render(DrilldownModal, {
-      props: { open: true, fencerName: 'Test', kadraDisabled: true, context: CTX },
+      props: { open: true, fencerName: 'Test', kadraDisabled: true, showEvfToggle: true, context: CTX },
     })
     const btns = container.querySelectorAll('.toggle-btn')
     // [0]=🇬🇧, [1]=🇵🇱 (LangToggle in modal-actions), [2]=PPW, [3]=+EVF (toggle in subheader)
@@ -337,7 +337,7 @@ describe('DrilldownModal', () => {
   // 6.10 — toggle placement
   it('L — PPW/Kadra toggle is in subheader (second row), LangToggle is in modal-actions (top row)', () => {
     const { container } = render(DrilldownModal, {
-      props: { open: true, fencerName: 'Test', context: CTX },
+      props: { open: true, fencerName: 'Test', showEvfToggle: true, context: CTX },
     })
     const subheader = container.querySelector('.subheader')
     const actions = container.querySelector('.modal-actions')

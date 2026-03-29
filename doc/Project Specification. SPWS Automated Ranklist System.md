@@ -1530,7 +1530,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-31 | Partial scrape detection (abort on incomplete data) | §9.5.1 | 3.13, 3.13b | Covered |
 | FR-32 | Discord alerting on pipeline failure | UC1(d) | 3.6 | Covered |
 | FR-33 | Web Component: weapon/gender/category filters | UC12(b) | FilterBar.test.ts (5 tests) | Covered |
-| FR-34 | Web Component: PPW/Kadra toggle with V0 guard | UC12(b) | FilterBar.test.ts, DrilldownModal.test.ts | Covered |
+| FR-34 | Web Component: PPW/Kadra toggle with V0 guard (conditional on `bool_show_evf_toggle` season config, ADR-017) | UC12(b) | FilterBar.test.ts, DrilldownModal.test.ts | Modified (toggle hidden by default, visible when season config enables it) |
 | FR-35 | Web Component: ranking table with mode-specific columns | UC12(c) | RanklistTable.test.ts (5 tests) | Covered |
 | FR-36 | Web Component: fencer drilldown modal with score breakdown | UC13(a,b) | DrilldownModal.test.ts (24 tests) | Covered |
 | FR-37 | ODS export (ranking + drilldown) | UC12, UC13 | export.test.ts (5 tests) | Covered |
@@ -1540,7 +1540,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-41 | Domestic-participation requirement: fencers with 0 domestic points excluded from ranking views | §8.5(7) | 5.24–5.25 | Covered |
 | FR-42 | CERT/PROD environment toggle with runtime switching | §2.2 | 8.01–8.04 | Covered (M8) |
 | FR-43 | Calendar view: chronological event list with season filter | UC21(a,b) | 8.11–8.19, 8.38–8.43, 8.47 | Covered (M8) |
-| FR-44 | Calendar view: past/future/all toggle | UC21(c) | 8.44–8.45 | Covered (M8) |
+| FR-44 | Calendar view: past/future/all toggle (scope filter conditional on `bool_show_evf_toggle`, ADR-017) | UC21(c) | 8.44–8.45, 8.79–8.80 | Modified (M8, scope filter hidden by default) |
 | FR-45 | Calendar view: mobile-friendly layout | UC21(e) | 8.46 | Covered (M8) |
 | FR-46 | Admin authentication: Supabase Auth + TOTP MFA (supersedes client-side password gate) | UC22(a), ADR-016 | 9.01–9.17 | Covered (M9, T9.0) |
 | FR-47 | Season CRUD via web UI | UC22(b) | 9.18–9.22, 9.27, 9.37–9.42 | Covered (M9, T9.1 SQL + T9.2 UI) |
@@ -1559,6 +1559,8 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-60 | Event CRUD via web UI (create, edit, delete events with all fields) | UC22(c) | 9.23–9.24, 9.28, 9.43–9.49 | Covered (M9, T9.1 SQL + T9.3 UI) |
 | FR-61 | Scoring config editor (admin, per-season, structured form) | UC22(f) | 8.62–8.75 | Covered (M8) |
 | FR-62 | Calendar view: completed events show "Wyniki" link to event results URL | UC21 | 8.76–8.77 | Covered (M8) |
+| FR-63 | Calendar event links stacked vertically: Wyniki and Komunikat organizatora rendered one below the other | UC21 | 8.78 | Covered (ADR-017) |
+| FR-64 | Season-level EVF toggle config: `bool_show_evf_toggle` in `tbl_scoring_config` controls PPW/+EVF toggle visibility in Ranklist and Calendar; admin checkbox in SeasonManager edit form | ADR-017 | 9.37–9.39, 8.79–8.83 | Covered |
 
 ### Non-Functional Requirements
 
@@ -1598,3 +1600,4 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-013](adr/013-poc-mvp-transition.md) | POC-to-MVP Transition | §6 |
 | [ADR-014](adr/014-delete-reimport-strategy.md) | Delete + Re-import in Transaction | UC23 |
 | [ADR-015](adr/015-m8-ui-design-decisions.md) | M8 UI Design Decisions | §6.2 M8 |
+| [ADR-017](adr/017-season-configurable-evf-toggle.md) | Season-Configurable EVF Toggle | §6.2 M9, FR-34, FR-44, FR-64 |

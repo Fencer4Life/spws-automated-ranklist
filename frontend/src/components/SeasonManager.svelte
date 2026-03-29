@@ -21,6 +21,12 @@
           {t('season_end_label')}
           <input data-field="form-end" type="date" bind:value={draftEnd} />
         </label>
+        {#if editingId != null}
+          <label class="checkbox-label">
+            <input data-field="form-evf-toggle" type="checkbox" bind:checked={draftShowEvf} />
+            {t('sc_show_evf_toggle')}
+          </label>
+        {/if}
         <div class="form-actions">
           <button data-field="form-save-btn" class="save-btn" onclick={() => { handleSave() }}>
             {t('season_save')}
@@ -61,14 +67,16 @@
     seasons = [] as Season[],
     isAdmin = false,
     oncreate = (_code: string, _start: string, _end: string) => {},
-    onupdate = (_id: number, _code: string, _start: string, _end: string) => {},
+    onupdate = (_id: number, _code: string, _start: string, _end: string, _showEvf: boolean) => {},
     ondelete = (_id: number) => {},
+    onfetchevf = (_id: number): Promise<boolean> => Promise.resolve(false),
   }: {
     seasons?: Season[]
     isAdmin?: boolean
     oncreate?: (code: string, start: string, end: string) => void
-    onupdate?: (id: number, code: string, start: string, end: string) => void
+    onupdate?: (id: number, code: string, start: string, end: string, showEvf: boolean) => void
     ondelete?: (id: number) => void
+    onfetchevf?: (id: number) => Promise<boolean>
   } = $props()
 
   let showForm = $state(false)
@@ -76,6 +84,7 @@
   let draftCode = $state('')
   let draftStart = $state('')
   let draftEnd = $state('')
+  let draftShowEvf = $state(false)
 
   function openCreateForm() {
     editingId = null
@@ -85,11 +94,12 @@
     showForm = true
   }
 
-  function openEditForm(season: Season) {
+  async function openEditForm(season: Season) {
     editingId = season.id_season
     draftCode = season.txt_code
     draftStart = season.dt_start
     draftEnd = season.dt_end
+    draftShowEvf = await onfetchevf(season.id_season)
     showForm = true
   }
 
@@ -100,7 +110,7 @@
 
   function handleSave() {
     if (editingId != null) {
-      onupdate(editingId, draftCode, draftStart, draftEnd)
+      onupdate(editingId, draftCode, draftStart, draftEnd, draftShowEvf)
     } else {
       oncreate(draftCode, draftStart, draftEnd)
     }
@@ -229,5 +239,18 @@
   }
   .icon-btn.delete:hover {
     color: #c33;
+  }
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #555;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .checkbox-label input[type="checkbox"] {
+    accent-color: #4a90d9;
+    cursor: pointer;
   }
 </style>

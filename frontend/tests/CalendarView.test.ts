@@ -115,8 +115,9 @@ describe('CalendarView (T8.5)', () => {
 
   // 8.42 — "Komunikat organizatora" link present when url_invitation set
   it('shows invitation link when url_invitation is set', () => {
+    const evt = makeEvent({ url_invitation: 'https://example.com/invite' })
     const { container } = render(CalendarView, {
-      props: { events: [EVENTS[2]] },
+      props: { events: [evt] },
     })
     const link = container.querySelector('.invitation-link') as HTMLAnchorElement
     expect(link).not.toBeNull()
@@ -134,11 +135,11 @@ describe('CalendarView (T8.5)', () => {
 
   // 8.44 — Past/future/all toggle filters events relative to today
   it('filters events by past/future/all toggle', async () => {
-    const { container } = render(CalendarView, { props: { events: EVENTS } })
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
 
-    // Default: all events shown
+    // Default: PPW scope — international event filtered out
     let items = container.querySelectorAll('.timeline-event')
-    expect(items.length).toBe(4)
+    expect(items.length).toBe(3)
 
     // Select "future" filter
     const select = container.querySelector('.time-filter-select') as HTMLSelectElement
@@ -153,7 +154,7 @@ describe('CalendarView (T8.5)', () => {
 
   // 8.45 — PPW shows domestic only; +EVF shows all events
   it('PPW mode hides international events; +EVF shows all', async () => {
-    const { container } = render(CalendarView, { props: { events: EVENTS } })
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
 
     // Click PPW filter
     const modeBtns = container.querySelectorAll('.scope-filter-btn')
@@ -190,8 +191,9 @@ describe('CalendarView (T8.5)', () => {
 
   // 8.76 — Results link shown when COMPLETED + url_event set
   it('shows results link when event is completed and url_event is set', () => {
+    const evt = makeEvent({ enum_status: 'COMPLETED', url_event: 'https://example.com/results' })
     const { container } = render(CalendarView, {
-      props: { events: [EVENTS[2]] }, // completed international with url_event
+      props: { events: [evt] },
     })
     const link = container.querySelector('.results-link') as HTMLAnchorElement
     expect(link).not.toBeNull()
@@ -213,13 +215,40 @@ describe('CalendarView (T8.5)', () => {
     expect(c2.querySelector('.results-link')).toBeNull()
   })
 
+  // 8.78 — Calendar links stacked vertically
+  it('renders event links in a stacked .timeline-links container', () => {
+    const evt = makeEvent({ enum_status: 'COMPLETED', url_event: 'https://example.com/results', url_invitation: 'https://example.com/invite' })
+    const { container } = render(CalendarView, {
+      props: { events: [evt] },
+    })
+    const linksContainer = container.querySelector('.timeline-links')
+    expect(linksContainer).not.toBeNull()
+    const links = linksContainer!.querySelectorAll('a')
+    expect(links.length).toBe(2)
+  })
+
+  // 8.79 — scope filter hidden when showEvfToggle=false (default)
+  it('hides scope filter buttons when showEvfToggle is false', () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS } })
+    const scopeBtns = container.querySelectorAll('.scope-filter-btn')
+    expect(scopeBtns.length).toBe(0)
+  })
+
+  // 8.80 — scope filter visible when showEvfToggle=true
+  it('shows scope filter buttons when showEvfToggle is true', () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    const scopeBtns = container.querySelectorAll('.scope-filter-btn')
+    expect(scopeBtns.length).toBe(2)
+  })
+
   // 8.47 — Season filter changes displayed events (tested via events prop)
   it('updates when events prop changes', () => {
     const { container, rerender } = render(CalendarView, {
-      props: { events: EVENTS },
+      props: { events: EVENTS, showEvfToggle: true },
     })
+    // Default PPW scope — international event filtered out
     let items = container.querySelectorAll('.timeline-event')
-    expect(items.length).toBe(4)
+    expect(items.length).toBe(3)
 
     // Simulate season change: pass only 1 event
     rerender({ events: [EVENTS[0]] })
