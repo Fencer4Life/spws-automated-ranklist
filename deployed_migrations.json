@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-03-26T20:54:13Z",
-    "last_sha": "e1c9bf141bdf1556dbba0237f379c626b4e27402",
+    "last_updated": "2026-03-29T16:41:49Z",
+    "last_sha": "515c147435c89ecc8b02706264581a6c05888f95",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -21,9 +21,14 @@
       "20260326000002_calendar_view.sql",
       "20260327000001_revoke_write_functions.sql",
       "20260327000002_crud_functions.sql",
-      "20260327000003_delete_cascade.sql"
+      "20260327000003_delete_cascade.sql",
+      "20260327000004_entry_fee_currency.sql",
+      "20260327000005_crud_entry_fee_currency.sql",
+      "20260327000006_event_weapons.sql",
+      "20260327000007_crud_weapons.sql",
+      "20260329000001_drop_old_overloads.sql"
     ],
-    "schema_fingerprint": "ff407ae3d9430a02eb89b6025bcfb0af"
+    "schema_fingerprint": "8e927c390f5afff8ea48264af035293c"
   },
   "prod": {
     "last_updated": "2026-03-26T18:17:43Z",
