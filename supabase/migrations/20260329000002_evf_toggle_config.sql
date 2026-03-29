@@ -9,8 +9,17 @@
 -- the new column.
 -- =============================================================================
 
-ALTER TABLE tbl_scoring_config
-  ADD COLUMN bool_show_evf_toggle BOOLEAN NOT NULL DEFAULT FALSE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'tbl_scoring_config' AND column_name = 'bool_show_evf_toggle'
+  ) THEN
+    ALTER TABLE tbl_scoring_config
+      ADD COLUMN bool_show_evf_toggle BOOLEAN NOT NULL DEFAULT FALSE;
+  END IF;
+END
+$$;
 
 
 -- -----------------------------------------------------------------------------
