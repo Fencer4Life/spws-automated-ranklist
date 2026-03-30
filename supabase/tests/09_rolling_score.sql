@@ -201,19 +201,19 @@ VALUES (
 
 -- R.13 — p_rolling=TRUE, domestic + international carry-over
 -- KORONA (117): born 1976, V1 in 2024-25 → V2 in 2025-26 (category crossing)
--- Current PPW: 98.00+69.72+27.33=195.05, no PP4/PP5 carry (no 2024-25 data)
--- MPW carry: 32.53 → ppw_total=227.58
--- Current PEW: 138.87+38.02, IMSW=0.00 → IMEW carry: 119.38 (MEW type)
+-- Current PPW: 98.00+69.72+27.33=195.05, PP4-V1 carry: 12.08
+-- Best-4 PPW: 98.00+69.72+27.33+12.08=207.13, MPW-V1 carry: 32.53 → ppw_total=239.66
+-- Current PEW: 138.87+38.02, IMSW=0.00 → IMEW-V1 carry: 119.38 (MEW type)
 -- PEW/MEW/MSW best-3: 138.87+119.38+38.02=296.27 → pew_total=296.27
--- Total: 227.58+296.27=523.85
+-- Total: 239.66+296.27=535.93
 SELECT is(
   (SELECT total_score FROM fn_ranking_kadra(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = 117),
-  523.85::NUMERIC,
-  'R.13: kadra p_rolling=TRUE — KORONA 523.85 (domestic + international carry-over)'
+  535.93::NUMERIC,
+  'R.13: kadra p_rolling=TRUE — KORONA 535.93 (domestic + international carry-over)'
 );
 
 -- R.14 — p_rolling=FALSE regression — same as current non-rolling result

@@ -303,6 +303,7 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 - CalendarView: `.rolling-progress` slot bar with `.slot.completed` (green ✓) and `.slot.carried` (amber ↩) states
 - i18n keys: `rolling_banner_text`, `rolling_carried_over`, `rolling_from_season` in both locales
 - pgTAP: 189 assertions (09_rolling_score.sql: 18 new). vitest: 166 assertions (7 new). pytest: 104 (unchanged).
+- **V1 M Epee seed data (2026-03-30):** Added `data/2024_25/v1_m_epee.sql` (14 tournaments, 97 matched results from `SZPADA-1-2024-2025.xlsx`). Generator tool (`python/tools/generate_season_seed.py`) SHEET_MAP extended with PP4, PP5, PEW3-6, PS. Test R.13 updated: kadra expected 523.85→535.93 (PP4-V1 carry-over adds 12.08 pts for Korona V1→V2 crossing).
 
 **Architecture:** Option C — `p_rolling BOOLEAN DEFAULT FALSE` parameter on `fn_ranking_ppw` and `fn_ranking_kadra`. New `fn_fencer_scores_rolling` for drilldown. New `fn_event_position` helper.
 

@@ -16,6 +16,8 @@ The rolling mechanism must:
 5. Use carried-over `num_final_score` as-is (multiplier already baked in at scoring time)
 6. Only affect the **active season** — past seasons are never modified
 
+**Verified with real data (2026-03-30):** V1 M Epee seed data added for 2024-25 season (14 tournaments, 97 matched results from `SZPADA-1-2024-2025.xlsx`). Korona (born 1976) was V1 in 2024-25 and aged to V2 in 2025-26. Rolling carry-over correctly includes PP4-V1 (12.08 pts), MPW-V1 (32.53 pts), and IMEW-V1 (119.38 pts) in the V2 ranking — confirmed by pgTAP test R.13 (kadra total 535.93).
+
 ### Three-State Position Logic
 
 | Active-season event at position N | Previous-season result at position N | Effect |
