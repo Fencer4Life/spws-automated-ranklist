@@ -32,6 +32,7 @@ export interface RankingPpwRow {
   ppw_score: number
   mpw_score: number
   total_score: number
+  bool_has_carryover?: boolean
 }
 
 export interface RankingKadraRow {
@@ -41,6 +42,7 @@ export interface RankingKadraRow {
   ppw_total: number
   pew_total: number
   total_score: number
+  bool_has_carryover?: boolean
 }
 
 export interface ScoreRow {
@@ -68,6 +70,8 @@ export interface ScoreRow {
   txt_season_code: string
   url_results: string | null
   txt_location: string | null
+  bool_carried_over?: boolean
+  txt_source_season_code?: string
 }
 
 export interface TournamentDetail {

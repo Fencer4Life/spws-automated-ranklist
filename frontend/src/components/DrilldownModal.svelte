@@ -46,6 +46,11 @@
       {:else if filteredScores.length === 0}
         <div class="empty">{t('no_tournament_results')}</div>
       {:else}
+        {#if hasCarryover}
+          <div class="rolling-info">
+            ↩ <strong>{t('rolling_banner_text')}</strong>
+          </div>
+        {/if}
         <div class="breakdown-section">
           <h3>{t('points_breakdown')}</h3>
           <div class="breakdown-grid" class:single-col={mode === 'PPW'}>
@@ -53,11 +58,12 @@
               <h4>{t('domestic_ppw_mpw')}: {fmt(domesticTotal)} {t('pts')}</h4>
               <div class="chart-area">
                 {#each domesticChart as item}
-                  <div class="chart-row">
+                  <div class="chart-row" class:carried-row={item.carried}>
                     <span class="chart-value">{Math.round(item.score)}</span>
                     <div class="chart-bar-bg">
                       <div
                         class="chart-bar domestic"
+                        class:domestic-carried={item.carried}
                         style="width: {maxScore > 0 ? (item.score / maxScore) * 100 : 0}%"
                       ></div>
                     </div>
@@ -72,11 +78,12 @@
                 <h4>{t('international_evf')}: {fmt(internationalTotal)} {t('pts')}</h4>
                 <div class="chart-area">
                   {#each internationalChart as item}
-                    <div class="chart-row">
+                    <div class="chart-row" class:carried-row={item.carried}>
                       <span class="chart-value">{Math.round(item.score)}</span>
                       <div class="chart-bar-bg">
                         <div
                           class="chart-bar international"
+                          class:international-carried={item.carried}
                           style="width: {maxScore > 0 ? (item.score / maxScore) * 100 : 0}%"
                         ></div>
                       </div>
@@ -93,6 +100,19 @@
               <span><strong>{parts[0]}</strong> — {parts.slice(1).join(' — ')}</span>
             {/each}
           </div>
+          {#if hasCarryover}
+            <div class="carried-legend">
+              <div class="carried-legend-item"><div class="legend-swatch current"></div> {t('domestic_ppw_mpw').split(' (')[0]}</div>
+              <div class="carried-legend-item"><div class="legend-swatch carried"></div> {t('rolling_carried_over')}</div>
+              {#if mode === 'KADRA'}
+                <div class="carried-legend-item"><div class="legend-swatch intl-current"></div> {t('international_evf').split(' (')[0]}</div>
+                <div class="carried-legend-item"><div class="legend-swatch intl-carried"></div> {t('rolling_carried_over')} (EVF)</div>
+              {/if}
+              <div class="carried-legend-item">★ Best</div>
+              <div class="carried-legend-item">✓ {t('sc_rule_always')}</div>
+              <div class="carried-legend-item">↩ {t('rolling_carried_over')}</div>
+            </div>
+          {/if}
         </div>
 
         <div class="table-total">
@@ -133,7 +153,7 @@
     </thead>
     <tbody>
       {#each rows as s}
-        <tr>
+        <tr class:carried-row={s.bool_carried_over}>
           <td>
             {#if s.url_results}
               <a href={s.url_results} target="_blank" rel="noopener">{s.txt_tournament_code}</a>
@@ -142,6 +162,9 @@
             {/if}
             {#if s.txt_location}
               <div class="location">{s.txt_location}</div>
+            {/if}
+            {#if s.bool_carried_over && s.txt_source_season_code}
+              <div class="carried-badge">↩ {s.txt_source_season_code}</div>
             {/if}
           </td>
           <td>{formatDate(s.dt_tournament)}</td>
@@ -198,16 +221,24 @@
       : scores
   )
 
+  // Sort: current season first (bool_carried_over=false), then carried-over, within each group by date asc
+  function sortCurrentFirst<T extends { bool_carried_over?: boolean; dt_tournament?: string | null }>(a: T, b: T): number {
+    const ac = a.bool_carried_over ? 1 : 0
+    const bc = b.bool_carried_over ? 1 : 0
+    if (ac !== bc) return ac - bc
+    return (a.dt_tournament ?? '').localeCompare(b.dt_tournament ?? '')
+  }
+
   let domesticScores = $derived(
     scores
       .filter((s) => s.enum_type === 'PPW' || s.enum_type === 'MPW')
-      .sort((a, b) => (a.dt_tournament ?? '').localeCompare(b.dt_tournament ?? ''))
+      .sort(sortCurrentFirst)
   )
 
   let internationalScores = $derived(
     scores
       .filter((s) => INTL_TYPES.includes(s.enum_type as (typeof INTL_TYPES)[number]))
-      .sort((a, b) => (a.dt_tournament ?? '').localeCompare(b.dt_tournament ?? ''))
+      .sort(sortCurrentFirst)
   )
 
   // Pool selection for JSONB rules: all international scores sorted desc
@@ -286,29 +317,49 @@
   let ppwModeTotal = $derived(domesticTotal)
 
   // Chart data
+  let hasCarryover = $derived(scores.some(s => s.bool_carried_over))
+  let carriedResultIds = $derived(new Set(scores.filter(s => s.bool_carried_over).map(s => s.id_result)))
+
   interface ChartItem {
     score: number
     code: string
     marker: string
     type: string
+    carried: boolean
   }
 
   let domesticChart = $derived.by((): ChartItem[] => {
+    // Current PPW first (by score desc), then carried PPW (by score desc), then MPW last
+    const currentPpw = ppwScoresSorted.filter(s => !s.bool_carried_over)
+    const carriedPpw = ppwScoresSorted.filter(s => !!s.bool_carried_over)
     const items: ChartItem[] = []
-    for (const s of ppwScoresSorted) {
+    for (const s of currentPpw) {
       items.push({
         score: s.num_final_score ?? 0,
         code: s.txt_tournament_code,
         marker: ppwBestIds.has(s.id_result) ? '★' : '',
         type: 'PPW',
+        carried: false,
+      })
+    }
+    for (const s of carriedPpw) {
+      const best = ppwBestIds.has(s.id_result) ? '★' : ''
+      items.push({
+        score: s.num_final_score ?? 0,
+        code: s.txt_tournament_code,
+        marker: best + ' ↩',
+        type: 'PPW',
+        carried: true,
       })
     }
     if (mpwScore) {
+      const carried = !!mpwScore.bool_carried_over
       items.push({
         score: mpwScore.num_final_score ?? 0,
         code: mpwScore.txt_tournament_code,
-        marker: '✓',
+        marker: '✓' + (carried ? ' ↩' : ''),
         type: 'MPW',
+        carried,
       })
     }
     return items
@@ -316,32 +367,48 @@
 
   let internationalChart = $derived.by((): ChartItem[] => {
     if (useJsonbRules) {
-      return intlPoolSorted.map((s) => ({
-        score: s.num_final_score ?? 0,
-        code: s.txt_tournament_code,
-        marker: intlPoolBestIds.has(s.id_result) ? '★' : '',
-        type: s.enum_type,
-      }))
+      // Current first (by score desc), then carried (by score desc)
+      const current = intlPoolSorted.filter(s => !s.bool_carried_over)
+      const carried = intlPoolSorted.filter(s => !!s.bool_carried_over)
+      return [...current, ...carried].map((s) => {
+        const isCarried = !!s.bool_carried_over
+        const best = intlPoolBestIds.has(s.id_result) ? '★' : ''
+        return {
+          score: s.num_final_score ?? 0,
+          code: s.txt_tournament_code,
+          marker: best + (isCarried ? ' ↩' : ''),
+          type: s.enum_type,
+          carried: isCarried,
+        }
+      })
     }
     // Legacy path
     const items: ChartItem[] = []
     if (mewScore) {
+      const carried = !!mewScore.bool_carried_over
       items.push({
         score: mewScore.num_final_score ?? 0,
         code: mewScore.txt_tournament_code,
-        marker: '✓',
+        marker: '✓' + (carried ? ' ↩' : ''),
         type: 'MEW',
+        carried,
       })
     }
     for (const s of pewScoresSorted) {
+      const carried = !!s.bool_carried_over
       items.push({
         score: s.num_final_score ?? 0,
         code: s.txt_tournament_code,
-        marker: pewBestIds.has(s.id_result) ? '★' : '',
+        marker: (pewBestIds.has(s.id_result) ? '★' : '') + (carried ? ' ↩' : ''),
         type: 'PEW',
+        carried,
       })
     }
-    items.sort((a, b) => b.score - a.score)
+    // Current first, then carried; within each group by score desc
+    items.sort((a, b) => {
+      if (a.carried !== b.carried) return a.carried ? 1 : -1
+      return b.score - a.score
+    })
     return items
   })
 
@@ -575,11 +642,20 @@
   .chart-bar.domestic {
     background: #4a90d9;
   }
+  .chart-row.carried-row .chart-value {
+    color: #999;
+  }
+  .chart-bar.domestic-carried {
+    background: repeating-linear-gradient(45deg, #b0c8e8, #b0c8e8 4px, #d0e0f4 4px, #d0e0f4 8px);
+  }
   .chart-bar.international {
     background: #e8a838;
   }
+  .chart-bar.international-carried {
+    background: repeating-linear-gradient(45deg, #e8d5a0, #e8d5a0 4px, #f0e4c4 4px, #f0e4c4 8px);
+  }
   .chart-marker {
-    width: 16px;
+    min-width: 28px;
     text-align: center;
     font-size: 13px;
   }
@@ -593,6 +669,42 @@
   }
   .type-legend strong {
     color: #666;
+  }
+  .carried-legend {
+    margin-top: 8px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: #888;
+    padding: 6px 10px;
+    background: #fafafa;
+    border-radius: 4px;
+  }
+  .carried-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .legend-swatch {
+    width: 14px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+  .legend-swatch.current {
+    background: #4a90d9;
+  }
+  .legend-swatch.carried {
+    background: repeating-linear-gradient(45deg, #b0c8e8, #b0c8e8 3px, #d0e0f4 3px, #d0e0f4 6px);
+    border: 1px solid #9bb8d8;
+  }
+  .legend-swatch.intl-current {
+    background: #e8a838;
+  }
+  .legend-swatch.intl-carried {
+    background: repeating-linear-gradient(45deg, #e8d5a0, #e8d5a0 3px, #f0e4c4 3px, #f0e4c4 6px);
+    border: 1px solid #d4b87a;
   }
   .table-total {
     text-align: right;
@@ -653,6 +765,33 @@
     color: #b07d2b;
   }
 
+  .rolling-info {
+    background: #fff8e6;
+    border: 1px solid #f0d88a;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #92730c;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .rolling-info strong {
+    color: #7a6520;
+  }
+  tr.carried-row {
+    color: #999;
+  }
+  tr.carried-row td {
+    border-bottom-color: #f5f5f5;
+  }
+  .carried-badge {
+    font-size: 10px;
+    color: #999;
+    font-style: italic;
+    margin-top: 2px;
+  }
   .location {
     font-size: 11px;
     color: #999;

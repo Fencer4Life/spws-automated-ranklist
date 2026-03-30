@@ -630,6 +630,50 @@ SELECT fn_calc_tournament_scores(
 );
 
 
+-- ---- PP4: IV Puchar Polski Weteranów (SCHEDULED — declared counterpart for rolling) ----
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country)
+VALUES (
+    'PP4-2025-2026',
+    'IV Puchar Polski Weteranów',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'SCHEDULED',
+    '2026-03-15', 'Gdańsk', 'Polska'
+);
+
+-- ---- PP5: V Puchar Polski Weteranów (SCHEDULED — declared counterpart for rolling) ----
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country)
+VALUES (
+    'PP5-2025-2026',
+    'V Puchar Polski Weteranów',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'SCHEDULED',
+    '2026-05-10', 'Warszawa', 'Polska'
+);
+
+-- ---- MPW: Mistrzostwa Polski Weteranów (SCHEDULED — declared counterpart for rolling) ----
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country)
+VALUES (
+    'MPW-2025-2026',
+    'Mistrzostwa Polski Weteranów',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'SCHEDULED',
+    '2026-06-07', 'Pabianice', 'Polska'
+);
+
+-- ---- IMEW: Indywidualne Mistrzostwa Europy Weteranów (SCHEDULED — declared counterpart for rolling) ----
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country)
+SELECT
+    'IMEW-2025-2026',
+    'Indywidualne Mistrzostwa Europy Weteranów',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'SCHEDULED',
+    '2026-07-15', 'Budapeszt', 'Węgry'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'IMEW-2025-2026');
+
 -- Backfill txt_location for 2025/26 events
 UPDATE tbl_event SET txt_location = 'Opole'     WHERE txt_code = 'PP1-2025-2026';
 UPDATE tbl_event SET txt_location = 'Poznań'    WHERE txt_code = 'PP2-2025-2026';
@@ -639,6 +683,6 @@ UPDATE tbl_event SET txt_location = 'Madryt'         WHERE txt_code = 'PEW2-2025
 UPDATE tbl_event SET txt_location = 'Manama, Bahrain' WHERE txt_code = 'IMSW-2025-2026';
 
 -- Summary
--- Domestic:     PP1, PP2, PP3
--- International: PEW1, PEW2, IMSW
--- (Early 2025 rounds PP4-5+MPW+PEW3-6+PS+IMEW moved to 2024-25 season file)
+-- Domestic:      PP1, PP2, PP3 (COMPLETED) + PP4, PP5, MPW (SCHEDULED — rolling counterparts)
+-- International: PEW1, PEW2, IMSW (COMPLETED) + IMEW (SCHEDULED — rolling counterpart)
+-- PP4+PP5+MPW+IMEW declared for M10 rolling score: carry-over from 2024-25 until completed

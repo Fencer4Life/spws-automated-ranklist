@@ -37,6 +37,7 @@ The POC (M0-M6) established the foundation. **236 test assertions** across 3 sui
 |---|-----------|-----------------|
 | M8 | Multi-Category Data + Calendar UI + Schema Extensions | 30-category seed data, Calendar view (`<spws-calendar>`), 4 new `tbl_event` columns, Shadow DOM for `<spws-ranklist>` + `<spws-calendar>`, admin password gate, scoring config editor |
 | M9 | Ingestion Pipeline + Admin CRUD + Identity Resolution Admin | `ingest.yml`, orchestration script, CRUD UI for seasons/events/tournaments, identity admin UI, re-import, Discord alerts |
+| M10 | Rolling Score for Active Season | `p_rolling` parameter on ranking functions, `fn_fencer_scores_rolling`, carried-over visual distinction, calendar progress indicator |
 
 ### 1.5 Architecture Decisions
 
@@ -48,6 +49,8 @@ The POC (M0-M6) established the foundation. **236 test assertions** across 3 sui
 | [ADR-016](adr/016-supabase-auth-totp-mfa.md) | Supabase Auth + TOTP MFA for Admin Access | Auth model |
 | [ADR-007](adr/007-shadow-dom-deferred.md) | Shadow DOM (target: M8) | CSS isolation |
 | [ADR-015](adr/015-m8-ui-design-decisions.md) | M8 UI Design Decisions | All 7 approved mockups |
+| [ADR-017](adr/017-season-configurable-evf-toggle.md) | Season-Configurable EVF Toggle | FR-34, FR-44, FR-64 |
+| [ADR-018](adr/018-rolling-score.md) | Rolling Score for Active Season | FR-15, FR-16, FR-65, FR-66 |
 
 ### 1.6 POC Test Gaps Carried Forward
 
@@ -286,6 +289,100 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 - EVF calendar import (T9.12, T9.13) — UI designed in M8 mockups (`m8_evf_import.html`)
 - Tournament import UI: URL scraping tab (deferred from T9.5/T9.6)
 
+### M10: Rolling Score for Active Season
+
+**Status: COMPLETED (2026-03-29)** — 25 new assertions (18 pgTAP + 7 vitest), 466 total
+
+**Scope:** Rolling ranking where previous-season results serve as baseline for active season. Position-matched carry-over with declared-counterpart constraint. See ADR-018 for full design.
+
+**Implementation notes:**
+- 4 new SQL migrations: `fn_event_position` helper, `fn_ranking_ppw` rolling, `fn_ranking_kadra` rolling, `fn_fencer_scores_rolling`
+- Seed data augmented: PP4+PP5 events added to 2024-25 (COMPLETED) and 2025-26 (SCHEDULED)
+- Frontend: `api.ts` passes `p_rolling: true` when season is active; `App.svelte` derives `isActiveSeason` from season list
+- DrilldownModal: striped bars for carried-over scores, `↩` marker, amber rolling info banner, `.carried-row` table styling
+- CalendarView: `.rolling-progress` slot bar with `.slot.completed` (green ✓) and `.slot.carried` (amber ↩) states
+- i18n keys: `rolling_banner_text`, `rolling_carried_over`, `rolling_from_season` in both locales
+- pgTAP: 189 assertions (09_rolling_score.sql: 18 new). vitest: 166 assertions (7 new). pytest: 104 (unchanged).
+
+**Architecture:** Option C — `p_rolling BOOLEAN DEFAULT FALSE` parameter on `fn_ranking_ppw` and `fn_ranking_kadra`. New `fn_fencer_scores_rolling` for drilldown. New `fn_event_position` helper.
+
+**UI mockups (approved):**
+
+| Mockup | File | Key Additions |
+|--------|------|---------------|
+| Drilldown Rolling | `m10_drilldown_rolling.html` | Grey striped carried-over bars, `↩` marker, amber rolling info banner, carried-row table styling |
+| Calendar Rolling | `m10_calendar_rolling.html` | Rolling progress slot bar (green ✓ completed, amber ↩ carried, grey — empty) |
+
+**Tasks:**
+
+| Task | Scope | Key Files | Tests |
+|------|-------|-----------|-------|
+| R1 | ADR-018 + `fn_event_position` helper | `doc/adr/018-rolling-score.md`, new migration | R.1–R.3 (pgTAP) |
+| R2 | Modify `fn_ranking_ppw` — add `p_rolling` parameter | Migration: DROP+recreate `fn_ranking_ppw` | R.4–R.12 (pgTAP) |
+| R3 | Modify `fn_ranking_kadra` — same treatment | Migration: DROP+recreate `fn_ranking_kadra` | R.13–R.14 (pgTAP) |
+| R4 | `fn_fencer_scores_rolling` — drilldown data | New migration | R.15–R.18 (pgTAP) |
+| R5 | Seed data augmentation (PP4+PP5 for both seasons) | `data/2024_25/*.sql`, `data/2025_26/*.sql` | — (enables R.7 tests) |
+| R6 | Frontend types + API | `types.ts`, `api.ts`, `App.svelte` | — |
+| R7 | DrilldownModal — carried-over visual distinction | `DrilldownModal.svelte` | R.19–R.22 (vitest) |
+| R8 | CalendarView — rolling progress indicator | `CalendarView.svelte` | R.23–R.25 (vitest) |
+| R9 | i18n + documentation | `pl.json`, `en.json`, dev plan, spec | — |
+
+**Task dependencies:** R1 → R5 → R2 → R3 → R4 → R6 → R7 + R8 (parallel) → R9
+
+**Test table:**
+
+| Test ID | Suite | What it verifies |
+|---------|-------|-----------------|
+| R.1 | pgTAP | `fn_event_position('PP1-2024-2025')` → `'PP1'` |
+| R.2 | pgTAP | `fn_event_position('MPW-2024-2025')` → `'MPW'` |
+| R.3 | pgTAP | `fn_event_position('PEW1-2025-2026')` → `'PEW1'` |
+| R.4 | pgTAP | `fn_ranking_ppw(rolling:=FALSE)` regression — same as before |
+| R.5 | pgTAP | `fn_ranking_ppw(rolling:=TRUE)` no previous season → same as non-rolling |
+| R.6 | pgTAP | `fn_ranking_ppw(rolling:=TRUE)` all completed → no carry-over |
+| R.7 | pgTAP | `fn_ranking_ppw(rolling:=TRUE)` partial: current + carried-over in pool |
+| R.8 | pgTAP | `fn_ranking_ppw(rolling:=TRUE)` best-K on merged pool |
+| R.9 | pgTAP | `fn_ranking_ppw(rolling:=TRUE)` category crossing V2→V3 |
+| R.10 | pgTAP | `fn_ranking_ppw(rolling:=TRUE)` new fencer → zero carryover |
+| R.11 | pgTAP | `fn_ranking_ppw(rolling:=TRUE)` no counterpart → not carried |
+| R.12 | pgTAP | `fn_ranking_ppw(rolling:=TRUE)` event deleted → carry-over drops |
+| R.13 | pgTAP | `fn_ranking_kadra(rolling:=TRUE)` domestic + international carry-over |
+| R.14 | pgTAP | `fn_ranking_kadra(rolling:=FALSE)` regression |
+| R.15 | pgTAP | `fn_fencer_scores_rolling` → `bool_carried_over=TRUE` for prev rows |
+| R.16 | pgTAP | `fn_fencer_scores_rolling` → `bool_carried_over=FALSE` for current rows |
+| R.17 | pgTAP | `fn_fencer_scores_rolling` position match: current replaces prev |
+| R.18 | pgTAP | `fn_fencer_scores_rolling` no counterpart → prev excluded |
+| R.19 | vitest | DrilldownModal: `.carried-row` class on carried-over rows |
+| R.20 | vitest | DrilldownModal: `↩` marker on carried-over chart items |
+| R.21 | vitest | DrilldownModal: rolling info banner when carried-over present |
+| R.22 | vitest | DrilldownModal: non-carried scores render normally (regression) |
+| R.23 | vitest | CalendarView: progress slots for active season |
+| R.24 | vitest | CalendarView: progress hidden for non-active season |
+| R.25 | vitest | CalendarView: correct slot states (completed/carried/missing) |
+
+**Estimated test totals after M10:**
+
+| Suite | Pre-M10 | M10 New | Total |
+|-------|---------|---------|-------|
+| pgTAP | 171 | +18 | 189 |
+| pytest | 104 | 0 | 104 |
+| vitest | 159 | +7 | 166 |
+| Playwright | 7 | 0 | 7 |
+| **Total** | **441** | **+25** | **466** |
+
+**Deployment notes:**
+- Migrations: 2–3 new files (position helper, fn_ranking_ppw DROP+recreate, fn_ranking_kadra DROP+recreate, fn_fencer_scores_rolling)
+- `fn_ranking_ppw` and `fn_ranking_kadra` require DROP before CREATE due to return type change — this is a **breaking migration** (must run in sequence)
+- Seed data augmentation: PP4+PP5 events added to 2024-25, declared counterparts in 2025-26
+- Frontend: `p_rolling: true` passed only when `season.bool_active === true`
+- Rollback: forward-only (per CI/CD manual §4.3) — new migration to revert if needed
+
+**FR scope changes:**
+- FR-15 modified: `fn_ranking_ppw` gains `p_rolling` parameter (ADR-018)
+- FR-16 modified: `fn_ranking_kadra` gains `p_rolling` parameter (ADR-018)
+- FR-65 added: Rolling ranking parameter with position-matched carry-over
+- FR-66 added: Rolling drilldown function + visual distinction in DrilldownModal and CalendarView
+- New i18n keys: `rolling_carried_over`, `rolling_progress`, `rolling_from_season`, `rolling_banner_text`
+
 ---
 
 ## 3. FR-to-Milestone Mapping
@@ -330,12 +427,21 @@ Quick reference — full details in [RTM (Appendix C)](Project%20Specification.%
 | FR-60 | Event CRUD via web UI | UC22(c) |
 | NFR-10 | Pipeline observability (POC gap) | §10 |
 
+### M10 Requirements
+
+| FR | Requirement | Source |
+|----|-------------|--------|
+| FR-15 | PPW ranking: `p_rolling` parameter for active-season carry-over (modified) | §8.3.1, ADR-018 |
+| FR-16 | Kadra ranking: `p_rolling` parameter for active-season carry-over (modified) | §8.3.2, ADR-018 |
+| FR-65 | Rolling ranking: position-matched carry-over, declared-counterpart constraint, category crossing | ADR-018 |
+| FR-66 | Rolling drilldown + visual distinction (carried-over bars, progress slots) | ADR-018 |
+
 ---
 
 ## 4. Cross-References
 
-- [Project Specification](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md) — Full spec (§6.2 = MVP scope, Appendix C = RTM with FR-01 to FR-60)
+- [Project Specification](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md) — Full spec (§6.2 = MVP scope, Appendix C = RTM with FR-01 to FR-66)
 - [CI/CD Operations Manual](cicd-operations-manual.md) — Release pipeline (LOCAL→CERT→PROD)
 - [POC Development Plan](POC_development_plan.md) — Historical reference only (M0-M6 archived)
-- `doc/mockups/` — 7 approved HTML mockups (see §2 M8 mockup table)
-- `doc/adr/` — 15 ADRs (see §1.5 for MVP-relevant subset)
+- `doc/mockups/` — 9 approved HTML mockups (see §2 M8 + M10 mockup tables)
+- `doc/adr/` — 18 ADRs (see §1.5 for MVP-relevant subset)

@@ -255,4 +255,48 @@ describe('CalendarView (T8.5)', () => {
     items = container.querySelectorAll('.timeline-event')
     expect(items.length).toBe(1)
   })
+
+  // R.23 — rolling progress bar with slot elements for active season
+  it('R.23: shows rolling-progress with slot elements for active season', () => {
+    const events = [
+      makeEvent({ id_event: 1, txt_code: 'PP1-2025-2026', enum_status: 'COMPLETED', dt_start: '2025-09-28' }),
+      makeEvent({ id_event: 2, txt_code: 'PP2-2025-2026', enum_status: 'SCHEDULED', dt_start: '2025-10-26' }),
+      makeEvent({ id_event: 3, txt_code: 'MPW-2025-2026', enum_status: 'SCHEDULED', dt_start: '2026-06-07' }),
+    ]
+    const { container } = render(CalendarView, {
+      props: { events, isActiveSeason: true },
+    })
+    const progress = container.querySelector('.rolling-progress')
+    expect(progress).not.toBeNull()
+    const slots = progress!.querySelectorAll('.slot')
+    expect(slots.length).toBe(3)
+  })
+
+  // R.24 — no rolling progress for non-active season
+  it('R.24: hides rolling-progress for non-active season', () => {
+    const events = [
+      makeEvent({ id_event: 1, txt_code: 'PP1-2025-2026', enum_status: 'COMPLETED', dt_start: '2025-09-28' }),
+    ]
+    const { container } = render(CalendarView, {
+      props: { events, isActiveSeason: false },
+    })
+    expect(container.querySelector('.rolling-progress')).toBeNull()
+  })
+
+  // R.25 — correct slot states
+  it('R.25: slot states match event statuses (completed/planned)', () => {
+    const events = [
+      makeEvent({ id_event: 1, txt_code: 'PP1-2025-2026', enum_status: 'COMPLETED', dt_start: '2025-09-28' }),
+      makeEvent({ id_event: 2, txt_code: 'PP2-2025-2026', enum_status: 'COMPLETED', dt_start: '2025-10-26' }),
+      makeEvent({ id_event: 3, txt_code: 'PP3-2025-2026', enum_status: 'SCHEDULED', dt_start: '2025-11-30' }),
+      makeEvent({ id_event: 4, txt_code: 'MPW-2025-2026', enum_status: 'SCHEDULED', dt_start: '2026-06-07' }),
+    ]
+    const { container } = render(CalendarView, {
+      props: { events, isActiveSeason: true },
+    })
+    const completedSlots = container.querySelectorAll('.slot.completed')
+    const plannedSlots = container.querySelectorAll('.slot.planned')
+    expect(completedSlots.length).toBe(2)
+    expect(plannedSlots.length).toBe(2)
+  })
 })

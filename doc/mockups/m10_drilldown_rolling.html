@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Drilldown — Rolling Score Mockup (M10)</title>
+  <style>
+    /* === Base === */
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
+    .views { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; }
+    .view-label { text-align: center; font-size: 13px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+
+    /* === Modal === */
+    .modal-content {
+      background: #fff; border-radius: 8px; width: 100%; max-width: 900px;
+      padding: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;
+    }
+    .modal-header h2 { margin: 0; font-size: 20px; color: #333; }
+    .modal-actions { display: flex; gap: 12px; align-items: center; }
+
+    /* Lang toggle */
+    .lang-toggle { display: flex; gap: 2px; font-size: 14px; }
+    .lang-toggle span { cursor: pointer; padding: 2px 4px; border-radius: 3px; }
+    .lang-toggle span.active { background: #e3effa; font-weight: 700; }
+
+    .btn-close {
+      background: none; border: none; font-size: 24px; cursor: pointer; color: #999; padding: 0 4px;
+    }
+
+    /* === Subheader === */
+    .subheader {
+      display: flex; align-items: center; gap: 6px; font-size: 13px; color: #666;
+      padding: 6px 0 12px; border-bottom: 1px solid #eee; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .subheader .sep { color: #ccc; }
+
+    /* PPW / +EVF toggle */
+    .toggle { display: inline-flex; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+    .toggle-btn {
+      padding: 5px 12px; border: none; background: #fff; font-size: 13px;
+      font-weight: 500; cursor: pointer; transition: all 0.15s;
+    }
+    .toggle-btn:first-child { border-right: 1px solid #ccc; }
+    .toggle-btn.active { background: #4a90d9; color: #fff; }
+
+    /* Export button */
+    .btn-export-sub {
+      margin-left: auto; background: none; border: 1px solid #ccc; border-radius: 4px;
+      padding: 3px 8px; font-size: 14px; cursor: pointer; color: #555;
+    }
+
+    /* === NEW: Rolling info banner === */
+    .rolling-info {
+      background: #fff8e6; border: 1px solid #f0d88a; border-radius: 6px;
+      padding: 8px 12px; font-size: 12px; color: #92730c; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .rolling-info strong { color: #7a6520; }
+
+    /* === Breakdown Section === */
+    .breakdown-section { margin-bottom: 24px; }
+    .breakdown-section h3 { font-size: 14px; color: #555; margin: 0 0 12px; }
+    .breakdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .breakdown-grid.single-col { grid-template-columns: 1fr; }
+    .breakdown-col h4 { font-size: 13px; color: #666; margin: 0 0 8px; font-weight: 600; }
+    .chart-area { display: flex; flex-direction: column; gap: 4px; }
+    .chart-row { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+    .chart-value { width: 36px; text-align: right; font-weight: 600; color: #333; }
+    .chart-bar-bg { flex: 1; height: 18px; background: #f0f0f0; border-radius: 3px; overflow: hidden; }
+    .chart-bar { height: 100%; border-radius: 3px; }
+    .chart-bar.domestic { background: #4a90d9; }
+    .chart-bar.international { background: #e8a838; }
+    .chart-marker { width: 28px; text-align: center; font-size: 13px; }
+
+    /* NEW: Carried-over chart styles */
+    .chart-bar.domestic-carried {
+      background: repeating-linear-gradient(45deg, #b0c8e8, #b0c8e8 4px, #d0e0f4 4px, #d0e0f4 8px);
+    }
+    .chart-bar.international-carried {
+      background: repeating-linear-gradient(45deg, #e8d5a0, #e8d5a0 4px, #f0e4c4 4px, #f0e4c4 8px);
+    }
+    .chart-row.carried .chart-value { color: #999; }
+
+    /* Type legend */
+    .type-legend {
+      margin-top: 12px; display: flex; flex-direction: column; gap: 2px;
+      font-size: 11px; color: #999;
+    }
+    .type-legend strong { color: #666; }
+
+    /* NEW: Carried-over legend */
+    .carried-legend {
+      margin-top: 8px; display: flex; gap: 16px; flex-wrap: wrap;
+      font-size: 11px; color: #888; padding: 6px 10px; background: #fafafa; border-radius: 4px;
+    }
+    .carried-legend-item { display: flex; align-items: center; gap: 4px; }
+    .legend-swatch { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
+    .legend-swatch.current { background: #4a90d9; }
+    .legend-swatch.carried { background: repeating-linear-gradient(45deg, #b0c8e8, #b0c8e8 3px, #d0e0f4 3px, #d0e0f4 6px); border: 1px solid #9bb8d8; }
+    .legend-swatch.intl-current { background: #e8a838; }
+    .legend-swatch.intl-carried { background: repeating-linear-gradient(45deg, #e8d5a0, #e8d5a0 3px, #f0e4c4 3px, #f0e4c4 6px); border: 1px solid #d4b87a; }
+
+    /* Table total */
+    .table-total { text-align: right; font-size: 15px; font-weight: 700; color: #222; margin-bottom: 4px; }
+
+    /* === Tournament Table === */
+    .table-section h3 { font-size: 14px; color: #555; margin: 16px 0 8px; }
+    .table-section { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
+    th {
+      padding: 8px; text-align: left; font-weight: 600; color: #555;
+      border-bottom: 2px solid #ddd; background: #f5f7fa; white-space: nowrap;
+    }
+    td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+    .num { text-align: right; }
+    .total { font-weight: 700; }
+    .place { font-weight: 700; font-size: 15px; }
+    .type-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; }
+    .type-badge.domestic { background: #e3effa; color: #2c6fad; }
+    .type-badge.international { background: #fdf3e1; color: #b07d2b; }
+    .location { font-size: 11px; color: #999; margin-top: 2px; }
+    td a { color: #2c6fad; text-decoration: underline; text-decoration-color: #b0c8e8; }
+
+    /* NEW: Carried-over row styles */
+    tr.carried-row { color: #999; }
+    tr.carried-row td { border-bottom-color: #f5f5f5; }
+    tr.carried-row .type-badge.domestic { opacity: 0.5; }
+    tr.carried-row .type-badge.international { opacity: 0.5; }
+    .carried-badge { font-size: 10px; color: #999; font-style: italic; }
+
+    /* Footer */
+    .modal-footer {
+      margin-top: 16px; padding-top: 10px; border-top: 1px solid #eee;
+      font-size: 12px; color: #888; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+    }
+    .modal-footer .sep { color: #ccc; }
+
+    /* Mobile */
+    @media (max-width: 600px) {
+      .modal-content { padding: 16px 12px; max-width: none; }
+      .modal-header h2 { font-size: 17px; }
+      .modal-actions { gap: 8px; }
+      .toggle-btn { padding: 4px 8px; font-size: 12px; }
+      .subheader { font-size: 12px; gap: 4px; }
+      .breakdown-grid { grid-template-columns: 1fr; gap: 16px; }
+      .breakdown-col h4 { font-size: 12px; }
+      .chart-row { font-size: 11px; }
+      .chart-value { width: 30px; }
+      .chart-bar-bg { height: 16px; }
+      table { font-size: 12px; min-width: 480px; }
+      th { padding: 6px; }
+      td { padding: 4px 6px; }
+      .views { flex-direction: column; gap: 30px; }
+    }
+  </style>
+</head>
+<body>
+
+<h2 style="text-align:center; color:#333; margin-bottom:30px;">M10 — Drilldown Modal with Rolling Score</h2>
+
+<div class="views">
+
+<!-- =====================================================================
+     VIEW 1: PPW MODE — Rolling score with carried-over domestic results
+     ===================================================================== -->
+<div>
+  <div class="view-label">PPW Mode (domestic only) — rolling active</div>
+  <div class="modal-content">
+
+    <!-- Header: fencer name + LangToggle + close -->
+    <div class="modal-header">
+      <h2>Kowalski Jan</h2>
+      <div class="modal-actions">
+        <div class="lang-toggle">
+          <span class="active">PL</span>
+          <span>EN</span>
+        </div>
+        <button class="btn-close">&times;</button>
+      </div>
+    </div>
+
+    <!-- Subheader: rank, category, season, birth year, PPW/+EVF toggle, export -->
+    <div class="subheader">
+      <span>Poz. #3</span>
+      <span class="sep">|</span>
+      <span>V2 &middot; SPWS-2025-2026 (ur. 1972)</span>
+      <div class="toggle">
+        <button class="toggle-btn active">PPW</button>
+        <button class="toggle-btn">+EVF</button>
+      </div>
+      <button class="btn-export-sub" title="Eksportuj do ODS">&#9113;</button>
+    </div>
+
+    <!-- NEW: Rolling info banner -->
+    <div class="rolling-info">
+      &#8617; <strong>Ranking bieżący:</strong> 3 z 5 PPW rozegranych &middot; 2 wyniki + MPW przeniesione z sezonu 2024-2025
+    </div>
+
+    <!-- Breakdown: Domestic chart only (PPW mode = single-col) -->
+    <div class="breakdown-section">
+      <h3>Szczegóły punktacji</h3>
+      <div class="breakdown-grid single-col">
+        <div class="breakdown-col">
+          <h4>Krajowe (PPW + MPW): 520 pkt</h4>
+          <div class="chart-area">
+            <!-- Current season results: solid blue bars -->
+            <div class="chart-row">
+              <span class="chart-value">120</span>
+              <div class="chart-bar-bg"><div class="chart-bar domestic" style="width: 80%;"></div></div>
+              <span class="chart-marker">★</span>
+            </div>
+            <div class="chart-row">
+              <span class="chart-value">110</span>
+              <div class="chart-bar-bg"><div class="chart-bar domestic" style="width: 73%;"></div></div>
+              <span class="chart-marker">★</span>
+            </div>
+            <div class="chart-row">
+              <span class="chart-value">105</span>
+              <div class="chart-bar-bg"><div class="chart-bar domestic" style="width: 70%;"></div></div>
+              <span class="chart-marker">★</span>
+            </div>
+            <!-- NEW: Carried-over results: striped blue bars -->
+            <div class="chart-row carried">
+              <span class="chart-value">95</span>
+              <div class="chart-bar-bg"><div class="chart-bar domestic-carried" style="width: 63%;"></div></div>
+              <span class="chart-marker">★ ↩</span>
+            </div>
+            <div class="chart-row carried">
+              <span class="chart-value">80</span>
+              <div class="chart-bar-bg"><div class="chart-bar domestic-carried" style="width: 53%;"></div></div>
+              <span class="chart-marker">↩</span>
+            </div>
+            <!-- MPW carried-over -->
+            <div class="chart-row carried">
+              <span class="chart-value">90</span>
+              <div class="chart-bar-bg"><div class="chart-bar domestic-carried" style="width: 60%;"></div></div>
+              <span class="chart-marker">✓ ↩</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Type legend (all 5 types — always shown) -->
+      <div class="type-legend">
+        <span><strong>PPW</strong> — Puchar Polski Weteranów</span>
+        <span><strong>MPW</strong> — Mistrzostwa Polski Weteranów</span>
+        <span><strong>PEW</strong> — Puchar Europy Weteranów</span>
+        <span><strong>MEW</strong> — Mistrzostwa Europy Weteranów</span>
+        <span><strong>MSW</strong> — Mistrzostwa Świata Weteranów</span>
+      </div>
+
+      <!-- NEW: Rolling legend with swatches -->
+      <div class="carried-legend">
+        <div class="carried-legend-item"><div class="legend-swatch current"></div> Bieżący sezon</div>
+        <div class="carried-legend-item"><div class="legend-swatch carried"></div> Przeniesione (2024-25)</div>
+        <div class="carried-legend-item">★ Najlepsze 4</div>
+        <div class="carried-legend-item">✓ Zawsze wliczane</div>
+        <div class="carried-legend-item">↩ Przeniesione</div>
+      </div>
+    </div>
+
+    <!-- Table total -->
+    <div class="table-total">PPW Suma: 520 pkt</div>
+
+    <!-- Tournament table: Domestic -->
+    <div class="table-section">
+      <h3>Zawody krajowe</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Zawody</th>
+            <th>Data</th>
+            <th>Typ</th>
+            <th class="num">Miejsce</th>
+            <th class="num">N</th>
+            <th class="num">Mnożnik</th>
+            <th class="num total">Punkty</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Current-season rows -->
+          <tr>
+            <td>
+              <a href="https://example.com/pp1-results" target="_blank">PP1-V2-M-EPEE-2025-2026</a>
+              <div class="location">Opole</div>
+            </td>
+            <td>28 wrz 25</td>
+            <td><span class="type-badge domestic">PPW</span></td>
+            <td class="num place">2</td>
+            <td class="num">8</td>
+            <td class="num">1.0</td>
+            <td class="num total">120 ★</td>
+          </tr>
+          <tr>
+            <td>
+              <a href="https://example.com/pp2-results" target="_blank">PP2-V2-M-EPEE-2025-2026</a>
+              <div class="location">Poznań</div>
+            </td>
+            <td>26 paź 25</td>
+            <td><span class="type-badge domestic">PPW</span></td>
+            <td class="num place">1</td>
+            <td class="num">11</td>
+            <td class="num">1.0</td>
+            <td class="num total">110 ★</td>
+          </tr>
+          <tr>
+            <td>
+              <a href="https://example.com/pp3-results" target="_blank">PP3-V2-M-EPEE-2025-2026</a>
+              <div class="location">Warszawa</div>
+            </td>
+            <td>30 lis 25</td>
+            <td><span class="type-badge domestic">PPW</span></td>
+            <td class="num place">3</td>
+            <td class="num">13</td>
+            <td class="num">1.0</td>
+            <td class="num total">105 ★</td>
+          </tr>
+          <!-- NEW: Carried-over rows (grey, with carried-badge) -->
+          <tr class="carried-row">
+            <td>
+              <a href="https://example.com/pp4-prev" target="_blank">PP4-V2-M-EPEE-2024-2025</a>
+              <div class="carried-badge">Gdańsk &middot; sezon 2024-25 ↩</div>
+            </td>
+            <td>15 mar 25</td>
+            <td><span class="type-badge domestic">PPW</span></td>
+            <td class="num place">4</td>
+            <td class="num">8</td>
+            <td class="num">1.0</td>
+            <td class="num total">95 ★ ↩</td>
+          </tr>
+          <tr class="carried-row">
+            <td>
+              <a href="https://example.com/pp5-prev" target="_blank">PP5-V2-M-EPEE-2024-2025</a>
+              <div class="carried-badge">Warszawa &middot; sezon 2024-25 ↩</div>
+            </td>
+            <td>10 maj 25</td>
+            <td><span class="type-badge domestic">PPW</span></td>
+            <td class="num place">5</td>
+            <td class="num">6</td>
+            <td class="num">1.0</td>
+            <td class="num total">80 ↩</td>
+          </tr>
+          <tr class="carried-row">
+            <td>
+              <a href="https://example.com/mpw-prev" target="_blank">MPW-V2-M-EPEE-2024-2025</a>
+              <div class="carried-badge">Pabianice &middot; sezon 2024-25 ↩</div>
+            </td>
+            <td>7 cze 25</td>
+            <td><span class="type-badge domestic">MPW</span></td>
+            <td class="num place">3</td>
+            <td class="num">6</td>
+            <td class="num">1.2</td>
+            <td class="num total">90 ✓ ↩</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer: N and Mult explanations -->
+    <div class="modal-footer">
+      <span><strong>N</strong> — liczba uczestników</span>
+      <span class="sep">&middot;</span>
+      <span><strong>Mnożnik</strong> — mnożnik typu zawodów stosowany do wyniku surowego (punkty za miejsce + bonus DE + bonus podium)</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- =====================================================================
+     VIEW 2: +EVF / KADRA MODE — Rolling with domestic + international
+     ===================================================================== -->
+<div>
+  <div class="view-label">+EVF Mode (domestic + international) — rolling active</div>
+  <div class="modal-content">
+
+    <!-- Header -->
+    <div class="modal-header">
+      <h2>Kowalski Jan</h2>
+      <div class="modal-actions">
+        <div class="lang-toggle">
+          <span class="active">PL</span>
+          <span>EN</span>
+        </div>
+        <button class="btn-close">&times;</button>
+      </div>
+    </div>
+
+    <!-- Subheader with +EVF active -->
+    <div class="subheader">
+      <span>Poz. #3</span>
+      <span class="sep">|</span>
+      <span>V2 &middot; SPWS-2025-2026 (ur. 1972)</span>
+      <div class="toggle">
+        <button class="toggle-btn">PPW</button>
+        <button class="toggle-btn active">+EVF</button>
+      </div>
+      <button class="btn-export-sub" title="Eksportuj do ODS">&#9113;</button>
+    </div>
+
+    <!-- Rolling info banner -->
+    <div class="rolling-info">
+      &#8617; <strong>Ranking bieżący:</strong> 3 z 5 PPW rozegranych &middot; 2 PPW + MPW + 1 PEW przeniesione z sezonu 2024-2025
+    </div>
+
+    <!-- Breakdown: Two-column grid (domestic + international) -->
+    <div class="breakdown-section">
+      <h3>Szczegóły punktacji</h3>
+      <div class="breakdown-grid">
+        <!-- Left: Domestic -->
+        <div class="breakdown-col">
+          <h4>Krajowe (PPW + MPW): 520 pkt</h4>
+          <div class="chart-area">
+            <div class="chart-row">
+              <span class="chart-value">120</span>
+              <div class="chart-bar-bg"><div class="chart-bar domestic" style="width: 80%;"></div></div>
+              <span class="chart-marker">★</span>
+            </div>
+            <div class="chart-row">
+              <span class="chart-value">110</span>
+              <div class="chart-bar-bg"><div class="chart-bar domestic" style="width: 73%;"></div></div>
+              <span class="chart-marker">★</span>
+            </div>
+            <div class="chart-row">
+              <span class="chart-value">105</span>
+              <div class="chart-bar-bg"><div class="chart-bar domestic" style="width: 70%;"></div></div>
+              <span class="chart-marker">★</span>
+            </div>
+            <div class="chart-row carried">
+              <span class="chart-value">95</span>
+              <div class="chart-bar-bg"><div class="chart-bar domestic-carried" style="width: 63%;"></div></div>
+              <span class="chart-marker">★ ↩</span>
+            </div>
+            <div class="chart-row carried">
+              <span class="chart-value">80</span>
+              <div class="chart-bar-bg"><div class="chart-bar domestic-carried" style="width: 53%;"></div></div>
+              <span class="chart-marker">↩</span>
+            </div>
+            <div class="chart-row carried">
+              <span class="chart-value">90</span>
+              <div class="chart-bar-bg"><div class="chart-bar domestic-carried" style="width: 60%;"></div></div>
+              <span class="chart-marker">✓ ↩</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: International (gold bars) -->
+        <div class="breakdown-col">
+          <h4>Zagraniczne (EVF): 310 pkt</h4>
+          <div class="chart-area">
+            <!-- Current-season international: solid gold -->
+            <div class="chart-row">
+              <span class="chart-value">150</span>
+              <div class="chart-bar-bg"><div class="chart-bar international" style="width: 100%;"></div></div>
+              <span class="chart-marker">★</span>
+            </div>
+            <div class="chart-row">
+              <span class="chart-value">90</span>
+              <div class="chart-bar-bg"><div class="chart-bar international" style="width: 60%;"></div></div>
+              <span class="chart-marker">★</span>
+            </div>
+            <!-- Carried-over international: striped gold -->
+            <div class="chart-row carried">
+              <span class="chart-value">70</span>
+              <div class="chart-bar-bg"><div class="chart-bar international-carried" style="width: 47%;"></div></div>
+              <span class="chart-marker">★ ↩</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Type legend -->
+      <div class="type-legend">
+        <span><strong>PPW</strong> — Puchar Polski Weteranów</span>
+        <span><strong>MPW</strong> — Mistrzostwa Polski Weteranów</span>
+        <span><strong>PEW</strong> — Puchar Europy Weteranów</span>
+        <span><strong>MEW</strong> — Mistrzostwa Europy Weteranów</span>
+        <span><strong>MSW</strong> — Mistrzostwa Świata Weteranów</span>
+      </div>
+
+      <!-- Rolling legend with both domestic + international swatches -->
+      <div class="carried-legend">
+        <div class="carried-legend-item"><div class="legend-swatch current"></div> Krajowe bieżące</div>
+        <div class="carried-legend-item"><div class="legend-swatch carried"></div> Krajowe przeniesione</div>
+        <div class="carried-legend-item"><div class="legend-swatch intl-current"></div> Zagraniczne bieżące</div>
+        <div class="carried-legend-item"><div class="legend-swatch intl-carried"></div> Zagraniczne przeniesione</div>
+        <div class="carried-legend-item">★ Najlepsze</div>
+        <div class="carried-legend-item">✓ Zawsze wliczane</div>
+        <div class="carried-legend-item">↩ Przeniesione</div>
+      </div>
+    </div>
+
+    <!-- Table total -->
+    <div class="table-total">+EVF Suma: 830 pkt</div>
+
+    <!-- Tournament table: Domestic -->
+    <div class="table-section">
+      <h3>Zawody krajowe</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Zawody</th>
+            <th>Data</th>
+            <th>Typ</th>
+            <th class="num">Miejsce</th>
+            <th class="num">N</th>
+            <th class="num">Mnożnik</th>
+            <th class="num total">Punkty</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <a href="https://example.com/pp1-results" target="_blank">PP1-V2-M-EPEE-2025-2026</a>
+              <div class="location">Opole</div>
+            </td>
+            <td>28 wrz 25</td>
+            <td><span class="type-badge domestic">PPW</span></td>
+            <td class="num place">2</td>
+            <td class="num">8</td>
+            <td class="num">1.0</td>
+            <td class="num total">120 ★</td>
+          </tr>
+          <tr>
+            <td>
+              <a href="https://example.com/pp2-results" target="_blank">PP2-V2-M-EPEE-2025-2026</a>
+              <div class="location">Poznań</div>
+            </td>
+            <td>26 paź 25</td>
+            <td><span class="type-badge domestic">PPW</span></td>
+            <td class="num place">1</td>
+            <td class="num">11</td>
+            <td class="num">1.0</td>
+            <td class="num total">110 ★</td>
+          </tr>
+          <tr>
+            <td>
+              <a href="https://example.com/pp3-results" target="_blank">PP3-V2-M-EPEE-2025-2026</a>
+              <div class="location">Warszawa</div>
+            </td>
+            <td>30 lis 25</td>
+            <td><span class="type-badge domestic">PPW</span></td>
+            <td class="num place">3</td>
+            <td class="num">13</td>
+            <td class="num">1.0</td>
+            <td class="num total">105 ★</td>
+          </tr>
+          <tr class="carried-row">
+            <td>
+              <a href="https://example.com/pp4-prev" target="_blank">PP4-V2-M-EPEE-2024-2025</a>
+              <div class="carried-badge">Gdańsk &middot; sezon 2024-25 ↩</div>
+            </td>
+            <td>15 mar 25</td>
+            <td><span class="type-badge domestic">PPW</span></td>
+            <td class="num place">4</td>
+            <td class="num">8</td>
+            <td class="num">1.0</td>
+            <td class="num total">95 ★ ↩</td>
+          </tr>
+          <tr class="carried-row">
+            <td>
+              <a href="https://example.com/pp5-prev" target="_blank">PP5-V2-M-EPEE-2024-2025</a>
+              <div class="carried-badge">Warszawa &middot; sezon 2024-25 ↩</div>
+            </td>
+            <td>10 maj 25</td>
+            <td><span class="type-badge domestic">PPW</span></td>
+            <td class="num place">5</td>
+            <td class="num">6</td>
+            <td class="num">1.0</td>
+            <td class="num total">80 ↩</td>
+          </tr>
+          <tr class="carried-row">
+            <td>
+              <a href="https://example.com/mpw-prev" target="_blank">MPW-V2-M-EPEE-2024-2025</a>
+              <div class="carried-badge">Pabianice &middot; sezon 2024-25 ↩</div>
+            </td>
+            <td>7 cze 25</td>
+            <td><span class="type-badge domestic">MPW</span></td>
+            <td class="num place">3</td>
+            <td class="num">6</td>
+            <td class="num">1.2</td>
+            <td class="num total">90 ✓ ↩</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- International tournaments table (only in +EVF mode) -->
+      <h3>Zawody zagraniczne (EVF)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Zawody</th>
+            <th>Data</th>
+            <th>Typ</th>
+            <th class="num">Miejsce</th>
+            <th class="num">N</th>
+            <th class="num">Mnożnik</th>
+            <th class="num total">Punkty</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Current-season international -->
+          <tr>
+            <td>
+              <a href="https://example.com/pew1-results" target="_blank">PEW1-V2-M-EPEE-2025-2026</a>
+              <div class="location">Budapeszt</div>
+            </td>
+            <td>15 paź 25</td>
+            <td><span class="type-badge international">PEW</span></td>
+            <td class="num place">5</td>
+            <td class="num">24</td>
+            <td class="num">1.0</td>
+            <td class="num total">150 ★</td>
+          </tr>
+          <tr>
+            <td>
+              <a href="https://example.com/mew-results" target="_blank">MEW-V2-M-EPEE-2025-2026</a>
+              <div class="location">Lozanna</div>
+            </td>
+            <td>22 lis 25</td>
+            <td><span class="type-badge international">MEW</span></td>
+            <td class="num place">8</td>
+            <td class="num">18</td>
+            <td class="num">2.0</td>
+            <td class="num total">90 ★</td>
+          </tr>
+          <!-- Carried-over international -->
+          <tr class="carried-row">
+            <td>
+              <a href="https://example.com/pew2-prev" target="_blank">PEW2-V2-M-EPEE-2024-2025</a>
+              <div class="carried-badge">Warszawa &middot; sezon 2024-25 ↩</div>
+            </td>
+            <td>12 kwi 25</td>
+            <td><span class="type-badge international">PEW</span></td>
+            <td class="num place">7</td>
+            <td class="num">20</td>
+            <td class="num">1.0</td>
+            <td class="num total">70 ★ ↩</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <span><strong>N</strong> — liczba uczestników</span>
+      <span class="sep">&middot;</span>
+      <span><strong>Mnożnik</strong> — mnożnik typu zawodów stosowany do wyniku surowego (punkty za miejsce + bonus DE + bonus podium)</span>
+    </div>
+  </div>
+</div>
+
+</div><!-- /views -->
+
+</body>
+</html>

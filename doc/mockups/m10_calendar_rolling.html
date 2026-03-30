@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M10 Calendar — Rolling Score Progress</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+  h1.page-title { text-align: center; margin-bottom: 10px; font-size: 28px; color: #222; }
+  .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 30px; }
+
+  .view-box { background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; width: 540px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 20px; }
+  .view-label { background: #e8ecf1; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Header bar (from m8_calendar_view.html) */
+  .header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f5f7fa; border-bottom: 1px solid #ddd; }
+  .hamburger { font-size: 20px; cursor: pointer; padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; line-height: 1; }
+  .header-title { display: flex; align-items: center; gap: 8px; font-size: 18px; color: #222; margin: 0; white-space: nowrap; }
+  .season-selector { display: flex; align-items: center; gap: 6px; }
+  .season-select { padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: #fff; }
+  .season-label { font-size: 13px; font-weight: 600; color: #555; white-space: nowrap; }
+  .env-toggle { display: flex; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+  .env-btn { padding: 3px 8px; border: none; background: #fff; font-size: 11px; font-weight: 600; cursor: pointer; letter-spacing: 0.5px; }
+  .env-btn.active { background: #4a90d9; color: #fff; }
+  .env-btn + .env-btn { border-left: 1px solid #ccc; }
+  .lang-toggle { display: flex; gap: 4px; }
+  .lang-btn { padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 14px; cursor: pointer; }
+  .lang-btn.active { background: #4a90d9; border-color: #4a90d9; }
+  .spacer { flex: 1; }
+
+  /* Filter bar */
+  .filter-bar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fafbfc; border-bottom: 1px solid #eee; flex-wrap: wrap; }
+  .mode-toggle { display: flex; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+  .mode-btn { padding: 4px 10px; border: none; background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .mode-btn.active { background: #4a90d9; color: #fff; }
+  .mode-btn + .mode-btn { border-left: 1px solid #ccc; }
+  .time-filter-select { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; font-weight: 600; background: #fff; cursor: pointer; }
+
+  /* Calendar content */
+  .calendar-content { padding: 14px; }
+
+  /* === NEW: Rolling progress indicator === */
+  .rolling-progress { padding: 10px 14px; background: #fafbfc; border-bottom: 1px solid #eee; }
+  .progress-label { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .progress-slots { display: flex; gap: 6px; flex-wrap: wrap; }
+  .slot { display: flex; flex-direction: column; align-items: center; padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: 600; min-width: 44px; }
+  .slot-name { font-size: 10px; }
+  .slot-icon { font-size: 14px; margin-top: 1px; }
+  .slot.completed { background: #e6f4ea; color: #1a7f37; border: 1px solid #b4dfbf; }
+  .slot.carried { background: #fff8e6; color: #b07d2b; border: 1px solid #f0d88a; }
+  .slot.missing { background: #f5f5f5; color: #999; border: 1px solid #ddd; }
+  .progress-summary { margin-top: 6px; font-size: 11px; color: #666; }
+  /* === END rolling progress === */
+
+  /* Month header */
+  .month-header { font-size: 13px; font-weight: 700; color: #888; letter-spacing: 1px; text-transform: uppercase; padding: 12px 0 8px; text-align: center; border-bottom: 1px solid #eee; margin-bottom: 10px; }
+
+  /* Event cards (from m8 accepted design — UNCHANGED) */
+  .event-card { border: 1px solid #ddd; border-radius: 6px; padding: 12px 14px; margin-bottom: 10px; background: #fff; }
+  .event-card.international { border-left: 4px solid #d4a017; }
+  .event-card .event-top { display: flex; gap: 10px; align-items: baseline; }
+  .event-card .event-date { font-weight: 700; font-size: 14px; color: #4a90d9; white-space: nowrap; }
+  .event-card .event-name { font-size: 14px; font-weight: 600; color: #222; }
+  .event-card .event-loc { font-size: 13px; color: #666; margin-top: 3px; }
+  .event-weapons { font-size: 11px; color: #4a90d9; margin-top: 3px; }
+  .event-meta { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; font-size: 12px; }
+  .results-link { color: #1a7f37; text-decoration: none; font-weight: 600; }
+  .results-link:hover { text-decoration: underline; }
+  .invitation-link { color: #4a90d9; text-decoration: none; }
+  .invitation-link:hover { text-decoration: underline; }
+  .entry-fee { color: #666; }
+  .event-card .event-bottom { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+  .event-card .tournament-count { font-size: 12px; color: #888; }
+  .status-badge { font-size: 12px; padding: 2px 8px; border-radius: 10px; font-weight: 600; display: inline-block; }
+  .status-completed { background: #e6f4ea; color: #1a7f37; }
+  .status-scheduled { background: #e1f0ff; color: #1a6fbf; }
+  .status-planned { background: #f0f0f0; color: #666; }
+  .status-cancelled { background: #ffeef0; color: #c33; text-decoration: line-through; }
+  .status-inprogress { background: #fff4e6; color: #b35c00; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 14px; font-size: 12px; border-top: 1px solid #eee; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .legend-border { width: 4px; height: 18px; display: inline-block; border-radius: 2px; }
+  .legend-swatch { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
+
+  .side-by-side { display: flex; gap: 24px; flex-wrap: wrap; }
+  hr.sep { border: none; border-top: 2px solid #4a90d9; margin: 40px 0 10px; }
+  .note { font-size: 13px; color: #888; margin-top: 8px; padding: 8px 12px; background: #fff8e1; border-radius: 4px; border-left: 3px solid #f5a623; margin-bottom: 20px; }
+  .section-header { font-size: 14px; font-weight: 600; color: #444; margin: 16px 0 8px; padding: 4px 0; border-bottom: 1px solid #eee; }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">M10 Calendar — Rolling Score Progress</h1>
+<p class="subtitle">Adds rolling progress indicator above the existing calendar. All existing UI elements preserved. Shows PPW mode and +EVF mode side-by-side.</p>
+
+<!-- ==================== SHARED HEADER ==================== -->
+<div style="background:#fff; border:1px solid #ddd; border-radius:8px; padding:14px; margin-bottom:20px; width:540px;">
+  <div style="font-size:12px; font-weight:600; color:#888; text-transform:uppercase; margin-bottom:8px;">Header (unchanged from M8)</div>
+  <div class="header" style="border-radius:6px;">
+    <button class="hamburger">&#9776;</button>
+    <div class="env-toggle">
+      <button class="env-btn active">CT</button>
+      <button class="env-btn">PD</button>
+    </div>
+    <h2 class="header-title">
+      &#9876; Kalendarz
+    </h2>
+    <div class="season-selector">
+      <select class="season-select"><option>SPWS-2025-2026 &#9679;</option></select>
+      <span class="season-label">Sezon</span>
+    </div>
+    <span class="spacer"></span>
+    <div class="lang-toggle">
+      <button class="lang-btn">&#127468;&#127463;</button>
+      <button class="lang-btn active">&#127477;&#127473;</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PPW MODE WITH ROLLING PROGRESS ==================== -->
+<hr class="sep">
+<div class="section-header">PPW mode — aktywny sezon z rolling score</div>
+
+<div class="side-by-side">
+  <!-- PPW mode -->
+  <div class="view-box">
+    <div class="view-label">PPW mode — domestic events only + rolling progress</div>
+
+    <div class="filter-bar">
+      <div class="mode-toggle">
+        <button class="mode-btn active">PPW</button>
+        <button class="mode-btn">+EVF</button>
+      </div>
+      <select class="time-filter-select">
+        <option>Wszystkie</option>
+        <option>Minione</option>
+        <option>Przysz&#322;e</option>
+      </select>
+    </div>
+
+    <!-- NEW: Rolling progress indicator -->
+    <div class="rolling-progress">
+      <div class="progress-label">Post&#281;p sezonu</div>
+      <div class="progress-slots">
+        <div class="slot completed" title="PP1 — bie&#380;&#261;cy sezon">
+          <span class="slot-name">PP1</span>
+          <span class="slot-icon">&#10003;</span>
+        </div>
+        <div class="slot completed" title="PP2 — bie&#380;&#261;cy sezon">
+          <span class="slot-name">PP2</span>
+          <span class="slot-icon">&#10003;</span>
+        </div>
+        <div class="slot completed" title="PP3 — bie&#380;&#261;cy sezon">
+          <span class="slot-name">PP3</span>
+          <span class="slot-icon">&#10003;</span>
+        </div>
+        <div class="slot carried" title="PP4 — z sez. 2024-2025">
+          <span class="slot-name">PP4</span>
+          <span class="slot-icon">&#8617;</span>
+        </div>
+        <div class="slot carried" title="PP5 — z sez. 2024-2025">
+          <span class="slot-name">PP5</span>
+          <span class="slot-icon">&#8617;</span>
+        </div>
+        <div class="slot carried" title="MPW — z sez. 2024-2025">
+          <span class="slot-name">MPW</span>
+          <span class="slot-icon">&#8617;</span>
+        </div>
+      </div>
+      <div class="progress-summary">
+        3/5 PPW bie&#380;&#261;cych &#183; 2 PPW + MPW przeniesione z 2024-2025
+      </div>
+    </div>
+    <!-- END rolling progress -->
+
+    <div class="calendar-content">
+      <div class="month-header">&mdash; Wrzesie&#324; 2025 &mdash;</div>
+
+      <div class="event-card">
+        <div class="event-top">
+          <span class="event-date">28.09</span>
+          <span class="event-name">I Puchar Polski Weteran&oacute;w</span>
+        </div>
+        <div class="event-loc">Opole, Polska &middot; 8 turniej&oacute;w</div>
+        <div class="event-weapons">Szpada + Floret + Szabla</div>
+        <div class="event-meta">
+          <a href="#" class="results-link">Wyniki &rarr;</a>
+          <a href="#" class="invitation-link">Komunikat organizatora &rarr;</a>
+          <span class="entry-fee">Op&#322;ata startowa: 80 PLN</span>
+        </div>
+        <div class="event-bottom">
+          <span class="status-badge status-completed">Zako&#324;czone</span>
+        </div>
+      </div>
+
+      <div class="month-header">&mdash; Pa&#378;dziernik 2025 &mdash;</div>
+
+      <div class="event-card">
+        <div class="event-top">
+          <span class="event-date">26.10</span>
+          <span class="event-name">II Puchar Polski Weteran&oacute;w</span>
+        </div>
+        <div class="event-loc">Pozna&#324;, Polska &middot; 11 turniej&oacute;w</div>
+        <div class="event-weapons">Szpada + Floret + Szabla</div>
+        <div class="event-meta">
+          <a href="#" class="results-link">Wyniki &rarr;</a>
+          <a href="#" class="invitation-link">Komunikat organizatora &rarr;</a>
+          <span class="entry-fee">Op&#322;ata startowa: 80 PLN</span>
+        </div>
+        <div class="event-bottom">
+          <span class="status-badge status-completed">Zako&#324;czone</span>
+        </div>
+      </div>
+
+      <div class="month-header">&mdash; Listopad 2025 &mdash;</div>
+
+      <div class="event-card">
+        <div class="event-top">
+          <span class="event-date">30.11</span>
+          <span class="event-name">III Puchar Polski Weteran&oacute;w</span>
+        </div>
+        <div class="event-loc">Warszawa, Polska &middot; 13 turniej&oacute;w</div>
+        <div class="event-weapons">Szpada + Floret + Szabla</div>
+        <div class="event-meta">
+          <a href="#" class="results-link">Wyniki &rarr;</a>
+          <a href="#" class="invitation-link">Komunikat organizatora &rarr;</a>
+          <span class="entry-fee">Op&#322;ata startowa: 80 PLN</span>
+        </div>
+        <div class="event-bottom">
+          <span class="status-badge status-completed">Zako&#324;czone</span>
+        </div>
+      </div>
+
+      <div class="month-header">&mdash; Marzec 2026 &mdash;</div>
+
+      <div class="event-card">
+        <div class="event-top">
+          <span class="event-date">15.03</span>
+          <span class="event-name">IV Puchar Polski Weteran&oacute;w</span>
+        </div>
+        <div class="event-loc">Gda&#324;sk, Polska &middot; 6 turniej&oacute;w</div>
+        <div class="event-weapons">Szpada + Floret</div>
+        <div class="event-meta">
+          <a href="#" class="invitation-link">Komunikat organizatora &rarr;</a>
+          <span class="entry-fee">Op&#322;ata startowa: 80 PLN</span>
+        </div>
+        <div class="event-bottom">
+          <span class="status-badge status-scheduled">Potwierdzone</span>
+        </div>
+      </div>
+
+      <div class="month-header">&mdash; Maj 2026 &mdash;</div>
+
+      <div class="event-card">
+        <div class="event-top">
+          <span class="event-date">10.05</span>
+          <span class="event-name">V Puchar Polski Weteran&oacute;w</span>
+        </div>
+        <div class="event-loc">Wroc&#322;aw, Polska &middot; 5 turniej&oacute;w</div>
+        <div class="event-bottom">
+          <span class="status-badge status-planned">Zaplanowane</span>
+        </div>
+      </div>
+
+      <div class="month-header">&mdash; Czerwiec 2026 &mdash;</div>
+
+      <div class="event-card">
+        <div class="event-top">
+          <span class="event-date">07.06</span>
+          <span class="event-name">Mistrzostwa Polski Weteran&oacute;w</span>
+        </div>
+        <div class="event-loc">Pabianice, Polska &middot; 10 turniej&oacute;w</div>
+        <div class="event-bottom">
+          <span class="status-badge status-planned">Zaplanowane</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot" style="background:#1a7f37;"></span> Zako&#324;czone</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#1a6fbf;"></span> Potwierdzone</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#999;"></span> Zaplanowane</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#c33;"></span> Odwo&#322;ane</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#b35c00;"></span> W trakcie</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#e6f4ea; border:1px solid #b4dfbf;"></span> Bie&#380;&#261;cy sezon</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#fff8e6; border:1px solid #f0d88a;"></span> Przeniesione (&#8617;)</div>
+    </div>
+  </div>
+
+  <!-- +EVF mode -->
+  <div class="view-box">
+    <div class="view-label">+EVF mode — all events + international + rolling progress</div>
+
+    <div class="filter-bar">
+      <div class="mode-toggle">
+        <button class="mode-btn">PPW</button>
+        <button class="mode-btn active">+EVF</button>
+      </div>
+      <select class="time-filter-select">
+        <option>Wszystkie</option>
+      </select>
+    </div>
+
+    <!-- Rolling progress in +EVF mode — shows international slots too -->
+    <div class="rolling-progress">
+      <div class="progress-label">Post&#281;p sezonu</div>
+      <div class="progress-slots">
+        <div class="slot completed" title="PP1 — bie&#380;&#261;cy sezon">
+          <span class="slot-name">PP1</span>
+          <span class="slot-icon">&#10003;</span>
+        </div>
+        <div class="slot completed" title="PP2 — bie&#380;&#261;cy sezon">
+          <span class="slot-name">PP2</span>
+          <span class="slot-icon">&#10003;</span>
+        </div>
+        <div class="slot completed" title="PP3 — bie&#380;&#261;cy sezon">
+          <span class="slot-name">PP3</span>
+          <span class="slot-icon">&#10003;</span>
+        </div>
+        <div class="slot carried" title="PP4 — z sez. 2024-2025">
+          <span class="slot-name">PP4</span>
+          <span class="slot-icon">&#8617;</span>
+        </div>
+        <div class="slot carried" title="PP5 — z sez. 2024-2025">
+          <span class="slot-name">PP5</span>
+          <span class="slot-icon">&#8617;</span>
+        </div>
+        <div class="slot carried" title="MPW — z sez. 2024-2025">
+          <span class="slot-name">MPW</span>
+          <span class="slot-icon">&#8617;</span>
+        </div>
+        <div class="slot completed" title="PEW1 — bie&#380;&#261;cy sezon" style="border-color:#d4a017; background:#fdf3e1;">
+          <span class="slot-name">PEW1</span>
+          <span class="slot-icon">&#10003;</span>
+        </div>
+        <div class="slot carried" title="MEW — z sez. 2024-2025" style="border-color:#d4a017;">
+          <span class="slot-name">MEW</span>
+          <span class="slot-icon">&#8617;</span>
+        </div>
+      </div>
+      <div class="progress-summary">
+        3/5 PPW + 1 PEW bie&#380;&#261;cych &#183; 2 PPW + MPW + MEW przeniesione z 2024-2025
+      </div>
+    </div>
+
+    <div class="calendar-content">
+      <div class="month-header">&mdash; Wrzesie&#324; 2025 &mdash;</div>
+
+      <div class="event-card">
+        <div class="event-top">
+          <span class="event-date">28.09</span>
+          <span class="event-name">I Puchar Polski Weteran&oacute;w</span>
+        </div>
+        <div class="event-loc">Opole, Polska &middot; 8 turniej&oacute;w</div>
+        <div class="event-weapons">Szpada + Floret + Szabla</div>
+        <div class="event-meta">
+          <a href="#" class="results-link">Wyniki &rarr;</a>
+          <a href="#" class="invitation-link">Komunikat organizatora &rarr;</a>
+          <span class="entry-fee">Op&#322;ata startowa: 80 PLN</span>
+        </div>
+        <div class="event-bottom">
+          <span class="status-badge status-completed">Zako&#324;czone</span>
+        </div>
+      </div>
+
+      <div class="month-header">&mdash; Pa&#378;dziernik 2025 &mdash;</div>
+
+      <div class="event-card international">
+        <div class="event-top">
+          <span class="event-date">12.10</span>
+          <span class="event-name">Grand Prix Budapeszt</span>
+        </div>
+        <div class="event-loc">Budapeszt, W&#281;gry &middot; 10 turniej&oacute;w</div>
+        <div class="event-weapons">Szpada + Floret + Szabla</div>
+        <div class="event-meta">
+          <a href="#" class="results-link">Wyniki &rarr;</a>
+          <a href="#" class="invitation-link">Komunikat organizatora &rarr;</a>
+          <span class="entry-fee">Op&#322;ata startowa: 50 EUR</span>
+        </div>
+        <div class="event-bottom">
+          <span class="status-badge status-completed">Zako&#324;czone</span>
+        </div>
+      </div>
+
+      <div class="event-card">
+        <div class="event-top">
+          <span class="event-date">26.10</span>
+          <span class="event-name">II Puchar Polski Weteran&oacute;w</span>
+        </div>
+        <div class="event-loc">Pozna&#324;, Polska &middot; 11 turniej&oacute;w</div>
+        <div class="event-weapons">Szpada + Floret + Szabla</div>
+        <div class="event-meta">
+          <a href="#" class="results-link">Wyniki &rarr;</a>
+          <a href="#" class="invitation-link">Komunikat organizatora &rarr;</a>
+          <span class="entry-fee">Op&#322;ata startowa: 80 PLN</span>
+        </div>
+        <div class="event-bottom">
+          <span class="status-badge status-completed">Zako&#324;czone</span>
+        </div>
+      </div>
+
+      <div class="month-header">&mdash; Listopad 2025 &mdash;</div>
+
+      <div class="event-card">
+        <div class="event-top">
+          <span class="event-date">30.11</span>
+          <span class="event-name">III Puchar Polski Weteran&oacute;w</span>
+        </div>
+        <div class="event-loc">Warszawa, Polska &middot; 13 turniej&oacute;w</div>
+        <div class="event-weapons">Szpada + Floret + Szabla</div>
+        <div class="event-meta">
+          <a href="#" class="results-link">Wyniki &rarr;</a>
+          <a href="#" class="invitation-link">Komunikat organizatora &rarr;</a>
+          <span class="entry-fee">Op&#322;ata startowa: 80 PLN</span>
+        </div>
+        <div class="event-bottom">
+          <span class="status-badge status-completed">Zako&#324;czone</span>
+        </div>
+      </div>
+
+      <div class="month-header">&mdash; Marzec 2026 &mdash;</div>
+
+      <div class="event-card">
+        <div class="event-top">
+          <span class="event-date">15.03</span>
+          <span class="event-name">IV Puchar Polski Weteran&oacute;w</span>
+        </div>
+        <div class="event-loc">Gda&#324;sk, Polska &middot; 6 turniej&oacute;w</div>
+        <div class="event-weapons">Szpada + Floret</div>
+        <div class="event-meta">
+          <a href="#" class="invitation-link">Komunikat organizatora &rarr;</a>
+          <span class="entry-fee">Op&#322;ata startowa: 80 PLN</span>
+        </div>
+        <div class="event-bottom">
+          <span class="status-badge status-scheduled">Potwierdzone</span>
+        </div>
+      </div>
+
+      <div class="month-header">&mdash; Maj 2026 &mdash;</div>
+
+      <div class="event-card international">
+        <div class="event-top">
+          <span class="event-date">03.05</span>
+          <span class="event-name">IMEW 2026</span>
+        </div>
+        <div class="event-loc">Thionville, Francja &middot; 12 turniej&oacute;w</div>
+        <div class="event-bottom">
+          <span class="status-badge status-planned">Zaplanowane</span>
+        </div>
+      </div>
+
+      <div class="event-card">
+        <div class="event-top">
+          <span class="event-date">10.05</span>
+          <span class="event-name">V Puchar Polski Weteran&oacute;w</span>
+        </div>
+        <div class="event-loc">Wroc&#322;aw, Polska &middot; 5 turniej&oacute;w</div>
+        <div class="event-bottom">
+          <span class="status-badge status-planned">Zaplanowane</span>
+        </div>
+      </div>
+
+      <div class="month-header">&mdash; Czerwiec 2026 &mdash;</div>
+
+      <div class="event-card">
+        <div class="event-top">
+          <span class="event-date">07.06</span>
+          <span class="event-name">Mistrzostwa Polski Weteran&oacute;w</span>
+        </div>
+        <div class="event-loc">Pabianice, Polska &middot; 10 turniej&oacute;w</div>
+        <div class="event-bottom">
+          <span class="status-badge status-planned">Zaplanowane</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><span class="legend-border" style="background:#d4a017;"></span> Zawody mi&#281;dzynarodowe</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#1a7f37;"></span> Zako&#324;czone</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#1a6fbf;"></span> Potwierdzone</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#999;"></span> Zaplanowane</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#c33;"></span> Odwo&#322;ane</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#b35c00;"></span> W trakcie</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#e6f4ea; border:1px solid #b4dfbf;"></span> Bie&#380;&#261;cy sezon</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#fff8e6; border:1px solid #f0d88a;"></span> Przeniesione (&#8617;)</div>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Rolling score additions (everything else unchanged):</strong>
+  <ul style="margin-top:4px; padding-left:16px;">
+    <li><strong>Rolling progress bar</strong> appears between filter bar and calendar content (only for active season)</li>
+    <li>Slots: green &#10003; = completed current, amber &#8617; = carried from previous season, grey &mdash; = empty/missing</li>
+    <li>In +EVF mode: international position slots (PEW, MEW) appear alongside domestic, with gold-tinted backgrounds</li>
+    <li>Summary text: "3/5 PPW bie&#380;&#261;cych &#183; 2 PPW + MPW przeniesione z 2024-2025"</li>
+    <li>Legend extended with carried-over swatch</li>
+    <li><strong>ALL existing elements preserved:</strong> weapons line, Wyniki&rarr;, Komunikat organizatora&rarr;, Op&#322;ata startowa, status badges, gold international border, lang toggle, env toggle</li>
+  </ul>
+</div>
+
+<hr class="sep" style="margin-top:30px;">
+<div style="text-align:center; padding: 20px; color: #888; font-size: 13px;">
+  Preserved from M8: &#9776; sidebar &middot; CT/PD env toggle &middot; &#127468;&#127463;/&#127477;&#127473; lang toggle &middot; Season dropdown &middot; PPW/+EVF toggle &middot; Time filter dropdown &middot; Weapons line &middot; Wyniki/Komunikat/Op&#322;ata links &middot; Status badges &middot; Gold international border
+</div>
+
+</body>
+</html>

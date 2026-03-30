@@ -354,4 +354,56 @@ describe('DrilldownModal', () => {
     })
     expect(container.querySelector('.btn-close')).not.toBeNull()
   })
+
+  // R.19 — carried-over table rows have .carried-row class
+  it('R.19: carried-over rows get .carried-row class', () => {
+    const scores = [
+      makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100, bool_carried_over: false }),
+      makeScore({ id_result: 2, enum_type: 'PPW', num_final_score: 80, id_tournament: 11, bool_carried_over: true, txt_source_season_code: '2024/25' }),
+    ]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW', context: CTX },
+    })
+    const carriedRows = container.querySelectorAll('tbody tr.carried-row')
+    expect(carriedRows.length).toBe(1)
+  })
+
+  // R.20 — carried-over chart items have ↩ marker
+  it('R.20: carried-over chart items show ↩ marker', () => {
+    const scores = [
+      makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100, bool_carried_over: false }),
+      makeScore({ id_result: 2, enum_type: 'PPW', num_final_score: 80, id_tournament: 11, bool_carried_over: true, txt_source_season_code: '2024/25' }),
+    ]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW', context: CTX },
+    })
+    const markers = Array.from(container.querySelectorAll('.chart-marker')).map(m => m.textContent)
+    expect(markers.some(m => m?.includes('↩'))).toBe(true)
+  })
+
+  // R.21 — rolling info banner visible when any bool_carried_over=true
+  it('R.21: rolling info banner shows when carried-over scores present', () => {
+    const scores = [
+      makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100, bool_carried_over: false }),
+      makeScore({ id_result: 2, enum_type: 'PPW', num_final_score: 80, id_tournament: 11, bool_carried_over: true, txt_source_season_code: '2024/25' }),
+    ]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW', context: CTX },
+    })
+    expect(container.querySelector('.rolling-info')).not.toBeNull()
+  })
+
+  // R.22 — non-carried scores render normally (regression)
+  it('R.22: non-carried scores render without carried-row class', () => {
+    const scores = [
+      makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100, bool_carried_over: false }),
+      makeScore({ id_result: 2, enum_type: 'MPW', num_final_score: 45, id_tournament: 20, bool_carried_over: false }),
+    ]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW', context: CTX },
+    })
+    const carriedRows = container.querySelectorAll('tbody tr.carried-row')
+    expect(carriedRows.length).toBe(0)
+    expect(container.querySelector('.rolling-info')).toBeNull()
+  })
 })

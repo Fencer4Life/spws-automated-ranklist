@@ -71,7 +71,7 @@
       onclose={closeDrilldown}
     />
   {:else if currentView === 'calendar'}
-    <CalendarView events={calendarEvents} {showEvfToggle} />
+    <CalendarView events={calendarEvents} {showEvfToggle} {isActiveSeason} />
   {:else if currentView === 'admin_seasons'}
     <SeasonManager
       {seasons}
@@ -160,6 +160,7 @@
     fetchRankingPpw,
     fetchRankingKadra,
     fetchFencerScores,
+    fetchFencerScoresRolling,
     fetchRankingRules,
     fetchCalendarEvents,
     fetchOrganizers,
@@ -269,6 +270,7 @@
   let loading = $state(false)
   let error: string | null = $state(null)
 
+  let isActiveSeason = $derived(seasons.find(s => s.id_season === selectedSeasonId)?.bool_active ?? false)
   let rankingRules: RankingRules | null = $state(null)
 
   let calendarEvents: CalendarEvent[] = $state([])
@@ -375,6 +377,7 @@
           filters.gender,
           filters.category,
           selectedSeasonId,
+          isActiveSeason,
         )
         kadraRows = []
         if (selectedSeasonId != null) {
@@ -386,6 +389,7 @@
           filters.gender,
           filters.category,
           selectedSeasonId,
+          isActiveSeason,
         )
         ppwRows = []
         if (selectedSeasonId != null) {
@@ -411,12 +415,20 @@
         modalScores = MOCK_SCORES[fencerId] ?? []
         modalContext = MOCK_DRILLDOWN[fencerId] ?? null
       } else if (selectedSeasonId != null) {
-        modalScores = await fetchFencerScores(
-          fencerId,
-          selectedSeasonId,
-          filters.weapon,
-          filters.gender,
-        )
+        modalScores = isActiveSeason
+          ? await fetchFencerScoresRolling(
+              fencerId,
+              filters.weapon,
+              filters.gender,
+              filters.category,
+              selectedSeasonId,
+            )
+          : await fetchFencerScores(
+              fencerId,
+              selectedSeasonId,
+              filters.weapon,
+              filters.gender,
+            )
         const row =
           filters.mode === 'PPW'
             ? ppwRows.find((r) => r.id_fencer === fencerId)
