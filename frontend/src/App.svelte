@@ -119,6 +119,7 @@
   open={auth.step === 'sign_in'}
   error={auth.error}
   onsubmit={(email, password) => { signIn(email, password) }}
+  oncancel={() => { resetAuth() }}
 />
 
 <AdminMfaEnrollModal
@@ -127,12 +128,14 @@
   secret={auth.secret}
   error={auth.error}
   onconfirm={(code) => { confirmEnroll(code) }}
+  oncancel={() => { resetAuth() }}
 />
 
 <AdminMfaChallengeModal
   open={auth.step === 'mfa_challenge'}
   error={auth.error}
   onverify={(code) => { verifyChallenge(code) }}
+  oncancel={() => { resetAuth() }}
 />
 
 
