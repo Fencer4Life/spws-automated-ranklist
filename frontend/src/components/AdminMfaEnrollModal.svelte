@@ -1,6 +1,8 @@
 {#if open}
-  <div class="admin-modal-overlay">
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <div class="admin-modal-overlay" role="dialog" onkeydown={handleKeydown}>
     <div class="admin-modal mfa-enroll-modal">
+      <button class="admin-modal-close" onclick={cancel} aria-label="Zamknij">&times;</button>
       <h3 class="admin-modal-title">Konfiguracja MFA</h3>
       <p class="admin-modal-subtitle">Zeskanuj kod QR aplikacja uwierzytelniajaca</p>
       {#if error}
@@ -31,18 +33,28 @@
     secret = '',
     error = '',
     onconfirm = (_code: string) => {},
+    oncancel = () => {},
   }: {
     open?: boolean
     qrCode?: string
     secret?: string
     error?: string
     onconfirm?: (code: string) => void
+    oncancel?: () => void
   } = $props()
 
   let code = $state('')
 
   function confirm() {
     onconfirm(code)
+  }
+
+  function cancel() {
+    oncancel()
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') cancel()
   }
 </script>
 
@@ -62,6 +74,22 @@
     padding: 30px;
     width: 380px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    position: relative;
+  }
+  .admin-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: #999;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+  }
+  .admin-modal-close:hover {
+    color: #333;
   }
   .admin-modal-title {
     font-size: 18px;
