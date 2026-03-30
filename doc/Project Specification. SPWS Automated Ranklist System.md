@@ -1055,19 +1055,33 @@ The views now **read pre-computed point values** from `tbl_result` rather than d
 - `id_season` enables client-side or server-side filtering by season
 
 **`fn_ranking_ppw`** — PPW Ranking (§8.3.1):
-- **Parameters:** `p_weapon`, `p_gender`, `p_category`, `p_season` (defaults to active season)
+- **Parameters:** `p_weapon`, `p_gender`, `p_category`, `p_season` (defaults to active season), `p_rolling BOOLEAN DEFAULT FALSE` (ADR-018)
 - **Category filtering by fencer, not tournament:** Uses `fn_age_category(birth_year, season_end_year)` for cross-category carryover (see §8.5 item 2). NULL birth year falls back to tournament category.
-- **Returns:** `(rank, id_fencer, fencer_name, ppw_score, mpw_score, total_score)`
+- **Returns:** `(rank, id_fencer, fencer_name, ppw_score, mpw_score, total_score, bool_has_carryover)`
 - **Legacy path** (`json_ranking_rules` IS NULL): Best $K$ PPW + conditional MPW drop (§8.3.1)
 - **JSONB path** (`json_ranking_rules` non-NULL): Bucket-based selection from `json_ranking_rules->'domestic'` (§8.6.6)
+- **Rolling mode** (`p_rolling = TRUE`): Eligible results CTE expanded to UNION previous-season results for positions that are declared but not yet completed in the active season. Position extracted via `fn_event_position(txt_code)`. Category crossing uses current season's end year. `bool_has_carryover = TRUE` when any carried-over scores contributed to the fencer's total.
 
 **`fn_ranking_kadra`** — Kadra Ranking (§8.3.2):
-- **Parameters:** same as `fn_ranking_ppw`
+- **Parameters:** same as `fn_ranking_ppw` (including `p_rolling`)
 - **Excludes V0:** V0 is a domestic SPWS category with no EVF international equivalent — returns empty for V0.
-- **Returns:** `(rank, id_fencer, fencer_name, ppw_total, pew_total, total_score)`
+- **Returns:** `(rank, id_fencer, fencer_name, ppw_total, pew_total, total_score, bool_has_carryover)`
 - **Legacy path** (`json_ranking_rules` IS NULL): Calls `fn_ranking_ppw` for domestic totals + best $J$ PEW + conditional MEW drop
 - **JSONB path** (`json_ranking_rules` non-NULL): Fully self-contained — processes `json_ranking_rules->'international'` buckets without calling `fn_ranking_ppw`. Domestic-type buckets (PPW/MPW) → `ppw_total`; international-type buckets (PEW/MEW/MSW/PSW) → `pew_total`
+- **Rolling mode** (`p_rolling = TRUE`): Same carry-over logic as `fn_ranking_ppw`, applied to both domestic AND international positions (PEW, MEW, MSW).
 - Orders by grand total descending
+
+**`fn_fencer_scores_rolling`** — Rolling Drilldown Data (ADR-018):
+- **Parameters:** `p_fencer`, `p_weapon`, `p_gender`, `p_category`, `p_season`
+- **Returns:** `ScoreRow` columns + `bool_carried_over BOOLEAN` + `txt_source_season_code TEXT`
+- Current-season scores: `bool_carried_over = FALSE`
+- Previous-season scores where position is declared but not completed: `bool_carried_over = TRUE`, `txt_source_season_code = previous season code`
+- Previous-season scores where position has no counterpart in active season: **excluded entirely**
+- Same `declared_positions` / `completed_positions` logic as the ranking functions
+
+**`fn_event_position`** — Position Helper (ADR-018):
+- **Parameters:** `p_code TEXT`
+- **Returns:** `TEXT` — `split_part(p_code, '-', 1)` (e.g., `PP1`, `MPW`, `PEW1`)
 
 > **Implementation note — view parameterization:** Since PostgreSQL views cannot accept parameters, the ranking views will be implemented as **security-definer functions** (e.g., `fn_ranking_ppw(p_weapon, p_gender, p_category)`) that return table types. These are exposed via PostgREST as RPC endpoints and called by the Web Component with the user's filter selections. The `vw_score` view remains a standard view (no parameters needed — the UI filters client-side for drill-down).
 
@@ -1511,8 +1525,8 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-12 | Score computation: DE round bonus | §8.1.2 | 2.4–2.5 | Covered |
 | FR-13 | Score computation: podium bonus | §8.1.3 | 2.6a–d | Covered |
 | FR-14 | Tournament multipliers (PPW, MPW, PEW, MEW, MSW, PSW) | §8.2 | 2.7, 2.19, 9.85 | Covered (M9, T9.9) |
-| FR-15 | PPW ranking: best-K domestic + always-include MPW | §8.3.1 | 5.2–5.13, 5.16, 5.20–5.21, 5.23 | Covered |
-| FR-16 | Kadra ranking: domestic + best-J international pool | §8.3.2 | 5.17, 5.19, 5.22 | Covered |
+| FR-15 | PPW ranking: best-K domestic + always-include MPW; `p_rolling` parameter for active-season carry-over (ADR-018) | §8.3.1 | 5.2–5.13, 5.16, 5.20–5.21, 5.23, R.4–R.12 | Modified (M10, rolling parameter) |
+| FR-16 | Kadra ranking: domestic + best-J international pool; `p_rolling` parameter for active-season carry-over (ADR-018) | §8.3.2 | 5.17, 5.19, 5.22, R.13–R.14 | Modified (M10, rolling parameter) |
 | FR-17 | V0 guard: no Kadra ranking for V0 | §8.3.2 | 5.18 | Covered |
 | FR-18 | Cross-category carryover (fencer ranked by birth-year category) | §8.5(2) | 5.14–5.15 | Covered |
 | FR-19 | JSONB bucket-based ranking rules | §8.6.6 | 5.4–5.7, 5.20–5.22 | Covered |
@@ -1561,6 +1575,8 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-62 | Calendar view: completed events show "Wyniki" link to event results URL | UC21 | 8.76–8.77 | Covered (M8) |
 | FR-63 | Calendar event links stacked vertically: Wyniki and Komunikat organizatora rendered one below the other | UC21 | 8.78 | Covered (ADR-017) |
 | FR-64 | Season-level EVF toggle config: `bool_show_evf_toggle` in `tbl_scoring_config` controls PPW/+EVF toggle visibility in Ranklist and Calendar; admin checkbox in SeasonManager edit form | ADR-017 | 9.37–9.39, 8.79–8.83 | Covered |
+| FR-65 | Rolling ranking for active season: `p_rolling BOOLEAN DEFAULT FALSE` on `fn_ranking_ppw` and `fn_ranking_kadra`; position-matched carry-over from previous season; declared-counterpart constraint; category crossing via current season's end year | ADR-018, §8.3.1, §8.3.2 | R.1–R.14 | Covered |
+| FR-66 | Rolling drilldown: `fn_fencer_scores_rolling` returns carried-over scores with `bool_carried_over` flag and source season code; visual distinction in DrilldownModal (grey striped bars, `↩` marker, rolling info banner) and CalendarView (progress slot bar) | ADR-018 | R.15–R.25 | Covered |
 
 ### Non-Functional Requirements
 
@@ -1601,3 +1617,4 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-014](adr/014-delete-reimport-strategy.md) | Delete + Re-import in Transaction | UC23 |
 | [ADR-015](adr/015-m8-ui-design-decisions.md) | M8 UI Design Decisions | §6.2 M8 |
 | [ADR-017](adr/017-season-configurable-evf-toggle.md) | Season-Configurable EVF Toggle | §6.2 M9, FR-34, FR-44, FR-64 |
+| [ADR-018](adr/018-rolling-score.md) | Rolling Score for Active Season | §8.3.1, §8.3.2, FR-15, FR-16, FR-65, FR-66 |

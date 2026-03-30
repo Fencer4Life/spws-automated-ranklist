@@ -45,6 +45,7 @@ export async function fetchRankingPpw(
   gender: GenderType,
   category: AgeCategory,
   season?: number | null,
+  rolling?: boolean,
 ): Promise<RankingPpwRow[]> {
   const params: Record<string, unknown> = {
     p_weapon: weapon,
@@ -52,6 +53,7 @@ export async function fetchRankingPpw(
     p_category: category,
   }
   if (season != null) params.p_season = season
+  if (rolling) params.p_rolling = true
   const { data, error } = await getClient().rpc('fn_ranking_ppw', params)
   if (error) throw error
   return data ?? []
@@ -62,6 +64,7 @@ export async function fetchRankingKadra(
   gender: GenderType,
   category: AgeCategory,
   season?: number | null,
+  rolling?: boolean,
 ): Promise<RankingKadraRow[]> {
   const params: Record<string, unknown> = {
     p_weapon: weapon,
@@ -69,6 +72,7 @@ export async function fetchRankingKadra(
     p_category: category,
   }
   if (season != null) params.p_season = season
+  if (rolling) params.p_rolling = true
   const { data, error } = await getClient().rpc('fn_ranking_kadra', params)
   if (error) throw error
   return data ?? []
@@ -88,6 +92,25 @@ export async function fetchFencerScores(
     .eq('enum_weapon', weapon)
     .eq('enum_gender', gender)
     .order('num_final_score', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function fetchFencerScoresRolling(
+  fencerId: number,
+  weapon: WeaponType,
+  gender: GenderType,
+  category: AgeCategory,
+  season?: number | null,
+): Promise<ScoreRow[]> {
+  const params: Record<string, unknown> = {
+    p_fencer_id: fencerId,
+    p_weapon: weapon,
+    p_gender: gender,
+    p_category: category,
+  }
+  if (season != null) params.p_season = season
+  const { data, error } = await getClient().rpc('fn_fencer_scores_rolling', params)
   if (error) throw error
   return data ?? []
 }

@@ -21,6 +21,19 @@
     </select>
   </div>
 
+  {#if isActiveSeason && positionSlots.length > 0}
+    <div class="rolling-progress">
+      <div class="progress-slots">
+        {#each positionSlots as slot}
+          <div class="slot" class:completed={slot.completed} class:planned={!slot.completed}>
+            <span class="slot-name">{slot.name}</span>
+            <span class="slot-icon">{slot.completed ? '✓' : '📅'}</span>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
   {#each monthGroups as group}
     <div class="timeline-month">{group.label}</div>
     {#each group.events as event, i}
@@ -94,20 +107,43 @@
   let {
     events = [] as CalendarEvent[],
     showEvfToggle = false,
+    isActiveSeason = false,
   }: {
     events?: CalendarEvent[]
     showEvfToggle?: boolean
+    isActiveSeason?: boolean
   } = $props()
 
   let timeFilter: 'all' | 'past' | 'future' = $state('all')
   let scopeFilter: 'all' | 'ppw' = $state('ppw')
+
+  const INTL_PREFIXES = /^(PEW|MEW|MSW|PSW|IMEW|IMSW)/
+
+  function isInternationalEvent(e: CalendarEvent): boolean {
+    return e.bool_has_international || INTL_PREFIXES.test(e.txt_code)
+  }
+
+  // Rolling progress: derive position slots respecting scope filter
+  let positionSlots = $derived.by(() => {
+    if (!isActiveSeason) return []
+    const inScope = scopeFilter === 'all'
+      ? events
+      : events.filter(e => !isInternationalEvent(e))
+    return inScope
+      .slice()
+      .sort((a, b) => (a.dt_start ?? '').localeCompare(b.dt_start ?? ''))
+      .map(e => ({
+        name: e.txt_code.split('-')[0].replace(/^PP(\d)/, 'PPW$1'),
+        completed: e.enum_status === 'COMPLETED',
+      }))
+  })
 
   const today = new Date().toISOString().slice(0, 10)
 
   let filteredEvents = $derived.by(() => {
     let result = events
     if (!showEvfToggle || scopeFilter === 'ppw') {
-      result = result.filter((e) => !e.bool_has_international)
+      result = result.filter((e) => !isInternationalEvent(e))
     }
     if (timeFilter === 'past') {
       result = result.filter((e) => e.dt_start != null && e.dt_start < today)
@@ -338,5 +374,42 @@
     color: #888;
     padding: 32px 0;
     font-size: 14px;
+  }
+  .rolling-progress {
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 12px;
+  }
+  .progress-slots {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 48px;
+  }
+  .slot.completed {
+    background: #e6f4ea;
+    color: #1a7f37;
+    border: 1px solid #b4dfbf;
+  }
+  .slot.planned {
+    background: #f0f0f0;
+    color: #888;
+    border: 1px solid #ddd;
+  }
+  .slot-name {
+    font-size: 11px;
+  }
+  .slot-icon {
+    font-size: 16px;
+    margin-top: 2px;
   }
 </style>

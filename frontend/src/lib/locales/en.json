@@ -184,5 +184,9 @@
   "sc_show_evf_toggle": "Show +EVF/Kadra toggle",
   "sc_show_evf_hint": "When enabled, the PPW/+EVF scope toggle is visible in Ranklist and Calendar views",
   "sc_cancel": "Cancel",
-  "sc_save": "Save & recalculate"
+  "sc_save": "Save & recalculate",
+
+  "rolling_banner_text": "Some scores carried over from previous season",
+  "rolling_carried_over": "Carried over",
+  "rolling_from_season": "from {season}"
 }
