@@ -17,4 +17,3 @@ build/
 ~$*.xls
 *.xlsx.tmp
 *.egg-info/
-doc/cicd-operations-manual.md
