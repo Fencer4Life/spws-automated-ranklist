@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Birth Year Range Subtitle — Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+
+  .mockup-title { text-align: center; margin-bottom: 8px; font-size: 22px; color: #222; }
+  .mockup-desc { text-align: center; font-size: 13px; color: #888; margin-bottom: 24px; }
+
+  .view-box { background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; max-width: 720px; margin: 0 auto 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+
+  /* Header bar */
+  .header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f5f7fa; border-bottom: 1px solid #ddd; }
+  .hamburger { font-size: 20px; cursor: pointer; padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; line-height: 1; }
+  .header h2 { font-size: 18px; color: #222; margin: 0; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
+  .header-logo { width: 28px; height: 28px; border-radius: 4px; background: #2c3e50; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .season-select { padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: #fff; }
+  .season-group { display: flex; flex-direction: column; gap: 2px; align-items: flex-end; }
+  .season-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+  .lang-toggle { display: flex; gap: 4px; }
+  .lang-btn { padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 14px; cursor: pointer; }
+  .lang-btn.active { background: #4a90d9; border-color: #4a90d9; }
+  .spacer { flex: 1; }
+
+  /* Filter bar */
+  .filter-bar { display: flex; align-items: flex-end; gap: 12px; padding: 8px 14px; background: #fafbfc; border-bottom: 1px solid #eee; flex-wrap: wrap; }
+  .filter-group { display: flex; flex-direction: column; gap: 3px; }
+  .filter-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: #666; letter-spacing: 0.5px; }
+  .filter-select { padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: #fff; }
+  .mode-toggle { display: flex; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+  .mode-btn { padding: 5px 12px; border: none; background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .mode-btn.active { background: #4a90d9; color: #fff; }
+  .mode-btn + .mode-btn { border-left: 1px solid #ccc; }
+  .export-btn { margin-left: auto; padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 14px; cursor: pointer; color: #555; }
+
+  /* === Birth year enumeration subtitle === */
+  .category-subtitle {
+    padding: 6px 14px;
+    background: #fafbfc;
+    border-bottom: 1px solid #eee;
+    font-size: 12px;
+    color: #888;
+    letter-spacing: 0.3px;
+  }
+  .category-subtitle .cat-label {
+    font-weight: 600;
+    color: #666;
+  }
+  .category-subtitle .birth-years {
+    color: #4a90d9;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .category-subtitle .ellipsis {
+    color: #aaa;
+    font-weight: 400;
+  }
+
+  /* Ranking table */
+  .rank-table { width: 100%; border-collapse: collapse; }
+  .rank-table th { text-align: left; padding: 8px 14px; font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 0.5px; border-bottom: 2px solid #eee; }
+  .rank-table td { padding: 10px 14px; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
+  .rank-table tr:hover { background: #f0f5ff; cursor: pointer; }
+  .rank-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .rank-table .rank-cell { font-weight: 700; color: #888; width: 40px; }
+
+  /* Annotations */
+  .annotation { max-width: 720px; margin: 0 auto 30px; padding: 12px 16px; background: #fffbe6; border: 1px solid #f0d88a; border-radius: 6px; font-size: 13px; color: #7a6520; }
+  .annotation strong { color: #5a4a10; }
+
+  hr.sep { border: none; border-top: 2px solid #4a90d9; margin: 40px auto 10px; max-width: 720px; }
+  .variant-title { max-width: 720px; margin: 10px auto 6px; font-size: 16px; font-weight: 700; color: #1a1a1a; }
+  .variant-desc { max-width: 720px; margin: 0 auto 14px; font-size: 13px; color: #666; }
+</style>
+</head>
+<body>
+
+<h1 class="mockup-title">Birth Year Range Subtitle</h1>
+<p class="mockup-desc">Displays the selected category's birth year enumeration between the filter bar and ranking table.</p>
+
+<!-- ============================================================ -->
+<!-- VARIANT A: V2 selected, season 2025-2026 (end year 2026) -->
+<!-- ============================================================ -->
+<div class="variant-title">Sezon 2025-2026 &middot; V2 selected</div>
+<div class="variant-desc">End year 2026: V2 = age 50&ndash;59 &rarr; born 1976, 1975, .. 1967</div>
+
+<div class="view-box">
+  <div class="header">
+    <button class="hamburger">&#9776;</button>
+    <h2><span class="header-logo">SP</span> Ranking SPWS</h2>
+    <div class="spacer"></div>
+    <div class="season-group">
+      <select class="season-select">
+        <option selected>SPWS-2025-2026 (aktywny)</option>
+        <option>SPWS-2024-2025</option>
+        <option>SPWS-2023-2024</option>
+      </select>
+      <span class="season-label">Sezon</span>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active">&#127468;&#127463;</button>
+      <button class="lang-btn">&#127477;&#127473;</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">Bron</span>
+      <select class="filter-select">
+        <option selected>Szpada</option>
+        <option>Floret</option>
+        <option>Szabla</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Plec</span>
+      <select class="filter-select">
+        <option selected>Mezczyzni</option>
+        <option>Kobiety</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Kategoria</span>
+      <select class="filter-select">
+        <option>V0 (30+)</option>
+        <option>V1 (40+)</option>
+        <option selected>V2 (50+)</option>
+        <option>V3 (60+)</option>
+        <option>V4 (70+)</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Ranking</span>
+      <div class="mode-toggle">
+        <button class="mode-btn active">PPW</button>
+        <button class="mode-btn">+EVF</button>
+      </div>
+    </div>
+    <button class="export-btn" title="Eksport">&#9113;</button>
+  </div>
+
+  <!-- Birth year enumeration: V2, end year 2026 → 1976..1967 -->
+  <div class="category-subtitle">
+    <span class="cat-label">kat. 2</span> &mdash; roczniki: <span class="birth-years">1976, 1975, <span class="ellipsis">..</span> 1967</span>
+  </div>
+
+  <table class="rank-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Zawodnik</th>
+        <th class="num">PPW</th>
+        <th class="num">MPW</th>
+        <th class="num">Razem</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="rank-cell">1</td><td>KORONA Przemyslaw</td><td class="num">195.05</td><td class="num">0.00</td><td class="num">195.05</td></tr>
+      <tr><td class="rank-cell">2</td><td>ZIELINSKI Grzegorz</td><td class="num">169.42</td><td class="num">0.00</td><td class="num">169.42</td></tr>
+      <tr><td class="rank-cell">3</td><td>ATANASSOW Aleksander</td><td class="num">124.02</td><td class="num">0.00</td><td class="num">124.02</td></tr>
+      <tr><td class="rank-cell">4</td><td>DROBINSKI Maciej</td><td class="num">101.18</td><td class="num">0.00</td><td class="num">101.18</td></tr>
+      <tr><td class="rank-cell">5</td><td>PARDUS Grzegorz</td><td class="num">18.41</td><td class="num">0.00</td><td class="num">18.41</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- VARIANT B: V0 selected, season 2025-2026 -->
+<!-- ============================================================ -->
+<hr class="sep">
+<div class="variant-title">Sezon 2025-2026 &middot; V0 selected</div>
+<div class="variant-desc">End year 2026: V0 = age 30&ndash;39 &rarr; born 1996, 1995, .. 1987</div>
+
+<div class="view-box">
+  <div class="header">
+    <button class="hamburger">&#9776;</button>
+    <h2><span class="header-logo">SP</span> Ranking SPWS</h2>
+    <div class="spacer"></div>
+    <div class="season-group">
+      <select class="season-select"><option selected>SPWS-2025-2026 (aktywny)</option></select>
+      <span class="season-label">Sezon</span>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active">&#127468;&#127463;</button>
+      <button class="lang-btn">&#127477;&#127473;</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">Bron</span>
+      <select class="filter-select"><option selected>Szpada</option></select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Plec</span>
+      <select class="filter-select"><option selected>Mezczyzni</option></select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Kategoria</span>
+      <select class="filter-select">
+        <option selected>V0 (30+)</option>
+        <option>V1 (40+)</option>
+        <option>V2 (50+)</option>
+        <option>V3 (60+)</option>
+        <option>V4 (70+)</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Ranking</span>
+      <div class="mode-toggle">
+        <button class="mode-btn active">PPW</button>
+        <button class="mode-btn" style="opacity:0.4;cursor:not-allowed;">+EVF</button>
+      </div>
+    </div>
+    <button class="export-btn">&#9113;</button>
+  </div>
+
+  <!-- V0, end year 2026 → 1996..1987 -->
+  <div class="category-subtitle">
+    <span class="cat-label">kat. 0</span> &mdash; roczniki: <span class="birth-years">1996, 1995, <span class="ellipsis">..</span> 1987</span>
+  </div>
+
+  <table class="rank-table">
+    <thead>
+      <tr><th>#</th><th>Zawodnik</th><th class="num">PPW</th><th class="num">MPW</th><th class="num">Razem</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="rank-cell">1</td><td>MLODY Tomasz</td><td class="num">55.20</td><td class="num">0.00</td><td class="num">55.20</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- VARIANT C: V4 selected (open-ended: "i starsi") -->
+<!-- ============================================================ -->
+<hr class="sep">
+<div class="variant-title">Sezon 2025-2026 &middot; V4 selected</div>
+<div class="variant-desc">End year 2026: V4 = age 70+ &rarr; born 1956, 1955, .. i starsi</div>
+
+<div class="view-box">
+  <div class="header">
+    <button class="hamburger">&#9776;</button>
+    <h2><span class="header-logo">SP</span> Ranking SPWS</h2>
+    <div class="spacer"></div>
+    <div class="season-group">
+      <select class="season-select"><option selected>SPWS-2025-2026 (aktywny)</option></select>
+      <span class="season-label">Sezon</span>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active">&#127468;&#127463;</button>
+      <button class="lang-btn">&#127477;&#127473;</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">Bron</span>
+      <select class="filter-select"><option selected>Szpada</option></select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Plec</span>
+      <select class="filter-select"><option selected>Mezczyzni</option></select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Kategoria</span>
+      <select class="filter-select">
+        <option>V0 (30+)</option>
+        <option>V1 (40+)</option>
+        <option>V2 (50+)</option>
+        <option>V3 (60+)</option>
+        <option selected>V4 (70+)</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Ranking</span>
+      <div class="mode-toggle">
+        <button class="mode-btn active">PPW</button>
+        <button class="mode-btn">+EVF</button>
+      </div>
+    </div>
+    <button class="export-btn">&#9113;</button>
+  </div>
+
+  <!-- V4, end year 2026 → 1956 i starsi -->
+  <div class="category-subtitle">
+    <span class="cat-label">kat. 4</span> &mdash; roczniki: <span class="birth-years">1956, 1955, <span class="ellipsis">..</span> i starsi</span>
+  </div>
+
+  <table class="rank-table">
+    <thead>
+      <tr><th>#</th><th>Zawodnik</th><th class="num">PPW</th><th class="num">MPW</th><th class="num">Razem</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="rank-cell">1</td><td>NOWAK Zbigniew</td><td class="num">88.50</td><td class="num">12.00</td><td class="num">100.50</td></tr>
+      <tr><td class="rank-cell">2</td><td>KOWALSKI Jerzy</td><td class="num">72.30</td><td class="num">0.00</td><td class="num">72.30</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- VARIANT D: Different season (2024-2025, end year 2025) — ranges shift -->
+<!-- ============================================================ -->
+<hr class="sep">
+<div class="variant-title">Sezon 2024-2025 &middot; V2 selected</div>
+<div class="variant-desc">End year 2025 (not 2026) &rarr; V2 shifts to 1975, 1974, .. 1966</div>
+
+<div class="view-box">
+  <div class="header">
+    <button class="hamburger">&#9776;</button>
+    <h2><span class="header-logo">SP</span> Ranking SPWS</h2>
+    <div class="spacer"></div>
+    <div class="season-group">
+      <select class="season-select">
+        <option>SPWS-2025-2026 (aktywny)</option>
+        <option selected>SPWS-2024-2025</option>
+        <option>SPWS-2023-2024</option>
+      </select>
+      <span class="season-label">Sezon</span>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active">&#127468;&#127463;</button>
+      <button class="lang-btn">&#127477;&#127473;</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">Bron</span>
+      <select class="filter-select"><option selected>Szpada</option></select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Plec</span>
+      <select class="filter-select"><option selected>Mezczyzni</option></select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Kategoria</span>
+      <select class="filter-select">
+        <option>V0 (30+)</option>
+        <option>V1 (40+)</option>
+        <option selected>V2 (50+)</option>
+        <option>V3 (60+)</option>
+        <option>V4 (70+)</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Ranking</span>
+      <div class="mode-toggle">
+        <button class="mode-btn active">PPW</button>
+        <button class="mode-btn">+EVF</button>
+      </div>
+    </div>
+    <button class="export-btn">&#9113;</button>
+  </div>
+
+  <!-- V2 for 2024-2025: end year 2025 → born 1975..1966 (shifted by 1 vs 2025-2026) -->
+  <div class="category-subtitle">
+    <span class="cat-label">kat. 2</span> &mdash; roczniki: <span class="birth-years">1975, 1974, <span class="ellipsis">..</span> 1966</span>
+  </div>
+
+  <table class="rank-table">
+    <thead>
+      <tr><th>#</th><th>Zawodnik</th><th class="num">PPW</th><th class="num">MPW</th><th class="num">Razem</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="rank-cell">1</td><td>KORONA Przemyslaw</td><td class="num">142.30</td><td class="num">28.50</td><td class="num">170.80</td></tr>
+      <tr><td class="rank-cell">2</td><td>WISNICKI Jakub</td><td class="num">98.20</td><td class="num">0.00</td><td class="num">98.20</td></tr>
+      <tr><td class="rank-cell">3</td><td>BOROWIEC Maciej</td><td class="num">65.00</td><td class="num">12.00</td><td class="num">77.00</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- MOBILE VARIANT -->
+<!-- ============================================================ -->
+<hr class="sep">
+<div class="variant-title">Mobile (narrow viewport)</div>
+<div class="variant-desc">Subtitle wraps gracefully on small screens.</div>
+
+<div class="view-box" style="max-width: 360px; margin: 0 auto;">
+  <div class="header" style="flex-wrap: wrap; gap: 6px;">
+    <button class="hamburger">&#9776;</button>
+    <h2 style="font-size: 15px;"><span class="header-logo" style="width: 24px; height: 24px; font-size: 9px;">SP</span> Ranking SPWS</h2>
+    <div class="spacer"></div>
+    <div class="season-group">
+      <select class="season-select" style="font-size: 12px; padding: 4px 6px;">
+        <option selected>SPWS-2025-2026</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="filter-bar" style="gap: 8px;">
+    <div class="filter-group" style="flex: 1 1 calc(50% - 8px);">
+      <span class="filter-label">Bron</span>
+      <select class="filter-select" style="width: 100%; font-size: 12px;">
+        <option selected>Szpada</option>
+      </select>
+    </div>
+    <div class="filter-group" style="flex: 1 1 calc(50% - 8px);">
+      <span class="filter-label">Plec</span>
+      <select class="filter-select" style="width: 100%; font-size: 12px;">
+        <option selected>Mezczyzni</option>
+      </select>
+    </div>
+    <div class="filter-group" style="flex: 1 1 calc(50% - 8px);">
+      <span class="filter-label">Kategoria</span>
+      <select class="filter-select" style="width: 100%; font-size: 12px;">
+        <option selected>V2 (50+)</option>
+      </select>
+    </div>
+    <div class="filter-group" style="flex: 1 1 calc(50% - 8px);">
+      <span class="filter-label">Ranking</span>
+      <div class="mode-toggle">
+        <button class="mode-btn active" style="font-size: 11px; padding: 4px 8px;">PPW</button>
+        <button class="mode-btn" style="font-size: 11px; padding: 4px 8px;">+EVF</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="category-subtitle" style="font-size: 11px;">
+    <span class="cat-label">kat. 2</span> &mdash; roczniki: <span class="birth-years">1976, 1975, <span class="ellipsis">..</span> 1967</span>
+  </div>
+
+  <table class="rank-table">
+    <thead>
+      <tr><th>#</th><th>Zawodnik</th><th class="num">Razem</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="rank-cell">1</td><td style="font-size: 13px;">KORONA P.</td><td class="num">195.05</td></tr>
+      <tr><td class="rank-cell">2</td><td style="font-size: 13px;">ZIELINSKI G.</td><td class="num">169.42</td></tr>
+      <tr><td class="rank-cell">3</td><td style="font-size: 13px;">ATANASSOW A.</td><td class="num">124.02</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="annotation" style="margin-top: 24px;">
+  <strong>Implementation notes:</strong><br>
+  &bull; No DB change needed &mdash; computed from <code>season.dt_end</code> year and the hardcoded age thresholds (30/40/50/60/70) already in <code>fn_age_category</code>.<br>
+  &bull; Formula: <code>newest = end_year - min_age</code>, <code>oldest = end_year - (min_age + 9)</code>. V4 is open-ended: "i starsi".<br>
+  &bull; Display format: <code>newest, newest-1, .. oldest</code> &mdash; enumeration style with ellipsis.<br>
+  &bull; Reactive: updates when season or category selector changes. Compare Variant A (2025-2026, V2: 1976..1967) vs Variant D (2024-2025, V2: 1975..1966).<br>
+  &bull; i18n: <code>birth_year_enum</code> key with <code>{cat}</code>, <code>{newest}</code>, <code>{oldest}</code> placeholders. V4 uses <code>birth_year_enum_oldest</code> with "i starsi" suffix.
+</div>
+
+</body>
+</html>

@@ -47,6 +47,15 @@
       onexport={handleMainExport}
     />
 
+    {#if selectedSeasonId}
+      {@const season = seasons.find(s => s.id_season === selectedSeasonId)}
+      {#if season}
+        <div class="category-subtitle">
+          {birthYearSubtitle(filters.category, season.dt_end)}
+        </div>
+      {/if}
+    {/if}
+
     {#if loading}
       <SkeletonLoader rows={10} />
     {:else}
@@ -605,6 +614,26 @@
       exportRankingKadra(kadraRows, title)
     }
   }
+
+  const AGE_THRESHOLDS: Record<AgeCategory, number> = {
+    V0: 30, V1: 40, V2: 50, V3: 60, V4: 70,
+  }
+
+  function birthYearSubtitle(category: AgeCategory, seasonEndDate: string): string {
+    const endYear = parseInt(seasonEndDate.split('-')[0])
+    const minAge = AGE_THRESHOLDS[category]
+    const newest = endYear - minAge
+    const oldest = endYear - (minAge + 9)
+    const catNum = category.replace('V', '')
+
+    if (category === 'V4') {
+      const years = `${newest}, ${newest - 1}, .. ${t('birth_year_and_older')}`
+      return t('birth_year_subtitle', { cat: catNum, years })
+    }
+
+    const years = `${newest}, ${newest - 1}, .. ${oldest}`
+    return t('birth_year_subtitle', { cat: catNum, years })
+  }
 </script>
 
 <style>
@@ -666,6 +695,13 @@
     align-items: center;
     gap: 8px;
     margin-left: auto;
+  }
+  .category-subtitle {
+    padding: 6px 14px;
+    background: #fafbfc;
+    border-bottom: 1px solid #eee;
+    font-size: 12px;
+    color: #888;
   }
   .env-toggle {
     display: flex;

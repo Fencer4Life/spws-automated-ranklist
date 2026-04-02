@@ -1577,6 +1577,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-64 | Season-level EVF toggle config: `bool_show_evf_toggle` in `tbl_scoring_config` controls PPW/+EVF toggle visibility in Ranklist and Calendar; admin checkbox in SeasonManager edit form | ADR-017 | 9.37–9.39, 8.79–8.83 | Covered |
 | FR-65 | Rolling ranking for active season: `p_rolling BOOLEAN DEFAULT FALSE` on `fn_ranking_ppw` and `fn_ranking_kadra`; position-matched carry-over from previous season; declared-counterpart constraint; category crossing via current season's end year | ADR-018, §8.3.1, §8.3.2 | R.1–R.14 | Covered |
 | FR-66 | Rolling drilldown: `fn_fencer_scores_rolling` returns carried-over scores with `bool_carried_over` flag and source season code; visual distinction in DrilldownModal (grey striped bars, `↩` marker, rolling info banner) and CalendarView (progress slot bar) | ADR-018 | R.15–R.25 | Covered |
+| FR-67 | Birth year range subtitle on ranklist view: displays eligible birth years for selected age category and season as enumeration (e.g. `kat. 2 — roczniki: 1976, 1975, .. 1967`); V4 open-ended ("i starsi"/"and older"); updates on category/season/locale change; PL+EN | UC12 | BY.1–BY.7 | Covered |
 
 ### Non-Functional Requirements
 
