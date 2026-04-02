@@ -291,7 +291,7 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 
 ### M10: Rolling Score for Active Season
 
-**Status: COMPLETED (2026-03-29)** — 25 new assertions (18 pgTAP + 7 vitest), 466 total
+**Status: COMPLETED (2026-03-29, updated 2026-04-02)** — 32 new assertions (18 pgTAP + 14 vitest), 473 total
 
 **Scope:** Rolling ranking where previous-season results serve as baseline for active season. Position-matched carry-over with declared-counterpart constraint. See ADR-018 for full design.
 
@@ -304,6 +304,7 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 - i18n keys: `rolling_banner_text`, `rolling_carried_over`, `rolling_from_season` in both locales
 - pgTAP: 189 assertions (09_rolling_score.sql: 18 new). vitest: 166 assertions (7 new). pytest: 104 (unchanged).
 - **V1 M Epee seed data (2026-03-30):** Added `data/2024_25/v1_m_epee.sql` (14 tournaments, 97 matched results from `SZPADA-1-2024-2025.xlsx`). Generator tool (`python/tools/generate_season_seed.py`) SHEET_MAP extended with PP4, PP5, PEW3-6, PS. Test R.13 updated: kadra expected 523.85→535.93 (PP4-V1 carry-over adds 12.08 pts for Korona V1→V2 crossing).
+- **Birth year range subtitle (2026-04-02, FR-67):** Display-only feature — subtitle between FilterBar and RanklistTable shows eligible birth years for selected category/season (e.g. `kat. 2 — roczniki: 1976, 1975, .. 1967`). V4 open-ended with "i starsi"/"and older". Computed from hardcoded FIE/EVF thresholds (V0=30+..V4=70+), no DB changes. Files: `App.svelte` (helper + template + CSS), `pl.json`/`en.json` (2 i18n keys each), `AppShell.test.ts` (7 new vitest tests BY.1–BY.7). Mockup: `birth_year_range_subtitle.html`.
 
 **Architecture:** Option C — `p_rolling BOOLEAN DEFAULT FALSE` parameter on `fn_ranking_ppw` and `fn_ranking_kadra`. New `fn_fencer_scores_rolling` for drilldown. New `fn_event_position` helper.
 
@@ -313,6 +314,7 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 |--------|------|---------------|
 | Drilldown Rolling | `m10_drilldown_rolling.html` | Grey striped carried-over bars, `↩` marker, amber rolling info banner, carried-row table styling |
 | Calendar Rolling | `m10_calendar_rolling.html` | Rolling progress slot bar (green ✓ completed, amber ↩ carried, grey — empty) |
+| Birth Year Subtitle | `birth_year_range_subtitle.html` | Enumeration subtitle between filter bar and table (5 variants: V2, V0, V4 open-ended, season shift, mobile) |
 
 **Tasks:**
 
@@ -359,6 +361,13 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 | R.23 | vitest | CalendarView: progress slots for active season |
 | R.24 | vitest | CalendarView: progress hidden for non-active season |
 | R.25 | vitest | CalendarView: correct slot states (completed/carried/missing) |
+| BY.1 | vitest | Birth year subtitle renders `.category-subtitle` when season loaded |
+| BY.2 | vitest | V2 + season 2026 → shows `1976, 1975, .. 1967` |
+| BY.3 | vitest | V0 + season 2026 → shows `1996, 1995, .. 1987` |
+| BY.4 | vitest | V4 + season 2026 → open-ended with "i starsi" |
+| BY.5 | vitest | EN locale → `cat.`, `birth years:`, `and older` |
+| BY.6 | vitest | No season selected → no subtitle rendered |
+| BY.7 | vitest | Season dropdown change → birth years shift by 1 year |
 
 **Estimated test totals after M10:**
 
@@ -366,9 +375,9 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 |-------|---------|---------|-------|
 | pgTAP | 171 | +18 | 189 |
 | pytest | 104 | 0 | 104 |
-| vitest | 159 | +7 | 166 |
+| vitest | 159 | +14 | 173 |
 | Playwright | 7 | 0 | 7 |
-| **Total** | **441** | **+25** | **466** |
+| **Total** | **441** | **+32** | **473** |
 
 **Deployment notes:**
 - Migrations: 2–3 new files (position helper, fn_ranking_ppw DROP+recreate, fn_ranking_kadra DROP+recreate, fn_fencer_scores_rolling)
@@ -383,6 +392,8 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 - FR-65 added: Rolling ranking parameter with position-matched carry-over
 - FR-66 added: Rolling drilldown function + visual distinction in DrilldownModal and CalendarView
 - New i18n keys: `rolling_carried_over`, `rolling_progress`, `rolling_from_season`, `rolling_banner_text`
+- FR-67 added: Birth year range subtitle (display-only, no DB changes)
+- New i18n keys: `birth_year_subtitle`, `birth_year_and_older`
 
 ---
 
@@ -436,13 +447,14 @@ Quick reference — full details in [RTM (Appendix C)](Project%20Specification.%
 | FR-16 | Kadra ranking: `p_rolling` parameter for active-season carry-over (modified) | §8.3.2, ADR-018 |
 | FR-65 | Rolling ranking: position-matched carry-over, declared-counterpart constraint, category crossing | ADR-018 |
 | FR-66 | Rolling drilldown + visual distinction (carried-over bars, progress slots) | ADR-018 |
+| FR-67 | Birth year range subtitle on ranklist view (enumeration format, PL+EN, season-reactive) | UC12 |
 
 ---
 
 ## 4. Cross-References
 
-- [Project Specification](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md) — Full spec (§6.2 = MVP scope, Appendix C = RTM with FR-01 to FR-66)
+- [Project Specification](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md) — Full spec (§6.2 = MVP scope, Appendix C = RTM with FR-01 to FR-67)
 - [CI/CD Operations Manual](cicd-operations-manual.md) — Release pipeline (LOCAL→CERT→PROD)
 - [POC Development Plan](POC_development_plan.md) — Historical reference only (M0-M6 archived)
-- `doc/mockups/` — 9 approved HTML mockups (see §2 M8 + M10 mockup tables)
+- `doc/mockups/` — 10 approved HTML mockups (see §2 M8 + M10 mockup tables)
 - `doc/adr/` — 18 ADRs (see §1.5 for MVP-relevant subset)

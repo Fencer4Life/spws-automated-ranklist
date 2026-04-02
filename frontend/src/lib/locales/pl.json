@@ -186,6 +186,9 @@
   "sc_cancel": "Anuluj",
   "sc_save": "Zapisz i przelicz",
 
+  "birth_year_subtitle": "kat. {cat} — roczniki: {years}",
+  "birth_year_and_older": "i starsi",
+
   "rolling_banner_text": "Część wyników przeniesiona z poprzedniego sezonu",
   "rolling_carried_over": "Przeniesione",
   "rolling_from_season": "z {season}"

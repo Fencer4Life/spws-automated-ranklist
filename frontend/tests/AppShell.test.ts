@@ -1,8 +1,10 @@
-// Plan tests: 8.27 (hamburger), 8.33, 8.34, 8.37
-// See doc/m8_implementation_plan.md §T8.4.
+// Plan tests: 8.27 (hamburger), 8.33, 8.34, 8.37, BY.1-BY.7
+// See doc/MVP_development_plan.md §M8 T8.4, §M10 birth year subtitle.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
+import { tick } from 'svelte'
+import { setLocale } from '../src/lib/locale.svelte'
 
 // Mock the api module before importing App
 vi.mock('../src/lib/api', () => ({
@@ -101,5 +103,115 @@ describe('App Shell (T8.4)', () => {
     // Season selector still present
     const seasonSelectorAfter = container.querySelector('.season-selector')
     expect(seasonSelectorAfter).not.toBeNull()
+  })
+})
+
+const MOCK_SEASONS = [
+  { id_season: 1, txt_code: 'SPWS-2025-2026', dt_start: '2025-08-01', dt_end: '2026-07-15', bool_active: true },
+  { id_season: 2, txt_code: 'SPWS-2024-2025', dt_start: '2024-08-15', dt_end: '2025-07-15', bool_active: false },
+]
+
+describe('Birth Year Subtitle (BY.1–BY.7)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setLocale('pl')
+  })
+
+  function renderApp(extraProps = {}) {
+    return render(App, {
+      props: {
+        'supabase-cert-url': 'https://cert.supabase.co',
+        'supabase-cert-key': 'cert-key-123',
+        ...extraProps,
+      },
+    })
+  }
+
+  async function renderWithSeasons(extraProps = {}) {
+    const { fetchSeasons } = await import('../src/lib/api')
+    vi.mocked(fetchSeasons).mockResolvedValue(MOCK_SEASONS)
+    const result = renderApp(extraProps)
+    // Wait for init() to complete: seasons loaded → options rendered
+    await vi.waitFor(() => {
+      const options = result.container.querySelectorAll('.season-selector select option')
+      expect(options.length).toBeGreaterThan(0)
+    })
+    await tick()
+    return result
+  }
+
+  // BY.1 — Subtitle renders when season loaded
+  it('renders .category-subtitle when season is loaded', async () => {
+    const { container } = await renderWithSeasons()
+    expect(container.querySelector('.category-subtitle')).not.toBeNull()
+  })
+
+  // BY.2 — V2 + season 2026 → 1976, 1975, .. 1967
+  it('shows correct birth years for V2 with season ending 2026', async () => {
+    const { container } = await renderWithSeasons()
+    const subtitle = container.querySelector('.category-subtitle')
+    expect(subtitle?.textContent).toContain('1976, 1975, .. 1967')
+  })
+
+  // BY.3 — V0 + season 2026 → 1996, 1995, .. 1987
+  it('shows correct birth years for V0 with season ending 2026', async () => {
+    const { container } = await renderWithSeasons()
+    // Change category to V0
+    const categorySelect = container.querySelectorAll('.filter-bar select')[2]
+    await fireEvent.change(categorySelect, { target: { value: 'V0' } })
+    await tick()
+    const subtitle = container.querySelector('.category-subtitle')
+    expect(subtitle?.textContent).toContain('1996, 1995, .. 1987')
+  })
+
+  // BY.4 — V4 + season 2026 → open-ended with "i starsi"
+  it('shows open-ended range for V4 with "i starsi"', async () => {
+    const { container } = await renderWithSeasons()
+    // Change category to V4
+    const categorySelect = container.querySelectorAll('.filter-bar select')[2]
+    await fireEvent.change(categorySelect, { target: { value: 'V4' } })
+    await tick()
+    const subtitle = container.querySelector('.category-subtitle')
+    expect(subtitle?.textContent).toContain('1956, 1955, ..')
+    expect(subtitle?.textContent).toContain('i starsi')
+  })
+
+  // BY.5 — EN locale uses English labels
+  it('shows English labels when locale is EN', async () => {
+    setLocale('en')
+    const { container } = await renderWithSeasons()
+    // Change category to V4 to test "and older"
+    const categorySelect = container.querySelectorAll('.filter-bar select')[2]
+    await fireEvent.change(categorySelect, { target: { value: 'V4' } })
+    await tick()
+    const subtitle = container.querySelector('.category-subtitle')
+    expect(subtitle?.textContent).toContain('cat.')
+    expect(subtitle?.textContent).toContain('birth years:')
+    expect(subtitle?.textContent).toContain('and older')
+  })
+
+  // BY.6 — No season → no subtitle
+  it('does not render subtitle when no season is selected', () => {
+    // Default mock returns [] for fetchSeasons → no season selected
+    const { container } = renderApp()
+    expect(container.querySelector('.category-subtitle')).toBeNull()
+  })
+
+  // BY.7 — Season change updates birth years dynamically
+  it('updates birth years when season changes', async () => {
+    const { container } = await renderWithSeasons()
+
+    // Initially season 1 (end year 2026): V2 → 1976..1967
+    const subtitle = container.querySelector('.category-subtitle')
+    expect(subtitle?.textContent).toContain('1976, 1975, .. 1967')
+
+    // Switch to season 2 (end year 2025)
+    const seasonSelect = container.querySelector('.season-selector select') as HTMLSelectElement
+    await fireEvent.change(seasonSelect, { target: { value: '2' } })
+    await tick()
+
+    // V2 → 1975..1966
+    const subtitleAfter = container.querySelector('.category-subtitle')
+    expect(subtitleAfter?.textContent).toContain('1975, 1974, .. 1966')
   })
 })

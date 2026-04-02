@@ -186,6 +186,9 @@
   "sc_cancel": "Cancel",
   "sc_save": "Save & recalculate",
 
+  "birth_year_subtitle": "cat. {cat} — birth years: {years}",
+  "birth_year_and_older": "and older",
+
   "rolling_banner_text": "Some scores carried over from previous season",
   "rolling_carried_over": "Carried over",
   "rolling_from_season": "from {season}"
