@@ -36,8 +36,8 @@
     "schema_fingerprint": "386b8a0f98a836ac16b79cc93082d20b"
   },
   "prod": {
-    "last_updated": "2026-03-29T19:10:04Z",
-    "last_sha": "cee99cce828b23acbfda906040ae55eb81638520",
+    "last_updated": "2026-04-02T21:18:16Z",
+    "last_sha": "9b44917d7f0fcc7747f4c91fee20398f29afc0f7",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -63,8 +63,12 @@
       "20260327000006_event_weapons.sql",
       "20260327000007_crud_weapons.sql",
       "20260329000001_drop_old_overloads.sql",
-      "20260329000002_evf_toggle_config.sql"
+      "20260329000002_evf_toggle_config.sql",
+      "20260329000003_fn_event_position.sql",
+      "20260330000001_ranking_ppw_rolling.sql",
+      "20260330000002_ranking_kadra_rolling.sql",
+      "20260330000003_fencer_scores_rolling.sql"
     ],
-    "schema_fingerprint": "cc839ba0798a4d30ad948c1323b0cab8"
+    "schema_fingerprint": "386b8a0f98a836ac16b79cc93082d20b"
   }
 }
