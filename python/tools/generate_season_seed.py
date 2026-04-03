@@ -37,11 +37,17 @@ DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 
 # Map sheet name → (tournament_type, event_code_prefix, human_name)
 SHEET_MAP = {
-    "PP1":  ("PPW", "PP1",  "I Puchar Polski Weteranów"),
-    "PP2":  ("PPW", "PP2",  "II Puchar Polski Weteranów"),
-    "PP3":  ("PPW", "PP3",  "III Puchar Polski Weteranów"),
-    "PP4":  ("PPW", "PP4",  "IV Puchar Polski Weteranów"),
-    "PP5":  ("PPW", "PP5",  "V Puchar Polski Weteranów"),
+    "PP1":  ("PPW", "PPW1",  "I Puchar Polski Weteranów"),
+    "PP2":  ("PPW", "PPW2",  "II Puchar Polski Weteranów"),
+    "PP3":  ("PPW", "PPW3",  "III Puchar Polski Weteranów"),
+    "PP4":  ("PPW", "PPW4",  "IV Puchar Polski Weteranów"),
+    "PP5":  ("PPW", "PPW5",  "V Puchar Polski Weteranów"),
+    "GP1":  ("PPW", "GP1",  "Grand Prix (runda 1)"),
+    "GP2":  ("PPW", "GP2",  "Grand Prix (runda 2)"),
+    "GP3":  ("PPW", "GP3",  "Grand Prix (runda 3)"),
+    "GP4":  ("PPW", "GP4",  "Grand Prix (runda 4)"),
+    "GP5":  ("PPW", "GP5",  "Grand Prix (runda 5)"),
+    "GP6":  ("PPW", "GP6",  "Grand Prix (runda 6)"),
     "GP7":  ("PPW", "GP7",  "Grand Prix (runda 7)"),
     "GP8":  ("PPW", "GP8",  "Grand Prix (runda 8)"),
     "MPW":  ("MPW", "MPW",  "Mistrzostwa Polski Weteranów"),
@@ -266,7 +272,7 @@ def main():
         data = extract_sheet(wb_data, wb_links, sheet_name)
         loc  = data["location"] or "?"
         dt   = data["date"]
-        n    = data["n"]
+        n    = data["n"] or 0
         url  = data["url"]
 
         # Skip tournaments with N=0 (e.g. PEW10 Graz — no participants)
@@ -290,7 +296,7 @@ def main():
         organizer_raw = "EVF" if ttype in ("PEW", "MEW") else "SPWS"
         loc_comment = f" ({loc})" if loc and loc != "?" else ""
 
-        lines += [
+        header_lines = [
             f"-- ---- {sheet_name}: {human_name}{loc_comment} ----",
             f"INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)",
             f"SELECT",
@@ -319,6 +325,7 @@ def main():
 
         matched_in_tournament = 0
         unmatched_in_tournament = 0
+        result_lines = []
 
         for row in data["results"]:
             name  = row["name"]
@@ -328,7 +335,7 @@ def main():
             if match:
                 fid, matched_name, score = match
                 matched_in_tournament += 1
-                lines += [
+                result_lines += [
                     f"INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)",
                     f"VALUES (",
                     f"    {fid},",
@@ -339,7 +346,7 @@ def main():
                 ]
             else:
                 unmatched_in_tournament += 1
-                lines += [
+                result_lines += [
                     f"-- UNMATCHED (score<{MATCH_THRESHOLD}): {sq(name)} place={place}",
                 ]
 
@@ -347,13 +354,21 @@ def main():
         total_unmatched += unmatched_in_tournament
         print(f"  {sheet_name}: N={n}, results={len(data['results'])}, matched={matched_in_tournament}, unmatched={unmatched_in_tournament}")
 
-        lines += [
-            f"-- Compute scores for {tourn_code}",
-            f"SELECT fn_calc_tournament_scores(",
-            f"    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = {sq(tourn_code)})",
-            f");",
-            "",
-        ]
+        if matched_in_tournament == 0:
+            lines += [
+                f"-- SKIP {sheet_name} ({human_name}): 0 matched fencers in DB — tournament not created",
+                "",
+            ]
+        else:
+            lines += header_lines
+            lines += result_lines
+            lines += [
+                f"-- Compute scores for {tourn_code}",
+                f"SELECT fn_calc_tournament_scores(",
+                f"    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = {sq(tourn_code)})",
+                f");",
+                "",
+            ]
 
     lines += [
         "-- Summary",

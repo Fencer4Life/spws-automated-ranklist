@@ -2,7 +2,7 @@
 -- Migration: fn_event_position
 -- =============================================================================
 -- ADR-018: Rolling Score for Active Season
--- Extracts the position prefix from an event code (e.g. PP1-2024-2025 → PP1).
+-- Extracts the position prefix from an event code (e.g. PPW1-2024-2025 → PPW1).
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION fn_event_position(p_code TEXT)

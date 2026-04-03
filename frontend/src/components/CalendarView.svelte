@@ -150,7 +150,7 @@
     } else if (timeFilter === 'future') {
       result = result.filter((e) => e.dt_start != null && e.dt_start > today)
     }
-    return result.slice().sort((a, b) => (a.dt_start ?? '').localeCompare(b.dt_start ?? ''))
+    return result.slice().sort((a, b) => (b.dt_start ?? '').localeCompare(a.dt_start ?? ''))
   })
 
   let monthGroups = $derived.by(() => {
@@ -167,16 +167,11 @@
     return groups
   })
 
-  const MONTH_NAMES_PL = [
-    'Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
-    'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień',
-  ]
-
   function formatMonth(yearMonth: string): string {
     if (yearMonth === 'unknown') return '—'
     const [y, m] = yearMonth.split('-')
-    const monthIdx = parseInt(m, 10) - 1
-    return `${MONTH_NAMES_PL[monthIdx]} ${y}`
+    const monthNum = parseInt(m, 10)
+    return `${t(`month_${monthNum}`)} ${y}`
   }
 
   function formatDate(dt: string | null): string {

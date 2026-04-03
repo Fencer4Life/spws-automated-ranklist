@@ -456,3 +456,160 @@ class TestURLDispatcher:
 
         with pytest.raises(ValueError, match="[Uu]nknown|[Uu]nsupported"):
             detect_platform("https://unknown-fencing-site.com/results")
+
+
+# ===========================================================================
+# 3.15  FTL event schedule scraper — tournament URL discovery
+# ===========================================================================
+class TestFTLEventSchedule:
+    """Test FTL event schedule page parsing for tournament URL extraction."""
+
+    def test_parse_event_schedule_extracts_links(self):
+        """3.15a: Parsing PPW2 fixture HTML returns tournament links."""
+        from python.tools.scrape_ftl_event_urls import parse_event_schedule
+
+        html = (FIXTURES / "ftl" / "event_schedule_PPW2.html").read_text()
+        results = parse_event_schedule(html)
+        # PPW2 has 27 links total, 3 MIKST → 24 non-MIKST tournaments
+        assert len(results) == 24
+        assert all("uuid" in r and "name" in r for r in results)
+        # Verify a known UUID is present
+        uuids = {r["uuid"] for r in results}
+        assert "0387CC20A25B4EBA9BDAFAB148E8C12B" in uuids  # SZPADA M V2
+
+    def test_parse_event_schedule_skips_mikst(self):
+        """3.15b: MIKST entries excluded from results."""
+        from python.tools.scrape_ftl_event_urls import parse_event_schedule
+
+        html = (FIXTURES / "ftl" / "event_schedule_PPW2.html").read_text()
+        results = parse_event_schedule(html)
+        names_upper = [r["name"].upper() for r in results]
+        assert not any("MIKST" in n or "MIKS " in n for n in names_upper)
+
+    def test_parse_tournament_name_epee_m_v2(self):
+        """3.15c: SZPADA MĘŻCZYZN 2 WETERANI → (EPEE, M, V2)."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        result = parse_tournament_name("SZPADA MĘŻCZYZN 2 WETERANI")
+        assert result == ("EPEE", "M", "V2")
+
+    def test_parse_tournament_name_foil_f_v0(self):
+        """3.15d: FLORET WETERANI kobiety 0 → (FOIL, F, V0)."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        result = parse_tournament_name("FLORET WETERANI     kobiety 0")
+        assert result == ("FOIL", "F", "V0")
+
+    def test_parse_tournament_name_sabre_m_v4(self):
+        """3.15e: SZABLA WETERANI MĘŻCZYZNI 4 → (SABRE, M, V4)."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        result = parse_tournament_name("SZABLA WETERANI MĘŻCZYZNI 4")
+        assert result == ("SABRE", "M", "V4")
+
+    def test_parse_tournament_name_mikst_returns_none(self):
+        """3.15f: floret MIKST WETERANI → None (skip)."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        assert parse_tournament_name("floret MIKST WETERANI") is None
+        assert parse_tournament_name("szabla MIKS WETERANI") is None
+        assert parse_tournament_name("MIKST SZPADA WETERANI") is None
+
+    def test_parse_tournament_name_letter_o_as_zero(self):
+        """3.15g: SZPADA MĘŻCZYZN O WETERANI → V0 (letter O = digit 0)."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        result = parse_tournament_name("SZPADA MĘŻCZYZN O WETERANI")
+        assert result == ("EPEE", "M", "V0")
+
+    def test_build_tournament_code(self):
+        """3.15h: Build tournament code from components."""
+        from python.tools.scrape_ftl_event_urls import build_tournament_code
+
+        code = build_tournament_code("PPW2", "EPEE", "M", "V2", "2025-2026")
+        assert code == "PPW2-V2-M-EPEE-2025-2026"
+
+    def test_build_result_url(self):
+        """3.15i: UUID → full results URL."""
+        from python.tools.scrape_ftl_event_urls import build_result_url
+
+        url = build_result_url("0387CC20A25B4EBA9BDAFAB148E8C12B")
+        assert url == "https://www.fencingtimelive.com/events/results/0387CC20A25B4EBA9BDAFAB148E8C12B"
+
+    def test_parse_tournament_name_english_epee(self):
+        """3.15j: English name — Men's Epee Category 2 → (EPEE, M, V2)."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        result = parse_tournament_name("Men's Epee Category 2")
+        assert result == ("EPEE", "M", "V2")
+
+    def test_parse_tournament_name_english_women_foil(self):
+        """3.15k: English name — Women's Foil Category 1 and 2 → combined."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        result = parse_tournament_name("Women's Foil Category 1 and 2")
+        assert isinstance(result, list)
+        assert ("FOIL", "F", "V1") in result
+        assert ("FOIL", "F", "V2") in result
+
+    def test_parse_tournament_name_english_saber(self):
+        """3.15l: English name — Men's Sabre Category 3 and 4 → combined."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        result = parse_tournament_name("Men's Sabre Category 3 and 4")
+        assert isinstance(result, list)
+        assert ("SABRE", "M", "V3") in result
+        assert ("SABRE", "M", "V4") in result
+
+    def test_parse_tournament_name_de_sub_event_skipped(self):
+        """3.15m: DE sub-events skipped."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        assert parse_tournament_name("Women's Cat 3 DE") is None
+        assert parse_tournament_name("Men's Sabre Cat 4 DE") is None
+
+    def test_parse_tournament_name_epee_accent(self):
+        """3.15n: Épée with accent → EPEE."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        result = parse_tournament_name("Women's Épée Category 3 and 4 (Combined)")
+        assert isinstance(result, list)
+        assert ("EPEE", "F", "V3") in result
+
+    def test_parse_tournament_name_v_combined_triple(self):
+        """3.15o: FLORET MĘŻCZYZN v0v1v2 → 3 combined categories."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        result = parse_tournament_name("FLORET MĘŻCZYZN v0v1v2")
+        assert isinstance(result, list)
+        assert len(result) == 3
+        assert ("FOIL", "M", "V0") in result
+        assert ("FOIL", "M", "V1") in result
+        assert ("FOIL", "M", "V2") in result
+
+    def test_parse_tournament_name_v_combined_double(self):
+        """3.15p: SZPADA KOBIET v0v1 → 2 combined categories."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        result = parse_tournament_name("SZPADA KOBIET v0v1")
+        assert isinstance(result, list)
+        assert len(result) == 2
+        assert ("EPEE", "F", "V0") in result
+        assert ("EPEE", "F", "V1") in result
+
+    def test_parse_tournament_name_no_category_all_v(self):
+        """3.15q: FLORET KOBIET (no category) → all V0-V4."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        result = parse_tournament_name("FLORET KOBIET")
+        assert isinstance(result, list)
+        assert len(result) == 5
+        for i in range(5):
+            assert ("FOIL", "F", f"V{i}") in result
+
+    def test_parse_tournament_name_eliminacje_skipped(self):
+        """3.15r: ELIMINACJE entries skipped."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        assert parse_tournament_name("FLORET ELIMINACJE") is None
+        assert parse_tournament_name("SZPADA ELIMINACJE") is None
