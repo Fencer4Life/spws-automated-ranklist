@@ -25,7 +25,7 @@ INSERT INTO tbl_tournament (
     'I Puchar Polski Weteranów',
     'PPW',
     'FOIL', 'M', 'V1',
-    NULL, 3, 'https://www.fencingtimelive.com/events/results/B70595711BE14439A2EF83D742DA8326',
+    NULL, 3, NULL,
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
