@@ -273,8 +273,8 @@
   let filters: Filters = $state({
     season: null,
     weapon: 'EPEE',
-    gender: 'M',
-    category: 'V2',
+    gender: 'F',
+    category: 'V1',
     mode: 'PPW',
   })
   let ppwRows: RankingPpwRow[] = $state([])

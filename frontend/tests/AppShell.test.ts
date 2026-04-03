@@ -146,11 +146,11 @@ describe('Birth Year Subtitle (BY.1–BY.7)', () => {
     expect(container.querySelector('.category-subtitle')).not.toBeNull()
   })
 
-  // BY.2 — V2 + season 2026 → 1976, 1975, .. 1967
-  it('shows correct birth years for V2 with season ending 2026', async () => {
+  // BY.2 — V1 + season 2026 → 1986, 1985, .. 1977
+  it('shows correct birth years for V1 with season ending 2026', async () => {
     const { container } = await renderWithSeasons()
     const subtitle = container.querySelector('.category-subtitle')
-    expect(subtitle?.textContent).toContain('1976, 1975, .. 1967')
+    expect(subtitle?.textContent).toContain('1986, 1985, .. 1977')
   })
 
   // BY.3 — V0 + season 2026 → 1996, 1995, .. 1987
@@ -201,17 +201,17 @@ describe('Birth Year Subtitle (BY.1–BY.7)', () => {
   it('updates birth years when season changes', async () => {
     const { container } = await renderWithSeasons()
 
-    // Initially season 1 (end year 2026): V2 → 1976..1967
+    // Initially season 1 (end year 2026): V1 → 1986..1977
     const subtitle = container.querySelector('.category-subtitle')
-    expect(subtitle?.textContent).toContain('1976, 1975, .. 1967')
+    expect(subtitle?.textContent).toContain('1986, 1985, .. 1977')
 
     // Switch to season 2 (end year 2025)
     const seasonSelect = container.querySelector('.season-selector select') as HTMLSelectElement
     await fireEvent.change(seasonSelect, { target: { value: '2' } })
     await tick()
 
-    // V2 → 1975..1966
+    // V1 → 1985..1976
     const subtitleAfter = container.querySelector('.category-subtitle')
-    expect(subtitleAfter?.textContent).toContain('1975, 1974, .. 1966')
+    expect(subtitleAfter?.textContent).toContain('1985, 1984, .. 1976')
   })
 })
