@@ -4,10 +4,15 @@ Identity resolution — fuzzy name matching.
 Compares scraped fencer names against the master fencer list (tbl_fencer)
 using RapidFuzz for fuzzy string matching.
 
-Thresholds:
+Thresholds (configurable):
   ≥95  → AUTO_MATCHED  (confident match)
   ≥50  → PENDING       (needs admin review)
   <50  → UNMATCHED     (no viable candidate)
+
+Enhancements for staging spreadsheet pipeline:
+  - Diacritic folding: BARAŃSKI → BARANSKI for cross-source matching
+  - Token set ratio: handles name subsets (NEYMAN vs SPŁAWA-NEYMAN)
+  - Configurable thresholds via function parameters
 
 Duplicate name disambiguation:
   When multiple fencers share the same name and tie at the same score,
@@ -21,6 +26,7 @@ Duplicate name disambiguation:
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 
 from rapidfuzz import fuzz
@@ -49,9 +55,31 @@ class MatchResult:
     matched_name: str | None = None
 
 
-def normalize_name(name: str) -> str:
-    """Normalize a name for comparison: lowercase, collapse whitespace."""
-    return re.sub(r"\s+", " ", name.strip()).lower()
+def fold_diacritics(text: str) -> str:
+    """Strip diacritical marks from text: ą→a, ł→l, ü→u, etc.
+
+    Uses Unicode NFD decomposition to split base characters from
+    combining marks, then removes the combining marks.
+    Special-cases ł/Ł which don't decompose via NFD.
+    """
+    # ł/Ł are not decomposed by NFD — handle explicitly
+    text = text.replace("ł", "l").replace("Ł", "L")
+    # NFD decompose, then strip combining marks (category 'Mn')
+    nfd = unicodedata.normalize("NFD", text)
+    return "".join(c for c in nfd if unicodedata.category(c) != "Mn")
+
+
+def normalize_name(name: str, use_diacritic_folding: bool = False) -> str:
+    """Normalize a name for comparison: lowercase, collapse whitespace.
+
+    Args:
+        name: Raw name string
+        use_diacritic_folding: If True, strip diacritics before normalizing
+    """
+    result = re.sub(r"\s+", " ", name.strip()).lower()
+    if use_diacritic_folding:
+        result = fold_diacritics(result)
+    return result
 
 
 def parse_scraped_name(name: str) -> tuple[str, str]:
@@ -102,27 +130,37 @@ def birth_year_matches_category(
     return age_range[0] <= age <= age_range[1]
 
 
-def _score_against_fencer(scraped: str, fencer: dict) -> float:
+def _score_against_fencer(
+    scraped: str,
+    fencer: dict,
+    use_diacritic_folding: bool = False,
+    use_token_set_ratio: bool = False,
+) -> float:
     """Compute best match score between scraped name and a fencer.
 
     Checks:
-    1. Full name match (token_sort_ratio for word-order independence)
-    2. Alias match (exact match against json_name_aliases)
+    1. Alias match (exact match against json_name_aliases) → 100
+    2. Full name fuzzy comparison (token_sort_ratio, optionally token_set_ratio)
     """
-    scraped_norm = normalize_name(scraped)
+    scraped_norm = normalize_name(scraped, use_diacritic_folding)
 
     # Check aliases first (exact match = 100)
     aliases = fencer.get("json_name_aliases") or []
     for alias in aliases:
-        if normalize_name(alias) == scraped_norm:
+        if normalize_name(alias, use_diacritic_folding) == scraped_norm:
             return 100.0
 
     # Full name fuzzy comparison
     full_name = _build_full_name(fencer)
-    full_name_norm = normalize_name(full_name)
+    full_name_norm = normalize_name(full_name, use_diacritic_folding)
 
     # Use token_sort_ratio: order-independent, handles "Jan KOWALSKI" vs "KOWALSKI Jan"
     score = fuzz.token_sort_ratio(scraped_norm, full_name_norm)
+
+    # Optionally use token_set_ratio (handles name subsets) and take the max
+    if use_token_set_ratio:
+        set_score = fuzz.token_set_ratio(scraped_norm, full_name_norm)
+        score = max(score, set_score)
 
     return score
 
@@ -132,6 +170,11 @@ def find_best_match(
     fencer_db: list[dict],
     age_category: str | None = None,
     season_end_year: int | None = None,
+    *,
+    auto_match_threshold: float | None = None,
+    pending_threshold: float | None = None,
+    use_diacritic_folding: bool = False,
+    use_token_set_ratio: bool = False,
 ) -> MatchResult:
     """Find the best matching fencer for a scraped name.
 
@@ -151,10 +194,17 @@ def find_best_match(
         age_category: Tournament age category (V0–V4), optional
         season_end_year: End year of the season (e.g., 2025 for
             SPWS-2024-2025), optional
+        auto_match_threshold: Score threshold for AUTO_MATCHED (default: 95)
+        pending_threshold: Score threshold for PENDING (default: 50)
+        use_diacritic_folding: Strip diacritics before comparing (default: False)
+        use_token_set_ratio: Use max(token_sort, token_set) (default: False)
 
     Returns:
         MatchResult with status AUTO_MATCHED, PENDING, or UNMATCHED
     """
+    auto_thresh = auto_match_threshold if auto_match_threshold is not None else AUTO_MATCH_THRESHOLD
+    pend_thresh = pending_threshold if pending_threshold is not None else PENDING_THRESHOLD
+
     if not fencer_db:
         return MatchResult(
             scraped_name=scraped_name,
@@ -166,7 +216,11 @@ def find_best_match(
     # Score all fencers
     scored = []
     for fencer in fencer_db:
-        score = _score_against_fencer(scraped_name, fencer)
+        score = _score_against_fencer(
+            scraped_name, fencer,
+            use_diacritic_folding=use_diacritic_folding,
+            use_token_set_ratio=use_token_set_ratio,
+        )
         scored.append((score, fencer))
 
     # Find the best score
@@ -211,7 +265,7 @@ def find_best_match(
             status="PENDING",
             matched_name=best_name,
         )
-    elif best_score >= AUTO_MATCH_THRESHOLD:
+    elif best_score >= auto_thresh:
         return MatchResult(
             scraped_name=scraped_name,
             id_fencer=best_fencer_id,
@@ -219,7 +273,7 @@ def find_best_match(
             status="AUTO_MATCHED",
             matched_name=best_name,
         )
-    elif best_score >= PENDING_THRESHOLD:
+    elif best_score >= pend_thresh:
         return MatchResult(
             scraped_name=scraped_name,
             id_fencer=best_fencer_id,

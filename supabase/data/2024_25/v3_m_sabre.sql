@@ -7,21 +7,21 @@
 -- ---- PP1: I Puchar Polski Weteranów (KONIN) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
-    'PP1-2024-2025',
+    'PPW1-2024-2025',
     'I Puchar Polski Weteranów',
     'KONIN',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
     'COMPLETED'
-WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PP1-2024-2025');
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW1-2024-2025');
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category,
     dt_tournament, int_participant_count, url_results,
     enum_import_status
 ) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PP1-2024-2025'),
-    'PP1-V3-M-SABRE-2024-2025',
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW1-2024-2025'),
+    'PPW1-V3-M-SABRE-2024-2025',
     'I Puchar Polski Weteranów',
     'PPW',
     'SABRE', 'M', 'V3',
@@ -31,40 +31,40 @@ INSERT INTO tbl_tournament (
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     262,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V3-M-SABRE-2024-2025'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-SABRE-2024-2025'),
     1,
     'ZABŁOCKI Michał'
 ); -- matched: ZABŁOCKI Michał (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     31,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V3-M-SABRE-2024-2025'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-SABRE-2024-2025'),
     2,
     'CHUDYCKI Artur'
 ); -- matched: CHUDYCKI Artur (score=100.0)
--- Compute scores for PP1-V3-M-SABRE-2024-2025
+-- Compute scores for PPW1-V3-M-SABRE-2024-2025
 SELECT fn_calc_tournament_scores(
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V3-M-SABRE-2024-2025')
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-SABRE-2024-2025')
 );
 
 -- ---- PP2: II Puchar Polski Weteranów (BYTOM) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
-    'PP2-2024-2025',
+    'PPW2-2024-2025',
     'II Puchar Polski Weteranów',
     'BYTOM',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
     'COMPLETED'
-WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PP2-2024-2025');
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW2-2024-2025');
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category,
     dt_tournament, int_participant_count, url_results,
     enum_import_status
 ) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PP2-2024-2025'),
-    'PP2-V3-M-SABRE-2024-2025',
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW2-2024-2025'),
+    'PPW2-V3-M-SABRE-2024-2025',
     'II Puchar Polski Weteranów',
     'PPW',
     'SABRE', 'M', 'V3',
@@ -74,33 +74,33 @@ INSERT INTO tbl_tournament (
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     59,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP2-V3-M-SABRE-2024-2025'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-SABRE-2024-2025'),
     1,
     'GAJDA Leszek'
 ); -- matched: GAJDA Leszek (score=100.0)
--- Compute scores for PP2-V3-M-SABRE-2024-2025
+-- Compute scores for PPW2-V3-M-SABRE-2024-2025
 SELECT fn_calc_tournament_scores(
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP2-V3-M-SABRE-2024-2025')
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-SABRE-2024-2025')
 );
 
 -- ---- PP3: III Puchar Polski Weteranów (KRAKÓW) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
-    'PP3-2024-2025',
+    'PPW3-2024-2025',
     'III Puchar Polski Weteranów',
     'KRAKÓW',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
     'COMPLETED'
-WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PP3-2024-2025');
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW3-2024-2025');
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category,
     dt_tournament, int_participant_count, url_results,
     enum_import_status
 ) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PP3-2024-2025'),
-    'PP3-V3-M-SABRE-2024-2025',
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW3-2024-2025'),
+    'PPW3-V3-M-SABRE-2024-2025',
     'III Puchar Polski Weteranów',
     'PPW',
     'SABRE', 'M', 'V3',
@@ -110,34 +110,127 @@ INSERT INTO tbl_tournament (
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     262,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V3-M-SABRE-2024-2025'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-SABRE-2024-2025'),
     1,
     'ZABŁOCKI Michał'
 ); -- matched: ZABŁOCKI Michał (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     59,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V3-M-SABRE-2024-2025'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-SABRE-2024-2025'),
     2,
     'GAJDA Leszek'
 ); -- matched: GAJDA Leszek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     31,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V3-M-SABRE-2024-2025'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-SABRE-2024-2025'),
     3,
     'CHUDYCKI Artur'
 ); -- matched: CHUDYCKI Artur (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     257,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V3-M-SABRE-2024-2025'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-SABRE-2024-2025'),
     4,
     'WOJCIECHOWSKI Marek'
 ); -- matched: WOJCIECHOWSKI Marek (score=100.0)
--- Compute scores for PP3-V3-M-SABRE-2024-2025
+-- Compute scores for PPW3-V3-M-SABRE-2024-2025
 SELECT fn_calc_tournament_scores(
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V3-M-SABRE-2024-2025')
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-SABRE-2024-2025')
+);
+
+-- ---- PP4: IV Puchar Polski Weteranów (WARSZAWA) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PPW4-2024-2025',
+    'IV Puchar Polski Weteranów',
+    'WARSZAWA',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW4-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2024-2025'),
+    'PPW4-V3-M-SABRE-2024-2025',
+    'IV Puchar Polski Weteranów',
+    'PPW',
+    'SABRE', 'M', 'V3',
+    '2025-02-23', 3, 'https://www.fencingtimelive.com/events/results/DF16046C29204C769C289F19BB1967D2',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    262,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2024-2025'),
+    1,
+    'ZABŁOCKI Michał'
+); -- matched: ZABŁOCKI Michał (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    59,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2024-2025'),
+    2,
+    'GAJDA Leszek'
+); -- matched: GAJDA Leszek (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    31,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2024-2025'),
+    3,
+    'CHUDYCKI Artur'
+); -- matched: CHUDYCKI Artur (score=100.0)
+-- Compute scores for PPW4-V3-M-SABRE-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2024-2025')
+);
+
+-- ---- PP5: V Puchar Polski Weteranów (SZCZECIN) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PPW5-2024-2025',
+    'V Puchar Polski Weteranów',
+    'SZCZECIN',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW5-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2024-2025'),
+    'PPW5-V3-M-SABRE-2024-2025',
+    'V Puchar Polski Weteranów',
+    'PPW',
+    'SABRE', 'M', 'V3',
+    '2025-04-26', 2, 'https://www.fencingtimelive.com/events/results/E81CCA279A6C47A09FDC7DA996157EA1',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    59,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V3-M-SABRE-2024-2025'),
+    1,
+    'GAJDA Leszek'
+); -- matched: GAJDA Leszek (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    31,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V3-M-SABRE-2024-2025'),
+    2,
+    'CHUDYCKI Artur'
+); -- matched: CHUDYCKI Artur (score=100.0)
+-- Compute scores for PPW5-V3-M-SABRE-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V3-M-SABRE-2024-2025')
 );
 
 -- ---- MPW: Mistrzostwa Polski Weteranów (PABIANICE) ----
@@ -197,36 +290,85 @@ SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-SABRE-2024-2025')
 );
 
--- ---- PEW1: EVF Grand Prix 1 — Budapeszt (Budapest) ----
+-- SKIP PEW1 (EVF Grand Prix 1 — Budapeszt): 0 matched fencers in DB — tournament not created
+
+-- SKIP PEW2 (EVF Grand Prix 2 — Madryt): N=0 — tournament had no participants
+
+-- ---- PEW3: EVF Grand Prix 3 (Munich) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
-    'PEW1-2024-2025',
-    'EVF Grand Prix 1 — Budapeszt',
-    'Budapest',
+    'PEW3-2024-2025',
+    'EVF Grand Prix 3',
+    'Munich',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
     'COMPLETED'
-WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW1-2024-2025');
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW3-2024-2025');
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category,
     dt_tournament, int_participant_count, url_results,
     enum_import_status
 ) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1-2024-2025'),
-    'PEW1-V3-M-SABRE-2024-2025',
-    'EVF Grand Prix 1 — Budapeszt',
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW3-2024-2025'),
+    'PEW3-V3-M-SABRE-2024-2025',
+    'EVF Grand Prix 3',
     'PEW',
     'SABRE', 'M', 'V3',
-    '2024-09-22', 16, 'https://engarde-service.com/app.php?id=4211E3',
+    '2024-12-08', 21, 'https://www.fencingworldwide.com/en/912307-2024/results/',
     'SCORED'
 );
--- Compute scores for PEW1-V3-M-SABRE-2024-2025
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    59,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V3-M-SABRE-2024-2025'),
+    3,
+    'GAJDA Leszek'
+); -- matched: GAJDA Leszek (score=100.0)
+-- Compute scores for PEW3-V3-M-SABRE-2024-2025
 SELECT fn_calc_tournament_scores(
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V3-M-SABRE-2024-2025')
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V3-M-SABRE-2024-2025')
 );
 
--- SKIP PEW2 (EVF Grand Prix 2 — Madryt): N=0 — tournament had no participants
+-- SKIP PEW4 (EVF Grand Prix 4): N=0 — tournament had no participants
+
+-- SKIP PEW5 (EVF Grand Prix 5): N=0 — tournament had no participants
+
+-- ---- PEW6: EVF Grand Prix 6 (Terni) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW6-2024-2025',
+    'EVF Grand Prix 6',
+    'Terni',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW6-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW6-2024-2025'),
+    'PEW6-V3-M-SABRE-2024-2025',
+    'EVF Grand Prix 6',
+    'PEW',
+    'SABRE', 'M', 'V3',
+    '2025-02-02', 17, 'https://www.4fence.it/FIS/Risultati/2025-02-02-01_Terni_(TR)_-_4_Prova_Naz.le_Master_-_EVF_Circuit/index.php?a=SC&s=M&c=8&f=clafinale',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    262,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V3-M-SABRE-2024-2025'),
+    9,
+    'ZABŁOCKI Michał'
+); -- matched: ZABŁOCKI Michał (score=100.0)
+-- Compute scores for PEW6-V3-M-SABRE-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V3-M-SABRE-2024-2025')
+);
 
 -- ---- PEW7: EVF Grand Prix 7 — Terni (Warszawa) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
@@ -293,6 +435,8 @@ SELECT fn_calc_tournament_scores(
 
 -- SKIP PEW9 (EVF Grand Prix 9 — Sztokholm): N=0 — tournament had no participants
 
+-- SKIP PS (Puchar Świata): N=0 — tournament had no participants
+
 -- ---- IMEW: Indywidualne Mistrzostwa Europy Weteranów (Płowdiw) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
@@ -337,5 +481,5 @@ SELECT fn_calc_tournament_scores(
 );
 
 -- Summary
--- Total results matched:   16
+-- Total results matched:   23
 -- Total results unmatched: 11

@@ -75,13 +75,13 @@ const EVENTS: CalendarEvent[] = [
 ]
 
 describe('CalendarView (T8.5)', () => {
-  // 8.38 — Renders events in chronological order
-  it('renders events in chronological order', () => {
+  // 8.38 — Renders events in reverse chronological order (future first)
+  it('renders events in reverse chronological order', () => {
     const { container } = render(CalendarView, { props: { events: EVENTS } })
     const items = container.querySelectorAll('.timeline-event')
     expect(items.length).toBeGreaterThanOrEqual(3)
-    // First item should be September (earliest)
-    expect(items[0].textContent).toContain('I Puchar Polski')
+    // First item should be April (latest / most future)
+    expect(items[0].textContent).toContain('IV Puchar Polski')
   })
 
   // 8.39 — Groups events by month with month headers

@@ -4,25 +4,26 @@
 -- One file per age category per season; see supabase/data/{season}/{cat}.sql
 -- =========================================================================
 
--- ---- PP1: I Puchar Polski Weteranów — Szpada M (OPOLE) ----
+-- ---- PPW1: I Puchar Polski Weteranów — Szpada M (OPOLE) ----
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country, url_invitation, num_entry_fee, url_event)
-VALUES (
-    'PP1-2025-2026',
+SELECT
+    'PPW1-2025-2026',
     'I Puchar Polski Weteranów',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
     'COMPLETED',
     '2025-09-28', 'Opole', 'Polska', 'https://spws.fencing.pl/pp1-2025', 80,
     'https://www.fightingtimelive.com/pp1-2025'
-);
+
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW1-2025-2026');
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category,
     dt_tournament, int_participant_count, url_results,
     enum_import_status
 ) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PP1-2025-2026'),
-    'PP1-V2-M-EPEE-2025-2026',
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW1-2025-2026'),
+    'PPW1-V2-M-EPEE-2025-2026',
     'I Puchar Polski Weteranów — Szpada M',
     'PPW',
     'EPEE', 'M', 'V2',
@@ -32,83 +33,84 @@ INSERT INTO tbl_tournament (
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     266,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-EPEE-2025-2026'),
     1,
     'ZIELIŃSKI Dariusz'
 ); -- matched: ZIELIŃSKI Dariusz (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     5,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-EPEE-2025-2026'),
     2,
     'ATANASSOW Aleksander'
 ); -- matched: ATANASSOW Aleksander (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     96,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-EPEE-2025-2026'),
     3,
     'JENDRYŚ Marek'
 ); -- matched: JENDRYŚ Marek (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     117,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-EPEE-2025-2026'),
     4,
     'KORONA Przemysław'
 ); -- matched: KORONA Przemysław (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     45,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-EPEE-2025-2026'),
     5,
     'DROBIŃSKI Leszek'
 ); -- matched: DROBIŃSKI Leszek (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     176,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-EPEE-2025-2026'),
     6,
     'PARDUS Borys'
 ); -- matched: PARDUS Borys (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     250,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-EPEE-2025-2026'),
     7,
     'WIERZBICKI Jacek'
 ); -- matched: WIERZBICKI Jacek (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     87,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-EPEE-2025-2026'),
     8,
     'HEŁKA Jacek'
 ); -- matched: HEŁKA Jacek (score=100)
 -- Compute scores for PP1-V2-M-EPEE-2025-2026
 SELECT fn_calc_tournament_scores(
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP1-V2-M-EPEE-2025-2026')
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-EPEE-2025-2026')
 );
 
--- ---- PP2: II Puchar Polski Weteranów — Szpada M (II Puchar Weteranów Poznań) ----
+-- ---- PPW2: II Puchar Polski Weteranów — Szpada M (II Puchar Weteranów Poznań) ----
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country, url_invitation, num_entry_fee, url_event)
-VALUES (
-    'PP2-2025-2026',
+SELECT
+    'PPW2-2025-2026',
     'II Puchar Polski Weteranów',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
     'COMPLETED',
     '2025-11-23', 'Warszawa', 'Polska', 'https://spws.fencing.pl/pp2-2025', 80,
     'https://www.fightingtimelive.com/pp2-2025'
-);
+
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW2-2025-2026');
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category,
     dt_tournament, int_participant_count, url_results,
     enum_import_status
 ) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PP2-2025-2026'),
-    'PP2-V2-M-EPEE-2025-2026',
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW2-2025-2026'),
+    'PPW2-V2-M-EPEE-2025-2026',
     'II Puchar Polski Weteranów — Szpada M',
     'PPW',
     'EPEE', 'M', 'V2',
@@ -118,83 +120,84 @@ INSERT INTO tbl_tournament (
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     117,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP2-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-EPEE-2025-2026'),
     1,
     'KORONA Przemysław'
 ); -- matched: KORONA Przemysław (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     45,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP2-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-EPEE-2025-2026'),
     2,
     'DROBIŃSKI Leszek'
 ); -- matched: DROBIŃSKI Leszek (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     269,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP2-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-EPEE-2025-2026'),
     3,
     'ŻUKOWSKI Wojciech'
 ); -- matched: ŻUKOWSKI Wojciech (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     214,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP2-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-EPEE-2025-2026'),
     4,
     'STANIEWICZ Witold'
 ); -- matched: STANIEWICZ Witold (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     250,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP2-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-EPEE-2025-2026'),
     5,
     'WIERZBICKI Jacek'
 ); -- matched: WIERZBICKI Jacek (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     176,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP2-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-EPEE-2025-2026'),
     6,
     'PARDUS Borys'
 ); -- matched: PARDUS Borys (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     87,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP2-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-EPEE-2025-2026'),
     7,
     'HEŁKA Jacek'
 ); -- matched: HEŁKA Jacek (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     235,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP2-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-EPEE-2025-2026'),
     8,
     'TOMCZAK Ireneusz'
 ); -- matched: TOMCZAK Ireneusz (score=100)
 -- Compute scores for PP2-V2-M-EPEE-2025-2026
 SELECT fn_calc_tournament_scores(
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP2-V2-M-EPEE-2025-2026')
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-EPEE-2025-2026')
 );
 
--- ---- PP3: III Puchar Polski Weteranów — Szpada M (Warsaw Epee Open) ----
+-- ---- PPW3: III Puchar Polski Weteranów — Szpada M (Warsaw Epee Open) ----
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country, url_invitation, num_entry_fee, url_event)
-VALUES (
-    'PP3-2025-2026',
+SELECT
+    'PPW3-2025-2026',
     'III Puchar Polski Weteranów',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
     'COMPLETED',
     '2026-02-15', 'Kraków', 'Polska', 'https://spws.fencing.pl/pp3-2026', 90,
     'https://www.fightingtimelive.com/pp3-2026'
-);
+
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW3-2025-2026');
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category,
     dt_tournament, int_participant_count, url_results,
     enum_import_status
 ) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PP3-2025-2026'),
-    'PP3-V2-M-EPEE-2025-2026',
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW3-2025-2026'),
+    'PPW3-V2-M-EPEE-2025-2026',
     'III Puchar Polski Weteranów — Szpada M',
     'PPW',
     'EPEE', 'M', 'V2',
@@ -204,21 +207,21 @@ INSERT INTO tbl_tournament (
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     5,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
     1,
     'ATANASSOW Aleksander'
 ); -- matched: ATANASSOW Aleksander (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     96,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
     2,
     'JENDRYŚ Marek'
 ); -- matched: JENDRYŚ Marek (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     117,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
     3,
     'KORONA Przemysław'
 ); -- matched: KORONA Przemysław (score=100)
@@ -226,42 +229,42 @@ VALUES (
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     266,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
     5,
     'ZIELIŃSKI Dariusz'
 ); -- matched: ZIELIŃSKI Dariusz (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     95,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
     6,
     'JASZCZAK Piotr'
 ); -- matched: JASZCZAK Piotr (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     169,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
     7,
     'OLSZEWSKI Mikołaj'
 ); -- matched: OLSZEWSKI Mikołaj (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     181,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
     8,
     'PILUTKIEWICZ Igor'
 ); -- matched: PILUTKIEWICZ Igor (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     45,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
     9,
     'DROBIŃSKI Leszek'
 ); -- matched: DROBIŃSKI Leszek (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     269,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
     10,
     'ŻUKOWSKI Wojciech'
 ); -- matched: ŻUKOWSKI Wojciech (score=100)
@@ -269,7 +272,7 @@ VALUES (
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     210,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
     12,
     'SKOCZEK Artur'
 ); -- matched: SKOCZEK Artur (score=100)
@@ -277,28 +280,28 @@ VALUES (
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     235,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
     14,
     'TOMCZAK Ireneusz'
 ); -- matched: TOMCZAK Ireneusz (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     207,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
     15,
     'SERWATKA Marek'
 ); -- matched: SERWATKA Marek (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     250,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
     16,
     'WIERZBICKI Jacek'
 ); -- matched: WIERZBICKI Jacek (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     176,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
     17,
     'PARDUS Borys'
 ); -- matched: PARDUS Borys (score=100)
@@ -306,12 +309,12 @@ VALUES (
 -- UNMATCHED (<80): 'GOLD Oleg' place=19
 -- Compute scores for PP3-V2-M-EPEE-2025-2026
 SELECT fn_calc_tournament_scores(
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V2-M-EPEE-2025-2026')
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026')
 );
 
 -- ---- PEW1: EVF Grand Prix 1 — Budapeszt (BUDAPEST CUP 2025.09.20) ----
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country, url_invitation, num_entry_fee, url_event)
-VALUES (
+SELECT
     'PEW1-2025-2026',
     'EVF Grand Prix 1 — Budapeszt',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
@@ -320,7 +323,8 @@ VALUES (
     '2025-10-12', 'Budapeszt', 'Węgry',
     'https://veteransfencing.eu/gp1-budapest-2025', 50,
     'https://veteransfencing.eu/gp1-budapest-2025/results'
-);
+
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW1-2025-2026');
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category,
@@ -423,7 +427,7 @@ SELECT fn_calc_tournament_scores(
 
 -- ---- PEW2: EVF Grand Prix 2 — Madryt (MADRID _x000D_) ----
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country, url_invitation, num_entry_fee, url_event)
-VALUES (
+SELECT
     'PEW2-2025-2026',
     'EVF Grand Prix 2 — Madryt',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
@@ -432,7 +436,8 @@ VALUES (
     '2025-12-07', 'Madryt', 'Hiszpania',
     'https://veteransfencing.eu/gp2-madrid-2025', 60,
     'https://veteransfencing.eu/gp2-madrid-2025/results'
-);
+
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW2-2025-2026');
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category,
@@ -499,7 +504,7 @@ SELECT fn_calc_tournament_scores(
 
 -- ---- IMSW: Indywidualne Mistrzostwa Świata Weteranów (2025 Veteran World Championships) ----
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country, url_invitation, num_entry_fee, url_event)
-VALUES (
+SELECT
     'IMSW-2025-2026',
     'Indywidualne Mistrzostwa Świata Weteranów',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
@@ -508,7 +513,8 @@ VALUES (
     '2026-04-18', 'Dubaj', 'Zjednoczone Emiraty Arabskie',
     'https://veteransfencing.eu/wch-dubai-2026', 100,
     'https://veteransfencing.eu/wch-dubai-2026/results'
-);
+
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'IMSW-2025-2026');
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category,
@@ -630,38 +636,134 @@ SELECT fn_calc_tournament_scores(
 );
 
 
--- ---- PP4: IV Puchar Polski Weteranów (SCHEDULED — declared counterpart for rolling) ----
+-- ---- PPW4: IV Puchar Polski Weteranów (Gdańsk, 2026-02-21) ----
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country)
-VALUES (
-    'PP4-2025-2026',
+SELECT
+    'PPW4-2025-2026',
     'IV Puchar Polski Weteranów',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
-    'SCHEDULED',
-    '2026-03-15', 'Gdańsk', 'Polska'
+    'COMPLETED',
+    '2026-02-21', 'Gdańsk', 'Polska'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW4-2025-2026');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2025-2026'),
+    'PPW4-V2-M-EPEE-2025-2026',
+    'IV Puchar Polski Weteranów — Szpada M',
+    'PPW',
+    'EPEE', 'M', 'V2',
+    '2026-02-21', 11, NULL,
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    117,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026'),
+    1,
+    'KORONA Przemysław'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    5,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026'),
+    2,
+    'ATANASSOW Aleksander'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    96,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026'),
+    3,
+    'JENDRYŚ Marek'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    46,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026'),
+    4,
+    'DUDEK Mariusz'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    247,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026'),
+    5,
+    'WASIOŁKA Sebastian'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    45,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026'),
+    6,
+    'DROBIŃSKI Leszek'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    86,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026'),
+    7,
+    'HAŚKO Sergiusz'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    250,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026'),
+    8,
+    'WIERZBICKI Jacek'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    235,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026'),
+    9,
+    'TOMCZAK Ireneusz'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    181,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026'),
+    10,
+    'PILUTKIEWICZ Igor'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    87,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026'),
+    11,
+    'HEŁKA Jacek'
+);
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026')
 );
 
--- ---- PP5: V Puchar Polski Weteranów (SCHEDULED — declared counterpart for rolling) ----
+-- ---- PPW5: V Puchar Polski Weteranów (SCHEDULED — declared counterpart for rolling) ----
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country)
-VALUES (
-    'PP5-2025-2026',
+SELECT
+    'PPW5-2025-2026',
     'V Puchar Polski Weteranów',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
     'SCHEDULED',
     '2026-05-10', 'Warszawa', 'Polska'
-);
+
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW5-2025-2026');
 
 -- ---- MPW: Mistrzostwa Polski Weteranów (SCHEDULED — declared counterpart for rolling) ----
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country)
-VALUES (
+SELECT
     'MPW-2025-2026',
     'Mistrzostwa Polski Weteranów',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
     'SCHEDULED',
     '2026-06-07', 'Pabianice', 'Polska'
-);
+
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'MPW-2025-2026');
 
 -- ---- IMEW: Indywidualne Mistrzostwa Europy Weteranów (SCHEDULED — declared counterpart for rolling) ----
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country)
@@ -675,9 +777,9 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'IMEW-2025-2026');
 
 -- Backfill txt_location for 2025/26 events
-UPDATE tbl_event SET txt_location = 'Opole'     WHERE txt_code = 'PP1-2025-2026';
-UPDATE tbl_event SET txt_location = 'Poznań'    WHERE txt_code = 'PP2-2025-2026';
-UPDATE tbl_event SET txt_location = 'Warszawa'  WHERE txt_code = 'PP3-2025-2026';
+UPDATE tbl_event SET txt_location = 'Opole'     WHERE txt_code = 'PPW1-2025-2026';
+UPDATE tbl_event SET txt_location = 'Poznań'    WHERE txt_code = 'PPW2-2025-2026';
+UPDATE tbl_event SET txt_location = 'Warszawa'  WHERE txt_code = 'PPW3-2025-2026';
 UPDATE tbl_event SET txt_location = 'Budapeszt'      WHERE txt_code = 'PEW1-2025-2026';
 UPDATE tbl_event SET txt_location = 'Madryt'         WHERE txt_code = 'PEW2-2025-2026';
 UPDATE tbl_event SET txt_location = 'Manama, Bahrain' WHERE txt_code = 'IMSW-2025-2026';

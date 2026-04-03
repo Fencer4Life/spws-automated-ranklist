@@ -11,21 +11,21 @@
 -- ---- PP3: III Puchar Polski Weteranów (KRAKÓW) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
-    'PP3-2024-2025',
+    'PPW3-2024-2025',
     'III Puchar Polski Weteranów',
     'KRAKÓW',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
     'COMPLETED'
-WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PP3-2024-2025');
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW3-2024-2025');
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category,
     dt_tournament, int_participant_count, url_results,
     enum_import_status
 ) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PP3-2024-2025'),
-    'PP3-V4-F-SABRE-2024-2025',
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW3-2024-2025'),
+    'PPW3-V4-F-SABRE-2024-2025',
     'III Puchar Polski Weteranów',
     'PPW',
     'SABRE', 'F', 'V4',
@@ -35,13 +35,13 @@ INSERT INTO tbl_tournament (
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     213,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V4-F-SABRE-2024-2025'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V4-F-SABRE-2024-2025'),
     1,
     'SOSNOWSKA Aniela'
 ); -- matched: SOSNOWSKA Aniela (score=100.0)
 -- Compute scores for PP3-V4-F-SABRE-2024-2025
 SELECT fn_calc_tournament_scores(
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PP3-V4-F-SABRE-2024-2025')
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V4-F-SABRE-2024-2025')
 );
 
 -- ---- MPW: Mistrzostwa Polski Weteranów (PABIANICE) ----

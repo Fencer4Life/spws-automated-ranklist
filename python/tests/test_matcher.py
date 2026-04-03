@@ -22,6 +22,11 @@ Tests cover:
   4.25–4.31  Age-category tiebreaker for duplicate surname+first_name pairs
   4.32–4.35  birth_year_matches_category helper
   4.36–4.37  Duplicate names through pipeline
+
+  Staging spreadsheet matcher enhancements:
+  4.38–4.41  Diacritic folding in normalize_name
+  4.42–4.45  Token set ratio as secondary scorer
+  4.46–4.49  Configurable thresholds
 """
 
 from __future__ import annotations
@@ -32,6 +37,7 @@ from python.matcher.fuzzy_match import (
     MatchResult,
     birth_year_matches_category,
     find_best_match,
+    fold_diacritics,
     normalize_name,
     parse_scraped_name,
 )
@@ -664,3 +670,138 @@ class TestDuplicateInPipeline:
         )
         assert len(resolved.matched) == 1
         assert resolved.matched[0].id_fencer == 9  # born 1984
+
+
+# ===========================================================================
+# Staging spreadsheet matcher enhancements
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# 4.38–4.41  Diacritic folding
+# ---------------------------------------------------------------------------
+class TestDiacriticFolding:
+    def test_fold_diacritics_polish(self):
+        """4.38 Polish diacritics are stripped: ąćęłńóśźż → acelnoszz."""
+        assert fold_diacritics("BARAŃSKI") == "BARANSKI"
+        assert fold_diacritics("KOŃCZYŁO") == "KONCZYLO"
+        assert fold_diacritics("ŁUCZAK") == "LUCZAK"
+        assert fold_diacritics("DĄBROWSKA") == "DABROWSKA"
+
+    def test_fold_diacritics_german_hungarian(self):
+        """4.39 German/Hungarian diacritics: ü→u, ö→o, á→a, é→e."""
+        assert fold_diacritics("MÜLLER") == "MULLER"
+        assert fold_diacritics("TAKÁCSY") == "TAKACSY"
+        assert fold_diacritics("PÁSZTOR") == "PASZTOR"
+
+    def test_diacritic_folding_match(self, fencer_db):
+        """4.40 'BARANSKI Witold' matches 'BARAŃSKI Witold' with diacritic folding."""
+        result = find_best_match(
+            "BARANSKI Witold", fencer_db, use_diacritic_folding=True
+        )
+        assert result.id_fencer == 1
+        assert result.confidence >= 95
+        assert result.status == "AUTO_MATCHED"
+
+    def test_diacritic_folding_off_lower_score(self, fencer_db):
+        """4.41 Without folding, 'BARANSKI Witold' vs 'BARAŃSKI Witold' scores lower."""
+        result = find_best_match(
+            "BARANSKI Witold", fencer_db, use_diacritic_folding=False
+        )
+        # Without folding, the ń→n difference lowers the score
+        assert result.confidence < 95 or result.status != "AUTO_MATCHED"
+
+
+# ---------------------------------------------------------------------------
+# 4.42–4.45  Token set ratio as secondary scorer
+# ---------------------------------------------------------------------------
+class TestTokenSetRatio:
+    @pytest.fixture
+    def fencer_db_compound(self):
+        """Fencer DB with compound surname."""
+        return [
+            {
+                "id_fencer": 1,
+                "txt_surname": "SPŁAWA-NEYMAN",
+                "txt_first_name": "Maciej",
+                "json_name_aliases": None,
+            },
+            {
+                "id_fencer": 2,
+                "txt_surname": "CIUFFREDA",
+                "txt_first_name": "Luigi Salvatore",
+                "json_name_aliases": None,
+            },
+        ]
+
+    def test_token_set_matches_subset_name(self, fencer_db_compound):
+        """4.42 'NEYMAN Maciej' matches 'SPŁAWA-NEYMAN Maciej' with token_set_ratio."""
+        result = find_best_match(
+            "NEYMAN Maciej", fencer_db_compound, use_token_set_ratio=True
+        )
+        assert result.id_fencer == 1
+        assert result.confidence >= 75  # token_set catches subset (~78.8)
+
+    def test_token_set_matches_partial_first_name(self, fencer_db_compound):
+        """4.43 'CIUFFREDA Luigi' matches 'CIUFFREDA Luigi Salvatore' with token_set."""
+        result = find_best_match(
+            "CIUFFREDA Luigi", fencer_db_compound, use_token_set_ratio=True
+        )
+        assert result.id_fencer == 2
+        assert result.confidence >= 85
+
+    def test_token_set_off_lower_score_for_subset(self, fencer_db_compound):
+        """4.44 Without token_set, 'NEYMAN Maciej' vs 'SPŁAWA-NEYMAN Maciej' scores lower."""
+        result = find_best_match(
+            "NEYMAN Maciej", fencer_db_compound, use_token_set_ratio=False
+        )
+        # token_sort_ratio only — partial surname match scores lower
+        assert result.confidence < 85
+
+    def test_token_set_does_not_false_positive(self, fencer_db):
+        """4.45 token_set_ratio doesn't cause false positive for unrelated names."""
+        result = find_best_match(
+            "XYZ Unknown", fencer_db, use_token_set_ratio=True
+        )
+        assert result.status == "UNMATCHED"
+
+
+# ---------------------------------------------------------------------------
+# 4.46–4.49  Configurable thresholds
+# ---------------------------------------------------------------------------
+class TestConfigurableThresholds:
+    def test_custom_auto_threshold_90(self, fencer_db):
+        """4.46 With auto_match_threshold=90, a score of ~92 → AUTO_MATCHED."""
+        # "KOWALSKI Jan" is exact (score 100), should AUTO_MATCH at 90
+        result = find_best_match(
+            "KOWALSKI Jan", fencer_db, auto_match_threshold=90
+        )
+        assert result.status == "AUTO_MATCHED"
+
+    def test_custom_auto_threshold_98_makes_typo_pending(self, fencer_db):
+        """4.47 With auto_match_threshold=98, a small typo → PENDING (not AUTO)."""
+        # "KOWALSKY Jan" typically scores ~92 — below 98 threshold
+        result = find_best_match(
+            "KOWALSKY Jan", fencer_db, auto_match_threshold=98
+        )
+        assert result.status == "PENDING"
+
+    def test_custom_pending_threshold_80(self, fencer_db):
+        """4.48 With pending_threshold=80, a score of 60 → UNMATCHED (not PENDING)."""
+        # "BARAŃSKI Tomasz" vs "BARAŃSKI Witold" — surname match but wrong first name
+        result = find_best_match(
+            "BARAŃSKI Tomasz", fencer_db, pending_threshold=80
+        )
+        # Score should be around 70 — below 80 threshold → UNMATCHED
+        assert result.status == "UNMATCHED" or result.confidence >= 80
+
+    def test_defaults_unchanged(self, fencer_db):
+        """4.49 Default thresholds (95/50) match original behavior."""
+        # Exact match → AUTO_MATCHED at default 95
+        result = find_best_match("KOWALSKI Jan", fencer_db)
+        assert result.status == "AUTO_MATCHED"
+        # Typo → PENDING at default thresholds
+        result2 = find_best_match("KOWALSKY Jan", fencer_db)
+        assert result2.status == "PENDING"
+        # Unknown → UNMATCHED at default 50
+        result3 = find_best_match("XYZ Unknown", fencer_db)
+        assert result3.status == "UNMATCHED"
