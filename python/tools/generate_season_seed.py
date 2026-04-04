@@ -69,6 +69,18 @@ SHEET_MAP = {
 
 MATCH_THRESHOLD = 70  # minimum fuzzy score to accept a match
 
+# Reuse domestic/international distinction from the live pipeline (ADR-020)
+DOMESTIC_TYPES = {"PPW", "MPW"}
+
+# Age category → minimum age (youngest boundary) — mirrors pipeline.py
+_CATEGORY_MIN_AGE = {
+    "V0": 30,
+    "V1": 40,
+    "V2": 50,
+    "V3": 60,
+    "V4": 70,
+}
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -146,6 +158,93 @@ def fuzzy_match(name: str, fencers: list[tuple]) -> tuple | None:
     if best_score >= MATCH_THRESHOLD:
         return (*best_fencer, best_score)
     return None
+
+
+def parse_season_end_year(season: str) -> int:
+    """Extract end year from 'SPWS-2024-2025' → 2025."""
+    return int(season.split("-")[-1])
+
+
+def estimate_birth_year(category: str, season_end_year: int) -> int:
+    """Estimate birth year from age category using youngest boundary."""
+    min_age = _CATEGORY_MIN_AGE.get(category)
+    if min_age is None:
+        raise ValueError(f"Unknown age category: {category}")
+    return season_end_year - min_age
+
+
+def _parse_scraped_name(name: str) -> tuple[str, str]:
+    """Parse 'SURNAME FirstName' into (surname, first_name)."""
+    parts = name.strip().split(None, 1)
+    if len(parts) == 1:
+        return parts[0], ""
+    return parts[0], parts[1]
+
+
+def generate_auto_create_sql(
+    scraped_name: str,
+    age_cat: str,
+    season_end_year: int,
+    auto_created: set | None = None,
+) -> str:
+    """Generate idempotent INSERT INTO tbl_fencer for an unmatched domestic fencer.
+
+    Args:
+        scraped_name: Name as scraped (e.g. "LEAHEY John")
+        age_cat: Age category (V0–V4)
+        season_end_year: End year of the season
+        auto_created: Optional set of (surname, first_name) already created — for dedup
+
+    Returns:
+        SQL string, or empty string if already in auto_created set.
+    """
+    surname, first_name = _parse_scraped_name(scraped_name)
+    key = (surname.upper(), first_name.upper())
+    if auto_created is not None:
+        if key in auto_created:
+            return ""
+        auto_created.add(key)
+
+    birth_year = estimate_birth_year(age_cat, season_end_year)
+    return (
+        f"INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, bool_birth_year_estimated)\n"
+        f"SELECT {sq(surname)}, {sq(first_name)}, {birth_year}, TRUE\n"
+        f"WHERE NOT EXISTS (\n"
+        f"    SELECT 1 FROM tbl_fencer WHERE txt_surname = {sq(surname)} AND txt_first_name = {sq(first_name)}\n"
+        f");"
+    )
+
+
+def build_result_sql_for_unmatched(
+    scraped_name: str,
+    place: int,
+    ttype: str,
+    tourn_code: str,
+) -> str:
+    """Build SQL for an unmatched fencer's result — domestic auto-create or international skip.
+
+    Args:
+        scraped_name: Scraped name
+        place: Finishing place
+        ttype: Tournament type (PPW, MPW, PEW, MEW, PSW, MSW)
+        tourn_code: Tournament code for the tbl_tournament reference
+
+    Returns:
+        SQL lines as a single string.
+    """
+    if ttype in DOMESTIC_TYPES:
+        surname, first_name = _parse_scraped_name(scraped_name)
+        return (
+            f"INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)\n"
+            f"VALUES (\n"
+            f"    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = {sq(surname)} AND txt_first_name = {sq(first_name)}),\n"
+            f"    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = {sq(tourn_code)}),\n"
+            f"    {place},\n"
+            f"    {sq(scraped_name)}\n"
+            f"); -- auto-created domestic fencer"
+        )
+    else:
+        return f"-- SKIPPED (international, no master data): {sq(scraped_name)} place={place}"
 
 
 def load_fencers(conn) -> list[tuple]:
@@ -275,7 +374,12 @@ def main():
 
     total_matched   = 0
     total_unmatched = 0
+    total_auto_created = 0
     tournament_codes = []
+    auto_created: set[tuple[str, str]] = set()   # (SURNAME, FIRST_NAME) dedup
+    auto_create_lines: list[str] = []             # fencer INSERT statements
+
+    season_end_year = parse_season_end_year(season)
 
     for sheet_name, (ttype, code, human_name) in SHEET_MAP.items():
         if sheet_name not in wb_data.sheetnames:
@@ -359,9 +463,18 @@ def main():
                 ]
             else:
                 unmatched_in_tournament += 1
-                result_lines += [
-                    f"-- UNMATCHED (score<{MATCH_THRESHOLD}): {sq(name)} place={place}",
-                ]
+                # ADR-020: domestic auto-create vs international skip
+                if ttype in DOMESTIC_TYPES:
+                    fencer_sql = generate_auto_create_sql(name, age_cat, season_end_year, auto_created)
+                    if fencer_sql:
+                        auto_create_lines.append(fencer_sql)
+                        total_auto_created += 1
+                    result_sql = build_result_sql_for_unmatched(name, place, ttype, tourn_code)
+                    result_lines += result_sql.split("\n")
+                else:
+                    result_lines += [
+                        build_result_sql_for_unmatched(name, place, ttype, tourn_code),
+                    ]
 
         total_matched   += matched_in_tournament
         total_unmatched += unmatched_in_tournament
@@ -383,10 +496,23 @@ def main():
                 "",
             ]
 
+    # Splice auto-created fencer INSERTs after header, before tournament blocks
+    if auto_create_lines:
+        fencer_block = [
+            "-- =========================================================================",
+            "-- Auto-created fencers (domestic unmatched — ADR-020)",
+            "-- =========================================================================",
+        ] + auto_create_lines + [""]
+        # Insert after the file header (first blank line, index 5)
+        insert_pos = next((i for i, l in enumerate(lines) if l == ""), len(lines))
+        lines = lines[:insert_pos + 1] + fencer_block + lines[insert_pos + 1:]
+        print(f"  Auto-created {total_auto_created} fencer(s)")
+
     lines += [
         "-- Summary",
         f"-- Total results matched:   {total_matched}",
         f"-- Total results unmatched: {total_unmatched}",
+        f"-- Total auto-created:      {total_auto_created}",
         "",
     ]
 
