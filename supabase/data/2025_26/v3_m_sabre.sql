@@ -25,33 +25,33 @@ INSERT INTO tbl_tournament (
     'I Puchar Polski Weteranów',
     'PPW',
     'SABRE', 'M', 'V3',
-    NULL, 4, NULL,
+    NULL, 4, 'https://www.fencingtimelive.com/events/results/DC3A91FCABDA4AA19D494237AD071EB6',
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    270,
+    306,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-SABRE-2025-2026'),
     1,
     'ZABŁOCKI Michał'
 ); -- matched: ZABŁOCKI Michał (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    58,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-SABRE-2025-2026'),
     2,
     'GAJDA Leszek'
 ); -- matched: GAJDA Leszek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    168,
+    187,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-SABRE-2025-2026'),
     3,
     'NIKALAICHUK Aliaksandr'
 ); -- matched: NIKALAICHUK Aliaksandr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-SABRE-2025-2026'),
     4,
     'CHUDYCKI Artur'
@@ -87,14 +87,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    58,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-SABRE-2025-2026'),
     1,
     'GAJDA Leszek'
 ); -- matched: GAJDA Leszek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-SABRE-2025-2026'),
     2,
     'CHUDYCKI Artur'
@@ -130,14 +130,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    58,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-SABRE-2025-2026'),
     1,
     'GAJDA Leszek'
 ); -- matched: GAJDA Leszek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-SABRE-2025-2026'),
     2,
     'CHUDYCKI Artur'
@@ -173,28 +173,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    58,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2025-2026'),
     1,
     'GAJDA Leszek'
 ); -- matched: GAJDA Leszek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    176,
+    197,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2025-2026'),
     2,
     'OSSOWSKI Wojciech'
 ); -- matched: OSSOWSKI Wojciech (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    91,
+    102,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2025-2026'),
     3,
     'JASIŃSKI Tomasz'
 ); -- matched: JASIŃSKI Tomasz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2025-2026'),
     4,
     'CHUDYCKI Artur'
@@ -203,15 +203,6 @@ VALUES (
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2025-2026')
 );
-
--- SKIP PP5: event not yet held (SCHEDULED) — results are rolling carry-over from previous season
-
--- SKIP MPW: event not yet held (SCHEDULED) — results are rolling carry-over from previous season
-
--- SKIP PEW1 (EVF Grand Prix 1 — Budapeszt): 0 matched fencers in DB — tournament not created
-
--- SKIP PEW2 (EVF Grand Prix 2 — Madryt): 0 matched fencers in DB — tournament not created
-
 -- ---- PEW3: EVF Grand Prix 3 (Munich) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
@@ -238,7 +229,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    58,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V3-M-SABRE-2025-2026'),
     7,
     'GAJDA Leszek'
@@ -278,38 +269,38 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    270,
+    306,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V3-M-SABRE-2025-2026'),
     1,
     'ZABŁOCKI Michał'
 ); -- matched: ZABŁOCKI Michał (score=100.0)
--- UNMATCHED (score<80): 'LUZZO ANTONIO' place=2
+-- SKIPPED (international, no master data): 'LUZZO ANTONIO' place=2
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    58,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V3-M-SABRE-2025-2026'),
     3,
     'GAJDA LESZEK'
 ); -- matched: GAJDA Leszek (score=100.0)
--- UNMATCHED (score<80): 'FEIRA CHIOS ALBERTO' place=4
--- UNMATCHED (score<80): 'LANARI ILDO' place=5
--- UNMATCHED (score<80): 'POSTORINO ALESSANDRO' place=6
--- UNMATCHED (score<80): 'FALASCHI LUCA' place=7
--- UNMATCHED (score<80): 'TALLARICO VINCENZO' place=8
--- UNMATCHED (score<80): 'ROWLANDS DUNCAN' place=9
--- UNMATCHED (score<80): 'BAILLACHE PAUL MAXIME' place=10
--- UNMATCHED (score<80): 'KREISCHER VIKTOR' place=11
--- UNMATCHED (score<80): 'FERRARI ATTILIO' place=12
--- UNMATCHED (score<80): 'CIUFFREDA LUIGI SALVATORE' place=13
--- UNMATCHED (score<80): 'FARALLA CORRADO' place=14
--- UNMATCHED (score<80): 'MARINI LUCA' place=15
--- UNMATCHED (score<80): 'DE CAROLIS AURELIO' place=16
--- UNMATCHED (score<80): 'NAGY ANDRAS' place=17
--- UNMATCHED (score<80): 'REDONDO BERMEJO JOSÉ LUIS' place=18
--- UNMATCHED (score<80): 'MYERS BRENT MARK' place=19
+-- SKIPPED (international, no master data): 'FEIRA CHIOS ALBERTO' place=4
+-- SKIPPED (international, no master data): 'LANARI ILDO' place=5
+-- SKIPPED (international, no master data): 'POSTORINO ALESSANDRO' place=6
+-- SKIPPED (international, no master data): 'FALASCHI LUCA' place=7
+-- SKIPPED (international, no master data): 'TALLARICO VINCENZO' place=8
+-- SKIPPED (international, no master data): 'ROWLANDS DUNCAN' place=9
+-- SKIPPED (international, no master data): 'BAILLACHE PAUL MAXIME' place=10
+-- SKIPPED (international, no master data): 'KREISCHER VIKTOR' place=11
+-- SKIPPED (international, no master data): 'FERRARI ATTILIO' place=12
+-- SKIPPED (international, no master data): 'CIUFFREDA LUIGI SALVATORE' place=13
+-- SKIPPED (international, no master data): 'FARALLA CORRADO' place=14
+-- SKIPPED (international, no master data): 'MARINI LUCA' place=15
+-- SKIPPED (international, no master data): 'DE CAROLIS AURELIO' place=16
+-- SKIPPED (international, no master data): 'NAGY ANDRAS' place=17
+-- SKIPPED (international, no master data): 'REDONDO BERMEJO JOSÉ LUIS' place=18
+-- SKIPPED (international, no master data): 'MYERS BRENT MARK' place=19
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    264,
+    299,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V3-M-SABRE-2025-2026'),
     20,
     'WOJCIECHOWSKI MAREK'
@@ -345,40 +336,40 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    270,
+    306,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V3-M-SABRE-2025-2026'),
     1,
     'ZABŁOCKI Michał'
 ); -- matched: ZABŁOCKI Michał (score=100.0)
--- UNMATCHED (score<80): 'FEIRA CHIOS Alberto' place=2
--- UNMATCHED (score<80): 'DUBROUKIN Oleg' place=3
+-- SKIPPED (international, no master data): 'FEIRA CHIOS Alberto' place=2
+-- SKIPPED (international, no master data): 'DUBROUKIN Oleg' place=3
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    58,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V3-M-SABRE-2025-2026'),
     4,
     'GAJDA Leszek'
 ); -- matched: GAJDA Leszek (score=100.0)
--- UNMATCHED (score<80): 'FALASCHI Luca' place=5
--- UNMATCHED (score<80): 'ZIEGLER Udo' place=6
+-- SKIPPED (international, no master data): 'FALASCHI Luca' place=5
+-- SKIPPED (international, no master data): 'ZIEGLER Udo' place=6
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    91,
+    102,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V3-M-SABRE-2025-2026'),
     7,
     'JASIŃSKI Tomasz'
 ); -- matched: JASIŃSKI Tomasz (score=100.0)
--- UNMATCHED (score<80): 'PAPP Gábor Zsigmond' place=8
--- UNMATCHED (score<80): 'ROWLANDS Duncan' place=9
+-- SKIPPED (international, no master data): 'PAPP Gábor Zsigmond' place=8
+-- SKIPPED (international, no master data): 'ROWLANDS Duncan' place=9
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V3-M-SABRE-2025-2026'),
     10,
     'CHUDYCKI Artur'
 ); -- matched: CHUDYCKI Artur (score=100.0)
--- UNMATCHED (score<80): 'MYERS Brent' place=11
--- UNMATCHED (score<80): 'BIERLAIRE Joel' place=12
+-- SKIPPED (international, no master data): 'MYERS Brent' place=11
+-- SKIPPED (international, no master data): 'BIERLAIRE Joel' place=12
 -- Compute scores for PEW7-V3-M-SABRE-2025-2026
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V3-M-SABRE-2025-2026')
@@ -390,8 +381,7 @@ SELECT fn_calc_tournament_scores(
 
 -- SKIP PS (Puchar Świata): N=0 — tournament had no participants
 
--- SKIP IMEW: event not yet held (SCHEDULED) — results are rolling carry-over from previous season
-
 -- Summary
 -- Total results matched:   28
 -- Total results unmatched: 49
+-- Total auto-created:      0

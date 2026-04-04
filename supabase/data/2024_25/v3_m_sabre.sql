@@ -30,14 +30,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    270,
+    306,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-SABRE-2024-2025'),
     1,
     'ZABŁOCKI Michał'
 ); -- matched: ZABŁOCKI Michał (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-SABRE-2024-2025'),
     2,
     'CHUDYCKI Artur'
@@ -73,7 +73,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    58,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-SABRE-2024-2025'),
     1,
     'GAJDA Leszek'
@@ -109,28 +109,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    270,
+    306,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-SABRE-2024-2025'),
     1,
     'ZABŁOCKI Michał'
 ); -- matched: ZABŁOCKI Michał (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    58,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-SABRE-2024-2025'),
     2,
     'GAJDA Leszek'
 ); -- matched: GAJDA Leszek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-SABRE-2024-2025'),
     3,
     'CHUDYCKI Artur'
 ); -- matched: CHUDYCKI Artur (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    264,
+    299,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-SABRE-2024-2025'),
     4,
     'WOJCIECHOWSKI Marek'
@@ -166,21 +166,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    270,
+    306,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2024-2025'),
     1,
     'ZABŁOCKI Michał'
 ); -- matched: ZABŁOCKI Michał (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    58,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2024-2025'),
     2,
     'GAJDA Leszek'
 ); -- matched: GAJDA Leszek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2024-2025'),
     3,
     'CHUDYCKI Artur'
@@ -216,14 +216,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    58,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V3-M-SABRE-2024-2025'),
     1,
     'GAJDA Leszek'
 ); -- matched: GAJDA Leszek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V3-M-SABRE-2024-2025'),
     2,
     'CHUDYCKI Artur'
@@ -259,28 +259,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    176,
+    197,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-SABRE-2024-2025'),
     1,
     'OSSOWSKI Wojciech'
 ); -- matched: OSSOWSKI Wojciech (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    58,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-SABRE-2024-2025'),
     2,
     'GAJDA Leszek'
 ); -- matched: GAJDA Leszek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-SABRE-2024-2025'),
     3,
     'CHUDYCKI Artur'
 ); -- matched: CHUDYCKI Artur (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    264,
+    299,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-SABRE-2024-2025'),
     4,
     'WOJCIECHOWSKI Marek'
@@ -320,7 +320,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    58,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V3-M-SABRE-2024-2025'),
     3,
     'GAJDA Leszek'
@@ -360,7 +360,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    270,
+    306,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V3-M-SABRE-2024-2025'),
     9,
     'ZABŁOCKI Michał'
@@ -396,36 +396,36 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    270,
+    306,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V3-M-SABRE-2024-2025'),
     1,
     'ZABŁOCKI Michał'
 ); -- matched: ZABŁOCKI Michał (score=100.0)
--- UNMATCHED (score<80): 'FALASCHI Luca' place=2
+-- SKIPPED (international, no master data): 'FALASCHI Luca' place=2
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    58,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V3-M-SABRE-2024-2025'),
     3,
     'GAJDA LESZEK'
 ); -- matched: GAJDA Leszek (score=100.0)
--- UNMATCHED (score<80): 'BEM Michel' place=3
--- UNMATCHED (score<80): 'FEIRA CHIOS Alberto' place=5
--- UNMATCHED (score<80): 'KREISCHER Viktor' place=6
--- UNMATCHED (score<80): 'DUBROUKIN Oleg' place=7
--- UNMATCHED (score<80): 'MYERS Brent' place=8
--- UNMATCHED (score<80): 'BALONUSKOVS Jurijs' place=9
--- UNMATCHED (score<80): 'TAKÁCSY László' place=10
--- UNMATCHED (score<80): 'CIUFFREDA Luigi Salvatore' place=11
--- UNMATCHED (score<80): 'ZIEGLER Udo' place=12
+-- SKIPPED (international, no master data): 'BEM Michel' place=3
+-- SKIPPED (international, no master data): 'FEIRA CHIOS Alberto' place=5
+-- SKIPPED (international, no master data): 'KREISCHER Viktor' place=6
+-- SKIPPED (international, no master data): 'DUBROUKIN Oleg' place=7
+-- SKIPPED (international, no master data): 'MYERS Brent' place=8
+-- SKIPPED (international, no master data): 'BALONUSKOVS Jurijs' place=9
+-- SKIPPED (international, no master data): 'TAKÁCSY László' place=10
+-- SKIPPED (international, no master data): 'CIUFFREDA Luigi Salvatore' place=11
+-- SKIPPED (international, no master data): 'ZIEGLER Udo' place=12
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V3-M-SABRE-2024-2025'),
     13,
     'CHUDYCKI Artur'
 ); -- matched: CHUDYCKI Artur (score=100.0)
--- UNMATCHED (score<80): 'NAGY András' place=14
+-- SKIPPED (international, no master data): 'NAGY András' place=14
 -- Compute scores for PEW7-V3-M-SABRE-2024-2025
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V3-M-SABRE-2024-2025')
@@ -463,14 +463,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    270,
+    306,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V3-M-SABRE-2024-2025'),
     3,
     'ZABŁOCKI Michał'
 ); -- matched: ZABŁOCKI Michał (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    58,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V3-M-SABRE-2024-2025'),
     22,
     'GAJDA Leszek'
@@ -483,3 +483,4 @@ SELECT fn_calc_tournament_scores(
 -- Summary
 -- Total results matched:   23
 -- Total results unmatched: 11
+-- Total auto-created:      0

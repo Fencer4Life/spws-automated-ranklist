@@ -16,7 +16,7 @@ To engineer a platform-independent, fully automated data pipeline and ranking en
 
 | ID | Phase | Actor | Action / Description | Acceptance Criteria |
 | :- | :---- | :---- | :------------------- | :------------------ |
-| **UC1** | 1 | **System (Scraper)** | **Automated Data Ingestion:** System polls specified FencingTimeLive / Engarde / 4Fence URLs, extracts placement data, and standardizes the output. One tournament is imported at a time, within one event at a time. | (a) Scraper produces a standardized result set (fencer name, place, participant count) for a given tournament URL. (b) Raw results inserted into `tbl_result` with `num_final_score = NULL`. (c) `tbl_tournament.enum_import_status` set to `IMPORTED`. (d) On failure, GitHub Actions workflow posts alert to Discord/Slack and logs error details. |
+| **UC1** | 1 | **System (Scraper)** | **Automated Data Ingestion:** System polls specified FencingTimeLive / Engarde / 4Fence URLs, extracts placement data, and standardizes the output. One tournament is imported at a time, within one event at a time. | (a) Scraper produces a standardized result set (fencer name, place, participant count) for a given tournament URL. (b) Raw results inserted into `tbl_result` with `num_final_score = NULL`. (c) `tbl_tournament.enum_import_status` set to `IMPORTED`. (d) On failure, GitHub Actions workflow posts alert to Telegram and logs error details. |
 | **UC2** | 1 | **Admin** | **Manual Result Upload:** When results are only available as PDF/email or from an unsupported platform, admin uploads results via CSV or manual entry form. | (a) Admin uploads a CSV file or enters results manually via the Admin UI. (b) Rows are inserted into `tbl_result` identically to UC1 output. (c) `tbl_tournament.enum_import_status` set to `IMPORTED`. |
 | **UC3** | 1 | **System (Matcher)** | **Identity Resolution:** System compares scraped names to the Master Fencer Table using RapidFuzz. Behavior depends on tournament type. **PPW/MPW (domestic):** all results always enter the ranklist — confident matches are auto-linked, uncertain matches are provisionally linked, and completely unmatched fencers are auto-created in the master data with an estimated birth year. **PEW/MEW (international):** only results for fencers already in the master data are imported — confident and uncertain matches are linked, but completely unmatched fencers are skipped entirely. **Duplicate name disambiguation:** When multiple fencers share the same surname+first_name (e.g., KRAWCZYK Paweł born 1954 vs 1989), the tournament's `enum_age_category` is used as a tiebreaker — the fencer whose `int_birth_year` falls within the category's age range is selected. If disambiguation fails (neither or both candidates fit the category, or birth years are NULL), the match is forced to `PENDING` for admin review regardless of name confidence score. | (a) Each imported name is compared against `tbl_fencer` + `json_name_aliases`. (b) Match ≥ 95 → `tbl_result.id_fencer` set automatically, `tbl_match_candidate` row created with `enum_status = 'AUTO_MATCHED'`. (c) Match 50–94 → `tbl_result.id_fencer` provisionally set to best match, `tbl_match_candidate` row with status `PENDING` (flagged for admin review in UC4). (d) Match < 50 and **PPW/MPW** → new fencer auto-created in `tbl_fencer` with `bool_birth_year_estimated = TRUE` (birth year estimated from youngest boundary of tournament age category), `tbl_result.id_fencer` linked, `tbl_match_candidate` status `NEW_FENCER`. (e) Match < 50 and **PEW/MEW** → result skipped entirely (not imported into `tbl_result`). (f) **Duplicate tiebreaker:** When multiple fencers tie at the same name-match score, the system checks `birth_year_matches_category(int_birth_year, enum_age_category, tournament_year)` — exactly one match → disambiguated; zero or 2+ matches → forced `PENDING`. |
 | **UC4** | 1 | **Admin** | **Manual Identity Review:** Admin views flagged fencer identities from UC3 and clicks to approve a suggested match, correct a provisional link, create a new fencer record, or dismiss. For PPW/MPW, provisionally linked and auto-created fencers are already scored — admin corrections trigger a re-link. | (a) Admin UI shows all `PENDING` / `NEW_FENCER` rows from `tbl_match_candidate`. (b) Admin can approve (confirms provisional `id_fencer` link), re-link (corrects to a different fencer), create new fencer, or dismiss. (c) Approved/re-linked rows update `tbl_result.id_fencer`. (d) `tbl_match_candidate.enum_status` updated to `APPROVED` / `NEW_FENCER` / `DISMISSED`. (e) Auto-created fencers with `bool_birth_year_estimated = TRUE` are flagged for admin to verify and correct the birth year. |
@@ -140,7 +140,7 @@ graph TD
     S1 & S2 & S3 --> P1
     P1 --> P2
     P1 --> EH
-    EH -->|Discord/Slack alert| EH
+    EH -->|Telegram alert| EH
     P2 -->|≥ 95% match| DB
     P2 -->|< 95% match| MC
     MC -->|Admin approval| MQ
@@ -204,46 +204,71 @@ To manage complexity, the system will be built iteratively, ensuring value is de
 
     - Identity resolution pipeline (RapidFuzz matcher + `tbl_match_candidate` for admin review).
 
-    - GitHub Actions pipeline with error handling, retries, and Discord/Slack alerting.
+    - GitHub Actions pipeline with error handling, retries, and Telegram alerting.
 
     - DB migration scripts (Supabase CLI migrations) and seed data for one test season (including default `tbl_scoring_config` with calibrated parameters).
 
     - Web Component running locally in a "Shadow Wrapper" mimicking WordPress CSS, featuring the Ranklist View (with weapon/gender/category filters) and Drill-down Audit View.
 
-### Phase 2: Minimum Viable Product (MVP)
+### Phase 2: Minimum Viable Product (MVP) — COMPLETED (2026-04-04)
 
 - **Goal:** Full operational system replacing the Excel system for all 30 sub-rankings.
 
 - **Scope:** All 30 sub-rankings (3 Weapons × 2 Genders × 5 Categories V0–V4; see §9.1.1 for age brackets). Combined V3+4-F category for women. V0 is domestic-only — no Kadra ranking (see §9.4).
 
-- **Use Cases:** UC1 (automation — deferred from POC), UC4 (admin UI — deferred from POC), UC6 (manual recalculation), UC14 (historical seasons), UC15–UC17 (corrections, master table updates, reprocessing), UC21–UC23 (calendar view, admin CRUD, re-import).
+- **Status:** All 3 milestones complete. **544 test assertions** (189 pgTAP + 175 pytest + 173 vitest + 7 Playwright). See [MVP Development Plan](MVP_development_plan.md).
 
 - **Milestones:**
 
-    | # | Milestone | Key Deliverables |
-    |---|-----------|-----------------|
-    | M8 | Multi-Category Data + Calendar UI + Schema Extensions | 30-category seed data, Calendar view (`<spws-calendar>`), 4 new `tbl_event` columns, Shadow DOM for `<spws-ranklist>` + `<spws-calendar>`, admin password gate |
-    | M9 | Ingestion Pipeline + Admin CRUD + Identity Resolution Admin | `ingest.yml`, orchestration script, CRUD UI for seasons/events/tournaments, identity admin UI, re-import, Discord alerts |
+    | # | Milestone | Status | Key Deliverables |
+    |---|-----------|--------|-----------------|
+    | M8 | Multi-Category Data + Calendar UI + Schema Extensions | COMPLETED (2026-03-26) | 30-category seed data, Calendar view, 6 `tbl_event` columns, Shadow DOM, admin auth, scoring config editor |
+    | M9 | Admin CRUD + Identity Resolution + Tooling | COMPLETED (2026-04-04) | Supabase Auth + TOTP MFA, CRUD SQL + UI (seasons/events/tournaments), identity admin UI, file import parsers, seed generator tooling (ADR-019, ADR-020) |
+    | M10 | Rolling Score for Active Season | COMPLETED (2026-03-29) | `p_rolling` parameter on ranking functions, `fn_fencer_scores_rolling`, carried-over visual distinction, calendar progress indicator, birth year subtitle |
 
-- **Deliverables:**
+- **Deliverables (completed):**
 
     - All 30 categories seeded (3 weapons × 2 genders × 5 age categories) with data from `doc/external_files/` Excel files.
 
     - **Calendar view** (`<spws-calendar>` custom element): vertical chronological event browser with season filter, past/future/all toggle, mobile-friendly layout. Two-view app: Ranklist | Calendar.
 
-    - **Schema extensions:** 4 new columns on `tbl_event`: `txt_country`, `txt_venue_address`, `url_invitation`, `num_entry_fee`.
+    - **Schema extensions:** 6 columns on `tbl_event`: `txt_country`, `txt_venue_address`, `url_invitation`, `num_entry_fee`, `txt_entry_fee_currency`, `arr_weapons`.
 
-    - **Admin CRUD UI:** Password-gated (ADR-004) web interface for season, event, and tournament management. Replaces Supabase Dashboard as admin UI. Delete cascades to child records. Two import paths: event-level batch (multi-select from event URL) and tournament-level single (own URL or file upload). Manual tournament creation via "+ Dodaj turniej". File import supports Excel/JSON/CSV.
+    - **Admin authentication:** Supabase Auth with email + password and mandatory TOTP MFA ([ADR-016](adr/016-supabase-auth-totp-mfa.md)). Write functions REVOKE'd from `anon`; require `authenticated` JWT. 59-minute inactivity timeout.
 
-    - **Automated ingestion pipeline** (`ingest.yml`): scheduled + manual dispatch. Orchestration script scrapes → matches → scores. Discord alerting on failure or new pending matches. Run summary artifact.
+    - **Admin CRUD UI:** Authenticated web interface for season, event, and tournament management. Delete cascades to child records. Two import paths: event-level batch (multi-select modal) and tournament-level single (file upload). Manual tournament creation via "+ Dodaj turniej". File import supports .xlsx/.xls/.json/.csv.
 
-    - **Identity resolution admin UI:** Web interface for approving/dismissing/creating fencers from `tbl_match_candidate`. Replaces Python-only workflow from POC.
+    - **Identity resolution admin UI:** Web interface for match candidate queue with approve/dismiss/create-new actions and disambiguation modal ([ADR-016](adr/016-supabase-auth-totp-mfa.md)). Frontend complete; DB wiring deferred to Go-to-PROD.
 
-    - **Tournament re-import:** Delete + re-import in a single DB transaction ([ADR-014](adr/014-delete-reimport-strategy.md)). Rollback on failure preserves original data.
+    - **Rolling score for active season:** Position-matched carry-over from previous season with declared-counterpart constraint ([ADR-018](adr/018-rolling-score.md)). Visual distinction in DrilldownModal (striped bars, `↩` marker) and CalendarView (progress slots). Birth year range subtitle on ranklist view.
+
+    - **Season-configurable EVF toggle:** PPW/Kadra toggle visibility controlled by per-season `bool_show_evf_toggle` flag ([ADR-017](adr/017-season-configurable-evf-toggle.md)).
 
     - **Shadow DOM isolation:** Both `<spws-ranklist>` and `<spws-calendar>` ship as custom elements with Shadow DOM encapsulation ([ADR-007](adr/007-shadow-dom-deferred.md)).
 
-    - Deploy both Web Components to the live WordPress site.
+    - **Seed generator tooling:** `generate_season_seed.py` with domestic auto-create ([ADR-020](adr/020-seed-generator-domestic-auto-create.md)), `sort_and_clean_fencers.py` for master fencer list maintenance ([ADR-019](adr/019-domestic-only-fencer-seed.md)).
+
+    - **Scoring config editor:** Structured form with 5 collapsible sections, per-season config, bucket editor for ranking rules.
+
+    - Web Components deployed to CERT environment; PROD deployment pending Go-to-PROD phase.
+
+- **Architecture decisions (MVP):** ADR-013 (POC→MVP transition), ADR-014 (delete+reimport), ADR-015 (M8 UI decisions), ADR-016 (Supabase Auth + TOTP MFA), ADR-017 (EVF toggle), ADR-018 (rolling score), ADR-019 (domestic-only seed), ADR-020 (seed generator auto-create).
+
+### Phase 2b: Go-to-PROD
+
+- **Goal:** Complete the automated ingestion pipeline and deploy the full system to production on the SPWS WordPress site.
+
+- **Status:** Planning. See [Go-to-PROD Plan](Go-to-PROD.md).
+
+- **Scope (deferred from MVP M9b):**
+
+    - **Pipeline orchestration:** End-to-end flow (parse file → fuzzy match → insert results → score) in a single DB transaction per ADR-014.
+    - **Identity resolution DB wiring:** Connect IdentityManager/DisambiguationModal callbacks to Supabase RPC for approve/dismiss/create-new actions.
+    - **URL scraping tab:** Second tab in import modals for scraping results directly from tournament URLs.
+    - **EVF calendar import:** Scrape veteransfencing.eu, deduplicate against existing events, create events + tournaments.
+    - **Automated ingestion pipeline** (`ingest.yml`): GitHub Actions workflow with scheduled + manual dispatch.
+    - **Pipeline observability:** Structured logging for all pipeline operations.
+    - **PROD deployment:** Deploy Web Components to the live WordPress site.
 
 ### Phase 3: Advanced Integrations
 
@@ -1249,7 +1274,7 @@ The GitHub Actions pipeline must be robust against transient and permanent failu
 | **Partial scrape** | If a tournament page is reachable but data is incomplete (e.g., missing fencer names), abort that tournament's import and log a structured error. Do not import partial data. |
 | **Identity resolution failures** | Unmatched names create `tbl_match_candidate` rows with `enum_status = 'PENDING'`. The pipeline continues — unmatched results await admin review. |
 | **Duplicate detection** | Before inserting, check `UNIQUE(id_fencer, id_tournament)` on `tbl_result`. On conflict, skip (idempotent re-runs). |
-| **Alerting** | On any pipeline failure or when new `PENDING` match candidates are created, send a notification via Discord webhook (configurable, Slack as alternative). |
+| **Alerting** | On any pipeline failure or when new `PENDING` match candidates are created, send a notification via Telegram Bot API. |
 | **Run summary** | Each pipeline run produces a structured JSON summary: tournaments processed, results imported, matches pending, errors encountered. Stored as a GitHub Actions artifact. |
 | **Idempotency** | The entire pipeline is safe to re-run. Re-importing an already-imported tournament skips existing results and only processes new/changed data. |
 
@@ -1400,7 +1425,7 @@ The script reads the Excel workbook, fuzzy-matches scraped names against `tbl_fe
 | **Security** | Admin credentials | Supabase Auth; service_role key stored as GitHub Actions secret |
 | **Compatibility** | Web Component | Works in Chrome, Firefox, Safari, Edge (last 2 major versions) |
 | **Compatibility** | Responsive design | Ranklist table readable on mobile (≥ 375px width) |
-| **Observability** | Pipeline monitoring | GitHub Actions run logs + Discord/Slack alerts on failure |
+| **Observability** | Pipeline monitoring | GitHub Actions run logs + Telegram alerts on failure |
 | **Maintainability** | Migration strategy | All schema changes via Supabase CLI migrations, version-controlled |
 | **Data integrity** | Backup | Supabase daily automated backups (free tier: 7-day retention) |
 
@@ -1518,7 +1543,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-05 | Alias matching (json_name_aliases) | UC3(a,b) | 4.2 (alias tests) | Covered |
 | FR-06 | Duplicate name disambiguation via age category | §8.5(5) | 4.25–4.37 | Covered |
 | FR-07 | Admin approve / dismiss / create-new-fencer for match candidates | UC4(b,c) | 4.6–4.8 | Covered |
-| FR-08 | Domestic intake: auto-create fencer for UNMATCHED PPW/MPW | §8.5 | 4.10–4.14b | Covered |
+| FR-08 | Domestic intake: auto-create fencer for UNMATCHED PPW/MPW | §8.5 | 4.10–4.14b, 9.142–9.148 | Covered |
 | FR-09 | International intake: skip UNMATCHED PEW/MEW fencers | §8.5 | 4.15–4.18 | Covered |
 | FR-10 | Birth year estimation (youngest boundary per category) | §8.5 | 4.19–4.21, 9.83–9.84 | Covered (M9, T9.9) |
 | FR-11 | Score computation: place points (log formula) | §8.1.1 | 2.1–2.3, 2.2a–b | Covered |
@@ -1542,7 +1567,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-29 | Idempotent re-import (skip existing results) | §9.5.1 | 3.9 | Covered |
 | FR-30 | Retry on transient network failure | §9.5.1 | 3.12 | Covered |
 | FR-31 | Partial scrape detection (abort on incomplete data) | §9.5.1 | 3.13, 3.13b | Covered |
-| FR-32 | Discord alerting on pipeline failure | UC1(d) | 3.6 | Covered |
+| FR-32 | Telegram alerting on pipeline failure | UC1(d) | 3.6 | Covered |
 | FR-33 | Web Component: weapon/gender/category filters | UC12(b) | FilterBar.test.ts (5 tests) | Covered |
 | FR-34 | Web Component: PPW/Kadra toggle with V0 guard (conditional on `bool_show_evf_toggle` season config, ADR-017) | UC12(b) | FilterBar.test.ts, DrilldownModal.test.ts | Modified (toggle hidden by default, visible when season config enables it) |
 | FR-35 | Web Component: ranking table with mode-specific columns | UC12(c) | RanklistTable.test.ts (5 tests) | Covered |
@@ -1561,14 +1586,14 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-48 | tbl_event schema extension: 6 columns (txt_country, txt_venue_address, url_invitation, num_entry_fee, txt_entry_fee_currency, arr_weapons) | UC22(c), UC21(d) | 8.05–8.10 | Covered (M8+M9) |
 | FR-49 | Tournament CRUD nested under events | UC22(d) | 9.25–9.26, 9.29, 9.50–9.55 | Covered (M9, T9.1 SQL + T9.4 UI) |
 | FR-50 | Delete cascade (event → tournaments → results) | UC22(e) | 9.30–9.36 | Covered (M9, T9.1) |
-| FR-51 | Tournament re-import in single transaction | UC23(a-f) | — | Planned (M9) |
+| FR-51 | Tournament re-import in single transaction | UC23(a-f) | — | Deferred → Go-to-PROD |
 | FR-52 | Multi-category expansion (30 sub-rankings) | §6.2 | 8.20–8.26 | Covered (M8) |
-| FR-53 | Event-level batch import: multi-select tournament checklist modal | UC22(g) | 9.62–9.67 | Partial (M9, T9.6 file UI; URL deferred) |
-| FR-54 | Tournament-level single import: own URL or file upload | UC22(h) | 9.56–9.61 | Partial (M9, T9.5 file UI; URL deferred) |
+| FR-53 | Event-level batch import: multi-select tournament checklist modal | UC22(g) | 9.62–9.67 | Partial (file UI done; URL + backend → Go-to-PROD) |
+| FR-54 | Tournament-level single import: own URL or file upload | UC22(h) | 9.56–9.61 | Partial (file UI done; URL + backend → Go-to-PROD) |
 | FR-55 | File import: parse results from .xlsx, .xls, .json, .csv | UC22(i), UC23(c) | 9.58, 9.93–9.100 | Covered (M9, T9.5 UI + T9.10 parsers) |
-| FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new | UC4(a-e) | 9.68–9.73, 9.77 | Partial (M9, T9.7 UI) |
-| FR-57 | Identity resolution: disambiguation modal for same-name fencers with age category fit | UC3(f), UC4(b) | 9.74–9.76 | Partial (M9, T9.7 disambiguation UI) |
-| FR-58 | EVF calendar import: fetch veteransfencing.eu, deduplication, create events+tournaments | UC8, UC9 | — | Planned (M9) |
+| FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new | UC4(a-e) | 9.68–9.73, 9.77 | Partial (UI done; DB wiring → Go-to-PROD) |
+| FR-57 | Identity resolution: disambiguation modal for same-name fencers with age category fit | UC3(f), UC4(b) | 9.74–9.76 | Partial (UI done; DB wiring → Go-to-PROD) |
+| FR-58 | EVF calendar import: fetch veteransfencing.eu, deduplication, create events+tournaments | UC8, UC9 | — | Deferred → Go-to-PROD |
 | FR-59 | Two-view app shell: sidebar drawer with Ranklista + Kalendarz navigation | UC12, UC21 | 8.27–8.37 | Covered (M8) |
 | FR-60 | Event CRUD via web UI (create, edit, delete events with all fields) | UC22(c) | 9.23–9.24, 9.28, 9.43–9.49 | Covered (M9, T9.1 SQL + T9.3 UI) |
 | FR-61 | Scoring config editor (admin, per-season, structured form) | UC22(f) | 8.62–8.75 | Covered (M8) |
@@ -1578,6 +1603,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-65 | Rolling ranking for active season: `p_rolling BOOLEAN DEFAULT FALSE` on `fn_ranking_ppw` and `fn_ranking_kadra`; position-matched carry-over from previous season; declared-counterpart constraint; category crossing via current season's end year | ADR-018, §8.3.1, §8.3.2 | R.1–R.14 | Covered |
 | FR-66 | Rolling drilldown: `fn_fencer_scores_rolling` returns carried-over scores with `bool_carried_over` flag and source season code; visual distinction in DrilldownModal (grey striped bars, `↩` marker, rolling info banner) and CalendarView (progress slot bar) | ADR-018 | R.15–R.25 | Covered |
 | FR-67 | Birth year range subtitle on ranklist view: displays eligible birth years for selected age category and season as enumeration (e.g. `kat. 2 — roczniki: 1976, 1975, .. 1967`); V4 open-ended ("i starsi"/"and older"); updates on category/season/locale change; PL+EN | UC12 | BY.1–BY.7 | Covered |
+| FR-68 | Biennial event carry-over: rolling carry-over uses rules-based type matching (`json_ranking_rules` buckets) instead of declared-event matching; IMEW (type=MEW) results from previous season automatically carry over when MEW is in the international rules, even without an IMEW event in the current season (ADR-021) | ADR-021 | R.19–R.21 | Covered |
 
 ### Non-Functional Requirements
 
@@ -1592,7 +1618,7 @@ Every functional and non-functional requirement is listed below with its source 
 | NFR-07 | RLS: audit log not publicly readable | §9.2.1 | 1.26 | Covered |
 | NFR-08 | Browser compatibility (Chrome, Firefox, Safari, Edge) | §10 | — | Not tested |
 | NFR-09 | Mobile responsive ≥ 375 px | §10 | — | Not tested (plan test 6.9) |
-| NFR-10 | Pipeline observability (structured logs + Discord) | §10 | 3.6 (Discord only) | Partial |
+| NFR-10 | Pipeline observability (structured logs + Telegram) | §10 | 3.6 (Telegram only) | Partial |
 | NFR-11 | Database migration strategy (numbered SQL files) | §9.9 | 1.1a–1.2i (schema verification) | Covered |
 | NFR-12 | Data integrity (Supabase daily backups) | §10 | — | Infrastructure (not testable) |
 | NFR-13 | Shadow DOM isolation (host CSS does not leak) | §5, §6 | 8.55–8.61 | Covered (M8) |
@@ -1621,3 +1647,4 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-018](adr/018-rolling-score.md) | Rolling Score for Active Season | §8.3.1, §8.3.2, FR-15, FR-16, FR-65, FR-66 |
 | [ADR-019](adr/019-domestic-only-fencer-seed.md) | Domestic-Only Fencer Seed | §7.1, seed_tbl_fencer.sql |
 | [ADR-020](adr/020-seed-generator-domestic-auto-create.md) | Seed Generator Domestic Auto-Create | §7.1, generate_season_seed.py |
+| [ADR-021](adr/021-imew-biennial-carry-over.md) | IMEW Biennial Carry-Over | ADR-018, FR-65, FR-68 |

@@ -10,8 +10,13 @@
 
 -- SKIP PP3 (III Puchar Polski Weteranów): N=0 — tournament had no participants
 
+-- SKIP PP4 (IV Puchar Polski Weteranów): N=0 — tournament had no participants
+
+-- SKIP PP5 (V Puchar Polski Weteranów): N=0 — tournament had no participants
+
 -- SKIP MPW (Mistrzostwa Polski Weteranów): N=0 — tournament had no participants
 
 -- Summary
 -- Total results matched:   0
 -- Total results unmatched: 0
+-- Total auto-created:      0

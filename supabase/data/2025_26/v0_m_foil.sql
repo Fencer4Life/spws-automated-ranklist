@@ -30,7 +30,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    237,
+    266,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-M-FOIL-2025-2026'),
     1,
     'SZMELC Łukasz'
@@ -66,7 +66,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    237,
+    266,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-M-FOIL-2025-2026'),
     1,
     'SZMELC Łukasz'
@@ -102,14 +102,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    222,
+    250,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-M-FOIL-2025-2026'),
     1,
     'SPŁAWA-NEYMAN MACIEJ'
 ); -- matched: SPŁAWA-NEYMAN MACIEJ (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    237,
+    266,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-M-FOIL-2025-2026'),
     2,
     'SZMELC Łukasz'
@@ -145,21 +145,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    170,
+    189,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-M-FOIL-2025-2026'),
     1,
     'NOWAK Szymon'
 ); -- matched: NOWAK Szymon (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    222,
+    250,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-M-FOIL-2025-2026'),
     2,
     'SPŁAWA-NEYMAN Maciej'
 ); -- matched: SPŁAWA-NEYMAN MACIEJ (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    94,
+    105,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-M-FOIL-2025-2026'),
     3,
     'JEROZOLIMSKI Marek'
@@ -168,11 +168,7 @@ VALUES (
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-M-FOIL-2025-2026')
 );
-
--- SKIP PP5: event not yet held (SCHEDULED) — results are rolling carry-over from previous season
-
--- SKIP MPW (Mistrzostwa Polski Weteranów): N=0 — tournament had no participants
-
 -- Summary
 -- Total results matched:   8
 -- Total results unmatched: 0
+-- Total auto-created:      0

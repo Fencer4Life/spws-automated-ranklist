@@ -30,25 +30,32 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    199,
+    224,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V0-F-EPEE-2023-2024'),
     1,
     'REMIAN Paulina'
 ); -- matched: REMIAN Paulina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    127,
+    134,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V0-F-EPEE-2023-2024'),
     2,
     'KOWALSKA Milena'
 ); -- matched: KOWALSKA Milena (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    212,
+    237,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V0-F-EPEE-2023-2024'),
     3,
     'SAMECKA-NACZYŃSKA Martyna'
 ); -- matched: SAMECKA-NACZYŃSKA Martyna (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    284,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V0-F-EPEE-2023-2024'),
+    4,
+    'WALAS Zuzanna'
+); -- matched: WALAS Zuzanna (score=100.0)
 -- Compute scores for GP1-V0-F-EPEE-2023-2024
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V0-F-EPEE-2023-2024')
@@ -84,7 +91,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    9,
+    12,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP4-V0-F-EPEE-2023-2024'),
     1,
     'BARAN Agata'
@@ -120,14 +127,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    212,
+    237,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP5-V0-F-EPEE-2023-2024'),
     1,
     'SAMECKA-NACZYŃSKA Martyna'
 ); -- matched: SAMECKA-NACZYŃSKA Martyna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    109,
+    119,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP5-V0-F-EPEE-2023-2024'),
     2,
     'KOCÓR Agata'
@@ -163,32 +170,39 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    9,
+    12,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP6-V0-F-EPEE-2023-2024'),
     1,
     'BARAN Agata'
 ); -- matched: BARAN Agata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    212,
+    237,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP6-V0-F-EPEE-2023-2024'),
     2,
     'SAMECKA-NACZYŃSKA Martyna'
 ); -- matched: SAMECKA-NACZYŃSKA Martyna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    85,
+    95,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP6-V0-F-EPEE-2023-2024'),
     3,
     'IRZYK Sabina'
 ); -- matched: IRZYK Sabina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    109,
+    119,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP6-V0-F-EPEE-2023-2024'),
     4,
     'KOCÓR Agata'
 ); -- matched: KOCÓR Agata (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    284,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP6-V0-F-EPEE-2023-2024'),
+    5,
+    'WALAS Zuzanna'
+); -- matched: WALAS Zuzanna (score=100.0)
 -- Compute scores for GP6-V0-F-EPEE-2023-2024
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP6-V0-F-EPEE-2023-2024')
@@ -220,21 +234,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    212,
+    237,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP7-V0-F-EPEE-2023-2024'),
     1,
     'SAMECKA-NACZYŃSKA Martyna'
 ); -- matched: SAMECKA-NACZYŃSKA Martyna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    9,
+    249,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP7-V0-F-EPEE-2023-2024'),
+    2,
+    'SPIRINA Ekaterina'
+); -- matched: SPIRINA Ekaterina (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    12,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP7-V0-F-EPEE-2023-2024'),
     3,
     'BARAN Agata'
 ); -- matched: BARAN Agata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    85,
+    95,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP7-V0-F-EPEE-2023-2024'),
     4,
     'IRZYK Sabina'
@@ -270,21 +291,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    212,
+    237,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP8-V0-F-EPEE-2023-2024'),
     1,
     'SAMECKA-NACZYŃSKA Martyna'
 ); -- matched: SAMECKA-NACZYŃSKA Martyna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    85,
+    95,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP8-V0-F-EPEE-2023-2024'),
     2,
     'IRZYK Sabina'
 ); -- matched: IRZYK Sabina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    109,
+    119,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP8-V0-F-EPEE-2023-2024'),
     3,
     'KOCÓR Agata'
@@ -320,7 +341,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    212,
+    237,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V0-F-EPEE-2023-2024'),
     1,
     'SAMECKA-NACZYŃSKA Martyna'
@@ -333,3 +354,4 @@ SELECT fn_calc_tournament_scores(
 -- Summary
 -- Total results matched:   20
 -- Total results unmatched: 0
+-- Total auto-created:      0

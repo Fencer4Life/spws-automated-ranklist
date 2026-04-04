@@ -3,8 +3,8 @@
 -- =============================================================================
 -- Returns vw_score-like rows for a specific fencer with rolling carry-over.
 -- Current-season scores: bool_carried_over = FALSE
--- Previous-season scores at declared-but-uncompleted positions: bool_carried_over = TRUE
--- Previous-season scores with no counterpart in current season: EXCLUDED
+-- Previous-season scores for types in ranking rules at uncompleted positions: bool_carried_over = TRUE
+-- Previous-season scores for types NOT in ranking rules: EXCLUDED (ADR-021)
 -- =============================================================================
 
 CREATE FUNCTION fn_fencer_scores_rolling(
@@ -48,6 +48,7 @@ DECLARE
   v_season_id      INT;
   v_prev_season_id INT;
   v_season_end_yr  INT;
+  v_rules          JSONB;
 BEGIN
   v_season_id := COALESCE(
     p_season,
@@ -57,6 +58,9 @@ BEGIN
   SELECT EXTRACT(YEAR FROM s.dt_end)::INT INTO v_season_end_yr
     FROM tbl_season s WHERE s.id_season = v_season_id;
 
+  SELECT sc.json_ranking_rules INTO v_rules
+    FROM tbl_scoring_config sc WHERE sc.id_season = v_season_id;
+
   SELECT s.id_season INTO v_prev_season_id
     FROM tbl_season s
    WHERE s.dt_end < (SELECT s2.dt_start FROM tbl_season s2 WHERE s2.id_season = v_season_id)
@@ -65,11 +69,12 @@ BEGIN
 
   RETURN QUERY
   WITH
-    -- Positions declared in current season
-    declared_positions AS (
-      SELECT DISTINCT fn_event_position(ev.txt_code) AS pos
-        FROM tbl_event ev
-       WHERE ev.id_season = v_season_id
+    -- Tournament types from ranking rules — domestic + international (ADR-021)
+    rules_types AS (
+      SELECT DISTINCT jsonb_array_elements_text(b.value -> 'types') AS type_code
+        FROM jsonb_array_elements(
+          COALESCE(v_rules -> 'domestic', '[]'::JSONB) || COALESCE(v_rules -> 'international', '[]'::JSONB)
+        ) AS b(value)
     ),
     -- Positions where at least one event is COMPLETED
     completed_positions AS (
@@ -131,8 +136,8 @@ BEGIN
         AND t.enum_gender = p_gender
         AND COALESCE(fn_age_category(f.int_birth_year, v_season_end_yr), t.enum_age_category) = p_category
         AND r.num_final_score IS NOT NULL
-        -- Position must be declared in current season but NOT completed
-        AND fn_event_position(ev.txt_code) IN (SELECT pos FROM declared_positions)
+        -- Type must be in ranking rules AND position not yet completed (ADR-021)
+        AND t.enum_type::TEXT IN (SELECT type_code FROM rules_types)
         AND fn_event_position(ev.txt_code) NOT IN (SELECT pos FROM completed_positions)
     )
   SELECT * FROM current_scores

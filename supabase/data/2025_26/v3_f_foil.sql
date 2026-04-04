@@ -25,12 +25,12 @@ INSERT INTO tbl_tournament (
     'I Puchar Polski Weteranów',
     'PPW',
     'FOIL', 'F', 'V3',
-    NULL, 1, NULL,
+    NULL, 1, 'https://www.fencingtimelive.com/events/results/45A8E050DF5F43BEA56D3507A9E22CFF',
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    177,
+    198,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-F-FOIL-2025-2026'),
     1,
     'OWCZAREK Elżbieta'
@@ -66,7 +66,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    177,
+    198,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-F-FOIL-2025-2026'),
     1,
     'OWCZAREK Elżbieta'
@@ -104,7 +104,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    177,
+    198,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-F-FOIL-2025-2026'),
     1,
     'OWCZAREK ELŻBIETA'
@@ -113,52 +113,6 @@ VALUES (
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-F-FOIL-2025-2026')
 );
-
--- SKIP PP5: event not yet held (SCHEDULED) — results are rolling carry-over from previous season
-
--- SKIP MPW: event not yet held (SCHEDULED) — results are rolling carry-over from previous season
-
--- ---- PEW1: EVF Grand Prix 1 — Budapeszt (Budapest) ----
-INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
-SELECT
-    'PEW1-2025-2026',
-    'EVF Grand Prix 1 — Budapeszt',
-    'Budapest',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
-    'COMPLETED'
-WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW1-2025-2026');
-INSERT INTO tbl_tournament (
-    id_event, txt_code, txt_name, enum_type,
-    enum_weapon, enum_gender, enum_age_category,
-    dt_tournament, int_participant_count, url_results,
-    enum_import_status
-) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1-2025-2026'),
-    'PEW1-V3-F-FOIL-2025-2026',
-    'EVF Grand Prix 1 — Budapeszt',
-    'PEW',
-    'FOIL', 'F', 'V3',
-    '2025-09-21', 4, 'https://engarde-service.com/competition/hunfencing/2025_09_21_tor/wf60',
-    'SCORED'
-);
--- Compute scores for PEW1-V3-F-FOIL-2025-2026
-SELECT fn_calc_tournament_scores(
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V3-F-FOIL-2025-2026')
-);
-
--- SKIP PEW2 (EVF Grand Prix 2 — Madryt): N=0 — tournament had no participants
-
--- SKIP PEW3 (EVF Grand Prix 3): N=0 — tournament had no participants
-
--- SKIP PEW4 (EVF Grand Prix 4): N=0 — tournament had no participants
-
--- SKIP PEW5 (EVF Grand Prix 5): N=0 — tournament had no participants
-
--- SKIP PEW6 (EVF Grand Prix 6): N=0 — tournament had no participants
-
--- SKIP PEW7 (EVF Grand Prix 7 — Terni): N=0 — tournament had no participants
-
 -- ---- PEW8: EVF Grand Prix 8 — Guildford (WARSZAWA) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
@@ -185,7 +139,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    177,
+    198,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V3-F-FOIL-2025-2026'),
     3,
     'OWCZAREK Elżbieta'
@@ -197,8 +151,7 @@ SELECT fn_calc_tournament_scores(
 
 -- SKIP PS (Puchar Świata): N=0 — tournament had no participants
 
--- SKIP IMEW (Indywidualne Mistrzostwa Europy Weteranów): N=0 — tournament had no participants
-
 -- Summary
 -- Total results matched:   7
 -- Total results unmatched: 0
+-- Total auto-created:      0

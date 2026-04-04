@@ -32,7 +32,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    56,
+    60,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V3-F-SABRE-2023-2024'),
     1,
     'FUHRMANN Ulrike'
@@ -74,7 +74,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    56,
+    60,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP6-V3-F-SABRE-2023-2024'),
     1,
     'FUHRMANN Ulrike'
@@ -110,7 +110,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    56,
+    60,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP7-V3-F-SABRE-2023-2024'),
     1,
     'FUHRMANN Ulrike'
@@ -148,7 +148,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    56,
+    60,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-F-SABRE-2023-2024'),
     1,
     'FUHRMANN Ulrike'
@@ -190,7 +190,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    56,
+    60,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V3-F-SABRE-2023-2024'),
     2,
     'FUHRMANN Ulrike'
@@ -240,7 +240,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    56,
+    60,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW12-V3-F-SABRE-2023-2024'),
     1,
     'FUHRMANN Ulrike'
@@ -274,32 +274,39 @@ INSERT INTO tbl_tournament (
     '2023-01-01', 15, 'https://engarde-service.com/competition/e3f/efcv/womensabrev3',
     'SCORED'
 );
--- UNMATCHED (score<80): 'HUTCHISON' place=1
--- UNMATCHED (score<80): 'ZINI' place=2
--- UNMATCHED (score<80): 'CONCONI' place=3
--- UNMATCHED (score<80): 'SELTENHAMMER' place=3
--- UNMATCHED (score<80): 'CAMERIN' place=5
+-- SKIPPED (international, no master data): 'HUTCHISON' place=1
+-- SKIPPED (international, no master data): 'ZINI' place=2
+-- SKIPPED (international, no master data): 'CONCONI' place=3
+-- SKIPPED (international, no master data): 'SELTENHAMMER' place=3
+-- SKIPPED (international, no master data): 'CAMERIN' place=5
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    56,
+    60,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V3-F-SABRE-2023-2024'),
     6,
     'FUHRMANN Ulrike'
 ); -- matched: FUHRMANN Ulrike (score=100.0)
--- UNMATCHED (score<80): 'REGUIGNE' place=7
--- UNMATCHED (score<80): 'WEIMAR' place=8
--- UNMATCHED (score<80): 'HENDRA' place=9
--- UNMATCHED (score<80): 'MARTIN CID' place=10
--- UNMATCHED (score<80): 'MORRIS' place=11
--- UNMATCHED (score<80): 'AEBI' place=12
--- UNMATCHED (score<80): 'BUENO DIEZ' place=13
--- UNMATCHED (score<80): 'KENNETT' place=14
--- UNMATCHED (score<80): 'FINDLAY' place=15
+-- SKIPPED (international, no master data): 'REGUIGNE' place=7
+-- SKIPPED (international, no master data): 'WEIMAR' place=8
+-- SKIPPED (international, no master data): 'HENDRA' place=9
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    112,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V3-F-SABRE-2023-2024'),
+    10,
+    'MARTIN CID'
+); -- matched: KAZIK Martin (score=72.72727272727273)
+-- SKIPPED (international, no master data): 'MORRIS' place=11
+-- SKIPPED (international, no master data): 'AEBI' place=12
+-- SKIPPED (international, no master data): 'BUENO DIEZ' place=13
+-- SKIPPED (international, no master data): 'KENNETT' place=14
+-- SKIPPED (international, no master data): 'FINDLAY' place=15
 -- Compute scores for IMEW-V3-F-SABRE-2023-2024
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V3-F-SABRE-2023-2024')
 );
 
 -- Summary
--- Total results matched:   7
--- Total results unmatched: 14
+-- Total results matched:   8
+-- Total results unmatched: 13
+-- Total auto-created:      0

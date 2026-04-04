@@ -30,47 +30,47 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    113,
+    140,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-FOIL-2024-2025'),
     1,
     'TK'
 ); -- matched: KOŃCZYŁO Tomasz (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    12,
+    15,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-FOIL-2024-2025'),
     2,
     'BAZAK Jacek'
 ); -- matched: BAZAK Jacek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    238,
+    267,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-FOIL-2024-2025'),
     3,
     'SZMIDT Grzegorz'
 ); -- matched: SZMIDT Grzegorz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    192,
+    214,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-FOIL-2024-2025'),
     4,
     'POŚPIESZNY Sławomir'
 ); -- matched: POŚPIESZNY Sławomir (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    82,
+    92,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-FOIL-2024-2025'),
     5,
     'HAŚKO Sergiusz'
 ); -- matched: HAŚKO Sergiusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    279,
+    318,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-FOIL-2024-2025'),
     6,
     'ŻUKOWSKI Wojciech'
 ); -- matched: ŻUKOWSKI Wojciech (score=100.0)
--- Compute scores for PP1-V2-M-FOIL-2024-2025
+-- Compute scores for PPW1-V2-M-FOIL-2024-2025
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-FOIL-2024-2025')
 );
@@ -101,54 +101,54 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    113,
+    140,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-FOIL-2024-2025'),
     1,
     'TK'
 ); -- matched: KOŃCZYŁO Tomasz (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    82,
+    92,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-FOIL-2024-2025'),
     2,
     'HAŚKO Sergiusz'
 ); -- matched: HAŚKO Sergiusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    12,
+    15,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-FOIL-2024-2025'),
     3,
     'BAZAK Jacek'
 ); -- matched: BAZAK Jacek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    238,
+    267,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-FOIL-2024-2025'),
     4,
     'SZMIDT Grzegorz'
 ); -- matched: SZMIDT Grzegorz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    192,
+    214,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-FOIL-2024-2025'),
     5,
     'POŚPIESZNY Sławomir'
 ); -- matched: POŚPIESZNY Sławomir (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    79,
+    86,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-FOIL-2024-2025'),
     6,
     'GWIAZDA Paweł'
 ); -- matched: GWIAZDA Paweł (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    279,
+    318,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-FOIL-2024-2025'),
     7,
     'ŻUKOWSKI Wojciech'
 ); -- matched: ŻUKOWSKI Wojciech (score=100.0)
--- Compute scores for PP2-V2-M-FOIL-2024-2025
+-- Compute scores for PPW2-V2-M-FOIL-2024-2025
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-M-FOIL-2024-2025')
 );
@@ -179,42 +179,149 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    113,
+    140,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-FOIL-2024-2025'),
     1,
     'TK'
 ); -- matched: KOŃCZYŁO Tomasz (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    238,
+    267,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-FOIL-2024-2025'),
     2,
     'SZMIDT Grzegorz'
 ); -- matched: SZMIDT Grzegorz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    82,
+    92,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-FOIL-2024-2025'),
     3,
     'HAŚKO Sergiusz'
 ); -- matched: HAŚKO Sergiusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    12,
+    15,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-FOIL-2024-2025'),
     4,
     'BAZAK Jacek'
 ); -- matched: BAZAK Jacek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    279,
+    318,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-FOIL-2024-2025'),
     5,
     'ŻUKOWSKI Wojciech'
 ); -- matched: ŻUKOWSKI Wojciech (score=100.0)
--- Compute scores for PP3-V2-M-FOIL-2024-2025
+-- Compute scores for PPW3-V2-M-FOIL-2024-2025
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-FOIL-2024-2025')
+);
+
+-- ---- PP4: IV Puchar Polski Weteranów (WARSZAWA) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PPW4-2024-2025',
+    'IV Puchar Polski Weteranów',
+    'WARSZAWA',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW4-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2024-2025'),
+    'PPW4-V2-M-FOIL-2024-2025',
+    'IV Puchar Polski Weteranów',
+    'PPW',
+    'FOIL', 'M', 'V2',
+    '2025-02-23', 3, 'https://www.fencingtimelive.com/events/results/153D51FF97B24F758AAFDFFAF4EA2654',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    140,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-FOIL-2024-2025'),
+    1,
+    'TK'
+); -- matched: KOŃCZYŁO Tomasz (score=100)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    267,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-FOIL-2024-2025'),
+    2,
+    'SZMIDT Grzegorz'
+); -- matched: SZMIDT Grzegorz (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    15,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-FOIL-2024-2025'),
+    3,
+    'BAZAK Jacek'
+); -- matched: BAZAK Jacek (score=100.0)
+-- Compute scores for PPW4-V2-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-FOIL-2024-2025')
+);
+
+-- ---- PP5: V Puchar Polski Weteranów (SZCZECIN) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PPW5-2024-2025',
+    'V Puchar Polski Weteranów',
+    'SZCZECIN',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW5-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2024-2025'),
+    'PPW5-V2-M-FOIL-2024-2025',
+    'V Puchar Polski Weteranów',
+    'PPW',
+    'FOIL', 'M', 'V2',
+    '2025-04-27', 4, 'https://www.fencingtimelive.com/events/results/4FCB6D82765C40D2B7C59DC3BFD70CB2',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    140,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V2-M-FOIL-2024-2025'),
+    1,
+    'TK'
+); -- matched: KOŃCZYŁO Tomasz (score=100)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    267,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V2-M-FOIL-2024-2025'),
+    2,
+    'SZMIDT Grzegorz'
+); -- matched: SZMIDT Grzegorz (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    15,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V2-M-FOIL-2024-2025'),
+    3,
+    'BAZAK Jacek'
+); -- matched: BAZAK Jacek (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    318,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V2-M-FOIL-2024-2025'),
+    4,
+    'ŻUKOWSKI Wojciech'
+); -- matched: ŻUKOWSKI Wojciech (score=100.0)
+-- Compute scores for PPW5-V2-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V2-M-FOIL-2024-2025')
 );
 
 -- ---- MPW: Mistrzostwa Polski Weteranów (PABIANICE) ----
@@ -243,33 +350,39 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    113,
+    140,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-M-FOIL-2024-2025'),
     1,
     'TK'
 ); -- matched: KOŃCZYŁO Tomasz (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    238,
+    267,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-M-FOIL-2024-2025'),
     2,
     'SZMIDT Grzegorz'
 ); -- matched: SZMIDT Grzegorz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    12,
+    15,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-M-FOIL-2024-2025'),
     3,
     'BAZAK Jacek'
 ); -- matched: BAZAK Jacek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    279,
+    318,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-M-FOIL-2024-2025'),
     4,
     'ŻUKOWSKI Wojciech'
 ); -- matched: ŻUKOWSKI Wojciech (score=100.0)
--- UNMATCHED (score<80): 'BOCHEŃSKI JACEK' place=5
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    21,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-M-FOIL-2024-2025'),
+    5,
+    'BOCHEŃSKI JACEK'
+); -- matched: BOCHEŃSKI Jacek (score=100.0)
 -- Compute scores for MPW-V2-M-FOIL-2024-2025
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-M-FOIL-2024-2025')
@@ -301,14 +414,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    113,
+    140,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-M-FOIL-2024-2025'),
     2,
     'TK'
 ); -- matched: KOŃCZYŁO Tomasz (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    12,
+    15,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-M-FOIL-2024-2025'),
     9,
     'BAZAK Jacek'
@@ -344,14 +457,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    113,
+    140,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V2-M-FOIL-2024-2025'),
     5,
     'TK'
 ); -- matched: KOŃCZYŁO Tomasz (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    12,
+    15,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V2-M-FOIL-2024-2025'),
     19,
     'BAZAK Jacek'
@@ -360,6 +473,48 @@ VALUES (
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V2-M-FOIL-2024-2025')
 );
+
+-- ---- PEW3: EVF Grand Prix 3 (Munich) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW3-2024-2025',
+    'EVF Grand Prix 3',
+    'Munich',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW3-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW3-2024-2025'),
+    'PEW3-V2-M-FOIL-2024-2025',
+    'EVF Grand Prix 3',
+    'PEW',
+    'FOIL', 'M', 'V2',
+    '2024-12-08', 24, 'https://www.fencingworldwide.com/en/903540-2024/results/',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    140,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V2-M-FOIL-2024-2025'),
+    7,
+    'TK'
+); -- matched: KOŃCZYŁO Tomasz (score=100)
+-- Compute scores for PEW3-V2-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V2-M-FOIL-2024-2025')
+);
+
+-- SKIP PEW4 (EVF Grand Prix 4): N=0 — tournament had no participants
+
+-- SKIP PEW5 (EVF Grand Prix 5): N=0 — tournament had no participants
+
+-- SKIP PEW6 (EVF Grand Prix 6): N=0 — tournament had no participants
 
 -- ---- PEW7: EVF Grand Prix 7 — Terni (Stockholm) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
@@ -387,7 +542,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    12,
+    15,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V2-M-FOIL-2024-2025'),
     1,
     'BAZAK Jacek'
@@ -423,42 +578,42 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    113,
+    140,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V2-M-FOIL-2024-2025'),
     1,
     'TK'
 ); -- matched: KOŃCZYŁO Tomasz (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    12,
+    15,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V2-M-FOIL-2024-2025'),
     3,
     'BAZAK Jacek'
 ); -- matched: BAZAK Jacek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    238,
+    267,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V2-M-FOIL-2024-2025'),
     7,
     'SZMIDT Grzegorz'
 ); -- matched: SZMIDT Grzegorz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    82,
+    92,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V2-M-FOIL-2024-2025'),
     10,
     'HAŚKO Sergiusz'
 ); -- matched: HAŚKO Sergiusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    79,
+    86,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V2-M-FOIL-2024-2025'),
     11,
     'GWIAZDA Paweł'
 ); -- matched: GWIAZDA Paweł (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    279,
+    318,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V2-M-FOIL-2024-2025'),
     12,
     'ŻUKOWSKI Wojciech'
@@ -468,8 +623,45 @@ SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V2-M-FOIL-2024-2025')
 );
 
+-- ---- PS: Puchar Świata (Paryż) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PS-2024-2025',
+    'Puchar Świata',
+    'Paryż',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PS-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PS-2024-2025'),
+    'PS-V2-M-FOIL-2024-2025',
+    'Puchar Świata',
+    'PSW',
+    'FOIL', 'M', 'V2',
+    '2025-07-05', 27, 'https://engarde-service.com/competition/fencingaddict/crit25/fhv2',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    140,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PS-V2-M-FOIL-2024-2025'),
+    11,
+    'TK'
+); -- matched: KOŃCZYŁO Tomasz (score=100)
+-- Compute scores for PS-V2-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PS-V2-M-FOIL-2024-2025')
+);
+
 -- SKIP IMEW (Indywidualne Mistrzostwa Europy Weteranów): N=0 — tournament had no participants
 
 -- Summary
--- Total results matched:   33
--- Total results unmatched: 1
+-- Total results matched:   43
+-- Total results unmatched: 0
+-- Total auto-created:      0

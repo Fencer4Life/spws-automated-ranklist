@@ -32,7 +32,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    161,
+    179,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V2-F-SABRE-2023-2024'),
     1,
     'MILCZAREK Renata'
@@ -80,14 +80,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    256,
+    289,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-F-SABRE-2023-2024'),
     1,
     'WASILCZUK Beata'
 ); -- matched: WASILCZUK Beata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    161,
+    179,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-F-SABRE-2023-2024'),
     2,
     'MILCZAREK Renata'
@@ -126,3 +126,4 @@ SELECT fn_calc_tournament_scores(
 -- Summary
 -- Total results matched:   3
 -- Total results unmatched: 35
+-- Total auto-created:      0

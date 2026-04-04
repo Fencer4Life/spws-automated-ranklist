@@ -32,7 +32,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    47,
+    51,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-F-SABRE-2024-2025'),
     1,
     'DWORAKOWSKA-BANAŚ Agnieszka'
@@ -68,7 +68,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    47,
+    51,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-SABRE-2024-2025'),
     1,
     'DWORAKOWSKA-BANAŚ AGNIESZKA'
@@ -104,7 +104,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    161,
+    179,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-SABRE-2024-2025'),
     1,
     'MILCZAREK Renata'
@@ -142,14 +142,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    47,
+    51,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-F-SABRE-2024-2025'),
     1,
     'DWORAKOWSKA-BANAŚ Agnieszka'
 ); -- matched: DWORAKOWSKA-BANAŚ Agnieszka (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    161,
+    179,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-F-SABRE-2024-2025'),
     2,
     'MILCZAREK Renata'
@@ -197,7 +197,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    161,
+    179,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V2-F-SABRE-2024-2025'),
     9,
     'MILCZAREK Renata'
@@ -218,3 +218,4 @@ SELECT fn_calc_tournament_scores(
 -- Summary
 -- Total results matched:   6
 -- Total results unmatched: 0
+-- Total auto-created:      0

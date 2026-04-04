@@ -25,12 +25,12 @@ INSERT INTO tbl_tournament (
     'I Puchar Polski Weteranów',
     'PPW',
     'FOIL', 'M', 'V4',
-    '2025-09-27', 1, NULL,
+    '2025-09-27', 1, 'https://www.fencingtimelive.com/events/results/A844F12AB47C46DFA956FD492FB6E5C4',
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    102,
+    114,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V4-M-FOIL-2025-2026'),
     1,
     'KIERSZNICKI Ryszard'
@@ -66,7 +66,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    102,
+    114,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V4-M-FOIL-2025-2026'),
     1,
     'KIERSZNICKI Ryszard'
@@ -102,21 +102,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    19,
+    24,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V4-M-FOIL-2025-2026'),
     1,
     'BORKOWSKI Andrzej'
 ); -- matched: BORKOWSKI Andrzej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    102,
+    114,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V4-M-FOIL-2025-2026'),
     2,
     'KIERSZNICKI Ryszard'
 ); -- matched: KIERSZNICKI Ryszard (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    95,
+    106,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V4-M-FOIL-2025-2026'),
     3,
     'JUSZKIEWICZ Piotr'
@@ -152,14 +152,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    102,
+    114,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-M-FOIL-2025-2026'),
     1,
     'KIERSZNICKI Ryszard'
 ); -- matched: KIERSZNICKI Ryszard (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    272,
+    308,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-M-FOIL-2025-2026'),
     2,
     'ZAKONEK Bronisław'
@@ -168,25 +168,6 @@ VALUES (
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-M-FOIL-2025-2026')
 );
-
--- SKIP PP5: event not yet held (SCHEDULED) — results are rolling carry-over from previous season
-
--- SKIP MPW: event not yet held (SCHEDULED) — results are rolling carry-over from previous season
-
--- SKIP PEW1 (EVF Grand Prix 1 — Budapeszt): 0 matched fencers in DB — tournament not created
-
--- SKIP PEW2 (EVF Grand Prix 2 — Madryt): 0 matched fencers in DB — tournament not created
-
--- SKIP PEW3 (EVF Grand Prix 3): N=0 — tournament had no participants
-
--- SKIP PEW4 (EVF Grand Prix 4): N=0 — tournament had no participants
-
--- SKIP PEW5 (EVF Grand Prix 5): N=0 — tournament had no participants
-
--- SKIP PEW6 (EVF Grand Prix 6): 0 matched fencers in DB — tournament not created
-
--- SKIP PEW7 (EVF Grand Prix 7 — Terni): N=0 — tournament had no participants
-
 -- ---- PEW8: EVF Grand Prix 8 — Guildford (Floret Mężczyzn V4 DE) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
@@ -211,24 +192,24 @@ INSERT INTO tbl_tournament (
     NULL, 4, NULL,
     'SCORED'
 );
--- UNMATCHED (score<80): 'SZABÓ Imre' place=1
+-- SKIPPED (international, no master data): 'SZABÓ Imre' place=1
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    19,
+    24,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V4-M-FOIL-2025-2026'),
     2,
     'BORKOWSKI Andrzej'
 ); -- matched: BORKOWSKI Andrzej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    278,
+    314,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V4-M-FOIL-2025-2026'),
     3,
     'ZYLKA Henryk'
 ); -- matched: ZYLKA Henryk (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    102,
+    114,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V4-M-FOIL-2025-2026'),
     3,
     'KIERSZNICKI Ryszard'
@@ -240,8 +221,7 @@ SELECT fn_calc_tournament_scores(
 
 -- SKIP PS (Puchar Świata): N=0 — tournament had no participants
 
--- SKIP IMEW: event not yet held (SCHEDULED) — results are rolling carry-over from previous season
-
 -- Summary
 -- Total results matched:   16
 -- Total results unmatched: 23
+-- Total auto-created:      0

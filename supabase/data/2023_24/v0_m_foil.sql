@@ -66,7 +66,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    170,
+    189,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V0-M-FOIL-2023-2024'),
     1,
     'NOWAK Szymon'
@@ -109,14 +109,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    207,
+    232,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V0-M-FOIL-2023-2024'),
     1,
     'RZESZUTKO Jakub'
 ); -- matched: RZESZUTKO Jakub (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    170,
+    189,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V0-M-FOIL-2023-2024'),
     2,
     'NOWAK Szymon'
@@ -161,14 +161,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    170,
+    189,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP5-V0-M-FOIL-2023-2024'),
     1,
     'NOWAK Szymon'
 ); -- matched: NOWAK Szymon (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    94,
+    105,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP5-V0-M-FOIL-2023-2024'),
     2,
     'JEROZOLIMSKI Marek'
@@ -247,7 +247,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    170,
+    189,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP7-V0-M-FOIL-2023-2024'),
     1,
     'NOWAK Szymon'
@@ -292,7 +292,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    170,
+    189,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V0-M-FOIL-2023-2024'),
     1,
     'NOWAK Szymon'
@@ -306,7 +306,7 @@ VALUES (
 ); -- matched: ADAMCZYK Grzegorz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    55,
+    59,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V0-M-FOIL-2023-2024'),
     3,
     'FRYDRYCH Szymon'
@@ -319,3 +319,4 @@ SELECT fn_calc_tournament_scores(
 -- Summary
 -- Total results matched:   15
 -- Total results unmatched: 0
+-- Total auto-created:      0

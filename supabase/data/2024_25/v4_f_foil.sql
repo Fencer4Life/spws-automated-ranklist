@@ -39,3 +39,4 @@
 -- Summary
 -- Total results matched:   0
 -- Total results unmatched: 0
+-- Total auto-created:      0

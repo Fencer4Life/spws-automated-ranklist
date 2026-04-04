@@ -25,12 +25,12 @@ INSERT INTO tbl_tournament (
     'I Puchar Polski Weteranów',
     'PPW',
     'SABRE', 'F', 'V1',
-    NULL, 1, NULL,
+    NULL, 1, 'https://www.fencingtimelive.com/events/results/4BFB941753FB48A0852F9DDAF07B5284',
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    62,
+    66,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-F-SABRE-2025-2026'),
     1,
     'GAWLE Katarzyna'
@@ -66,7 +66,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    62,
+    66,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-F-SABRE-2025-2026'),
     1,
     'GAWLE Katarzyna'
@@ -81,12 +81,62 @@ SELECT fn_calc_tournament_scores(
 -- SKIP PP4 (IV Puchar Polski Weteranów): N=0 — tournament had no participants
 
 -- SKIP PP5 (V Puchar Polski Weteranów): N=0 — tournament had no participants
-
--- SKIP MPW: event not yet held (SCHEDULED) — results are rolling carry-over from previous season
-
--- SKIP PEW1 (EVF Grand Prix 1 — Budapeszt): 0 matched fencers in DB — tournament not created
-
--- SKIP PEW2 (EVF Grand Prix 2 — Madryt): 0 matched fencers in DB — tournament not created
+-- ---- PEW2: EVF Grand Prix 2 — Madryt (VI Ciudad de Madrid CUP VETERANS FENCING) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW2-2025-2026',
+    'EVF Grand Prix 2 — Madryt',
+    'VI Ciudad de Madrid CUP VETERANS FENCING',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW2-2025-2026');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW2-2025-2026'),
+    'PEW2-V1-F-SABRE-2025-2026',
+    'EVF Grand Prix 2 — Madryt',
+    'PEW',
+    'SABRE', 'F', 'V1',
+    NULL, 22, NULL,
+    'SCORED'
+);
+-- SKIPPED (international, no master data): 'HORI' place=1
+-- SKIPPED (international, no master data): 'DI MARTINO' place=2
+-- SKIPPED (international, no master data): 'YANO' place=3
+-- SKIPPED (international, no master data): 'ALBINI' place=4
+-- SKIPPED (international, no master data): 'COLAIACOMO' place=5
+-- SKIPPED (international, no master data): 'MORENO BLASCO' place=6
+-- SKIPPED (international, no master data): 'URBANO PRADA' place=7
+-- SKIPPED (international, no master data): 'DE RIOJA MEDIAVILLA' place=8
+-- SKIPPED (international, no master data): 'MELGAREJO QUIRÓS' place=9
+-- SKIPPED (international, no master data): 'SIRACUSANO' place=10
+-- SKIPPED (international, no master data): 'ROUSSELOT' place=11
+-- SKIPPED (international, no master data): 'PADURA MUGICA' place=12
+-- SKIPPED (international, no master data): 'RAINER' place=13
+-- SKIPPED (international, no master data): 'LUJAN' place=14
+-- SKIPPED (international, no master data): 'TRAPANESE' place=15
+-- SKIPPED (international, no master data): 'VILLARRUBIA' place=16
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    112,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V1-F-SABRE-2025-2026'),
+    17,
+    'MARTIN CID'
+); -- matched: KAZIK Martin (score=72.72727272727273)
+-- SKIPPED (international, no master data): 'BERNARDO DA SILVA FRANCA' place=18
+-- SKIPPED (international, no master data): 'STOKKERMANS' place=19
+-- SKIPPED (international, no master data): 'AYUSO PEÑAS' place=20
+-- SKIPPED (international, no master data): 'BUENO DIEZ' place=21
+-- SKIPPED (international, no master data): 'GREEN' place=22
+-- Compute scores for PEW2-V1-F-SABRE-2025-2026
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V1-F-SABRE-2025-2026')
+);
 
 -- SKIP PEW3 (EVF Grand Prix 3): N=0 — tournament had no participants
 
@@ -104,8 +154,7 @@ SELECT fn_calc_tournament_scores(
 
 -- SKIP PS (Puchar Świata): N=0 — tournament had no participants
 
--- SKIP IMEW (Indywidualne Mistrzostwa Europy Weteranów): N=0 — tournament had no participants
-
 -- Summary
--- Total results matched:   3
--- Total results unmatched: 22
+-- Total results matched:   4
+-- Total results unmatched: 21
+-- Total auto-created:      0

@@ -32,14 +32,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    211,
+    236,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V0-F-SABRE-2023-2024'),
     1,
     'SAJEWICZ Izabela'
 ); -- matched: SAJEWICZ Izabela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    71,
+    75,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V0-F-SABRE-2023-2024'),
     2,
     'GRACZYK Anna'
@@ -75,18 +75,18 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    211,
+    236,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V0-F-SABRE-2023-2024'),
     1,
     'SAJEWICZ Izabela'
 ); -- matched: SAJEWICZ Izabela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    62,
+    66,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V0-F-SABRE-2023-2024'),
     2,
     'GAWLE Katarzyna (kat 1)'
-); -- matched: GAWLE Katarzyna (kat 1) (score=100.0)
+); -- matched: GAWLE Katarzyna (score=100.0)
 -- Compute scores for GP3-V0-F-SABRE-2023-2024
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V0-F-SABRE-2023-2024')
@@ -118,7 +118,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    211,
+    236,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP4-V0-F-SABRE-2023-2024'),
     1,
     'SAJEWICZ Izabela'
@@ -154,7 +154,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    211,
+    236,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP5-V0-F-SABRE-2023-2024'),
     1,
     'SAJEWICZ Izabela'
@@ -192,7 +192,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    211,
+    236,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP7-V0-F-SABRE-2023-2024'),
     1,
     'SAJEWICZ Izabela'
@@ -228,7 +228,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    178,
+    199,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP8-V0-F-SABRE-2023-2024'),
     1,
     'OWCZAREK Ewelina'
@@ -264,21 +264,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    211,
+    236,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V0-F-SABRE-2023-2024'),
     1,
     'SAJEWICZ Izabela'
 ); -- matched: SAJEWICZ Izabela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    80,
+    90,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V0-F-SABRE-2023-2024'),
     2,
     'HAJDAS Martyna'
 ); -- matched: HAJDAS Martyna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    212,
+    237,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V0-F-SABRE-2023-2024'),
     3,
     'SAMECKA-NACZYŃSKA Martyna'
@@ -291,3 +291,4 @@ SELECT fn_calc_tournament_scores(
 -- Summary
 -- Total results matched:   11
 -- Total results unmatched: 0
+-- Total auto-created:      0
