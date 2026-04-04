@@ -94,12 +94,6 @@
               </div>
             {/if}
           </div>
-          <div class="type-legend">
-            {#each ['legend_ppw', 'legend_mpw', 'legend_pew', 'legend_mew', 'legend_msw'] as key}
-              {@const parts = t(key).split(' — ')}
-              <span><strong>{parts[0]}</strong> — {parts.slice(1).join(' — ')}</span>
-            {/each}
-          </div>
           {#if hasCarryover}
             <div class="carried-legend">
               <div class="carried-legend-item"><div class="legend-swatch current"></div> {t('domestic_ppw_mpw').split(' (')[0]}</div>
@@ -133,6 +127,12 @@
         <span><strong>{footerN[0]}</strong> — {footerN.slice(1).join(' — ')}</span>
         <span class="sep">·</span>
         <span><strong>{footerMult[0]}</strong> — {footerMult.slice(1).join(' — ')}</span>
+      </div>
+      <div class="type-legend">
+        {#each ['legend_ppw', 'legend_mpw', 'legend_pew', 'legend_mew', 'legend_msw'] as key}
+          {@const parts = t(key).split(' — ')}
+          <span><strong>{parts[0]}</strong> — {parts.slice(1).join(' — ')}</span>
+        {/each}
       </div>
     </div>
   </div>
@@ -664,7 +664,7 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    font-size: 11px;
+    font-size: 9px;
     color: #999;
   }
   .type-legend strong {
