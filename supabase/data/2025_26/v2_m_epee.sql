@@ -4,6 +4,30 @@
 -- One file per age category per season; see supabase/data/{season}/{cat}.sql
 -- =========================================================================
 
+-- =========================================================================
+-- Auto-created fencers (domestic unmatched — ADR-020)
+-- =========================================================================
+INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, bool_birth_year_estimated)
+SELECT 'LEAHEY', 'John', 1976, TRUE
+WHERE NOT EXISTS (
+    SELECT 1 FROM tbl_fencer WHERE txt_surname = 'LEAHEY' AND txt_first_name = 'John'
+);
+INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, bool_birth_year_estimated)
+SELECT 'GERTSMAN', 'Alex', 1976, TRUE
+WHERE NOT EXISTS (
+    SELECT 1 FROM tbl_fencer WHERE txt_surname = 'GERTSMAN' AND txt_first_name = 'Alex'
+);
+INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, bool_birth_year_estimated)
+SELECT 'MCQUEEN', 'Andy', 1976, TRUE
+WHERE NOT EXISTS (
+    SELECT 1 FROM tbl_fencer WHERE txt_surname = 'MCQUEEN' AND txt_first_name = 'Andy'
+);
+INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, bool_birth_year_estimated)
+SELECT 'GOLD', 'Oleg', 1976, TRUE
+WHERE NOT EXISTS (
+    SELECT 1 FROM tbl_fencer WHERE txt_surname = 'GOLD' AND txt_first_name = 'Oleg'
+);
+
 -- ---- PPW1: I Puchar Polski Weteranów — Szpada M (OPOLE) ----
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country, url_invitation, num_entry_fee, url_event)
 SELECT
@@ -225,7 +249,13 @@ VALUES (
     3,
     'KORONA Przemysław'
 ); -- matched: KORONA Przemysław (score=100)
--- UNMATCHED (<80): 'LEAHEY John' place=4
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'LEAHEY' AND txt_first_name = 'John'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
+    4,
+    'LEAHEY John'
+); -- auto-created domestic fencer
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     275,
@@ -268,7 +298,13 @@ VALUES (
     10,
     'ŻUKOWSKI Wojciech'
 ); -- matched: ŻUKOWSKI Wojciech (score=100)
--- UNMATCHED (<80): 'GERTSMAN Alex' place=11
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'GERTSMAN' AND txt_first_name = 'Alex'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
+    11,
+    'GERTSMAN Alex'
+); -- auto-created domestic fencer
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     217,
@@ -276,7 +312,13 @@ VALUES (
     12,
     'SKOCZEK Artur'
 ); -- matched: SKOCZEK Artur (score=100)
--- UNMATCHED (<80): 'ODOLAK Jarosław' place=13
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ODOLAK' AND txt_first_name = 'Jarosław'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
+    13,
+    'ODOLAK Jarosław'
+); -- existing fencer, timing fix
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     248,
@@ -305,8 +347,20 @@ VALUES (
     17,
     'PARDUS Borys'
 ); -- matched: PARDUS Borys (score=100)
--- UNMATCHED (<80): 'MCQUEEN Andy' place=18
--- UNMATCHED (<80): 'GOLD Oleg' place=19
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MCQUEEN' AND txt_first_name = 'Andy'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
+    18,
+    'MCQUEEN Andy'
+); -- auto-created domestic fencer
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'GOLD' AND txt_first_name = 'Oleg'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026'),
+    19,
+    'GOLD Oleg'
+); -- auto-created domestic fencer
 -- Compute scores for PP3-V2-M-EPEE-2025-2026
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-M-EPEE-2025-2026')
