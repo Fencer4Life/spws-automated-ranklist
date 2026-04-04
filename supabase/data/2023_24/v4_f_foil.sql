@@ -51,3 +51,4 @@
 -- Summary
 -- Total results matched:   0
 -- Total results unmatched: 18
+-- Total auto-created:      0

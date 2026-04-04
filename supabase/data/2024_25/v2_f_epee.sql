@@ -30,34 +30,40 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    256,
+    289,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-EPEE-2024-2025'),
     1,
     'WASILCZUK Beata'
 ); -- matched: WASILCZUK Beata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    60,
+    64,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-EPEE-2024-2025'),
     2,
     'GANSZCZYK Anna'
 ); -- matched: GANSZCZYK Anna (score=100.0)
--- UNMATCHED (score<80): 'ANNA-LISE Mion' place=3
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    240,
+    7,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-EPEE-2024-2025'),
+    3,
+    'ANNA-LISE Mion'
+); -- matched: ANNA-LISE Mion (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    269,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-EPEE-2024-2025'),
     4,
     'SZURLEJ Agata'
 ); -- matched: SZURLEJ Agata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    254,
+    286,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-EPEE-2024-2025'),
     5,
     'WALECKA Wanda'
 ); -- matched: WALECKA Wanda (score=100.0)
--- Compute scores for PP1-V2-F-EPEE-2024-2025
+-- Compute scores for PPW1-V2-F-EPEE-2024-2025
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-EPEE-2024-2025')
 );
@@ -88,40 +94,40 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    256,
+    289,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-F-EPEE-2024-2025'),
     1,
     'WASILCZUK Beata'
 ); -- matched: WASILCZUK Beata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    225,
+    253,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-F-EPEE-2024-2025'),
     2,
     'STAŃCZYK Agnieszka'
 ); -- matched: STAŃCZYK Agnieszka (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    240,
+    269,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-F-EPEE-2024-2025'),
     3,
     'SZURLEJ Agata'
 ); -- matched: SZURLEJ Agata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    60,
+    64,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-F-EPEE-2024-2025'),
     4,
     'GANSZCZYK Anna'
 ); -- matched: GANSZCZYK Anna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    254,
+    286,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-F-EPEE-2024-2025'),
     5,
     'WALECKA Wanda'
 ); -- matched: WALECKA Wanda (score=100.0)
--- Compute scores for PP2-V2-F-EPEE-2024-2025
+-- Compute scores for PPW2-V2-F-EPEE-2024-2025
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-F-EPEE-2024-2025')
 );
@@ -152,49 +158,142 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    256,
+    289,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-2024-2025'),
     1,
     'WASILCZUK Beata'
 ); -- matched: WASILCZUK Beata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    225,
+    253,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-2024-2025'),
     2,
     'STAŃCZYK Agnieszka'
 ); -- matched: STAŃCZYK Agnieszka (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    60,
+    64,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-2024-2025'),
     3,
     'GANSZCZYK Anna'
 ); -- matched: GANSZCZYK Anna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    240,
+    269,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-2024-2025'),
     4,
     'SZURLEJ Agata'
 ); -- matched: SZURLEJ Agata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    209,
+    233,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-2024-2025'),
     5,
     'SADOWIŃSKA Adriana'
-); -- matched: SADOWIŃSKA Adrianna (score=97.2972972972973)
+); -- matched: SADOWIŃSKA Adriana (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    140,
+    154,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-2024-2025'),
     6,
     'LASKUS KRYSTYNA'
 ); -- matched: LASKUS Krystyna (score=100.0)
--- Compute scores for PP3-V2-F-EPEE-2024-2025
+-- Compute scores for PPW3-V2-F-EPEE-2024-2025
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-2024-2025')
+);
+
+-- ---- PP4: IV Puchar Polski Weteranów (WARSZAWA) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PPW4-2024-2025',
+    'IV Puchar Polski Weteranów',
+    'WARSZAWA',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW4-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2024-2025'),
+    'PPW4-V2-F-EPEE-2024-2025',
+    'IV Puchar Polski Weteranów',
+    'PPW',
+    'EPEE', 'F', 'V2',
+    '2025-02-22', 4, 'https://www.fencingtimelive.com/events/results/F4AFD2C78D9C4FEFA8BC9FFF47DFFF22',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    289,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-EPEE-2024-2025'),
+    1,
+    'WASILCZUK Beata'
+); -- matched: WASILCZUK Beata (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    64,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-EPEE-2024-2025'),
+    2,
+    'GANSZCZYK Anna'
+); -- matched: GANSZCZYK Anna (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    233,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-EPEE-2024-2025'),
+    3,
+    'SADOWIŃSKA Adriana'
+); -- matched: SADOWIŃSKA Adriana (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    286,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-EPEE-2024-2025'),
+    4,
+    'WALECKA Wanda'
+); -- matched: WALECKA Wanda (score=100.0)
+-- Compute scores for PPW4-V2-F-EPEE-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-EPEE-2024-2025')
+);
+
+-- ---- PP5: V Puchar Polski Weteranów (SZCZECIN) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PPW5-2024-2025',
+    'V Puchar Polski Weteranów',
+    'SZCZECIN',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW5-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2024-2025'),
+    'PPW5-V2-F-EPEE-2024-2025',
+    'V Puchar Polski Weteranów',
+    'PPW',
+    'EPEE', 'F', 'V2',
+    '2025-04-26', 1, 'https://www.fencingtimelive.com/events/results/C237E2B8C8634417A7F70E8A9644F41A',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    64,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V2-F-EPEE-2024-2025'),
+    1,
+    'GANSZCZYK Anna'
+); -- matched: GANSZCZYK Anna (score=100.0)
+-- Compute scores for PPW5-V2-F-EPEE-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V2-F-EPEE-2024-2025')
 );
 
 -- ---- MPW: Mistrzostwa Polski Weteranów (PABIANICE) ----
@@ -223,28 +322,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    256,
+    289,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-F-EPEE-2024-2025'),
     1,
     'WASILCZUK Beata'
 ); -- matched: WASILCZUK Beata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    60,
+    64,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-F-EPEE-2024-2025'),
     2,
     'GANSZCZYK Anna'
 ); -- matched: GANSZCZYK Anna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    209,
+    233,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-F-EPEE-2024-2025'),
     3,
     'SADOWIŃSKA Adriana'
-); -- matched: SADOWIŃSKA Adrianna (score=97.2972972972973)
+); -- matched: SADOWIŃSKA Adriana (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    254,
+    286,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-F-EPEE-2024-2025'),
     4,
     'WALECKA Wanda'
@@ -280,14 +379,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    256,
+    289,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-F-EPEE-2024-2025'),
     8,
     'WASILCZUK Beata'
 ); -- matched: WASILCZUK Beata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    60,
+    64,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-F-EPEE-2024-2025'),
     17,
     'GANSZCZYK Anna'
@@ -323,14 +422,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    60,
+    64,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V2-F-EPEE-2024-2025'),
     22,
     'GANSZCZYK Anna'
 ); -- matched: GANSZCZYK Anna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    240,
+    269,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V2-F-EPEE-2024-2025'),
     27,
     'SZURLEJ Agata'
@@ -340,7 +439,104 @@ SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V2-F-EPEE-2024-2025')
 );
 
+-- SKIP PEW3 (EVF Grand Prix 3): N=0 — tournament had no participants
+
+-- SKIP PEW4 (EVF Grand Prix 4): 0 matched fencers in DB — tournament not created
+
+-- SKIP PEW5 (EVF Grand Prix 5): N=0 — tournament had no participants
+
+-- ---- PEW6: EVF Grand Prix 6 (WARSZAWA) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW6-2024-2025',
+    'EVF Grand Prix 6',
+    'WARSZAWA',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW6-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW6-2024-2025'),
+    'PEW6-V2-F-EPEE-2024-2025',
+    'EVF Grand Prix 6',
+    'PEW',
+    'EPEE', 'F', 'V2',
+    '2025-03-29', 18, 'https://www.fencingtimelive.com/events/results/FAAD3A9478B14A08924828AA50E715D0',
+    'SCORED'
+);
+-- SKIPPED (international, no master data): 'LAISNEY Sandra' place=1
+-- SKIPPED (international, no master data): 'DE GROOTE Annica' place=2
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    289,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2024-2025'),
+    3,
+    'WASILCZUK Beata'
+); -- matched: WASILCZUK Beata (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    150,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2024-2025'),
+    3,
+    'KUZMICHOVA Svitlana'
+); -- matched: KUZMICHOVA Svitlana (score=100.0)
+-- SKIPPED (international, no master data): 'GRAF Bettina' place=5
+-- SKIPPED (international, no master data): 'GABELLLA Barbara' place=6
+-- SKIPPED (international, no master data): 'AVANCINI Annalisa' place=7
+-- SKIPPED (international, no master data): 'BOYKO Maria' place=8
+-- SKIPPED (international, no master data): 'IGARIENE Asta' place=9
+-- SKIPPED (international, no master data): 'HORI Catherine' place=10
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    215,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2024-2025'),
+    11,
+    'PRAHA-TSAREHRADSKA Nadiia'
+); -- matched: PRAHA-TSAREHRADSKA Nadiia (score=100.0)
+-- SKIPPED (international, no master data): 'BONATO Iliana Diana' place=12
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    64,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2024-2025'),
+    13,
+    'GANSZCZYK Anna'
+); -- matched: GANSZCZYK Anna (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    233,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2024-2025'),
+    14,
+    'SADOWIŃSKA Adriana'
+); -- matched: SADOWIŃSKA Adriana (score=100.0)
+-- SKIPPED (international, no master data): 'PARK-BHASIN Ok Kyong' place=15
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    154,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2024-2025'),
+    16,
+    'LASKUS Krystyna'
+); -- matched: LASKUS Krystyna (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    286,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2024-2025'),
+    17,
+    'WALECKA Wanda'
+); -- matched: WALECKA Wanda (score=100.0)
+-- SKIPPED (international, no master data): 'NOVOSELSKA Tetiana' place=18
+-- Compute scores for PEW6-V2-F-EPEE-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2024-2025')
+);
+
 -- SKIP PEW7 (EVF Grand Prix 7 — Terni): N=0 — tournament had no participants
+
+-- SKIP PS (Puchar Świata): N=0 — tournament had no participants
 
 -- ---- IMEW: Indywidualne Mistrzostwa Europy Weteranów (Płowdiw) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
@@ -368,7 +564,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    60,
+    64,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V2-F-EPEE-2024-2025'),
     49,
     'GANSZCZYK Anna'
@@ -379,5 +575,6 @@ SELECT fn_calc_tournament_scores(
 );
 
 -- Summary
--- Total results matched:   24
--- Total results unmatched: 1
+-- Total results matched:   37
+-- Total results unmatched: 11
+-- Total auto-created:      0

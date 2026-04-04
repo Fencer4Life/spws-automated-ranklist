@@ -25,12 +25,12 @@ INSERT INTO tbl_tournament (
     'I Puchar Polski Weteranów',
     'PPW',
     'FOIL', 'F', 'V2',
-    '2025-09-27', 1, NULL,
+    '2025-09-27', 1, 'https://www.fencingtimelive.com/events/results/B4E170EF51DF4DE2A84A9BA2D0F70147',
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    256,
+    289,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-FOIL-2025-2026'),
     1,
     'WASILCZUK Beata'
@@ -66,7 +66,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    86,
+    97,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-F-FOIL-2025-2026'),
     1,
     'JABŁOŃSKA Ewa'
@@ -102,14 +102,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    86,
+    97,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-FOIL-2025-2026'),
     1,
     'JABŁOŃSKA Ewa'
 ); -- matched: JABŁOŃSKA Ewa (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    256,
+    289,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-FOIL-2025-2026'),
     2,
     'WASILCZUK Beata'
@@ -145,14 +145,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    86,
+    97,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-FOIL-2025-2026'),
     1,
     'JABŁOŃSKA Ewa'
 ); -- matched: JABŁOŃSKA Ewa (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    208,
+    233,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-FOIL-2025-2026'),
     2,
     'SADOWIŃSKA Adriana'
@@ -163,9 +163,6 @@ SELECT fn_calc_tournament_scores(
 );
 
 -- SKIP PP5 (V Puchar Polski Weteranów): N=0 — tournament had no participants
-
--- SKIP MPW: event not yet held (SCHEDULED) — results are rolling carry-over from previous season
-
 -- ---- PEW1: EVF Grand Prix 1 — Budapeszt (INTERNATIONAL VETERAN CHAMPIONSHIPS) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
@@ -192,7 +189,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    256,
+    289,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-F-FOIL-2025-2026'),
     9,
     'WASILCZUK Beata'
@@ -240,14 +237,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    256,
+    289,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V2-F-FOIL-2025-2026'),
     5,
     'WASILCZUK Beata'
 ); -- matched: WASILCZUK Beata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    208,
+    233,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V2-F-FOIL-2025-2026'),
     8,
     'SADOWIŃSKA Adriana'
@@ -259,8 +256,7 @@ SELECT fn_calc_tournament_scores(
 
 -- SKIP PS (Puchar Świata): N=0 — tournament had no participants
 
--- SKIP IMEW (Indywidualne Mistrzostwa Europy Weteranów): N=0 — tournament had no participants
-
 -- Summary
 -- Total results matched:   10
 -- Total results unmatched: 0
+-- Total auto-created:      0

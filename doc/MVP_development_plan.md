@@ -33,11 +33,13 @@ The POC (M0-M6) established the foundation. **236 test assertions** across 3 sui
 
 ### 1.4 Milestones
 
-| # | Milestone | Key Deliverables |
-|---|-----------|-----------------|
-| M8 | Multi-Category Data + Calendar UI + Schema Extensions | 30-category seed data, Calendar view (`<spws-calendar>`), 4 new `tbl_event` columns, Shadow DOM for `<spws-ranklist>` + `<spws-calendar>`, admin password gate, scoring config editor |
-| M9 | Ingestion Pipeline + Admin CRUD + Identity Resolution Admin | `ingest.yml`, orchestration script, CRUD UI for seasons/events/tournaments, identity admin UI, re-import, Discord alerts |
-| M10 | Rolling Score for Active Season | `p_rolling` parameter on ranking functions, `fn_fencer_scores_rolling`, carried-over visual distinction, calendar progress indicator |
+| # | Milestone | Status | Key Deliverables |
+|---|-----------|--------|-----------------|
+| M8 | Multi-Category Data + Calendar UI + Schema Extensions | COMPLETED | 30-category seed data, Calendar view, 6 `tbl_event` columns, Shadow DOM, admin auth, scoring config editor |
+| M9 | Admin CRUD + Identity Resolution + Tooling | COMPLETED | Auth + TOTP MFA, CRUD SQL + UI (seasons/events/tournaments), identity admin UI, file import parsers, seed generator tooling (ADR-019, ADR-020) |
+| M10 | Rolling Score for Active Season | COMPLETED | `p_rolling` parameter on ranking functions, `fn_fencer_scores_rolling`, carried-over visual distinction, calendar progress indicator, birth year subtitle |
+
+**Deferred to Go-to-PROD phase:** Automated ingestion pipeline, orchestration script, EVF calendar import, URL scraping tab, identity resolution DB wiring, pipeline observability. See [Go-to-PROD.md](Go-to-PROD.md).
 
 ### 1.5 Architecture Decisions
 
@@ -51,6 +53,9 @@ The POC (M0-M6) established the foundation. **236 test assertions** across 3 sui
 | [ADR-015](adr/015-m8-ui-design-decisions.md) | M8 UI Design Decisions | All 7 approved mockups |
 | [ADR-017](adr/017-season-configurable-evf-toggle.md) | Season-Configurable EVF Toggle | FR-34, FR-44, FR-64 |
 | [ADR-018](adr/018-rolling-score.md) | Rolling Score for Active Season | FR-15, FR-16, FR-65, FR-66 |
+| [ADR-019](adr/019-domestic-only-fencer-seed.md) | Domestic-Only Fencer Seed | seed_tbl_fencer.sql |
+| [ADR-020](adr/020-seed-generator-domestic-auto-create.md) | Seed Generator Domestic Auto-Create | generate_season_seed.py |
+| [ADR-021](adr/021-imew-biennial-carry-over.md) | IMEW Biennial Carry-Over | FR-65, FR-68 |
 
 ### 1.6 POC Test Gaps Carried Forward
 
@@ -135,50 +140,23 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 - **Identity resolution queue:** Default filter PENDING, stats bar, three actions (Zatwierdź, Nowy zawodnik, Odrzuć), disambiguation modal for same-name fencers
 - **Polish UI terminology:** "Ranklista" (not "Ranklist"), "Komunikat organizatora" (not "Zaproszenie")
 
-### M9: Ingestion Pipeline + Admin CRUD + Identity Resolution Admin
+### M9: Admin CRUD + Identity Resolution + Tooling
 
-- Detailed plan in `.claude/plans/rosy-bouncing-kitten.md` — 125 acceptance tests across M9a (UI) + M9b (Pipeline)
-- Split: **M9a** (T9.0–T9.8) Auth + CRUD SQL + Admin UI; **M9b** (T9.9–T9.14) Pipeline + Test Gaps
+**Status: COMPLETED (2026-04-04)** — 103 new assertions, 544 total
 
-**Test results after T9.5:**
+- Detailed plan in `.claude/plans/rosy-bouncing-kitten.md`
+- Original split: M9a (T9.0–T9.8) Auth + CRUD SQL + Admin UI; M9b (T9.9–T9.14) Pipeline + Test Gaps
+- M9a + T9.9–T9.10 + ADR-017/019/020 completed. Remaining M9b scope (pipeline, orchestration, EVF import) deferred to [Go-to-PROD](Go-to-PROD.md)
 
-| Suite | Post-M8 | M9 New | Total |
-|-------|---------|--------|-------|
-| pgTAP | 135 | 24 | 159 |
-| pytest | 94 | 0 | 94 |
-| vitest | 97 | 34 | 131 |
-| Playwright | 7 | 0 | 7 |
-| **Total** | **333** | **58** | **391**
-
-**Test results after T9.6:**
+**Final test results (M9 complete):**
 
 | Suite | Post-M8 | M9 New | Total |
 |-------|---------|--------|-------|
-| pgTAP | 135 | 24 | 159 |
-| pytest | 94 | 0 | 94 |
-| vitest | 97 | 40 | 137 |
+| pgTAP | 135 | 54 | 189 |
+| pytest | 94 | 81 | 175 |
+| vitest | 97 | 76 | 173 |
 | Playwright | 7 | 0 | 7 |
-| **Total** | **333** | **64** | **397** |
-
-**Test results after T9.10:**
-
-| Suite | Post-M8 | M9 New | Total |
-|-------|---------|--------|-------|
-| pgTAP | 135 | 32 | 167 |
-| pytest | 94 | 10 | 104 |
-| vitest | 97 | 55 | 152 |
-| Playwright | 7 | 0 | 7 |
-| **Total** | **333** | **97** | **430** |
-
-**Test results after EVF toggle scope change (current):**
-
-| Suite | Post-T9.10 | EVF Toggle | Total |
-|-------|------------|------------|-------|
-| pgTAP | 167 | +4 | 171 |
-| pytest | 104 | 0 | 104 |
-| vitest | 152 | +7 | 159 |
-| Playwright | 7 | 0 | 7 |
-| **Total** | **430** | **+11** | **441** |
+| **Total** | **333** | **+211** | **544** |
 
 **Tasks completed:**
 
@@ -195,6 +173,8 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 | T9.8 | Sidebar Wiring + Admin View Routing: Extended AppView type, added click handlers to 4 admin sidebar buttons, active state highlighting | `Sidebar.svelte`, `types.ts`, `AdminRouting.test.ts` | 5 vitest (9.78–9.82) |
 | T9.9 | POC Test Gap Coverage: V1/V3 birth year (FR-10), MSW multiplier (FR-14), CHANGED event state (FR-23), import status transitions (FR-40) | `test_matcher.py`, `01_database_foundation.sql`, `02_scoring_engine.sql` | 2 pytest (9.83–9.84), 8 pgTAP (9.85–9.92) |
 | T9.10 | File Import Parsers (FR-55): parse_file dispatcher (.csv/.xlsx/.xls/.json), xlsx_parser (openpyxl + xlrd), json_parser with key normalization, xlrd dep added | `file_import.py`, `xlsx_parser.py`, `json_parser.py`, `test_file_import.py` | 8 pytest (9.93–9.100) |
+| T9.10b | Domestic-Only Fencer Seed (ADR-019): purged 81 international-only fencers from seed, `sort_and_clean_fencers.py` tool, 361→280 fencers | `seed_tbl_fencer.sql`, `sort_and_clean_fencers.py`, `test_seed_generator.py` | 34 pytest (9.101–9.134) |
+| T9.10c | Seed Generator Domestic Auto-Create (ADR-020): auto-create fencers for domestic PPW/MPW unmatched, skip international PEW/MEW with `-- SKIPPED` comment, idempotent `WHERE NOT EXISTS` pattern | `generate_season_seed.py`, `test_seed_generator.py`, `data/2025_26/v2_m_epee.sql` | 7 pytest (9.142–9.148) |
 
 **Implementation notes (T9.4):**
 - Props-driven component pattern (same as EventManager): `tournaments`, `eventId`, `isAdmin`, `oncreate`/`onupdate`/`ondelete` callbacks
@@ -283,15 +263,28 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 - `ScoringConfigEditor` fully i18n-ized (34 new `sc_*` keys in pl.json/en.json)
 - Season selector context-aware: triggers appropriate reload per active view
 
-**Remaining scope (M9b):**
-- Automated ingestion pipeline (`ingest.yml`): scheduled + manual dispatch (T9.14)
-- Orchestration script: scrape → match → score (T9.11)
-- EVF calendar import (T9.12, T9.13) — UI designed in M8 mockups (`m8_evf_import.html`)
-- Tournament import UI: URL scraping tab (deferred from T9.5/T9.6)
+**T9.10b — Domestic-Only Fencer Seed (ADR-019, 2026-04-03):**
+- Purged 81 international-only fencers from `seed_tbl_fencer.sql` (361→280 fencers)
+- Created `python/tools/sort_and_clean_fencers.py`: reads DB state, cross-references domestic tournament participation, outputs cleaned seed file
+- 34 new pytest assertions (9.101–9.134): normalize_name, sq helper, fuzzy_match edge cases, Excel parsing, SHEET_MAP coverage
+- ADR-019 documents the domestic-only policy for seed data
+
+**T9.10c — Seed Generator Domestic Auto-Create (ADR-020, 2026-04-04):**
+- 5 new functions in `generate_season_seed.py`: `parse_season_end_year`, `estimate_birth_year`, `_parse_scraped_name`, `generate_auto_create_sql`, `build_result_sql_for_unmatched`
+- Domestic PPW/MPW unmatched → auto-create fencer with `WHERE NOT EXISTS` + result via subquery
+- International PEW/MEW/PSW/MSW unmatched → `-- SKIPPED (international, no master data)` comment
+- Deduplication: `auto_created` set tracks (surname, first_name) across tournaments
+- Estimated birth year from age category + season end year; `bool_birth_year_estimated = TRUE`
+- Surgically updated `data/2025_26/v2_m_epee.sql`: added 4 auto-created fencers (LEAHEY, GERTSMAN, MCQUEEN, GOLD) + fixed ODOLAK match (subquery instead of hardcoded id)
+- All fencer references in data files use subqueries for CERT/PROD portability (no hardcoded IDs)
+- 7 new pytest assertions (9.142–9.148): fuzzy match regression, parse helper, auto-create SQL, international skip, idempotency, deduplication, birth year estimation
+
+**Deferred scope → [Go-to-PROD](Go-to-PROD.md):**
+Pipeline orchestration (T9.11), EVF calendar import (T9.12–T9.13), automated ingestion (T9.14), URL scraping tab (T9.5/T9.6 partial), identity resolution DB wiring (FR-56/FR-57 partial), pipeline observability (NFR-10 partial).
 
 ### M10: Rolling Score for Active Season
 
-**Status: COMPLETED (2026-03-29, updated 2026-04-02)** — 32 new assertions (18 pgTAP + 14 vitest), 473 total
+**Status: COMPLETED (2026-03-29, updated 2026-04-02)** — 32 new assertions (18 pgTAP + 14 vitest)
 
 **Scope:** Rolling ranking where previous-season results serve as baseline for active season. Position-matched carry-over with declared-counterpart constraint. See ADR-018 for full design.
 
@@ -369,15 +362,15 @@ These items from the POC Known Test Gaps carry forward to MVP milestones:
 | BY.6 | vitest | No season selected → no subtitle rendered |
 | BY.7 | vitest | Season dropdown change → birth years shift by 1 year |
 
-**Estimated test totals after M10:**
+**Final test totals (all milestones complete):**
 
-| Suite | Pre-M10 | M10 New | Total |
-|-------|---------|---------|-------|
-| pgTAP | 171 | +18 | 189 |
-| pytest | 104 | 0 | 104 |
-| vitest | 159 | +14 | 173 |
-| Playwright | 7 | 0 | 7 |
-| **Total** | **441** | **+32** | **473** |
+| Suite | POC | M8 | M9 | M10 | Total |
+|-------|-----|----|----|-----|-------|
+| pgTAP | 117 | +18 | +36 | +18 | **189** |
+| pytest | 91 | +3 | +81 | 0 | **175** |
+| vitest | 28 | +69 | +62 | +14 | **173** |
+| Playwright | 0 | +7 | 0 | 0 | **7** |
+| **Total** | **236** | **+97** | **+179** | **+32** | **544** |
 
 **Deployment notes:**
 - Migrations: 2–3 new files (position helper, fn_ranking_ppw DROP+recreate, fn_ranking_kadra DROP+recreate, fn_fencer_scores_rolling)
@@ -419,25 +412,25 @@ Quick reference — full details in [RTM (Appendix C)](Project%20Specification.%
 
 ### M9 Requirements
 
-| FR | Requirement | Source |
-|----|-------------|--------|
-| FR-46 | Admin auth: Supabase Auth + TOTP MFA (rewrite from M8 client-side gate) | UC22(a), ADR-016 |
-| FR-10 | Birth year estimation V1, V3 (POC gap) | §8.5 |
-| FR-14 | Tournament multipliers MSW (POC gap) | §8.2 |
-| FR-23 | Event lifecycle CHANGED state (POC gap) | UC10 |
-| FR-40 | Import status IMPORTED transition (POC gap) | UC1(b) |
-| FR-47 | Season CRUD via web UI | UC22(b) |
-| FR-49 | Tournament CRUD nested under events | UC22(d) |
-| FR-50 | Delete cascade (event → tournaments → results) | UC22(e) |
-| FR-51 | Tournament re-import in single transaction | UC23(a-f) |
-| FR-53 | Event-level batch import | UC22(g) |
-| FR-54 | Tournament-level single import | UC22(h) |
-| FR-55 | File import (.xlsx, .xls, .json, .csv) | UC22(i), UC23(c) |
-| FR-56 | Identity resolution admin UI | UC4(a-e) |
-| FR-57 | Disambiguation modal (same-name fencers) | UC3(f), UC4(b) |
-| FR-58 | EVF calendar import | UC8, UC9 |
-| FR-60 | Event CRUD via web UI | UC22(c) |
-| NFR-10 | Pipeline observability (POC gap) | §10 |
+| FR | Requirement | Source | Status |
+|----|-------------|--------|--------|
+| FR-46 | Admin auth: Supabase Auth + TOTP MFA (rewrite from M8 client-side gate) | UC22(a), ADR-016 | Covered (T9.0) |
+| FR-10 | Birth year estimation V1, V3 (POC gap) | §8.5 | Covered (T9.9) |
+| FR-14 | Tournament multipliers MSW (POC gap) | §8.2 | Covered (T9.9) |
+| FR-23 | Event lifecycle CHANGED state (POC gap) | UC10 | Covered (T9.9) |
+| FR-40 | Import status IMPORTED transition (POC gap) | UC1(b) | Covered (T9.9) |
+| FR-47 | Season CRUD via web UI | UC22(b) | Covered (T9.1+T9.2) |
+| FR-49 | Tournament CRUD nested under events | UC22(d) | Covered (T9.1+T9.4) |
+| FR-50 | Delete cascade (event → tournaments → results) | UC22(e) | Covered (T9.1) |
+| FR-51 | Tournament re-import in single transaction | UC23(a-f) | **Deferred → Go-to-PROD** |
+| FR-53 | Event-level batch import | UC22(g) | Partial (file UI done; URL + backend → Go-to-PROD) |
+| FR-54 | Tournament-level single import | UC22(h) | Partial (file UI done; URL + backend → Go-to-PROD) |
+| FR-55 | File import (.xlsx, .xls, .json, .csv) | UC22(i), UC23(c) | Covered (T9.5+T9.10) |
+| FR-56 | Identity resolution admin UI | UC4(a-e) | Partial (UI done; DB wiring → Go-to-PROD) |
+| FR-57 | Disambiguation modal (same-name fencers) | UC3(f), UC4(b) | Partial (UI done; DB wiring → Go-to-PROD) |
+| FR-58 | EVF calendar import | UC8, UC9 | **Deferred → Go-to-PROD** |
+| FR-60 | Event CRUD via web UI | UC22(c) | Covered (T9.1+T9.3) |
+| NFR-10 | Pipeline observability (POC gap) | §10 | Partial (Telegram covered; structured logs → Go-to-PROD) |
 
 ### M10 Requirements
 
@@ -448,6 +441,7 @@ Quick reference — full details in [RTM (Appendix C)](Project%20Specification.%
 | FR-65 | Rolling ranking: position-matched carry-over, declared-counterpart constraint, category crossing | ADR-018 |
 | FR-66 | Rolling drilldown + visual distinction (carried-over bars, progress slots) | ADR-018 |
 | FR-67 | Birth year range subtitle on ranklist view (enumeration format, PL+EN, season-reactive) | UC12 |
+| FR-68 | Biennial event carry-over: rules-based type matching for rolling carry-over (ADR-021) | ADR-021 |
 
 ---
 
@@ -456,5 +450,6 @@ Quick reference — full details in [RTM (Appendix C)](Project%20Specification.%
 - [Project Specification](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md) — Full spec (§6.2 = MVP scope, Appendix C = RTM with FR-01 to FR-67)
 - [CI/CD Operations Manual](cicd-operations-manual.md) — Release pipeline (LOCAL→CERT→PROD)
 - [POC Development Plan](POC_development_plan.md) — Historical reference only (M0-M6 archived)
+- [Go-to-PROD Plan](Go-to-PROD.md) — Deferred scope from M9b (pipeline, orchestration, EVF import, identity DB wiring)
 - `doc/mockups/` — 10 approved HTML mockups (see §2 M8 + M10 mockup tables)
-- `doc/adr/` — 18 ADRs (see §1.5 for MVP-relevant subset)
+- `doc/adr/` — 20 ADRs (see §1.5 for MVP-relevant subset)

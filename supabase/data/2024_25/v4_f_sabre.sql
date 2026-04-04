@@ -34,14 +34,86 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    221,
+    248,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V4-F-SABRE-2024-2025'),
     1,
     'SOSNOWSKA Aniela'
 ); -- matched: SOSNOWSKA Aniela (score=100.0)
--- Compute scores for PP3-V4-F-SABRE-2024-2025
+-- Compute scores for PPW3-V4-F-SABRE-2024-2025
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V4-F-SABRE-2024-2025')
+);
+
+-- ---- PP4: IV Puchar Polski Weteranów (WARSZAWA) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PPW4-2024-2025',
+    'IV Puchar Polski Weteranów',
+    'WARSZAWA',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW4-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2024-2025'),
+    'PPW4-V4-F-SABRE-2024-2025',
+    'IV Puchar Polski Weteranów',
+    'PPW',
+    'SABRE', 'F', 'V4',
+    '2025-02-23', 1, 'https://www.fencingtimelive.com/events/results/920A25812E40462BB15D09AF7BC18DB9',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    248,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-F-SABRE-2024-2025'),
+    1,
+    'SOSNOWSKA Aniela'
+); -- matched: SOSNOWSKA Aniela (score=100.0)
+-- Compute scores for PPW4-V4-F-SABRE-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-F-SABRE-2024-2025')
+);
+
+-- ---- PP5: V Puchar Polski Weteranów (SZCZECIN) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PPW5-2024-2025',
+    'V Puchar Polski Weteranów',
+    'SZCZECIN',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW5-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2024-2025'),
+    'PPW5-V4-F-SABRE-2024-2025',
+    'V Puchar Polski Weteranów',
+    'PPW',
+    'SABRE', 'F', 'V4',
+    '2025-04-26', 1, 'https://www.fencingtimelive.com/events/results/72B80AE4EB5C46D3B3498969D1E72A9C',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    248,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V4-F-SABRE-2024-2025'),
+    1,
+    'SOSNOWSKA Aniela'
+); -- matched: SOSNOWSKA Aniela (score=100.0)
+-- Compute scores for PPW5-V4-F-SABRE-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V4-F-SABRE-2024-2025')
 );
 
 -- ---- MPW: Mistrzostwa Polski Weteranów (PABIANICE) ----
@@ -70,7 +142,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    221,
+    248,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V4-F-SABRE-2024-2025'),
     1,
     'SOSNOWSKA Aniela'
@@ -83,6 +155,14 @@ SELECT fn_calc_tournament_scores(
 -- SKIP PEW1 (EVF Grand Prix 1 — Budapeszt): N=0 — tournament had no participants
 
 -- SKIP PEW2 (EVF Grand Prix 2 — Madryt): N=0 — tournament had no participants
+
+-- SKIP PEW3 (EVF Grand Prix 3): N=0 — tournament had no participants
+
+-- SKIP PEW4 (EVF Grand Prix 4): N=0 — tournament had no participants
+
+-- SKIP PEW5 (EVF Grand Prix 5): N=0 — tournament had no participants
+
+-- SKIP PEW6 (EVF Grand Prix 6): N=0 — tournament had no participants
 
 -- ---- PEW7: EVF Grand Prix 7 — Terni (Warszawa) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
@@ -108,11 +188,11 @@ INSERT INTO tbl_tournament (
     '2025-03-29', 3, 'https://www.fencingtimelive.com/events/results/FA515CDF8BF74AE8825CF038062E6384',
     'SCORED'
 );
--- UNMATCHED (score<80): 'ALBINI Adriana' place=1
--- UNMATCHED (score<80): 'GREEN Linda' place=2
+-- SKIPPED (international, no master data): 'ALBINI Adriana' place=1
+-- SKIPPED (international, no master data): 'GREEN Linda' place=2
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    221,
+    248,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V4-F-SABRE-2024-2025'),
     3,
     'SOSNOWSKA Aniela'
@@ -125,6 +205,8 @@ SELECT fn_calc_tournament_scores(
 -- SKIP PEW8 (EVF Grand Prix 8 — Guildford): N=0 — tournament had no participants
 
 -- SKIP PEW9 (EVF Grand Prix 9 — Sztokholm): N=0 — tournament had no participants
+
+-- SKIP PS (Puchar Świata): N=0 — tournament had no participants
 
 -- ---- IMEW: Indywidualne Mistrzostwa Europy Weteranów (Płowdiw) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
@@ -152,7 +234,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    221,
+    248,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V4-F-SABRE-2024-2025'),
     11,
     'SOSNOWSKA Aniela'
@@ -163,5 +245,6 @@ SELECT fn_calc_tournament_scores(
 );
 
 -- Summary
--- Total results matched:   4
+-- Total results matched:   6
 -- Total results unmatched: 2
+-- Total auto-created:      0

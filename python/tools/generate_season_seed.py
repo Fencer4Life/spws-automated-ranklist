@@ -144,14 +144,25 @@ def fuzzy_match(name: str, fencers: list[tuple]) -> tuple | None:
     for fid, surname, first, aliases in fencers:
         full = f"{surname} {first}"
         score = fuzz.token_sort_ratio(norm, full.upper())
-        # Component-level scoring: surname (ratio only) + first_name (ratio+partial)
+        # Component-level check: if surname or first name is very different, cap score
+        # This prevents brothers (same surname, different first) from matching
         parts = norm.split(None, 1)
         if len(parts) == 2 and first:
             s_sur, s_fst = parts[0], parts[1]
             f_sur, f_fst = surname.upper(), first.upper()
             sur_best = fuzz.ratio(s_sur, f_sur)
             fst_best = max(fuzz.ratio(s_fst, f_fst), fuzz.partial_ratio(s_fst, f_fst))
-            score = max(score, 0.75 * sur_best + 0.25 * fst_best)
+            # Boost: only if both components are reasonable matches.
+            # Uses 55 (not 50) because partial_ratio inflates short name pairs
+            # to ~50 even for clearly different names (e.g., dariusz vs jarosław).
+            if fst_best >= 55:
+                score = max(score, 0.75 * sur_best + 0.25 * fst_best)
+            # Penalty: if surname matches well but first name is very different,
+            # cap the full-name score to prevent false matches on shared surnames
+            if sur_best >= 90 and fst_best < 55:
+                score = min(score, 60)
+            elif sur_best < 50 and fst_best >= 90:
+                score = min(score, 60)
         if score > best_score:
             best_score = score
             best_fencer = (fid, f"{surname} {first}")

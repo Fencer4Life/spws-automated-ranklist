@@ -4,6 +4,15 @@
 -- One file per age category per season; see supabase/data/{season}/{cat}.sql
 -- =========================================================================
 
+-- =========================================================================
+-- Auto-created fencers (domestic unmatched — ADR-020)
+-- =========================================================================
+INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, bool_birth_year_estimated)
+SELECT 'FRYDRYCH', 'Aleksander', 1984, TRUE
+WHERE NOT EXISTS (
+    SELECT 1 FROM tbl_fencer WHERE txt_surname = 'FRYDRYCH' AND txt_first_name = 'Aleksander'
+);
+
 -- ---- GP1: Grand Prix (runda 1) (PABIANICE) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
@@ -30,49 +39,56 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    133,
+    143,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V1-M-SABRE-2023-2024'),
     1,
     'KROCHMALSKI Jakub'
 ); -- matched: KROCHMALSKI Jakub (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    120,
+    127,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V1-M-SABRE-2023-2024'),
     2,
     'KOSIŃSKI Łukasz'
 ); -- matched: KOSIŃSKI Łukasz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    274,
+    310,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V1-M-SABRE-2023-2024'),
     3,
     'ZAWROTNIAK Przemysław'
 ); -- matched: ZAWROTNIAK Przemysław (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    65,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V1-M-SABRE-2023-2024'),
     4,
     'GANSZCZYK Marcin'
 ); -- matched: GANSZCZYK Marcin (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    241,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FRYDRYCH' AND txt_first_name = 'Aleksander'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V1-M-SABRE-2023-2024'),
+    5,
+    'FRYDRYCH Aleksander'
+); -- auto-created domestic fencer
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    270,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V1-M-SABRE-2023-2024'),
     6,
     'SZYMAŃSKI Adam'
 ); -- matched: SZYMAŃSKI Adam (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    153,
+    166,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V1-M-SABRE-2023-2024'),
     7,
     'MARASEK Tomasz'
 ); -- matched: MARASEK Tomasz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    72,
+    76,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V1-M-SABRE-2023-2024'),
     9,
     'GRACZYK Bogdan'
@@ -108,35 +124,42 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    65,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V1-M-SABRE-2023-2024'),
     1,
     'GANSZCZYK Marcin'
 ); -- matched: GANSZCZYK Marcin (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    120,
+    127,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V1-M-SABRE-2023-2024'),
     2,
     'KOSIŃSKI Łukasz'
 ); -- matched: KOSIŃSKI Łukasz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    133,
+    143,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V1-M-SABRE-2023-2024'),
     3,
     'KROCHMALSKI Jakub'
 ); -- matched: KROCHMALSKI Jakub (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    241,
+    270,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V1-M-SABRE-2023-2024'),
     4,
     'SZYMAŃSKI Adam'
 ); -- matched: SZYMAŃSKI Adam (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    153,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FRYDRYCH' AND txt_first_name = 'Aleksander'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V1-M-SABRE-2023-2024'),
+    5,
+    'FRYDRYCH Aleksander'
+); -- auto-created domestic fencer
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    166,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V1-M-SABRE-2023-2024'),
     6,
     'MARASEK Tomasz'
@@ -172,49 +195,49 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    120,
+    127,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V1-M-SABRE-2023-2024'),
     1,
     'KOSIŃSKI Łukasz'
 ); -- matched: KOSIŃSKI Łukasz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    65,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V1-M-SABRE-2023-2024'),
     2,
     'GANSZCZYK Marcin'
 ); -- matched: GANSZCZYK Marcin (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    274,
+    310,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V1-M-SABRE-2023-2024'),
     3,
     'ZAWROTNIAK Przemysław'
 ); -- matched: ZAWROTNIAK Przemysław (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    234,
+    263,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V1-M-SABRE-2023-2024'),
     4,
     'SZEPIETOWSKI Rafał (kat 0)'
-); -- matched: SZEPIETOWSKI Rafał (kat 0) (score=100.0)
+); -- matched: SZEPIETOWSKI Rafał (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    241,
+    270,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V1-M-SABRE-2023-2024'),
     5,
     'SZYMAŃSKI Adam'
 ); -- matched: SZYMAŃSKI Adam (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    111,
+    139,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V1-M-SABRE-2023-2024'),
     6,
     'KOŁUCKI Michał'
 ); -- matched: KOŁUCKI Michał (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    72,
+    76,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V1-M-SABRE-2023-2024'),
     9,
     'GRACZYK Bogdan'
@@ -250,28 +273,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    111,
+    139,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP4-V1-M-SABRE-2023-2024'),
     1,
     'KOŁUCKI Michał'
 ); -- matched: KOŁUCKI Michał (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    120,
+    127,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP4-V1-M-SABRE-2023-2024'),
     2,
     'KOSIŃSKI Łukasz'
 ); -- matched: KOSIŃSKI Łukasz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    133,
+    143,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP4-V1-M-SABRE-2023-2024'),
     3,
     'KROCHMALSKI Jakub'
 ); -- matched: KROCHMALSKI Jakub (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    241,
+    270,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP4-V1-M-SABRE-2023-2024'),
     4,
     'SZYMAŃSKI Adam'
@@ -309,7 +332,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    133,
+    143,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP6-V1-M-SABRE-2023-2024'),
     1,
     'KROCHMALSKI Jakub'
@@ -345,14 +368,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    133,
+    143,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP7-V1-M-SABRE-2023-2024'),
     1,
     'KROCHMALSKI Jakub'
 ); -- matched: KROCHMALSKI Jakub (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    120,
+    127,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP7-V1-M-SABRE-2023-2024'),
     2,
     'KOSIŃSKI Łukasz'
@@ -388,21 +411,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    72,
+    76,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP8-V1-M-SABRE-2023-2024'),
     1,
     'GRACZYK Bogdan'
 ); -- matched: GRACZYK Bogdan (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    241,
+    270,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP8-V1-M-SABRE-2023-2024'),
     2,
     'SZYMAŃSKI Adam'
 ); -- matched: SZYMAŃSKI Adam (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    246,
+    276,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP8-V1-M-SABRE-2023-2024'),
     3,
     'TECŁAW Robert'
@@ -438,28 +461,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    133,
+    143,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-M-SABRE-2023-2024'),
     1,
     'KROCHMALSKI Jakub'
 ); -- matched: KROCHMALSKI Jakub (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    241,
+    270,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-M-SABRE-2023-2024'),
     2,
     'SZYMAŃSKI Adam'
 ); -- matched: SZYMAŃSKI Adam (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    120,
+    127,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-M-SABRE-2023-2024'),
     3,
     'KOSIŃSKI Łukasz'
 ); -- matched: KOSIŃSKI Łukasz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    72,
+    76,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-M-SABRE-2023-2024'),
     4,
     'GRACZYK Bogdan'
@@ -499,7 +522,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    120,
+    127,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V1-M-SABRE-2023-2024'),
     9,
     'KOSIŃSKI Łukasz'
@@ -535,7 +558,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    65,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V1-M-SABRE-2023-2024'),
     2,
     'GANSZCZYK Marcin'
@@ -585,69 +608,70 @@ INSERT INTO tbl_tournament (
     '2023-01-01', 40, 'https://engarde-service.com/competition/e3f/efcv/mensabrev1',
     'SCORED'
 );
--- UNMATCHED (score<80): 'TURLIER' place=1
--- UNMATCHED (score<80): 'NAGY' place=2
--- UNMATCHED (score<80): 'HERM' place=3
--- UNMATCHED (score<80): 'HIEN' place=3
--- UNMATCHED (score<80): 'SCHULEMANN' place=5
--- UNMATCHED (score<80): 'GAY' place=6
--- UNMATCHED (score<80): 'ANDREU DEDEU' place=7
--- UNMATCHED (score<80): 'GOIKHMAN' place=8
--- UNMATCHED (score<80): 'WEBER' place=9
--- UNMATCHED (score<80): 'BODAY' place=10
--- UNMATCHED (score<80): 'FREMONT' place=11
+-- SKIPPED (international, no master data): 'TURLIER' place=1
+-- SKIPPED (international, no master data): 'NAGY' place=2
+-- SKIPPED (international, no master data): 'HERM' place=3
+-- SKIPPED (international, no master data): 'HIEN' place=3
+-- SKIPPED (international, no master data): 'SCHULEMANN' place=5
+-- SKIPPED (international, no master data): 'GAY' place=6
+-- SKIPPED (international, no master data): 'ANDREU DEDEU' place=7
+-- SKIPPED (international, no master data): 'GOIKHMAN' place=8
+-- SKIPPED (international, no master data): 'WEBER' place=9
+-- SKIPPED (international, no master data): 'BODAY' place=10
+-- SKIPPED (international, no master data): 'FREMONT' place=11
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    65,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V1-M-SABRE-2023-2024'),
     12,
     'GANSZCZYK Marcin'
 ); -- matched: GANSZCZYK Marcin (score=100.0)
--- UNMATCHED (score<80): 'PARISE' place=13
--- UNMATCHED (score<80): 'HUGO' place=14
+-- SKIPPED (international, no master data): 'PARISE' place=13
+-- SKIPPED (international, no master data): 'HUGO' place=14
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    120,
+    127,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V1-M-SABRE-2023-2024'),
     15,
     'KOSIŃSKI Łukasz'
 ); -- matched: KOSIŃSKI Łukasz (score=100.0)
--- UNMATCHED (score<80): 'REY HERMIDA' place=16
--- UNMATCHED (score<80): 'TYPL' place=17
--- UNMATCHED (score<80): 'ZANELLATO' place=18
--- UNMATCHED (score<80): 'WRIGHT' place=19
--- UNMATCHED (score<80): 'NASH' place=20
--- UNMATCHED (score<80): 'MATHIS' place=21
--- UNMATCHED (score<80): 'BELLET' place=22
--- UNMATCHED (score<80): 'BLATZ' place=23
--- UNMATCHED (score<80): 'BROCK' place=24
--- UNMATCHED (score<80): 'MAHLAMAKI' place=25
--- UNMATCHED (score<80): 'CSALLO' place=26
--- UNMATCHED (score<80): 'BELLET' place=27
+-- SKIPPED (international, no master data): 'REY HERMIDA' place=16
+-- SKIPPED (international, no master data): 'TYPL' place=17
+-- SKIPPED (international, no master data): 'ZANELLATO' place=18
+-- SKIPPED (international, no master data): 'WRIGHT' place=19
+-- SKIPPED (international, no master data): 'NASH' place=20
+-- SKIPPED (international, no master data): 'MATHIS' place=21
+-- SKIPPED (international, no master data): 'BELLET' place=22
+-- SKIPPED (international, no master data): 'BLATZ' place=23
+-- SKIPPED (international, no master data): 'BROCK' place=24
+-- SKIPPED (international, no master data): 'MAHLAMAKI' place=25
+-- SKIPPED (international, no master data): 'CSALLO' place=26
+-- SKIPPED (international, no master data): 'BELLET' place=27
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    133,
+    143,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V1-M-SABRE-2023-2024'),
     28,
     'KROCHMALSKI Jakub'
 ); -- matched: KROCHMALSKI Jakub (score=100.0)
--- UNMATCHED (score<80): 'SENATORE' place=29
--- UNMATCHED (score<80): 'RUSAK' place=30
--- UNMATCHED (score<80): 'CASADESUS SOLE' place=31
--- UNMATCHED (score<80): 'MOULINIER' place=32
--- UNMATCHED (score<80): 'PETRONE' place=33
--- UNMATCHED (score<80): 'ANTONIS' place=34
--- UNMATCHED (score<80): 'MCDOUGALL' place=35
--- UNMATCHED (score<80): 'SMOLEJ' place=36
--- UNMATCHED (score<80): 'DIOP' place=37
--- UNMATCHED (score<80): 'BARTH' place=38
--- UNMATCHED (score<80): 'SZABO' place=39
--- UNMATCHED (score<80): 'CHITISHVILI' place=40
+-- SKIPPED (international, no master data): 'SENATORE' place=29
+-- SKIPPED (international, no master data): 'RUSAK' place=30
+-- SKIPPED (international, no master data): 'CASADESUS SOLE' place=31
+-- SKIPPED (international, no master data): 'MOULINIER' place=32
+-- SKIPPED (international, no master data): 'PETRONE' place=33
+-- SKIPPED (international, no master data): 'ANTONIS' place=34
+-- SKIPPED (international, no master data): 'MCDOUGALL' place=35
+-- SKIPPED (international, no master data): 'SMOLEJ' place=36
+-- SKIPPED (international, no master data): 'DIOP' place=37
+-- SKIPPED (international, no master data): 'BARTH' place=38
+-- SKIPPED (international, no master data): 'SZABO' place=39
+-- SKIPPED (international, no master data): 'CHITISHVILI' place=40
 -- Compute scores for IMEW-V1-M-SABRE-2023-2024
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V1-M-SABRE-2023-2024')
 );
 
 -- Summary
--- Total results matched:   40
--- Total results unmatched: 37
+-- Total results matched:   38
+-- Total results unmatched: 39
+-- Total auto-created:      1

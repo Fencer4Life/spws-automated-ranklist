@@ -25,12 +25,12 @@ INSERT INTO tbl_tournament (
     'I Puchar Polski Weteranów',
     'PPW',
     'SABRE', 'F', 'V0',
-    NULL, 1, NULL,
+    NULL, 1, 'https://www.fencingtimelive.com/events/results/4BFB941753FB48A0852F9DDAF07B5284',
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    178,
+    199,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-F-SABRE-2025-2026'),
     1,
     'OWCZAREK Ewelina'
@@ -66,14 +66,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    80,
+    90,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-F-SABRE-2025-2026'),
     1,
     'HAJDAS Martyna'
 ); -- matched: HAJDAS Martyna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    178,
+    199,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-F-SABRE-2025-2026'),
     2,
     'OWCZAREK Ewelina'
@@ -111,7 +111,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    178,
+    199,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-F-SABRE-2025-2026'),
     1,
     'OWCZAREK Ewelina'
@@ -120,11 +120,7 @@ VALUES (
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-F-SABRE-2025-2026')
 );
-
--- SKIP PP5: event not yet held (SCHEDULED) — results are rolling carry-over from previous season
-
--- SKIP MPW: event not yet held (SCHEDULED) — results are rolling carry-over from previous season
-
 -- Summary
 -- Total results matched:   7
 -- Total results unmatched: 0
+-- Total auto-created:      0

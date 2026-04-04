@@ -4,6 +4,15 @@
 -- One file per age category per season; see supabase/data/{season}/{cat}.sql
 -- =========================================================================
 
+-- =========================================================================
+-- Auto-created fencers (domestic unmatched — ADR-020)
+-- =========================================================================
+INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, bool_birth_year_estimated)
+SELECT 'ŻYCZKOWSKI', 'KAROL', 1965, TRUE
+WHERE NOT EXISTS (
+    SELECT 1 FROM tbl_fencer WHERE txt_surname = 'ŻYCZKOWSKI' AND txt_first_name = 'KAROL'
+);
+
 -- ---- PP1: I Puchar Polski Weteranów (KONIN) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
@@ -30,19 +39,19 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    168,
+    187,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-FOIL-2024-2025'),
     1,
     'NIKALAICHUK Aliaksandr'
 ); -- matched: NIKALAICHUK Aliaksandr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    190,
+    211,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-FOIL-2024-2025'),
     2,
     'POKRZYWA Mariusz'
 ); -- matched: POKRZYWA Mariusz (score=100.0)
--- Compute scores for PP1-V3-M-FOIL-2024-2025
+-- Compute scores for PPW1-V3-M-FOIL-2024-2025
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-FOIL-2024-2025')
 );
@@ -73,19 +82,19 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    168,
+    187,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-FOIL-2024-2025'),
     1,
     'NIKALAICHUK Aliaksandr'
 ); -- matched: NIKALAICHUK Aliaksandr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    190,
+    211,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-FOIL-2024-2025'),
     2,
     'POKRZYWA Mariusz'
 ); -- matched: POKRZYWA Mariusz (score=100.0)
--- Compute scores for PP2-V3-M-FOIL-2024-2025
+-- Compute scores for PPW2-V3-M-FOIL-2024-2025
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-FOIL-2024-2025')
 );
@@ -116,29 +125,114 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    168,
+    187,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-FOIL-2024-2025'),
     1,
     'NIKALAICHUK Aliaksandr'
 ); -- matched: NIKALAICHUK Aliaksandr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    190,
+    211,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-FOIL-2024-2025'),
     2,
     'POKRZYWA MARIUSZ'
 ); -- matched: POKRZYWA Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    150,
+    169,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-FOIL-2024-2025'),
     3,
     'MAŁASIŃSKI Adam'
 ); -- matched: MAŁASIŃSKI Adam (score=100.0)
--- UNMATCHED (score<80): 'ŻYCZKOWSKI KAROL' place=4
--- Compute scores for PP3-V3-M-FOIL-2024-2025
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ŻYCZKOWSKI' AND txt_first_name = 'KAROL'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-FOIL-2024-2025'),
+    4,
+    'ŻYCZKOWSKI KAROL'
+); -- auto-created domestic fencer
+-- Compute scores for PPW3-V3-M-FOIL-2024-2025
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-FOIL-2024-2025')
+);
+
+-- ---- PP4: IV Puchar Polski Weteranów (WARSZAWA) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PPW4-2024-2025',
+    'IV Puchar Polski Weteranów',
+    'WARSZAWA',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW4-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2024-2025'),
+    'PPW4-V3-M-FOIL-2024-2025',
+    'IV Puchar Polski Weteranów',
+    'PPW',
+    'FOIL', 'M', 'V3',
+    '2025-02-23', 2, 'https://www.fencingtimelive.com/events/results/9A4078FDE2E24B2AA822505B81B96D9E',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    187,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-FOIL-2024-2025'),
+    1,
+    'NIKALAICHUK Aliaksandr'
+); -- matched: NIKALAICHUK Aliaksandr (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    169,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-FOIL-2024-2025'),
+    2,
+    'MAŁASIŃSKI Adam'
+); -- matched: MAŁASIŃSKI Adam (score=100.0)
+-- Compute scores for PPW4-V3-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-FOIL-2024-2025')
+);
+
+-- ---- PP5: V Puchar Polski Weteranów (SZCZECIN) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PPW5-2024-2025',
+    'V Puchar Polski Weteranów',
+    'SZCZECIN',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW5-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2024-2025'),
+    'PPW5-V3-M-FOIL-2024-2025',
+    'V Puchar Polski Weteranów',
+    'PPW',
+    'FOIL', 'M', 'V3',
+    '2025-04-27', 1, 'https://www.fencingtimelive.com/events/results/7F63F67E2FD94C02A454586BC5F7F72E',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    187,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V3-M-FOIL-2024-2025'),
+    1,
+    'NIKALAICHUK Aliaksandr'
+); -- matched: NIKALAICHUK Aliaksandr (score=100.0)
+-- Compute scores for PPW5-V3-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V3-M-FOIL-2024-2025')
 );
 
 -- ---- MPW: Mistrzostwa Polski Weteranów (PABIANICE) ----
@@ -167,28 +261,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    42,
+    46,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-FOIL-2024-2025'),
     1,
     'DRAPELLA Maciej'
 ); -- matched: DRAPELLA Maciej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    190,
+    211,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-FOIL-2024-2025'),
     2,
     'POKRZYWA Mariusz'
 ); -- matched: POKRZYWA Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    150,
+    169,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-FOIL-2024-2025'),
     3,
     'MAŁASIŃSKI Adam'
 ); -- matched: MAŁASIŃSKI Adam (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    196,
+    219,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-FOIL-2024-2025'),
     4,
     'PYZIK Zdzisław'
@@ -224,14 +318,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    42,
+    46,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V3-M-FOIL-2024-2025'),
     10,
     'DRAPELLA Maciej'
 ); -- matched: DRAPELLA Maciej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    35,
+    315,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V3-M-FOIL-2024-2025'),
     16,
     'ĆWIORO Krzysztof'
@@ -267,7 +361,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    42,
+    46,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V3-M-FOIL-2024-2025'),
     1,
     'DRAPELLA Maciej'
@@ -276,6 +370,55 @@ VALUES (
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V3-M-FOIL-2024-2025')
 );
+
+-- ---- PEW3: EVF Grand Prix 3 (Munich) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW3-2024-2025',
+    'EVF Grand Prix 3',
+    'Munich',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW3-2024-2025');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW3-2024-2025'),
+    'PEW3-V3-M-FOIL-2024-2025',
+    'EVF Grand Prix 3',
+    'PEW',
+    'FOIL', 'M', 'V3',
+    '2024-12-07', 33, 'https://www.fencingworldwide.com/en/903541-2024/results/',
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    187,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V3-M-FOIL-2024-2025'),
+    15,
+    'NIKALAICHUK Aliaksandr'
+); -- matched: NIKALAICHUK Aliaksandr (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    211,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V3-M-FOIL-2024-2025'),
+    16,
+    'POKRZYWA Mariusz'
+); -- matched: POKRZYWA Mariusz (score=100.0)
+-- Compute scores for PEW3-V3-M-FOIL-2024-2025
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V3-M-FOIL-2024-2025')
+);
+
+-- SKIP PEW4 (EVF Grand Prix 4): N=0 — tournament had no participants
+
+-- SKIP PEW5 (EVF Grand Prix 5): N=0 — tournament had no participants
+
+-- SKIP PEW6 (EVF Grand Prix 6): N=0 — tournament had no participants
 
 -- SKIP PEW7 (EVF Grand Prix 7 — Terni): N=0 — tournament had no participants
 
@@ -303,42 +446,44 @@ INSERT INTO tbl_tournament (
     '2025-03-30', 14, 'https://www.fencingtimelive.com/events/results/D18CF3A475804DB0883332925DC05620',
     'SCORED'
 );
--- UNMATCHED (score<80): 'CSÁK Attila' place=1
--- UNMATCHED (score<80): 'RIJSENBRIJ Hans' place=2
--- UNMATCHED (score<80): 'MÉSZÁROS András' place=3
+-- SKIPPED (international, no master data): 'CSÁK Attila' place=1
+-- SKIPPED (international, no master data): 'RIJSENBRIJ Hans' place=2
+-- SKIPPED (international, no master data): 'MÉSZÁROS András' place=3
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    42,
+    46,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V3-M-FOIL-2024-2025'),
     3,
     'DRAPELLA Maciej'
 ); -- matched: DRAPELLA Maciej (score=100.0)
--- UNMATCHED (score<80): 'RAEKER Hans Martin' place=5
--- UNMATCHED (score<80): 'MONDT Bas' place=6
+-- SKIPPED (international, no master data): 'RAEKER Hans Martin' place=5
+-- SKIPPED (international, no master data): 'MONDT Bas' place=6
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    168,
+    187,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V3-M-FOIL-2024-2025'),
     7,
     'NIKALAICHUK Aliaksandr'
 ); -- matched: NIKALAICHUK Aliaksandr (score=100.0)
--- UNMATCHED (score<80): 'SÁRDI Tamás' place=8
--- UNMATCHED (score<80): 'POSTHUMA Frans' place=9
--- UNMATCHED (score<80): 'LEE Philip' place=10
--- UNMATCHED (score<80): 'PÉNTEK Tamás' place=11
+-- SKIPPED (international, no master data): 'SÁRDI Tamás' place=8
+-- SKIPPED (international, no master data): 'POSTHUMA Frans' place=9
+-- SKIPPED (international, no master data): 'LEE Philip' place=10
+-- SKIPPED (international, no master data): 'PÉNTEK Tamás' place=11
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    150,
+    169,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V3-M-FOIL-2024-2025'),
     12,
     'MAŁASIŃSKI Adam'
 ); -- matched: MAŁASIŃSKI Adam (score=100.0)
--- UNMATCHED (score<80): 'WATTENBERG Dirk' place=13
--- UNMATCHED (score<80): 'SZABÓ Imre' place=14
+-- SKIPPED (international, no master data): 'WATTENBERG Dirk' place=13
+-- SKIPPED (international, no master data): 'SZABÓ Imre' place=14
 -- Compute scores for PEW8-V3-M-FOIL-2024-2025
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V3-M-FOIL-2024-2025')
 );
+
+-- SKIP PS (Puchar Świata): N=0 — tournament had no participants
 
 -- ---- IMEW: Indywidualne Mistrzostwa Europy Weteranów (Płowdiw) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
@@ -366,7 +511,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    168,
+    187,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V3-M-FOIL-2024-2025'),
     24,
     'NIKALAICHUK Aliaksandr'
@@ -377,5 +522,6 @@ SELECT fn_calc_tournament_scores(
 );
 
 -- Summary
--- Total results matched:   18
+-- Total results matched:   23
 -- Total results unmatched: 12
+-- Total auto-created:      1

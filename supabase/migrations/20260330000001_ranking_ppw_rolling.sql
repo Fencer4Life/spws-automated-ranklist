@@ -2,8 +2,8 @@
 -- Migration: fn_ranking_ppw with p_rolling parameter (ADR-018)
 -- =============================================================================
 -- Adds p_rolling BOOLEAN DEFAULT FALSE parameter.
--- When TRUE, carries over previous-season results for positions that are
--- declared but not yet completed in the current season.
+-- When TRUE, carries over previous-season results for tournament types in
+-- json_ranking_rules whose positions are not yet completed (ADR-018 + ADR-021).
 -- Return type extended with bool_has_carryover.
 -- =============================================================================
 
@@ -157,11 +157,10 @@ BEGIN
         FROM jsonb_array_elements(v_rules -> 'domestic')
              WITH ORDINALITY AS b(value, ordinality)
       ),
-      -- Positions declared in current season (any event at that position)
-      declared_positions AS (
-        SELECT DISTINCT fn_event_position(ev.txt_code) AS pos
-          FROM tbl_event ev
-         WHERE ev.id_season = v_season_id
+      -- Tournament types declared in ranking rules (ADR-021: rules-based carry-over)
+      rules_types AS (
+        SELECT DISTINCT jsonb_array_elements_text(b.value -> 'types') AS type_code
+          FROM jsonb_array_elements(v_rules -> 'domestic') AS b(value)
       ),
       -- Positions where at least one event is COMPLETED
       completed_positions AS (
@@ -211,8 +210,8 @@ BEGIN
           AND COALESCE(fn_age_category(f.int_birth_year, v_season_end_yr), t.enum_age_category) = p_category
           AND r.num_final_score IS NOT NULL
           AND r.id_fencer IS NOT NULL
-          -- Position must be declared in current season but NOT completed
-          AND fn_event_position(e.txt_code) IN (SELECT pos FROM declared_positions)
+          -- Type must be in ranking rules AND position not yet completed (ADR-021)
+          AND t.enum_type::TEXT IN (SELECT type_code FROM rules_types)
           AND fn_event_position(e.txt_code) NOT IN (SELECT pos FROM completed_positions)
       ),
       eligible AS (

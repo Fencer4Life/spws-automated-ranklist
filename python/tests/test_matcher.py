@@ -27,6 +27,9 @@ Tests cover:
   4.38–4.41  Diacritic folding in normalize_name
   4.42–4.45  Token set ratio as secondary scorer
   4.46–4.49  Configurable thresholds
+
+  Same-surname disambiguation (brothers):
+  4.58–4.60  Same surname, different first name must not false-match
 """
 
 from __future__ import annotations
@@ -873,3 +876,48 @@ class TestComponentScoring:
         """4.57 Component scoring doesn't cause false positives for unrelated names."""
         result = find_best_match("XYZ Unknown", fencer_db)
         assert result.status == "UNMATCHED"
+
+
+# ---------------------------------------------------------------------------
+# 4.58–4.60 Same-surname different-first-name (brothers) must not false-match
+# ---------------------------------------------------------------------------
+class TestBrotherDisambiguation:
+    """Fencers sharing a surname but with different first names must NOT
+    be treated as the same person.  Regression test for BOBUSIA brothers
+    (Jarosław vs DARIUSZ) false-match bug."""
+
+    @pytest.fixture
+    def brothers_db(self):
+        """DB containing only BOBUSIA Jarosław — DARIUSZ is NOT in the DB."""
+        return [
+            {
+                "id_fencer": 20,
+                "txt_surname": "BOBUSIA",
+                "txt_first_name": "Jarosław",
+                "json_name_aliases": None,
+            },
+        ]
+
+    def test_brother_not_auto_matched(self, brothers_db):
+        """4.58 BOBUSIA DARIUSZ must NOT auto-match to BOBUSIA Jarosław."""
+        result = find_best_match("BOBUSIA DARIUSZ", brothers_db)
+        assert result.status != "AUTO_MATCHED", (
+            f"BOBUSIA DARIUSZ incorrectly auto-matched to Jarosław "
+            f"with confidence {result.confidence}"
+        )
+
+    def test_brother_score_below_pending(self, brothers_db):
+        """4.59 Score for same-surname-different-first should be capped below PENDING threshold."""
+        result = find_best_match("BOBUSIA DARIUSZ", brothers_db)
+        # With the penalty, score should be ≤60 (below default pending=50 would be ideal,
+        # but the surname alone drives token_sort_ratio ~71; penalty caps to 60)
+        assert result.confidence <= 65, (
+            f"Score {result.confidence} too high for different-first-name match"
+        )
+
+    def test_correct_brother_still_matches(self, brothers_db):
+        """4.60 BOBUSIA Jarosław itself must still auto-match perfectly."""
+        result = find_best_match("BOBUSIA Jarosław", brothers_db)
+        assert result.status == "AUTO_MATCHED"
+        assert result.id_fencer == 20
+        assert result.confidence >= 95

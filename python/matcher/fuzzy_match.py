@@ -179,8 +179,21 @@ def _score_against_fencer(
         f_fst = normalize_name(fencer_first, use_diacritic_folding)
         sur_best = fuzz.ratio(s_sur, f_sur)
         fst_best = max(fuzz.ratio(s_fst, f_fst), fuzz.partial_ratio(s_fst, f_fst))
-        component_score = 0.75 * sur_best + 0.25 * fst_best
-        score = max(score, component_score)
+        # Require first name similarity ≥55 to avoid matching brothers/unrelated.
+        # 55 (not 50) because partial_ratio inflates short name pairs to ~50
+        # even for clearly different names (e.g., "dariusz" vs "jarosław").
+        if fst_best >= 55:
+            component_score = 0.75 * sur_best + 0.25 * fst_best
+            score = max(score, component_score)
+
+        # Penalty: if surname matches well but first name is very different,
+        # cap the score to prevent false matches on shared surnames (brothers).
+        # Uses 55 threshold (not 50) because partial_ratio can inflate short
+        # name pairs to exactly 50 (e.g., "dariusz" vs "jarosław").
+        if sur_best >= 90 and fst_best < 55:
+            score = min(score, 60)
+        elif sur_best < 50 and fst_best >= 90:
+            score = min(score, 60)
 
     return score
 

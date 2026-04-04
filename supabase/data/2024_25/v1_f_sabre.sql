@@ -32,7 +32,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    71,
+    75,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-F-SABRE-2024-2025'),
     1,
     'GRACZYK Anna'
@@ -68,7 +68,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    62,
+    66,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-F-SABRE-2024-2025'),
     1,
     'GAWLE Katarzyna'
@@ -108,7 +108,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    62,
+    66,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-F-SABRE-2024-2025'),
     1,
     'GAWLE Katarzyna'
@@ -143,3 +143,4 @@ SELECT fn_calc_tournament_scores(
 -- Summary
 -- Total results matched:   3
 -- Total results unmatched: 0
+-- Total auto-created:      0

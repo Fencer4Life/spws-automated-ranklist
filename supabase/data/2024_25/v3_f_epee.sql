@@ -30,14 +30,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    156,
+    171,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-F-EPEE-2024-2025'),
     1,
     'MCGINNITY Marie'
 ); -- matched: MCGINNITY Marie (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    18,
+    23,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-F-EPEE-2024-2025'),
     2,
     'BORKOWSKA Halina'
@@ -73,7 +73,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    162,
+    180,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-F-EPEE-2024-2025'),
     1,
     'MILOVA Tatiana'
@@ -109,7 +109,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    162,
+    180,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-F-EPEE-2024-2025'),
     1,
     'MILOVA Tatiana'
@@ -145,7 +145,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    18,
+    23,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-F-EPEE-2024-2025'),
     1,
     'BORKOWSKA Halina'
@@ -201,7 +201,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    18,
+    23,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V3-F-EPEE-2024-2025'),
     44,
     'BORKOWSKA Halina'
@@ -214,3 +214,4 @@ SELECT fn_calc_tournament_scores(
 -- Summary
 -- Total results matched:   6
 -- Total results unmatched: 0
+-- Total auto-created:      0

@@ -30,42 +30,49 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    210,
+    235,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V1-F-EPEE-2023-2024'),
     1,
     'SADOWSKA Małgorzata'
 ); -- matched: SADOWSKA Małgorzata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V1-F-EPEE-2023-2024'),
     2,
     'KAMIŃSKA Gabriela'
 ); -- matched: KAMIŃSKA Gabriela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    99,
+    111,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V1-F-EPEE-2023-2024'),
     3,
     'KASPRZYK-KUŹNIAK Michalina'
 ); -- matched: KASPRZYK-KUŹNIAK Michalina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    240,
+    269,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V1-F-EPEE-2023-2024'),
     4,
     'SZURLEJ Agata'
 ); -- matched: SZURLEJ Agata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    169,
+    188,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V1-F-EPEE-2023-2024'),
     5,
     'NOWAK Marta'
 ); -- matched: NOWAK Marta (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    127,
+    287,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V1-F-EPEE-2023-2024'),
+    6,
+    'WALENCIUK Urszula'
+); -- matched: WALENCIUK Urszula (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    134,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V1-F-EPEE-2023-2024'),
     8,
     'KOWALSKA Milena'
@@ -101,28 +108,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    240,
+    269,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V1-F-EPEE-2023-2024'),
     1,
     'SZURLEJ Agata'
 ); -- matched: SZURLEJ Agata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    186,
+    206,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V1-F-EPEE-2023-2024'),
     2,
     'PILARSKA Barbara'
 ); -- matched: PILARSKA Barbara (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    99,
+    111,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V1-F-EPEE-2023-2024'),
     3,
     'KASPRZYK-KUŹNIAK Michalina'
 ); -- matched: KASPRZYK-KUŹNIAK Michalina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    210,
+    235,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V1-F-EPEE-2023-2024'),
     4,
     'SADOWSKA Małgorzata'
@@ -158,35 +165,42 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V1-F-EPEE-2023-2024'),
     1,
     'KAMIŃSKA Gabriela'
 ); -- matched: KAMIŃSKA Gabriela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    186,
+    206,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V1-F-EPEE-2023-2024'),
     2,
     'PILARSKA Barbara'
 ); -- matched: PILARSKA Barbara (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    240,
+    269,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V1-F-EPEE-2023-2024'),
     3,
     'SZURLEJ Agata'
 ); -- matched: SZURLEJ Agata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    99,
+    249,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V1-F-EPEE-2023-2024'),
+    4,
+    'SPIRINA Ekaterina'
+); -- matched: SPIRINA Ekaterina (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    111,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V1-F-EPEE-2023-2024'),
     5,
     'KASPRZYK-KUŹNIAK Michalina'
 ); -- matched: KASPRZYK-KUŹNIAK Michalina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    169,
+    188,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V1-F-EPEE-2023-2024'),
     6,
     'NOWAK Marta'
@@ -222,21 +236,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    105,
+    152,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP4-V1-F-EPEE-2023-2024'),
     1,
     'KŁOS Iwona'
 ); -- matched: KŁOS Iwona (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    99,
+    111,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP4-V1-F-EPEE-2023-2024'),
     2,
     'KASPRZYK-KUŹNIAK Michalina'
 ); -- matched: KASPRZYK-KUŹNIAK Michalina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    240,
+    269,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP4-V1-F-EPEE-2023-2024'),
     3,
     'SZURLEJ Agata'
@@ -272,28 +286,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP5-V1-F-EPEE-2023-2024'),
     1,
     'KAMIŃSKA Gabriela'
 ); -- matched: KAMIŃSKA Gabriela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    127,
+    134,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP5-V1-F-EPEE-2023-2024'),
     2,
     'KOWALSKA Milena'
 ); -- matched: KOWALSKA Milena (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    210,
+    235,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP5-V1-F-EPEE-2023-2024'),
     3,
     'SADOWSKA Małgorzata'
 ); -- matched: SADOWSKA Małgorzata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    99,
+    111,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP5-V1-F-EPEE-2023-2024'),
     4,
     'KASPRZYK-KUŹNIAK Michalina'
@@ -329,28 +343,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP6-V1-F-EPEE-2023-2024'),
     1,
     'KAMIŃSKA Gabriela'
 ); -- matched: KAMIŃSKA Gabriela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    210,
+    235,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP6-V1-F-EPEE-2023-2024'),
     2,
     'SADOWSKA Małgorzata'
 ); -- matched: SADOWSKA Małgorzata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    105,
+    152,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP6-V1-F-EPEE-2023-2024'),
     3,
     'KŁOS Iwona'
 ); -- matched: KŁOS Iwona (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    240,
+    269,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP6-V1-F-EPEE-2023-2024'),
     4,
     'SZURLEJ Agata'
@@ -386,28 +400,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    240,
+    269,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP7-V1-F-EPEE-2023-2024'),
     1,
     'SZURLEJ Agata'
 ); -- matched: SZURLEJ Agata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    105,
+    152,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP7-V1-F-EPEE-2023-2024'),
     2,
     'KŁOS Iwona'
 ); -- matched: KŁOS Iwona (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP7-V1-F-EPEE-2023-2024'),
     3,
     'KAMIŃSKA Gabriela'
 ); -- matched: KAMIŃSKA Gabriela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    169,
+    188,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP7-V1-F-EPEE-2023-2024'),
     4,
     'NOWAK Marta'
@@ -445,28 +459,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-F-EPEE-2023-2024'),
     1,
     'KAMIŃSKA Gabriela'
 ); -- matched: KAMIŃSKA Gabriela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    210,
+    235,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-F-EPEE-2023-2024'),
     2,
     'SADOWSKA Małgorzata'
 ); -- matched: SADOWSKA Małgorzata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    127,
+    134,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-F-EPEE-2023-2024'),
     3,
     'KOWALSKA Milena'
 ); -- matched: KOWALSKA Milena (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    240,
+    269,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-F-EPEE-2023-2024'),
     4,
     'SZURLEJ Agata'
@@ -502,7 +516,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-F-EPEE-2023-2024'),
     8,
     'KAMIŃSKA Gabriela'
@@ -538,7 +552,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V1-F-EPEE-2023-2024'),
     2,
     'KAMIŃSKA Gabriela'
@@ -574,21 +588,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    210,
+    235,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V1-F-EPEE-2023-2024'),
     5,
     'SADOWSKA Małgorzata'
 ); -- matched: SADOWSKA Małgorzata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    186,
+    206,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V1-F-EPEE-2023-2024'),
     6,
     'PILARSKA Barbara'
 ); -- matched: PILARSKA Barbara (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    240,
+    269,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V1-F-EPEE-2023-2024'),
     8,
     'SZURLEJ Agata'
@@ -624,7 +638,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V1-F-EPEE-2023-2024'),
     9,
     'KAMIŃSKA Gabriela'
@@ -660,7 +674,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW5-V1-F-EPEE-2023-2024'),
     2,
     'KAMIŃSKA Gabriela'
@@ -696,14 +710,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-F-EPEE-2023-2024'),
     3,
     'KAMIŃSKA Gabriela'
 ); -- matched: KAMIŃSKA Gabriela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    210,
+    235,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-F-EPEE-2023-2024'),
     21,
     'SADOWSKA Małgorzata'
@@ -739,7 +753,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V1-F-EPEE-2023-2024'),
     11,
     'KAMIŃSKA Gabriela'
@@ -775,7 +789,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V1-F-EPEE-2023-2024'),
     3,
     'KAMIŃSKA Gabriela'
@@ -811,7 +825,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW9-V1-F-EPEE-2023-2024'),
     5,
     'KAMIŃSKA Gabriela'
@@ -849,28 +863,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW11-V1-F-EPEE-2023-2024'),
     2,
     'KAMIŃSKA Gabriela'
 ); -- matched: KAMIŃSKA Gabriela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    127,
+    134,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW11-V1-F-EPEE-2023-2024'),
     5,
     'KOWALSKA Milena'
 ); -- matched: KOWALSKA Milena (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    210,
+    235,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW11-V1-F-EPEE-2023-2024'),
     8,
     'SADOWSKA Małgorzata'
 ); -- matched: SADOWSKA Małgorzata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    105,
+    152,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW11-V1-F-EPEE-2023-2024'),
     9,
     'KŁOS Iwona'
@@ -906,106 +920,106 @@ INSERT INTO tbl_tournament (
     '2023-01-01', 82, 'https://engarde-service.com/competition/e3f/efcv/womenepeev1',
     'SCORED'
 );
--- UNMATCHED (score<80): 'DUMOULIN' place=1
--- UNMATCHED (score<80): 'ERGAND' place=2
--- UNMATCHED (score<80): 'HYVONEN' place=3
--- UNMATCHED (score<80): 'RODRIGUEZ GARCIA' place=3
--- UNMATCHED (score<80): 'TERZANI' place=5
--- UNMATCHED (score<80): 'FEYTIE BRAVAIS' place=6
--- UNMATCHED (score<80): 'CHEVALIER' place=7
--- UNMATCHED (score<80): 'SZINI' place=8
--- UNMATCHED (score<80): 'SAPIN-DORNACHER' place=9
--- UNMATCHED (score<80): 'MULLER-BRAKER' place=10
--- UNMATCHED (score<80): 'CUSCINI' place=11
--- UNMATCHED (score<80): 'ENRIGHT' place=12
--- UNMATCHED (score<80): 'BRIANCHON' place=13
--- UNMATCHED (score<80): 'BARCLAY' place=14
--- UNMATCHED (score<80): 'MODIN' place=15
--- UNMATCHED (score<80): 'SOLDAI' place=16
--- UNMATCHED (score<80): 'REUMUELLER' place=17
--- UNMATCHED (score<80): 'PETROVSKA' place=18
--- UNMATCHED (score<80): 'MAJOREL' place=19
--- UNMATCHED (score<80): 'HERCZEG' place=20
--- UNMATCHED (score<80): 'PURICELLI' place=21
--- UNMATCHED (score<80): 'LAHAUT' place=22
--- UNMATCHED (score<80): 'PREISSLER' place=23
--- UNMATCHED (score<80): 'HARGINA' place=24
--- UNMATCHED (score<80): 'EGYUD' place=25
--- UNMATCHED (score<80): 'MADER' place=26
--- UNMATCHED (score<80): 'PELA' place=27
--- UNMATCHED (score<80): 'MAJERUS' place=28
--- UNMATCHED (score<80): 'VITALYOS' place=29
--- UNMATCHED (score<80): 'BRESSER' place=30
--- UNMATCHED (score<80): 'THEUNISSSEN' place=31
+-- SKIPPED (international, no master data): 'DUMOULIN' place=1
+-- SKIPPED (international, no master data): 'ERGAND' place=2
+-- SKIPPED (international, no master data): 'HYVONEN' place=3
+-- SKIPPED (international, no master data): 'RODRIGUEZ GARCIA' place=3
+-- SKIPPED (international, no master data): 'TERZANI' place=5
+-- SKIPPED (international, no master data): 'FEYTIE BRAVAIS' place=6
+-- SKIPPED (international, no master data): 'CHEVALIER' place=7
+-- SKIPPED (international, no master data): 'SZINI' place=8
+-- SKIPPED (international, no master data): 'SAPIN-DORNACHER' place=9
+-- SKIPPED (international, no master data): 'MULLER-BRAKER' place=10
+-- SKIPPED (international, no master data): 'CUSCINI' place=11
+-- SKIPPED (international, no master data): 'ENRIGHT' place=12
+-- SKIPPED (international, no master data): 'BRIANCHON' place=13
+-- SKIPPED (international, no master data): 'BARCLAY' place=14
+-- SKIPPED (international, no master data): 'MODIN' place=15
+-- SKIPPED (international, no master data): 'SOLDAI' place=16
+-- SKIPPED (international, no master data): 'REUMUELLER' place=17
+-- SKIPPED (international, no master data): 'PETROVSKA' place=18
+-- SKIPPED (international, no master data): 'MAJOREL' place=19
+-- SKIPPED (international, no master data): 'HERCZEG' place=20
+-- SKIPPED (international, no master data): 'PURICELLI' place=21
+-- SKIPPED (international, no master data): 'LAHAUT' place=22
+-- SKIPPED (international, no master data): 'PREISSLER' place=23
+-- SKIPPED (international, no master data): 'HARGINA' place=24
+-- SKIPPED (international, no master data): 'EGYUD' place=25
+-- SKIPPED (international, no master data): 'MADER' place=26
+-- SKIPPED (international, no master data): 'PELA' place=27
+-- SKIPPED (international, no master data): 'MAJERUS' place=28
+-- SKIPPED (international, no master data): 'VITALYOS' place=29
+-- SKIPPED (international, no master data): 'BRESSER' place=30
+-- SKIPPED (international, no master data): 'THEUNISSSEN' place=31
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    210,
+    235,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V1-F-EPEE-2023-2024'),
     32,
     'SADOWSKA Małgorzata'
 ); -- matched: SADOWSKA Małgorzata (score=100.0)
--- UNMATCHED (score<80): 'LOWACK' place=33
--- UNMATCHED (score<80): 'ZMAIC' place=34
--- UNMATCHED (score<80): 'HUPFER' place=35
--- UNMATCHED (score<80): 'REED' place=36
--- UNMATCHED (score<80): 'VALORZI' place=37
--- UNMATCHED (score<80): 'GOMEZ MARTIN' place=38
--- UNMATCHED (score<80): 'NICOLAY' place=39
--- UNMATCHED (score<80): 'SCHREUER' place=40
--- UNMATCHED (score<80): 'DANLOUP' place=41
+-- SKIPPED (international, no master data): 'LOWACK' place=33
+-- SKIPPED (international, no master data): 'ZMAIC' place=34
+-- SKIPPED (international, no master data): 'HUPFER' place=35
+-- SKIPPED (international, no master data): 'REED' place=36
+-- SKIPPED (international, no master data): 'VALORZI' place=37
+-- SKIPPED (international, no master data): 'GOMEZ MARTIN' place=38
+-- SKIPPED (international, no master data): 'NICOLAY' place=39
+-- SKIPPED (international, no master data): 'SCHREUER' place=40
+-- SKIPPED (international, no master data): 'DANLOUP' place=41
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    97,
+    108,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V1-F-EPEE-2023-2024'),
     42,
     'KAMIŃSKA Gabriela'
 ); -- matched: KAMIŃSKA Gabriela (score=100.0)
--- UNMATCHED (score<80): 'BORS' place=43
--- UNMATCHED (score<80): 'DERETIC' place=44
--- UNMATCHED (score<80): 'GUILLEMINOT ROUX' place=45
--- UNMATCHED (score<80): 'ROSENBERG' place=46
--- UNMATCHED (score<80): 'BOTEZ-HULUDET' place=47
--- UNMATCHED (score<80): 'HECKEBERG' place=48
--- UNMATCHED (score<80): 'COUTISSON' place=49
--- UNMATCHED (score<80): 'DOEMELAND' place=50
--- UNMATCHED (score<80): 'WITTING' place=51
--- UNMATCHED (score<80): 'PUKLIN VUCELIC' place=52
--- UNMATCHED (score<80): 'GLASER' place=53
--- UNMATCHED (score<80): 'WACQUEZ' place=54
--- UNMATCHED (score<80): 'CRUSTEWITZ' place=55
--- UNMATCHED (score<80): 'LASMOLLES' place=56
--- UNMATCHED (score<80): 'HEITMANN' place=57
+-- SKIPPED (international, no master data): 'BORS' place=43
+-- SKIPPED (international, no master data): 'DERETIC' place=44
+-- SKIPPED (international, no master data): 'GUILLEMINOT ROUX' place=45
+-- SKIPPED (international, no master data): 'ROSENBERG' place=46
+-- SKIPPED (international, no master data): 'BOTEZ-HULUDET' place=47
+-- SKIPPED (international, no master data): 'HECKEBERG' place=48
+-- SKIPPED (international, no master data): 'COUTISSON' place=49
+-- SKIPPED (international, no master data): 'DOEMELAND' place=50
+-- SKIPPED (international, no master data): 'WITTING' place=51
+-- SKIPPED (international, no master data): 'PUKLIN VUCELIC' place=52
+-- SKIPPED (international, no master data): 'GLASER' place=53
+-- SKIPPED (international, no master data): 'WACQUEZ' place=54
+-- SKIPPED (international, no master data): 'CRUSTEWITZ' place=55
+-- SKIPPED (international, no master data): 'LASMOLLES' place=56
+-- SKIPPED (international, no master data): 'HEITMANN' place=57
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    240,
+    269,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V1-F-EPEE-2023-2024'),
     58,
     'SZURLEJ Agata'
 ); -- matched: SZURLEJ Agata (score=100.0)
--- UNMATCHED (score<80): 'MICHEL' place=59
--- UNMATCHED (score<80): 'STANDISH-LEIGH' place=60
--- UNMATCHED (score<80): 'MORONI' place=61
--- UNMATCHED (score<80): 'TRAPANESE' place=62
--- UNMATCHED (score<80): 'HELDMANN' place=63
--- UNMATCHED (score<80): 'CHEMOUILLI' place=64
--- UNMATCHED (score<80): 'MOSCA' place=65
--- UNMATCHED (score<80): 'BERARD' place=66
--- UNMATCHED (score<80): 'ANDERSEN' place=67
--- UNMATCHED (score<80): 'HIRSCHAUER' place=68
--- UNMATCHED (score<80): 'ESTIOT' place=69
--- UNMATCHED (score<80): 'BONJEAN' place=70
--- UNMATCHED (score<80): 'HERENDA' place=71
--- UNMATCHED (score<80): 'MADER' place=72
--- UNMATCHED (score<80): 'MENG' place=73
--- UNMATCHED (score<80): 'LEMMER' place=74
--- UNMATCHED (score<80): 'GIOVANNETTI' place=75
--- UNMATCHED (score<80): 'TERRYN' place=76
--- UNMATCHED (score<80): 'PILARD' place=77
--- UNMATCHED (score<80): 'NAGEL' place=78
--- UNMATCHED (score<80): 'OEHLER' place=79
--- UNMATCHED (score<80): 'CLARKE' place=80
--- UNMATCHED (score<80): 'STABER' place=81
--- UNMATCHED (score<80): 'HIRSCHFELD' place=82
+-- SKIPPED (international, no master data): 'MICHEL' place=59
+-- SKIPPED (international, no master data): 'STANDISH-LEIGH' place=60
+-- SKIPPED (international, no master data): 'MORONI' place=61
+-- SKIPPED (international, no master data): 'TRAPANESE' place=62
+-- SKIPPED (international, no master data): 'HELDMANN' place=63
+-- SKIPPED (international, no master data): 'CHEMOUILLI' place=64
+-- SKIPPED (international, no master data): 'MOSCA' place=65
+-- SKIPPED (international, no master data): 'BERARD' place=66
+-- SKIPPED (international, no master data): 'ANDERSEN' place=67
+-- SKIPPED (international, no master data): 'HIRSCHAUER' place=68
+-- SKIPPED (international, no master data): 'ESTIOT' place=69
+-- SKIPPED (international, no master data): 'BONJEAN' place=70
+-- SKIPPED (international, no master data): 'HERENDA' place=71
+-- SKIPPED (international, no master data): 'MADER' place=72
+-- SKIPPED (international, no master data): 'MENG' place=73
+-- SKIPPED (international, no master data): 'LEMMER' place=74
+-- SKIPPED (international, no master data): 'GIOVANNETTI' place=75
+-- SKIPPED (international, no master data): 'TERRYN' place=76
+-- SKIPPED (international, no master data): 'PILARD' place=77
+-- SKIPPED (international, no master data): 'NAGEL' place=78
+-- SKIPPED (international, no master data): 'OEHLER' place=79
+-- SKIPPED (international, no master data): 'CLARKE' place=80
+-- SKIPPED (international, no master data): 'STABER' place=81
+-- SKIPPED (international, no master data): 'HIRSCHFELD' place=82
 -- Compute scores for IMEW-V1-F-EPEE-2023-2024
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V1-F-EPEE-2023-2024')
@@ -1014,3 +1028,4 @@ SELECT fn_calc_tournament_scores(
 -- Summary
 -- Total results matched:   55
 -- Total results unmatched: 79
+-- Total auto-created:      0

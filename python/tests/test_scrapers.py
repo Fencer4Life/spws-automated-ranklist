@@ -276,21 +276,22 @@ class TestDBImport:
 
 
 # ===========================================================================
-# 3.6  Scraper failure: Discord webhook called
+# 3.6  Scraper failure: Telegram alert sent
 # ===========================================================================
-class TestDiscordAlert:
-    """Test 3.6: Discord webhook on scraper failure."""
+class TestTelegramAlert:
+    """Test 3.6: Telegram alert on scraper failure."""
 
-    def test_discord_webhook_called_on_failure(self):
-        """3.6 Scraper failure sends Discord webhook with error details."""
-        from python.scrapers.base import send_discord_alert
+    def test_telegram_alert_called_on_failure(self):
+        """3.6 Scraper failure sends Telegram alert with error details."""
+        from python.scrapers.base import send_telegram_alert
 
         with patch("python.scrapers.base.httpx") as mock_httpx:
             mock_client = mock_httpx.Client.return_value.__enter__ = lambda s: s
             mock_httpx.post = lambda *a, **kw: None
 
-            send_discord_alert(
-                webhook_url="https://discord.com/api/webhooks/test/test",
+            send_telegram_alert(
+                bot_token="123456:ABC-DEF",
+                chat_id="987654321",
                 message="Scraper failed for tournament PPW1",
                 error="ConnectionError: timeout",
             )

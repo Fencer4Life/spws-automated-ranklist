@@ -42,7 +42,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    212,
+    237,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-F-FOIL-2025-2026'),
     9,
     'SAMECKA-NACZYŃSKA Martyna'
@@ -90,7 +90,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    142,
+    158,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V1-F-FOIL-2025-2026'),
     3,
     'LIPKOWSKA Dominika'
@@ -102,8 +102,7 @@ SELECT fn_calc_tournament_scores(
 
 -- SKIP PS (Puchar Świata): N=0 — tournament had no participants
 
--- SKIP IMEW (Indywidualne Mistrzostwa Europy Weteranów): N=0 — tournament had no participants
-
 -- Summary
 -- Total results matched:   2
 -- Total results unmatched: 0
+-- Total auto-created:      0

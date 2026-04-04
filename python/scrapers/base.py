@@ -4,7 +4,7 @@ Shared utilities for all scraper modules.
 - Result format definition
 - URL dispatcher
 - Retry logic with exponential backoff
-- Discord alerting
+- Telegram alerting
 - Validation and idempotency helpers
 - Minimum participant threshold check
 """
@@ -132,15 +132,20 @@ async def fetch_with_retry(
     raise last_error  # type: ignore[misc]
 
 
-def send_discord_alert(
-    webhook_url: str, message: str, error: str | None = None
+def send_telegram_alert(
+    bot_token: str, chat_id: str, message: str, error: str | None = None
 ) -> None:
-    """Send an alert to a Discord webhook."""
-    payload = {
-        "content": f"**SPWS Scraper Alert**\n{message}",
-    }
+    """Send an alert to a Telegram chat via Bot API."""
+    text = f"*SPWS Scraper Alert*\n{message}"
     if error:
-        payload["content"] += f"\n```\n{error}\n```"
+        text += f"\n```\n{error}\n```"
+
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": text,
+        "parse_mode": "Markdown",
+    }
 
     with httpx.Client() as client:
-        client.post(webhook_url, json=payload)
+        client.post(url, json=payload)

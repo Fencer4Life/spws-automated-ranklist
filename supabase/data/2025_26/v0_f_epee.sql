@@ -25,19 +25,19 @@ INSERT INTO tbl_tournament (
     'I Puchar Polski Weteranów',
     'PPW',
     'EPEE', 'F', 'V0',
-    NULL, 2, NULL,
+    NULL, 2, 'https://www.fencingtimelive.com/events/results/65CAE5FBA1DC4D25B2B9A99CC9927F49',
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    185,
+    220,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-F-EPEE-2025-2026'),
     1,
     'PĘCZEK Sandra'
 ); -- matched: PĘCZEK Sandra (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    109,
+    119,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-F-EPEE-2025-2026'),
     2,
     'KOCÓR Agata'
@@ -73,14 +73,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    134,
+    144,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-F-EPEE-2025-2026'),
     1,
     'KRUJALSKIENE Julija'
 ); -- matched: KRUJALSKIENE Julija (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    109,
+    119,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-F-EPEE-2025-2026'),
     2,
     'KOCÓR Agata'
@@ -116,35 +116,35 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    185,
+    220,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-EPEE-2025-2026'),
     1,
     'PĘCZEK Sandra'
 ); -- matched: PĘCZEK Sandra (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    236,
+    265,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-EPEE-2025-2026'),
     2,
     'SZMAJDZIŃSKA - BOŁDYS Katarzyna'
-); -- matched: SZMAJDZIŃSKA - BOŁDYS Katarzyna (score=100.0)
+); -- matched: SZMAJDZIŃSKA Katarzyna (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    85,
+    95,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-EPEE-2025-2026'),
     3,
     'IRZYK Sabina'
 ); -- matched: IRZYK Sabina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    43,
+    47,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-EPEE-2025-2026'),
     4,
     'DRAPELLA Magdalena'
 ); -- matched: DRAPELLA Magdalena (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    67,
+    87,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-EPEE-2025-2026'),
     5,
     'GÓRNA Karolina'
@@ -180,21 +180,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    236,
+    265,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-F-EPEE-2025-2026'),
     1,
     'SZMAJDZIŃSKA - BOŁDYS Katarzyna'
-); -- matched: SZMAJDZIŃSKA - BOŁDYS Katarzyna (score=100.0)
+); -- matched: SZMAJDZIŃSKA Katarzyna (score=100)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    67,
+    87,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-F-EPEE-2025-2026'),
     2,
     'GÓRNA Karolina'
 ); -- matched: GÓRNA Karolina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    43,
+    47,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-F-EPEE-2025-2026'),
     3,
     'DRAPELLA Magdalena'
@@ -203,11 +203,7 @@ VALUES (
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-F-EPEE-2025-2026')
 );
-
--- SKIP PP5: event not yet held (SCHEDULED) — results are rolling carry-over from previous season
-
--- SKIP MPW: event not yet held (SCHEDULED) — results are rolling carry-over from previous season
-
 -- Summary
 -- Total results matched:   16
 -- Total results unmatched: 0
+-- Total auto-created:      0

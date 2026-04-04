@@ -30,70 +30,70 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    136,
+    146,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-EPEE-2024-2025'),
     1,
     'KRZEMIŃSKI Mariusz'
 ); -- matched: KRZEMIŃSKI Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    121,
+    128,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-EPEE-2024-2025'),
     2,
     'KOSTRZEWA Ireneusz'
 ); -- matched: KOSTRZEWA Ireneusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    42,
+    46,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-EPEE-2024-2025'),
     3,
     'DRAPELLA Maciej'
 ); -- matched: DRAPELLA Maciej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    84,
+    93,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-EPEE-2024-2025'),
     4,
     'HERONIMEK Leszek'
 ); -- matched: HERONIMEK Leszek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    168,
+    187,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-EPEE-2024-2025'),
     5,
     'NIKALAICHUK Aliaksandr'
 ); -- matched: NIKALAICHUK Aliaksandr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    190,
+    211,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-EPEE-2024-2025'),
     6,
     'POKRZYWA Mariusz'
 ); -- matched: POKRZYWA Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    7,
+    10,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-EPEE-2024-2025'),
     7,
     'AUGUSTOWSKI Waldemar'
 ); -- matched: AUGUSTOWSKI Waldemar (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    35,
+    315,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-EPEE-2024-2025'),
     8,
     'ĆWIORO Krzysztof'
 ); -- matched: ĆWIORO Krzysztof (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    258,
+    291,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-EPEE-2024-2025'),
     9,
     'WHITLEY Gary'
 ); -- matched: WHITLEY Gary (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-M-EPEE-2024-2025'),
     10,
     'CHUDYCKI Artur'
@@ -129,63 +129,63 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    121,
+    128,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-EPEE-2024-2025'),
     1,
     'KOSTRZEWA Ireneusz'
 ); -- matched: KOSTRZEWA Ireneusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    42,
+    46,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-EPEE-2024-2025'),
     2,
     'DRAPELLA Maciej'
 ); -- matched: DRAPELLA Maciej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    136,
+    146,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-EPEE-2024-2025'),
     3,
     'KRZEMIŃSKI Mariusz'
 ); -- matched: KRZEMIŃSKI Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    84,
+    93,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-EPEE-2024-2025'),
     4,
     'HERONIMEK Leszek'
 ); -- matched: HERONIMEK Leszek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    168,
+    187,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-EPEE-2024-2025'),
     5,
     'NIKALAICHUK Aliaksandr'
 ); -- matched: NIKALAICHUK Aliaksandr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    191,
+    213,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-EPEE-2024-2025'),
     6,
     'POPRAWA Mariusz'
 ); -- matched: POPRAWA Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    7,
+    10,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-EPEE-2024-2025'),
     7,
     'AUGUSTOWSKI Waldemar'
 ); -- matched: AUGUSTOWSKI Waldemar (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    190,
+    211,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-EPEE-2024-2025'),
     8,
     'POKRZYWA Mariusz'
 ); -- matched: POKRZYWA Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    258,
+    291,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-EPEE-2024-2025'),
     9,
     'WHITLEY Gary'
@@ -221,77 +221,77 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    136,
+    146,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-EPEE-2024-2025'),
     1,
     'KRZEMIŃSKI Mariusz'
 ); -- matched: KRZEMIŃSKI Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    121,
+    128,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-EPEE-2024-2025'),
     2,
     'KOSTRZEWA Ireneusz'
 ); -- matched: KOSTRZEWA Ireneusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    7,
+    10,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-EPEE-2024-2025'),
     3,
     'AUGUSTOWSKI Waldemar'
 ); -- matched: AUGUSTOWSKI Waldemar (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    190,
+    211,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-EPEE-2024-2025'),
     4,
     'POKRZYWA MARIUSZ'
 ); -- matched: POKRZYWA Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    42,
+    46,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-EPEE-2024-2025'),
     5,
     'DRAPELLA Maciej'
 ); -- matched: DRAPELLA Maciej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    191,
+    213,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-EPEE-2024-2025'),
     6,
     'POPRAWA Mariusz'
 ); -- matched: POPRAWA Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-EPEE-2024-2025'),
     7,
     'CHUDYCKI Artur'
 ); -- matched: CHUDYCKI Artur (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    150,
+    169,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-EPEE-2024-2025'),
     8,
     'MAŁASIŃSKI Adam'
 ); -- matched: MAŁASIŃSKI Adam (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    168,
+    187,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-EPEE-2024-2025'),
     9,
     'NIKALAICHUK Aliaksandr'
 ); -- matched: NIKALAICHUK Aliaksandr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    267,
+    302,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-EPEE-2024-2025'),
     10,
     'WRONA Grzegorz'
 ); -- matched: WRONA Grzegorz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    196,
+    219,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-M-EPEE-2024-2025'),
     11,
     'PYZIK Zdzisław'
@@ -327,63 +327,63 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    136,
+    146,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-EPEE-2024-2025'),
     1,
     'KRZEMIŃSKI Mariusz'
 ); -- matched: KRZEMIŃSKI Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    7,
+    10,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-EPEE-2024-2025'),
     2,
     'AUGUSTOWSKI Waldemar'
 ); -- matched: AUGUSTOWSKI Waldemar (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    42,
+    46,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-EPEE-2024-2025'),
     3,
     'DRAPELLA Maciej'
 ); -- matched: DRAPELLA Maciej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    84,
+    93,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-EPEE-2024-2025'),
     4,
     'HERONIMEK Leszek'
 ); -- matched: HERONIMEK Leszek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    233,
+    262,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-EPEE-2024-2025'),
     5,
     'SZCZĘSNY Jacek'
 ); -- matched: SZCZĘSNY Jacek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    150,
+    169,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-EPEE-2024-2025'),
     6,
     'MAŁASIŃSKI Adam'
 ); -- matched: MAŁASIŃSKI Adam (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    191,
+    213,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-EPEE-2024-2025'),
     7,
     'POPRAWA Mariusz'
 ); -- matched: POPRAWA Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-EPEE-2024-2025'),
     8,
     'CHUDYCKI Artur'
 ); -- matched: CHUDYCKI Artur (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    258,
+    291,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-EPEE-2024-2025'),
     9,
     'WHITLEY Gary'
@@ -419,42 +419,42 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    7,
+    10,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V3-M-EPEE-2024-2025'),
     1,
     'AUGUSTOWSKI Waldemar'
 ); -- matched: AUGUSTOWSKI Waldemar (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    121,
+    128,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V3-M-EPEE-2024-2025'),
     2,
     'KOSTRZEWA Ireneusz'
 ); -- matched: KOSTRZEWA Ireneusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    242,
+    271,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V3-M-EPEE-2024-2025'),
     3,
     'SZYMKOWIAK Krzysztof'
 ); -- matched: SZYMKOWIAK Krzysztof (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    84,
+    93,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V3-M-EPEE-2024-2025'),
     4,
     'HERONIMEK Leszek'
 ); -- matched: HERONIMEK Leszek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    258,
+    291,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V3-M-EPEE-2024-2025'),
     5,
     'WHITLEY Gary'
 ); -- matched: WHITLEY Gary (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    228,
+    257,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V3-M-EPEE-2024-2025'),
     6,
     'STOŁOWSKI Mariusz'
@@ -490,84 +490,84 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    136,
+    146,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-EPEE-2024-2025'),
     1,
     'KRZEMIŃSKI Mariusz'
 ); -- matched: KRZEMIŃSKI Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    242,
+    271,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-EPEE-2024-2025'),
     2,
     'SZYMKOWIAK Krzysztof'
 ); -- matched: SZYMKOWIAK Krzysztof (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    7,
+    10,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-EPEE-2024-2025'),
     3,
     'AUGUSTOWSKI Waldemar'
 ); -- matched: AUGUSTOWSKI Waldemar (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    121,
+    128,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-EPEE-2024-2025'),
     4,
     'KOSTRZEWA Ireneusz'
 ); -- matched: KOSTRZEWA Ireneusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    42,
+    46,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-EPEE-2024-2025'),
     5,
     'DRAPELLA Maciej'
 ); -- matched: DRAPELLA Maciej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    233,
+    262,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-EPEE-2024-2025'),
     6,
     'SZCZĘSNY Jacek'
 ); -- matched: SZCZĘSNY Jacek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    150,
+    169,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-EPEE-2024-2025'),
     7,
     'MAŁASIŃSKI Adam'
 ); -- matched: MAŁASIŃSKI Adam (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    84,
+    93,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-EPEE-2024-2025'),
     8,
     'HERONIMEK Leszek'
 ); -- matched: HERONIMEK Leszek (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    191,
+    213,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-EPEE-2024-2025'),
     9,
     'POPRAWA Mariusz'
 ); -- matched: POPRAWA Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    190,
+    211,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-EPEE-2024-2025'),
     10,
     'POKRZYWA Mariusz'
 ); -- matched: POKRZYWA Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-EPEE-2024-2025'),
     11,
     'CHUDYCKI Artur'
 ); -- matched: CHUDYCKI Artur (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    196,
+    219,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-M-EPEE-2024-2025'),
     12,
     'PYZIK Zdzisław'
@@ -603,28 +603,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    136,
+    146,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V3-M-EPEE-2024-2025'),
     1,
     'KRZEMIŃSKI Mariusz'
 ); -- matched: KRZEMIŃSKI Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    121,
+    128,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V3-M-EPEE-2024-2025'),
     5,
     'KOSTRZEWA Ireneusz'
 ); -- matched: KOSTRZEWA Ireneusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    42,
+    46,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V3-M-EPEE-2024-2025'),
     13,
     'DRAPELLA Maciej'
 ); -- matched: DRAPELLA Maciej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    35,
+    315,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V3-M-EPEE-2024-2025'),
     39,
     'ĆWIORO Krzysztof'
@@ -660,26 +660,26 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    121,
+    128,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V3-M-EPEE-2024-2025'),
     2,
     'KOSTRZEWA Ireneusz'
 ); -- matched: KOSTRZEWA Ireneusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    42,
+    46,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V3-M-EPEE-2024-2025'),
     3,
     'DRAPELLA Maciej'
 ); -- matched: DRAPELLA Maciej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    136,
+    146,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V3-M-EPEE-2024-2025'),
     10,
     'KRZEMIŃSKI Mariusz'
 ); -- matched: KRZEMIŃSKI Mariusz (score=100.0)
--- UNMATCHED (score<80): 'KARATHANASIS  Athanasios' place=32
+-- SKIPPED (international, no master data): 'KARATHANASIS  Athanasios' place=32
 -- Compute scores for PEW2-V3-M-EPEE-2024-2025
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V3-M-EPEE-2024-2025')
@@ -711,7 +711,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    136,
+    146,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V3-M-EPEE-2024-2025'),
     5,
     'KRZEMIŃSKI Mariusz'
@@ -747,7 +747,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    136,
+    146,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V3-M-EPEE-2024-2025'),
     6,
     'KRZEMIŃSKI Mariusz'
@@ -783,7 +783,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    136,
+    146,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW5-V3-M-EPEE-2024-2025'),
     3,
     'KRZEMIŃSKI Mariusz'
@@ -817,74 +817,81 @@ INSERT INTO tbl_tournament (
     '2025-03-29', 27, 'https://www.fencingtimelive.com/events/results/2B95F7EF0EEE41EA8CD7D483B9EAB62C',
     'SCORED'
 );
--- UNMATCHED (score<80): 'HINZ Gerald' place=1
--- UNMATCHED (score<80): 'BÁRDI Robert' place=2
+-- SKIPPED (international, no master data): 'HINZ Gerald' place=1
+-- SKIPPED (international, no master data): 'BÁRDI Robert' place=2
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    136,
+    146,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V3-M-EPEE-2024-2025'),
     3,
     'KRZEMINSKI Mariusz'
 ); -- matched: KRZEMIŃSKI Mariusz (score=94.44444444444444)
--- UNMATCHED (score<80): 'FALCK-YTTER Jan' place=3
--- UNMATCHED (score<80): 'VAN DEN BERG Paul' place=5
--- UNMATCHED (score<80): 'SJÖDAHL Fredrik' place=6
--- UNMATCHED (score<80): 'BAKER Jeremy' place=7
--- UNMATCHED (score<80): 'KOVÁCS László Csaba' place=8
--- UNMATCHED (score<80): 'PINK Simon' place=9
+-- SKIPPED (international, no master data): 'FALCK-YTTER Jan' place=3
+-- SKIPPED (international, no master data): 'VAN DEN BERG Paul' place=5
+-- SKIPPED (international, no master data): 'SJÖDAHL Fredrik' place=6
+-- SKIPPED (international, no master data): 'BAKER Jeremy' place=7
+-- SKIPPED (international, no master data): 'KOVÁCS László Csaba' place=8
+-- SKIPPED (international, no master data): 'PINK Simon' place=9
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    84,
+    93,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V3-M-EPEE-2024-2025'),
     10,
     'HERONIMEK Leszek'
 ); -- matched: HERONIMEK Leszek (score=100.0)
--- UNMATCHED (score<80): 'DESCHAMPS Michel' place=11
+-- SKIPPED (international, no master data): 'DESCHAMPS Michel' place=11
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    7,
+    10,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V3-M-EPEE-2024-2025'),
     12,
     'AUGUSTOWSKI Waldemar'
 ); -- matched: AUGUSTOWSKI Waldemar (score=100.0)
--- UNMATCHED (score<80): 'LIPTON Michael' place=13
--- UNMATCHED (score<80): 'WATTENBERG Dirk' place=14
+-- SKIPPED (international, no master data): 'LIPTON Michael' place=13
+-- SKIPPED (international, no master data): 'WATTENBERG Dirk' place=14
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    42,
+    46,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V3-M-EPEE-2024-2025'),
     15,
     'DRAPELLA Maciej'
 ); -- matched: DRAPELLA Maciej (score=100.0)
--- UNMATCHED (score<80): 'DE LEPORINI Livio' place=16
--- UNMATCHED (score<80): 'MANGIAROTTI Alberto' place=17
--- UNMATCHED (score<80): 'MELNIKOV Sergei' place=18
+-- SKIPPED (international, no master data): 'DE LEPORINI Livio' place=16
+-- SKIPPED (international, no master data): 'MANGIAROTTI Alberto' place=17
+-- SKIPPED (international, no master data): 'MELNIKOV Sergei' place=18
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    258,
+    221,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V3-M-EPEE-2024-2025'),
+    19,
+    'QUEVRAIN Michel'
+); -- matched: QUEVRAIN Michel (score=100.0)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    291,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V3-M-EPEE-2024-2025'),
     20,
     'WHITLEY Gary'
 ); -- matched: WHITLEY Gary (score=100.0)
--- UNMATCHED (score<80): 'VOLK Rainer' place=21
+-- SKIPPED (international, no master data): 'VOLK Rainer' place=21
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    32,
+    38,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V3-M-EPEE-2024-2025'),
     22,
     'CHUDYCKI Artur'
 ); -- matched: CHUDYCKI Artur (score=100.0)
--- UNMATCHED (score<80): 'SUBTIRICA Doru' place=23
--- UNMATCHED (score<80): 'BECKER Detlef' place=24
+-- SKIPPED (international, no master data): 'SUBTIRICA Doru' place=23
+-- SKIPPED (international, no master data): 'BECKER Detlef' place=24
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    150,
+    169,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V3-M-EPEE-2024-2025'),
     25,
     'MAŁASIŃSKI Adam'
 ); -- matched: MAŁASIŃSKI Adam (score=100.0)
--- UNMATCHED (score<80): 'KARATHANASIS  Athanasios' place=26
--- UNMATCHED (score<80): 'KAISER Wolfgang' place=27
+-- SKIPPED (international, no master data): 'KARATHANASIS  Athanasios' place=26
+-- SKIPPED (international, no master data): 'KAISER Wolfgang' place=27
 -- Compute scores for PEW6-V3-M-EPEE-2024-2025
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V3-M-EPEE-2024-2025')
@@ -920,7 +927,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    136,
+    146,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V3-M-EPEE-2024-2025'),
     16,
     'KRZEMIŃSKI Mariusz'
@@ -933,3 +940,4 @@ SELECT fn_calc_tournament_scores(
 -- Summary
 -- Total results matched:   76
 -- Total results unmatched: 21
+-- Total auto-created:      0
