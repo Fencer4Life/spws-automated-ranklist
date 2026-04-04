@@ -30,7 +30,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    63,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-F-SABRE-2025-2026'),
     1,
     'GAWLE Katarzyna'
@@ -66,7 +66,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    63,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-F-SABRE-2025-2026'),
     1,
     'GAWLE Katarzyna'

@@ -34,7 +34,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    213,
+    221,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V4-F-EPEE-2024-2025'),
     1,
     'Sosnowska Aniela'
@@ -70,7 +70,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    213,
+    221,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-F-EPEE-2024-2025'),
     1,
     'SOSNOWSKA Aniela'
@@ -106,7 +106,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    213,
+    221,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V4-F-EPEE-2024-2025'),
     1,
     'SOSNOWSKA Aniela'
@@ -142,7 +142,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    213,
+    221,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V4-F-EPEE-2024-2025'),
     1,
     'SOSNOWSKA Aniela'
@@ -188,7 +188,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    213,
+    221,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V4-F-EPEE-2024-2025'),
     3,
     'SOSNOWSKA Aniela'
@@ -228,7 +228,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    213,
+    221,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V4-F-EPEE-2024-2025'),
     23,
     'SOSNOWSKA Aniela'

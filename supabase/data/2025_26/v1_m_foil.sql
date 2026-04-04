@@ -30,21 +30,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    145,
+    149,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-FOIL-2025-2026'),
     1,
     'MALINOWSKI Piotr'
 ); -- matched: MALINOWSKI Piotr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    290,
+    65,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-FOIL-2025-2026'),
     2,
     'GIBULA Marcin'
 ); -- matched: GIBULA Marcin (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    280,
+    31,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-FOIL-2025-2026'),
     3,
     'CHUDY Tomasz'
@@ -80,28 +80,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    145,
+    149,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-FOIL-2025-2026'),
     1,
     'MALINOWSKI Piotr'
 ); -- matched: MALINOWSKI Piotr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    283,
+    50,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-FOIL-2025-2026'),
     2,
     'EJCHSZTET Mariusz'
 ); -- matched: EJCHSZTET Mariusz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    290,
+    65,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-FOIL-2025-2026'),
     3,
     'GIBULA Marcin'
 ); -- matched: GIBULA Marcin (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    280,
+    31,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-FOIL-2025-2026'),
     4,
     'CHUDY Tomasz'
@@ -137,21 +137,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    145,
+    149,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-FOIL-2025-2026'),
     1,
     'MALINOWSKI Piotr'
 ); -- matched: MALINOWSKI Piotr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    350,
+    222,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-FOIL-2025-2026'),
     2,
     'SPŁAWA-NEYMAN (0) MACIEJ'
 ); -- matched: SPŁAWA-NEYMAN (0) MACIEJ (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    361,
+    237,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-FOIL-2025-2026'),
     3,
     'SZMELC (0) Łukasz'
@@ -187,7 +187,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    280,
+    31,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-M-FOIL-2025-2026'),
     1,
     'CHUDY Tomasz'
@@ -235,7 +235,7 @@ INSERT INTO tbl_tournament (
 -- UNMATCHED (score<80): 'DELATTRE 1 Jeffrey' place=2
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    189,
+    195,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V1-M-FOIL-2025-2026'),
     3,
     'PRZYSTAJKO Daniel'
@@ -253,13 +253,6 @@ VALUES (
 -- UNMATCHED (score<80): 'COX 1 Gregory' place=14
 -- UNMATCHED (score<80): 'BA 1 Mouhamadou Alpha' place=15
 -- UNMATCHED (score<80): 'RIOUX 1 Frederic' place=16
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
-VALUES (
-    272,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V1-M-FOIL-2025-2026'),
-    17,
-    'ALCSER 1 Norbert'
-); -- matched: ALCSER Norbert (score=93.33333333333333)
 -- UNMATCHED (score<80): 'SIDGWICK 1 Aly' place=18
 -- Compute scores for PEW4-V1-M-FOIL-2025-2026
 SELECT fn_calc_tournament_scores(
@@ -303,13 +296,6 @@ INSERT INTO tbl_tournament (
 -- UNMATCHED (score<80): 'SIROLLI FRANCESCO SAVER' place=9
 -- UNMATCHED (score<80): 'CAMPLONE CRISTIANO' place=10
 -- UNMATCHED (score<80): 'SIMEONI MARIO' place=11
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
-VALUES (
-    272,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-M-FOIL-2025-2026'),
-    12,
-    'ALCSER NORBERT'
-); -- matched: ALCSER Norbert (score=100.0)
 -- UNMATCHED (score<80): 'MASELLA ROBERTO MARIA' place=13
 -- Compute scores for PEW6-V1-M-FOIL-2025-2026
 SELECT fn_calc_tournament_scores(
@@ -340,21 +326,7 @@ INSERT INTO tbl_tournament (
     NULL, 3, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
-VALUES (
-    67,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V1-M-FOIL-2025-2026'),
-    1,
-    'GINZERY Tomas'
-); -- matched: GINZERY Tomas (score=100.0)
 -- UNMATCHED (score<80): 'ERNST Deniz' place=2
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
-VALUES (
-    272,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V1-M-FOIL-2025-2026'),
-    3,
-    'ALCSER Norbert'
-); -- matched: ALCSER Norbert (score=100.0)
 -- Compute scores for PEW7-V1-M-FOIL-2025-2026
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V1-M-FOIL-2025-2026')
@@ -388,14 +360,7 @@ INSERT INTO tbl_tournament (
 -- UNMATCHED (score<80): 'GLATT Andor' place=2
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    67,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V1-M-FOIL-2025-2026'),
-    3,
-    'GINZERY Tomas'
-); -- matched: GINZERY Tomas (score=100.0)
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
-VALUES (
-    189,
+    195,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V1-M-FOIL-2025-2026'),
     3,
     'PRZYSTAJKO Daniel'
@@ -404,14 +369,14 @@ VALUES (
 -- UNMATCHED (score<80): 'WOLNY Przemyslaw Szymon' place=6
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    345,
+    214,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V1-M-FOIL-2025-2026'),
     7,
     'SERAFIN Błażej'
 ); -- matched: SERAFIN Błażej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    145,
+    149,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V1-M-FOIL-2025-2026'),
     8,
     'MALINOWSKI Piotr'
@@ -452,7 +417,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    189,
+    195,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PS-V1-M-FOIL-2025-2026'),
     6,
     'PRZYSTAJKO Daniel'

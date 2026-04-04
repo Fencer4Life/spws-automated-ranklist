@@ -67,7 +67,7 @@ SHEET_MAP = {
     "IMEW": ("MEW", "IMEW", "Indywidualne Mistrzostwa Europy Weteranów"),
 }
 
-MATCH_THRESHOLD = 80  # minimum fuzzy score to accept a match
+MATCH_THRESHOLD = 70  # minimum fuzzy score to accept a match
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -104,9 +104,14 @@ def parse_date(raw) -> str | None:
     return None
 
 
+def strip_category_markers(name: str) -> str:
+    """Remove FTL category markers like '(kat 1)', '(kat 0)', '(0)', '(1)', '(V1)' from names."""
+    return re.sub(r'\s*\((?:kat\s*)?V?\d+\)\s*', ' ', name).strip()
+
+
 def normalize_name(name: str) -> str:
-    """Uppercase + strip extra whitespace."""
-    return " ".join(name.upper().split())
+    """Uppercase + strip category markers + extra whitespace."""
+    return " ".join(strip_category_markers(name).upper().split())
 
 
 def fuzzy_match(name: str, fencers: list[tuple]) -> tuple | None:
@@ -121,12 +126,20 @@ def fuzzy_match(name: str, fencers: list[tuple]) -> tuple | None:
         for alias in aliases:
             if normalize_name(alias) == norm:
                 return (fid, f"{surname} {first}", 100)
-    # 2. Fuzzy match on full name
+    # 2. Fuzzy match on full name + component-level scoring
     best_score = 0
     best_fencer = None
     for fid, surname, first, aliases in fencers:
         full = f"{surname} {first}"
         score = fuzz.token_sort_ratio(norm, full.upper())
+        # Component-level scoring: surname (ratio only) + first_name (ratio+partial)
+        parts = norm.split(None, 1)
+        if len(parts) == 2 and first:
+            s_sur, s_fst = parts[0], parts[1]
+            f_sur, f_fst = surname.upper(), first.upper()
+            sur_best = fuzz.ratio(s_sur, f_sur)
+            fst_best = max(fuzz.ratio(s_fst, f_fst), fuzz.partial_ratio(s_fst, f_fst))
+            score = max(score, 0.75 * sur_best + 0.25 * fst_best)
         if score > best_score:
             best_score = score
             best_fencer = (fid, f"{surname} {first}")

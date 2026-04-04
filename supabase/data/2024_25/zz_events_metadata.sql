@@ -215,7 +215,7 @@ UPDATE tbl_event SET
     txt_country = 'Polska',
     dt_start = '2025-04-26',
     dt_end = '2025-04-27',
-    url_event = NULL,
+    url_event = 'https://www.fencingtimelive.com/tournaments/eventSchedule/705DF0675003488FBF0F493E76892123',
     url_invitation = 'https://weteraniszermierki.pl/wp-content/uploads/2025/03/KOMUNIKAT-2-V-PP-SZCZECIN-2025_1.pdf',
     num_entry_fee = NULL,
     txt_entry_fee_currency = NULL
@@ -364,3 +364,31 @@ UPDATE tbl_event SET
     num_entry_fee = NULL,
     txt_entry_fee_currency = NULL
 WHERE txt_code = 'PEW9-2024-2025';
+
+-- =========================================================================
+-- Phase 3: PPW5 tournament result URLs (from FTL event schedule)
+-- =========================================================================
+UPDATE tbl_tournament SET url_results = 'https://www.fencingtimelive.com/events/results/344176CFFBD34C8684BD67F6D63BC4CE'
+WHERE txt_code = 'PPW5-V0-M-SABRE-2024-2025';
+UPDATE tbl_tournament SET url_results = 'https://www.fencingtimelive.com/events/results/577C8999CAD84E11AA8F65186E61F86A'
+WHERE txt_code = 'PPW5-V1-M-EPEE-2024-2025';
+UPDATE tbl_tournament SET url_results = 'https://www.fencingtimelive.com/events/results/5C623C9949DA4BFE9A3F6663E5074530'
+WHERE txt_code = 'PPW5-V1-M-SABRE-2024-2025';
+UPDATE tbl_tournament SET url_results = 'https://www.fencingtimelive.com/events/results/993817953DF94EE2BD3A86CEEF94CEF5'
+WHERE txt_code = 'PPW5-V2-M-EPEE-2024-2025';
+UPDATE tbl_tournament SET url_results = 'https://www.fencingtimelive.com/events/results/1B2C70B599F547299014C7E42AE198E6'
+WHERE txt_code = 'PPW5-V3-F-FOIL-2024-2025';
+UPDATE tbl_tournament SET url_results = 'https://www.fencingtimelive.com/events/results/5126BA9976FE475CB4CDCC20DDA49EAF'
+WHERE txt_code = 'PPW5-V3-F-SABRE-2024-2025';
+UPDATE tbl_tournament SET url_results = 'https://www.fencingtimelive.com/events/results/958D6D51663A4F7E9464BCBC3167FF47'
+WHERE txt_code = 'PPW5-V3-M-EPEE-2024-2025';
+UPDATE tbl_tournament SET url_results = 'https://www.fencingtimelive.com/events/results/E81CCA279A6C47A09FDC7DA996157EA1'
+WHERE txt_code = 'PPW5-V3-M-SABRE-2024-2025';
+UPDATE tbl_tournament SET url_results = 'https://www.fencingtimelive.com/events/results/4C74F2EAEA2A46BBADE5609A4382C611'
+WHERE txt_code = 'PPW5-V4-F-EPEE-2024-2025';
+UPDATE tbl_tournament SET url_results = 'https://www.fencingtimelive.com/events/results/97261C8C2E0C4F5F91410EF344D7AC82'
+WHERE txt_code = 'PPW5-V4-M-EPEE-2024-2025';
+UPDATE tbl_tournament SET url_results = 'https://www.fencingtimelive.com/events/results/7F63F67E2FD94C02A454586BC5F7F72E'
+WHERE txt_code = 'PPW5-V4-M-FOIL-2024-2025';
+UPDATE tbl_tournament SET url_results = 'https://www.fencingtimelive.com/events/results/22021B5F31434144A94486A4C238DFDA'
+WHERE txt_code = 'PPW5-V4-M-SABRE-2024-2025';

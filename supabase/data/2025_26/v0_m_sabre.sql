@@ -30,21 +30,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    340,
+    200,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-M-SABRE-2025-2026'),
     1,
     'ROMANOWICZ Aleksiej'
 ); -- matched: ROMANOWICZ Aleksiej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    278,
+    26,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-M-SABRE-2025-2026'),
     2,
     'CHARKIEWICZ Paweł'
 ); -- matched: CHARKIEWICZ Paweł (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    41,
+    40,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-M-SABRE-2025-2026'),
     3,
     'DOMAŃSKI Sławomir'
@@ -80,14 +80,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    352,
+    224,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-M-SABRE-2025-2026'),
     1,
     'STANISŁAWSKI Albert'
 ); -- matched: STANISŁAWSKI Albert (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    65,
+    64,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-M-SABRE-2025-2026'),
     2,
     'GĘZIKIEWICZ Marcin'
@@ -130,21 +130,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    352,
+    224,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-M-SABRE-2025-2026'),
     1,
     'STANISŁAWSKI Albert'
 ); -- matched: STANISŁAWSKI Albert (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    366,
+    246,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-M-SABRE-2025-2026'),
     2,
     'TECŁAW (1) Robert'
 ); -- matched: TECŁAW (1) Robert (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    373,
+    271,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-M-SABRE-2025-2026'),
     3,
     'ZAJĄC (1) Michał'
@@ -180,7 +180,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    312,
+    143,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-M-SABRE-2025-2026'),
     1,
     'LISOWSKI Igor'

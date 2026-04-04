@@ -37,7 +37,7 @@ VALUES (
 ); -- matched: ADAMCZYK Grzegorz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    53,
+    55,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-M-FOIL-2024-2025'),
     2,
     'FRYDRYCH Szymon'
@@ -109,7 +109,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    165,
+    170,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-M-FOIL-2024-2025'),
     1,
     'NOWAK Szymon'

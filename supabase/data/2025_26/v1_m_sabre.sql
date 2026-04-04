@@ -51,7 +51,7 @@ VALUES (
 ); -- matched: KUCIĘBA Piotr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    232,
+    246,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-SABRE-2025-2026'),
     4,
     'TECŁAW Robert'
@@ -101,7 +101,7 @@ VALUES (
 ); -- matched: KOSIŃSKI Łukasz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    232,
+    246,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-SABRE-2025-2026'),
     3,
     'TECŁAW Robert'
@@ -113,13 +113,6 @@ VALUES (
     4,
     'KOWALEWSKI Rafał'
 ); -- matched: KOWALEWSKI Rafał (score=100.0)
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
-VALUES (
-    52,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-SABRE-2025-2026'),
-    5,
-    'FRYDRYCH Aleksander'
-); -- matched: FRYDRYCH Aleksander (score=100.0)
 -- Compute scores for PPW2-V1-M-SABRE-2025-2026
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-SABRE-2025-2026')
@@ -151,14 +144,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    232,
+    246,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-SABRE-2025-2026'),
     1,
     'TECŁAW Robert'
 ); -- matched: TECŁAW Robert (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    263,
+    271,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-SABRE-2025-2026'),
     2,
     'ZAJĄC Michał'
@@ -194,7 +187,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    232,
+    246,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-M-SABRE-2025-2026'),
     1,
     'TECŁAW Robert'
@@ -247,7 +240,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    189,
+    195,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V1-M-SABRE-2025-2026'),
     2,
     'PRZYSTAJKO Daniel'
@@ -283,7 +276,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    232,
+    246,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW5-V1-M-SABRE-2025-2026'),
     3,
     'TECŁAW Robert'
@@ -320,7 +313,7 @@ INSERT INTO tbl_tournament (
 -- UNMATCHED (score<80): 'GAY PAOLO' place=1
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    232,
+    246,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-M-SABRE-2025-2026'),
     2,
     'TECŁAW Robert'
@@ -371,7 +364,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    232,
+    246,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V1-M-SABRE-2025-2026'),
     1,
     'TECŁAW Robert'
@@ -385,7 +378,7 @@ VALUES (
 ); -- matched: KUCIĘBA Piotr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    189,
+    195,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V1-M-SABRE-2025-2026'),
     3,
     'PRZYSTAJKO Daniel'
@@ -401,7 +394,7 @@ VALUES (
 -- UNMATCHED (score<80): 'GALLAVOTTI Francesco' place=6
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    263,
+    271,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V1-M-SABRE-2025-2026'),
     7,
     'ZAJĄC Michał'
@@ -441,7 +434,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    189,
+    195,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PS-V1-M-SABRE-2025-2026'),
     5,
     'PRZYSTAJKO Daniel'

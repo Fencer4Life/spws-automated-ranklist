@@ -42,13 +42,13 @@ SELECT is(
 -- =========================================================================
 
 -- R.4 — p_rolling=FALSE regression: same as current non-rolling result
--- KORONA (117) has PPW1=27.33, PPW2=98.00, PPW3=69.72, PPW4=110.02 → best-4=305.07
+-- KORONA (116) has PPW1=27.33, PPW2=98.00, PPW3=69.72, PPW4=110.02 → best-4=305.07
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := FALSE
-  ) WHERE id_fencer = 117),
+  ) WHERE id_fencer = 116),
   305.07::NUMERIC,
   'R.4: p_rolling=FALSE regression — KORONA 305.07'
 );
@@ -80,7 +80,7 @@ SELECT is(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
-  ) WHERE id_fencer = 117),
+  ) WHERE id_fencer = 116),
   305.07::NUMERIC,
   'R.6: p_rolling=TRUE, all completed — KORONA unchanged at 305.07'
 );
@@ -91,7 +91,7 @@ WHERE txt_code IN ('PPW5-2025-2026', 'MPW-2025-2026');
 ALTER TABLE tbl_event ENABLE TRIGGER trg_event_transition;
 
 -- R.7 — p_rolling=TRUE, partial: carry-over from 2024-25
--- ZIELIŃSKI (266): current PPW1=98.00 + PPW3=43.22, carried MPW=115.62
+-- ZIELIŃSKI (275): current PPW1=98.00 + PPW3=43.22, carried MPW=115.62
 -- PPW5-prev not carried (ZIELIŃSKI not in PPW5-V2-M-EPEE-2024-2025)
 -- Best-4 PPW: 98.00+43.22 = 141.22, MPW=115.62, Total=256.84
 SELECT is(
@@ -99,13 +99,13 @@ SELECT is(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
-  ) WHERE id_fencer = 266),
+  ) WHERE id_fencer = 275),
   256.84::NUMERIC,
   'R.7: p_rolling=TRUE partial — ZIELIŃSKI 256.84 (current + carried MPW)'
 );
 
 -- R.8 — p_rolling=TRUE, best-K operates on merged pool
--- PARDUS (176): current PPW1=7.78 + PPW2=7.78 + PPW3=2.85
+-- PARDUS (182): current PPW1=7.78 + PPW2=7.78 + PPW3=2.85
 -- PPW5-prev not carried (PARDUS not in PPW5-V2-M-EPEE-2024-2025)
 -- Best-4 PPW: 7.78+7.78+2.85 = 18.41, MPW carry: 1.20, Total: 19.61
 SELECT is(
@@ -113,13 +113,13 @@ SELECT is(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
-  ) WHERE id_fencer = 176),
+  ) WHERE id_fencer = 182),
   19.61::NUMERIC,
   'R.8: p_rolling=TRUE best-K on merged pool — PARDUS 19.61'
 );
 
 -- R.9 — p_rolling=TRUE, category crossing V2→V3
--- TRACZ (236) born 1966: V2 in 2024-25 (age 59), V3 in 2025-26 (age 60)
+-- TRACZ (249) born 1966: V2 in 2024-25 (age 59), V3 in 2025-26 (age 60)
 -- Current V3: PPW1=25.09+PPW3=4.15, carried MPW-V2=7.18
 -- Best-4 PPW: 25.09+4.15=29.24, MPW=7.18, Total=36.42
 SELECT is(
@@ -127,22 +127,23 @@ SELECT is(
     'EPEE', 'M', 'V3',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
-  ) WHERE id_fencer = 236),
+  ) WHERE id_fencer = 249),
   36.42::NUMERIC,
   'R.9: p_rolling=TRUE category crossing — TRACZ V2→V3 total 36.42'
 );
 
--- R.10 — p_rolling=TRUE, new fencer → zero carryover
--- DROBIŃSKI (45) has no 2024-25 results → rolling adds nothing
+-- R.10 — p_rolling=TRUE, carryover from PPW5-V2-M-EPEE-2024-2025
+-- DROBIŃSKI (45) has PPW5 result in 2024-25 (84.29) carried over to uncompleted PPW5 position
 -- Current: PPW1=12.08 + PPW2=65.67 + PPW3=23.43 + PPW4=23.39 = 124.57
+-- Carried: PPW5=84.29 → best-4 = 65.67+84.29+23.43+23.39 = 196.78
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = 45),
-  124.57::NUMERIC,
-  'R.10: p_rolling=TRUE new fencer — DROBIŃSKI same 124.57 (no carryover)'
+  196.78::NUMERIC,
+  'R.10: p_rolling=TRUE — DROBIŃSKI 196.78 with PPW5 carryover'
 );
 
 -- R.11 — p_rolling=TRUE, no counterpart: PPW5 not declared → PPW5-prev not carried
@@ -156,7 +157,7 @@ SELECT is(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
-  ) WHERE id_fencer = 5),
+  ) WHERE id_fencer = 6),
   268.87::NUMERIC,
   'R.11: p_rolling=TRUE no counterpart — PPW5 not declared, ATANASSOW 268.87'
 );
@@ -182,7 +183,7 @@ SELECT is(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
-  ) WHERE id_fencer = 5),
+  ) WHERE id_fencer = 6),
   189.69::NUMERIC,
   'R.12: p_rolling=TRUE event deleted — PPW4 dropped, carry resumes, ATANASSOW 189.69'
 );
@@ -204,12 +205,12 @@ VALUES (
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 SELECT v.id_fencer, (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026'), v.place, v.name
 FROM (VALUES
-    (117, 1, 'KORONA Przemysław'), (5, 2, 'ATANASSOW Aleksander'),
-    (96, 3, 'JENDRYŚ Marek'), (46, 4, 'DUDEK Mariusz'),
-    (247, 5, 'WASIOŁKA Sebastian'), (45, 6, 'DROBIŃSKI Leszek'),
-    (86, 7, 'HAŚKO Sergiusz'), (250, 8, 'WIERZBICKI Jacek'),
-    (235, 9, 'TOMCZAK Ireneusz'), (181, 10, 'PILUTKIEWICZ Igor'),
-    (87, 11, 'HEŁKA Jacek')
+    (116, 1, 'KORONA Przemysław'), (6, 2, 'ATANASSOW Aleksander'),
+    (93, 3, 'JENDRYŚ Marek'), (46, 4, 'DUDEK Mariusz'),
+    (257, 5, 'WASIOŁKA Sebastian'), (45, 6, 'DROBIŃSKI Leszek'),
+    (82, 7, 'HAŚKO Sergiusz'), (259, 8, 'WIERZBICKI Jacek'),
+    (248, 9, 'TOMCZAK Ireneusz'), (187, 10, 'PILUTKIEWICZ Igor'),
+    (83, 11, 'HEŁKA Jacek')
 ) AS v(id_fencer, place, name);
 SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026')
@@ -225,7 +226,7 @@ SELECT fn_calc_tournament_scores(
 -- =========================================================================
 
 -- R.13 — p_rolling=TRUE, domestic + international carry-over
--- KORONA (117): born 1976, V1 in 2024-25 → V2 in 2025-26 (category crossing)
+-- KORONA (116): born 1976, V1 in 2024-25 → V2 in 2025-26 (category crossing)
 -- Current PPW: 27.33+98.00+69.72+110.02=305.07, MPW-V1 carry: 32.53 → ppw_total=337.60
 -- Current PEW: 138.87+38.02, IMSW=0.00 → IMEW-V1 carry: 119.38 (MEW type)
 -- PEW/MEW/MSW best-3: 138.87+119.38+38.02=296.27 → pew_total=296.27
@@ -235,7 +236,7 @@ SELECT is(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
-  ) WHERE id_fencer = 117),
+  ) WHERE id_fencer = 116),
   633.87::NUMERIC,
   'R.13: kadra p_rolling=TRUE — KORONA 633.87 (domestic + international carry-over)'
 );
@@ -246,7 +247,7 @@ SELECT is(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := FALSE
-  ) WHERE id_fencer = 117),
+  ) WHERE id_fencer = 116),
   481.96::NUMERIC,
   'R.14: kadra p_rolling=FALSE regression — KORONA 481.96'
 );
@@ -255,7 +256,7 @@ SELECT is(
 -- R.15–R.18: fn_fencer_scores_rolling
 -- =========================================================================
 -- Returns vw_score-like rows + bool_carried_over + txt_source_season_code.
--- ZIELIŃSKI (266): 3 current (PPW1, PPW3, IMSW) + 3 carried (PPW5, MPW, IMEW)
+-- ZIELIŃSKI (275): 3 current (PPW1, PPW3, IMSW) + 3 carried (PPW5, MPW, IMEW)
 -- PPW4 is COMPLETED in current season — no carry for PPW4.
 -- =========================================================================
 
@@ -263,7 +264,7 @@ SELECT is(
 -- ZIELIŃSKI: carried MPW + IMEW from 2024-25 (no PPW5 — he wasn't in it)
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
-    266, 'EPEE', 'M', 'V2',
+    275, 'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
   ) WHERE bool_carried_over = TRUE),
   2,
@@ -273,7 +274,7 @@ SELECT is(
 -- R.16 — current rows have bool_carried_over = FALSE
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
-    266, 'EPEE', 'M', 'V2',
+    275, 'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
   ) WHERE bool_carried_over = FALSE),
   3,
@@ -283,7 +284,7 @@ SELECT is(
 -- R.17 — position match: PPW1-prev NOT in results (PPW1 COMPLETED in current season)
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
-    266, 'EPEE', 'M', 'V2',
+    275, 'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
   ) WHERE txt_tournament_code = 'PPW1-V2-M-EPEE-2024-2025'),
   0,
@@ -295,7 +296,7 @@ DELETE FROM tbl_event WHERE txt_code = 'IMEW-2025-2026';
 
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
-    266, 'EPEE', 'M', 'V2',
+    275, 'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
   ) WHERE bool_carried_over = TRUE),
   1,

@@ -30,7 +30,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    246,
+    256,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-FOIL-2025-2026'),
     1,
     'WASILCZUK Beata'
@@ -66,7 +66,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    90,
+    86,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-F-FOIL-2025-2026'),
     1,
     'JABŁOŃSKA Ewa'
@@ -102,14 +102,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    90,
+    86,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-FOIL-2025-2026'),
     1,
     'JABŁOŃSKA Ewa'
 ); -- matched: JABŁOŃSKA Ewa (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    246,
+    256,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-FOIL-2025-2026'),
     2,
     'WASILCZUK Beata'
@@ -145,14 +145,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    90,
+    86,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-FOIL-2025-2026'),
     1,
     'JABŁOŃSKA Ewa'
 ); -- matched: JABŁOŃSKA Ewa (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    343,
+    208,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-FOIL-2025-2026'),
     2,
     'SADOWIŃSKA Adriana'
@@ -192,7 +192,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    246,
+    256,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-F-FOIL-2025-2026'),
     9,
     'WASILCZUK Beata'
@@ -240,14 +240,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    246,
+    256,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V2-F-FOIL-2025-2026'),
     5,
     'WASILCZUK Beata'
 ); -- matched: WASILCZUK Beata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    343,
+    208,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V2-F-FOIL-2025-2026'),
     8,
     'SADOWIŃSKA Adriana'
