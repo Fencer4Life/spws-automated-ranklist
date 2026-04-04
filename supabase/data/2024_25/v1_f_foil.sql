@@ -140,7 +140,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    204,
+    212,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-F-FOIL-2024-2025'),
     8,
     'SAMECKA-NACZYŃSKA Martyna'
@@ -227,7 +227,7 @@ VALUES (
 -- UNMATCHED (score<80): 'SULLIVAN Annemarie' place=7
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    204,
+    212,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V1-F-FOIL-2024-2025'),
     8,
     'SAMECKA-NACZYŃSKA Martyna'

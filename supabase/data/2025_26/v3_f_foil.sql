@@ -30,7 +30,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    171,
+    177,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-F-FOIL-2025-2026'),
     1,
     'OWCZAREK Elżbieta'
@@ -66,7 +66,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    171,
+    177,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-F-FOIL-2025-2026'),
     1,
     'OWCZAREK Elżbieta'
@@ -104,7 +104,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    171,
+    177,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-F-FOIL-2025-2026'),
     1,
     'OWCZAREK ELŻBIETA'
@@ -185,7 +185,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    171,
+    177,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V3-F-FOIL-2025-2026'),
     3,
     'OWCZAREK Elżbieta'

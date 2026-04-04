@@ -30,28 +30,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    215,
+    225,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-EPEE-2025-2026'),
     1,
     'STAŃCZYK Agnieszka'
 ); -- matched: STAŃCZYK Agnieszka (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    246,
+    256,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-EPEE-2025-2026'),
     2,
     'WASILCZUK Beata'
 ); -- matched: WASILCZUK Beata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    60,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-EPEE-2025-2026'),
     3,
     'GANSZCZYK Anna'
 ); -- matched: GANSZCZYK Anna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    296,
+    98,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-EPEE-2025-2026'),
     4,
     'KARMAN Irene'
@@ -87,21 +87,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    246,
+    256,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-F-EPEE-2025-2026'),
     1,
     'WASILCZUK Beata'
 ); -- matched: WASILCZUK Beata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    60,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-F-EPEE-2025-2026'),
     2,
     'GANSZCZYK Anna'
 ); -- matched: GANSZCZYK Anna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    243,
+    254,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-F-EPEE-2025-2026'),
     3,
     'WALECKA Wanda'
@@ -137,42 +137,42 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    308,
+    139,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-2025-2026'),
     1,
     'KUZMICHOVA Svitlana'
 ); -- matched: KUZMICHOVA Svitlana (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    334,
+    193,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-2025-2026'),
     2,
     'PRAHA-TSAREHRADSKA Nadiia'
 ); -- matched: PRAHA-TSAREHRADSKA Nadiia (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    215,
+    225,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-2025-2026'),
     3,
     'STAŃCZYK Agnieszka'
 ); -- matched: STAŃCZYK Agnieszka (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    60,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-2025-2026'),
     4,
     'GANSZCZYK Anna'
 ); -- matched: GANSZCZYK Anna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    246,
+    256,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-2025-2026'),
     5,
     'WASILCZUK Beata'
 ); -- matched: WASILCZUK Beata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    180,
+    186,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-2025-2026'),
     6,
     'PILARSKA Barbara'
@@ -208,14 +208,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    246,
+    256,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-EPEE-2025-2026'),
     1,
     'WASILCZUK Beata'
 ); -- matched: WASILCZUK Beata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    60,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-EPEE-2025-2026'),
     2,
     'GANSZCZYK Anna'
@@ -229,14 +229,14 @@ VALUES (
 ); -- matched: LASKUS Krystyna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    343,
+    208,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-EPEE-2025-2026'),
     4,
     'SADOWIŃSKA Adriana'
 ); -- matched: SADOWIŃSKA Adriana (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    215,
+    225,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-EPEE-2025-2026'),
     5,
     'STAŃCZYK Agnieszka'
@@ -277,7 +277,7 @@ INSERT INTO tbl_tournament (
 -- UNMATCHED (score<80): 'HABLÜTZEL-BÜRKI Gianna' place=1
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    308,
+    139,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-F-EPEE-2025-2026'),
     2,
     'KUZMICHOVA Svitlana'
@@ -291,7 +291,7 @@ VALUES (
 -- UNMATCHED (score<80): 'ARNOLD Mónika' place=9
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    246,
+    256,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-F-EPEE-2025-2026'),
     10,
     'WASILCZUK Beata'
@@ -310,7 +310,7 @@ VALUES (
 -- UNMATCHED (score<80): 'MEUNIER-DUPAS Katy' place=22
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    334,
+    193,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-F-EPEE-2025-2026'),
     23,
     'PRAHA-TSAREHRADSKA Nadiia'
@@ -318,7 +318,7 @@ VALUES (
 -- UNMATCHED (score<80): 'OHRABLOVA Zuzana' place=24
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    60,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-F-EPEE-2025-2026'),
     25,
     'GANSZCZYK Anna'
@@ -364,7 +364,7 @@ INSERT INTO tbl_tournament (
 -- UNMATCHED (score<80): 'LAISNEY SANDRA' place=3
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    308,
+    139,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V2-F-EPEE-2025-2026'),
     4,
     'KUZMICHOVA SVITALINA'
@@ -384,7 +384,7 @@ VALUES (
 -- UNMATCHED (score<80): 'TANZMEISTER DOROTHEA' place=17
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    215,
+    225,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V2-F-EPEE-2025-2026'),
     18,
     'STAŃCZYK Agnieszka'
@@ -397,7 +397,7 @@ VALUES (
 -- UNMATCHED (score<80): 'MORONI FRANCESCA' place=24
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    334,
+    193,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V2-F-EPEE-2025-2026'),
     25,
     'PRAHA-TSAREHRAD NADIIA'
@@ -406,7 +406,7 @@ VALUES (
 -- UNMATCHED (score<80): 'CARLINI VALERIA' place=27
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    60,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V2-F-EPEE-2025-2026'),
     28,
     'GANSZCZYK ANNA'
@@ -464,13 +464,6 @@ INSERT INTO tbl_tournament (
     'SCORED'
 );
 -- UNMATCHED (score<80): 'CISZEWSKA Barbara' place=1
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
-VALUES (
-    273,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2025-2026'),
-    2,
-    'MION Anna-Lise'
-); -- matched: ANNA-LISE Mion (score=100.0)
 -- UNMATCHED (score<80): 'AVANCINI Annalisa' place=3
 -- UNMATCHED (score<80): 'SELLEI 2 Petra' place=4
 -- UNMATCHED (score<80): 'IGARIENE Asta' place=5
@@ -479,28 +472,28 @@ VALUES (
 -- UNMATCHED (score<80): 'BELANGER Marie-Claire' place=8
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    334,
+    193,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2025-2026'),
     9,
     'PRAHA-TSAREHRADSKA Nadiia'
 ); -- matched: PRAHA-TSAREHRADSKA Nadiia (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    215,
+    225,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2025-2026'),
     10,
     'STAŃCZYK Agnieszka'
 ); -- matched: STAŃCZYK Agnieszka (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    246,
+    256,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2025-2026'),
     11,
     'WASILCZUK Beata'
 ); -- matched: WASILCZUK Beata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    308,
+    139,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2025-2026'),
     12,
     'KUZMICHOVA Svitlana'
@@ -508,14 +501,14 @@ VALUES (
 -- UNMATCHED (score<80): 'NOVOSELSKA Tetiana' place=13
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    60,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2025-2026'),
     14,
     'GANSZCZYK Anna'
 ); -- matched: GANSZCZYK Anna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    343,
+    208,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2025-2026'),
     15,
     'SADOWIŃSKA Adriana'
@@ -531,7 +524,7 @@ VALUES (
 -- UNMATCHED (score<80): 'BELIAKOVA Alena' place=18
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    243,
+    254,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V2-F-EPEE-2025-2026'),
     19,
     'WALECKA Wanda'

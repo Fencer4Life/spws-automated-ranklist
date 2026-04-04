@@ -30,14 +30,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    337,
+    185,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-F-EPEE-2025-2026'),
     1,
     'PĘCZEK Sandra'
 ); -- matched: PĘCZEK Sandra (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    111,
+    109,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-F-EPEE-2025-2026'),
     2,
     'KOCÓR Agata'
@@ -73,14 +73,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    304,
+    134,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-F-EPEE-2025-2026'),
     1,
     'KRUJALSKIENE Julija'
 ); -- matched: KRUJALSKIENE Julija (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    111,
+    109,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-F-EPEE-2025-2026'),
     2,
     'KOCÓR Agata'
@@ -116,21 +116,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    337,
+    185,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-EPEE-2025-2026'),
     1,
     'PĘCZEK Sandra'
 ); -- matched: PĘCZEK Sandra (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    359,
+    236,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-EPEE-2025-2026'),
     2,
     'SZMAJDZIŃSKA - BOŁDYS Katarzyna'
 ); -- matched: SZMAJDZIŃSKA - BOŁDYS Katarzyna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    89,
+    85,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-EPEE-2025-2026'),
     3,
     'IRZYK Sabina'
@@ -144,7 +144,7 @@ VALUES (
 ); -- matched: DRAPELLA Magdalena (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    293,
+    67,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-EPEE-2025-2026'),
     5,
     'GÓRNA Karolina'
@@ -180,14 +180,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    359,
+    236,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-F-EPEE-2025-2026'),
     1,
     'SZMAJDZIŃSKA - BOŁDYS Katarzyna'
 ); -- matched: SZMAJDZIŃSKA - BOŁDYS Katarzyna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    293,
+    67,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-F-EPEE-2025-2026'),
     2,
     'GÓRNA Karolina'

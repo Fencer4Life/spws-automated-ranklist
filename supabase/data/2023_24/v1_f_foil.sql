@@ -32,7 +32,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    197,
+    203,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V1-F-FOIL-2023-2024'),
     1,
     'RUT Agnieszka'
@@ -120,14 +120,14 @@ VALUES (
 ); -- matched: LIPKOWSKA Dominika (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    19,
+    18,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP5-V1-F-FOIL-2023-2024'),
     2,
     'BORKOWSKA Halina'
 ); -- matched: BORKOWSKA Halina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    160,
+    165,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP5-V1-F-FOIL-2023-2024'),
     3,
     'MULSON Irena'
@@ -254,7 +254,7 @@ VALUES (
 ); -- matched: LIPKOWSKA Dominika (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    100,
+    97,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW5-V1-F-FOIL-2023-2024'),
     12,
     'KAMIŃSKA Gabriela'

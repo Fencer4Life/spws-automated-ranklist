@@ -30,21 +30,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    100,
+    97,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-F-EPEE-2024-2025'),
     1,
     'KAMIŃSKA Gabriela'
 ); -- matched: KAMIŃSKA Gabriela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    204,
+    212,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-F-EPEE-2024-2025'),
     2,
     'SAMECKA-NACZYŃSKA Martyna'
 ); -- matched: SAMECKA-NACZYŃSKA Martyna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    107,
+    104,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-F-EPEE-2024-2025'),
     3,
     'KLIMECKA Dorota'
@@ -88,14 +88,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    100,
+    97,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-F-EPEE-2024-2025'),
     1,
     'KAMIŃSKA Gabriela'
 ); -- matched: KAMIŃSKA Gabriela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    108,
+    105,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-F-EPEE-2024-2025'),
     2,
     'KŁOS Iwona'
@@ -109,7 +109,7 @@ VALUES (
 ); -- matched: KOWALSKA Milena (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    107,
+    104,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-F-EPEE-2024-2025'),
     4,
     'KLIMECKA Dorota'
@@ -152,28 +152,28 @@ VALUES (
 ); -- matched: KOWALSKA Milena (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    107,
+    104,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-F-EPEE-2024-2025'),
     2,
     'KLIMECKA Dorota'
 ); -- matched: KLIMECKA Dorota (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    108,
+    105,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-F-EPEE-2024-2025'),
     3,
     'KŁOS Iwona'
 ); -- matched: KŁOS Iwona (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    100,
+    97,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-F-EPEE-2024-2025'),
     4,
     'KAMIŃSKA Gabriela'
 ); -- matched: KAMIŃSKA Gabriela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    204,
+    212,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-F-EPEE-2024-2025'),
     5,
     'SAMECKA-NACZYŃSKA Martyna'
@@ -209,21 +209,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    100,
+    97,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-F-EPEE-2024-2025'),
     1,
     'KAMIŃSKA Gabriela'
 ); -- matched: KAMIŃSKA Gabriela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    204,
+    212,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-F-EPEE-2024-2025'),
     2,
     'SAMECKA-NACZYŃSKA Martyna'
 ); -- matched: SAMECKA-NACZYŃSKA Martyna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    107,
+    104,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-F-EPEE-2024-2025'),
     3,
     'KLIMECKA Dorota'
@@ -259,14 +259,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    204,
+    212,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-F-EPEE-2024-2025'),
     3,
     'SAMECKA-NACZYŃSKA Martyna'
 ); -- matched: SAMECKA-NACZYŃSKA Martyna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    100,
+    97,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-F-EPEE-2024-2025'),
     3,
     'KAMIŃSKA Gabriela'
@@ -302,7 +302,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    100,
+    97,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V1-F-EPEE-2024-2025'),
     7,
     'KAMIŃSKA Gabriela'
@@ -340,14 +340,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    100,
+    97,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V1-F-EPEE-2024-2025'),
     15,
     'KAMIŃSKA Gabriela'
 ); -- matched: KAMIŃSKA Gabriela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    204,
+    212,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V1-F-EPEE-2024-2025'),
     29,
     'SAMECKA-NACZYŃSKA Martyna'

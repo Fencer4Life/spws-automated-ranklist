@@ -30,7 +30,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    111,
+    109,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-F-EPEE-2024-2025'),
     1,
     'KOCÓR Agata'
@@ -67,21 +67,21 @@ INSERT INTO tbl_tournament (
 -- UNMATCHED (score<80): 'SZMAJDZIŃSKA Katarzyna' place=1
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    8,
+    9,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-F-EPEE-2024-2025'),
     2,
     'BARAN Agata'
 ); -- matched: BARAN Agata (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    89,
+    85,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-F-EPEE-2024-2025'),
     3,
     'IRZYK Sabina'
 ); -- matched: IRZYK Sabina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    111,
+    109,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-F-EPEE-2024-2025'),
     4,
     'KOCÓR Agata'
@@ -125,7 +125,7 @@ INSERT INTO tbl_tournament (
 -- UNMATCHED (score<80): 'SPIRINA Ekaterina' place=1
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    8,
+    9,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-EPEE-2024-2025'),
     2,
     'BARAN Agata'
@@ -133,14 +133,14 @@ VALUES (
 -- UNMATCHED (score<80): 'PĘCZEK Sandra' place=3
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    89,
+    85,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-EPEE-2024-2025'),
     4,
     'IRZYK Sabina'
 ); -- matched: IRZYK Sabina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    111,
+    109,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-EPEE-2024-2025'),
     5,
     'KOCÓR Agata'
@@ -184,7 +184,7 @@ INSERT INTO tbl_tournament (
 -- UNMATCHED (score<80): 'GÓRNA Karolina' place=1
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    89,
+    85,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V0-F-EPEE-2024-2025'),
     2,
     'IRZYK Sabina'

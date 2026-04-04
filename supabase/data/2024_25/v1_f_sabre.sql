@@ -32,7 +32,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    72,
+    71,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-F-SABRE-2024-2025'),
     1,
     'GRACZYK Anna'
@@ -68,7 +68,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    63,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-F-SABRE-2024-2025'),
     1,
     'GAWLE Katarzyna'
@@ -108,7 +108,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    63,
+    62,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V1-F-SABRE-2024-2025'),
     1,
     'GAWLE Katarzyna'

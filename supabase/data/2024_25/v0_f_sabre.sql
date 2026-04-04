@@ -30,14 +30,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    172,
+    178,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-F-SABRE-2024-2025'),
     1,
     'OWCZAREK Ewelina'
 ); -- matched: OWCZAREK Ewelina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    84,
+    80,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-F-SABRE-2024-2025'),
     2,
     'HAJDAS Martyna'
@@ -80,14 +80,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    84,
+    80,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-F-SABRE-2024-2025'),
     1,
     'HAJDAS Martyna'
 ); -- matched: HAJDAS Martyna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    172,
+    178,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-F-SABRE-2024-2025'),
     2,
     'OWCZAREK Ewelina'
@@ -124,7 +124,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    172,
+    178,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-SABRE-2024-2025'),
     1,
     'OWCZAREK Ewelina'
@@ -161,14 +161,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    172,
+    178,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V0-F-SABRE-2024-2025'),
     1,
     'OWCZAREK Ewelina'
 ); -- matched: OWCZAREK Ewelina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    84,
+    80,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V0-F-SABRE-2024-2025'),
     2,
     'HAJDAS Martyna'

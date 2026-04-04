@@ -32,7 +32,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    342,
+    206,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-F-FOIL-2025-2026'),
     1,
     'RZEPECKA Martyna'
@@ -68,7 +68,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    342,
+    206,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-FOIL-2025-2026'),
     1,
     'RZEPECKA Martyna'
@@ -118,7 +118,7 @@ VALUES (
 ); -- matched: DRAPELLA Magdalena (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    342,
+    206,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-F-FOIL-2025-2026'),
     2,
     'RZEPECKA Martyna'

@@ -805,3 +805,71 @@ class TestConfigurableThresholds:
         # Unknown → UNMATCHED at default 50
         result3 = find_best_match("XYZ Unknown", fencer_db)
         assert result3.status == "UNMATCHED"
+
+
+# ===========================================================================
+# Category marker stripping + component-level scoring
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# 4.50–4.51  Category marker stripping in normalize_name
+# ---------------------------------------------------------------------------
+class TestCategoryMarkerStripping:
+    def test_v1_marker_stripped(self, fencer_db):
+        """4.50 Name with (V1) marker matches after stripping."""
+        result = find_best_match("KOWALSKI (V1) Jan", fencer_db)
+        assert result.id_fencer == 3
+        assert result.confidence >= 95
+        assert result.status == "AUTO_MATCHED"
+
+    def test_kat_0_marker_stripped(self, fencer_db):
+        """4.51 Name with (kat 0) marker matches after stripping."""
+        result = find_best_match("KOWALSKI Jan (kat 0)", fencer_db)
+        assert result.id_fencer == 3
+        assert result.confidence >= 95
+        assert result.status == "AUTO_MATCHED"
+
+
+# ---------------------------------------------------------------------------
+# 4.52–4.57  Component-level scoring for typo resilience
+# ---------------------------------------------------------------------------
+class TestComponentScoring:
+    def test_mazik_transposition(self):
+        """4.52 MAZIK Alksander vs Aleksander — component boost → AUTO_MATCHED."""
+        db = [{"id_fencer": 1, "txt_surname": "MAZIK", "txt_first_name": "Aleksander", "json_name_aliases": None}]
+        result = find_best_match("MAZIK Alksander", db)
+        assert result.confidence >= 95
+        assert result.status == "AUTO_MATCHED"
+
+    def test_krujaskis_missing_letter(self):
+        """4.53 KRUJASKIS vs KRUJALSKIS — surname typo → AUTO_MATCHED."""
+        db = [{"id_fencer": 1, "txt_surname": "KRUJALSKIS", "txt_first_name": "Gotfridas", "json_name_aliases": None}]
+        result = find_best_match("KRUJASKIS Gotfridas", db)
+        assert result.confidence >= 95
+        assert result.status == "AUTO_MATCHED"
+
+    def test_nikalaichuk_transliteration(self):
+        """4.54 NIKALAICHUK Aleksander vs Aliaksandr — transliteration → AUTO_MATCHED."""
+        db = [{"id_fencer": 1, "txt_surname": "NIKALAICHUK", "txt_first_name": "Aliaksandr", "json_name_aliases": None}]
+        result = find_best_match("NIKALAICHUK Aleksander", db)
+        assert result.confidence >= 95
+        assert result.status == "AUTO_MATCHED"
+
+    def test_fras_felix_feliks(self):
+        """4.55 FRAŚ Felix vs Feliks — first name variant → AUTO_MATCHED."""
+        db = [{"id_fencer": 1, "txt_surname": "FRAŚ", "txt_first_name": "Feliks", "json_name_aliases": None}]
+        result = find_best_match("FRAŚ Felix", db)
+        assert result.confidence >= 95
+        assert result.status == "AUTO_MATCHED"
+
+    def test_fuhrmann_transposition(self):
+        """4.56 FUHRMANN Urlike vs Ulrike — transposition → AUTO_MATCHED."""
+        db = [{"id_fencer": 1, "txt_surname": "FUHRMANN", "txt_first_name": "Ulrike", "json_name_aliases": None}]
+        result = find_best_match("FUHRMANN Urlike", db)
+        assert result.confidence >= 95
+        assert result.status == "AUTO_MATCHED"
+
+    def test_no_false_positive(self, fencer_db):
+        """4.57 Component scoring doesn't cause false positives for unrelated names."""
+        result = find_best_match("XYZ Unknown", fencer_db)
+        assert result.status == "UNMATCHED"

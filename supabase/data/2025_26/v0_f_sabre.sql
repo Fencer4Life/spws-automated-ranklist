@@ -30,7 +30,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    172,
+    178,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-F-SABRE-2025-2026'),
     1,
     'OWCZAREK Ewelina'
@@ -66,14 +66,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    84,
+    80,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-F-SABRE-2025-2026'),
     1,
     'HAJDAS Martyna'
 ); -- matched: HAJDAS Martyna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    172,
+    178,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-F-SABRE-2025-2026'),
     2,
     'OWCZAREK Ewelina'
@@ -111,7 +111,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    172,
+    178,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-F-SABRE-2025-2026'),
     1,
     'OWCZAREK Ewelina'

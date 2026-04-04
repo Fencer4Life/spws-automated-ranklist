@@ -34,14 +34,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    160,
+    165,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V4-F-FOIL-2025-2026'),
     1,
     'MULSON Irena'
 ); -- matched: MULSON Irena (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    19,
+    18,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V4-F-FOIL-2025-2026'),
     2,
     'BORKOWSKA Halina'
@@ -124,7 +124,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    19,
+    18,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V4-F-FOIL-2025-2026'),
     3,
     'BORKOWSKA Halina'

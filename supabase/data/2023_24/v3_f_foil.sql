@@ -30,14 +30,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    19,
+    18,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V3-F-FOIL-2023-2024'),
     1,
     'BORKOWSKA Halina'
 ); -- matched: BORKOWSKA Halina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    160,
+    165,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V3-F-FOIL-2023-2024'),
     2,
     'MULSON Irena'
@@ -73,7 +73,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    160,
+    165,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V3-F-FOIL-2023-2024'),
     1,
     'MULSON Irena'
@@ -109,14 +109,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    19,
+    18,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V3-F-FOIL-2023-2024'),
     1,
     'BORKOWSKA Halina'
 ); -- matched: BORKOWSKA Halina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    160,
+    165,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP3-V3-F-FOIL-2023-2024'),
     2,
     'MULSON Irena'
@@ -152,7 +152,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    19,
+    18,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP4-V3-F-FOIL-2023-2024'),
     1,
     'BORKOWSKA Halina'
@@ -188,14 +188,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    19,
+    18,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP5-V3-F-FOIL-2023-2024'),
     1,
     'BORKOWSKA Halina'
 ); -- matched: BORKOWSKA Halina (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    160,
+    165,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP5-V3-F-FOIL-2023-2024'),
     2,
     'MULSON Irena'
@@ -231,7 +231,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    19,
+    18,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP6-V3-F-FOIL-2023-2024'),
     1,
     'BORKOWSKA Halina'
@@ -271,7 +271,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    234,
+    247,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-F-FOIL-2023-2024'),
     1,
     'TOMASZEWSKA Hanna'
@@ -352,7 +352,7 @@ INSERT INTO tbl_tournament (
 -- UNMATCHED (score<80): 'ULM' place=21
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    19,
+    18,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V3-F-FOIL-2023-2024'),
     22,
     'BORKOWSKA Halina'
@@ -360,7 +360,7 @@ VALUES (
 -- UNMATCHED (score<80): 'KESSLING' place=23
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    160,
+    165,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V3-F-FOIL-2023-2024'),
     24,
     'MULSON Irena'

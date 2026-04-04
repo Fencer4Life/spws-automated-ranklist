@@ -36,7 +36,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    246,
+    256,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-F-FOIL-2024-2025'),
     1,
     'WASILCZUK Beata'
@@ -72,7 +72,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    246,
+    256,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-F-FOIL-2024-2025'),
     3,
     'WASILCZUK Beata'
@@ -118,7 +118,7 @@ INSERT INTO tbl_tournament (
 -- UNMATCHED (score<80): 'MOONEY Rebecca' place=6
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    90,
+    86,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V2-F-FOIL-2024-2025'),
     7,
     'JABŁOŃSKA Ewa'
@@ -127,7 +127,7 @@ VALUES (
 -- UNMATCHED (score<80): 'PLATOV Audra' place=9
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    246,
+    256,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V2-F-FOIL-2024-2025'),
     10,
     'WASILCZUK Beata'

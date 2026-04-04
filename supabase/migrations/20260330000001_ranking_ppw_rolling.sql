@@ -208,7 +208,7 @@ BEGIN
           AND e.id_season = v_prev_season_id
           AND t.enum_weapon = p_weapon
           AND t.enum_gender = p_gender
-          AND fn_age_category(f.int_birth_year, v_season_end_yr) = p_category
+          AND COALESCE(fn_age_category(f.int_birth_year, v_season_end_yr), t.enum_age_category) = p_category
           AND r.num_final_score IS NOT NULL
           AND r.id_fencer IS NOT NULL
           -- Position must be declared in current season but NOT completed

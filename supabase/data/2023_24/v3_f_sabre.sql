@@ -32,7 +32,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    287,
+    56,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V3-F-SABRE-2023-2024'),
     1,
     'FUHRMANN Ulrike'
@@ -74,7 +74,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    287,
+    56,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP6-V3-F-SABRE-2023-2024'),
     1,
     'FUHRMANN Ulrike'
@@ -110,7 +110,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    287,
+    56,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP7-V3-F-SABRE-2023-2024'),
     1,
     'FUHRMANN Ulrike'
@@ -148,7 +148,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    287,
+    56,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V3-F-SABRE-2023-2024'),
     1,
     'FUHRMANN Ulrike'
@@ -190,7 +190,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    287,
+    56,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V3-F-SABRE-2023-2024'),
     2,
     'FUHRMANN Ulrike'
@@ -240,7 +240,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    287,
+    56,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW12-V3-F-SABRE-2023-2024'),
     1,
     'FUHRMANN Ulrike'
@@ -281,7 +281,7 @@ INSERT INTO tbl_tournament (
 -- UNMATCHED (score<80): 'CAMERIN' place=5
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    287,
+    56,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V3-F-SABRE-2023-2024'),
     6,
     'FUHRMANN Ulrike'

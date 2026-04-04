@@ -69,14 +69,20 @@ def fold_diacritics(text: str) -> str:
     return "".join(c for c in nfd if unicodedata.category(c) != "Mn")
 
 
+def strip_category_markers(name: str) -> str:
+    """Remove FTL category markers like (0), (1), (kat 1), (V1) from names."""
+    return re.sub(r"\s*\((?:kat\s*)?V?\d+\)\s*", " ", name).strip()
+
+
 def normalize_name(name: str, use_diacritic_folding: bool = False) -> str:
-    """Normalize a name for comparison: lowercase, collapse whitespace.
+    """Normalize a name for comparison: strip markers, lowercase, collapse whitespace.
 
     Args:
         name: Raw name string
         use_diacritic_folding: If True, strip diacritics before normalizing
     """
-    result = re.sub(r"\s+", " ", name.strip()).lower()
+    result = strip_category_markers(name)
+    result = re.sub(r"\s+", " ", result.strip()).lower()
     if use_diacritic_folding:
         result = fold_diacritics(result)
     return result
@@ -161,6 +167,20 @@ def _score_against_fencer(
     if use_token_set_ratio:
         set_score = fuzz.token_set_ratio(scraped_norm, full_name_norm)
         score = max(score, set_score)
+
+    # Component-level scoring: compare surname and first_name separately
+    # Catches typos where one component is exact and the other has 1-2 char differences
+    scraped_surname, scraped_first = parse_scraped_name(scraped)
+    fencer_first = fencer["txt_first_name"] or ""
+    if scraped_first and fencer_first:
+        s_sur = normalize_name(scraped_surname, use_diacritic_folding)
+        s_fst = normalize_name(scraped_first, use_diacritic_folding)
+        f_sur = normalize_name(fencer["txt_surname"], use_diacritic_folding)
+        f_fst = normalize_name(fencer_first, use_diacritic_folding)
+        sur_best = fuzz.ratio(s_sur, f_sur)
+        fst_best = max(fuzz.ratio(s_fst, f_fst), fuzz.partial_ratio(s_fst, f_fst))
+        component_score = 0.75 * sur_best + 0.25 * fst_best
+        score = max(score, component_score)
 
     return score
 

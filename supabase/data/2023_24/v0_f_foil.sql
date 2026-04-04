@@ -73,13 +73,6 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    18,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V0-F-FOIL-2023-2024'),
-    1,
-    'BONIK-NINARD Agata'
-); -- matched: BONIK-NINARD Agata (score=100.0)
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
-VALUES (
     142,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V0-F-FOIL-2023-2024'),
     2,
@@ -87,7 +80,7 @@ VALUES (
 ); -- matched: LIPKOWSKA Dominika (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    197,
+    203,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP2-V0-F-FOIL-2023-2024'),
     3,
     'RUT Agnieszka'
@@ -133,7 +126,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    204,
+    212,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP8-V0-F-FOIL-2023-2024'),
     1,
     'SAMECKA-NACZYŃSKA Martyna'
@@ -169,21 +162,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    203,
+    211,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V0-F-FOIL-2023-2024'),
     1,
     'SAJEWICZ Izabela'
 ); -- matched: SAJEWICZ Izabela (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    364,
+    243,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V0-F-FOIL-2023-2024'),
     2,
     'SZYPUŁOWSKA-GRZYŚ Joanna'
 ); -- matched: SZYPUŁOWSKA-GRZYŚ Joanna (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    204,
+    212,
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V0-F-FOIL-2023-2024'),
     3,
     'SAMECKA-NACZYŃSKA Martyna'
