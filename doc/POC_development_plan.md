@@ -639,7 +639,7 @@ The spec originally called for a Svelte custom element with Shadow DOM for CSS i
 
 **Verification:**
 - Vitest unit tests pass for component logic (28 tests across 6 test files).
-- pgTAP total: 192 assertions (1 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 7 T8.2 + 5 T8.3 + 5 T9.0 + 23 T9.1 + 21 M10 rolling).
+- pgTAP total: 199 assertions (1 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 7 T8.2 + 5 T8.3 + 5 T9.0 + 23 T9.1 + 21 M10 rolling + 7 ingest pipeline).
 - Manual test: open `index.html` in browser with `demo` attribute, verify ranklist loads with mock data, drilldown modal shows score breakdown with markers and summary rows.
 
 **CERT/PROD Deployment (infrastructure — not a plan test):** See [ADR-009](adr/009-cert-prod-runtime-toggle.md) for architectural rationale, [ADR-011](adr/011-artifact-release-pipeline.md) for release pipeline design.
