@@ -22,8 +22,7 @@ jobs:
         run: pip install supabase httpx
 
       - name: Run ingestion pipeline
-        run: python -m pipeline.ingest_cli --from-storage --season-end-year 2026
-        working-directory: python
+        run: python -m python.pipeline.ingest_cli --from-storage --season-end-year 2026
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

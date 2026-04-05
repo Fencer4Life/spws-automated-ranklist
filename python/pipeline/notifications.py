@@ -10,7 +10,7 @@ Uses send_telegram_alert() from scrapers.base as the low-level sender.
 
 from __future__ import annotations
 
-from scrapers.base import send_telegram_alert
+from python.scrapers.base import send_telegram_alert
 
 
 class TelegramNotifier:
