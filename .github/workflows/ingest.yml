@@ -19,7 +19,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install supabase httpx
+        run: pip install supabase httpx rapidfuzz
 
       - name: Run ingestion pipeline
         run: python -m python.pipeline.ingest_cli --from-storage --season-end-year 2026
