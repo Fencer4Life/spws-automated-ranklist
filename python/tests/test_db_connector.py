@@ -86,3 +86,21 @@ class TestDbConnector:
         })
         assert new_id == 42
         mock_sb.table.return_value.insert.assert_called_once()
+
+    def test_has_existing_results(self):
+        """9.200 has_existing_results returns True when results exist, False when not."""
+        from python.pipeline.db_connector import DbConnector
+
+        # Has results
+        mock_sb = MagicMock()
+        mock_sb.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value.data = [
+            {"id_result": 1},
+        ]
+        db = DbConnector(mock_sb)
+        assert db.has_existing_results(5) is True
+
+        # No results
+        mock_sb2 = MagicMock()
+        mock_sb2.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value.data = []
+        db2 = DbConnector(mock_sb2)
+        assert db2.has_existing_results(5) is False

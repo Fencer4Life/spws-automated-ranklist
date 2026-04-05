@@ -75,10 +75,11 @@ def run_ingest(
             combined.skipped += r.skipped
             combined.errors.extend(r.errors)
             combined.skipped_files.extend(r.skipped_files)
+        notifier.summary(combined)
         return combined
     else:
         xml_bytes = filepath.read_bytes()
-        return process_xml_file(
+        r = process_xml_file(
             file_bytes=xml_bytes,
             filename=filepath.name,
             db=db,
@@ -87,6 +88,8 @@ def run_ingest(
             tournament_type=tournament_type,
             dry_run=dry_run,
         )
+        notifier.summary(r)
+        return r
 
 
 def main() -> None:
@@ -110,53 +113,55 @@ def main() -> None:
             os.environ.get("TELEGRAM_CHAT_ID"),
         )
 
-        staging_files = storage.list_staging_files()
-        season = f"SPWS-{args.season_end_year - 1}-{args.season_end_year}"
-        for fpath in staging_files:
-            file_bytes = storage.download_file(fpath)
-            fname = Path(fpath).name
+        try:
+            staging_files = storage.list_staging_files()
+            season = f"SPWS-{args.season_end_year - 1}-{args.season_end_year}"
+            for fpath in staging_files:
+                file_bytes = storage.download_file(fpath)
+                fname = Path(fpath).name
 
-            # Handle both .zip and .xml files in staging
-            if fname.lower().endswith(".zip"):
-                xml_files = unzip_in_memory(file_bytes)
-            elif fname.lower().endswith(".xml"):
-                xml_files = {fname: file_bytes}
-            else:
-                continue
-
-            has_error = False
-            for xname, xml_bytes in xml_files.items():
-                r = process_xml_file(
-                    file_bytes=xml_bytes,
-                    filename=xname,
-                    db=db,
-                    notifier=notifier,
-                    season_end_year=args.season_end_year,
-                    tournament_type=args.tournament_type,
-                )
-                if r.errors:
-                    has_error = True
-
-            # Clean staging after success (ADR-023)
-            if not has_error:
+                # Handle both .zip and .xml files in staging
                 if fname.lower().endswith(".zip"):
-                    event_name = Path(fpath).stem
-                    storage.archive_zip(fpath, season, event_name)
-                    notifier.info(f"Archived {fpath} → archive/{season}/{event_name}")
+                    xml_files = unzip_in_memory(file_bytes)
+                elif fname.lower().endswith(".xml"):
+                    xml_files = {fname: file_bytes}
                 else:
-                    storage.delete_file(fpath)
-                    notifier.info(f"Deleted {fpath} from staging")
+                    continue
+
+                for xname, xml_bytes in xml_files.items():
+                    process_xml_file(
+                        file_bytes=xml_bytes,
+                        filename=xname,
+                        db=db,
+                        notifier=notifier,
+                        season_end_year=args.season_end_year,
+                        tournament_type=args.tournament_type,
+                    )
+
+            # ADR-025: do NOT auto-delete staging files — admin triggers cleanup via Telegram
+            notifier.info(f"{len(staging_files)} file(s) in staging ready for cleanup.")
+        except Exception as e:
+            notifier.notify_pipeline_failure(str(e))
+            raise
     elif args.path:
-        result = run_ingest(
-            path=args.path,
-            season_end_year=args.season_end_year,
-            dry_run=args.dry_run,
-            tournament_type=args.tournament_type,
+        notifier = TelegramNotifier(
+            os.environ.get("TELEGRAM_BOT_TOKEN"),
+            os.environ.get("TELEGRAM_CHAT_ID"),
         )
-        print(f"Matched: {result.matched}, Pending: {result.pending}, "
-              f"Auto-created: {result.auto_created}, Skipped: {result.skipped}")
-        if result.errors:
-            print(f"Errors: {result.errors}")
+        try:
+            result = run_ingest(
+                path=args.path,
+                season_end_year=args.season_end_year,
+                dry_run=args.dry_run,
+                tournament_type=args.tournament_type,
+            )
+            print(f"Matched: {result.matched}, Pending: {result.pending}, "
+                  f"Auto-created: {result.auto_created}, Skipped: {result.skipped}")
+            if result.errors:
+                print(f"Errors: {result.errors}")
+        except Exception as e:
+            notifier.notify_pipeline_failure(str(e))
+            raise
     else:
         parser.error("Either path or --from-storage is required")
 

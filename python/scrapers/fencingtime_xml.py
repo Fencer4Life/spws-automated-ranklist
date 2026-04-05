@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import re
 import xml.etree.ElementTree as ET
+from dataclasses import dataclass, field
 from datetime import datetime
 
 # Polish weapon names → English
@@ -185,18 +186,27 @@ def detect_categories_from_altname(alt_name: str) -> list[str]:
     return [c.upper() for c in cats]
 
 
+@dataclass
+class SplitResult:
+    """Result of splitting combined-category results (ADR-024)."""
+
+    buckets: dict[str, list[dict]] = field(default_factory=dict)
+    unresolved: list[dict] = field(default_factory=list)
+
+
 def split_combined_results(
     enriched_results: list[dict],
     categories: list[str],
     fencer_db: list[dict],
     season_end_year: int,
-) -> dict[str, list[dict]]:
+) -> SplitResult:
     """Split combined-category results into per-category ranked lists.
 
     For each fencer:
     1. Use birth_date from XML if available
     2. Cross-reference fencer_db by name if DOB missing
-    3. Fall back to lowest category in the combined set
+    3. If still unknown → add to unresolved AND assign to lowest category
+       (ADR-024: flag PENDING for admin review, don't silently assign)
 
     Re-ranks within each split: place 1..N per category.
 
@@ -207,7 +217,7 @@ def split_combined_results(
         season_end_year: End year for age calculation
 
     Returns:
-        dict mapping category → list[dict] with re-ranked results
+        SplitResult with buckets (category → results) and unresolved list
     """
     # Build name→birth_year lookup from fencer_db
     db_lookup: dict[str, int] = {}
@@ -221,6 +231,7 @@ def split_combined_results(
 
     # Assign each fencer to a category
     buckets: dict[str, list[dict]] = {cat: [] for cat in categories}
+    unresolved: list[dict] = []
     lowest_cat = categories[0]  # e.g., "V0" for ["V0", "V1"]
 
     # Sort by original place to preserve relative ordering
@@ -243,9 +254,10 @@ def split_combined_results(
                     assigned_cat = cat
                     break
 
-        # Fallback to lowest category
+        # ADR-024: unknown DOB → assign to lowest but track as unresolved
         if assigned_cat is None:
             assigned_cat = lowest_cat
+            unresolved.append(dict(result))
 
         buckets[assigned_cat].append(dict(result))
 
@@ -254,4 +266,4 @@ def split_combined_results(
         for i, fencer in enumerate(fencers, 1):
             fencer["place"] = i
 
-    return buckets
+    return SplitResult(buckets=buckets, unresolved=unresolved)

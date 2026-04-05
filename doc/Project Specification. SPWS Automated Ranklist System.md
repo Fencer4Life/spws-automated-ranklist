@@ -1613,6 +1613,13 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-76 | GitHub Actions `ingest.yml` downloads from Storage staging → processes → archives | ADR-023 | Manual test | Pending |
 | FR-77 | Processed .zip archived to `archive/{season}/{event}.zip`; staging cleaned; previous event compressed | ADR-023 | 9.169–9.172, 9.191–9.192 | Pending |
 | FR-78 | Telegram notifications for all pipeline events (13 use cases: routine, warnings, alerts, overdue) | Go-to-PROD §2.8 | 9.173–9.190 | Pending |
+| FR-79 | Event-centric ingestion: match XML to existing event by date, create tournaments on-the-fly | ADR-025 | 10.8–10.12, 9.193 | Pending |
+| FR-80 | Event status lifecycle: PLANNED → IN_PROGRESS → COMPLETED with rollback | ADR-025 | 10.12–10.15 | Pending |
+| FR-81 | Telegram command interface: 16 admin commands for lifecycle, review, storage, season, emergency | ADR-025 | 10.16–10.22 | Pending |
+| FR-82 | CERT → PROD promotion triggered from Telegram | ADR-025 | Phase 6 E2E | Pending |
+| FR-83 | Batch summary notification after each ingestion run | ADR-025 | 9.197 | Pending |
+| FR-84 | ADR-024 compliance: flag PENDING for unknown DOB in combined categories | ADR-024/025 | 9.194–9.196 | Pending |
+| FR-85 | Workflow failure notifications via Telegram | ADR-025 | 9.202–9.203 | Pending |
 
 ### Non-Functional Requirements
 
@@ -1660,3 +1667,4 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-022](adr/022-ingestion-db-transaction.md) | Ingestion DB Transaction Strategy (single RPC) | FR-73, ADR-014 |
 | [ADR-023](adr/023-email-ingestion-gas-storage.md) | Email Ingestion via GAS + Supabase Storage | FR-75, FR-76, FR-77 |
 | [ADR-024](adr/024-combined-category-splitting.md) | Combined Category Splitting Strategy | FR-71, ADR-010 |
+| [ADR-025](adr/025-event-centric-ingestion-telegram.md) | Event-Centric Ingestion + Telegram Admin | FR-79–85, ADR-022/023/024 |

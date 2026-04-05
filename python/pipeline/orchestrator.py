@@ -73,6 +73,7 @@ def process_xml_file(
     # 2. Skip preliminary rounds (Sexe="X")
     if metadata.get("gender") == "X":
         result.skipped_files.append(filename)
+        notifier.info(f"Skipped preliminary round: {filename}")
         return result
 
     # 3. Parse enriched results
@@ -91,8 +92,15 @@ def process_xml_file(
     # 6. Handle combined vs single category
     if len(categories) > 1:
         # Combined category — split by DOB/DB lookup
-        splits = split_combined_results(enriched, categories, fencer_db, season_end_year)
-        for cat, cat_results in splits.items():
+        split_result = split_combined_results(enriched, categories, fencer_db, season_end_year)
+        # ADR-024: notify about unresolved DOB fencers
+        if split_result.unresolved:
+            result.pending += len(split_result.unresolved)
+            notifier.notify_missing_dob(
+                len(split_result.unresolved),
+                filename,
+            )
+        for cat, cat_results in split_result.buckets.items():
             _process_category(
                 cat_results, metadata, cat, fencer_db, db, notifier,
                 season_end_year, tournament_type, dry_run, result,
@@ -129,19 +137,32 @@ def _process_category(
     except ValueError:
         date = raw_date  # already ISO or unparseable — pass through
 
-    # Find tournament in DB
-    tournament = db.find_tournament(weapon, gender, category, date)
-    if tournament is None:
-        result.errors.append(
-            f"Tournament not found: {weapon} {gender} {category} {date}"
+    # Event-centric lookup (ADR-025): find event by date, then find/create tournament
+    event = None
+    tournament = None
+    event = db.find_event_by_date(date)
+    if event is None:
+        # Fallback: try legacy global tournament lookup for backwards compatibility
+        tournament = db.find_tournament(weapon, gender, category, date)
+        if tournament is None:
+            result.errors.append(
+                f"No event scheduled for {date} and no tournament found: {weapon} {gender} {category}"
+            )
+            notifier.notify_tournament_not_found(weapon, gender, category, date, "")
+            return
+        tournament_id = tournament["id_tournament"]
+    else:
+        # Create tournament under event if it doesn't exist
+        tournament_id = db.find_or_create_tournament(
+            event["id_event"], weapon, gender, category, date, tournament_type
         )
-        notifier.notify_tournament_not_found(weapon, gender, category, date, "")
-        return
 
-    tournament_id = tournament["id_tournament"]
-    # Use caller-provided tournament_type (from filename/context),
-    # falling back to DB enum_type only if not specified
     t_type = tournament_type
+
+    # Check for duplicate import (warn but proceed — ADR-014 handles idempotent reimport)
+    if hasattr(db, 'has_existing_results') and db.has_existing_results(tournament_id):
+        tourn_info = f"{weapon} {gender} {category}"
+        notifier.notify_duplicate_import(tourn_info)
 
     # Resolve identities using matcher pipeline
     scraped_names = [r["fencer_name"] for r in enriched_results]
@@ -242,8 +263,13 @@ def _process_category(
     if results_json and not dry_run:
         db.ingest_results(tournament_id, results_json)
         result.tournament_ids.append(tournament_id)
+        tourn_label = str(tournament_id)
+        if event is not None:
+            tourn_label = f"{event.get('txt_code', '')}-{category}-{gender}-{weapon}"
+        elif tournament is not None:
+            tourn_label = tournament.get("txt_code", str(tournament_id))
         notifier.notify_import_success(
-            tournament.get("txt_code", str(tournament_id)),
+            tourn_label,
             {"matched": result.matched, "pending": result.pending,
              "auto_created": result.auto_created, "skipped": result.skipped},
         )

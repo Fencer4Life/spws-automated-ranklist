@@ -1,0 +1,50 @@
+name: Promote Event to PROD
+
+on:
+  workflow_dispatch:
+    inputs:
+      event_code:
+        description: 'Event code prefix (e.g. PPW4)'
+        required: true
+
+jobs:
+  promote:
+    name: CERT → PROD Promotion
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Promote event data
+        run: |
+          EVENT="${{ github.event.inputs.event_code }}"
+          echo "Promoting event: $EVENT"
+
+          # Read results from CERT
+          CERT_DATA=$(curl -s -X POST \
+            "https://api.supabase.com/v1/projects/${{ secrets.SUPABASE_CERT_REF }}/database/query" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": \"SELECT jsonb_build_object('event', row_to_json(e), 'tournaments', (SELECT jsonb_agg(row_to_json(t)) FROM tbl_tournament t WHERE t.id_event = e.id_event), 'results', (SELECT jsonb_agg(jsonb_build_object('id_fencer', r.id_fencer, 'id_tournament', r.id_tournament, 'int_place', r.int_place, 'tournament_code', t2.txt_code)) FROM tbl_result r JOIN tbl_tournament t2 ON r.id_tournament = t2.id_tournament WHERE t2.id_event = e.id_event)) FROM tbl_event e WHERE e.txt_code LIKE '${EVENT}%' AND e.id_season = (SELECT id_season FROM tbl_season WHERE bool_active = TRUE) LIMIT 1\"}")
+
+          echo "CERT data retrieved"
+          echo "$CERT_DATA" | head -c 500
+
+          # TODO: Parse CERT_DATA and insert into PROD via Management API
+          # This requires a Python script for proper JSON handling
+          echo "Full promotion logic requires Python script — placeholder for now"
+
+      - name: Notify success
+        if: success()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d text="Promoted ${{ github.event.inputs.event_code }} from CERT to PROD." \
+            -d parse_mode=Markdown
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d text="Promotion FAILED for ${{ github.event.inputs.event_code }}. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            -d parse_mode=Markdown

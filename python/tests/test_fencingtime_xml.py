@@ -143,7 +143,7 @@ class TestCategoryDetection:
 class TestCategorySplitting:
     def test_split_combined_by_birth_year(self):
         """9.126 6 fencers split into V0 (3) + V1 (3), re-ranked 1..3 each."""
-        from scrapers.fencingtime_xml import (
+        from python.scrapers.fencingtime_xml import (
             parse_fencingtime_xml_enriched,
             split_combined_results,
         )
@@ -161,25 +161,27 @@ class TestCategorySplitting:
                 "json_name_aliases": [],
             },
         ]
-        splits = split_combined_results(
+        split_result = split_combined_results(
             results,
             categories=["V0", "V1"],
             fencer_db=fencer_db,
             season_end_year=2026,
         )
-        assert "V0" in splits
-        assert "V1" in splits
-        assert len(splits["V0"]) == 3
-        assert len(splits["V1"]) == 3
+        assert "V0" in split_result.buckets
+        assert "V1" in split_result.buckets
+        assert len(split_result.buckets["V0"]) == 3
+        assert len(split_result.buckets["V1"]) == 3
+        # NOWY resolved via fencer_db → no unresolved
+        assert len(split_result.unresolved) == 0
         # Check re-ranking: places should be 1, 2, 3 within each split
-        v0_places = sorted(r["place"] for r in splits["V0"])
-        v1_places = sorted(r["place"] for r in splits["V1"])
+        v0_places = sorted(r["place"] for r in split_result.buckets["V0"])
+        v1_places = sorted(r["place"] for r in split_result.buckets["V1"])
         assert v0_places == [1, 2, 3]
         assert v1_places == [1, 2, 3]
 
-    def test_split_missing_dob_fallback(self):
-        """9.127 Fencer without DOB and not in fencer_db → lowest category."""
-        from scrapers.fencingtime_xml import (
+    def test_split_missing_dob_unresolved(self):
+        """9.127 Fencer without DOB and not in fencer_db → in unresolved + lowest category (ADR-024)."""
+        from python.scrapers.fencingtime_xml import (
             parse_fencingtime_xml_enriched,
             split_combined_results,
         )
@@ -188,15 +190,38 @@ class TestCategorySplitting:
             _load_fixture("combined_v0v1.xml")
         )
         # Empty fencer_db — NOWY Michał (no DOB) can't be resolved
-        splits = split_combined_results(
+        split_result = split_combined_results(
             results,
             categories=["V0", "V1"],
             fencer_db=[],
             season_end_year=2026,
         )
-        # NOWY should fall back to V0 (lowest category in the combined set)
-        v0_names = [r["fencer_name"] for r in splits["V0"]]
+        # NOWY should be in unresolved
+        unresolved_names = [r["fencer_name"] for r in split_result.unresolved]
+        assert "NOWY Michał" in unresolved_names
+        # But still assigned to V0 (lowest category) so data isn't lost
+        v0_names = [r["fencer_name"] for r in split_result.buckets["V0"]]
         assert "NOWY Michał" in v0_names
+
+    def test_split_unresolved_returns_correct_count(self):
+        """9.194 split_combined_results returns unresolved for unknown DOB."""
+        from python.scrapers.fencingtime_xml import (
+            parse_fencingtime_xml_enriched,
+            split_combined_results,
+        )
+
+        results = parse_fencingtime_xml_enriched(
+            _load_fixture("combined_v0v1.xml")
+        )
+        split_result = split_combined_results(
+            results,
+            categories=["V0", "V1"],
+            fencer_db=[],
+            season_end_year=2026,
+        )
+        # Exactly 1 fencer has missing DOB in the fixture (NOWY Michał)
+        assert len(split_result.unresolved) == 1
+        assert split_result.unresolved[0]["fencer_name"] == "NOWY Michał"
 
 
 class TestFileImportDispatch:

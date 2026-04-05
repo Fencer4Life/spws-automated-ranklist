@@ -85,26 +85,50 @@
 
     <div data-field="event-list" class="event-list">
       {#each filteredEvents as event}
-        <div data-field="event-row" class="event-row">
-          <span data-field="event-name" class="event-cell">{event.txt_name}</span>
-          <span data-field="event-location" class="event-cell">{event.txt_location ?? ''}</span>
-          <span data-field="event-weapons" class="event-cell event-weapons">{formatWeapons(event.arr_weapons ?? [])}</span>
-          <span data-field="event-dates" class="event-cell">{event.dt_start ?? ''}{event.dt_end && event.dt_end !== event.dt_start ? ` – ${event.dt_end}` : ''}</span>
-          <span data-field="event-status-badge" class="event-cell status-badge {statusClass(event.enum_status)}">{event.enum_status}</span>
-          <span class="event-cell">
-            {#if VALID_TRANSITIONS[event.enum_status]?.length > 0}
-              <select data-field="event-status-select" onchange={(e) => { handleStatusChange(event.id_event, (e.target as HTMLSelectElement).value) }}>
-                <option value="">--</option>
-                {#each VALID_TRANSITIONS[event.enum_status] as next}
-                  <option value={next}>{next}</option>
-                {/each}
-              </select>
-            {/if}
-          </span>
-          <span class="event-cell actions">
-            <button data-field="edit-btn" class="icon-btn" onclick={() => { openEditForm(event) }}>&#9998;</button>
-            <button data-field="delete-btn" class="icon-btn delete" onclick={() => { ondelete(event.id_event) }}>&#128465;</button>
-          </span>
+        <div class="event-card">
+          <div data-field="event-row" class="event-row">
+            <button data-field="expand-btn" class="expand-btn" onclick={() => { toggleExpand(event.id_event) }}>
+              {expandedIds.has(event.id_event) ? '▼' : '▶'}
+            </button>
+            <span data-field="event-name" class="event-cell">{event.txt_name}</span>
+            <span data-field="event-location" class="event-cell">{event.txt_location ?? ''}</span>
+            <span data-field="event-weapons" class="event-cell event-weapons">{formatWeapons(event.arr_weapons ?? [])}</span>
+            <span data-field="event-dates" class="event-cell">{event.dt_start ?? ''}{event.dt_end && event.dt_end !== event.dt_start ? ` – ${event.dt_end}` : ''}</span>
+            <span data-field="event-status-badge" class="event-cell status-badge {statusClass(event.enum_status)}">{event.enum_status}</span>
+            <span data-field="tournament-count" class="event-cell tournament-count-badge">{tournamentsForEvent(event.id_event).length}</span>
+            <span class="event-cell">
+              {#if VALID_TRANSITIONS[event.enum_status]?.length > 0}
+                <select data-field="event-status-select" onchange={(e) => { handleStatusChange(event.id_event, (e.target as HTMLSelectElement).value) }}>
+                  <option value="">--</option>
+                  {#each VALID_TRANSITIONS[event.enum_status] as next}
+                    <option value={next}>{next}</option>
+                  {/each}
+                </select>
+              {/if}
+            </span>
+            <span class="event-cell actions">
+              <button data-field="edit-btn" class="icon-btn" onclick={() => { openEditForm(event) }}>&#9998;</button>
+              <button data-field="delete-btn" class="icon-btn delete" onclick={() => { ondelete(event.id_event) }}>&#128465;</button>
+            </span>
+          </div>
+
+          {#if expandedIds.has(event.id_event)}
+            <div data-field="tournament-list" class="tournament-list">
+              {#each tournamentsForEvent(event.id_event) as tourn}
+                <div data-field="tournament-row" class="tourn-row">
+                  <span data-field="tourn-code" class="tourn-cell tourn-code">{tourn.txt_code}</span>
+                  <span class="tourn-cell tourn-type-badge">{tourn.enum_type}</span>
+                  <span class="tourn-cell">{tourn.enum_weapon}</span>
+                  <span class="tourn-cell">{tourn.enum_age_category} {tourn.enum_gender}</span>
+                  <span data-field="tourn-import-status" class="tourn-cell import-badge {importStatusClass(tourn.enum_import_status)}">{tourn.enum_import_status}</span>
+                  <span data-field="tourn-participants" class="tourn-cell">{tourn.int_participant_count ?? '—'}</span>
+                  <span class="tourn-cell actions">
+                    <button data-field="tourn-delete-btn" class="icon-btn delete" onclick={() => { ondeletetournament(tourn.id_tournament) }}>&#128465;</button>
+                  </span>
+                </div>
+              {/each}
+            </div>
+          {/if}
         </div>
       {/each}
     </div>
@@ -112,7 +136,7 @@
 {/if}
 
 <script lang="ts">
-  import type { CalendarEvent, Season, Organizer, WeaponType } from '../lib/types'
+  import type { CalendarEvent, Season, Organizer, WeaponType, Tournament } from '../lib/types'
   import { t } from '../lib/locale.svelte'
 
   const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -128,22 +152,26 @@
     events = [] as CalendarEvent[],
     seasons = [] as Season[],
     organizers = [] as Organizer[],
+    tournaments = [] as Tournament[],
     selectedSeasonId = null as number | null,
     isAdmin = false,
     oncreate = (_evt: Record<string, unknown>) => {},
     onupdate = (_id: number, _evt: Record<string, unknown>) => {},
     onupdatestatus = (_id: number, _status: string) => {},
     ondelete = (_id: number) => {},
+    ondeletetournament = (_id: number) => {},
   }: {
     events?: CalendarEvent[]
     seasons?: Season[]
     organizers?: Organizer[]
+    tournaments?: Tournament[]
     selectedSeasonId?: number | null
     isAdmin?: boolean
     oncreate?: (evt: Record<string, unknown>) => void
     onupdate?: (id: number, evt: Record<string, unknown>) => void
     onupdatestatus?: (id: number, status: string) => void
     ondelete?: (id: number) => void
+    ondeletetournament?: (id: number) => void
   } = $props()
 
   let showForm = $state(false)
@@ -160,6 +188,33 @@
   let draftUrlEvent = $state('')
   let draftOrganizerId = $state(0)
   let draftWeapons: Set<WeaponType> = $state(new Set(['EPEE', 'FOIL', 'SABRE']))
+
+  let expandedIds: Set<number> = $state(new Set())
+
+  function toggleExpand(eventId: number) {
+    const next = new Set(expandedIds)
+    if (next.has(eventId)) {
+      next.delete(eventId)
+    } else {
+      next.add(eventId)
+    }
+    expandedIds = next
+  }
+
+  function tournamentsForEvent(eventId: number): Tournament[] {
+    return tournaments.filter(t => t.id_event === eventId)
+  }
+
+  function importStatusClass(status: string): string {
+    switch (status) {
+      case 'SCORED': return 'import-scored'
+      case 'IMPORTED': return 'import-imported'
+      case 'PLANNED': return 'import-planned'
+      case 'PENDING': return 'import-pending'
+      case 'REJECTED': return 'import-rejected'
+      default: return ''
+    }
+  }
 
   const WEAPON_OPTIONS: WeaponType[] = ['EPEE', 'FOIL', 'SABRE']
 
@@ -426,4 +481,72 @@
   .icon-btn.delete:hover {
     color: #c33;
   }
+  .event-card {
+    margin-bottom: 2px;
+  }
+  .expand-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px;
+    color: #4a90d9;
+    min-width: 20px;
+  }
+  .tournament-count-badge {
+    background: #e0e8f0;
+    color: #4a90d9;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 24px;
+    text-align: center;
+  }
+  .tournament-list {
+    background: #f4f6f8;
+    border: 1px solid #e0e0e0;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    padding: 4px 12px 8px 32px;
+  }
+  .tourn-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid #e8e8e8;
+    font-size: 13px;
+  }
+  .tourn-row:last-child {
+    border-bottom: none;
+  }
+  .tourn-cell {
+    color: #333;
+  }
+  .tourn-code {
+    font-family: monospace;
+    font-size: 12px;
+    color: #4a90d9;
+    min-width: 180px;
+  }
+  .tourn-type-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 600;
+    background: #d4edda;
+    color: #155724;
+  }
+  .import-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+  .import-scored { background: #d4edda; color: #155724; }
+  .import-imported { background: #cce5ff; color: #004085; }
+  .import-planned { background: #e2e3e5; color: #383d41; }
+  .import-pending { background: #fff3cd; color: #856404; }
+  .import-rejected { background: #f8d7da; color: #721c24; }
 </style>

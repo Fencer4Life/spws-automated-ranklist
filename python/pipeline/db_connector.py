@@ -25,12 +25,47 @@ class DbConnector:
         )
         return resp.data
 
+    def find_event_by_date(self, date: str) -> dict | None:
+        """Find event in active season by date (ADR-025).
+
+        Returns dict with id_event, txt_code, txt_name, enum_status or None.
+        """
+        resp = self._sb.rpc(
+            "fn_find_event_by_date",
+            {"p_date": date},
+        ).execute()
+        if resp.data:
+            return resp.data[0]
+        return None
+
+    def find_or_create_tournament(
+        self, event_id: int, weapon: str, gender: str,
+        category: str, date: str, tournament_type: str,
+    ) -> int:
+        """Find or create tournament under event (ADR-025).
+
+        Returns id_tournament.
+        """
+        resp = self._sb.rpc(
+            "fn_find_or_create_tournament",
+            {
+                "p_event_id": event_id,
+                "p_weapon": weapon,
+                "p_gender": gender,
+                "p_age_category": category,
+                "p_date": date,
+                "p_type": tournament_type,
+            },
+        ).execute()
+        return resp.data
+
     def find_tournament(
         self, weapon: str, gender: str, category: str, date: str
     ) -> dict | None:
-        """Look up a tournament by weapon, gender, category, and date.
+        """Legacy: look up tournament by weapon+gender+category+date globally.
 
-        Returns dict with id_tournament, txt_code, enum_type or None.
+        Kept for backwards compatibility. Prefer find_event_by_date +
+        find_or_create_tournament for new code.
         """
         resp = (
             self._sb.table("tbl_tournament")
@@ -44,6 +79,17 @@ class DbConnector:
         if resp.data:
             return resp.data[0]
         return None
+
+    def has_existing_results(self, tournament_id: int) -> bool:
+        """Check if a tournament already has results in tbl_result."""
+        resp = (
+            self._sb.table("tbl_result")
+            .select("id_result")
+            .eq("id_tournament", tournament_id)
+            .limit(1)
+            .execute()
+        )
+        return len(resp.data) > 0
 
     def ingest_results(self, tournament_id: int, results_json: list[dict]) -> dict:
         """Call fn_ingest_tournament_results RPC (ADR-022)."""

@@ -47,6 +47,10 @@ def _make_mock_db(
         return tournaments.get(key)
 
     db.find_tournament.side_effect = find_tournament
+    # Event-centric methods (ADR-025): return None by default (falls back to legacy)
+    db.find_event_by_date.return_value = None
+    db.find_or_create_tournament.return_value = 1
+    db.has_existing_results.return_value = False
     db.ingest_results.return_value = ingest_response or {"inserted": 3, "scored": True}
     db.insert_fencer.return_value = 999  # fake new id_fencer
     return db
@@ -359,3 +363,114 @@ class TestErrorHandling:
         # There should be pending or auto-created fencers triggering notification
         if result.pending > 0:
             notifier.notify_identity_review.assert_called()
+
+
+class TestADR024PendingDOB:
+    """Tests 9.195–9.196: ADR-024 PENDING for unknown DOB in combined categories."""
+
+    def test_orchestrator_sets_pending_for_unresolved(self):
+        """9.195 Orchestrator increments pending count for unresolved DOB fencers."""
+        from python.pipeline.orchestrator import process_xml_file
+
+        tournaments = {
+            ("EPEE", "M", "V0"): {"id_tournament": 10, "txt_code": "T-V0", "enum_type": "PPW"},
+            ("EPEE", "M", "V1"): {"id_tournament": 11, "txt_code": "T-V1", "enum_type": "PPW"},
+        }
+        # Empty fencer_db — NOWY Michał (no DOB in fixture) can't be resolved
+        db = _make_mock_db(tournaments=tournaments, fencer_db=[])
+        notifier = _make_mock_notifier()
+        result = process_xml_file(
+            file_bytes=_load_fixture("combined_v0v1.xml"),
+            filename="RESULTS_VETME_v0v1.xml",
+            db=db,
+            notifier=notifier,
+            season_end_year=2026,
+        )
+        # NOWY Michał has no DOB → pending should be > 0
+        assert result.pending > 0
+
+    def test_notify_missing_dob_called_for_unresolved(self):
+        """9.196 notify_missing_dob called when unresolved > 0."""
+        from python.pipeline.orchestrator import process_xml_file
+
+        tournaments = {
+            ("EPEE", "M", "V0"): {"id_tournament": 10, "txt_code": "T-V0", "enum_type": "PPW"},
+            ("EPEE", "M", "V1"): {"id_tournament": 11, "txt_code": "T-V1", "enum_type": "PPW"},
+        }
+        db = _make_mock_db(tournaments=tournaments, fencer_db=[])
+        notifier = _make_mock_notifier()
+        process_xml_file(
+            file_bytes=_load_fixture("combined_v0v1.xml"),
+            filename="RESULTS_VETME_v0v1.xml",
+            db=db,
+            notifier=notifier,
+            season_end_year=2026,
+        )
+        notifier.notify_missing_dob.assert_called_once_with(1, "RESULTS_VETME_v0v1.xml")
+
+
+class TestEventCentricIngestion:
+    """Test 9.193: Event-centric routing (ADR-025)."""
+
+    def test_rejects_xml_when_no_event_and_no_tournament(self):
+        """9.193 Orchestrator rejects XML when no event matches date and no legacy tournament."""
+        from python.pipeline.orchestrator import process_xml_file
+
+        db = _make_mock_db(tournaments={})  # empty — nothing found
+        db.find_event_by_date.return_value = None  # no event either
+        notifier = _make_mock_notifier()
+        result = process_xml_file(
+            file_bytes=_load_fixture("single_category.xml"),
+            filename="RESULTS_V50ME.xml",
+            db=db,
+            notifier=notifier,
+            season_end_year=2026,
+        )
+        assert len(result.errors) > 0
+        notifier.notify_tournament_not_found.assert_called()
+
+
+class TestNotificationWiring:
+    """Tests 9.198–9.199: Missing notification calls wired in."""
+
+    def test_preliminary_file_notifies_skip(self):
+        """9.198 Preliminary file (Sexe=X) sends info notification about skip."""
+        from python.pipeline.orchestrator import process_xml_file
+
+        db = _make_mock_db()
+        notifier = _make_mock_notifier()
+
+        xml = """<?xml version="1.0" encoding="utf-8"?>
+        <CompetitionIndividuelle Arme="E" Sexe="X" AltName="SZPADA ELIMINACJE"
+            Annee="2025/2026" Date="21.02.2026" TitreLong="Test" Federation="POL">
+            <Tireurs>
+                <Tireur Nom="TEST" Prenom="One" Classement="1" Nation="POL"/>
+            </Tireurs>
+        </CompetitionIndividuelle>""".encode("utf-8")
+
+        result = process_xml_file(
+            file_bytes=xml,
+            filename="RESULTS_GRVETXE.xml",
+            db=db,
+            notifier=notifier,
+            season_end_year=2026,
+        )
+        assert len(result.skipped_files) > 0
+        notifier.info.assert_called()
+
+    def test_duplicate_import_notifies_warning(self):
+        """9.199 Re-importing a tournament with existing results triggers duplicate notification."""
+        from python.pipeline.orchestrator import process_xml_file
+
+        db = _make_mock_db(fencer_db=[])
+        db.has_existing_results.return_value = True
+        notifier = _make_mock_notifier()
+        result = process_xml_file(
+            file_bytes=_load_fixture("single_category.xml"),
+            filename="RESULTS_V50ME.xml",
+            db=db,
+            notifier=notifier,
+            season_end_year=2026,
+            tournament_type="PPW",
+        )
+        notifier.notify_duplicate_import.assert_called()
