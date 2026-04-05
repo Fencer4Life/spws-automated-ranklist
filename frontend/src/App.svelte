@@ -189,6 +189,7 @@
     saveScoringConfig,
     fetchAllTournaments,
     deleteTournamentCascade,
+    fetchMatchCandidates,
   } from './lib/api'
   import {
     MOCK_SEASONS,
@@ -490,6 +491,7 @@
     currentView = view
     if (view === 'calendar') loadCalendar()
     else if (view === 'admin_events') loadAdminEvents()
+    else if (view === 'admin_identities') loadMatchCandidates()
     else if (view === 'admin_scoring') loadScoringConfig()
   }
 
@@ -517,6 +519,15 @@
         const eventIds = calendarEvents.map(e => e.id_event)
         allTournaments = await fetchAllTournaments(eventIds)
       }
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function loadMatchCandidates() {
+    if (demo) return
+    try {
+      matchCandidates = await fetchMatchCandidates()
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
     }
