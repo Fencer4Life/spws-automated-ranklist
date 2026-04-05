@@ -111,18 +111,37 @@ def main() -> None:
         )
 
         staging_files = storage.list_staging_files()
+        season = f"SPWS-{args.season_end_year - 1}-{args.season_end_year}"
         for fpath in staging_files:
-            zip_bytes = storage.download_file(fpath)
-            xml_files = unzip_in_memory(zip_bytes)
-            for fname, xml_bytes in xml_files.items():
-                process_xml_file(
+            file_bytes = storage.download_file(fpath)
+            fname = Path(fpath).name
+
+            # Handle both .zip and .xml files in staging
+            if fname.lower().endswith(".zip"):
+                xml_files = unzip_in_memory(file_bytes)
+            elif fname.lower().endswith(".xml"):
+                xml_files = {fname: file_bytes}
+            else:
+                continue
+
+            has_error = False
+            for xname, xml_bytes in xml_files.items():
+                r = process_xml_file(
                     file_bytes=xml_bytes,
-                    filename=fname,
+                    filename=xname,
                     db=db,
                     notifier=notifier,
                     season_end_year=args.season_end_year,
                     tournament_type=args.tournament_type,
                 )
+                if r.errors:
+                    has_error = True
+
+            # Archive and clean staging (ADR-023)
+            if not has_error:
+                event_name = Path(fpath).stem
+                storage.archive_zip(fpath, season, event_name)
+                notifier.info(f"Archived {fpath} → archive/{season}/{event_name}")
     elif args.path:
         result = run_ingest(
             path=args.path,
