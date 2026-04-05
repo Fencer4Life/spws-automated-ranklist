@@ -123,6 +123,8 @@
                   <span data-field="tourn-import-status" class="tourn-cell import-badge {importStatusClass(tourn.enum_import_status)}">{tourn.enum_import_status}</span>
                   <span data-field="tourn-participants" class="tourn-cell">{tourn.int_participant_count ?? '—'}</span>
                   <span class="tourn-cell actions">
+                    <button data-field="tourn-import-btn" class="action-btn import-btn" onclick={() => { onimporttournament(tourn.id_tournament, tourn.enum_import_status !== 'PLANNED') }}>⬇</button>
+                    <button data-field="tourn-edit-btn" class="icon-btn" onclick={() => { onedittournament(tourn.id_tournament) }}>&#9998;</button>
                     <button data-field="tourn-delete-btn" class="icon-btn delete" onclick={() => { ondeletetournament(tourn.id_tournament) }}>&#128465;</button>
                   </span>
                 </div>
@@ -160,6 +162,8 @@
     onupdatestatus = (_id: number, _status: string) => {},
     ondelete = (_id: number) => {},
     ondeletetournament = (_id: number) => {},
+    onimporttournament = (_id: number, _isReimport: boolean) => {},
+    onedittournament = (_id: number) => {},
   }: {
     events?: CalendarEvent[]
     seasons?: Season[]
@@ -172,6 +176,8 @@
     onupdatestatus?: (id: number, status: string) => void
     ondelete?: (id: number) => void
     ondeletetournament?: (id: number) => void
+    onimporttournament?: (id: number, isReimport: boolean) => void
+    onedittournament?: (id: number) => void
   } = $props()
 
   let showForm = $state(false)
@@ -549,4 +555,20 @@
   .import-planned { background: #e2e3e5; color: #383d41; }
   .import-pending { background: #fff3cd; color: #856404; }
   .import-rejected { background: #f8d7da; color: #721c24; }
+  .action-btn {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    border: 1px solid;
+  }
+  .import-btn {
+    background: #d4edda;
+    color: #155724;
+    border-color: #155724;
+  }
+  .import-btn:hover {
+    background: #c3e6cb;
+  }
 </style>
