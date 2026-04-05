@@ -582,26 +582,26 @@ SELECT fn_calc_tournament_scores(
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V1-M-FOIL-2024-2025')
 );
 
--- ---- PS: Puchar Świata (Paryż) ----
+-- ---- PEW10: EVF Criterium Mondial Vétérans (Paryż) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
-    'PS-2024-2025',
-    'Puchar Świata',
+    'PEW10-2024-2025',
+    'EVF Criterium Mondial Vétérans 2025',
     'Paryż',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
     'COMPLETED'
-WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PS-2024-2025');
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW10-2024-2025');
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category,
     dt_tournament, int_participant_count, url_results,
     enum_import_status
 ) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PS-2024-2025'),
-    'PS-V1-M-FOIL-2024-2025',
-    'Puchar Świata',
-    'PSW',
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW10-2024-2025'),
+    'PEW10-V1-M-FOIL-2024-2025',
+    'EVF Criterium Mondial Vétérans 2025',
+    'PEW',
     'FOIL', 'M', 'V1',
     '2025-07-05', 16, 'https://engarde-service.com/competition/fencingaddict/crit25/fhv1',
     'SCORED'
@@ -609,13 +609,13 @@ INSERT INTO tbl_tournament (
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     216,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PS-V1-M-FOIL-2024-2025'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW10-V1-M-FOIL-2024-2025'),
     6,
     'PRZYSTAJKO Daniel'
 ); -- matched: PRZYSTAJKO Daniel (score=100.0)
 -- Compute scores for PS-V1-M-FOIL-2024-2025
 SELECT fn_calc_tournament_scores(
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PS-V1-M-FOIL-2024-2025')
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW10-V1-M-FOIL-2024-2025')
 );
 
 -- ---- IMEW: Indywidualne Mistrzostwa Europy Weteranów (Płowdiw) ----
