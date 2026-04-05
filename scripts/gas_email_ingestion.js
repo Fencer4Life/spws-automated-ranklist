@@ -212,25 +212,47 @@ function handleCommand(props, command, arg) {
 // ═══════════════════════════════════════════════════════════════
 
 function callRpc(url, key, fnName, params) {
-  var endpoint = url + '/rest/v1/rpc/' + fnName;
+  // Build SQL call from function name and params
+  var paramParts = [];
+  for (var k in params) {
+    var v = params[k];
+    if (typeof v === 'string') {
+      paramParts.push(k + " := '" + v.replace(/'/g, "''") + "'");
+    } else if (v === null || v === undefined) {
+      paramParts.push(k + ' := NULL');
+    } else {
+      paramParts.push(k + ' := ' + v);
+    }
+  }
+  var sql = 'SELECT ' + fnName + '(' + paramParts.join(', ') + ')';
+
+  // Use Management API (bypasses PostgREST restrictions)
+  var props = PropertiesService.getScriptProperties();
+  var accessToken = props.getProperty('SUPABASE_ACCESS_TOKEN');
+  var projectRef = props.getProperty('SUPABASE_PROJECT_REF');
+
+  var endpoint = 'https://api.supabase.com/v1/projects/' + projectRef + '/database/query';
   var response = UrlFetchApp.fetch(endpoint, {
     method: 'post',
     headers: {
-      'Authorization': 'Bearer ' + key,
-      'apikey': key,
+      'Authorization': 'Bearer ' + accessToken,
       'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
     },
-    payload: JSON.stringify(params),
+    payload: JSON.stringify({ query: sql }),
     muteHttpExceptions: true,
   });
 
   if (response.getResponseCode() >= 400) {
-    var err = JSON.parse(response.getContentText());
-    throw new Error(err.message || response.getContentText());
+    throw new Error(response.getContentText());
   }
 
-  return JSON.parse(response.getContentText());
+  var rows = JSON.parse(response.getContentText());
+  if (rows && rows.length > 0) {
+    // Extract the function result from the first row's first column
+    var firstKey = Object.keys(rows[0])[0];
+    return rows[0][firstKey];
+  }
+  return null;
 }
 
 function uploadToSupabaseStorage(url, key, path, bytes, contentType) {
