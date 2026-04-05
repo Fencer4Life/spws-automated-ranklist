@@ -22,12 +22,12 @@ class TestIngestCli:
 
     def test_cli_processes_single_xml(self):
         """9.166 CLI processes single XML file and prints summary."""
-        from pipeline.ingest_cli import run_ingest
+        from python.pipeline.ingest_cli import run_ingest
 
         xml_path = FIXTURES / "single_category.xml"
 
-        with patch("pipeline.ingest_cli.create_db_connector") as mock_create_db, \
-             patch("pipeline.ingest_cli.process_xml_file") as mock_process:
+        with patch("python.pipeline.ingest_cli.create_db_connector") as mock_create_db, \
+             patch("python.pipeline.ingest_cli.process_xml_file") as mock_process:
             mock_process.return_value = MagicMock(
                 tournament_ids=[1], matched=5, pending=0,
                 auto_created=0, skipped=0, errors=[], skipped_files=[],
@@ -42,7 +42,7 @@ class TestIngestCli:
 
     def test_cli_processes_zip_archive(self):
         """9.167 CLI processes .zip archive — extracts and processes each XML."""
-        from pipeline.ingest_cli import run_ingest
+        from python.pipeline.ingest_cli import run_ingest
 
         # Create a zip with 2 XML files
         xml1 = (FIXTURES / "single_category.xml").read_bytes()
@@ -57,8 +57,8 @@ class TestIngestCli:
             tmp.write(buf.getvalue())
             tmp_path = tmp.name
 
-        with patch("pipeline.ingest_cli.create_db_connector") as mock_create_db, \
-             patch("pipeline.ingest_cli.process_xml_file") as mock_process:
+        with patch("python.pipeline.ingest_cli.create_db_connector") as mock_create_db, \
+             patch("python.pipeline.ingest_cli.process_xml_file") as mock_process:
             mock_process.return_value = MagicMock(
                 tournament_ids=[1], matched=5, pending=0,
                 auto_created=0, skipped=0, errors=[], skipped_files=[],
@@ -75,12 +75,12 @@ class TestIngestCli:
 
     def test_cli_dry_run_no_db_writes(self):
         """9.168 --dry-run parses and matches but skips DB writes."""
-        from pipeline.ingest_cli import run_ingest
+        from python.pipeline.ingest_cli import run_ingest
 
         xml_path = FIXTURES / "single_category.xml"
 
-        with patch("pipeline.ingest_cli.create_db_connector") as mock_create_db, \
-             patch("pipeline.ingest_cli.process_xml_file") as mock_process:
+        with patch("python.pipeline.ingest_cli.create_db_connector") as mock_create_db, \
+             patch("python.pipeline.ingest_cli.process_xml_file") as mock_process:
             mock_process.return_value = MagicMock(
                 tournament_ids=[], matched=0, pending=0,
                 auto_created=0, skipped=0, errors=[], skipped_files=[],

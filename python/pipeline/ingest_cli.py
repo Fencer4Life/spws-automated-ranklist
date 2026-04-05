@@ -17,10 +17,10 @@ from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import Path
 
-from pipeline.db_connector import create_db_connector
-from pipeline.notifications import TelegramNotifier
-from pipeline.orchestrator import IngestResult, process_xml_file
-from pipeline.storage_handler import unzip_in_memory
+from python.pipeline.db_connector import create_db_connector
+from python.pipeline.notifications import TelegramNotifier
+from python.pipeline.orchestrator import IngestResult, process_xml_file
+from python.pipeline.storage_handler import unzip_in_memory
 
 
 def run_ingest(
@@ -100,7 +100,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.from_storage:
-        from pipeline.storage_handler import StorageHandler
+        from python.pipeline.storage_handler import StorageHandler
         db = create_db_connector()
         from supabase import create_client
         sb = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])

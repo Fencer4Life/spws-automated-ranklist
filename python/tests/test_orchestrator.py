@@ -54,7 +54,7 @@ def _make_mock_db(
 
 def _make_silent_notifier():
     """Create a TelegramNotifier in silent mode (no-op)."""
-    from pipeline.notifications import TelegramNotifier
+    from python.pipeline.notifications import TelegramNotifier
     return TelegramNotifier(None, None)
 
 
@@ -68,7 +68,7 @@ class TestSingleCategoryRouting:
 
     def test_single_category_routes_to_correct_tournament(self):
         """9.149 Single-category XML routes to correct tournament by weapon+gender+category+date."""
-        from pipeline.orchestrator import process_xml_file
+        from python.pipeline.orchestrator import process_xml_file
 
         db = _make_mock_db()
         notifier = _make_silent_notifier()
@@ -87,7 +87,7 @@ class TestSingleCategoryRouting:
 
     def test_enriched_results_used_for_matching(self):
         """9.150 Enriched results (with DOB) passed to matcher, not basic results."""
-        from pipeline.orchestrator import process_xml_file
+        from python.pipeline.orchestrator import process_xml_file
 
         db = _make_mock_db()
         notifier = _make_silent_notifier()
@@ -108,7 +108,7 @@ class TestPreliminarySkipping:
 
     def test_sexe_x_skipped(self):
         """9.151 XML with Sexe='X' (preliminary round) → skipped."""
-        from pipeline.orchestrator import process_xml_file
+        from python.pipeline.orchestrator import process_xml_file
 
         db = _make_mock_db()
         notifier = _make_silent_notifier()
@@ -139,7 +139,7 @@ class TestCombinedCategorySplitting:
 
     def test_combined_splits_into_two_tournaments(self):
         """9.152 Combined v0v1 XML splits into 2 tournament imports."""
-        from pipeline.orchestrator import process_xml_file
+        from python.pipeline.orchestrator import process_xml_file
 
         tournaments = {
             ("EPEE", "M", "V0"): {"id_tournament": 10, "txt_code": "T-V0", "enum_type": "PPW"},
@@ -160,7 +160,7 @@ class TestCombinedCategorySplitting:
 
     def test_combined_splits_reranked(self):
         """9.153 Each split re-ranked 1..N independently."""
-        from pipeline.orchestrator import process_xml_file
+        from python.pipeline.orchestrator import process_xml_file
 
         tournaments = {
             ("EPEE", "M", "V0"): {"id_tournament": 10, "txt_code": "T-V0", "enum_type": "PPW"},
@@ -184,7 +184,7 @@ class TestCombinedCategorySplitting:
 
     def test_combined_missing_dob_flagged_pending(self):
         """9.154 Missing DOB in combined category → flagged PENDING."""
-        from pipeline.orchestrator import process_xml_file
+        from python.pipeline.orchestrator import process_xml_file
 
         tournaments = {
             ("EPEE", "M", "V0"): {"id_tournament": 10, "txt_code": "T-V0", "enum_type": "PPW"},
@@ -209,7 +209,7 @@ class TestDomesticInternationalRules:
 
     def test_domestic_unmatched_auto_creates(self):
         """9.155 PPW: unmatched fencer → insert_fencer called on db connector."""
-        from pipeline.orchestrator import process_xml_file
+        from python.pipeline.orchestrator import process_xml_file
 
         # Fixture has 5 fencers, empty fencer_db means all unmatched
         db = _make_mock_db(fencer_db=[])
@@ -228,7 +228,7 @@ class TestDomesticInternationalRules:
 
     def test_international_unmatched_skipped(self):
         """9.156 PEW: unmatched fencer → skipped, no insert."""
-        from pipeline.orchestrator import process_xml_file
+        from python.pipeline.orchestrator import process_xml_file
 
         db = _make_mock_db(fencer_db=[])
         notifier = _make_silent_notifier()
@@ -246,7 +246,7 @@ class TestDomesticInternationalRules:
 
     def test_auto_matched_correct_payload(self):
         """9.157 Auto-matched fencers → correct JSONB payload for RPC."""
-        from pipeline.orchestrator import process_xml_file
+        from python.pipeline.orchestrator import process_xml_file
 
         fencer_db = [
             {"id_fencer": 1, "txt_surname": "NOWAK", "txt_first_name": "Piotr",
@@ -280,7 +280,7 @@ class TestErrorHandling:
 
     def test_tournament_not_found_error(self):
         """9.158 Tournament not found in DB → error + notify_tournament_not_found called."""
-        from pipeline.orchestrator import process_xml_file
+        from python.pipeline.orchestrator import process_xml_file
 
         db = _make_mock_db(tournaments={})  # empty — nothing found
         notifier = _make_mock_notifier()
@@ -296,7 +296,7 @@ class TestErrorHandling:
 
     def test_ingest_result_counts(self):
         """9.159 IngestResult includes counts: matched, pending, auto_created, skipped."""
-        from pipeline.orchestrator import process_xml_file
+        from python.pipeline.orchestrator import process_xml_file
 
         db = _make_mock_db(fencer_db=[])
         notifier = _make_silent_notifier()
@@ -318,7 +318,7 @@ class TestErrorHandling:
 
     def test_empty_xml_error(self):
         """9.160 Empty XML (no Tireurs) → error."""
-        from pipeline.orchestrator import process_xml_file
+        from python.pipeline.orchestrator import process_xml_file
 
         xml = """<?xml version="1.0" encoding="utf-8"?>
         <CompetitionIndividuelle Arme="E" Sexe="M" AltName="SZPADA MEZCZYZN v2"
@@ -339,7 +339,7 @@ class TestErrorHandling:
 
     def test_pending_matches_notify(self):
         """9.161 PENDING matches → notify_identity_review called."""
-        from pipeline.orchestrator import process_xml_file
+        from python.pipeline.orchestrator import process_xml_file
 
         # Provide fencers that will partially match (different first name → pending)
         fencer_db = [

@@ -18,7 +18,7 @@ class TestDbConnector:
 
     def test_fetch_fencer_db_returns_list_of_dicts(self):
         """9.162 fetch_fencer_db() returns list[dict] with expected keys."""
-        from pipeline.db_connector import DbConnector
+        from python.pipeline.db_connector import DbConnector
 
         mock_sb = MagicMock()
         mock_sb.table.return_value.select.return_value.execute.return_value.data = [
@@ -37,7 +37,7 @@ class TestDbConnector:
 
     def test_find_tournament_returns_dict_or_none(self):
         """9.163 find_tournament returns dict when found, None when not."""
-        from pipeline.db_connector import DbConnector
+        from python.pipeline.db_connector import DbConnector
 
         # Found case
         mock_sb = MagicMock()
@@ -58,7 +58,7 @@ class TestDbConnector:
 
     def test_ingest_results_calls_rpc(self):
         """9.164 ingest_results calls .rpc('fn_ingest_tournament_results')."""
-        from pipeline.db_connector import DbConnector
+        from python.pipeline.db_connector import DbConnector
 
         mock_sb = MagicMock()
         mock_sb.rpc.return_value.execute.return_value.data = {"inserted": 3, "scored": True}
@@ -70,7 +70,7 @@ class TestDbConnector:
 
     def test_insert_fencer_returns_id(self):
         """9.165 insert_fencer inserts and returns id_fencer."""
-        from pipeline.db_connector import DbConnector
+        from python.pipeline.db_connector import DbConnector
 
         mock_sb = MagicMock()
         mock_sb.table.return_value.insert.return_value.execute.return_value.data = [
