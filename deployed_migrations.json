@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-03-30T07:05:38Z",
-    "last_sha": "2334b1f04690619992c1697c8e68dd918164aae0",
+    "last_updated": "2026-04-05T15:36:25Z",
+    "last_sha": "bfb8481d924808f1c2d7ab0152943d49f28ea93a",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -31,9 +31,10 @@
       "20260329000003_fn_event_position.sql",
       "20260330000001_ranking_ppw_rolling.sql",
       "20260330000002_ranking_kadra_rolling.sql",
-      "20260330000003_fencer_scores_rolling.sql"
+      "20260330000003_fencer_scores_rolling.sql",
+      "20260405000001_fn_ingest_tournament_results.sql"
     ],
-    "schema_fingerprint": "386b8a0f98a836ac16b79cc93082d20b"
+    "schema_fingerprint": "ac14efad85a93e5efcf8bc52d4e8a189"
   },
   "prod": {
     "last_updated": "2026-04-02T21:18:16Z",
