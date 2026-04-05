@@ -44,6 +44,10 @@ class StorageHandler:
             self._sb.storage.from_(self.BUCKET).remove([staging_path])
         return archive_path
 
+    def delete_file(self, path: str) -> None:
+        """Delete a single file from the bucket."""
+        self._sb.storage.from_(self.BUCKET).remove([path])
+
     def compress_previous_event(self, season: str, previous_event: str) -> None:
         """Remove unzipped XMLs from current/ for a previous event."""
         files = self._sb.storage.from_(self.BUCKET).list(f"current/{season}/{previous_event}")
