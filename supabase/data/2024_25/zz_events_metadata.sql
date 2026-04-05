@@ -144,12 +144,12 @@ WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'IMEW-2024-2025');
 
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
 SELECT
-    'PS-2024-2025',
-    'PS',
+    'PEW10-2024-2025',
+    'EVF Criterium Mondial Vétérans 2025',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
-    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'FIE'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
     'COMPLETED'
-WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PS-2024-2025');
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW10-2024-2025');
 
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
 SELECT
@@ -159,6 +159,10 @@ SELECT
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
     'COMPLETED'
 WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW9-2024-2025');
+
+-- Fix PEW10 organizer: created by v*.sql with SPWS, should be EVF
+UPDATE tbl_event SET id_organizer = (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF')
+WHERE txt_code = 'PEW10-2024-2025';
 
 -- Phase 2: Update events with enriched metadata
 UPDATE tbl_event SET
@@ -342,16 +346,16 @@ UPDATE tbl_event SET
 WHERE txt_code = 'IMEW-2024-2025';
 
 UPDATE tbl_event SET
-    txt_name = 'PS',
-    txt_location = NULL,
-    txt_country = NULL,
+    txt_name = 'EVF Criterium Mondial Vétérans 2025',
+    txt_location = 'Paris',
+    txt_country = 'France',
     dt_start = '2025-07-05',
     dt_end = '2025-07-05',
-    url_event = NULL,
+    url_event = 'https://engarde-service.com/tournament/fencingaddict/crit25',
     url_invitation = NULL,
     num_entry_fee = NULL,
     txt_entry_fee_currency = NULL
-WHERE txt_code = 'PS-2024-2025';
+WHERE txt_code = 'PEW10-2024-2025';
 
 UPDATE tbl_event SET
     txt_name = 'PEW9',

@@ -153,6 +153,10 @@ SELECT
     'PLANNED'
 WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW9-2025-2026');
 
+-- Fix PS organizer: created by v*.sql with SPWS, should be EVF
+UPDATE tbl_event SET id_organizer = (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF')
+WHERE txt_code = 'PEW10-2025-2026';
+
 -- Phase 2: Update events with enriched metadata
 -- Disable transition trigger for status corrections (generated v*.sql files may
 -- set COMPLETED for events that haven't happened yet based on stale Excel dates)
@@ -163,7 +167,7 @@ UPDATE tbl_event SET
     txt_country = 'Polska',
     dt_start = '2025-09-27',
     dt_end = '2025-09-28',
-    url_event = NULL,
+    url_event = 'https://fencingtimelive.com/tournaments/eventSchedule/BF6E1ADD88844A8CAC2F8CD353D082F9#today',
     url_invitation = 'https://weteraniszermierki.pl/zaproszenie-na-i-puchar-polski-weteranow-szermierki-opole-2025/',
     num_entry_fee = 250,
     txt_entry_fee_currency = 'PLN'
@@ -261,7 +265,7 @@ UPDATE tbl_event SET
     txt_country = 'Great Britain',
     dt_start = '2026-01-10',
     dt_end = '2026-01-11',
-    url_event = 'https://fencingtimelive.com/tournaments/eventSchedule/D586C1250E8C41D3BB9B9E5772CB998F#today',
+    url_event = 'https://fencingtimelive.com/tournaments/eventSchedule/E2A7B077F2824DD8A7F2E413B4211296#today',
     url_invitation = 'https://www.veteransfencing.eu/wp-content/uploads/2025/10/EVf-Guildford-2026-invitation-letter.pdf',
     num_entry_fee = NULL,
     txt_entry_fee_currency = NULL
@@ -327,6 +331,18 @@ UPDATE tbl_event SET
     txt_entry_fee_currency = NULL
 WHERE txt_code = 'PEW8-2025-2026';
 
+
+UPDATE tbl_event SET
+    txt_name = 'EVF Criterium Mondial Vétérans 2025',
+    txt_location = 'Paris',
+    txt_country = 'France',
+    dt_start = '2025-07-05',
+    dt_end = '2025-07-05',
+    url_event = 'https://engarde-service.com/tournament/fencingaddict/crit25',
+    url_invitation = NULL,
+    num_entry_fee = NULL,
+    txt_entry_fee_currency = NULL
+WHERE txt_code = 'PEW10-2025-2026';
 
 UPDATE tbl_event SET
     txt_name = 'IMSW',

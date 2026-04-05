@@ -1144,26 +1144,26 @@ SELECT fn_calc_tournament_scores(
 
 -- SKIP PEW7 (EVF Grand Prix 7 — Terni): N=0 — tournament had no participants
 
--- ---- PS: Puchar Świata (Paryż) ----
+-- ---- PEW10: EVF Criterium Mondial Vétérans (Paryż) ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
-    'PS-2025-2026',
-    'Puchar Świata',
+    'PEW10-2025-2026',
+    'EVF Criterium Mondial Vétérans 2025',
     'Paryż',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
     'COMPLETED'
-WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PS-2025-2026');
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW10-2025-2026');
 INSERT INTO tbl_tournament (
     id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category,
     dt_tournament, int_participant_count, url_results,
     enum_import_status
 ) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PS-2025-2026'),
-    'PS-V2-M-EPEE-2025-2026',
-    'Puchar Świata',
-    'PSW',
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW10-2025-2026'),
+    'PEW10-V2-M-EPEE-2025-2026',
+    'EVF Criterium Mondial Vétérans 2025',
+    'PEW',
     'EPEE', 'M', 'V2',
     '2025-07-05', 75, 'https://engarde-service.com/competition/fencingaddict/crit25/ehv2',
     'SCORED'
@@ -1171,20 +1171,20 @@ INSERT INTO tbl_tournament (
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     203,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PS-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW10-V2-M-EPEE-2025-2026'),
     41,
     'PARDUS Borys'
 ); -- matched: PARDUS Borys (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
     123,
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PS-V2-M-EPEE-2025-2026'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW10-V2-M-EPEE-2025-2026'),
     77,
     'KORONA Przemysław'
 ); -- matched: KORONA Przemysław (score=100.0)
--- Compute scores for PS-V2-M-EPEE-2025-2026
+-- Compute scores for PEW10-V2-M-EPEE-2025-2026
 SELECT fn_calc_tournament_scores(
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PS-V2-M-EPEE-2025-2026')
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW10-V2-M-EPEE-2025-2026')
 );
 
 -- Summary
