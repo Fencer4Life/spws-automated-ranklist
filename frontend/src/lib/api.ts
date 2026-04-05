@@ -266,6 +266,17 @@ export async function deleteEventCascade(id: number): Promise<void> {
   if (error) throw error
 }
 
+export async function fetchAllTournaments(eventIds: number[]): Promise<Tournament[]> {
+  if (eventIds.length === 0) return []
+  const { data, error } = await getClient()
+    .from('tbl_tournament')
+    .select('*')
+    .in('id_event', eventIds)
+    .order('dt_tournament')
+  if (error) throw error
+  return data ?? []
+}
+
 export async function fetchTournaments(eventId: number): Promise<Tournament[]> {
   const { data, error } = await getClient()
     .from('tbl_tournament')

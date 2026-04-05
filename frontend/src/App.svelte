@@ -93,6 +93,7 @@
   {:else if currentView === 'admin_events'}
     <EventManager
       events={calendarEvents}
+      tournaments={allTournaments}
       {seasons}
       {organizers}
       selectedSeasonId={selectedSeasonId}
@@ -101,6 +102,7 @@
       onupdate={handleUpdateEvent}
       onupdatestatus={handleUpdateEventStatus}
       ondelete={handleDeleteEvent}
+      ondeletetournament={handleDeleteTournament}
     />
   {:else if currentView === 'admin_identities'}
     <IdentityManager
@@ -165,7 +167,7 @@
     AppView,
     CalendarEvent,
   } from './lib/types'
-  import type { Organizer, ScoringConfig, MatchCandidate, CreateEventParams, UpdateEventParams } from './lib/types'
+  import type { Organizer, ScoringConfig, MatchCandidate, CreateEventParams, UpdateEventParams, Tournament } from './lib/types'
   import {
     initClient,
     fetchSeasons,
@@ -185,6 +187,8 @@
     deleteEventCascade,
     fetchScoringConfig,
     saveScoringConfig,
+    fetchAllTournaments,
+    deleteTournamentCascade,
   } from './lib/api'
   import {
     MOCK_SEASONS,
@@ -286,6 +290,7 @@
   let rankingRules: RankingRules | null = $state(null)
 
   let calendarEvents: CalendarEvent[] = $state([])
+  let allTournaments: Tournament[] = $state([])
   let organizers: Organizer[] = $state([])
   let scoringConfig: ScoringConfig | null = $state(null)
   let showEvfToggle = $state(false)
@@ -496,6 +501,21 @@
       }
       if (selectedSeasonId) {
         calendarEvents = await fetchCalendarEvents(selectedSeasonId)
+        const eventIds = calendarEvents.map(e => e.id_event)
+        allTournaments = await fetchAllTournaments(eventIds)
+      }
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleDeleteTournament(id: number) {
+    try {
+      await deleteTournamentCascade(id)
+      if (selectedSeasonId) {
+        calendarEvents = await fetchCalendarEvents(selectedSeasonId)
+        const eventIds = calendarEvents.map(e => e.id_event)
+        allTournaments = await fetchAllTournaments(eventIds)
       }
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
