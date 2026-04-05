@@ -137,11 +137,15 @@ def main() -> None:
                 if r.errors:
                     has_error = True
 
-            # Archive and clean staging (ADR-023)
+            # Clean staging after success (ADR-023)
             if not has_error:
-                event_name = Path(fpath).stem
-                storage.archive_zip(fpath, season, event_name)
-                notifier.info(f"Archived {fpath} → archive/{season}/{event_name}")
+                if fname.lower().endswith(".zip"):
+                    event_name = Path(fpath).stem
+                    storage.archive_zip(fpath, season, event_name)
+                    notifier.info(f"Archived {fpath} → archive/{season}/{event_name}")
+                else:
+                    storage.delete_file(fpath)
+                    notifier.info(f"Deleted {fpath} from staging")
     elif args.path:
         result = run_ingest(
             path=args.path,
