@@ -1,0 +1,31 @@
+name: Ingest XML Results
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Trigger source (gas/manual)'
+        default: 'manual'
+
+jobs:
+  ingest:
+    name: Process XML from Storage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install supabase httpx
+
+      - name: Run ingestion pipeline
+        run: python -m pipeline.ingest_cli --from-storage --season-end-year 2026
+        working-directory: python
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

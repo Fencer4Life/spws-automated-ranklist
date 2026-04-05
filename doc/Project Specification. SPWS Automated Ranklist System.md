@@ -1604,6 +1604,15 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-66 | Rolling drilldown: `fn_fencer_scores_rolling` returns carried-over scores with `bool_carried_over` flag and source season code; visual distinction in DrilldownModal (grey striped bars, `↩` marker, rolling info banner) and CalendarView (progress slot bar) | ADR-018 | R.15–R.25 | Covered |
 | FR-67 | Birth year range subtitle on ranklist view: displays eligible birth years for selected age category and season as enumeration (e.g. `kat. 2 — roczniki: 1976, 1975, .. 1967`); V4 open-ended ("i starsi"/"and older"); updates on category/season/locale change; PL+EN | UC12 | BY.1–BY.7 | Covered |
 | FR-68 | Biennial event carry-over: rolling carry-over uses rules-based type matching (`json_ranking_rules` buckets) instead of declared-event matching; IMEW (type=MEW) results from previous season automatically carry over when MEW is in the international rules, even without an IMEW event in the current season (ADR-021) | ADR-021 | R.19–R.21 | Covered |
+| FR-70 | Orchestrator parses FTL XML metadata and routes to correct DB tournament by weapon+gender+category+date | Go-to-PROD §2.5 | 9.149–9.151 | Pending |
+| FR-71 | Orchestrator splits combined-category XML (v0v1, v0v1v2) into per-category result sets with re-ranking | ADR-024 | 9.152–9.154 | Pending |
+| FR-72 | Orchestrator resolves fencer identities via fuzzy matching against DB (domestic auto-create, international skip) | UC3, ADR-020 | 9.155–9.157 | Pending |
+| FR-73 | `fn_ingest_tournament_results` atomically deletes old + inserts new results + scores in single transaction | ADR-014, ADR-022 | 10.1–10.7 | Pending |
+| FR-74 | CLI entry point processes single XML files, .zip archives, or Supabase Storage staging bucket | Go-to-PROD §2.7 | 9.166–9.168 | Pending |
+| FR-75 | Google Apps Script extracts email .zip attachments from Gmail → uploads to Supabase Storage staging | ADR-023 | Manual test | Pending |
+| FR-76 | GitHub Actions `ingest.yml` downloads from Storage staging → processes → archives | ADR-023 | Manual test | Pending |
+| FR-77 | Processed .zip archived to `archive/{season}/{event}.zip`; staging cleaned; previous event compressed | ADR-023 | 9.169–9.172, 9.191–9.192 | Pending |
+| FR-78 | Telegram notifications for all pipeline events (13 use cases: routine, warnings, alerts, overdue) | Go-to-PROD §2.8 | 9.173–9.190 | Pending |
 
 ### Non-Functional Requirements
 
@@ -1648,3 +1657,6 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-019](adr/019-domestic-only-fencer-seed.md) | Domestic-Only Fencer Seed | §7.1, seed_tbl_fencer.sql |
 | [ADR-020](adr/020-seed-generator-domestic-auto-create.md) | Seed Generator Domestic Auto-Create | §7.1, generate_season_seed.py |
 | [ADR-021](adr/021-imew-biennial-carry-over.md) | IMEW Biennial Carry-Over | ADR-018, FR-65, FR-68 |
+| [ADR-022](adr/022-ingestion-db-transaction.md) | Ingestion DB Transaction Strategy (single RPC) | FR-73, ADR-014 |
+| [ADR-023](adr/023-email-ingestion-gas-storage.md) | Email Ingestion via GAS + Supabase Storage | FR-75, FR-76, FR-77 |
+| [ADR-024](adr/024-combined-category-splitting.md) | Combined Category Splitting Strategy | FR-71, ADR-010 |
