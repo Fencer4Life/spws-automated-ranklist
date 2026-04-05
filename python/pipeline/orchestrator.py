@@ -8,6 +8,7 @@ Routes notifications through TelegramNotifier at each step.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from python.scrapers.fencingtime_xml import (
     detect_categories_from_altname,
@@ -121,7 +122,12 @@ def _process_category(
     """Process results for a single category within a file."""
     weapon = metadata["weapon"]
     gender = metadata["gender"]
-    date = metadata.get("date", "")
+    raw_date = metadata.get("date", "")
+    # Convert DD.MM.YYYY → YYYY-MM-DD for PostgreSQL
+    try:
+        date = datetime.strptime(raw_date, "%d.%m.%Y").strftime("%Y-%m-%d")
+    except ValueError:
+        date = raw_date  # already ISO or unparseable — pass through
 
     # Find tournament in DB
     tournament = db.find_tournament(weapon, gender, category, date)
