@@ -307,10 +307,12 @@ UPDATE tbl_event SET
     txt_entry_fee_currency = NULL
 WHERE txt_code = 'PEW6-2025-2026';
 
+-- PEW7: 2026-04-18 — future event, seed files set COMPLETED from Excel data
 UPDATE tbl_event SET
     txt_name = 'EVF Circuit Salzburg',
     txt_location = 'Salzburg',
     txt_country = 'Austria',
+    enum_status = 'PLANNED',
     dt_start = '2026-04-18',
     dt_end = '2026-04-19',
     url_event = NULL,
@@ -319,10 +321,12 @@ UPDATE tbl_event SET
     txt_entry_fee_currency = NULL
 WHERE txt_code = 'PEW7-2025-2026';
 
+-- PEW8: 2026-05-02 — future event
 UPDATE tbl_event SET
     txt_name = 'EVF Circuit Chania',
     txt_location = 'Chania',
     txt_country = 'Greece',
+    enum_status = 'PLANNED',
     dt_start = '2026-05-02',
     dt_end = '2026-05-03',
     url_event = NULL,
