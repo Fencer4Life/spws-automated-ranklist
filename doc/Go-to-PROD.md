@@ -1,7 +1,7 @@
 # Go-to-PROD Plan — SPWS Automated Ranklist System
 
-**Status:** Planning
-**Date:** 2026-04-04
+**Status:** In Progress
+**Date:** 2026-04-05 (updated)
 **Predecessor:** [MVP Development Plan](MVP_development_plan.md) (M8–M10, completed 2026-04-04)
 
 ## 1. Overview
@@ -19,10 +19,10 @@ This document tracks scope deferred from MVP that is required for full productio
 
 Items below were originally planned for M9b but deferred to keep the MVP focused on what's deployed and working.
 
-### 2.1 Pipeline Orchestration (T9.11) — IN PROGRESS
+### 2.1 Pipeline Orchestration (T9.11) — PHASE 3 COMPLETE, PHASE 5-8 IN PROGRESS
 
-**FRs:** FR-51, FR-70, FR-71, FR-72, FR-73, FR-74, FR-75, FR-76, FR-77, FR-78
-**ADRs:** ADR-022 (DB transaction strategy), ADR-023 (email ingestion via GAS + Storage), ADR-024 (combined category splitting)
+**FRs:** FR-51, FR-70–78 (Phase 3), FR-79–85 (Phase 5-8)
+**ADRs:** ADR-022, ADR-023, ADR-024, ADR-025 (event-centric ingestion + Telegram admin)
 **Depends on:** File import parsers (T9.10, done), CRUD SQL (T9.1, done), scrapers (POC, done)
 
 End-to-end flow: parse uploaded file → fuzzy match against master fencer list → insert results → call `fn_calc_tournament_scores`. Must run in a single DB transaction per ADR-014 (delete + reimport).
@@ -34,11 +34,22 @@ End-to-end flow: parse uploaded file → fuzzy match against master fencer list 
 - `python/file_import/` — .xlsx/.xls/.json/.csv parsers (T9.10)
 - CRUD SQL functions with SECURITY DEFINER (T9.1)
 
-**What's needed:**
-- Orchestration function that wires: file parse → match → DB insert → score
-- Transaction wrapper (BEGIN/COMMIT/ROLLBACK) for re-import
-- Integration with TournamentImportModal + EventImportModal callbacks
-- Integration tests (pytest) for end-to-end flow
+**Phase 3 (COMPLETE — 2026-04-05):**
+- `fn_ingest_tournament_results` — atomic delete+insert+score (ADR-022)
+- `python/pipeline/` — orchestrator, db_connector, storage_handler, ingest_cli
+- `python/pipeline/notifications.py` — TelegramNotifier (13 use cases)
+- GAS email polling → Supabase Storage → GitHub Actions ingest workflow
+- 594 total assertions (199 pgTAP + 222 pytest + 173 vitest)
+- PPW4 Gdańsk data successfully ingested into CERT
+
+**Phase 5-8 (IN PROGRESS — ADR-025):**
+- Event-centric ingestion: match XML → existing event → create tournaments on-the-fly
+- Event lifecycle: PLANNED → IN_PROGRESS → COMPLETED with rollback
+- Telegram command interface (16 commands)
+- CERT → PROD promotion via Telegram
+- ADR-024 PENDING fix for unknown DOB
+- Admin UI: tournament management accordion + identity resolution
+- E2E test with PPW4.5 dummy event
 
 ### 2.2 Identity Resolution DB Wiring (FR-56, FR-57)
 

@@ -4,7 +4,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
 import EventManager from '../src/components/EventManager.svelte'
-import type { CalendarEvent, Season, Organizer } from '../src/lib/types'
+import type { CalendarEvent, Season, Organizer, Tournament } from '../src/lib/types'
 
 const MOCK_SEASONS: Season[] = [
   { id_season: 1, txt_code: 'SPWS-2024-2025', dt_start: '2024-09-01', dt_end: '2025-06-30', bool_active: true },
@@ -180,5 +180,143 @@ describe('EventManager (T9.3)', () => {
     const { container } = render(EventManager, { props: { ...defaultProps, isAdmin: false } })
     expect(container.querySelector('[data-field="event-list"]')).toBeNull()
     expect(container.querySelector('[data-field="add-event-btn"]')).toBeNull()
+  })
+})
+
+// ─── Accordion & Tournament Tests (Phase 6) ─────────────────────────
+
+const MOCK_TOURNAMENTS: Tournament[] = [
+  {
+    id_tournament: 100,
+    id_event: 10,
+    txt_code: 'PPW-WRO-V2-M-EPEE-2024-2025',
+    txt_name: 'V2 M Epee',
+    enum_type: 'PPW',
+    enum_weapon: 'EPEE',
+    enum_gender: 'M',
+    enum_age_category: 'V2',
+    dt_tournament: '2025-01-15',
+    int_participant_count: 32,
+    num_multiplier: 1.0,
+    url_results: null,
+    enum_import_status: 'SCORED',
+    txt_import_status_reason: null,
+  },
+  {
+    id_tournament: 101,
+    id_event: 10,
+    txt_code: 'PPW-WRO-V1-M-EPEE-2024-2025',
+    txt_name: 'V1 M Epee',
+    enum_type: 'PPW',
+    enum_weapon: 'EPEE',
+    enum_gender: 'M',
+    enum_age_category: 'V1',
+    dt_tournament: '2025-01-15',
+    int_participant_count: 28,
+    num_multiplier: 1.0,
+    url_results: null,
+    enum_import_status: 'PLANNED',
+    txt_import_status_reason: null,
+  },
+]
+
+describe('EventManager Accordion (Phase 6)', () => {
+  const propsWithTournaments = {
+    events: MOCK_EVENTS,
+    seasons: MOCK_SEASONS,
+    organizers: MOCK_ORGANIZERS,
+    tournaments: MOCK_TOURNAMENTS,
+    selectedSeasonId: 1,
+    isAdmin: true,
+    oncreate: vi.fn(),
+    onupdate: vi.fn(),
+    onupdatestatus: vi.fn(),
+    ondelete: vi.fn(),
+    ondeletetournament: vi.fn(),
+  }
+
+  // 9.204 — Event row shows tournament count badge
+  it('shows tournament count badge on event row', () => {
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    const rows = container.querySelectorAll('[data-field="event-row"]')
+    const badge = rows[0].querySelector('[data-field="tournament-count"]')
+    expect(badge).not.toBeNull()
+    expect(badge!.textContent).toContain('2')
+  })
+
+  // 9.205 — Clicking event row toggles accordion (shows tournament list)
+  it('clicking event row toggles accordion', async () => {
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    // Initially no tournament rows visible
+    expect(container.querySelector('[data-field="tournament-row"]')).toBeNull()
+
+    // Click to expand
+    const expandBtn = container.querySelector('[data-field="expand-btn"]')!
+    await fireEvent.click(expandBtn)
+
+    // Tournament rows should now be visible
+    const tournRows = container.querySelectorAll('[data-field="tournament-row"]')
+    expect(tournRows.length).toBe(2)
+  })
+
+  // 9.206 — Tournament row shows code, weapon, category, import status
+  it('tournament row shows code, weapon, category, import status', async () => {
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+
+    const tournRows = container.querySelectorAll('[data-field="tournament-row"]')
+    const first = tournRows[0]
+    expect(first.querySelector('[data-field="tourn-code"]')!.textContent).toContain('PPW-WRO-V2-M-EPEE')
+    expect(first.querySelector('[data-field="tourn-import-status"]')!.textContent).toContain('SCORED')
+  })
+
+  // 9.207 — Tournament row shows participant count
+  it('tournament row shows participant count', async () => {
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+
+    const tournRows = container.querySelectorAll('[data-field="tournament-row"]')
+    expect(tournRows[0].querySelector('[data-field="tourn-participants"]')!.textContent).toContain('32')
+  })
+
+  // 9.208 — Tournament delete button calls ondeletetournament
+  it('tournament delete button calls ondeletetournament', async () => {
+    const ondeletetournament = vi.fn()
+    const { container } = render(EventManager, { props: { ...propsWithTournaments, ondeletetournament } })
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+
+    const deleteBtn = container.querySelector('[data-field="tourn-delete-btn"]')!
+    await fireEvent.click(deleteBtn)
+    expect(ondeletetournament).toHaveBeenCalledWith(100)
+  })
+
+  // 9.209 — Import status badges have correct styling classes
+  it('import status badges have correct classes', async () => {
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+
+    const badges = container.querySelectorAll('[data-field="tourn-import-status"]')
+    expect(badges[0].classList.contains('import-scored')).toBe(true)
+    expect(badges[1].classList.contains('import-planned')).toBe(true)
+  })
+
+  // 9.210 — Collapse hides tournament rows
+  it('collapsing hides tournament rows', async () => {
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    // Expand
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+    expect(container.querySelectorAll('[data-field="tournament-row"]').length).toBe(2)
+
+    // Collapse
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+    expect(container.querySelector('[data-field="tournament-row"]')).toBeNull()
+  })
+
+  // 9.211 — Event with no tournaments shows empty message
+  it('expanded event with no tournaments shows empty state', async () => {
+    const propsNoTourn = { ...propsWithTournaments, tournaments: [] }
+    const { container } = render(EventManager, { props: propsNoTourn })
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+    expect(container.querySelector('[data-field="tournament-row"]')).toBeNull()
   })
 })
