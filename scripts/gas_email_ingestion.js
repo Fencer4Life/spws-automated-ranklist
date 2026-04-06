@@ -264,6 +264,32 @@ function handleCommand(props, command, arg) {
       triggerGitHubWorkflow(githubPatS, githubRepoS, 'export-seed.yml', { reason: 'manual' });
       return '<b>Seed Export</b>\n<i>Regeneration triggered. Watch for completion notification.</i>';
 
+    // --- EVF ---
+    case 'evf-import':
+      var githubPatE = props.getProperty('GITHUB_PAT');
+      var githubRepoE = props.getProperty('GITHUB_REPO');
+      triggerGitHubWorkflow(githubPatE, githubRepoE, 'evf-sync.yml', { mode: 'calendar' });
+      return '<b>EVF Calendar Import</b>\n<i>Scraping veteransfencing.eu calendar. Watch for notification.</i>';
+
+    case 'evf-results':
+      var githubPatER = props.getProperty('GITHUB_PAT');
+      var githubRepoER = props.getProperty('GITHUB_REPO');
+      triggerGitHubWorkflow(githubPatER, githubRepoER, 'evf-sync.yml', { mode: 'results', event_code: arg });
+      return '<b>EVF Results Fetch</b>\n<pre>' + arg + '</pre>\n<i>Checking for result PDFs. Watch for notification.</i>';
+
+    case 'evf-status':
+      var evfEvents = callRpc(supabaseUrl, supabaseKey, 'fn_season_overview', {});
+      if (!evfEvents || evfEvents.length === 0) return '<b>EVF Status</b>\n<i>No events</i>';
+      var evfLines = ['<b>EVF Status</b>\n<i>PEW/MEW events pending results:</i>'];
+      evfEvents.forEach(function(e) {
+        if (e.is_international && e.status === 'PLANNED') {
+          evfLines.push('\n<pre>' + e.event_code + '</pre>');
+          evfLines.push(e.event_name + '  |  ' + (e.dt_start || ''));
+        }
+      });
+      if (evfLines.length === 1) evfLines.push('\n<i>All international events have results</i>');
+      return evfLines.join('\n');
+
     // --- Emergency ---
     case 'pause':
       props.setProperty('PAUSED', 'true');
@@ -326,6 +352,17 @@ function handleCommand(props, command, arg) {
         '',
         '<pre>export-seed</pre>',
         'Regenerate seed files from CERT',
+        '',
+        '<b><u>EVF</u></b>',
+        '',
+        '<pre>evf-import</pre>',
+        'Scrape EVF calendar for PEW/MEW events',
+        '',
+        '<pre>evf-results &lt;event&gt;</pre>',
+        'Fetch result PDFs for a specific event',
+        '',
+        '<pre>evf-status</pre>',
+        'Show PEW/MEW events pending results',
         '',
         '<b><u>Emergency</u></b>',
         '',
