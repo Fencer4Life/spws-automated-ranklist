@@ -30,8 +30,21 @@
 function checkEmailForResults() {
   var props = PropertiesService.getScriptProperties();
 
-  // Check if paused
-  if (props.getProperty('PAUSED') === 'true') return;
+  // Auto-resume if an event is scheduled today (ADR-027)
+  if (props.getProperty('PAUSED') === 'true') {
+    try {
+      var today = Utilities.formatDate(new Date(), 'UTC', 'yyyy-MM-dd');
+      var events = callRpc(null, null, 'fn_find_event_by_date', { p_date: today });
+      if (events) {
+        props.deleteProperty('PAUSED');
+        sendTelegramMessage(props, '<b>Auto-Resumed</b>\nEmail polling activated — event scheduled today.');
+      } else {
+        return; // still paused, no event today
+      }
+    } catch (e) {
+      return; // query failed, stay paused
+    }
+  }
 
   var supabaseUrl = props.getProperty('SUPABASE_URL');
   var supabaseKey = props.getProperty('SUPABASE_SERVICE_ROLE_KEY');
@@ -68,7 +81,7 @@ function checkEmailForResults() {
   }
 
   if (uploadedCount > 0) {
-    sendTelegramMessage(props, 'New files uploaded to staging: ' + uploadedCount + ' file(s)');
+    sendTelegramMessage(props, '<b>Files Received</b>\n' + uploadedCount + ' file(s) uploaded to staging.\n<i>Ingestion workflow triggered.</i>');
     triggerGitHubWorkflow(githubPat, githubRepo, 'ingest.yml', { source: 'gas' });
   }
 }
@@ -120,31 +133,80 @@ function handleCommand(props, command, arg) {
   switch (command) {
     // --- Lifecycle ---
     case 'status':
-      return formatJson(callRpc(supabaseUrl, supabaseKey, 'fn_event_status', { p_prefix: arg }));
+      var statusData = callRpc(supabaseUrl, supabaseKey, 'fn_event_status', { p_prefix: arg });
+      return '<b>Event Status</b>\n'
+        + '<pre>' + (statusData.event_code || arg) + '</pre>\n'
+        + 'Status: <b>' + (statusData.event_status || '—') + '</b>\n'
+        + 'Tournaments: <b>' + (statusData.tournament_count || 0) + '</b>\n'
+        + 'Results: <b>' + (statusData.result_count || 0) + '</b>\n'
+        + 'Pending: <b>' + (statusData.pending_count || 0) + '</b>';
 
     case 'complete':
       callRpc(supabaseUrl, supabaseKey, 'fn_complete_event', { p_prefix: arg });
-      return 'Event "' + arg + '" marked COMPLETED.';
+      // Trigger seed export from CERT (ADR-027)
+      var githubPatC = props.getProperty('GITHUB_PAT');
+      var githubRepoC = props.getProperty('GITHUB_REPO');
+      try { triggerGitHubWorkflow(githubPatC, githubRepoC, 'export-seed.yml', { reason: 'complete' }); } catch(e) {}
+      return '<b>Event Completed</b>\n'
+        + '<pre>' + arg + '</pre>\n'
+        + 'Status changed to <b>COMPLETED</b>\n'
+        + '<i>Seed export triggered</i>';
 
     case 'rollback':
       var result = callRpc(supabaseUrl, supabaseKey, 'fn_rollback_event', { p_prefix: arg });
-      return 'Rolled back "' + arg + '": ' + result.tournaments_deleted + ' tournaments, ' + result.results_deleted + ' results deleted.';
+      // Trigger seed export from CERT (ADR-027)
+      var githubPatR = props.getProperty('GITHUB_PAT');
+      var githubRepoR = props.getProperty('GITHUB_REPO');
+      try { triggerGitHubWorkflow(githubPatR, githubRepoR, 'export-seed.yml', { reason: 'rollback' }); } catch(e) {}
+      return '<b>Event Rolled Back</b>\n'
+        + '<pre>' + arg + '</pre>\n'
+        + 'Tournaments deleted: <b>' + result.tournaments_deleted + '</b>\n'
+        + 'Results deleted: <b>' + result.results_deleted + '</b>\n'
+        + 'Status reset to <b>PLANNED</b>\n'
+        + '<i>Seed export triggered</i>';
 
     case 'promote':
       var githubPat = props.getProperty('GITHUB_PAT');
       var githubRepo = props.getProperty('GITHUB_REPO');
       triggerGitHubWorkflow(githubPat, githubRepo, 'promote.yml', { event_code: arg });
-      return 'Promotion triggered for "' + arg + '". Watch for completion notification.';
+      return '<b>Promotion Triggered</b>\n'
+        + '<pre>' + arg + '</pre>\n'
+        + '<i>CERT data will be pushed to PROD.\nWatch for completion notification.</i>';
 
     // --- Data review ---
     case 'results':
-      return formatJson(callRpc(supabaseUrl, supabaseKey, 'fn_event_results_summary', { p_prefix: arg }));
+      var resData = callRpc(supabaseUrl, supabaseKey, 'fn_event_results_summary', { p_prefix: arg });
+      if (!resData || resData.length === 0) return '<b>Results</b>\n<pre>' + arg + '</pre>\n<i>No tournaments found</i>';
+      var resLines = ['<b>Results</b>\n<pre>' + arg + '</pre>'];
+      resData.forEach(function(t) {
+        resLines.push('\n<b>' + t.category + ' ' + t.gender + ' ' + t.weapon + '</b>  (' + t.participants + ' fencers)');
+        if (t.top3) {
+          t.top3.forEach(function(f) {
+            resLines.push('  ' + f.place + '. ' + f.name);
+          });
+        }
+      });
+      return resLines.join('\n');
 
     case 'pending':
-      return formatJson(callRpc(supabaseUrl, supabaseKey, 'fn_event_pending', { p_prefix: arg }));
+      var pendData = callRpc(supabaseUrl, supabaseKey, 'fn_event_pending', { p_prefix: arg });
+      if (!pendData || pendData.length === 0) return '<b>Pending</b>\n<pre>' + arg + '</pre>\n<i>No unresolved matches</i>';
+      var pendLines = ['<b>Pending Matches</b>\n<pre>' + arg + '</pre>'];
+      pendData.forEach(function(p) {
+        pendLines.push('\n<code>' + p.scraped_name + '</code>');
+        pendLines.push('  Suggested: ' + (p.suggested_fencer || '—') + ' (' + (p.confidence || 0) + '%)');
+        pendLines.push('  <i>' + p.tournament + '</i>');
+      });
+      return pendLines.join('\n');
 
     case 'missing':
-      return formatJson(callRpc(supabaseUrl, supabaseKey, 'fn_event_missing_categories', { p_prefix: arg }));
+      var missData = callRpc(supabaseUrl, supabaseKey, 'fn_event_missing_categories', { p_prefix: arg });
+      if (!missData || missData.length === 0) return '<b>Missing Categories</b>\n<pre>' + arg + '</pre>\n<i>All categories have results</i>';
+      var missLines = ['<b>Missing Categories</b>\n<pre>' + arg + '</pre>'];
+      missData.forEach(function(m) {
+        missLines.push('  ' + m.category + ' ' + m.gender + ' ' + m.weapon);
+      });
+      return missLines.join('\n');
 
     // --- Storage ---
     case 'staging':
@@ -155,54 +217,110 @@ function handleCommand(props, command, arg) {
 
     // --- Season ---
     case 'season':
-      return formatJson(callRpc(supabaseUrl, supabaseKey, 'fn_season_overview', {}));
+      var seasonData = callRpc(supabaseUrl, supabaseKey, 'fn_season_overview', {});
+      if (!seasonData || seasonData.length === 0) return '<b>Season Overview</b>\n<i>No events found</i>';
+      var seasonLines = ['<b>Season Overview</b>'];
+      seasonData.forEach(function(e) {
+        var status = e.status || 'PLANNED';
+        var intl = e.is_international ? '  [INT]' : '';
+        seasonLines.push('\n<pre>' + e.event_code + '</pre>');
+        seasonLines.push('<b>' + status + '</b>' + intl);
+        seasonLines.push((e.event_name || '') + (e.dt_start ? '  |  ' + e.dt_start : ''));
+        seasonLines.push('Tournaments: ' + (e.tournament_count || 0) + '  |  Results: ' + (e.result_count || 0));
+      });
+      return seasonLines.join('\n');
 
     case 'ranking':
-      var rParts = arg.split(/\s+/);
-      if (rParts.length < 3) return 'Usage: ranking <category> <gender> <weapon>\nExample: ranking V2 M EPEE';
-      return formatJson(callRpc(supabaseUrl, supabaseKey, 'fn_category_ranking', {
+      var rParts = arg.toUpperCase().split(/\s+/);
+      if (rParts.length < 3) return '<b>Usage</b>\n<pre>ranking V2 M EPEE</pre>\n<i>category  gender  weapon</i>';
+      var rankData = callRpc(supabaseUrl, supabaseKey, 'fn_category_ranking', {
         p_weapon: rParts[2], p_gender: rParts[1], p_category: rParts[0]
-      }));
+      });
+      if (!rankData || rankData.length === 0) return '<b>Ranking ' + arg + '</b>\n<i>No results found</i>';
+      var rankLines = ['<b>Ranking ' + rParts[0] + ' ' + rParts[1] + ' ' + rParts[2] + '</b>\n<i>Domestic points (PPW/MPW)</i>'];
+      rankData.forEach(function(r, i) {
+        rankLines.push('\n<pre>' + (i + 1) + '. ' + r.fencer + '</pre>' + r.total_score + ' pts');
+      });
+      return rankLines.join('\n');
+
+    // --- Seed ---
+    case 'export-seed':
+      var githubPatS = props.getProperty('GITHUB_PAT');
+      var githubRepoS = props.getProperty('GITHUB_REPO');
+      triggerGitHubWorkflow(githubPatS, githubRepoS, 'export-seed.yml', { reason: 'manual' });
+      return '<b>Seed Export</b>\n<i>Regeneration triggered. Watch for completion notification.</i>';
 
     // --- Emergency ---
     case 'pause':
       props.setProperty('PAUSED', 'true');
-      return 'Email polling PAUSED. Send "resume" to re-enable.';
+      return '<b>Paused</b>\nEmail polling stopped.\n<i>Send</i> <code>resume</code> <i>to re-enable.</i>';
 
     case 'resume':
       props.deleteProperty('PAUSED');
-      return 'Email polling RESUMED.';
+      return '<b>Resumed</b>\nEmail polling is active.';
 
     // --- Admin ---
     case 'help':
       return [
-        'SPWS Bot Commands:',
+        '<b>SPWS Ranklist Bot</b>',
         '',
-        'Lifecycle:',
-        '  status <event>    - Event status + counts',
-        '  complete <event>  - Mark event done',
-        '  rollback <event>  - Delete all data, reset to PLANNED',
-        '  promote <event>   - Push CERT data to PROD',
+        '<b><u>Lifecycle</u></b>',
         '',
-        'Review:',
-        '  results <event>   - Top 3 per tournament',
-        '  pending <event>   - Unresolved matches',
-        '  missing <event>   - Missing categories',
+        '<pre>status &lt;event&gt;</pre>',
+        'Event status, tournament + result counts',
         '',
-        'Storage:',
-        '  staging           - List files in staging',
-        '  cleanup           - Delete all staging files',
+        '<pre>complete &lt;event&gt;</pre>',
+        'Mark event done, trigger seed export',
         '',
-        'Season:',
-        '  season            - All events overview',
-        '  ranking V2 M EPEE - Top 5 in category',
+        '<pre>rollback &lt;event&gt;</pre>',
+        'Delete all ingested data, reset to PLANNED',
         '',
-        'Emergency:',
-        '  pause / resume    - Toggle email polling',
+        '<pre>promote &lt;event&gt;</pre>',
+        'Push event data from CERT to PROD',
+        '',
+        '<b><u>Review</u></b>',
+        '',
+        '<pre>results &lt;event&gt;</pre>',
+        'Top 3 fencers per tournament',
+        '',
+        '<pre>pending &lt;event&gt;</pre>',
+        'Fencers with unresolved identity match',
+        '',
+        '<pre>missing &lt;event&gt;</pre>',
+        'Categories without results yet',
+        '',
+        '<b><u>Storage</u></b>',
+        '',
+        '<pre>staging</pre>',
+        'List files in staging bucket',
+        '',
+        '<pre>cleanup</pre>',
+        'Delete all files from staging',
+        '',
+        '<b><u>Season</u></b>',
+        '',
+        '<pre>season</pre>',
+        'All events with status overview',
+        '',
+        '<pre>ranking V2 M EPEE</pre>',
+        'Top 5 fencers in a category',
+        '',
+        '<b><u>Seed</u></b>',
+        '',
+        '<pre>export-seed</pre>',
+        'Regenerate seed files from CERT',
+        '',
+        '<b><u>Emergency</u></b>',
+        '',
+        '<pre>pause</pre>',
+        'Stop email polling',
+        '',
+        '<pre>resume</pre>',
+        'Re-enable email polling',
       ].join('\n');
 
     default:
-      return 'Unknown command: "' + command + '". Send "help" for available commands.';
+      return 'Unknown command: <code>' + command + '</code>\n<i>Send</i> <code>help</code> <i>for available commands.</i>';
   }
 }
 
@@ -286,11 +404,11 @@ function listStagingFiles(url, key) {
   });
 
   var files = JSON.parse(response.getContentText());
-  if (!files || files.length === 0) return 'Staging is empty.';
+  if (!files || files.length === 0) return '<b>Staging</b>\n<i>Empty — no files</i>';
 
-  var lines = ['Staging files (' + files.length + '):'];
+  var lines = ['<b>Staging</b>  (' + files.length + ' files)'];
   for (var i = 0; i < files.length; i++) {
-    lines.push('  ' + files[i].name);
+    lines.push('  <code>' + files[i].name + '</code>');
   }
   return lines.join('\n');
 }
@@ -309,7 +427,7 @@ function cleanupStaging(url, key) {
   });
 
   var files = JSON.parse(response.getContentText());
-  if (!files || files.length === 0) return 'Staging already empty.';
+  if (!files || files.length === 0) return '<b>Cleanup</b>\n<i>Staging already empty</i>';
 
   var paths = files.map(function(f) { return 'staging/' + f.name; });
 
@@ -325,7 +443,7 @@ function cleanupStaging(url, key) {
     muteHttpExceptions: true,
   });
 
-  return 'Staging cleared: ' + files.length + ' file(s) deleted.';
+  return '<b>Cleanup Complete</b>\n' + files.length + ' file(s) deleted from staging.';
 }
 
 
@@ -362,7 +480,7 @@ function sendTelegramMessage(props, message) {
 
   UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
     method: 'post',
-    payload: { chat_id: chatId, text: message },
+    payload: { chat_id: chatId, text: message, parse_mode: 'HTML' },
     muteHttpExceptions: true,
   });
 }
