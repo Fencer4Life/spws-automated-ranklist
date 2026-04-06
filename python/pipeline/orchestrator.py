@@ -128,6 +128,7 @@ def _process_category(
     result: IngestResult,
 ) -> None:
     """Process results for a single category within a file."""
+    _prev_pending = result.pending
     weapon = metadata["weapon"]
     gender = metadata["gender"]
     raw_date = metadata.get("date", "")
@@ -276,6 +277,7 @@ def _process_category(
     elif results_json:
         result.tournament_ids.append(tournament_id)
 
-    # Notify pending identity reviews
-    if result.pending > 0:
-        notifier.notify_identity_review(result.pending, "")
+    # Notify pending identity reviews (only for this tournament's new pending)
+    pending_this_tourn = result.pending - _prev_pending
+    if pending_this_tourn > 0:
+        notifier.notify_identity_review(pending_this_tourn, tourn_label if results_json else "")
