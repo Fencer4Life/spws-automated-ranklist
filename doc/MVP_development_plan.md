@@ -426,8 +426,8 @@ Quick reference — full details in [RTM (Appendix C)](Project%20Specification.%
 | FR-53 | Event-level batch import | UC22(g) | Partial (file UI done; URL + backend → Go-to-PROD) |
 | FR-54 | Tournament-level single import | UC22(h) | Partial (file UI done; URL + backend → Go-to-PROD) |
 | FR-55 | File import (.xlsx, .xls, .json, .csv) | UC22(i), UC23(c) | Covered (T9.5+T9.10) |
-| FR-56 | Identity resolution admin UI | UC4(a-e) | Partial (UI done; DB wiring → Go-to-PROD) |
-| FR-57 | Disambiguation modal (same-name fencers) | UC3(f), UC4(b) | Partial (UI done; DB wiring → Go-to-PROD) |
+| FR-56 | Identity resolution admin UI | UC4(a-e) | Covered (UI + DB wiring: 11.1–11.12, 9.78–9.80) |
+| FR-57 | Disambiguation modal (same-name fencers) | UC3(f), UC4(b) | Covered (UI: 9.74–9.76; DB: 11.6–11.8) |
 | FR-58 | EVF calendar import | UC8, UC9 | **Deferred → Go-to-PROD** |
 | FR-60 | Event CRUD via web UI | UC22(c) | Covered (T9.1+T9.3) |
 | NFR-10 | Pipeline observability (POC gap) | §10 | Partial (Telegram covered; structured logs → Go-to-PROD) |

@@ -276,6 +276,23 @@ export async function fetchMatchCandidates(): Promise<MatchCandidate[]> {
   return (data ?? []) as MatchCandidate[]
 }
 
+export async function approveMatch(matchId: number, fencerId: number): Promise<void> {
+  const { error } = await getClient().rpc('fn_approve_match', { p_match_id: matchId, p_fencer_id: fencerId })
+  if (error) throw error
+}
+
+export async function dismissMatch(matchId: number, note?: string): Promise<void> {
+  const { error } = await getClient().rpc('fn_dismiss_match', { p_match_id: matchId, p_note: note ?? null })
+  if (error) throw error
+}
+
+export async function createFencerFromMatch(matchId: number, surname: string, firstName: string, birthYear?: number): Promise<void> {
+  const { error } = await getClient().rpc('fn_create_fencer_from_match', {
+    p_match_id: matchId, p_surname: surname, p_first_name: firstName, p_birth_year: birthYear ?? null
+  })
+  if (error) throw error
+}
+
 export async function fetchAllTournaments(eventIds: number[]): Promise<Tournament[]> {
   if (eventIds.length === 0) return []
   const { data, error } = await getClient()
