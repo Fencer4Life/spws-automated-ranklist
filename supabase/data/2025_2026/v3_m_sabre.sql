@@ -157,6 +157,55 @@ VALUES (
     7, 39.15
 ); -- GAJDA Leszek
 
+-- ---- PPW4-2025-2026: IV Puchar Polski Weteranów ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PPW4-2025-2026',
+    'IV Puchar Polski Weteranów',
+    'Gdańsk',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW4-2025-2026');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2025-2026'),
+    'PPW4-V3-M-SABRE-2025-2026',
+    'V3 M SABRE',
+    'PPW',
+    'SABRE', 'M', 'V3',
+    '2026-02-21', 4, NULL,
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'GAJDA' AND txt_first_name = 'Leszek' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2025-2026'),
+    1, 84.29
+); -- GAJDA Leszek
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'OSSOWSKI' AND txt_first_name = 'Wojciech' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2025-2026'),
+    2, 45.02
+); -- OSSOWSKI Wojciech
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'JASIŃSKI' AND txt_first_name = 'Tomasz' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2025-2026'),
+    3, 15.93
+); -- JASIŃSKI Tomasz
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'CHUDYCKI' AND txt_first_name = 'Artur' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2025-2026'),
+    4, 1.00
+); -- CHUDYCKI Artur
+
 -- ---- PEW6-2025-2026: EVF Circuit Jabłonna ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
