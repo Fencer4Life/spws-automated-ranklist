@@ -25,9 +25,12 @@
     <div class="rolling-progress">
       <div class="progress-slots">
         {#each positionSlots as slot}
-          <div class="slot" class:completed={slot.completed} class:planned={!slot.completed}>
-            <span class="slot-name">{slot.name}</span>
-            <span class="slot-icon">{slot.completed ? '✓' : '📅'}</span>
+          <div class="slot {slot.type}" class:completed={slot.completed} class:planned={!slot.completed}>
+            <span class="slot-code">{slot.name}</span>
+            <span class="slot-icon">{slot.completed ? '✓' : '↩'}</span>
+            {#if slot.city}
+              <span class="slot-city">{slot.city}</span>
+            {/if}
           </div>
         {/each}
       </div>
@@ -38,9 +41,8 @@
     <div class="timeline-month">{group.label}</div>
     {#each group.events as event, i}
       <div
-        class="timeline-event"
+        class="timeline-event {eventTypeClass(event.txt_code)}"
         class:completed={event.enum_status === 'COMPLETED'}
-        class:international={event.bool_has_international}
       >
         {#if i < group.events.length - 1}
           <div class="timeline-line"></div>
@@ -123,6 +125,19 @@
     return e.bool_has_international || INTL_PREFIXES.test(e.txt_code)
   }
 
+  function eventTypeClass(code: string): string {
+    if (/^PEW/.test(code)) return 'evf-circuit'
+    if (/^(IMEW|IMSW|MEW|MSW|PSW)/.test(code)) return 'evf-intl'
+    return ''
+  }
+
+  function slotTypeClass(code: string): string {
+    if (/^PEW/.test(code)) return 'pew'
+    if (/^(IMEW|IMSW|MEW|MSW|PSW)/.test(code)) return 'imew'
+    if (/^MPW/.test(code)) return 'mpw'
+    return 'ppw'
+  }
+
   // Rolling progress: derive position slots respecting scope filter
   let positionSlots = $derived.by(() => {
     if (!isActiveSeason) return []
@@ -135,6 +150,8 @@
       .map(e => ({
         name: e.txt_code.split('-')[0].replace(/^PP(\d)/, 'PPW$1'),
         completed: e.enum_status === 'COMPLETED',
+        type: slotTypeClass(e.txt_code),
+        city: e.txt_location ?? '',
       }))
   })
 
@@ -278,9 +295,23 @@
     background: #1a7f37;
     box-shadow: 0 0 0 1px #1a7f37;
   }
-  .timeline-event.international::before {
-    background: #d4a017;
-    box-shadow: 0 0 0 1px #d4a017;
+  /* PEW — EVF circuit: light blue */
+  .timeline-event.evf-circuit::before {
+    background: #5ba8e0;
+    box-shadow: 0 0 0 1px #5ba8e0;
+  }
+  .timeline-event.evf-circuit {
+    border-left: 4px solid #5ba8e0;
+    background: #f4f9fd;
+  }
+  /* IMEW/MEW/MSW/PSW — international: light gold */
+  .timeline-event.evf-intl::before {
+    background: #c9a030;
+    box-shadow: 0 0 0 1px #c9a030;
+  }
+  .timeline-event.evf-intl {
+    border-left: 4px solid #c9a030;
+    background: #fdf9f0;
   }
   .timeline-line {
     position: absolute;
@@ -384,27 +415,49 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
+    padding: 5px 8px 4px;
+    border-radius: 5px;
     font-weight: 600;
-    min-width: 48px;
+    min-width: 52px;
   }
-  .slot.completed {
-    background: #e6f4ea;
-    color: #1a7f37;
-    border: 1px solid #b4dfbf;
-  }
-  .slot.planned {
-    background: #f0f0f0;
-    color: #888;
-    border: 1px solid #ddd;
-  }
-  .slot-name {
-    font-size: 11px;
+  .slot-code {
+    font-size: 9px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
   }
   .slot-icon {
-    font-size: 16px;
-    margin-top: 2px;
+    font-size: 14px;
+    line-height: 1.2;
+  }
+  .slot-city {
+    font-size: 8px;
+    font-weight: 500;
+    opacity: 0.7;
+    max-width: 58px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* PPW/MPW domestic — completed (solid green) */
+  .slot.ppw.completed, .slot.mpw.completed {
+    background: #e6f4ea; color: #1a7f37; border: 1px solid #b4dfbf;
+  }
+  /* PPW/MPW domestic — future (lighter green) */
+  .slot.ppw.planned, .slot.mpw.planned {
+    background: #f2faf5; color: #5aad6a; border: 1px solid #d0e8d6;
+  }
+  /* PEW — EVF circuit (light blue) */
+  .slot.pew.completed {
+    background: #deedf8; color: #2a6faa; border: 1px solid #aed0ec;
+  }
+  .slot.pew.planned {
+    background: #f2f7fb; color: #a0c4dd; border: 1px solid #d8e8f2;
+  }
+  /* IMEW/MEW/MSW/PSW — international (light gold) */
+  .slot.imew.completed {
+    background: #faf3e0; color: #8a6d1b; border: 1px solid #e8d5a0;
+  }
+  .slot.imew.planned {
+    background: #fefcf5; color: #c8b880; border: 1px solid #ede8d8;
   }
 </style>
