@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-04-06T12:06:46Z",
-    "last_sha": "df87be8a0d328aae8077636deda39dc74b1b8382",
+    "last_updated": "2026-04-06T13:38:32Z",
+    "last_sha": "00715e05eb22d77a80b58f68e6968a603d4cb5b5",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -38,9 +38,10 @@
       "20260406000003_identity_resolution_rpcs.sql",
       "20260406000004_vw_match_candidates.sql",
       "20260406000005_ranking_domestic_only.sql",
-      "20260406000006_fix_carryover_in_progress.sql"
+      "20260406000006_fix_carryover_in_progress.sql",
+      "20260406000007_fn_season_summary.sql"
     ],
-    "schema_fingerprint": "ca7189c7c17532bdc0dcce4a9c6351de"
+    "schema_fingerprint": "55ed795997827b6b95ae1985abc6a283"
   },
   "prod": {
     "last_updated": "2026-04-06T12:07:12Z",
