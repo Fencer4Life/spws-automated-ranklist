@@ -30,7 +30,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    158,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'LIPKOWSKA' AND txt_first_name = 'Dominika' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-F-FOIL-2024-2025'),
     1,
     'LIPKOWSKA Dominika'
@@ -66,7 +66,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    158,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'LIPKOWSKA' AND txt_first_name = 'Dominika' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-F-FOIL-2024-2025'),
     1,
     'LIPKOWSKA Dominika'
@@ -102,7 +102,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    158,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'LIPKOWSKA' AND txt_first_name = 'Dominika' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-F-FOIL-2024-2025'),
     1,
     'LIPKOWSKA Dominika'
@@ -138,7 +138,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    158,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'LIPKOWSKA' AND txt_first_name = 'Dominika' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-F-FOIL-2024-2025'),
     1,
     'LIPKOWSKA Dominika'
@@ -178,7 +178,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    237,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SAMECKA-NACZYŃSKA' AND txt_first_name = 'Martyna' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-F-FOIL-2024-2025'),
     8,
     'SAMECKA-NACZYŃSKA Martyna'
@@ -214,7 +214,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    158,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'LIPKOWSKA' AND txt_first_name = 'Dominika' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V1-F-FOIL-2024-2025'),
     7,
     'LIPKOWSKA Dominika'
@@ -263,7 +263,7 @@ INSERT INTO tbl_tournament (
 -- SKIPPED (international, no master data): 'KICKBUSCH Karin' place=3
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    158,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'LIPKOWSKA' AND txt_first_name = 'Dominika' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V1-F-FOIL-2024-2025'),
     3,
     'LIPKOWSKA Dominika'
@@ -273,7 +273,7 @@ VALUES (
 -- SKIPPED (international, no master data): 'SULLIVAN Annemarie' place=7
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    237,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SAMECKA-NACZYŃSKA' AND txt_first_name = 'Martyna' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V1-F-FOIL-2024-2025'),
     8,
     'SAMECKA-NACZYŃSKA Martyna'

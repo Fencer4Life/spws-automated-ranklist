@@ -30,42 +30,42 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    114,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KIERSZNICKI' AND txt_first_name = 'Ryszard' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V4-M-EPEE-2024-2025'),
     1,
     'KIERSZNICKI Ryszard'
 ); -- matched: KIERSZNICKI Ryszard (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    1,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ADAMCZEWSKI' AND txt_first_name = 'Wojciech' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V4-M-EPEE-2024-2025'),
     2,
     'ADAMCZEWSKI Wojciech'
 ); -- matched: ADAMCZEWSKI Wojciech (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    106,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'JUSZKIEWICZ' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V4-M-EPEE-2024-2025'),
     3,
     'JUSZKIEWICZ Piotr'
 ); -- matched: JUSZKIEWICZ Piotr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    161,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'LYNCH' AND txt_first_name = 'Pat' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V4-M-EPEE-2024-2025'),
     4,
     'LYNCH Pat'
 ); -- matched: LYNCH Pat (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FURMANIAK' AND txt_first_name = 'Andrzej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V4-M-EPEE-2024-2025'),
     5,
     'FURMANIAK Andrzej'
 ); -- matched: FURMANIAK Andrzej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    190,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWAKOWSKI' AND txt_first_name = 'Andrzej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V4-M-EPEE-2024-2025'),
     6,
     'NOWAKOWSKI Andrzej'
@@ -101,28 +101,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    114,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KIERSZNICKI' AND txt_first_name = 'Ryszard' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V4-M-EPEE-2024-2025'),
     1,
     'KIERSZNICKI Ryszard'
 ); -- matched: KIERSZNICKI Ryszard (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    1,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ADAMCZEWSKI' AND txt_first_name = 'Wojciech' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V4-M-EPEE-2024-2025'),
     2,
     'ADAMCZEWSKI Wojciech'
 ); -- matched: ADAMCZEWSKI Wojciech (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FURMANIAK' AND txt_first_name = 'Andrzej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V4-M-EPEE-2024-2025'),
     3,
     'FURMANIAK Andrzej'
 ); -- matched: FURMANIAK Andrzej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    190,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWAKOWSKI' AND txt_first_name = 'Andrzej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V4-M-EPEE-2024-2025'),
     4,
     'NOWAKOWSKI Andrzej'
@@ -158,28 +158,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    1,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ADAMCZEWSKI' AND txt_first_name = 'Wojciech' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V4-M-EPEE-2024-2025'),
     1,
     'ADAMCZEWSKI Wojciech'
 ); -- matched: ADAMCZEWSKI Wojciech (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    106,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'JUSZKIEWICZ' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V4-M-EPEE-2024-2025'),
     2,
     'JUSZKIEWICZ Piotr'
 ); -- matched: JUSZKIEWICZ Piotr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FURMANIAK' AND txt_first_name = 'Andrzej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V4-M-EPEE-2024-2025'),
     3,
     'FURMANIAK Andrzej'
 ); -- matched: FURMANIAK Andrzej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    190,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWAKOWSKI' AND txt_first_name = 'Andrzej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V4-M-EPEE-2024-2025'),
     4,
     'NOWAKOWSKI Andrzej'
@@ -215,35 +215,35 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    1,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ADAMCZEWSKI' AND txt_first_name = 'Wojciech' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-M-EPEE-2024-2025'),
     1,
     'ADAMCZEWSKI Wojciech'
 ); -- matched: ADAMCZEWSKI Wojciech (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    114,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KIERSZNICKI' AND txt_first_name = 'Ryszard' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-M-EPEE-2024-2025'),
     2,
     'KIERSZNICKI Ryszard'
 ); -- matched: KIERSZNICKI Ryszard (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    24,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'BORKOWSKI' AND txt_first_name = 'Andrzej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-M-EPEE-2024-2025'),
     3,
     'BORKOWSKI Andrzej'
 ); -- matched: BORKOWSKI Andrzej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    106,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'JUSZKIEWICZ' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-M-EPEE-2024-2025'),
     4,
     'JUSZKIEWICZ Piotr'
 ); -- matched: JUSZKIEWICZ Piotr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    190,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWAKOWSKI' AND txt_first_name = 'Andrzej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-M-EPEE-2024-2025'),
     5,
     'NOWAKOWSKI Andrzej'
@@ -279,28 +279,28 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    114,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KIERSZNICKI' AND txt_first_name = 'Ryszard' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V4-M-EPEE-2024-2025'),
     1,
     'KIERSZNICKI Ryszard'
 ); -- matched: KIERSZNICKI Ryszard (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    106,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'JUSZKIEWICZ' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V4-M-EPEE-2024-2025'),
     2,
     'JUSZKIEWICZ Piotr'
 ); -- matched: JUSZKIEWICZ Piotr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FURMANIAK' AND txt_first_name = 'Andrzej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V4-M-EPEE-2024-2025'),
     3,
     'FURMANIAK Andrzej'
 ); -- matched: FURMANIAK Andrzej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    190,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWAKOWSKI' AND txt_first_name = 'Andrzej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V4-M-EPEE-2024-2025'),
     4,
     'NOWAKOWSKI Andrzej'
@@ -336,42 +336,42 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    1,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ADAMCZEWSKI' AND txt_first_name = 'Wojciech' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V4-M-EPEE-2024-2025'),
     1,
     'ADAMCZEWSKI Wojciech'
 ); -- matched: ADAMCZEWSKI Wojciech (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    245,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SOBIERAJ' AND txt_first_name = 'Wojciech' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V4-M-EPEE-2024-2025'),
     2,
     'SOBIERAJ Wojciech'
 ); -- matched: SOBIERAJ Wojciech (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    114,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KIERSZNICKI' AND txt_first_name = 'Ryszard' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V4-M-EPEE-2024-2025'),
     3,
     'KIERSZNICKI Ryszard'
 ); -- matched: KIERSZNICKI Ryszard (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    106,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'JUSZKIEWICZ' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V4-M-EPEE-2024-2025'),
     4,
     'JUSZKIEWICZ Piotr'
 ); -- matched: JUSZKIEWICZ Piotr (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FURMANIAK' AND txt_first_name = 'Andrzej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V4-M-EPEE-2024-2025'),
     5,
     'FURMANIAK Andrzej'
 ); -- matched: FURMANIAK Andrzej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    190,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWAKOWSKI' AND txt_first_name = 'Andrzej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V4-M-EPEE-2024-2025'),
     6,
     'NOWAKOWSKI Andrzej'
@@ -418,14 +418,14 @@ INSERT INTO tbl_tournament (
 -- SKIPPED (international, no master data): 'STOCK Jean' place=1
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    120,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOLLAR' AND txt_first_name = 'Gabriel' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V4-M-EPEE-2024-2025'),
     2,
     'KOLLÁR Gabriel'
 ); -- matched: KOLLAR Gabriel (score=92.85714285714286)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    1,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ADAMCZEWSKI' AND txt_first_name = 'Wojciech' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V4-M-EPEE-2024-2025'),
     3,
     'ADAMCZEWSKI Wojciech'
@@ -433,14 +433,14 @@ VALUES (
 -- SKIPPED (international, no master data): 'PINCEMAILLE Benoit' place=3
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    314,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZYLKA' AND txt_first_name = 'Henryk' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V4-M-EPEE-2024-2025'),
     5,
     'ZYLKA Henryk'
 ); -- matched: ZYLKA Henryk (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    106,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'JUSZKIEWICZ' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V4-M-EPEE-2024-2025'),
     6,
     'JUSZKIEWICZ Piotr'
@@ -448,7 +448,7 @@ VALUES (
 -- SKIPPED (international, no master data): 'AUSSEDAT Bernard' place=7
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    114,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KIERSZNICKI' AND txt_first_name = 'Ryszard' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V4-M-EPEE-2024-2025'),
     8,
     'KIERSZNICKI Ryszard'
@@ -456,14 +456,14 @@ VALUES (
 -- SKIPPED (international, no master data): 'MOREIRA Artur' place=9
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    190,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWAKOWSKI' AND txt_first_name = 'Andrzej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V4-M-EPEE-2024-2025'),
     10,
     'NOWAKOWSKI Andrzej'
 ); -- matched: NOWAKOWSKI Andrzej (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    61,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FURMANIAK' AND txt_first_name = 'Andrzej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V4-M-EPEE-2024-2025'),
     11,
     'FURMANIAK Andrzej'
@@ -504,7 +504,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    24,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'BORKOWSKI' AND txt_first_name = 'Andrzej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V4-M-EPEE-2024-2025'),
     40,
     'BORKOWSKI Andrzej'

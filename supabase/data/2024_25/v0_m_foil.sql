@@ -30,14 +30,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    2,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ADAMCZYK' AND txt_first_name = 'Grzegorz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-M-FOIL-2024-2025'),
     1,
     'ADAMCZYK Grzegorz'
 ); -- matched: ADAMCZYK Grzegorz (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    59,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FRYDRYCH' AND txt_first_name = 'Szymon' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V0-M-FOIL-2024-2025'),
     2,
     'FRYDRYCH Szymon'
@@ -73,7 +73,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    41,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DAMIAN' AND txt_first_name = 'Mateusz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-M-FOIL-2024-2025'),
     1,
     'KLAMAN Mateusz'
@@ -109,21 +109,21 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    189,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWAK' AND txt_first_name = 'Szymon' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-M-FOIL-2024-2025'),
     1,
     'NOWAK Szymon'
 ); -- matched: NOWAK Szymon (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    250,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SPŁAWA-NEYMAN' AND txt_first_name = 'MACIEJ' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-M-FOIL-2024-2025'),
     2,
     'SPŁAWA-NEYMAN MACIEJ'
 ); -- matched: SPŁAWA-NEYMAN MACIEJ (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    2,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ADAMCZYK' AND txt_first_name = 'Grzegorz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-M-FOIL-2024-2025'),
     3,
     'ADAMCZYK Grzegorz'
@@ -159,7 +159,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    250,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SPŁAWA-NEYMAN' AND txt_first_name = 'MACIEJ' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-M-FOIL-2024-2025'),
     1,
     'SPŁAWA-NEYMAN MACIEJ'
@@ -195,7 +195,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    174,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'METZA' AND txt_first_name = 'Oskar' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V0-M-FOIL-2024-2025'),
     1,
     'METZA Oskar'

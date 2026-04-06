@@ -18,19 +18,33 @@ import httpx
 
 
 def _management_query(ref: str, access_token: str, sql: str) -> list[dict]:
-    """Execute SQL via Supabase Management API."""
-    resp = httpx.post(
-        f"https://api.supabase.com/v1/projects/{ref}/database/query",
-        headers={
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json",
-        },
-        json={"query": sql},
-        timeout=30,
-    )
-    if resp.status_code >= 400:
-        raise RuntimeError(f"Management API error ({resp.status_code}): {resp.text}")
-    return resp.json()
+    """Execute SQL via Supabase Management API with retry."""
+    import time
+
+    url = f"https://api.supabase.com/v1/projects/{ref}/database/query"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+    }
+    payload = {"query": sql}
+
+    for attempt in range(3):
+        try:
+            resp = httpx.post(url, headers=headers, json=payload, timeout=60)
+        except httpx.ReadTimeout:
+            if attempt < 2:
+                time.sleep(3 * (attempt + 1))
+                continue
+            raise
+
+        if resp.status_code in (429, 503):
+            time.sleep(3 * (attempt + 1))
+            continue
+        if resp.status_code >= 400:
+            raise RuntimeError(f"Management API error ({resp.status_code}): {resp.text}")
+        return resp.json()
+
+    raise RuntimeError("Management API: max retries exceeded")
 
 
 def _esc(s: str) -> str:
@@ -69,9 +83,14 @@ def export_fencer_seed(
         by_str = str(by) if by else "NULL"
         est_str = "TRUE" if estimated else "FALSE"
         comment = " -- ESTIMATED" if estimated else ""
-        value_lines.append(f"    ('{surname}', '{first_name}', {by_str}, {est_str}){comment}")
+        value_lines.append((f"    ('{surname}', '{first_name}', {by_str}, {est_str})", comment))
 
-    lines.append(",\n".join(value_lines) + ";")
+    # Build VALUES with commas before comments to avoid breaking SQL
+    parts = []
+    for i, (val, comment) in enumerate(value_lines):
+        sep = "," if i < len(value_lines) - 1 else ";"
+        parts.append(f"{val}{sep}{comment}")
+    lines.append("\n".join(parts))
     return "\n".join(lines) + "\n"
 
 
@@ -154,11 +173,23 @@ def export_full_season(
         )
 
         for tourn in tournaments:
+            tourn_code = tourn["txt_code"]
+
+            # Fetch results first — skip empty tournaments (0 results)
+            results = query_fn(
+                f"SELECT r.int_place, r.num_final_score, f.txt_surname, f.txt_first_name "
+                f"FROM tbl_result r "
+                f"JOIN tbl_fencer f ON r.id_fencer = f.id_fencer "
+                f"WHERE r.id_tournament = {tourn['id_tournament']} "
+                f"ORDER BY r.int_place"
+            )
+            if not results:
+                continue
+
             cat = tourn["enum_age_category"].lower()
             gender = tourn["enum_gender"].lower()
             weapon = tourn["enum_weapon"].lower()
             filename = f"{cat}_{gender}_{weapon}.sql"
-            tourn_code = tourn["txt_code"]
             tourn_name = _esc(tourn.get("txt_name") or event_name)
 
             lines = category_files.setdefault(filename, [])
@@ -197,26 +228,19 @@ def export_full_season(
                 f");"
             )
 
-            # Fetch results with fencer names
-            results = query_fn(
-                f"SELECT r.int_place, f.txt_surname, f.txt_first_name "
-                f"FROM tbl_result r "
-                f"JOIN tbl_fencer f ON r.id_fencer = f.id_fencer "
-                f"WHERE r.id_tournament = {tourn['id_tournament']} "
-                f"ORDER BY r.int_place"
-            )
-
             for r in results:
                 surname = _esc(r["txt_surname"])
                 first_name = _esc(r["txt_first_name"])
                 place = r["int_place"]
+                score = r["num_final_score"]
+                score_sql = str(score) if score is not None else "NULL"
                 scraped = f"{surname} {first_name}"
                 lines.append(
-                    f"INSERT INTO tbl_result (id_fencer, id_tournament, int_place)\n"
+                    f"INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)\n"
                     f"VALUES (\n"
                     f"    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = '{surname}' AND txt_first_name = '{first_name}' LIMIT 1),\n"
                     f"    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = '{tourn_code}'),\n"
-                    f"    {place}\n"
+                    f"    {place}, {score_sql}\n"
                     f"); -- {scraped}"
                 )
 

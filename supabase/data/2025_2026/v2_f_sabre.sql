@@ -27,11 +27,11 @@ INSERT INTO tbl_tournament (
     NULL, 1, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DWORAKOWSKA-BANAŚ' AND txt_first_name = 'Agnieszka' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-SABRE-2025-2026'),
-    1
+    1, 59.00
 ); -- DWORAKOWSKA-BANAŚ Agnieszka
 
 -- ---- PPW2-2025-2026: II Puchar Polski Weteranów ----
@@ -58,17 +58,17 @@ INSERT INTO tbl_tournament (
     NULL, 2, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DWORAKOWSKA-BANAŚ' AND txt_first_name = 'Agnieszka' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-F-SABRE-2025-2026'),
-    1
+    1, 71.34
 ); -- DWORAKOWSKA-BANAŚ Agnieszka
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MILCZAREK' AND txt_first_name = 'Renata' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-F-SABRE-2025-2026'),
-    2
+    2, 8.56
 ); -- MILCZAREK Renata
 
 -- ---- PEW2-2025-2026: EVF Circuit Madrid ----
@@ -95,11 +95,11 @@ INSERT INTO tbl_tournament (
     NULL, 22, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KAZIK' AND txt_first_name = 'Martin' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V2-F-SABRE-2025-2026'),
-    17
+    17, 5.09
 ); -- KAZIK Martin
 
 -- ---- PPW3-2025-2026: III Puchar Polski Weteranów / Warsaw Epee Open ----
@@ -126,11 +126,11 @@ INSERT INTO tbl_tournament (
     '2025-12-14', 1, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MILCZAREK' AND txt_first_name = 'Renata' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-SABRE-2025-2026'),
-    1
+    1, 59.00
 ); -- MILCZAREK Renata
 
 -- ---- PPW4-2025-2026: IV Puchar Polski Weteranów ----
@@ -157,11 +157,11 @@ INSERT INTO tbl_tournament (
     '2026-02-21', 1, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MILCZAREK' AND txt_first_name = 'Renata' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-SABRE-2025-2026'),
-    1
+    1, 59.00
 ); -- MILCZAREK Renata
 
 -- ---- PEW7-2025-2026: EVF Circuit Salzburg ----
@@ -188,9 +188,9 @@ INSERT INTO tbl_tournament (
     '2026-03-29', 6, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MILCZAREK' AND txt_first_name = 'Renata' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V2-F-SABRE-2025-2026'),
-    6
+    6, 1.00
 ); -- MILCZAREK Renata

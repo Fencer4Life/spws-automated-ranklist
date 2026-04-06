@@ -30,14 +30,14 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    171,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MCGINNITY' AND txt_first_name = 'Marie' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-F-EPEE-2024-2025'),
     1,
     'MCGINNITY Marie'
 ); -- matched: MCGINNITY Marie (score=100.0)
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    23,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'BORKOWSKA' AND txt_first_name = 'Halina' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-F-EPEE-2024-2025'),
     2,
     'BORKOWSKA Halina'
@@ -73,7 +73,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    180,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MILOVA' AND txt_first_name = 'Tatiana' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-F-EPEE-2024-2025'),
     1,
     'MILOVA Tatiana'
@@ -109,7 +109,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    180,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MILOVA' AND txt_first_name = 'Tatiana' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-F-EPEE-2024-2025'),
     1,
     'MILOVA Tatiana'
@@ -145,7 +145,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    23,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'BORKOWSKA' AND txt_first_name = 'Halina' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-F-EPEE-2024-2025'),
     1,
     'BORKOWSKA Halina'
@@ -201,7 +201,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    23,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'BORKOWSKA' AND txt_first_name = 'Halina' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V3-F-EPEE-2024-2025'),
     44,
     'BORKOWSKA Halina'
