@@ -179,6 +179,14 @@ def promote_event(
         results = cert_data["results"].get(cert_tid, [])
 
         if not results:
+            # Clean up stale PROD data for tournaments with 0 results on CERT
+            try:
+                prod_query_fn(
+                    f"DELETE FROM tbl_result WHERE id_tournament = "
+                    f"(SELECT id_tournament FROM tbl_tournament WHERE txt_code = '{tourn_code}')"
+                )
+            except Exception:
+                pass  # tournament may not exist on PROD
             continue
 
         try:
