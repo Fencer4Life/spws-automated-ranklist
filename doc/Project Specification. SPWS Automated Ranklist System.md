@@ -1620,6 +1620,10 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-83 | Batch summary notification after each ingestion run | ADR-025 | 9.197 | Pending |
 | FR-84 | ADR-024 compliance: flag PENDING for unknown DOB in combined categories | ADR-024/025 | 9.194–9.196 | Pending |
 | FR-85 | Workflow failure notifications via Telegram | ADR-025 | 9.202–9.203 | Pending |
+| FR-86 | CERT → PROD promotion: per-tournament transfer with error recovery | ADR-026 | 9.204–9.207 | Pending |
+| FR-87 | Auto-export seed SQL files after promotion (committed to repo) | ADR-026 | 9.208 | Superseded by FR-88 |
+| FR-88 | Full-season seed export from CERT on complete/rollback (overwrite, not append) | ADR-027 | 9.209–9.213 | Pending |
+| FR-89 | Auto-resume email polling on event day | ADR-027 | Manual E2E | Pending |
 
 ### Non-Functional Requirements
 
@@ -1668,3 +1672,5 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-023](adr/023-email-ingestion-gas-storage.md) | Email Ingestion via GAS + Supabase Storage | FR-75, FR-76, FR-77 |
 | [ADR-024](adr/024-combined-category-splitting.md) | Combined Category Splitting Strategy | FR-71, ADR-010 |
 | [ADR-025](adr/025-event-centric-ingestion-telegram.md) | Event-Centric Ingestion + Telegram Admin | FR-79–85, ADR-022/023/024 |
+| [ADR-026](adr/026-cert-prod-promotion.md) | CERT → PROD Event Promotion via Python | FR-86, ADR-025 |
+| [ADR-027](adr/027-full-season-seed-export.md) | Full-Season Seed Export from CERT | FR-88, FR-89, ADR-025/026 |

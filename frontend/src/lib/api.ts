@@ -268,38 +268,12 @@ export async function deleteEventCascade(id: number): Promise<void> {
 
 export async function fetchMatchCandidates(): Promise<MatchCandidate[]> {
   const { data, error } = await getClient()
-    .from('tbl_match_candidate')
-    .select(`
-      id_match,
-      id_result,
-      txt_scraped_name,
-      id_fencer,
-      num_confidence,
-      enum_status,
-      txt_admin_note,
-      tbl_fencer (txt_surname, txt_first_name),
-      tbl_result!inner (
-        id_tournament,
-        tbl_tournament!inner (txt_code, enum_type)
-      )
-    `)
+    .from('vw_match_candidates')
+    .select('*')
     .order('id_match', { ascending: false })
     .limit(200)
   if (error) throw error
-  return (data ?? []).map((row: any) => ({
-    id_match: row.id_match,
-    id_result: row.id_result,
-    txt_scraped_name: row.txt_scraped_name,
-    id_fencer: row.id_fencer,
-    txt_fencer_name: row.tbl_fencer
-      ? `${row.tbl_fencer.txt_surname} ${row.tbl_fencer.txt_first_name}`
-      : null,
-    num_confidence: row.num_confidence,
-    enum_status: row.enum_status,
-    txt_admin_note: row.txt_admin_note,
-    txt_tournament_code: row.tbl_result?.tbl_tournament?.txt_code ?? null,
-    enum_type: row.tbl_result?.tbl_tournament?.enum_type ?? null,
-  }))
+  return (data ?? []) as MatchCandidate[]
 }
 
 export async function fetchAllTournaments(eventIds: number[]): Promise<Tournament[]> {

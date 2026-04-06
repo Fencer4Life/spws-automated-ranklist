@@ -1,0 +1,59 @@
+name: Export Seed from CERT
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Trigger reason (complete/rollback/manual)'
+        default: 'manual'
+      season:
+        description: 'Season code'
+        default: 'SPWS-2025-2026'
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    name: Export seed files from CERT
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install httpx
+
+      - name: Export seed files
+        run: python -m python.pipeline.export_seed --cert-ref "${{ secrets.SUPABASE_CERT_REF }}" --season "${{ github.event.inputs.season }}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Commit seed files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add supabase/seed_tbl_fencer.sql supabase/data/
+          if git diff --cached --quiet; then
+            echo "No seed changes to commit"
+          else
+            git commit -m "chore: auto-export seed from CERT (${{ github.event.inputs.reason }}) [skip ci]"
+            git push
+          fi
+
+      - name: Notify success
+        if: success()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d text="Seed files exported from CERT (${{ github.event.inputs.reason }}). Git updated."
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d text="Seed export FAILED. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
