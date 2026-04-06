@@ -3,37 +3,6 @@
 -- Auto-loaded by supabase db reset via config.toml sql_paths glob.
 -- =========================================================================
 
--- ---- PEW10-2025-2026: EVF Criterium Mondial Vétérans 2025 ----
-INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
-SELECT
-    'PEW10-2025-2026',
-    'EVF Criterium Mondial Vétérans 2025',
-    'Paris',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
-    'COMPLETED'
-WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW10-2025-2026');
-INSERT INTO tbl_tournament (
-    id_event, txt_code, txt_name, enum_type,
-    enum_weapon, enum_gender, enum_age_category,
-    dt_tournament, int_participant_count, url_results,
-    enum_import_status
-) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW10-2025-2026'),
-    'PEW10-V1-M-EPEE-2025-2026',
-    'EVF Criterium Mondial Vétérans 2025',
-    'PEW',
-    'EPEE', 'M', 'V1',
-    '2025-07-05', 31, NULL,
-    'SCORED'
-);
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW10-V1-M-EPEE-2025-2026'),
-    8, 40.33
-); -- KORONA Przemysław
-
 -- ---- PEW1-2025-2026: EVF Circuit Budapest ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
@@ -55,21 +24,27 @@ INSERT INTO tbl_tournament (
     'EVF Grand Prix 1 — Budapeszt',
     'PEW',
     'EPEE', 'M', 'V1',
-    NULL, 33, NULL,
+    NULL, 3, NULL,
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'BOBUSIA' AND txt_first_name = 'Jarosław' LIMIT 1),
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Radosław' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-M-EPEE-2025-2026'),
-    5, 57.45
-); -- BOBUSIA Jarosław
+    14, 0.00
+); -- KORONA Radosław
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KULKA' AND txt_first_name = 'Dawid' LIMIT 1),
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ALCSER' AND txt_first_name = 'Norbert' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-M-EPEE-2025-2026'),
-    6, 54.89
-); -- KULKA Dawid
+    20, 0.00
+); -- ALCSER Norbert
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STOLARIK' AND txt_first_name = 'Peter' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-M-EPEE-2025-2026'),
+    25, 0.00
+); -- STOLARIK Peter
 
 -- ---- PPW1-2025-2026: I Puchar Polski Weteranów ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
@@ -232,27 +207,27 @@ INSERT INTO tbl_tournament (
     'EVF Grand Prix 2 — Madryt',
     'PEW',
     'EPEE', 'M', 'V1',
-    NULL, 27, NULL,
+    NULL, 3, NULL,
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STOCKI' AND txt_first_name = 'Piotr' LIMIT 1),
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Radosław' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V1-M-EPEE-2025-2026'),
-    7, 41.07
-); -- STOCKI Piotr
+    1, 82.98
+); -- KORONA Radosław
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KULKA' AND txt_first_name = 'Dawid' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V1-M-EPEE-2025-2026'),
-    11, 24.35
+    10, 0.00
 ); -- KULKA Dawid
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STOLARIK' AND txt_first_name = 'Peter' LIMIT 1),
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ALCSER' AND txt_first_name = 'Norbert' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V1-M-EPEE-2025-2026'),
-    19, 6.22
-); -- STOLARIK Peter
+    18, 0.00
+); -- ALCSER Norbert
 
 -- ---- PPW3-2025-2026: III Puchar Polski Weteranów / Warsaw Epee Open ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
@@ -366,27 +341,15 @@ INSERT INTO tbl_tournament (
     'EVF Grand Prix 3',
     'PEW',
     'EPEE', 'M', 'V1',
-    NULL, 34, NULL,
+    NULL, 1, NULL,
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STOCKI' AND txt_first_name = 'Piotr' LIMIT 1),
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KAZIK' AND txt_first_name = 'Martin' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V1-M-EPEE-2025-2026'),
-    17, 20.63
-); -- STOCKI Piotr
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ALCSER' AND txt_first_name = 'Norbert' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V1-M-EPEE-2025-2026'),
-    21, 17.70
-); -- ALCSER Norbert
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KULKA' AND txt_first_name = 'Dawid' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V1-M-EPEE-2025-2026'),
-    22, 17.05
-); -- KULKA Dawid
+    11, 50.00
+); -- KAZIK Martin
 
 -- ---- PPW4-2025-2026: IV Puchar Polski Weteranów ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)

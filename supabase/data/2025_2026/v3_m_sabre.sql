@@ -3,6 +3,37 @@
 -- Auto-loaded by supabase db reset via config.toml sql_paths glob.
 -- =========================================================================
 
+-- ---- PEW1-2025-2026: EVF Circuit Budapest ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW1-2025-2026',
+    'EVF Circuit Budapest',
+    'Budapest',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW1-2025-2026');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1-2025-2026'),
+    'PEW1-V3-M-SABRE-2025-2026',
+    'V3 M SABRE',
+    'PEW',
+    'SABRE', 'M', 'V3',
+    '2025-09-20', 1, NULL,
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FARAGO' AND txt_first_name = 'József' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V3-M-SABRE-2025-2026'),
+    15, 50.00
+); -- FARAGO József
+
 -- ---- PPW1-2025-2026: I Puchar Polski Weteranów ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
@@ -88,6 +119,37 @@ VALUES (
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-M-SABRE-2025-2026'),
     2, 8.56
 ); -- CHUDYCKI Artur
+
+-- ---- PEW-SPORTHALLE-2025-2026: EVF Circuit Memoriam Max Geuter – Munich (GER) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW-SPORTHALLE-2025-2026',
+    'EVF Circuit Memoriam Max Geuter – Munich (GER)',
+    'Sporthalle der Städtischen Berufsschule für Informationstechnik',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW-SPORTHALLE-2025-2026');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW-SPORTHALLE-2025-2026'),
+    'PEW-SPORTHALLE-V3-M-SABRE-2025-2026',
+    'V3 M SABRE',
+    'PEW',
+    'SABRE', 'M', 'V3',
+    '2025-12-06', 1, NULL,
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'GAJDA' AND txt_first_name = 'Leszek' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW-SPORTHALLE-V3-M-SABRE-2025-2026'),
+    7, 50.00
+); -- GAJDA Leszek
 
 -- ---- PPW3-2025-2026: III Puchar Polski Weteranów / Warsaw Epee Open ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
@@ -205,6 +267,49 @@ VALUES (
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-M-SABRE-2025-2026'),
     4, 1.00
 ); -- CHUDYCKI Artur
+
+-- ---- PEW4-2025-2026: EVF Circuit Napoli ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW4-2025-2026',
+    'EVF Circuit Napoli',
+    'Napoli',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW4-2025-2026');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW4-2025-2026'),
+    'PEW4-V3-M-SABRE-2025-2026',
+    'V3 M SABRE',
+    'PEW',
+    'SABRE', 'M', 'V3',
+    '2026-03-07', 3, NULL,
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZABŁOCKI' AND txt_first_name = 'Michał' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V3-M-SABRE-2025-2026'),
+    1, 82.98
+); -- ZABŁOCKI Michał
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'GAJDA' AND txt_first_name = 'Leszek' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V3-M-SABRE-2025-2026'),
+    3, 5.33
+); -- GAJDA Leszek
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WOJCIECHOWSKI' AND txt_first_name = 'Marek' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V3-M-SABRE-2025-2026'),
+    20, 0.00
+); -- WOJCIECHOWSKI Marek
 
 -- ---- PEW6-2025-2026: EVF Circuit Jabłonna ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)

@@ -3,37 +3,6 @@
 -- Auto-loaded by supabase db reset via config.toml sql_paths glob.
 -- =========================================================================
 
--- ---- PEW10-2025-2026: EVF Criterium Mondial Vétérans 2025 ----
-INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
-SELECT
-    'PEW10-2025-2026',
-    'EVF Criterium Mondial Vétérans 2025',
-    'Paris',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
-    'COMPLETED'
-WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW10-2025-2026');
-INSERT INTO tbl_tournament (
-    id_event, txt_code, txt_name, enum_type,
-    enum_weapon, enum_gender, enum_age_category,
-    dt_tournament, int_participant_count, url_results,
-    enum_import_status
-) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW10-2025-2026'),
-    'PEW10-V2-M-SABRE-2025-2026',
-    'EVF Criterium Mondial Vétérans 2025',
-    'PEW',
-    'SABRE', 'M', 'V2',
-    '2025-07-05', 12, NULL,
-    'SCORED'
-);
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOŃCZYŁO' AND txt_first_name = 'Tomasz' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW10-V2-M-SABRE-2025-2026'),
-    3, 55.20
-); -- KOŃCZYŁO Tomasz
-
 -- ---- PEW1-2025-2026: EVF Circuit Budapest ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
@@ -55,51 +24,15 @@ INSERT INTO tbl_tournament (
     'EVF Grand Prix 1 — Budapeszt',
     'PEW',
     'SABRE', 'M', 'V2',
-    NULL, 22, NULL,
+    NULL, 1, NULL,
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOŃCZYŁO' AND txt_first_name = 'Tomasz' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-M-SABRE-2025-2026'),
-    3, 70.99
-); -- KOŃCZYŁO Tomasz
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'GANSZCZYK' AND txt_first_name = 'Marcin' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-M-SABRE-2025-2026'),
-    4, 58.02
+    3, 53.00
 ); -- GANSZCZYK Marcin
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'CHIAROMONTE' AND txt_first_name = 'Francesco' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-M-SABRE-2025-2026'),
-    5, 44.49
-); -- CHIAROMONTE Francesco
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZAWROTNIAK' AND txt_first_name = 'Przemysław' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-M-SABRE-2025-2026'),
-    6, 41.60
-); -- ZAWROTNIAK Przemysław
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWICKI' AND txt_first_name = 'Robert' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-M-SABRE-2025-2026'),
-    10, 23.50
-); -- NOWICKI Robert
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MAZIK' AND txt_first_name = 'Aleksander' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-M-SABRE-2025-2026'),
-    14, 18.16
-); -- MAZIK Aleksander
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WIERZBICKI' AND txt_first_name = 'Jacek' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-M-SABRE-2025-2026'),
-    15, 17.07
-); -- WIERZBICKI Jacek
 
 -- ---- PPW1-2025-2026: I Puchar Polski Weteranów ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
@@ -271,6 +204,80 @@ VALUES (
     9, 1.00
 ); -- KOTTS Radosław
 
+-- ---- PEW2-2025-2026: EVF Circuit Madrid ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW2-2025-2026',
+    'EVF Circuit Madrid',
+    'Madrid',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW2-2025-2026');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW2-2025-2026'),
+    'PEW2-V2-M-SABRE-2025-2026',
+    'V2 M SABRE',
+    'PEW',
+    'SABRE', 'M', 'V2',
+    '2025-11-01', 1, NULL,
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'CHIAROMONTE' AND txt_first_name = 'Francesco' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V2-M-SABRE-2025-2026'),
+    2, 56.00
+); -- CHIAROMONTE Francesco
+
+-- ---- PEW-SPORTHALLE-2025-2026: EVF Circuit Memoriam Max Geuter – Munich (GER) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW-SPORTHALLE-2025-2026',
+    'EVF Circuit Memoriam Max Geuter – Munich (GER)',
+    'Sporthalle der Städtischen Berufsschule für Informationstechnik',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW-SPORTHALLE-2025-2026');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW-SPORTHALLE-2025-2026'),
+    'PEW-SPORTHALLE-2025-2026-M-SABRE',
+    'EVF Circuit Memoriam Max Geuter – Munich (GER)',
+    'PEW',
+    'SABRE', 'M', 'V2',
+    '2025-12-06', 3, NULL,
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'GANSZCZYK' AND txt_first_name = 'Marcin' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW-SPORTHALLE-2025-2026-M-SABRE'),
+    6, 0.00
+); -- GANSZCZYK Marcin
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'CHIAROMONTE' AND txt_first_name = 'Francesco' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW-SPORTHALLE-2025-2026-M-SABRE'),
+    8, 0.00
+); -- CHIAROMONTE Francesco
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWICKI' AND txt_first_name = 'Robert' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW-SPORTHALLE-2025-2026-M-SABRE'),
+    9, 0.00
+); -- NOWICKI Robert
+
 -- ---- PPW3-2025-2026: III Puchar Polski Weteranów / Warsaw Epee Open ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
@@ -389,21 +396,21 @@ INSERT INTO tbl_tournament (
     'EVF Grand Prix 3',
     'PEW',
     'SABRE', 'M', 'V2',
-    '2025-12-06', 25, NULL,
+    '2025-12-06', 2, NULL,
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'GANSZCZYK' AND txt_first_name = 'Marcin' LIMIT 1),
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'CHIAROMONTE' AND txt_first_name = 'Francesco' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V2-M-SABRE-2025-2026'),
-    6, 42.72
-); -- GANSZCZYK Marcin
+    2, 8.56
+); -- CHIAROMONTE Francesco
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWICKI' AND txt_first_name = 'Robert' LIMIT 1),
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOŃCZYŁO' AND txt_first_name = 'Tomasz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V2-M-SABRE-2025-2026'),
-    9, 26.55
-); -- NOWICKI Robert
+    3, 3.78
+); -- KOŃCZYŁO Tomasz
 
 -- ---- PPW4-2025-2026: IV Puchar Polski Weteranów ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
@@ -511,15 +518,51 @@ INSERT INTO tbl_tournament (
     'EVF Grand Prix 4',
     'PEW',
     'SABRE', 'M', 'V2',
-    '2026-11-11', 22, NULL,
+    '2026-11-11', 7, NULL,
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOŃCZYŁO' AND txt_first_name = 'Tomasz' LIMIT 1),
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWICKI' AND txt_first_name = 'Robert' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V2-M-SABRE-2025-2026'),
-    3, 70.99
-); -- KOŃCZYŁO Tomasz
+    3, 38.07
+); -- NOWICKI Robert
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZAWROTNIAK' AND txt_first_name = 'Przemysław' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V2-M-SABRE-2025-2026'),
+    6, 4.88
+); -- ZAWROTNIAK Przemysław
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'GANSZCZYK' AND txt_first_name = 'Marcin' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V2-M-SABRE-2025-2026'),
+    9, 0.00
+); -- GANSZCZYK Marcin
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'CHIAROMONTE' AND txt_first_name = 'Francesco' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V2-M-SABRE-2025-2026'),
+    13, 0.00
+); -- CHIAROMONTE Francesco
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MAZIK' AND txt_first_name = 'Aleksander' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V2-M-SABRE-2025-2026'),
+    21, 0.00
+); -- MAZIK Aleksander
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KACZMAREK' AND txt_first_name = 'Paweł' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V2-M-SABRE-2025-2026'),
+    28, 0.00
+); -- KACZMAREK Paweł
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WIERZBICKI' AND txt_first_name = 'Jacek' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V2-M-SABRE-2025-2026'),
+    31, 0.00
+); -- WIERZBICKI Jacek
 
 -- ---- PEW6-2025-2026: EVF Circuit Jabłonna ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)

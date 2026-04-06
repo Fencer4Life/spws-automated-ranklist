@@ -3,37 +3,6 @@
 -- Auto-loaded by supabase db reset via config.toml sql_paths glob.
 -- =========================================================================
 
--- ---- PEW10-2025-2026: EVF Criterium Mondial Vétérans 2025 ----
-INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
-SELECT
-    'PEW10-2025-2026',
-    'EVF Criterium Mondial Vétérans 2025',
-    'Paris',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
-    'COMPLETED'
-WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW10-2025-2026');
-INSERT INTO tbl_tournament (
-    id_event, txt_code, txt_name, enum_type,
-    enum_weapon, enum_gender, enum_age_category,
-    dt_tournament, int_participant_count, url_results,
-    enum_import_status
-) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW10-2025-2026'),
-    'PEW10-V1-M-SABRE-2025-2026',
-    'EVF Criterium Mondial Vétérans 2025',
-    'PEW',
-    'SABRE', 'M', 'V1',
-    '2025-07-05', 9, NULL,
-    'SCORED'
-);
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PRZYSTAJKO' AND txt_first_name = 'Daniel' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW10-V1-M-SABRE-2025-2026'),
-    5, 24.11
-); -- PRZYSTAJKO Daniel
-
 -- ---- PPW1-2025-2026: I Puchar Polski Weteranów ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
@@ -175,6 +144,68 @@ VALUES (
     2, 8.56
 ); -- ZAJĄC Michał
 
+-- ---- PEW3-2025-2026: EVF Circuit Guildford ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW3-2025-2026',
+    'EVF Circuit Guildford',
+    'Guildford',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW3-2025-2026');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW3-2025-2026'),
+    'PEW3-V1-M-SABRE-2025-2026',
+    'V1 M SABRE',
+    'PEW',
+    'SABRE', 'M', 'V1',
+    '2026-01-11', 1, NULL,
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PRZYSTAJKO' AND txt_first_name = 'Daniel' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V1-M-SABRE-2025-2026'),
+    2, 56.00
+); -- PRZYSTAJKO Daniel
+
+-- ---- PEW-SALLEJEANZ-2025-2026: EVF Circuit – Fâches-Thumesnil (FRA) ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW-SALLEJEANZ-2025-2026',
+    'EVF Circuit – Fâches-Thumesnil (FRA)',
+    'Salle Jean Zay',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW-SALLEJEANZ-2025-2026');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW-SALLEJEANZ-2025-2026'),
+    'PEW-SALLEJEANZ-V1-M-SABRE-2025-2026',
+    'V1 M SABRE',
+    'PEW',
+    'SABRE', 'M', 'V1',
+    '2026-02-08', 1, NULL,
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TECŁAW' AND txt_first_name = 'Robert' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW-SALLEJEANZ-V1-M-SABRE-2025-2026'),
+    3, 53.00
+); -- TECŁAW Robert
+
 -- ---- PPW4-2025-2026: IV Puchar Polski Weteranów ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
@@ -233,15 +264,15 @@ INSERT INTO tbl_tournament (
     'EVF Grand Prix 4',
     'PEW',
     'SABRE', 'M', 'V1',
-    '2026-11-11', 13, NULL,
+    '2026-11-11', 1, NULL,
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PRZYSTAJKO' AND txt_first_name = 'Daniel' LIMIT 1),
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TECŁAW' AND txt_first_name = 'Robert' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V1-M-SABRE-2025-2026'),
-    2, 80.87
-); -- PRZYSTAJKO Daniel
+    2, 56.00
+); -- TECŁAW Robert
 
 -- ---- PEW5-2025-2026: EVF Circuit Stockholm ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)

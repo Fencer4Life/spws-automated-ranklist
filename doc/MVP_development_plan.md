@@ -428,7 +428,7 @@ Quick reference — full details in [RTM (Appendix C)](Project%20Specification.%
 | FR-55 | File import (.xlsx, .xls, .json, .csv) | UC22(i), UC23(c) | Covered (T9.5+T9.10) |
 | FR-56 | Identity resolution admin UI | UC4(a-e) | Covered (UI + DB wiring: 11.1–11.12, 9.78–9.80) |
 | FR-57 | Disambiguation modal (same-name fencers) | UC3(f), UC4(b) | Covered (UI: 9.74–9.76; DB: 11.6–11.8) |
-| FR-58 | EVF calendar import | UC8, UC9 | **Deferred → Go-to-PROD** |
+| FR-58 | EVF calendar + results import | UC8, UC9 | Covered (ADR-028, evf.1–evf.10, 12.1–12.4) |
 | FR-60 | Event CRUD via web UI | UC22(c) | Covered (T9.1+T9.3) |
 | NFR-10 | Pipeline observability (POC gap) | §10 | Partial (Telegram covered; structured logs → Go-to-PROD) |
 

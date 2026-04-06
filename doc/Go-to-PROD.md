@@ -78,16 +78,20 @@ End-to-end flow: parse uploaded file → fuzzy match against master fencer list 
 - URL input field → auto-detect scraper platform → scrape → feed into orchestration pipeline
 - Frontend validation (URL format, platform detection feedback)
 
-### 2.4 EVF Calendar Import (FR-58, T9.12–T9.13)
+### 2.4 EVF Calendar + Results Import (FR-58) — COMPLETE
 
-**What exists:**
-- UI mockup: `m8_evf_import.html` (gold "Import EVF" button on Calendar, checklist modal)
-- `tbl_event` schema with all needed columns (country, venue, weapons, entry fee)
+**ADR-028:** Two data sources — calendar HTML (past+future) and JSON API (`api.veteransfencing.eu/fe`).
 
-**What's needed:**
-- Scraper for veteransfencing.eu calendar page
-- Deduplication logic: match scraped events against existing DB events by date + location
-- Create `tbl_event` + child `tbl_tournament` entries for each imported event
+**Implemented:**
+- `python/scrapers/evf_calendar.py` — calendar HTML parser (past+future, fee/URL extraction)
+- `python/scrapers/evf_results.py` — `EvfApiClient` (JSON API), `scrape_event_results()`, event discovery by ID scan
+- `python/scrapers/evf_sync.py` — full season orchestrator with `--dry-run` mode
+- `fn_import_evf_events()` — bulk event creation with child tournaments
+- `.github/workflows/evf-sync.yml` — cron every 3 days + manual dispatch
+- Telegram commands: `evf-import`, `evf-results`, `evf-status`
+- Fuzzy matching with diacritic folding against full SPWS fencer DB
+- 10 pytest + 4 pgTAP tests
+- **E2E validated:** 7 events scraped, 64 results ingested, 2 new events created
 - Admin review modal (checklist with dedup warnings)
 - Tests: scraper unit tests, dedup logic, integration
 

@@ -24,33 +24,15 @@ INSERT INTO tbl_tournament (
     'EVF Grand Prix 1 — Budapeszt',
     'PEW',
     'EPEE', 'F', 'V2',
-    NULL, 28, NULL,
+    NULL, 1, NULL,
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KUZMICHOVA' AND txt_first_name = 'Svitlana' LIMIT 1),
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KARMAN' AND txt_first_name = 'Irene' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-F-EPEE-2025-2026'),
-    2, 98.03
-); -- KUZMICHOVA Svitlana
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WASILCZUK' AND txt_first_name = 'Beata' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-F-EPEE-2025-2026'),
-    10, 26.14
-); -- WASILCZUK Beata
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PRAHA-TSAREHRADSKA' AND txt_first_name = 'Nadiia' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-F-EPEE-2025-2026'),
-    23, 3.89
-); -- PRAHA-TSAREHRADSKA Nadiia
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'GANSZCZYK' AND txt_first_name = 'Anna' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-F-EPEE-2025-2026'),
-    25, 2.67
-); -- GANSZCZYK Anna
+    20, 50.00
+); -- KARMAN Irene
 
 -- ---- PPW1-2025-2026: I Puchar Polski Weteranów ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
@@ -205,6 +187,43 @@ VALUES (
     6, 1.00
 ); -- PILARSKA Barbara
 
+-- ---- PEW3-2025-2026: EVF Circuit Guildford ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW3-2025-2026',
+    'EVF Circuit Guildford',
+    'Guildford',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW3-2025-2026');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW3-2025-2026'),
+    'PEW3-V2-F-EPEE-2025-2026',
+    'V2 F EPEE',
+    'PEW',
+    'EPEE', 'F', 'V2',
+    '2026-01-11', 2, NULL,
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PRAHA-TSAREHRADSKA' AND txt_first_name = 'Nadiia' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V2-F-EPEE-2025-2026'),
+    12, 0.00
+); -- PRAHA-TSAREHRADSKA Nadiia
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ANNA-LISE' AND txt_first_name = 'Mion' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V2-F-EPEE-2025-2026'),
+    15, 0.00
+); -- ANNA-LISE Mion
+
 -- ---- PPW4-2025-2026: IV Puchar Polski Weteranów ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
@@ -281,33 +300,15 @@ INSERT INTO tbl_tournament (
     'EVF Grand Prix 4',
     'PEW',
     'EPEE', 'F', 'V2',
-    NULL, 49, NULL,
+    NULL, 1, NULL,
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KUZMICHOVA' AND txt_first_name = 'Svitlana' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V2-F-EPEE-2025-2026'),
-    4, 72.55
+    3, 53.00
 ); -- KUZMICHOVA Svitlana
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STAŃCZYK' AND txt_first_name = 'Agnieszka' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V2-F-EPEE-2025-2026'),
-    18, 23.61
-); -- STAŃCZYK Agnieszka
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PRAHA-TSAREHRADSKA' AND txt_first_name = 'Nadiia' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V2-F-EPEE-2025-2026'),
-    25, 19.47
-); -- PRAHA-TSAREHRADSKA Nadiia
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'GANSZCZYK' AND txt_first_name = 'Anna' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V2-F-EPEE-2025-2026'),
-    28, 18.05
-); -- GANSZCZYK Anna
 
 -- ---- PEW6-2025-2026: EVF Circuit Jabłonna ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)

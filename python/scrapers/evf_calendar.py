@@ -1,14 +1,16 @@
 """
 EVF Calendar Scraper — veteransfencing.eu (ADR-028)
 
-Parses the calendar page HTML to extract PEW/MEW event metadata.
+Parses calendar pages (past + future) for PEW/MEW event metadata.
 Current season only. Team events stored as metadata but excluded from result scraping.
 """
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta
 
+import httpx
 from bs4 import BeautifulSoup
 
 try:
@@ -16,24 +18,29 @@ try:
 except ImportError:
     fuzz = None  # type: ignore[assignment]
 
+EVF_CALENDAR_FUTURE = "https://www.veteransfencing.eu/calendar/"
+EVF_CALENDAR_PAST = "https://www.veteransfencing.eu/calendar/list/?eventDisplay=past"
+
 
 def parse_evf_calendar_html(html: str) -> list[dict]:
     """Parse veteransfencing.eu/calendar/ HTML into event dicts.
 
     Returns list of dicts with keys:
-        name, dt_start, dt_end, location, address, country, weapons, is_team
+        name, dt_start, dt_end, location, address, country,
+        weapons, is_team, url, fee, fee_currency
     """
     soup = BeautifulSoup(html, "html.parser")
     events: list[dict] = []
 
     for article in soup.select(".tribe-events-calendar-list__event"):
-        # Title
+        # Title + URL
         title_el = article.select_one(
             ".tribe-events-calendar-list__event-title a"
         )
         name = title_el.get_text().strip() if title_el else ""
         if not name:
             continue
+        url = title_el.get("href", "") if title_el else ""
 
         # Dates (datetime attribute on time elements)
         dt_els = article.select("[datetime]")
@@ -71,6 +78,22 @@ def parse_evf_calendar_html(html: str) -> list[dict]:
         # Team detection
         is_team = "team" in name.lower()
 
+        # Entry fee from cost element
+        cost_el = article.select_one(".tribe-events-calendar-list__event-cost")
+        fee = None
+        fee_currency = ""
+        if cost_el:
+            cost_text = cost_el.get_text().strip()
+            fee_match = re.search(r"[€$£]?\s*(\d+(?:\.\d+)?)", cost_text)
+            if fee_match:
+                fee = float(fee_match.group(1))
+                if "€" in cost_text:
+                    fee_currency = "EUR"
+                elif "£" in cost_text:
+                    fee_currency = "GBP"
+                elif "$" in cost_text:
+                    fee_currency = "USD"
+
         events.append({
             "name": name,
             "dt_start": dt_start[:10] if dt_start else "",
@@ -80,9 +103,50 @@ def parse_evf_calendar_html(html: str) -> list[dict]:
             "country": country,
             "weapons": weapons,
             "is_team": is_team,
+            "url": url,
+            "fee": fee,
+            "fee_currency": fee_currency,
         })
 
     return events
+
+
+def scrape_full_season_calendar(
+    season_start: str, season_end: str
+) -> list[dict]:
+    """Fetch past + future calendar pages, merge, deduplicate, filter to season.
+
+    Only includes circuit and championship events (filters out social/camp events).
+    """
+    all_events: list[dict] = []
+    seen_keys: set[str] = set()
+
+    for url in [EVF_CALENDAR_PAST, EVF_CALENDAR_FUTURE]:
+        try:
+            resp = httpx.get(url, timeout=30, follow_redirects=True)
+            resp.raise_for_status()
+            page_events = parse_evf_calendar_html(resp.text)
+            for e in page_events:
+                # Deduplicate by date+name
+                key = f"{e['dt_start']}_{e['name']}"
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    all_events.append(e)
+        except Exception:
+            continue
+
+    # Filter to season range
+    filtered = filter_by_season(all_events, season_start, season_end)
+
+    # Only circuit and championship events (skip social, camp, outdoor)
+    relevant = [
+        e for e in filtered
+        if "circuit" in e["name"].lower()
+        or "championship" in e["name"].lower()
+        or "criterium" in e["name"].lower()
+    ]
+
+    return relevant
 
 
 def filter_by_season(
