@@ -315,6 +315,67 @@ VALUES (
     11, 20.10
 ); -- SOBIERAJ Wojciech
 
+-- ---- PPW4-2025-2026: IV Puchar Polski Weteranów ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PPW4-2025-2026',
+    'IV Puchar Polski Weteranów',
+    'Gdańsk',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW4-2025-2026');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2025-2026'),
+    'PPW4-V4-M-EPEE-2025-2026',
+    'V4 M EPEE',
+    'PPW',
+    'EPEE', 'M', 'V4',
+    '2026-02-21', 6, NULL,
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ADAMCZEWSKI' AND txt_first_name = 'Wojciech' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-M-EPEE-2025-2026'),
+    1, 96.35
+); -- ADAMCZEWSKI Wojciech
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SZCZĘSNY' AND txt_first_name = 'Jacek' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-M-EPEE-2025-2026'),
+    2, 61.95
+); -- SZCZĘSNY Jacek
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SOBIERAJ' AND txt_first_name = 'Wojciech' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-M-EPEE-2025-2026'),
+    3, 35.41
+); -- SOBIERAJ Wojciech
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KIERSZNICKI' AND txt_first_name = 'Ryszard' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-M-EPEE-2025-2026'),
+    4, 22.09
+); -- KIERSZNICKI Ryszard
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FURMANIAK' AND txt_first_name = 'Andrzej' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-M-EPEE-2025-2026'),
+    5, 5.99
+); -- FURMANIAK Andrzej
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWAKOWSKI' AND txt_first_name = 'Andrzej' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-M-EPEE-2025-2026'),
+    6, 1.00
+); -- NOWAKOWSKI Andrzej
+
 -- ---- PEW4-2025-2026: EVF Circuit Napoli ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
