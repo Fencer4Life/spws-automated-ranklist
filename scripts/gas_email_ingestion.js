@@ -252,6 +252,12 @@ function handleCommand(props, command, arg) {
       return rankLines.join('\n');
 
     // --- Seed ---
+    case 'ingest':
+      var githubPatI = props.getProperty('GITHUB_PAT');
+      var githubRepoI = props.getProperty('GITHUB_REPO');
+      triggerGitHubWorkflow(githubPatI, githubRepoI, 'ingest.yml', { source: 'telegram' });
+      return '<b>Ingestion Triggered</b>\n<i>Processing staging files. Watch for completion notification.</i>';
+
     case 'export-seed':
       var githubPatS = props.getProperty('GITHUB_PAT');
       var githubRepoS = props.getProperty('GITHUB_REPO');
@@ -313,7 +319,10 @@ function handleCommand(props, command, arg) {
         '<pre>ranking V2 M EPEE</pre>',
         'Top 5 fencers in a category',
         '',
-        '<b><u>Seed</u></b>',
+        '<b><u>Pipeline</u></b>',
+        '',
+        '<pre>ingest</pre>',
+        'Trigger ingestion from staging files',
         '',
         '<pre>export-seed</pre>',
         'Regenerate seed files from CERT',
