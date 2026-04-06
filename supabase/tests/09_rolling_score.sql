@@ -56,15 +56,15 @@ SELECT is(
 -- =========================================================================
 
 -- R.4 — p_rolling=FALSE regression: same as current non-rolling result
--- KORONA has PPW1=27.33, PPW2=98.00, PPW3=69.72 → best-3=195.05 (PPW4 not yet ingested)
+-- KORONA has PPW1=27.33, PPW2=98.00, PPW3=69.72, PPW4=110.02 → best-4=305.07
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := FALSE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  195.05::NUMERIC,
-  'R.4: p_rolling=FALSE regression — KORONA 195.05'
+  305.07::NUMERIC,
+  'R.4: p_rolling=FALSE regression — KORONA 305.07'
 );
 
 -- R.5 — p_rolling=TRUE, no previous season → same as non-rolling
@@ -95,8 +95,8 @@ SELECT is(
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  207.13::NUMERIC,
-  'R.6: p_rolling=TRUE, PPW5+MPW completed — KORONA 207.13 (PPW4 PLANNED, carry-over active)'
+  305.07::NUMERIC,
+  'R.6: p_rolling=TRUE, all completed — KORONA unchanged at 305.07'
 );
 
 -- Restore for subsequent tests
@@ -105,31 +105,31 @@ WHERE txt_code IN ('PPW5-2025-2026', 'MPW-2025-2026');
 ALTER TABLE tbl_event ENABLE TRIGGER trg_event_transition;
 
 -- R.7 — p_rolling=TRUE, partial: carry-over from 2024-25
--- ZIELIŃSKI: current PPW1=98.00 + PPW3=43.22, carried MPW=115.62 + PPW4-prev=65.67
--- PPW4 position PLANNED (not completed) → PPW4-prev carries
--- Best-4 PPW: 98.00+65.67+43.22 = 206.89, MPW=115.62, Total=322.51
+-- ZIELIŃSKI: current PPW1=98.00 + PPW3=43.22, carried MPW=115.62
+-- PPW5-prev not carried (ZIELIŃSKI not in PPW5-V2-M-EPEE-2024-2025)
+-- Best-4 PPW: 98.00+43.22 = 141.22, MPW=115.62, Total=256.84
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz')),
-  322.51::NUMERIC,
-  'R.7: p_rolling=TRUE partial — ZIELIŃSKI 322.51 (current + carried MPW + PPW4-prev)'
+  256.84::NUMERIC,
+  'R.7: p_rolling=TRUE partial — ZIELIŃSKI 256.84 (current + carried MPW)'
 );
 
 -- R.8 — p_rolling=TRUE, best-K operates on merged pool
 -- PARDUS: current PPW1=7.78 + PPW2=7.78 + PPW3=2.85
--- PPW4 PLANNED → PPW4-prev carries (PARDUS PPW4-prev=13.28)
--- Best-4 PPW: 13.28+7.78+7.78+2.85 = 31.69
+-- PPW5-prev not carried (PARDUS not in PPW5-V2-M-EPEE-2024-2025)
+-- Best-4 PPW: 7.78+7.78+2.85 = 18.41, MPW carry: 1.20, Total: 19.61
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PARDUS' AND txt_first_name = 'Borys')),
-  31.69::NUMERIC,
-  'R.8: p_rolling=TRUE best-K on merged pool — PARDUS 31.69'
+  19.61::NUMERIC,
+  'R.8: p_rolling=TRUE best-K on merged pool — PARDUS 19.61'
 );
 
 -- R.9 — p_rolling=TRUE, category crossing V2→V3
@@ -148,21 +148,21 @@ SELECT is(
 
 -- R.10 — p_rolling=TRUE, carryover from PPW5-V2-M-EPEE-2024-2025
 -- DROBIŃSKI has PPW5 result in 2024-25 (84.29) carried over to uncompleted PPW5 position
--- Current: PPW1=12.08 + PPW2=65.67 + PPW3=23.43 (no PPW4 yet)
--- Carried: PPW5=84.29 + PPW4=13.90 → best-4 = 84.29+65.67+23.43+13.90 = 185.47 (MPW carry adds rest)
+-- Current: PPW1=12.08 + PPW2=65.67 + PPW3=23.43 + PPW4=23.39 = 124.57
+-- Carried: PPW5=84.29 → best-4 = 65.67+84.29+23.43+23.39 = 196.78
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DROBIŃSKI' AND txt_first_name = 'Leszek')),
-  185.47::NUMERIC,
-  'R.10: p_rolling=TRUE — DROBIŃSKI 185.47 with PPW5+PPW4 carryover'
+  196.78::NUMERIC,
+  'R.10: p_rolling=TRUE — DROBIŃSKI 196.78 with PPW5 carryover'
 );
 
 -- R.11 — p_rolling=TRUE, event deletion: PPW5 removed from current season
 -- With rules-based carry-over (ADR-021), deleting the event does NOT block carry.
--- ATANASSOW: PPW1=65.67+PPW3=124.02 + carried PPW4-prev=98.00 → best-4=287.69
+-- ATANASSOW has no PPW5-prev results, so no change: PPW1=65.67+PPW3=124.02+PPW4=79.18=268.87
 DELETE FROM tbl_event WHERE txt_code = 'PPW5-2025-2026';
 
 SELECT is(
@@ -171,8 +171,8 @@ SELECT is(
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ATANASSOW' AND txt_first_name = 'Aleksander')),
-  287.69::NUMERIC,
-  'R.11: p_rolling=TRUE event deleted — ATANASSOW 287.69 (PPW4-prev carries)'
+  268.87::NUMERIC,
+  'R.11: p_rolling=TRUE event deleted — ATANASSOW 268.87 (no PPW5-prev to carry)'
 );
 
 -- Restore PPW5 for next test
