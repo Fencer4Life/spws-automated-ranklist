@@ -1,0 +1,371 @@
+"""
+Discover and populate tournament result URLs from event pages (ADR-029).
+
+Supports three platforms:
+- FencingTimeLive (FTL): scrape event schedule HTML
+- Engarde: XML API for competition listing
+- 4Fence: deterministic URL generation from parameters
+
+Usage:
+    python -m python.tools.populate_tournament_urls --event-code PP4-2025-2026 [--dry-run]
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+import xml.etree.ElementTree as ET
+
+from python.scrapers.base import detect_platform
+from python.tools.scrape_ftl_event_urls import (
+    parse_event_schedule,
+    parse_tournament_name,
+    build_result_url,
+)
+
+
+# ── FTL Discovery ────────────────────────────────────────────────────────
+
+
+def _discover_ftl(html: str) -> list[dict]:
+    """Discover tournament URLs from FTL event schedule HTML."""
+    tournaments = parse_event_schedule(html)
+    results = []
+    for t in tournaments:
+        parsed = parse_tournament_name(t["name"])
+        if parsed is None:
+            continue
+        entries = parsed if isinstance(parsed, list) else [parsed]
+        for weapon, gender, category in entries:
+            results.append({
+                "weapon": weapon,
+                "gender": gender,
+                "category": category,
+                "url": build_result_url(t["uuid"]),
+                "source_name": t["name"],
+            })
+    return results
+
+
+# ── Engarde Discovery (XML API) ──────────────────────────────────────────
+
+ENGARDE_WEAPON_MAP = {"e": "EPEE", "f": "FOIL", "s": "SABRE"}
+ENGARDE_GENDER_MAP = {"m": "M", "f": "F"}
+ENGARDE_BASE = "https://engarde-service.com/competition"
+
+
+def _parse_engarde_category(slug: str, titre: str) -> list[str]:
+    """Extract age categories from Engarde slug and title.
+
+    Handles:
+    - "ef-2" → ["V2"]
+    - "em-3-4" → ["V3", "V4"]  (combined)
+    - "ef-1" → ["V1"]
+    - "shv2" → ["V2"]
+    """
+    # Try combined pattern from slug: e.g., "ef-3-4" or "em-1-2"
+    combined = re.findall(r"-(\d)", slug)
+    if len(combined) >= 2:
+        return [f"V{d}" for d in combined]
+    if len(combined) == 1:
+        return [f"V{combined[0]}"]
+
+    # Try from slug suffix: "shv2" → "2", "ehv1" → "1"
+    v_match = re.search(r"v(\d)$", slug)
+    if v_match:
+        return [f"V{v_match.group(1)}"]
+
+    # Try from title: "EPEE FEMALE - 2" → "2"
+    title_digits = re.findall(r"\b([0-4])\b", titre)
+    if len(title_digits) >= 2:
+        return [f"V{d}" for d in title_digits]
+    if len(title_digits) == 1:
+        return [f"V{title_digits[0]}"]
+
+    return []
+
+
+def parse_engarde_competitions_xml(
+    xml_text: str, org: str, event: str
+) -> list[dict]:
+    """Parse Engarde getCompeForDisplay XML into tournament URL list.
+
+    Filters out TABLE/DE entries (t_ prefix in slug) and non-individual events.
+    """
+    root = ET.fromstring(xml_text)
+    results = []
+    for comp in root.findall("comp"):
+        slug = comp.get("compe", "")
+        # Skip TABLE/DE sub-events
+        if slug.startswith("t_"):
+            continue
+        # Skip non-individual
+        if comp.get("estindividuelle") == "0":
+            continue
+
+        arme = comp.get("arme", "")
+        sexe = comp.get("sexe", "")
+        titre = ""
+        titre_el = comp.find("titre")
+        if titre_el is not None and titre_el.text:
+            titre = titre_el.text
+
+        weapon = ENGARDE_WEAPON_MAP.get(arme)
+        gender = ENGARDE_GENDER_MAP.get(sexe)
+        if not weapon or not gender:
+            continue
+
+        categories = _parse_engarde_category(slug, titre)
+        if not categories:
+            continue
+
+        url = f"{ENGARDE_BASE}/{org}/{event}/{slug}/clasfinal.htm"
+        for cat in categories:
+            results.append({
+                "weapon": weapon,
+                "gender": gender,
+                "category": cat,
+                "url": url,
+                "source_name": titre,
+                "slug": slug,
+            })
+
+    return results
+
+
+# ── 4Fence Discovery (deterministic generation) ─────────────────────────
+
+FOURFENCE_WEAPON_MAP = {
+    "EPEE": "SP",
+    "FOIL": "F",
+    "SABRE": "SC",
+}
+FOURFENCE_CATEGORY_MAP = {
+    "V0": "5",
+    "V1": "6",
+    "V2": "7",
+    "V3": "8",
+    "V4": "9",
+}
+
+
+def generate_fourfence_urls(base_url: str) -> list[dict]:
+    """Generate all possible 4Fence tournament result URLs from base path.
+
+    4Fence URLs are deterministic: base + query params for weapon/gender/category.
+    """
+    # Ensure base URL ends with /
+    if not base_url.endswith("/"):
+        base_url += "/"
+
+    results = []
+    for weapon, w_code in FOURFENCE_WEAPON_MAP.items():
+        for gender in ("M", "F"):
+            for category, c_code in FOURFENCE_CATEGORY_MAP.items():
+                url = f"{base_url}index.php?a={w_code}&s={gender}&c={c_code}&f=clafinale"
+                results.append({
+                    "weapon": weapon,
+                    "gender": gender,
+                    "category": category,
+                    "url": url,
+                    "source_name": f"{weapon} {gender} {category}",
+                })
+    return results
+
+
+# ── URL matching ─────────────────────────────────────────────────────────
+
+
+def match_urls_to_tournaments(
+    discovered: list[dict],
+    tournaments: list[dict],
+) -> tuple[list[dict], list[dict]]:
+    """Match discovered URLs to DB tournament records by weapon+gender+category.
+
+    Returns (matched, unmatched) where matched includes id_tournament + url.
+    """
+    # Build lookup: (weapon, gender, category) → tournament
+    lookup: dict[tuple, dict] = {}
+    for t in tournaments:
+        key = (t["enum_weapon"], t["enum_gender"], t["enum_age_category"])
+        lookup[key] = t
+
+    matched = []
+    unmatched = []
+    for d in discovered:
+        key = (d["weapon"], d["gender"], d["category"])
+        if key in lookup:
+            t = lookup[key]
+            matched.append({
+                "id_tournament": t["id_tournament"],
+                "url": d["url"],
+                "weapon": d["weapon"],
+                "gender": d["gender"],
+                "category": d["category"],
+                "source_name": d.get("source_name", ""),
+                "existing_url": t.get("url_results"),
+            })
+        else:
+            unmatched.append(d)
+
+    return matched, unmatched
+
+
+# ── Top-level discovery dispatcher ───────────────────────────────────────
+
+
+def discover_tournament_urls_from_html(
+    html_or_xml: str, platform: str, **kwargs
+) -> list[dict]:
+    """Discover tournament URLs from page content (for testing without HTTP).
+
+    Args:
+        html_or_xml: Page content (HTML for FTL, XML for Engarde)
+        platform: 'ftl', 'engarde', or 'fourfence'
+        **kwargs: Platform-specific args (org/event for Engarde, base_url for 4Fence)
+    """
+    if platform == "ftl":
+        return _discover_ftl(html_or_xml)
+    elif platform == "engarde":
+        return parse_engarde_competitions_xml(
+            html_or_xml,
+            org=kwargs.get("org", ""),
+            event=kwargs.get("event", ""),
+        )
+    elif platform == "fourfence":
+        return generate_fourfence_urls(kwargs.get("base_url", html_or_xml))
+    else:
+        raise ValueError(f"Unknown platform: {platform}")
+
+
+def discover_tournament_urls(event_url: str) -> list[dict]:
+    """Fetch event page and discover tournament result URLs.
+
+    Requires network access — use discover_tournament_urls_from_html for testing.
+    """
+    import httpx
+
+    platform = detect_platform(event_url)
+
+    if platform == "ftl":
+        resp = httpx.get(event_url, follow_redirects=True, timeout=15)
+        resp.raise_for_status()
+        return _discover_ftl(resp.text)
+
+    elif platform == "engarde":
+        # Extract org and event from URL: /tournament/{org}/{event}
+        parts = event_url.rstrip("/").split("/")
+        org = parts[-2]
+        event = parts[-1]
+        api_url = (
+            f"https://engarde-service.com/prog/getCompeForDisplay.php"
+            f"?option=competition&organism={org}&event={event}"
+            f"&lang=en&nrows=50&page=no&orderby=competitions_tournament"
+            f"&order=ASC&large=E&show_test=0&cache=1"
+        )
+        resp = httpx.get(api_url, timeout=15)
+        resp.raise_for_status()
+        return parse_engarde_competitions_xml(resp.text, org=org, event=event)
+
+    elif platform == "fourfence":
+        return generate_fourfence_urls(event_url)
+
+    else:
+        raise ValueError(f"Unsupported platform: {event_url}")
+
+
+# ── CLI ──────────────────────────────────────────────────────────────────
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Populate tournament result URLs from event page"
+    )
+    parser.add_argument("--event-code", required=True, help="Event code (e.g., PP4-2025-2026)")
+    parser.add_argument("--supabase-url", default=None, help="Supabase URL")
+    parser.add_argument("--supabase-key", default=None, help="Supabase service role key")
+    parser.add_argument("--dry-run", action="store_true", help="Preview only, don't update DB")
+    args = parser.parse_args()
+
+    import os
+    supabase_url = args.supabase_url or os.environ.get("SUPABASE_URL", "http://127.0.0.1:54321")
+    supabase_key = args.supabase_key or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+
+    import httpx
+
+    # 1. Fetch event from DB
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    resp = httpx.get(
+        f"{supabase_url}/rest/v1/tbl_event?txt_code=eq.{args.event_code}&select=id_event,txt_code,url_event",
+        headers=headers,
+        timeout=10,
+    )
+    resp.raise_for_status()
+    events = resp.json()
+    if not events:
+        print(f"ERROR: Event '{args.event_code}' not found", file=sys.stderr)
+        sys.exit(1)
+    event = events[0]
+    if not event.get("url_event"):
+        print(f"ERROR: Event '{args.event_code}' has no url_event", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Event: {event['txt_code']} → {event['url_event']}", file=sys.stderr)
+
+    # 2. Discover tournament URLs
+    discovered = discover_tournament_urls(event["url_event"])
+    print(f"Discovered {len(discovered)} tournament URLs", file=sys.stderr)
+
+    # 3. Fetch tournaments from DB
+    resp = httpx.get(
+        f"{supabase_url}/rest/v1/tbl_tournament?id_event=eq.{event['id_event']}"
+        f"&select=id_tournament,txt_code,enum_weapon,enum_gender,enum_age_category,url_results",
+        headers=headers,
+        timeout=10,
+    )
+    resp.raise_for_status()
+    tournaments = resp.json()
+    print(f"DB has {len(tournaments)} tournaments for this event", file=sys.stderr)
+
+    # 4. Match
+    matched, unmatched = match_urls_to_tournaments(discovered, tournaments)
+
+    # 5. Report
+    new_urls = [m for m in matched if not m.get("existing_url")]
+    existing = [m for m in matched if m.get("existing_url")]
+
+    print(f"\nResults:", file=sys.stderr)
+    print(f"  Matched: {len(matched)} ({len(new_urls)} new, {len(existing)} already had URL)", file=sys.stderr)
+    print(f"  Unmatched (no DB tournament): {len(unmatched)}", file=sys.stderr)
+
+    for m in new_urls:
+        print(f"  NEW: {m['weapon']} {m['gender']} {m['category']} → {m['url']}", file=sys.stderr)
+    for m in existing:
+        print(f"  SKIP: {m['weapon']} {m['gender']} {m['category']} (already has URL)", file=sys.stderr)
+    for u in unmatched:
+        print(f"  MISS: {u['weapon']} {u['gender']} {u['category']} — {u.get('source_name', '')}", file=sys.stderr)
+
+    if args.dry_run:
+        print(f"\nDRY RUN — no DB updates", file=sys.stderr)
+        return
+
+    # 6. Update DB
+    updated = 0
+    for m in new_urls:
+        resp = httpx.patch(
+            f"{supabase_url}/rest/v1/tbl_tournament?id_tournament=eq.{m['id_tournament']}",
+            json={"url_results": m["url"]},
+            headers={**headers, "Content-Type": "application/json", "Prefer": "return=minimal"},
+            timeout=10,
+        )
+        if resp.status_code in (200, 204):
+            updated += 1
+        else:
+            print(f"  FAIL: {m['weapon']} {m['gender']} {m['category']} — HTTP {resp.status_code}", file=sys.stderr)
+
+    print(f"\nUpdated {updated}/{len(new_urls)} tournament URLs", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()
