@@ -27,11 +27,11 @@ INSERT INTO tbl_tournament (
     NULL, 13, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WASILCZUK' AND txt_first_name = 'Beata' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V2-F-FOIL-2025-2026'),
-    9
+    9, 8.02
 ); -- WASILCZUK Beata
 
 -- ---- PPW1-2025-2026: I Puchar Polski Weteranów ----
@@ -58,11 +58,11 @@ INSERT INTO tbl_tournament (
     '2025-09-27', 1, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WASILCZUK' AND txt_first_name = 'Beata' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-FOIL-2025-2026'),
-    1
+    1, 59.00
 ); -- WASILCZUK Beata
 
 -- ---- PPW2-2025-2026: II Puchar Polski Weteranów ----
@@ -89,11 +89,11 @@ INSERT INTO tbl_tournament (
     '2025-10-25', 1, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'JABŁOŃSKA' AND txt_first_name = 'Ewa' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V2-F-FOIL-2025-2026'),
-    1
+    1, 59.00
 ); -- JABŁOŃSKA Ewa
 
 -- ---- PPW3-2025-2026: III Puchar Polski Weteranów / Warsaw Epee Open ----
@@ -120,17 +120,17 @@ INSERT INTO tbl_tournament (
     '2025-12-14', 2, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'JABŁOŃSKA' AND txt_first_name = 'Ewa' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-FOIL-2025-2026'),
-    1
+    1, 71.34
 ); -- JABŁOŃSKA Ewa
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WASILCZUK' AND txt_first_name = 'Beata' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-FOIL-2025-2026'),
-    2
+    2, 8.56
 ); -- WASILCZUK Beata
 
 -- ---- PPW4-2025-2026: IV Puchar Polski Weteranów ----
@@ -157,17 +157,17 @@ INSERT INTO tbl_tournament (
     '2026-02-21', 2, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'JABŁOŃSKA' AND txt_first_name = 'Ewa' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-FOIL-2025-2026'),
-    1
+    1, 71.34
 ); -- JABŁOŃSKA Ewa
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SADOWIŃSKA' AND txt_first_name = 'Adriana' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-F-FOIL-2025-2026'),
-    2
+    2, 8.56
 ); -- SADOWIŃSKA Adriana
 
 -- ---- PEW8-2025-2026: EVF Circuit Chania ----
@@ -194,15 +194,15 @@ INSERT INTO tbl_tournament (
     '2026-03-29', 8, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WASILCZUK' AND txt_first_name = 'Beata' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V2-F-FOIL-2025-2026'),
-    5
+    5, 12.08
 ); -- WASILCZUK Beata
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SADOWIŃSKA' AND txt_first_name = 'Adriana' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V2-F-FOIL-2025-2026'),
-    8
+    8, 1.00
 ); -- SADOWIŃSKA Adriana

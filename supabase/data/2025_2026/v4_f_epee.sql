@@ -27,15 +27,15 @@ INSERT INTO tbl_tournament (
     '2026-03-28', 6, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SOSNOWSKA' AND txt_first_name = 'Aniela' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V4-F-EPEE-2025-2026'),
-    5
+    5, 5.99
 ); -- SOSNOWSKA Aniela
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'BORKOWSKA' AND txt_first_name = 'Halina' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V4-F-EPEE-2025-2026'),
-    6
+    6, 1.00
 ); -- BORKOWSKA Halina

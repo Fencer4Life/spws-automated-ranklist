@@ -27,11 +27,11 @@ INSERT INTO tbl_tournament (
     '2025-10-25', 1, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'RZEPECKA' AND txt_first_name = 'Martyna' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V0-F-FOIL-2025-2026'),
-    1
+    1, 59.00
 ); -- RZEPECKA Martyna
 
 -- ---- PPW3-2025-2026: III Puchar Polski Weteranów / Warsaw Epee Open ----
@@ -58,17 +58,17 @@ INSERT INTO tbl_tournament (
     '2025-12-13', 2, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'RZEPECKA' AND txt_first_name = 'Martyna' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-FOIL-2025-2026'),
-    1
+    1, 71.34
 ); -- RZEPECKA Martyna
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DRAPELLA' AND txt_first_name = 'Magdalena' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V0-F-FOIL-2025-2026'),
-    2
+    2, 8.56
 ); -- DRAPELLA Magdalena
 
 -- ---- PPW4-2025-2026: IV Puchar Polski Weteranów ----
@@ -95,21 +95,21 @@ INSERT INTO tbl_tournament (
     '2026-02-21', 3, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DRAPELLA' AND txt_first_name = 'Magdalena' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-F-FOIL-2025-2026'),
-    1
+    1, 82.98
 ); -- DRAPELLA Magdalena
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'RZEPECKA' AND txt_first_name = 'Martyna' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-F-FOIL-2025-2026'),
-    2
+    2, 37.74
 ); -- RZEPECKA Martyna
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'OWCZAREK' AND txt_first_name = 'Elżbieta' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V0-F-FOIL-2025-2026'),
-    3
+    3, 5.33
 ); -- OWCZAREK Elżbieta

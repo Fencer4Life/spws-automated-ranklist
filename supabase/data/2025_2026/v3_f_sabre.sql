@@ -27,11 +27,11 @@ INSERT INTO tbl_tournament (
     NULL, 1, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'OWCZAREK' AND txt_first_name = 'Elżbieta' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V3-F-SABRE-2025-2026'),
-    1
+    1, 59.00
 ); -- OWCZAREK Elżbieta
 
 -- ---- PPW2-2025-2026: II Puchar Polski Weteranów ----
@@ -58,11 +58,11 @@ INSERT INTO tbl_tournament (
     NULL, 1, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'OWCZAREK' AND txt_first_name = 'Elżbieta' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V3-F-SABRE-2025-2026'),
-    1
+    1, 59.00
 ); -- OWCZAREK Elżbieta
 
 -- ---- PEW2-2025-2026: EVF Circuit Madrid ----
@@ -89,11 +89,11 @@ INSERT INTO tbl_tournament (
     NULL, 22, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KAZIK' AND txt_first_name = 'Martin' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V3-F-SABRE-2025-2026'),
-    17
+    17, 5.09
 ); -- KAZIK Martin
 
 -- ---- PPW3-2025-2026: III Puchar Polski Weteranów / Warsaw Epee Open ----
@@ -120,11 +120,11 @@ INSERT INTO tbl_tournament (
     '2024-12-14', 1, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FUHRMANN' AND txt_first_name = 'Ulrike' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V3-F-SABRE-2025-2026'),
-    1
+    1, 59.00
 ); -- FUHRMANN Ulrike
 
 -- ---- PEW3-2025-2026: EVF Circuit Guildford ----
@@ -151,11 +151,11 @@ INSERT INTO tbl_tournament (
     '2025-12-06', 11, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FUHRMANN' AND txt_first_name = 'Ulrike' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V3-F-SABRE-2025-2026'),
-    5
+    5, 27.11
 ); -- FUHRMANN Ulrike
 
 -- ---- PPW4-2025-2026: IV Puchar Polski Weteranów ----
@@ -182,11 +182,11 @@ INSERT INTO tbl_tournament (
     '2026-02-21', 1, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FUHRMANN' AND txt_first_name = 'Ulrike' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V3-F-SABRE-2025-2026'),
-    1
+    1, 59.00
 ); -- FUHRMANN Ulrike
 
 -- ---- PEW7-2025-2026: EVF Circuit Salzburg ----
@@ -213,9 +213,9 @@ INSERT INTO tbl_tournament (
     '2026-03-29', 6, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'OWCZAREK' AND txt_first_name = 'Elżbieta' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V3-F-SABRE-2025-2026'),
-    6
+    6, 1.00
 ); -- OWCZAREK Elżbieta

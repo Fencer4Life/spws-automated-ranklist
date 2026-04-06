@@ -27,11 +27,11 @@ INSERT INTO tbl_tournament (
     '2025-07-05', 31, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW10-V1-M-EPEE-2025-2026'),
-    8
+    8, 40.33
 ); -- KORONA Przemysław
 
 -- ---- PEW1-2025-2026: EVF Circuit Budapest ----
@@ -58,17 +58,17 @@ INSERT INTO tbl_tournament (
     NULL, 33, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'BOBUSIA' AND txt_first_name = 'Jarosław' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-M-EPEE-2025-2026'),
-    5
+    5, 57.45
 ); -- BOBUSIA Jarosław
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KULKA' AND txt_first_name = 'Dawid' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-M-EPEE-2025-2026'),
-    6
+    6, 54.89
 ); -- KULKA Dawid
 
 -- ---- PPW1-2025-2026: I Puchar Polski Weteranów ----
@@ -95,59 +95,59 @@ INSERT INTO tbl_tournament (
     NULL, 9, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SĘKOWSKI' AND txt_first_name = 'Maciej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-EPEE-2025-2026'),
-    1
+    1, 108.72
 ); -- SĘKOWSKI Maciej
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'BOBUSIA' AND txt_first_name = 'Jarosław' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-EPEE-2025-2026'),
-    2
+    2, 77.02
 ); -- BOBUSIA Jarosław
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TATCHYN' AND txt_first_name = 'Andriy' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-EPEE-2025-2026'),
-    3
+    3, 51.74
 ); -- TATCHYN Andriy
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STOCKI' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-EPEE-2025-2026'),
-    4
+    4, 39.08
 ); -- STOCKI Piotr
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORNAŚ' AND txt_first_name = 'Jarosław' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-EPEE-2025-2026'),
-    5
+    5, 24.11
 ); -- KORNAŚ Jarosław
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DOBRZAŃSKI' AND txt_first_name = 'Maciej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-EPEE-2025-2026'),
-    6
+    6, 20.04
 ); -- DOBRZAŃSKI Maciej
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'GROMADA' AND txt_first_name = 'Roland' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-EPEE-2025-2026'),
-    7
+    7, 16.60
 ); -- GROMADA Roland
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'BOROWIEC' AND txt_first_name = 'Maciej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-EPEE-2025-2026'),
-    8
+    8, 13.63
 ); -- BOROWIEC Maciej
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'POKRYWA' AND txt_first_name = 'Bartosz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-EPEE-2025-2026'),
-    9
+    9, 1.00
 ); -- POKRYWA Bartosz
 
 -- ---- PPW2-2025-2026: II Puchar Polski Weteranów ----
@@ -174,41 +174,41 @@ INSERT INTO tbl_tournament (
     NULL, 6, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SĘKOWSKI' AND txt_first_name = 'Maciej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-EPEE-2025-2026'),
-    1
+    1, 96.35
 ); -- SĘKOWSKI Maciej
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KULKA' AND txt_first_name = 'Dawid' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-EPEE-2025-2026'),
-    2
+    2, 61.95
 ); -- KULKA Dawid
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'GROMADA' AND txt_first_name = 'Roland' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-EPEE-2025-2026'),
-    3
+    3, 35.41
 ); -- GROMADA Roland
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STOCKI' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-EPEE-2025-2026'),
-    4
+    4, 22.09
 ); -- STOCKI Piotr
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'POKRYWA' AND txt_first_name = 'Bartosz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-EPEE-2025-2026'),
-    5
+    5, 5.99
 ); -- POKRYWA Bartosz
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PAWŁOWSKI' AND txt_first_name = 'Łukasz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-EPEE-2025-2026'),
-    6
+    6, 1.00
 ); -- PAWŁOWSKI Łukasz
 
 -- ---- PEW2-2025-2026: EVF Circuit Madrid ----
@@ -235,23 +235,23 @@ INSERT INTO tbl_tournament (
     NULL, 27, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STOCKI' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V1-M-EPEE-2025-2026'),
-    7
+    7, 41.07
 ); -- STOCKI Piotr
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KULKA' AND txt_first_name = 'Dawid' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V1-M-EPEE-2025-2026'),
-    11
+    11, 24.35
 ); -- KULKA Dawid
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STOLARIK' AND txt_first_name = 'Peter' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V1-M-EPEE-2025-2026'),
-    19
+    19, 6.22
 ); -- STOLARIK Peter
 
 -- ---- PPW3-2025-2026: III Puchar Polski Weteranów / Warsaw Epee Open ----
@@ -278,71 +278,71 @@ INSERT INTO tbl_tournament (
     NULL, 11, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Radosław' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-EPEE-2025-2026'),
-    1
+    1, 110.02
 ); -- KORONA Radosław
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SĘKOWSKI' AND txt_first_name = 'Maciej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-EPEE-2025-2026'),
-    2
+    2, 79.18
 ); -- SĘKOWSKI Maciej
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOWALCZYK' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-EPEE-2025-2026'),
-    3
+    3, 54.22
 ); -- KOWALCZYK Piotr
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STOCKI' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-EPEE-2025-2026'),
-    4
+    4, 41.67
 ); -- STOCKI Piotr
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DOBRZAŃSKI' AND txt_first_name = 'Maciej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-EPEE-2025-2026'),
-    5
+    5, 27.11
 ); -- DOBRZAŃSKI Maciej
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KRAMARZ' AND txt_first_name = 'Konrad' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-EPEE-2025-2026'),
-    6
+    6, 23.39
 ); -- KRAMARZ Konrad
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TATCHYN' AND txt_first_name = 'Andriy' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-EPEE-2025-2026'),
-    7
+    7, 20.24
 ); -- TATCHYN Andriy
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KLEPACKI' AND txt_first_name = 'Denis' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-EPEE-2025-2026'),
-    8
+    8, 17.51
 ); -- KLEPACKI Denis
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'POKRYWA' AND txt_first_name = 'Bartosz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-EPEE-2025-2026'),
-    9
+    9, 5.10
 ); -- POKRYWA Bartosz
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PAWŁOWSKI' AND txt_first_name = 'Łukasz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-EPEE-2025-2026'),
-    10
+    10, 2.95
 ); -- PAWŁOWSKI Łukasz
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'CHUDY' AND txt_first_name = 'Tomasz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-EPEE-2025-2026'),
-    11
+    11, 1.00
 ); -- CHUDY Tomasz
 
 -- ---- PEW3-2025-2026: EVF Circuit Guildford ----
@@ -369,23 +369,23 @@ INSERT INTO tbl_tournament (
     NULL, 34, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STOCKI' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V1-M-EPEE-2025-2026'),
-    17
+    17, 20.63
 ); -- STOCKI Piotr
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ALCSER' AND txt_first_name = 'Norbert' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V1-M-EPEE-2025-2026'),
-    21
+    21, 17.70
 ); -- ALCSER Norbert
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KULKA' AND txt_first_name = 'Dawid' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V1-M-EPEE-2025-2026'),
-    22
+    22, 17.05
 ); -- KULKA Dawid
 
 -- ---- PPW4-2025-2026: IV Puchar Polski Weteranów ----
@@ -412,47 +412,47 @@ INSERT INTO tbl_tournament (
     '2026-02-21', 7, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SĘKOWSKI' AND txt_first_name = 'Maciej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-M-EPEE-2025-2026'),
-    1
+    1, 97.22
 ); -- SĘKOWSKI Maciej
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DOBRZAŃSKI' AND txt_first_name = 'Maciej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-M-EPEE-2025-2026'),
-    2
+    2, 64.02
 ); -- DOBRZAŃSKI Maciej
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STOCKI' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-M-EPEE-2025-2026'),
-    3
+    3, 38.07
 ); -- STOCKI Piotr
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TATCHYN' AND txt_first_name = 'Andriy' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-M-EPEE-2025-2026'),
-    4
+    4, 25.09
 ); -- TATCHYN Andriy
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'CHUDY' AND txt_first_name = 'Tomasz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-M-EPEE-2025-2026'),
-    5
+    5, 9.47
 ); -- CHUDY Tomasz
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STAŃCZYK' AND txt_first_name = 'Marcin' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-M-EPEE-2025-2026'),
-    6
+    6, 4.88
 ); -- STAŃCZYK Marcin
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PAWŁOWSKI' AND txt_first_name = 'Łukasz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-M-EPEE-2025-2026'),
-    7
+    7, 1.00
 ); -- PAWŁOWSKI Łukasz
 
 -- ---- PEW4-2025-2026: EVF Circuit Napoli ----
@@ -479,35 +479,35 @@ INSERT INTO tbl_tournament (
     NULL, 59, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Radosław' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V1-M-EPEE-2025-2026'),
-    3
+    3, 88.48
 ); -- KORONA Radosław
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ALCSER' AND txt_first_name = 'Norbert' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V1-M-EPEE-2025-2026'),
-    11
+    11, 41.18
 ); -- ALCSER Norbert
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STOCKI' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V1-M-EPEE-2025-2026'),
-    13
+    13, 39.18
 ); -- STOCKI Piotr
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SCHOLZ' AND txt_first_name = 'Jurgen' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V1-M-EPEE-2025-2026'),
-    19
+    19, 24.62
 ); -- SCHOLZ Jurgen
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORNAŚ' AND txt_first_name = 'Jarosław' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V1-M-EPEE-2025-2026'),
-    30
+    30, 19.13
 ); -- KORNAŚ Jarosław
 
 -- ---- PEW5-2025-2026: EVF Circuit Stockholm ----
@@ -534,17 +534,17 @@ INSERT INTO tbl_tournament (
     NULL, 13, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Radosław' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW5-V1-M-EPEE-2025-2026'),
-    2
+    2, 80.87
 ); -- KORONA Radosław
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ALCSER' AND txt_first_name = 'Norbert' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW5-V1-M-EPEE-2025-2026'),
-    12
+    12, 2.53
 ); -- ALCSER Norbert
 
 -- ---- PEW6-2025-2026: EVF Circuit Jabłonna ----
@@ -571,75 +571,75 @@ INSERT INTO tbl_tournament (
     NULL, 24, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SĘKOWSKI' AND txt_first_name = 'Maciej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-M-EPEE-2025-2026'),
-    1
+    1, 125.96
 ); -- SĘKOWSKI Maciej
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STOCKI' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-M-EPEE-2025-2026'),
-    3
+    3, 71.71
 ); -- STOCKI Piotr
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'BOBUSIA' AND txt_first_name = 'Jarosław' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-M-EPEE-2025-2026'),
-    4
+    4, 58.63
 ); -- BOBUSIA Jarosław
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Radosław' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-M-EPEE-2025-2026'),
-    6
+    6, 42.37
 ); -- KORONA Radosław
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOWALCZYK' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-M-EPEE-2025-2026'),
-    10
+    10, 24.50
 ); -- KOWALCZYK Piotr
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TATCHYN' AND txt_first_name = 'Andriy' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-M-EPEE-2025-2026'),
-    11
+    11, 23.03
 ); -- TATCHYN Andriy
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORNAŚ' AND txt_first_name = 'Jarosław' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-M-EPEE-2025-2026'),
-    12
+    12, 21.69
 ); -- KORNAŚ Jarosław
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWAK' AND txt_first_name = 'Szymon' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-M-EPEE-2025-2026'),
-    13
+    13, 20.45
 ); -- NOWAK Szymon
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DOBRZAŃSKI' AND txt_first_name = 'Maciej' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-M-EPEE-2025-2026'),
-    16
+    16, 17.25
 ); -- DOBRZAŃSKI Maciej
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'LELONEK' AND txt_first_name = 'Tomasz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-M-EPEE-2025-2026'),
-    22
+    22, 2.34
 ); -- LELONEK Tomasz
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'STAŃCZYK' AND txt_first_name = 'Marcin' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-M-EPEE-2025-2026'),
-    23
+    23, 1.66
 ); -- STAŃCZYK Marcin
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PAWŁOWSKI' AND txt_first_name = 'Łukasz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-M-EPEE-2025-2026'),
-    24
+    24, 1.00
 ); -- PAWŁOWSKI Łukasz

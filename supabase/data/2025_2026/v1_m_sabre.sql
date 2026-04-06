@@ -27,11 +27,11 @@ INSERT INTO tbl_tournament (
     '2025-07-05', 9, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PRZYSTAJKO' AND txt_first_name = 'Daniel' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW10-V1-M-SABRE-2025-2026'),
-    5
+    5, 24.11
 ); -- PRZYSTAJKO Daniel
 
 -- ---- PPW1-2025-2026: I Puchar Polski Weteranów ----
@@ -58,29 +58,29 @@ INSERT INTO tbl_tournament (
     NULL, 4, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOWALEWSKI' AND txt_first_name = 'Rafał' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-SABRE-2025-2026'),
-    1
+    1, 84.29
 ); -- KOWALEWSKI Rafał
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOSIŃSKI' AND txt_first_name = 'Łukasz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-SABRE-2025-2026'),
-    2
+    2, 45.02
 ); -- KOSIŃSKI Łukasz
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KUCIĘBA' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-SABRE-2025-2026'),
-    3
+    3, 15.93
 ); -- KUCIĘBA Piotr
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TECŁAW' AND txt_first_name = 'Robert' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V1-M-SABRE-2025-2026'),
-    4
+    4, 1.00
 ); -- TECŁAW Robert
 
 -- ---- PPW2-2025-2026: II Puchar Polski Weteranów ----
@@ -107,35 +107,35 @@ INSERT INTO tbl_tournament (
     NULL, 5, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KUCIĘBA' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-SABRE-2025-2026'),
-    1
+    1, 95.39
 ); -- KUCIĘBA Piotr
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOSIŃSKI' AND txt_first_name = 'Łukasz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-SABRE-2025-2026'),
-    2
+    2, 59.16
 ); -- KOSIŃSKI Łukasz
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TECŁAW' AND txt_first_name = 'Robert' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-SABRE-2025-2026'),
-    3
+    3, 31.68
 ); -- TECŁAW Robert
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOWALEWSKI' AND txt_first_name = 'Rafał' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-SABRE-2025-2026'),
-    4
+    4, 17.79
 ); -- KOWALEWSKI Rafał
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FRYDRYCH' AND txt_first_name = 'Aleksander' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-M-SABRE-2025-2026'),
-    5
+    5, 1.00
 ); -- FRYDRYCH Aleksander
 
 -- ---- PPW3-2025-2026: III Puchar Polski Weteranów / Warsaw Epee Open ----
@@ -162,17 +162,17 @@ INSERT INTO tbl_tournament (
     '2024-12-01', 2, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TECŁAW' AND txt_first_name = 'Robert' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-SABRE-2025-2026'),
-    1
+    1, 71.34
 ); -- TECŁAW Robert
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZAJĄC' AND txt_first_name = 'Michał' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V1-M-SABRE-2025-2026'),
-    2
+    2, 8.56
 ); -- ZAJĄC Michał
 
 -- ---- PPW4-2025-2026: IV Puchar Polski Weteranów ----
@@ -199,17 +199,17 @@ INSERT INTO tbl_tournament (
     '2026-02-21', 2, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TECŁAW' AND txt_first_name = 'Robert' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-M-SABRE-2025-2026'),
-    1
+    1, 71.34
 ); -- TECŁAW Robert
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOWALEWSKI' AND txt_first_name = 'Rafał' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-M-SABRE-2025-2026'),
-    2
+    2, 8.56
 ); -- KOWALEWSKI Rafał
 
 -- ---- PEW4-2025-2026: EVF Circuit Napoli ----
@@ -236,11 +236,11 @@ INSERT INTO tbl_tournament (
     '2026-11-11', 13, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PRZYSTAJKO' AND txt_first_name = 'Daniel' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW4-V1-M-SABRE-2025-2026'),
-    2
+    2, 80.87
 ); -- PRZYSTAJKO Daniel
 
 -- ---- PEW5-2025-2026: EVF Circuit Stockholm ----
@@ -267,11 +267,11 @@ INSERT INTO tbl_tournament (
     '2026-02-07', 20, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TECŁAW' AND txt_first_name = 'Robert' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW5-V1-M-SABRE-2025-2026'),
-    3
+    3, 70.17
 ); -- TECŁAW Robert
 
 -- ---- PEW6-2025-2026: EVF Circuit Jabłonna ----
@@ -298,11 +298,11 @@ INSERT INTO tbl_tournament (
     NULL, 17, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TECŁAW' AND txt_first_name = 'Robert' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW6-V1-M-SABRE-2025-2026'),
-    2
+    2, 93.44
 ); -- TECŁAW Robert
 
 -- ---- PEW7-2025-2026: EVF Circuit Salzburg ----
@@ -329,33 +329,33 @@ INSERT INTO tbl_tournament (
     NULL, 7, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TECŁAW' AND txt_first_name = 'Robert' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V1-M-SABRE-2025-2026'),
-    1
+    1, 97.22
 ); -- TECŁAW Robert
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KUCIĘBA' AND txt_first_name = 'Piotr' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V1-M-SABRE-2025-2026'),
-    2
+    2, 64.02
 ); -- KUCIĘBA Piotr
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PRZYSTAJKO' AND txt_first_name = 'Daniel' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V1-M-SABRE-2025-2026'),
-    3
+    3, 38.07
 ); -- PRZYSTAJKO Daniel
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOSIŃSKI' AND txt_first_name = 'Łukasz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V1-M-SABRE-2025-2026'),
-    5
+    5, 9.47
 ); -- KOSIŃSKI Łukasz
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZAJĄC' AND txt_first_name = 'Michał' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V1-M-SABRE-2025-2026'),
-    7
+    7, 1.00
 ); -- ZAJĄC Michał

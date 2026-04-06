@@ -27,37 +27,12 @@ INSERT INTO tbl_tournament (
     '2025-09-21', 9, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SAMECKA-NACZYŃSKA' AND txt_first_name = 'Martyna' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-F-FOIL-2025-2026'),
-    9
+    9, 1.00
 ); -- SAMECKA-NACZYŃSKA Martyna
-
--- ---- PPW4-2025-2026: IV Puchar Polski Weteranów ----
-INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
-SELECT
-    'PPW4-2025-2026',
-    'IV Puchar Polski Weteranów',
-    'Gdańsk',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
-    'COMPLETED'
-WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW4-2025-2026');
-INSERT INTO tbl_tournament (
-    id_event, txt_code, txt_name, enum_type,
-    enum_weapon, enum_gender, enum_age_category,
-    dt_tournament, int_participant_count, url_results,
-    enum_import_status
-) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2025-2026'),
-    'PPW4-V1-F-FOIL-2025-2026',
-    'V1 F FOIL',
-    'PPW',
-    'FOIL', 'F', 'V1',
-    '2026-02-21', 0, NULL,
-    'SCORED'
-);
 
 -- ---- PEW8-2025-2026: EVF Circuit Chania ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
@@ -83,9 +58,9 @@ INSERT INTO tbl_tournament (
     '2025-03-29', 4, NULL,
     'SCORED'
 );
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'LIPKOWSKA' AND txt_first_name = 'Dominika' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW8-V1-F-FOIL-2025-2026'),
-    3
+    3, 15.93
 ); -- LIPKOWSKA Dominika

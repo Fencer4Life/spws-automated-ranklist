@@ -34,7 +34,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    248,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SOSNOWSKA' AND txt_first_name = 'Aniela' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V4-F-SABRE-2024-2025'),
     1,
     'SOSNOWSKA Aniela'
@@ -70,7 +70,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    248,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SOSNOWSKA' AND txt_first_name = 'Aniela' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V4-F-SABRE-2024-2025'),
     1,
     'SOSNOWSKA Aniela'
@@ -106,7 +106,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    248,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SOSNOWSKA' AND txt_first_name = 'Aniela' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V4-F-SABRE-2024-2025'),
     1,
     'SOSNOWSKA Aniela'
@@ -142,7 +142,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    248,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SOSNOWSKA' AND txt_first_name = 'Aniela' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V4-F-SABRE-2024-2025'),
     1,
     'SOSNOWSKA Aniela'
@@ -192,7 +192,7 @@ INSERT INTO tbl_tournament (
 -- SKIPPED (international, no master data): 'GREEN Linda' place=2
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    248,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SOSNOWSKA' AND txt_first_name = 'Aniela' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V4-F-SABRE-2024-2025'),
     3,
     'SOSNOWSKA Aniela'
@@ -234,7 +234,7 @@ INSERT INTO tbl_tournament (
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 VALUES (
-    248,
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SOSNOWSKA' AND txt_first_name = 'Aniela' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V4-F-SABRE-2024-2025'),
     11,
     'SOSNOWSKA Aniela'

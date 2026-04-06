@@ -57,8 +57,8 @@ def _mock_season_data():
 
         if "tbl_result" in sql_lower:
             return [
-                {"int_place": 1, "txt_surname": "KOWALSKI", "txt_first_name": "Jan"},
-                {"int_place": 2, "txt_surname": "NOWAK", "txt_first_name": "Piotr"},
+                {"int_place": 1, "num_final_score": 98.00, "txt_surname": "KOWALSKI", "txt_first_name": "Jan"},
+                {"int_place": 2, "num_final_score": 45.50, "txt_surname": "NOWAK", "txt_first_name": "Piotr"},
             ]
 
         return []

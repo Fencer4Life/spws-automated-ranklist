@@ -228,6 +228,14 @@ function handleCommand(props, command, arg) {
         seasonLines.push((e.event_name || '') + (e.dt_start ? '  |  ' + e.dt_start : ''));
         seasonLines.push('Tournaments: ' + (e.tournament_count || 0) + '  |  Results: ' + (e.result_count || 0));
       });
+      // Summary totals
+      var summary = callRpc(supabaseUrl, supabaseKey, 'fn_season_summary', {});
+      if (summary) {
+        seasonLines.push('\n<b>Summary</b>');
+        seasonLines.push('Fencers: <b>' + (summary.fencers || 0) + '</b>');
+        seasonLines.push('Tournaments: <b>' + (summary.tournaments || 0) + '</b>');
+        seasonLines.push('Results: <b>' + (summary.results || 0) + '</b>  |  Scored: <b>' + (summary.scored || 0) + '</b>');
+      }
       return seasonLines.join('\n');
 
     case 'ranking':

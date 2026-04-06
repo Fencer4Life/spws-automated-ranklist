@@ -7,7 +7,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(23);
+SELECT plan(25);
 
 -- ===== SETUP: create test data for ingest tests =====
 
@@ -480,6 +480,138 @@ SELECT isnt(
   (SELECT fn_season_overview()),
   NULL,
   '10.22: fn_season_overview returns non-null result'
+);
+
+
+-- =========================================================================
+-- SETUP for carry-over double-counting regression test (10.23–10.24)
+-- =========================================================================
+-- Regression: when a current-season event is IN_PROGRESS at the same
+-- position (e.g. PPW4) as a previous-season event, carry-over from the
+-- previous season must be excluded. Previously only COMPLETED triggered
+-- exclusion, so IN_PROGRESS events double-counted.
+-- =========================================================================
+
+DO $carryover_setup$
+DECLARE
+  v_prev_season INT;
+  v_curr_season INT;
+  v_org         INT;
+  v_prev_event  INT;
+  v_curr_event  INT;
+  v_prev_tourn  INT;
+  v_curr_tourn  INT;
+  v_fencer      INT;
+  v_results     JSONB;
+  v_summary     JSONB;
+BEGIN
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+
+  -- Deactivate all seasons first
+  UPDATE tbl_season SET bool_active = FALSE;
+
+  -- Create previous season (dates must not overlap with seed seasons)
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
+  VALUES ('CARRY-PREV', '2027-09-01', '2028-06-30', FALSE)
+  RETURNING id_season INTO v_prev_season;
+
+  -- Create current season (active) — starts after CARRY-PREV ends
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
+  VALUES ('CARRY-CURR', '2028-09-01', '2029-06-30', TRUE)
+  RETURNING id_season INTO v_curr_season;
+
+  -- Both seasons need scoring_config with json_ranking_rules (JSONB path)
+  INSERT INTO tbl_scoring_config (id_season, json_ranking_rules)
+  VALUES (v_prev_season, '{"domestic":[{"types":["PPW"],"best":4},{"types":["MPW"],"always":true}]}'::JSONB)
+  ON CONFLICT (id_season) DO UPDATE SET json_ranking_rules = EXCLUDED.json_ranking_rules;
+
+  INSERT INTO tbl_scoring_config (id_season, json_ranking_rules)
+  VALUES (v_curr_season, '{"domestic":[{"types":["PPW"],"best":4},{"types":["MPW"],"always":true}]}'::JSONB)
+  ON CONFLICT (id_season) DO UPDATE SET json_ranking_rules = EXCLUDED.json_ranking_rules;
+
+  -- Create fencer for the test
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, txt_nationality)
+  VALUES ('CARRYOVER', 'Test', 1970, 'PL')
+  RETURNING id_fencer INTO v_fencer;
+
+  -- Previous season: PPW4-CARRY-PREV event, COMPLETED, with a result
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, dt_start, enum_status)
+  VALUES ('PPW4-CARRY-PREV', 'Prev PPW4', v_prev_season, v_org, '2028-03-01', 'COMPLETED')
+  RETURNING id_event INTO v_prev_event;
+
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count, enum_import_status)
+  VALUES (v_prev_event, 'PPW4-CARRY-PREV-V2-M-EPEE', 'Prev PPW4 V2 M Epee', 'PPW', 'EPEE', 'M', 'V2', '2028-03-01', 1, 'SCORED')
+  RETURNING id_tournament INTO v_prev_tourn;
+
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+  VALUES (v_fencer, v_prev_tourn, 1, 100.00);
+
+  -- Current season: PPW4-CARRY-CURR event, IN_PROGRESS (just ingested)
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, dt_start, enum_status)
+  VALUES ('PPW4-CARRY-CURR', 'Curr PPW4', v_curr_season, v_org, '2029-03-01', 'IN_PROGRESS')
+  RETURNING id_event INTO v_curr_event;
+
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count, enum_import_status)
+  VALUES (v_curr_event, 'PPW4-CARRY-CURR-V2-M-EPEE', 'Curr PPW4 V2 M Epee', 'PPW', 'EPEE', 'M', 'V2', '2029-03-01', 1, 'SCORED')
+  RETURNING id_tournament INTO v_curr_tourn;
+
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+  VALUES (v_fencer, v_curr_tourn, 1, 80.00);
+END;
+$carryover_setup$;
+
+
+-- =========================================================================
+-- 10.23 — IN_PROGRESS event excludes carry-over at same position (regression)
+-- =========================================================================
+-- fn_ranking_ppw with rolling=TRUE must return ONLY the current season score
+-- (80.00), NOT current + carry-over (80.00 + 100.00 = 180.00).
+-- This catches the bug where completed_positions only checked 'COMPLETED'.
+SELECT is(
+  (SELECT total_score FROM fn_ranking_ppw('EPEE', 'M', 'V2', NULL, TRUE)
+   WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'CARRYOVER')),
+  80.00::NUMERIC,
+  '10.23: IN_PROGRESS event excludes carry-over at same position (no double-counting)'
+);
+
+
+-- =========================================================================
+-- 10.24 — Carry-over IS included when position has no current-season event
+-- =========================================================================
+-- Add a PPW3 result in prev season only (no PPW3 in current season).
+-- The carry-over for PPW3 SHOULD be included in the ranking.
+DO $carryover_ppw3$
+DECLARE
+  v_prev_season INT;
+  v_org         INT;
+  v_event       INT;
+  v_tourn       INT;
+  v_fencer      INT;
+BEGIN
+  SELECT id_season INTO v_prev_season FROM tbl_season WHERE txt_code = 'CARRY-PREV';
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+  SELECT id_fencer INTO v_fencer FROM tbl_fencer WHERE txt_surname = 'CARRYOVER';
+
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, dt_start, enum_status)
+  VALUES ('PPW3-CARRY-PREV', 'Prev PPW3', v_prev_season, v_org, '2028-02-01', 'COMPLETED')
+  RETURNING id_event INTO v_event;
+
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count, enum_import_status)
+  VALUES (v_event, 'PPW3-CARRY-PREV-V2-M-EPEE', 'Prev PPW3 V2 M Epee', 'PPW', 'EPEE', 'M', 'V2', '2028-02-01', 1, 'SCORED')
+  RETURNING id_tournament INTO v_tourn;
+
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+  VALUES (v_fencer, v_tourn, 1, 50.00);
+END;
+$carryover_ppw3$;
+
+-- Now ranking should include: current PPW4 (80) + carried PPW3 (50) = 130
+-- But NOT carried PPW4 (100) because PPW4 is IN_PROGRESS in current season
+SELECT is(
+  (SELECT total_score FROM fn_ranking_ppw('EPEE', 'M', 'V2', NULL, TRUE)
+   WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'CARRYOVER')),
+  130.00::NUMERIC,
+  '10.24: Carry-over included for position without current-season event (PPW3=50 + PPW4=80 = 130)'
 );
 
 

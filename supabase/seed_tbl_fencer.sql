@@ -41,7 +41,7 @@ INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, bool_birth_
     ('CHOJNECKI', 'Mateusz', 1988, FALSE),
     ('CHUDY', 'Tomasz', 1980, FALSE),
     ('CHUDYCKI', 'Artur', 1960, FALSE),
-    ('CIEPŁY', 'Tomasz', 1985, TRUE) -- ESTIMATED,
+    ('CIEPŁY', 'Tomasz', 1985, TRUE), -- ESTIMATED
     ('ĆWIORO', 'Krzysztof', 1960, FALSE),
     ('ĆWIORO', 'Tomasz', 1985, FALSE),
     ('CYGAŃSKI', 'Tomasz', 1973, FALSE),
@@ -64,12 +64,12 @@ INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, bool_birth_
     ('FORAJTER', 'Roman', 1977, FALSE),
     ('FORNAL', 'Mateusz', 1991, FALSE),
     ('FRAŚ', 'Feliks', 1990, FALSE),
-    ('FRYDRYCH', 'Aleksander', 1984, TRUE) -- ESTIMATED,
+    ('FRYDRYCH', 'Aleksander', 1984, TRUE), -- ESTIMATED
     ('FRYDRYCH', 'Szymon', 1986, FALSE),
-    ('FRYDRYCKI', 'Mariusz', 1984, TRUE) -- ESTIMATED,
+    ('FRYDRYCKI', 'Mariusz', 1984, TRUE), -- ESTIMATED
     ('FUHRMANN', 'Ulrike', 1960, FALSE),
     ('FURMANIAK', 'Andrzej', 1947, FALSE),
-    ('GAJDA', 'Krzysztof', 1994, TRUE) -- ESTIMATED,
+    ('GAJDA', 'Krzysztof', 1994, TRUE), -- ESTIMATED
     ('GAJDA', 'Leszek', 1965, FALSE),
     ('GAJDA', 'Zbigniew', 1967, FALSE),
     ('GANSZCZYK', 'Anna', 1972, FALSE),
@@ -171,7 +171,7 @@ INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, bool_birth_
     ('LISOWSKI', 'Igor', 1990, FALSE),
     ('LISOWSKI', 'Robert', 1971, FALSE),
     ('LYNCH', 'Pat', 1930, FALSE),
-    ('MACKO', 'Marcin', 1995, TRUE) -- ESTIMATED,
+    ('MACKO', 'Marcin', 1995, TRUE), -- ESTIMATED
     ('MADDEN', 'Gerard', 1991, FALSE),
     ('MAINKA', 'Andrzej', 1949, FALSE),
     ('MAŁASIŃSKI', 'Adam', 1958, FALSE),
@@ -192,7 +192,7 @@ INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, bool_birth_
     ('MILCZAREK', 'Renata', 1968, FALSE),
     ('MILOVA', 'Tatiana', 1965, FALSE),
     ('MŁYNEK', 'Janusz', 1984, FALSE),
-    ('MOCEK', 'Sławomir', 1985, TRUE) -- ESTIMATED,
+    ('MOCEK', 'Sławomir', 1985, TRUE), -- ESTIMATED
     ('MORDEL', 'Adam', 1985, FALSE),
     ('MULSON', 'Irena', 1956, FALSE),
     ('MURRAY', 'Claire', 1985, FALSE),
@@ -257,7 +257,7 @@ INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, bool_birth_
     ('SIDOR', 'Marek', 1984, FALSE),
     ('SKOCZEK', 'Artur', 1970, FALSE),
     ('SKRYPKA', 'Glib', 1991, FALSE),
-    ('SOBCZAK', 'Sławomir', 1995, TRUE) -- ESTIMATED,
+    ('SOBCZAK', 'Sławomir', 1995, TRUE), -- ESTIMATED
     ('SOBIERAJ', 'Wojciech', 1955, FALSE),
     ('SOKOL', 'Vratislav', 1976, FALSE),
     ('SOMERS', 'Jan', 1964, FALSE),
@@ -328,5 +328,5 @@ INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, bool_birth_
     ('ZIMNY', 'Lech', 1955, FALSE),
     ('ŻUKOWSKI', 'Wojciech', 1969, FALSE),
     ('ŻYCZKOWSKI', 'Adam', 1960, FALSE),
-    ('ŻYCZKOWSKI', 'KAROL', 1965, TRUE) -- ESTIMATED,
+    ('ŻYCZKOWSKI', 'KAROL', 1965, TRUE), -- ESTIMATED
     ('ZYLKA', 'Henryk', 1930, FALSE);
