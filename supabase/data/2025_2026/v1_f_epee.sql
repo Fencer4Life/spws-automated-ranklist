@@ -206,55 +206,6 @@ VALUES (
     8, 37.50
 ); -- KAMIŃSKA Gabriela
 
--- ---- PPW4-2025-2026: IV Puchar Polski Weteranów ----
-INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
-SELECT
-    'PPW4-2025-2026',
-    'IV Puchar Polski Weteranów',
-    'Gdańsk',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
-    'COMPLETED'
-WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW4-2025-2026');
-INSERT INTO tbl_tournament (
-    id_event, txt_code, txt_name, enum_type,
-    enum_weapon, enum_gender, enum_age_category,
-    dt_tournament, int_participant_count, url_results,
-    enum_import_status
-) VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2025-2026'),
-    'PPW4-V1-F-EPEE-2025-2026',
-    'V1 F EPEE',
-    'PPW',
-    'EPEE', 'F', 'V1',
-    '2026-02-21', 4, NULL,
-    'SCORED'
-);
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KAMIŃSKA' AND txt_first_name = 'Gabriela' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-F-EPEE-2025-2026'),
-    1, 84.29
-); -- KAMIŃSKA Gabriela
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SAMECKA-NACZYŃSKA' AND txt_first_name = 'Martyna' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-F-EPEE-2025-2026'),
-    2, 45.02
-); -- SAMECKA-NACZYŃSKA Martyna
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'CHMIELEWSKA' AND txt_first_name = 'Emilia' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-F-EPEE-2025-2026'),
-    3, 15.93
-); -- CHMIELEWSKA Emilia
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MARNIAK' AND txt_first_name = 'Ksenia' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V1-F-EPEE-2025-2026'),
-    4, 1.00
-); -- MARNIAK Ksenia
-
 -- ---- PEW4-2025-2026: EVF Circuit Napoli ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
 SELECT
