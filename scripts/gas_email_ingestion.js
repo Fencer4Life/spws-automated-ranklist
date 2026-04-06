@@ -291,6 +291,13 @@ function handleCommand(props, command, arg) {
       if (evfLines.length === 1) evfLines.push('\n<i>All past international events have results ✓</i>');
       return evfLines.join('\n');
 
+    // --- URL Population ---
+    case 'populate-urls':
+      var githubPatPU = props.getProperty('GITHUB_PAT');
+      var githubRepoPU = props.getProperty('GITHUB_REPO');
+      triggerGitHubWorkflow(githubPatPU, githubRepoPU, 'populate-urls.yml', { event_code: arg });
+      return '<b>Populate URLs</b>\n<pre>' + arg + '</pre>\n<i>Discovering tournament result URLs from event page...</i>';
+
     // --- Emergency ---
     case 'pause':
       props.setProperty('PAUSED', 'true');
@@ -364,6 +371,11 @@ function handleCommand(props, command, arg) {
         '',
         '<pre>evf-status</pre>',
         'Show past intl events missing results',
+        '',
+        '<b><u>URLs</u></b>',
+        '',
+        '<pre>populate-urls &lt;event&gt;</pre>',
+        'Auto-discover tournament result URLs from event page',
         '',
         '<b><u>Emergency</u></b>',
         '',

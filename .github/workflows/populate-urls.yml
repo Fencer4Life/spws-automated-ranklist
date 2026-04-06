@@ -1,0 +1,49 @@
+name: Populate Tournament URLs
+
+on:
+  workflow_dispatch:
+    inputs:
+      event_code:
+        description: 'Event code (e.g. PPW4-2025-2026)'
+        required: true
+
+jobs:
+  populate:
+    name: Discover & Populate URLs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install httpx beautifulsoup4
+
+      - name: Populate tournament URLs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_CERT_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -m python.tools.populate_tournament_urls \
+            --event-code "${{ github.event.inputs.event_code }}" \
+            2>&1 | tee /tmp/populate-output.txt
+
+      - name: Notify Telegram
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          OUTPUT=$(tail -20 /tmp/populate-output.txt 2>/dev/null || echo "No output")
+          STATUS="${{ job.status }}"
+          MSG="<b>Populate URLs: ${{ github.event.inputs.event_code }}</b>
+          <i>Status: ${STATUS}</i>
+          <pre>${OUTPUT}</pre>"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d parse_mode=HTML \
+            --data-urlencode "text=${MSG}" > /dev/null
