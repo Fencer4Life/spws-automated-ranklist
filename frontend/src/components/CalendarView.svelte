@@ -27,7 +27,7 @@
         {#each positionSlots as slot}
           <div class="slot {slot.type}" class:completed={slot.completed} class:planned={!slot.completed}>
             <span class="slot-code">{slot.name}</span>
-            <span class="slot-icon">{slot.completed ? '✓' : '↩'}</span>
+            <span class="slot-icon">{slot.completed ? '✓' : '📅'}</span>
             {#if slot.city}
               <span class="slot-city">{slot.city}</span>
             {/if}
