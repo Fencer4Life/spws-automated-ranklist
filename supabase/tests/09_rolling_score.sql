@@ -258,8 +258,8 @@ SELECT is(
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  739.01::NUMERIC,
-  'R.13: kadra p_rolling=TRUE — KORONA 739.01 (domestic + IMEW biennial carry-over)'
+  686.17::NUMERIC,
+  'R.13: kadra p_rolling=TRUE — KORONA 686.17 (domestic + international + IMEW carry-over)'
 );
 
 -- R.14 — p_rolling=FALSE regression — no carry-over, no IMEW in current season
@@ -272,8 +272,8 @@ SELECT is(
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := FALSE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  673.13::NUMERIC,
-  'R.14: kadra p_rolling=FALSE regression — KORONA 673.13 (no IMEW this season)'
+  606.21::NUMERIC,
+  'R.14: kadra p_rolling=FALSE regression — KORONA 606.21 (no IMEW this season)'
 );
 
 -- =========================================================================

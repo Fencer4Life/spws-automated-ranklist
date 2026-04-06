@@ -86,6 +86,91 @@ class EvfApiClient:
         data = self._post(f"/results/{competition_id}", model=RESULTS_MODEL)
         return data.get("data", {}).get("list", [])
 
+    def discover_season_events(
+        self,
+        season_start: str,
+        season_end: str,
+        calendar_events: list[dict] | None = None,
+        scan_range: tuple[int, int] = (26, 120),
+    ) -> list[dict]:
+        """Discover EVF events for a season by scanning API IDs.
+
+        Scans event IDs via /events/competitions, filters by date,
+        and cross-references with calendar events by date proximity.
+
+        Returns enriched list:
+            [{evf_id, name, date, location, weapons, competitions, total_fencers, is_team, ...}]
+        """
+        from datetime import datetime as dt
+
+        found: list[dict] = []
+
+        for eid in range(scan_range[0], scan_range[1]):
+            try:
+                comps = self.get_competitions(eid)
+            except RuntimeError:
+                continue
+            if not comps:
+                continue
+
+            starts = comps[0].get("starts", "")
+            if not starts or starts < season_start or starts > season_end:
+                continue
+
+            total = sum(c.get("total", 0) for c in comps)
+            weapons_ids = set(c.get("weaponId") for c in comps)
+            weapons = [WEAPON_MAP.get(w, "?") for w in sorted(weapons_ids) if w in WEAPON_MAP]
+            cats = set(c.get("categoryId") for c in comps)
+            categories = [CATEGORY_MAP.get(c, "?") for c in sorted(cats) if c in CATEGORY_MAP]
+
+            # Cross-reference with calendar by date (+-3 days)
+            name = f"Event {eid}"
+            location = ""
+            country = ""
+            url = ""
+            fee = None
+            fee_currency = ""
+            is_team = False
+
+            if calendar_events:
+                for ce in calendar_events:
+                    ce_date = ce.get("dt_start", "")
+                    if not ce_date:
+                        continue
+                    try:
+                        d1 = dt.strptime(starts, "%Y-%m-%d")
+                        d2 = dt.strptime(ce_date, "%Y-%m-%d")
+                        if abs((d1 - d2).days) <= 3:
+                            name = ce["name"]
+                            location = ce.get("location", "")
+                            country = ce.get("country", "")
+                            url = ce.get("url", "")
+                            fee = ce.get("fee")
+                            fee_currency = ce.get("fee_currency", "")
+                            is_team = ce.get("is_team", False)
+                            break
+                    except (ValueError, TypeError):
+                        continue
+
+            found.append({
+                "evf_id": eid,
+                "name": name,
+                "date": starts,
+                "location": location,
+                "country": country,
+                "weapons": weapons,
+                "categories": categories,
+                "competitions": len(comps),
+                "total_fencers": total,
+                "is_team": is_team,
+                "url": url,
+                "fee": fee,
+                "fee_currency": fee_currency,
+                "has_results": total > 0,
+            })
+
+        return sorted(found, key=lambda e: e["date"])
+
     def close(self) -> None:
         self._client.close()
 

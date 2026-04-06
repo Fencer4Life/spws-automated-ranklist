@@ -24,15 +24,15 @@ INSERT INTO tbl_tournament (
     'EVF Grand Prix 1 — Budapeszt',
     'PEW',
     'EPEE', 'F', 'V1',
-    NULL, 17, NULL,
+    NULL, 1, NULL,
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SAMECKA-NACZYŃSKA' AND txt_first_name = 'Martyna' LIMIT 1),
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MURRAY' AND txt_first_name = 'Claire' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW1-V1-F-EPEE-2025-2026'),
-    7, 36.35
-); -- SAMECKA-NACZYŃSKA Martyna
+    12, 50.00
+); -- MURRAY Claire
 
 -- ---- PPW1-2025-2026: I Puchar Polski Weteranów ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
@@ -113,6 +113,37 @@ VALUES (
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW2-V1-F-EPEE-2025-2026'),
     3, 5.33
 ); -- KLIMECKA Dorota
+
+-- ---- PEW2-2025-2026: EVF Circuit Madrid ----
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PEW2-2025-2026',
+    'EVF Circuit Madrid',
+    'Madrid',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW2-2025-2026');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW2-2025-2026'),
+    'PEW2-V1-F-EPEE-2025-2026',
+    'V1 F EPEE',
+    'PEW',
+    'EPEE', 'F', 'V1',
+    '2025-11-01', 1, NULL,
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MURRAY' AND txt_first_name = 'Claire' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V1-F-EPEE-2025-2026'),
+    6, 50.00
+); -- MURRAY Claire
 
 -- ---- PPW3-2025-2026: III Puchar Polski Weteranów / Warsaw Epee Open ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
@@ -196,15 +227,15 @@ INSERT INTO tbl_tournament (
     'EVF Grand Prix 3',
     'PEW',
     'EPEE', 'F', 'V1',
-    '2026-01-10', 23, NULL,
+    '2026-01-10', 1, NULL,
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KAMIŃSKA' AND txt_first_name = 'Gabriela' LIMIT 1),
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MURRAY' AND txt_first_name = 'Claire' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW3-V1-F-EPEE-2025-2026'),
-    8, 37.50
-); -- KAMIŃSKA Gabriela
+    21, 50.00
+); -- MURRAY Claire
 
 -- ---- PPW4-2025-2026: IV Puchar Polski Weteranów ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)

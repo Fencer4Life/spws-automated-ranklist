@@ -201,27 +201,21 @@ INSERT INTO tbl_tournament (
     'EVF Grand Prix 2 — Madryt',
     'PEW',
     'EPEE', 'M', 'V3',
-    NULL, 38, NULL,
+    NULL, 2, NULL,
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WHITLEY' AND txt_first_name = 'Gary' LIMIT 1),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V3-M-EPEE-2025-2026'),
-    10, 38.98
-); -- WHITLEY Gary
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-VALUES (
     (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOSTRZEWA' AND txt_first_name = 'Ireneusz' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V3-M-EPEE-2025-2026'),
-    11, 37.70
+    8, 0.00
 ); -- KOSTRZEWA Ireneusz
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
 VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'LYNCH' AND txt_first_name = 'Pat' LIMIT 1),
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WHITLEY' AND txt_first_name = 'Gary' LIMIT 1),
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW2-V3-M-EPEE-2025-2026'),
-    35, 2.11
-); -- LYNCH Pat
+    17, 0.00
+); -- WHITLEY Gary
 
 -- ---- PPW3-2025-2026: III Puchar Polski Weteranów / Warsaw Epee Open ----
 INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)

@@ -2,21 +2,6 @@
 -- Season 2025-2026 — Events Metadata — auto-exported from CERT (ADR-027)
 -- =========================================================================
 
--- ---- PEW10-2025-2026 ----
-INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
-SELECT 'PEW10-2025-2026', 'EVF Criterium Mondial Vétérans 2025',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
-    'COMPLETED'
-WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW10-2025-2026');
-UPDATE tbl_event SET
-    txt_location = 'Paris',
-    txt_country = 'France',
-    dt_start = '2025-07-05',
-    dt_end = '2025-07-05',
-    url_event = 'https://engarde-service.com/tournament/fencingaddict/crit25'
-WHERE txt_code = 'PEW10-2025-2026';
-
 -- ---- PEW1-2025-2026 ----
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
 SELECT 'PEW1-2025-2026', 'EVF Circuit Budapest',
@@ -85,6 +70,21 @@ UPDATE tbl_event SET
     url_invitation = 'https://www.veteransfencing.eu/wp-content/uploads/2025/10/EVF-Circuit-Madrid-2025.pdf'
 WHERE txt_code = 'PEW2-2025-2026';
 
+-- ---- PEW-SPORTHALLE-2025-2026 ----
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+SELECT 'PEW-SPORTHALLE-2025-2026', 'EVF Circuit Memoriam Max Geuter – Munich (GER)',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW-SPORTHALLE-2025-2026');
+UPDATE tbl_event SET
+    txt_location = 'Sporthalle der Städtischen Berufsschule für Informationstechnik',
+    txt_country = 'Germany',
+    dt_start = '2025-12-06',
+    dt_end = '2025-12-06',
+    txt_entry_fee_currency = 'PLN'
+WHERE txt_code = 'PEW-SPORTHALLE-2025-2026';
+
 -- ---- PPW3-2025-2026 ----
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
 SELECT 'PPW3-2025-2026', 'III Puchar Polski Weteranów / Warsaw Epee Open',
@@ -118,6 +118,21 @@ UPDATE tbl_event SET
     url_event = 'https://fencingtimelive.com/tournaments/eventSchedule/E2A7B077F2824DD8A7F2E413B4211296#today',
     url_invitation = 'https://www.veteransfencing.eu/wp-content/uploads/2025/10/EVf-Guildford-2026-invitation-letter.pdf'
 WHERE txt_code = 'PEW3-2025-2026';
+
+-- ---- PEW-SALLEJEANZ-2025-2026 ----
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+SELECT 'PEW-SALLEJEANZ-2025-2026', 'EVF Circuit – Fâches-Thumesnil (FRA)',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PEW-SALLEJEANZ-2025-2026');
+UPDATE tbl_event SET
+    txt_location = 'Salle Jean Zay',
+    txt_country = 'France',
+    dt_start = '2026-02-07',
+    dt_end = '2026-02-07',
+    txt_entry_fee_currency = 'PLN'
+WHERE txt_code = 'PEW-SALLEJEANZ-2025-2026';
 
 -- ---- PPW4-2025-2026 ----
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
@@ -231,6 +246,21 @@ UPDATE tbl_event SET
     dt_end = '2026-05-03',
     url_invitation = 'https://www.veteransfencing.eu/wp-content/uploads/2026/03/Chania-Invitation-letter-2026.pdf'
 WHERE txt_code = 'PEW8-2025-2026';
+
+-- ---- MEW-COMPLEXESP-2025-2026 ----
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+SELECT 'MEW-COMPLEXESP-2025-2026', 'European Team Championships 2026 – Cognac',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'PLANNED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'MEW-COMPLEXESP-2025-2026');
+UPDATE tbl_event SET
+    txt_location = 'Complexe Sportif Omnisports des Vauzelles',
+    txt_country = 'France',
+    dt_start = '2026-05-14',
+    dt_end = '2026-05-14',
+    txt_entry_fee_currency = 'PLN'
+WHERE txt_code = 'MEW-COMPLEXESP-2025-2026';
 
 -- ---- PEW9-2025-2026 ----
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
