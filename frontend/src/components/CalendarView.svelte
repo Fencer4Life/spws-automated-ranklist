@@ -26,11 +26,8 @@
       <div class="progress-slots">
         {#each positionSlots as slot}
           <div class="slot" class:completed={slot.completed} class:planned={!slot.completed}>
-            <span class="slot-code">{slot.name}</span>
-            <span class="slot-icon">{slot.completed ? '✓' : '—'}</span>
-            {#if slot.city}
-              <span class="slot-city">{slot.city}</span>
-            {/if}
+            <span class="slot-name">{slot.name}</span>
+            <span class="slot-icon">{slot.completed ? '✓' : '📅'}</span>
           </div>
         {/each}
       </div>
@@ -41,8 +38,9 @@
     <div class="timeline-month">{group.label}</div>
     {#each group.events as event, i}
       <div
-        class="timeline-event {eventTypeClass(event.txt_code)}"
+        class="timeline-event"
         class:completed={event.enum_status === 'COMPLETED'}
+        class:international={event.bool_has_international}
       >
         {#if i < group.events.length - 1}
           <div class="timeline-line"></div>
@@ -125,13 +123,6 @@
     return e.bool_has_international || INTL_PREFIXES.test(e.txt_code)
   }
 
-  function eventTypeClass(code: string): string {
-    if (/^PEW/.test(code)) return 'evf-circuit'
-    if (/^(IMEW|IMSW|MEW)/.test(code)) return 'evf-championship'
-    if (/^(MSW|PSW)/.test(code)) return 'evf-fie'
-    return ''
-  }
-
   // Rolling progress: derive position slots respecting scope filter
   let positionSlots = $derived.by(() => {
     if (!isActiveSeason) return []
@@ -144,7 +135,6 @@
       .map(e => ({
         name: e.txt_code.split('-')[0].replace(/^PP(\d)/, 'PPW$1'),
         completed: e.enum_status === 'COMPLETED',
-        city: (e.txt_location || '').split(',')[0].trim(),
       }))
   })
 
@@ -288,20 +278,9 @@
     background: #1a7f37;
     box-shadow: 0 0 0 1px #1a7f37;
   }
-  .timeline-event.evf-circuit { border-left: 3px solid #5ba8e0; }
-  .timeline-event.evf-championship { border-left: 3px solid #a0a8b0; }
-  .timeline-event.evf-fie { border-left: 3px solid #c9a030; }
-  .timeline-event.evf-circuit::before {
-    background: #5ba8e0;
-    box-shadow: 0 0 0 1px #5ba8e0;
-  }
-  .timeline-event.evf-championship::before {
-    background: #a0a8b0;
-    box-shadow: 0 0 0 1px #a0a8b0;
-  }
-  .timeline-event.evf-fie::before {
-    background: #c9a030;
-    box-shadow: 0 0 0 1px #c9a030;
+  .timeline-event.international::before {
+    background: #d4a017;
+    box-shadow: 0 0 0 1px #d4a017;
   }
   .timeline-line {
     position: absolute;
@@ -421,20 +400,11 @@
     color: #888;
     border: 1px solid #ddd;
   }
-  .slot-code {
+  .slot-name {
     font-size: 11px;
   }
   .slot-icon {
     font-size: 16px;
-    margin: 2px 0;
-  }
-  .slot-city {
-    font-size: 9px;
-    color: #666;
-    max-width: 64px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    text-align: center;
+    margin-top: 2px;
   }
 </style>
