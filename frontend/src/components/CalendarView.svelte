@@ -39,14 +39,11 @@
 
   {#each monthGroups as group}
     <div class="timeline-month">{group.label}</div>
-    {#each group.events as event, i}
+    {#each group.events as event}
       <div
         class="timeline-event {eventTypeClass(event.txt_code)}"
         class:completed={event.enum_status === 'COMPLETED'}
       >
-        {#if i < group.events.length - 1}
-          <div class="timeline-line"></div>
-        {/if}
         <div class="timeline-date">{formatDate(event.dt_start)}</div>
         <div class="timeline-info">
           <div class="timeline-name">{event.txt_name}</div>
@@ -275,51 +272,24 @@
   .timeline-event {
     display: flex;
     gap: 14px;
-    margin-bottom: 14px;
-    position: relative;
-    padding-left: 20px;
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
   }
-  .timeline-event::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 8px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #4a90d9;
-    border: 2px solid #fff;
-    box-shadow: 0 0 0 1px #4a90d9;
-  }
-  .timeline-event.completed::before {
-    background: #1a7f37;
-    box-shadow: 0 0 0 1px #1a7f37;
+  .timeline-event.completed {
+    border-left: 4px solid #1a7f37;
   }
   /* PEW — EVF circuit: light blue */
-  .timeline-event.evf-circuit::before {
-    background: #5ba8e0;
-    box-shadow: 0 0 0 1px #5ba8e0;
-  }
   .timeline-event.evf-circuit {
     border-left: 4px solid #5ba8e0;
     background: #f4f9fd;
   }
   /* IMEW/MEW/MSW/PSW — international: light gold */
-  .timeline-event.evf-intl::before {
-    background: #c9a030;
-    box-shadow: 0 0 0 1px #c9a030;
-  }
   .timeline-event.evf-intl {
     border-left: 4px solid #c9a030;
     background: #fdf9f0;
-  }
-  .timeline-line {
-    position: absolute;
-    left: 4px;
-    top: 20px;
-    bottom: -14px;
-    width: 2px;
-    background: #e0e0e0;
   }
   .timeline-date {
     font-weight: 700;
