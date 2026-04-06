@@ -1,7 +1,7 @@
 """
 EVF Calendar + Results Sync CLI (ADR-028)
 
-Orchestrates calendar scraping and result PDF downloading from veteransfencing.eu.
+Orchestrates calendar scraping and result fetching from veteransfencing.eu API.
 Called by .github/workflows/evf-sync.yml.
 
 Usage:
@@ -13,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import time
 
@@ -23,23 +24,35 @@ from python.scrapers.evf_calendar import (
     filter_by_season,
     deduplicate_events,
 )
-from python.scrapers.evf_results import parse_evf_result_pdf, evf_code_to_category
+from python.scrapers.evf_results import (
+    EvfApiClient,
+    scrape_event_results,
+    CATEGORY_MAP,
+    WEAPON_MAP,
+)
 
 EVF_CALENDAR_URL = "https://www.veteransfencing.eu/calendar/"
-EVF_RESULTS_URL = "https://www.veteransfencing.eu/fencing/results/"
 
 
 def _management_query(ref: str, token: str, sql: str) -> list[dict]:
     """Execute SQL via Supabase Management API."""
-    resp = httpx.post(
-        f"https://api.supabase.com/v1/projects/{ref}/database/query",
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-        json={"query": sql},
-        timeout=60,
-    )
-    if resp.status_code >= 400:
-        raise RuntimeError(f"Management API error ({resp.status_code}): {resp.text}")
-    return resp.json()
+    for attempt in range(3):
+        try:
+            resp = httpx.post(
+                f"https://api.supabase.com/v1/projects/{ref}/database/query",
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                json={"query": sql},
+                timeout=60,
+            )
+            if resp.status_code in (429, 503):
+                time.sleep(3 * (attempt + 1))
+                continue
+            if resp.status_code >= 400:
+                raise RuntimeError(f"Management API error ({resp.status_code}): {resp.text}")
+            return resp.json()
+        except httpx.ReadTimeout:
+            time.sleep(3 * (attempt + 1))
+    raise RuntimeError("Management API: max retries exceeded")
 
 
 def _telegram(bot_token: str, chat_id: str, msg: str) -> None:
@@ -64,7 +77,8 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str) -> None:
 
     # Get active season date range
     season = _management_query(ref, token,
-        "SELECT txt_code, dt_start::TEXT, dt_end::TEXT FROM tbl_season WHERE bool_active = TRUE"
+        "SELECT txt_code, dt_start::TEXT, dt_end::TEXT, id_season "
+        "FROM tbl_season WHERE bool_active = TRUE"
     )
     if not season:
         print("  No active season found, skipping")
@@ -77,7 +91,7 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str) -> None:
     # Get existing events for dedup
     existing = _management_query(ref, token,
         f"SELECT txt_name, dt_start::TEXT FROM tbl_event "
-        f"WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = '{s['txt_code']}')"
+        f"WHERE id_season = {s['id_season']}"
     )
 
     new, already = deduplicate_events(filtered, existing)
@@ -90,68 +104,71 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str) -> None:
     # Generate event codes and import
     season_suffix = s["txt_code"].replace("SPWS-", "")
     import_events = []
-    for i, evt in enumerate(new):
-        # Generate code: PEW{N}-{season} for circuit, IMEW-{season} for championship
+    for evt in new:
         loc = evt.get("location", "").split(",")[0].strip().upper().replace(" ", "")[:10]
         code = f"PEW-{loc}-{season_suffix}" if not evt.get("is_team") else f"MEW-{loc}-{season_suffix}"
         evt["code"] = code
         import_events.append(evt)
 
-    import json
     events_json = json.dumps(import_events).replace("'", "''")
-    season_id = _management_query(ref, token,
-        f"SELECT id_season FROM tbl_season WHERE txt_code = '{s['txt_code']}'"
-    )[0]["id_season"]
-
     result = _management_query(ref, token,
-        f"SELECT fn_import_evf_events('{events_json}'::JSONB, {season_id})"
+        f"SELECT fn_import_evf_events('{events_json}'::JSONB, {s['id_season']})"
     )
     print(f"  Import result: {result}")
 
     _telegram(bot_token, chat_id,
-        f"<b>EVF Calendar Updated</b>\n{len(new)} new event(s) imported from veteransfencing.eu"
+        f"<b>EVF Calendar Updated</b>\n{len(new)} new event(s) imported"
     )
 
 
 def sync_results(ref: str, token: str, bot_token: str, chat_id: str, event_code: str = "") -> None:
-    """Check for result PDFs and download+ingest if available."""
-    # Find events needing results (PLANNED, dt_end >= 2 days ago)
-    if event_code:
-        where = f"e.txt_code = '{event_code}'"
-    else:
-        where = (
-            "e.enum_status = 'PLANNED' "
-            "AND e.dt_end IS NOT NULL "
-            "AND e.dt_end <= CURRENT_DATE - INTERVAL '2 days' "
-            "AND e.dt_end >= CURRENT_DATE - INTERVAL '16 days' "
-            "AND EXISTS(SELECT 1 FROM tbl_tournament t WHERE t.id_event = e.id_event AND t.enum_type = 'PEW')"
-        )
+    """Fetch results from EVF API and compare/ingest."""
+    print("Connecting to EVF API...")
+    client = EvfApiClient(request_delay=1.0)
+    client.connect()
 
-    events = _management_query(ref, token,
-        f"SELECT e.txt_code, e.txt_name, e.dt_end::TEXT "
-        f"FROM tbl_event e "
-        f"WHERE e.id_season = (SELECT id_season FROM tbl_season WHERE bool_active = TRUE) "
-        f"AND {where} "
-        f"ORDER BY e.dt_end"
-    )
+    try:
+        evf_events = client.get_events()
+        print(f"  {len(evf_events)} events in EVF database")
 
-    if not events:
-        print("  No events needing results")
-        return
+        if event_code:
+            # Find the matching EVF event for a specific SPWS event
+            # Get SPWS event date to match
+            spws_event = _management_query(ref, token,
+                f"SELECT dt_start::TEXT, txt_name FROM tbl_event "
+                f"WHERE txt_code = '{event_code}'"
+            )
+            if not spws_event:
+                print(f"  Event {event_code} not found in CERT")
+                return
 
-    # Process one event at a time
-    evt = events[0]
-    print(f"Checking results for {evt['txt_code']} ({evt['txt_name']})...")
+            date = spws_event[0]["dt_start"]
+            # Find EVF event by date
+            from python.scrapers.evf_results import find_event_by_date
+            evf_event = find_event_by_date(evf_events, date)
+            if not evf_event:
+                print(f"  No EVF event found for date {date}")
+                _telegram(bot_token, chat_id,
+                    f"<b>EVF Results</b>\n<pre>{event_code}</pre>\n<i>No EVF data found for {date}</i>"
+                )
+                return
 
-    # TODO: Scrape EVF results page for PDF links matching this event's date
-    # Then download PDFs with 2-minute delay between each
-    # Then parse and ingest via pipeline
-    # This requires matching EVF result page entries to our events by date
+            print(f"  Found EVF event: {evf_event['name']} (id={evf_event['id']})")
+            results = scrape_event_results(evf_event["id"], client=client)
+            pol = [r for r in results if r["country"] == "POL"]
 
-    print("  Results sync not yet implemented (PDF discovery + burst download)")
-    _telegram(bot_token, chat_id,
-        f"<b>EVF Results Check</b>\n<pre>{evt['txt_code']}</pre>\n<i>Checking for result PDFs...</i>"
-    )
+            print(f"  Total: {len(results)} results, {len(pol)} Polish fencers")
+            _telegram(bot_token, chat_id,
+                f"<b>EVF Results</b>\n<pre>{event_code}</pre>\n"
+                f"{evf_event['name']}\n"
+                f"Total: <b>{len(results)}</b> fencers\n"
+                f"Polish: <b>{len(pol)}</b>"
+            )
+        else:
+            # Check all events needing results
+            print("  Full results sync not yet implemented")
+    finally:
+        client.close()
 
 
 def main() -> None:
