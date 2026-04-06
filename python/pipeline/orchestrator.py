@@ -128,6 +128,8 @@ def _process_category(
     result: IngestResult,
 ) -> None:
     """Process results for a single category within a file."""
+    if not enriched_results:
+        return
     _prev_pending = result.pending
     weapon = metadata["weapon"]
     gender = metadata["gender"]
