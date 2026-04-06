@@ -60,10 +60,12 @@ End-to-end flow: parse uploaded file → fuzzy match against master fencer list 
 - 10 vitest assertions (9.68–9.77) for UI behavior
 
 **What's needed:**
-- DB persistence for admin actions (approve → update `tbl_result.id_fencer`, dismiss → set status, create-new → insert `tbl_fencer`)
-- Wire `onapprove`, `oncreatenew`, `ondismiss` callbacks to Supabase RPC
-- Match candidate query (view or function) that returns unresolved matches with scores
-- Integration tests for admin approve/dismiss/create-new workflows
+- ~~DB persistence for admin actions~~ — Done: `fn_approve_match`, `fn_dismiss_match`, `fn_create_fencer_from_match` (migration 20260406000003)
+- ~~Match candidate query~~ — Done: `vw_match_candidates` (migration 20260406000004)
+- Wire `onapprove`, `oncreatenew`, `ondismiss` callbacks to Supabase RPC via `api.ts`
+- Add 3 API functions: `approveMatch()`, `dismissMatch()`, `createFencerFromMatch()`
+- pgTAP tests for 3 RPCs (11.1–11.12, 12 assertions)
+- vitest integration tests (9.78–9.82, 5 assertions)
 
 ### 2.3 URL Scraping Tab (FR-53, FR-54 partial)
 

@@ -17,7 +17,7 @@ vi.mock('@supabase/supabase-js', () => {
   }
 })
 
-import { initClient, fetchSeasons, fetchRankingPpw, fetchRankingKadra, fetchFencerScores, fetchCalendarEvents } from '../src/lib/api'
+import { initClient, fetchSeasons, fetchRankingPpw, fetchRankingKadra, fetchFencerScores, fetchCalendarEvents, approveMatch, dismissMatch, createFencerFromMatch } from '../src/lib/api'
 import { __mockRpc, __mockFrom } from '@supabase/supabase-js'
 
 const mockRpc = __mockRpc as ReturnType<typeof vi.fn>
@@ -171,5 +171,34 @@ describe('fetchFencerScores', () => {
     const result = await fetchFencerScores(5, 1, 'EPEE', 'M')
     expect(mockFrom).toHaveBeenCalledWith('vw_score')
     expect(result).toEqual(scores)
+  })
+})
+
+// 9.78 — approveMatch calls rpc correctly
+describe('approveMatch', () => {
+  it('calls fn_approve_match with match_id and fencer_id', async () => {
+    mockRpc.mockResolvedValue({ data: { id_match: 1, status: 'APPROVED' }, error: null })
+    await approveMatch(1, 100)
+    expect(mockRpc).toHaveBeenCalledWith('fn_approve_match', { p_match_id: 1, p_fencer_id: 100 })
+  })
+})
+
+// 9.79 — dismissMatch calls rpc correctly
+describe('dismissMatch', () => {
+  it('calls fn_dismiss_match with match_id and optional note', async () => {
+    mockRpc.mockResolvedValue({ data: { id_match: 2, status: 'DISMISSED' }, error: null })
+    await dismissMatch(2, 'Not a real fencer')
+    expect(mockRpc).toHaveBeenCalledWith('fn_dismiss_match', { p_match_id: 2, p_note: 'Not a real fencer' })
+  })
+})
+
+// 9.80 — createFencerFromMatch calls rpc correctly
+describe('createFencerFromMatch', () => {
+  it('calls fn_create_fencer_from_match with match_id, name, birth_year', async () => {
+    mockRpc.mockResolvedValue({ data: { id_match: 3, id_fencer: 999, status: 'NEW_FENCER' }, error: null })
+    await createFencerFromMatch(3, 'KOWALSKI', 'Jan', 1985)
+    expect(mockRpc).toHaveBeenCalledWith('fn_create_fencer_from_match', {
+      p_match_id: 3, p_surname: 'KOWALSKI', p_first_name: 'Jan', p_birth_year: 1985,
+    })
   })
 })

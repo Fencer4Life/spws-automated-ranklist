@@ -108,6 +108,9 @@
     <IdentityManager
       candidates={matchCandidates}
       isAdmin={isAdmin}
+      onapprove={handleApproveMatch}
+      oncreatenew={handleCreateNewFencer}
+      ondismiss={handleDismissMatch}
     />
   {:else if currentView === 'admin_scoring'}
     {#if scoringConfig}
@@ -190,6 +193,9 @@
     fetchAllTournaments,
     deleteTournamentCascade,
     fetchMatchCandidates,
+    approveMatch,
+    dismissMatch,
+    createFencerFromMatch,
   } from './lib/api'
   import {
     MOCK_SEASONS,
@@ -528,6 +534,39 @@
     if (demo) return
     try {
       matchCandidates = await fetchMatchCandidates()
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleApproveMatch(matchId: number, fencerId: number) {
+    try {
+      await approveMatch(matchId, fencerId)
+      await loadMatchCandidates()
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleDismissMatch(matchId: number) {
+    try {
+      await dismissMatch(matchId)
+      await loadMatchCandidates()
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleCreateNewFencer(matchId: number) {
+    const candidate = matchCandidates.find(c => c.id_match === matchId)
+    if (!candidate) return
+    const name = candidate.txt_scraped_name
+    const spaceIdx = name.indexOf(' ')
+    const surname = spaceIdx > 0 ? name.substring(0, spaceIdx) : name
+    const firstName = spaceIdx > 0 ? name.substring(spaceIdx + 1) : ''
+    try {
+      await createFencerFromMatch(matchId, surname, firstName)
+      await loadMatchCandidates()
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
     }
