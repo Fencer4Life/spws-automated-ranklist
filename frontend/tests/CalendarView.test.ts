@@ -299,4 +299,87 @@ describe('CalendarView (T8.5)', () => {
     expect(completedSlots.length).toBe(2)
     expect(plannedSlots.length).toBe(2)
   })
+
+  // 11.1 — PEW event card gets evf-circuit class
+  it('11.1: PEW event gets evf-circuit class on timeline-event', () => {
+    const events = [
+      makeEvent({ id_event: 1, txt_code: 'PEW1-2025-2026', txt_name: 'EVF Circuit Stockholm', dt_start: '2026-03-14', enum_status: 'COMPLETED', bool_has_international: true }),
+    ]
+    const { container } = render(CalendarView, {
+      props: { events, showEvfToggle: true },
+    })
+    // Click +EVF to show international
+    const evfBtn = Array.from(container.querySelectorAll('.scope-filter-btn')).find(b => b.textContent?.trim() === '+EVF')
+    evfBtn && fireEvent.click(evfBtn)
+    const card = container.querySelector('.timeline-event.evf-circuit')
+    expect(card).not.toBeNull()
+  })
+
+  // 11.2 — IMEW event card gets evf-intl class
+  it('11.2: IMEW event gets evf-intl class on timeline-event', () => {
+    const events = [
+      makeEvent({ id_event: 1, txt_code: 'IMEW-2025-2026', txt_name: 'European Champs', dt_start: '2026-05-14', enum_status: 'PLANNED', bool_has_international: true }),
+    ]
+    const { container } = render(CalendarView, {
+      props: { events, showEvfToggle: true },
+    })
+    const evfBtn = Array.from(container.querySelectorAll('.scope-filter-btn')).find(b => b.textContent?.trim() === '+EVF')
+    evfBtn && fireEvent.click(evfBtn)
+    const card = container.querySelector('.timeline-event.evf-intl')
+    expect(card).not.toBeNull()
+  })
+
+  // 11.3 — MSW event card gets evf-intl class (same as IMEW)
+  it('11.3: MSW event gets evf-intl class on timeline-event', () => {
+    const events = [
+      makeEvent({ id_event: 1, txt_code: 'MSW-2025-2026', txt_name: 'World Championships', dt_start: '2026-10-15', enum_status: 'PLANNED', bool_has_international: true }),
+    ]
+    const { container } = render(CalendarView, {
+      props: { events, showEvfToggle: true },
+    })
+    const evfBtn = Array.from(container.querySelectorAll('.scope-filter-btn')).find(b => b.textContent?.trim() === '+EVF')
+    evfBtn && fireEvent.click(evfBtn)
+    const card = container.querySelector('.timeline-event.evf-intl')
+    expect(card).not.toBeNull()
+  })
+
+  // 11.4 — PPW event card has no evf class
+  it('11.4: PPW event has no evf-circuit or evf-intl class', () => {
+    const events = [
+      makeEvent({ id_event: 1, txt_code: 'PP1-2025-2026', enum_status: 'COMPLETED', dt_start: '2025-09-28' }),
+    ]
+    const { container } = render(CalendarView, { props: { events } })
+    const card = container.querySelector('.timeline-event')
+    expect(card).not.toBeNull()
+    expect(card!.classList.contains('evf-circuit')).toBe(false)
+    expect(card!.classList.contains('evf-intl')).toBe(false)
+  })
+
+  // 11.5 — Slot box shows city name from txt_location
+  it('11.5: slot box shows city name', () => {
+    const events = [
+      makeEvent({ id_event: 1, txt_code: 'PP1-2025-2026', enum_status: 'COMPLETED', dt_start: '2025-09-28', txt_location: 'Konin' }),
+    ]
+    const { container } = render(CalendarView, {
+      props: { events, isActiveSeason: true },
+    })
+    const city = container.querySelector('.slot-city')
+    expect(city).not.toBeNull()
+    expect(city!.textContent).toBe('Konin')
+  })
+
+  // 11.6 — Slot type classes: PEW slot gets pew class
+  it('11.6: PEW slot gets pew type class', () => {
+    const events = [
+      makeEvent({ id_event: 1, txt_code: 'PEW1-2025-2026', enum_status: 'COMPLETED', dt_start: '2025-10-15', bool_has_international: true }),
+    ]
+    const { container } = render(CalendarView, {
+      props: { events, isActiveSeason: true, showEvfToggle: true },
+    })
+    // Click +EVF
+    const evfBtn = Array.from(container.querySelectorAll('.scope-filter-btn')).find(b => b.textContent?.trim() === '+EVF')
+    evfBtn && fireEvent.click(evfBtn)
+    const slot = container.querySelector('.slot.pew')
+    expect(slot).not.toBeNull()
+  })
 })

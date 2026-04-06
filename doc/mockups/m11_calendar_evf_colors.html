@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M11 Calendar — EVF Color Coding + City Labels</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+  h1.page-title { text-align: center; margin-bottom: 6px; font-size: 26px; color: #222; }
+  .subtitle { text-align: center; color: #888; font-size: 13px; margin-bottom: 24px; }
+
+  .view-box { background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; width: 560px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin: 0 auto 30px; }
+  .view-label { background: #e8ecf1; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Header */
+  .header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f5f7fa; border-bottom: 1px solid #ddd; }
+  .hamburger { font-size: 20px; cursor: pointer; padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; line-height: 1; }
+  .header-title { font-size: 18px; color: #222; font-weight: 700; white-space: nowrap; }
+  .spacer { flex: 1; }
+  .season-select { padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: #fff; }
+  .env-toggle { display: flex; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+  .env-btn { padding: 3px 8px; border: none; background: #fff; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .env-btn.active { background: #4a90d9; color: #fff; }
+  .env-btn + .env-btn { border-left: 1px solid #ccc; }
+  .lang-toggle { display: flex; gap: 4px; }
+  .lang-btn { padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 14px; cursor: pointer; }
+  .lang-btn.active { background: #4a90d9; border-color: #4a90d9; }
+
+  /* Filter bar */
+  .filter-bar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fafbfc; border-bottom: 1px solid #eee; }
+  .mode-toggle { display: flex; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+  .mode-btn { padding: 4px 10px; border: none; background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .mode-btn.active { background: #4a90d9; color: #fff; }
+  .mode-btn + .mode-btn { border-left: 1px solid #ccc; }
+  .time-select { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; font-weight: 600; background: #fff; }
+
+  /* ================================================================
+     ROLLING PROGRESS SLOTS — 3-line layout with city + color coding
+     ================================================================ */
+  .rolling-progress { padding: 10px 14px; background: #fafbfc; border-bottom: 1px solid #eee; }
+  .progress-label { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .progress-slots { display: flex; gap: 5px; flex-wrap: wrap; }
+
+  .slot {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 5px 8px 4px; border-radius: 5px;
+    font-weight: 600; min-width: 52px;
+  }
+  .slot-code { font-size: 9px; letter-spacing: 0.3px; text-transform: uppercase; }
+  .slot-icon { font-size: 14px; line-height: 1.2; }
+  .slot-city { font-size: 8px; font-weight: 500; opacity: 0.7; max-width: 58px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* PPW/MPW domestic — completed (solid green) */
+  .slot.ppw.completed  { background: #e6f4ea; color: #1a7f37; border: 1px solid #b4dfbf; }
+  .slot.mpw.completed  { background: #e6f4ea; color: #1a7f37; border: 1px solid #b4dfbf; }
+  /* PPW/MPW domestic — future/planned (lighter green) */
+  .slot.ppw.planned    { background: #f2faf5; color: #5aad6a; border: 1px solid #d0e8d6; }
+  .slot.mpw.planned    { background: #f2faf5; color: #5aad6a; border: 1px solid #d0e8d6; }
+  /* PPW/MPW domestic — carried */
+  .slot.ppw.carried    { background: #fff8e6; color: #b07d2b; border: 1px solid #f0d88a; }
+  .slot.mpw.carried    { background: #fff8e6; color: #b07d2b; border: 1px solid #f0d88a; }
+  /* PPW/MPW domestic — missing (generic no data) */
+  .slot.ppw.missing    { background: #f5f5f5; color: #999;    border: 1px solid #ddd; }
+  .slot.mpw.missing    { background: #f5f5f5; color: #999;    border: 1px solid #ddd; }
+
+  /* PEW — EVF Circuit (light blue) */
+  .slot.pew.completed  { background: #deedf8; color: #2a6faa; border: 1px solid #aed0ec; }
+  .slot.pew.carried    { background: #edf5fc; color: #7ab0d8; border: 1px solid #c8dff0; }
+  .slot.pew.missing    { background: #f2f7fb; color: #a0c4dd; border: 1px solid #d8e8f2; }
+
+  /* IMEW/MEW/MSW/PSW — International (light gold) */
+  .slot.imew.completed { background: #faf3e0; color: #8a6d1b; border: 1px solid #e8d5a0; }
+  .slot.imew.carried   { background: #fdf8ee; color: #b8a060; border: 1px solid #ede0c0; }
+  .slot.imew.missing   { background: #fefcf5; color: #c8b880; border: 1px solid #ede8d8; }
+  .slot.msw.completed  { background: #faf3e0; color: #8a6d1b; border: 1px solid #e8d5a0; }
+  .slot.msw.carried    { background: #fdf8ee; color: #b8a060; border: 1px solid #ede0c0; }
+  .slot.msw.missing    { background: #fefcf5; color: #c8b880; border: 1px solid #ede8d8; }
+
+  .progress-summary { margin-top: 6px; font-size: 11px; color: #666; }
+
+  /* ================================================================
+     EVENT CARDS — color-coded backgrounds by organizer type
+     ================================================================ */
+  .calendar-content { padding: 14px; }
+  .month-header { font-size: 12px; font-weight: 700; color: #888; letter-spacing: 1px; text-transform: uppercase; padding: 12px 0 6px; text-align: center; border-bottom: 1px solid #eee; margin-bottom: 10px; }
+
+  .event-card {
+    border: 1px solid #ddd; border-radius: 6px;
+    padding: 10px 14px; margin-bottom: 10px;
+    background: #fff;
+  }
+  /* PPW/MPW — default white, no special background */
+  .event-card.ppw { background: #fff; }
+
+  /* PEW — EVF circuit: light blue tint */
+  .event-card.pew {
+    background: #f4f9fd;
+    border-left: 4px solid #5ba8e0;
+  }
+
+  /* IMEW/MEW/MSW/PSW — International: light gold tint */
+  .event-card.imew {
+    background: #fdf9f0;
+    border-left: 4px solid #c9a030;
+  }
+  .event-card.msw {
+    background: #fdf9f0;
+    border-left: 4px solid #c9a030;
+  }
+
+  .event-card .event-top { display: flex; gap: 10px; align-items: baseline; }
+  .event-card .event-date { font-weight: 700; font-size: 14px; color: #4a90d9; white-space: nowrap; }
+  .event-card .event-name { font-size: 14px; font-weight: 600; color: #222; }
+  .event-card .event-loc { font-size: 12px; color: #666; margin-top: 2px; }
+  .event-weapons { font-size: 11px; color: #4a90d9; margin-top: 3px; }
+  .event-meta { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; font-size: 12px; }
+  .results-link { color: #1a7f37; text-decoration: none; font-weight: 600; }
+  .results-link:hover { text-decoration: underline; }
+  .invitation-link { color: #4a90d9; text-decoration: none; }
+  .invitation-link:hover { text-decoration: underline; }
+  .entry-fee { color: #666; }
+  .event-card .event-bottom { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+  .event-card .tournament-count { font-size: 12px; color: #888; }
+  .status-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; display: inline-block; }
+  .status-completed { background: #e6f4ea; color: #1a7f37; }
+  .status-scheduled { background: #e1f0ff; color: #1a6fbf; }
+  .status-planned   { background: #f0f0f0; color: #666; }
+  .status-inprogress { background: #fff4e6; color: #b35c00; }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 12px 14px; font-size: 11px; border-top: 1px solid #eee; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-swatch { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
+  .legend-bar { width: 4px; height: 16px; border-radius: 2px; display: inline-block; }
+
+  .note { font-size: 13px; color: #888; margin-top: 8px; padding: 8px 12px; background: #fff8e1; border-radius: 4px; border-left: 3px solid #f5a623; margin-bottom: 20px; max-width: 560px; margin-left: auto; margin-right: auto; }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">M11 Calendar — EVF Color Coding + City</h1>
+<p class="subtitle">Color-coded slots + event cards by organizer. 3-line slot boxes with city. Carried-over ↩ icons preserved.</p>
+
+<!-- ==================== +EVF MODE ==================== -->
+<div class="view-box">
+  <div class="view-label">+EVF mode — all events, color-coded</div>
+
+  <div class="header">
+    <button class="hamburger">&#9776;</button>
+    <div class="env-toggle">
+      <button class="env-btn active">CT</button>
+      <button class="env-btn">PD</button>
+    </div>
+    <span class="header-title"><img src="../SPWS-logo.png" alt="SPWS" style="height:19px; vertical-align:middle; margin-right:6px;">Kalendarz</span>
+    <select class="season-select"><option>SPWS-2025-2026 &#9679;</option></select>
+    <span class="spacer"></span>
+    <div class="lang-toggle">
+      <button class="lang-btn">&#127468;&#127463;</button>
+      <button class="lang-btn active">&#127477;&#127473;</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="mode-toggle">
+      <button class="mode-btn">PPW</button>
+      <button class="mode-btn active">+EVF</button>
+    </div>
+    <select class="time-select">
+      <option>Wszystkie</option>
+      <option>Minione</option>
+      <option>Przyszle</option>
+    </select>
+  </div>
+
+  <!-- Rolling progress: color-coded slots with city + carried icons -->
+  <div class="rolling-progress">
+    <div class="progress-label">Postep sezonu</div>
+    <div class="progress-slots">
+      <!-- PEW1 Budapest — completed, light blue -->
+      <div class="slot pew completed" title="PEW1 Budapest — biezacy sezon">
+        <span class="slot-code">PEW1</span>
+        <span class="slot-icon">&#10003;</span>
+        <span class="slot-city">Budapest</span>
+      </div>
+      <!-- PPW1 Konin — completed, green -->
+      <div class="slot ppw completed" title="PPW1 Konin — biezacy sezon">
+        <span class="slot-code">PPW1</span>
+        <span class="slot-icon">&#10003;</span>
+        <span class="slot-city">Konin</span>
+      </div>
+      <!-- PEW2 Madrid -->
+      <div class="slot pew completed">
+        <span class="slot-code">PEW2</span>
+        <span class="slot-icon">&#10003;</span>
+        <span class="slot-city">Madrid</span>
+      </div>
+      <!-- PPW2 Kielce -->
+      <div class="slot ppw completed">
+        <span class="slot-code">PPW2</span>
+        <span class="slot-icon">&#10003;</span>
+        <span class="slot-city">Kielce</span>
+      </div>
+      <!-- PEW3 Munich -->
+      <div class="slot pew completed">
+        <span class="slot-code">PEW3</span>
+        <span class="slot-icon">&#10003;</span>
+        <span class="slot-city">Munich</span>
+      </div>
+      <!-- PPW3 Wroclaw -->
+      <div class="slot ppw completed">
+        <span class="slot-code">PPW3</span>
+        <span class="slot-icon">&#10003;</span>
+        <span class="slot-city">Wroclaw</span>
+      </div>
+      <!-- PEW4 Guildford -->
+      <div class="slot pew completed">
+        <span class="slot-code">PEW4</span>
+        <span class="slot-icon">&#10003;</span>
+        <span class="slot-city">Guildford</span>
+      </div>
+      <!-- PPW4 Gdansk -->
+      <div class="slot ppw completed">
+        <span class="slot-code">PPW4</span>
+        <span class="slot-icon">&#10003;</span>
+        <span class="slot-city">Gdansk</span>
+      </div>
+      <!-- PEW5 Naples -->
+      <div class="slot pew completed">
+        <span class="slot-code">PEW5</span>
+        <span class="slot-icon">&#10003;</span>
+        <span class="slot-city">Naples</span>
+      </div>
+      <!-- PEW6 Stockholm -->
+      <div class="slot pew completed">
+        <span class="slot-code">PEW6</span>
+        <span class="slot-icon">&#10003;</span>
+        <span class="slot-city">Stockholm</span>
+      </div>
+      <!-- PEW7 Jablonna — future, empty -->
+      <div class="slot pew missing">
+        <span class="slot-code">PEW7</span>
+        <span class="slot-icon">&#8617;</span>
+        <span class="slot-city">Jablonna</span>
+      </div>
+      <!-- PPW5 — future event, not yet happened (lighter green) -->
+      <div class="slot ppw planned" title="PPW5 Warszawa — zaplanowane">
+        <span class="slot-code">PPW5</span>
+        <span class="slot-icon">&#8617;</span>
+        <span class="slot-city">Warszawa</span>
+      </div>
+      <!-- MPW — future event, not yet happened (lighter green) -->
+      <div class="slot mpw planned" title="MPW Pabianice — zaplanowane">
+        <span class="slot-code">MPW</span>
+        <span class="slot-icon">&#8617;</span>
+        <span class="slot-city">Pabianice</span>
+      </div>
+      <!-- PEW8 Salzburg — future -->
+      <div class="slot pew missing">
+        <span class="slot-code">PEW8</span>
+        <span class="slot-icon">&#8617;</span>
+        <span class="slot-city">Salzburg</span>
+      </div>
+      <!-- IMEW Cognac — carried from 2024-25 (biennial, silver+amber) -->
+      <div class="slot imew carried" title="IMEW — przeniesione z 2024-2025 (biennale)">
+        <span class="slot-code">IMEW</span>
+        <span class="slot-icon">&#8617;</span>
+        <span class="slot-city">Plovdiv '25</span>
+      </div>
+      <!-- MSW — FIE World Championships, future (gold) -->
+      <div class="slot msw missing" title="MSW — Mistrzostwa Swiata Weteranow">
+        <span class="slot-code">MSW</span>
+        <span class="slot-icon">&#8617;</span>
+        <span class="slot-city">Plovdiv</span>
+      </div>
+    </div>
+    <div class="progress-summary">
+      4/5 PPW + 6 PEW biezacych &middot; PPW5 + MPW + IMEW przeniesione &middot; MSW zaplanowane
+    </div>
+  </div>
+
+  <!-- Event cards — future first (descending date) -->
+  <div class="calendar-content">
+
+    <div class="month-header">&mdash; Pazdziernik 2026 &mdash;</div>
+
+    <!-- MSW — FIE World Championships, gold background -->
+    <div class="event-card msw">
+      <div class="event-top">
+        <span class="event-date">15.10</span>
+        <span class="event-name">Veterans World Championships 2026</span>
+      </div>
+      <div class="event-loc">Plovdiv, Bulgaria &middot; 18 turnieji</div>
+      <div class="event-weapons">Szpada + Floret + Szabla</div>
+      <div class="event-bottom">
+        <span class="status-badge status-planned">Zaplanowane</span>
+      </div>
+    </div>
+
+    <div class="month-header">&mdash; Czerwiec 2026 &mdash;</div>
+
+    <!-- MPW domestic -->
+    <div class="event-card ppw">
+      <div class="event-top">
+        <span class="event-date">07.06</span>
+        <span class="event-name">Mistrzostwa Polski Weteranow</span>
+      </div>
+      <div class="event-loc">Pabianice, Polska &middot; 10 turnieji</div>
+      <div class="event-bottom">
+        <span class="status-badge status-planned">Zaplanowane</span>
+      </div>
+    </div>
+
+    <div class="month-header">&mdash; Maj 2026 &mdash;</div>
+
+    <!-- PEW future -->
+    <div class="event-card pew">
+      <div class="event-top">
+        <span class="event-date">30.05</span>
+        <span class="event-name">EVF Circuit &mdash; Dublin</span>
+      </div>
+      <div class="event-loc">Dublin, Ireland &middot; 6 turnieji</div>
+      <div class="event-weapons">Szpada + Floret + Szabla</div>
+      <div class="event-bottom">
+        <span class="status-badge status-planned">Zaplanowane</span>
+      </div>
+    </div>
+
+    <!-- IMEW — silver background -->
+    <div class="event-card imew">
+      <div class="event-top">
+        <span class="event-date">14.05</span>
+        <span class="event-name">European Team Championships 2026</span>
+      </div>
+      <div class="event-loc">Cognac, France &middot; 12 turnieji</div>
+      <div class="event-weapons">Szpada + Floret + Szabla</div>
+      <div class="event-meta">
+        <a href="#" class="invitation-link">Komunikat organizatora &rarr;</a>
+        <span class="entry-fee">Oplata startowa: 450 EUR</span>
+      </div>
+      <div class="event-bottom">
+        <span class="status-badge status-planned">Zaplanowane</span>
+      </div>
+    </div>
+
+    <!-- PPW future — default white -->
+    <div class="event-card ppw">
+      <div class="event-top">
+        <span class="event-date">10.05</span>
+        <span class="event-name">V Puchar Polski Weteranow</span>
+      </div>
+      <div class="event-loc">Warszawa, Polska &middot; 30 turnieji</div>
+      <div class="event-bottom">
+        <span class="status-badge status-planned">Zaplanowane</span>
+      </div>
+    </div>
+
+    <div class="month-header">&mdash; Kwiecien 2026 &mdash;</div>
+
+    <!-- PEW future — light blue, scheduled -->
+    <div class="event-card pew">
+      <div class="event-top">
+        <span class="event-date">18.04</span>
+        <span class="event-name">EVF Circuit &mdash; Salzburg</span>
+      </div>
+      <div class="event-loc">Salzburg, Austria &middot; 4 turnieji</div>
+      <div class="event-weapons">Szpada + Floret</div>
+      <div class="event-meta">
+        <span class="entry-fee">Oplata startowa: 50 EUR</span>
+      </div>
+      <div class="event-bottom">
+        <span class="status-badge status-scheduled">Potwierdzone</span>
+      </div>
+    </div>
+
+    <div class="event-card pew">
+      <div class="event-top">
+        <span class="event-date">11.04</span>
+        <span class="event-name">EVF Circuit &mdash; Liege</span>
+      </div>
+      <div class="event-loc">Liege, Belgium &middot; 2 turnieji</div>
+      <div class="event-weapons">Szabla</div>
+      <div class="event-bottom">
+        <span class="status-badge status-scheduled">Potwierdzone</span>
+      </div>
+    </div>
+
+    <div class="month-header">&mdash; Marzec 2026 &mdash;</div>
+
+    <!-- PEW event — light blue background -->
+    <div class="event-card pew">
+      <div class="event-top">
+        <span class="event-date">14.03</span>
+        <span class="event-name">EVF Circuit &mdash; Stockholm</span>
+      </div>
+      <div class="event-loc">Stockholm, Sweden &middot; 4 turnieji</div>
+      <div class="event-weapons">Szpada + Floret</div>
+      <div class="event-meta">
+        <a href="#" class="results-link">Wyniki &rarr;</a>
+      </div>
+      <div class="event-bottom">
+        <span class="status-badge status-completed">Zakonczone</span>
+      </div>
+    </div>
+
+    <!-- PPW event — default white -->
+    <div class="event-card ppw">
+      <div class="event-top">
+        <span class="event-date">07.03</span>
+        <span class="event-name">IV Puchar Polski Weteranow</span>
+      </div>
+      <div class="event-loc">Gdansk, Polska &middot; 28 turnieji</div>
+      <div class="event-weapons">Szpada + Floret + Szabla</div>
+      <div class="event-meta">
+        <a href="#" class="results-link">Wyniki &rarr;</a>
+        <a href="#" class="invitation-link">Komunikat organizatora &rarr;</a>
+        <span class="entry-fee">Oplata startowa: 80 PLN</span>
+      </div>
+      <div class="event-bottom">
+        <span class="status-badge status-completed">Zakonczone</span>
+      </div>
+    </div>
+
+    <!-- Another PEW — light blue -->
+    <div class="event-card pew">
+      <div class="event-top">
+        <span class="event-date">07.03</span>
+        <span class="event-name">EVF Circuit &mdash; Naples</span>
+      </div>
+      <div class="event-loc">Palavesuvio, Italy &middot; 24 turnieji</div>
+      <div class="event-weapons">Szpada + Floret + Szabla</div>
+      <div class="event-meta">
+        <a href="#" class="results-link">Wyniki &rarr;</a>
+        <span class="entry-fee">Oplata startowa: 50 EUR</span>
+      </div>
+      <div class="event-bottom">
+        <span class="status-badge status-completed">Zakonczone</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><span class="legend-swatch" style="background:#e6f4ea; border:1px solid #b4dfbf;"></span> PPW/MPW &#10003;</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#f2faf5; border:1px solid #d0e8d6;"></span> PPW/MPW &mdash;</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#deedf8; border:1px solid #aed0ec;"></span> PEW (EVF)</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#faf3e0; border:1px solid #e8d5a0;"></span> IMEW/MEW/MSW (intl.)</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fff8e6; border:1px solid #f0d88a;"></span> Przeniesione &#8617;</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#f5f5f5; border:1px solid #ddd;"></span> Oczekujace &mdash;</div>
+  </div>
+</div>
+
+<!-- ==================== PPW MODE ==================== -->
+<div class="view-box">
+  <div class="view-label">PPW mode — domestic only (unchanged behavior)</div>
+
+  <div class="filter-bar">
+    <div class="mode-toggle">
+      <button class="mode-btn active">PPW</button>
+      <button class="mode-btn">+EVF</button>
+    </div>
+    <select class="time-select"><option>Wszystkie</option></select>
+  </div>
+
+  <div class="rolling-progress">
+    <div class="progress-label">Postep sezonu</div>
+    <div class="progress-slots">
+      <div class="slot ppw completed">
+        <span class="slot-code">PPW1</span>
+        <span class="slot-icon">&#10003;</span>
+        <span class="slot-city">Konin</span>
+      </div>
+      <div class="slot ppw completed">
+        <span class="slot-code">PPW2</span>
+        <span class="slot-icon">&#10003;</span>
+        <span class="slot-city">Kielce</span>
+      </div>
+      <div class="slot ppw completed">
+        <span class="slot-code">PPW3</span>
+        <span class="slot-icon">&#10003;</span>
+        <span class="slot-city">Wroclaw</span>
+      </div>
+      <div class="slot ppw completed">
+        <span class="slot-code">PPW4</span>
+        <span class="slot-icon">&#10003;</span>
+        <span class="slot-city">Gdansk</span>
+      </div>
+      <div class="slot ppw planned">
+        <span class="slot-code">PPW5</span>
+        <span class="slot-icon">&#8617;</span>
+        <span class="slot-city">Warszawa</span>
+      </div>
+      <div class="slot mpw planned">
+        <span class="slot-code">MPW</span>
+        <span class="slot-icon">&#8617;</span>
+        <span class="slot-city">Pabianice</span>
+      </div>
+    </div>
+    <div class="progress-summary">
+      4/5 PPW biezacych &middot; PPW5 + MPW zaplanowane
+    </div>
+  </div>
+
+  <div class="calendar-content">
+    <div class="month-header">&mdash; Marzec 2026 &mdash;</div>
+    <div class="event-card ppw">
+      <div class="event-top">
+        <span class="event-date">07.03</span>
+        <span class="event-name">IV Puchar Polski Weteranow</span>
+      </div>
+      <div class="event-loc">Gdansk, Polska &middot; 28 turnieji</div>
+      <div class="event-weapons">Szpada + Floret + Szabla</div>
+      <div class="event-meta">
+        <a href="#" class="results-link">Wyniki &rarr;</a>
+        <a href="#" class="invitation-link">Komunikat organizatora &rarr;</a>
+        <span class="entry-fee">Oplata startowa: 80 PLN</span>
+      </div>
+      <div class="event-bottom">
+        <span class="status-badge status-completed">Zakonczone</span>
+      </div>
+    </div>
+
+    <div class="month-header">&mdash; Maj 2026 &mdash;</div>
+    <div class="event-card ppw">
+      <div class="event-top">
+        <span class="event-date">10.05</span>
+        <span class="event-name">V Puchar Polski Weteranow</span>
+      </div>
+      <div class="event-loc">Warszawa, Polska &middot; 30 turnieji</div>
+      <div class="event-bottom">
+        <span class="status-badge status-planned">Zaplanowane</span>
+      </div>
+    </div>
+
+    <div class="month-header">&mdash; Czerwiec 2026 &mdash;</div>
+    <div class="event-card ppw">
+      <div class="event-top">
+        <span class="event-date">07.06</span>
+        <span class="event-name">Mistrzostwa Polski Weteranow</span>
+      </div>
+      <div class="event-loc">Pabianice, Polska &middot; 10 turnieji</div>
+      <div class="event-bottom">
+        <span class="status-badge status-planned">Zaplanowane</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-swatch" style="background:#e6f4ea; border:1px solid #b4dfbf;"></span> Zakonczone &#10003;</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#f2faf5; border:1px solid #d0e8d6;"></span> Zaplanowane &mdash;</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fff8e6; border:1px solid #f0d88a;"></span> Przeniesione &#8617;</div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>M11 changes from M10:</strong>
+  <ul style="margin-top:4px; padding-left:16px;">
+    <li><b>Slot boxes:</b> 3-line layout — code (top), icon (middle), city (bottom)</li>
+    <li><b>Slot colors by type:</b> PPW=green, PEW=light blue, IMEW/MEW/MSW/PSW=light gold</li>
+    <li><b>Carried-over &#8617; icon preserved</b> — amber background for domestic, type-tinted for international</li>
+    <li><b>Event cards:</b> PEW = light blue background + blue left border, IMEW/MEW/MSW/PSW = light gold + gold border</li>
+    <li><b>PPW mode unchanged</b> — green completed, amber carried, grey missing (same as M10)</li>
+    <li><b>All M10 elements preserved:</b> weapons, Wyniki/Komunikat links, entry fee, status badges, lang toggle, env toggle, progress summary</li>
+  </ul>
+</div>
+
+</body>
+</html>
