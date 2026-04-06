@@ -17,6 +17,7 @@ dependencies = [
     "xlrd>=2.0",
     "odfpy>=1.4",
     "supabase>=2.4",
+    "pypdf>=4.0",
 ]
 
 [project.optional-dependencies]

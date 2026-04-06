@@ -1674,3 +1674,4 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-025](adr/025-event-centric-ingestion-telegram.md) | Event-Centric Ingestion + Telegram Admin | FR-79–85, ADR-022/023/024 |
 | [ADR-026](adr/026-cert-prod-promotion.md) | CERT → PROD Event Promotion via Python | FR-86, ADR-025 |
 | [ADR-027](adr/027-full-season-seed-export.md) | Full-Season Seed Export from CERT | FR-88, FR-89, ADR-025/026 |
+| [ADR-028](adr/028-evf-calendar-results-import.md) | EVF Calendar + Results Import | FR-58, ADR-025 |
