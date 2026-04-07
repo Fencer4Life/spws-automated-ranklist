@@ -331,6 +331,47 @@ flowchart LR
 - Log levels: INFO for normal flow, WARNING for skipped fencers, ERROR for failures
 - Aggregated run summary (tournaments processed, fencers matched/skipped/created)
 
+### 2.9 Event Admin — Tournament Actions Wiring
+
+**FRs:** FR-53, FR-54
+**Depends on:** Pipeline Orchestration (2.1 ✓)
+
+The Event Admin accordion (EventManager.svelte) has 3 unwired buttons and 2 orphaned modal components.
+
+**Button wiring status:**
+
+| Button | UI Exists | App Handler | API Function | DB RPC | Status |
+|--------|-----------|-------------|--------------|--------|--------|
+| Add/Edit/Delete Event | ✓ | ✓ | ✓ | ✓ | **COMPLETE** |
+| Event Status Dropdown | ✓ | ✓ | ✓ | ✓ | **COMPLETE** |
+| Delete Tournament | ✓ | ✓ | ✓ | ✓ | **COMPLETE** |
+| **Import Tournament** | ✓ | ✗ | ✗ | — | **NOT WIRED** |
+| **Edit Tournament** | ✓ | ✗ | ✗ | — | **NOT WIRED** |
+
+**Orphaned components:**
+- `TournamentImportModal.svelte` — file upload UI (supports .xlsx, .xls, .json, .csv, .xml), fires `onimport(tournamentId, file)`. Never instantiated.
+- `EventImportModal.svelte` — batch import with tournament checklist, fires `onimport(tournamentIds[], file)`. Never instantiated.
+
+**What's needed:**
+
+1. **Import Tournament button → TournamentImportModal wiring:**
+   - `handleImportTournament(id, isReimport)` in App.svelte → opens TournamentImportModal
+   - `handleImportFile(tournamentId, file)` → uploads file to Supabase Storage → triggers `ingest.yml`
+   - Pass `onimporttournament` prop to EventManager
+   - Alternative: file upload goes directly to pipeline (no GHA, process in-browser via WASM)
+
+2. **Edit Tournament button → inline edit or modal:**
+   - `handleEditTournament(id)` in App.svelte → opens edit form/modal
+   - API: `updateTournament(id, params)` already exists in api.ts
+   - RPC: `fn_update_tournament` already exists in DB
+   - Only missing: UI handler + form/modal component
+
+3. **Event-level batch import (EventImportModal):**
+   - Wire EventImportModal into EventManager for batch import across all tournaments
+   - Handler: `handleImportEvent(tournamentIds, file)` → uploads ZIP → triggers pipeline
+
+**Estimated scope:** Medium — backend RPCs and API functions already exist for tournament CRUD. Main work is UI wiring + file upload flow.
+
 ## 3. Architecture
 
 ### 3.1 Dependency Graph
@@ -349,10 +390,12 @@ flowchart TD
     STRAT["2.6 Ingestion Strategy ✓"]:::done
     AUTO["2.7 Automated Pipeline ✓"]:::done
     OBS["2.8 Pipeline Observability"]:::ready
+    ADMIN["2.9 Event Admin\nTournament Actions"]:::ready
 
     ORCH --> IDRES
     ORCH --> URL
     ORCH --> FTL
+    ORCH --> ADMIN
     IDRES --> FTL
     FTL --> STRAT
     URL -.->|"fallback path"| STRAT
@@ -366,11 +409,12 @@ flowchart TD
 ### 3.2 Remaining Work
 
 ```
-2.3  URL Scraping Tab          — frontend "Z adresu URL" tab (fallback ingestion path)
-2.8  Pipeline Observability    — structured JSON logging + aggregated summaries
+2.3  URL Scraping Tab              — frontend "Z adresu URL" tab (fallback ingestion path)
+2.8  Pipeline Observability        — structured JSON logging + aggregated summaries
+2.9  Event Admin Tournament Actions — wire Import/Edit buttons + integrate import modals
 ```
 
-Items 2.1, 2.2, 2.4, 2.5, 2.6, 2.7 are complete. Only 2.3 and 2.8 remain as nice-to-haves.
+Items 2.1, 2.2, 2.4, 2.5, 2.6, 2.7 are complete. Items 2.3, 2.8, 2.9 remain.
 
 ## 4. Current Test Baseline
 
