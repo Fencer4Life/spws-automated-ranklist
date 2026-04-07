@@ -331,46 +331,36 @@ flowchart LR
 - Log levels: INFO for normal flow, WARNING for skipped fencers, ERROR for failures
 - Aggregated run summary (tournaments processed, fencers matched/skipped/created)
 
-### 2.9 Event Admin — Tournament Actions Wiring
+### 2.9 Event Admin — Tournament Actions Wiring — COMPLETE
 
 **FRs:** FR-53, FR-54
-**Depends on:** Pipeline Orchestration (2.1 ✓)
-
-The Event Admin accordion (EventManager.svelte) has 3 unwired buttons and 2 orphaned modal components.
+**ADR:** ADR-029
 
 **Button wiring status:**
 
-| Button | UI Exists | App Handler | API Function | DB RPC | Status |
-|--------|-----------|-------------|--------------|--------|--------|
+| Button | UI | Handler | API | DB | Status |
+|--------|----|---------|-----|-----|--------|
 | Add/Edit/Delete Event | ✓ | ✓ | ✓ | ✓ | **COMPLETE** |
 | Event Status Dropdown | ✓ | ✓ | ✓ | ✓ | **COMPLETE** |
-| Delete Tournament | ✓ | ✓ | ✓ | ✓ | **COMPLETE** |
-| **Import Tournament** | ✓ | ✗ | ✗ | — | **NOT WIRED** |
-| **Edit Tournament** | ✓ | ✗ | ✗ | — | **NOT WIRED** |
+| Delete Tournament (with confirm) | ✓ | ✓ | ✓ | ✓ | **COMPLETE** |
+| Edit Tournament (code/url/status) | ✓ | ✓ | ✓ | ✓ | **COMPLETE** |
+| Create Tournament | ✓ | ✓ | ✓ | ✓ | **COMPLETE** |
+| Import Tournament (URL scrape) | ✓ | ✓ | GHA | ✓ | **COMPLETE** |
 
-**Orphaned components:**
-- `TournamentImportModal.svelte` — file upload UI (supports .xlsx, .xls, .json, .csv, .xml), fires `onimport(tournamentId, file)`. Never instantiated.
-- `EventImportModal.svelte` — batch import with tournament checklist, fires `onimport(tournamentIds[], file)`. Never instantiated.
+**Implemented:**
+- Inline tournament edit form: code, url_results, import_status, status_reason
+- Tournament create form: weapon, gender, category, type, url
+- `fn_update_tournament` extended with `p_code` parameter (migration 20260407000001)
+- `scrape_tournament.py` — URL scrape → parse → fuzzy match → ingest glue
+- `scrape-tournament.yml` — GHA workflow for import
+- Telegram `t-scrape <tournament_code>` command (fallback for UI import)
+- Event URL 🔗 link visible in event row
+- Confirmation dialogs on delete (event + tournament)
+- Translated tooltips on all action buttons (PL + EN)
+- 2 pgTAP tests (10.25–10.26), 4 vitest tests (9.83–9.86), 4 pytest tests (3.17a–d)
 
-**What's needed:**
-
-1. **Import Tournament button → TournamentImportModal wiring:**
-   - `handleImportTournament(id, isReimport)` in App.svelte → opens TournamentImportModal
-   - `handleImportFile(tournamentId, file)` → uploads file to Supabase Storage → triggers `ingest.yml`
-   - Pass `onimporttournament` prop to EventManager
-   - Alternative: file upload goes directly to pipeline (no GHA, process in-browser via WASM)
-
-2. **Edit Tournament button → inline edit or modal:**
-   - `handleEditTournament(id)` in App.svelte → opens edit form/modal
-   - API: `updateTournament(id, params)` already exists in api.ts
-   - RPC: `fn_update_tournament` already exists in DB
-   - Only missing: UI handler + form/modal component
-
-3. **Event-level batch import (EventImportModal):**
-   - Wire EventImportModal into EventManager for batch import across all tournaments
-   - Handler: `handleImportEvent(tournamentIds, file)` → uploads ZIP → triggers pipeline
-
-**Estimated scope:** Medium — backend RPCs and API functions already exist for tournament CRUD. Main work is UI wiring + file upload flow.
+**Remaining (deferred):**
+- `TournamentImportModal.svelte` / `EventImportModal.svelte` — file upload modals exist but not integrated (file-based import via email/GAS is primary path)
 
 ## 3. Architecture
 
@@ -390,7 +380,7 @@ flowchart TD
     STRAT["2.6 Ingestion Strategy ✓"]:::done
     AUTO["2.7 Automated Pipeline ✓"]:::done
     OBS["2.8 Pipeline Observability"]:::ready
-    ADMIN["2.9 Event Admin\nTournament Actions"]:::ready
+    ADMIN["2.9 Event Admin\nTournament Actions ✓"]:::done
 
     ORCH --> IDRES
     ORCH --> URL
@@ -409,22 +399,21 @@ flowchart TD
 ### 3.2 Remaining Work
 
 ```
-2.3  URL Scraping Tab              — frontend "Z adresu URL" tab (fallback ingestion path)
-2.8  Pipeline Observability        — structured JSON logging + aggregated summaries
-2.9  Event Admin Tournament Actions — wire Import/Edit buttons + integrate import modals
+2.3  URL Scraping Tab          — frontend "Z adresu URL" tab (fallback, low priority)
+2.8  Pipeline Observability    — structured JSON logging (nice-to-have)
 ```
 
-Items 2.1, 2.2, 2.4, 2.5, 2.6, 2.7 are complete. Items 2.3, 2.8, 2.9 remain.
+Items 2.1–2.2, 2.4–2.7, 2.9 are complete. Only 2.3 and 2.8 remain as optional enhancements.
 
 ## 4. Current Test Baseline
 
 | Suite | Count | Files |
 |-------|-------|-------|
-| pgTAP | 234 | `supabase/tests/` (13 files) |
-| pytest | 263 | `python/tests/` (19 files) |
-| vitest | 197 | `frontend/tests/` (21 files) |
+| pgTAP | 236 | `supabase/tests/` (13 files) |
+| pytest | 267 | `python/tests/` (20 files) |
+| vitest | 201 | `frontend/tests/` (21 files) |
 | Playwright | 7 | `frontend/e2e/` (1 file) |
-| **Total** | **701** | |
+| **Total** | **711** | |
 
 ## 5. RTM Coverage Summary
 

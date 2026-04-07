@@ -110,6 +110,9 @@
               {/if}
             </span>
             <span class="event-cell actions">
+              {#if event.url_event}
+                <button data-field="event-import-btn" class="action-btn import-btn" title={t('tooltip_import_event')} onclick={() => { onimportevent(event.id_event) }}>⬇</button>
+              {/if}
               <button data-field="edit-btn" class="icon-btn" title={t('tooltip_edit_event')} onclick={() => { openEditForm(event) }}>&#9998;</button>
               <button data-field="delete-btn" class="icon-btn delete" title={t('tooltip_delete_event')} onclick={() => { if (confirm(t('confirm_delete_event'))) ondelete(event.id_event) }}>&#128465;</button>
             </span>
@@ -241,6 +244,7 @@
     onimporttournament = (_id: number, _isReimport: boolean) => {},
     onedittournament = (_id: number, _params: Record<string, unknown>) => {},
     oncreatetournament = (_eventId: number, _params: Record<string, unknown>) => {},
+    onimportevent = (_eventId: number) => {},
   }: {
     events?: CalendarEvent[]
     seasons?: Season[]
@@ -256,6 +260,7 @@
     onimporttournament?: (id: number, isReimport: boolean) => void
     onedittournament?: (id: number, params: Record<string, unknown>) => void
     oncreatetournament?: (eventId: number, params: Record<string, unknown>) => void
+    onimportevent?: (eventId: number) => void
   } = $props()
 
   let showForm = $state(false)
