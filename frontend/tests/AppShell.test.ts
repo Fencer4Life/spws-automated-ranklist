@@ -83,13 +83,19 @@ describe('App Shell (T8.4)', () => {
     expect(title?.querySelector('.header-logo')).not.toBeNull()
   })
 
-  // 8.37 — Season selector shared between both views
+  // 8.37 — Season selector in filter bar of both views (moved from header)
   it('keeps season selector visible in both views', async () => {
+    const { fetchSeasons } = await import('../src/lib/api')
+    vi.mocked(fetchSeasons).mockResolvedValue(MOCK_SEASONS)
     const { container } = renderApp()
+    await vi.waitFor(() => {
+      expect(container.querySelector('.season-select')).not.toBeNull()
+    })
+    await tick()
 
-    // Season selector present in ranklist view
-    const seasonSelector = container.querySelector('.season-selector')
-    expect(seasonSelector).not.toBeNull()
+    // Season select present in ranklist filter bar
+    const seasonSelect = container.querySelector('.season-select')
+    expect(seasonSelect).not.toBeNull()
 
     // Switch to calendar view
     const hamburger = container.querySelector('.hamburger-btn')
@@ -99,10 +105,11 @@ describe('App Shell (T8.4)', () => {
       el.textContent?.includes('Kalendarz'),
     )
     await fireEvent.click(calendarItem!)
+    await tick()
 
-    // Season selector still present
-    const seasonSelectorAfter = container.querySelector('.season-selector')
-    expect(seasonSelectorAfter).not.toBeNull()
+    // Season select still present in calendar filter bar
+    const seasonSelectAfter = container.querySelector('.season-select')
+    expect(seasonSelectAfter).not.toBeNull()
   })
 })
 
@@ -133,7 +140,7 @@ describe('Birth Year Subtitle (BY.1–BY.7)', () => {
     const result = renderApp(extraProps)
     // Wait for init() to complete: seasons loaded → options rendered
     await vi.waitFor(() => {
-      const options = result.container.querySelectorAll('.season-selector select option')
+      const options = result.container.querySelectorAll('.season-select option')
       expect(options.length).toBeGreaterThan(0)
     })
     await tick()
@@ -157,7 +164,7 @@ describe('Birth Year Subtitle (BY.1–BY.7)', () => {
   it('shows correct birth years for V0 with season ending 2026', async () => {
     const { container } = await renderWithSeasons()
     // Change category to V0
-    const categorySelect = container.querySelectorAll('.filter-bar select')[2]
+    const categorySelect = container.querySelectorAll('.filter-bar select')[3]
     await fireEvent.change(categorySelect, { target: { value: 'V0' } })
     await tick()
     const subtitle = container.querySelector('.category-subtitle')
@@ -168,7 +175,7 @@ describe('Birth Year Subtitle (BY.1–BY.7)', () => {
   it('shows open-ended range for V4 with "i starsi"', async () => {
     const { container } = await renderWithSeasons()
     // Change category to V4
-    const categorySelect = container.querySelectorAll('.filter-bar select')[2]
+    const categorySelect = container.querySelectorAll('.filter-bar select')[3]
     await fireEvent.change(categorySelect, { target: { value: 'V4' } })
     await tick()
     const subtitle = container.querySelector('.category-subtitle')
@@ -181,7 +188,7 @@ describe('Birth Year Subtitle (BY.1–BY.7)', () => {
     setLocale('en')
     const { container } = await renderWithSeasons()
     // Change category to V4 to test "and older"
-    const categorySelect = container.querySelectorAll('.filter-bar select')[2]
+    const categorySelect = container.querySelectorAll('.filter-bar select')[3]
     await fireEvent.change(categorySelect, { target: { value: 'V4' } })
     await tick()
     const subtitle = container.querySelector('.category-subtitle')
@@ -206,8 +213,9 @@ describe('Birth Year Subtitle (BY.1–BY.7)', () => {
     expect(subtitle?.textContent).toContain('1986, 1985, .. 1977')
 
     // Switch to season 2 (end year 2025)
-    const seasonSelect = container.querySelector('.season-selector select') as HTMLSelectElement
+    const seasonSelect = container.querySelector('.season-select') as HTMLSelectElement
     await fireEvent.change(seasonSelect, { target: { value: '2' } })
+    await tick()
     await tick()
 
     // V1 → 1985..1976

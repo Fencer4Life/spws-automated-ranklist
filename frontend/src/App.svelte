@@ -23,14 +23,6 @@
       <img src="SPWS-logo.png" alt="SPWS" class="header-logo" />
       {currentView === 'ranklist' ? t('app_title') : currentView === 'calendar' ? t('calendar_title') : currentView === 'admin_seasons' ? t('nav_admin_seasons') : currentView === 'admin_events' ? t('nav_admin_events') : currentView === 'admin_identities' ? t('nav_admin_identities') : currentView === 'admin_scoring' ? t('nav_admin_scoring') : t('app_title')}
     </h2>
-    <div class="season-selector">
-      <select bind:value={selectedSeasonId} onchange={handleSeasonChange}>
-        {#each seasons as s}
-          <option value={s.id_season}>{s.txt_code}{s.bool_active ? ' ' + t('season_active') : ''}</option>
-        {/each}
-      </select>
-      <label class="season-label">{t('season_label')}</label>
-    </div>
     <div class="header-right">
       <LangToggle />
     </div>
@@ -43,6 +35,9 @@
       category={filters.category}
       mode={filters.mode}
       {showEvfToggle}
+      {seasons}
+      bind:selectedSeasonId
+      onseasonchange={handleSeasonChange}
       onfilterchange={onFilterChange}
       onexport={handleMainExport}
     />
@@ -80,7 +75,7 @@
       onclose={closeDrilldown}
     />
   {:else if currentView === 'calendar'}
-    <CalendarView events={calendarEvents} {showEvfToggle} {isActiveSeason} />
+    <CalendarView events={calendarEvents} {showEvfToggle} {isActiveSeason} {seasons} bind:selectedSeasonId onseasonchange={handleSeasonChange} />
   {:else if currentView === 'admin_seasons'}
     <SeasonManager
       {seasons}
@@ -741,24 +736,6 @@
   .header-logo {
     height: 22px;
     width: auto;
-  }
-  .season-selector {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .season-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #555;
-    white-space: nowrap;
-  }
-  .season-selector select {
-    padding: 6px 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-    background: #fff;
   }
   .header-right {
     display: flex;

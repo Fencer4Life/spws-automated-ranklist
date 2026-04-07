@@ -1,5 +1,12 @@
 <div class="calendar-view">
   <div class="calendar-filters">
+    {#if seasons.length > 0}
+      <select class="season-select" bind:value={selectedSeasonId} onchange={onseasonchange}>
+        {#each seasons as s}
+          <option value={s.id_season}>{s.txt_code}{s.bool_active ? ' ' + t('season_active') : ''}</option>
+        {/each}
+      </select>
+    {/if}
     {#if showEvfToggle}
       <div class="scope-filters">
         <button
@@ -88,7 +95,7 @@
 </div>
 
 <script lang="ts">
-  import type { CalendarEvent, EventStatus, WeaponType } from '../lib/types'
+  import type { CalendarEvent, EventStatus, WeaponType, Season } from '../lib/types'
   import { t } from '../lib/locale.svelte'
 
   function weaponLabel(w: WeaponType): string {
@@ -107,10 +114,16 @@
     events = [] as CalendarEvent[],
     showEvfToggle = false,
     isActiveSeason = false,
+    seasons = [] as Season[],
+    selectedSeasonId = $bindable(null as number | null),
+    onseasonchange,
   }: {
     events?: CalendarEvent[]
     showEvfToggle?: boolean
     isActiveSeason?: boolean
+    seasons?: Season[]
+    selectedSeasonId?: number | null
+    onseasonchange?: () => void
   } = $props()
 
   let timeFilter: 'all' | 'past' | 'future' = $state('all')

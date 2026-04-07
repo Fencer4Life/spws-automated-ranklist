@@ -1,5 +1,15 @@
 <div class="filter-bar">
   <div class="filter-row">
+    {#if seasons.length > 0}
+      <label class="filter-group">
+        <span class="filter-label">{t('season_label')}</span>
+        <select class="season-select" bind:value={selectedSeasonId} onchange={onseasonchange}>
+          {#each seasons as s}
+            <option value={s.id_season}>{s.txt_code}{s.bool_active ? ' ' + t('season_active') : ''}</option>
+          {/each}
+        </select>
+      </label>
+    {/if}
     <label class="filter-group">
       <span class="filter-label">{t('weapon')}</span>
       <select bind:value={weapon} onchange={emitChange}>
@@ -53,7 +63,7 @@
 </div>
 
 <script lang="ts">
-  import type { WeaponType, GenderType, AgeCategory, RankingMode, Filters } from '../lib/types'
+  import type { WeaponType, GenderType, AgeCategory, RankingMode, Filters, Season } from '../lib/types'
   import { t } from '../lib/locale.svelte'
 
   let {
@@ -62,6 +72,9 @@
     category = 'V2' as AgeCategory,
     mode = 'PPW' as RankingMode,
     showEvfToggle = false,
+    seasons = [] as Season[],
+    selectedSeasonId = $bindable(null as number | null),
+    onseasonchange,
     onfilterchange,
     onexport,
   }: {
@@ -70,6 +83,9 @@
     category?: AgeCategory
     mode?: RankingMode
     showEvfToggle?: boolean
+    seasons?: Season[]
+    selectedSeasonId?: number | null
+    onseasonchange?: () => void
     onfilterchange?: (filters: Omit<Filters, 'season'>) => void
     onexport?: () => void
   } = $props()
