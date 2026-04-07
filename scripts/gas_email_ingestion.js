@@ -9,6 +9,8 @@
  * Setup (Script Properties):
  *   SUPABASE_URL           — Supabase project URL (CERT)
  *   SUPABASE_SERVICE_ROLE_KEY — service_role key (bypasses RLS)
+ *   SUPABASE_PROD_URL      — Supabase project URL (PROD)
+ *   SUPABASE_PROD_SERVICE_ROLE_KEY — PROD service_role key
  *   GITHUB_PAT             — GitHub personal access token (workflow_dispatch scope)
  *   GITHUB_REPO            — owner/repo (e.g. "Fencer4Life/spws-automated-ranklist")
  *   TELEGRAM_BOT_TOKEN     — Telegram bot token
@@ -291,6 +293,50 @@ function handleCommand(props, command, arg) {
       if (evfLines.length === 1) evfLines.push('\n<i>All past international events have results ✓</i>');
       return evfLines.join('\n');
 
+    // --- PROD read-only commands ---
+    case 'status-prod':
+      var prodUrl = props.getProperty('SUPABASE_PROD_URL');
+      var prodKey = props.getProperty('SUPABASE_PROD_SERVICE_ROLE_KEY');
+      var statusProd = callRpc(prodUrl, prodKey, 'fn_event_status', { p_prefix: arg });
+      return '<b>Event Status (PROD)</b>\n'
+        + '<pre>' + (statusProd.event_code || arg) + '</pre>\n'
+        + 'Status: <b>' + (statusProd.event_status || '—') + '</b>\n'
+        + 'Tournaments: <b>' + (statusProd.tournament_count || 0) + '</b>\n'
+        + 'Results: <b>' + (statusProd.result_count || 0) + '</b>\n'
+        + 'Pending: <b>' + (statusProd.pending_count || 0) + '</b>';
+
+    case 'results-prod':
+      var prodUrlR = props.getProperty('SUPABASE_PROD_URL');
+      var prodKeyR = props.getProperty('SUPABASE_PROD_SERVICE_ROLE_KEY');
+      var resProd = callRpc(prodUrlR, prodKeyR, 'fn_event_results_summary', { p_prefix: arg });
+      if (!resProd || resProd.length === 0) return '<b>Results (PROD)</b>\n<pre>' + arg + '</pre>\n<i>No tournaments found</i>';
+      var resProdLines = ['<b>Results (PROD)</b>\n<pre>' + arg + '</pre>'];
+      resProd.forEach(function(t) {
+        resProdLines.push('\n<b>' + t.category + ' ' + t.gender + ' ' + t.weapon + '</b>  (' + t.participants + ' fencers)');
+        if (t.top3) {
+          t.top3.forEach(function(f) {
+            resProdLines.push('  ' + f.place + '. ' + f.name);
+          });
+        }
+      });
+      return resProdLines.join('\n');
+
+    case 'evf-status-prod':
+      var prodUrlE = props.getProperty('SUPABASE_PROD_URL');
+      var prodKeyE = props.getProperty('SUPABASE_PROD_SERVICE_ROLE_KEY');
+      var evfProd = callRpc(prodUrlE, prodKeyE, 'fn_season_overview', {});
+      if (!evfProd || evfProd.length === 0) return '<b>EVF Status (PROD)</b>\n<i>No events</i>';
+      var todayP = new Date().toISOString().slice(0, 10);
+      var evfProdLines = ['<b>EVF Status (PROD)</b>\n<i>International events missing results:</i>'];
+      evfProd.forEach(function(e) {
+        if (e.is_international && e.dt_end && e.dt_end < todayP && e.result_count === 0) {
+          evfProdLines.push('\n<pre>' + e.event_code + '</pre>');
+          evfProdLines.push(e.event_name + '  |  ' + (e.dt_start || '') + '  |  0 results');
+        }
+      });
+      if (evfProdLines.length === 1) evfProdLines.push('\n<i>All past international events have results ✓</i>');
+      return evfProdLines.join('\n');
+
     // --- URL Population + Scraping ---
     case 'populate-urls':
       var githubPatPU = props.getProperty('GITHUB_PAT');
@@ -382,7 +428,18 @@ function handleCommand(props, command, arg) {
         'Fetch + import results from EVF API',
         '',
         '<pre>evf-status</pre>',
-        'Show past intl events missing results',
+        'Show past intl events missing results (CERT)',
+        '',
+        '<b><u>PROD</u></b>',
+        '',
+        '<pre>status-prod &lt;event&gt;</pre>',
+        'Event status on PROD',
+        '',
+        '<pre>results-prod &lt;event&gt;</pre>',
+        'Results summary on PROD',
+        '',
+        '<pre>evf-status-prod</pre>',
+        'Intl events missing results on PROD',
         '',
         '<b><u>URLs</u></b>',
         '',
