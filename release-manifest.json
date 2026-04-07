@@ -21,9 +21,9 @@
   },
   "deployed": {
     "cert": {
-      "at": "2026-04-06T15:36:11Z",
-      "sha": "7e2a20ffea91c06cdce851669d3043bf8cd19f33",
-      "schema_fingerprint": "f09f2cd3f1011c7b150ad1108792bdee"
+      "at": "2026-04-07T16:51:56Z",
+      "sha": "8f33b7e5d7d83dbf10cccd21c04509b8bbcfc5d0",
+      "schema_fingerprint": "38cd8e4211cda5dfe04ee1f08c5ee501"
     },
     "prod": {
       "at": "2026-04-06T15:36:32Z",
