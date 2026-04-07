@@ -74,7 +74,7 @@ def read_cert_event(
     tourn_rows = query_fn(
         f"SELECT id_tournament, txt_code, enum_type::TEXT, enum_weapon::TEXT, "
         f"enum_gender::TEXT, enum_age_category::TEXT, dt_tournament::TEXT, "
-        f"int_participant_count "
+        f"int_participant_count, url_results "
         f"FROM tbl_tournament WHERE id_event = {event_id} ORDER BY txt_code"
     )
 
@@ -203,6 +203,14 @@ def promote_event(
                 results=results,
                 query_fn=prod_query_fn,
             )
+
+            # Copy url_results if set on CERT
+            if tourn.get("url_results"):
+                url_escaped = tourn["url_results"].replace("'", "''")
+                prod_query_fn(
+                    f"UPDATE tbl_tournament SET url_results = '{url_escaped}' "
+                    f"WHERE id_tournament = {prod_tid}"
+                )
 
             promoted += 1
             total_results += len(results)
