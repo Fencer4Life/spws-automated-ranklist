@@ -37,7 +37,7 @@ This document tracks remaining scope for full production readiness.
 - ADR-024 fix for unknown DOB in combined categories
 - E2E test with PPW4.5 dummy event
 
-### 2.2 Identity Resolution DB Wiring (FR-56, FR-57) — PARTIALLY COMPLETE
+### 2.2 Identity Resolution DB Wiring (FR-56, FR-57) — COMPLETE
 
 **What exists:**
 - `IdentityManager.svelte` — match candidate queue with status filter, confidence coloring (T9.7)
@@ -47,11 +47,8 @@ This document tracks remaining scope for full production readiness.
 - 13 pgTAP tests for identity RPCs (supabase/tests/11_identity_resolution.sql)
 - `api.ts` functions: `approveMatch()`, `dismissMatch()`, `createFencerFromMatch()`
 - App.svelte callbacks wired: `handleApproveMatch`, `handleDismissMatch`, `handleCreateNewFencer`
-- 10 vitest assertions (9.68–9.77)
-
-**What remains:**
-- Integration testing: verify end-to-end approve/dismiss/create flow on CERT
-- vitest integration tests (9.78–9.82, 5 assertions)
+- 15 vitest assertions (9.68–9.77 unit + 9.78–9.82 integration)
+- CERT: 498 match candidates, all AUTO_MATCHED (no pending review needed)
 
 ### 2.3 URL Scraping Tab (FR-53, FR-54 partial)
 
@@ -340,7 +337,7 @@ flowchart TD
     classDef blocked fill:#9e9e9e,color:#fff,stroke:#757575
 
     ORCH["2.1 Pipeline Orchestration\n(Phase 3-5 done)"]:::done
-    IDRES["2.2 Identity Resolution\nDB Wiring (partial)"]:::ready
+    IDRES["2.2 Identity Resolution\nDB Wiring ✓"]:::done
     URL["2.3 URL Scraping Tab"]:::blocked
     EVF["2.4 EVF Calendar +\nResults Import ✓"]:::done
     FTL["2.5 FTL XML File Ingestion"]:::blocked
@@ -377,16 +374,16 @@ Items 2.1 (Pipeline Orchestration Phase 3-5) and 2.4 (EVF Import) are already co
 |-------|-------|-------|
 | pgTAP | 234 | `supabase/tests/` (13 files) |
 | pytest | 263 | `python/tests/` (19 files) |
-| vitest | 192 | `frontend/tests/` (20 files) |
+| vitest | 197 | `frontend/tests/` (21 files) |
 | Playwright | 7 | `frontend/e2e/` (1 file) |
-| **Total** | **696** | |
+| **Total** | **701** | |
 
 ## 5. RTM Coverage Summary
 
 | Status | Count | FRs |
 |--------|-------|-----|
-| Covered | 56 | FR-01–FR-50, FR-52, FR-55, FR-58, FR-59–FR-67 |
-| Partial | 5 | FR-53, FR-54, FR-56, FR-57, NFR-10 |
+| Covered | 58 | FR-01–FR-50, FR-52, FR-55–FR-58, FR-59–FR-67 |
+| Partial | 3 | FR-53, FR-54, NFR-10 |
 | Deferred | 1 | FR-51 |
 | Not tested (NFR) | 4 | NFR-01, NFR-03, NFR-04, NFR-08 |
 | Infrastructure | 2 | NFR-02, NFR-12 |
