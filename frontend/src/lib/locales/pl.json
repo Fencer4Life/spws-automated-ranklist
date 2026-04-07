@@ -204,5 +204,14 @@
   "month_9": "Wrzesień",
   "month_10": "Październik",
   "month_11": "Listopad",
-  "month_12": "Grudzień"
+  "month_12": "Grudzień",
+
+  "tooltip_edit_event": "Edytuj wydarzenie",
+  "tooltip_delete_event": "Usuń wydarzenie",
+  "tooltip_import_tournament": "Importuj wyniki z URL",
+  "tooltip_edit_tournament": "Edytuj turniej",
+  "tooltip_delete_tournament": "Usuń turniej",
+  "tooltip_add_tournament": "Dodaj turniej",
+  "confirm_delete_event": "Usunąć wydarzenie i wszystkie turnieje?",
+  "confirm_delete_tournament": "Usunąć turniej i wyniki?"
 }

@@ -204,5 +204,14 @@
   "month_9": "September",
   "month_10": "October",
   "month_11": "November",
-  "month_12": "December"
+  "month_12": "December",
+
+  "tooltip_edit_event": "Edit event",
+  "tooltip_delete_event": "Delete event",
+  "tooltip_import_tournament": "Import results from URL",
+  "tooltip_edit_tournament": "Edit tournament",
+  "tooltip_delete_tournament": "Delete tournament",
+  "tooltip_add_tournament": "Add tournament",
+  "confirm_delete_event": "Delete event and all tournaments?",
+  "confirm_delete_tournament": "Delete tournament and results?"
 }

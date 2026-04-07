@@ -107,8 +107,8 @@
               {/if}
             </span>
             <span class="event-cell actions">
-              <button data-field="edit-btn" class="icon-btn" onclick={() => { openEditForm(event) }}>&#9998;</button>
-              <button data-field="delete-btn" class="icon-btn delete" onclick={() => { ondelete(event.id_event) }}>&#128465;</button>
+              <button data-field="edit-btn" class="icon-btn" title={t('tooltip_edit_event')} onclick={() => { openEditForm(event) }}>&#9998;</button>
+              <button data-field="delete-btn" class="icon-btn delete" title={t('tooltip_delete_event')} onclick={() => { if (confirm(t('confirm_delete_event'))) ondelete(event.id_event) }}>&#128465;</button>
             </span>
           </div>
 
@@ -123,9 +123,9 @@
                   <span data-field="tourn-import-status" class="tourn-cell import-badge {importStatusClass(tourn.enum_import_status)}">{tourn.enum_import_status}</span>
                   <span data-field="tourn-participants" class="tourn-cell">{tourn.int_participant_count ?? '—'}</span>
                   <span class="tourn-cell actions">
-                    <button data-field="tourn-import-btn" class="action-btn import-btn" onclick={() => { onimporttournament(tourn.id_tournament, tourn.enum_import_status !== 'PLANNED') }}>⬇</button>
-                    <button data-field="tourn-edit-btn" class="icon-btn" onclick={() => { onedittournament(tourn.id_tournament) }}>&#9998;</button>
-                    <button data-field="tourn-delete-btn" class="icon-btn delete" onclick={() => { ondeletetournament(tourn.id_tournament) }}>&#128465;</button>
+                    <button data-field="tourn-import-btn" class="action-btn import-btn" title={t('tooltip_import_tournament')} onclick={() => { onimporttournament(tourn.id_tournament, tourn.enum_import_status !== 'PLANNED') }}>⬇</button>
+                    <button data-field="tourn-edit-btn" class="icon-btn" title={t('tooltip_edit_tournament')} onclick={() => { onedittournament(tourn.id_tournament) }}>&#9998;</button>
+                    <button data-field="tourn-delete-btn" class="icon-btn delete" title={t('tooltip_delete_tournament')} onclick={() => { if (confirm(t('confirm_delete_tournament'))) ondeletetournament(tourn.id_tournament) }}>&#128465;</button>
                   </span>
                 </div>
               {/each}
