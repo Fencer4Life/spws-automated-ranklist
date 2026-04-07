@@ -1,11 +1,14 @@
 <div class="calendar-view">
   <div class="calendar-filters">
     {#if seasons.length > 0}
-      <select class="season-select" bind:value={selectedSeasonId} onchange={onseasonchange}>
-        {#each seasons as s}
-          <option value={s.id_season}>{s.txt_code}{s.bool_active ? ' ' + t('season_active') : ''}</option>
-        {/each}
-      </select>
+      <label class="filter-group">
+        <span class="filter-label">{t('season_label')}</span>
+        <select class="season-select" bind:value={selectedSeasonId} onchange={onseasonchange}>
+          {#each seasons as s}
+            <option value={s.id_season}>{s.txt_code}{s.bool_active ? ' ' + t('season_active') : ''}</option>
+          {/each}
+        </select>
+      </label>
     {/if}
     {#if showEvfToggle}
       <div class="scope-filters">
@@ -19,14 +22,6 @@
           class:active={scopeFilter === 'all'}
           onclick={() => { scopeFilter = 'all' }}
         >+EVF</button>
-      </div>
-    {/if}
-    {#if dualEnv}
-      <div class="env-toggle">
-        <button class="env-btn" class:active={activeEnv === 'CERT'}
-          onclick={() => { activeEnv = 'CERT' }}>CT</button>
-        <button class="env-btn" class:active={activeEnv === 'PROD'}
-          onclick={() => { activeEnv = 'PROD' }}>PD</button>
       </div>
     {/if}
     <select class="time-filter-select" bind:value={timeFilter}>
@@ -99,6 +94,17 @@
 
   {#if filteredEvents.length === 0}
     <div class="no-events">{t('no_results')}</div>
+  {/if}
+
+  {#if dualEnv}
+    <div class="env-footer">
+      <div class="env-toggle">
+        <button class="env-btn" class:active={activeEnv === 'CERT'}
+          onclick={() => { activeEnv = 'CERT' }}>CT</button>
+        <button class="env-btn" class:active={activeEnv === 'PROD'}
+          onclick={() => { activeEnv = 'PROD' }}>PD</button>
+      </div>
+    </div>
   {/if}
 </div>
 
@@ -248,9 +254,29 @@
   .calendar-view {
     padding: 0;
   }
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .filter-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #666;
+    letter-spacing: 0.5px;
+  }
+  .season-select {
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    background: #fff;
+    cursor: pointer;
+  }
   .calendar-filters {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 12px;
     padding: 8px 0;
     flex-wrap: wrap;
@@ -276,6 +302,11 @@
   .scope-filter-btn.active {
     background: #4a90d9;
     color: #fff;
+  }
+  .env-footer {
+    display: flex;
+    justify-content: center;
+    padding: 16px 0;
   }
   .env-toggle {
     display: flex;
