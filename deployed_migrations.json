@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-04-06T15:36:11Z",
-    "last_sha": "7e2a20ffea91c06cdce851669d3043bf8cd19f33",
+    "last_updated": "2026-04-07T16:51:56Z",
+    "last_sha": "8f33b7e5d7d83dbf10cccd21c04509b8bbcfc5d0",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -40,9 +40,10 @@
       "20260406000005_ranking_domestic_only.sql",
       "20260406000006_fix_carryover_in_progress.sql",
       "20260406000007_fn_season_summary.sql",
-      "20260406000008_evf_import_rpc.sql"
+      "20260406000008_evf_import_rpc.sql",
+      "20260407000001_update_tournament_code.sql"
     ],
-    "schema_fingerprint": "f09f2cd3f1011c7b150ad1108792bdee"
+    "schema_fingerprint": "38cd8e4211cda5dfe04ee1f08c5ee501"
   },
   "prod": {
     "last_updated": "2026-04-06T15:36:32Z",
