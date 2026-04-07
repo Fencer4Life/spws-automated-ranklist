@@ -322,10 +322,10 @@ To manage complexity, the system will be built iteratively, ensuring value is de
 
 - **Historical Snapshots:** At end-of-season, save a static JSON snapshot of the final rankings, preserving history immutably before the new season begins.
 
-## 8. Detailed Scoring Mathematics (Derived from Legacy Excel)
+## 8. Detailed Scoring Mathematics
 
-> **Source:** Analysis of `SZPADA-2-2024-2025.xlsx` (Men's Epee Cat.2 / 50+).
-> These formulas must be faithfully reproduced by the scoring engine (`fn_calc_tournament_scores`).
+> **Scoring method:** Originally developed by **British Veterans Fencing (BVF)** and adopted by the **European Veterans Fencing (EVF)** ranking system. The same method is used by the Polish Veterans Fencing Association (SPWS) for domestic and international rankings.
+> These formulas are faithfully reproduced by the scoring engine (`fn_calc_tournament_scores`).
 
 ### 8.1 Per-Tournament Score Components
 
