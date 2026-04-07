@@ -1,70 +1,56 @@
 # Go-to-PROD Plan — SPWS Automated Ranklist System
 
 **Status:** In Progress
-**Date:** 2026-04-05 (updated)
+**Date:** 2026-04-07 (updated)
 **Predecessor:** [MVP Development Plan](MVP_development_plan.md) (M8–M10, completed 2026-04-04)
 
 ## 1. Overview
 
-The MVP phase delivered 544 test assertions across 3 milestones (M8, M9, M10), covering:
-- All 30 sub-rankings with rolling score for active season
-- Admin auth (Supabase Auth + TOTP MFA), CRUD UI for seasons/events/tournaments
-- Identity resolution admin UI (frontend only), file import parsers
-- Calendar view, scoring config editor, seed generator tooling (ADR-019, ADR-020)
-- Release pipeline: LOCAL → CERT → PROD with schema fingerprinting
+The MVP phase delivered all 30 sub-rankings with rolling score, admin auth, CRUD UI, calendar view, and a release pipeline (LOCAL → CERT → PROD). Post-MVP work has added:
 
-This document tracks scope deferred from MVP that is required for full production readiness.
+- **EVF Calendar + Results Import** (ADR-028) — automated scraping of veteransfencing.eu via JSON API
+- **Event-centric ingestion pipeline** (ADR-025) — Telegram-driven, atomic per-tournament
+- **CERT → PROD promotion** (ADR-026) — schema fingerprint verification
+- **Calendar UI color coding** — PEW (blue), IMEW/MEW/MSW/PSW (gold), 3-line slot boxes with city
+
+This document tracks remaining scope for full production readiness.
 
 ## 2. Deferred Scope
 
-Items below were originally planned for M9b but deferred to keep the MVP focused on what's deployed and working.
-
-### 2.1 Pipeline Orchestration (T9.11) — PHASE 3 COMPLETE, PHASE 5-8 IN PROGRESS
+### 2.1 Pipeline Orchestration (T9.11) — PHASE 3-5 COMPLETE
 
 **FRs:** FR-51, FR-70–78 (Phase 3), FR-79–85 (Phase 5-8)
 **ADRs:** ADR-022, ADR-023, ADR-024, ADR-025 (event-centric ingestion + Telegram admin)
-**Depends on:** File import parsers (T9.10, done), CRUD SQL (T9.1, done), scrapers (POC, done)
 
-End-to-end flow: parse uploaded file → fuzzy match against master fencer list → insert results → call `fn_calc_tournament_scores`. Must run in a single DB transaction per ADR-014 (delete + reimport).
-
-**What exists:**
-- `python/scrapers/` — FTL, Engarde, 4Fence, CSV upload scrapers (all tested)
-- `python/matcher/pipeline.py` — scrape + match pipeline with domestic/international rules
-- `python/matcher/fuzzy_match.py` — RapidFuzz matching, alias support, disambiguation
-- `python/file_import/` — .xlsx/.xls/.json/.csv parsers (T9.10)
-- CRUD SQL functions with SECURITY DEFINER (T9.1)
-
-**Phase 3 (COMPLETE — 2026-04-05):**
+**What's implemented:**
 - `fn_ingest_tournament_results` — atomic delete+insert+score (ADR-022)
 - `python/pipeline/` — orchestrator, db_connector, storage_handler, ingest_cli
 - `python/pipeline/notifications.py` — TelegramNotifier (13 use cases)
+- `python/pipeline/export_seed.py` — CERT seed export with retry logic
+- `python/pipeline/promote.py` — CERT → PROD promotion with stale data cleanup
 - GAS email polling → Supabase Storage → GitHub Actions ingest workflow
-- 594 total assertions (199 pgTAP + 222 pytest + 173 vitest)
-- PPW4 Gdańsk data successfully ingested into CERT
+- Telegram command interface (16+ commands including `ingest`, `seed-export`, `promote`)
+- PPW4 Gdańsk data ingested end-to-end into CERT and promoted to PROD
 
-**Phase 5-8 (IN PROGRESS — ADR-025):**
-- Event-centric ingestion: match XML → existing event → create tournaments on-the-fly
-- Event lifecycle: PLANNED → IN_PROGRESS → COMPLETED with rollback
-- Telegram command interface (16 commands)
-- CERT → PROD promotion via Telegram
-- ADR-024 PENDING fix for unknown DOB
-- Admin UI: tournament management accordion + identity resolution
+**What remains:**
+- Phase 6-8: event lifecycle transitions (PLANNED → IN_PROGRESS → COMPLETED)
+- ADR-024 fix for unknown DOB in combined categories
 - E2E test with PPW4.5 dummy event
 
-### 2.2 Identity Resolution DB Wiring (FR-56, FR-57)
+### 2.2 Identity Resolution DB Wiring (FR-56, FR-57) — PARTIALLY COMPLETE
 
 **What exists:**
 - `IdentityManager.svelte` — match candidate queue with status filter, confidence coloring (T9.7)
 - `DisambiguationModal.svelte` — fencer selection with radio buttons, birth year display (T9.7)
-- `pipeline.py` — `approve_match`, `dismiss_match`, `create_new_fencer` pure functions (M4)
-- 10 vitest assertions (9.68–9.77) for UI behavior
+- `fn_approve_match`, `fn_dismiss_match`, `fn_create_fencer_from_match` RPCs (migration 20260406000003)
+- `vw_match_candidates` view (migration 20260406000004)
+- 13 pgTAP tests for identity RPCs (supabase/tests/11_identity_resolution.sql)
+- `api.ts` functions: `approveMatch()`, `dismissMatch()`, `createFencerFromMatch()`
+- App.svelte callbacks wired: `handleApproveMatch`, `handleDismissMatch`, `handleCreateNewFencer`
+- 10 vitest assertions (9.68–9.77)
 
-**What's needed:**
-- ~~DB persistence for admin actions~~ — Done: `fn_approve_match`, `fn_dismiss_match`, `fn_create_fencer_from_match` (migration 20260406000003)
-- ~~Match candidate query~~ — Done: `vw_match_candidates` (migration 20260406000004)
-- Wire `onapprove`, `oncreatenew`, `ondismiss` callbacks to Supabase RPC via `api.ts`
-- Add 3 API functions: `approveMatch()`, `dismissMatch()`, `createFencerFromMatch()`
-- pgTAP tests for 3 RPCs (11.1–11.12, 12 assertions)
+**What remains:**
+- Integration testing: verify end-to-end approve/dismiss/create flow on CERT
 - vitest integration tests (9.78–9.82, 5 assertions)
 
 ### 2.3 URL Scraping Tab (FR-53, FR-54 partial)
@@ -80,20 +66,30 @@ End-to-end flow: parse uploaded file → fuzzy match against master fencer list 
 
 ### 2.4 EVF Calendar + Results Import (FR-58) — COMPLETE
 
-**ADR-028:** Two data sources — calendar HTML (past+future) and JSON API (`api.veteransfencing.eu/fe`).
+**ADR-028:** Two data sources from veteransfencing.eu — calendar HTML and JSON API.
 
 **Implemented:**
-- `python/scrapers/evf_calendar.py` — calendar HTML parser (past+future, fee/URL extraction)
-- `python/scrapers/evf_results.py` — `EvfApiClient` (JSON API), `scrape_event_results()`, event discovery by ID scan
+- `python/scrapers/evf_calendar.py` — calendar HTML parser (past+future pages, dedup by date+name)
+- `python/scrapers/evf_results.py` — `EvfApiClient` (JSON API at `api.veteransfencing.eu/fe`)
+  - Event discovery via `/events/competitions` endpoint (scans API IDs)
+  - Results via POST with `{path, nonce, model}` body
+  - Category mapping: EVF Cat 1-4 = SPWS V1-V4 (skip V0), team events metadata only
 - `python/scrapers/evf_sync.py` — full season orchestrator with `--dry-run` mode
-- `fn_import_evf_events()` — bulk event creation with child tournaments
+  - `sync_calendar()` — scrape → dedup → create events
+  - `sync_results()` — discover API events → scrape → fuzzy match (diacritic folding) → ingest
+- `fn_import_evf_events()` — bulk event+tournament creation (migration 20260406000008)
 - `.github/workflows/evf-sync.yml` — cron every 3 days + manual dispatch
-- Telegram commands: `evf-import`, `evf-results`, `evf-status`
-- Fuzzy matching with diacritic folding against full SPWS fencer DB
+- Telegram commands: `evf-cal-import`, `evf-results-import <event>`, `evf-status`
 - 10 pytest + 4 pgTAP tests
-- **E2E validated:** 7 events scraped, 64 results ingested, 2 new events created
-- Admin review modal (checklist with dedup warnings)
-- Tests: scraper unit tests, dedup logic, integration
+- **E2E validated:** 7 events scraped, 64 results ingested, 2 new events created on CERT
+
+**Calendar UI (M11):**
+- Color-coded event cards: PEW = light blue bg + blue left border, IMEW/MEW/MSW/PSW = light gold + gold border
+- 3-line slot boxes in rolling progress: code/icon/city, type-colored
+- PPW/MPW: solid green (completed) vs lighter green (future) with 📅 icon
+- Card layout with proper borders/border-radius (replaced timeline dot layout)
+- Mockup: `doc/mockups/m11_calendar_evf_colors.html`
+- 6 new vitest tests (11.1–11.6)
 
 ### 2.5 FencingTime Live XML File Ingestion
 
@@ -199,7 +195,7 @@ Some tournaments combine age categories (e.g., `v0v1` = V0 + V1 fencing together
 
 ### 2.6 Ingestion Strategy — Calendar-Driven Triggers
 
-Our calendar (`tbl_event` / `tbl_tournament`) is the source of truth. Excel files are retired from the active pipeline — all new results come in via FTL XML file import or URL scraping.
+Our calendar (`tbl_event` / `tbl_tournament`) is the source of truth. Excel files are retired from the active pipeline — all new results come in via FTL XML file import, URL scraping, or EVF API import.
 
 A daily scheduled GitHub Actions cron job (e.g., 08:00 UTC) queries for overdue tournaments:
 
@@ -241,21 +237,30 @@ flowchart TD
 | 4 | Telegram alert to admin: "Results not received for [event]. Check email or provide URL." |
 | 4+ | Admin either forwards the missing files or provides the FTL results URL as fallback. |
 
-#### 2.6.2 International PEW/MEW — URL Scraping Only
+#### 2.6.2 International PEW/MEW/IMEW/MSW — EVF API (Primary) + URL Scraping (Fallback)
 
-SPWS does not organize these. No XML files will arrive. Results are published on external platforms (FTL, Engarde, or 4Fence).
+SPWS does not organize these. Results are available via two channels:
+
+**Primary: EVF JSON API** (implemented — ADR-028)
+- Automated via `evf-sync.yml` cron (every 3 days) or manual Telegram `evf-results-import`
+- Scrapes `api.veteransfencing.eu/fe` for individual results
+- Fuzzy matches against full SPWS fencer DB with diacritic folding
+- Only ingests Polish fencer results (international rules from ADR-025)
+
+**Fallback: URL scraping** (for events not on EVF, or if API fails)
+- Admin provides results URL via Telegram or URL Scraping Tab
+- FTL / Engarde / 4Fence auto-detection
 
 ```mermaid
 flowchart TD
-    CRON["Daily cron: overdue PENDING\nPEW/MEW tournaments"] --> CHECK_URL{"Results URL\nknown?"}
-    CHECK_URL -->|"Yes"| SCRAPE["Auto-scrape from\nknown platform URL"]
-    CHECK_URL -->|"No"| CHECK_EVF["Check EVF event page\nfor results link"]
-    CHECK_EVF -->|"Link found"| SCRAPE
-    CHECK_EVF -->|"No link yet, day 1–7"| WAIT["Wait — results may not be published yet"]
-    CHECK_EVF -->|"No link, day 8+"| ALERT["Telegram alert:\n'MEW Budapest results not found.\nProvide URL?'"]
-    ALERT --> ADMIN_URL["Admin provides URL\nvia URL Scraping Tab"]
-    ADMIN_URL --> SCRAPE
-    SCRAPE --> MATCH["Fuzzy match fencers\n(international rules: skip unknowns)"]
+    CRON["Daily cron: overdue PENDING\nPEW/MEW tournaments"] --> CHECK_EVF{"EVF API\nhas results?"}
+    CHECK_EVF -->|"Yes"| EVF_SCRAPE["EVF API scrape\n(evf_sync.py)"]
+    CHECK_EVF -->|"No, day 0–7"| WAIT["Wait — results may not be published yet"]
+    CHECK_EVF -->|"No, day 8+"| ALERT["Telegram alert:\n'PEW5 Naples results not found.\nProvide URL?'"]
+    ALERT --> ADMIN_URL["Admin provides URL\nor triggers evf-results-import"]
+    ADMIN_URL --> FALLBACK["URL Scraping\n(FTL / Engarde / 4Fence)"]
+    EVF_SCRAPE --> MATCH["Fuzzy match fencers\n(international rules: skip unknowns)"]
+    FALLBACK --> MATCH
     MATCH --> IMPORT["Insert results + score\n(txn per ADR-014)"]
     IMPORT --> DONE["enum_import_status = 'IMPORTED'\n+ Telegram summary"]
 ```
@@ -264,9 +269,18 @@ flowchart TD
 | Day | Action |
 |-----|--------|
 | 0 | Event takes place abroad. |
-| 1–7 | Daily check: look for results URL in `tbl_event` or on EVF event page. If found → auto-scrape. |
-| 8 | Telegram alert to admin: "Results not found for [event]. Provide URL?" |
-| 8+ | Admin pastes URL into URL Scraping Tab → scrape → import (international rules: skip unknown fencers). |
+| 1–2 | Wait for results to appear on EVF. |
+| 3 | EVF cron runs `evf-sync.yml` — checks API for results. If found → auto-import. |
+| 3–7 | If not found, next cron run retries. |
+| 8 | Telegram alert: "Results not found for [event]. Provide URL or trigger evf-results-import." |
+| 8+ | Admin provides URL or manually triggers EVF results fetch. |
+
+**Telegram commands for EVF:**
+| Command | Action |
+|---------|--------|
+| `evf-cal-import` | Manual calendar scrape (bypass 3-day schedule) |
+| `evf-results-import <event>` | Manual result fetch + import for specific event |
+| `evf-status` | Show past international events missing results |
 
 #### 2.6.3 Summary: Two-Track Ingestion Model
 
@@ -275,18 +289,18 @@ flowchart LR
     CAL["Our Calendar\n(source of truth)"] --> CRON["Daily cron:\noverdue PENDING?"]
 
     CRON --> DOM{"Domestic\nPPW/MPW?"}
-    CRON --> INT{"International\nPEW/MEW?"}
+    CRON --> INT{"International\nPEW/MEW/IMEW/MSW?"}
 
     DOM -->|"Primary"| XML["XML via email\n(spws.weterani@gmail.com)"]
     DOM -->|"Fallback"| URL_D["URL scraping\n(FTL)"]
 
-    INT -->|"Only option"| URL_I["URL scraping\n(FTL / Engarde / 4Fence)"]
-    INT -->|"URL discovery"| EVF["EVF event page\n(results link)"]
+    INT -->|"Primary"| EVF["EVF JSON API\n(api.veteransfencing.eu)"]
+    INT -->|"Fallback"| URL_I["URL scraping\n(FTL / Engarde / 4Fence)"]
 
     XML --> PIPE["Orchestration Pipeline\n(§2.1)"]
     URL_D --> PIPE
+    EVF --> PIPE
     URL_I --> PIPE
-    EVF --> URL_I
 ```
 
 > **Excel retired.** The `generate_season_seed.py` tool and Excel parsers remain in the repo for historical seed data but are not part of the active ingestion pipeline.
@@ -295,11 +309,12 @@ flowchart LR
 
 **What exists:**
 - GitHub Actions CI/CD pipeline for deployment (LOCAL → CERT → PROD)
+- `evf-sync.yml` — EVF calendar + results cron (every 3 days)
 - Telegram alerting on pipeline failure (FR-32, tested)
 
 **What's needed:**
 - `ingest.yml` GitHub Actions workflow: daily cron (08:00 UTC) + manual dispatch + Supabase Storage webhook trigger
-- Implements the two-track ingestion strategy (§2.6): domestic XML-first, international scrape-only
+- Implements the two-track ingestion strategy (§2.6): domestic XML-first, international EVF API-first
 - Configurable grace periods: 4 days (domestic), 8 days (international) before Telegram escalation
 - Error handling + Telegram notifications on failure/success
 - Admin reply handling for interactive edge cases (Telegram bot listens for YES/NO replies)
@@ -320,13 +335,14 @@ flowchart LR
 
 ```mermaid
 flowchart TD
+    classDef done fill:#4caf50,color:#fff,stroke:#388e3c
     classDef ready fill:#ff9800,color:#fff,stroke:#f57c00
     classDef blocked fill:#9e9e9e,color:#fff,stroke:#757575
 
-    ORCH["2.1 Pipeline Orchestration"]:::ready
-    IDRES["2.2 Identity Resolution\nDB Wiring"]:::blocked
+    ORCH["2.1 Pipeline Orchestration\n(Phase 3-5 done)"]:::done
+    IDRES["2.2 Identity Resolution\nDB Wiring (partial)"]:::ready
     URL["2.3 URL Scraping Tab"]:::blocked
-    EVF["2.4 EVF Calendar Import"]:::ready
+    EVF["2.4 EVF Calendar +\nResults Import ✓"]:::done
     FTL["2.5 FTL XML File Ingestion"]:::blocked
     STRAT["2.6 Ingestion Strategy\n(calendar-driven triggers)"]:::blocked
     AUTO["2.7 Automated Ingestion\nPipeline"]:::blocked
@@ -338,41 +354,55 @@ flowchart TD
     IDRES --> FTL
     FTL --> STRAT
     URL --> STRAT
-    STRAT --> AUTO
+    EVF -->|"PEW/MEW primary path"| STRAT
     OBS --> AUTO
-    EVF -.->|"optional: PEW/MEW\nURL discovery"| STRAT
+    STRAT --> AUTO
 ```
 
-**Legend:** 🟠 Ready (no dependencies) · ⬜ Blocked (waiting on predecessors) · Dashed = optional enhancement
+**Legend:** 🟢 Done · 🟠 Ready (no blockers) · ⬜ Blocked (waiting on predecessors)
 
 ### 3.2 Recommended Order
 
 ```
-Phase A:  2.1 Pipeline Orchestration  +  2.8 Pipeline Observability  (parallel, no deps)
-Phase B:  2.2 Identity Resolution DB Wiring  (needs 2.1)
-Phase C:  2.5 FTL XML File Ingestion  +  2.3 URL Scraping Tab  (need 2.1 + 2.2)
-Phase D:  2.6 Ingestion Strategy  +  2.7 Automated Ingestion Pipeline  (needs 2.5 + 2.3)
-Phase E:  2.4 EVF Calendar Import  (independent — enhances PEW/MEW URL discovery in 2.6)
+Phase A:  2.2 Identity Resolution DB Wiring  +  2.8 Pipeline Observability  (ready now)
+Phase B:  2.3 URL Scraping Tab  +  2.5 FTL XML File Ingestion  (need 2.2)
+Phase C:  2.6 Ingestion Strategy  +  2.7 Automated Ingestion Pipeline  (need 2.5 + 2.3)
 ```
+
+Items 2.1 (Pipeline Orchestration Phase 3-5) and 2.4 (EVF Import) are already complete.
 
 ## 4. Current Test Baseline
 
 | Suite | Count | Files |
 |-------|-------|-------|
-| pgTAP | 189 | `supabase/tests/` (10 files) |
-| pytest | 175 | `python/tests/` (7 files) |
-| vitest | 173 | `frontend/tests/` (20 files) |
+| pgTAP | 234 | `supabase/tests/` (13 files) |
+| pytest | 263 | `python/tests/` (19 files) |
+| vitest | 192 | `frontend/tests/` (20 files) |
 | Playwright | 7 | `frontend/e2e/` (1 file) |
-| **Total** | **544** | |
+| **Total** | **696** | |
 
 ## 5. RTM Coverage Summary
 
 | Status | Count | FRs |
 |--------|-------|-----|
-| Covered | 55 | FR-01–FR-50, FR-52, FR-55, FR-59–FR-67 |
+| Covered | 56 | FR-01–FR-50, FR-52, FR-55, FR-58, FR-59–FR-67 |
 | Partial | 5 | FR-53, FR-54, FR-56, FR-57, NFR-10 |
-| Deferred | 2 | FR-51, FR-58 |
+| Deferred | 1 | FR-51 |
 | Not tested (NFR) | 4 | NFR-01, NFR-03, NFR-04, NFR-08 |
 | Infrastructure | 2 | NFR-02, NFR-12 |
 
 Full RTM: [Project Specification Appendix C](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#appendix-c--requirements-traceability-matrix)
+
+## 6. ADR Registry
+
+| ADR | Title | Status |
+|-----|-------|--------|
+| ADR-022 | Ingestion DB Transaction Strategy | Accepted |
+| ADR-023 | Email Ingestion via GAS + Storage | Accepted |
+| ADR-024 | Combined Category Splitting | Accepted (DOB fix pending) |
+| ADR-025 | Event-Centric Ingestion + Telegram Admin | Accepted |
+| ADR-026 | CERT → PROD Promotion | Accepted |
+| ADR-027 | Full-Season Seed Export | Accepted |
+| ADR-028 | EVF Calendar + Results Import | Accepted |
+
+See [full ADR index](adr/) and [Project Specification Appendix C](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#appendix-c--requirements-traceability-matrix).
