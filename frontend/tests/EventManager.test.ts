@@ -322,4 +322,70 @@ describe('EventManager Accordion (Phase 6)', () => {
     await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
     expect(container.querySelector('[data-field="tournament-row"]')).toBeNull()
   })
+
+  // 9.83 — Tournament edit button opens edit form with current values
+  it('9.83: tournament edit button opens inline edit form', async () => {
+    const onedittournament = vi.fn()
+    const { container } = render(EventManager, { props: { ...propsWithTournaments, onedittournament } })
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+
+    const editBtn = container.querySelector('[data-field="tourn-edit-btn"]')!
+    await fireEvent.click(editBtn)
+
+    // Edit form should appear with code and url fields
+    const editForm = container.querySelector('[data-field="tourn-edit-form"]')
+    expect(editForm).not.toBeNull()
+    const codeInput = editForm!.querySelector('[data-field="tourn-edit-code"]') as HTMLInputElement
+    expect(codeInput).not.toBeNull()
+    expect(codeInput.value).toContain('PPW-WRO-V2-M-EPEE')
+  })
+
+  // 9.84 — Add Tournament button shows create form
+  it('9.84: add tournament button shows create form', async () => {
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+
+    const addBtn = container.querySelector('[data-field="tourn-add-btn"]')
+    expect(addBtn).not.toBeNull()
+    await fireEvent.click(addBtn!)
+
+    const createForm = container.querySelector('[data-field="tourn-create-form"]')
+    expect(createForm).not.toBeNull()
+  })
+
+  // 9.85 — Tournament edit save calls onedittournament with params
+  it('9.85: tournament edit save calls onedittournament with id and params', async () => {
+    const onedittournament = vi.fn()
+    const { container } = render(EventManager, { props: { ...propsWithTournaments, onedittournament } })
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+    await fireEvent.click(container.querySelector('[data-field="tourn-edit-btn"]')!)
+
+    // Change the code
+    const codeInput = container.querySelector('[data-field="tourn-edit-code"]') as HTMLInputElement
+    await fireEvent.input(codeInput, { target: { value: 'NEW-CODE' } })
+
+    // Save
+    const saveBtn = container.querySelector('[data-field="tourn-edit-save"]')!
+    await fireEvent.click(saveBtn)
+
+    expect(onedittournament).toHaveBeenCalledWith(100, expect.objectContaining({ code: 'NEW-CODE' }))
+  })
+
+  // 9.86 — Tournament create save calls oncreatetournament
+  it('9.86: tournament create save calls oncreatetournament with event id and params', async () => {
+    const oncreatetournament = vi.fn()
+    const { container } = render(EventManager, { props: { ...propsWithTournaments, oncreatetournament } })
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+    await fireEvent.click(container.querySelector('[data-field="tourn-add-btn"]')!)
+
+    // Fill weapon select
+    const weaponSelect = container.querySelector('[data-field="tourn-create-weapon"]') as HTMLSelectElement
+    await fireEvent.change(weaponSelect, { target: { value: 'FOIL' } })
+
+    // Save
+    const saveBtn = container.querySelector('[data-field="tourn-create-save"]')!
+    await fireEvent.click(saveBtn)
+
+    expect(oncreatetournament).toHaveBeenCalledWith(10, expect.objectContaining({ weapon: 'FOIL' }))
+  })
 })

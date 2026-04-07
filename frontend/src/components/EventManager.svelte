@@ -115,20 +115,93 @@
           {#if expandedIds.has(event.id_event)}
             <div data-field="tournament-list" class="tournament-list">
               {#each tournamentsForEvent(event.id_event) as tourn}
-                <div data-field="tournament-row" class="tourn-row">
-                  <span data-field="tourn-code" class="tourn-cell tourn-code">{tourn.txt_code}</span>
-                  <span class="tourn-cell tourn-type-badge">{tourn.enum_type}</span>
-                  <span class="tourn-cell">{tourn.enum_weapon}</span>
-                  <span class="tourn-cell">{tourn.enum_age_category} {tourn.enum_gender}</span>
-                  <span data-field="tourn-import-status" class="tourn-cell import-badge {importStatusClass(tourn.enum_import_status)}">{tourn.enum_import_status}</span>
-                  <span data-field="tourn-participants" class="tourn-cell">{tourn.int_participant_count ?? '—'}</span>
-                  <span class="tourn-cell actions">
-                    <button data-field="tourn-import-btn" class="action-btn import-btn" title={t('tooltip_import_tournament')} onclick={() => { onimporttournament(tourn.id_tournament, tourn.enum_import_status !== 'PLANNED') }}>⬇</button>
-                    <button data-field="tourn-edit-btn" class="icon-btn" title={t('tooltip_edit_tournament')} onclick={() => { onedittournament(tourn.id_tournament) }}>&#9998;</button>
-                    <button data-field="tourn-delete-btn" class="icon-btn delete" title={t('tooltip_delete_tournament')} onclick={() => { if (confirm(t('confirm_delete_tournament'))) ondeletetournament(tourn.id_tournament) }}>&#128465;</button>
-                  </span>
-                </div>
+                {#if editingTournId === tourn.id_tournament}
+                  <div data-field="tourn-edit-form" class="tourn-edit-form">
+                    <label>{t('tournament_code')}
+                      <input data-field="tourn-edit-code" type="text" bind:value={tournEditCode} />
+                    </label>
+                    <label>{t('tournament_url')}
+                      <input data-field="tourn-edit-url" type="text" bind:value={tournEditUrl} />
+                    </label>
+                    <label>{t('tournament_status')}
+                      <select data-field="tourn-edit-status" bind:value={tournEditStatus}>
+                        <option value="PLANNED">PLANNED</option>
+                        <option value="PENDING">PENDING</option>
+                        <option value="IMPORTED">IMPORTED</option>
+                        <option value="SCORED">SCORED</option>
+                        <option value="REJECTED">REJECTED</option>
+                      </select>
+                    </label>
+                    <label>{t('tournament_status_reason')}
+                      <input data-field="tourn-edit-reason" type="text" bind:value={tournEditReason} />
+                    </label>
+                    <div class="form-actions">
+                      <button data-field="tourn-edit-save" class="save-btn" onclick={() => { handleTournEditSave() }}>{t('event_save')}</button>
+                      <button class="cancel-btn" onclick={() => { editingTournId = null }}>{t('event_cancel')}</button>
+                    </div>
+                  </div>
+                {:else}
+                  <div data-field="tournament-row" class="tourn-row">
+                    <span data-field="tourn-code" class="tourn-cell tourn-code">{tourn.txt_code}</span>
+                    <span class="tourn-cell tourn-type-badge">{tourn.enum_type}</span>
+                    <span class="tourn-cell">{tourn.enum_weapon}</span>
+                    <span class="tourn-cell">{tourn.enum_age_category} {tourn.enum_gender}</span>
+                    <span data-field="tourn-import-status" class="tourn-cell import-badge {importStatusClass(tourn.enum_import_status)}">{tourn.enum_import_status}</span>
+                    <span data-field="tourn-participants" class="tourn-cell">{tourn.int_participant_count ?? '—'}</span>
+                    <span class="tourn-cell actions">
+                      <button data-field="tourn-import-btn" class="action-btn import-btn" title={t('tooltip_import_tournament')} onclick={() => { onimporttournament(tourn.id_tournament, tourn.enum_import_status !== 'PLANNED') }}>⬇</button>
+                      <button data-field="tourn-edit-btn" class="icon-btn" title={t('tooltip_edit_tournament')} onclick={() => { openTournEditForm(tourn) }}>&#9998;</button>
+                      <button data-field="tourn-delete-btn" class="icon-btn delete" title={t('tooltip_delete_tournament')} onclick={() => { if (confirm(t('confirm_delete_tournament'))) ondeletetournament(tourn.id_tournament) }}>&#128465;</button>
+                    </span>
+                  </div>
+                {/if}
               {/each}
+
+              {#if creatingTournForEvent === event.id_event}
+                <div data-field="tourn-create-form" class="tourn-edit-form">
+                  <label>{t('weapon')}
+                    <select data-field="tourn-create-weapon" bind:value={tournCreateWeapon}>
+                      <option value="EPEE">{t('epee')}</option>
+                      <option value="FOIL">{t('foil')}</option>
+                      <option value="SABRE">{t('sabre')}</option>
+                    </select>
+                  </label>
+                  <label>{t('gender')}
+                    <select data-field="tourn-create-gender" bind:value={tournCreateGender}>
+                      <option value="M">{t('men')}</option>
+                      <option value="F">{t('women')}</option>
+                    </select>
+                  </label>
+                  <label>{t('category')}
+                    <select data-field="tourn-create-category" bind:value={tournCreateCategory}>
+                      <option value="V0">V0</option>
+                      <option value="V1">V1</option>
+                      <option value="V2">V2</option>
+                      <option value="V3">V3</option>
+                      <option value="V4">V4</option>
+                    </select>
+                  </label>
+                  <label>{t('tournament_type')}
+                    <select data-field="tourn-create-type" bind:value={tournCreateType}>
+                      <option value="PPW">PPW</option>
+                      <option value="MPW">MPW</option>
+                      <option value="PEW">PEW</option>
+                      <option value="MEW">MEW</option>
+                      <option value="MSW">MSW</option>
+                      <option value="PSW">PSW</option>
+                    </select>
+                  </label>
+                  <label>{t('tournament_url')}
+                    <input data-field="tourn-create-url" type="text" bind:value={tournCreateUrl} />
+                  </label>
+                  <div class="form-actions">
+                    <button data-field="tourn-create-save" class="save-btn" onclick={() => { handleTournCreateSave(event) }}>{t('event_save')}</button>
+                    <button class="cancel-btn" onclick={() => { creatingTournForEvent = null }}>{t('event_cancel')}</button>
+                  </div>
+                </div>
+              {:else}
+                <button data-field="tourn-add-btn" class="action-btn add-btn" title={t('tooltip_add_tournament')} onclick={() => { creatingTournForEvent = event.id_event }}>+ {t('tooltip_add_tournament')}</button>
+              {/if}
             </div>
           {/if}
         </div>
@@ -138,7 +211,7 @@
 {/if}
 
 <script lang="ts">
-  import type { CalendarEvent, Season, Organizer, WeaponType, Tournament } from '../lib/types'
+  import type { CalendarEvent, Season, Organizer, WeaponType, Tournament, TournamentType, GenderType, AgeCategory } from '../lib/types'
   import { t } from '../lib/locale.svelte'
 
   const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -163,7 +236,8 @@
     ondelete = (_id: number) => {},
     ondeletetournament = (_id: number) => {},
     onimporttournament = (_id: number, _isReimport: boolean) => {},
-    onedittournament = (_id: number) => {},
+    onedittournament = (_id: number, _params: Record<string, unknown>) => {},
+    oncreatetournament = (_eventId: number, _params: Record<string, unknown>) => {},
   }: {
     events?: CalendarEvent[]
     seasons?: Season[]
@@ -177,7 +251,8 @@
     ondelete?: (id: number) => void
     ondeletetournament?: (id: number) => void
     onimporttournament?: (id: number, isReimport: boolean) => void
-    onedittournament?: (id: number) => void
+    onedittournament?: (id: number, params: Record<string, unknown>) => void
+    oncreatetournament?: (eventId: number, params: Record<string, unknown>) => void
   } = $props()
 
   let showForm = $state(false)
@@ -196,6 +271,57 @@
   let draftWeapons: Set<WeaponType> = $state(new Set(['EPEE', 'FOIL', 'SABRE']))
 
   let expandedIds: Set<number> = $state(new Set())
+
+  // Tournament edit state
+  let editingTournId: number | null = $state(null)
+  let tournEditCode = $state('')
+  let tournEditUrl = $state('')
+  let tournEditStatus = $state('PLANNED')
+  let tournEditReason = $state('')
+
+  function openTournEditForm(tourn: Tournament) {
+    editingTournId = tourn.id_tournament
+    tournEditCode = tourn.txt_code
+    tournEditUrl = tourn.url_results ?? ''
+    tournEditStatus = tourn.enum_import_status
+    tournEditReason = tourn.txt_import_status_reason ?? ''
+  }
+
+  function handleTournEditSave() {
+    if (editingTournId == null) return
+    onedittournament(editingTournId, {
+      code: tournEditCode,
+      urlResults: tournEditUrl,
+      importStatus: tournEditStatus,
+      statusReason: tournEditReason,
+    })
+    editingTournId = null
+  }
+
+  // Tournament create state
+  let creatingTournForEvent: number | null = $state(null)
+  let tournCreateWeapon = $state('EPEE')
+  let tournCreateGender = $state('M')
+  let tournCreateCategory = $state('V2')
+  let tournCreateType = $state('PPW')
+  let tournCreateUrl = $state('')
+
+  function handleTournCreateSave(event: CalendarEvent) {
+    oncreatetournament(event.id_event, {
+      weapon: tournCreateWeapon,
+      gender: tournCreateGender,
+      category: tournCreateCategory,
+      type: tournCreateType,
+      urlResults: tournCreateUrl || null,
+      dtTournament: event.dt_start,
+    })
+    creatingTournForEvent = null
+    tournCreateWeapon = 'EPEE'
+    tournCreateGender = 'M'
+    tournCreateCategory = 'V2'
+    tournCreateType = 'PPW'
+    tournCreateUrl = ''
+  }
 
   function toggleExpand(eventId: number) {
     const next = new Set(expandedIds)
@@ -515,6 +641,45 @@
     border-top: none;
     border-radius: 0 0 4px 4px;
     padding: 4px 12px 8px 32px;
+  }
+  .tourn-edit-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px;
+    background: #f9fafb;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .tourn-edit-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #666;
+  }
+  .tourn-edit-form input,
+  .tourn-edit-form select {
+    padding: 4px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .add-btn {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #4a90d9;
+    background: none;
+    border: 1px dashed #4a90d9;
+    border-radius: 4px;
+    padding: 4px 12px;
+    cursor: pointer;
+  }
+  .add-btn:hover {
+    background: #f0f6ff;
   }
   .tourn-row {
     display: flex;

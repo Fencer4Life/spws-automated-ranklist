@@ -101,6 +101,8 @@
       onupdatestatus={handleUpdateEventStatus}
       ondelete={handleDeleteEvent}
       ondeletetournament={handleDeleteTournament}
+      onedittournament={handleEditTournament}
+      oncreatetournament={handleCreateTournament}
     />
   {:else if currentView === 'admin_identities'}
     <IdentityManager
@@ -167,6 +169,7 @@
     RankingRules,
     AppView,
     CalendarEvent,
+    TournamentType,
   } from './lib/types'
   import type { Organizer, ScoringConfig, MatchCandidate, CreateEventParams, UpdateEventParams, Tournament } from './lib/types'
   import {
@@ -190,6 +193,8 @@
     saveScoringConfig,
     fetchAllTournaments,
     deleteTournamentCascade,
+    updateTournament,
+    createTournament,
     fetchMatchCandidates,
     approveMatch,
     dismissMatch,
@@ -518,13 +523,53 @@
   async function handleDeleteTournament(id: number) {
     try {
       await deleteTournamentCascade(id)
-      if (selectedSeasonId) {
-        calendarEvents = await fetchCalendarEvents(selectedSeasonId)
-        const eventIds = calendarEvents.map(e => e.id_event)
-        allTournaments = await fetchAllTournaments(eventIds)
-      }
+      await reloadAdminEvents()
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleEditTournament(id: number, params: Record<string, unknown>) {
+    try {
+      await updateTournament(id, {
+        code: params.code as string | undefined,
+        urlResults: params.urlResults as string | undefined,
+        importStatus: params.importStatus as import('./lib/types').ImportStatus | undefined,
+        statusReason: params.statusReason as string | undefined,
+      })
+      await reloadAdminEvents()
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleCreateTournament(eventId: number, params: Record<string, unknown>) {
+    try {
+      const event = calendarEvents.find(e => e.id_event === eventId)
+      const season = seasons.find(s => s.id_season === selectedSeasonId)
+      const code = `${event?.txt_code ?? 'T'}-${params.category}-${params.gender}-${params.weapon}-${season?.txt_code?.replace('SPWS-', '') ?? ''}`
+      await createTournament({
+        idEvent: eventId,
+        code,
+        name: code,
+        type: params.type as TournamentType,
+        weapon: params.weapon as WeaponType,
+        gender: params.gender as GenderType,
+        ageCategory: params.category as AgeCategory,
+        dtTournament: (params.dtTournament as string) ?? undefined,
+        urlResults: (params.urlResults as string) ?? undefined,
+      })
+      await reloadAdminEvents()
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function reloadAdminEvents() {
+    if (selectedSeasonId) {
+      calendarEvents = await fetchCalendarEvents(selectedSeasonId)
+      const eventIds = calendarEvents.map(e => e.id_event)
+      allTournaments = await fetchAllTournaments(eventIds)
     }
   }
 

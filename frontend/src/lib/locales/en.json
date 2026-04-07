@@ -213,5 +213,10 @@
   "tooltip_delete_tournament": "Delete tournament",
   "tooltip_add_tournament": "Add tournament",
   "confirm_delete_event": "Delete event and all tournaments?",
-  "confirm_delete_tournament": "Delete tournament and results?"
+  "confirm_delete_tournament": "Delete tournament and results?",
+  "tournament_code": "Tournament code",
+  "tournament_url": "Results URL",
+  "tournament_status": "Import status",
+  "tournament_status_reason": "Status reason",
+  "tournament_type": "Tournament type"
 }

@@ -170,6 +170,7 @@ export interface CreateTournamentParams {
 }
 
 export interface UpdateTournamentParams {
+  code?: string
   urlResults?: string
   importStatus?: ImportStatus
   statusReason?: string
