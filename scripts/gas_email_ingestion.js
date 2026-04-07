@@ -298,6 +298,12 @@ function handleCommand(props, command, arg) {
       triggerGitHubWorkflow(githubPatPU, githubRepoPU, 'populate-urls.yml', { event_code: arg });
       return '<b>Populate URLs</b>\n<pre>' + arg + '</pre>\n<i>Discovering tournament result URLs from event page...</i>';
 
+    case 'populate-urls-prod':
+      var githubPatPUP = props.getProperty('GITHUB_PAT');
+      var githubRepoPUP = props.getProperty('GITHUB_REPO');
+      triggerGitHubWorkflow(githubPatPUP, githubRepoPUP, 'populate-urls.yml', { event_code: arg, target: 'prod' });
+      return '<b>Populate URLs (PROD)</b>\n<pre>' + arg + '</pre>\n<i>Discovering tournament URLs on PROD...</i>';
+
     case 't-scrape':
       var githubPatTS = props.getProperty('GITHUB_PAT');
       var githubRepoTS = props.getProperty('GITHUB_REPO');
@@ -381,7 +387,10 @@ function handleCommand(props, command, arg) {
         '<b><u>URLs</u></b>',
         '',
         '<pre>populate-urls &lt;event&gt;</pre>',
-        'Auto-discover tournament result URLs from event page',
+        'Auto-discover tournament result URLs (CERT)',
+        '',
+        '<pre>populate-urls-prod &lt;event&gt;</pre>',
+        'Auto-discover tournament result URLs (PROD)',
         '',
         '<pre>t-scrape &lt;tournament_code&gt;</pre>',
         'Scrape results from tournament URL and ingest',
