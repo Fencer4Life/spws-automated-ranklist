@@ -1,9 +1,12 @@
 // Plan tests: 9.43, 9.44, 9.45, 9.46, 9.47, 9.48, 9.49
 // See .claude/plans/rosy-bouncing-kitten.md §T9.3.
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
 import EventManager from '../src/components/EventManager.svelte'
+
+// Mock window.confirm for delete confirmation dialogs
+vi.stubGlobal('confirm', vi.fn(() => true))
 import type { CalendarEvent, Season, Organizer, Tournament } from '../src/lib/types'
 
 const MOCK_SEASONS: Season[] = [
