@@ -7,7 +7,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(25);
+SELECT plan(27);
 
 -- ===== SETUP: create test data for ingest tests =====
 
@@ -614,6 +614,25 @@ SELECT is(
   '10.24: Carry-over included for position without current-season event (PPW3=50 + PPW4=80 = 130)'
 );
 
+
+-- =============================================================================
+-- 10.25–10.26: fn_update_tournament txt_code editing
+-- =============================================================================
+
+-- 10.25: Rename tournament code via p_code parameter
+SELECT lives_ok(
+  $$SELECT fn_update_tournament(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-EPEE-2025-2026'),
+    NULL, 'PLANNED', NULL, 'RENAMED-V2-M-EPEE-2025-2026'
+  )$$,
+  '10.25: fn_update_tournament with p_code renames txt_code'
+);
+
+SELECT is(
+  (SELECT txt_code FROM tbl_tournament WHERE txt_code = 'RENAMED-V2-M-EPEE-2025-2026'),
+  'RENAMED-V2-M-EPEE-2025-2026',
+  '10.26: Tournament txt_code updated in DB'
+);
 
 SELECT * FROM finish();
 ROLLBACK;

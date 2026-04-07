@@ -213,5 +213,10 @@
   "tooltip_delete_tournament": "Usuń turniej",
   "tooltip_add_tournament": "Dodaj turniej",
   "confirm_delete_event": "Usunąć wydarzenie i wszystkie turnieje?",
-  "confirm_delete_tournament": "Usunąć turniej i wyniki?"
+  "confirm_delete_tournament": "Usunąć turniej i wyniki?",
+  "tournament_code": "Kod turnieju",
+  "tournament_url": "URL wyników",
+  "tournament_status": "Status importu",
+  "tournament_status_reason": "Powód statusu",
+  "tournament_type": "Typ turnieju"
 }

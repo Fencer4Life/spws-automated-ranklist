@@ -337,6 +337,7 @@ export async function updateTournament(id: number, params: UpdateTournamentParam
     p_url_results: params.urlResults ?? null,
     p_import_status: params.importStatus ?? null,
     p_status_reason: params.statusReason ?? null,
+    p_code: params.code ?? null,
   })
   if (error) throw error
 }
