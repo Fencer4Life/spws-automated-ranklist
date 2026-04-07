@@ -7,85 +7,44 @@
       </button>
     </div>
 
-    {#if showForm}
-      <div data-field="event-form" class="event-form">
-        <label>
-          {t('event_name_label')}
-          <input data-field="form-name" type="text" bind:value={draftName} />
-        </label>
-        <label>
-          {t('event_location_label')}
-          <input data-field="form-location" type="text" bind:value={draftLocation} />
-        </label>
-        <label>
-          {t('event_start_label')}
-          <input data-field="form-dt-start" type="date" bind:value={draftDtStart} />
-        </label>
-        <label>
-          {t('event_end_label')}
-          <input data-field="form-dt-end" type="date" bind:value={draftDtEnd} />
-        </label>
-        <label>
-          {t('event_country_label')}
-          <input data-field="form-country" type="text" bind:value={draftCountry} />
-        </label>
-        <label>
-          {t('event_venue_label')}
-          <input data-field="form-venue" type="text" bind:value={draftVenue} />
-        </label>
-        <label>
-          {t('event_results_url_label')}
-          <input data-field="form-url-event" type="text" bind:value={draftUrlEvent} />
-        </label>
-        <label>
-          {t('event_invitation_label')}
-          <input data-field="form-invitation" type="text" bind:value={draftInvitation} />
-        </label>
-        <label>
-          {t('event_entry_fee_label')}
-          <div class="fee-row">
-            <input data-field="form-entry-fee" type="number" bind:value={draftEntryFee} />
-            <select data-field="form-currency" bind:value={draftCurrency}>
-              <option value="PLN">PLN</option>
-              <option value="EUR">EUR</option>
-              <option value="USD">USD</option>
-            </select>
-          </div>
-        </label>
-        <label>
-          {t('event_organizer_label')}
-          <select data-field="form-organizer" bind:value={draftOrganizerId}>
-            <option value={0}>--</option>
-            {#each organizers as org}
-              <option value={org.id_organizer}>{org.txt_code}</option>
-            {/each}
-          </select>
-        </label>
-        <label>
-          {t('event_weapons_label')}
-          <div data-field="form-weapons" class="weapons-row">
-            {#each WEAPON_OPTIONS as w}
-              <label class="weapon-check">
-                <input type="checkbox" checked={draftWeapons.has(w)} onchange={() => { toggleWeapon(w) }} />
-                {weaponLabel(w)}
-              </label>
-            {/each}
-          </div>
-        </label>
-        <div class="form-actions">
-          <button data-field="form-save-btn" class="save-btn" onclick={() => { handleSave() }}>
-            {t('event_save')}
-          </button>
-          <button data-field="form-cancel-btn" class="cancel-btn" onclick={() => { closeForm() }}>
-            {t('event_cancel')}
-          </button>
-        </div>
-      </div>
-    {/if}
-
     <div data-field="event-list" class="event-list">
       {#each filteredEvents as event}
         <div class="event-card">
+          {#if showForm && editingId === event.id_event}
+            <div data-field="event-form" class="event-form">
+              <label>{t('event_name_label')} <input data-field="form-name" type="text" bind:value={draftName} /></label>
+              <label>{t('event_location_label')} <input data-field="form-location" type="text" bind:value={draftLocation} /></label>
+              <label>{t('event_start_label')} <input data-field="form-dt-start" type="date" bind:value={draftDtStart} /></label>
+              <label>{t('event_end_label')} <input data-field="form-dt-end" type="date" bind:value={draftDtEnd} /></label>
+              <label>{t('event_country_label')} <input data-field="form-country" type="text" bind:value={draftCountry} /></label>
+              <label>{t('event_venue_label')} <input data-field="form-venue" type="text" bind:value={draftVenue} /></label>
+              <label>{t('event_results_url_label')} <input data-field="form-url-event" type="text" bind:value={draftUrlEvent} /></label>
+              <label>{t('event_invitation_label')} <input data-field="form-invitation" type="text" bind:value={draftInvitation} /></label>
+              <label>{t('event_entry_fee_label')}
+                <div class="fee-row">
+                  <input data-field="form-entry-fee" type="number" bind:value={draftEntryFee} />
+                  <select data-field="form-currency" bind:value={draftCurrency}>
+                    <option value="PLN">PLN</option><option value="EUR">EUR</option><option value="USD">USD</option>
+                  </select>
+                </div>
+              </label>
+              <label>{t('event_organizer_label')}
+                <select data-field="form-organizer" bind:value={draftOrganizerId}>
+                  <option value={0}>--</option>
+                  {#each organizers as org}<option value={org.id_organizer}>{org.txt_code}</option>{/each}
+                </select>
+              </label>
+              <label>{t('event_weapons_label')}
+                <div data-field="form-weapons" class="weapons-row">
+                  {#each WEAPON_OPTIONS as w}<label class="weapon-check"><input type="checkbox" checked={draftWeapons.has(w)} onchange={() => { toggleWeapon(w) }} /> {weaponLabel(w)}</label>{/each}
+                </div>
+              </label>
+              <div class="form-actions">
+                <button data-field="form-save-btn" class="save-btn" onclick={() => { handleSave() }}>{t('event_save')}</button>
+                <button data-field="form-cancel-btn" class="cancel-btn" onclick={() => { closeForm() }}>{t('event_cancel')}</button>
+              </div>
+            </div>
+          {/if}
           <div data-field="event-row" class="event-row">
             <button data-field="expand-btn" class="expand-btn" onclick={() => { toggleExpand(event.id_event) }}>
               {expandedIds.has(event.id_event) ? '▼' : '▶'}
@@ -212,6 +171,42 @@
           {/if}
         </div>
       {/each}
+
+      {#if showForm && editingId === null}
+        <div data-field="event-form" class="event-form">
+          <label>{t('event_name_label')} <input data-field="form-name" type="text" bind:value={draftName} /></label>
+          <label>{t('event_location_label')} <input data-field="form-location" type="text" bind:value={draftLocation} /></label>
+          <label>{t('event_start_label')} <input data-field="form-dt-start" type="date" bind:value={draftDtStart} /></label>
+          <label>{t('event_end_label')} <input data-field="form-dt-end" type="date" bind:value={draftDtEnd} /></label>
+          <label>{t('event_country_label')} <input data-field="form-country" type="text" bind:value={draftCountry} /></label>
+          <label>{t('event_venue_label')} <input data-field="form-venue" type="text" bind:value={draftVenue} /></label>
+          <label>{t('event_results_url_label')} <input data-field="form-url-event" type="text" bind:value={draftUrlEvent} /></label>
+          <label>{t('event_invitation_label')} <input data-field="form-invitation" type="text" bind:value={draftInvitation} /></label>
+          <label>{t('event_entry_fee_label')}
+            <div class="fee-row">
+              <input data-field="form-entry-fee" type="number" bind:value={draftEntryFee} />
+              <select data-field="form-currency" bind:value={draftCurrency}>
+                <option value="PLN">PLN</option><option value="EUR">EUR</option><option value="USD">USD</option>
+              </select>
+            </div>
+          </label>
+          <label>{t('event_organizer_label')}
+            <select data-field="form-organizer" bind:value={draftOrganizerId}>
+              <option value={0}>--</option>
+              {#each organizers as org}<option value={org.id_organizer}>{org.txt_code}</option>{/each}
+            </select>
+          </label>
+          <label>{t('event_weapons_label')}
+            <div data-field="form-weapons" class="weapons-row">
+              {#each WEAPON_OPTIONS as w}<label class="weapon-check"><input type="checkbox" checked={draftWeapons.has(w)} onchange={() => { toggleWeapon(w) }} /> {weaponLabel(w)}</label>{/each}
+            </div>
+          </label>
+          <div class="form-actions">
+            <button data-field="form-save-btn" class="save-btn" onclick={() => { handleSave() }}>{t('event_save')}</button>
+            <button data-field="form-cancel-btn" class="cancel-btn" onclick={() => { closeForm() }}>{t('event_cancel')}</button>
+          </div>
+        </div>
+      {/if}
     </div>
   </div>
 {/if}
@@ -499,9 +494,9 @@
     gap: 12px;
     align-items: flex-end;
     padding: 12px;
-    margin-bottom: 16px;
-    background: #f8f9fa;
-    border: 1px solid #e0e0e0;
+    margin-bottom: 8px;
+    background: #eef4fb;
+    border: 1px solid #b8d4ee;
     border-radius: 4px;
     flex-wrap: wrap;
   }
@@ -671,8 +666,8 @@
     flex-wrap: wrap;
     gap: 10px;
     padding: 10px;
-    background: #f9fafb;
-    border: 1px solid #e0e0e0;
+    background: #f5f7f0;
+    border: 1px solid #d4dcc8;
     border-radius: 4px;
     margin-bottom: 6px;
     font-size: 13px;
