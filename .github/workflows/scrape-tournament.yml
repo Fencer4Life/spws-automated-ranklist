@@ -1,0 +1,47 @@
+name: Scrape Tournament Results
+
+on:
+  workflow_dispatch:
+    inputs:
+      tournament_code:
+        description: 'Tournament code (e.g. PPW4-V2-M-EPEE-2025-2026)'
+        required: true
+
+jobs:
+  scrape:
+    name: Scrape & Ingest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install httpx beautifulsoup4 rapidfuzz
+
+      - name: Scrape tournament results
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_CERT_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
+        run: |
+          python -m python.tools.scrape_tournament \
+            --tournament-code "${{ github.event.inputs.tournament_code }}" \
+            2>&1 | tee /tmp/scrape-output.txt
+
+      - name: Notify Telegram
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          OUTPUT=$(tail -10 /tmp/scrape-output.txt 2>/dev/null || echo "No output")
+          STATUS="${{ job.status }}"
+          MSG="<b>Scrape: ${{ github.event.inputs.tournament_code }}</b>
+          <i>Status: ${STATUS}</i>
+          <pre>${OUTPUT}</pre>"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d parse_mode=HTML \
+            --data-urlencode "text=${MSG}" > /dev/null

@@ -103,6 +103,7 @@
       ondeletetournament={handleDeleteTournament}
       onedittournament={handleEditTournament}
       oncreatetournament={handleCreateTournament}
+      onimporttournament={handleImportTournament}
     />
   {:else if currentView === 'admin_identities'}
     <IdentityManager
@@ -563,6 +564,19 @@
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
     }
+  }
+
+  async function handleImportTournament(id: number, _isReimport: boolean) {
+    const tourn = allTournaments.find(t => t.id_tournament === id)
+    if (!tourn) return
+    if (!tourn.url_results) {
+      error = t('import_no_url')
+      return
+    }
+    const msg = `${t('import_confirm')}\n\n${tourn.txt_code}\n${tourn.url_results}`
+    if (!confirm(msg)) return
+    // Trigger scrape via Telegram command (GHA can't be called from browser)
+    error = `${t('import_triggered')}: t-scrape ${tourn.txt_code}`
   }
 
   async function reloadAdminEvents() {

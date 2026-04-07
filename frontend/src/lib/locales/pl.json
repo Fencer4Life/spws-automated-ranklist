@@ -218,5 +218,8 @@
   "tournament_url": "URL wyników",
   "tournament_status": "Status importu",
   "tournament_status_reason": "Powód statusu",
-  "tournament_type": "Typ turnieju"
+  "tournament_type": "Typ turnieju",
+  "import_no_url": "Ustaw URL wyników przed importem",
+  "import_confirm": "Importować wyniki z URL?",
+  "import_triggered": "Wyślij komendę w Telegramie"
 }

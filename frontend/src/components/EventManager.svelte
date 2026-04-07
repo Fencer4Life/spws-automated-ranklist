@@ -94,6 +94,9 @@
             <span data-field="event-location" class="event-cell">{event.txt_location ?? ''}</span>
             <span data-field="event-weapons" class="event-cell event-weapons">{formatWeapons(event.arr_weapons ?? [])}</span>
             <span data-field="event-dates" class="event-cell">{event.dt_start ?? ''}{event.dt_end && event.dt_end !== event.dt_start ? ` – ${event.dt_end}` : ''}</span>
+            {#if event.url_event}
+              <span class="event-cell"><a class="event-url-link" href={event.url_event} target="_blank" rel="noopener" title={event.url_event}>🔗</a></span>
+            {/if}
             <span data-field="event-status-badge" class="event-cell status-badge {statusClass(event.enum_status)}">{event.enum_status}</span>
             <span data-field="tournament-count" class="event-cell tournament-count-badge">{tournamentsForEvent(event.id_event).length}</span>
             <span class="event-cell">
@@ -599,6 +602,13 @@
   .status-cancelled { background: #f8d7da; color: #721c24; }
   .status-in-progress { background: #fff3cd; color: #856404; }
   .status-changed { background: #ffe0cc; color: #8a4500; }
+  .event-url-link {
+    text-decoration: none;
+    font-size: 14px;
+  }
+  .event-url-link:hover {
+    opacity: 0.7;
+  }
   .icon-btn {
     border: 1px solid #ccc;
     background: #fff;
