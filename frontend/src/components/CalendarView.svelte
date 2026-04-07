@@ -21,6 +21,14 @@
         >+EVF</button>
       </div>
     {/if}
+    {#if dualEnv}
+      <div class="env-toggle">
+        <button class="env-btn" class:active={activeEnv === 'CERT'}
+          onclick={() => { activeEnv = 'CERT' }}>CT</button>
+        <button class="env-btn" class:active={activeEnv === 'PROD'}
+          onclick={() => { activeEnv = 'PROD' }}>PD</button>
+      </div>
+    {/if}
     <select class="time-filter-select" bind:value={timeFilter}>
       <option value="all">{t('filter_all')}</option>
       <option value="past">{t('filter_past')}</option>
@@ -95,7 +103,7 @@
 </div>
 
 <script lang="ts">
-  import type { CalendarEvent, EventStatus, WeaponType, Season } from '../lib/types'
+  import type { CalendarEvent, EventStatus, WeaponType, Season, Environment } from '../lib/types'
   import { t } from '../lib/locale.svelte'
 
   function weaponLabel(w: WeaponType): string {
@@ -116,6 +124,8 @@
     isActiveSeason = false,
     seasons = [] as Season[],
     selectedSeasonId = $bindable(null as number | null),
+    dualEnv = false,
+    activeEnv = $bindable('CERT' as Environment),
     onseasonchange,
   }: {
     events?: CalendarEvent[]
@@ -123,6 +133,8 @@
     isActiveSeason?: boolean
     seasons?: Season[]
     selectedSeasonId?: number | null
+    dualEnv?: boolean
+    activeEnv?: Environment
     onseasonchange?: () => void
   } = $props()
 
@@ -262,6 +274,29 @@
     border-left: 1px solid #ccc;
   }
   .scope-filter-btn.active {
+    background: #4a90d9;
+    color: #fff;
+  }
+  .env-toggle {
+    display: flex;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .env-btn {
+    padding: 5px 10px;
+    border: none;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+  }
+  .env-btn:first-child {
+    border-right: 1px solid #ccc;
+  }
+  .env-btn.active {
     background: #4a90d9;
     color: #fff;
   }
