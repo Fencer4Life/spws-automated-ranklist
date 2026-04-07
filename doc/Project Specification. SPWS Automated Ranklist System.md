@@ -1675,4 +1675,4 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-026](adr/026-cert-prod-promotion.md) | CERT → PROD Event Promotion via Python | FR-86, ADR-025 |
 | [ADR-027](adr/027-full-season-seed-export.md) | Full-Season Seed Export from CERT | FR-88, FR-89, ADR-025/026 |
 | [ADR-028](adr/028-evf-calendar-results-import.md) | EVF Calendar + Results Import | FR-58, ADR-025 |
-| [ADR-029](adr/029-tournament-url-auto-population.md) | Tournament URL Auto-Population | FR-53, FR-54, ADR-025 |
+| [ADR-029](adr/029-tournament-url-auto-population.md) | Tournament URL Auto-Population + Admin CRUD | FR-53, FR-54, ADR-025 |
