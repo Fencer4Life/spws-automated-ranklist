@@ -58,24 +58,12 @@
       </div>
     {/if}
 
-    {#if dualEnv}
-      <div class="filter-group toggle-group">
-        <span class="filter-label">&nbsp;</span>
-        <div class="env-toggle">
-          <button class="env-btn" class:active={activeEnv === 'CERT'}
-            onclick={() => { activeEnv = 'CERT' }}>CT</button>
-          <button class="env-btn" class:active={activeEnv === 'PROD'}
-            onclick={() => { activeEnv = 'PROD' }}>PD</button>
-        </div>
-      </div>
-    {/if}
-
     <button class="btn-export" title={t('export_to_ods')} onclick={onexport}>&#9113;</button>
   </div>
 </div>
 
 <script lang="ts">
-  import type { WeaponType, GenderType, AgeCategory, RankingMode, Filters, Season, Environment } from '../lib/types'
+  import type { WeaponType, GenderType, AgeCategory, RankingMode, Filters, Season } from '../lib/types'
   import { t } from '../lib/locale.svelte'
 
   let {
@@ -86,8 +74,6 @@
     showEvfToggle = false,
     seasons = [] as Season[],
     selectedSeasonId = $bindable(null as number | null),
-    dualEnv = false,
-    activeEnv = $bindable('CERT' as Environment),
     onseasonchange,
     onfilterchange,
     onexport,
@@ -99,8 +85,6 @@
     showEvfToggle?: boolean
     seasons?: Season[]
     selectedSeasonId?: number | null
-    dualEnv?: boolean
-    activeEnv?: Environment
     onseasonchange?: () => void
     onfilterchange?: (filters: Omit<Filters, 'season'>) => void
     onexport?: () => void
@@ -133,29 +117,6 @@
     gap: 16px;
     align-items: flex-end;
     flex-wrap: wrap;
-  }
-  .env-toggle {
-    display: flex;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .env-btn {
-    padding: 4px 10px;
-    border: none;
-    background: #fff;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    letter-spacing: 0.5px;
-    transition: all 0.15s;
-  }
-  .env-btn:first-child {
-    border-right: 1px solid #ccc;
-  }
-  .env-btn.active {
-    background: #4a90d9;
-    color: #fff;
   }
   .btn-export {
     margin-left: auto;
