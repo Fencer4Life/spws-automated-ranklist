@@ -6,11 +6,26 @@ import { render, fireEvent } from '@testing-library/svelte'
 import FilterBar from '../src/components/FilterBar.svelte'
 
 describe('FilterBar', () => {
+  // 11.7 — Season dropdown renders when seasons prop provided
+  it('11.7: renders season dropdown as first filter when seasons provided', () => {
+    const seasons = [
+      { id_season: 1, txt_code: 'SPWS-2024-2025', dt_start: '2024-09-01', dt_end: '2025-06-30', bool_active: false },
+      { id_season: 2, txt_code: 'SPWS-2025-2026', dt_start: '2025-09-01', dt_end: '2026-06-30', bool_active: true },
+    ]
+    const { container } = render(FilterBar, {
+      props: { seasons, selectedSeasonId: 2 },
+    })
+    const selects = container.querySelectorAll('select')
+    expect(selects.length).toBe(4) // season + weapon + gender + category
+    // First select should contain season codes
+    expect(selects[0].textContent).toContain('SPWS-2025-2026')
+  })
+
   // 6.2 — filter dropdowns rendered
   it('renders all filter controls', () => {
     const { container } = render(FilterBar, { props: { showEvfToggle: true } })
     const selects = container.querySelectorAll('select')
-    expect(selects.length).toBe(3) // weapon, gender, category
+    expect(selects.length).toBe(3) // weapon, gender, category (no seasons passed)
     const toggleBtns = container.querySelectorAll('.toggle-btn')
     expect(toggleBtns.length).toBe(2) // PPW, Kadra
   })

@@ -382,4 +382,20 @@ describe('CalendarView (T8.5)', () => {
     const slot = container.querySelector('.slot.pew')
     expect(slot).not.toBeNull()
   })
+
+  // 11.8 — Season dropdown renders in calendar-filters when seasons provided
+  it('11.8: renders season dropdown in calendar filters when seasons provided', () => {
+    const seasons = [
+      { id_season: 1, txt_code: 'SPWS-2024-2025', dt_start: '2024-09-01', dt_end: '2025-06-30', bool_active: false },
+      { id_season: 2, txt_code: 'SPWS-2025-2026', dt_start: '2025-09-01', dt_end: '2026-06-30', bool_active: true },
+    ]
+    const { container } = render(CalendarView, {
+      props: { events: EVENTS, seasons, selectedSeasonId: 2 },
+    })
+    const filters = container.querySelector('.calendar-filters')
+    expect(filters).not.toBeNull()
+    const seasonSelect = filters!.querySelector('.season-select')
+    expect(seasonSelect).not.toBeNull()
+    expect(seasonSelect!.textContent).toContain('SPWS-2025-2026')
+  })
 })
