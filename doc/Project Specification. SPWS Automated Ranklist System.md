@@ -1586,14 +1586,14 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-48 | tbl_event schema extension: 6 columns (txt_country, txt_venue_address, url_invitation, num_entry_fee, txt_entry_fee_currency, arr_weapons) | UC22(c), UC21(d) | 8.05–8.10 | Covered (M8+M9) |
 | FR-49 | Tournament CRUD nested under events | UC22(d) | 9.25–9.26, 9.29, 9.50–9.55 | Covered (M9, T9.1 SQL + T9.4 UI) |
 | FR-50 | Delete cascade (event → tournaments → results) | UC22(e) | 9.30–9.36 | Covered (M9, T9.1) |
-| FR-51 | Tournament re-import in single transaction | UC23(a-f) | — | Deferred → Go-to-PROD |
+| FR-51 | Tournament re-import in single transaction | UC23(a-f) | 10.1–10.7 | Covered (ADR-022, fn_ingest_tournament_results) |
 | FR-52 | Multi-category expansion (30 sub-rankings) | §6.2 | 8.20–8.26 | Covered (M8) |
-| FR-53 | Event-level batch import: multi-select tournament checklist modal | UC22(g) | 9.62–9.67 | Partial (file UI done; URL + backend → Go-to-PROD) |
-| FR-54 | Tournament-level single import: own URL or file upload | UC22(h) | 9.56–9.61 | Partial (file UI done; URL + backend → Go-to-PROD) |
+| FR-53 | Event-level batch import: multi-select tournament checklist modal | UC22(g) | 9.62–9.67 | Partial (file UI + Admin ⬇ button + populate-urls GHA) |
+| FR-54 | Tournament-level single import: own URL or file upload | UC22(h) | 9.56–9.61, 3.17a–d | Partial (file UI + Admin ⬇ button + t-scrape + scrape-tournament GHA) |
 | FR-55 | File import: parse results from .xlsx, .xls, .json, .csv | UC22(i), UC23(c) | 9.58, 9.93–9.100 | Covered (M9, T9.5 UI + T9.10 parsers) |
-| FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new | UC4(a-e) | 9.68–9.73, 9.77 | Partial (UI done; DB wiring → Go-to-PROD) |
-| FR-57 | Identity resolution: disambiguation modal for same-name fencers with age category fit | UC3(f), UC4(b) | 9.74–9.76 | Partial (UI done; DB wiring → Go-to-PROD) |
-| FR-58 | EVF calendar import: fetch veteransfencing.eu, deduplication, create events+tournaments | UC8, UC9 | — | Deferred → Go-to-PROD |
+| FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new | UC4(a-e) | 9.68–9.73, 9.77, 9.78–9.82, 11.1–11.12 | Covered (UI + RPCs + API wiring) |
+| FR-57 | Identity resolution: disambiguation modal for same-name fencers with age category fit | UC3(f), UC4(b) | 9.74–9.76 | Covered (DisambiguationModal + App.svelte handlers) |
+| FR-58 | EVF calendar import: fetch veteransfencing.eu, deduplication, create events+tournaments | UC8, UC9 | 12.1–12.4, pytest evf_* | Covered (ADR-028: JSON API + HTML calendar + evf-sync.yml) |
 | FR-59 | Two-view app shell: sidebar drawer with Ranklista + Kalendarz navigation | UC12, UC21 | 8.27–8.37 | Covered (M8) |
 | FR-60 | Event CRUD via web UI (create, edit, delete events with all fields) | UC22(c) | 9.23–9.24, 9.28, 9.43–9.49 | Covered (M9, T9.1 SQL + T9.3 UI) |
 | FR-61 | Scoring config editor (admin, per-season, structured form) | UC22(f) | 8.62–8.75 | Covered (M8) |
@@ -1604,26 +1604,26 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-66 | Rolling drilldown: `fn_fencer_scores_rolling` returns carried-over scores with `bool_carried_over` flag and source season code; visual distinction in DrilldownModal (grey striped bars, `↩` marker, rolling info banner) and CalendarView (progress slot bar) | ADR-018 | R.15–R.25 | Covered |
 | FR-67 | Birth year range subtitle on ranklist view: displays eligible birth years for selected age category and season as enumeration (e.g. `kat. 2 — roczniki: 1976, 1975, .. 1967`); V4 open-ended ("i starsi"/"and older"); updates on category/season/locale change; PL+EN | UC12 | BY.1–BY.7 | Covered |
 | FR-68 | Biennial event carry-over: rolling carry-over uses rules-based type matching (`json_ranking_rules` buckets) instead of declared-event matching; IMEW (type=MEW) results from previous season automatically carry over when MEW is in the international rules, even without an IMEW event in the current season (ADR-021) | ADR-021 | R.19–R.21 | Covered |
-| FR-70 | Orchestrator parses FTL XML metadata and routes to correct DB tournament by weapon+gender+category+date | Go-to-PROD §2.5 | 9.149–9.151 | Pending |
-| FR-71 | Orchestrator splits combined-category XML (v0v1, v0v1v2) into per-category result sets with re-ranking | ADR-024 | 9.152–9.154 | Pending |
-| FR-72 | Orchestrator resolves fencer identities via fuzzy matching against DB (domestic auto-create, international skip) | UC3, ADR-020 | 9.155–9.157 | Pending |
-| FR-73 | `fn_ingest_tournament_results` atomically deletes old + inserts new results + scores in single transaction | ADR-014, ADR-022 | 10.1–10.7 | Pending |
-| FR-74 | CLI entry point processes single XML files, .zip archives, or Supabase Storage staging bucket | Go-to-PROD §2.7 | 9.166–9.168 | Pending |
-| FR-75 | Google Apps Script extracts email .zip attachments from Gmail → uploads to Supabase Storage staging | ADR-023 | Manual test | Pending |
-| FR-76 | GitHub Actions `ingest.yml` downloads from Storage staging → processes → archives | ADR-023 | Manual test | Pending |
-| FR-77 | Processed .zip archived to `archive/{season}/{event}.zip`; staging cleaned; previous event compressed | ADR-023 | 9.169–9.172, 9.191–9.192 | Pending |
-| FR-78 | Telegram notifications for all pipeline events (13 use cases: routine, warnings, alerts, overdue) | Go-to-PROD §2.8 | 9.173–9.190 | Pending |
-| FR-79 | Event-centric ingestion: match XML to existing event by date, create tournaments on-the-fly | ADR-025 | 10.8–10.12, 9.193 | Pending |
-| FR-80 | Event status lifecycle: PLANNED → IN_PROGRESS → COMPLETED with rollback | ADR-025 | 10.12–10.15 | Pending |
-| FR-81 | Telegram command interface: 16 admin commands for lifecycle, review, storage, season, emergency | ADR-025 | 10.16–10.22 | Pending |
-| FR-82 | CERT → PROD promotion triggered from Telegram | ADR-025 | Phase 6 E2E | Pending |
-| FR-83 | Batch summary notification after each ingestion run | ADR-025 | 9.197 | Pending |
-| FR-84 | ADR-024 compliance: flag PENDING for unknown DOB in combined categories | ADR-024/025 | 9.194–9.196 | Pending |
-| FR-85 | Workflow failure notifications via Telegram | ADR-025 | 9.202–9.203 | Pending |
-| FR-86 | CERT → PROD promotion: per-tournament transfer with error recovery | ADR-026 | 9.204–9.207 | Pending |
+| FR-70 | Orchestrator parses FTL XML metadata and routes to correct DB tournament by weapon+gender+category+date | ADR-022, §2.5 | 9.149–9.151 | Covered |
+| FR-71 | Orchestrator splits combined-category XML (v0v1, v0v1v2) into per-category result sets with re-ranking | ADR-024 | 9.152–9.154 | Covered |
+| FR-72 | Orchestrator resolves fencer identities via fuzzy matching against DB (domestic auto-create, international skip) | UC3, ADR-020 | 9.155–9.157 | Covered |
+| FR-73 | `fn_ingest_tournament_results` atomically deletes old + inserts new results + scores in single transaction | ADR-014, ADR-022 | 10.1–10.7 | Covered |
+| FR-74 | CLI entry point processes single XML files, .zip archives, or Supabase Storage staging bucket | ADR-023 | 9.166–9.168 | Covered |
+| FR-75 | Google Apps Script extracts email .zip attachments from Gmail → uploads to Supabase Storage staging | ADR-023 | Manual E2E ✓ | Covered |
+| FR-76 | GitHub Actions `ingest.yml` downloads from Storage staging → processes → archives | ADR-023 | Manual E2E ✓ | Covered |
+| FR-77 | Processed .zip archived to `archive/{season}/{event}.zip`; staging cleaned; previous event compressed | ADR-023 | 9.169–9.172, 9.191–9.192 | Covered |
+| FR-78 | Telegram notifications for all pipeline events (13 use cases: routine, warnings, alerts, overdue) | ADR-025 | 9.173–9.190 | Covered |
+| FR-79 | Event-centric ingestion: match XML to existing event by date, create tournaments on-the-fly | ADR-025 | 10.8–10.12, 9.193 | Covered |
+| FR-80 | Event status lifecycle: PLANNED → IN_PROGRESS → COMPLETED with rollback | ADR-025 | 10.12–10.15 | Covered |
+| FR-81 | Telegram command interface: 20+ admin commands for lifecycle, review, storage, season, PROD, URLs, emergency | ADR-025 | 10.16–10.22 | Covered |
+| FR-82 | CERT → PROD promotion triggered from Telegram and Admin UI | ADR-026 | PPW4 E2E ✓ | Covered |
+| FR-83 | Batch summary notification after each ingestion run | ADR-025 | 9.197 | Covered |
+| FR-84 | ADR-024 compliance: flag PENDING for unknown DOB in combined categories | ADR-024/025 | 9.194–9.196 | Covered |
+| FR-85 | Workflow failure notifications via Telegram | ADR-025 | 9.202–9.203 | Covered |
+| FR-86 | CERT → PROD promotion: per-tournament transfer with url_results carry and error recovery | ADR-026 | 9.204–9.207 | Covered |
 | FR-87 | Auto-export seed SQL files after promotion (committed to repo) | ADR-026 | 9.208 | Superseded by FR-88 |
-| FR-88 | Full-season seed export from CERT on complete/rollback (overwrite, not append) | ADR-027 | 9.209–9.213 | Pending |
-| FR-89 | Auto-resume email polling on event day | ADR-027 | Manual E2E | Pending |
+| FR-88 | Full-season seed export from CERT on complete/rollback (overwrite, not append) | ADR-027 | 9.209–9.213 | Covered |
+| FR-89 | Auto-resume email polling on event day | ADR-027 | GAS E2E ✓ | Covered |
 
 ### Non-Functional Requirements
 
@@ -1676,3 +1676,26 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-027](adr/027-full-season-seed-export.md) | Full-Season Seed Export from CERT | FR-88, FR-89, ADR-025/026 |
 | [ADR-028](adr/028-evf-calendar-results-import.md) | EVF Calendar + Results Import | FR-58, ADR-025 |
 | [ADR-029](adr/029-tournament-url-auto-population.md) | Tournament URL Auto-Population + Admin CRUD | FR-53, FR-54, ADR-025 |
+
+## Appendix D — Test Baseline
+
+<!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
+- pgTAP total: 236 assertions (1 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 7 T8.2 + 5 T8.3 + 5 T9.0 + 23 T9.1 + 21 M10 rolling + 27 ingest pipeline + 13 identity resolution + 4 EVF import).
+
+| Suite | Count | Files | Location |
+|-------|-------|-------|----------|
+| pgTAP | 236 | 13 | `supabase/tests/` |
+| pytest | 269 | 20 | `python/tests/` |
+| vitest | 201 | 21 | `frontend/tests/` |
+| Playwright | 7 | 1 | `frontend/e2e/` |
+| **Total** | **713** | | |
+
+### Coverage Summary
+
+| Status | Count | FRs |
+|--------|-------|-----|
+| Covered | 83 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-89 |
+| Partial | 2 | FR-53, FR-54 |
+| Superseded | 1 | FR-87 (by FR-88) |
+| Not tested (NFR) | 5 | NFR-01, NFR-03, NFR-04, NFR-08, NFR-09 |
+| Infrastructure | 2 | NFR-02, NFR-12 |

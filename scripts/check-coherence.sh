@@ -63,15 +63,15 @@ for f in supabase/tests/*.sql; do
   fi
 done
 
-# Extract documented total from POC plan: "pgTAP total: NNN assertions"
-POC_PLAN="doc/POC_development_plan.md"
-DOCUMENTED_TOTAL=$(grep -o 'pgTAP total: [0-9]* assertions' "$POC_PLAN" 2>/dev/null | grep -o '[0-9]*' || echo 0)
+# Extract documented total from Project Specification Appendix D: "pgTAP total: NNN assertions"
+SPEC_DOC="doc/Project Specification. SPWS Automated Ranklist System.md"
+DOCUMENTED_TOTAL=$(grep -o 'pgTAP total: [0-9]* assertions' "$SPEC_DOC" 2>/dev/null | grep -o '[0-9]*' || echo 0)
 
 if [ "$ACTUAL_SUM" -eq "$DOCUMENTED_TOTAL" ]; then
   echo "  PASS: $ACTUAL_SUM assertions match documented total"
 else
   echo "  FAIL: Actual $ACTUAL_SUM != Documented $DOCUMENTED_TOTAL"
-  echo "  (Update the 'pgTAP total: N assertions' line in $POC_PLAN)"
+  echo "  (Update the 'pgTAP total: N assertions' line in $SPEC_DOC Appendix D)"
   ERRORS=$((ERRORS + 1))
 fi
 echo ""
@@ -91,9 +91,9 @@ CHANGED_FILES=$(git diff --name-only "$BASE" -- . 2>/dev/null || echo "")
 HAS_NEW_MIGRATION=$(echo "$CHANGED_FILES" | grep -c 'supabase/migrations/' || echo 0)
 HAS_SPEC_CHANGE=$(echo "$CHANGED_FILES" | grep -c 'doc/Project Specification' || echo 0)
 HAS_ADR_CHANGE=$(echo "$CHANGED_FILES" | grep -c 'doc/adr/' || echo 0)
-HAS_POC_CHANGE=$(echo "$CHANGED_FILES" | grep -c 'doc/POC_development_plan' || echo 0)
+HAS_HISTORY_CHANGE=$(echo "$CHANGED_FILES" | grep -c 'doc/development_history' || echo 0)
 
-if [ "$HAS_NEW_MIGRATION" -gt 0 ] && [ "$HAS_SPEC_CHANGE" -eq 0 ] && [ "$HAS_ADR_CHANGE" -eq 0 ] && [ "$HAS_POC_CHANGE" -eq 0 ]; then
+if [ "$HAS_NEW_MIGRATION" -gt 0 ] && [ "$HAS_SPEC_CHANGE" -eq 0 ] && [ "$HAS_ADR_CHANGE" -eq 0 ] && [ "$HAS_HISTORY_CHANGE" -eq 0 ]; then
   echo "  WARNING: New migration(s) without any doc/spec/ADR changes"
   WARNINGS=$((WARNINGS + 1))
   # Emit GitHub Actions warning annotation
