@@ -58,32 +58,54 @@ ENGARDE_BASE = "https://engarde-service.com/competition"
 def _parse_engarde_category(slug: str, titre: str) -> list[str]:
     """Extract age categories from Engarde slug and title.
 
-    Handles:
-    - "ef-2" → ["V2"]
-    - "em-3-4" → ["V3", "V4"]  (combined)
-    - "ef-1" → ["V1"]
-    - "shv2" → ["V2"]
-    """
-    # Try combined pattern from slug: e.g., "ef-3-4" or "em-1-2"
-    combined = re.findall(r"-(\d)", slug)
-    if len(combined) >= 2:
-        return [f"V{d}" for d in combined]
-    if len(combined) == 1:
-        return [f"V{combined[0]}"]
+    Priority: title V-notation > slug pattern > title bare digits.
 
-    # Try from slug suffix: "shv2" → "2", "ehv1" → "1"
-    v_match = re.search(r"v(\d)$", slug)
+    Handles:
+    - Title "Men's Epee V1 (40)" → ["V1"]
+    - Title "Women's Epee V1-V2 Poules (40-50)" → ["V1", "V2"]
+    - Slug "ef-2" → ["V2"]
+    - Slug "em-3-4" → ["V3", "V4"]  (combined)
+    - Slug "shv2" → ["V2"]
+    - Title "EPEE FEMALE - 2" → ["V2"]
+    """
+    # 1. Try V-notation from title: "V1", "V2", "V1-V2", etc.
+    v_from_title = re.findall(r"V([0-4])", titre)
+    if v_from_title:
+        return [f"V{d}" for d in v_from_title]
+
+    # 2. Try slug patterns
+    # "ef-3-4" or "em-1-2" — combined via dash-digit
+    slug_combined = re.findall(r"-([0-4])(?!\d)", slug)
+    if len(slug_combined) >= 2:
+        return [f"V{d}" for d in slug_combined]
+    if len(slug_combined) == 1:
+        return [f"V{slug_combined[0]}"]
+
+    # "shv2", "ehv1" — v-suffix
+    v_match = re.search(r"v([0-4])$", slug)
     if v_match:
         return [f"V{v_match.group(1)}"]
 
-    # Try from title: "EPEE FEMALE - 2" → "2"
+    # 3. Fallback: bare digits in title: "EPEE FEMALE - 2"
     title_digits = re.findall(r"\b([0-4])\b", titre)
-    if len(title_digits) >= 2:
+    if title_digits:
         return [f"V{d}" for d in title_digits]
-    if len(title_digits) == 1:
-        return [f"V{title_digits[0]}"]
 
     return []
+
+
+def _parse_engarde_gender(sexe: str, titre: str) -> str | None:
+    """Extract gender from sexe attribute, with title fallback.
+
+    Some events have wrong sexe attribute (e.g. Budapest me70 has sexe='f').
+    Title keywords override: Men's/Women's/Homme/Femme/Dame.
+    """
+    upper = titre.upper()
+    if "WOMEN" in upper or "FEMME" in upper or "DAME" in upper or "FEMALE" in upper:
+        return "F"
+    if "MEN'S" in upper or "HOMME" in upper or " MALE" in upper or upper.startswith("MEN"):
+        return "M"
+    return ENGARDE_GENDER_MAP.get(sexe)
 
 
 def parse_engarde_competitions_xml(
@@ -103,6 +125,10 @@ def parse_engarde_competitions_xml(
         # Skip non-individual
         if comp.get("estindividuelle") == "0":
             continue
+        # Skip non-completed (Poules, empty, etc.)
+        etat = comp.get("etat", "")
+        if etat != "completed":
+            continue
 
         arme = comp.get("arme", "")
         sexe = comp.get("sexe", "")
@@ -112,7 +138,7 @@ def parse_engarde_competitions_xml(
             titre = titre_el.text
 
         weapon = ENGARDE_WEAPON_MAP.get(arme)
-        gender = ENGARDE_GENDER_MAP.get(sexe)
+        gender = _parse_engarde_gender(sexe, titre)
         if not weapon or not gender:
             continue
 

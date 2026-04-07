@@ -104,6 +104,35 @@ class TestDiscoverEngarde:
         assert len(v3_f_epee) > 0
         assert len(v4_f_epee) > 0
 
+    def test_engarde_budapest_v_notation_titles(self):
+        """3.16k: Budapest event with V-notation titles parses all 8 tournaments."""
+        from python.tools.populate_tournament_urls import parse_engarde_competitions_xml
+
+        xml = (FIXTURES / "engarde" / "competitions_budapest.xml").read_text()
+        results = parse_engarde_competitions_xml(
+            xml, org="hunfencing", event="2025_09_20_pbt"
+        )
+        assert len(results) == 8
+        # All epee, 4 male + 4 female, V1-V4
+        weapons = {r["weapon"] for r in results}
+        assert weapons == {"EPEE"}
+        genders = {r["gender"] for r in results}
+        assert genders == {"M", "F"}
+        categories = {r["category"] for r in results}
+        assert categories == {"V1", "V2", "V3", "V4"}
+
+    def test_engarde_skips_poules_and_empty(self):
+        """3.16l: Poules and empty entries filtered out."""
+        from python.tools.populate_tournament_urls import parse_engarde_competitions_xml
+
+        xml = (FIXTURES / "engarde" / "competitions_budapest.xml").read_text()
+        results = parse_engarde_competitions_xml(
+            xml, org="hunfencing", event="2025_09_20_pbt"
+        )
+        slugs = [r.get("slug", "") for r in results]
+        # No combined poule slugs
+        assert not any("-" in s for s in slugs)
+
 
 # ── 3.16c: 4Fence discovery (deterministic URL generation) ──────────────
 
