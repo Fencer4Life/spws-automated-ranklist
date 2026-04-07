@@ -197,6 +197,7 @@
     deleteTournamentCascade,
     updateTournament,
     createTournament,
+    triggerGitHubWorkflow,
     fetchMatchCandidates,
     approveMatch,
     dismissMatch,
@@ -232,12 +233,16 @@
     'supabase-cert-key': certKey = '',
     'supabase-prod-url': prodUrl = '',
     'supabase-prod-key': prodKey = '',
+    'github-pat': githubPat = '',
+    'github-repo': githubRepo = '',
     demo = false,
   }: {
     'supabase-cert-url'?: string
     'supabase-cert-key'?: string
     'supabase-prod-url'?: string
     'supabase-prod-key'?: string
+    'github-pat'?: string
+    'github-repo'?: string
     demo?: boolean
   } = $props()
 
@@ -570,26 +575,31 @@
   async function handleImportEvent(eventId: number) {
     const event = calendarEvents.find(e => e.id_event === eventId)
     if (!event) return
-    if (!event.url_event) {
-      error = t('import_no_url')
-      return
-    }
+    if (!event.url_event) { error = t('import_no_url'); return }
+    if (!githubPat || !githubRepo) { error = t('import_no_github'); return }
     const msg = `${t('import_event_confirm')}\n\n${event.txt_code}\n${event.url_event}`
     if (!confirm(msg)) return
-    error = `${t('import_triggered')}: populate-urls ${event.txt_code}`
+    try {
+      await triggerGitHubWorkflow(githubPat, githubRepo, 'populate-urls.yml', { event_code: event.txt_code })
+      error = `${t('import_triggered_ok')}: ${event.txt_code}`
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
   }
 
   async function handleImportTournament(id: number, _isReimport: boolean) {
     const tourn = allTournaments.find(t => t.id_tournament === id)
     if (!tourn) return
-    if (!tourn.url_results) {
-      error = t('import_no_url')
-      return
-    }
+    if (!tourn.url_results) { error = t('import_no_url'); return }
+    if (!githubPat || !githubRepo) { error = t('import_no_github'); return }
     const msg = `${t('import_confirm')}\n\n${tourn.txt_code}\n${tourn.url_results}`
     if (!confirm(msg)) return
-    // Trigger scrape via Telegram command (GHA can't be called from browser)
-    error = `${t('import_triggered')}: t-scrape ${tourn.txt_code}`
+    try {
+      await triggerGitHubWorkflow(githubPat, githubRepo, 'scrape-tournament.yml', { tournament_code: tourn.txt_code })
+      error = `${t('import_triggered_ok')}: ${tourn.txt_code}`
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
   }
 
   async function reloadAdminEvents() {

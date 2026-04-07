@@ -221,7 +221,8 @@
   "tournament_type": "Typ turnieju",
   "import_no_url": "Ustaw URL wyników przed importem",
   "import_confirm": "Importować wyniki z URL?",
-  "import_triggered": "Wyślij komendę w Telegramie",
+  "import_triggered_ok": "Import uruchomiony",
+  "import_no_github": "Brak konfiguracji GitHub (PAT/repo)",
   "import_event_confirm": "Odkryć i importować wyniki wszystkich turniejów?",
   "tooltip_import_event": "Importuj wyniki ze strony wydarzenia"
 }
