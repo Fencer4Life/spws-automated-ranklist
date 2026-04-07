@@ -17,25 +17,23 @@ This document tracks remaining scope for full production readiness.
 
 ## 2. Deferred Scope
 
-### 2.1 Pipeline Orchestration (T9.11) — PHASE 3-5 COMPLETE
+### 2.1 Pipeline Orchestration (T9.11) — COMPLETE
 
-**FRs:** FR-51, FR-70–78 (Phase 3), FR-79–85 (Phase 5-8)
-**ADRs:** ADR-022, ADR-023, ADR-024, ADR-025 (event-centric ingestion + Telegram admin)
+**FRs:** FR-51, FR-70–85
+**ADRs:** ADR-022, ADR-023, ADR-024, ADR-025, ADR-026, ADR-027
 
-**What's implemented:**
+**Implemented:**
 - `fn_ingest_tournament_results` — atomic delete+insert+score (ADR-022)
-- `python/pipeline/` — orchestrator, db_connector, storage_handler, ingest_cli
-- `python/pipeline/notifications.py` — TelegramNotifier (13 use cases)
-- `python/pipeline/export_seed.py` — CERT seed export with retry logic
-- `python/pipeline/promote.py` — CERT → PROD promotion with stale data cleanup
-- GAS email polling → Supabase Storage → GitHub Actions ingest workflow
-- Telegram command interface (16+ commands including `ingest`, `seed-export`, `promote`)
-- PPW4 Gdańsk data ingested end-to-end into CERT and promoted to PROD
-
-**What remains:**
-- Phase 6-8: event lifecycle transitions (PLANNED → IN_PROGRESS → COMPLETED)
-- ADR-024 fix for unknown DOB in combined categories
-- E2E test with PPW4.5 dummy event
+- `python/pipeline/` — orchestrator, db_connector, storage_handler, ingest_cli, notifications, promote, export_seed
+- Event lifecycle: PLANNED → IN_PROGRESS (auto on ingest) → COMPLETED (admin) + rollback
+- Combined category splitting with DOB resolution + PENDING flag for unresolvable (ADR-024)
+- Event-centric routing: `fn_find_event_by_date()` + `fn_find_or_create_tournament()` (ADR-025)
+- Telegram command interface: 16+ commands (lifecycle, review, storage, season, EVF, URLs, emergency)
+- GAS email polling → Supabase Storage → GitHub Actions ingest workflow (ADR-023)
+- CERT → PROD promotion with per-tournament error handling (ADR-026)
+- Full-season seed export with name-based lookups + auto-commit (ADR-027)
+- PPW4 Gdańsk data ingested E2E into CERT and promoted to PROD
+- 25 pgTAP tests (10.1–10.24) + 20 pytest tests (test_orchestrator, test_ingest_cli)
 
 ### 2.2 Identity Resolution DB Wiring (FR-56, FR-57) — COMPLETE
 
@@ -88,10 +86,18 @@ This document tracks remaining scope for full production readiness.
 - Mockup: `doc/mockups/m11_calendar_evf_colors.html`
 - 6 new vitest tests (11.1–11.6)
 
-### 2.5 FencingTime Live XML File Ingestion
+### 2.5 FencingTime Live XML File Ingestion — COMPLETE
 
-**FRs:** FR-51 (partial), new FRs TBD
-**Depends on:** Pipeline Orchestration (2.1), Identity Resolution DB Wiring (2.2)
+**FRs:** FR-51
+**ADRs:** ADR-022, ADR-024
+**Depends on:** Pipeline Orchestration (2.1 ✓), Identity Resolution DB Wiring (2.2 ✓)
+
+**Implemented:**
+- `python/scrapers/fencingtime_xml.py` — full XML parser (270 lines), basic + enriched modes
+- Combined category splitting: DOB-based assignment, fencer_db fallback, PENDING for unresolvable
+- `python/scrapers/file_import.py` — file format dispatcher (.xml, .xlsx, .xls, .json, .csv)
+- Test fixtures: `single_category.xml`, `combined_v0v1.xml`, `no_dob.xml`
+- 3 pytest test classes (test_fencingtime_xml) + orchestrator integration tests
 
 Automated ingestion of FencingTime Live XML result files — the primary data format for Polish domestic tournaments (PPW/MPW).
 
@@ -302,19 +308,18 @@ flowchart LR
 
 > **Excel retired.** The `generate_season_seed.py` tool and Excel parsers remain in the repo for historical seed data but are not part of the active ingestion pipeline.
 
-### 2.7 Automated Ingestion Pipeline (T9.14)
+### 2.7 Automated Ingestion Pipeline (T9.14) — COMPLETE
 
-**What exists:**
-- GitHub Actions CI/CD pipeline for deployment (LOCAL → CERT → PROD)
+**Implemented:**
+- `ingest.yml` — GitHub Actions workflow: manual dispatch + GAS trigger via workflow_dispatch
 - `evf-sync.yml` — EVF calendar + results cron (every 3 days)
-- Telegram alerting on pipeline failure (FR-32, tested)
-
-**What's needed:**
-- `ingest.yml` GitHub Actions workflow: daily cron (08:00 UTC) + manual dispatch + Supabase Storage webhook trigger
-- Implements the two-track ingestion strategy (§2.6): domestic XML-first, international EVF API-first
-- Configurable grace periods: 4 days (domestic), 8 days (international) before Telegram escalation
-- Error handling + Telegram notifications on failure/success
-- Admin reply handling for interactive edge cases (Telegram bot listens for YES/NO replies)
+- `promote.yml` — CERT → PROD promotion workflow
+- `export-seed.yml` — seed export from CERT
+- `populate-urls.yml` — tournament URL auto-population (ADR-029)
+- GAS email polling (5-min interval) with auto-upload to Supabase Storage
+- Telegram notifications on success/failure/edge cases (13+ notification types)
+- Two-track ingestion: domestic XML-first (email), international EVF API-first
+- Admin Telegram commands for lifecycle management (complete, rollback, promote, status)
 
 ### 2.8 Pipeline Observability (NFR-10 partial)
 
@@ -336,13 +341,13 @@ flowchart TD
     classDef ready fill:#ff9800,color:#fff,stroke:#f57c00
     classDef blocked fill:#9e9e9e,color:#fff,stroke:#757575
 
-    ORCH["2.1 Pipeline Orchestration\n(Phase 3-5 done)"]:::done
-    IDRES["2.2 Identity Resolution\nDB Wiring ✓"]:::done
-    URL["2.3 URL Scraping Tab"]:::blocked
+    ORCH["2.1 Pipeline Orchestration ✓"]:::done
+    IDRES["2.2 Identity Resolution ✓"]:::done
+    URL["2.3 URL Scraping Tab"]:::ready
     EVF["2.4 EVF Calendar +\nResults Import ✓"]:::done
-    FTL["2.5 FTL XML File Ingestion"]:::blocked
-    STRAT["2.6 Ingestion Strategy\n(calendar-driven triggers)"]:::blocked
-    AUTO["2.7 Automated Ingestion\nPipeline"]:::blocked
+    FTL["2.5 FTL XML Ingestion ✓"]:::done
+    STRAT["2.6 Ingestion Strategy ✓"]:::done
+    AUTO["2.7 Automated Pipeline ✓"]:::done
     OBS["2.8 Pipeline Observability"]:::ready
 
     ORCH --> IDRES
@@ -350,23 +355,22 @@ flowchart TD
     ORCH --> FTL
     IDRES --> FTL
     FTL --> STRAT
-    URL --> STRAT
+    URL -.->|"fallback path"| STRAT
     EVF -->|"PEW/MEW primary path"| STRAT
-    OBS --> AUTO
+    OBS -.-> AUTO
     STRAT --> AUTO
 ```
 
 **Legend:** 🟢 Done · 🟠 Ready (no blockers) · ⬜ Blocked (waiting on predecessors)
 
-### 3.2 Recommended Order
+### 3.2 Remaining Work
 
 ```
-Phase A:  2.2 Identity Resolution DB Wiring  +  2.8 Pipeline Observability  (ready now)
-Phase B:  2.3 URL Scraping Tab  +  2.5 FTL XML File Ingestion  (need 2.2)
-Phase C:  2.6 Ingestion Strategy  +  2.7 Automated Ingestion Pipeline  (need 2.5 + 2.3)
+2.3  URL Scraping Tab          — frontend "Z adresu URL" tab (fallback ingestion path)
+2.8  Pipeline Observability    — structured JSON logging + aggregated summaries
 ```
 
-Items 2.1 (Pipeline Orchestration Phase 3-5) and 2.4 (EVF Import) are already complete.
+Items 2.1, 2.2, 2.4, 2.5, 2.6, 2.7 are complete. Only 2.3 and 2.8 remain as nice-to-haves.
 
 ## 4. Current Test Baseline
 
@@ -382,9 +386,8 @@ Items 2.1 (Pipeline Orchestration Phase 3-5) and 2.4 (EVF Import) are already co
 
 | Status | Count | FRs |
 |--------|-------|-----|
-| Covered | 58 | FR-01–FR-50, FR-52, FR-55–FR-58, FR-59–FR-67 |
+| Covered | 59 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-67 |
 | Partial | 3 | FR-53, FR-54, NFR-10 |
-| Deferred | 1 | FR-51 |
 | Not tested (NFR) | 4 | NFR-01, NFR-03, NFR-04, NFR-08 |
 | Infrastructure | 2 | NFR-02, NFR-12 |
 
