@@ -179,11 +179,32 @@ Key design decisions are recorded as Architecture Decision Records in [`doc/adr/
 | [001](adr/001-hybrid-scoring-config.md) | Hybrid scoring config (DB table + JSON export/import) | Accepted |
 | [002](adr/002-calculate-once-store-forever.md) | Calculate once, store forever (immutable scores) | Accepted |
 | [003](adr/003-identity-by-fk-not-name.md) | Identity by FK, not by name (replacing Excel XLOOKUP) | Accepted |
-| [004](adr/004-single-admin-account.md) | Single admin account for POC | Accepted |
+| ~~[004](adr/004-single-admin-account.md)~~ | ~~Single admin account for POC~~ | Superseded by ADR-016 |
 | [005](adr/005-svelte-state-i18n.md) | Svelte 5 `$state` for internationalisation | Accepted |
 | [006](adr/006-jsonb-ranking-rules.md) | JSONB bucket-based ranking rules | Accepted |
-| [007](adr/007-shadow-dom-deferred.md) | Shadow DOM deferred to MVP | Accepted |
+| [007](adr/007-shadow-dom-deferred.md) | Shadow DOM isolation (implemented M8) | Accepted |
 | [008](adr/008-psw-msw-international-pool.md) | PSW and MSW in international ranking pool | Accepted |
+| [009](adr/009-cert-prod-runtime-toggle.md) | CERT/PROD runtime toggle | Accepted |
+| [010](adr/010-age-category-birth-year.md) | Age category by birth year | Accepted |
+| [011](adr/011-three-tier-release-pipeline.md) | Three-tier release pipeline (LOCAL → CERT → PROD) | Accepted |
+| [012](adr/012-sql-pre-deploy-snapshots.md) | SQL pre-deploy snapshots | Deferred |
+| [013](adr/013-poc-mvp-transition.md) | POC → MVP transition strategy | Accepted |
+| [014](adr/014-delete-reimport-strategy.md) | Delete-reimport strategy | Accepted |
+| [015](adr/015-m8-ui-design-decisions.md) | M8 UI design decisions | Accepted |
+| [016](adr/016-supabase-auth-totp-mfa.md) | Supabase Auth + TOTP MFA | Accepted |
+| [017](adr/017-season-configurable-evf-toggle.md) | Season-configurable EVF toggle | Accepted |
+| [018](adr/018-rolling-score-active-season.md) | Rolling score for active season | Accepted |
+| [019](adr/019-domestic-only-fencer-seed.md) | Domestic-only fencer seed | Accepted |
+| [020](adr/020-seed-generator-domestic-auto-create.md) | Seed generator domestic auto-create | Accepted |
+| [021](adr/021-imew-biennial-carry-over.md) | IMEW biennial carry-over | Accepted |
+| [022](adr/022-ingestion-db-transaction.md) | Ingestion DB transaction strategy | Accepted |
+| [023](adr/023-email-ingestion-gas-storage.md) | Email ingestion via GAS + Supabase Storage | Accepted |
+| [024](adr/024-combined-category-splitting.md) | Combined category splitting (DOB-based) | Accepted |
+| [025](adr/025-event-centric-ingestion-telegram.md) | Event-centric ingestion + Telegram admin | Accepted |
+| [026](adr/026-cert-prod-promotion.md) | CERT → PROD event promotion | Accepted |
+| [027](adr/027-full-season-seed-export.md) | Full-season seed export from CERT | Accepted |
+| [028](adr/028-evf-calendar-results-import.md) | EVF calendar + results import (JSON API) | Accepted |
+| [029](adr/029-tournament-url-auto-population.md) | Tournament URL auto-population + admin CRUD | Accepted |
 
 ## 6. Implementation Phasing & Solution Approach
 
