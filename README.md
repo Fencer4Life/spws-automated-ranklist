@@ -5,8 +5,8 @@ Automated ranking system for the **Polish Veterans Fencing Association** (Stowar
 ## Live
 
 - **Production:** Embedded on the SPWS website via `<spws-ranklist>` Web Component
-- **CERT (staging):** [fencer4life.github.io/spws-automated-ranklist](https://fencer4life.github.io/spws-automated-ranklist/)
-- **Admin UI:** [fencer4life.github.io/spws-automated-ranklist/?admin=1](https://fencer4life.github.io/spws-automated-ranklist/?admin=1)
+- [**CERT (staging)**](https://fencer4life.github.io/spws-automated-ranklist/)
+- [**Admin UI**](https://fencer4life.github.io/spws-automated-ranklist/?admin=1)
 
 ## Features
 
