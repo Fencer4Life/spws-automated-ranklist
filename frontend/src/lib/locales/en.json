@@ -221,7 +221,8 @@
   "tournament_type": "Tournament type",
   "import_no_url": "Set results URL before importing",
   "import_confirm": "Import results from URL?",
-  "import_triggered": "Send command in Telegram",
+  "import_triggered_ok": "Import triggered",
+  "import_no_github": "GitHub configuration missing (PAT/repo)",
   "import_event_confirm": "Discover and import results for all tournaments?",
   "tooltip_import_event": "Import results from event page"
 }

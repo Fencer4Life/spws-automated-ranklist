@@ -346,3 +346,24 @@ export async function deleteTournamentCascade(id: number): Promise<void> {
   const { error } = await getClient().rpc('fn_delete_tournament_cascade', { p_id: id })
   if (error) throw error
 }
+
+export async function triggerGitHubWorkflow(
+  pat: string, repo: string, workflow: string, inputs: Record<string, string>
+): Promise<void> {
+  const resp = await fetch(
+    `https://api.github.com/repos/${repo}/actions/workflows/${workflow}/dispatches`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `token ${pat}`,
+        Accept: 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ref: 'main', inputs }),
+    },
+  )
+  if (!resp.ok) {
+    const text = await resp.text()
+    throw new Error(`GitHub Actions trigger failed (${resp.status}): ${text}`)
+  }
+}
