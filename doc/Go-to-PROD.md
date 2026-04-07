@@ -1,6 +1,8 @@
+> **ARCHIVED** — This document is superseded by [Development History](development_history.md) and the [Project Specification](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). Kept for git history reference only.
+
 # Go-to-PROD Plan — SPWS Automated Ranklist System
 
-**Status:** In Progress
+**Status:** Complete
 **Date:** 2026-04-07 (updated)
 **Predecessor:** [MVP Development Plan](MVP_development_plan.md) (M8–M10, completed 2026-04-04)
 
