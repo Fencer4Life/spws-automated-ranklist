@@ -104,6 +104,7 @@
       onedittournament={handleEditTournament}
       oncreatetournament={handleCreateTournament}
       onimporttournament={handleImportTournament}
+      onimportevent={handleImportEvent}
     />
   {:else if currentView === 'admin_identities'}
     <IdentityManager
@@ -564,6 +565,18 @@
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
     }
+  }
+
+  async function handleImportEvent(eventId: number) {
+    const event = calendarEvents.find(e => e.id_event === eventId)
+    if (!event) return
+    if (!event.url_event) {
+      error = t('import_no_url')
+      return
+    }
+    const msg = `${t('import_event_confirm')}\n\n${event.txt_code}\n${event.url_event}`
+    if (!confirm(msg)) return
+    error = `${t('import_triggered')}: populate-urls ${event.txt_code}`
   }
 
   async function handleImportTournament(id: number, _isReimport: boolean) {
