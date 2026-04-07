@@ -600,17 +600,26 @@
   .status-in-progress { background: #fff3cd; color: #856404; }
   .status-changed { background: #ffe0cc; color: #8a4500; }
   .icon-btn {
-    border: none;
-    background: none;
+    border: 1px solid #ccc;
+    background: #fff;
     cursor: pointer;
-    font-size: 16px;
-    padding: 4px;
-    color: #666;
+    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #555;
+    transition: all 0.15s;
   }
   .icon-btn:hover {
-    color: #333;
+    background: #f0f0f0;
+    border-color: #999;
+    color: #222;
+  }
+  .icon-btn.delete {
+    color: #999;
   }
   .icon-btn.delete:hover {
+    background: #ffeef0;
+    border-color: #c33;
     color: #c33;
   }
   .event-card {
