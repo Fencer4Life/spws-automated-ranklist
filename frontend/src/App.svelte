@@ -11,14 +11,6 @@
 <div class="ranklist-app">
   <header class="app-header">
     <button class="hamburger-btn" onclick={() => { sidebarOpen = true }} aria-label="Menu">&#9776;</button>
-    {#if dualEnv}
-      <div class="env-toggle">
-        <button class="env-btn" class:active={activeEnv === 'CERT'}
-          onclick={() => { activeEnv = 'CERT' }}>CT</button>
-        <button class="env-btn" class:active={activeEnv === 'PROD'}
-          onclick={() => { activeEnv = 'PROD' }}>PD</button>
-      </div>
-    {/if}
     <h2 class="app-title">
       <img src="SPWS-logo.png" alt="SPWS" class="header-logo" />
       {currentView === 'ranklist' ? t('app_title') : currentView === 'calendar' ? t('calendar_title') : currentView === 'admin_seasons' ? t('nav_admin_seasons') : currentView === 'admin_events' ? t('nav_admin_events') : currentView === 'admin_identities' ? t('nav_admin_identities') : currentView === 'admin_scoring' ? t('nav_admin_scoring') : t('app_title')}
@@ -37,6 +29,8 @@
       {showEvfToggle}
       {seasons}
       bind:selectedSeasonId
+      {dualEnv}
+      bind:activeEnv
       onseasonchange={handleSeasonChange}
       onfilterchange={onFilterChange}
       onexport={handleMainExport}
@@ -75,7 +69,7 @@
       onclose={closeDrilldown}
     />
   {:else if currentView === 'calendar'}
-    <CalendarView events={calendarEvents} {showEvfToggle} {isActiveSeason} {seasons} bind:selectedSeasonId onseasonchange={handleSeasonChange} />
+    <CalendarView events={calendarEvents} {showEvfToggle} {isActiveSeason} {seasons} bind:selectedSeasonId {dualEnv} bind:activeEnv onseasonchange={handleSeasonChange} />
   {:else if currentView === 'admin_seasons'}
     <SeasonManager
       {seasons}
@@ -749,29 +743,6 @@
     border-bottom: 1px solid #eee;
     font-size: 12px;
     color: #888;
-  }
-  .env-toggle {
-    display: flex;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .env-btn {
-    padding: 4px 10px;
-    border: none;
-    background: #fff;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    letter-spacing: 0.5px;
-    transition: all 0.15s;
-  }
-  .env-btn:first-child {
-    border-right: 1px solid #ccc;
-  }
-  .env-btn.active {
-    background: #4a90d9;
-    color: #fff;
   }
   .error-banner {
     margin-top: 16px;
