@@ -291,12 +291,18 @@ function handleCommand(props, command, arg) {
       if (evfLines.length === 1) evfLines.push('\n<i>All past international events have results ✓</i>');
       return evfLines.join('\n');
 
-    // --- URL Population ---
+    // --- URL Population + Scraping ---
     case 'populate-urls':
       var githubPatPU = props.getProperty('GITHUB_PAT');
       var githubRepoPU = props.getProperty('GITHUB_REPO');
       triggerGitHubWorkflow(githubPatPU, githubRepoPU, 'populate-urls.yml', { event_code: arg });
       return '<b>Populate URLs</b>\n<pre>' + arg + '</pre>\n<i>Discovering tournament result URLs from event page...</i>';
+
+    case 't-scrape':
+      var githubPatTS = props.getProperty('GITHUB_PAT');
+      var githubRepoTS = props.getProperty('GITHUB_REPO');
+      triggerGitHubWorkflow(githubPatTS, githubRepoTS, 'scrape-tournament.yml', { tournament_code: arg });
+      return '<b>Scrape Tournament</b>\n<pre>' + arg + '</pre>\n<i>Scraping results from URL and ingesting...</i>';
 
     // --- Emergency ---
     case 'pause':
@@ -376,6 +382,9 @@ function handleCommand(props, command, arg) {
         '',
         '<pre>populate-urls &lt;event&gt;</pre>',
         'Auto-discover tournament result URLs from event page',
+        '',
+        '<pre>t-scrape &lt;tournament_code&gt;</pre>',
+        'Scrape results from tournament URL and ingest',
         '',
         '<b><u>Emergency</u></b>',
         '',
