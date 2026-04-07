@@ -9,8 +9,7 @@
  * Setup (Script Properties):
  *   SUPABASE_URL           — Supabase project URL (CERT)
  *   SUPABASE_SERVICE_ROLE_KEY — service_role key (bypasses RLS)
- *   SUPABASE_PROD_URL      — Supabase project URL (PROD)
- *   SUPABASE_PROD_SERVICE_ROLE_KEY — PROD service_role key
+ *   SUPABASE_PROD_REF      — PROD project ref (e.g. "ywgymtgcyturldazcpmw")
  *   GITHUB_PAT             — GitHub personal access token (workflow_dispatch scope)
  *   GITHUB_REPO            — owner/repo (e.g. "Fencer4Life/spws-automated-ranklist")
  *   TELEGRAM_BOT_TOKEN     — Telegram bot token
@@ -295,9 +294,8 @@ function handleCommand(props, command, arg) {
 
     // --- PROD read-only commands ---
     case 'status-prod':
-      var prodUrl = props.getProperty('SUPABASE_PROD_URL');
-      var prodKey = props.getProperty('SUPABASE_PROD_SERVICE_ROLE_KEY');
-      var statusProd = callRpc(prodUrl, prodKey, 'fn_event_status', { p_prefix: arg });
+      var prodRef = props.getProperty('SUPABASE_PROD_REF');
+      var statusProd = callRpc(null, null, 'fn_event_status', { p_prefix: arg }, prodRef);
       return '<b>Event Status (PROD)</b>\n'
         + '<pre>' + (statusProd.event_code || arg) + '</pre>\n'
         + 'Status: <b>' + (statusProd.event_status || '—') + '</b>\n'
@@ -306,9 +304,8 @@ function handleCommand(props, command, arg) {
         + 'Pending: <b>' + (statusProd.pending_count || 0) + '</b>';
 
     case 'results-prod':
-      var prodUrlR = props.getProperty('SUPABASE_PROD_URL');
-      var prodKeyR = props.getProperty('SUPABASE_PROD_SERVICE_ROLE_KEY');
-      var resProd = callRpc(prodUrlR, prodKeyR, 'fn_event_results_summary', { p_prefix: arg });
+      var prodRefR = props.getProperty('SUPABASE_PROD_REF');
+      var resProd = callRpc(null, null, 'fn_event_results_summary', { p_prefix: arg }, prodRefR);
       if (!resProd || resProd.length === 0) return '<b>Results (PROD)</b>\n<pre>' + arg + '</pre>\n<i>No tournaments found</i>';
       var resProdLines = ['<b>Results (PROD)</b>\n<pre>' + arg + '</pre>'];
       resProd.forEach(function(t) {
@@ -322,9 +319,8 @@ function handleCommand(props, command, arg) {
       return resProdLines.join('\n');
 
     case 'evf-status-prod':
-      var prodUrlE = props.getProperty('SUPABASE_PROD_URL');
-      var prodKeyE = props.getProperty('SUPABASE_PROD_SERVICE_ROLE_KEY');
-      var evfProd = callRpc(prodUrlE, prodKeyE, 'fn_season_overview', {});
+      var prodRefE = props.getProperty('SUPABASE_PROD_REF');
+      var evfProd = callRpc(null, null, 'fn_season_overview', {}, prodRefE);
       if (!evfProd || evfProd.length === 0) return '<b>EVF Status (PROD)</b>\n<i>No events</i>';
       var todayP = new Date().toISOString().slice(0, 10);
       var evfProdLines = ['<b>EVF Status (PROD)</b>\n<i>International events missing results:</i>'];
@@ -471,7 +467,7 @@ function handleCommand(props, command, arg) {
 // SUPABASE HELPERS
 // ═══════════════════════════════════════════════════════════════
 
-function callRpc(url, key, fnName, params) {
+function callRpc(url, key, fnName, params, overrideRef) {
   // Build SQL call from function name and params
   var paramParts = [];
   for (var k in params) {
@@ -489,7 +485,7 @@ function callRpc(url, key, fnName, params) {
   // Use Management API (bypasses PostgREST restrictions)
   var props = PropertiesService.getScriptProperties();
   var accessToken = props.getProperty('SUPABASE_ACCESS_TOKEN');
-  var projectRef = props.getProperty('SUPABASE_PROJECT_REF');
+  var projectRef = overrideRef || props.getProperty('SUPABASE_PROJECT_REF');
 
   var endpoint = 'https://api.supabase.com/v1/projects/' + projectRef + '/database/query';
   var response = UrlFetchApp.fetch(endpoint, {
