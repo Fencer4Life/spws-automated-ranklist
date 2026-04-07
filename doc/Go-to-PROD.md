@@ -315,11 +315,14 @@ flowchart LR
 - `evf-sync.yml` — EVF calendar + results cron (every 3 days)
 - `promote.yml` — CERT → PROD promotion workflow
 - `export-seed.yml` — seed export from CERT
-- `populate-urls.yml` — tournament URL auto-population (ADR-029)
+- `populate-urls.yml` — tournament URL auto-population, supports CERT + PROD target (ADR-029)
+- `scrape-tournament.yml` — scrape single tournament results from URL and ingest (ADR-029)
 - GAS email polling (5-min interval) with auto-upload to Supabase Storage
 - Telegram notifications on success/failure/edge cases (13+ notification types)
 - Two-track ingestion: domestic XML-first (email), international EVF API-first
 - Admin Telegram commands for lifecycle management (complete, rollback, promote, status)
+- PROD read-only Telegram commands: `status-prod`, `results-prod`, `evf-status-prod`
+- URL commands: `populate-urls`, `populate-urls-prod`, `t-scrape`
 
 ### 2.8 Pipeline Observability (NFR-10 partial)
 
@@ -410,10 +413,10 @@ Items 2.1–2.2, 2.4–2.7, 2.9 are complete. Only 2.3 and 2.8 remain as optiona
 | Suite | Count | Files |
 |-------|-------|-------|
 | pgTAP | 236 | `supabase/tests/` (13 files) |
-| pytest | 267 | `python/tests/` (20 files) |
+| pytest | 269 | `python/tests/` (20 files) |
 | vitest | 201 | `frontend/tests/` (21 files) |
 | Playwright | 7 | `frontend/e2e/` (1 file) |
-| **Total** | **711** | |
+| **Total** | **713** | |
 
 ## 5. RTM Coverage Summary
 
@@ -437,5 +440,6 @@ Full RTM: [Project Specification Appendix C](Project%20Specification.%20SPWS%20A
 | ADR-026 | CERT → PROD Promotion | Accepted |
 | ADR-027 | Full-Season Seed Export | Accepted |
 | ADR-028 | EVF Calendar + Results Import | Accepted |
+| ADR-029 | Tournament URL Auto-Population + Admin CRUD | Accepted |
 
 See [full ADR index](adr/) and [Project Specification Appendix C](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#appendix-c--requirements-traceability-matrix).
