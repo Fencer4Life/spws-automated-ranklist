@@ -7,54 +7,78 @@
       </button>
     </div>
 
-    {#if showForm}
-      <div data-field="season-form" class="season-form">
-        <label>
-          {t('season_code_label')}
-          <input data-field="form-code" type="text" bind:value={draftCode} />
-        </label>
-        <label>
-          {t('season_start_label')}
-          <input data-field="form-start" type="date" bind:value={draftStart} />
-        </label>
-        <label>
-          {t('season_end_label')}
-          <input data-field="form-end" type="date" bind:value={draftEnd} />
-        </label>
-        {#if editingId != null}
-          <label class="checkbox-label">
-            <input data-field="form-evf-toggle" type="checkbox" bind:checked={draftShowEvf} />
-            {t('sc_show_evf_toggle')}
-          </label>
-        {/if}
-        <div class="form-actions">
-          <button data-field="form-save-btn" class="save-btn" onclick={() => { handleSave() }}>
-            {t('season_save')}
-          </button>
-          <button data-field="form-cancel-btn" class="cancel-btn" onclick={() => { closeForm() }}>
-            {t('season_cancel')}
-          </button>
-        </div>
-      </div>
-    {/if}
-
     <div data-field="season-list" class="season-list">
       {#each seasons as season}
-        <div data-field="season-row" class="season-row">
-          <span data-field="season-code" class="season-cell">{season.txt_code}</span>
-          <span data-field="season-start" class="season-cell">{season.dt_start}</span>
-          <span data-field="season-end" class="season-cell">{season.dt_end}</span>
-          <span class="season-cell">
-            {#if season.bool_active}
-              <span class="active-badge">{t('season_active_badge')}</span>
-            {/if}
-          </span>
-          <span class="season-cell actions">
-            <button data-field="edit-btn" class="icon-btn" onclick={() => { openEditForm(season) }}>&#9998;</button>
-            <button data-field="delete-btn" class="icon-btn delete" onclick={() => { ondelete(season.id_season) }}>&#128465;</button>
-          </span>
+        <div data-field="season-card" class="season-card">
+          {#if showForm && editingId === season.id_season}
+            <div data-field="season-form" class="season-form">
+              <label>
+                {t('season_code_label')}
+                <input data-field="form-code" type="text" bind:value={draftCode} />
+              </label>
+              <label>
+                {t('season_start_label')}
+                <input data-field="form-start" type="date" bind:value={draftStart} />
+              </label>
+              <label>
+                {t('season_end_label')}
+                <input data-field="form-end" type="date" bind:value={draftEnd} />
+              </label>
+              <label class="checkbox-label">
+                <input data-field="form-evf-toggle" type="checkbox" bind:checked={draftShowEvf} />
+                {t('sc_show_evf_toggle')}
+              </label>
+              <div class="form-actions">
+                <button data-field="form-save-btn" class="save-btn" onclick={() => { handleSave() }}>
+                  {t('season_save')}
+                </button>
+                <button data-field="form-cancel-btn" class="cancel-btn" onclick={() => { closeForm() }}>
+                  {t('season_cancel')}
+                </button>
+              </div>
+            </div>
+          {/if}
+          <div data-field="season-row" class="season-row">
+            <span data-field="season-code" class="season-cell">{season.txt_code}</span>
+            <span data-field="season-start" class="season-cell">{season.dt_start}</span>
+            <span data-field="season-end" class="season-cell">{season.dt_end}</span>
+            <span class="season-cell">
+              {#if season.bool_active}
+                <span class="active-badge">{t('season_active_badge')}</span>
+              {/if}
+            </span>
+            <span class="season-cell actions">
+              <button data-field="edit-btn" class="icon-btn" onclick={() => { openEditForm(season) }}>&#9998;</button>
+              <button data-field="delete-btn" class="icon-btn delete" onclick={() => { ondelete(season.id_season) }}>&#128465;</button>
+            </span>
+          </div>
         </div>
       {/each}
+
+      {#if showForm && editingId === null}
+        <div data-field="season-form" class="season-form">
+          <label>
+            {t('season_code_label')}
+            <input data-field="form-code" type="text" bind:value={draftCode} />
+          </label>
+          <label>
+            {t('season_start_label')}
+            <input data-field="form-start" type="date" bind:value={draftStart} />
+          </label>
+          <label>
+            {t('season_end_label')}
+            <input data-field="form-end" type="date" bind:value={draftEnd} />
+          </label>
+          <div class="form-actions">
+            <button data-field="form-save-btn" class="save-btn" onclick={() => { handleSave() }}>
+              {t('season_save')}
+            </button>
+            <button data-field="form-cancel-btn" class="cancel-btn" onclick={() => { closeForm() }}>
+              {t('season_cancel')}
+            </button>
+          </div>
+        </div>
+      {/if}
     </div>
   </div>
 {/if}
@@ -150,9 +174,9 @@
     gap: 12px;
     align-items: flex-end;
     padding: 12px;
-    margin-bottom: 16px;
-    background: #f8f9fa;
-    border: 1px solid #e0e0e0;
+    margin-bottom: 8px;
+    background: #eef4fb;
+    border: 1px solid #b8d4ee;
     border-radius: 4px;
     flex-wrap: wrap;
   }
@@ -196,6 +220,9 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+  }
+  .season-card {
+    margin-bottom: 2px;
   }
   .season-row {
     display: flex;

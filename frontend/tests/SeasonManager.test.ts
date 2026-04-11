@@ -1,4 +1,4 @@
-// Plan tests: 9.37, 9.38, 9.39, 9.40, 9.41, 9.42, 8.81, 8.82, 8.83
+// Plan tests: 9.37, 9.38, 9.39, 9.40, 9.41, 9.42, 9.43, 8.81, 8.82, 8.83
 // See .claude/plans/rosy-bouncing-kitten.md §T9.2.
 
 import { describe, it, expect, vi } from 'vitest'
@@ -147,6 +147,25 @@ describe('SeasonManager (T9.2)', () => {
 
     const checkbox = container.querySelector('[data-field="form-evf-toggle"]') as HTMLInputElement
     expect(checkbox.checked).toBe(true)
+  })
+
+  // 9.43 — Edit form renders inline above the edited season row
+  it('edit form appears directly above the edited season row', async () => {
+    const onfetchevf = vi.fn().mockResolvedValue(false)
+    const { container } = render(SeasonManager, { props: { ...defaultProps, onfetchevf } })
+
+    // Click edit on the SECOND season
+    const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
+    await fireEvent.click(editBtns[1])
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-field="season-form"]')).not.toBeNull()
+    })
+
+    // Form should be inside the second season-card, not the first
+    const cards = container.querySelectorAll('[data-field="season-card"]')
+    expect(cards.length).toBe(2)
+    expect(cards[0].querySelector('[data-field="season-form"]')).toBeNull()
+    expect(cards[1].querySelector('[data-field="season-form"]')).not.toBeNull()
   })
 
   // 8.83 — Saving edit form calls onupdate with showEvf param
