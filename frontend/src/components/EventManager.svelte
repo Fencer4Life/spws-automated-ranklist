@@ -61,10 +61,10 @@
             <span data-field="event-status-badge" class="event-cell status-badge {statusClass(event.enum_status)}">{event.enum_status}</span>
             <span data-field="tournament-count" class="event-cell tournament-count-badge">{tournamentsForEvent(event.id_event).length}</span>
             <span class="event-cell">
-              {#if VALID_TRANSITIONS[event.enum_status]?.length > 0}
+              {#if getAvailableStatuses(event).length > 0}
                 <select data-field="event-status-select" onchange={(e) => { handleStatusChange(event.id_event, (e.target as HTMLSelectElement).value) }}>
                   <option value="">--</option>
-                  {#each VALID_TRANSITIONS[event.enum_status] as next}
+                  {#each getAvailableStatuses(event) as next}
                     <option value={next}>{next}</option>
                   {/each}
                 </select>
@@ -219,13 +219,12 @@
   import type { CalendarEvent, Season, Organizer, WeaponType, Tournament, TournamentType, GenderType, AgeCategory } from '../lib/types'
   import { t } from '../lib/locale.svelte'
 
-  const VALID_TRANSITIONS: Record<string, string[]> = {
-    PLANNED:     ['SCHEDULED', 'CANCELLED'],
-    SCHEDULED:   ['CHANGED', 'IN_PROGRESS', 'CANCELLED'],
-    CHANGED:     ['SCHEDULED', 'IN_PROGRESS', 'CANCELLED'],
-    IN_PROGRESS: ['COMPLETED', 'CANCELLED'],
-    COMPLETED:   [],
-    CANCELLED:   [],
+  const ALL_STATUSES: string[] = ['PLANNED', 'SCHEDULED', 'CHANGED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
+
+  function getAvailableStatuses(event: CalendarEvent): string[] {
+    const today = new Date().toISOString().slice(0, 10)
+    if (event.dt_start != null && event.dt_start < today) return []
+    return ALL_STATUSES.filter(s => s !== event.enum_status)
   }
 
   let {

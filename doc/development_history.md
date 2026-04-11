@@ -139,6 +139,55 @@
 |---------|-------------|------|-----|
 | Event Registration URL + Deadline | Two new fields on `tbl_event` (`url_registration`, `dt_registration_deadline`); conditional display in Calendar (deadline + link hide after cutoff date); admin edit form; 3 pgTAP + 8 vitest assertions | 2026-04-11 | ADR-030 |
 | Local dev reset script | `scripts/reset-dev.sh` — combines `supabase db reset` with admin user recreation via GoTrue API (LOCAL ONLY) | 2026-04-11 | — |
+| Date-aware event status transitions | Replace static `VALID_TRANSITIONS` map in EventManager with date-aware logic: future events allow all statuses, past events lock status. Aligns UI with DB rollback support (ADR-025). Fixes spec state diagram. +3 vitest assertions | 2026-04-11 | — (aligns with ADR-025) |
+
+### Date-Aware Event Status Transitions — Implementation Plan
+
+**Problem:** An IMSW event on CERT was accidentally marked COMPLETED despite being a future event. The frontend `VALID_TRANSITIONS` map has `COMPLETED: []`, blocking all transitions from COMPLETED. The DB trigger (`fn_validate_event_transition`) already permits `COMPLETED → PLANNED` and `COMPLETED → IN_PROGRESS` per ADR-025, but the UI never exposed these.
+
+**Approach:** Replace static transition map with `getAvailableStatuses(event)` function:
+- **Future event** (`dt_start >= today` or `dt_start` is null): offer ALL statuses except current
+- **Past event** (`dt_start < today`): no dropdown (locked)
+- DB trigger remains the authoritative safety net for invalid transitions
+
+#### Tests (TDD — RED phase first)
+
+| Test ID | File | Assertion |
+|---------|------|-----------|
+| 9.49 | `frontend/tests/EventManager.test.ts` | **REWRITE:** past event (dt_start='2025-01-15') shows NO status dropdown |
+| 9.87 | `frontend/tests/EventManager.test.ts` | Future COMPLETED event (dt_start='2027-10-15') shows dropdown with 5 statuses (all except COMPLETED) |
+| 9.88 | `frontend/tests/EventManager.test.ts` | Event with dt_start=null shows dropdown (all except current) |
+| 9.89 | `frontend/tests/EventManager.test.ts` | Future CANCELLED event shows dropdown with 5 statuses |
+
+#### Implementation (GREEN phase)
+
+| File | Change |
+|------|--------|
+| `frontend/src/components/EventManager.svelte` | Remove `VALID_TRANSITIONS` (lines 222–229); add `ALL_STATUSES` + `getAvailableStatuses(event)` function; update template (lines 64–71) |
+
+#### Documentation
+
+| File | Change |
+|------|--------|
+| `doc/Project Specification. SPWS Automated Ranklist System.md` (lines 1340–1354) | Update mermaid state diagram: add `PLANNED→IN_PROGRESS`, `IN_PROGRESS→PLANNED`, `COMPLETED→IN_PROGRESS`, `COMPLETED→PLANNED`; remove `COMPLETED→[*]`; add note about UI date-aware locking |
+| `doc/Project Specification. SPWS Automated Ranklist System.md` (Appendix D) | vitest count +3 (net: rewrite 9.49 + add 9.87–9.89) |
+| RTM FR-23 | No change needed — already references 9.86–9.90 |
+
+#### Execution Order
+
+1. Write tests → run → confirm RED
+2. Implement `getAvailableStatuses()` → run → confirm GREEN
+3. Update spec state diagram + Appendix D
+4. Update this development_history.md entry with implementation notes
+
+#### Implementation Notes (2026-04-11)
+
+- **RED:** 4 tests failed as expected (9.49 rewrite + 9.87–9.89 new)
+- **GREEN:** All 215 vitest tests pass after replacing `VALID_TRANSITIONS` with `getAvailableStatuses(event)`
+- **Spec:** Updated mermaid state diagram (added ADR-025 rollback transitions, `PLANNED→IN_PROGRESS` auto-ingestion); added UI date-aware locking note
+- **Appendix D:** vitest 212→215, total 727→730
+- **RTM FR-23:** No change needed — already references 9.86–9.90
+- **No new ADR:** UI bugfix aligning with existing ADR-025 DB capabilities
 
 ---
 

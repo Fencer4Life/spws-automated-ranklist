@@ -1341,6 +1341,7 @@ Enforced by `fn_validate_event_transition()` — a `BEFORE UPDATE OF enum_status
 stateDiagram-v2
     [*] --> PLANNED
     PLANNED --> SCHEDULED
+    PLANNED --> IN_PROGRESS : auto (ingestion)
     PLANNED --> CANCELLED
     SCHEDULED --> CHANGED
     SCHEDULED --> IN_PROGRESS
@@ -1349,10 +1350,14 @@ stateDiagram-v2
     CHANGED --> IN_PROGRESS
     CHANGED --> CANCELLED
     IN_PROGRESS --> COMPLETED
+    IN_PROGRESS --> PLANNED : rollback
     IN_PROGRESS --> CANCELLED
-    COMPLETED --> [*]
+    COMPLETED --> IN_PROGRESS : rollback
+    COMPLETED --> PLANNED : full rollback
     CANCELLED --> [*]
 ```
+
+> **Admin UI rule:** Status changes are only available for future events (`dt_start >= today`). Past events have their status locked in the UI; the DB trigger remains the authoritative validator for all transitions.
 
 | Status | Meaning |
 |--------|---------|
@@ -1723,9 +1728,9 @@ Every functional and non-functional requirement is listed below with its source 
 |-------|-------|-------|----------|
 | pgTAP | 239 | 13 | `supabase/tests/` |
 | pytest | 269 | 20 | `python/tests/` |
-| vitest | 212 | 21 | `frontend/tests/` |
+| vitest | 215 | 21 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **727** | | |
+| **Total** | **730** | | |
 
 ### Coverage Summary
 
