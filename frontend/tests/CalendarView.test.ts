@@ -449,6 +449,43 @@ describe('CalendarView (T8.5)', () => {
     expect(container.querySelector('.registration-deadline')).toBeNull()
   })
 
+  // 8.26 — Registration block green when 7+ days remain, red when < 7 days
+  it('8.26: registration block has reg-urgent class when < 7 days remain', () => {
+    const soon = new Date()
+    soon.setDate(soon.getDate() + 3)
+    const soonStr = soon.toISOString().slice(0, 10)
+    const farStart = new Date()
+    farStart.setDate(farStart.getDate() + 30)
+    const farStartStr = farStart.toISOString().slice(0, 10)
+    const events = [makeEvent({
+      id_event: 99, dt_start: farStartStr, enum_status: 'SCHEDULED',
+      url_registration: 'https://example.com/register',
+      dt_registration_deadline: soonStr,
+    })]
+    const { container } = render(CalendarView, { props: { events } })
+    const regBlock = container.querySelector('.timeline-registration')
+    expect(regBlock).not.toBeNull()
+    expect(regBlock!.classList.contains('reg-urgent')).toBe(true)
+  })
+
+  it('8.26b: registration block has no reg-urgent class when 7+ days remain', () => {
+    const far = new Date()
+    far.setDate(far.getDate() + 14)
+    const farStr = far.toISOString().slice(0, 10)
+    const farStart = new Date()
+    farStart.setDate(farStart.getDate() + 30)
+    const farStartStr = farStart.toISOString().slice(0, 10)
+    const events = [makeEvent({
+      id_event: 99, dt_start: farStartStr, enum_status: 'SCHEDULED',
+      url_registration: 'https://example.com/register',
+      dt_registration_deadline: farStr,
+    })]
+    const { container } = render(CalendarView, { props: { events } })
+    const regBlock = container.querySelector('.timeline-registration')
+    expect(regBlock).not.toBeNull()
+    expect(regBlock!.classList.contains('reg-urgent')).toBe(false)
+  })
+
   // 8.25 — Nothing shown when deadline/dt_start has passed
   it('8.25: hides registration when deadline has passed', () => {
     const events = [makeEvent({

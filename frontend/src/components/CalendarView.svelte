@@ -53,6 +53,7 @@
       {@const regCutoff = event.dt_registration_deadline ?? event.dt_start ?? ''}
       {@const showRegDeadline = event.dt_registration_deadline != null && today <= event.dt_registration_deadline}
       {@const showRegLink = event.url_registration != null && regCutoff !== '' && today <= regCutoff}
+      {@const regUrgent = regCutoff !== '' && (new Date(regCutoff).getTime() - new Date(today).getTime()) < 7 * 86400000}
       <div
         class="timeline-event {eventTypeClass(event.txt_code)}"
         class:completed={event.enum_status === 'COMPLETED'}
@@ -88,7 +89,7 @@
             </div>
           {/if}
           {#if showRegDeadline || showRegLink}
-            <div class="timeline-registration">
+            <div class="timeline-registration" class:reg-urgent={regUrgent}>
               {#if showRegDeadline}
                 <span class="registration-deadline">{t('event_registration_deadline_label')}: {formatDate(event.dt_registration_deadline)}</span>
               {/if}
@@ -468,17 +469,21 @@
   }
   .registration-deadline {
     font-size: 11px;
-    color: #e65100;
+    color: #2e7d32;
     font-weight: 600;
   }
   .registration-link {
     font-size: 11px;
-    color: #e65100;
+    color: #2e7d32;
     text-decoration: none;
     font-weight: 600;
   }
   .registration-link:hover {
     text-decoration: underline;
+  }
+  .reg-urgent .registration-deadline,
+  .reg-urgent .registration-link {
+    color: #c33;
   }
   .no-events {
     text-align: center;
