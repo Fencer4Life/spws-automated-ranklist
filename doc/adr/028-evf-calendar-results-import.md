@@ -41,9 +41,9 @@ Two data sources from veteransfencing.eu. Current season only (2025-2026). Categ
 - Under 30 EVF API requests per burst — well below any reasonable rate limit.
 
 ### Telegram Commands
-- `evf-import` — manual calendar scrape (bypass 3-day schedule)
-- `evf-results <event>` — manual result fetch for specific event (starts burst immediately)
-- `evf-status` — show events with pending results
+- `evf-cal-import` — manual calendar scrape (bypass 3-day schedule)
+- `evf-results-import <event>` — manual result fetch + import for specific event
+- `evf-status` — show past international events missing results (dt_end < today, result_count = 0)
 
 ## Alternatives Considered
 

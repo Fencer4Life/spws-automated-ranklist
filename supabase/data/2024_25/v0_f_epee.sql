@@ -282,7 +282,7 @@ INSERT INTO tbl_tournament (
     'Mistrzostwa Polski Weteranów',
     'MPW',
     'EPEE', 'F', 'V0',
-    '2025-06-07', 3, 'https://www.fencingtimelive.com/events/results/0C897F4B78BE41288DC9EE257CCE4398',
+    '2025-06-07', 3, 'https://www.fencingtimelive.com/events/results/EDEA116637B7499CB9C3E843743BC2E3',
     'SCORED'
 );
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)

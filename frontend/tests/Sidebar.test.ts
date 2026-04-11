@@ -41,7 +41,7 @@ describe('Sidebar (T8.4)', () => {
 
     const navItems = container.querySelectorAll('.nav-item')
     const texts = Array.from(navItems).map((el) => el.textContent?.trim())
-    expect(texts).toContain('Ranklista')
+    expect(texts).toContain('Ranking')
     expect(texts).toContain('Kalendarz')
   })
 
@@ -54,7 +54,7 @@ describe('Sidebar (T8.4)', () => {
     })
     const navItems = container.querySelectorAll('.nav-item')
     const ranklistItem = Array.from(navItems).find((el) =>
-      el.textContent?.includes('Ranklista'),
+      el.textContent?.includes('Ranking'),
     )
     expect(ranklistItem).not.toBeUndefined()
     await fireEvent.click(ranklistItem!)
