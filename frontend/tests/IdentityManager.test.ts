@@ -47,6 +47,7 @@ const MOCK_CANDIDATES: MatchCandidate[] = [
 const MOCK_FENCERS: FencerListItem[] = [
   { id_fencer: 100, txt_surname: 'KOWALSKI', txt_first_name: 'Jan', int_birth_year: 1970, txt_club: 'WKS', enum_gender: 'M' },
   { id_fencer: 101, txt_surname: 'NOWAK', txt_first_name: 'Adam', int_birth_year: 1975, txt_club: null, enum_gender: 'M' },
+  { id_fencer: 102, txt_surname: 'ZIELINSKI', txt_first_name: 'Marek', int_birth_year: 1980, txt_club: null, enum_gender: 'F' },
 ]
 
 describe('IdentityManager (T9.7)', () => {
@@ -61,7 +62,7 @@ describe('IdentityManager (T9.7)', () => {
     onupdategender: vi.fn(),
   }
 
-  // 9.68 — Renders queue with scraped_name, confidence, status
+  // 9.68 — Renders candidate cards with scraped_name, confidence, status
   it('renders queue with scraped_name, confidence, status', () => {
     const { container } = render(IdentityManager, { props: defaultProps })
     const queue = container.querySelector('[data-field="identity-queue"]')
@@ -81,43 +82,47 @@ describe('IdentityManager (T9.7)', () => {
     const filter = container.querySelector('[data-field="status-filter"]')
     expect(filter).not.toBeNull()
 
-    // PENDING count badge visible
     const pendingBadge = container.querySelector('[data-field="count-PENDING"]')
     expect(pendingBadge).not.toBeNull()
     expect(pendingBadge!.textContent).toContain('2')
   })
 
-  // 9.70 — Approve calls onapprove with match id and fencer id
+  // 9.70 — Expanding card and clicking save with suggested match calls onapprove
   it('approve calls onapprove with match id and fencer id', async () => {
     const onapprove = vi.fn()
     const { container } = render(IdentityManager, { props: { ...defaultProps, onapprove } })
 
-    const approveBtn = container.querySelector('[data-field="approve-btn"]')
-    expect(approveBtn).not.toBeNull()
-    await fireEvent.click(approveBtn!)
+    // Click edit button on first PENDING row (NOWAK Adam, id_match=2)
+    const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
+    expect(editBtns.length).toBeGreaterThan(0)
+    await fireEvent.click(editBtns[0])
+
+    // Edit form should be open with SUGGESTED choice (has fencer match)
+    const editForm = container.querySelector('[data-field="edit-form"]')
+    expect(editForm).not.toBeNull()
+
+    // Click save — should call onapprove since suggested match is selected
+    const saveBtn = container.querySelector('[data-field="save-btn"]')!
+    await fireEvent.click(saveBtn)
 
     expect(onapprove).toHaveBeenCalledTimes(1)
-    // First PENDING candidate: id_match=2, id_fencer=101
     expect(onapprove).toHaveBeenCalledWith(2, 101)
   })
 
-  // 9.71 — Create new fencer button opens CreateFencerModal
-  it('create new fencer button opens modal', async () => {
+  // 9.71 — Switching to "Create new" in the fencer dropdown
+  it('create new fencer option available in edit form', async () => {
     const { container } = render(IdentityManager, { props: defaultProps })
 
-    // Switch filter to ALL to see all candidates
-    const filterSelect = container.querySelector('[data-field="status-filter"]') as HTMLSelectElement
-    await fireEvent.change(filterSelect, { target: { value: 'ALL' } })
+    // Open edit on first PENDING row
+    const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
+    await fireEvent.click(editBtns[0])
 
-    // Modal should not be open initially
-    expect(container.querySelector('[data-field="create-fencer-modal"]')).toBeNull()
-
-    const createBtns = container.querySelectorAll('[data-field="create-new-btn"]')
-    expect(createBtns.length).toBeGreaterThan(0)
-    await fireEvent.click(createBtns[0])
-
-    // Modal should now be open
-    expect(container.querySelector('[data-field="create-fencer-modal"]')).not.toBeNull()
+    // Fencer choice dropdown should exist with NEW option
+    const choiceSelect = container.querySelector('[data-field="fencer-choice"]') as HTMLSelectElement
+    expect(choiceSelect).not.toBeNull()
+    const options = choiceSelect.querySelectorAll('option')
+    const newOption = [...options].find(o => o.value === 'NEW')
+    expect(newOption).toBeDefined()
   })
 
   // 9.72 — Dismiss calls ondismiss with match id
@@ -125,26 +130,27 @@ describe('IdentityManager (T9.7)', () => {
     const ondismiss = vi.fn()
     const { container } = render(IdentityManager, { props: { ...defaultProps, ondismiss } })
 
+    // Open edit on first PENDING row
+    const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
+    await fireEvent.click(editBtns[0])
+
     const dismissBtn = container.querySelector('[data-field="dismiss-btn"]')
     expect(dismissBtn).not.toBeNull()
     await fireEvent.click(dismissBtn!)
 
     expect(ondismiss).toHaveBeenCalledTimes(1)
-    // First PENDING candidate: id_match=2
     expect(ondismiss).toHaveBeenCalledWith(2)
   })
 
   // 9.73 — Confidence color: green ≥95, yellow ≥50, red <50
-  it('confidence color coding', () => {
-    // Render with ALL filter to see all candidates
+  it('confidence color coding', async () => {
     const { container } = render(IdentityManager, { props: defaultProps })
 
-    // Switch to ALL
+    // Switch to ALL to see all candidates
     const filterSelect = container.querySelector('[data-field="status-filter"]') as HTMLSelectElement
-    fireEvent.change(filterSelect, { target: { value: 'ALL' } })
+    await fireEvent.change(filterSelect, { target: { value: 'ALL' } })
 
     const badges = container.querySelectorAll('[data-field="confidence-badge"]')
-    // Check that confidence badges exist with color classes
     const allBadges = [...badges]
     const greenBadge = allBadges.find(b => b.classList.contains('confidence-high'))
     const yellowBadge = allBadges.find(b => b.classList.contains('confidence-medium'))
@@ -162,67 +168,77 @@ describe('IdentityManager (T9.7)', () => {
     expect(queue).toBeNull()
   })
 
-  // 9.83 — "Assign fencer" button visible for <100% confidence rows
-  it('assign fencer button visible for <100% confidence rows', async () => {
+  // 9.83 — Edit form opens with fencer choice dropdown for <100% rows
+  it('edit form opens with fencer choice dropdown', async () => {
     const { container } = render(IdentityManager, { props: defaultProps })
     const filterSelect = container.querySelector('[data-field="status-filter"]') as HTMLSelectElement
     await fireEvent.change(filterSelect, { target: { value: 'ALL' } })
 
-    const assignBtns = container.querySelectorAll('[data-field="assign-btn"]')
-    // Should appear for PENDING (2,4), UNMATCHED (3), AUTO_MATCHED (1) — not for APPROVED/100% (5)
-    expect(assignBtns.length).toBeGreaterThanOrEqual(4)
+    // Edit buttons exist for non-read-only rows, not for 100% APPROVED
+    const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
+    expect(editBtns.length).toBe(4) // candidates 1,2,3,4 — not 5 (100% APPROVED)
+
+    await fireEvent.click(editBtns[0])
+    const choiceSelect = container.querySelector('[data-field="fencer-choice"]')
+    expect(choiceSelect).not.toBeNull()
   })
 
-  // 9.84 — "Create new fencer" button visible for all non-APPROVED/100% rows
-  it('create new fencer button visible for all actionable rows', async () => {
+  // 9.84 — Surname field always editable and forces uppercase
+  it('surname field always editable and forces uppercase', async () => {
     const { container } = render(IdentityManager, { props: defaultProps })
-    const filterSelect = container.querySelector('[data-field="status-filter"]') as HTMLSelectElement
-    await fireEvent.change(filterSelect, { target: { value: 'ALL' } })
 
-    const createBtns = container.querySelectorAll('[data-field="create-new-btn"]')
-    // Should appear for candidates 1,2,3,4 but not 5 (APPROVED + 100%)
-    expect(createBtns.length).toBe(4)
+    const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
+    await fireEvent.click(editBtns[0])
+
+    const surnameInput = container.querySelector('[data-field="surname-input"]') as HTMLInputElement
+    expect(surnameInput).not.toBeNull()
+    expect(surnameInput.disabled).toBe(false)
+    // Value should be uppercase
+    expect(surnameInput.value).toBe(surnameInput.value.toUpperCase())
   })
 
-  // 9.85 — Gender column shows inline select for rows with linked fencer
-  it('gender column shows inline select for rows with linked fencer', async () => {
+  // 9.85 — Gender select shown in edit form
+  it('gender select shown in edit form', async () => {
     const { container } = render(IdentityManager, { props: defaultProps })
-    const filterSelect = container.querySelector('[data-field="status-filter"]') as HTMLSelectElement
-    await fireEvent.change(filterSelect, { target: { value: 'ALL' } })
 
-    const genderSelects = container.querySelectorAll('[data-field="gender-select"]')
-    // Candidates 1,2,4,5 have linked fencers; candidate 3 has no fencer
-    expect(genderSelects.length).toBe(4)
+    const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
+    await fireEvent.click(editBtns[0])
+
+    const genderSelect = container.querySelector('[data-field="gender-select"]')
+    expect(genderSelect).not.toBeNull()
   })
 
-  // 9.86 — Gender mismatch highlighted (fencer gender ≠ tournament gender)
+  // 9.86 — Gender mismatch highlighted in collapsed card
   it('gender mismatch highlighted', async () => {
     const { container } = render(IdentityManager, { props: defaultProps })
     const filterSelect = container.querySelector('[data-field="status-filter"]') as HTMLSelectElement
     await fireEvent.change(filterSelect, { target: { value: 'ALL' } })
 
-    const mismatchCells = container.querySelectorAll('.gender-mismatch')
+    const mismatchIcons = container.querySelectorAll('.mismatch-icon')
     // Candidate 4: fencer_gender=F, tournament_gender=M → mismatch
-    expect(mismatchCells.length).toBeGreaterThanOrEqual(1)
+    expect(mismatchIcons.length).toBeGreaterThanOrEqual(1)
   })
 
-  // 9.87 — Approve button shown for AUTO_MATCHED rows
-  it('approve button shown for AUTO_MATCHED rows', async () => {
+  // 9.87 — Edit button shown for AUTO_MATCHED rows
+  it('edit button shown for AUTO_MATCHED rows', async () => {
     const { container } = render(IdentityManager, { props: defaultProps })
     const filterSelect = container.querySelector('[data-field="status-filter"]') as HTMLSelectElement
     await fireEvent.change(filterSelect, { target: { value: 'AUTO_MATCHED' } })
 
-    const approveBtns = container.querySelectorAll('[data-field="approve-btn"]')
-    expect(approveBtns.length).toBeGreaterThanOrEqual(1)
+    const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
+    expect(editBtns.length).toBeGreaterThanOrEqual(1)
   })
 
-  // 9.88 — Dismiss button shown for AUTO_MATCHED rows
-  it('dismiss button shown for AUTO_MATCHED rows', async () => {
+  // 9.88 — Dismiss button shown in edit form for AUTO_MATCHED rows
+  it('dismiss button shown in edit form for AUTO_MATCHED rows', async () => {
     const { container } = render(IdentityManager, { props: defaultProps })
     const filterSelect = container.querySelector('[data-field="status-filter"]') as HTMLSelectElement
     await fireEvent.change(filterSelect, { target: { value: 'AUTO_MATCHED' } })
 
-    const dismissBtns = container.querySelectorAll('[data-field="dismiss-btn"]')
-    expect(dismissBtns.length).toBeGreaterThanOrEqual(1)
+    const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
+    await fireEvent.click(editBtns[0])
+
+    const dismissBtn = container.querySelector('[data-field="dismiss-btn"]')
+    expect(dismissBtn).not.toBeNull()
   })
 })

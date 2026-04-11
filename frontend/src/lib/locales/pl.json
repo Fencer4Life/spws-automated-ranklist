@@ -161,6 +161,9 @@
   "identity_gender": "Płeć",
   "identity_birth_year": "Rok urodzenia",
   "identity_gender_mismatch": "Płeć zawodnika nie zgadza się z płcią turnieju",
+  "identity_fencer_choice": "Zawodnik",
+  "identity_search_other": "Szukaj innego zawodnika...",
+  "identity_save": "Zapisz",
   "disambiguation_title": "Wybierz zawodnika",
 
   "sc_banner": "Konfiguracja punktacji dla sezonu {season}",

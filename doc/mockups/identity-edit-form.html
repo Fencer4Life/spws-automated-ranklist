@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Identity Manager — Edit Form Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 960px; margin: 0 auto; padding: 16px; color: #333; background: #f5f5f5; }
+  h2 { margin-bottom: 12px; font-size: 18px; }
+
+  .status-counts { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .count-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: #e9ecef; color: #555; }
+  .count-badge.pending { background: #fff3cd; color: #856404; }
+  .count-badge.unmatched { background: #f8d7da; color: #721c24; }
+  .count-badge.approved { background: #d4edda; color: #155724; }
+
+  .filter-bar { margin-bottom: 12px; }
+  .filter-bar select { padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+
+  .candidate-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .candidate-card { border: 1px solid #e0e0e0; border-radius: 6px; background: #fff; }
+  .candidate-card.editing { border-color: #4a90d9; box-shadow: 0 2px 8px rgba(74,144,217,0.15); }
+
+  .card-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; gap: 10px; }
+  .card-header:hover { background: #f8f9fa; }
+  .header-left { display: flex; flex-direction: column; gap: 2px; }
+  .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .scraped-name { font-weight: 600; color: #333; font-size: 14px; }
+  .tournament-code { font-size: 11px; color: #888; }
+  .suggested-name { font-size: 12px; color: #555; }
+
+  .confidence-badge { padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+  .confidence-high { background: #d4edda; color: #155724; }
+  .confidence-medium { background: #fff3cd; color: #856404; }
+  .confidence-low { background: #f8d7da; color: #721c24; }
+
+  .status-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .status-pending { background: #fff3cd; color: #856404; }
+  .status-auto_matched { background: #d4edda; color: #155724; }
+  .status-unmatched { background: #f8d7da; color: #721c24; }
+  .status-approved { background: #d4edda; color: #155724; }
+
+  .mismatch-icon { color: #dc3545; font-size: 14px; }
+  .edit-toggle { border: none; background: none; cursor: pointer; font-size: 12px; color: #888; padding: 2px 6px; }
+
+  .edit-form { padding: 14px; border-top: 1px solid #e0e0e0; background: #f8f9fa; }
+  .form-row { margin-bottom: 12px; }
+  .form-label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; }
+  .fencer-choice-select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: #fff; }
+
+  .search-panel { margin-bottom: 12px; }
+  .search-input { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; margin-bottom: 8px; }
+  .search-results { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+  .fencer-option { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid #e0e0e0; border-radius: 4px; cursor: pointer; font-size: 13px; background: #fff; }
+  .fencer-option:hover { border-color: #4a90d9; }
+  .fencer-option.selected { border-color: #4a90d9; background: #f0f7ff; }
+  .fencer-name { font-weight: 600; color: #333; }
+  .fencer-detail { font-size: 12px; color: #555; }
+  .gender-badge { font-size: 11px; padding: 1px 5px; border-radius: 6px; font-weight: 600; background: #e9ecef; color: #555; }
+
+  .field-row { display: flex; gap: 12px; margin-bottom: 10px; }
+  .form-field { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .field-label { font-size: 12px; font-weight: 600; color: #555; }
+  .field-input { padding: 7px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+  .field-input.surname { text-transform: uppercase; font-weight: 600; }
+  .gender-mismatch-select { border-color: #dc3545; color: #dc3545; }
+  .mismatch-warn { font-size: 11px; color: #dc3545; margin-top: 2px; }
+
+  .form-actions { display: flex; gap: 8px; }
+  .action-btn { padding: 7px 16px; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; font-weight: 600; }
+  .action-btn.save { background: #4a90d9; color: #fff; }
+  .action-btn.save:disabled { background: #b0c4de; cursor: not-allowed; }
+  .action-btn.dismiss { background: #f8d7da; color: #721c24; }
+  .action-btn.cancel { background: #e9ecef; color: #555; }
+
+  .section-label { font-size: 13px; font-weight: 700; color: #4a90d9; margin: 24px 0 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  .note { font-size: 12px; color: #666; margin-bottom: 8px; font-style: italic; }
+</style>
+</head>
+<body>
+
+<h2>🇬🇧 Identities</h2>
+
+<div class="status-counts">
+  <span class="count-badge pending">PENDING: 2</span>
+  <span class="count-badge" style="background:#d4edda;color:#155724">AUTO_MATCHED: 3</span>
+  <span class="count-badge unmatched">UNMATCHED: 1</span>
+  <span class="count-badge approved">APPROVED: 8</span>
+</div>
+
+<div class="filter-bar">
+  <select><option>PENDING</option><option>ALL</option><option>AUTO_MATCHED</option><option>UNMATCHED</option></select>
+</div>
+
+<!-- ============================================================ -->
+<div class="section-label">State A — Collapsed rows (default view)</div>
+<!-- ============================================================ -->
+
+<div class="candidate-list">
+  <div class="candidate-card">
+    <div class="card-header">
+      <div class="header-left">
+        <span class="scraped-name">NOWAK Adam</span>
+        <span class="tournament-code">PPW5-V1-M-SABRE-2024-25</span>
+      </div>
+      <div class="header-right">
+        <span class="confidence-badge confidence-medium">78%</span>
+        <span class="suggested-name">→ NOWAK Adam</span>
+        <span class="status-badge status-pending">PENDING</span>
+        <button class="edit-toggle">▼</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="candidate-card">
+    <div class="card-header">
+      <div class="header-left">
+        <span class="scraped-name">KOWALSKA Maria</span>
+        <span class="tournament-code">PPW5-V1-M-SABRE-2024-25</span>
+      </div>
+      <div class="header-right">
+        <span class="confidence-badge confidence-medium">55%</span>
+        <span class="suggested-name">→ KOWALSKA Maria</span>
+        <span class="status-badge status-pending">PENDING</span>
+        <span class="mismatch-icon" title="Gender mismatch: fencer F ≠ tournament M">⚠</span>
+        <button class="edit-toggle">▼</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="section-label">State B — Expanded: "Suggested match" selected (default when match exists)</div>
+<p class="note">Dropdown pre-fills the fields. All fields are always editable. Surname auto-uppercases. Changing name/surname means "update the existing fencer's data".</p>
+<!-- ============================================================ -->
+
+<div class="candidate-list">
+  <div class="candidate-card editing">
+    <div class="card-header">
+      <div class="header-left">
+        <span class="scraped-name">NOWAK Adam</span>
+        <span class="tournament-code">PPW5-V1-M-SABRE-2024-25</span>
+      </div>
+      <div class="header-right">
+        <span class="confidence-badge confidence-medium">78%</span>
+        <span class="suggested-name">→ NOWAK Adam</span>
+        <span class="status-badge status-pending">PENDING</span>
+        <button class="edit-toggle">▲</button>
+      </div>
+    </div>
+
+    <div class="edit-form">
+      <div class="form-row">
+        <label class="form-label">Fencer</label>
+        <select class="fencer-choice-select">
+          <option selected>✓ NOWAK Adam (78%) — suggested match</option>
+          <option>➕ Create new fencer</option>
+          <option>🔍 Search other fencers...</option>
+        </select>
+      </div>
+
+      <div class="form-fields">
+        <div class="field-row">
+          <label class="form-field">
+            <span class="field-label">Surname</span>
+            <input class="field-input surname" value="NOWAK">
+          </label>
+          <label class="form-field">
+            <span class="field-label">First name</span>
+            <input class="field-input" value="Adam">
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="form-field">
+            <span class="field-label">Gender</span>
+            <select class="field-input"><option selected>M</option><option>F</option></select>
+          </label>
+          <label class="form-field">
+            <span class="field-label">Birth year</span>
+            <input class="field-input" value="1975">
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="action-btn save">Save</button>
+        <button class="action-btn dismiss">Dismiss</button>
+        <button class="action-btn cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="section-label">State C — Expanded: "Create new fencer" selected</div>
+<p class="note">Fields pre-filled from scraped name. Surname forced ALL CAPS. All mandatory fields must be filled before Save.</p>
+<!-- ============================================================ -->
+
+<div class="candidate-list">
+  <div class="candidate-card editing">
+    <div class="card-header">
+      <div class="header-left">
+        <span class="scraped-name">WIŚNIEWSKI Piotr</span>
+        <span class="tournament-code">PPW5-V0-F-SABRE-2024-25</span>
+      </div>
+      <div class="header-right">
+        <span class="confidence-badge confidence-low">30%</span>
+        <span class="status-badge status-unmatched">UNMATCHED</span>
+        <button class="edit-toggle">▲</button>
+      </div>
+    </div>
+
+    <div class="edit-form">
+      <div class="form-row">
+        <label class="form-label">Fencer</label>
+        <select class="fencer-choice-select">
+          <option>✓ WIŚNIEWSKI Piotr (30%) — suggested match</option>
+          <option selected>➕ Create new fencer</option>
+          <option>🔍 Search other fencers...</option>
+        </select>
+      </div>
+
+      <div class="form-fields">
+        <div class="field-row">
+          <label class="form-field">
+            <span class="field-label">Surname</span>
+            <input class="field-input surname" value="WIŚNIEWSKI">
+          </label>
+          <label class="form-field">
+            <span class="field-label">First name</span>
+            <input class="field-input" value="Piotr">
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="form-field">
+            <span class="field-label">Gender</span>
+            <select class="field-input gender-mismatch-select">
+              <option>M</option><option selected>F</option>
+            </select>
+            <span class="mismatch-warn">⚠ Fencer gender does not match tournament gender</span>
+          </label>
+          <label class="form-field">
+            <span class="field-label">Birth year</span>
+            <input class="field-input" placeholder="e.g. 1970">
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="action-btn save">Save</button>
+        <button class="action-btn dismiss">Dismiss</button>
+        <button class="action-btn cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="section-label">State D — Expanded: "Search other fencers" with results</div>
+<p class="note">Selecting a fencer from search pre-fills the fields. You can still edit them by hand. Surname stays ALL CAPS.</p>
+<!-- ============================================================ -->
+
+<div class="candidate-list">
+  <div class="candidate-card editing">
+    <div class="card-header">
+      <div class="header-left">
+        <span class="scraped-name">KOWALSKA Maria</span>
+        <span class="tournament-code">PPW5-V1-M-SABRE-2024-25</span>
+      </div>
+      <div class="header-right">
+        <span class="confidence-badge confidence-medium">55%</span>
+        <span class="suggested-name">→ KOWALSKA Maria</span>
+        <span class="status-badge status-pending">PENDING</span>
+        <span class="mismatch-icon">⚠</span>
+        <button class="edit-toggle">▲</button>
+      </div>
+    </div>
+
+    <div class="edit-form">
+      <div class="form-row">
+        <label class="form-label">Fencer</label>
+        <select class="fencer-choice-select">
+          <option>✓ KOWALSKA Maria (55%) — suggested match</option>
+          <option>➕ Create new fencer</option>
+          <option selected>🔍 Search other fencers...</option>
+        </select>
+      </div>
+
+      <div class="search-panel">
+        <input class="search-input" placeholder="Search by name..." value="KOWAL">
+        <div class="search-results">
+          <label class="fencer-option selected">
+            <input type="radio" name="search-d" checked>
+            <span class="fencer-name">KOWALSKA Maria</span>
+            <span class="fencer-detail">1978</span>
+            <span class="fencer-detail">AZS Wrocław</span>
+            <span class="gender-badge">F</span>
+          </label>
+          <label class="fencer-option">
+            <input type="radio" name="search-d">
+            <span class="fencer-name">KOWALSKI Jan</span>
+            <span class="fencer-detail">1970</span>
+            <span class="fencer-detail">WKS Kraków</span>
+            <span class="gender-badge">M</span>
+          </label>
+          <label class="fencer-option">
+            <input type="radio" name="search-d">
+            <span class="fencer-name">KOWALCZYK Anna</span>
+            <span class="fencer-detail">1982</span>
+            <span class="gender-badge">F</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-fields">
+        <div class="field-row">
+          <label class="form-field">
+            <span class="field-label">Surname</span>
+            <input class="field-input surname" value="KOWALSKA">
+          </label>
+          <label class="form-field">
+            <span class="field-label">First name</span>
+            <input class="field-input" value="Maria">
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="form-field">
+            <span class="field-label">Gender</span>
+            <select class="field-input gender-mismatch-select">
+              <option>M</option><option selected>F</option>
+            </select>
+            <span class="mismatch-warn">⚠ Fencer gender does not match tournament gender</span>
+          </label>
+          <label class="form-field">
+            <span class="field-label">Birth year</span>
+            <input class="field-input" value="1978">
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="action-btn save">Save</button>
+        <button class="action-btn dismiss">Dismiss</button>
+        <button class="action-btn cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="section-label">State E — Read-only row (100% APPROVED — no edit button)</div>
+<!-- ============================================================ -->
+
+<div class="candidate-list">
+  <div class="candidate-card">
+    <div class="card-header" style="cursor:default">
+      <div class="header-left">
+        <span class="scraped-name">ZIELIŃSKI Marek</span>
+        <span class="tournament-code">PPW5-V2-M-EPEE-2024-25</span>
+      </div>
+      <div class="header-right">
+        <span class="confidence-badge confidence-high">100%</span>
+        <span class="suggested-name">→ ZIELIŃSKI Marek</span>
+        <span class="status-badge status-approved">APPROVED</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

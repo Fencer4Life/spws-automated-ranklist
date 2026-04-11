@@ -161,6 +161,9 @@
   "identity_gender": "Gender",
   "identity_birth_year": "Birth year",
   "identity_gender_mismatch": "Fencer gender does not match tournament gender",
+  "identity_fencer_choice": "Fencer",
+  "identity_search_other": "Search other fencers...",
+  "identity_save": "Save",
   "disambiguation_title": "Select fencer",
 
   "sc_banner": "Scoring config for season {season}",
