@@ -103,7 +103,7 @@ flowchart TD
 1. **Make your changes locally** — code, migrations, tests, docs
 2. **Test locally:**
    ```bash
-   supabase db reset        # Reset local DB with all migrations + seed
+   ./scripts/reset-dev.sh    # Reset local DB + recreate admin user
    supabase test db          # Run pgTAP tests
    cd frontend && npm test   # Run vitest
    cd .. && pytest           # Run Python tests

@@ -229,6 +229,8 @@ export async function createEvent(params: CreateEventParams): Promise<number> {
     p_entry_fee: params.entryFee ?? null,
     p_entry_fee_currency: params.entryFeeCurrency ?? null,
     p_weapons: params.weapons ?? null,
+    p_registration: params.registration ?? null,
+    p_registration_deadline: params.registrationDeadline ?? null,
   })
   if (error) throw error
   return data as number
@@ -249,6 +251,8 @@ export async function updateEvent(id: number, params: UpdateEventParams): Promis
     p_entry_fee_currency: params.entryFeeCurrency ?? null,
     p_id_organizer: params.organizerId ?? null,
     p_weapons: params.weapons ?? null,
+    p_registration: params.registration ?? null,
+    p_registration_deadline: params.registrationDeadline ?? null,
   })
   if (error) throw error
 }

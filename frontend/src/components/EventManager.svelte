@@ -20,6 +20,8 @@
               <label>{t('event_venue_label')} <input data-field="form-venue" type="text" bind:value={draftVenue} /></label>
               <label>{t('event_results_url_label')} <input data-field="form-url-event" type="text" bind:value={draftUrlEvent} /></label>
               <label>{t('event_invitation_label')} <input data-field="form-invitation" type="text" bind:value={draftInvitation} /></label>
+              <label>{t('event_registration_deadline_label')} <input data-field="form-registration-deadline" type="date" bind:value={draftRegistrationDeadline} /></label>
+              <label>{t('event_registration_label')} <input data-field="form-registration" type="text" bind:value={draftRegistration} /></label>
               <label>{t('event_entry_fee_label')}
                 <div class="fee-row">
                   <input data-field="form-entry-fee" type="number" bind:value={draftEntryFee} />
@@ -182,6 +184,8 @@
           <label>{t('event_venue_label')} <input data-field="form-venue" type="text" bind:value={draftVenue} /></label>
           <label>{t('event_results_url_label')} <input data-field="form-url-event" type="text" bind:value={draftUrlEvent} /></label>
           <label>{t('event_invitation_label')} <input data-field="form-invitation" type="text" bind:value={draftInvitation} /></label>
+          <label>{t('event_registration_deadline_label')} <input data-field="form-registration-deadline" type="date" bind:value={draftRegistrationDeadline} /></label>
+          <label>{t('event_registration_label')} <input data-field="form-registration" type="text" bind:value={draftRegistration} /></label>
           <label>{t('event_entry_fee_label')}
             <div class="fee-row">
               <input data-field="form-entry-fee" type="number" bind:value={draftEntryFee} />
@@ -267,6 +271,8 @@
   let draftCountry = $state('')
   let draftVenue = $state('')
   let draftInvitation = $state('')
+  let draftRegistration = $state('')
+  let draftRegistrationDeadline = $state('')
   let draftEntryFee: number | null = $state(null)
   let draftCurrency = $state('PLN')
   let draftUrlEvent = $state('')
@@ -402,6 +408,8 @@
     draftCountry = ''
     draftVenue = ''
     draftInvitation = ''
+    draftRegistration = ''
+    draftRegistrationDeadline = ''
     draftEntryFee = null
     draftCurrency = 'PLN'
     draftUrlEvent = ''
@@ -419,6 +427,8 @@
     draftCountry = event.txt_country ?? ''
     draftVenue = event.txt_venue_address ?? ''
     draftInvitation = event.url_invitation ?? ''
+    draftRegistration = event.url_registration ?? ''
+    draftRegistrationDeadline = event.dt_registration_deadline ?? ''
     draftEntryFee = event.num_entry_fee
     draftCurrency = event.txt_entry_fee_currency ?? 'PLN'
     draftUrlEvent = event.url_event ?? ''
@@ -442,6 +452,8 @@
       country: draftCountry || undefined,
       venueAddress: draftVenue || undefined,
       invitation: draftInvitation || undefined,
+      registration: draftRegistration || undefined,
+      registrationDeadline: draftRegistrationDeadline || undefined,
       entryFee: draftEntryFee ?? undefined,
       entryFeeCurrency: draftCurrency || undefined,
       organizerId: draftOrganizerId || undefined,
