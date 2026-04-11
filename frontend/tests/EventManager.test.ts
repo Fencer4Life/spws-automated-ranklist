@@ -1,4 +1,4 @@
-// Plan tests: 9.43, 9.44, 9.45, 9.46, 9.47, 9.48, 9.49
+// Plan tests: 9.43, 9.44, 9.45, 9.46, 9.47, 9.48, 9.49, 9.87, 9.88, 9.89
 // See .claude/plans/rosy-bouncing-kitten.md §T9.3.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -167,19 +167,68 @@ describe('EventManager (T9.3)', () => {
     expect(badges[1].textContent).toContain('PLANNED')
   })
 
-  // 9.49 — Status dropdown shows only valid next states
-  it('status dropdown shows only valid next states for SCHEDULED event', () => {
+  // 9.49 — Past event shows no status dropdown (date-aware transitions)
+  it('past event shows no status dropdown', () => {
+    // Both MOCK_EVENTS have dt_start in 2025 (past) — no dropdown expected
     const { container } = render(EventManager, { props: defaultProps })
     const rows = container.querySelectorAll('[data-field="event-row"]')
-    // First event is SCHEDULED — valid transitions: CHANGED, IN_PROGRESS, CANCELLED
-    const select = rows[0].querySelector('[data-field="event-status-select"]') as HTMLSelectElement
+    expect(rows[0].querySelector('[data-field="event-status-select"]')).toBeNull()
+    expect(rows[1].querySelector('[data-field="event-status-select"]')).toBeNull()
+  })
+
+  // 9.87 — Future COMPLETED event shows dropdown with all statuses except COMPLETED
+  it('future COMPLETED event shows status dropdown with rollback options', () => {
+    const futureCompleted: CalendarEvent = {
+      ...MOCK_EVENTS[0],
+      id_event: 99,
+      dt_start: '2027-10-15',
+      dt_end: '2027-10-16',
+      enum_status: 'COMPLETED',
+    }
+    const { container } = render(EventManager, { props: { ...defaultProps, events: [futureCompleted] } })
+    const select = container.querySelector('[data-field="event-status-select"]') as HTMLSelectElement
     expect(select).not.toBeNull()
     const options = Array.from(select.options).map(o => o.value).filter(v => v !== '')
+    expect(options).toContain('PLANNED')
+    expect(options).toContain('SCHEDULED')
     expect(options).toContain('CHANGED')
     expect(options).toContain('IN_PROGRESS')
     expect(options).toContain('CANCELLED')
-    expect(options).not.toContain('PLANNED')
     expect(options).not.toContain('COMPLETED')
+  })
+
+  // 9.88 — Event with null dt_start shows status dropdown
+  it('event with null dt_start shows status dropdown', () => {
+    const nullDate: CalendarEvent = {
+      ...MOCK_EVENTS[1],
+      id_event: 98,
+      dt_start: null,
+      dt_end: null,
+      enum_status: 'PLANNED',
+    }
+    const { container } = render(EventManager, { props: { ...defaultProps, events: [nullDate] } })
+    const select = container.querySelector('[data-field="event-status-select"]') as HTMLSelectElement
+    expect(select).not.toBeNull()
+    const options = Array.from(select.options).map(o => o.value).filter(v => v !== '')
+    expect(options).not.toContain('PLANNED')
+    expect(options.length).toBe(5)
+  })
+
+  // 9.89 — Future CANCELLED event shows status dropdown
+  it('future CANCELLED event shows status dropdown', () => {
+    const futureCancelled: CalendarEvent = {
+      ...MOCK_EVENTS[0],
+      id_event: 97,
+      dt_start: '2027-06-01',
+      dt_end: '2027-06-01',
+      enum_status: 'CANCELLED',
+    }
+    const { container } = render(EventManager, { props: { ...defaultProps, events: [futureCancelled] } })
+    const select = container.querySelector('[data-field="event-status-select"]') as HTMLSelectElement
+    expect(select).not.toBeNull()
+    const options = Array.from(select.options).map(o => o.value).filter(v => v !== '')
+    expect(options).not.toContain('CANCELLED')
+    expect(options.length).toBe(5)
   })
 
   // Admin guard — renders nothing when isAdmin=false
