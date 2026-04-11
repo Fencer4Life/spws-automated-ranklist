@@ -6,7 +6,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(13);
+SELECT plan(21);
 
 -- ===== SETUP =====
 DO $setup$
@@ -276,6 +276,116 @@ SELECT throws_ok(
   )$$,
   NULL,
   '11.12: fn_create_fencer_from_match on APPROVED raises error'
+);
+
+
+-- =========================================================================
+-- Re-ingest for AUTO_MATCHED + gender tests
+-- =========================================================================
+DO $reingest_auto$
+DECLARE
+  v_tourn INT;
+  v_f1 INT; v_f2 INT; v_f3 INT;
+  v_results JSONB;
+  v_summary JSONB;
+BEGIN
+  SELECT id_tournament INTO v_tourn FROM tbl_tournament WHERE txt_code = 'IDENT-TRN';
+  SELECT id_fencer INTO v_f1 FROM tbl_fencer WHERE txt_surname = 'IDENTFENCER' AND txt_first_name = 'Alpha';
+  SELECT id_fencer INTO v_f2 FROM tbl_fencer WHERE txt_surname = 'IDENTFENCER' AND txt_first_name = 'Beta';
+  SELECT id_fencer INTO v_f3 FROM tbl_fencer WHERE txt_surname = 'IDENTFENCER' AND txt_first_name = 'Gamma';
+
+  v_results := jsonb_build_array(
+    jsonb_build_object('id_fencer', v_f1, 'int_place', 1, 'txt_scraped_name', 'AUTO Approve Test', 'num_confidence', 92.0, 'enum_match_status', 'AUTO_MATCHED'),
+    jsonb_build_object('id_fencer', v_f2, 'int_place', 2, 'txt_scraped_name', 'AUTO Dismiss Test', 'num_confidence', 80.0, 'enum_match_status', 'AUTO_MATCHED'),
+    jsonb_build_object('id_fencer', v_f3, 'int_place', 3, 'txt_scraped_name', 'AUTO Create Test', 'num_confidence', 70.0, 'enum_match_status', 'AUTO_MATCHED')
+  );
+  v_summary := fn_ingest_tournament_results(v_tourn, v_results);
+END;
+$reingest_auto$;
+
+
+-- =========================================================================
+-- 11.13 — fn_approve_match on AUTO_MATCHED → APPROVED
+-- =========================================================================
+SELECT lives_ok(
+  $$SELECT fn_approve_match(
+    (SELECT id_match FROM tbl_match_candidate WHERE txt_scraped_name = 'AUTO Approve Test' AND enum_status = 'AUTO_MATCHED'),
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'IDENTFENCER' AND txt_first_name = 'Alpha')
+  )$$,
+  '11.13: fn_approve_match on AUTO_MATCHED executes without error'
+);
+
+
+-- =========================================================================
+-- 11.14 — fn_dismiss_match on AUTO_MATCHED → DISMISSED
+-- =========================================================================
+SELECT is(
+  (SELECT (fn_dismiss_match(
+    (SELECT id_match FROM tbl_match_candidate WHERE txt_scraped_name = 'AUTO Dismiss Test' AND enum_status = 'AUTO_MATCHED')
+  )) ->> 'status'),
+  'DISMISSED',
+  '11.14: fn_dismiss_match on AUTO_MATCHED sets DISMISSED'
+);
+
+
+-- =========================================================================
+-- 11.15 — fn_create_fencer_from_match on AUTO_MATCHED → NEW_FENCER
+-- =========================================================================
+SELECT lives_ok(
+  $$SELECT fn_create_fencer_from_match(
+    (SELECT id_match FROM tbl_match_candidate WHERE txt_scraped_name = 'AUTO Create Test' AND enum_status = 'AUTO_MATCHED'),
+    'AUTOCREATED', 'Fencer', NULL, 'M'
+  )$$,
+  '11.15: fn_create_fencer_from_match on AUTO_MATCHED executes without error'
+);
+
+
+-- =========================================================================
+-- 11.16 — fn_create_fencer_from_match with gender stores enum_gender
+-- =========================================================================
+SELECT is(
+  (SELECT enum_gender::TEXT FROM tbl_fencer WHERE txt_surname = 'AUTOCREATED' AND txt_first_name = 'Fencer'),
+  'M',
+  '11.16: fn_create_fencer_from_match stores enum_gender on new fencer'
+);
+
+
+-- =========================================================================
+-- 11.17 — fn_update_fencer_gender sets gender
+-- =========================================================================
+SELECT lives_ok(
+  $$SELECT fn_update_fencer_gender(
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'IDENTFENCER' AND txt_first_name = 'Alpha'),
+    'M'
+  )$$,
+  '11.17: fn_update_fencer_gender executes without error'
+);
+
+SELECT is(
+  (SELECT enum_gender::TEXT FROM tbl_fencer WHERE txt_surname = 'IDENTFENCER' AND txt_first_name = 'Alpha'),
+  'M',
+  '11.17b: fn_update_fencer_gender persists gender value'
+);
+
+
+-- =========================================================================
+-- 11.18 — fn_update_fencer_gender with bad fencer raises error
+-- =========================================================================
+SELECT throws_ok(
+  $$SELECT fn_update_fencer_gender(-99999, 'M')$$,
+  NULL,
+  '11.18: fn_update_fencer_gender with non-existent fencer raises error'
+);
+
+
+-- =========================================================================
+-- 11.19 — vw_match_candidates returns enum_tournament_gender + enum_fencer_gender
+-- =========================================================================
+SELECT is(
+  (SELECT enum_tournament_gender::TEXT FROM vw_match_candidates
+   WHERE txt_scraped_name = 'AUTO Approve Test' LIMIT 1),
+  'M',
+  '11.19: vw_match_candidates returns enum_tournament_gender'
 );
 
 

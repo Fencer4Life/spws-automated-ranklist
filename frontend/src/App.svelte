@@ -114,10 +114,14 @@
   {:else if currentView === 'admin_identities'}
     <IdentityManager
       candidates={matchCandidates}
+      fencers={allFencers}
       isAdmin={isAdmin}
+      errorMsg={identityError}
       onapprove={handleApproveMatch}
+      onassign={handleAssignFencer}
       oncreatenew={handleCreateNewFencer}
       ondismiss={handleDismissMatch}
+      onupdategender={handleUpdateFencerGender}
     />
   {/if}
 
@@ -169,7 +173,7 @@
     CalendarEvent,
     TournamentType,
   } from './lib/types'
-  import type { Organizer, ScoringConfig, MatchCandidate, CreateEventParams, UpdateEventParams, Tournament } from './lib/types'
+  import type { Organizer, ScoringConfig, MatchCandidate, CreateEventParams, UpdateEventParams, Tournament, FencerListItem } from './lib/types'
   import {
     initClient,
     fetchSeasons,
@@ -198,6 +202,8 @@
     approveMatch,
     dismissMatch,
     createFencerFromMatch,
+    fetchAllFencers,
+    updateFencerGender,
     refreshActiveSeason,
   } from './lib/api'
   import {
@@ -309,6 +315,8 @@
   let editingScoringSeasonId: number | null = $state(null)
   let showEvfToggle = $state(false)
   let matchCandidates: MatchCandidate[] = $state([])
+  let allFencers: FencerListItem[] = $state([])
+  let identityError: string | null = $state(null)
 
   let modalOpen = $state(false)
   let modalFencerName = $state('')
@@ -607,43 +615,65 @@
 
   async function loadMatchCandidates() {
     if (demo) return
+    identityError = null
     try {
       matchCandidates = await fetchMatchCandidates()
+      if (allFencers.length === 0) {
+        allFencers = await fetchAllFencers()
+      }
     } catch (e: unknown) {
-      error = e instanceof Error ? e.message : String(e)
+      identityError = e instanceof Error ? e.message : String(e)
     }
   }
 
   async function handleApproveMatch(matchId: number, fencerId: number) {
+    identityError = null
     try {
       await approveMatch(matchId, fencerId)
       await loadMatchCandidates()
     } catch (e: unknown) {
-      error = e instanceof Error ? e.message : String(e)
+      identityError = e instanceof Error ? e.message : String(e)
     }
   }
 
   async function handleDismissMatch(matchId: number) {
+    identityError = null
     try {
       await dismissMatch(matchId)
       await loadMatchCandidates()
     } catch (e: unknown) {
-      error = e instanceof Error ? e.message : String(e)
+      identityError = e instanceof Error ? e.message : String(e)
     }
   }
 
-  async function handleCreateNewFencer(matchId: number) {
-    const candidate = matchCandidates.find(c => c.id_match === matchId)
-    if (!candidate) return
-    const name = candidate.txt_scraped_name
-    const spaceIdx = name.indexOf(' ')
-    const surname = spaceIdx > 0 ? name.substring(0, spaceIdx) : name
-    const firstName = spaceIdx > 0 ? name.substring(spaceIdx + 1) : ''
+  async function handleCreateNewFencer(matchId: number, surname: string, firstName: string, gender: GenderType, birthYear?: number) {
+    identityError = null
     try {
-      await createFencerFromMatch(matchId, surname, firstName)
+      await createFencerFromMatch(matchId, surname, firstName, birthYear, gender)
+      allFencers = await fetchAllFencers()
       await loadMatchCandidates()
     } catch (e: unknown) {
-      error = e instanceof Error ? e.message : String(e)
+      identityError = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleAssignFencer(matchId: number, fencerId: number) {
+    identityError = null
+    try {
+      await approveMatch(matchId, fencerId)
+      await loadMatchCandidates()
+    } catch (e: unknown) {
+      identityError = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleUpdateFencerGender(fencerId: number, gender: GenderType) {
+    identityError = null
+    try {
+      await updateFencerGender(fencerId, gender)
+      await loadMatchCandidates()
+    } catch (e: unknown) {
+      identityError = e instanceof Error ? e.message : String(e)
     }
   }
 
