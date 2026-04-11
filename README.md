@@ -1,10 +1,10 @@
 # SPWS Automated Ranklist System
 
-Automated ranking system for the **Polish Veterans Fencing Association** (Stowarzyszenie Polskich Weteranow Szermierki). Computes and publishes live rankings across 30 sub-rankings (3 weapons, 2 genders, 5 age categories V0-V4) with rolling score carry-over from previous seasons.
+Automated ranking system for the **Polish Veterans Fencing Association** (Stowarzyszenie Polskich Weteranow Szermierki). Computes and publishes live rankings across 30 weapon-gender-cathegory-rankings (3 weapons, 2 genders, 5 age categories V0-V4) with rolling score carry-over from previous seasons.
 
 ## Live
 
-- **Production:** Embedded on the SPWS website via `<spws-ranklist>` Web Component
+- **Production:** Embedded on the SPWS website via `<spws-ranklist>` Web Component. Tobe rolled out at the beginning of 2026-2027 season. MVP version published on GitHub page for certification testing.
 - [**CERT (staging)**](https://fencer4life.github.io/spws-automated-ranklist/)
 - [**Admin UI**](https://fencer4life.github.io/spws-automated-ranklist/?admin=1)
 
@@ -133,4 +133,4 @@ bash scripts/check-coherence.sh
 
 ## License
 
-Private repository. All rights reserved.
+Public repository.
