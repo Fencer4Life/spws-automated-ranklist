@@ -6,7 +6,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(7);
+SELECT plan(10);
 
 -- ===== SETUP: Create test data for calendar view =====
 DO $setup$
@@ -98,6 +98,71 @@ SELECT ok(
   AND (SELECT bool_has_international FROM vw_calendar WHERE txt_code = 'CAL-TEST-1') = FALSE,
   '8.17: bool_has_international correct for domestic vs international events'
 );
+
+-- 8.18 — tbl_event has url_registration and dt_registration_deadline columns
+SELECT ok(
+  (SELECT COUNT(*)::INT = 2 FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'tbl_event'
+     AND column_name IN ('url_registration', 'dt_registration_deadline')),
+  '8.18: tbl_event has url_registration and dt_registration_deadline columns'
+);
+
+-- 8.19 — vw_calendar includes url_registration and dt_registration_deadline
+SELECT ok(
+  (SELECT COUNT(*)::INT = 2 FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'vw_calendar'
+     AND column_name IN ('url_registration', 'dt_registration_deadline')),
+  '8.19: vw_calendar includes url_registration and dt_registration_deadline columns'
+);
+
+-- 8.20 — fn_create_event and fn_update_event accept registration params and persist them
+DO $t820$
+DECLARE
+  v_season INT;
+  v_org INT;
+  v_eid INT;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025';
+  SELECT id_organizer INTO v_org FROM tbl_organizer LIMIT 1;
+
+  -- Create event with registration fields
+  v_eid := fn_create_event(
+    'CAL-REG-TEST', 'Registration Test Event', v_season, v_org,
+    'Poznań', '2025-03-01'::DATE, '2025-03-02'::DATE, NULL,
+    'POL', NULL, NULL, NULL::NUMERIC, NULL, NULL::enum_weapon_type[],
+    'https://example.com/register', '2025-02-20'::DATE
+  );
+
+  -- Verify create persisted
+  IF NOT (SELECT url_registration = 'https://example.com/register'
+            AND dt_registration_deadline = '2025-02-20'
+          FROM tbl_event WHERE id_event = v_eid) THEN
+    RAISE EXCEPTION 'fn_create_event did not persist registration fields';
+  END IF;
+
+  -- Update registration fields
+  PERFORM fn_update_event(
+    v_eid, 'Registration Test Event', 'Poznań', '2025-03-01'::DATE, '2025-03-02'::DATE,
+    NULL, 'POL', NULL, NULL, NULL::NUMERIC, NULL, NULL, NULL::enum_weapon_type[],
+    'https://example.com/register2', '2025-02-25'::DATE
+  );
+
+  -- Verify update persisted
+  IF NOT (SELECT url_registration = 'https://example.com/register2'
+            AND dt_registration_deadline = '2025-02-25'
+          FROM tbl_event WHERE id_event = v_eid) THEN
+    RAISE EXCEPTION 'fn_update_event did not persist registration fields';
+  END IF;
+
+  -- Verify vw_calendar returns the fields
+  IF NOT (SELECT url_registration = 'https://example.com/register2'
+            AND dt_registration_deadline = '2025-02-25'
+          FROM vw_calendar WHERE txt_code = 'CAL-REG-TEST') THEN
+    RAISE EXCEPTION 'vw_calendar does not return registration fields';
+  END IF;
+END;
+$t820$;
+SELECT pass('8.20: fn_create_event and fn_update_event accept registration params and persist them');
 
 SELECT * FROM finish();
 ROLLBACK;

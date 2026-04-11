@@ -24,6 +24,8 @@ const makeEvent = (overrides: Partial<CalendarEvent> = {}): CalendarEvent => ({
   enum_status: 'COMPLETED',
   num_tournaments: 5,
   bool_has_international: false,
+  url_registration: null,
+  dt_registration_deadline: null,
   ...overrides,
 })
 
@@ -381,6 +383,82 @@ describe('CalendarView (T8.5)', () => {
     evfBtn && fireEvent.click(evfBtn)
     const slot = container.querySelector('.slot.pew')
     expect(slot).not.toBeNull()
+  })
+
+  // 8.21 — Registration link + deadline shown when both set and today <= deadline
+  it('8.21: shows registration link and deadline when both set and before deadline', () => {
+    const futureDate = new Date()
+    futureDate.setMonth(futureDate.getMonth() + 2)
+    const futureStr = futureDate.toISOString().slice(0, 10)
+    const futureStartStr = new Date(futureDate.getTime() + 30 * 86400000).toISOString().slice(0, 10)
+    const events = [makeEvent({
+      id_event: 99, dt_start: futureStartStr, enum_status: 'SCHEDULED',
+      url_registration: 'https://example.com/register',
+      dt_registration_deadline: futureStr,
+    })]
+    const { container } = render(CalendarView, { props: { events } })
+    const regLink = container.querySelector('.registration-link')
+    expect(regLink).not.toBeNull()
+    expect(regLink!.getAttribute('href')).toBe('https://example.com/register')
+    const deadline = container.querySelector('.registration-deadline')
+    expect(deadline).not.toBeNull()
+  })
+
+  // 8.22 — Registration link only shown (no deadline) when URL set and today <= dt_start
+  it('8.22: shows registration link without deadline when only URL set and before dt_start', () => {
+    const futureStart = new Date()
+    futureStart.setMonth(futureStart.getMonth() + 2)
+    const futureStartStr = futureStart.toISOString().slice(0, 10)
+    const events = [makeEvent({
+      id_event: 99, dt_start: futureStartStr, enum_status: 'SCHEDULED',
+      url_registration: 'https://example.com/register',
+      dt_registration_deadline: null,
+    })]
+    const { container } = render(CalendarView, { props: { events } })
+    const regLink = container.querySelector('.registration-link')
+    expect(regLink).not.toBeNull()
+    const deadline = container.querySelector('.registration-deadline')
+    expect(deadline).toBeNull()
+  })
+
+  // 8.23 — Registration deadline text shown without link when only deadline set
+  it('8.23: shows deadline text without link when only deadline set', () => {
+    const futureDate = new Date()
+    futureDate.setMonth(futureDate.getMonth() + 2)
+    const futureStr = futureDate.toISOString().slice(0, 10)
+    const events = [makeEvent({
+      id_event: 99, dt_start: futureStr, enum_status: 'SCHEDULED',
+      url_registration: null,
+      dt_registration_deadline: futureStr,
+    })]
+    const { container } = render(CalendarView, { props: { events } })
+    const regLink = container.querySelector('.registration-link')
+    expect(regLink).toBeNull()
+    const deadline = container.querySelector('.registration-deadline')
+    expect(deadline).not.toBeNull()
+  })
+
+  // 8.24 — Nothing shown when both null
+  it('8.24: shows no registration block when both fields are null', () => {
+    const events = [makeEvent({
+      id_event: 99, enum_status: 'SCHEDULED',
+      url_registration: null, dt_registration_deadline: null,
+    })]
+    const { container } = render(CalendarView, { props: { events } })
+    expect(container.querySelector('.registration-link')).toBeNull()
+    expect(container.querySelector('.registration-deadline')).toBeNull()
+  })
+
+  // 8.25 — Nothing shown when deadline/dt_start has passed
+  it('8.25: hides registration when deadline has passed', () => {
+    const events = [makeEvent({
+      id_event: 99, dt_start: '2020-01-01', enum_status: 'COMPLETED',
+      url_registration: 'https://example.com/register',
+      dt_registration_deadline: '2019-12-20',
+    })]
+    const { container } = render(CalendarView, { props: { events } })
+    expect(container.querySelector('.registration-link')).toBeNull()
+    expect(container.querySelector('.registration-deadline')).toBeNull()
   })
 
   // 11.8 — Season dropdown renders in calendar-filters when seasons provided

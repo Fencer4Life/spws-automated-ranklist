@@ -1617,7 +1617,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-45 | Calendar view: mobile-friendly layout | UC21(e) | 8.46 | Covered (M8) |
 | FR-46 | Admin authentication: Supabase Auth + TOTP MFA (supersedes client-side password gate) | UC22(a), ADR-016 | 9.01–9.17 | Covered (M9, T9.0) |
 | FR-47 | Season CRUD via web UI | UC22(b) | 9.18–9.22, 9.27, 9.37–9.42 | Covered (M9, T9.1 SQL + T9.2 UI) |
-| FR-48 | tbl_event schema extension: 6 columns (txt_country, txt_venue_address, url_invitation, num_entry_fee, txt_entry_fee_currency, arr_weapons) | UC22(c), UC21(d) | 8.05–8.10 | Covered (M8+M9) |
+| FR-48 | tbl_event schema extension: 8 columns (txt_country, txt_venue_address, url_invitation, num_entry_fee, txt_entry_fee_currency, arr_weapons, url_registration, dt_registration_deadline) | UC22(c), UC21(d), ADR-030 | 8.05–8.10, 8.18–8.20 | Covered (M8+M9+ADR-030) |
 | FR-49 | Tournament CRUD nested under events | UC22(d) | 9.25–9.26, 9.29, 9.50–9.55 | Covered (M9, T9.1 SQL + T9.4 UI) |
 | FR-50 | Delete cascade (event → tournaments → results) | UC22(e) | 9.30–9.36 | Covered (M9, T9.1) |
 | FR-51 | Tournament re-import in single transaction | UC23(a-f) | 10.1–10.7 | Covered (ADR-022, fn_ingest_tournament_results) |
@@ -1658,6 +1658,8 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-87 | Auto-export seed SQL files after promotion (committed to repo) | ADR-026 | 9.208 | Superseded by FR-88 |
 | FR-88 | Full-season seed export from CERT on complete/rollback (overwrite, not append) | ADR-027 | 9.209–9.213 | Covered |
 | FR-89 | Auto-resume email polling on event day | ADR-027 | GAS E2E ✓ | Covered |
+| FR-90 | Event registration URL: nullable `url_registration` on `tbl_event`, displayed in Calendar before deadline/start, editable in Admin UI | UC21, ADR-030 | 8.18–8.20, 8.21–8.25, 9.43a–9.43c | Covered |
+| FR-91 | Event registration deadline: nullable `dt_registration_deadline` on `tbl_event`, displayed in Calendar until deadline passes, editable in Admin UI | UC21, ADR-030 | 8.18–8.20, 8.21–8.25, 9.43a–9.43c | Covered |
 
 ### Non-Functional Requirements
 
@@ -1710,25 +1712,26 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-027](adr/027-full-season-seed-export.md) | Full-Season Seed Export from CERT | FR-88, FR-89, ADR-025/026 |
 | [ADR-028](adr/028-evf-calendar-results-import.md) | EVF Calendar + Results Import | FR-58, ADR-025 |
 | [ADR-029](adr/029-tournament-url-auto-population.md) | Tournament URL Auto-Population + Admin CRUD | FR-53, FR-54, ADR-025 |
+| [ADR-030](adr/030-event-registration-url-deadline.md) | Event Registration URL + Deadline | UC21, FR-90, FR-91 |
 
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 236 assertions (1 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 7 T8.2 + 5 T8.3 + 5 T9.0 + 23 T9.1 + 21 M10 rolling + 27 ingest pipeline + 13 identity resolution + 4 EVF import).
+- pgTAP total: 239 assertions (1 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 23 T9.1 + 21 M10 rolling + 27 ingest pipeline + 13 identity resolution + 4 EVF import).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
-| pgTAP | 236 | 13 | `supabase/tests/` |
+| pgTAP | 239 | 13 | `supabase/tests/` |
 | pytest | 269 | 20 | `python/tests/` |
-| vitest | 201 | 21 | `frontend/tests/` |
+| vitest | 210 | 21 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **713** | | |
+| **Total** | **725** | | |
 
 ### Coverage Summary
 
 | Status | Count | FRs |
 |--------|-------|-----|
-| Covered | 83 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-89 |
+| Covered | 85 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-91 |
 | Partial | 2 | FR-53, FR-54 |
 | Superseded | 1 | FR-87 (by FR-88) |
 | Not tested (NFR) | 5 | NFR-01, NFR-03, NFR-04, NFR-08, NFR-09 |

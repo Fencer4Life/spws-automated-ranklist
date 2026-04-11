@@ -112,6 +112,8 @@ export interface CalendarEvent {
   enum_status: EventStatus
   num_tournaments: number
   bool_has_international: boolean
+  url_registration: string | null
+  dt_registration_deadline: string | null
 }
 
 export interface ScoringConfig {
@@ -197,6 +199,8 @@ export interface CreateEventParams {
   entryFee?: number
   entryFeeCurrency?: string
   weapons?: WeaponType[]
+  registration?: string
+  registrationDeadline?: string
 }
 
 export interface UpdateEventParams {
@@ -212,6 +216,8 @@ export interface UpdateEventParams {
   entryFeeCurrency?: string
   organizerId?: number
   weapons?: WeaponType[]
+  registration?: string
+  registrationDeadline?: string
 }
 
 export type MatchStatus = 'PENDING' | 'AUTO_MATCHED' | 'UNMATCHED' | 'APPROVED' | 'NEW_FENCER' | 'DISMISSED'

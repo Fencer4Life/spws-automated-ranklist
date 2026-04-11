@@ -50,6 +50,9 @@
   {#each monthGroups as group}
     <div class="timeline-month">{group.label}</div>
     {#each group.events as event}
+      {@const regCutoff = event.dt_registration_deadline ?? event.dt_start ?? ''}
+      {@const showRegDeadline = event.dt_registration_deadline != null && today <= event.dt_registration_deadline}
+      {@const showRegLink = event.url_registration != null && regCutoff !== '' && today <= regCutoff}
       <div
         class="timeline-event {eventTypeClass(event.txt_code)}"
         class:completed={event.enum_status === 'COMPLETED'}
@@ -80,6 +83,18 @@
               {#if event.url_invitation}
                 <a class="invitation-link" href={event.url_invitation} target="_blank" rel="noopener">
                   {t('organizer_announcement')} &rarr;
+                </a>
+              {/if}
+            </div>
+          {/if}
+          {#if showRegDeadline || showRegLink}
+            <div class="timeline-registration">
+              {#if showRegDeadline}
+                <span class="registration-deadline">{t('event_registration_deadline_label')}: {formatDate(event.dt_registration_deadline)}</span>
+              {/if}
+              {#if showRegLink}
+                <a class="registration-link" href={event.url_registration} target="_blank" rel="noopener">
+                  {t('event_registration')} &rarr;
                 </a>
               {/if}
             </div>
@@ -442,6 +457,27 @@
     text-decoration: none;
   }
   .invitation-link:hover {
+    text-decoration: underline;
+  }
+  .timeline-registration {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+    margin-top: 4px;
+  }
+  .registration-deadline {
+    font-size: 11px;
+    color: #e65100;
+    font-weight: 600;
+  }
+  .registration-link {
+    font-size: 11px;
+    color: #e65100;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .registration-link:hover {
     text-decoration: underline;
   }
   .no-events {

@@ -37,6 +37,8 @@ const MOCK_EVENTS: CalendarEvent[] = [
     enum_status: 'SCHEDULED',
     num_tournaments: 3,
     bool_has_international: false,
+    url_registration: 'https://example.com/register',
+    dt_registration_deadline: '2025-01-10',
   },
   {
     id_event: 11,
@@ -56,6 +58,8 @@ const MOCK_EVENTS: CalendarEvent[] = [
     enum_status: 'PLANNED',
     num_tournaments: 2,
     bool_has_international: false,
+    url_registration: null,
+    dt_registration_deadline: null,
   },
 ]
 
@@ -351,6 +355,55 @@ describe('EventManager Accordion (Phase 6)', () => {
 
     const createForm = container.querySelector('[data-field="tourn-create-form"]')
     expect(createForm).not.toBeNull()
+  })
+
+  // 9.43a — Edit form populates registration URL and deadline from event data
+  it('9.43a: edit form populates registration URL and deadline', async () => {
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    const editBtn = container.querySelector('[data-field="edit-btn"]')!
+    await fireEvent.click(editBtn)
+
+    const regInput = container.querySelector('[data-field="form-registration"]') as HTMLInputElement
+    expect(regInput).not.toBeNull()
+    expect(regInput.value).toBe('https://example.com/register')
+
+    const deadlineInput = container.querySelector('[data-field="form-registration-deadline"]') as HTMLInputElement
+    expect(deadlineInput).not.toBeNull()
+    expect(deadlineInput.value).toBe('2025-01-10')
+  })
+
+  // 9.43b — Create form has empty registration fields
+  it('9.43b: create form has empty registration fields', async () => {
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    const addBtn = container.querySelector('[data-field="add-event-btn"]')!
+    await fireEvent.click(addBtn)
+
+    const regInput = container.querySelector('[data-field="form-registration"]') as HTMLInputElement
+    expect(regInput).not.toBeNull()
+    expect(regInput.value).toBe('')
+
+    const deadlineInput = container.querySelector('[data-field="form-registration-deadline"]') as HTMLInputElement
+    expect(deadlineInput).not.toBeNull()
+    expect(deadlineInput.value).toBe('')
+  })
+
+  // 9.43c — Save includes registration + registrationDeadline in params
+  it('9.43c: save includes registration and registrationDeadline in params', async () => {
+    const onupdate = vi.fn()
+    const { container } = render(EventManager, { props: { ...propsWithTournaments, onupdate } })
+    const editBtn = container.querySelector('[data-field="edit-btn"]')!
+    await fireEvent.click(editBtn)
+
+    const regInput = container.querySelector('[data-field="form-registration"]') as HTMLInputElement
+    await fireEvent.input(regInput, { target: { value: 'https://new-reg.com' } })
+
+    const saveBtn = container.querySelector('[data-field="form-save-btn"]')!
+    await fireEvent.click(saveBtn)
+
+    expect(onupdate).toHaveBeenCalledWith(10, expect.objectContaining({
+      registration: 'https://new-reg.com',
+      registrationDeadline: '2025-01-10',
+    }))
   })
 
   // 9.85 — Tournament edit save calls onedittournament with params
