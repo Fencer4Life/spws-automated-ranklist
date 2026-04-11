@@ -10,11 +10,15 @@ __pycache__/
 htmlcov/
 node_modules/
 dist/
+dist-ce/
 build/
 *.lock
 .svelte2tsx-language-server-files/
 .vite/
+test-results/
 ~$*.xlsx
 ~$*.xls
 *.xlsx.tmp
+.~lock.*#
+doc/external_files/
 *.egg-info/

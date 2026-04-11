@@ -231,7 +231,7 @@ UPDATE tbl_event SET
     txt_country = 'Polska',
     dt_start = '2025-06-07',
     dt_end = '2025-06-08',
-    url_event = NULL,
+    url_event = 'https://www.fencingtimelive.com/tournaments/eventSchedule/B2C615704AB84D0F85BBFF395C07BA41#today',
     url_invitation = 'https://weteraniszermierki.pl/xxxiv-indywidualne-mistrzostwa-polski-weteranow-lodz-2025/',
     num_entry_fee = NULL,
     txt_entry_fee_currency = NULL

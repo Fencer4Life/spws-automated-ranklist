@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"ALTER TABLE tbl_event\" /Users/aleks/coding/SPWSranklist/supabase/migrations/*.sql)",
+      "Bash(psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -c \":*)",
+      "Bash(python3 -c \":*)",
+      "Bash(python python/tools/import_events_from_excel.py --folder reference/ --season SPWS-2024-2025 --dry-run)",
+      "Bash(python -c \":*)",
+      "Bash(python python/tools/import_events_from_excel.py --folder reference/ --season SPWS-2024-25 --dry-run)",
+      "Bash(python python/tools/import_events_from_excel.py --folder reference/ --season SPWS-2024-25)",
+      "Bash(find /Users/aleks/coding/SPWSranklist -maxdepth 2 -name external_files -o -name external*)"
+    ]
+  }
+}
