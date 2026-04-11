@@ -38,7 +38,6 @@
         <li><button class="nav-item admin-item" class:active={currentView === 'admin_seasons'} onclick={() => { onnavigate('admin_seasons'); onclose() }}>{t('nav_admin_seasons')}</button></li>
         <li><button class="nav-item admin-item" class:active={currentView === 'admin_events'} onclick={() => { onnavigate('admin_events'); onclose() }}>{t('nav_admin_events')}</button></li>
         <li><button class="nav-item admin-item" class:active={currentView === 'admin_identities'} onclick={() => { onnavigate('admin_identities'); onclose() }}>{t('nav_admin_identities')}</button></li>
-        <li><button class="nav-item admin-item" class:active={currentView === 'admin_scoring'} onclick={() => { onnavigate('admin_scoring'); onclose() }}>{t('nav_admin_scoring')}</button></li>
       </ul>
     </div>
   {/if}

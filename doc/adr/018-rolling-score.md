@@ -14,7 +14,7 @@ The rolling mechanism must:
 3. Support **category crossing** — a fencer aging V2→V3 gets previous V2 results placed into the V3 ranking
 4. Preserve **Best-K selection** — bucket rules operate on the merged pool (current + carried-over)
 5. Use carried-over `num_final_score` as-is (multiplier already baked in at scoring time)
-6. Only affect the **active season** — past seasons are never modified
+6. Only affect the **active season** — past and future (not yet active) seasons are never modified. A future season that is not yet active shows an empty ranklist by design; rolling carry-over only kicks in when the season actually becomes active (per ADR-031 auto-activation rules)
 
 **Verified with real data (2026-03-30):** V1 M Epee seed data added for 2024-25 season (14 tournaments, 97 matched results from `SZPADA-1-2024-2025.xlsx`). Korona (born 1976) was V1 in 2024-25 and aged to V2 in 2025-26. Rolling carry-over correctly includes PP4-V1 (12.08 pts), MPW-V1 (32.53 pts), and IMEW-V1 (119.38 pts) in the V2 ranking — confirmed by pgTAP test R.13 (kadra total 535.93).
 
@@ -80,7 +80,7 @@ Same declared/completed position logic as the ranking functions.
 - **Correctness** — ranking totals MUST include carried-over scores (eliminates D)
 - **No duplication** — single function per ranking type (eliminates B)
 - **Backward compatibility** — `p_rolling=FALSE` default preserves all existing behavior (better than A)
-- **Legacy path unchanged** — active season always has JSONB rules, so only the JSONB path needs rolling logic
+- **Legacy path unchanged** — active season always has JSONB rules, so only the JSONB path needs rolling logic. **Prerequisites:** (1) `fn_auto_create_scoring_config` trigger copies `json_ranking_rules` from the previous season (migration `20260411000002`); (2) "active season" is auto-derived from dates per ADR-031 — future seasons become active via the nearest-future fallback rule, which means rolling carry-over activates automatically without admin intervention
 - **Testable** — call with `p_rolling := TRUE/FALSE` to verify both behaviors independently
 
 ## Visual Distinction

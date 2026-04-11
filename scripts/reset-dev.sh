@@ -23,20 +23,42 @@ echo "=== Resetting local Supabase database ==="
 supabase db reset
 
 echo ""
-echo "=== Creating admin user (${ADMIN_EMAIL}) ==="
-RESPONSE=$(curl -s "${GOTRUE_URL}/admin/users" \
-  -H "apikey: ${SERVICE_ROLE_KEY}" \
-  -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"${ADMIN_EMAIL}\",\"password\":\"${ADMIN_PASSWORD}\",\"email_confirm\":true}")
+echo "=== Waiting for GoTrue to be ready ==="
+for i in $(seq 1 15); do
+  if curl -sf "${GOTRUE_URL}/health" > /dev/null 2>&1; then
+    echo "GoTrue ready after ${i}s"
+    break
+  fi
+  if [ "$i" -eq 15 ]; then
+    echo "ERROR: GoTrue not ready after 15s"
+    exit 1
+  fi
+  sleep 1
+done
 
-if echo "${RESPONSE}" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d.get('email')" 2>/dev/null; then
-  echo "Admin user created: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}"
-else
-  echo "ERROR: Failed to create admin user"
-  echo "${RESPONSE}"
-  exit 1
-fi
+echo "=== Creating admin user (${ADMIN_EMAIL}) ==="
+MAX_RETRIES=3
+for attempt in $(seq 1 ${MAX_RETRIES}); do
+  RESPONSE=$(curl -s "${GOTRUE_URL}/admin/users" \
+    -H "apikey: ${SERVICE_ROLE_KEY}" \
+    -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
+    -H "Content-Type: application/json" \
+    -d "{\"email\":\"${ADMIN_EMAIL}\",\"password\":\"${ADMIN_PASSWORD}\",\"email_confirm\":true}")
+
+  if echo "${RESPONSE}" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d.get('email')" 2>/dev/null; then
+    echo "Admin user created: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}"
+    break
+  fi
+
+  if [ "$attempt" -eq ${MAX_RETRIES} ]; then
+    echo "ERROR: Failed to create admin user after ${MAX_RETRIES} attempts"
+    echo "${RESPONSE}"
+    exit 1
+  fi
+
+  echo "Attempt ${attempt} failed, retrying in 2s..."
+  sleep 2
+done
 
 echo ""
 echo "=== Done. Open http://localhost:5173/?admin=1 to log in ==="

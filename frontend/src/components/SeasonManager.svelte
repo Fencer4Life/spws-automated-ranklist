@@ -8,10 +8,45 @@
     </div>
 
     <div data-field="season-list" class="season-list">
+      {#if showForm && editingId === null}
+        <div data-field="season-form" class="season-form">
+          <label>
+            {t('season_code_label')}
+            <input data-field="form-code" type="text" bind:value={draftCode} />
+          </label>
+          <label>
+            {t('season_start_label')}
+            <input data-field="form-start" type="date" bind:value={draftStart} />
+          </label>
+          <label>
+            {t('season_end_label')}
+            <input data-field="form-end" type="date" bind:value={draftEnd} />
+          </label>
+          {#if formError}
+            <div class="form-error">{formError}</div>
+          {/if}
+          <div class="form-actions">
+            <button data-field="form-save-btn" class="save-btn" onclick={() => { handleSave() }}>
+              {t('season_save')}
+            </button>
+            <button data-field="form-cancel-btn" class="cancel-btn" onclick={() => { closeForm() }}>
+              {t('season_cancel')}
+            </button>
+          </div>
+        </div>
+      {/if}
       {#each seasons as season}
         <div data-field="season-card" class="season-card">
           {#if showForm && editingId === season.id_season}
             <div data-field="season-form" class="season-form">
+              <div class="form-top-row">
+                <span class="tooltip-wrapper">
+                  <button data-field="scoring-btn" class="scoring-btn" onclick={() => { onscoringconfig(season.id_season) }}>
+                    🎯 {t('nav_admin_scoring')}
+                  </button>
+                  <span class="tooltip-text">{t('season_scoring_tooltip')}</span>
+                </span>
+              </div>
               <label>
                 {t('season_code_label')}
                 <input data-field="form-code" type="text" bind:value={draftCode} />
@@ -28,6 +63,9 @@
                 <input data-field="form-evf-toggle" type="checkbox" bind:checked={draftShowEvf} />
                 {t('sc_show_evf_toggle')}
               </label>
+              {#if formError}
+                <div class="form-error">{formError}</div>
+              {/if}
               <div class="form-actions">
                 <button data-field="form-save-btn" class="save-btn" onclick={() => { handleSave() }}>
                   {t('season_save')}
@@ -37,6 +75,16 @@
                 </button>
               </div>
             </div>
+            {#if scoringConfig && scoringSeasonId === season.id_season}
+              {@const isSeasonPast = new Date(season.dt_end) < new Date()}
+              <ScoringConfigEditor
+                config={scoringConfig}
+                seasonCode={season.txt_code}
+                readonly={isSeasonPast}
+                onsave={onsavescoring}
+                oncancel={onclosescoring}
+              />
+            {/if}
           {/if}
           <div data-field="season-row" class="season-row">
             <span data-field="season-code" class="season-cell">{season.txt_code}</span>
@@ -55,52 +103,39 @@
         </div>
       {/each}
 
-      {#if showForm && editingId === null}
-        <div data-field="season-form" class="season-form">
-          <label>
-            {t('season_code_label')}
-            <input data-field="form-code" type="text" bind:value={draftCode} />
-          </label>
-          <label>
-            {t('season_start_label')}
-            <input data-field="form-start" type="date" bind:value={draftStart} />
-          </label>
-          <label>
-            {t('season_end_label')}
-            <input data-field="form-end" type="date" bind:value={draftEnd} />
-          </label>
-          <div class="form-actions">
-            <button data-field="form-save-btn" class="save-btn" onclick={() => { handleSave() }}>
-              {t('season_save')}
-            </button>
-            <button data-field="form-cancel-btn" class="cancel-btn" onclick={() => { closeForm() }}>
-              {t('season_cancel')}
-            </button>
-          </div>
-        </div>
-      {/if}
     </div>
   </div>
 {/if}
 
 <script lang="ts">
-  import type { Season } from '../lib/types'
+  import type { Season, ScoringConfig } from '../lib/types'
   import { t } from '../lib/locale.svelte'
+  import ScoringConfigEditor from './ScoringConfigEditor.svelte'
 
   let {
     seasons = [] as Season[],
     isAdmin = false,
-    oncreate = (_code: string, _start: string, _end: string) => {},
-    onupdate = (_id: number, _code: string, _start: string, _end: string, _showEvf: boolean) => {},
+    oncreate = (_code: string, _start: string, _end: string): Promise<string | null> => Promise.resolve(null),
+    onupdate = (_id: number, _code: string, _start: string, _end: string, _showEvf: boolean): Promise<string | null> => Promise.resolve(null),
     ondelete = (_id: number) => {},
     onfetchevf = (_id: number): Promise<boolean> => Promise.resolve(false),
+    onscoringconfig = (_id: number) => {},
+    scoringConfig = null as ScoringConfig | null,
+    scoringSeasonId = null as number | null,
+    onsavescoring = (_c: ScoringConfig) => {},
+    onclosescoring = () => {},
   }: {
     seasons?: Season[]
     isAdmin?: boolean
-    oncreate?: (code: string, start: string, end: string) => void
-    onupdate?: (id: number, code: string, start: string, end: string, showEvf: boolean) => void
+    oncreate?: (code: string, start: string, end: string) => Promise<string | null>
+    onupdate?: (id: number, code: string, start: string, end: string, showEvf: boolean) => Promise<string | null>
     ondelete?: (id: number) => void
     onfetchevf?: (id: number) => Promise<boolean>
+    onscoringconfig?: (id: number) => void
+    scoringConfig?: ScoringConfig | null
+    scoringSeasonId?: number | null
+    onsavescoring?: (config: ScoringConfig) => void
+    onclosescoring?: () => void
   } = $props()
 
   let showForm = $state(false)
@@ -109,12 +144,14 @@
   let draftStart = $state('')
   let draftEnd = $state('')
   let draftShowEvf = $state(false)
+  let formError: string | null = $state(null)
 
   function openCreateForm() {
     editingId = null
     draftCode = ''
     draftStart = ''
     draftEnd = ''
+    formError = null
     showForm = true
   }
 
@@ -124,21 +161,29 @@
     draftStart = season.dt_start
     draftEnd = season.dt_end
     draftShowEvf = await onfetchevf(season.id_season)
+    formError = null
     showForm = true
   }
 
   function closeForm() {
     showForm = false
     editingId = null
+    formError = null
   }
 
-  function handleSave() {
+  async function handleSave() {
+    formError = null
+    let err: string | null = null
     if (editingId != null) {
-      onupdate(editingId, draftCode, draftStart, draftEnd, draftShowEvf)
+      err = await onupdate(editingId, draftCode, draftStart, draftEnd, draftShowEvf)
     } else {
-      oncreate(draftCode, draftStart, draftEnd)
+      err = await oncreate(draftCode, draftStart, draftEnd)
     }
-    closeForm()
+    if (err) {
+      formError = err
+    } else {
+      closeForm()
+    }
   }
 </script>
 
@@ -193,6 +238,11 @@
     border-radius: 4px;
     font-size: 14px;
   }
+  .form-top-row {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+  }
   .form-actions {
     display: flex;
     gap: 8px;
@@ -215,6 +265,54 @@
     color: #555;
     font-size: 13px;
     cursor: pointer;
+  }
+  .scoring-btn {
+    padding: 6px 14px;
+    border: 1px solid #e8a020;
+    border-radius: 4px;
+    background: #fff8e8;
+    color: #8a6010;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .scoring-btn:hover {
+    background: #fff0c8;
+  }
+  .tooltip-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+  .tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    margin-bottom: 4px;
+    z-index: 10;
+  }
+  .tooltip-wrapper:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+  }
+  .form-error {
+    width: 100%;
+    padding: 8px 12px;
+    background: #fee;
+    border: 1px solid #c33;
+    border-radius: 4px;
+    color: #c33;
+    font-size: 13px;
   }
   .season-list {
     display: flex;

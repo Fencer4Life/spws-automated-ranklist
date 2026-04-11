@@ -26,7 +26,7 @@ BEGIN
 
   -- Create a season for ingest testing
   -- Use fn_create_season which auto-creates scoring_config
-  v_season := fn_create_season('INGEST-TEST-SEASON', '2025-09-01', '2026-06-30');
+  v_season := fn_create_season('INGEST-TEST-SEASON', '2035-09-01', '2036-06-30');
 
   INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
   VALUES ('INGEST-EVT-1', 'Ingest Test Event', v_season, v_org, 'PLANNED')
@@ -515,9 +515,10 @@ BEGIN
   VALUES ('CARRY-PREV', '2027-09-01', '2028-06-30', FALSE)
   RETURNING id_season INTO v_prev_season;
 
-  -- Create current season (active) — starts after CARRY-PREV ends
+  -- Create current season — starts after CARRY-PREV ends
+  -- (bool_active is auto-derived by trigger; tests use explicit season ID)
   INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
-  VALUES ('CARRY-CURR', '2028-09-01', '2029-06-30', TRUE)
+  VALUES ('CARRY-CURR', '2028-09-01', '2029-06-30', FALSE)
   RETURNING id_season INTO v_curr_season;
 
   -- Both seasons need scoring_config with json_ranking_rules (JSONB path)
@@ -568,7 +569,8 @@ $carryover_setup$;
 -- (80.00), NOT current + carry-over (80.00 + 100.00 = 180.00).
 -- This catches the bug where completed_positions only checked 'COMPLETED'.
 SELECT is(
-  (SELECT total_score FROM fn_ranking_ppw('EPEE', 'M', 'V2', NULL, TRUE)
+  (SELECT total_score FROM fn_ranking_ppw('EPEE', 'M', 'V2',
+     (SELECT id_season FROM tbl_season WHERE txt_code = 'CARRY-CURR'), TRUE)
    WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'CARRYOVER')),
   80.00::NUMERIC,
   '10.23: IN_PROGRESS event excludes carry-over at same position (no double-counting)'
@@ -608,7 +610,8 @@ $carryover_ppw3$;
 -- Now ranking should include: current PPW4 (80) + carried PPW3 (50) = 130
 -- But NOT carried PPW4 (100) because PPW4 is IN_PROGRESS in current season
 SELECT is(
-  (SELECT total_score FROM fn_ranking_ppw('EPEE', 'M', 'V2', NULL, TRUE)
+  (SELECT total_score FROM fn_ranking_ppw('EPEE', 'M', 'V2',
+     (SELECT id_season FROM tbl_season WHERE txt_code = 'CARRY-CURR'), TRUE)
    WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'CARRYOVER')),
   130.00::NUMERIC,
   '10.24: Carry-over included for position without current-season event (PPW3=50 + PPW4=80 = 130)'

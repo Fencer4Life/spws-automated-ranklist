@@ -166,9 +166,12 @@ SELECT has_index('public', 'tbl_tournament', 'idx_tournament_code', '1.6c tbl_to
 SELECT has_index('public', 'tbl_organizer',  'idx_organizer_code',  '1.6d tbl_organizer txt_code unique index');
 
 -- ---------------------------------------------------------------------------
--- 1.7  Partial unique index: only one active season allowed
+-- 1.7  Exclusion constraint: no overlapping season date ranges (ADR-031)
 -- ---------------------------------------------------------------------------
-SELECT has_index('public', 'tbl_season', 'idx_season_active', '1.7 Partial unique index on tbl_season(bool_active)');
+SELECT ok(
+  EXISTS(SELECT 1 FROM pg_constraint WHERE conname = 'excl_season_date_overlap'),
+  '1.7 tbl_season has excl_season_date_overlap exclusion constraint'
+);
 
 -- ---------------------------------------------------------------------------
 -- 1.8  Unique constraint on tbl_scoring_config(id_season)
@@ -301,14 +304,14 @@ SELECT ok(
 );
 
 -- ---------------------------------------------------------------------------
--- 1.15  Enforce single active season
+-- 1.15  Enforce no overlapping season dates (ADR-031)
 -- ---------------------------------------------------------------------------
 SELECT throws_ok(
   'INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
-   VALUES (''CONFLICT-SEASON'', ''2098-08-01'', ''2099-07-15'', TRUE)',
-  '23505',
+   VALUES (''OVERLAP-SEASON'', ''2025-09-01'', ''2026-06-30'', FALSE)',
+  '23P01',
   NULL,
-  '1.15 Second active season rejected by partial unique index'
+  '1.15 Overlapping season dates rejected by exclusion constraint'
 );
 
 -- ---------------------------------------------------------------------------
