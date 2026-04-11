@@ -11,6 +11,10 @@
       </div>
     </div>
 
+    {#if errorMsg}
+      <div data-field="identity-error" class="error-banner">{errorMsg}</div>
+    {/if}
+
     <div class="filter-bar">
       <select data-field="status-filter" class="status-filter" bind:value={statusFilter}>
         <option value="ALL">{t('identity_filter_all')}</option>
@@ -29,6 +33,7 @@
           <th>{t('identity_scraped_name')}</th>
           <th>{t('identity_confidence')}</th>
           <th>{t('identity_suggested')}</th>
+          <th>{t('identity_gender')}</th>
           <th>Status</th>
           <th>Actions</th>
         </tr>
@@ -51,26 +56,60 @@
               </span>
             </td>
             <td>{candidate.txt_fencer_name ?? '—'}</td>
+            <td class={isGenderMismatch(candidate) ? 'gender-mismatch' : ''}>
+              {#if candidate.id_fencer != null && candidate.enum_fencer_gender != null}
+                <select
+                  data-field="gender-select"
+                  class="gender-select {isGenderMismatch(candidate) ? 'gender-mismatch-select' : ''}"
+                  value={candidate.enum_fencer_gender}
+                  onchange={(e) => { onupdategender(candidate.id_fencer!, (e.target as HTMLSelectElement).value as 'M' | 'F') }}
+                >
+                  <option value="M">M</option>
+                  <option value="F">F</option>
+                </select>
+                {#if isGenderMismatch(candidate)}
+                  <span class="mismatch-icon" title={t('identity_gender_mismatch')}>⚠</span>
+                {/if}
+              {:else if candidate.id_fencer != null}
+                <select
+                  data-field="gender-select"
+                  class="gender-select gender-mismatch-select"
+                  value=""
+                  onchange={(e) => { onupdategender(candidate.id_fencer!, (e.target as HTMLSelectElement).value as 'M' | 'F') }}
+                >
+                  <option value="" disabled>—</option>
+                  <option value="M">M</option>
+                  <option value="F">F</option>
+                </select>
+              {:else}
+                <span class="gender-na">—</span>
+              {/if}
+            </td>
             <td>
               <span data-field="status-badge" class="status-badge status-{candidate.enum_status.toLowerCase()}">
                 {candidate.enum_status}
               </span>
             </td>
             <td class="actions">
-              {#if candidate.enum_status === 'PENDING' && candidate.id_fencer != null}
-                <button data-field="approve-btn" class="action-btn approve" onclick={() => { onapprove(candidate.id_match, candidate.id_fencer!) }}>
-                  {t('identity_approve')}
-                </button>
-              {/if}
-              {#if candidate.enum_status === 'UNMATCHED' && isDomestic(candidate.enum_type)}
-                <button data-field="create-new-btn" class="action-btn create-new" onclick={() => { oncreatenew(candidate.id_match) }}>
+              {#if isReadOnly(candidate)}
+                <!-- read-only: 100% confidence + APPROVED -->
+              {:else}
+                {#if candidate.id_fencer != null && (candidate.enum_status === 'PENDING' || candidate.enum_status === 'AUTO_MATCHED')}
+                  <button data-field="approve-btn" class="action-btn approve" onclick={() => { onapprove(candidate.id_match, candidate.id_fencer!) }}>
+                    {t('identity_approve')}
+                  </button>
+                {/if}
+                <button data-field="create-new-btn" class="action-btn create-new" onclick={() => { creatingMatchId = candidate.id_match }}>
                   {t('identity_create_new')}
                 </button>
-              {/if}
-              {#if candidate.enum_status === 'PENDING' || candidate.enum_status === 'UNMATCHED'}
-                <button data-field="dismiss-btn" class="action-btn dismiss" onclick={() => { ondismiss(candidate.id_match) }}>
-                  {t('identity_dismiss')}
+                <button data-field="assign-btn" class="action-btn assign" onclick={() => { assigningMatchId = candidate.id_match }}>
+                  {t('identity_assign')}
                 </button>
+                {#if candidate.enum_status === 'PENDING' || candidate.enum_status === 'UNMATCHED' || candidate.enum_status === 'AUTO_MATCHED'}
+                  <button data-field="dismiss-btn" class="action-btn dismiss" onclick={() => { ondismiss(candidate.id_match) }}>
+                    {t('identity_dismiss')}
+                  </button>
+                {/if}
               {/if}
             </td>
           </tr>
@@ -78,27 +117,55 @@
       </tbody>
     </table>
   </div>
+
+  <CreateFencerModal
+    open={creatingMatchId != null}
+    scrapedName={creatingCandidate?.txt_scraped_name ?? ''}
+    tournamentGender={creatingCandidate?.enum_tournament_gender ?? null}
+    onconfirm={handleCreateConfirm}
+    onclose={() => { creatingMatchId = null }}
+  />
+
+  <FencerSearchModal
+    open={assigningMatchId != null}
+    scrapedName={assigningCandidate?.txt_scraped_name ?? ''}
+    {fencers}
+    onconfirm={handleAssignConfirm}
+    onclose={() => { assigningMatchId = null }}
+  />
 {/if}
 
 <script lang="ts">
-  import type { MatchCandidate, MatchStatus, TournamentType } from '../lib/types'
+  import type { MatchCandidate, MatchStatus, FencerListItem, GenderType } from '../lib/types'
   import { t } from '../lib/locale.svelte'
+  import CreateFencerModal from './CreateFencerModal.svelte'
+  import FencerSearchModal from './FencerSearchModal.svelte'
 
   let {
     candidates = [] as MatchCandidate[],
+    fencers = [] as FencerListItem[],
     isAdmin = false,
+    errorMsg = null as string | null,
     onapprove = (_id: number, _fencerId: number) => {},
-    oncreatenew = (_id: number) => {},
+    onassign = (_id: number, _fencerId: number) => {},
+    oncreatenew = (_id: number, _surname: string, _firstName: string, _gender: GenderType, _birthYear?: number) => {},
     ondismiss = (_id: number) => {},
+    onupdategender = (_fencerId: number, _gender: GenderType) => {},
   }: {
     candidates?: MatchCandidate[]
+    fencers?: FencerListItem[]
     isAdmin?: boolean
+    errorMsg?: string | null
     onapprove?: (id: number, fencerId: number) => void
-    oncreatenew?: (id: number) => void
+    onassign?: (id: number, fencerId: number) => void
+    oncreatenew?: (id: number, surname: string, firstName: string, gender: GenderType, birthYear?: number) => void
     ondismiss?: (id: number) => void
+    onupdategender?: (fencerId: number, gender: GenderType) => void
   } = $props()
 
-  let statusFilter: MatchStatus | 'ALL' = $state('PENDING')
+  let statusFilter = $state<MatchStatus | 'ALL'>('PENDING')
+  let creatingMatchId: number | null = $state(null)
+  let assigningMatchId: number | null = $state(null)
 
   const statusKeys: MatchStatus[] = ['PENDING', 'AUTO_MATCHED', 'UNMATCHED', 'APPROVED', 'NEW_FENCER', 'DISMISSED']
 
@@ -112,6 +179,14 @@
       : candidates.filter(c => c.enum_status === statusFilter)
   )
 
+  let creatingCandidate = $derived(
+    creatingMatchId != null ? candidates.find(c => c.id_match === creatingMatchId) ?? null : null
+  )
+
+  let assigningCandidate = $derived(
+    assigningMatchId != null ? candidates.find(c => c.id_match === assigningMatchId) ?? null : null
+  )
+
   function confidenceClass(confidence: number | null): string {
     if (confidence == null) return 'confidence-low'
     if (confidence >= 95) return 'confidence-high'
@@ -119,8 +194,28 @@
     return 'confidence-low'
   }
 
-  function isDomestic(type: TournamentType | null): boolean {
-    return type === 'PPW' || type === 'MPW'
+  function isReadOnly(candidate: MatchCandidate): boolean {
+    return candidate.num_confidence === 100 && candidate.enum_status === 'APPROVED'
+  }
+
+  function isGenderMismatch(candidate: MatchCandidate): boolean {
+    return candidate.enum_fencer_gender != null
+      && candidate.enum_tournament_gender != null
+      && candidate.enum_fencer_gender !== candidate.enum_tournament_gender
+  }
+
+  function handleCreateConfirm(surname: string, firstName: string, gender: GenderType, birthYear?: number) {
+    if (creatingMatchId != null) {
+      oncreatenew(creatingMatchId, surname, firstName, gender, birthYear)
+      creatingMatchId = null
+    }
+  }
+
+  function handleAssignConfirm(fencerId: number) {
+    if (assigningMatchId != null) {
+      onassign(assigningMatchId, fencerId)
+      assigningMatchId = null
+    }
   }
 </script>
 
@@ -133,6 +228,8 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
   }
   .queue-header h3 {
     margin: 0;
@@ -155,6 +252,15 @@
   .count-badge.count-pending { background: #fff3cd; color: #856404; }
   .count-badge.count-approved { background: #d4edda; color: #155724; }
   .count-badge.count-unmatched { background: #f8d7da; color: #721c24; }
+  .error-banner {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    background: #fff0f0;
+    border: 1px solid #fcc;
+    border-radius: 4px;
+    color: #c33;
+    font-size: 13px;
+  }
   .filter-bar {
     margin-bottom: 12px;
   }
@@ -199,6 +305,28 @@
   .confidence-high { background: #d4edda; color: #155724; }
   .confidence-medium { background: #fff3cd; color: #856404; }
   .confidence-low { background: #f8d7da; color: #721c24; }
+  .gender-select {
+    padding: 3px 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .gender-mismatch-select {
+    border-color: #dc3545;
+    color: #dc3545;
+  }
+  .gender-mismatch {
+    background: #fff0f0;
+  }
+  .mismatch-icon {
+    color: #dc3545;
+    font-size: 14px;
+    margin-left: 4px;
+  }
+  .gender-na {
+    color: #aaa;
+  }
   .status-badge {
     font-size: 11px;
     padding: 2px 8px;
@@ -214,6 +342,7 @@
   .actions {
     display: flex;
     gap: 6px;
+    flex-wrap: wrap;
   }
   .action-btn {
     padding: 4px 10px;
@@ -225,5 +354,6 @@
   }
   .action-btn.approve { background: #d4edda; color: #155724; }
   .action-btn.create-new { background: #cce5ff; color: #004085; }
+  .action-btn.assign { background: #e2d4f0; color: #5a2d82; }
   .action-btn.dismiss { background: #f8d7da; color: #721c24; }
 </style>

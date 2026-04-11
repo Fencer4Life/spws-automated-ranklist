@@ -17,6 +17,7 @@ import type {
   Tournament,
   CreateTournamentParams,
   UpdateTournamentParams,
+  FencerListItem,
 } from './types'
 
 let client: SupabaseClient | null = null
@@ -294,9 +295,25 @@ export async function dismissMatch(matchId: number, note?: string): Promise<void
   if (error) throw error
 }
 
-export async function createFencerFromMatch(matchId: number, surname: string, firstName: string, birthYear?: number): Promise<void> {
+export async function createFencerFromMatch(matchId: number, surname: string, firstName: string, birthYear?: number, gender?: GenderType): Promise<void> {
   const { error } = await getClient().rpc('fn_create_fencer_from_match', {
-    p_match_id: matchId, p_surname: surname, p_first_name: firstName, p_birth_year: birthYear ?? null
+    p_match_id: matchId, p_surname: surname, p_first_name: firstName, p_birth_year: birthYear ?? null, p_gender: gender ?? null
+  })
+  if (error) throw error
+}
+
+export async function fetchAllFencers(): Promise<FencerListItem[]> {
+  const { data, error } = await getClient()
+    .from('tbl_fencer')
+    .select('id_fencer, txt_surname, txt_first_name, int_birth_year, txt_club, enum_gender')
+    .order('txt_surname')
+  if (error) throw error
+  return data ?? []
+}
+
+export async function updateFencerGender(fencerId: number, gender: GenderType): Promise<void> {
+  const { error } = await getClient().rpc('fn_update_fencer_gender', {
+    p_fencer_id: fencerId, p_gender: gender
   })
   if (error) throw error
 }

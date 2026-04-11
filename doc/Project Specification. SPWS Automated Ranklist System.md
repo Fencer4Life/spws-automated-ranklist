@@ -1581,7 +1581,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-04 | Fuzzy match scraped names to master fencer list | UC3(a–f) | 4.1–4.5 | Covered |
 | FR-05 | Alias matching (json_name_aliases) | UC3(a,b) | 4.2 (alias tests) | Covered |
 | FR-06 | Duplicate name disambiguation via age category | §8.5(5) | 4.25–4.37 | Covered |
-| FR-07 | Admin approve / dismiss / create-new-fencer for match candidates | UC4(b,c) | 4.6–4.8 | Covered |
+| FR-07 | Admin approve / dismiss / create-new-fencer for match candidates | UC4(b,c) | 4.6–4.8, 11.13–11.16 | Covered |
 | FR-08 | Domestic intake: auto-create fencer for UNMATCHED PPW/MPW | §8.5 | 4.10–4.14b, 9.142–9.148 | Covered |
 | FR-09 | International intake: skip UNMATCHED PEW/MEW fencers | §8.5 | 4.15–4.18 | Covered |
 | FR-10 | Birth year estimation (youngest boundary per category) | §8.5 | 4.19–4.21, 9.83–9.84 | Covered (M9, T9.9) |
@@ -1630,7 +1630,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-53 | Event-level batch import: multi-select tournament checklist modal | UC22(g) | 9.62–9.67 | Partial (file UI + Admin ⬇ button + populate-urls GHA) |
 | FR-54 | Tournament-level single import: own URL or file upload | UC22(h) | 9.56–9.61, 3.17a–d | Partial (file UI + Admin ⬇ button + t-scrape + scrape-tournament GHA) |
 | FR-55 | File import: parse results from .xlsx, .xls, .json, .csv | UC22(i), UC23(c) | 9.58, 9.93–9.100 | Covered (M9, T9.5 UI + T9.10 parsers) |
-| FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new | UC4(a-e) | 9.68–9.73, 9.77, 9.78–9.82, 11.1–11.12 | Covered (UI + RPCs + API wiring) |
+| FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new/assign + gender column | UC4(a-e) | 9.68–9.73, 9.77, 9.78–9.88, 11.1–11.19 | Covered (UI + RPCs + API wiring + gender + assign) |
 | FR-57 | Identity resolution: disambiguation modal for same-name fencers with age category fit | UC3(f), UC4(b) | 9.74–9.76 | Covered (DisambiguationModal + App.svelte handlers) |
 | FR-58 | EVF calendar import: fetch veteransfencing.eu, deduplication, create events+tournaments | UC8, UC9 | 12.1–12.4, pytest evf_* | Covered (ADR-028: JSON API + HTML calendar + evf-sync.yml) |
 | FR-59 | Two-view app shell: sidebar drawer with Ranklista + Kalendarz navigation | UC12, UC21 | 8.27–8.37 | Covered (M8) |
@@ -1665,6 +1665,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-89 | Auto-resume email polling on event day | ADR-027 | GAS E2E ✓ | Covered |
 | FR-90 | Event registration URL: nullable `url_registration` on `tbl_event`, displayed in Calendar before deadline/start, editable in Admin UI | UC21, ADR-030 | 8.18–8.20, 8.21–8.25, 9.43a–9.43c | Covered |
 | FR-91 | Event registration deadline: nullable `dt_registration_deadline` on `tbl_event`, displayed in Calendar until deadline passes, editable in Admin UI | UC21, ADR-030 | 8.18–8.20, 8.21–8.25, 9.43a–9.43c | Covered |
+| FR-92 | Fencer gender column with backfill from tournament participation, inline admin edit, and gender mismatch highlighting in Identity Manager | ADR-033, ADR-034 | 11.16–11.19, 9.85–9.86, 9.89–9.94 | Covered |
 
 ### Non-Functional Requirements
 
@@ -1720,25 +1721,27 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-030](adr/030-event-registration-url-deadline.md) | Event Registration URL + Deadline | UC21, FR-90, FR-91 |
 | [ADR-031](adr/031-auto-active-season.md) | Auto-Active Season by Date | FR-21, FR-22 |
 | [ADR-032](adr/032-drilldown-mobile-card-layout.md) | Drilldown Mobile Card Layout | NFR-09, FR-36, FR-66 |
+| [ADR-033](adr/033-fencer-gender-identity-enhancements.md) | Fencer Gender Column + Identity Manager Enhancement | FR-07, FR-56, FR-92 |
+| [ADR-034](adr/034-cross-gender-tournament-scoring.md) | Cross-Gender Tournament Scoring (Deferred) | FR-92, ADR-024, ADR-033 |
 
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 246 assertions (1 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 27 ingest pipeline + 13 identity resolution + 4 EVF import).
+- pgTAP total: 254 assertions (1 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 27 ingest pipeline + 21 identity resolution + 4 EVF import).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
-| pgTAP | 246 | 13 | `supabase/tests/` |
+| pgTAP | 254 | 13 | `supabase/tests/` |
 | pytest | 269 | 20 | `python/tests/` |
-| vitest | 229 | 21 | `frontend/tests/` |
+| vitest | 241 | 23 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **744** | | |
+| **Total** | **771** | | |
 
 ### Coverage Summary
 
 | Status | Count | FRs |
 |--------|-------|-----|
-| Covered | 85 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-91 |
+| Covered | 86 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-92 |
 | Partial | 2 | FR-53, FR-54 |
 | Superseded | 1 | FR-87 (by FR-88) |
 | Not tested (NFR) | 4 | NFR-01, NFR-03, NFR-04, NFR-08 |

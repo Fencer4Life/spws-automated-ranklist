@@ -244,6 +244,35 @@
 - **RTM:** NFR-09 updated (Not tested → Covered); Appendix C: added ADR-032; Appendix D: vitest 215→229, total 730→744
 - **Coverage:** NFR-09 (Mobile responsive ≥ 375px) now covered by C.1–C.14
 
+### Fencer Gender + Identity Manager Enhancement (ADR-033, ADR-034) — 2026-04-11
+
+| Feature | Description | Date | ADR |
+|---------|-------------|------|-----|
+| Fencer Gender Column | `enum_gender` on `tbl_fencer`, backfilled from tournament participation (majority vote); authoritative source — never overwritten by import | 2026-04-11 | ADR-033 |
+| Identity Manager Redesign | "Assign fencer" with searchable modal, "Create new fencer" form modal (editable name/gender/birth year), inline gender dropdown with mismatch highlighting, error display; all action buttons on <100% confidence rows | 2026-04-11 | ADR-033 |
+| Widened Identity RPCs | `fn_approve_match`, `fn_dismiss_match`, `fn_create_fencer_from_match` now accept AUTO_MATCHED status; `fn_create_fencer_from_match` accepts gender parameter; new `fn_update_fencer_gender` RPC | 2026-04-11 | ADR-033 |
+| Cross-Gender Scoring Rules | Documented asymmetric rules: man in women's → never counts; woman in men's → moved to women's ranklist if no women's tournament exists, else dropped. Enforcement deferred. | 2026-04-11 | ADR-034 |
+
+**Problem:** The Identity Manager had limited actions (approve only PENDING, create-new only UNMATCHED domestic). No way to reassign matches to different fencers. No gender tracking on fencers led to a woman appearing in men's sabre rankings.
+
+**Approach:** Add `enum_gender` column with backfill. Redesign Identity Manager with two new modals (CreateFencerModal, FencerSearchModal), inline gender editing, and widened RPC status guards. Document cross-gender scoring rules as ADR-034 (deferred enforcement).
+
+**Changes:**
+- Migration `20260412000001`: ALTER TABLE + backfill + 4 RPCs (CREATE OR REPLACE + new fn_update_fencer_gender) + updated vw_match_candidates
+- `CreateFencerModal.svelte` (new): form with surname, first name, gender, birth year
+- `FencerSearchModal.svelte` (new): searchable fencer list with radio select
+- `IdentityManager.svelte`: gender column, action buttons for all <100% rows, modal integration, error banner
+- `App.svelte`: allFencers state, loadAllFencers, handleAssignFencer, handleUpdateFencerGender, handleCreateNewFencer (now accepts form data)
+- `api.ts`: fetchAllFencers, updateFencerGender, createFencerFromMatch with gender
+- `types.ts`: FencerListItem, MatchCandidate + gender fields
+- Locale keys: 8 new identity_ keys (en + pl)
+
+**TDD:**
+- **RED:** 8 pgTAP + 12 vitest new assertions failed
+- **GREEN:** All 254 pgTAP + 241 vitest pass
+- **RTM:** FR-07 tests updated; FR-56 tests expanded (9.83–9.88, 11.13–11.19); new FR-92 added; ADR-033+034 in Appendix C; Appendix D: pgTAP 246→254, vitest 229→241, total 744→771
+- **Coverage:** FR-92 (Fencer gender) covered by 11.16–11.19, 9.85–9.86, 9.89–9.94
+
 ---
 
 ## Archived Documents

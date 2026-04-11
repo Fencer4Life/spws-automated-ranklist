@@ -233,6 +233,17 @@ export interface MatchCandidate {
   txt_admin_note: string | null
   txt_tournament_code: string | null
   enum_type: TournamentType | null
+  enum_tournament_gender: GenderType | null
+  enum_fencer_gender: GenderType | null
+}
+
+export interface FencerListItem {
+  id_fencer: number
+  txt_surname: string
+  txt_first_name: string
+  int_birth_year: number | null
+  txt_club: string | null
+  enum_gender: GenderType | null
 }
 
 export interface FencerCandidate {
