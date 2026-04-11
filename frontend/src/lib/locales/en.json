@@ -164,6 +164,7 @@
   "identity_fencer_choice": "Fencer",
   "identity_search_other": "Search other fencers...",
   "identity_save": "Save",
+  "identity_undo": "Undo",
   "identity_birth_year_type": "Birth year accuracy",
   "identity_birth_year_exact": "Exact (verified)",
   "identity_birth_year_estimated": "Estimated (from age group)",

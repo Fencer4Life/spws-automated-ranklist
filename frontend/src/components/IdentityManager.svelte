@@ -55,7 +55,12 @@
               {#if isGenderMismatch(candidate)}
                 <span class="mismatch-icon" title={t('identity_gender_mismatch')}>⚠</span>
               {/if}
-              {#if !isReadOnly(candidate)}
+              {#if candidate.enum_status === 'DISMISSED'}
+                <button data-field="undo-btn" class="action-btn undo" onclick={(e) => { e.stopPropagation(); onundismiss(candidate.id_match) }}>
+                  {t('identity_undo')}
+                </button>
+              {/if}
+              {#if !isReadOnly(candidate) && candidate.enum_status !== 'DISMISSED'}
                 <button data-field="edit-btn" class="edit-toggle" onclick={(e) => { e.stopPropagation(); toggleEdit(candidate) }}>
                   {editing ? '▲' : '▼'}
                 </button>
@@ -192,6 +197,7 @@
     onassign = (_id: number, _fencerId: number) => {},
     oncreatenew = (_id: number, _surname: string, _firstName: string, _gender: GenderType, _birthYear?: number, _birthYearEstimated?: boolean) => {},
     ondismiss = (_id: number) => {},
+    onundismiss = (_id: number) => {},
     onupdategender = (_fencerId: number, _gender: GenderType) => {},
   }: {
     candidates?: MatchCandidate[]
@@ -202,6 +208,7 @@
     onassign?: (id: number, fencerId: number) => void
     oncreatenew?: (id: number, surname: string, firstName: string, gender: GenderType, birthYear?: number, birthYearEstimated?: boolean) => void
     ondismiss?: (id: number) => void
+    onundismiss?: (id: number) => void
     onupdategender?: (fencerId: number, gender: GenderType) => void
   } = $props()
 
@@ -438,6 +445,7 @@
   .action-btn.save { background: #4a90d9; color: #fff; }
   .action-btn.save:disabled { background: #b0c4de; cursor: not-allowed; }
   .action-btn.dismiss { background: #f8d7da; color: #721c24; }
+  .action-btn.undo { background: #fff3cd; color: #856404; font-size: 11px; padding: 3px 10px; }
   .action-btn.cancel { background: #e9ecef; color: #555; }
 
   @media (max-width: 600px) {
