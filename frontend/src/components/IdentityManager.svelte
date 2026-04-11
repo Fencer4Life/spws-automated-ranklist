@@ -148,6 +148,13 @@
                     <span class="field-label">{t('identity_birth_year')}</span>
                     <input data-field="birth-year-input" type="number" class="field-input" bind:value={editBirthYear} placeholder="e.g. 1970" />
                   </label>
+                  <label class="form-field">
+                    <span class="field-label">{t('identity_birth_year_type')}</span>
+                    <select data-field="birth-year-estimated" class="field-input" bind:value={editBirthYearEstimated}>
+                      <option value={false}>{t('identity_birth_year_exact')}</option>
+                      <option value={true}>{t('identity_birth_year_estimated')}</option>
+                    </select>
+                  </label>
                 </div>
               </div>
 
@@ -183,7 +190,7 @@
     errorMsg = null as string | null,
     onapprove = (_id: number, _fencerId: number) => {},
     onassign = (_id: number, _fencerId: number) => {},
-    oncreatenew = (_id: number, _surname: string, _firstName: string, _gender: GenderType, _birthYear?: number) => {},
+    oncreatenew = (_id: number, _surname: string, _firstName: string, _gender: GenderType, _birthYear?: number, _birthYearEstimated?: boolean) => {},
     ondismiss = (_id: number) => {},
     onupdategender = (_fencerId: number, _gender: GenderType) => {},
   }: {
@@ -193,7 +200,7 @@
     errorMsg?: string | null
     onapprove?: (id: number, fencerId: number) => void
     onassign?: (id: number, fencerId: number) => void
-    oncreatenew?: (id: number, surname: string, firstName: string, gender: GenderType, birthYear?: number) => void
+    oncreatenew?: (id: number, surname: string, firstName: string, gender: GenderType, birthYear?: number, birthYearEstimated?: boolean) => void
     ondismiss?: (id: number) => void
     onupdategender?: (fencerId: number, gender: GenderType) => void
   } = $props()
@@ -207,6 +214,7 @@
   let editFirstName = $state('')
   let editGender = $state<GenderType>('M')
   let editBirthYear: number | undefined = $state(undefined)
+  let editBirthYearEstimated = $state(true)
   let editFencerId: number | null = $state(null)
   let searchQuery = $state('')
 
@@ -277,6 +285,7 @@
         editFirstName = f.txt_first_name
         editGender = f.enum_gender ?? candidate.enum_tournament_gender ?? 'M'
         editBirthYear = f.int_birth_year ?? undefined
+        editBirthYearEstimated = false
       }
     } else {
       editChoice = 'NEW'
@@ -291,6 +300,7 @@
     editFirstName = spaceIdx > 0 ? name.substring(spaceIdx + 1) : ''
     editGender = candidate.enum_tournament_gender ?? 'M'
     editBirthYear = undefined
+    editBirthYearEstimated = true
     editFencerId = null
   }
 
@@ -341,7 +351,7 @@
     const firstName = editFirstName.trim()
 
     if (editChoice === 'NEW') {
-      oncreatenew(candidate.id_match, surname, firstName, editGender, editBirthYear || undefined)
+      oncreatenew(candidate.id_match, surname, firstName, editGender, editBirthYear || undefined, editBirthYearEstimated)
     } else if (editFencerId != null) {
       if (editChoice === 'SUGGESTED' && candidate.id_fencer === editFencerId) {
         onapprove(candidate.id_match, editFencerId)

@@ -198,7 +198,7 @@ describe('createFencerFromMatch', () => {
     mockRpc.mockResolvedValue({ data: { id_match: 3, id_fencer: 999, status: 'NEW_FENCER' }, error: null })
     await createFencerFromMatch(3, 'KOWALSKI', 'Jan', 1985)
     expect(mockRpc).toHaveBeenCalledWith('fn_create_fencer_from_match', {
-      p_match_id: 3, p_surname: 'KOWALSKI', p_first_name: 'Jan', p_birth_year: 1985, p_gender: null,
+      p_match_id: 3, p_surname: 'KOWALSKI', p_first_name: 'Jan', p_birth_year: 1985, p_gender: null, p_birth_year_estimated: true,
     })
   })
 })

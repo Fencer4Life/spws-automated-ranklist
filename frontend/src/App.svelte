@@ -646,10 +646,10 @@
     }
   }
 
-  async function handleCreateNewFencer(matchId: number, surname: string, firstName: string, gender: GenderType, birthYear?: number) {
+  async function handleCreateNewFencer(matchId: number, surname: string, firstName: string, gender: GenderType, birthYear?: number, birthYearEstimated?: boolean) {
     identityError = null
     try {
-      await createFencerFromMatch(matchId, surname, firstName, birthYear, gender)
+      await createFencerFromMatch(matchId, surname, firstName, birthYear, gender, birthYearEstimated)
       allFencers = await fetchAllFencers()
       await loadMatchCandidates()
     } catch (e: unknown) {
