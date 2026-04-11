@@ -128,8 +128,8 @@ bash scripts/check-coherence.sh
 
 ## Authors
 
-- **Aleksander Atanassow** ([@Fencer4Life](https://github.com/Fencer4Life)) — Project owner, domain expert, system architect
-- **Claude Opus 4.6** (Anthropic) — Co-author, implementation partner
+- **Aleksander Atanassow** ([@Fencer4Life](https://github.com/Fencer4Life)) — Project owner, domain expert, system requirements owner
+- **Claude Opus 4.6** (Anthropic) — Co-author, solution architecture and implementation partner
 
 ## License
 
