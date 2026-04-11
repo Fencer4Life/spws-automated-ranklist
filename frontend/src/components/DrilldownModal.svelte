@@ -925,9 +925,8 @@
   @media (max-width: 600px) {
     .modal-overlay {
       padding: 0;
-      align-items: stretch;
+      align-items: flex-start;
       width: 100vw;
-      min-height: 100vh;
     }
     .modal-content {
       border-radius: 0;
