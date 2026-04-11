@@ -224,6 +224,28 @@
 
 ---
 
+### Drilldown Mobile Card Layout (ADR-032) — 2026-04-11
+
+| Feature | Description | Date | ADR |
+|---------|-------------|------|-----|
+| Drilldown Mobile Card Layout | Dual-render table + card layout in DrilldownModal; CSS media query (`max-width: 600px`) shows cards on mobile, hides table; all 11 data fields preserved; 14 new vitest assertions (C.1–C.14) | 2026-04-11 | ADR-032 |
+
+**Problem:** The 7-column tournament table in DrilldownModal overflows on 375px mobile screens (`min-width: 480px`), especially in +EVF mode with two tables. Users must rotate to landscape.
+
+**Approach:** Render both `<table>` and `.card-list` in DOM. CSS media query swaps visibility. No JS viewport detection. Existing tests unaffected (jsdom ignores CSS).
+
+**Changes:**
+- `DrilldownModal.svelte`: New `{#snippet tournamentCards(rows)}` with `.result-card` per tournament; card CSS (65 lines); `@media (max-width: 600px)` hides table, shows cards; removed `table { min-width: 480px }` mobile override
+- `DrilldownModal.test.ts`: 14 new tests (C.1–C.14) covering all card elements: tournament code (text + link), location, date, type badge, place/N, multiplier, points+marker, carried class, carried badge, KADRA vs PPW card-list count
+
+**TDD:**
+- **RED:** 14 new tests failed (`.card-list` not found, `.result-card` elements missing)
+- **GREEN:** All 229 vitest tests pass (215 existing + 14 new)
+- **RTM:** NFR-09 updated (Not tested → Covered); Appendix C: added ADR-032; Appendix D: vitest 215→229, total 730→744
+- **Coverage:** NFR-09 (Mobile responsive ≥ 375px) now covered by C.1–C.14
+
+---
+
 ## Archived Documents
 
 The following documents contain the original detailed plans. They are superseded by this history and the Project Specification:

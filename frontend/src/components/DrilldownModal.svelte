@@ -116,9 +116,11 @@
         <div class="table-section">
           <h3>{t('domestic_tournaments')}</h3>
           {@render tournamentTable(domesticScores)}
+          {@render tournamentCards(domesticScores)}
           {#if mode === 'KADRA' && internationalScores.length > 0}
             <h3>{t('international_tournaments_evf')}</h3>
             {@render tournamentTable(internationalScores)}
+            {@render tournamentCards(internationalScores)}
           {/if}
         </div>
       {/if}
@@ -177,6 +179,35 @@
       {/each}
     </tbody>
   </table>
+{/snippet}
+
+{#snippet tournamentCards(rows: ScoreRow[])}
+  <div class="card-list">
+    {#each rows as s}
+      <div class="result-card" class:carried={s.bool_carried_over}>
+        <div class="card-top">
+          <span class="card-tournament">
+            {#if s.url_results}
+              <a href={s.url_results} target="_blank" rel="noopener">{s.txt_tournament_code}</a>
+            {:else}
+              {s.txt_tournament_code}
+            {/if}
+          </span>
+          <span class="card-points">{fmt(s.num_final_score)} {getMarker(s)}</span>
+        </div>
+        <div class="card-meta">
+          {#if s.txt_location}<span class="card-location">{s.txt_location}</span>{/if}
+          <span class="card-date">{formatDate(s.dt_tournament)}</span>
+          <span class="type-badge" class:domestic={s.enum_type === 'PPW' || s.enum_type === 'MPW'} class:international={INTL_TYPES.includes(s.enum_type as (typeof INTL_TYPES)[number])}>{s.enum_type}</span>
+          <span class="card-place">{s.int_place}/{s.int_participant_count ?? '—'}</span>
+          <span class="card-mult">&times;{s.num_multiplier != null ? Number(s.num_multiplier).toFixed(1) : '—'}</span>
+        </div>
+        {#if s.bool_carried_over && s.txt_source_season_code}
+          <div class="card-carried-badge">↩ {s.txt_source_season_code}</div>
+        {/if}
+      </div>
+    {/each}
+  </div>
 {/snippet}
 
 <script lang="ts">
@@ -826,6 +857,69 @@
     overflow-x: auto;
   }
 
+  /* Card layout — hidden on desktop, shown on mobile */
+  .card-list {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .result-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 10px 12px;
+    background: #fff;
+  }
+  .result-card.carried {
+    color: #999;
+    border-color: #f0f0f0;
+    background: #fcfcfc;
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .card-tournament {
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .card-tournament a {
+    color: #2c6fad;
+    text-decoration: underline;
+    text-decoration-color: #b0c8e8;
+  }
+  .card-tournament a:hover {
+    text-decoration-color: #2c6fad;
+  }
+  .card-points {
+    font-weight: 700;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 6px;
+    font-size: 12px;
+    color: #777;
+  }
+  .card-meta > span + span::before {
+    content: '·';
+    margin-right: 6px;
+  }
+  .card-place {
+    font-weight: 600;
+  }
+  .card-carried-badge {
+    font-size: 10px;
+    color: #999;
+    font-style: italic;
+    margin-top: 4px;
+  }
+
   @media (max-width: 600px) {
     .modal-overlay {
       padding: 0;
@@ -867,9 +961,11 @@
     .chart-bar-bg {
       height: 16px;
     }
-    table {
-      font-size: 12px;
-      min-width: 480px;
+    .table-section table {
+      display: none;
+    }
+    .card-list {
+      display: flex;
     }
     th {
       padding: 6px;

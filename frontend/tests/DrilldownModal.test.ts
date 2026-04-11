@@ -407,3 +407,173 @@ describe('DrilldownModal', () => {
     expect(container.querySelector('.rolling-info')).toBeNull()
   })
 })
+
+// ── Card layout (mobile responsive view) ─────────────────────────────────────
+// These verify the card-list elements that replace tables on mobile (<= 600px).
+// Both table and cards are always in the DOM; CSS media queries control visibility.
+
+describe('DrilldownModal — Card layout', () => {
+  // C.1 — card container exists
+  it('C.1: renders .card-list when domestic scores are present', () => {
+    const scores = [makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100 })]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    expect(container.querySelector('.card-list')).not.toBeNull()
+  })
+
+  // C.2 — correct card count
+  it('C.2: renders one .result-card per domestic score', () => {
+    const scores = [
+      makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100 }),
+      makeScore({ id_result: 2, enum_type: 'PPW', num_final_score: 80, id_tournament: 11 }),
+      makeScore({ id_result: 3, enum_type: 'MPW', num_final_score: 45, id_tournament: 12 }),
+    ]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    const cards = container.querySelectorAll('.card-list .result-card')
+    expect(cards.length).toBe(3)
+  })
+
+  // C.3 — tournament code text
+  it('C.3: card shows tournament code text', () => {
+    const scores = [makeScore({ txt_tournament_code: 'PPW-07' })]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    expect(container.querySelector('.card-tournament')?.textContent).toContain('PPW-07')
+  })
+
+  // C.4 — tournament code as link
+  it('C.4: card shows tournament code as link when url_results exists', () => {
+    const scores = [makeScore({
+      txt_tournament_code: 'PPW-07',
+      url_results: 'https://example.com/results',
+    })]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    const link = container.querySelector('.card-tournament a') as HTMLAnchorElement
+    expect(link).not.toBeNull()
+    expect(link.target).toBe('_blank')
+    expect(link.href).toContain('example.com')
+  })
+
+  // C.5 — location
+  it('C.5: card shows location when txt_location is present', () => {
+    const scores = [makeScore({ txt_location: 'Gdańsk' })]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    expect(container.querySelector('.card-location')?.textContent).toBe('Gdańsk')
+  })
+
+  // C.6 — formatted date
+  it('C.6: card shows formatted date', () => {
+    const scores = [makeScore({ dt_tournament: '2025-02-21' })]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    const dateEl = container.querySelector('.card-date')
+    expect(dateEl?.textContent).toMatch(/21.*Feb.*25/)
+  })
+
+  // C.7 — type badge domestic
+  it('C.7: card shows type badge with .domestic class for PPW', () => {
+    const scores = [makeScore({ enum_type: 'PPW' })]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    const badge = container.querySelector('.result-card .type-badge')
+    expect(badge?.classList.contains('domestic')).toBe(true)
+    expect(badge?.textContent).toBe('PPW')
+  })
+
+  // C.8 — type badge international
+  it('C.8: card shows type badge with .international class for PEW', () => {
+    const scores = [
+      makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100 }),
+      makeScore({ id_result: 2, enum_type: 'PEW', num_final_score: 80, id_tournament: 20 }),
+    ]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'KADRA' },
+    })
+    const badges = container.querySelectorAll('.result-card .type-badge')
+    const intlBadge = Array.from(badges).find((b) => b.textContent === 'PEW')
+    expect(intlBadge?.classList.contains('international')).toBe(true)
+  })
+
+  // C.9 — place and participant count
+  it('C.9: card shows place/N', () => {
+    const scores = [makeScore({ int_place: 3, int_participant_count: 24 })]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    expect(container.querySelector('.card-place')?.textContent).toBe('3/24')
+  })
+
+  // C.10 — multiplier
+  it('C.10: card shows multiplier', () => {
+    const scores = [makeScore({ num_multiplier: 1.2 })]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    expect(container.querySelector('.card-mult')?.textContent).toContain('1.2')
+  })
+
+  // C.11 — points and marker
+  it('C.11: card shows points and star marker for best-K', () => {
+    const scores = [
+      makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 120 }),
+    ]
+    const ctx = { ...CTX, ppwBestCount: 4 }
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW', context: ctx },
+    })
+    const pts = container.querySelector('.card-points')
+    expect(pts?.textContent).toContain('120')
+    expect(pts?.textContent).toContain('★')
+  })
+
+  // C.12 — carried class on card
+  it('C.12: card has .carried class when bool_carried_over', () => {
+    const scores = [
+      makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100, bool_carried_over: true, txt_source_season_code: '2023/24' }),
+    ]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW', context: CTX },
+    })
+    expect(container.querySelector('.result-card.carried')).not.toBeNull()
+  })
+
+  // C.13 — carried badge
+  it('C.13: card shows carried badge with source season code', () => {
+    const scores = [
+      makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100, bool_carried_over: true, txt_source_season_code: '2023/24' }),
+    ]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW', context: CTX },
+    })
+    const badge = container.querySelector('.card-carried-badge')
+    expect(badge?.textContent).toContain('↩')
+    expect(badge?.textContent).toContain('2023/24')
+  })
+
+  // C.14 — KADRA renders 2 card-lists, PPW renders 1
+  it('C.14: KADRA mode renders 2 card-lists, PPW mode renders 1', () => {
+    const scores = [
+      makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100 }),
+      makeScore({ id_result: 2, enum_type: 'PEW', num_final_score: 80, id_tournament: 20 }),
+    ]
+    const { container: cKadra } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'KADRA' },
+    })
+    expect(cKadra.querySelectorAll('.card-list').length).toBe(2)
+
+    const { container: cPpw } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
+    })
+    expect(cPpw.querySelectorAll('.card-list').length).toBe(1)
+  })
+})
