@@ -14,7 +14,7 @@ Automated ranking system for the **Polish Veterans Fencing Association** (Stowar
 - **Ranklist** — filterable by weapon/gender/category/season with PPW (domestic) and +EVF/Kadra (international) ranking modes
 - **Calendar** — chronological event list with color-coded cards (PEW blue, IMEW/MSW gold), rolling progress bar, 3-line slot boxes with city names
 - **Drilldown Modal** — per-fencer score breakdown with carried-over scores from previous season
-- **Birth Year Subtitle** — eligible birth years for selected category and season
+- **Dynamic age cathegory selection** — determining eligible birth years for selected category and season
 
 ### Admin (Authenticated)
 - **Season/Event/Tournament CRUD** — inline edit/create forms in accordion UI with tooltips and confirmation dialogs
