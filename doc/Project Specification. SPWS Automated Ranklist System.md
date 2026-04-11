@@ -1678,7 +1678,7 @@ Every functional and non-functional requirement is listed below with its source 
 | NFR-06 | RLS: authenticated full CRUD | §9.2.1 | 1.11 | Covered |
 | NFR-07 | RLS: audit log not publicly readable | §9.2.1 | 1.26 | Covered |
 | NFR-08 | Browser compatibility (Chrome, Firefox, Safari, Edge) | §10 | — | Not tested |
-| NFR-09 | Mobile responsive ≥ 375 px | §10 | — | Not tested (plan test 6.9) |
+| NFR-09 | Mobile responsive ≥ 375 px | §10, ADR-032 | C.1–C.14 | Covered (drilldown cards) |
 | NFR-10 | Pipeline observability (structured logs + Telegram) | §10 | 3.6 (Telegram only) | Partial |
 | NFR-11 | Database migration strategy (numbered SQL files) | §9.9 | 1.1a–1.2i (schema verification) | Covered |
 | NFR-12 | Data integrity (Supabase daily backups) | §10 | — | Infrastructure (not testable) |
@@ -1719,6 +1719,7 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-029](adr/029-tournament-url-auto-population.md) | Tournament URL Auto-Population + Admin CRUD | FR-53, FR-54, ADR-025 |
 | [ADR-030](adr/030-event-registration-url-deadline.md) | Event Registration URL + Deadline | UC21, FR-90, FR-91 |
 | [ADR-031](adr/031-auto-active-season.md) | Auto-Active Season by Date | FR-21, FR-22 |
+| [ADR-032](adr/032-drilldown-mobile-card-layout.md) | Drilldown Mobile Card Layout | NFR-09, FR-36, FR-66 |
 
 ## Appendix D — Test Baseline
 
@@ -1729,9 +1730,9 @@ Every functional and non-functional requirement is listed below with its source 
 |-------|-------|-------|----------|
 | pgTAP | 246 | 13 | `supabase/tests/` |
 | pytest | 269 | 20 | `python/tests/` |
-| vitest | 215 | 21 | `frontend/tests/` |
+| vitest | 229 | 21 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **730** | | |
+| **Total** | **744** | | |
 
 ### Coverage Summary
 
@@ -1740,5 +1741,5 @@ Every functional and non-functional requirement is listed below with its source 
 | Covered | 85 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-91 |
 | Partial | 2 | FR-53, FR-54 |
 | Superseded | 1 | FR-87 (by FR-88) |
-| Not tested (NFR) | 5 | NFR-01, NFR-03, NFR-04, NFR-08, NFR-09 |
+| Not tested (NFR) | 4 | NFR-01, NFR-03, NFR-04, NFR-08 |
 | Infrastructure | 2 | NFR-02, NFR-12 |
