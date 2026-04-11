@@ -295,9 +295,9 @@ export async function dismissMatch(matchId: number, note?: string): Promise<void
   if (error) throw error
 }
 
-export async function createFencerFromMatch(matchId: number, surname: string, firstName: string, birthYear?: number, gender?: GenderType): Promise<void> {
+export async function createFencerFromMatch(matchId: number, surname: string, firstName: string, birthYear?: number, gender?: GenderType, birthYearEstimated?: boolean): Promise<void> {
   const { error } = await getClient().rpc('fn_create_fencer_from_match', {
-    p_match_id: matchId, p_surname: surname, p_first_name: firstName, p_birth_year: birthYear ?? null, p_gender: gender ?? null
+    p_match_id: matchId, p_surname: surname, p_first_name: firstName, p_birth_year: birthYear ?? null, p_gender: gender ?? null, p_birth_year_estimated: birthYearEstimated ?? true
   })
   if (error) throw error
 }

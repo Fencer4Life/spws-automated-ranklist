@@ -164,6 +164,9 @@
   "identity_fencer_choice": "Zawodnik",
   "identity_search_other": "Szukaj innego zawodnika...",
   "identity_save": "Zapisz",
+  "identity_birth_year_type": "Dokładność roku urodzenia",
+  "identity_birth_year_exact": "Dokładny (zweryfikowany)",
+  "identity_birth_year_estimated": "Szacowany (z kat. wiekowej)",
   "disambiguation_title": "Wybierz zawodnika",
 
   "sc_banner": "Konfiguracja punktacji dla sezonu {season}",
