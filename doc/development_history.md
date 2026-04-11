@@ -249,23 +249,24 @@
 | Feature | Description | Date | ADR |
 |---------|-------------|------|-----|
 | Fencer Gender Column | `enum_gender` on `tbl_fencer`, backfilled from tournament participation (majority vote); authoritative source — never overwritten by import | 2026-04-11 | ADR-033 |
-| Identity Manager Redesign | "Assign fencer" with searchable modal, "Create new fencer" form modal (editable name/gender/birth year), inline gender dropdown with mismatch highlighting, error display; all action buttons on <100% confidence rows | 2026-04-11 | ADR-033 |
+| Identity Manager Redesign | Card-based layout with inline edit form: fencer dropdown (suggested/create new/search), always-editable fields (SURNAME forced ALL CAPS, first name, gender, birth year), inline error display, form stays open on error, auto-closes on success | 2026-04-12 | ADR-033 |
 | Widened Identity RPCs | `fn_approve_match`, `fn_dismiss_match`, `fn_create_fencer_from_match` now accept AUTO_MATCHED status; `fn_create_fencer_from_match` accepts gender parameter; new `fn_update_fencer_gender` RPC | 2026-04-11 | ADR-033 |
 | Cross-Gender Scoring Rules | Documented asymmetric rules: man in women's → never counts; woman in men's → moved to women's ranklist if no women's tournament exists, else dropped. Enforcement deferred. | 2026-04-11 | ADR-034 |
 
 **Problem:** The Identity Manager had limited actions (approve only PENDING, create-new only UNMATCHED domestic). No way to reassign matches to different fencers. No gender tracking on fencers led to a woman appearing in men's sabre rankings.
 
-**Approach:** Add `enum_gender` column with backfill. Redesign Identity Manager with two new modals (CreateFencerModal, FencerSearchModal), inline gender editing, and widened RPC status guards. Document cross-gender scoring rules as ADR-034 (deferred enforcement).
+**Approach:** Add `enum_gender` column with backfill. Redesign Identity Manager as card-based layout with unified inline edit form per candidate (replaces separate modal dialogs). Dropdown selects fencer source (suggested match / create new / search), all fields always editable, surname forced ALL CAPS. Form stays open on error, auto-closes on successful status change. Document cross-gender scoring rules as ADR-034 (deferred enforcement, gender mismatch is informational per ADR-034).
 
 **Changes:**
 - Migration `20260412000001`: ALTER TABLE + backfill + 4 RPCs (CREATE OR REPLACE + new fn_update_fencer_gender) + updated vw_match_candidates
-- `CreateFencerModal.svelte` (new): form with surname, first name, gender, birth year
-- `FencerSearchModal.svelte` (new): searchable fencer list with radio select
-- `IdentityManager.svelte`: gender column, action buttons for all <100% rows, modal integration, error banner
-- `App.svelte`: allFencers state, loadAllFencers, handleAssignFencer, handleUpdateFencerGender, handleCreateNewFencer (now accepts form data)
+- `IdentityManager.svelte`: complete rewrite — card layout, inline edit form with fencer dropdown + search panel, always-editable fields, SURNAME ALL CAPS, error banner, auto-close on status change
+- `CreateFencerModal.svelte` (new): standalone form modal (kept for potential reuse)
+- `FencerSearchModal.svelte` (new): standalone search modal (kept for potential reuse)
+- `App.svelte`: allFencers state, loadAllFencers, handleAssignFencer, handleUpdateFencerGender, handleCreateNewFencer (now accepts form data), identityError state
 - `api.ts`: fetchAllFencers, updateFencerGender, createFencerFromMatch with gender
 - `types.ts`: FencerListItem, MatchCandidate + gender fields
-- Locale keys: 8 new identity_ keys (en + pl)
+- Locale keys: 11 new identity_ keys (en + pl)
+- Mockup: `doc/mockups/identity-edit-form.html`
 
 **TDD:**
 - **RED:** 8 pgTAP + 12 vitest new assertions failed

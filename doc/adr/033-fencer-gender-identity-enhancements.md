@@ -21,18 +21,27 @@ The `tbl_fencer` table had no gender column. Gender was only tracked at the tour
 
 4. **Update `fn_create_fencer_from_match`** — accepts optional `p_gender` parameter, stored on the new fencer.
 
-5. **Redesign Identity Manager UI**:
-   - New **Gender column** with inline M/F dropdown for linked fencers; red highlight on gender mismatch (fencer gender ≠ tournament gender)
-   - **"Create new fencer"** button on all <100% confidence rows (removed domestic-only restriction), opens a form modal with editable surname, first name, gender (pre-selected from tournament), and birth year
-   - **"Assign fencer"** button opens a searchable modal to pick from all existing fencers
+5. **Redesign Identity Manager UI** as card-based layout with inline edit forms:
+   - **Collapsed view**: each candidate is a compact card showing scraped name, tournament code, confidence badge, suggested fencer, status, gender mismatch warning
+   - **Expanded edit form** (click to open): single fencer dropdown with three choices:
+     - `✓ Suggested match` — pre-fills fields from matched fencer
+     - `➕ Create new fencer` — pre-fills from scraped name
+     - `🔍 Search other fencers` — shows searchable fencer list, selecting pre-fills fields
+   - **All fields always editable**: Surname (forced ALL CAPS), First name, Gender (M/F), Birth year. Dropdown pre-fills but admin can always type by hand.
+   - **Surname forced ALL CAPS** via CSS `text-transform` + `.toUpperCase()` on save
+   - **Save logic**: if existing fencer selected → approve/assign + update fencer data if changed; if "Create new" → create new fencer with form values
+   - **Gender mismatch warning** when fencer gender ≠ tournament gender
    - **Error messages** displayed inline in the Identity Manager view
-   - **Approve/Dismiss** now available for AUTO_MATCHED rows
+   - **Dismiss/Cancel** buttons alongside Save
+   - **Read-only** for 100% confidence + APPROVED rows (no edit button)
+   - Mockup: `doc/mockups/identity-edit-form.html`
 
 ## Alternatives
 
 - **Add gender as NOT NULL** — rejected because existing fencers lack gender data; nullable allows gradual backfill.
 - **Derive gender at query time from tournament** — rejected because fencer gender should be authoritative (see ADR-034 for cross-gender tournament scenarios).
 - **Server-side fencer search** — deferred; client-side filtering with max 50 displayed results is sufficient for current data volume.
+- **Separate modal dialogs for create/assign/approve** — replaced with unified inline edit form per card; modals were confusing with too many buttons.
 
 ## Related ADRs
 
