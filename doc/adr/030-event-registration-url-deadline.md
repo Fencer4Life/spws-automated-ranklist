@@ -1,6 +1,6 @@
 # ADR-030: Event Registration URL + Deadline
 
-**Status:** Proposed  
+**Status:** Implemented  
 **Date:** 2026-04-11  
 **Source:** UC21, FR-90, FR-91
 
@@ -33,7 +33,20 @@ Rules:
 
 ### Visual style
 
-Same style as invitation link. Color: `#e65100` (warm orange) — distinct from invitation blue (`#4a90d9`) and results green (`#1a7f37`), signals "action needed."
+2-tier urgency color coding based on days remaining until the cutoff date (`dt_registration_deadline ?? dt_start`):
+
+| Condition | Color | CSS class | Meaning |
+|-----------|-------|-----------|---------|
+| 7+ days remaining | Dark green `#2e7d32` | (default) | Plenty of time |
+| < 7 days remaining | Red `#c33` | `.reg-urgent` | Act soon |
+
+Both the deadline text (`.registration-deadline`) and the registration link (`.registration-link`) change color together — the `.reg-urgent` class is applied to the parent `.timeline-registration` container.
+
+Implementation: `regUrgent` is computed per-event as a `@const` in the `{#each}` block:
+```
+regCutoff = dt_registration_deadline ?? dt_start
+regUrgent = (cutoff - today) < 7 days
+```
 
 ## Alternatives Considered
 
@@ -181,14 +194,19 @@ p_registration_deadline: params.registrationDeadline ?? null,
 Registration block in `timeline-links` section (after invitation link, before entry fee):
 
 ```svelte
-{#if showRegistrationDeadline || showRegistrationLink}
-  <div class="timeline-registration">
-    {#if showRegistrationDeadline}
+{@const regCutoff = event.dt_registration_deadline ?? event.dt_start ?? ''}
+{@const showRegDeadline = event.dt_registration_deadline != null && today <= event.dt_registration_deadline}
+{@const showRegLink = event.url_registration != null && regCutoff !== '' && today <= regCutoff}
+{@const regUrgent = regCutoff !== '' && (new Date(regCutoff).getTime() - new Date(today).getTime()) < 7 * 86400000}
+
+{#if showRegDeadline || showRegLink}
+  <div class="timeline-registration" class:reg-urgent={regUrgent}>
+    {#if showRegDeadline}
       <span class="registration-deadline">
         {t('event_registration_deadline_label')}: {formatDate(event.dt_registration_deadline)}
       </span>
     {/if}
-    {#if showRegistrationLink}
+    {#if showRegLink}
       <a class="registration-link" href={event.url_registration} target="_blank" rel="noopener">
         {t('event_registration')} &rarr;
       </a>
@@ -197,9 +215,15 @@ Registration block in `timeline-links` section (after invitation link, before en
 {/if}
 ```
 
-Conditions (computed per-event):
-- `showRegistrationDeadline` = `event.dt_registration_deadline != null && today <= event.dt_registration_deadline`
-- `showRegistrationLink` = `event.url_registration != null && today <= (event.dt_registration_deadline ?? event.dt_start)`
+Conditions (computed per-event as `@const` inside `{#each}`):
+- `regCutoff` = `dt_registration_deadline ?? dt_start` — the date that drives both visibility and urgency
+- `showRegDeadline` = `dt_registration_deadline != null && today <= dt_registration_deadline`
+- `showRegLink` = `url_registration != null && today <= regCutoff`
+- `regUrgent` = `(regCutoff - today) < 7 days` — toggles `.reg-urgent` CSS class on parent container
+
+Color coding:
+- Default (7+ days): dark green `#2e7d32` on `.registration-deadline` and `.registration-link`
+- Urgent (< 7 days): red `#c33` via `.reg-urgent .registration-deadline` and `.reg-urgent .registration-link`
 
 ### 8. Event Manager (Admin Edit Form)
 
@@ -221,7 +245,7 @@ Wire into `openCreateForm()`, `openEditForm()`, `handleSave()`.
 
 ### 9. Vitest Tests
 
-**CalendarView.test.ts** — +5 tests:
+**CalendarView.test.ts** — +7 tests:
 
 | Test ID | Assertion |
 |---------|-----------|
@@ -230,6 +254,8 @@ Wire into `openCreateForm()`, `openEditForm()`, `handleSave()`.
 | 8.23 | Registration deadline text shown without link when only deadline set |
 | 8.24 | Nothing shown when both null |
 | 8.25 | Nothing shown when deadline/dt_start has passed (date in the past) |
+| 8.26 | Registration block has `.reg-urgent` class when < 7 days remain |
+| 8.26b | Registration block has no `.reg-urgent` class when 7+ days remain |
 
 **EventManager.test.ts** — +3 tests:
 
@@ -252,11 +278,11 @@ Update ADR registry line to include ADR-030.
 ## Execution Order (TDD)
 
 1. **Documentation first:** This ADR, Spec RTM (FR-90, FR-91), Appendix C+D
-2. **Write tests (RED):** pgTAP 3 + vitest 8
+2. **Write tests (RED):** pgTAP 3 + vitest 10
 3. **Run tests → confirm RED**
-4. **Implementation:** migration → types → api → locales → CalendarView → EventManager
+4. **Implementation:** migration → types → api → locales → CalendarView (+ color coding) → EventManager
 5. **Run tests → confirm GREEN**
-6. **Update test baseline** (pgTAP 239, vitest 209, total 721)
+6. **Update test baseline** (pgTAP 239, vitest 212, total 727)
 7. **Update development_history.md + MEMORY.md**
 
 ## Files Modified (Summary)
@@ -266,13 +292,14 @@ Update ADR registry line to include ADR-030.
 | `doc/adr/030-event-registration-url-deadline.md` | NEW — this ADR |
 | `doc/Project Specification. SPWS Automated Ranklist System.md` | FR-90, FR-91 in RTM; FR-48 update; Appendix C+D |
 | `doc/development_history.md` | Post-MVP enhancement entry |
-| `supabase/migrations/20260411000001_event_registration.sql` | NEW — schema + view + CRUD |
+| `supabase/migrations/20260411000001_event_registration.sql` | NEW — schema + view + CRUD (drops old overloads) |
 | `supabase/tests/05_calendar_view.sql` | +3 assertions (8.18–8.20) |
 | `frontend/src/lib/types.ts` | CalendarEvent + Create/UpdateEventParams |
 | `frontend/src/lib/api.ts` | createEvent + updateEvent params |
 | `frontend/src/lib/locales/en.json` | 3 new keys |
 | `frontend/src/lib/locales/pl.json` | 3 new keys |
-| `frontend/src/components/CalendarView.svelte` | Registration block with date logic |
+| `frontend/src/components/CalendarView.svelte` | Registration block with date logic + 2-tier color coding |
 | `frontend/src/components/EventManager.svelte` | 2 new form fields + state + handlers |
-| `frontend/tests/CalendarView.test.ts` | +5 tests (8.21–8.25) |
+| `frontend/tests/CalendarView.test.ts` | +7 tests (8.21–8.26b) |
 | `frontend/tests/EventManager.test.ts` | +3 tests (9.43a–9.43c) |
+| `scripts/reset-dev.sh` | NEW — local DB reset + admin user recreation |
