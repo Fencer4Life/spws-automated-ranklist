@@ -865,15 +865,16 @@
     margin-bottom: 16px;
   }
   .result-card {
-    border: 1px solid #e0e0e0;
+    border: 1px solid #d8d8d8;
     border-radius: 6px;
     padding: 10px 12px;
-    background: #fff;
+    background: #f8f9fa;
+    color: #333;
   }
   .result-card.carried {
     color: #999;
-    border-color: #f0f0f0;
-    background: #fcfcfc;
+    border-color: #e8e8e8;
+    background: #f5f4f2;
   }
   .card-top {
     display: flex;
@@ -898,6 +899,7 @@
     font-weight: 700;
     font-size: 14px;
     white-space: nowrap;
+    color: #222;
   }
   .card-meta {
     display: flex;
@@ -924,12 +926,16 @@
     .modal-overlay {
       padding: 0;
       align-items: stretch;
+      width: 100vw;
+      min-height: 100vh;
     }
     .modal-content {
       border-radius: 0;
       padding: 16px 12px;
-      max-width: none;
+      max-width: 100vw;
+      width: 100vw;
       min-height: 100vh;
+      background: #fff;
     }
     .modal-header h2 {
       font-size: 17px;
