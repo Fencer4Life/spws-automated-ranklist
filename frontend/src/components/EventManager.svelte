@@ -41,6 +41,16 @@
                   {#each WEAPON_OPTIONS as w}<label class="weapon-check"><input type="checkbox" checked={draftWeapons.has(w)} onchange={() => { toggleWeapon(w) }} /> {weaponLabel(w)}</label>{/each}
                 </div>
               </label>
+              {#if getAvailableStatuses(event).length > 0}
+                <label>{t('event_status_label')}
+                  <select data-field="event-status-select" bind:value={draftStatus}>
+                    <option value={event.enum_status}>{event.enum_status}</option>
+                    {#each getAvailableStatuses(event) as next}
+                      <option value={next}>{next}</option>
+                    {/each}
+                  </select>
+                </label>
+              {/if}
               <div class="form-actions">
                 <button data-field="form-save-btn" class="save-btn" onclick={() => { handleSave() }}>{t('event_save')}</button>
                 <button data-field="form-cancel-btn" class="cancel-btn" onclick={() => { closeForm() }}>{t('event_cancel')}</button>
@@ -60,16 +70,7 @@
             {/if}
             <span data-field="event-status-badge" class="event-cell status-badge {statusClass(event.enum_status)}">{event.enum_status}</span>
             <span data-field="tournament-count" class="event-cell tournament-count-badge">{tournamentsForEvent(event.id_event).length}</span>
-            <span class="event-cell">
-              {#if getAvailableStatuses(event).length > 0}
-                <select data-field="event-status-select" onchange={(e) => { handleStatusChange(event.id_event, (e.target as HTMLSelectElement).value) }}>
-                  <option value="">--</option>
-                  {#each getAvailableStatuses(event) as next}
-                    <option value={next}>{next}</option>
-                  {/each}
-                </select>
-              {/if}
-            </span>
+            <span class="event-cell"></span>
             <span class="event-cell actions">
               {#if event.url_event}
                 <button data-field="event-import-btn" class="action-btn import-btn" title={t('tooltip_import_event')} onclick={() => { onimportevent(event.id_event) }}>⬇</button>
@@ -277,6 +278,7 @@
   let draftUrlEvent = $state('')
   let draftOrganizerId = $state(0)
   let draftWeapons: Set<WeaponType> = $state(new Set(['EPEE', 'FOIL', 'SABRE']))
+  let draftStatus = $state('')
 
   let expandedIds: Set<number> = $state(new Set())
 
@@ -433,6 +435,7 @@
     draftUrlEvent = event.url_event ?? ''
     draftOrganizerId = event.id_organizer ?? 0
     draftWeapons = new Set((event.arr_weapons ?? ['EPEE', 'FOIL', 'SABRE']) as WeaponType[])
+    draftStatus = event.enum_status
     showForm = true
   }
 
@@ -460,16 +463,17 @@
     }
     if (editingId != null) {
       onupdate(editingId, params)
+      const originalEvent = filteredEvents.find(e => e.id_event === editingId)
+      if (originalEvent && draftStatus !== originalEvent.enum_status) {
+        onupdatestatus(editingId, draftStatus)
+      }
     } else {
       oncreate(params)
     }
     closeForm()
   }
 
-  function handleStatusChange(eventId: number, newStatus: string) {
-    if (newStatus) {
-      onupdatestatus(eventId, newStatus)
-    }
+  function handleStatusChange(_eventId: number, _newStatus: string) {
   }
 </script>
 
