@@ -51,8 +51,8 @@
     "schema_fingerprint": "05a6ee07f95865a52921b2c79232d80d"
   },
   "prod": {
-    "last_updated": "2026-04-11T22:13:03Z",
-    "last_sha": "27598de393721b60c7b48dcb6df08b5c67d5e115",
+    "last_updated": "2026-04-11T22:25:31Z",
+    "last_sha": "8e137ada861067ebe45b39099d902668078141d8",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -96,8 +96,9 @@
       "20260411000001_event_registration.sql",
       "20260411000002_copy_scoring_rules_on_season_create.sql",
       "20260411000003_auto_active_season.sql",
-      "20260412000001_identity_manager_enhancements.sql"
+      "20260412000001_identity_manager_enhancements.sql",
+      "20260412000002_birth_year_estimated_param.sql"
     ],
-    "schema_fingerprint": "2167f06869de53f705aacde1d089421b"
+    "schema_fingerprint": "05a6ee07f95865a52921b2c79232d80d"
   }
 }
