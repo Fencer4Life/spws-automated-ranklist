@@ -302,6 +302,11 @@ export async function createFencerFromMatch(matchId: number, surname: string, fi
   if (error) throw error
 }
 
+export async function undismissMatch(matchId: number): Promise<void> {
+  const { error } = await getClient().rpc('fn_undismiss_match', { p_match_id: matchId })
+  if (error) throw error
+}
+
 export async function fetchAllFencers(): Promise<FencerListItem[]> {
   const { data, error } = await getClient()
     .from('tbl_fencer')

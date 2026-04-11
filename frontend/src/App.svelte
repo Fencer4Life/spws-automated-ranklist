@@ -121,6 +121,7 @@
       onassign={handleAssignFencer}
       oncreatenew={handleCreateNewFencer}
       ondismiss={handleDismissMatch}
+      onundismiss={handleUndismissMatch}
       onupdategender={handleUpdateFencerGender}
     />
   {/if}
@@ -201,6 +202,7 @@
     fetchMatchCandidates,
     approveMatch,
     dismissMatch,
+    undismissMatch,
     createFencerFromMatch,
     fetchAllFencers,
     updateFencerGender,
@@ -640,6 +642,16 @@
     identityError = null
     try {
       await dismissMatch(matchId)
+      await loadMatchCandidates()
+    } catch (e: unknown) {
+      identityError = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleUndismissMatch(matchId: number) {
+    identityError = null
+    try {
+      await undismissMatch(matchId)
       await loadMatchCandidates()
     } catch (e: unknown) {
       identityError = e instanceof Error ? e.message : String(e)
