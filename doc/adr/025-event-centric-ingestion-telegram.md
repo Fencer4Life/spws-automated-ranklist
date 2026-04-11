@@ -83,3 +83,6 @@ Staging files are NOT automatically deleted after processing. The admin reviews 
 - Two-event date collision requires manual resolution (delete/reschedule one event temporarily).
 - 5-minute polling latency for Telegram commands (acceptable for admin operations).
 - GAS script complexity increases (email polling + Telegram command handling).
+
+### Note (ADR-031)
+"Active season" references in this ADR (lines 24, 48) are now auto-derived from season dates rather than manually set. Behavior is unchanged — `WHERE bool_active = TRUE` still resolves to the correct season, but activation is automatic per ADR-031.

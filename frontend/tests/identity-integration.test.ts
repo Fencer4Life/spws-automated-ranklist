@@ -8,6 +8,7 @@ import { tick } from 'svelte'
 // Mock api module with identity resolution functions
 vi.mock('../src/lib/api', () => ({
   initClient: vi.fn(),
+  refreshActiveSeason: vi.fn().mockResolvedValue(undefined),
   fetchSeasons: vi.fn().mockResolvedValue([
     { id_season: 1, txt_code: 'SPWS-2025-2026', dt_start: '2025-09-01', dt_end: '2026-06-30', bool_active: true },
   ]),

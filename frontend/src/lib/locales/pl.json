@@ -89,6 +89,8 @@
   "season_end_label": "Data zakończenia",
   "season_save": "Zapisz",
   "season_cancel": "Anuluj",
+  "season_scoring_tooltip": "Edytuj parametry punktacji dla tego sezonu (mnożniki, reguły best-K, progi uczestników)",
+  "season_overlap_error": "Zakres dat wprowadzanego sezonu nachodzi na zakres istniejącego sezonu. Zmień daty. Sezony muszą mieć rozłączne zakresy.",
   "season_delete_confirm": "Usunąć sezon?",
   "season_active_badge": "aktywny",
 
@@ -188,6 +190,7 @@
   "sc_show_evf_toggle": "Pokaż przełącznik +EVF/Kadra",
   "sc_show_evf_hint": "Gdy włączone, przełącznik PPW/+EVF jest widoczny w widoku Rankingu i Kalendarza",
   "sc_cancel": "Anuluj",
+  "sc_close": "Zamknij",
   "sc_save": "Zapisz i przelicz",
 
   "birth_year_subtitle": "kat. {cat} — roczniki: {years}",

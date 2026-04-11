@@ -56,3 +56,6 @@ CERT is the source of truth for seed data (not PROD). CERT always has the most r
 - Full-season export queries many tables (acceptable — runs infrequently)
 - Existing hardcoded-ID seed files will be replaced with name-lookup format (one-time format change)
 - `[skip ci]` commits mean LOCAL doesn't auto-reset (by design — manual `db reset` when needed)
+
+### Note (ADR-031)
+"Active season" in the export trigger context (line 17) is derived from the event's `id_season`, not the global `bool_active` flag. Season activation is now auto-managed per ADR-031.

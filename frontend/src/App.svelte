@@ -13,7 +13,7 @@
     <button class="hamburger-btn" onclick={() => { sidebarOpen = true }} aria-label="Menu">&#9776;</button>
     <h2 class="app-title">
       <img src="SPWS-logo.png" alt="SPWS" class="header-logo" />
-      {currentView === 'ranklist' ? t('app_title') : currentView === 'calendar' ? t('calendar_title') : currentView === 'admin_seasons' ? t('nav_admin_seasons') : currentView === 'admin_events' ? t('nav_admin_events') : currentView === 'admin_identities' ? t('nav_admin_identities') : currentView === 'admin_scoring' ? t('nav_admin_scoring') : t('app_title')}
+      {currentView === 'ranklist' ? t('app_title') : currentView === 'calendar' ? t('calendar_title') : currentView === 'admin_seasons' ? t('nav_admin_seasons') : currentView === 'admin_events' ? t('nav_admin_events') : currentView === 'admin_identities' ? t('nav_admin_identities') : t('app_title')}
     </h2>
     <div class="header-right">
       <LangToggle />
@@ -87,6 +87,11 @@
       onupdate={handleUpdateSeason}
       ondelete={handleDeleteSeason}
       onfetchevf={handleFetchEvfToggle}
+      onscoringconfig={handleOpenScoringConfig}
+      {scoringConfig}
+      scoringSeasonId={editingScoringSeasonId}
+      onsavescoring={handleSaveScoringConfig}
+      onclosescoring={() => { editingScoringSeasonId = null }}
     />
   {:else if currentView === 'admin_events'}
     <EventManager
@@ -114,17 +119,8 @@
       oncreatenew={handleCreateNewFencer}
       ondismiss={handleDismissMatch}
     />
-  {:else if currentView === 'admin_scoring'}
-    {#if scoringConfig}
-      <ScoringConfigEditor
-        config={scoringConfig}
-        seasonCode={seasons.find(s => s.id_season === selectedSeasonId)?.txt_code ?? ''}
-        onsave={handleSaveScoringConfig}
-      />
-    {:else}
-      <p style="padding: 20px; color: #999;">Ładowanie konfiguracji punktacji…</p>
-    {/if}
   {/if}
+
 
   {#if error}
     <div class="error-banner">{error}</div>
@@ -202,6 +198,7 @@
     approveMatch,
     dismissMatch,
     createFencerFromMatch,
+    refreshActiveSeason,
   } from './lib/api'
   import {
     MOCK_SEASONS,
@@ -225,7 +222,6 @@
   import SeasonManager from './components/SeasonManager.svelte'
   import EventManager from './components/EventManager.svelte'
   import IdentityManager from './components/IdentityManager.svelte'
-  import ScoringConfigEditor from './components/ScoringConfigEditor.svelte'
   import { getAuthState, startAuth, signIn, confirmEnroll, verifyChallenge, signOut, reset as resetAuth } from './lib/admin-auth.svelte'
 
   let {
@@ -310,6 +306,7 @@
   let allTournaments: Tournament[] = $state([])
   let organizers: Organizer[] = $state([])
   let scoringConfig: ScoringConfig | null = $state(null)
+  let editingScoringSeasonId: number | null = $state(null)
   let showEvfToggle = $state(false)
   let matchCandidates: MatchCandidate[] = $state([])
 
@@ -343,6 +340,7 @@
 
   async function init() {
     try {
+      await refreshActiveSeason().catch(() => {}) // best-effort: may fail for anon
       seasons = await fetchSeasons()
       const active = seasons.find((s) => s.bool_active)
       if (active) {
@@ -386,8 +384,6 @@
       loadCalendar()
     } else if (currentView === 'admin_events') {
       loadAdminEvents()
-    } else if (currentView === 'admin_scoring') {
-      // scoringConfig already fetched by refreshEvfToggle
     } else {
       loadRanking()
     }
@@ -508,7 +504,6 @@
     if (view === 'calendar') loadCalendar()
     else if (view === 'admin_events') loadAdminEvents()
     else if (view === 'admin_identities') loadMatchCandidates()
-    else if (view === 'admin_scoring') loadScoringConfig()
   }
 
   async function loadAdminEvents() {
@@ -661,16 +656,39 @@
     }
   }
 
-  async function handleCreateSeason(code: string, start: string, end: string) {
+  async function handleOpenScoringConfig(seasonId: number) {
     try {
-      await createSeason(code, start, end)
-      seasons = await fetchSeasons()
+      scoringConfig = await fetchScoringConfig(seasonId)
+      editingScoringSeasonId = seasonId
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
     }
   }
 
-  async function handleUpdateSeason(id: number, code: string, start: string, end: string, showEvf: boolean) {
+  function friendlySeasonError(e: unknown): string {
+    let msg: string
+    if (e instanceof Error) {
+      msg = e.message
+    } else if (e && typeof e === 'object' && 'message' in e) {
+      msg = String((e as { message: unknown }).message)
+    } else {
+      msg = String(e)
+    }
+    if (msg.includes('excl_season_date_overlap')) return t('season_overlap_error')
+    return msg
+  }
+
+  async function handleCreateSeason(code: string, start: string, end: string): Promise<string | null> {
+    try {
+      await createSeason(code, start, end)
+      seasons = await fetchSeasons()
+      return null
+    } catch (e: unknown) {
+      return friendlySeasonError(e)
+    }
+  }
+
+  async function handleUpdateSeason(id: number, code: string, start: string, end: string, showEvf: boolean): Promise<string | null> {
     try {
       await updateSeason(id, code, start, end)
       const cfg = await fetchScoringConfig(id)
@@ -679,8 +697,9 @@
       }
       seasons = await fetchSeasons()
       if (id === selectedSeasonId) await refreshEvfToggle()
+      return null
     } catch (e: unknown) {
-      error = e instanceof Error ? e.message : String(e)
+      return friendlySeasonError(e)
     }
   }
 
@@ -742,6 +761,7 @@
     try {
       await saveScoringConfig(config as unknown as Record<string, unknown>)
       await refreshEvfToggle()
+      editingScoringSeasonId = null
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
     }

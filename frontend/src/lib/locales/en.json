@@ -89,6 +89,8 @@
   "season_end_label": "End date",
   "season_save": "Save",
   "season_cancel": "Cancel",
+  "season_scoring_tooltip": "Edit the scoring parameters for this season (multipliers, best-K rules, intake thresholds)",
+  "season_overlap_error": "The date range of the entered season overlaps with an existing season. Change the dates. Seasons must have non-overlapping date ranges.",
   "season_delete_confirm": "Delete season?",
   "season_active_badge": "active",
 
@@ -188,6 +190,7 @@
   "sc_show_evf_toggle": "Show +EVF/Kadra toggle",
   "sc_show_evf_hint": "When enabled, the PPW/+EVF scope toggle is visible in Ranklist and Calendar views",
   "sc_cancel": "Cancel",
+  "sc_close": "Close",
   "sc_save": "Save & recalculate",
 
   "birth_year_subtitle": "cat. {cat} — birth years: {years}",

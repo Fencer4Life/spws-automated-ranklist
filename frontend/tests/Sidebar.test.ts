@@ -110,7 +110,6 @@ describe('Sidebar (T8.4)', () => {
     expect(texts).toContain('Sezony')
     expect(texts).toContain('Wydarzenia')
     expect(texts).toContain('Tożsamości')
-    expect(texts).toContain('Punktacja')
   })
 
   // 8.36 — When admin NOT active, sidebar hides admin section

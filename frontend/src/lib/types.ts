@@ -14,7 +14,7 @@ export interface RankingRules {
   international: RankingBucket[]
 }
 export type RankingMode = 'PPW' | 'KADRA'
-export type AppView = 'ranklist' | 'calendar' | 'admin_seasons' | 'admin_events' | 'admin_identities' | 'admin_scoring'
+export type AppView = 'ranklist' | 'calendar' | 'admin_seasons' | 'admin_events' | 'admin_identities'
 export type Environment = 'CERT' | 'PROD'
 
 export interface Season {

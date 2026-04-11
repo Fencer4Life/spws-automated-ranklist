@@ -7,6 +7,7 @@ import { render, fireEvent } from '@testing-library/svelte'
 // Mock the api module before importing App
 vi.mock('../src/lib/api', () => ({
   initClient: vi.fn(),
+  refreshActiveSeason: vi.fn().mockResolvedValue(undefined),
   fetchSeasons: vi.fn().mockResolvedValue([]),
   fetchRankingPpw: vi.fn().mockResolvedValue([]),
   fetchRankingKadra: vi.fn().mockResolvedValue([]),

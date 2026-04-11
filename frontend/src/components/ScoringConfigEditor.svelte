@@ -1,6 +1,6 @@
 <div class="config-banner">{t('sc_banner', { season: seasonCode })}</div>
 
-<div class="config-editor">
+<div class="config-editor" class:config-readonly={readonly}>
   <!-- Info banner -->
   <div class="config-info">
     <span class="info-icon">i</span>
@@ -230,8 +230,10 @@
   <!-- Footer actions -->
   <div class="config-footer">
     <button class="config-export-btn" onclick={handleExport}>{t('sc_export')}</button>
-    <button class="config-cancel-btn" onclick={oncancel}>{t('sc_cancel')}</button>
-    <button class="config-save-btn" onclick={handleSave}>{t('sc_save')}</button>
+    <button class="config-cancel-btn" onclick={oncancel}>{readonly ? t('sc_close') : t('sc_cancel')}</button>
+    {#if !readonly}
+      <button class="config-save-btn" onclick={handleSave}>{t('sc_save')}</button>
+    {/if}
   </div>
 </div>
 
@@ -242,11 +244,13 @@
   let {
     config,
     seasonCode,
+    readonly = false,
     onsave = (_c: ScoringConfig) => {},
     oncancel = () => {},
   }: {
     config: ScoringConfig
     seasonCode: string
+    readonly?: boolean
     onsave?: (config: ScoringConfig) => void
     oncancel?: () => void
   } = $props()
@@ -715,5 +719,14 @@
   }
   .config-save-btn:hover {
     background: #3a7bc8;
+  }
+  /* Read-only mode: disable all inputs visually */
+  .config-readonly :global(input),
+  .config-readonly :global(select),
+  .config-readonly :global(.add-bucket-btn),
+  .config-readonly :global(.remove-bucket-btn),
+  .config-readonly :global(.picker-type-btn) {
+    pointer-events: none;
+    opacity: 0.6;
   }
 </style>

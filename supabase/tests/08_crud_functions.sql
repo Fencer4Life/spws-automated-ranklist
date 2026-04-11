@@ -7,7 +7,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(23);
+SELECT plan(30);
 
 -- ===== SETUP: create test data for CRUD and cascade tests =====
 
@@ -25,7 +25,7 @@ BEGIN
 
   -- Create a season with events for cascade testing
   INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
-  VALUES ('CRUD-TEST-SEASON', '2025-09-01', '2026-06-30', FALSE)
+  VALUES ('CRUD-TEST-SEASON', '2035-09-01', '2036-06-30', FALSE)
   RETURNING id_season INTO v_season;
 
   INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
@@ -39,7 +39,7 @@ BEGIN
   ) VALUES (
     v_event, 'CRUD-TRN-1', 'CRUD Test Tournament', 'PPW',
     'EPEE', 'M', 'V2',
-    '2025-11-15', 24
+    '2035-11-15', 24
   ) RETURNING id_tournament INTO v_tourn;
 
   -- Get a fencer from seed data
@@ -397,6 +397,194 @@ SELECT is(
   'true',
   '9.39: fn_import_scoring_config persists show_evf_toggle = true'
 );
+
+
+-- =========================================================================
+-- Season Config Inheritance (9.40, ADR-018 prerequisite)
+-- =========================================================================
+
+-- 9.40 — fn_create_season copies json_ranking_rules from previous season
+DO $t940$
+DECLARE
+  v_base_sid INT;
+  v_new_sid  INT;
+  v_rules    JSONB := '{"domestic":[{"best":4,"types":["PPW"]},{"types":["MPW"],"always":true}]}'::JSONB;
+BEGIN
+  -- Create a base season with known ranking rules
+  v_base_sid := fn_create_season('RULES-BASE', '2038-08-01', '2039-07-15');
+  UPDATE tbl_scoring_config
+     SET json_ranking_rules = v_rules
+   WHERE id_season = v_base_sid;
+
+  -- Create a new season after the base season
+  v_new_sid := fn_create_season('RULES-INHERIT', '2039-08-01', '2040-07-15');
+
+  -- Verify the new season inherited the rules
+  PERFORM 1 FROM tbl_scoring_config
+   WHERE id_season = v_new_sid
+     AND json_ranking_rules = v_rules;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'json_ranking_rules not copied to new season';
+  END IF;
+END;
+$t940$;
+SELECT pass('9.40: fn_create_season copies json_ranking_rules from previous season');
+
+
+-- =========================================================================
+-- Auto-Active Season (9.41–9.46, ADR-031)
+-- =========================================================================
+
+-- 9.41 — fn_refresh_active_season activates season engulfing today
+DO $t941$
+DECLARE
+  v_active_id INT;
+BEGIN
+  -- Seed data: SPWS-2025-2026 has dt_start=2025-08-01, dt_end=2026-07-15
+  -- Today (2026-04-11) falls within it
+  PERFORM fn_refresh_active_season();
+  SELECT id_season INTO v_active_id FROM tbl_season WHERE bool_active = TRUE;
+  IF v_active_id IS NULL THEN
+    RAISE EXCEPTION 'no active season after refresh';
+  END IF;
+  -- Verify it's the season engulfing today
+  PERFORM 1 FROM tbl_season
+   WHERE id_season = v_active_id
+     AND dt_start <= CURRENT_DATE
+     AND dt_end >= CURRENT_DATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'active season does not engulf today';
+  END IF;
+END;
+$t941$;
+SELECT pass('9.41: fn_refresh_active_season activates season engulfing today');
+
+-- 9.42 — fn_refresh_active_season fallback to nearest future season
+DO $t942$
+DECLARE
+  v_future_sid INT;
+  v_active_id  INT;
+  v_rec        RECORD;
+  v_idx        INT := 0;
+BEGIN
+  -- Move each existing season to a unique past date range (avoids overlap constraint)
+  FOR v_rec IN SELECT id_season FROM tbl_season ORDER BY id_season LOOP
+    UPDATE tbl_season
+       SET dt_start = ('2000-01-01'::DATE + v_idx * 400),
+           dt_end   = ('2000-06-01'::DATE + v_idx * 400)
+     WHERE id_season = v_rec.id_season;
+    v_idx := v_idx + 1;
+  END LOOP;
+  -- Create a future season
+  v_future_sid := fn_create_season('FUTURE-ONLY', '2040-08-01', '2041-07-15');
+  -- Refresh — should pick the nearest future
+  PERFORM fn_refresh_active_season();
+  SELECT id_season INTO v_active_id FROM tbl_season WHERE bool_active = TRUE;
+  IF v_active_id <> v_future_sid THEN
+    RAISE EXCEPTION 'expected future season %, got %', v_future_sid, v_active_id;
+  END IF;
+END;
+$t942$;
+SELECT pass('9.42: fn_refresh_active_season fallback to nearest future season');
+
+-- 9.43 — fn_refresh_active_season: no active season when all are past
+DO $t943$
+DECLARE
+  v_count INT;
+  v_rec   RECORD;
+  v_idx   INT := 0;
+BEGIN
+  -- Move each season to a unique past date range (avoids overlap constraint)
+  FOR v_rec IN SELECT id_season FROM tbl_season ORDER BY id_season LOOP
+    UPDATE tbl_season
+       SET dt_start = ('2000-01-01'::DATE + v_idx * 400),
+           dt_end   = ('2000-06-01'::DATE + v_idx * 400)
+     WHERE id_season = v_rec.id_season;
+    v_idx := v_idx + 1;
+  END LOOP;
+  PERFORM fn_refresh_active_season();
+  SELECT COUNT(*) INTO v_count FROM tbl_season WHERE bool_active = TRUE;
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'expected no active season, got %', v_count;
+  END IF;
+END;
+$t943$;
+SELECT pass('9.43: fn_refresh_active_season: no active season when all are past');
+
+-- 9.44 — Exclusion constraint rejects overlapping season dates
+DO $t944$
+BEGIN
+  -- Create two non-overlapping seasons, then try to insert one that overlaps the first
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
+  VALUES ('OVERLAP-A', '2060-01-01', '2060-06-30', FALSE);
+  -- This should fail: overlaps with OVERLAP-A
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
+  VALUES ('OVERLAP-B', '2060-03-01', '2060-12-31', FALSE);
+  RAISE EXCEPTION 'expected constraint violation but insert succeeded';
+EXCEPTION
+  WHEN exclusion_violation THEN
+    NULL; -- expected
+END;
+$t944$;
+SELECT pass('9.44: exclusion constraint rejects overlapping season dates');
+
+-- 9.45 — Trigger auto-activates on season INSERT (engulfs today)
+DO $t945$
+DECLARE
+  v_sid       INT;
+  v_is_active BOOLEAN;
+BEGIN
+  -- Insert a season engulfing today — trigger should auto-activate it
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
+  VALUES ('AUTO-ACTIVE-INS', '2026-01-01', '2026-12-31', FALSE)
+  RETURNING id_season INTO v_sid;
+  SELECT bool_active INTO v_is_active FROM tbl_season WHERE id_season = v_sid;
+  IF NOT v_is_active THEN
+    RAISE EXCEPTION 'season not auto-activated on INSERT';
+  END IF;
+END;
+$t945$;
+SELECT pass('9.45: trigger auto-activates on season INSERT');
+
+-- 9.46 — Trigger auto-corrects on season UPDATE (date change)
+DO $t946$
+DECLARE
+  v_sid1 INT;
+  v_sid2 INT;
+BEGIN
+  -- Create two non-overlapping future seasons
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
+  VALUES ('CORRECT-A', '2070-01-01', '2070-06-30', FALSE)
+  RETURNING id_season INTO v_sid1;
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
+  VALUES ('CORRECT-B', '2071-01-01', '2071-06-30', FALSE)
+  RETURNING id_season INTO v_sid2;
+  -- If AUTO-ACTIVE-INS (engulfing today) is still present, it's the primary active.
+  -- Remove it so fallback logic kicks in for future seasons.
+  DELETE FROM tbl_scoring_config WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'AUTO-ACTIVE-INS');
+  DELETE FROM tbl_season WHERE txt_code = 'AUTO-ACTIVE-INS';
+  -- Now refresh — CORRECT-A should be nearest future (2070 < 2071)
+  -- But we also have FUTURE-ONLY at 2040 and possibly OVERLAP-A at 2060...
+  -- FUTURE-ONLY (2040) is nearer, so delete test seasons that interfere
+  DELETE FROM tbl_scoring_config WHERE id_season IN (SELECT id_season FROM tbl_season WHERE txt_code IN ('FUTURE-ONLY', 'OVERLAP-A'));
+  DELETE FROM tbl_season WHERE txt_code IN ('FUTURE-ONLY', 'OVERLAP-A');
+  PERFORM fn_refresh_active_season();
+  -- CORRECT-A (2070) should be active (nearest future, all others are in the past)
+  PERFORM 1 FROM tbl_season WHERE id_season = v_sid1 AND bool_active = TRUE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'nearest future season not active after cleanup';
+  END IF;
+  -- Move CORRECT-A to the distant past — CORRECT-B should become active
+  UPDATE tbl_season SET dt_start = '1990-01-01', dt_end = '1990-06-30'
+   WHERE id_season = v_sid1;
+  PERFORM 1 FROM tbl_season WHERE id_season = v_sid2 AND bool_active = TRUE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'active season not corrected after UPDATE';
+  END IF;
+END;
+$t946$;
+SELECT pass('9.46: trigger auto-corrects on season UPDATE (date change)');
 
 
 SELECT * FROM finish();

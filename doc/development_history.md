@@ -189,6 +189,39 @@
 - **RTM FR-23:** No change needed — already references 9.86–9.90
 - **No new ADR:** UI bugfix aligning with existing ADR-025 DB capabilities
 
+### Bug Fix: Season scoring config inheritance (2026-04-11)
+
+**Problem:** New seasons created via `fn_create_season` got `json_ranking_rules = NULL` in their auto-created `tbl_scoring_config` row. This caused rolling carry-over (ADR-018) to never activate — the ranking function fell into the legacy code path where rolling is not supported.
+
+**Root cause:** The `fn_auto_create_scoring_config` trigger only inserted `id_season`, relying on column defaults. Since `json_ranking_rules` defaults to NULL, new seasons always lacked the JSONB bucket rules required for rolling.
+
+**Fix:** Migration `20260411000002` — trigger now copies `json_ranking_rules` and `bool_show_evf_toggle` from the most recent previous season. Includes data patch for existing season SPWS-2026-2027.
+
+- **RED:** Test 9.40 failed (`json_ranking_rules not copied to new season`)
+- **GREEN:** All 240 pgTAP assertions pass after migration applied
+- **RTM:** FR-21 tests column updated (added 9.40)
+- **Appendix D:** pgTAP 239→240, T9.1 23→24
+- **ADR-018:** Added prerequisite note about `fn_auto_create_scoring_config` copying rules
+
+### Auto-Active Season by Date + Overlap Constraint + Punktacja Relocation (2026-04-11)
+
+**ADR-031:** `bool_active` on `tbl_season` is now auto-derived from dates. Primary rule: `dt_start <= TODAY <= dt_end`. Fallback: nearest future season. Eliminates admin overhead for season transitions.
+
+**Changes:**
+- Migration `20260411000003`: `fn_refresh_active_season()` function + `trg_season_refresh_active` trigger + `excl_season_date_overlap` exclusion constraint (btree_gist). Dropped `idx_season_active` partial unique index.
+- Frontend: `refreshActiveSeason()` called on app load for midnight boundary handling
+- Frontend: Punktacja menu item removed from sidebar; gear button added to each season row in SeasonManager, opens ScoringConfigEditor inline below the season list
+- Frontend: Friendly error message for overlapping season dates
+- Updated tests: 1.7 (exclusion constraint check), 1.15 (overlap rejection), 9.41-9.46 (auto-active logic), 10.23-10.24 (explicit season ID for carry-over)
+
+**TDD:**
+- **RED:** 6 new pgTAP tests failed (fn_refresh_active_season not found, exclusion_violation not raised)
+- **GREEN:** All 246 pgTAP + 215 vitest tests pass
+- **RTM:** FR-21, FR-22 updated; Appendix C: added ADR-031; Appendix D: pgTAP 240->246, T9.1 24->30
+- **ADRs updated:** ADR-018 (prerequisite note + ADR-031 ref), ADR-025 (ADR-031 note), ADR-027 (ADR-031 note)
+
+**Design decision:** Future (not yet active) seasons intentionally show an empty ranklist. Rolling carry-over only kicks in when the season actually becomes active. This is by design — documented in ADR-018 (point 6), ADR-031 (consequences), and FR-65 (RTM).
+
 ---
 
 ## Archived Documents
