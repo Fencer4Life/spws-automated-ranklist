@@ -1,60 +1,3 @@
-{#if isAdmin}
-  <div data-field="fencer-view" class="fencer-view">
-    <div class="fencer-header">
-      <span data-field="fencer-count" class="fencer-count">{t('fencer_header_count', { count: fencers.length })}</span>
-    </div>
-
-    <div data-field="tab-bar" class="tab-bar">
-      <button
-        data-field="tab-identities"
-        class="tab-btn"
-        class:active={activeTab === 'identities'}
-        onclick={() => { activeTab = 'identities' }}
-      >
-        {t('fencer_tab_identities')}
-        {#if identityCount > 0}
-          <span data-field="tab-badge-identities" class="tab-badge">{identityCount}</span>
-        {/if}
-      </button>
-      <button
-        data-field="tab-birth-year"
-        class="tab-btn"
-        class:active={activeTab === 'birth_year_review'}
-        onclick={() => { activeTab = 'birth_year_review' }}
-      >
-        {t('fencer_tab_birth_year')}
-        {#if birthYearReviewCount > 0}
-          <span data-field="tab-badge-birth-year" class="tab-badge">{birthYearReviewCount}</span>
-        {/if}
-      </button>
-    </div>
-
-    <div class="tab-content" style:display={activeTab === 'identities' ? '' : 'none'}>
-      <IdentityManager
-        {candidates}
-        {fencers}
-        {isAdmin}
-        {errorMsg}
-        {onapprove}
-        {onassign}
-        {oncreatenew}
-        {ondismiss}
-        {onundismiss}
-        {onupdategender}
-      />
-    </div>
-    <div class="tab-content" style:display={activeTab === 'birth_year_review' ? '' : 'none'}>
-      <BirthYearReview
-        {fencers}
-        {isAdmin}
-        errorMsg={birthYearError}
-        {onupdatebirthyear}
-        {onfetchhistory}
-      />
-    </div>
-  </div>
-{/if}
-
 <script lang="ts">
   import type { MatchCandidate, FencerListItem, FencerTournamentRow, FencerTab, GenderType } from '../lib/types'
   import { t } from '../lib/locale.svelte'
@@ -91,7 +34,11 @@
     onfetchhistory?: (fencerId: number) => Promise<FencerTournamentRow[]>
   } = $props()
 
-  let activeTab = $state<FencerTab>('identities')
+  let activeTab = $state('identities')
+
+  function switchTab(tab: string) {
+    activeTab = tab
+  }
 
   let identityCount = $derived(
     candidates.filter(c => c.enum_status === 'PENDING' || c.enum_status === 'AUTO_MATCHED' || c.enum_status === 'UNMATCHED').length
@@ -101,6 +48,61 @@
     fencers.filter(f => f.int_birth_year == null || f.bool_birth_year_estimated).length
   )
 </script>
+
+{#if isAdmin}
+  <div data-field="fencer-view" class="fencer-view">
+    <div class="fencer-header">
+      <span data-field="fencer-count" class="fencer-count">{t('fencer_header_count', { count: fencers.length })}</span>
+    </div>
+
+    <div data-field="tab-bar" class="tab-bar">
+      <button
+        data-field="tab-identities"
+        class="tab-btn {activeTab === 'identities' ? 'active' : ''}"
+        onclick={() => switchTab('identities')}
+      >
+        {t('fencer_tab_identities')}
+        {#if identityCount > 0}
+          <span data-field="tab-badge-identities" class="tab-badge">{identityCount}</span>
+        {/if}
+      </button>
+      <button
+        data-field="tab-birth-year"
+        class="tab-btn {activeTab === 'birth_year_review' ? 'active' : ''}"
+        onclick={() => switchTab('birth_year_review')}
+      >
+        {t('fencer_tab_birth_year')}
+        {#if birthYearReviewCount > 0}
+          <span data-field="tab-badge-birth-year" class="tab-badge">{birthYearReviewCount}</span>
+        {/if}
+      </button>
+    </div>
+
+    <div class="tab-panel" style="display: {activeTab === 'identities' ? 'block' : 'none'}">
+      <IdentityManager
+        {candidates}
+        {fencers}
+        {isAdmin}
+        {errorMsg}
+        {onapprove}
+        {onassign}
+        {oncreatenew}
+        {ondismiss}
+        {onundismiss}
+        {onupdategender}
+      />
+    </div>
+    <div class="tab-panel" style="display: {activeTab === 'birth_year_review' ? 'block' : 'none'}">
+      <BirthYearReview
+        {fencers}
+        {isAdmin}
+        errorMsg={birthYearError}
+        {onupdatebirthyear}
+        {onfetchhistory}
+      />
+    </div>
+  </div>
+{/if}
 
 <style>
   .fencer-view { padding: 16px; }
