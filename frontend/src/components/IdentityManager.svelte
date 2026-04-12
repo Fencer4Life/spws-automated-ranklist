@@ -398,7 +398,7 @@
   .count-badge.count-approved { background: #d4edda; color: #155724; }
   .count-badge.count-unmatched { background: #f8d7da; color: #721c24; }
   .error-banner { margin-bottom: 12px; padding: 10px 14px; background: #fff0f0; border: 1px solid #fcc; border-radius: 4px; color: #c33; font-size: 13px; }
-  .filter-bar { margin-bottom: 12px; }
+  .filter-bar { margin-bottom: 12px; position: sticky; top: 60px; background: #fff; z-index: 9; padding: 8px 0; }
   .status-filter { padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
 
   .candidate-list { display: flex; flex-direction: column; gap: 8px; }

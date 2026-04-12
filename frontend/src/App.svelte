@@ -142,6 +142,7 @@
         isAdmin={isAdmin}
         errorMsg={birthYearError}
         onupdatebirthyear={handleUpdateFencerBirthYear}
+        onupdategender={handleUpdateFencerGender}
         onfetchhistory={handleFetchTournamentHistory}
       />
     {/if}
@@ -991,19 +992,25 @@
   }
   .fencer-tabs {
     padding: 0 16px;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 10;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0;
   }
   .fencer-count {
     font-size: 14px;
     font-weight: 600;
     color: #555;
     display: block;
+    padding-top: 8px;
     margin-bottom: 8px;
   }
   .tab-bar {
     display: flex;
     gap: 0;
     border-bottom: 2px solid #dee2e6;
-    margin-bottom: 14px;
   }
   .tab-btn {
     padding: 8px 16px;
