@@ -112,21 +112,39 @@
       onimportevent={handleImportEvent}
     />
   {:else if currentView === 'admin_fencers'}
-    <FencerView
-      candidates={matchCandidates}
-      fencers={allFencers}
-      isAdmin={isAdmin}
-      errorMsg={identityError}
-      birthYearError={birthYearError}
-      onapprove={handleApproveMatch}
-      onassign={handleAssignFencer}
-      oncreatenew={handleCreateNewFencer}
-      ondismiss={handleDismissMatch}
-      onundismiss={handleUndismissMatch}
-      onupdategender={handleUpdateFencerGender}
-      onupdatebirthyear={handleUpdateFencerBirthYear}
-      onfetchhistory={handleFetchTournamentHistory}
-    />
+    <div class="fencer-tabs">
+      <span class="fencer-count">{t('fencer_header_count', { count: allFencers.length })}</span>
+      <div class="tab-bar">
+        <button class="tab-btn" class:active={fencerTab === 'identities'} onclick={() => { fencerTab = 'identities' }}>
+          {t('fencer_tab_identities')}
+        </button>
+        <button class="tab-btn" class:active={fencerTab === 'birth_year_review'} onclick={() => { fencerTab = 'birth_year_review' }}>
+          {t('fencer_tab_birth_year')}
+        </button>
+      </div>
+    </div>
+    {#if fencerTab === 'identities'}
+      <IdentityManager
+        candidates={matchCandidates}
+        fencers={allFencers}
+        isAdmin={isAdmin}
+        errorMsg={identityError}
+        onapprove={handleApproveMatch}
+        onassign={handleAssignFencer}
+        oncreatenew={handleCreateNewFencer}
+        ondismiss={handleDismissMatch}
+        onundismiss={handleUndismissMatch}
+        onupdategender={handleUpdateFencerGender}
+      />
+    {:else}
+      <BirthYearReview
+        fencers={allFencers}
+        isAdmin={isAdmin}
+        errorMsg={birthYearError}
+        onupdatebirthyear={handleUpdateFencerBirthYear}
+        onfetchhistory={handleFetchTournamentHistory}
+      />
+    {/if}
   {/if}
 
 
@@ -234,7 +252,8 @@
   import AdminMfaChallengeModal from './components/AdminMfaChallengeModal.svelte'
   import SeasonManager from './components/SeasonManager.svelte'
   import EventManager from './components/EventManager.svelte'
-  import FencerView from './components/FencerView.svelte'
+  import IdentityManager from './components/IdentityManager.svelte'
+  import BirthYearReview from './components/BirthYearReview.svelte'
   import { getAuthState, startAuth, signIn, confirmEnroll, verifyChallenge, signOut, reset as resetAuth } from './lib/admin-auth.svelte'
 
   let {
@@ -325,6 +344,7 @@
   let allFencers: FencerListItem[] = $state([])
   let identityError: string | null = $state(null)
   let birthYearError: string | null = $state(null)
+  let fencerTab = $state('identities')
 
   let modalOpen = $state(false)
   let modalFencerName = $state('')
@@ -969,4 +989,33 @@
       gap: 10px;
     }
   }
+  .fencer-tabs {
+    padding: 0 16px;
+  }
+  .fencer-count {
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid #dee2e6;
+    margin-bottom: 14px;
+  }
+  .tab-btn {
+    padding: 8px 16px;
+    border: none;
+    background: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+  }
+  .tab-btn:hover { color: #555; }
+  .tab-btn.active { color: #4a90d9; border-bottom-color: #4a90d9; }
 </style>

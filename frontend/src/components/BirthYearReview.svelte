@@ -212,7 +212,7 @@
       list = list.filter(f => f.txt_surname.toLowerCase().includes(q) || f.txt_first_name.toLowerCase().includes(q))
     }
 
-    return list.sort((a, b) => a.txt_surname.localeCompare(b.txt_surname))
+    return [...list].sort((a, b) => a.txt_surname.localeCompare(b.txt_surname))
   })())
 
   let historyBySeason = $derived((() => {
