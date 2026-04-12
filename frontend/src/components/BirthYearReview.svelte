@@ -342,6 +342,7 @@
     if (newGender && newGender !== fencer.enum_gender) {
       onupdategender(fencer.id_fencer, newGender)
     }
+    expandedFencerId = null
   }
 </script>
 
