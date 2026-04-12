@@ -29,29 +29,28 @@
       </button>
     </div>
 
-    <div class="tab-content">
-      {#if activeTab === 'identities'}
-        <IdentityManager
-          {candidates}
-          {fencers}
-          {isAdmin}
-          {errorMsg}
-          {onapprove}
-          {onassign}
-          {oncreatenew}
-          {ondismiss}
-          {onundismiss}
-          {onupdategender}
-        />
-      {:else}
-        <BirthYearReview
-          {fencers}
-          {isAdmin}
-          errorMsg={birthYearError}
-          {onupdatebirthyear}
-          {onfetchhistory}
-        />
-      {/if}
+    <div class="tab-content" class:hidden={activeTab !== 'identities'}>
+      <IdentityManager
+        {candidates}
+        {fencers}
+        {isAdmin}
+        {errorMsg}
+        {onapprove}
+        {onassign}
+        {oncreatenew}
+        {ondismiss}
+        {onundismiss}
+        {onupdategender}
+      />
+    </div>
+    <div class="tab-content" class:hidden={activeTab !== 'birth_year_review'}>
+      <BirthYearReview
+        {fencers}
+        {isAdmin}
+        errorMsg={birthYearError}
+        {onupdatebirthyear}
+        {onfetchhistory}
+      />
     </div>
   </div>
 {/if}
@@ -134,4 +133,5 @@
     color: #856404;
   }
   .tab-btn.active .tab-badge { background: #cce5ff; color: #004085; }
+  .hidden { display: none; }
 </style>
