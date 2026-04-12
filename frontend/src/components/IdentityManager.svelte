@@ -5,7 +5,7 @@
       <div class="status-counts">
         {#each statusKeys as status}
           <span data-field="count-{status}" class="count-badge count-{status.toLowerCase()}">
-            {status}: {statusCounts.get(status) ?? 0}
+            {statusLabel(status)}: {statusCounts.get(status) ?? 0}
           </span>
         {/each}
       </div>
@@ -19,11 +19,11 @@
       <select data-field="status-filter" class="status-filter" bind:value={statusFilter}>
         <option value="ALL">{t('identity_filter_all')}</option>
         <option value="PENDING">{t('identity_filter_pending')}</option>
-        <option value="AUTO_MATCHED">AUTO_MATCHED</option>
-        <option value="UNMATCHED">UNMATCHED</option>
-        <option value="APPROVED">APPROVED</option>
-        <option value="NEW_FENCER">NEW_FENCER</option>
-        <option value="DISMISSED">DISMISSED</option>
+        <option value="AUTO_MATCHED">{t('identity_filter_auto_matched')}</option>
+        <option value="UNMATCHED">{t('identity_filter_unmatched')}</option>
+        <option value="APPROVED">{t('identity_filter_approved')}</option>
+        <option value="NEW_FENCER">{t('identity_filter_new_fencer')}</option>
+        <option value="DISMISSED">{t('identity_filter_dismissed')}</option>
       </select>
     </div>
 
@@ -50,7 +50,7 @@
                 <span class="suggested-name">→ {candidate.txt_fencer_name}</span>
               {/if}
               <span data-field="status-badge" class="status-badge status-{candidate.enum_status.toLowerCase()}">
-                {candidate.enum_status}
+                {statusLabel(candidate.enum_status)}
               </span>
               {#if isGenderMismatch(candidate)}
                 <span class="mismatch-icon" title={t('identity_gender_mismatch')}>⚠</span>
@@ -226,6 +226,19 @@
   let searchQuery = $state('')
 
   const statusKeys: MatchStatus[] = ['PENDING', 'AUTO_MATCHED', 'UNMATCHED', 'APPROVED', 'NEW_FENCER', 'DISMISSED']
+
+  const statusLabelKey: Record<MatchStatus, string> = {
+    PENDING: 'identity_filter_pending',
+    AUTO_MATCHED: 'identity_filter_auto_matched',
+    UNMATCHED: 'identity_filter_unmatched',
+    APPROVED: 'identity_filter_approved',
+    NEW_FENCER: 'identity_filter_new_fencer',
+    DISMISSED: 'identity_filter_dismissed',
+  }
+
+  function statusLabel(status: MatchStatus): string {
+    return t(statusLabelKey[status])
+  }
 
   let statusCounts = $derived(
     new Map(statusKeys.map(s => [s, candidates.filter(c => c.enum_status === s).length]))
