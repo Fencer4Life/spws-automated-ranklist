@@ -297,13 +297,13 @@
       expandedFencerId = null
       return
     }
-    expandedFencerId = fencerId
     const fencer = fencers.find(f => f.id_fencer === fencerId)
     editEstimated = fencer?.bool_birth_year_estimated ?? true
-    editGender = fencer?.enum_gender ?? ''
-
-    // Auto-suggest: pre-fill with existing value, or compute from history
+    editGender = (fencer?.enum_gender as string) || ''
     editBirthYear = fencer?.int_birth_year ?? undefined
+
+    // Set expanded AFTER form values are ready
+    expandedFencerId = fencerId
 
     // Load tournament history
     historyLoading = true
