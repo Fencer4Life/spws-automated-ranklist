@@ -205,7 +205,7 @@ INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
 SELECT 'PPW5-2025-2026', 'V Puchar Polski Weteranów',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
-    'SCHEDULED'
+    'COMPLETED'
 WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW5-2025-2026');
 UPDATE tbl_event SET
     txt_location = 'Gdańsk',

@@ -163,6 +163,8 @@ SELECT is(
 -- R.11 — p_rolling=TRUE, event deletion: PPW5 removed from current season
 -- With rules-based carry-over (ADR-021), deleting the event does NOT block carry.
 -- ATANASSOW has no PPW5-prev results, so no change: PPW1=65.67+PPW3=124.02+PPW4=79.18=268.87
+DELETE FROM tbl_result WHERE id_tournament IN (SELECT id_tournament FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2025-2026'));
+DELETE FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2025-2026');
 DELETE FROM tbl_event WHERE txt_code = 'PPW5-2025-2026';
 
 SELECT is(
