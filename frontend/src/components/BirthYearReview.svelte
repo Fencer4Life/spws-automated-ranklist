@@ -92,6 +92,14 @@
               <div class="edit-fields">
                 <div class="field-row">
                   <label class="form-field">
+                    <span class="field-label">{t('identity_gender')}</span>
+                    <select data-field="gender-select" class="field-input" bind:value={editGender}>
+                      <option value="">—</option>
+                      <option value="M">M</option>
+                      <option value="F">F</option>
+                    </select>
+                  </label>
+                  <label class="form-field">
                     <span class="field-label">{t('identity_birth_year')}</span>
                     <input data-field="birth-year-input" type="number" class="field-input" bind:value={editBirthYear} placeholder="e.g. 1970" />
                   </label>
@@ -173,12 +181,14 @@
     isAdmin = false,
     errorMsg = null as string | null,
     onupdatebirthyear = (_fencerId: number, _birthYear: number, _estimated: boolean) => {},
+    onupdategender = (_fencerId: number, _gender: GenderType) => {},
     onfetchhistory = (_fencerId: number): Promise<FencerTournamentRow[]> => Promise.resolve([]),
   }: {
     fencers?: FencerListItem[]
     isAdmin?: boolean
     errorMsg?: string | null
     onupdatebirthyear?: (fencerId: number, birthYear: number, estimated: boolean) => void
+    onupdategender?: (fencerId: number, gender: GenderType) => void
     onfetchhistory?: (fencerId: number) => Promise<FencerTournamentRow[]>
   } = $props()
 
@@ -188,6 +198,7 @@
   let expandedFencerId: number | null = $state(null)
   let editBirthYear: number | undefined = $state(undefined)
   let editEstimated = $state(false)
+  let editGender = $state('')
   let tournamentHistory: FencerTournamentRow[] = $state([])
   let historyLoading = $state(false)
 
@@ -289,6 +300,7 @@
     expandedFencerId = fencerId
     const fencer = fencers.find(f => f.id_fencer === fencerId)
     editEstimated = fencer?.bool_birth_year_estimated ?? true
+    editGender = fencer?.enum_gender ?? ''
 
     // Auto-suggest: pre-fill with existing value, or compute from history
     editBirthYear = fencer?.int_birth_year ?? undefined
@@ -326,12 +338,16 @@
     if (editBirthYear) {
       onupdatebirthyear(fencer.id_fencer, editBirthYear, editEstimated)
     }
+    const newGender = editGender as GenderType
+    if (newGender && newGender !== fencer.enum_gender) {
+      onupdategender(fencer.id_fencer, newGender)
+    }
   }
 </script>
 
 <style>
   .birth-year-review { padding: 0; }
-  .filter-bar { margin-bottom: 12px; }
+  .filter-bar { margin-bottom: 12px; position: sticky; top: 60px; background: #fff; z-index: 9; padding: 8px 0; }
   .status-counts { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
   .count-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
   .count-badge.estimated { background: #fff3cd; color: #856404; }
