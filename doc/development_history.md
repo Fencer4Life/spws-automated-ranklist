@@ -304,6 +304,32 @@
 - **RTM:** FR-56 updated (tab in App.svelte); new FR-93 added; ADR-035 in Appendix C; Appendix D: pgTAP 254→259, vitest 241→255, total 771→790
 - **Coverage:** FR-93 covered by 9.100–9.113, 13.1–13.4; UC16 partially implemented (birth year + gender editing; merge deferred)
 
+### Cross-Gender Scoring Enforcement (ADR-034) — 2026-04-12
+
+| Feature | Description | Date | ADR |
+|---------|-------------|------|-----|
+| fn_effective_gender | Pure SQL helper computing effective ranklist gender per ADR-034 asymmetric rules: normal match, man-in-F (dropped), woman-in-M without F sibling (reassigned to F), woman-in-M with F sibling (dropped) | 2026-04-12 | ADR-034 |
+| Ranking function updates | All 4 ranking functions (`fn_ranking_ppw`, `fn_ranking_kadra`, `fn_fencer_scores_rolling`, `fn_category_ranking`) filter on `fn_effective_gender()` instead of raw `t.enum_gender` | 2026-04-12 | ADR-034 |
+| PPW5 sabre seed data | PPW5-V1-M-SABRE-2025-2026 (Gdańsk, 2026-04-11): SAMECKA-NACZYŃSKA Martyna as sole participant — first real cross-gender case in seed data | 2026-04-12 | ADR-034 |
+| Calendar filter fix | Time filter dropdown (All/Past/Future) now also filters event boxes at the top, matching the SPWS/+EVF toggle behaviour | 2026-04-12 | — |
+
+**Problem:** SAMECKA-NACZYŃSKA Martyna (F) appeared in the M sabre V1 ranklist on CERT because she was the sole participant in PPW5-V1-M-SABRE-2025-2026 (a joined tournament). ADR-034 documented the rules but enforcement was deferred to manual admin review.
+
+**Approach:** Automated enforcement at ranking query time via `fn_effective_gender` helper function. The helper encodes all 4 ADR-034 rules in a single CASE expression. The EXISTS subquery (sibling tournament check) only fires for the rare cross-gender mismatch case — normal results short-circuit. Scores are not recalculated (ADR-002 respected); only ranklist assignment changes. Each ranking function's `AND t.enum_gender = p_gender` replaced with a one-line `fn_effective_gender(...)` call (10 filter sites across 4 functions).
+
+**Changes:**
+- Migration `20260412000005`: `fn_effective_gender` + DROP/CREATE of `fn_ranking_ppw`, `fn_ranking_kadra`, `fn_fencer_scores_rolling`; CREATE OR REPLACE of `fn_category_ranking` (added `tbl_fencer` join). Includes IN_PROGRESS carry-over fix from migration `000006` (which the DROP/CREATE would otherwise undo).
+- `supabase/data/2025_2026/v1_m_sabre.sql`: PPW5 seed data with Martyna's cross-gender result
+- `supabase/data/2025_2026/zz_events_metadata.sql`: PPW5 status SCHEDULED → COMPLETED
+- `supabase/tests/09_rolling_score.sql`: cascade-safe DELETE for PPW5 event (FK from new tournament)
+- `frontend/src/components/CalendarView.svelte`: time filter applied to event boxes (positionSlots)
+
+**TDD:**
+- **RED:** 9 pgTAP tests failed (fn_effective_gender does not exist)
+- **GREEN:** All 268 pgTAP + 269 pytest + 255 vitest pass
+- **RTM:** FR-92 tests expanded (14.CG1–14.CG9); ADR-034 status Deferred→Implemented in Appendix C; Appendix D: pgTAP 259→268, total 790→799
+- **Coverage:** FR-92 (Cross-gender scoring) fully covered by fn_effective_gender unit tests + ranking integration tests
+
 ---
 
 ## Archived Documents

@@ -182,12 +182,19 @@
     return 'ppw'
   }
 
-  // Rolling progress: derive position slots respecting scope filter
+  const today = new Date().toISOString().slice(0, 10)
+
+  // Rolling progress: derive position slots respecting scope + time filters
   let positionSlots = $derived.by(() => {
     if (!isActiveSeason) return []
-    const inScope = scopeFilter === 'all'
+    let inScope = scopeFilter === 'all'
       ? events
       : events.filter(e => !isInternationalEvent(e))
+    if (timeFilter === 'past') {
+      inScope = inScope.filter(e => e.dt_start != null && e.dt_start < today)
+    } else if (timeFilter === 'future') {
+      inScope = inScope.filter(e => e.dt_start != null && e.dt_start > today)
+    }
     return inScope
       .slice()
       .sort((a, b) => (a.dt_start ?? '').localeCompare(b.dt_start ?? ''))
@@ -198,8 +205,6 @@
         city: e.txt_location ?? '',
       }))
   })
-
-  const today = new Date().toISOString().slice(0, 10)
 
   let filteredEvents = $derived.by(() => {
     let result = events

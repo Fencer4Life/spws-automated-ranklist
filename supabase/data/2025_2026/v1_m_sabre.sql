@@ -390,3 +390,36 @@ VALUES (
     (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PEW7-V1-M-SABRE-2025-2026'),
     7, 1.00
 ); -- ZAJĄC Michał
+
+-- ---- PPW5-2025-2026: V Puchar Polski Weteranów ----
+-- NOTE: Only participant is female (SAMECKA-NACZYŃSKA Martyna).
+-- ADR-034: fn_effective_gender reassigns this result to F ranklist.
+INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)
+SELECT
+    'PPW5-2025-2026',
+    'V Puchar Polski Weteranów',
+    'Gdańsk',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'COMPLETED'
+WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = 'PPW5-2025-2026');
+INSERT INTO tbl_tournament (
+    id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category,
+    dt_tournament, int_participant_count, url_results,
+    enum_import_status
+) VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2025-2026'),
+    'PPW5-V1-M-SABRE-2025-2026',
+    'V Puchar Polski Weteranów',
+    'PPW',
+    'SABRE', 'M', 'V1',
+    '2026-04-11', 1, NULL,
+    'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SAMECKA-NACZYŃSKA' AND txt_first_name = 'Martyna' LIMIT 1),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V1-M-SABRE-2025-2026'),
+    1, 59.00
+); -- SAMECKA-NACZYŃSKA Martyna (cross-gender: ADR-034)

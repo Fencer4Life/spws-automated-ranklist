@@ -1,7 +1,7 @@
 # ADR-034: Cross-Gender Tournament Scoring
 
-**Status:** Deferred (documented, enforcement not implemented)  
-**Date:** 2026-04-11  
+**Status:** Implemented (automated enforcement via `fn_effective_gender`)  
+**Date:** 2026-04-11 (documented) · 2026-04-12 (implemented)  
 **Source:** FR-92, ADR-033
 
 ## Context
@@ -23,12 +23,11 @@ Depends on whether a corresponding women's tournament exists at the same event f
 
 ### Enforcement
 
-**Deferred** — the system does not currently check or reassign points automatically. The admin must:
-1. Identify gender mismatches via the Identity Manager UI (ADR-033 adds gender mismatch highlighting)
-2. Manually verify whether a corresponding women's tournament exists at the event
-3. Take appropriate action (dismiss the result, or ensure it's counted in the women's ranklist)
+**Automated** at ranking query time via `fn_effective_gender` helper function. The function is called inline in every ranking function (`fn_ranking_ppw`, `fn_ranking_kadra`, `fn_fencer_scores_rolling`, `fn_category_ranking`), replacing the raw `t.enum_gender = p_gender` filter.
 
-Future implementation should add automated gender-aware scoring at ingestion or scoring time.
+Scores are not recalculated — `num_final_score` stays as computed at import time (ADR-002). Only the ranklist assignment changes.
+
+Admin can still review gender mismatches via the Identity Manager UI (ADR-033).
 
 ## Alternatives
 
@@ -45,6 +44,89 @@ Future implementation should add automated gender-aware scoring at ingestion or 
 
 ## Consequences
 
-- No code changes in this ADR (documentation only)
-- Admin must manually review gender mismatches flagged in the Identity Manager
-- Future work: automated scoring reassignment based on sibling tournament check at event level (analogous to ADR-024's category splitting)
+- Admin can still review gender mismatches flagged in the Identity Manager (ADR-033)
+- Automated enforcement via `fn_effective_gender` helper + ranking function filters (see implementation plan below)
+
+---
+
+## Implementation Plan (2026-04-12)
+
+### Approach: `fn_effective_gender` helper function
+
+A pure SQL function that computes the "effective gender" for a single result row, encoding all four ADR-034 rules:
+
+```sql
+fn_effective_gender(
+  p_fencer_gender    enum_gender_type,   -- from tbl_fencer.enum_gender
+  p_tournament_gender enum_gender_type,  -- from tbl_tournament.enum_gender
+  p_id_event         INT,               -- tournament's parent event
+  p_weapon           enum_weapon_type,   -- for sibling check
+  p_age_category     enum_age_category   -- for sibling check
+) RETURNS enum_gender_type  -- NULL = dropped, 'F'/'M' = effective ranklist
+```
+
+Logic:
+1. `fencer_gender IS NULL OR matches tournament` → return tournament gender (normal)
+2. `fencer = M, tournament = F` → return NULL (always dropped)
+3. `fencer = F, tournament = M` → check for sibling F tournament at same event/weapon/category:
+   - Sibling exists → NULL (dropped — she should have competed there)
+   - No sibling → `'F'` (reassigned to women's ranklist)
+
+The EXISTS subquery only fires for the rare cross-gender case; normal results short-circuit.
+
+### Filter replacement (10 sites → 1-line change each)
+
+Every `AND t.enum_gender = p_gender` becomes:
+
+```sql
+AND fn_effective_gender(f.enum_gender, t.enum_gender, t.id_event, t.enum_weapon, t.enum_age_category) = p_gender
+```
+
+### Files to modify
+
+**New migration:** `supabase/migrations/20260412000002_cross_gender_scoring.sql`
+
+Contains:
+1. `fn_effective_gender` — new helper function (STABLE, SECURITY DEFINER)
+2. `fn_ranking_ppw` — DROP + CREATE replacing 3 gender filters (lines 81, 186, 209)
+3. `fn_ranking_kadra` — DROP + CREATE replacing 3 gender filters (lines 96, 209, 232)
+4. `fn_fencer_scores_rolling` — DROP + CREATE replacing 2 gender filters (lines 109, 136)
+5. `fn_category_ranking` — CREATE OR REPLACE replacing 1 gender filter (line 40)
+
+Note: `fn_category_ranking` does not join `tbl_fencer` today — must add the join.
+
+**Return columns unchanged:** `fn_fencer_scores_rolling` still returns `t.enum_gender` (the original tournament gender) so the UI shows the actual tournament code. Only the filtering uses effective gender.
+
+### pgTAP tests
+
+New test file: `supabase/tests/04_cross_gender_scoring.sql`
+
+Tests:
+1. `fn_effective_gender` unit tests — all 4 rules (match, M-in-F, F-in-M-no-sibling, F-in-M-with-sibling)
+2. Woman in M tournament with no F sibling → appears in F ranking, not M ranking
+3. Woman in M tournament with F sibling → appears in neither ranking
+4. Man in F tournament → appears in neither ranking
+5. Fencer with NULL gender → appears in tournament's declared gender ranking (backwards-compatible)
+6. Rolling carry-over: carried-over cross-gender result still filtered correctly
+7. Kadra: cross-gender filter applies to international results too
+
+### Verification
+
+```sql
+-- After reset: Martyna in F sabre V1 ranking (via PPW5-V1-M-SABRE reassignment)
+SELECT * FROM fn_ranking_ppw('SABRE', 'F', 'V1');
+-- Expected: SAMECKA-NACZYŃSKA appears
+
+SELECT * FROM fn_ranking_ppw('SABRE', 'M', 'V1');
+-- Expected: SAMECKA-NACZYŃSKA does NOT appear
+
+-- Direct helper check
+SELECT fn_effective_gender('F', 'M', 
+  (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2025-2026'),
+  'SABRE', 'V1');
+-- Expected: 'F' (no sibling F tournament)
+```
+
+### Seed data prerequisite
+
+PPW5-V1-M-SABRE-2025-2026 must exist in local seed data (`supabase/data/2025_2026/v1_m_sabre.sql`) with Martyna's result for verification to work. Add it as part of implementation.

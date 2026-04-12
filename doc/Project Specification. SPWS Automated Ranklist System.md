@@ -1665,7 +1665,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-89 | Auto-resume email polling on event day | ADR-027 | GAS E2E ✓ | Covered |
 | FR-90 | Event registration URL: nullable `url_registration` on `tbl_event`, displayed in Calendar before deadline/start, editable in Admin UI | UC21, ADR-030 | 8.18–8.20, 8.21–8.25, 9.43a–9.43c | Covered |
 | FR-91 | Event registration deadline: nullable `dt_registration_deadline` on `tbl_event`, displayed in Calendar until deadline passes, editable in Admin UI | UC21, ADR-030 | 8.18–8.20, 8.21–8.25, 9.43a–9.43c | Covered |
-| FR-92 | Fencer gender column with backfill from tournament participation, inline admin edit, and gender mismatch highlighting in Identity Manager | ADR-033, ADR-034 | 11.16–11.19, 9.85–9.86, 9.89–9.94 | Covered |
+| FR-92 | Fencer gender column with backfill from tournament participation, inline admin edit, gender mismatch highlighting in Identity Manager, and automated cross-gender scoring enforcement (ADR-034) | ADR-033, ADR-034 | 11.16–11.19, 9.85–9.86, 9.89–9.94, 14.CG1–14.CG9 | Covered |
 | FR-93 | Birth year review tab: filter/search/edit/tournament history grouped by season/birth year hints + auto-suggest/age category inconsistency flag | UC16, ADR-035 | 9.100–9.113, 13.1–13.4 | Covered |
 
 ### Non-Functional Requirements
@@ -1723,21 +1723,21 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-031](adr/031-auto-active-season.md) | Auto-Active Season by Date | FR-21, FR-22 |
 | [ADR-032](adr/032-drilldown-mobile-card-layout.md) | Drilldown Mobile Card Layout | NFR-09, FR-36, FR-66 |
 | [ADR-033](adr/033-fencer-gender-identity-enhancements.md) | Fencer Gender Column + Identity Manager Enhancement | FR-07, FR-56, FR-92 |
-| [ADR-034](adr/034-cross-gender-tournament-scoring.md) | Cross-Gender Tournament Scoring (Deferred) | FR-92, ADR-024, ADR-033 |
+| [ADR-034](adr/034-cross-gender-tournament-scoring.md) | Cross-Gender Tournament Scoring (Implemented) | FR-92, ADR-024, ADR-033 |
 | [ADR-035](adr/035-fencers-view-tabs.md) | Fencers View with Tabs (Identity + Birth Year Review) | FR-56, FR-93, UC4, UC16 |
 
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 259 assertions (1 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 27 ingest pipeline + 21 identity resolution + 4 EVF import + 5 fencer birth year).
+- pgTAP total: 268 assertions (1 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 27 ingest pipeline + 21 identity resolution + 4 EVF import + 5 fencer birth year + 9 cross-gender scoring).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
-| pgTAP | 259 | 14 | `supabase/tests/` |
+| pgTAP | 268 | 15 | `supabase/tests/` |
 | pytest | 269 | 20 | `python/tests/` |
 | vitest | 255 | 24 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **790** | | |
+| **Total** | **799** | | |
 
 ### Coverage Summary
 
