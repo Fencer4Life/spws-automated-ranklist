@@ -29,7 +29,7 @@
       </button>
     </div>
 
-    <div class="tab-content" class:hidden={activeTab !== 'identities'}>
+    <div class="tab-content" style:display={activeTab === 'identities' ? '' : 'none'}>
       <IdentityManager
         {candidates}
         {fencers}
@@ -43,7 +43,7 @@
         {onupdategender}
       />
     </div>
-    <div class="tab-content" class:hidden={activeTab !== 'birth_year_review'}>
+    <div class="tab-content" style:display={activeTab === 'birth_year_review' ? '' : 'none'}>
       <BirthYearReview
         {fencers}
         {isAdmin}
@@ -133,5 +133,4 @@
     color: #856404;
   }
   .tab-btn.active .tab-badge { background: #cce5ff; color: #004085; }
-  .hidden { display: none; }
 </style>
