@@ -82,9 +82,9 @@ describe('FencerView (ADR-035)', () => {
     expect(byTab.classList.contains('active')).toBe(true)
     const review = container.querySelector('[data-field="birth-year-review"]')
     expect(review).not.toBeNull()
-    // IdentityManager should be gone
-    const queue = container.querySelector('[data-field="identity-queue"]')
-    expect(queue).toBeNull()
+    // IdentityManager tab should be hidden (CSS display:none), not removed from DOM
+    const identitiesTab = container.querySelector('[data-field="tab-identities"]')
+    expect(identitiesTab!.classList.contains('active')).toBe(false)
   })
 
   // 9.98 — Identities tab badge shows actionable count
