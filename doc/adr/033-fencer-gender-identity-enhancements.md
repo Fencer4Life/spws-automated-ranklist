@@ -50,6 +50,7 @@ The `tbl_fencer` table had no gender column. Gender was only tracked at the tour
 - **ADR-024** (Combined Category Splitting) — analogous problem for age categories; this ADR addresses gender dimension.
 - **ADR-025** (Event-Centric Ingestion + Telegram Admin) — the ingestion pipeline creates match candidates but never sets fencer gender; gender is admin-managed only.
 - **ADR-034** (Cross-Gender Tournament Scoring) — documents the scoring rules for cross-gender participation; depends on this ADR's gender column for mismatch detection.
+- **ADR-035** (Fencers View with Tabs) — gender edit also available in Birth year review tab for correcting missing/wrong gender values alongside birth year confirmation.
 
 ## Consequences
 

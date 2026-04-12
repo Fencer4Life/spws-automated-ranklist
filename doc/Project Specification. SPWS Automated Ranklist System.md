@@ -1630,7 +1630,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-53 | Event-level batch import: multi-select tournament checklist modal | UC22(g) | 9.62–9.67 | Partial (file UI + Admin ⬇ button + populate-urls GHA) |
 | FR-54 | Tournament-level single import: own URL or file upload | UC22(h) | 9.56–9.61, 3.17a–d | Partial (file UI + Admin ⬇ button + t-scrape + scrape-tournament GHA) |
 | FR-55 | File import: parse results from .xlsx, .xls, .json, .csv | UC22(i), UC23(c) | 9.58, 9.93–9.100 | Covered (M9, T9.5 UI + T9.10 parsers) |
-| FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new/assign + gender column; refactored into FencerView tab wrapper (ADR-035) | UC4(a-e) | 9.68–9.73, 9.77, 9.78–9.88, 9.95–9.99, 11.1–11.19 | Covered (UI + RPCs + tabs) |
+| FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new/assign + gender column; Identities tab in Fencers view (ADR-035) | UC4(a-e) | 9.68–9.73, 9.77, 9.78–9.88, 11.1–11.19 | Covered (UI + RPCs + tab in App.svelte) |
 | FR-57 | Identity resolution: disambiguation modal for same-name fencers with age category fit | UC3(f), UC4(b) | 9.74–9.76 | Covered (DisambiguationModal + App.svelte handlers) |
 | FR-58 | EVF calendar import: fetch veteransfencing.eu, deduplication, create events+tournaments | UC8, UC9 | 12.1–12.4, pytest evf_* | Covered (ADR-028: JSON API + HTML calendar + evf-sync.yml) |
 | FR-59 | Two-view app shell: sidebar drawer with Ranklista + Kalendarz navigation | UC12, UC21 | 8.27–8.37 | Covered (M8) |
@@ -1735,9 +1735,9 @@ Every functional and non-functional requirement is listed below with its source 
 |-------|-------|-------|----------|
 | pgTAP | 259 | 14 | `supabase/tests/` |
 | pytest | 269 | 20 | `python/tests/` |
-| vitest | 260 | 25 | `frontend/tests/` |
+| vitest | 255 | 24 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **795** | | |
+| **Total** | **790** | | |
 
 ### Coverage Summary
 
