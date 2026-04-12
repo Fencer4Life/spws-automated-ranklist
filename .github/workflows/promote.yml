@@ -7,6 +7,9 @@ on:
         description: 'Event code prefix (e.g. PPW4)'
         required: true
 
+permissions:
+  contents: write
+
 jobs:
   promote:
     name: CERT → PROD Promotion
@@ -29,6 +32,25 @@ jobs:
           SUPABASE_PROD_REF: ${{ secrets.SUPABASE_PROD_REF }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      - name: Export PROD seed (ADR-036)
+        if: success()
+        run: python -m python.pipeline.export_seed --ref "${{ secrets.SUPABASE_PROD_REF }}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Commit seed file
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add supabase/seed_prod_*.sql supabase/seed_prod_latest.sql
+          if git diff --cached --quiet; then
+            echo "No seed changes to commit"
+          else
+            git commit -m "chore: auto-export seed from PROD after promote ${{ github.event.inputs.event_code }} [skip ci]"
+            git push
+          fi
 
       - name: Notify failure
         if: failure()

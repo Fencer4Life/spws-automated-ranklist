@@ -185,8 +185,8 @@ def sync_results(
             spws_results = _match_against_spws(ref, token, all_results)
             print(f"  SPWS matches: {len(spws_results)}")
 
-            # Compare with CERT data and optionally ingest
-            _compare_and_ingest(ref, token, evf_evt, spws_results, dry_run, bot_token, chat_id)
+            # Compare with CERT data and optionally ingest (pass all_results for participant count)
+            _compare_and_ingest(ref, token, evf_evt, spws_results, dry_run, bot_token, chat_id, all_results=all_results)
 
     finally:
         client.close()
@@ -224,6 +224,7 @@ def _compare_and_ingest(
     ref: str, token: str,
     evf_evt: dict, spws_results: list[dict],
     dry_run: bool, bot_token: str, chat_id: str,
+    all_results: list[dict] | None = None,
 ) -> None:
     """Compare EVF-matched SPWS results with CERT data, ingest missing."""
     evf_date = evf_evt["date"]
@@ -256,8 +257,8 @@ def _compare_and_ingest(
         )[0]["txt_code"]
         print(f"  Created event: {cert_code} (id={cert_event_id})")
 
-        # Ingest all SPWS results
-        _ingest_evf_results(ref, token, cert_event_id, spws_results, evf_date)
+        # Ingest all SPWS results (pass all_results for correct participant count)
+        _ingest_evf_results(ref, token, cert_event_id, spws_results, evf_date, all_results=all_results)
         _telegram(bot_token, chat_id,
             f"<b>EVF Import</b>\n<pre>{cert_code}</pre>\n"
             f"{evf_evt['name']}\n"
@@ -317,7 +318,7 @@ def _compare_and_ingest(
     if evf_only and not dry_run:
         cert_event_id = cert_events[0]["id_event"]
         evf_only_results = [evf_details[k] for k in evf_only]
-        ingested = _ingest_evf_results(ref, token, cert_event_id, evf_only_results, evf_date)
+        ingested = _ingest_evf_results(ref, token, cert_event_id, evf_only_results, evf_date, all_results=all_results)
         print(f"\n  Ingested {ingested} EVF-only results to CERT")
 
     summary = (
@@ -368,15 +369,28 @@ def _create_cert_event(ref: str, token: str, evf_evt: dict) -> int | None:
 def _ingest_evf_results(
     ref: str, token: str,
     event_id: int, results: list[dict], event_date: str,
+    all_results: list[dict] | None = None,
 ) -> int:
-    """Ingest EVF results into CERT via fn_find_or_create_tournament + fn_ingest_tournament_results."""
+    """Ingest EVF results into CERT via fn_find_or_create_tournament + fn_ingest_tournament_results.
+
+    Args:
+        all_results: Full scraped results (all fencers, not just SPWS matches).
+                     Used to compute correct int_participant_count per tournament.
+    """
     ingested = 0
 
-    # Group results by weapon+gender+category
+    # Group SPWS-matched results by weapon+gender+category
     groups: dict[tuple, list[dict]] = {}
     for r in results:
         key = (r["weapon"], r["gender"], r["category"])
         groups.setdefault(key, []).append(r)
+
+    # Group ALL results for total participant count
+    total_counts: dict[tuple, int] = {}
+    if all_results:
+        for r in all_results:
+            key = (r["weapon"], r["gender"], r["category"])
+            total_counts[key] = total_counts.get(key, 0) + 1
 
     for (weapon, gender, category), group_results in groups.items():
         # Find or create tournament
@@ -404,12 +418,17 @@ def _ingest_evf_results(
 
         json_str = json.dumps(results_json).replace("'", "''")
 
+        # Total participant count for this tournament (all fencers, not just SPWS)
+        total_count = total_counts.get((weapon, gender, category))
+        count_param = f", {total_count}" if total_count else ""
+
         try:
             _management_query(ref, token,
-                f"SELECT fn_ingest_tournament_results({tourn_id}, '{json_str}'::JSONB)"
+                f"SELECT fn_ingest_tournament_results({tourn_id}, '{json_str}'::JSONB{count_param})"
             )
             ingested += len(group_results)
-            print(f"    {weapon} {gender} {category}: {len(group_results)} results ingested")
+            count_info = f" (N={total_count})" if total_count else ""
+            print(f"    {weapon} {gender} {category}: {len(group_results)} results ingested{count_info}")
         except Exception as e:
             print(f"    ERROR {weapon} {gender} {category}: {e}")
 

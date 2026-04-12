@@ -1,21 +1,25 @@
-name: Export Seed from CERT
+name: Export Seed from PROD
 
 on:
   workflow_dispatch:
     inputs:
       reason:
-        description: 'Trigger reason (complete/rollback/manual)'
+        description: 'Trigger reason (promote/manual)'
         default: 'manual'
-      season:
-        description: 'Season code'
-        default: 'SPWS-2025-2026'
+      source:
+        description: 'Source environment'
+        default: 'prod'
+        type: choice
+        options:
+          - prod
+          - cert
 
 permissions:
   contents: write
 
 jobs:
   export:
-    name: Export seed files from CERT
+    name: Export monolithic seed (ADR-036)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,20 +31,26 @@ jobs:
       - name: Install dependencies
         run: pip install httpx
 
-      - name: Export seed files
-        run: python -m python.pipeline.export_seed --cert-ref "${{ secrets.SUPABASE_CERT_REF }}" --season "${{ github.event.inputs.season }}"
+      - name: Export seed
+        run: |
+          if [ "${{ github.event.inputs.source }}" = "cert" ]; then
+            REF="${{ secrets.SUPABASE_CERT_REF }}"
+          else
+            REF="${{ secrets.SUPABASE_PROD_REF }}"
+          fi
+          python -m python.pipeline.export_seed --ref "$REF"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-      - name: Commit seed files
+      - name: Commit seed file
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add supabase/seed_tbl_fencer.sql supabase/data/
+          git add supabase/seed_prod_*.sql supabase/seed_prod_latest.sql
           if git diff --cached --quiet; then
             echo "No seed changes to commit"
           else
-            git commit -m "chore: auto-export seed from CERT (${{ github.event.inputs.reason }}) [skip ci]"
+            git commit -m "chore: auto-export seed from ${{ github.event.inputs.source }} (${{ github.event.inputs.reason }}) [skip ci]"
             git push
           fi
 
@@ -49,7 +59,7 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="Seed files exported from CERT (${{ github.event.inputs.reason }}). Git updated."
+            -d text="Seed exported from ${{ github.event.inputs.source }} (${{ github.event.inputs.reason }}). Git updated."
 
       - name: Notify failure
         if: failure()

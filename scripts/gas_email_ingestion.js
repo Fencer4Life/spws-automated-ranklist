@@ -144,35 +144,29 @@ function handleCommand(props, command, arg) {
 
     case 'complete':
       callRpc(supabaseUrl, supabaseKey, 'fn_complete_event', { p_prefix: arg });
-      // Trigger seed export from CERT (ADR-027)
-      var githubPatC = props.getProperty('GITHUB_PAT');
-      var githubRepoC = props.getProperty('GITHUB_REPO');
-      try { triggerGitHubWorkflow(githubPatC, githubRepoC, 'export-seed.yml', { reason: 'complete' }); } catch(e) {}
+      // ADR-036: seed export moved to /promote (PROD is source of truth)
       return '<b>Event Completed</b>\n'
         + '<pre>' + arg + '</pre>\n'
         + 'Status changed to <b>COMPLETED</b>\n'
-        + '<i>Seed export triggered</i>';
+        + '<i>Use /promote to push to PROD + update seeds</i>';
 
     case 'rollback':
       var result = callRpc(supabaseUrl, supabaseKey, 'fn_rollback_event', { p_prefix: arg });
-      // Trigger seed export from CERT (ADR-027)
-      var githubPatR = props.getProperty('GITHUB_PAT');
-      var githubRepoR = props.getProperty('GITHUB_REPO');
-      try { triggerGitHubWorkflow(githubPatR, githubRepoR, 'export-seed.yml', { reason: 'rollback' }); } catch(e) {}
+      // ADR-036: seed export moved to /promote (PROD is source of truth)
       return '<b>Event Rolled Back</b>\n'
         + '<pre>' + arg + '</pre>\n'
         + 'Tournaments deleted: <b>' + result.tournaments_deleted + '</b>\n'
         + 'Results deleted: <b>' + result.results_deleted + '</b>\n'
-        + 'Status reset to <b>PLANNED</b>\n'
-        + '<i>Seed export triggered</i>';
+        + 'Status reset to <b>PLANNED</b>';
 
     case 'promote':
       var githubPat = props.getProperty('GITHUB_PAT');
       var githubRepo = props.getProperty('GITHUB_REPO');
       triggerGitHubWorkflow(githubPat, githubRepo, 'promote.yml', { event_code: arg });
+      // ADR-036: seed export triggered by promote.yml after PROD is updated
       return '<b>Promotion Triggered</b>\n'
         + '<pre>' + arg + '</pre>\n'
-        + '<i>CERT data will be pushed to PROD.\nWatch for completion notification.</i>';
+        + '<i>CERT → PROD + seed export.\nWatch for completion notification.</i>';
 
     // --- Data review ---
     case 'results':
@@ -372,13 +366,13 @@ function handleCommand(props, command, arg) {
         'Event status, tournament + result counts',
         '',
         '<pre>complete &lt;event&gt;</pre>',
-        'Mark event done, trigger seed export',
+        'Mark event COMPLETED on CERT',
         '',
         '<pre>rollback &lt;event&gt;</pre>',
         'Delete all ingested data, reset to PLANNED',
         '',
         '<pre>promote &lt;event&gt;</pre>',
-        'Push event data from CERT to PROD',
+        'CERT → PROD + seed export to git',
         '',
         '<b><u>Review</u></b>',
         '',

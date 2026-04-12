@@ -1,61 +1,54 @@
-# ADR-027: Full-Season Seed Export from CERT
+# ADR-027: Full-Season Seed Export
 
-**Status:** Accepted  
-**Date:** 2026-04-06  
-**Relates to:** ADR-025 (Event-Centric Ingestion), ADR-026 (CERT→PROD Promotion)
+**Status:** Superseded by ADR-036  
+**Date:** 2026-04-06 (original) · 2026-04-12 (superseded)  
+**Relates to:** ADR-025 (Event-Centric Ingestion), ADR-026 (CERT→PROD Promotion), ADR-036 (PROD Export & Local Mirror)
 
 ## Context
 
-Seed files in `supabase/data/{season}/` serve as disaster recovery — `supabase db reset` rebuilds the entire DB from them. After ingesting event data into CERT and validating it, the seed files must be updated to reflect the current state.
+Seed files serve as disaster recovery — `supabase db reset` rebuilds the entire DB from them. After ingesting event data and promoting to PROD, the seed files must be updated to reflect the current state.
 
-The Phase 9 approach (appending event data to seed files during promotion) causes duplicates on re-promotion and doesn't update `seed_tbl_fencer.sql` with auto-created fencers.
+## Original Decision (2026-04-06)
 
-## Decision
+Export from **CERT** on `/complete` and `/rollback` commands. Per-category SQL files overwrite existing seed data. CERT was the source of truth.
 
-### Full-season overwrite on `complete` and `rollback`
+## Superseded Decision (2026-04-12, ADR-036)
 
-When the admin sends `complete <event>` or `rollback <event>` on Telegram, regenerate **all** seed files for the active season by reading the full dataset from CERT via the Management API. This produces a complete snapshot that overwrites existing files — no duplicates, no stale data.
+### Single monolithic PROD dump
 
-### Export triggers
+ADR-036 replaces the multi-file per-category approach with a single timestamped SQL file exported from **PROD** (not CERT). PROD is now the source of truth for seed data.
 
-- **`complete <event>`**: Event finalized on CERT → regenerate seeds → auto-commit `[skip ci]`
-- **`rollback <event>`**: Data deleted from CERT → regenerate seeds → auto-commit `[skip ci]` (rolled-back event data absent)
-- **`export-seed`**: Manual trigger via Telegram for ad-hoc regeneration
+### Export triggers — NEW flow
 
-### Name-based fencer lookups
+| Command | Action | Seed export? |
+|---------|--------|-------------|
+| `/complete <event>` | Mark event COMPLETED on CERT | **No** — CERT-only change |
+| `/rollback <event>` | Delete event data on CERT, reset to PLANNED | **No** — CERT-only change |
+| `/promote <event>` | Copy CERT → PROD | **Yes** — after PROD is updated, export PROD to git |
+| `/export-seed` | Manual trigger | **Yes** — ad-hoc export from PROD |
 
-Existing seed files use hardcoded `id_fencer` integers. The export uses name-based subselect lookups instead:
+### Why the change
+
+1. **PROD is the source of truth** — seed files should reflect what's deployed, not an intermediate CERT state
+2. **Monolithic dump is simpler** — one file, no directory naming issues, no duplicate INSERTs
+3. **Schema-driven export** — discovers columns at runtime, future-proof (ADR-036)
+4. **Fewer unnecessary exports** — `/complete` and `/rollback` happen frequently during ingestion; only `/promote` changes PROD
+
+### Name-based fencer lookups (unchanged)
+
+Seed files use name-based subselect lookups (not hardcoded IDs):
 ```sql
 (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOWALSKI' AND txt_first_name = 'Jan' LIMIT 1)
 ```
-This ensures seed files work correctly after `db reset` where fencer IDs are reassigned by the Postgres sequence.
 
-### Auto-resume email polling on event day
+### Auto-resume email polling on event day (unchanged)
 
-The GAS script's `checkEmailForResults()` checks if any event is scheduled today. If so, it auto-clears the `PAUSED` flag and notifies via Telegram. This means `pause` is safe to leave on indefinitely.
-
-### Source of truth
-
-CERT is the source of truth for seed data (not PROD). CERT always has the most recent validated state. PROD is a copy of CERT.
-
-## Alternatives Considered
-
-1. **Append-based export (Phase 9):** Causes duplicates on re-promotion, doesn't include new fencers. Rejected.
-2. **Export from PROD:** Adds a dependency on promotion before seeds update. CERT data is validated first. Rejected.
-3. **Auto-revert git commits on rollback:** Complex — requires finding the specific seed commit to revert. Simpler to just regenerate from CERT's current state. Rejected.
+The GAS script's `checkEmailForResults()` checks if any event is scheduled today. If so, it auto-clears the `PAUSED` flag and notifies via Telegram.
 
 ## Consequences
 
-### Positive
-- Seed files always reflect CERT's validated state
-- Full overwrite = no duplicates, no stale data
-- Git history = versioned backup of every state
-- Auto-resume eliminates risk of forgetting to re-enable polling
-
-### Negative
-- Full-season export queries many tables (acceptable — runs infrequently)
-- Existing hardcoded-ID seed files will be replaced with name-lookup format (one-time format change)
-- `[skip ci]` commits mean LOCAL doesn't auto-reset (by design — manual `db reset` when needed)
-
-### Note (ADR-031)
-"Active season" in the export trigger context (line 17) is derived from the event's `id_season`, not the global `bool_active` flag. Season activation is now auto-managed per ADR-031.
+- Seed export no longer fires on `/complete` or `/rollback`
+- Seed export fires after `/promote` completes (PROD updated)
+- Seed file format: single `supabase/seed_prod_YYYY-MM-DD.sql` (ADR-036)
+- Old per-category files (`supabase/data/`, `seed.sql`, `seed_tbl_fencer.sql`) removed
+- `config.toml` points to `seed_prod_latest.sql` symlink
