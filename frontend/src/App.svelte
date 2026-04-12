@@ -13,7 +13,7 @@
     <button class="hamburger-btn" onclick={() => { sidebarOpen = true }} aria-label="Menu">&#9776;</button>
     <h2 class="app-title">
       <img src="SPWS-logo.png" alt="SPWS" class="header-logo" />
-      {currentView === 'ranklist' ? t('app_title') : currentView === 'calendar' ? t('calendar_title') : currentView === 'admin_seasons' ? t('nav_admin_seasons') : currentView === 'admin_events' ? t('nav_admin_events') : currentView === 'admin_identities' ? t('nav_admin_identities') : t('app_title')}
+      {currentView === 'ranklist' ? t('app_title') : currentView === 'calendar' ? t('calendar_title') : currentView === 'admin_seasons' ? t('nav_admin_seasons') : currentView === 'admin_events' ? t('nav_admin_events') : currentView === 'admin_fencers' ? t('nav_admin_fencers') : t('app_title')}
     </h2>
     <div class="header-right">
       <LangToggle />
@@ -111,18 +111,21 @@
       onimporttournament={handleImportTournament}
       onimportevent={handleImportEvent}
     />
-  {:else if currentView === 'admin_identities'}
-    <IdentityManager
+  {:else if currentView === 'admin_fencers'}
+    <FencerView
       candidates={matchCandidates}
       fencers={allFencers}
       isAdmin={isAdmin}
       errorMsg={identityError}
+      birthYearError={birthYearError}
       onapprove={handleApproveMatch}
       onassign={handleAssignFencer}
       oncreatenew={handleCreateNewFencer}
       ondismiss={handleDismissMatch}
       onundismiss={handleUndismissMatch}
       onupdategender={handleUpdateFencerGender}
+      onupdatebirthyear={handleUpdateFencerBirthYear}
+      onfetchhistory={handleFetchTournamentHistory}
     />
   {/if}
 
@@ -206,6 +209,8 @@
     createFencerFromMatch,
     fetchAllFencers,
     updateFencerGender,
+    updateFencerBirthYear,
+    fetchFencerTournamentHistory,
     refreshActiveSeason,
   } from './lib/api'
   import {
@@ -229,7 +234,7 @@
   import AdminMfaChallengeModal from './components/AdminMfaChallengeModal.svelte'
   import SeasonManager from './components/SeasonManager.svelte'
   import EventManager from './components/EventManager.svelte'
-  import IdentityManager from './components/IdentityManager.svelte'
+  import FencerView from './components/FencerView.svelte'
   import { getAuthState, startAuth, signIn, confirmEnroll, verifyChallenge, signOut, reset as resetAuth } from './lib/admin-auth.svelte'
 
   let {
@@ -319,6 +324,7 @@
   let matchCandidates: MatchCandidate[] = $state([])
   let allFencers: FencerListItem[] = $state([])
   let identityError: string | null = $state(null)
+  let birthYearError: string | null = $state(null)
 
   let modalOpen = $state(false)
   let modalFencerName = $state('')
@@ -513,7 +519,7 @@
     currentView = view
     if (view === 'calendar') loadCalendar()
     else if (view === 'admin_events') loadAdminEvents()
-    else if (view === 'admin_identities') loadMatchCandidates()
+    else if (view === 'admin_fencers') loadMatchCandidates()
   }
 
   async function loadAdminEvents() {
@@ -687,6 +693,20 @@
     } catch (e: unknown) {
       identityError = e instanceof Error ? e.message : String(e)
     }
+  }
+
+  async function handleUpdateFencerBirthYear(fencerId: number, birthYear: number, estimated: boolean) {
+    birthYearError = null
+    try {
+      await updateFencerBirthYear(fencerId, birthYear, estimated)
+      allFencers = await fetchAllFencers()
+    } catch (e: unknown) {
+      birthYearError = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleFetchTournamentHistory(fencerId: number) {
+    return await fetchFencerTournamentHistory(fencerId)
   }
 
   async function loadScoringConfig() {

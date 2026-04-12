@@ -274,6 +274,35 @@
 - **RTM:** FR-07 tests updated; FR-56 tests expanded (9.83–9.88, 11.13–11.19); new FR-92 added; ADR-033+034 in Appendix C; Appendix D: pgTAP 246→254, vitest 229→241, total 744→771
 - **Coverage:** FR-92 (Fencer gender) covered by 11.16–11.19, 9.85–9.86, 9.89–9.94
 
+### Fencers View with Tabs (ADR-035) — 2026-04-12
+
+| Feature | Description | Date | ADR |
+|---------|-------------|------|-----|
+| Fencers View | Renamed `admin_identities` → `admin_fencers`; new `FencerView.svelte` tab container with count badges and fencer count header | 2026-04-12 | ADR-035 |
+| Identities Tab | Existing IdentityManager preserved with zero changes, re-parented as Tab 1 | 2026-04-12 | ADR-035 |
+| Birth Year Review Tab | Full fencer list with filter (status + gender), search, expandable edit form, tournament history grouped by season, birth year hints + auto-suggest, age category inconsistency flag | 2026-04-12 | ADR-035 |
+| fn_update_fencer_birth_year | New RPC for admin birth year + estimated flag edits | 2026-04-12 | ADR-035 |
+
+**Problem:** Auto-created fencers had estimated or missing birth years with no admin workflow to review and confirm them. The Identity Manager was a single-purpose view that couldn't accommodate fencer data quality tasks.
+
+**Approach:** Consolidate fencer-related admin work into a tabbed "Fencers" view. Tab 1 wraps existing IdentityManager (zero changes). Tab 2 adds birth year review with tournament history context, age category hints, and inconsistency detection. All UI text internationalized via `t()`. Conflict-scanned all 34 existing ADRs — zero conflicts.
+
+**Changes:**
+- `FencerView.svelte` (new): tab container with Identities + Birth year review tabs, count badges, fencer count
+- `BirthYearReview.svelte` (new): fencer list with filters/search, expandable edit form, tournament history grouped by season, birth year hint + auto-suggest, inconsistency flag
+- Migration `20260412000004`: `fn_update_fencer_birth_year(p_fencer_id, p_birth_year, p_estimated)`
+- `Sidebar.svelte`: `admin_identities` → `admin_fencers`
+- `App.svelte`: FencerView replaces IdentityManager, new handlers for birth year update + tournament history fetch
+- `types.ts`: AppView updated, new `FencerTab`, `BirthYearFilter`, `FencerTournamentRow` types; `FencerListItem` extended
+- `api.ts`: `fetchFencerTournamentHistory`, `updateFencerBirthYear`, extended `fetchAllFencers`
+- Locale keys: 16 new keys (en + pl), `nav_admin_identities` removed
+
+**TDD:**
+- **RED:** 5 pgTAP + 19 vitest new assertions failed
+- **GREEN:** All 259 pgTAP + 260 vitest pass
+- **RTM:** FR-56 updated (tab refactor); new FR-93 added; ADR-035 in Appendix C; Appendix D: pgTAP 254→259, vitest 241→260, total 771→795
+- **Coverage:** FR-93 covered by 9.100–9.113, 13.1–13.4; UC16 partially implemented
+
 ---
 
 ## Archived Documents

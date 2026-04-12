@@ -18,6 +18,7 @@ import type {
   CreateTournamentParams,
   UpdateTournamentParams,
   FencerListItem,
+  FencerTournamentRow,
 } from './types'
 
 let client: SupabaseClient | null = null
@@ -310,10 +311,27 @@ export async function undismissMatch(matchId: number): Promise<void> {
 export async function fetchAllFencers(): Promise<FencerListItem[]> {
   const { data, error } = await getClient()
     .from('tbl_fencer')
-    .select('id_fencer, txt_surname, txt_first_name, int_birth_year, txt_club, enum_gender')
+    .select('id_fencer, txt_surname, txt_first_name, int_birth_year, txt_club, enum_gender, bool_birth_year_estimated, txt_nationality')
     .order('txt_surname')
   if (error) throw error
   return data ?? []
+}
+
+export async function fetchFencerTournamentHistory(fencerId: number): Promise<FencerTournamentRow[]> {
+  const { data, error } = await getClient()
+    .from('vw_score')
+    .select('id_result, txt_tournament_code, txt_tournament_name, dt_tournament, enum_type, enum_weapon, enum_gender, enum_age_category, int_place, num_final_score, int_participant_count, txt_season_code, txt_location')
+    .eq('id_fencer', fencerId)
+    .order('dt_tournament', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function updateFencerBirthYear(fencerId: number, birthYear: number, estimated: boolean): Promise<void> {
+  const { error } = await getClient().rpc('fn_update_fencer_birth_year', {
+    p_fencer_id: fencerId, p_birth_year: birthYear, p_estimated: estimated
+  })
+  if (error) throw error
 }
 
 export async function updateFencerGender(fencerId: number, gender: GenderType): Promise<void> {

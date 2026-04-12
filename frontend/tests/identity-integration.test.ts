@@ -60,11 +60,11 @@ describe('Identity Resolution Integration (9.78–9.82)', () => {
     })
     await tick()
 
-    // Navigate to admin_identities via sidebar
+    // Navigate to admin_fencers via sidebar
     const hamburger = container.querySelector('.hamburger-btn')
     await fireEvent.click(hamburger!)
     const navItems = container.querySelectorAll('.nav-item')
-    const identItem = Array.from(navItems).find(el => el.textContent?.includes('ożsamo'))
+    const identItem = Array.from(navItems).find(el => el.textContent?.includes('zermierze'))
     if (identItem) {
       await fireEvent.click(identItem)
       await tick()
