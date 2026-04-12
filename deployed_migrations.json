@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-04-11T22:35:41Z",
-    "last_sha": "ff0f39b4dd2c490f450fc6f3b5446db3ba6c4c76",
+    "last_updated": "2026-04-12T07:17:54Z",
+    "last_sha": "af7bfa28c3e220f94ff9aa5d764da29cb82586a8",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -47,9 +47,10 @@
       "20260411000003_auto_active_season.sql",
       "20260412000001_identity_manager_enhancements.sql",
       "20260412000002_birth_year_estimated_param.sql",
-      "20260412000003_undismiss_match.sql"
+      "20260412000003_undismiss_match.sql",
+      "20260412000004_fn_update_fencer_birth_year.sql"
     ],
-    "schema_fingerprint": "1fc332b5dcfde649eb48da254f78fc69"
+    "schema_fingerprint": "5060f585c4c8d81f2138fefa2e744c3b"
   },
   "prod": {
     "last_updated": "2026-04-11T22:36:02Z",
