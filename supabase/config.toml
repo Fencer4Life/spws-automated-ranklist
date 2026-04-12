@@ -60,10 +60,8 @@ schema_paths = []
 [db.seed]
 # If enabled, seeds the database after migrations during a db reset.
 enabled = true
-# Specifies an ordered list of seed files to load during db reset.
-# Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-# Load order: bootstrap config → master fencer list → season data (alphabetical by folder/file)
-sql_paths = ["./seed.sql", "./seed_tbl_fencer.sql", "./data/**/*.sql"]
+# Single monolithic PROD dump (ADR-036). Updated by ./scripts/export-prod.sh
+sql_paths = ["./seed_prod_latest.sql"]
 
 [db.network_restrictions]
 # Enable management of network restrictions.

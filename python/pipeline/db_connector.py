@@ -91,12 +91,19 @@ class DbConnector:
         )
         return len(resp.data) > 0
 
-    def ingest_results(self, tournament_id: int, results_json: list[dict]) -> dict:
-        """Call fn_ingest_tournament_results RPC (ADR-022)."""
-        resp = self._sb.rpc(
-            "fn_ingest_tournament_results",
-            {"p_tournament_id": tournament_id, "p_results": results_json},
-        ).execute()
+    def ingest_results(self, tournament_id: int, results_json: list[dict],
+                        participant_count: int | None = None) -> dict:
+        """Call fn_ingest_tournament_results RPC (ADR-022).
+
+        Args:
+            participant_count: Optional total tournament size. When provided,
+                overrides auto-count from results array. Critical for international
+                tournaments where only POL fencers are imported.
+        """
+        params = {"p_tournament_id": tournament_id, "p_results": results_json}
+        if participant_count is not None:
+            params["p_participant_count"] = participant_count
+        resp = self._sb.rpc("fn_ingest_tournament_results", params).execute()
         return resp.data
 
     def insert_fencer(self, fencer_dict: dict) -> int:

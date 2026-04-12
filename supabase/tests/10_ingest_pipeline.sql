@@ -7,7 +7,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(27);
+SELECT plan(29);
 
 -- ===== SETUP: create test data for ingest tests =====
 
@@ -635,6 +635,32 @@ SELECT is(
   (SELECT txt_code FROM tbl_tournament WHERE txt_code = 'RENAMED-V2-M-EPEE-2025-2026'),
   'RENAMED-V2-M-EPEE-2025-2026',
   '10.26: Tournament txt_code updated in DB'
+);
+
+-- =========================================================================
+-- 10.27–10.28: p_participant_count parameter (ADR-036 fix)
+-- =========================================================================
+-- When p_participant_count is provided, fn_ingest_tournament_results should
+-- use that value instead of counting input results. Critical for international
+-- tournaments where only POL fencers are ingested but the tournament has
+-- more participants (e.g., 38 total, 14 POL imported).
+
+-- 10.27 — p_participant_count overrides auto-count
+-- Use RENAMED tournament (from test 10.25) which still exists in the transaction
+SELECT lives_ok(
+  $$SELECT fn_ingest_tournament_results(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'RENAMED-V2-M-EPEE-2025-2026'),
+    '[{"id_fencer": 1, "int_place": 1, "txt_scraped_name": "TEST", "num_confidence": 100, "enum_match_status": "AUTO_MATCHED"}]'::JSONB,
+    42
+  )$$,
+  '10.27: fn_ingest_tournament_results accepts p_participant_count parameter'
+);
+
+-- 10.28 — verify participant count was set to 42, not 1
+SELECT is(
+  (SELECT int_participant_count FROM tbl_tournament WHERE txt_code = 'RENAMED-V2-M-EPEE-2025-2026'),
+  42,
+  '10.28: p_participant_count=42 overrides auto-count of 1 result'
 );
 
 SELECT * FROM finish();

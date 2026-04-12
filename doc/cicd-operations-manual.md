@@ -348,7 +348,49 @@ The schema fingerprint is an MD5 hash computed from your database's public schem
 
 ---
 
-## 10. Files Reference
+## 10. Telegram Admin Commands
+
+The Telegram bot (`@spws_ranklist_bot`) is the primary admin interface for event lifecycle management. Commands are polled every 5 minutes by a Google Apps Script (GAS) timer.
+
+### Event lifecycle flow
+
+```
+Ingest XML → /status → /complete → /promote → PROD + seed export
+                         ↕
+                      /rollback
+```
+
+### Command reference
+
+| Command | Action | Side effects |
+|---------|--------|-------------|
+| `/status <event>` | Show event status, tournament/result/pending counts | Read-only |
+| `/complete <event>` | Mark event COMPLETED on CERT | CERT DB only |
+| `/rollback <event>` | Delete all tournaments + results, reset to PLANNED | CERT DB only |
+| `/promote <event>` | Copy CERT event data to PROD | PROD updated + **seed export to git** (ADR-036) |
+| `/results <event>` | Show top 3 per tournament | Read-only |
+| `/pending <event>` | Show PENDING match candidates | Read-only |
+| `/missing <event>` | Show expected but missing tournament categories | Read-only |
+| `/ranking <weapon> <gender> <cat>` | Show top 5 in domestic ranking | Read-only |
+| `/overview` | Show all events in active season | Read-only |
+| `/pause` | Pause email polling | GAS flag |
+| `/resume` | Resume email polling | GAS flag |
+| `/export-seed` | Manual seed export from PROD | Triggers `export-seed.yml` |
+
+### Seed export (ADR-036)
+
+Seed files are exported **only after `/promote`** — when PROD has the latest data. The `promote.yml` workflow:
+1. Runs `promote.py` (CERT → PROD data transfer)
+2. Runs `export_seed.py --ref <PROD>` (monolithic PROD dump)
+3. Commits `seed_prod_YYYY-MM-DD.sql` to git with `[skip ci]`
+
+Manual export: send `/export-seed` or trigger `export-seed.yml` via GitHub Actions.
+
+Local mirror: `./scripts/mirror-prod.sh` (export + reset + verify).
+
+---
+
+## 11. Files Reference
 
 | File | Purpose |
 |------|---------|
@@ -362,3 +404,10 @@ The schema fingerprint is an MD5 hash computed from your database's public schem
 | `scripts/update-tracking.sh` | Update tracking files after deployment |
 | `scripts/generate-manifest.sh` | Generate release-manifest.json |
 | `scripts/check-coherence.sh` | CI coherence gates |
+| `scripts/export-prod.sh` | Export PROD to monolithic seed file (ADR-036) |
+| `scripts/mirror-prod.sh` | Full PROD → local mirror: export + reset + verify |
+| `scripts/seed-remote.sh` | Truncate + re-seed remote DB from seed file |
+| `scripts/update-test-values.sh` | Update pgTAP expected values from local DB |
+| `.github/workflows/promote.yml` | CERT → PROD promotion + seed export |
+| `.github/workflows/export-seed.yml` | Manual seed export from PROD or CERT |
+| `scripts/gas_email_ingestion.js` | GAS Telegram bot + email ingestion |

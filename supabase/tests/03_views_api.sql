@@ -48,6 +48,14 @@ BEGIN
 
   -- Clear pre-loaded tournament data for the test season so tests are isolated.
   -- This runs inside BEGIN...ROLLBACK, so real seed data is restored after tests.
+  -- Must delete match_candidates first (FK → tbl_result)
+  DELETE FROM tbl_match_candidate
+  WHERE id_result IN (
+    SELECT r.id_result FROM tbl_result r
+    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
+    JOIN tbl_event e ON e.id_event = t.id_event
+    WHERE e.id_season = v_season
+  );
   DELETE FROM tbl_result
   WHERE id_tournament IN (
     SELECT t.id_tournament FROM tbl_tournament t
@@ -199,10 +207,12 @@ BEGIN
 
   -- -----------------------------------------------------------------------
   -- Female fencer result (for filter test 5.9)
-  -- ATANASSOW (V2) in female tournament — tests gender filter works
+  -- ADR-034: male fencers in F tournaments are dropped, so use a female fencer
   -- -----------------------------------------------------------------------
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
+  VALUES ('VIEWS-FEMALE', 'Tester', 'PL', 1970, 'F');
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
-    (v_fencer_a, v_fem1, 1, 150.00, NOW());
+    ((SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'VIEWS-FEMALE'), v_fem1, 1, 150.00, NOW());
 
   -- -----------------------------------------------------------------------
   -- V1 fencer result (for filter test 5.10)

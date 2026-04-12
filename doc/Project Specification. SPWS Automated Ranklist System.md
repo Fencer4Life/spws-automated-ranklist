@@ -202,7 +202,7 @@ Key design decisions are recorded as Architecture Decision Records in [`doc/adr/
 | [024](adr/024-combined-category-splitting.md) | Combined category splitting (DOB-based) | Accepted |
 | [025](adr/025-event-centric-ingestion-telegram.md) | Event-centric ingestion + Telegram admin | Accepted |
 | [026](adr/026-cert-prod-promotion.md) | CERT → PROD event promotion | Accepted |
-| [027](adr/027-full-season-seed-export.md) | Full-season seed export from CERT | Accepted |
+| [027](adr/027-full-season-seed-export.md) | Full-season seed export from CERT | Superseded by ADR-036 |
 | [028](adr/028-evf-calendar-results-import.md) | EVF calendar + results import (JSON API) | Accepted |
 | [029](adr/029-tournament-url-auto-population.md) | Tournament URL auto-population + admin CRUD | Accepted |
 
@@ -1661,7 +1661,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-85 | Workflow failure notifications via Telegram | ADR-025 | 9.202–9.203 | Covered |
 | FR-86 | CERT → PROD promotion: per-tournament transfer with url_results carry and error recovery | ADR-026 | 9.204–9.207 | Covered |
 | FR-87 | Auto-export seed SQL files after promotion (committed to repo) | ADR-026 | 9.208 | Superseded by FR-88 |
-| FR-88 | Full-season seed export from CERT on complete/rollback (overwrite, not append) | ADR-027 | 9.209–9.213 | Covered |
+| FR-88 | Monolithic PROD seed export on promote (schema-driven, single file) | ADR-027→ADR-036 | 9.209–9.213 | Covered |
 | FR-89 | Auto-resume email polling on event day | ADR-027 | GAS E2E ✓ | Covered |
 | FR-90 | Event registration URL: nullable `url_registration` on `tbl_event`, displayed in Calendar before deadline/start, editable in Admin UI | UC21, ADR-030 | 8.18–8.20, 8.21–8.25, 9.43a–9.43c | Covered |
 | FR-91 | Event registration deadline: nullable `dt_registration_deadline` on `tbl_event`, displayed in Calendar until deadline passes, editable in Admin UI | UC21, ADR-030 | 8.18–8.20, 8.21–8.25, 9.43a–9.43c | Covered |
@@ -1716,7 +1716,7 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-024](adr/024-combined-category-splitting.md) | Combined Category Splitting Strategy | FR-71, ADR-010 |
 | [ADR-025](adr/025-event-centric-ingestion-telegram.md) | Event-Centric Ingestion + Telegram Admin | FR-79–85, ADR-022/023/024 |
 | [ADR-026](adr/026-cert-prod-promotion.md) | CERT → PROD Event Promotion via Python | FR-86, ADR-025 |
-| [ADR-027](adr/027-full-season-seed-export.md) | Full-Season Seed Export from CERT | FR-88, FR-89, ADR-025/026 |
+| [ADR-027](adr/027-full-season-seed-export.md) | ~~Full-Season Seed Export from CERT~~ (Superseded by ADR-036) | FR-88, FR-89, ADR-025/026 |
 | [ADR-028](adr/028-evf-calendar-results-import.md) | EVF Calendar + Results Import | FR-58, ADR-025 |
 | [ADR-029](adr/029-tournament-url-auto-population.md) | Tournament URL Auto-Population + Admin CRUD | FR-53, FR-54, ADR-025 |
 | [ADR-030](adr/030-event-registration-url-deadline.md) | Event Registration URL + Deadline | UC21, FR-90, FR-91 |
@@ -1725,6 +1725,7 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-033](adr/033-fencer-gender-identity-enhancements.md) | Fencer Gender Column + Identity Manager Enhancement | FR-07, FR-56, FR-92 |
 | [ADR-034](adr/034-cross-gender-tournament-scoring.md) | Cross-Gender Tournament Scoring (Implemented) | FR-92, ADR-024, ADR-033 |
 | [ADR-035](adr/035-fencers-view-tabs.md) | Fencers View with Tabs (Identity + Birth Year Review) | FR-56, FR-93, UC4, UC16 |
+| [ADR-036](adr/036-prod-export-local-mirror.md) | PROD Export & Local Mirror (Single Monolithic Dump) | ADR-027, ADR-026 |
 
 ## Appendix D — Test Baseline
 
