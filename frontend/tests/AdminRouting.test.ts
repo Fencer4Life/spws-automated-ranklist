@@ -32,8 +32,8 @@ describe('AdminRouting (T9.8)', () => {
     expect(onnavigate).toHaveBeenCalledWith('admin_events')
   })
 
-  // 9.80 — Clicking "Tożsamości" calls onnavigate with 'admin_identities'
-  it('clicking Tożsamości navigates to admin_identities', async () => {
+  // 9.80 — Clicking "Fencers" calls onnavigate with 'admin_fencers'
+  it('clicking Fencers navigates to admin_fencers', async () => {
     const onnavigate = vi.fn()
     const { container } = render(Sidebar, {
       props: { open: true, currentView: 'ranklist' as AppView, isAdmin: true, onnavigate, onclose: vi.fn() },
@@ -41,7 +41,7 @@ describe('AdminRouting (T9.8)', () => {
 
     const adminItems = container.querySelectorAll('.admin-item')
     await fireEvent.click(adminItems[2])
-    expect(onnavigate).toHaveBeenCalledWith('admin_identities')
+    expect(onnavigate).toHaveBeenCalledWith('admin_fencers')
   })
 
   // 9.81 — Admin nav items hidden when isAdmin=false
@@ -57,7 +57,7 @@ describe('AdminRouting (T9.8)', () => {
   // 9.82 — AppView type includes admin views (compile-time check via assignment)
   it('AppView type includes admin view values', () => {
     // Type-level check: these assignments must compile without error
-    const views: AppView[] = ['admin_seasons', 'admin_events', 'admin_identities', 'admin_scoring']
-    expect(views.length).toBe(4)
+    const views: AppView[] = ['admin_seasons', 'admin_events', 'admin_fencers']
+    expect(views.length).toBe(3)
   })
 })

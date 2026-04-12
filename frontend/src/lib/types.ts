@@ -14,7 +14,9 @@ export interface RankingRules {
   international: RankingBucket[]
 }
 export type RankingMode = 'PPW' | 'KADRA'
-export type AppView = 'ranklist' | 'calendar' | 'admin_seasons' | 'admin_events' | 'admin_identities'
+export type AppView = 'ranklist' | 'calendar' | 'admin_seasons' | 'admin_events' | 'admin_fencers'
+export type FencerTab = 'identities' | 'birth_year_review'
+export type BirthYearFilter = 'ALL' | 'ESTIMATED' | 'MISSING' | 'CONFIRMED'
 export type Environment = 'CERT' | 'PROD'
 
 export interface Season {
@@ -244,6 +246,24 @@ export interface FencerListItem {
   int_birth_year: number | null
   txt_club: string | null
   enum_gender: GenderType | null
+  bool_birth_year_estimated: boolean
+  txt_nationality: string | null
+}
+
+export interface FencerTournamentRow {
+  id_result: number
+  txt_tournament_code: string
+  txt_tournament_name: string | null
+  dt_tournament: string | null
+  enum_type: TournamentType
+  enum_weapon: WeaponType
+  enum_gender: GenderType
+  enum_age_category: AgeCategory
+  int_place: number
+  num_final_score: number | null
+  int_participant_count: number | null
+  txt_season_code: string
+  txt_location: string | null
 }
 
 export interface FencerCandidate {

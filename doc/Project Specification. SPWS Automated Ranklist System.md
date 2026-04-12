@@ -1630,7 +1630,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-53 | Event-level batch import: multi-select tournament checklist modal | UC22(g) | 9.62–9.67 | Partial (file UI + Admin ⬇ button + populate-urls GHA) |
 | FR-54 | Tournament-level single import: own URL or file upload | UC22(h) | 9.56–9.61, 3.17a–d | Partial (file UI + Admin ⬇ button + t-scrape + scrape-tournament GHA) |
 | FR-55 | File import: parse results from .xlsx, .xls, .json, .csv | UC22(i), UC23(c) | 9.58, 9.93–9.100 | Covered (M9, T9.5 UI + T9.10 parsers) |
-| FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new/assign + gender column | UC4(a-e) | 9.68–9.73, 9.77, 9.78–9.88, 11.1–11.19 | Covered (UI + RPCs + API wiring + gender + assign) |
+| FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new/assign + gender column; refactored into FencerView tab wrapper (ADR-035) | UC4(a-e) | 9.68–9.73, 9.77, 9.78–9.88, 9.95–9.99, 11.1–11.19 | Covered (UI + RPCs + tabs) |
 | FR-57 | Identity resolution: disambiguation modal for same-name fencers with age category fit | UC3(f), UC4(b) | 9.74–9.76 | Covered (DisambiguationModal + App.svelte handlers) |
 | FR-58 | EVF calendar import: fetch veteransfencing.eu, deduplication, create events+tournaments | UC8, UC9 | 12.1–12.4, pytest evf_* | Covered (ADR-028: JSON API + HTML calendar + evf-sync.yml) |
 | FR-59 | Two-view app shell: sidebar drawer with Ranklista + Kalendarz navigation | UC12, UC21 | 8.27–8.37 | Covered (M8) |
@@ -1666,6 +1666,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-90 | Event registration URL: nullable `url_registration` on `tbl_event`, displayed in Calendar before deadline/start, editable in Admin UI | UC21, ADR-030 | 8.18–8.20, 8.21–8.25, 9.43a–9.43c | Covered |
 | FR-91 | Event registration deadline: nullable `dt_registration_deadline` on `tbl_event`, displayed in Calendar until deadline passes, editable in Admin UI | UC21, ADR-030 | 8.18–8.20, 8.21–8.25, 9.43a–9.43c | Covered |
 | FR-92 | Fencer gender column with backfill from tournament participation, inline admin edit, and gender mismatch highlighting in Identity Manager | ADR-033, ADR-034 | 11.16–11.19, 9.85–9.86, 9.89–9.94 | Covered |
+| FR-93 | Birth year review tab: filter/search/edit/tournament history grouped by season/birth year hints + auto-suggest/age category inconsistency flag | UC16, ADR-035 | 9.100–9.113, 13.1–13.4 | Covered |
 
 ### Non-Functional Requirements
 
@@ -1723,25 +1724,26 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-032](adr/032-drilldown-mobile-card-layout.md) | Drilldown Mobile Card Layout | NFR-09, FR-36, FR-66 |
 | [ADR-033](adr/033-fencer-gender-identity-enhancements.md) | Fencer Gender Column + Identity Manager Enhancement | FR-07, FR-56, FR-92 |
 | [ADR-034](adr/034-cross-gender-tournament-scoring.md) | Cross-Gender Tournament Scoring (Deferred) | FR-92, ADR-024, ADR-033 |
+| [ADR-035](adr/035-fencers-view-tabs.md) | Fencers View with Tabs (Identity + Birth Year Review) | FR-56, FR-93, UC4, UC16 |
 
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 254 assertions (1 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 27 ingest pipeline + 21 identity resolution + 4 EVF import).
+- pgTAP total: 259 assertions (1 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 27 ingest pipeline + 21 identity resolution + 4 EVF import + 5 fencer birth year).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
-| pgTAP | 254 | 13 | `supabase/tests/` |
+| pgTAP | 259 | 14 | `supabase/tests/` |
 | pytest | 269 | 20 | `python/tests/` |
-| vitest | 241 | 23 | `frontend/tests/` |
+| vitest | 260 | 25 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **771** | | |
+| **Total** | **795** | | |
 
 ### Coverage Summary
 
 | Status | Count | FRs |
 |--------|-------|-----|
-| Covered | 86 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-92 |
+| Covered | 87 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-93 |
 | Partial | 2 | FR-53, FR-54 |
 | Superseded | 1 | FR-87 (by FR-88) |
 | Not tested (NFR) | 4 | NFR-01, NFR-03, NFR-04, NFR-08 |

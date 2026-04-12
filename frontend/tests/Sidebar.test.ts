@@ -109,7 +109,7 @@ describe('Sidebar (T8.4)', () => {
     const texts = Array.from(adminItems).map((el) => el.textContent?.trim())
     expect(texts).toContain('Sezony')
     expect(texts).toContain('Wydarzenia')
-    expect(texts).toContain('Tożsamości')
+    expect(texts).toContain('Szermierze')
   })
 
   // 8.36 — When admin NOT active, sidebar hides admin section

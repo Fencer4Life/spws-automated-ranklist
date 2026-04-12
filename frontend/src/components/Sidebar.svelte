@@ -37,7 +37,7 @@
       <ul class="nav-list">
         <li><button class="nav-item admin-item" class:active={currentView === 'admin_seasons'} onclick={() => { onnavigate('admin_seasons'); onclose() }}>{t('nav_admin_seasons')}</button></li>
         <li><button class="nav-item admin-item" class:active={currentView === 'admin_events'} onclick={() => { onnavigate('admin_events'); onclose() }}>{t('nav_admin_events')}</button></li>
-        <li><button class="nav-item admin-item" class:active={currentView === 'admin_identities'} onclick={() => { onnavigate('admin_identities'); onclose() }}>{t('nav_admin_identities')}</button></li>
+        <li><button class="nav-item admin-item" class:active={currentView === 'admin_fencers'} onclick={() => { onnavigate('admin_fencers'); onclose() }}>{t('nav_admin_fencers')}</button></li>
       </ul>
     </div>
   {/if}
