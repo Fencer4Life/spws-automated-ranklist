@@ -1730,7 +1730,7 @@ Every functional and non-functional requirement is listed below with its source 
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 272 assertions (3 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 29 ingest pipeline + 21 identity resolution + 4 EVF import + 5 fencer birth year + 9 cross-gender scoring).
+- pgTAP total: 281 assertions (3 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 29 ingest pipeline + 21 identity resolution + 13 EVF import + 5 fencer birth year + 9 cross-gender scoring).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
