@@ -390,7 +390,163 @@ Local mirror: `./scripts/mirror-prod.sh` (export + reset + verify).
 
 ---
 
-## 11. Files Reference
+## 11. Environment Sync (ADR-036)
+
+The system has three environments. Data flows one way: **PROD → local** and **PROD → CERT**.
+
+```
+PROD (source of truth)
+  │
+  ├──→ LOCAL  (via mirror-prod.sh)
+  │
+  └──→ CERT   (via seed-remote.sh)
+```
+
+### Prerequisites
+
+| Credential | What it is | Where stored |
+|-----------|------------|--------------|
+| `SUPABASE_ACCESS_TOKEN` | Supabase org-level Management API token | `~/.supabase_token` (local file, chmod 600) |
+| `SUPABASE_PROD_REF` | PROD project reference ID | Hardcoded in scripts as `ywgymtgcyturldazcpmw` |
+| `SUPABASE_CERT_REF` | CERT project reference ID | Hardcoded in scripts as `sdomfjncmfydlkygzpgw` |
+
+**To get the access token:** Go to https://supabase.com/dashboard/account/tokens → copy an active token → save to `~/.supabase_token`.
+
+**Other requirements:**
+- Docker running (for local PostgreSQL)
+- Supabase CLI installed (`supabase start` has been run at least once)
+- Python venv set up (`.venv/` with httpx installed)
+
+---
+
+### Operation A: Mirror PROD → LOCAL
+
+**When to use:** After promoting new data to PROD, or when your local DB is stale/broken.
+
+**What it does:** Exports all PROD data to a timestamped SQL file, resets local DB from migrations, loads the dump, creates admin user, and verifies table counts match PROD.
+
+```bash
+./scripts/mirror-prod.sh
+```
+
+**Step-by-step (if running manually):**
+
+1. Export PROD data:
+   ```bash
+   ./scripts/export-prod.sh
+   ```
+   Creates `supabase/seed_prod_YYYY-MM-DD.sql` and updates symlink `seed_prod_latest.sql`.
+
+2. Reset local DB:
+   ```bash
+   ./scripts/reset-dev.sh
+   ```
+   Applies all migrations + loads `seed_prod_latest.sql` + creates admin user (`admin@spws.local` / `admin123`).
+
+3. Verify:
+   ```bash
+   export SUPABASE_ACCESS_TOKEN="$(cat ~/.supabase_token)"
+   python3 -m pytest python/tests/test_prod_mirror.py -v
+   ```
+   All 7 tables must match PROD counts.
+
+4. Run tests:
+   ```bash
+   supabase test db
+   ```
+
+**Duration:** ~2 minutes (export ~60s, reset ~30s, verify ~30s).
+
+**Local admin credentials:** `admin@spws.local` / `admin123` (always recreated by reset-dev.sh).
+
+---
+
+### Operation B: Sync CERT from PROD
+
+**When to use:** After CERT has diverged from PROD (e.g., after a rollback or data corruption), and you want CERT to match PROD exactly.
+
+**What it does:** Truncates all CERT data tables and re-seeds from the local dump file. After this, CERT = PROD = LOCAL.
+
+**Prerequisite:** Run Operation A first (so local has the latest PROD dump).
+
+```bash
+export SUPABASE_ACCESS_TOKEN="$(cat ~/.supabase_token)"
+export SUPABASE_REF=sdomfjncmfydlkygzpgw
+./scripts/seed-remote.sh
+```
+
+**Step-by-step:**
+
+1. Ensure local dump is current:
+   ```bash
+   ./scripts/export-prod.sh
+   ```
+
+2. Push dump to CERT:
+   ```bash
+   export SUPABASE_ACCESS_TOKEN="$(cat ~/.supabase_token)"
+   export SUPABASE_REF=sdomfjncmfydlkygzpgw
+   ./scripts/seed-remote.sh
+   ```
+
+3. Verify (optional):
+   ```bash
+   python -m python.tools.audit_results --env cert --pol-only
+   ```
+
+**Safety:** The script refuses to run against PROD without `--force` flag.
+
+**Duration:** ~30 seconds (truncate + single API call with full dump).
+
+---
+
+### Operation C: Force-sync PROD from LOCAL (DANGEROUS)
+
+**When to use:** NEVER under normal circumstances. Only if PROD data is catastrophically corrupted and you have a known-good local dump.
+
+```bash
+export SUPABASE_ACCESS_TOKEN="$(cat ~/.supabase_token)"
+export SUPABASE_REF=ywgymtgcyturldazcpmw
+./scripts/seed-remote.sh --force
+```
+
+**The `--force` flag is required because this overwrites PROD.**
+
+---
+
+### Data audit
+
+To check for discrepancies between environments and source URLs:
+
+```bash
+export SUPABASE_ACCESS_TOKEN="$(cat ~/.supabase_token)"
+
+# Audit CERT against source tournament URLs
+python -m python.tools.audit_results --env cert --pol-only
+
+# Audit PROD
+python -m python.tools.audit_results --env prod --pol-only
+
+# Audit local
+python -m python.tools.audit_results --env local --pol-only
+```
+
+---
+
+### Troubleshooting
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| `Illegal header value b'Bearer '` | Token not loaded | Ensure `~/.supabase_token` exists and `SUPABASE_ACCESS_TOKEN` is exported |
+| `401 Unauthorized` | Token expired or revoked | Generate new token at supabase.com/dashboard/account/tokens, save to `~/.supabase_token` |
+| `502 Bad gateway` | Supabase API outage | Wait 5 minutes and retry |
+| Mirror test fails (count mismatch) | Stale dump | Re-run `./scripts/export-prod.sh` then `./scripts/reset-dev.sh` |
+| Identity Manager shows empty | `tbl_match_candidate` not loaded | Re-run mirror (dump includes match candidates since ADR-036) |
+| Refusing to seed PROD | Safety check | Add `--force` flag (only if you're absolutely sure) |
+
+---
+
+## 12. Files Reference
 
 | File | Purpose |
 |------|---------|
