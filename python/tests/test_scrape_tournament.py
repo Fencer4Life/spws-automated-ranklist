@@ -71,3 +71,14 @@ class TestScrapeTournament:
 
         with pytest.raises(ValueError, match="Unsupported"):
             scrape_and_parse("https://unknown-site.com/results/123")
+
+    def test_detect_platform_dartagnan(self):
+        """dart.7: Dartagnan URL detected as 'dartagnan' platform."""
+        from python.scrapers.base import detect_platform
+
+        assert detect_platform(
+            "https://www.dartagnan.live/turniere/EuropeanVeteransCup_2026/de/6687-rankings.html"
+        ) == "dartagnan"
+        assert detect_platform(
+            "http://dartagnan.live/turniere/foo/de/index.html"
+        ) == "dartagnan"

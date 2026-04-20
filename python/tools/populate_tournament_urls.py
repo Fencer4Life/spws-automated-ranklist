@@ -176,6 +176,29 @@ FOURFENCE_CATEGORY_MAP = {
 }
 
 
+def discover_dartagnan_tournament_urls(
+    index_html: str, index_url: str
+) -> list[dict]:
+    """Discover Dartagnan per-category rankings URLs from an event index page.
+
+    Returns [{weapon, gender, category, url, source_name}, ...].
+    Combined rounds (V1/V2 Runde, etc.) are skipped by the underlying parser.
+    """
+    from python.scrapers.dartagnan import parse_dartagnan_event_index
+
+    competitions = parse_dartagnan_event_index(index_html, index_url)
+    results = []
+    for c in competitions:
+        results.append({
+            "weapon": c["weapon"],
+            "gender": c["gender"],
+            "category": c["category"],
+            "url": c["rankings_url"],
+            "source_name": f"{c['weapon']} {c['gender']} {c['category']} ({c['id']})",
+        })
+    return results
+
+
 def generate_fourfence_urls(base_url: str) -> list[dict]:
     """Generate all possible 4Fence tournament result URLs from base path.
 
@@ -261,6 +284,10 @@ def discover_tournament_urls_from_html(
         )
     elif platform == "fourfence":
         return generate_fourfence_urls(kwargs.get("base_url", html_or_xml))
+    elif platform == "dartagnan":
+        return discover_dartagnan_tournament_urls(
+            html_or_xml, index_url=kwargs.get("index_url", "")
+        )
     else:
         raise ValueError(f"Unknown platform: {platform}")
 
@@ -296,6 +323,11 @@ def discover_tournament_urls(event_url: str) -> list[dict]:
 
     elif platform == "fourfence":
         return generate_fourfence_urls(event_url)
+
+    elif platform == "dartagnan":
+        resp = httpx.get(event_url, follow_redirects=True, timeout=15)
+        resp.raise_for_status()
+        return discover_dartagnan_tournament_urls(resp.text, index_url=event_url)
 
     else:
         raise ValueError(f"Unsupported platform: {event_url}")

@@ -30,6 +30,8 @@ def detect_platform(url: str) -> str:
         return "engarde"
     if "4fence.it" in url_lower:
         return "fourfence"
+    if "dartagnan.live" in url_lower:
+        return "dartagnan"
     raise ValueError(f"Unsupported platform URL: {url}")
 
 

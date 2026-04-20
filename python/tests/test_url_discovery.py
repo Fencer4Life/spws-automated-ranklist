@@ -203,3 +203,36 @@ class TestPlatformDetection:
 
         with pytest.raises(ValueError):
             detect_platform("https://unknown-site.com/results")
+
+
+# ── dart.url.1: Dartagnan discovery ──────────────────────────────────────
+
+class TestDiscoverDartagnan:
+    def test_discover_dartagnan_tournament_urls(self):
+        """dart.url.1: Dartagnan index → per-category rankings URLs."""
+        from python.tools.populate_tournament_urls import discover_tournament_urls_from_html
+
+        html = (FIXTURES / "dartagnan" / "index.html").read_text()
+        index_url = (
+            "https://www.dartagnan.live/turniere/EuropeanVeteransCup_2026/de/index.html"
+        )
+        results = discover_tournament_urls_from_html(
+            html, "dartagnan", index_url=index_url
+        )
+
+        assert len(results) > 0
+        first = results[0]
+        assert "weapon" in first and first["weapon"] in ("EPEE", "FOIL", "SABRE")
+        assert "gender" in first and first["gender"] in ("M", "F")
+        assert "category" in first and first["category"] in ("V0", "V1", "V2", "V3", "V4")
+        assert "url" in first
+        assert first["url"].endswith("-rankings.html")
+
+        # Sanity: Men Epee V1 (6687) and Women Foil V4 (7027) both present
+        keys = {(r["weapon"], r["gender"], r["category"]) for r in results}
+        assert ("EPEE", "M", "V1") in keys
+        assert ("FOIL", "F", "V4") in keys
+
+        # No combined "Runde" entries — every discovered URL is for a single category
+        urls = [r["url"] for r in results]
+        assert all(u.endswith("-rankings.html") for u in urls)
