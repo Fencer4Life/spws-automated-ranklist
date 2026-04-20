@@ -1730,15 +1730,15 @@ Every functional and non-functional requirement is listed below with its source 
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 268 assertions (1 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 27 ingest pipeline + 21 identity resolution + 4 EVF import + 5 fencer birth year + 9 cross-gender scoring).
+- pgTAP total: 272 assertions (3 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 29 ingest pipeline + 21 identity resolution + 4 EVF import + 5 fencer birth year + 9 cross-gender scoring).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
-| pgTAP | 268 | 15 | `supabase/tests/` |
-| pytest | 269 | 20 | `python/tests/` |
+| pgTAP | 272 | 15 | `supabase/tests/` |
+| pytest | 269 | 21 | `python/tests/` |
 | vitest | 255 | 24 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **799** | | |
+| **Total** | **803** | | |
 
 ### Coverage Summary
 

@@ -4,13 +4,20 @@ Test that local DB is a faithful mirror of PROD.
 Compares row counts for all data tables between PROD (via Management API)
 and local DB (via docker exec). Fails if any table has a count mismatch.
 
-Usage:
-    python -m pytest python/tests/test_prod_mirror.py -v
+Skipped in CI (requires SUPABASE_ACCESS_TOKEN).
+Run locally: python -m pytest python/tests/test_prod_mirror.py -v
 """
 
+import os
 import subprocess
 
 import pytest
+
+# Skip entire module if no access token (CI environment)
+pytestmark = pytest.mark.skipif(
+    not os.environ.get("SUPABASE_ACCESS_TOKEN"),
+    reason="SUPABASE_ACCESS_TOKEN not set (skipped in CI)"
+)
 
 from python.tools.audit_results import query_db
 
