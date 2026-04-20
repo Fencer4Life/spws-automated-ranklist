@@ -167,10 +167,13 @@ def _process_category(
         tourn_info = f"{weapon} {gender} {category}"
         notifier.notify_duplicate_import(tourn_info)
 
-    # Resolve identities using matcher pipeline
+    # Resolve identities using matcher pipeline (ADR-038: pass countries so
+    # EVF events drop non-POL rows before matching)
     scraped_names = [r["fencer_name"] for r in enriched_results]
+    scraped_countries = [r.get("country") for r in enriched_results]
     resolved = resolve_tournament_results(
-        scraped_names, fencer_db, t_type, category, season_end_year
+        scraped_names, fencer_db, t_type, category, season_end_year,
+        scraped_countries=scraped_countries,
     )
 
     # Build JSONB payload for RPC

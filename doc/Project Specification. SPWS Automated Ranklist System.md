@@ -1728,6 +1728,7 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-035](adr/035-fencers-view-tabs.md) | Fencers View with Tabs (Identity + Birth Year Review) | FR-56, FR-93, UC4, UC16 |
 | [ADR-036](adr/036-prod-export-local-mirror.md) | PROD Export & Local Mirror (Single Monolithic Dump) | ADR-027, ADR-026 |
 | [ADR-037](adr/037-derived-display-status-awaiting-results.md) | Derived Display Status — "Awaiting Results" (view-layer, preserves ADR-018 rolling carry-over) | ADR-018, ADR-025, ADR-028 |
+| [ADR-038](adr/038-evf-intake-polish-only.md) | EVF-Organized Tournaments Ingest POL-Only Rows | FR-54, ADR-019, ADR-020, ADR-025 |
 
 ## Appendix D — Test Baseline
 
@@ -1737,10 +1738,10 @@ Every functional and non-functional requirement is listed below with its source 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
 | pgTAP | 281 | 15 | `supabase/tests/` |
-| pytest | 282 | 22 | `python/tests/` |
+| pytest | 290 | 22 | `python/tests/` |
 | vitest | 267 | 25 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **837** | | |
+| **Total** | **845** | | |
 
 ### Coverage Summary
 

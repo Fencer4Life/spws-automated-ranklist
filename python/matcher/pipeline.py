@@ -101,6 +101,7 @@ def resolve_tournament_results(
     tournament_type: str,
     age_category: str,
     season_end_year: int,
+    scraped_countries: list[str | None] | None = None,
 ) -> ResolvedTournament:
     """Match scraped names against master data with tournament-type rules.
 
@@ -111,6 +112,13 @@ def resolve_tournament_results(
         tournament_type: PPW, MPW, PEW, MEW, or MSW
         age_category: V0, V1, V2, V3, or V4
         season_end_year: End year of the season (e.g., 2025 for SPWS-2024-2025)
+        scraped_countries: Optional parallel list of 3-letter ISO codes per row.
+            When provided for EVF-organized (international) tournaments, rows
+            whose country != "POL" are dismissed before matching — no match,
+            no auto-create, no queue entry (ADR-038). Missing/None country
+            at an international tournament also dismisses the row
+            (fail-closed). SPWS-organized (domestic) tournaments ignore this
+            parameter; all rows pass to the matcher.
 
     Returns:
         ResolvedTournament with matched, auto_created, and skipped lists
@@ -118,7 +126,14 @@ def resolve_tournament_results(
     result = ResolvedTournament()
     is_domestic = tournament_type in DOMESTIC_TYPES
 
-    for name in scraped_names:
+    for idx, name in enumerate(scraped_names):
+        # ADR-038: EVF events — drop non-POL rows before matching.
+        if not is_domestic and scraped_countries is not None:
+            country = scraped_countries[idx] if idx < len(scraped_countries) else None
+            if country != "POL":
+                result.skipped.append(name)
+                continue
+
         match = find_best_match(name, fencer_db, age_category, season_end_year)
 
         if match.status == "AUTO_MATCHED":
