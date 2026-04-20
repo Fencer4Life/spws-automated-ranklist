@@ -1667,6 +1667,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-91 | Event registration deadline: nullable `dt_registration_deadline` on `tbl_event`, displayed in Calendar until deadline passes, editable in Admin UI | UC21, ADR-030 | 8.18–8.20, 8.21–8.25, 9.43a–9.43c | Covered |
 | FR-92 | Fencer gender column with backfill from tournament participation, inline admin edit, gender mismatch highlighting in Identity Manager, and automated cross-gender scoring enforcement (ADR-034) | ADR-033, ADR-034 | 11.16–11.19, 9.85–9.86, 9.89–9.94, 14.CG1–14.CG9 | Covered |
 | FR-93 | Birth year review tab: filter/search/edit/tournament history grouped by season/birth year hints + auto-suggest/age category inconsistency flag | UC16, ADR-035 | 9.100–9.113, 13.1–13.4 | Covered |
+| FR-94 | Derived event display status: PLANNED events whose `dt_end < today` render as amber "Awaiting results" / "Oczekiwanie na wyniki" instead of misleading "Planowany". View-layer helper only — underlying `enum_status` unchanged, preserving ADR-018 rolling carry-over invariant. Self-heals when `fn_ingest_tournament_results` fires. | UC21, ADR-037 | ES.1–ES.11, 8.41b | Covered |
 
 ### Non-Functional Requirements
 
@@ -1726,6 +1727,7 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-034](adr/034-cross-gender-tournament-scoring.md) | Cross-Gender Tournament Scoring (Implemented) | FR-92, ADR-024, ADR-033 |
 | [ADR-035](adr/035-fencers-view-tabs.md) | Fencers View with Tabs (Identity + Birth Year Review) | FR-56, FR-93, UC4, UC16 |
 | [ADR-036](adr/036-prod-export-local-mirror.md) | PROD Export & Local Mirror (Single Monolithic Dump) | ADR-027, ADR-026 |
+| [ADR-037](adr/037-derived-display-status-awaiting-results.md) | Derived Display Status — "Awaiting Results" (view-layer, preserves ADR-018 rolling carry-over) | ADR-018, ADR-025, ADR-028 |
 
 ## Appendix D — Test Baseline
 
@@ -1734,17 +1736,17 @@ Every functional and non-functional requirement is listed below with its source 
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
-| pgTAP | 272 | 15 | `supabase/tests/` |
-| pytest | 269 | 21 | `python/tests/` |
-| vitest | 255 | 24 | `frontend/tests/` |
+| pgTAP | 281 | 15 | `supabase/tests/` |
+| pytest | 271 | 22 | `python/tests/` |
+| vitest | 267 | 25 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **803** | | |
+| **Total** | **826** | | |
 
 ### Coverage Summary
 
 | Status | Count | FRs |
 |--------|-------|-----|
-| Covered | 87 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-93 |
+| Covered | 88 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-94 |
 | Partial | 2 | FR-53, FR-54 |
 | Superseded | 1 | FR-87 (by FR-88) |
 | Not tested (NFR) | 4 | NFR-01, NFR-03, NFR-04, NFR-08 |
