@@ -1,7 +1,7 @@
 # ADR-020: Seed Generator Auto-Creates Fencers for Domestic Tournaments
 
-**Status:** Accepted
-**Date:** 2026-04-04 (M9)
+**Status:** Superseded by ADR-036
+**Date:** 2026-04-04 (M9) · 2026-04-13 (superseded)
 
 ## Context
 
@@ -38,3 +38,7 @@ Reuses `parse_scraped_name()` from `fuzzy_match.py` and `estimate_birth_year()` 
 - The operator should run `sort_and_clean_fencers.py` after generation to absorb auto-created fencers into the canonical seed
 - International unmatched fencers are clearly labeled as `-- SKIPPED` rather than the ambiguous `-- UNMATCHED`
 - Same fencer appearing in multiple domestic tournaments gets only one `tbl_fencer` INSERT (deduplication by surname + first_name)
+
+## Superseded (2026-04-13)
+
+ADR-036 replaced per-category seed files with a monolithic PROD dump. `generate_season_seed.py` is no longer used to produce seed data. The domestic/international intake rules this ADR describes are still active in the **live ingestion pipeline** (`orchestrator.py`, `evf_sync.py`, `fn_ingest_tournament_results`) and documented in ADR-025.

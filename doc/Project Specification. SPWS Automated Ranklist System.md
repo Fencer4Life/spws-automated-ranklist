@@ -195,7 +195,7 @@ Key design decisions are recorded as Architecture Decision Records in [`doc/adr/
 | [017](adr/017-season-configurable-evf-toggle.md) | Season-configurable EVF toggle | Accepted |
 | [018](adr/018-rolling-score-active-season.md) | Rolling score for active season | Accepted |
 | [019](adr/019-domestic-only-fencer-seed.md) | Domestic-only fencer seed | Accepted |
-| [020](adr/020-seed-generator-domestic-auto-create.md) | Seed generator domestic auto-create | Accepted |
+| [020](adr/020-seed-generator-domestic-auto-create.md) | Seed generator domestic auto-create | Superseded by ADR-036 |
 | [021](adr/021-imew-biennial-carry-over.md) | IMEW biennial carry-over | Accepted |
 | [022](adr/022-ingestion-db-transaction.md) | Ingestion DB transaction strategy | Accepted |
 | [023](adr/023-email-ingestion-gas-storage.md) | Email ingestion via GAS + Supabase Storage | Accepted |
@@ -1709,7 +1709,7 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-017](adr/017-season-configurable-evf-toggle.md) | Season-Configurable EVF Toggle | §6.2 M9, FR-34, FR-44, FR-64 |
 | [ADR-018](adr/018-rolling-score.md) | Rolling Score for Active Season | §8.3.1, §8.3.2, FR-15, FR-16, FR-65, FR-66 |
 | [ADR-019](adr/019-domestic-only-fencer-seed.md) | Domestic-Only Fencer Seed | §7.1, seed_tbl_fencer.sql |
-| [ADR-020](adr/020-seed-generator-domestic-auto-create.md) | Seed Generator Domestic Auto-Create | §7.1, generate_season_seed.py |
+| [ADR-020](adr/020-seed-generator-domestic-auto-create.md) | ~~Seed Generator Domestic Auto-Create~~ (Superseded by ADR-036) | §7.1, generate_season_seed.py |
 | [ADR-021](adr/021-imew-biennial-carry-over.md) | IMEW Biennial Carry-Over | ADR-018, FR-65, FR-68 |
 | [ADR-022](adr/022-ingestion-db-transaction.md) | Ingestion DB Transaction Strategy (single RPC) | FR-73, ADR-014 |
 | [ADR-023](adr/023-email-ingestion-gas-storage.md) | Email Ingestion via GAS + Supabase Storage | FR-75, FR-76, FR-77 |
