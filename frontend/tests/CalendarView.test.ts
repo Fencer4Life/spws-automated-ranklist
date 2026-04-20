@@ -68,7 +68,7 @@ const EVENTS: CalendarEvent[] = [
     id_event: 4,
     txt_code: 'PP4-2025-2026',
     txt_name: 'IV Puchar Polski Weteranów',
-    dt_start: '2026-04-15',
+    dt_start: '2099-04-15',
     txt_location: 'Gdańsk',
     enum_status: 'SCHEDULED',
     num_tournaments: 6,
