@@ -1632,7 +1632,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-55 | File import: parse results from .xlsx, .xls, .json, .csv | UC22(i), UC23(c) | 9.58, 9.93–9.100 | Covered (M9, T9.5 UI + T9.10 parsers) |
 | FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new/assign + gender column; Identities tab in Fencers view (ADR-035) | UC4(a-e) | 9.68–9.73, 9.77, 9.78–9.88, 11.1–11.19 | Covered (UI + RPCs + tab in App.svelte) |
 | FR-57 | Identity resolution: disambiguation modal for same-name fencers with age category fit | UC3(f), UC4(b) | 9.74–9.76 | Covered (DisambiguationModal + App.svelte handlers) |
-| FR-58 | EVF calendar import: fetch veteransfencing.eu, deduplication, create events+tournaments | UC8, UC9 | 12.1–12.4, pytest evf_* | Covered (ADR-028: JSON API + HTML calendar + evf-sync.yml) |
+| FR-58 | EVF calendar import: HTML-primary fetch from veteransfencing.eu with JSON-API cross-reference, event-level URL harvesting (`url_event`, `url_invitation`, `url_registration`), dedup, create events via `fn_import_evf_events` (idempotent-by-code), refresh existing events via `fn_refresh_evf_event_urls` (NULL-only, protects admin edits), raise on total failure. Deadline harvesting disabled pending real-world pattern data. | UC8, UC9 | 12.1–12.13, pytest evf.1–evf.13 | Covered (ADR-028 rev 2 2026-04-20: insert + refresh + admin-edit protection) |
 | FR-59 | Two-view app shell: sidebar drawer with Ranklista + Kalendarz navigation | UC12, UC21 | 8.27–8.37 | Covered (M8) |
 | FR-60 | Event CRUD via web UI (create, edit, delete events with all fields) | UC22(c) | 9.23–9.24, 9.28, 9.43–9.49 | Covered (M9, T9.1 SQL + T9.3 UI) |
 | FR-61 | Scoring config editor (admin, per-season, structured form) | UC22(f) | 8.62–8.75 | Covered (M8) |
@@ -1717,7 +1717,7 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-025](adr/025-event-centric-ingestion-telegram.md) | Event-Centric Ingestion + Telegram Admin | FR-79–85, ADR-022/023/024 |
 | [ADR-026](adr/026-cert-prod-promotion.md) | CERT → PROD Event Promotion via Python | FR-86, ADR-025 |
 | [ADR-027](adr/027-full-season-seed-export.md) | ~~Full-Season Seed Export from CERT~~ (Superseded by ADR-036) | FR-88, FR-89, ADR-025/026 |
-| [ADR-028](adr/028-evf-calendar-results-import.md) | EVF Calendar + Results Import | FR-58, ADR-025 |
+| [ADR-028](adr/028-evf-calendar-results-import.md) | EVF Calendar + Results Import (rev 2 2026-04-20: URL refresh path + admin-edit protection + deadline harvest disabled) | FR-58, ADR-025, ADR-029, ADR-030 |
 | [ADR-029](adr/029-tournament-url-auto-population.md) | Tournament URL Auto-Population + Admin CRUD | FR-53, FR-54, ADR-025 |
 | [ADR-030](adr/030-event-registration-url-deadline.md) | Event Registration URL + Deadline | UC21, FR-90, FR-91 |
 | [ADR-031](adr/031-auto-active-season.md) | Auto-Active Season by Date | FR-21, FR-22 |

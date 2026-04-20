@@ -22,6 +22,7 @@ import httpx
 from python.scrapers.evf_calendar import (
     scrape_full_season_calendar,
     deduplicate_events,
+    match_scraped_to_existing,
 )
 from python.scrapers.evf_results import (
     EvfApiClient,
@@ -77,6 +78,8 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
     """Scrape EVF calendar (past+future) and sync to CERT.
 
     Returns the full list of season calendar events (for use by sync_results).
+    Raises RuntimeError if all scrape sources fail; the workflow's
+    `if: failure()` step then sends a Telegram alert too.
     """
     season = _get_active_season(ref, token)
     if not season:
@@ -84,8 +87,19 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
         return []
 
     print(f"Scraping EVF calendar for {season['txt_code']}...")
-    cal_events = scrape_full_season_calendar(season["dt_start"], season["dt_end"])
+    try:
+        cal_events = scrape_full_season_calendar(season["dt_start"], season["dt_end"])
+    except RuntimeError as exc:
+        _telegram(bot_token, chat_id,
+            f"<b>EVF Calendar FAILED</b>\n<pre>{str(exc)[:500]}</pre>"
+        )
+        raise
     print(f"  Found {len(cal_events)} circuit/championship events")
+
+    inv = sum(1 for e in cal_events if e.get("url_invitation"))
+    reg = sum(1 for e in cal_events if e.get("url_registration"))
+    dln = sum(1 for e in cal_events if e.get("dt_registration_deadline"))
+    print(f"  URL enrichment: inv={inv} reg={reg} deadline={dln}")
 
     for e in cal_events:
         fee_str = f" {e['fee_currency']}{e['fee']}" if e.get('fee') else ""
@@ -94,9 +108,8 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
         print(f"  {e['dt_start']}  {e['name']:<45} {weapons:<15}{fee_str}{team_str}")
 
     if not dry_run:
-        # Get existing events for dedup
         existing = _management_query(ref, token,
-            f"SELECT txt_name, dt_start::TEXT FROM tbl_event "
+            f"SELECT id_event, txt_name, dt_start::TEXT FROM tbl_event "
             f"WHERE id_season = {season['id_season']}"
         )
         new, already = deduplicate_events(cal_events, existing)
@@ -104,16 +117,67 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
 
         if new:
             season_suffix = season["txt_code"].replace("SPWS-", "")
+            payload: list[dict] = []
             for evt in new:
                 loc = evt.get("location", "").split(",")[0].strip().upper().replace(" ", "")[:10]
-                evt["code"] = f"PEW-{loc}-{season_suffix}" if not evt.get("is_team") else f"MEW-{loc}-{season_suffix}"
+                code = f"PEW-{loc}-{season_suffix}" if not evt.get("is_team") else f"MEW-{loc}-{season_suffix}"
+                payload.append({
+                    "code": code,
+                    "name": evt.get("name", ""),
+                    "dt_start": evt.get("dt_start", ""),
+                    "dt_end": evt.get("dt_end") or evt.get("dt_start", ""),
+                    "location": evt.get("location", ""),
+                    "country": evt.get("country", ""),
+                    "weapons": evt.get("weapons", []),
+                    "is_team": bool(evt.get("is_team", False)),
+                    "url_event": evt.get("url", "") or "",
+                    "url_invitation": evt.get("url_invitation") or "",
+                    "url_registration": evt.get("url_registration") or "",
+                    "dt_registration_deadline": evt.get("dt_registration_deadline") or "",
+                    "address": evt.get("address", ""),
+                    "fee": "" if evt.get("fee") is None else str(evt["fee"]),
+                    "fee_currency": evt.get("fee_currency", ""),
+                })
 
-            events_json = json.dumps(new).replace("'", "''")
+            events_json = json.dumps(payload).replace("'", "''")
             _management_query(ref, token,
                 f"SELECT fn_import_evf_events('{events_json}'::JSONB, {season['id_season']})"
             )
             _telegram(bot_token, chat_id,
-                f"<b>EVF Calendar</b>\n{len(new)} new event(s) imported"
+                f"<b>EVF Calendar</b>\n{len(new)} new event(s) imported\n"
+                f"URL fields: inv={inv} reg={reg} deadline={dln}"
+            )
+
+        # Refresh URL/enrichment fields on already-imported events (ADR-028
+        # amendment). Only fills NULL/empty columns; admin edits preserved.
+        matched_pairs = match_scraped_to_existing(cal_events, existing)
+        refresh_payload: list[dict] = []
+        for scraped, existing_row in matched_pairs:
+            refresh_payload.append({
+                "id_event": existing_row["id_event"],
+                "url_event": scraped.get("url", "") or "",
+                "url_invitation": scraped.get("url_invitation") or "",
+                "url_registration": scraped.get("url_registration") or "",
+                "dt_registration_deadline": scraped.get("dt_registration_deadline") or "",
+                "address": scraped.get("address", ""),
+                "fee": "" if scraped.get("fee") is None else str(scraped["fee"]),
+                "fee_currency": scraped.get("fee_currency", ""),
+                "weapons": scraped.get("weapons", []),
+            })
+
+        if refresh_payload:
+            refresh_json = json.dumps(refresh_payload).replace("'", "''")
+            result = _management_query(ref, token,
+                f"SELECT fn_refresh_evf_event_urls('{refresh_json}'::JSONB) AS r"
+            )
+            r = result[0].get("r") if result else {}
+            if isinstance(r, str):
+                r = json.loads(r)
+            touched = (r or {}).get("touched", 0)
+            refreshed = (r or {}).get("refreshed", 0)
+            print(f"  URL refresh: touched={touched} refreshed={refreshed}")
+            _telegram(bot_token, chat_id,
+                f"<b>EVF URL refresh</b>\nTouched: {touched}, refreshed: {refreshed}"
             )
     else:
         print("\n  [DRY RUN] No changes made")

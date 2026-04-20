@@ -32,3 +32,6 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["python/tests"]
 asyncio_mode = "auto"
+markers = [
+    "integration: tests requiring live external APIs (deselect with -m 'not integration')",
+]

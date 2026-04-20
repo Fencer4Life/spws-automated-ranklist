@@ -1,0 +1,26 @@
+[
+  {
+    "id": 85,
+    "name": "EVF Circuit — Salzburg",
+    "opens": "2026-04-18",
+    "closes": "2026-04-19",
+    "location": "Salzburg",
+    "country_abbr": "AUT"
+  },
+  {
+    "id": 86,
+    "name": "EVF Veterans European Championships",
+    "opens": "2026-05-30",
+    "closes": "2026-06-04",
+    "location": "Dublin",
+    "country_abbr": "IRL"
+  },
+  {
+    "id": 87,
+    "name": "EVF Circuit — Leszno",
+    "opens": "2026-03-14",
+    "closes": "2026-03-15",
+    "location": "Leszno",
+    "country_abbr": "POL"
+  }
+]
