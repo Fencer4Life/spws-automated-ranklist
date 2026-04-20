@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 
@@ -49,7 +50,7 @@ ENVS = {
     },
 }
 
-SUPABASE_ACCESS_TOKEN = "sbp_3dd15a0de5550c66f093090c7fd4c7e99039ce1d"
+SUPABASE_ACCESS_TOKEN = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
 MGMT_API = "https://api.supabase.com/v1/projects"
 
 FTL_DATA_PREFIX = "https://www.fencingtimelive.com/events/results/data/"

@@ -26,6 +26,10 @@ echo "=== Step 2.5: Update test expected values ==="
 echo ""
 echo "=== Step 3: Verify local matches PROD ==="
 source .venv/bin/activate
+# Load token for PROD count verification
+if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ] && [ -f "$HOME/.supabase_token" ]; then
+  export SUPABASE_ACCESS_TOKEN="$(cat "$HOME/.supabase_token" | tr -d '[:space:]')"
+fi
 python3 -m pytest python/tests/test_prod_mirror.py -v
 
 echo ""

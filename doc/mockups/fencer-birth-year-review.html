@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fencer Birth Year Review — Mockup Options</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 960px; margin: 0 auto; padding: 16px; color: #333; background: #f5f5f5; }
+
+  h2 { margin-bottom: 6px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+  .option-label { font-size: 14px; font-weight: 700; color: #fff; background: #4a90d9; padding: 4px 12px; border-radius: 4px; margin: 24px 0 10px; display: inline-block; }
+  .option-desc { font-size: 13px; color: #666; margin-bottom: 14px; font-style: italic; }
+
+  /* ===== Shared styles ===== */
+  .unconfirmed-badge { font-size: 12px; padding: 3px 10px; border-radius: 10px; font-weight: 600; background: #fff3cd; color: #856404; }
+  .confirmed-badge   { font-size: 12px; padding: 3px 10px; border-radius: 10px; font-weight: 600; background: #d4edda; color: #155724; }
+  .missing-badge     { font-size: 12px; padding: 3px 10px; border-radius: 10px; font-weight: 600; background: #f8d7da; color: #721c24; }
+
+  .action-btn { padding: 5px 14px; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 600; }
+  .action-btn.confirm { background: #d4edda; color: #155724; }
+  .action-btn.save { background: #4a90d9; color: #fff; }
+  .action-btn.cancel { background: #e9ecef; color: #555; }
+
+  .field-input { padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; width: 80px; }
+  .field-input.surname { text-transform: uppercase; font-weight: 600; }
+
+  .gender-badge { font-size: 11px; padding: 1px 5px; border-radius: 6px; font-weight: 600; background: #e9ecef; color: #555; }
+
+  /* ===== Option A: Dedicated view ===== */
+  .fencer-review { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 16px; }
+  .review-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+  .review-header h2 { margin: 0; }
+  .review-filter { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .review-filter select, .review-filter input { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+  .review-filter input { width: 200px; }
+
+  .review-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .review-table th { text-align: left; padding: 8px 10px; border-bottom: 2px solid #dee2e6; color: #555; font-weight: 600; }
+  .review-table td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+  .review-table tr:hover { background: #f8f9fa; }
+  .review-table .name-cell { font-weight: 600; }
+  .review-table .actions-cell { display: flex; gap: 6px; align-items: center; }
+
+  .edit-row td { background: #f0f7ff; }
+
+  /* ===== Option B: Tab in Identity Manager ===== */
+  .tab-bar { display: flex; gap: 0; margin-bottom: 14px; border-bottom: 2px solid #dee2e6; }
+  .tab-btn { padding: 8px 16px; border: none; background: none; font-size: 13px; font-weight: 600; color: #888; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+  .tab-btn.active { color: #4a90d9; border-bottom-color: #4a90d9; }
+
+  .candidate-card { border: 1px solid #e0e0e0; border-radius: 6px; background: #fff; margin-bottom: 8px; }
+  .candidate-card.editing { border-color: #4a90d9; box-shadow: 0 2px 8px rgba(74,144,217,0.15); }
+  .card-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; gap: 10px; }
+  .card-header:hover { background: #f8f9fa; }
+  .header-left { display: flex; flex-direction: column; gap: 2px; }
+  .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .fencer-name { font-weight: 600; color: #333; font-size: 14px; }
+  .fencer-detail { font-size: 12px; color: #555; }
+  .edit-form { padding: 14px; border-top: 1px solid #e0e0e0; background: #f8f9fa; }
+  .field-row { display: flex; gap: 12px; margin-bottom: 10px; }
+  .form-field { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .field-label { font-size: 12px; font-weight: 600; color: #555; }
+  .form-actions { display: flex; gap: 8px; }
+
+  .section-sep { border: none; border-top: 3px solid #4a90d9; margin: 32px 0 8px; }
+
+  /* Sidebar mockup */
+  .sidebar-mockup { background: #2c2c2c; color: #ccc; padding: 12px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; width: 200px; }
+  .sidebar-mockup .nav-item { padding: 6px 10px; border-radius: 4px; margin-bottom: 2px; cursor: pointer; }
+  .sidebar-mockup .nav-item:hover { background: #3c3c3c; }
+  .sidebar-mockup .nav-item.active { background: #4a90d9; color: #fff; }
+  .sidebar-mockup .nav-section { color: #ff6b35; font-size: 11px; font-weight: 600; padding: 6px 10px; text-transform: uppercase; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ================================================================ -->
+<span class="option-label">Option A — Dedicated "Fencers" admin view</span>
+<p class="option-desc">New sidebar item "Fencers" in admin section. Table with inline edit. Filter: All / Unconfirmed / Missing birth year. Search by name.</p>
+<!-- ================================================================ -->
+
+<div style="display: flex; gap: 16px; align-items: flex-start;">
+
+  <!-- Sidebar -->
+  <div class="sidebar-mockup">
+    <div class="nav-item">🏆 Ranklist</div>
+    <div class="nav-item">📅 Calendar</div>
+    <div class="nav-section">Admin</div>
+    <div class="nav-item">Seasons</div>
+    <div class="nav-item">Events</div>
+    <div class="nav-item">Identities</div>
+    <div class="nav-item active">Fencers</div>
+  </div>
+
+  <!-- Main content -->
+  <div class="fencer-review" style="flex: 1;">
+    <div class="review-header">
+      <h2>🤺 Fencers <span class="unconfirmed-badge">23 unconfirmed</span></h2>
+    </div>
+
+    <div class="review-filter">
+      <select>
+        <option selected>Unconfirmed birth year</option>
+        <option>Missing birth year</option>
+        <option>All fencers</option>
+      </select>
+      <input type="text" placeholder="Search by name...">
+    </div>
+
+    <table class="review-table">
+      <thead>
+        <tr>
+          <th>Surname</th>
+          <th>First name</th>
+          <th>Gender</th>
+          <th>Birth year</th>
+          <th>Status</th>
+          <th>Club</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Row 1: Estimated — one-click confirm -->
+        <tr>
+          <td class="name-cell">SZKLAR</td>
+          <td>Bożena</td>
+          <td><span class="gender-badge">F</span></td>
+          <td>1968</td>
+          <td><span class="unconfirmed-badge">Estimated</span></td>
+          <td>AZS Wrocław</td>
+          <td class="actions-cell">
+            <button class="action-btn confirm">✓ Confirm</button>
+            <button class="action-btn cancel">Edit</button>
+          </td>
+        </tr>
+
+        <!-- Row 2: Estimated — being edited (inline) -->
+        <tr class="edit-row">
+          <td class="name-cell">NOWAK</td>
+          <td>Adam</td>
+          <td><span class="gender-badge">M</span></td>
+          <td><input class="field-input" type="number" value="1975" style="width:70px"></td>
+          <td><span class="unconfirmed-badge">Estimated</span> → <span class="confirmed-badge">Exact</span></td>
+          <td>—</td>
+          <td class="actions-cell">
+            <button class="action-btn save">Save</button>
+            <button class="action-btn cancel">Cancel</button>
+          </td>
+        </tr>
+
+        <!-- Row 3: Missing birth year -->
+        <tr>
+          <td class="name-cell">WIŚNIEWSKI</td>
+          <td>Piotr</td>
+          <td><span class="gender-badge">M</span></td>
+          <td>—</td>
+          <td><span class="missing-badge">Missing</span></td>
+          <td>—</td>
+          <td class="actions-cell">
+            <button class="action-btn cancel">Edit</button>
+          </td>
+        </tr>
+
+        <!-- Row 4: Already confirmed (shown in "All" filter) -->
+        <tr>
+          <td class="name-cell">KOWALSKI</td>
+          <td>Jan</td>
+          <td><span class="gender-badge">M</span></td>
+          <td>1970</td>
+          <td><span class="confirmed-badge">Exact</span></td>
+          <td>WKS Kraków</td>
+          <td class="actions-cell">
+            <button class="action-btn cancel">Edit</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<hr class="section-sep">
+
+
+<!-- ================================================================ -->
+<span class="option-label">Option B — Tab inside Identity Manager</span>
+<p class="option-desc">New "Fencer review" tab alongside the existing match candidate queue. Reuses card layout. Same sidebar position (Identities).</p>
+<!-- ================================================================ -->
+
+<div style="background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 16px;">
+  <h2>🇬🇧 Identities</h2>
+
+  <div class="tab-bar">
+    <button class="tab-btn">Match candidates</button>
+    <button class="tab-btn active">Fencer review <span class="unconfirmed-badge" style="margin-left:4px">23</span></button>
+  </div>
+
+  <div class="review-filter" style="margin-bottom: 12px;">
+    <select>
+      <option selected>Unconfirmed birth year</option>
+      <option>Missing birth year</option>
+      <option>All fencers</option>
+    </select>
+    <input type="text" placeholder="Search by name..." style="padding:6px 10px; border:1px solid #ccc; border-radius:4px; font-size:13px; width:200px;">
+  </div>
+
+  <!-- Card: Estimated, collapsed -->
+  <div class="candidate-card">
+    <div class="card-header">
+      <div class="header-left">
+        <span class="fencer-name">SZKLAR Bożena</span>
+        <span class="fencer-detail">AZS Wrocław</span>
+      </div>
+      <div class="header-right">
+        <span class="gender-badge">F</span>
+        <span class="fencer-detail">1968</span>
+        <span class="unconfirmed-badge">Estimated</span>
+        <button class="action-btn confirm" style="font-size:11px; padding:3px 10px">✓ Confirm</button>
+        <span style="color:#888; font-size:12px; cursor:pointer;">▼</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card: Missing, expanded (editing) -->
+  <div class="candidate-card editing">
+    <div class="card-header">
+      <div class="header-left">
+        <span class="fencer-name">WIŚNIEWSKI Piotr</span>
+      </div>
+      <div class="header-right">
+        <span class="gender-badge">M</span>
+        <span class="missing-badge">Missing</span>
+        <span style="color:#888; font-size:12px; cursor:pointer;">▲</span>
+      </div>
+    </div>
+    <div class="edit-form">
+      <div class="field-row">
+        <label class="form-field">
+          <span class="field-label">Surname</span>
+          <input class="field-input surname" value="WIŚNIEWSKI" style="width:100%">
+        </label>
+        <label class="form-field">
+          <span class="field-label">First name</span>
+          <input class="field-input" value="Piotr" style="width:100%">
+        </label>
+        <label class="form-field">
+          <span class="field-label">Gender</span>
+          <select class="field-input" style="width:100%"><option selected>M</option><option>F</option></select>
+        </label>
+      </div>
+      <div class="field-row">
+        <label class="form-field">
+          <span class="field-label">Birth year</span>
+          <input class="field-input" type="number" placeholder="e.g. 1970" style="width:100%">
+        </label>
+        <label class="form-field">
+          <span class="field-label">Birth year accuracy</span>
+          <select class="field-input" style="width:100%">
+            <option selected>Exact (verified)</option>
+            <option>Estimated (from age group)</option>
+          </select>
+        </label>
+        <label class="form-field">
+          <span class="field-label">Club</span>
+          <input class="field-input" placeholder="e.g. AZS Wrocław" style="width:100%">
+        </label>
+      </div>
+      <div class="form-actions">
+        <button class="action-btn save">Save</button>
+        <button class="action-btn cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card: Estimated, collapsed -->
+  <div class="candidate-card">
+    <div class="card-header">
+      <div class="header-left">
+        <span class="fencer-name">NOWAK Adam</span>
+      </div>
+      <div class="header-right">
+        <span class="gender-badge">M</span>
+        <span class="fencer-detail">1975</span>
+        <span class="unconfirmed-badge">Estimated</span>
+        <button class="action-btn confirm" style="font-size:11px; padding:3px 10px">✓ Confirm</button>
+        <span style="color:#888; font-size:12px; cursor:pointer;">▼</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

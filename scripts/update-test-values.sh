@@ -45,21 +45,9 @@ if [ -n "$TRACZ" ]; then
   echo "  R.9 TRACZ V3: $TRACZ"
 fi
 
-# R.10: DROBIŃSKI rolling (test runs AFTER R.6 restores PPW5 to SCHEDULED)
-# Must compute in SCHEDULED state, not base state
-DROBINSKI=$(val "
-  ALTER TABLE tbl_event DISABLE TRIGGER trg_event_transition;
-  UPDATE tbl_event SET enum_status = 'SCHEDULED' WHERE txt_code = 'PPW5-2025-2026';
-  SELECT total_score FROM fn_ranking_ppw('EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'), TRUE)
-  WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DROBIŃSKI' AND txt_first_name = 'Leszek');
-")
-# Restore
-$PSQL -c "UPDATE tbl_event SET enum_status = 'COMPLETED' WHERE txt_code = 'PPW5-2025-2026'; ALTER TABLE tbl_event ENABLE TRIGGER trg_event_transition;" > /dev/null 2>&1
-if [ -n "$DROBINSKI" ]; then
-  sed -i '' "s/196\.78/${DROBINSKI}/g" supabase/tests/09_rolling_score.sql
-  echo "  R.10 DROBIŃSKI: $DROBINSKI"
-fi
+# R.10: DROBIŃSKI rolling — value depends on test's own state manipulation
+# (PPW5 set to SCHEDULED during test). Cannot be computed from base state.
+# Value is stable: 196.78 when PPW5=SCHEDULED. Only update if base data changes.
 
 # R.11: ATANASSOW after PPW5 deletion (non-rolling scores only: PPW1+PPW3+PPW4)
 ATANASSOW_NO_PPW5=$(val "SELECT COALESCE(SUM(r.num_final_score), 0) FROM tbl_result r JOIN tbl_tournament t ON t.id_tournament = r.id_tournament JOIN tbl_event e ON e.id_event = t.id_event WHERE r.id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ATANASSOW' AND txt_first_name = 'Aleksander') AND e.id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026') AND t.enum_weapon = 'EPEE' AND t.enum_gender = 'M' AND t.enum_type = 'PPW' AND e.txt_code != 'PPW5-2025-2026'")

@@ -149,7 +149,7 @@ SELECT is(
 -- R.10 — p_rolling=TRUE, carryover from PPW5-V2-M-EPEE-2024-2025
 -- DROBIŃSKI has PPW5 result in 2024-25 (84.29) carried over to uncompleted PPW5 position
 -- Current: PPW1=12.08 + PPW2=65.67 + PPW3=23.43 + PPW4=23.39 = 124.57
--- Carried: PPW5=84.29 → best-4 = 65.67+84.29+23.43+23.39 = 196.78
+-- Carried: PPW5=84.29 → best-4 = 65.67+84.29+23.43+23.39 = ALTERTABLEUPDATE1196.78
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
     'EPEE', 'M', 'V2',
