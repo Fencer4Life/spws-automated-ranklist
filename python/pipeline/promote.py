@@ -149,15 +149,31 @@ def write_prod_results(
     query_fn=None,
     prod_ref: str | None = None,
     access_token: str | None = None,
+    participant_count: int | None = None,
 ) -> dict:
-    """Ingest results into PROD tournament. Returns summary."""
+    """Ingest results into PROD tournament. Returns summary.
+
+    `participant_count` (optional) is forwarded to the 3-param RPC so PROD
+    records the actual tournament field size. Required for international
+    tournaments under ADR-038 where the POL-only payload is smaller than
+    the real field — otherwise PROD scoring deflates. Falls back to
+    jsonb_array_length(payload) when NULL (pre-ADR-038 behavior).
+    """
     if query_fn is None:
         query_fn = lambda sql: _management_query(prod_ref, access_token, sql)
 
     results_json = json.dumps(results).replace("'", "''")
-    rows = query_fn(
-        f"SELECT fn_ingest_tournament_results({tournament_id}, '{results_json}'::JSONB)"
-    )
+    if participant_count is not None:
+        rpc_sql = (
+            f"SELECT fn_ingest_tournament_results("
+            f"{tournament_id}, '{results_json}'::JSONB, {int(participant_count)})"
+        )
+    else:
+        rpc_sql = (
+            f"SELECT fn_ingest_tournament_results("
+            f"{tournament_id}, '{results_json}'::JSONB)"
+        )
+    rows = query_fn(rpc_sql)
     return rows[0]["fn_ingest_tournament_results"]
 
 
@@ -203,11 +219,14 @@ def promote_event(
                 query_fn=prod_query_fn,
             )
 
-            # Ingest results
+            # Ingest results — thread CERT's int_participant_count so PROD
+            # records the actual field size, not the POL-filtered payload
+            # length (ADR-038 deflation fix).
             summary = write_prod_results(
                 tournament_id=prod_tid,
                 results=results,
                 query_fn=prod_query_fn,
+                participant_count=tourn.get("int_participant_count"),
             )
 
             # Copy url_results if set on CERT

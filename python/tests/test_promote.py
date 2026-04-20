@@ -125,6 +125,102 @@ class TestPromoteEvent:
         assert summary["inserted"] == 2
         mock_query.assert_called_once()
 
+    def test_write_prod_results_carries_participant_count(self):
+        """9.206a write_prod_results passes participant_count to PROD RPC.
+
+        Regression guard for CERT→PROD promotion deflation: after ADR-038
+        shrank the payload to POL-only rows, the 3rd RPC argument
+        (p_participant_count) must carry CERT's actual field size to PROD.
+        Without it, PROD falls back to jsonb_array_length(payload) and
+        deflates scoring on the production ranklist.
+        """
+        from python.pipeline.promote import write_prod_results
+
+        recorded_sql: list[str] = []
+
+        def fake_query(sql: str):
+            recorded_sql.append(sql)
+            return [{"fn_ingest_tournament_results": {"inserted": 2, "scored": True}}]
+
+        results = [
+            {"id_fencer": 1, "int_place": 1, "txt_scraped_name": "KOWALSKI Jan",
+             "num_confidence": 99, "enum_match_status": "AUTO_MATCHED"},
+            {"id_fencer": 2, "int_place": 2, "txt_scraped_name": "NOWAK Piotr",
+             "num_confidence": 97, "enum_match_status": "AUTO_MATCHED"},
+        ]
+        write_prod_results(
+            tournament_id=200, results=results, query_fn=fake_query,
+            participant_count=31,
+        )
+        assert len(recorded_sql) == 1
+        sql = recorded_sql[0]
+        # RPC must be called with 3 positional args: (tid, payload, participant_count)
+        assert "fn_ingest_tournament_results(200," in sql, \
+            f"expected tournament_id as first arg; got SQL:\n{sql}"
+        assert sql.rstrip().endswith(", 31)") or ", 31)" in sql, \
+            f"participant_count=31 must be passed to PROD RPC; got SQL:\n{sql}"
+
+    def test_promote_event_threads_cert_participant_count_to_prod(self):
+        """9.206b promote_event must pass CERT's int_participant_count to PROD.
+
+        End-to-end guard: read_cert_event already captures
+        int_participant_count per tournament; promote_event must forward
+        that value so PROD scoring matches CERT scoring exactly.
+        """
+        from python.pipeline.promote import promote_event
+
+        cert_data = {
+            "event": {
+                "id_event": 54, "txt_code": "PEW7-2025-2026",
+                "txt_name": "EVF Circuit Salzburg",
+                "id_season": 3, "id_organizer": 2,
+                "dt_start": "2026-04-18", "enum_status": "IN_PROGRESS",
+            },
+            "tournaments": [
+                {"id_tournament": 101, "txt_code": "PEW7-V2-M-EPEE-2025-2026",
+                 "enum_type": "PEW", "enum_weapon": "EPEE", "enum_gender": "M",
+                 "enum_age_category": "V2", "dt_tournament": "2026-04-18",
+                 "int_participant_count": 31, "url_results": "https://dart/x"},
+            ],
+            "results": {
+                101: [
+                    {"id_fencer": 1, "int_place": 1, "txt_scraped_name": "X Y",
+                     "num_confidence": 99, "enum_match_status": "AUTO_MATCHED"},
+                    {"id_fencer": 2, "int_place": 2, "txt_scraped_name": "A B",
+                     "num_confidence": 97, "enum_match_status": "AUTO_MATCHED"},
+                    {"id_fencer": 3, "int_place": 3, "txt_scraped_name": "C D",
+                     "num_confidence": 95, "enum_match_status": "AUTO_MATCHED"},
+                ],
+            },
+            "fencers": {},
+        }
+
+        recorded_sql: list[str] = []
+
+        def fake_prod_query(sql: str):
+            recorded_sql.append(sql)
+            if "fn_find_or_create_tournament" in sql:
+                return [{"fn_find_or_create_tournament": 200}]
+            if "fn_ingest_tournament_results" in sql:
+                return [{"fn_ingest_tournament_results":
+                         {"inserted": 3, "scored": True}}]
+            return []
+
+        promote_event(
+            cert_data=cert_data, prod_event_id=10,
+            prod_query_fn=fake_prod_query,
+        )
+
+        ingest_calls = [s for s in recorded_sql
+                        if "fn_ingest_tournament_results" in s]
+        assert len(ingest_calls) == 1, \
+            "promote_event should call the RPC once per tournament"
+        # N=31 must reach PROD, NOT 3 (the payload length)
+        assert ", 31)" in ingest_calls[0], (
+            "promote_event must thread CERT int_participant_count (31) "
+            f"into PROD RPC. Got:\n{ingest_calls[0]}"
+        )
+
     def test_reports_per_tournament_results(self):
         """9.207 promote_event reports per-tournament success/failure."""
         from python.pipeline.promote import promote_event
