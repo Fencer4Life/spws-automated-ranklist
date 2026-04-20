@@ -57,8 +57,8 @@
     "schema_fingerprint": "4c714cb220468e9ca48705d4f4e4e8a4"
   },
   "prod": {
-    "last_updated": "2026-04-20T17:26:47Z",
-    "last_sha": "4b6d3596ba8dfcf97eb70a55af29bcc38923cdbf",
+    "last_updated": "2026-04-20T18:43:55Z",
+    "last_sha": "45e854acec3439de07946b35454f4bc89454cefc",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -107,8 +107,10 @@
       "20260412000003_undismiss_match.sql",
       "20260412000004_fn_update_fencer_birth_year.sql",
       "20260412000005_cross_gender_scoring.sql",
-      "20260412000006_ingest_participant_count.sql"
+      "20260412000006_ingest_participant_count.sql",
+      "20260420000001_evf_import_urls.sql",
+      "20260420000002_evf_refresh_urls.sql"
     ],
-    "schema_fingerprint": "6942d70f4b453154d479e3edb2ed5c26"
+    "schema_fingerprint": "4c714cb220468e9ca48705d4f4e4e8a4"
   }
 }
