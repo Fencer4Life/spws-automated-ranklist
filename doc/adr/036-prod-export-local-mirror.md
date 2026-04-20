@@ -134,6 +134,10 @@ cd frontend && npm test
 - Timestamped dumps provide rollback snapshots
 - Old per-category seed files (`supabase/data/`, `seed.sql`, `seed_tbl_fencer.sql`) replaced by single file
 
+## Full Operations Guide
+
+See **`doc/cicd-operations-manual.md` §11 (Environment Sync)** for complete step-by-step procedures for all sync operations (PROD → local, PROD → CERT, data audit).
+
 ## Related ADRs
 
 - **ADR-027** (Full-Season Seed Export) — superseded by this ADR for local mirroring
