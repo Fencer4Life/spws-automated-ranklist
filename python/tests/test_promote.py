@@ -153,3 +153,124 @@ class TestPromoteEvent:
         assert len(result["errors"]) == 0
 
     # 9.208 moved to test_export_seed.py (ADR-027 replaces append-based export)
+
+
+# =============================================================================
+# prom.5–prom.7 — Calendar-mode CERT→PROD promotion (ADR-026 amendment)
+# =============================================================================
+
+
+class TestPromoteCalendar:
+    """Plan test IDs prom.5–prom.7 — see doc/evf_calendar_promote_plan.md."""
+
+    def test_calendar_mode_imports_new_events_on_prod(self):
+        """prom.5: calendar mode calls fn_import_evf_events on PROD for CERT-only events."""
+        from python.pipeline.promote import promote_calendar
+
+        cert_query_calls: list[str] = []
+        prod_query_calls: list[str] = []
+
+        def cert_query(sql: str):
+            cert_query_calls.append(sql)
+            if "bool_active = TRUE" in sql:
+                return [{"txt_code": "SPWS-2025-2026", "dt_start": "2025-08-01",
+                         "dt_end": "2026-07-15", "id_season": 3}]
+            # EVF events on CERT
+            return [
+                {"txt_code": "PEW-NEWCITY-2025-2026", "txt_name": "EVF Circuit New City",
+                 "dt_start": "2026-06-15", "dt_end": "2026-06-15",
+                 "txt_location": "New City", "txt_country": "AUT",
+                 "txt_venue_address": "Street 1", "url_event": "https://evf/new",
+                 "url_invitation": "https://evf/inv.pdf", "url_registration": None,
+                 "dt_registration_deadline": None, "num_entry_fee": 50.0,
+                 "txt_entry_fee_currency": "EUR", "weapons": ["EPEE", "FOIL"],
+                 "is_team": False},
+            ]
+
+        def prod_query(sql: str):
+            prod_query_calls.append(sql)
+            if "bool_active = TRUE" in sql:
+                return [{"txt_code": "SPWS-2025-2026", "dt_start": "2025-08-01",
+                         "dt_end": "2026-07-15", "id_season": 5}]
+            if "SELECT id_event, txt_code FROM tbl_event" in sql:
+                # PROD has nothing matching yet
+                return []
+            # RPC call return (SQL uses `AS r` alias)
+            return [{"r": {"created": 1, "skipped": 0}}]
+
+        summary = promote_calendar(
+            cert_query_fn=cert_query,
+            prod_query_fn=prod_query,
+            dry_run=False,
+        )
+        # Expect fn_import_evf_events called on PROD, NOT fn_refresh (no matches)
+        import_calls = [s for s in prod_query_calls if "fn_import_evf_events" in s]
+        refresh_calls = [s for s in prod_query_calls if "fn_refresh_evf_event_urls" in s]
+        assert len(import_calls) == 1, f"expected 1 import call, got {len(import_calls)}"
+        assert len(refresh_calls) == 0, "no refresh expected (no existing events)"
+        assert "PEW-NEWCITY-2025-2026" in import_calls[0]
+        assert summary["imported"] == 1
+        assert summary["refreshed"] == 0
+
+    def test_calendar_mode_refreshes_existing_events_on_prod(self):
+        """prom.6: calendar mode calls fn_refresh_evf_event_urls for events present on both sides."""
+        from python.pipeline.promote import promote_calendar
+
+        prod_query_calls: list[str] = []
+
+        def cert_query(sql: str):
+            if "bool_active = TRUE" in sql:
+                return [{"txt_code": "SPWS-2025-2026", "dt_start": "2025-08-01",
+                         "dt_end": "2026-07-15", "id_season": 3}]
+            return [
+                {"txt_code": "PEW1-2025-2026", "txt_name": "EVF Circuit Budapest",
+                 "dt_start": "2025-09-20", "dt_end": "2025-09-20",
+                 "txt_location": "Budapest", "txt_country": "HUN",
+                 "txt_venue_address": "Street 1", "url_event": "https://e/budapest",
+                 "url_invitation": "https://e/inv.pdf", "url_registration": "https://reg",
+                 "dt_registration_deadline": None, "num_entry_fee": 45.0,
+                 "txt_entry_fee_currency": "EUR", "weapons": ["EPEE", "FOIL", "SABRE"],
+                 "is_team": False},
+            ]
+
+        def prod_query(sql: str):
+            prod_query_calls.append(sql)
+            if "bool_active = TRUE" in sql:
+                return [{"txt_code": "SPWS-2025-2026", "dt_start": "2025-08-01",
+                         "dt_end": "2026-07-15", "id_season": 5}]
+            if "SELECT id_event, txt_code FROM tbl_event" in sql:
+                return [{"id_event": 99, "txt_code": "PEW1-2025-2026"}]
+            return [{"r": {"touched": 1, "refreshed": 1}}]
+
+        summary = promote_calendar(
+            cert_query_fn=cert_query,
+            prod_query_fn=prod_query,
+            dry_run=False,
+        )
+        import_calls = [s for s in prod_query_calls if "fn_import_evf_events" in s]
+        refresh_calls = [s for s in prod_query_calls if "fn_refresh_evf_event_urls" in s]
+        assert len(refresh_calls) == 1, f"expected 1 refresh call, got {len(refresh_calls)}"
+        assert len(import_calls) == 0, "no import expected (event already on PROD)"
+        # Refresh payload must reference PROD id_event (99), NOT CERT id
+        assert '"id_event": 99' in refresh_calls[0] or "99" in refresh_calls[0]
+        assert summary["imported"] == 0
+        assert summary["refreshed"] == 1
+
+    def test_calendar_mode_cli_rejects_event_arg(self, monkeypatch):
+        """prom.7: `promote --mode calendar --event PEW1` exits non-zero with a clear error."""
+        import sys
+        import io
+        from python.pipeline import promote
+
+        monkeypatch.setenv("SUPABASE_ACCESS_TOKEN", "x")
+        monkeypatch.setenv("SUPABASE_CERT_REF", "cert")
+        monkeypatch.setenv("SUPABASE_PROD_REF", "prod")
+        monkeypatch.setattr(sys, "argv", ["promote", "--mode", "calendar", "--event", "PEW1"])
+
+        captured = io.StringIO()
+        monkeypatch.setattr(sys, "stderr", captured)
+        with pytest.raises(SystemExit) as excinfo:
+            promote.main()
+        assert excinfo.value.code != 0
+        msg = captured.getvalue().lower()
+        assert "calendar" in msg and "event" in msg

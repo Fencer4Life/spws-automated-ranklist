@@ -10,6 +10,12 @@ on:
 permissions:
   contents: write
 
+# Serialise PROD writes with the evf-sync calendar-promote job.
+# cancel-in-progress: false so partial writes never abort mid-flight.
+concurrency:
+  group: prod-write
+  cancel-in-progress: false
+
 jobs:
   promote:
     name: CERT → PROD Promotion

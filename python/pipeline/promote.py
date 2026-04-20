@@ -1,11 +1,17 @@
 """
-CERT → PROD event promotion (ADR-026).
+CERT → PROD promotion (ADR-026 + 2026-04-20 amendment).
 
-Reads event data from CERT, writes to PROD via Supabase Management API.
-Per-tournament error handling — one failure doesn't block the rest.
+Two modes:
 
-Usage:
-    python -m python.pipeline.promote --event PPW4 [--dry-run]
+* ``--mode event --event PPW4``  (default — original contract, per-event,
+  promotes tournaments + results).
+* ``--mode calendar``            (ADR-026 amendment — propagates EVF calendar:
+  new events + URL enrichment via the idempotent RPCs ``fn_import_evf_events``
+  and ``fn_refresh_evf_event_urls``. Does NOT touch tournaments or results).
+
+Calendar mode shares the ``prod-write`` GitHub Actions concurrency group with
+event-promote so the two never overlap. The RPCs' idempotency is the backstop
+if the group is bypassed (e.g. local runs).
 """
 
 from __future__ import annotations
@@ -234,11 +240,176 @@ def promote_event(
     }
 
 
+def _get_active_season(query_fn) -> dict | None:
+    """Read active season row via the given query function."""
+    rows = query_fn(
+        "SELECT txt_code, dt_start::TEXT, dt_end::TEXT, id_season "
+        "FROM tbl_season WHERE bool_active = TRUE"
+    )
+    return rows[0] if rows else None
+
+
+def _read_cert_evf_events(query_fn, id_season: int) -> list[dict]:
+    """Fetch EVF events in the active season from CERT with all URL / enrichment fields."""
+    return query_fn(
+        "SELECT e.txt_code, e.txt_name, "
+        "e.dt_start::TEXT AS dt_start, e.dt_end::TEXT AS dt_end, "
+        "COALESCE(e.txt_location,'') AS txt_location, "
+        "COALESCE(e.txt_country,'') AS txt_country, "
+        "COALESCE(e.txt_venue_address,'') AS txt_venue_address, "
+        "e.url_event, e.url_invitation, e.url_registration, "
+        "e.dt_registration_deadline::TEXT AS dt_registration_deadline, "
+        "e.num_entry_fee, "
+        "COALESCE(e.txt_entry_fee_currency,'') AS txt_entry_fee_currency, "
+        "(SELECT COALESCE(ARRAY_AGG(w::TEXT), ARRAY[]::TEXT[]) "
+        "   FROM UNNEST(e.arr_weapons) w) AS weapons, "
+        "EXISTS(SELECT 1 FROM tbl_tournament t WHERE t.id_event = e.id_event "
+        "  AND t.enum_type IN ('MEW','MSW','PSW')) AS is_team "
+        f"FROM tbl_event e WHERE e.id_season = {id_season} "
+        "AND (e.txt_code LIKE 'PEW%' OR e.txt_code LIKE 'MEW%') "
+        "ORDER BY e.dt_start"
+    )
+
+
+def _build_import_payload(evt: dict) -> dict:
+    """Shape a CERT EVF event row into the JSONB payload fn_import_evf_events expects."""
+    return {
+        "code": evt["txt_code"],
+        "name": evt.get("txt_name") or "",
+        "dt_start": evt.get("dt_start") or "",
+        "dt_end": evt.get("dt_end") or evt.get("dt_start") or "",
+        "location": evt.get("txt_location") or "",
+        "country": evt.get("txt_country") or "",
+        "address": evt.get("txt_venue_address") or "",
+        "weapons": evt.get("weapons") or [],
+        "is_team": bool(evt.get("is_team", False)),
+        "url_event": evt.get("url_event") or "",
+        "url_invitation": evt.get("url_invitation") or "",
+        "url_registration": evt.get("url_registration") or "",
+        "dt_registration_deadline": evt.get("dt_registration_deadline") or "",
+        "fee": "" if evt.get("num_entry_fee") is None else str(evt["num_entry_fee"]),
+        "fee_currency": evt.get("txt_entry_fee_currency") or "",
+    }
+
+
+def _build_refresh_payload(prod_id_event: int, evt: dict) -> dict:
+    """Shape a refresh payload targeting an existing PROD event by id_event."""
+    return {
+        "id_event": prod_id_event,
+        "url_event": evt.get("url_event") or "",
+        "url_invitation": evt.get("url_invitation") or "",
+        "url_registration": evt.get("url_registration") or "",
+        "dt_registration_deadline": evt.get("dt_registration_deadline") or "",
+        "address": evt.get("txt_venue_address") or "",
+        "fee": "" if evt.get("num_entry_fee") is None else str(evt["num_entry_fee"]),
+        "fee_currency": evt.get("txt_entry_fee_currency") or "",
+        "weapons": evt.get("weapons") or [],
+    }
+
+
+def promote_calendar(
+    cert_query_fn=None,
+    prod_query_fn=None,
+    cert_ref: str | None = None,
+    prod_ref: str | None = None,
+    access_token: str | None = None,
+    dry_run: bool = False,
+) -> dict:
+    """Propagate EVF calendar (new events + URL enrichment) from CERT to PROD.
+
+    Reuses the idempotent RPCs ``fn_import_evf_events`` (insert by code, skip
+    existing) and ``fn_refresh_evf_event_urls`` (fill NULLs only, never
+    overwrites admin edits).
+
+    Returns ``{"imported": int, "refreshed": int, "new_codes": [...],
+    "refreshed_codes": [...]}``.
+    """
+    if cert_query_fn is None:
+        cert_query_fn = lambda sql: _management_query(cert_ref, access_token, sql)
+    if prod_query_fn is None:
+        prod_query_fn = lambda sql: _management_query(prod_ref, access_token, sql)
+
+    # Active season must exist on both sides (PROD is the driver — what PROD
+    # thinks is active dictates which window we care about).
+    prod_season = _get_active_season(prod_query_fn)
+    if not prod_season:
+        raise RuntimeError("No active season on PROD — cannot promote calendar")
+    cert_season = _get_active_season(cert_query_fn)
+    if not cert_season:
+        raise RuntimeError("No active season on CERT — cannot promote calendar")
+
+    # Read EVF events on both sides for the active season.
+    cert_events = _read_cert_evf_events(cert_query_fn, cert_season["id_season"])
+    prod_existing = prod_query_fn(
+        f"SELECT id_event, txt_code FROM tbl_event "
+        f"WHERE id_season = {prod_season['id_season']} "
+        f"AND (txt_code LIKE 'PEW%' OR txt_code LIKE 'MEW%')"
+    )
+    prod_by_code = {row["txt_code"]: row["id_event"] for row in prod_existing}
+
+    # Diff.
+    new_events: list[dict] = []
+    refresh_events: list[tuple[int, dict]] = []
+    for evt in cert_events:
+        code = evt["txt_code"]
+        if code in prod_by_code:
+            refresh_events.append((prod_by_code[code], evt))
+        else:
+            new_events.append(evt)
+
+    summary = {
+        "imported": 0,
+        "refreshed": 0,
+        "new_codes": [e["txt_code"] for e in new_events],
+        "refreshed_codes": [e["txt_code"] for _, e in refresh_events],
+    }
+
+    if dry_run:
+        return summary
+
+    # Import new events via fn_import_evf_events on PROD.
+    if new_events:
+        payload = [_build_import_payload(e) for e in new_events]
+        payload_json = json.dumps(payload).replace("'", "''")
+        result = prod_query_fn(
+            f"SELECT fn_import_evf_events('{payload_json}'::JSONB, "
+            f"{prod_season['id_season']}) AS r"
+        )
+        rpc = (result[0].get("r") if result else {}) or {}
+        if isinstance(rpc, str):
+            rpc = json.loads(rpc)
+        summary["imported"] = int(rpc.get("created", len(new_events)))
+
+    # Refresh URL fields on already-present events.
+    if refresh_events:
+        payload = [_build_refresh_payload(pid, e) for pid, e in refresh_events]
+        payload_json = json.dumps(payload).replace("'", "''")
+        result = prod_query_fn(
+            f"SELECT fn_refresh_evf_event_urls('{payload_json}'::JSONB) AS r"
+        )
+        rpc = (result[0].get("r") if result else {}) or {}
+        if isinstance(rpc, str):
+            rpc = json.loads(rpc)
+        summary["refreshed"] = int(rpc.get("refreshed", 0))
+
+    return summary
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Promote event from CERT to PROD")
-    parser.add_argument("--event", required=True, help="Event code prefix (e.g. PPW4)")
-    parser.add_argument("--dry-run", action="store_true", help="Read CERT but don't write PROD")
+    parser = argparse.ArgumentParser(description="Promote CERT → PROD (ADR-026)")
+    parser.add_argument("--mode", choices=("event", "calendar"), default="event",
+                        help="event: single-event per-result promotion (default). "
+                             "calendar: EVF calendar + URL refresh (ADR-026 amendment).")
+    parser.add_argument("--event", default=None,
+                        help="Event code prefix (e.g. PPW4) — required when --mode event")
+    parser.add_argument("--dry-run", action="store_true", help="Read but don't write PROD")
     args = parser.parse_args()
+
+    if args.mode == "event" and not args.event:
+        parser.error("--event is required when --mode=event")
+    if args.mode == "calendar" and args.event:
+        parser.error("--event is not accepted when --mode=calendar (calendar promotes "
+                     "all EVF events for the active season)")
 
     access_token = os.environ["SUPABASE_ACCESS_TOKEN"]
     cert_ref = os.environ["SUPABASE_CERT_REF"]
@@ -253,13 +424,41 @@ def main() -> None:
             try:
                 httpx.post(
                     f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                    data={"chat_id": chat_id, "text": msg},
+                    data={"chat_id": chat_id, "text": msg, "parse_mode": "HTML"},
                     timeout=10,
                 )
             except Exception:
                 pass
 
-    # Read from CERT
+    # -------------------------- Calendar mode ---------------------------------
+    if args.mode == "calendar":
+        print(f"EVF calendar promote CERT ({cert_ref}) → PROD ({prod_ref})"
+              + (" [DRY RUN]" if args.dry_run else ""))
+        try:
+            summary = promote_calendar(
+                cert_ref=cert_ref,
+                prod_ref=prod_ref,
+                access_token=access_token,
+                dry_run=args.dry_run,
+            )
+        except Exception as exc:
+            notify(f"<b>EVF Calendar → PROD FAILED</b>\n<pre>{str(exc)[:500]}</pre>")
+            raise
+        print(f"  Imported: {summary['imported']} new event(s)")
+        print(f"  Refreshed: {summary['refreshed']} existing event(s)")
+        if summary["new_codes"]:
+            print("  New: " + ", ".join(summary["new_codes"]))
+        if summary["refreshed_codes"]:
+            print("  Refreshed: " + ", ".join(summary["refreshed_codes"]))
+        if not args.dry_run:
+            notify(
+                f"<b>EVF Calendar → PROD</b>\n"
+                f"Imported: <b>{summary['imported']}</b> new event(s)\n"
+                f"Refreshed: <b>{summary['refreshed']}</b> existing event(s)"
+            )
+        return
+
+    # -------------------------- Event mode (original ADR-026) -----------------
     print(f"Reading event '{args.event}' from CERT ({cert_ref})...")
     cert_data = read_cert_event(args.event, cert_ref=cert_ref, access_token=access_token)
     if cert_data is None:
