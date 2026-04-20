@@ -9,6 +9,7 @@
 
     <div data-field="event-list" class="event-list">
       {#each filteredEvents as event}
+        {@const displayStatus = getEventDisplayStatus(event.enum_status, event.dt_end, event.dt_start)}
         <div class="event-card">
           {#if showForm && editingId === event.id_event}
             <div data-field="event-form" class="event-form">
@@ -68,7 +69,7 @@
             {#if event.url_event}
               <span class="event-cell"><a class="event-url-link" href={event.url_event} target="_blank" rel="noopener" title={event.url_event}>🔗</a></span>
             {/if}
-            <span data-field="event-status-badge" class="event-cell status-badge {statusClass(event.enum_status)}">{event.enum_status}</span>
+            <span data-field="event-status-badge" class="event-cell status-badge {displayStatus.cssClass}">{t(displayStatus.labelKey)}</span>
             <span data-field="tournament-count" class="event-cell tournament-count-badge">{tournamentsForEvent(event.id_event).length}</span>
             <span class="event-cell"></span>
             <span class="event-cell actions">
@@ -219,6 +220,7 @@
 <script lang="ts">
   import type { CalendarEvent, Season, Organizer, WeaponType, Tournament, TournamentType, GenderType, AgeCategory } from '../lib/types'
   import { t } from '../lib/locale.svelte'
+  import { getEventDisplayStatus } from '../lib/eventStatus'
 
   const ALL_STATUSES: string[] = ['PLANNED', 'SCHEDULED', 'CHANGED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
 
@@ -387,18 +389,6 @@
       ? events.filter(e => e.id_season === selectedSeasonId)
       : events
   )
-
-  function statusClass(status: string): string {
-    switch (status) {
-      case 'COMPLETED': return 'status-completed'
-      case 'SCHEDULED': return 'status-scheduled'
-      case 'PLANNED': return 'status-planned'
-      case 'CANCELLED': return 'status-cancelled'
-      case 'IN_PROGRESS': return 'status-in-progress'
-      case 'CHANGED': return 'status-changed'
-      default: return ''
-    }
-  }
 
   function openCreateForm() {
     editingId = null
@@ -615,8 +605,9 @@
   .status-scheduled { background: #cce5ff; color: #004085; }
   .status-planned { background: #e2e3e5; color: #383d41; }
   .status-cancelled { background: #f8d7da; color: #721c24; }
-  .status-in-progress { background: #fff3cd; color: #856404; }
+  .status-inprogress { background: #fff3cd; color: #856404; }
   .status-changed { background: #ffe0cc; color: #8a4500; }
+  .status-awaiting { background: #fef3c7; color: #92400e; }
   .event-url-link {
     text-decoration: none;
     font-size: 14px;

@@ -115,6 +115,23 @@ describe('CalendarView (T8.5)', () => {
     expect(badge!.classList.contains('status-completed')).toBe(true)
   })
 
+  // 8.41b — PLANNED event with past dt_end renders amber "Awaiting results" badge
+  it('renders amber awaiting-results badge for past PLANNED events', () => {
+    const pastPlanned = makeEvent({
+      id_event: 99,
+      txt_code: 'PP99-2025-2026',
+      txt_name: 'Past event awaiting results',
+      dt_start: '2000-01-01',
+      dt_end: '2000-01-02',
+      enum_status: 'PLANNED',
+    })
+    const { container } = render(CalendarView, { props: { events: [pastPlanned] } })
+    const badge = container.querySelector('.status-badge')
+    expect(badge).not.toBeNull()
+    expect(badge!.classList.contains('status-awaiting')).toBe(true)
+    expect(badge!.classList.contains('status-planned')).toBe(false)
+  })
+
   // 8.42 — "Komunikat organizatora" link present when url_invitation set
   it('shows invitation link when url_invitation is set', () => {
     const evt = makeEvent({ url_invitation: 'https://example.com/invite' })
