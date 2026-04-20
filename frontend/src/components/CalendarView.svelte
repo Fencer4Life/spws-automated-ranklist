@@ -54,6 +54,7 @@
       {@const showRegDeadline = event.dt_registration_deadline != null && today <= event.dt_registration_deadline}
       {@const showRegLink = event.url_registration != null && regCutoff !== '' && today <= regCutoff}
       {@const regUrgent = regCutoff !== '' && (new Date(regCutoff).getTime() - new Date(today).getTime()) < 7 * 86400000}
+      {@const displayStatus = getEventDisplayStatus(event.enum_status, event.dt_end, event.dt_start)}
       <div
         class="timeline-event {eventTypeClass(event.txt_code)}"
         class:completed={event.enum_status === 'COMPLETED'}
@@ -72,7 +73,7 @@
             <div class="timeline-weapons">{formatWeapons(event.arr_weapons)}</div>
           {/if}
           <div class="timeline-meta">
-            <span class="status-badge {statusClass(event.enum_status)}">{statusLabel(event.enum_status)}</span>
+            <span class="status-badge {displayStatus.cssClass}">{t(displayStatus.labelKey)}</span>
           </div>
           {#if (event.enum_status === 'COMPLETED' && event.url_event) || event.url_invitation}
             <div class="timeline-links">
@@ -125,8 +126,9 @@
 </div>
 
 <script lang="ts">
-  import type { CalendarEvent, EventStatus, WeaponType, Season, Environment } from '../lib/types'
+  import type { CalendarEvent, WeaponType, Season, Environment } from '../lib/types'
   import { t } from '../lib/locale.svelte'
+  import { getEventDisplayStatus } from '../lib/eventStatus'
 
   function weaponLabel(w: WeaponType): string {
     switch (w) {
@@ -246,29 +248,6 @@
     return `${parseInt(d, 10)}.${m}`
   }
 
-  function statusClass(status: EventStatus): string {
-    const map: Record<EventStatus, string> = {
-      COMPLETED: 'status-completed',
-      SCHEDULED: 'status-scheduled',
-      PLANNED: 'status-planned',
-      CANCELLED: 'status-cancelled',
-      IN_PROGRESS: 'status-inprogress',
-      CHANGED: 'status-scheduled',
-    }
-    return map[status] ?? 'status-planned'
-  }
-
-  function statusLabel(status: EventStatus): string {
-    const map: Record<EventStatus, string> = {
-      COMPLETED: t('status_completed'),
-      SCHEDULED: t('status_scheduled'),
-      PLANNED: t('status_planned'),
-      CANCELLED: t('status_cancelled'),
-      IN_PROGRESS: t('status_in_progress'),
-      CHANGED: t('status_scheduled'),
-    }
-    return map[status] ?? status
-  }
 </script>
 
 <style>
@@ -441,6 +420,8 @@
   .status-planned { background: #f0f0f0; color: #666; }
   .status-cancelled { background: #ffeef0; color: #c33; }
   .status-inprogress { background: #fff4e6; color: #b35c00; }
+  .status-awaiting { background: #fef3c7; color: #92400e; }
+  .status-changed { background: #ffe0cc; color: #8a4500; }
   .timeline-links {
     display: flex;
     flex-direction: column;

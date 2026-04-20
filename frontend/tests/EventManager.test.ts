@@ -163,8 +163,12 @@ describe('EventManager (T9.3)', () => {
     const { container } = render(EventManager, { props: defaultProps })
     const badges = container.querySelectorAll('[data-field="event-status-badge"]')
     expect(badges.length).toBe(2)
-    expect(badges[0].textContent).toContain('SCHEDULED')
-    expect(badges[1].textContent).toContain('PLANNED')
+    // Renders via getEventDisplayStatus → i18n label + css class.
+    // Event[0] is SCHEDULED → status-scheduled.
+    // Event[1] is PLANNED with past dt_start (2025-02-20) → flips to
+    // status-awaiting (ADR-028: "Awaiting results" display status).
+    expect(badges[0].classList.contains('status-scheduled')).toBe(true)
+    expect(badges[1].classList.contains('status-awaiting')).toBe(true)
   })
 
   // 9.49 — Past event edit form shows no status dropdown (date-aware transitions)

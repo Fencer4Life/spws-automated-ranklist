@@ -78,6 +78,8 @@
   "status_planned": "Zaplanowane",
   "status_cancelled": "Odwołane",
   "status_in_progress": "W trakcie",
+  "status_changed": "Zmienione",
+  "status_awaiting_results": "Oczekiwanie na wyniki",
   "organizer_announcement": "Komunikat organizatora",
   "tournaments_count": "turniejów",
   "entry_fee": "Opłata startowa",
