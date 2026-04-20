@@ -248,6 +248,49 @@ class TestDomesticInternationalRules:
         db.insert_fencer.assert_not_called()
         assert result.skipped > 0
 
+    def test_pew_ingest_uses_raw_field_size_for_participant_count(self):
+        """9.157a Orchestrator passes raw pre-filter scrape size as participant_count.
+
+        ADR-038 bug regression: with POL-only filter active, the payload
+        shrinks (e.g. 5 scraped → 1 POL matched), but int_participant_count
+        must stay at the actual tournament field size (5). Otherwise scoring
+        would deflate for international events that have few Polish fencers.
+        """
+        from python.pipeline.orchestrator import process_xml_file
+
+        fencer_db = [
+            {"id_fencer": 1, "txt_surname": "KOWALSKI", "txt_first_name": "Jan",
+             "int_birth_year": 1974, "json_name_aliases": None},
+        ]
+        db = _make_mock_db(fencer_db=fencer_db)
+        notifier = _make_silent_notifier()
+        process_xml_file(
+            file_bytes=_load_fixture("single_category.xml"),
+            filename="RESULTS_V50ME.xml",
+            db=db,
+            notifier=notifier,
+            season_end_year=2026,
+            tournament_type="PEW",
+        )
+        assert db.ingest_results.called, \
+            "ingest_results must be called even when only 1 POL fencer matches"
+        call = db.ingest_results.call_args
+        # fixture single_category.xml has 5 fencers (4 POL + 1 GER)
+        passed_count = call.kwargs.get("participant_count")
+        if passed_count is None and len(call.args) >= 3:
+            passed_count = call.args[2]
+        assert passed_count == 5, (
+            f"participant_count must be 5 (raw field size) not "
+            f"{passed_count} (payload length)"
+        )
+        # Regression guard: payload must be strictly smaller than field size
+        # (some foreign fencers got filtered by ADR-038), so the bug would
+        # surface as participant_count == payload length.
+        payload = call.args[1] if len(call.args) > 1 else call.kwargs["results_json"]
+        assert len(payload) < 5, \
+            f"Payload ({len(payload)}) must be smaller than field (5); " \
+            "otherwise this test does not exercise the bug"
+
     def test_auto_matched_correct_payload(self):
         """9.157 Auto-matched fencers → correct JSONB payload for RPC."""
         from python.pipeline.orchestrator import process_xml_file

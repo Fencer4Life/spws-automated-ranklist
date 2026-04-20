@@ -265,9 +265,13 @@ def _process_category(
                 "enum_match_status": "NEW_FENCER",
             })
 
-    # Ingest to DB
+    # Ingest to DB — pass raw field size so int_participant_count reflects
+    # actual tournament size, not POL-filtered payload length (ADR-038 fix).
     if results_json and not dry_run:
-        db.ingest_results(tournament_id, results_json)
+        db.ingest_results(
+            tournament_id, results_json,
+            participant_count=len(enriched_results),
+        )
         result.tournament_ids.append(tournament_id)
         tourn_label = str(tournament_id)
         if event is not None:

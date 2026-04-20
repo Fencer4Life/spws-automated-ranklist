@@ -20,6 +20,7 @@ from python.scrapers.base import detect_platform
 from python.scrapers.ftl import parse_ftl_json
 from python.scrapers.engarde import parse_engarde_html
 from python.scrapers.fourfence import parse_fourfence_html
+from python.scrapers.dartagnan import parse_dartagnan_rankings_html
 
 
 FTL_DATA_PREFIX = "https://www.fencingtimelive.com/events/results/data/"
@@ -55,6 +56,11 @@ def scrape_and_parse(url: str | None) -> list[dict]:
         resp = httpx.get(url, follow_redirects=True, timeout=15)
         resp.raise_for_status()
         return parse_fourfence_html(resp.text)
+
+    elif platform == "dartagnan":
+        resp = httpx.get(url, follow_redirects=True, timeout=15)
+        resp.raise_for_status()
+        return parse_dartagnan_rankings_html(resp.text)
 
     else:
         raise ValueError(f"Unsupported platform: {url}")
@@ -113,25 +119,41 @@ def main():
     fencer_db = db.fetch_fencer_db()
 
     from python.matcher.pipeline import resolve_tournament_results
-    is_domestic = tourn["enum_type"] in ("PPW", "MPW")
-    matched = resolve_tournament_results(results, fencer_db, domestic=is_domestic)
+    scraped_names = [r["fencer_name"] for r in results]
+    scraped_countries = [r.get("country") for r in results]
+    resolved = resolve_tournament_results(
+        scraped_names, fencer_db, tourn["enum_type"],
+        tourn["enum_age_category"], int(tourn.get("season_end_year", 2026)),
+        scraped_countries=scraped_countries,
+    )
 
-    # 4. Build JSONB payload
+    # 4. Build JSONB payload (ADR-038: POL-only for EVF, matched by name)
     import json
     payload = []
-    for m in matched:
+    for r in results:
+        m = next(
+            (x for x in resolved.matched if x.scraped_name == r["fencer_name"]),
+            None,
+        )
+        if m is None:
+            continue
         payload.append({
-            "id_fencer": m.get("id_fencer"),
-            "int_place": m["place"],
-            "txt_scraped_name": m["fencer_name"],
-            "num_confidence": m.get("confidence"),
-            "enum_match_status": m.get("match_status", "AUTO_MATCHED"),
+            "id_fencer": m.id_fencer,
+            "int_place": r["place"],
+            "txt_scraped_name": r["fencer_name"],
+            "num_confidence": float(m.confidence) if m.confidence else 0,
+            "enum_match_status": m.status,
         })
 
-    # 5. Ingest
+    # 5. Ingest — pass RAW scrape size so int_participant_count reflects
+    # the actual tournament field, not the POL-filtered payload length.
     resp = httpx.post(
         f"{supabase_url}/rest/v1/rpc/fn_ingest_tournament_results",
-        json={"p_tournament_id": tourn["id_tournament"], "p_results": json.dumps(payload)},
+        json={
+            "p_tournament_id": tourn["id_tournament"],
+            "p_results": json.dumps(payload),
+            "p_participant_count": len(results),
+        },
         headers={**headers, "Content-Type": "application/json"},
         timeout=30,
     )
