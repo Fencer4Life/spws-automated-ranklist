@@ -448,6 +448,90 @@ class TestInternationalIntake:
 
 
 # ---------------------------------------------------------------------------
+# 4.61–4.67  ADR-038 — EVF-organized tournaments ingest POL-only rows
+# ---------------------------------------------------------------------------
+class TestAdr038PolOnlyGate:
+    """Country gate: non-POL scraped rows at PEW/MEW/MSW are dismissed."""
+
+    def test_pew_pol_auto_matched_passes(self, fencer_db):
+        """4.61 PEW, country=POL, exact match → AUTO_MATCHED (not filtered)."""
+        resolved = resolve_tournament_results(
+            ["KOWALSKI Jan"], fencer_db, "PEW", "V2", 2025,
+            scraped_countries=["POL"],
+        )
+        assert len(resolved.matched) == 1
+        assert resolved.matched[0].status == "AUTO_MATCHED"
+        assert len(resolved.skipped) == 0
+
+    def test_pew_non_pol_auto_matched_dismissed(self, fencer_db):
+        """4.62 PEW, country=HUN, would-be exact match → filtered out."""
+        resolved = resolve_tournament_results(
+            ["KOWALSKI Jan"], fencer_db, "PEW", "V2", 2025,
+            scraped_countries=["HUN"],
+        )
+        assert len(resolved.matched) == 0
+        assert len(resolved.auto_created) == 0
+        assert resolved.skipped == ["KOWALSKI Jan"]
+
+    def test_pew_non_pol_pending_dismissed(self, fencer_db):
+        """4.63 PEW, country=AUT, would-be PENDING → filtered out (no queue entry)."""
+        resolved = resolve_tournament_results(
+            ["KOWALSKY Jan"], fencer_db, "PEW", "V2", 2025,
+            scraped_countries=["AUT"],
+        )
+        assert len(resolved.matched) == 0
+        assert resolved.skipped == ["KOWALSKY Jan"]
+
+    def test_pew_non_pol_unmatched_dismissed(self, fencer_db):
+        """4.64 PEW, country=GER, UNMATCHED → filtered out (as before, but via country gate)."""
+        resolved = resolve_tournament_results(
+            ["MÜLLER Hans"], fencer_db, "PEW", "V2", 2025,
+            scraped_countries=["GER"],
+        )
+        assert len(resolved.matched) == 0
+        assert resolved.skipped == ["MÜLLER Hans"]
+
+    def test_mew_non_pol_dismissed(self, fencer_db):
+        """4.65 MEW (team) also gated by country."""
+        resolved = resolve_tournament_results(
+            ["KOWALSKI Jan"], fencer_db, "MEW", "V2", 2025,
+            scraped_countries=["HUN"],
+        )
+        assert len(resolved.matched) == 0
+        assert resolved.skipped == ["KOWALSKI Jan"]
+
+    def test_ppw_non_pol_still_ingested(self, fencer_db):
+        """4.66 PPW (domestic) — country filter does NOT apply; all rows go in."""
+        resolved = resolve_tournament_results(
+            ["KOWALSKI Jan", "MÜLLER Hans"], fencer_db, "PPW", "V2", 2025,
+            scraped_countries=["POL", "GER"],
+        )
+        # KOWALSKI Jan → AUTO_MATCHED, MÜLLER Hans → NEW_FENCER (auto-created)
+        assert len(resolved.matched) == 2
+        assert len(resolved.auto_created) == 1
+        assert len(resolved.skipped) == 0
+
+    def test_pew_missing_country_fails_closed(self, fencer_db):
+        """4.67 PEW with scraped_countries list but None entry → row dismissed (fail-closed)."""
+        resolved = resolve_tournament_results(
+            ["KOWALSKI Jan", "PARTICS Péter"], fencer_db, "PEW", "V2", 2025,
+            scraped_countries=["POL", None],
+        )
+        assert len(resolved.matched) == 1
+        assert resolved.matched[0].scraped_name == "KOWALSKI Jan"
+        assert resolved.skipped == ["PARTICS Péter"]
+
+    def test_pew_no_countries_backward_compat(self, fencer_db):
+        """4.68 PEW without scraped_countries → legacy behavior (PENDING still provisionally linked)."""
+        resolved = resolve_tournament_results(
+            ["KOWALSKY Jan"], fencer_db, "PEW", "V2", 2025,
+        )
+        # Without country info, fall back to pre-ADR-038 behavior (no filter)
+        assert len(resolved.matched) == 1
+        assert resolved.matched[0].status == "PENDING"
+
+
+# ---------------------------------------------------------------------------
 # 4.19–4.21  Birth year estimation from age category
 # ---------------------------------------------------------------------------
 class TestBirthYearEstimation:
