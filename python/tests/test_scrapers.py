@@ -614,3 +614,143 @@ class TestFTLEventSchedule:
 
         assert parse_tournament_name("FLORET ELIMINACJE") is None
         assert parse_tournament_name("SZPADA ELIMINACJE") is None
+
+
+# ===========================================================================
+# Dartagnan parser: index + rankings pages (dart.1–dart.6, dart.8)
+# ===========================================================================
+class TestDartagnanParser:
+    """Dartagnan (dartagnan.live) parser tests using saved HTML fixtures."""
+
+    INDEX_URL = (
+        "https://www.dartagnan.live/turniere/EuropeanVeteransCup_2026/de/index.html"
+    )
+
+    def test_parse_dartagnan_event_index_returns_competitions(self):
+        """dart.1: index.html parsed into competitions with metadata + rankings URL."""
+        from python.scrapers.dartagnan import parse_dartagnan_event_index
+
+        html = (FIXTURES / "dartagnan" / "index.html").read_text()
+        competitions = parse_dartagnan_event_index(html, self.INDEX_URL)
+
+        assert len(competitions) >= 1
+        for c in competitions:
+            assert "id" in c
+            assert "weapon" in c and c["weapon"] in ("EPEE", "FOIL", "SABRE")
+            assert "gender" in c and c["gender"] in ("M", "F")
+            assert "category" in c and c["category"] in ("V0", "V1", "V2", "V3", "V4")
+            assert "rankings_url" in c
+            assert c["rankings_url"].endswith("-rankings.html")
+            assert c["rankings_url"].startswith("https://")
+
+        # Sanity check: known Salzburg IDs present with correct mapping
+        by_id = {c["id"]: c for c in competitions}
+        assert "6687" in by_id
+        assert by_id["6687"]["weapon"] == "EPEE"
+        assert by_id["6687"]["gender"] == "M"
+        assert by_id["6687"]["category"] == "V1"
+        assert "7027" in by_id
+        assert by_id["7027"]["weapon"] == "FOIL"
+        assert by_id["7027"]["gender"] == "F"
+        assert by_id["7027"]["category"] == "V4"
+
+    def test_parse_dartagnan_rankings_returns_fencer_rows(self):
+        """dart.2: rankings.html parsed into fencer rows passing _assert_valid_result."""
+        from python.scrapers.dartagnan import parse_dartagnan_rankings_html
+
+        html = (FIXTURES / "dartagnan" / "6687-rankings.html").read_text()
+        results = parse_dartagnan_rankings_html(html)
+
+        assert len(results) > 0
+        for r in results:
+            _assert_valid_result(r)
+
+        first = results[0]
+        assert first["place"] == 1
+        assert first["fencer_name"] == "PARTICS Péter"
+
+    def test_parse_dartagnan_rankings_country_is_iso3(self):
+        """dart.3: country is 3-letter ISO from flag image, not Nation text."""
+        from python.scrapers.dartagnan import parse_dartagnan_rankings_html
+
+        html = (FIXTURES / "dartagnan" / "6687-rankings.html").read_text()
+        results = parse_dartagnan_rankings_html(html)
+
+        first = results[0]
+        assert first["country"] == "HUN"
+        assert first["country"] != "Hungary"
+
+        # Second place = NED (Netherlands)
+        assert results[1]["country"] == "NED"
+
+    def test_parse_dartagnan_rankings_handles_ties(self):
+        """dart.4: ties (duplicate Platz) yield multiple rows at same place."""
+        from python.scrapers.dartagnan import parse_dartagnan_rankings_html
+
+        html = (FIXTURES / "dartagnan" / "6687-rankings.html").read_text()
+        results = parse_dartagnan_rankings_html(html)
+
+        third_place = [r for r in results if r["place"] == 3]
+        assert len(third_place) == 2
+        names = {r["fencer_name"] for r in third_place}
+        assert "PÁSZTOR Attila" in names
+        assert "RUSEV Rosislav" in names
+
+    def test_parse_dartagnan_rankings_empty_returns_empty_list(self):
+        """dart.5: empty table (unfinished tournament) returns [] without raising."""
+        from python.scrapers.dartagnan import parse_dartagnan_rankings_html
+
+        html = (FIXTURES / "dartagnan" / "7027-rankings-empty.html").read_text()
+        results = parse_dartagnan_rankings_html(html)
+
+        assert results == []
+
+    def test_scrape_dartagnan_event_orchestrator(self):
+        """dart.6: orchestrator fetches index + each rankings URL once; returns combined dict."""
+        from python.scrapers.dartagnan import scrape_dartagnan_event
+
+        index_html = (FIXTURES / "dartagnan" / "index.html").read_text()
+        rankings_html = (FIXTURES / "dartagnan" / "6687-rankings.html").read_text()
+        empty_html = (FIXTURES / "dartagnan" / "7027-rankings-empty.html").read_text()
+
+        called_urls: list[str] = []
+
+        def fake_get(url):
+            called_urls.append(url)
+            if url.endswith("index.html"):
+                return index_html
+            # Return the finished rankings for 6687, empty for everything else
+            if url.endswith("6687-rankings.html"):
+                return rankings_html
+            return empty_html
+
+        result = scrape_dartagnan_event(self.INDEX_URL, http_get=fake_get)
+
+        assert result["event_url"] == self.INDEX_URL
+        assert "competitions" in result
+        assert len(result["competitions"]) >= 1
+
+        # Index fetched once + one call per rankings URL
+        assert called_urls[0] == self.INDEX_URL
+        rankings_urls_called = [u for u in called_urls if u.endswith("-rankings.html")]
+        assert len(rankings_urls_called) == len(result["competitions"])
+        # No URL fetched twice
+        assert len(rankings_urls_called) == len(set(rankings_urls_called))
+
+        # The 6687 competition has results populated
+        men_epee_v1 = [
+            c for c in result["competitions"]
+            if c["weapon"] == "EPEE" and c["gender"] == "M" and c["category"] == "V1"
+        ]
+        assert len(men_epee_v1) == 1
+        assert len(men_epee_v1[0]["results"]) > 0
+        assert men_epee_v1[0]["rankings_url"].endswith("6687-rankings.html")
+
+    @pytest.mark.integration
+    def test_live_dartagnan_reachable(self):
+        """dart.8: live Salzburg URL reachable, ≥1 competition with ≥1 result."""
+        from python.scrapers.dartagnan import scrape_dartagnan_event
+
+        result = scrape_dartagnan_event(self.INDEX_URL)
+        assert len(result["competitions"]) >= 1
+        assert any(len(c["results"]) >= 1 for c in result["competitions"])

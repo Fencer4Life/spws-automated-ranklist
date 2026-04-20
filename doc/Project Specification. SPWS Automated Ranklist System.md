@@ -1628,7 +1628,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-51 | Tournament re-import in single transaction | UC23(a-f) | 10.1–10.7 | Covered (ADR-022, fn_ingest_tournament_results) |
 | FR-52 | Multi-category expansion (30 sub-rankings) | §6.2 | 8.20–8.26 | Covered (M8) |
 | FR-53 | Event-level batch import: multi-select tournament checklist modal | UC22(g) | 9.62–9.67 | Partial (file UI + Admin ⬇ button + populate-urls GHA) |
-| FR-54 | Tournament-level single import: own URL or file upload | UC22(h) | 9.56–9.61, 3.17a–d | Partial (file UI + Admin ⬇ button + t-scrape + scrape-tournament GHA) |
+| FR-54 | Tournament-level single import: own URL or file upload (FTL / Engarde / 4fence / Dartagnan) | UC22(h) | 9.56–9.61, 3.17a–d, dart.1–dart.8, dart.url.1 | Partial (file UI + Admin ⬇ button + t-scrape + scrape-tournament GHA + Dartagnan parser) |
 | FR-55 | File import: parse results from .xlsx, .xls, .json, .csv | UC22(i), UC23(c) | 9.58, 9.93–9.100 | Covered (M9, T9.5 UI + T9.10 parsers) |
 | FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new/assign + gender column; Identities tab in Fencers view (ADR-035) | UC4(a-e) | 9.68–9.73, 9.77, 9.78–9.88, 11.1–11.19 | Covered (UI + RPCs + tab in App.svelte) |
 | FR-57 | Identity resolution: disambiguation modal for same-name fencers with age category fit | UC3(f), UC4(b) | 9.74–9.76 | Covered (DisambiguationModal + App.svelte handlers) |
@@ -1737,10 +1737,10 @@ Every functional and non-functional requirement is listed below with its source 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
 | pgTAP | 281 | 15 | `supabase/tests/` |
-| pytest | 274 | 22 | `python/tests/` |
+| pytest | 282 | 22 | `python/tests/` |
 | vitest | 267 | 25 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **829** | | |
+| **Total** | **837** | | |
 
 ### Coverage Summary
 
