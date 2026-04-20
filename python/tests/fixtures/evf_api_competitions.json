@@ -1,0 +1,19 @@
+{
+  "85": [
+    {"id": 301, "starts": "2026-04-18", "weaponId": 2, "categoryId": 1, "total": 42},
+    {"id": 302, "starts": "2026-04-18", "weaponId": 2, "categoryId": 2, "total": 58},
+    {"id": 303, "starts": "2026-04-19", "weaponId": 1, "categoryId": 1, "total": 31},
+    {"id": 304, "starts": "2026-04-19", "weaponId": 3, "categoryId": 2, "total": 27}
+  ],
+  "86": [
+    {"id": 401, "starts": "2026-05-30", "weaponId": 2, "categoryId": 1, "total": 88},
+    {"id": 402, "starts": "2026-05-31", "weaponId": 2, "categoryId": 2, "total": 104},
+    {"id": 403, "starts": "2026-06-01", "weaponId": 1, "categoryId": 3, "total": 52},
+    {"id": 404, "starts": "2026-06-02", "weaponId": 3, "categoryId": 2, "total": 33},
+    {"id": 405, "starts": "2026-06-03", "weaponId": 2, "categoryId": 4, "total": 19}
+  ],
+  "87": [
+    {"id": 201, "starts": "2026-03-14", "weaponId": 2, "categoryId": 2, "total": 36},
+    {"id": 202, "starts": "2026-03-15", "weaponId": 2, "categoryId": 3, "total": 24}
+  ]
+}
