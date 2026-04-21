@@ -28,6 +28,7 @@ import re
 from datetime import datetime
 
 import httpx
+import unicodedata
 from bs4 import BeautifulSoup
 
 try:
@@ -36,6 +37,51 @@ except ImportError:
     fuzz = None  # type: ignore[assignment]
 
 logger = logging.getLogger("evf.calendar")
+
+
+# Country-name aliases used by EVF + seed data. Each canonical form below
+# matches any of its aliases after diacritic-folding + case-folding.
+# ADR-028 dedup key depends on these.
+_COUNTRY_ALIASES = {
+    "poland":     {"polska"},
+    "germany":    {"deutschland"},
+    "italy":      {"italia"},
+    "austria":    {"osterreich"},  # diacritic-folded from Österreich
+    "spain":      {"espana"},       # diacritic-folded from España
+    "belgium":    {"belgique", "belgie"},  # fr + nl
+    "greece":     {"hellas", "ellada"},
+    "netherlands": {"holland", "nederland"},
+    "france":     {},
+    "hungary":    {"magyarorszag"},
+    "czechia":    {"czech republic", "ceska republika"},
+    "sweden":     {"sverige"},
+    "norway":     {"norge"},
+    "finland":    {"suomi"},
+    "denmark":    {"danmark"},
+    "switzerland": {"schweiz", "suisse", "svizzera"},
+    "great britain": {"united kingdom", "uk", "england", "britain"},
+    "ireland":    {"eire"},
+}
+
+# Reverse index: any variant → canonical. Canonicals also map to themselves.
+_COUNTRY_CANONICAL: dict[str, str] = {}
+for canonical, aliases in _COUNTRY_ALIASES.items():
+    _COUNTRY_CANONICAL[canonical] = canonical
+    for alias in aliases:
+        _COUNTRY_CANONICAL[alias] = canonical
+
+
+def _normalize_country(name: str | None) -> str:
+    """Canonicalise a country name for dedup comparison.
+
+    Steps: strip → lower → diacritic-fold → alias-map. Returns "" for
+    None/empty so the fallback path (fuzzy name) kicks in cleanly.
+    """
+    if not name:
+        return ""
+    s = unicodedata.normalize("NFKD", name.strip().lower())
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return _COUNTRY_CANONICAL.get(s, s)
 
 # TODO(ADR-028): disabled 2026-04-20 — live hit rate was 0/13 against EVF detail
 # pages. Re-enable once real-world deadline phrasings have been observed and the
@@ -565,6 +611,76 @@ def filter_by_season(events: list[dict], season_start: str, season_end: str) -> 
     ]
 
 
+def _find_existing_match(
+    s_evt: dict,
+    existing: list[dict],
+    date_tolerance: int,
+    name_threshold: float,
+) -> dict | None:
+    """Find the best existing-row match for a scraped event (ADR-028 dedup key).
+
+    Primary: exact dt_start + normalized country. This is the natural key
+    for EVF-organized events (cannot have two different EVF events on the
+    same day in the same country).
+
+    Fallback: date tolerance ±N days + fuzzy name ≥ threshold, with
+    diacritic folding so "Jablonna" matches "Jabłonna". Used when country
+    is missing (legacy rows / scrapers that don't emit country).
+    """
+    s_date = s_evt.get("dt_start", "")
+    s_country = _normalize_country(s_evt.get("country", ""))
+
+    # Primary match: exact dt_start + same canonical country
+    if s_country:
+        for ex in existing:
+            if str(ex.get("dt_start", "")) != s_date:
+                continue
+            if _normalize_country(ex.get("txt_country", "")) == s_country:
+                return ex
+
+    # Fallback: date tolerance + fuzzy name (diacritic-folded)
+    try:
+        sd = datetime.strptime(s_date, "%Y-%m-%d")
+    except (ValueError, TypeError):
+        return None
+
+    s_name_folded = _diacritic_fold(s_evt.get("name", ""))
+    best: dict | None = None
+    best_score = 0.0
+
+    for ex in existing:
+        ex_date = str(ex.get("dt_start", ""))
+        try:
+            ed = datetime.strptime(ex_date, "%Y-%m-%d")
+        except (ValueError, TypeError):
+            continue
+        if abs((sd - ed).days) > date_tolerance:
+            continue
+
+        ex_name_folded = _diacritic_fold(ex.get("txt_name", ""))
+        if fuzz is not None:
+            score = float(fuzz.token_set_ratio(s_name_folded, ex_name_folded))
+        else:
+            score = 100.0 if (
+                s_name_folded.lower() in ex_name_folded.lower()
+                or ex_name_folded.lower() in s_name_folded.lower()
+            ) else 0.0
+
+        if score >= name_threshold and score > best_score:
+            best = ex
+            best_score = score
+
+    return best
+
+
+def _diacritic_fold(text: str) -> str:
+    """NFKD + strip combining marks — 'Jabłonna' → 'Jablonna'."""
+    if not text:
+        return ""
+    s = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in s if not unicodedata.combining(c))
+
+
 def match_scraped_to_existing(
     scraped: list[dict],
     existing: list[dict],
@@ -573,46 +689,17 @@ def match_scraped_to_existing(
 ) -> list[tuple[dict, dict]]:
     """Pair each scraped event with its best-matching existing DB row, if any.
 
-    Uses the same date+name fuzzy rule as `deduplicate_events`. Returns
+    Uses (dt_start exact + country) primary, fuzzy-name fallback. Returns
     `[(scraped_evt, existing_row), ...]` for every scraped event that matched
     an existing row. Existing rows must carry at least `txt_name` + `dt_start`
-    (+ `id_event` when the caller plans to feed the refresh RPC).
+    (+ `txt_country` for the primary path, + `id_event` when the caller plans
+    to feed the refresh RPC).
     """
     pairs: list[tuple[dict, dict]] = []
-
     for s_evt in scraped:
-        s_date = s_evt.get("dt_start", "")
-        s_name = s_evt.get("name", "")
-        best: dict | None = None
-        best_score = 0.0
-
-        for ex in existing:
-            ex_date = str(ex.get("dt_start", ""))
-            ex_name = ex.get("txt_name", "")
-
-            try:
-                sd = datetime.strptime(s_date, "%Y-%m-%d")
-                ed = datetime.strptime(ex_date, "%Y-%m-%d")
-                if abs((sd - ed).days) > date_tolerance:
-                    continue
-            except (ValueError, TypeError):
-                continue
-
-            if fuzz is not None:
-                score = float(fuzz.token_set_ratio(s_name, ex_name))
-            else:
-                score = 100.0 if (
-                    s_name.lower() in ex_name.lower()
-                    or ex_name.lower() in s_name.lower()
-                ) else 0.0
-
-            if score >= name_threshold and score > best_score:
-                best = ex
-                best_score = score
-
-        if best is not None:
-            pairs.append((s_evt, best))
-
+        match = _find_existing_match(s_evt, existing, date_tolerance, name_threshold)
+        if match is not None:
+            pairs.append((s_evt, match))
     return pairs
 
 
@@ -624,43 +711,17 @@ def deduplicate_events(
 ) -> tuple[list[dict], list[dict]]:
     """Split scraped events into (new, already_imported).
 
-    An event is considered already imported if an existing event has:
-    - dt_start within +-date_tolerance days, AND
-    - name fuzzy match >= name_threshold (token_set_ratio).
+    Primary dedup key: dt_start (exact) + country (normalised). This catches
+    EVF renames like "Napoli"→"Naples (ITA)" that defeat token_set_ratio.
+    Fallback: ±date_tolerance days + fuzzy name ≥ threshold with diacritic
+    folding (keeps backward compat when country is missing). See ADR-028.
     """
     new: list[dict] = []
     already: list[dict] = []
-
-    for scraped_evt in scraped:
-        s_date = scraped_evt.get("dt_start", "")
-        s_name = scraped_evt.get("name", "")
-        matched = False
-
-        for ex in existing:
-            ex_date = str(ex.get("dt_start", ""))
-            ex_name = ex.get("txt_name", "")
-
-            try:
-                sd = datetime.strptime(s_date, "%Y-%m-%d")
-                ed = datetime.strptime(ex_date, "%Y-%m-%d")
-                if abs((sd - ed).days) > date_tolerance:
-                    continue
-            except (ValueError, TypeError):
-                continue
-
-            if fuzz is not None:
-                score = fuzz.token_set_ratio(s_name, ex_name)
-                if score >= name_threshold:
-                    matched = True
-                    break
-            else:
-                if s_name.lower() in ex_name.lower() or ex_name.lower() in s_name.lower():
-                    matched = True
-                    break
-
-        if matched:
-            already.append(scraped_evt)
+    for s_evt in scraped:
+        match = _find_existing_match(s_evt, existing, date_tolerance, name_threshold)
+        if match is not None:
+            already.append(s_evt)
         else:
-            new.append(scraped_evt)
-
+            new.append(s_evt)
     return new, already
