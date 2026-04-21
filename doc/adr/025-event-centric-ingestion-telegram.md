@@ -47,14 +47,16 @@ The existing GAS script (ADR-023) is extended with a `checkTelegramCommands()` f
 
 Commands use **prefix matching within the active season**: `rollback PPW4` matches any event whose `txt_code` starts with `PPW4` in the active season.
 
-16 commands across 6 categories:
+17 commands across 6 categories:
 
-- **Lifecycle:** `status`, `complete`, `rollback`, `promote`
+- **Lifecycle:** `status`, `complete`, `rollback`, `delete`, `promote`
 - **Data review:** `results`, `pending`, `missing`
 - **Storage:** `cleanup`, `staging`
 - **Season:** `season`, `ranking`
 - **Emergency:** `pause`, `resume`
 - **Admin:** `help`
+
+`delete` is stricter than `rollback`: it wipes the child tournaments + results AND removes the `tbl_event` row itself. Use when an event was created in error (wrong-ingest, erroneous scrape, dedup-bug phantom row). Backed by the `fn_delete_event(prefix)` RPC (amendment 2026-04-21). `rollback` remains the safer default when you only want to re-ingest.
 
 ### 4. CERT → PROD Promotion
 
@@ -86,3 +88,31 @@ Staging files are NOT automatically deleted after processing. The admin reviews 
 
 ### Note (ADR-031)
 "Active season" references in this ADR (lines 24, 48) are now auto-derived from season dates rather than manually set. Behavior is unchanged — `WHERE bool_active = TRUE` still resolves to the correct season, but activation is automatic per ADR-031.
+
+### Amendment 2026-04-21 — `fn_delete_event` RPC + Telegram `delete` command (FR-95)
+
+**Problem** — `fn_rollback_event` wipes child tournaments + results and resets the event to `PLANNED`, but leaves the `tbl_event` row in place. When an event was created in **error** (wrong-ingest, erroneous scrape, dedup-bug phantom row like the three EVF duplicates cleaned up earlier on 2026-04-21), rollback-only leaves an orphan row the admin must then hand-delete via direct SQL. That two-step dance is not captured anywhere durable — every operator reinvents it.
+
+**Decision** — Add a single transactional RPC:
+
+```sql
+fn_delete_event(p_prefix TEXT) RETURNS JSONB
+-- 1. Resolve prefix to id_event in active season (same helper as fn_rollback_event)
+-- 2. For every child tournament: fn_delete_tournament_cascade(id)
+-- 3. DELETE FROM tbl_event WHERE id_event = v_event_id
+-- Returns: {status: "DELETED", event_id, event_code, tournaments_deleted,
+--          results_deleted, event_deleted: TRUE}
+```
+
+Same permission model as `fn_rollback_event` (REVOKE anon, GRANT authenticated). Migration: `20260421000001_fn_delete_event.sql`. Tests: `10.29–10.32` in `supabase/tests/10_ingest_pipeline.sql`.
+
+**When to use `delete` vs `rollback`:**
+
+| Situation | Command | Effect |
+|---|---|---|
+| Re-ingest same event with corrected source | `rollback` | Wipes results, event row + children stay, can re-ingest |
+| Event was created in error (wrong code, phantom row, scraper dedup bug) | `delete` | Wipes everything including the event row; must re-create via calendar scraper or CRUD |
+
+**Telegram surface** — New `delete <prefix>` command alongside the existing `rollback`. Routes to `fn_delete_event` via the same GAS polling path. Counted in the Lifecycle category of UC27 (brings the total to 17 commands).
+
+**Historical** — This tool should have been built on 2026-04-20 during the PEW7 + EVF duplicate cleanup, when the two-step `fn_rollback_event` + manual `DELETE FROM tbl_event` sequence was used three times in the same session. It wasn't, so it's captured here retroactively as a durable artifact rather than living in ad-hoc scripts.

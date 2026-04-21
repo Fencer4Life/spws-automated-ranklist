@@ -356,8 +356,8 @@ The Telegram bot (`@spws_ranklist_bot`) is the primary admin interface for event
 
 ```
 Ingest XML → /status → /complete → /promote → PROD + seed export
-                         ↕
-                      /rollback
+                         ↕           ↕
+                      /rollback    /delete
 ```
 
 ### Command reference
@@ -367,6 +367,7 @@ Ingest XML → /status → /complete → /promote → PROD + seed export
 | `/status <event>` | Show event status, tournament/result/pending counts | Read-only |
 | `/complete <event>` | Mark event COMPLETED on CERT | CERT DB only |
 | `/rollback <event>` | Delete all tournaments + results, reset to PLANNED | CERT DB only |
+| `/delete <event>` | Rollback **and** delete the `tbl_event` row itself (use for phantom / erroneous events) | CERT DB only |
 | `/promote <event>` | Copy CERT event data to PROD | PROD updated + **seed export to git** (ADR-036) |
 | `/results <event>` | Show top 3 per tournament | Read-only |
 | `/pending <event>` | Show PENDING match candidates | Read-only |
@@ -376,6 +377,11 @@ Ingest XML → /status → /complete → /promote → PROD + seed export
 | `/pause` | Pause email polling | GAS flag |
 | `/resume` | Resume email polling | GAS flag |
 | `/export-seed` | Manual seed export from PROD | Triggers `export-seed.yml` |
+
+### rollback vs delete — which to use
+
+- **`/rollback`** — the safe default. Use when you want to **re-ingest** the same event (e.g. the scraper got bad data, you fix the source, then re-import). The event row stays, children are wiped, status returns to PLANNED. `fn_rollback_event(prefix)` RPC.
+- **`/delete`** — stricter. Use when the event **should not exist at all** (wrong txt_code, duplicate caused by a scraper dedup bug, data from a different season, etc.). Wipes children AND removes the event row. Must be re-created via calendar scraper or CRUD if needed again. `fn_delete_event(prefix)` RPC (ADR-025 amendment, FR-95, migration `20260421000001_fn_delete_event.sql`).
 
 ### Seed export (ADR-036)
 
