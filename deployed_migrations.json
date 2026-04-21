@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-04-20T18:43:28Z",
-    "last_sha": "45e854acec3439de07946b35454f4bc89454cefc",
+    "last_updated": "2026-04-21T06:28:33Z",
+    "last_sha": "ae685e2898d86ed10fddbf8e72f7326859c20316",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -52,9 +52,10 @@
       "20260412000005_cross_gender_scoring.sql",
       "20260412000006_ingest_participant_count.sql",
       "20260420000001_evf_import_urls.sql",
-      "20260420000002_evf_refresh_urls.sql"
+      "20260420000002_evf_refresh_urls.sql",
+      "20260421000001_fn_delete_event.sql"
     ],
-    "schema_fingerprint": "4c714cb220468e9ca48705d4f4e4e8a4"
+    "schema_fingerprint": "42b18ccf8f7354f88988874931b4882a"
   },
   "prod": {
     "last_updated": "2026-04-20T18:43:55Z",
