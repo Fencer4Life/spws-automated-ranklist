@@ -267,17 +267,17 @@ SELECT is(
 );
 
 -- R.14 — p_rolling=FALSE regression — no carry-over, no IMEW in current season
--- PPW best-4=356.92, no MPW �� ppw_total=356.92
--- PEW/MEW/MSW best-3: 143.16+138.87+86.03=368.06 → pew_total=368.06
--- Total: 356.92+368.06=673.13
+-- PPW best-4 (in-test state: PPW4 reinserted, PPW5 empty) = 305.07
+-- PEW/MEW/MSW best-3: 143.16+138.87+98.96 = 380.99 (Salzburg PEW7 promoted 3rd slot)
+-- Total: 305.07+380.99=686.06
 SELECT is(
   (SELECT total_score FROM fn_ranking_kadra(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := FALSE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  673.13::NUMERIC,
-  'R.14: kadra p_rolling=FALSE regression — KORONA 673.13 (no IMEW this season)'
+  686.06::NUMERIC,
+  'R.14: kadra p_rolling=FALSE regression — KORONA 686.06 (no IMEW this season, PEW7 Salzburg ingested)'
 );
 
 -- =========================================================================
