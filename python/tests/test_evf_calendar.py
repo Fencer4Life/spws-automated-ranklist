@@ -99,6 +99,115 @@ class TestEvfDedup:
         assert new[0]["name"] == "EVF Circuit Dublin"
         assert len(already) == 0
 
+    def test_dedup_matches_renamed_events_by_date_and_country(self):
+        """evf.14: EVF renames (Napoli→Naples, Jabłonna→Jablonna, Chania→Chania Crete)
+        score <80 on token_set_ratio but share exact dt_start + country.
+        `(dt_start, country)` primary match must catch these as duplicates.
+        """
+        from python.scrapers.evf_calendar import deduplicate_events
+
+        scraped = [
+            {"name": "EVF Circuit – Naples (ITA)", "dt_start": "2026-03-07",
+             "country": "Italy"},
+            {"name": "EVF Circuit – Jablonna (POL)", "dt_start": "2026-03-28",
+             "country": "Poland"},
+            {"name": "EVF Circuit – Chania, Crete (GRE)", "dt_start": "2026-05-02",
+             "country": "Greece"},
+        ]
+        existing = [
+            {"txt_name": "EVF Circuit Napoli", "dt_start": "2026-03-07",
+             "txt_country": "Italy"},
+            {"txt_name": "EVF Circuit Jabłonna", "dt_start": "2026-03-28",
+             "txt_country": "Polska"},
+            {"txt_name": "EVF Circuit Chania", "dt_start": "2026-05-02",
+             "txt_country": "Greece"},
+        ]
+        new, already = deduplicate_events(scraped, existing)
+        assert len(new) == 0, (
+            f"Renamed EVF events must NOT create new rows. Got new={[e['name'] for e in new]}"
+        )
+        assert len(already) == 3
+
+    def test_dedup_country_aliases_fold(self):
+        """evf.15: Multi-language country names (Polska↔Poland, Italia↔Italy,
+        Deutschland↔Germany) fold to the same canonical form.
+        """
+        from python.scrapers.evf_calendar import deduplicate_events
+
+        scraped = [
+            {"name": "EVF Circuit Warsaw", "dt_start": "2026-06-15",
+             "country": "Poland"},
+            {"name": "EVF Circuit Rome", "dt_start": "2026-07-10",
+             "country": "Italy"},
+            {"name": "EVF Circuit Berlin", "dt_start": "2026-08-20",
+             "country": "Germany"},
+        ]
+        existing = [
+            {"txt_name": "EVF Event X", "dt_start": "2026-06-15",
+             "txt_country": "Polska"},
+            {"txt_name": "EVF Event Y", "dt_start": "2026-07-10",
+             "txt_country": "Italia"},
+            {"txt_name": "EVF Event Z", "dt_start": "2026-08-20",
+             "txt_country": "Deutschland"},
+        ]
+        new, already = deduplicate_events(scraped, existing)
+        assert len(new) == 0
+        assert len(already) == 3
+
+    def test_dedup_same_day_different_country_stays_separate(self):
+        """evf.16: Two EVF events on the same day in different countries are
+        NOT duplicates. Primary key must include country — date alone would
+        over-match (regression guard against aggressive dedup).
+        """
+        from python.scrapers.evf_calendar import deduplicate_events
+
+        scraped = [
+            {"name": "EVF Circuit – Liège (BEL)", "dt_start": "2026-04-11",
+             "country": "Belgium"},
+        ]
+        existing = [
+            {"txt_name": "V Puchar Polski Weteranów", "dt_start": "2026-04-11",
+             "txt_country": "Polska"},
+        ]
+        new, already = deduplicate_events(scraped, existing)
+        assert len(new) == 1, "Same day, different country → separate events"
+        assert len(already) == 0
+
+    def test_dedup_diacritic_folded_name_fallback(self):
+        """evf.17: Fallback path (missing country) still works via diacritic-folded
+        fuzzy name — ensures backward compat when scraper can't emit country.
+        """
+        from python.scrapers.evf_calendar import deduplicate_events
+
+        scraped = [
+            {"name": "EVF Circuit Jablonna", "dt_start": "2026-03-28"},
+        ]
+        existing = [
+            {"txt_name": "EVF Circuit Jabłonna", "dt_start": "2026-03-28"},
+        ]
+        new, already = deduplicate_events(scraped, existing)
+        assert len(already) == 1
+        assert len(new) == 0
+
+    def test_match_scraped_to_existing_uses_same_primary_key(self):
+        """evf.18: match_scraped_to_existing (the URL-refresh pair builder)
+        must apply the same (dt_start + country) primary match so refresh
+        hits the right existing row even when EVF renamed the event.
+        """
+        from python.scrapers.evf_calendar import match_scraped_to_existing
+
+        scraped = [
+            {"name": "EVF Circuit – Naples (ITA)", "dt_start": "2026-03-07",
+             "country": "Italy", "url": "https://evf/naples"},
+        ]
+        existing = [
+            {"id_event": 42, "txt_name": "EVF Circuit Napoli",
+             "dt_start": "2026-03-07", "txt_country": "Italy"},
+        ]
+        pairs = match_scraped_to_existing(scraped, existing)
+        assert len(pairs) == 1
+        assert pairs[0][1]["id_event"] == 42
+
 
 # =============================================================================
 # evf.6–evf.11: API-first scraper + detail-page URL harvesting
