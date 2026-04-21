@@ -7,7 +7,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(29);
+SELECT plan(33);
 
 -- ===== SETUP: create test data for ingest tests =====
 
@@ -661,6 +661,66 @@ SELECT is(
   (SELECT int_participant_count FROM tbl_tournament WHERE txt_code = 'RENAMED-V2-M-EPEE-2025-2026'),
   42,
   '10.28: p_participant_count=42 overrides auto-count of 1 result'
+);
+
+-- =========================================================================
+-- 10.29–10.32: fn_delete_event — durable admin tool for wrong-ingest cleanup
+-- =========================================================================
+-- Scope: same cascade as fn_rollback_event, plus DELETE of the event row
+-- itself. Returns combined summary. Eliminates the "rollback then manual
+-- DELETE tbl_event" two-step dance I used during PEW7 + EVF-dup cleanups.
+
+-- Setup: create DEL-EVT in active season with 1 tournament + 1 result
+DO $setup_del$
+DECLARE
+  v_season_id INT;
+  v_event_id INT;
+  v_tourn_id INT;
+  v_f1 INT;
+  v_results JSONB;
+BEGIN
+  SELECT id_season INTO v_season_id FROM tbl_season WHERE bool_active = TRUE;
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country)
+  VALUES (
+    'DEL-EVT-2025-2026', 'Delete Cascade Test Event',
+    v_season_id,
+    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
+    'IN_PROGRESS', '2026-03-01', 'TestCity', 'Polska'
+  ) RETURNING id_event INTO v_event_id;
+  v_tourn_id := fn_find_or_create_tournament(v_event_id, 'EPEE', 'M', 'V2', '2026-03-01'::DATE, 'PPW');
+  SELECT id_fencer INTO v_f1 FROM tbl_fencer WHERE txt_surname = 'TESTOWSKI';
+  v_results := jsonb_build_array(
+    jsonb_build_object('id_fencer', v_f1, 'int_place', 1, 'txt_scraped_name', 'TESTOWSKI Jan', 'num_confidence', 99.0, 'enum_match_status', 'AUTO_MATCHED')
+  );
+  PERFORM fn_ingest_tournament_results(v_tourn_id, v_results);
+END;
+$setup_del$;
+
+-- 10.29 — fn_delete_event runs and returns a JSONB summary
+SELECT lives_ok(
+  $$SELECT fn_delete_event('DEL-EVT')$$,
+  '10.29: fn_delete_event executes without error'
+);
+
+-- 10.30 — event row is gone after call
+SELECT is(
+  (SELECT COUNT(*)::INT FROM tbl_event WHERE txt_code = 'DEL-EVT-2025-2026'),
+  0,
+  '10.30: fn_delete_event removes the tbl_event row'
+);
+
+-- 10.31 — child tournaments are gone too
+SELECT is(
+  (SELECT COUNT(*)::INT FROM tbl_tournament WHERE txt_code LIKE 'DEL-EVT-%'),
+  0,
+  '10.31: fn_delete_event removes all child tournaments'
+);
+
+-- 10.32 — unknown prefix raises
+SELECT throws_ok(
+  $$SELECT fn_delete_event('NONEXISTENT-DEL-EVT')$$,
+  NULL,
+  '10.32: fn_delete_event on unknown prefix raises error'
 );
 
 SELECT * FROM finish();
