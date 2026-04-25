@@ -59,7 +59,10 @@
         class="timeline-event {eventTypeClass(event.txt_code)}"
         class:completed={event.enum_status === 'COMPLETED'}
       >
-        <div class="timeline-date">{formatDate(event.dt_start)}</div>
+        <div class="timeline-date">
+          <span class="timeline-date-text">{formatDate(event.dt_start)}</span>
+          <span class="timeline-code">{eventCodePrefix(event.txt_code)}</span>
+        </div>
         <div class="timeline-info">
           <div class="timeline-name">{event.txt_name}</div>
           {#if event.txt_location}
@@ -201,7 +204,7 @@
       .slice()
       .sort((a, b) => (a.dt_start ?? '').localeCompare(b.dt_start ?? ''))
       .map(e => ({
-        name: e.txt_code.split('-')[0].replace(/^PP(\d)/, 'PPW$1'),
+        name: eventCodePrefix(e.txt_code),
         completed: e.enum_status === 'COMPLETED',
         type: slotTypeClass(e.txt_code),
         city: e.txt_location ?? '',
@@ -246,6 +249,10 @@
     if (!dt) return '—'
     const [, m, d] = dt.split('-')
     return `${parseInt(d, 10)}.${m}`
+  }
+
+  function eventCodePrefix(code: string): string {
+    return code.split('-')[0].replace(/^PP(\d)/, 'PPW$1')
   }
 
 </script>
@@ -371,12 +378,38 @@
     background: #fdf9f0;
   }
   .timeline-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-width: 56px;
+    padding-top: 0;
+  }
+  .timeline-date-text {
     font-weight: 700;
     font-size: 13px;
     color: #4a90d9;
     white-space: nowrap;
-    min-width: 50px;
-    padding-top: 2px;
+  }
+  .timeline-code {
+    font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    line-height: 1.4;
+    background: #e6f4ea;
+    color: #1a7f37;
+  }
+  .timeline-event.evf-circuit .timeline-code {
+    background: #deedf8;
+    color: #2a6faa;
+  }
+  .timeline-event.evf-intl .timeline-code {
+    background: #faf3e0;
+    color: #8a6d1b;
   }
   .timeline-info {
     flex: 1;
