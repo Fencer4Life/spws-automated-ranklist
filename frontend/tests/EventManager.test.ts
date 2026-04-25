@@ -865,6 +865,33 @@ describe('EventManager Accordion (Phase 6)', () => {
     vi.useRealTimers()
   })
 
+  // 9.45o — Dispatch banner clears 1.5s after a successful refresh so the
+  // accordion isn't permanently encumbered.
+  it('9.45o: dispatch banner clears 1.5s after refresh success', async () => {
+    vi.useFakeTimers()
+    mockRequestDispatch.mockReset()
+    mockRequestDispatch.mockResolvedValue({
+      ok: true,
+      runs_url: 'https://github.com/x/y/actions/workflows/populate-urls.yml',
+    })
+    const onrefresh = vi.fn().mockResolvedValue(undefined)
+    const { container } = render(EventManager, {
+      props: { ...propsWithTournaments, onrefresh },
+    })
+    await fireEvent.click(container.querySelector('[data-field="event-import-btn"]')!)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(container.querySelector('[data-field="dispatch-status-10"]')).not.toBeNull()
+    // Trigger auto-refresh (40s timer fires; fast onrefresh resolves immediately)
+    await vi.advanceTimersByTimeAsync(40_000)
+    await vi.advanceTimersByTimeAsync(0)
+    // Banner is still up, now showing "Refreshed" during the 1.5s success-flash
+    expect(container.querySelector('[data-field="dispatch-status-10"]')).not.toBeNull()
+    // After 1.5s, banner cleared
+    await vi.advanceTimersByTimeAsync(1_501)
+    expect(container.querySelector('[data-field="dispatch-status-10"]')).toBeNull()
+    vi.useRealTimers()
+  })
+
   // 9.45n — onrefresh rejection sets refresh-failed state, auto-clears
   it('9.45n: refresh failure renders error state, auto-clears after 3s', async () => {
     vi.useFakeTimers()
