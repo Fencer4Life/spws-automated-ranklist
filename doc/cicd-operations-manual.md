@@ -394,6 +394,22 @@ Manual export: send `/export-seed` or trigger `export-seed.yml` via GitHub Actio
 
 Local mirror: `./scripts/mirror-prod.sh` (export + reset + verify).
 
+### Outbound notifications from `evf-sync.yml` (ADR-028 / ADR-039)
+
+The EVF scraper fires unsolicited messages directly to the admin chat (no GAS round-trip). These are *informational* — none require a reply. All messages use `parse_mode=HTML`.
+
+| Trigger | Template | Emitter |
+|---|---|---|
+| Calendar imported new events | `<b>EVF Calendar</b>\n{N} new event(s) imported\nURL fields: inv={...} reg={...} deadline={...}` | `sync_calendar` after `fn_import_evf_events`. |
+| URL refresh sweep complete | `<b>EVF URL refresh</b>\nTouched: {N}, refreshed: {N}` | `sync_calendar` after `fn_refresh_evf_event_urls`. |
+| Per-event diff after results scrape | `<b>EVF vs CERT: {name}</b>\n<pre>{cert_code}</pre>\nEVF SPWS: {N}  \|  CERT: {N}\nMatch: {N}  \|  EVF-only: {N}  \|  CERT-only: {N}\n{N} new results ingested` | `_compare_and_ingest` per event. |
+| New CERT event auto-created from EVF results | `<b>EVF Import</b>\n<pre>{cert_code}</pre>\n{name}\nCreated event + <b>{N}</b> results ingested` | `_compare_and_ingest` when no in-scope CERT row matched. |
+| Calendar HTML + API both unreachable | `<b>EVF Calendar FAILED</b>\n<pre>{exception}</pre>` | `sync_calendar` on `RuntimeError` from `scrape_full_season_calendar`. |
+| **Logical-integrity violation (ADR-039 Step 0)** | `<b>EVF Sync HALT</b>\n<pre>Future-COMPLETED event(s) detected — manual fix required: {code} dt_start={date} status={status}</pre>\nManual fix required.` | Both `sync_calendar` and `sync_results` at entry, before the workflow exits non-zero. The GH Actions `Notify failure` step then also fires the generic FAILED message. |
+| Workflow-level failure (any non-zero exit) | `EVF sync FAILED. Check: {gh_actions_url}` | `evf-sync.yml`'s `Notify failure` step (curl, plain text). |
+
+Stale-event filtering (ADR-039 Step 1) is logged to stdout only — no Telegram message — to avoid notification noise on routine cron runs. The filtered count appears in the GH Actions log as `Stale-gate: skipping N CERT event(s) outside the 30-day window or COMPLETED`.
+
 ---
 
 ## 11. Environment Sync (ADR-036)

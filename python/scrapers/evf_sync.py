@@ -23,6 +23,10 @@ from python.scrapers.evf_calendar import (
     scrape_full_season_calendar,
     deduplicate_events,
     match_scraped_to_existing,
+    is_in_scope,
+    assert_no_future_completed,
+    LogicalIntegrityError,
+    STALE_WINDOW_DAYS,
 )
 from python.scrapers.evf_results import (
     EvfApiClient,
@@ -107,12 +111,43 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
         weapons = ",".join(e.get("weapons", []))
         print(f"  {e['dt_start']}  {e['name']:<45} {weapons:<15}{fee_str}{team_str}")
 
-    if not dry_run:
-        existing = _management_query(ref, token,
-            f"SELECT id_event, txt_name, dt_start::TEXT FROM tbl_event "
-            f"WHERE id_season = {season['id_season']}"
+    # Fetch the full active-season event roster ONCE (used for invariant
+    # guard, in-scope filter, and dedup). Includes the columns the new
+    # ADR-039 algorithm requires: country, location, dt_end, enum_status.
+    existing = _management_query(ref, token,
+        f"SELECT id_event, txt_code, txt_name, "
+        f"dt_start::TEXT, dt_end::TEXT, "
+        f"txt_country, txt_location, enum_status::TEXT "
+        f"FROM tbl_event WHERE id_season = {season['id_season']}"
+    )
+
+    # Step 0 — logical-integrity guard: a future row marked COMPLETED is
+    # data corruption; halt the sync and alert the admin.
+    try:
+        assert_no_future_completed(existing)
+    except LogicalIntegrityError as exc:
+        _telegram(bot_token, chat_id,
+            f"<b>EVF Sync HALT</b>\n<pre>{str(exc)[:400]}</pre>\n"
+            f"Manual fix required."
         )
-        new, already = deduplicate_events(cal_events, existing)
+        raise
+
+    # Match scraped events against the FULL existing roster (so a COMPLETED
+    # PEW7 still hides Salzburg from being auto-created as a venue-coded
+    # duplicate). Then post-filter: only feed in-scope ones to insert/refresh
+    # paths. Out-of-scope matches are silently skipped — admin territory.
+    new, already = deduplicate_events(cal_events, existing)
+
+    # Drop scraped events that are themselves stale — never auto-create
+    # for a date that's > 30 days past.
+    new_in_scope = [e for e in new if is_in_scope(e)]
+    skipped_stale_new = len(new) - len(new_in_scope)
+    if skipped_stale_new:
+        print(f"  Stale-gate: not auto-creating {skipped_stale_new} stale scraped event(s) "
+              f"(>{STALE_WINDOW_DAYS} days past)")
+    new = new_in_scope
+
+    if not dry_run:
         print(f"\n  {len(new)} new, {len(already)} already in CERT")
 
         if new:
@@ -150,7 +185,9 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
 
         # Refresh URL/enrichment fields on already-imported events (ADR-028
         # amendment). Only fills NULL/empty columns; admin edits preserved.
-        matched_pairs = match_scraped_to_existing(cal_events, existing)
+        # Skip refresh on COMPLETED/stale rows — those are admin territory.
+        in_scope_existing = [e for e in existing if is_in_scope(e)]
+        matched_pairs = match_scraped_to_existing(cal_events, in_scope_existing)
         refresh_payload: list[dict] = []
         for scraped, existing_row in matched_pairs:
             refresh_payload.append({
@@ -180,7 +217,9 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
                 f"<b>EVF URL refresh</b>\nTouched: {touched}, refreshed: {refreshed}"
             )
     else:
-        print("\n  [DRY RUN] No changes made")
+        print(f"\n  [DRY RUN] {len(new)} new, {len(already)} already in CERT")
+        for evt in new:
+            print(f"  [DRY RUN] Would create: {evt.get('dt_start')} {evt.get('name')}")
 
     return cal_events
 
@@ -196,6 +235,30 @@ def sync_results(
     if not season:
         print("No active season found")
         return
+
+    # Fetch active-season CERT events ONCE — used for invariant guard,
+    # scope filter, and per-event dedup via the shared matcher.
+    cert_events = _management_query(ref, token,
+        f"SELECT id_event, txt_code, txt_name, "
+        f"dt_start::TEXT, dt_end::TEXT, "
+        f"txt_country, txt_location, enum_status::TEXT "
+        f"FROM tbl_event WHERE id_season = {season['id_season']}"
+    )
+
+    # Step 0 — logical-integrity guard.
+    try:
+        assert_no_future_completed(cert_events)
+    except LogicalIntegrityError as exc:
+        _telegram(bot_token, chat_id,
+            f"<b>EVF Sync HALT</b>\n<pre>{str(exc)[:400]}</pre>\n"
+            f"Manual fix required."
+        )
+        raise
+
+    # We pass the FULL CERT list (not pre-filtered) to _compare_and_ingest
+    # so the matcher still sees COMPLETED/stale rows and avoids creating
+    # venue-coded duplicates. The post-match scope check decides whether
+    # to actually update the matched row.
 
     print("\nConnecting to EVF API...")
     client = EvfApiClient(request_delay=0.5)
@@ -236,7 +299,8 @@ def sync_results(
                 print(f"  No EVF results for {event_code} (date {target_date})")
                 return
 
-        # Scrape results for each event
+        # Scrape results for each event (the per-event scope check is done
+        # inside _compare_and_ingest after we know which CERT row matches).
         for evf_evt in events_with_results:
             print(f"\n{'='*60}")
             print(f"Scraping: {evf_evt['name']} (EVF ID {evf_evt['evf_id']})")
@@ -250,7 +314,9 @@ def sync_results(
             print(f"  SPWS matches: {len(spws_results)}")
 
             # Compare with CERT data and optionally ingest (pass all_results for participant count)
-            _compare_and_ingest(ref, token, evf_evt, spws_results, dry_run, bot_token, chat_id, all_results=all_results)
+            _compare_and_ingest(ref, token, evf_evt, spws_results, dry_run,
+                                bot_token, chat_id, all_results=all_results,
+                                cert_events_pool=cert_events)
 
     finally:
         client.close()
@@ -289,19 +355,45 @@ def _compare_and_ingest(
     evf_evt: dict, spws_results: list[dict],
     dry_run: bool, bot_token: str, chat_id: str,
     all_results: list[dict] | None = None,
+    cert_events_pool: list[dict] | None = None,
 ) -> None:
-    """Compare EVF-matched SPWS results with CERT data, ingest missing."""
+    """Compare EVF-matched SPWS results with CERT data, ingest missing.
+
+    Uses the shared `_find_existing_match` (ADR-039) when `cert_events_pool`
+    is provided — same dedup ladder as the calendar path. Match candidates
+    include COMPLETED/stale rows so we don't create venue-coded duplicates;
+    the post-match scope check decides whether to update.
+    """
     evf_date = evf_evt["date"]
 
-    # Find matching CERT event by date
-    cert_events = _management_query(ref, token,
-        f"SELECT e.id_event, e.txt_code, e.txt_name, e.dt_start::TEXT "
-        f"FROM tbl_event e "
-        f"WHERE e.id_season = (SELECT id_season FROM tbl_season WHERE bool_active = TRUE) "
-        f"AND e.dt_start BETWEEN '{evf_date}'::DATE - INTERVAL '3 days' "
-        f"AND '{evf_date}'::DATE + INTERVAL '3 days' "
-        f"AND EXISTS(SELECT 1 FROM tbl_tournament t WHERE t.id_event = e.id_event AND t.enum_type IN ('PEW','MEW'))"
-    )
+    cert_events: list[dict] = []
+    if cert_events_pool is not None:
+        # Map the EVF API event onto the calendar-shape dict the matcher expects.
+        scraped_shape = {
+            "name": evf_evt.get("name", ""),
+            "dt_start": evf_date,
+            "country": evf_evt.get("country", ""),
+            "location": evf_evt.get("location", ""),
+        }
+        from python.scrapers.evf_calendar import _find_existing_match
+        match = _find_existing_match(scraped_shape, cert_events_pool)
+        if match is not None:
+            # Post-match scope gate: if matched row is COMPLETED or stale,
+            # skip silently — admin owns it; do NOT auto-create a duplicate.
+            if not is_in_scope(match):
+                print(f"  Matched CERT event {match.get('txt_code')} is "
+                      f"COMPLETED or stale — skipping (admin territory).")
+                return
+            cert_events = [match]
+    else:
+        # Legacy fallback: ad-hoc per-event query.
+        cert_events = _management_query(ref, token,
+            f"SELECT e.id_event, e.txt_code, e.txt_name, e.dt_start::TEXT "
+            f"FROM tbl_event e "
+            f"WHERE e.id_season = (SELECT id_season FROM tbl_season WHERE bool_active = TRUE) "
+            f"AND e.dt_start BETWEEN '{evf_date}'::DATE - INTERVAL '3 days' "
+            f"AND '{evf_date}'::DATE + INTERVAL '3 days'"
+        )
 
     if not cert_events:
         print(f"  No matching CERT event for date {evf_date}")
@@ -309,6 +401,15 @@ def _compare_and_ingest(
             print(f"  [DRY RUN] Would create event + ingest {len(spws_results)} results")
             for r in spws_results:
                 print(f"    {r['place']:>3} {r['spws_surname']:<20} {r['category']} {r['gender']} {r['weapon']}  ({r['country']})")
+            return
+
+        # Auto-create only when the EVF event itself is in scope (Step 1).
+        scraped_shape = {
+            "dt_end": evf_date, "dt_start": evf_date,
+        }
+        if not is_in_scope(scraped_shape):
+            print(f"  Stale-gate: not auto-creating CERT event for {evf_date} "
+                  f"(>30 days past). Admin must create manually.")
             return
 
         # Create the event
