@@ -363,6 +363,11 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# ADR-041: Server-side workflow dispatch. PAT lives only as a Supabase env
+# secret (GH_DISPATCH_PAT, GH_REPO) — never in the browser.
+[functions.dispatch-workflow]
+verify_jwt = true
+
 [analytics]
 enabled = false
 port = 54327

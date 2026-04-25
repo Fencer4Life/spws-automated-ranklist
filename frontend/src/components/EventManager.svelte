@@ -102,12 +102,22 @@
             <span class="event-cell"></span>
             <span class="event-cell actions">
               {#if event.url_event}
-                <button data-field="event-import-btn" class="action-btn import-btn" title={t('tooltip_import_event')} onclick={() => { onimportevent(event.id_event) }}>⬇</button>
+                <button data-field="event-import-btn" class="action-btn import-btn" title={t('tooltip_import_event')} onclick={() => { handleDispatchEvent(event) }}>⬇</button>
               {/if}
               <button data-field="edit-btn" class="icon-btn" title={t('tooltip_edit_event')} onclick={() => { openEditForm(event) }}>&#9998;</button>
               <button data-field="delete-btn" class="icon-btn delete" title={t('tooltip_delete_event')} onclick={() => { if (confirm(t('confirm_delete_event'))) ondelete(event.id_event) }}>&#128465;</button>
             </span>
           </div>
+
+          {#if dispatchStatus.get(event.id_event)}
+            {@const ds = dispatchStatus.get(event.id_event)!}
+            <div data-field="dispatch-status-{event.id_event}" class="dispatch-status dispatch-{ds.phase}">
+              <span class="dispatch-msg">{ds.message}</span>
+              {#if ds.link}
+                <a class="dispatch-link" href={ds.link} target="_blank" rel="noopener">view run on GitHub Actions ↗</a>
+              {/if}
+            </div>
+          {/if}
 
           {#if expandedIds.has(event.id_event)}
             <div data-field="tournament-list" class="tournament-list">
@@ -146,7 +156,7 @@
                     <span data-field="tourn-import-status" class="tourn-cell import-badge {importStatusClass(tourn.enum_import_status)}">{tourn.enum_import_status}</span>
                     <span data-field="tourn-participants" class="tourn-cell">{tourn.int_participant_count ?? '—'}</span>
                     <span class="tourn-cell actions">
-                      <button data-field="tourn-import-btn" class="action-btn import-btn" title={t('tooltip_import_tournament')} onclick={() => { onimporttournament(tourn.id_tournament, tourn.enum_import_status !== 'PLANNED') }}>⬇</button>
+                      <button data-field="tourn-import-btn" class="action-btn import-btn" title={t('tooltip_import_tournament')} onclick={() => { handleDispatchTournament(tourn) }}>⬇</button>
                       <button data-field="tourn-edit-btn" class="icon-btn" title={t('tooltip_edit_tournament')} onclick={() => { openTournEditForm(tourn) }}>&#9998;</button>
                       <button data-field="tourn-delete-btn" class="icon-btn delete" title={t('tooltip_delete_tournament')} onclick={() => { if (confirm(t('confirm_delete_tournament'))) ondeletetournament(tourn.id_tournament) }}>&#128465;</button>
                     </span>
@@ -249,6 +259,77 @@
   import type { CalendarEvent, Season, Organizer, WeaponType, Tournament, TournamentType, GenderType, AgeCategory } from '../lib/types'
   import { t } from '../lib/locale.svelte'
   import { getEventDisplayStatus } from '../lib/eventStatus'
+  import { requestDispatch } from '../lib/api'
+
+  // ADR-041: Per-event dispatch status, rendered inline below each event-row.
+  type DispatchPhase = 'pending' | 'success' | 'error'
+  type DispatchState = { phase: DispatchPhase; message: string; link?: string; ts: number }
+  let dispatchStatus: Map<number, DispatchState> = $state(new Map())
+
+  function setDispatchStatus(id: number, s: DispatchState) {
+    const next = new Map(dispatchStatus)
+    next.set(id, s)
+    dispatchStatus = next
+    if (s.phase !== 'pending') {
+      // Auto-clear terminal states after 5 minutes so the row doesn't
+      // accumulate stale banners forever.
+      const stamp = s.ts
+      setTimeout(() => {
+        const m = new Map(dispatchStatus)
+        const cur = m.get(id)
+        if (cur && cur.ts === stamp) {
+          m.delete(id)
+          dispatchStatus = m
+        }
+      }, 5 * 60 * 1000)
+    }
+  }
+
+  async function dispatchAndTrack(
+    statusId: number,
+    workflow: 'populate-urls.yml' | 'scrape-tournament.yml',
+    inputs: Record<string, string>,
+    label: string,
+  ) {
+    setDispatchStatus(statusId, {
+      phase: 'pending',
+      message: `⏳ Triggering ${workflow.replace('.yml', '')} for ${label}…`,
+      ts: Date.now(),
+    })
+    try {
+      const result = await requestDispatch(workflow, inputs)
+      if (result.ok) {
+        setDispatchStatus(statusId, {
+          phase: 'success',
+          message: `✓ Triggered: ${label}`,
+          link: result.runs_url,
+          ts: Date.now(),
+        })
+      } else {
+        setDispatchStatus(statusId, {
+          phase: 'error',
+          message: `✗ Dispatch failed: ${result.message}`,
+          ts: Date.now(),
+        })
+      }
+    } catch (e: unknown) {
+      setDispatchStatus(statusId, {
+        phase: 'error',
+        message: `✗ Dispatch failed: ${e instanceof Error ? e.message : String(e)}`,
+        ts: Date.now(),
+      })
+    }
+  }
+
+  function handleDispatchEvent(event: CalendarEvent) {
+    return dispatchAndTrack(event.id_event, 'populate-urls.yml', { event_code: event.txt_code }, event.txt_code)
+  }
+
+  // Tournament dispatch is keyed off the parent event's id so the inline
+  // status renders next to the event row (where the tournament list lives).
+  function handleDispatchTournament(tourn: Tournament) {
+    return dispatchAndTrack(tourn.id_event, 'scrape-tournament.yml', { tournament_code: tourn.txt_code }, tourn.txt_code)
+  }
 
   const ALL_STATUSES: string[] = ['PLANNED', 'SCHEDULED', 'CHANGED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
 
@@ -270,10 +351,8 @@
     onupdatestatus = (_id: number, _status: string) => {},
     ondelete = (_id: number) => {},
     ondeletetournament = (_id: number) => {},
-    onimporttournament = (_id: number, _isReimport: boolean) => {},
     onedittournament = (_id: number, _params: Record<string, unknown>) => {},
     oncreatetournament = (_eventId: number, _params: Record<string, unknown>) => {},
-    onimportevent = (_eventId: number) => {},
   }: {
     events?: CalendarEvent[]
     seasons?: Season[]
@@ -286,10 +365,8 @@
     onupdatestatus?: (id: number, status: string) => void
     ondelete?: (id: number) => void
     ondeletetournament?: (id: number) => void
-    onimporttournament?: (id: number, isReimport: boolean) => void
     onedittournament?: (id: number, params: Record<string, unknown>) => void
     oncreatetournament?: (eventId: number, params: Record<string, unknown>) => void
-    onimportevent?: (eventId: number) => void
   } = $props()
 
   let showForm = $state(false)
@@ -605,6 +682,20 @@
     font-size: 12px;
     color: #4a90d9;
   }
+  .dispatch-status {
+    margin: 6px 12px 8px 12px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  .dispatch-status.dispatch-pending { background: #f0f6ff; border: 1px solid #b8d4ee; color: #2a5a9a; }
+  .dispatch-status.dispatch-success { background: #f0fff4; border: 1px solid #b8e6c4; color: #2a7a3a; }
+  .dispatch-status.dispatch-error   { background: #fff0f0; border: 1px solid #fcc;    color: #c33; }
+  .dispatch-status .dispatch-link { color: inherit; text-decoration: underline; font-weight: 600; }
   .url-section {
     display: flex;
     flex-direction: column;

@@ -3,6 +3,14 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
+
+// Mock the api module before importing EventManager so the dispatch path is stubbable
+vi.mock('../src/lib/api', () => ({
+  requestDispatch: vi.fn(),
+}))
+import { requestDispatch } from '../src/lib/api'
+const mockRequestDispatch = vi.mocked(requestDispatch)
+
 import EventManager from '../src/components/EventManager.svelte'
 
 // Mock window.confirm for delete confirmation dialogs
@@ -625,5 +633,99 @@ describe('EventManager Accordion (Phase 6)', () => {
     const primary = container.querySelector('[data-field="url-num-1"].primary')
                   ?? container.querySelector('[data-field="url-num-1"][data-primary="true"]')
     expect(primary).not.toBeNull()
+  })
+
+  // ─── ADR-041 — Edge Function dispatch (server-side, no PAT in browser) ──
+
+  // 9.45a — Clicking ⬇ calls requestDispatch with workflow + event_code
+  it('9.45a: clicking ⬇ invokes requestDispatch(populate-urls.yml, { event_code })', async () => {
+    mockRequestDispatch.mockReset()
+    mockRequestDispatch.mockResolvedValue({
+      ok: true,
+      runs_url: 'https://github.com/Fencer4Life/spws-automated-ranklist/actions/workflows/populate-urls.yml',
+    })
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    await fireEvent.click(container.querySelector('[data-field="event-import-btn"]')!)
+    expect(mockRequestDispatch).toHaveBeenCalledWith('populate-urls.yml', { event_code: 'PPW-WRO-2025-01' })
+  })
+
+  // 9.45b — Pending status renders inline below event-row while in flight
+  it('9.45b: pending status renders inline while dispatch is in flight', async () => {
+    mockRequestDispatch.mockReset()
+    let resolveIt: (v: unknown) => void = () => {}
+    mockRequestDispatch.mockReturnValue(
+      new Promise<unknown>((r) => { resolveIt = r as never }) as never,
+    )
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    await fireEvent.click(container.querySelector('[data-field="event-import-btn"]')!)
+    const status = container.querySelector('[data-field="dispatch-status-10"]')
+    expect(status).not.toBeNull()
+    expect(status!.textContent ?? '').toMatch(/⏳|triggering|wyzwala/i)
+    resolveIt({ ok: true, runs_url: 'x' })
+  })
+
+  // 9.45c — Success status renders runs_url as link
+  it('9.45c: success status renders link to GH Actions run URL', async () => {
+    mockRequestDispatch.mockReset()
+    mockRequestDispatch.mockResolvedValue({
+      ok: true,
+      runs_url: 'https://github.com/Fencer4Life/spws-automated-ranklist/actions/workflows/populate-urls.yml',
+    })
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    await fireEvent.click(container.querySelector('[data-field="event-import-btn"]')!)
+    await new Promise((r) => setTimeout(r, 0))
+    const status = container.querySelector('[data-field="dispatch-status-10"]')
+    expect(status).not.toBeNull()
+    const link = status!.querySelector('a') as HTMLAnchorElement | null
+    expect(link).not.toBeNull()
+    expect(link!.href).toContain('github.com')
+    expect(link!.href).toContain('populate-urls')
+  })
+
+  // 9.45d — Error status renders inline (not via global toast)
+  it('9.45d: error status renders inline below event-row', async () => {
+    mockRequestDispatch.mockReset()
+    mockRequestDispatch.mockResolvedValue({
+      ok: false,
+      code: 'gh_dispatch_failed',
+      message: 'GitHub returned 422: workflow not found',
+    })
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    await fireEvent.click(container.querySelector('[data-field="event-import-btn"]')!)
+    await new Promise((r) => setTimeout(r, 0))
+    const status = container.querySelector('[data-field="dispatch-status-10"]')
+    expect(status).not.toBeNull()
+    expect(status!.textContent ?? '').toMatch(/✗|failed|workflow not found/i)
+  })
+
+  // 9.45e — When url_event empty, ⬇ button is hidden (regression guard)
+  it('9.45e: when url_event is null, ⬇ button is not rendered', () => {
+    const eventNoUrl: CalendarEvent = { ...MOCK_EVENTS[0], url_event: null }
+    const { container } = render(EventManager, {
+      props: { ...propsWithTournaments, events: [eventNoUrl] },
+    })
+    expect(container.querySelector('[data-field="event-import-btn"]')).toBeNull()
+  })
+
+  // 9.45f — Multiple events render independent statuses
+  it('9.45f: dispatch on event A does not affect event B status', async () => {
+    mockRequestDispatch.mockReset()
+    mockRequestDispatch.mockResolvedValue({
+      ok: true,
+      runs_url: 'https://github.com/x/y/actions/workflows/populate-urls.yml',
+    })
+    const eventsBoth: CalendarEvent[] = [
+      MOCK_EVENTS[0],
+      { ...MOCK_EVENTS[0], id_event: 20, txt_code: 'PPW-DRUGI', txt_name: 'Drugi event', url_event: 'https://e.example/' },
+    ]
+    const { container } = render(EventManager, {
+      props: { ...propsWithTournaments, events: eventsBoth },
+    })
+    const allBtns = container.querySelectorAll('[data-field="event-import-btn"]')
+    expect(allBtns.length).toBe(2)
+    await fireEvent.click(allBtns[0])
+    await new Promise((r) => setTimeout(r, 0))
+    expect(container.querySelector('[data-field="dispatch-status-10"]')).not.toBeNull()
+    expect(container.querySelector('[data-field="dispatch-status-20"]')).toBeNull()
   })
 })

@@ -403,6 +403,26 @@ export async function deleteTournamentCascade(id: number): Promise<void> {
   if (error) throw error
 }
 
+export type DispatchResult =
+  | { ok: true; workflow: string; inputs: Record<string, string>; runs_url: string }
+  | { ok: false; code: string; message: string }
+
+// ADR-041: Server-side workflow dispatch via Supabase Edge Function.
+// The PAT lives only as a Supabase env secret in the function's runtime —
+// never in the browser. The caller's session JWT is auto-attached by
+// supabase-js; the function verifies it before reaching the handler.
+export async function requestDispatch(
+  workflow: string, inputs: Record<string, string>
+): Promise<DispatchResult> {
+  const { data, error } = await getClient().functions.invoke('dispatch-workflow', {
+    body: { workflow, inputs },
+  })
+  if (error) {
+    return { ok: false, code: 'invoke_error', message: error.message ?? String(error) }
+  }
+  return data as DispatchResult
+}
+
 export async function triggerGitHubWorkflow(
   pat: string, repo: string, workflow: string, inputs: Record<string, string>
 ): Promise<void> {

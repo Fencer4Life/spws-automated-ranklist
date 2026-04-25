@@ -364,6 +364,47 @@
 - **RTM:** FR-48 updated (12 tbl_event extension columns); FR-98 added; ADR-040 in Appendix C; Appendix D: pgTAP 286→292, pytest 310→314, vitest 267→273, total 870→886.
 - **Coverage:** FR-98 fully covered (15.1–15.6 + 9.44a–f + 3.16k–m + prom.8).
 
+### Server-Side Workflow Dispatch via Edge Function (ADR-041) — 2026-04-25
+
+| Feature | Description | Date | ADR |
+|---------|-------------|------|-----|
+| `dispatch-workflow` Edge Function | Deno function holds the GH PAT as a Supabase env secret (`GH_DISPATCH_PAT`, `GH_REPO`); accepts `{ workflow, inputs }` from authenticated callers; allowlist of two workflows (`populate-urls.yml`, `scrape-tournament.yml`); returns sync `{ ok, runs_url }` after calling GitHub's dispatches API. PAT never appears in browser. | 2026-04-25 | ADR-041 |
+| `requestDispatch()` API | Frontend helper calling `supabase.functions.invoke('dispatch-workflow', ...)`. Caller's session JWT auto-attached. Returns `DispatchResult` typed union. | 2026-04-25 | ADR-041 |
+| EventManager inline status | Per-event-row dispatch status (pending → success-with-link → error) rendered below the event-row, above the tournament-list. Auto-clears 5 minutes after terminal state. Multiple events can show independent statuses. | 2026-04-25 | ADR-041 |
+| Removed: `github-pat` / `github-repo` HTML attributes | Stripped from `<spws-ranklist>` web component (App.svelte props + index.html). PAT never lives in HTML again. `triggerGitHubWorkflow` still exported from api.ts as legacy API but no longer called from App.svelte. | 2026-04-25 | ADR-041 |
+| `release.yml` Edge Function deploy | New step in deploy-cert + deploy-prod jobs: `supabase functions deploy dispatch-workflow --project-ref ...`. Idempotent; replaces function on each release. | 2026-04-25 | ADR-041 |
+
+**Problem:** The admin UI's ⬇ buttons triggered GitHub workflows by reading a PAT from a `github-pat` HTML attribute on `<spws-ranklist>` and POSTing to GitHub's dispatches API directly from the browser. The deployed `index.html` is served by GitHub Pages at a public URL — embedding a PAT in that HTML means anyone with View Source could scrape it. The release pipeline already declined to populate the attribute (the four `sed` lines covered `supabase-*` only, deliberately not `github-*`), which made the button effectively dev-only on cloud and pushed admins to use the secure Telegram path. Admins wanted both surfaces working, securely.
+
+**Approach:** Server-side workflow dispatch via Supabase Edge Function. Browser invokes `supabase.functions.invoke('dispatch-workflow', ...)` with the user's session JWT auto-attached; the function (Deno, ~100 lines including CORS + validation) reads the PAT from `Deno.env.get('GH_DISPATCH_PAT')` and forwards a `workflow_dispatch` call to GitHub. Allowlist of two workflows narrows the function's blast radius even if the auth check is bypassed — only `populate-urls.yml` and `scrape-tournament.yml` are reachable through it. Sub-second click-to-dispatch latency.
+
+**Why not the cron-poller queue I drafted first:** rejected after re-evaluation. The "uses zero PATs" framing was rhetorical (Supabase env secret is not meaningfully less secure than `GITHUB_TOKEN` inside a runner); the queue added a `tbl_dispatch_request` table + RLS + 2 RPCs + a workflow YAML + frontend polling logic for no security advantage and worse UX (60s worst-case latency, 1440 wasted runs/day). The Edge Function is ~100 LoC for the same security guarantee at sub-second latency.
+
+**Changes:**
+- New `supabase/functions/dispatch-workflow/index.ts` (Deno, ~100 lines).
+- `supabase/config.toml`: declare `[functions.dispatch-workflow] verify_jwt = true`.
+- `frontend/src/lib/api.ts`: `requestDispatch()` + `DispatchResult` type.
+- `frontend/src/components/EventManager.svelte`: `dispatchAndTrack` helper, `handleDispatchEvent`, `handleDispatchTournament`, per-event `dispatchStatus: Map<id, DispatchState>`, inline status block in template, dispatch CSS.
+- `frontend/src/components/EventManager.svelte`: removed `onimportevent` and `onimporttournament` props; ⬇ buttons call internal handlers directly.
+- `frontend/src/App.svelte`: removed `handleImportEvent`, `handleImportTournament`, `triggerGitHubWorkflow` import, `github-pat` / `github-repo` props.
+- `frontend/index.html`: removed `github-pat=""` and `github-repo=""` attributes.
+- `frontend/tests/EventManager.test.ts`: 6 new vitest cases (9.45a–9.45f) with `vi.mock('../src/lib/api')` for `requestDispatch`.
+- `.github/workflows/release.yml`: `supabase functions deploy dispatch-workflow` step in `deploy-cert` and `deploy-prod`.
+
+**One-time setup per environment** (admin runs once, manually):
+```
+supabase secrets set --project-ref <CERT_REF> GH_DISPATCH_PAT=<fine-grained-pat> GH_REPO=Fencer4Life/spws-automated-ranklist
+supabase secrets set --project-ref <PROD_REF> GH_DISPATCH_PAT=<fine-grained-pat> GH_REPO=Fencer4Life/spws-automated-ranklist
+```
+
+The PAT should be **fine-grained, scoped to this repo only, with `Actions: read and write` permission and nothing else**.
+
+**TDD:**
+- **RED:** 5/6 vitest assertions failed (the 6th — button hidden when `url_event` null — was already passing; treated as regression guard).
+- **GREEN:** 293 pgTAP + 314 pytest (9 skipped) + 279 vitest pass.
+- **RTM:** FR-99 added; ADR-041 in Appendix C; Appendix D: vitest 273→279, total 887→893.
+- **Coverage:** FR-99 fully covered (9.45a–9.45f).
+
 ---
 
 ## Archived Documents

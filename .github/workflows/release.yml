@@ -132,6 +132,19 @@ jobs:
           fi
           echo "CERT fingerprint verified: $CLOUD_FP"
 
+      # ADR-041: deploy Edge Functions to CERT. Idempotent — Supabase replaces
+      # the function on each deploy. Function source: supabase/functions/.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Deploy Edge Functions to CERT
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy dispatch-workflow \
+            --project-ref "${{ secrets.SUPABASE_CERT_REF }}" \
+            --no-verify-jwt=false
+
       - name: Update tracking files
         if: steps.check.outputs.has_new_migrations == 'true'
         run: |
@@ -194,6 +207,18 @@ jobs:
             exit 1
           fi
           echo "PROD fingerprint verified: $CLOUD_FP"
+
+      # ADR-041: deploy Edge Functions to PROD.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Deploy Edge Functions to PROD
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy dispatch-workflow \
+            --project-ref "${{ secrets.SUPABASE_PROD_REF }}" \
+            --no-verify-jwt=false
 
       - name: Update tracking files
         if: steps.check.outputs.has_new_migrations == 'true'

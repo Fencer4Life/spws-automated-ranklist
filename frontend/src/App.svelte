@@ -108,8 +108,6 @@
       ondeletetournament={handleDeleteTournament}
       onedittournament={handleEditTournament}
       oncreatetournament={handleCreateTournament}
-      onimporttournament={handleImportTournament}
-      onimportevent={handleImportEvent}
     />
   {:else if currentView === 'admin_fencers'}
     <div class="fencer-tabs">
@@ -226,7 +224,6 @@
     deleteTournamentCascade,
     updateTournament,
     createTournament,
-    triggerGitHubWorkflow,
     fetchMatchCandidates,
     approveMatch,
     dismissMatch,
@@ -263,21 +260,20 @@
   import BirthYearReview from './components/BirthYearReview.svelte'
   import { getAuthState, startAuth, signIn, confirmEnroll, verifyChallenge, signOut, reset as resetAuth } from './lib/admin-auth.svelte'
 
+  // ADR-041: github-pat / github-repo attributes removed. Workflow dispatch
+  // is now server-side via the dispatch-workflow Edge Function — no PAT in
+  // browser, ever.
   let {
     'supabase-cert-url': certUrl = '',
     'supabase-cert-key': certKey = '',
     'supabase-prod-url': prodUrl = '',
     'supabase-prod-key': prodKey = '',
-    'github-pat': githubPat = '',
-    'github-repo': githubRepo = '',
     demo = false,
   }: {
     'supabase-cert-url'?: string
     'supabase-cert-key'?: string
     'supabase-prod-url'?: string
     'supabase-prod-key'?: string
-    'github-pat'?: string
-    'github-repo'?: string
     demo?: boolean
   } = $props()
 
@@ -339,11 +335,6 @@
   let error: string | null = $state(null)
   let errorType: 'error' | 'success' | 'progress' = $state('error')
   let errorLink: string | null = $state(null)
-  function setStatus(msg: string, type: 'error' | 'success' | 'progress' = 'error', link: string | null = null) {
-    error = msg
-    errorType = type
-    errorLink = link
-  }
   function clearStatus() { error = null; errorLink = null }
 
   let isActiveSeason = $derived(seasons.find(s => s.id_season === selectedSeasonId)?.bool_active ?? false)
@@ -618,37 +609,9 @@
     }
   }
 
-  async function handleImportEvent(eventId: number) {
-    const event = calendarEvents.find(e => e.id_event === eventId)
-    if (!event) return
-    if (!event.url_event) { setStatus(t('import_no_url'), 'error'); return }
-    if (!githubPat || !githubRepo) { setStatus(t('import_no_github'), 'error'); return }
-    const msg = `${t('import_event_confirm')}\n\n${event.txt_code}\n${event.url_event}`
-    if (!confirm(msg)) return
-    setStatus(`⏳ Triggering populate-urls workflow for ${event.txt_code}…`, 'progress')
-    const runsUrl = `https://github.com/${githubRepo}/actions/workflows/populate-urls.yml`
-    try {
-      await triggerGitHubWorkflow(githubPat, githubRepo, 'populate-urls.yml', { event_code: event.txt_code })
-      setStatus(`✓ ${t('import_triggered_ok')}: ${event.txt_code}\nWatch progress on GitHub Actions:`, 'success', runsUrl)
-    } catch (e: unknown) {
-      setStatus(`✗ Trigger failed: ${e instanceof Error ? e.message : String(e)}`, 'error')
-    }
-  }
-
-  async function handleImportTournament(id: number, _isReimport: boolean) {
-    const tourn = allTournaments.find(t => t.id_tournament === id)
-    if (!tourn) return
-    if (!tourn.url_results) { error = t('import_no_url'); return }
-    if (!githubPat || !githubRepo) { error = t('import_no_github'); return }
-    const msg = `${t('import_confirm')}\n\n${tourn.txt_code}\n${tourn.url_results}`
-    if (!confirm(msg)) return
-    try {
-      await triggerGitHubWorkflow(githubPat, githubRepo, 'scrape-tournament.yml', { tournament_code: tourn.txt_code })
-      error = `${t('import_triggered_ok')}: ${tourn.txt_code}`
-    } catch (e: unknown) {
-      error = e instanceof Error ? e.message : String(e)
-    }
-  }
+  // ADR-041: handleImportEvent / handleImportTournament moved into
+  // EventManager.svelte and now dispatch via the dispatch-workflow Edge
+  // Function instead of a browser-side PAT.
 
   async function reloadAdminEvents() {
     if (selectedSeasonId) {
