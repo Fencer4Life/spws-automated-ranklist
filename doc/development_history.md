@@ -405,6 +405,42 @@ The PAT should be **fine-grained, scoped to this repo only, with `Actions: read 
 - **RTM:** FR-99 added; ADR-041 in Appendix C; Appendix D: vitest 273→279, total 887→893.
 - **Coverage:** FR-99 fully covered (9.45a–9.45f).
 
+#### Amendment 2026-04-25 — Refresh-on-dispatch UX (8 tests)
+
+**Problem:** the dispatch returns instantly (workflow accepted by GitHub Actions) but the actual `url_results` PATCH lands ~20-30 seconds later when the script runs. Admin clicked ⬇, saw `✓ Triggered`, but the tournament list still showed empty URLs because the frontend never re-fetched. Manual hard-refresh of the browser was the only way to see the new data.
+
+**Approach:** Two complementary refresh triggers, both calling existing `App.reloadAdminEvents` via a new `onrefresh` prop:
+
+1. **Auto-refresh ~40s after dispatch success.** `setTimeout(onrefresh, 40_000)` scheduled in `dispatchAndTrack`'s success branch, per-event timer ID tracked so a second dispatch on the same event resets the clock (latest wins, no double-fire).
+2. **Refetch on every accordion expand (▶ → ▼).** `toggleExpand` calls `runRefreshFor(eventId)` on the collapsed→expanded transition; collapsing is a no-op for refresh. Maps to natural admin intent ("show me this event's tournaments now"). Always fires regardless of whether a dispatch happened — consistent semantics, no stale-tracking state.
+
+**Spinner UX (clever, not generic — see [`doc/adr041_refresh_ux_plan.md`](adr041_refresh_ux_plan.md)):**
+
+- **Delayed-show ≥200 ms** — sub-200ms refreshes (the 95% case on CERT) render zero spinner. No flicker on fast networks.
+- **Per-event `Map<id_event, RefreshPhase>`** — no global overlay. A slow refresh on one event doesn't blank-out the rest of the calendar.
+- **Banner lifecycle morph** for dispatch-triggered auto-refresh — the existing dispatch-status banner reuses its slot to morph through `Triggering → Triggered → Refreshing → Refreshed at HH:MM:SS`. One coherent timeline; CSS animates the colour transition for free.
+- **Triangle morph** for expand-triggered refresh on events with no dispatch banner — the expand triangle itself morphs `▶ → ◐ (CSS-spun) → ✓ (1.5s) → ▼`. Co-located with the action that triggered it; zero new UI elements.
+
+**State machine (per event):**
+```
+idle ──[refresh starts]──→ pending ──[<200ms]──→ success-flash (1.5s) ──→ idle
+                              ↘[≥200ms]──→ visible ──[done]──→ success-flash ──→ idle
+                                                  ↘[error]──→ failed (3s) ──→ idle
+```
+
+One state machine, two render targets (banner-morph or triangle-morph) depending on whether a dispatch banner already exists for that event.
+
+**Changes:**
+- `frontend/src/components/EventManager.svelte`: new `onrefresh` prop, `refreshState: Map<number, RefreshPhase>`, `dispatchTimers: Map<number, Timeout>`, `runRefreshFor(eventId)` helper with delayed-show pattern, auto-refresh `setTimeout` in `dispatchAndTrack` success branch, `toggleExpand` fires refresh on collapsed→expanded only, expand-button class morph (`refreshing` / `refresh-success` / `refresh-failed`) + glyph morph (◐/✓/⚠), dispatch-banner content morph during refresh phases.
+- `frontend/src/App.svelte`: pass `onrefresh={reloadAdminEvents}` to `<EventManager>`.
+- `frontend/tests/EventManager.test.ts`: 8 new vitest cases (9.45g–9.45n) using `vi.useFakeTimers` + `vi.advanceTimersByTimeAsync` for deterministic timing.
+
+**TDD:**
+- **RED:** 6/8 new tests failed (9.45j and 9.45k passed vacuously pre-implementation — collapse never called onrefresh because no impl existed; spinner-not-rendered passed because no spinner element existed).
+- **GREEN:** 293 pgTAP + 314 pytest (9 skipped) + 287 vitest pass.
+- **Appendix D:** vitest 279→287, total 893→901.
+- **Coverage:** FR-99 extended with refresh UX coverage (9.45g–9.45n).
+
 ---
 
 ## Archived Documents
