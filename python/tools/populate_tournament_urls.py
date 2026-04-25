@@ -292,6 +292,44 @@ def discover_tournament_urls_from_html(
         raise ValueError(f"Unknown platform: {platform}")
 
 
+def discover_tournament_urls_for_event(event: dict) -> list[dict]:
+    """Iterate event-level URL slots (ADR-040) and merge per-(weapon,gender,
+    category) results. First occurrence wins; collisions logged as warnings.
+
+    `event` is a dict with keys ``url_event`` and ``url_event_2..5`` (any of
+    which may be NULL/empty). Calls ``discover_tournament_urls`` once per
+    non-empty slot, in slot order.
+    """
+    slots = [
+        event.get("url_event"),
+        event.get("url_event_2"),
+        event.get("url_event_3"),
+        event.get("url_event_4"),
+        event.get("url_event_5"),
+    ]
+    seen: set[tuple[str, str, str]] = set()
+    merged: list[dict] = []
+    for slot_url in slots:
+        if slot_url is None:
+            continue
+        url = str(slot_url).strip()
+        if not url:
+            continue
+        results = discover_tournament_urls(url)
+        for r in results:
+            key = (r.get("weapon"), r.get("gender"), r.get("category"))
+            if key in seen:
+                print(
+                    f"WARN: duplicate (weapon,gender,category)={key} from {url} "
+                    f"— keeping first occurrence",
+                    file=sys.stderr,
+                )
+                continue
+            seen.add(key)
+            merged.append(r)
+    return merged
+
+
 def discover_tournament_urls(event_url: str) -> list[dict]:
     """Fetch event page and discover tournament result URLs.
 
@@ -352,10 +390,11 @@ def main():
 
     import httpx
 
-    # 1. Fetch event from DB
+    # 1. Fetch event from DB (all 5 URL slots — ADR-040)
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     resp = httpx.get(
-        f"{supabase_url}/rest/v1/tbl_event?txt_code=eq.{args.event_code}&select=id_event,txt_code,url_event",
+        f"{supabase_url}/rest/v1/tbl_event?txt_code=eq.{args.event_code}"
+        f"&select=id_event,txt_code,url_event,url_event_2,url_event_3,url_event_4,url_event_5",
         headers=headers,
         timeout=10,
     )
@@ -365,14 +404,22 @@ def main():
         print(f"ERROR: Event '{args.event_code}' not found", file=sys.stderr)
         sys.exit(1)
     event = events[0]
-    if not event.get("url_event"):
-        print(f"ERROR: Event '{args.event_code}' has no url_event", file=sys.stderr)
+    slot_urls = [
+        event.get(k) for k in ("url_event", "url_event_2", "url_event_3", "url_event_4", "url_event_5")
+        if event.get(k)
+    ]
+    if not slot_urls:
+        print(f"ERROR: Event '{args.event_code}' has no result-platform URLs", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Event: {event['txt_code']} → {event['url_event']}", file=sys.stderr)
+    print(
+        f"Event: {event['txt_code']} → {len(slot_urls)} URL slot(s): "
+        + ", ".join(slot_urls),
+        file=sys.stderr,
+    )
 
-    # 2. Discover tournament URLs
-    discovered = discover_tournament_urls(event["url_event"])
+    # 2. Discover tournament URLs across all slots
+    discovered = discover_tournament_urls_for_event(event)
     print(f"Discovered {len(discovered)} tournament URLs", file=sys.stderr)
 
     # 3. Fetch tournaments from DB

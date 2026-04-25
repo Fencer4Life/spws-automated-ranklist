@@ -276,7 +276,8 @@ def _read_cert_evf_events(query_fn, id_season: int) -> list[dict]:
         "COALESCE(e.txt_location,'') AS txt_location, "
         "COALESCE(e.txt_country,'') AS txt_country, "
         "COALESCE(e.txt_venue_address,'') AS txt_venue_address, "
-        "e.url_event, e.url_invitation, e.url_registration, "
+        "e.url_event, e.url_event_2, e.url_event_3, e.url_event_4, e.url_event_5, "
+        "e.url_invitation, e.url_registration, "
         "e.dt_registration_deadline::TEXT AS dt_registration_deadline, "
         "e.num_entry_fee, "
         "COALESCE(e.txt_entry_fee_currency,'') AS txt_entry_fee_currency, "
@@ -312,10 +313,19 @@ def _build_import_payload(evt: dict) -> dict:
 
 
 def _build_refresh_payload(prod_id_event: int, evt: dict) -> dict:
-    """Shape a refresh payload targeting an existing PROD event by id_event."""
+    """Shape a refresh payload targeting an existing PROD event by id_event.
+
+    ADR-040: includes url_event_2..5 slots; the receiving RPC applies per-slot
+    NULL-only invariant and re-compacts. Keys are always present (empty string
+    when source is NULL/empty) so payload shape is stable.
+    """
     return {
         "id_event": prod_id_event,
         "url_event": evt.get("url_event") or "",
+        "url_event_2": evt.get("url_event_2") or "",
+        "url_event_3": evt.get("url_event_3") or "",
+        "url_event_4": evt.get("url_event_4") or "",
+        "url_event_5": evt.get("url_event_5") or "",
         "url_invitation": evt.get("url_invitation") or "",
         "url_registration": evt.get("url_registration") or "",
         "dt_registration_deadline": evt.get("dt_registration_deadline") or "",

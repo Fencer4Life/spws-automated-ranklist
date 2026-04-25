@@ -330,6 +330,40 @@
 - **RTM:** FR-92 tests expanded (14.CG1–14.CG9); ADR-034 status Deferred→Implemented in Appendix C; Appendix D: pgTAP 259→268, total 790→799
 - **Coverage:** FR-92 (Cross-gender scoring) fully covered by fn_effective_gender unit tests + ranking integration tests
 
+### Multi-Slot Event Result URLs (ADR-040) — 2026-04-25
+
+| Feature | Description | Date | ADR |
+|---------|-------------|------|-----|
+| `tbl_event.url_event_2..5` | 4 nullable TEXT columns alongside the existing `url_event`. Up to 5 result-platform URL slots per event. Slots are equal-status — no role labels, no per-slot enum, no primary pointer. | 2026-04-25 | ADR-040 |
+| `fn_compact_urls(VARIADIC TEXT[])` | Pure helper. Trim → drop empty → dedupe first-occurrence → pad NULL to length 5. Shared by `fn_create_event`, `fn_update_event`, `fn_refresh_evf_event_urls`. Compact-on-save guarantees: *if any URL is set, slot #1 (`url_event`) is set.* | 2026-04-25 | ADR-040 |
+| EventManager.svelte form | URL section with slot #1 visible (primary cyan border) and slots #2–5 behind a disclosure (auto-opens when any of #2–5 has content; filled-count display). Save handler compacts before calling `oncreate`/`onupdate`. | 2026-04-25 | ADR-040 |
+| `discover_tournament_urls_for_event` | New entry point in `populate_tournament_urls.py`. Iterates non-null slots, runs platform-detect-and-discover per URL, merges per-(weapon,gender,category) results dedupe-first-occurrence. Logs warning on collision. | 2026-04-25 | ADR-040 |
+| promote.py calendar mode | `_read_cert_evf_events` SQL extended to select all 5 slots; `_build_refresh_payload` ships `url_event_2..5` keys to PROD. Per-slot NULL-only invariant + post-write recompact preserve admin-edit protection. | 2026-04-25 | ADR-040 |
+
+**Problem:** EVF Circuit Budapest 2025-09-20/21 had three organiser-published Engarde URLs (one per weapon: `pbt`/`kard`/`tor`). Our schema modelled `tbl_event.url_event` as a single TEXT column, so ADR-029's `populate-urls.yml` could only auto-populate one weapon's tournaments; the other ~20 had to be entered manually. The same shape recurs for any event the organiser splits across multiple platform URLs (per-weapon, per-day, or per-day×weapon).
+
+**Approach:** Additive schema extension — 4 nullable columns, not an array or child table. Compact-on-save makes "URL #1 = canonical primary" a structural invariant rather than coincidence, so every existing `url_event`-dependent code path (calendar 🔗 link, ⬇ Import button, ADR-029 auto-populate seed, ADR-028 refresh write order) keeps working unchanged. Slot positions are non-semantic; admin's choice of "which slot got cleared" carries no information worth preserving across edits.
+
+**Changes:**
+- Migration `20260425000001_event_multi_url.sql`: 4 ALTER TABLEs, `fn_compact_urls`, fn_create_event/fn_update_event recreated with 4 new params, fn_refresh_evf_event_urls extended with per-slot NULL-only invariant + post-write compact.
+- `supabase/tests/15_event_multi_url.sql`: 6 new pgTAP assertions (15.1–15.6).
+- `frontend/src/lib/types.ts`: 4 fields on `CalendarEvent`, 4 on `Create/UpdateEventParams`.
+- `frontend/src/lib/api.ts`: pass `p_url_event_2..5` in createEvent / updateEvent.
+- `frontend/src/lib/locales/{en,pl}.json`: 5 new keys.
+- `frontend/src/components/EventManager.svelte`: 5-slot URL section, disclosure, filled-count, `compactUrls` helper, primary marker on slot #1.
+- `frontend/tests/EventManager.test.ts`: 6 new vitest cases (9.44a–9.44f).
+- `python/tools/populate_tournament_urls.py`: `discover_tournament_urls_for_event` + main() reads all 5 slots.
+- `python/pipeline/promote.py`: SQL select extended; `_build_refresh_payload` ships all 5 slots.
+- `python/tests/test_url_discovery.py`: 3 new pytest cases (3.16k–3.16m).
+- `python/tests/test_promote.py`: 1 new case (prom.8).
+- `doc/mockups/m12_event_edit_multi_url.html`: dual-state mockup (typical 1-URL + Budapest 3-URL).
+
+**TDD:**
+- **RED:** 6 pgTAP + 6 vitest + 4 pytest assertions failed (column missing, fn_compact_urls absent, form lacks slots #2–5, multi-slot discovery absent, refresh payload missing keys).
+- **GREEN:** 292 pgTAP + 314 pytest (9 skipped) + 273 vitest pass.
+- **RTM:** FR-48 updated (12 tbl_event extension columns); FR-98 added; ADR-040 in Appendix C; Appendix D: pgTAP 286→292, pytest 310→314, vitest 267→273, total 870→886.
+- **Coverage:** FR-98 fully covered (15.1–15.6 + 9.44a–f + 3.16k–m + prom.8).
+
 ---
 
 ## Archived Documents

@@ -237,6 +237,10 @@ export async function createEvent(params: CreateEventParams): Promise<number> {
     p_weapons: params.weapons ?? null,
     p_registration: params.registration ?? null,
     p_registration_deadline: params.registrationDeadline ?? null,
+    p_url_event_2: params.urlEvent2 ?? null,
+    p_url_event_3: params.urlEvent3 ?? null,
+    p_url_event_4: params.urlEvent4 ?? null,
+    p_url_event_5: params.urlEvent5 ?? null,
   })
   if (error) throw error
   return data as number
@@ -259,6 +263,10 @@ export async function updateEvent(id: number, params: UpdateEventParams): Promis
     p_weapons: params.weapons ?? null,
     p_registration: params.registration ?? null,
     p_registration_deadline: params.registrationDeadline ?? null,
+    p_url_event_2: params.urlEvent2 ?? null,
+    p_url_event_3: params.urlEvent3 ?? null,
+    p_url_event_4: params.urlEvent4 ?? null,
+    p_url_event_5: params.urlEvent5 ?? null,
   })
   if (error) throw error
 }

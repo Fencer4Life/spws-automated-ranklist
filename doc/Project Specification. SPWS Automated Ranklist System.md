@@ -1623,7 +1623,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-45 | Calendar view: mobile-friendly layout | UC21(e) | 8.46 | Covered (M8) |
 | FR-46 | Admin authentication: Supabase Auth + TOTP MFA (supersedes client-side password gate) | UC22(a), ADR-016 | 9.01–9.17 | Covered (M9, T9.0) |
 | FR-47 | Season CRUD via web UI | UC22(b) | 9.18–9.22, 9.27, 9.37–9.42 | Covered (M9, T9.1 SQL + T9.2 UI) |
-| FR-48 | tbl_event schema extension: 8 columns (txt_country, txt_venue_address, url_invitation, num_entry_fee, txt_entry_fee_currency, arr_weapons, url_registration, dt_registration_deadline) | UC22(c), UC21(d), ADR-030 | 8.05–8.10, 8.18–8.20 | Covered (M8+M9+ADR-030) |
+| FR-48 | tbl_event schema extension: 12 columns (txt_country, txt_venue_address, url_invitation, num_entry_fee, txt_entry_fee_currency, arr_weapons, url_registration, dt_registration_deadline, url_event_2, url_event_3, url_event_4, url_event_5) | UC22(c), UC21(d), ADR-030, ADR-040 | 8.05–8.10, 8.18–8.20, 15.1 | Covered (M8+M9+ADR-030+ADR-040) |
 | FR-49 | Tournament CRUD nested under events | UC22(d) | 9.25–9.26, 9.29, 9.50–9.55 | Covered (M9, T9.1 SQL + T9.4 UI) |
 | FR-50 | Delete cascade (event → tournaments → results) | UC22(e) | 9.30–9.36 | Covered (M9, T9.1) |
 | FR-51 | Tournament re-import in single transaction | UC23(a-f) | 10.1–10.7 | Covered (ADR-022, fn_ingest_tournament_results) |
@@ -1672,6 +1672,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-95 | Event deletion admin tool: `fn_delete_event(prefix)` RPC (+ Telegram `delete <prefix>` command) performs rollback + removal of `tbl_event` row in a single transaction. Used when an event was created in error (wrong-ingest, erroneous scrape, dedup-bug phantom). Stricter than `rollback` (which keeps the event row for re-ingest). Prefix-matches in the active season, reuses `_resolve_event_prefix` + `fn_delete_tournament_cascade` helpers. Admin-only (REVOKE anon, GRANT authenticated). | UC22(e), UC27, ADR-025 (amendment 2026-04-21) | 10.29–10.32 | Covered |
 | FR-96 | EVF stale-event gate: scraper does not auto-create or auto-update events outside the 30-day fresh window or marked `enum_status='COMPLETED'`. `is_in_scope(event)` predicate is applied to existing CERT rows AND scraped EVF events before passing them to `_find_existing_match` / `_create_cert_event`. Stale events are admin-territory; the cron only ever touches in-flight (≤30 days post-end, not COMPLETED) rows. Implemented in `python/scrapers/evf_calendar.py` (`is_in_scope`, `STALE_WINDOW_DAYS`) and applied at entry of `sync_calendar` / `sync_results` in `evf_sync.py`. | UC25, ADR-039 | pytest evf.22, evf.24 | Covered |
 | FR-97 | EVF logical-integrity guard: a `tbl_event` row with `dt_start > today AND enum_status = 'COMPLETED'` is data corruption and halts the scraper. `assert_no_future_completed(events)` raises `LogicalIntegrityError` at sync entry; the caller sends the **EVF Sync HALT** Telegram alert and exits non-zero so the admin notices and reconciles the row manually before the next cron. | UC25, UC27, ADR-039 | pytest evf.23 | Covered |
+| FR-98 | Multi-slot event result URLs: `tbl_event` carries up to 5 nullable result-platform URL slots (`url_event`, `url_event_2..5`); admin enters them via the Event Edit form (slot #1 visible, slots #2–5 behind a disclosure with filled-count). On every save the 5 inputs are compacted (trim → drop empty → dedupe first-occurrence → pad NULL) so any non-null URL always lives in slot #1, preserving every existing `url_event`-as-primary code path (calendar 🔗 link, ⬇ Import button, ADR-029 auto-populate seed, ADR-028 EVF refresh write order). Tournament URL discovery iterates all non-null slots and merges per-(weapon,gender,category) results dedupe-first. `tbl_tournament.url_results` unchanged (drilldown leaf). Implemented as `fn_compact_urls(VARIADIC TEXT[]) RETURNS TEXT[]` shared by `fn_create_event` / `fn_update_event` / `fn_refresh_evf_event_urls`. | UC21, UC22(c), ADR-040 | 15.1–15.6, 9.44a–9.44f, pytest 3.16k–m, prom.8 | Covered |
 
 ### Non-Functional Requirements
 
@@ -1734,25 +1735,26 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-037](adr/037-derived-display-status-awaiting-results.md) | Derived Display Status — "Awaiting Results" (view-layer, preserves ADR-018 rolling carry-over) | ADR-018, ADR-025, ADR-028 |
 | [ADR-038](adr/038-evf-intake-polish-only.md) | EVF-Organized Tournaments Ingest POL-Only Rows | FR-54, ADR-019, ADR-020, ADR-025 |
 | [ADR-039](adr/039-stale-event-gate.md) | EVF Scraper Dedup Algorithm + Stale-Event Gate (amends ADR-028) | FR-58, FR-96, FR-97, ADR-028 |
+| [ADR-040](adr/040-multi-slot-event-urls.md) | Multi-Slot Event Result URLs with Compact-on-Save | FR-48, FR-98, ADR-028, ADR-029, ADR-030, ADR-036 |
 
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 286 assertions (4 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 33 ingest pipeline + 21 identity resolution + 13 EVF import + 5 fencer birth year + 9 cross-gender scoring).
+- pgTAP total: 292 assertions (4 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 33 ingest pipeline + 21 identity resolution + 13 EVF import + 5 fencer birth year + 9 cross-gender scoring + 6 ADR-040 multi-slot URLs).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
-| pgTAP | 286 | 15 | `supabase/tests/` |
-| pytest | 310 | 22 | `python/tests/` |
-| vitest | 267 | 25 | `frontend/tests/` |
+| pgTAP | 292 | 16 | `supabase/tests/` |
+| pytest | 314 | 22 | `python/tests/` |
+| vitest | 273 | 25 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **870** | | |
+| **Total** | **886** | | |
 
 ### Coverage Summary
 
 | Status | Count | FRs |
 |--------|-------|-----|
-| Covered | 90 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-97 |
+| Covered | 91 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-98 |
 | Partial | 2 | FR-53, FR-54 |
 | Superseded | 1 | FR-87 (by FR-88) |
 | Not tested (NFR) | 4 | NFR-01, NFR-03, NFR-04, NFR-08 |

@@ -236,3 +236,92 @@ class TestDiscoverDartagnan:
         # No combined "Runde" entries — every discovered URL is for a single category
         urls = [r["url"] for r in results]
         assert all(u.endswith("-rankings.html") for u in urls)
+
+
+# ── 3.16k–m: Multi-slot event-level URLs (ADR-040) ──────────────────────
+
+class TestMultiSlotEventUrls:
+    """Plan tests 3.16k–3.16m: discovery iterates url_event + url_event_2..5,
+    merges results across URLs deduping by (weapon, gender, category).
+    """
+
+    def test_3_16k_iterates_non_null_slots(self, monkeypatch):
+        """3.16k: discover_tournament_urls_for_event iterates non-null url_event slots
+        and skips NULL/empty ones."""
+        from python.tools import populate_tournament_urls as ptu
+
+        called_with: list[str] = []
+
+        # Each URL yields a distinct (weapon,gender,category) tuple so all
+        # three results survive deduplication.
+        per_url = {
+            "https://a.example/": {"weapon": "EPEE", "gender": "M", "category": "V1"},
+            "https://c.example/": {"weapon": "FOIL", "gender": "F", "category": "V2"},
+            "https://e.example/": {"weapon": "SABRE", "gender": "M", "category": "V3"},
+        }
+
+        def fake_discover(url: str) -> list[dict]:
+            called_with.append(url)
+            wgc = per_url[url]
+            return [{**wgc, "url": f"{url}#cat", "source_name": f"slot for {url}"}]
+
+        monkeypatch.setattr(ptu, "discover_tournament_urls", fake_discover)
+
+        event = {
+            "url_event":   "https://a.example/",
+            "url_event_2": None,
+            "url_event_3": "https://c.example/",
+            "url_event_4": "",        # empty → skip
+            "url_event_5": "https://e.example/",
+        }
+        results = ptu.discover_tournament_urls_for_event(event)
+        assert called_with == ["https://a.example/", "https://c.example/", "https://e.example/"]
+        assert len(results) == 3
+
+    def test_3_16l_dedupes_by_weapon_gender_category(self, monkeypatch):
+        """3.16l: when two URLs both yield results for the same (weapon,gender,category),
+        keep the first occurrence and log a warning."""
+        from python.tools import populate_tournament_urls as ptu
+
+        # URL A returns Epee M V1; URL B returns Epee M V1 (collision) + Foil F V2
+        def fake_discover(url: str) -> list[dict]:
+            if url == "https://a.example/":
+                return [{"weapon": "EPEE", "gender": "M", "category": "V1",
+                         "url": "https://a.example/em-v1", "source_name": "A"}]
+            if url == "https://b.example/":
+                return [
+                    {"weapon": "EPEE", "gender": "M", "category": "V1",
+                     "url": "https://b.example/em-v1-dup", "source_name": "B-dup"},
+                    {"weapon": "FOIL", "gender": "F", "category": "V2",
+                     "url": "https://b.example/ff-v2", "source_name": "B"},
+                ]
+            return []
+
+        monkeypatch.setattr(ptu, "discover_tournament_urls", fake_discover)
+
+        event = {
+            "url_event":   "https://a.example/",
+            "url_event_2": "https://b.example/",
+            "url_event_3": None, "url_event_4": None, "url_event_5": None,
+        }
+        results = ptu.discover_tournament_urls_for_event(event)
+        # 2 unique (weapon, gender, category) combos: (EPEE,M,V1) + (FOIL,F,V2)
+        keys = {(r["weapon"], r["gender"], r["category"]) for r in results}
+        assert keys == {("EPEE", "M", "V1"), ("FOIL", "F", "V2")}
+        # First occurrence wins → URL A's URL is kept for the duplicate
+        em_v1 = next(r for r in results if (r["weapon"], r["gender"], r["category"]) == ("EPEE","M","V1"))
+        assert em_v1["url"] == "https://a.example/em-v1"
+
+    def test_3_16m_all_null_returns_empty(self, monkeypatch):
+        """3.16m: event with all 5 URL slots NULL/empty → empty result list, no calls."""
+        from python.tools import populate_tournament_urls as ptu
+
+        called = []
+        monkeypatch.setattr(ptu, "discover_tournament_urls",
+                            lambda u: (called.append(u), [])[1])
+
+        event = {"url_event": None, "url_event_2": "", "url_event_3": None,
+                 "url_event_4": None, "url_event_5": None}
+        results = ptu.discover_tournament_urls_for_event(event)
+        assert results == []
+        assert called == []

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M12 Mockup — Event Edit Form: Multiple Result URLs</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; }
+
+  h1 { text-align: center; color: #00d4ff; margin-bottom: 8px; font-size: 1.6em; }
+  .subtitle { text-align: center; color: #888; margin-bottom: 30px; font-size: 0.95em; max-width: 920px; margin-left: auto; margin-right: auto; }
+
+  .section-label {
+    background: #00d4ff; color: #1a1a2e; padding: 8px 16px; border-radius: 8px 8px 0 0;
+    font-weight: 700; font-size: 1.05em; display: inline-block; margin-top: 30px;
+  }
+  .section-desc {
+    color: #aaa; font-size: 0.85em; padding: 6px 0 10px 0; max-width: 960px;
+  }
+
+  /* App chrome */
+  .app-frame {
+    background: #16213e; border-radius: 0 8px 8px 8px; overflow: hidden;
+    max-width: 960px; border: 1px solid #0f3460;
+  }
+  .header {
+    background: #0f3460; padding: 10px 16px; display: flex; align-items: center; gap: 12px;
+    font-size: 0.9em; border-bottom: 1px solid #1a4a8a;
+  }
+  .hamburger { font-size: 1.3em; cursor: pointer; color: #00d4ff; }
+  .header-title { font-weight: 700; color: #fff; flex: 1; }
+  .header-pill { background: #1a4a8a; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; color: #7fbadc; border: none; }
+  .header-env { background: #ff6b35; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 0.75em; font-weight: 700; }
+  .lang-toggle { font-size: 1.1em; cursor: pointer; }
+
+  .breadcrumb { font-size: 0.8em; color: #7fbadc; margin: 14px 16px 14px 16px; }
+  .breadcrumb a { color: #00d4ff; text-decoration: none; }
+
+  /* Event card containing the inline edit form */
+  .event-card {
+    background: #1a2744; border: 1px solid #1a4a8a; border-radius: 8px;
+    margin: 0 16px 16px 16px; overflow: hidden;
+  }
+  .event-row {
+    padding: 10px 14px; display: flex; align-items: center; gap: 10px;
+    background: #16213e; border-bottom: 1px solid #1a4a8a;
+  }
+  .event-row .ev-name { font-weight: 600; color: #fff; flex: 1; font-size: 0.92em; }
+  .event-row .ev-date { color: #7fbadc; font-size: 0.8em; }
+  .event-row .ev-city { color: #888; font-size: 0.8em; }
+  .event-row .ev-status { font-size: 0.7em; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: #0a3622; color: #4ade80; }
+
+  /* Edit form — matches existing EventManager.svelte layout */
+  .edit-form {
+    padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .edit-form label {
+    display: flex; flex-direction: column; gap: 4px;
+    font-size: 0.78em; color: #7fbadc; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .edit-form label.inline { flex-direction: row; align-items: center; gap: 8px; text-transform: none; letter-spacing: 0; color: #ccc; }
+  .edit-form input[type="text"],
+  .edit-form input[type="number"],
+  .edit-form input[type="date"],
+  .edit-form select {
+    background: #0d1b2a; border: 1px solid #1a4a8a; color: #e0e0e0;
+    padding: 7px 10px; border-radius: 6px; font-size: 0.88em; font-family: inherit;
+  }
+  .edit-form input:focus, .edit-form select:focus { outline: 1px solid #00d4ff; border-color: #00d4ff; }
+  .edit-form input::placeholder { color: #4a5a78; font-style: italic; }
+
+  /* URL section — visually grouped, but identical input style as other fields */
+  .url-section {
+    border: 1px dashed #1a4a8a; border-radius: 8px; padding: 12px 14px;
+    background: rgba(0, 212, 255, 0.04);
+  }
+  .url-section-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    font-size: 0.78em; color: #00d4ff; text-transform: uppercase; letter-spacing: 0.5px;
+    font-weight: 700;
+  }
+  .url-section-help {
+    font-size: 0.75em; color: #888; font-weight: 400; text-transform: none; letter-spacing: 0;
+    margin-left: auto;
+  }
+  .url-row {
+    display: grid; grid-template-columns: 60px 1fr; gap: 10px; align-items: center;
+    margin-bottom: 8px;
+  }
+  .url-row:last-child { margin-bottom: 0; }
+  .url-num {
+    font-size: 0.72em; color: #7fbadc; font-weight: 600;
+    background: #1a2744; border: 1px solid #1a4a8a; padding: 6px 0;
+    border-radius: 6px; text-align: center; font-family: monospace;
+  }
+  .url-num.primary { color: #00d4ff; border-color: #00d4ff; background: rgba(0, 212, 255, 0.12); }
+  .url-num.empty   { color: #555; }
+  .url-row input { width: 100%; }
+
+  .disclosure {
+    border: none; background: none; color: #00d4ff; cursor: pointer;
+    font-size: 0.82em; padding: 8px 0 0 0; text-align: left;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .disclosure:hover { color: #4ae0ff; }
+  .disclosure-arrow { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .disclosure-arrow.open { transform: rotate(90deg); }
+
+  .row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .form-actions {
+    display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid #1a4a8a; margin-top: 6px;
+  }
+  .save-btn {
+    background: #0a3622; color: #4ade80; border: 1px solid #4ade80;
+    padding: 6px 14px; border-radius: 6px; font-size: 0.82em; cursor: pointer; font-weight: 700;
+  }
+  .save-btn:hover { background: #0f4a2e; }
+  .cancel-btn {
+    background: none; color: #888; border: 1px solid #1a4a8a;
+    padding: 6px 14px; border-radius: 6px; font-size: 0.82em; cursor: pointer;
+  }
+  .cancel-btn:hover { color: #ccc; border-color: #888; }
+
+  /* Annotations */
+  .annotate-new { border-left: 2px solid #fbbf24; padding-left: 10px; }
+  .badge-new {
+    display: inline-block; background: #3a2a0a; color: #fbbf24;
+    padding: 1px 6px; border-radius: 8px; font-size: 0.65em; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-left: 6px;
+  }
+  .badge-existing {
+    display: inline-block; background: #1a2744; color: #7fbadc;
+    padding: 1px 6px; border-radius: 8px; font-size: 0.65em; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-left: 6px;
+  }
+
+  /* Notes section */
+  .notes {
+    background: #0d1b2a; border: 1px solid #1a4a8a; border-radius: 8px;
+    padding: 16px 18px; margin-top: 30px; max-width: 960px;
+  }
+  .notes h3 { color: #00d4ff; font-size: 0.95em; margin-bottom: 8px; }
+  .notes h4 { color: #fbbf24; font-size: 0.82em; margin: 12px 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+  .notes ul { padding-left: 20px; font-size: 0.85em; color: #ccc; }
+  .notes li { margin-bottom: 5px; }
+  .notes code { background: #1a2744; padding: 1px 5px; border-radius: 3px; color: #fbbf24; font-size: 0.9em; font-family: monospace; }
+  .notes .ok    { color: #4ade80; }
+  .notes .warn  { color: #fbbf24; }
+</style>
+</head>
+<body>
+
+<h1>M12 — Event Edit Form: Multiple Result URLs</h1>
+<p class="subtitle">
+  Event-level <code>url_event</code> stays as URL #1 (no rename, no semantic break).
+  Four new optional slots <code>url_event_2..url_event_5</code> appear in the same form, grouped in a single section.
+  The tournament URL discovery script later iterates non-null slots; tournament-level <code>url_results</code> is unchanged.
+</p>
+
+<!-- ══════════════════════════════════════════════════════════════
+     STATE A — Typical event (1 URL): backward-compatible default
+     ══════════════════════════════════════════════════════════════ -->
+<div class="section-label">State A — Typical event (1 URL filled)</div>
+<p class="section-desc">
+  The 95% case. URL #1 is visible and behaves exactly like today's <code>url_event</code> field.
+  Slots #2–#5 are tucked behind a disclosure (closed by default), so the form length and visual weight are unchanged for admins editing typical Polish events.
+</p>
+
+<div class="app-frame">
+  <div class="header">
+    <span class="hamburger">☰</span>
+    <span class="header-title">SPWS Wydarzenia</span>
+    <span class="header-env">CT</span>
+    <select class="header-pill">
+      <option>SPWS-2025-2026</option>
+    </select>
+    <span class="lang-toggle">🇬🇧 🇵🇱</span>
+  </div>
+
+  <div class="breadcrumb"><a href="#">Ranklist</a> › <strong>Wydarzenia</strong> › <em>Edycja</em></div>
+
+  <div class="event-card">
+    <div class="event-row">
+      <span class="ev-name">PP1 — Puchar Polski #1</span>
+      <span class="ev-date">2025-10-04</span>
+      <span class="ev-city">Warszawa</span>
+      <span class="ev-status">COMPLETED</span>
+    </div>
+
+    <div class="edit-form">
+      <label>Nazwa wydarzenia <input type="text" value="PP1 — Puchar Polski #1"></label>
+      <label>Lokalizacja <input type="text" value="Warszawa"></label>
+
+      <div class="row-2col">
+        <label>Data rozpoczęcia <input type="date" value="2025-10-04"></label>
+        <label>Data zakończenia <input type="date" value="2025-10-04"></label>
+      </div>
+
+      <div class="row-2col">
+        <label>Kraj <input type="text" value="Polska"></label>
+        <label>Adres obiektu <input type="text" value="ul. Konwiktorska 6"></label>
+      </div>
+
+      <!-- URL SECTION — State A: only #1 visible, rest collapsed -->
+      <div class="url-section">
+        <div class="url-section-header">
+          🔗 URL-e wyników (do skanowania platformy)
+          <span class="url-section-help">używane przez ⬇ Import — discovery API platformy</span>
+        </div>
+
+        <div class="url-row">
+          <div class="url-num primary">URL #1</div>
+          <input type="text" value="https://www.fencingtimelive.com/events/EID/12345">
+        </div>
+
+        <button class="disclosure">
+          <span class="disclosure-arrow">▶</span>
+          Pokaż 4 dodatkowe sloty URL <span style="color:#888; font-weight:400;">(0 wypełnionych)</span>
+        </button>
+      </div>
+
+      <label>Zaproszenie (PDF) <input type="text" value="https://veteransfencing.eu/inv.pdf"></label>
+      <label>URL rejestracji <input type="text" value=""></label>
+      <div class="row-2col">
+        <label>Termin rejestracji <input type="date" value=""></label>
+        <label>Wpisowe
+          <div style="display:flex; gap:6px;">
+            <input type="number" value="120" style="flex:1;">
+            <select style="width:80px;"><option>PLN</option><option>EUR</option><option>USD</option></select>
+          </div>
+        </label>
+      </div>
+
+      <div class="row-2col">
+        <label>Organizator
+          <select><option>SPWS</option><option>EVF</option></select>
+        </label>
+        <label>Bronie
+          <div style="display:flex; gap:10px; padding-top:4px;">
+            <label class="inline"><input type="checkbox" checked> Szpada</label>
+            <label class="inline"><input type="checkbox" checked> Floret</label>
+            <label class="inline"><input type="checkbox" checked> Szabla</label>
+          </div>
+        </label>
+      </div>
+
+      <label>Status
+        <select><option>COMPLETED</option><option>IN_PROGRESS</option><option>PLANNED</option></select>
+      </label>
+
+      <div class="form-actions">
+        <button class="save-btn">💾 Zapisz</button>
+        <button class="cancel-btn">Anuluj</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     STATE B — Budapest case (3 URLs): disclosure expanded, slots filled
+     ══════════════════════════════════════════════════════════════ -->
+<div class="section-label" style="margin-top:50px;">State B — Budapest event (3 URLs filled)</div>
+<p class="section-desc">
+  Same form, disclosure expanded. Slots #1–#3 hold the per-weapon Engarde URLs the organiser actually published.
+  Slots #4–#5 stay empty (placeholders only). When admin clicks ⬇ Import, the discovery script loops over all non-null slots.
+</p>
+
+<div class="app-frame">
+  <div class="header">
+    <span class="hamburger">☰</span>
+    <span class="header-title">SPWS Wydarzenia</span>
+    <span class="header-env">CT</span>
+    <select class="header-pill"><option>SPWS-2025-2026</option></select>
+    <span class="lang-toggle">🇬🇧 🇵🇱</span>
+  </div>
+
+  <div class="breadcrumb"><a href="#">Ranklist</a> › <strong>Wydarzenia</strong> › <em>Edycja</em></div>
+
+  <div class="event-card">
+    <div class="event-row">
+      <span class="ev-name">PEW1 — EVF Circuit Budapest</span>
+      <span class="ev-date">2025-09-20 – 2025-09-21</span>
+      <span class="ev-city">Budapest</span>
+      <span class="ev-status">COMPLETED</span>
+    </div>
+
+    <div class="edit-form">
+      <label>Nazwa wydarzenia <input type="text" value="EVF Circuit Budapest"></label>
+      <label>Lokalizacja <input type="text" value="Budapest"></label>
+
+      <div class="row-2col">
+        <label>Data rozpoczęcia <input type="date" value="2025-09-20"></label>
+        <label>Data zakończenia <input type="date" value="2025-09-21"></label>
+      </div>
+
+      <div class="row-2col">
+        <label>Kraj <input type="text" value="Hungary"></label>
+        <label>Adres obiektu <input type="text" value="Istvánmezei út 3-5., Budapest"></label>
+      </div>
+
+      <!-- URL SECTION — State B: disclosure expanded, 3 of 5 filled -->
+      <div class="url-section annotate-new">
+        <div class="url-section-header">
+          🔗 URL-e wyników (do skanowania platformy)
+          <span class="url-section-help">3/5 wypełnionych · iterowane przez discovery</span>
+        </div>
+
+        <div class="url-row">
+          <div class="url-num primary">URL #1</div>
+          <input type="text" value="https://engarde-service.com/tournament/hunfencing/2025_09_20_pbt">
+        </div>
+        <div class="url-row">
+          <div class="url-num">URL #2 <span class="badge-new">nowy</span></div>
+          <input type="text" value="https://engarde-service.com/tournament/hunfencing/2025_09_21_kard">
+        </div>
+        <div class="url-row">
+          <div class="url-num">URL #3 <span class="badge-new">nowy</span></div>
+          <input type="text" value="https://engarde-service.com/tournament/hunfencing/2025_09_21_tor">
+        </div>
+        <div class="url-row">
+          <div class="url-num empty">URL #4</div>
+          <input type="text" value="" placeholder="opcjonalnie — kolejny URL platformy wyników">
+        </div>
+        <div class="url-row">
+          <div class="url-num empty">URL #5</div>
+          <input type="text" value="" placeholder="opcjonalnie — kolejny URL platformy wyników">
+        </div>
+
+        <button class="disclosure">
+          <span class="disclosure-arrow open">▶</span>
+          Ukryj dodatkowe sloty URL
+        </button>
+      </div>
+
+      <label>Zaproszenie (PDF) <input type="text" value="https://www.veteransfencing.eu/wp-content/uploads/2025/08/International-Veteran-Budapest-Cup-event-2025-september-ENG.pdf"></label>
+      <label>URL rejestracji <input type="text" value=""></label>
+      <div class="row-2col">
+        <label>Termin rejestracji <input type="date" value=""></label>
+        <label>Wpisowe
+          <div style="display:flex; gap:6px;">
+            <input type="number" value="45" style="flex:1;">
+            <select style="width:80px;"><option>EUR</option><option>PLN</option><option>USD</option></select>
+          </div>
+        </label>
+      </div>
+
+      <div class="row-2col">
+        <label>Organizator <select><option>EVF</option><option>SPWS</option></select></label>
+        <label>Bronie
+          <div style="display:flex; gap:10px; padding-top:4px;">
+            <label class="inline"><input type="checkbox" checked> Szpada</label>
+            <label class="inline"><input type="checkbox" checked> Floret</label>
+            <label class="inline"><input type="checkbox" checked> Szabla</label>
+          </div>
+        </label>
+      </div>
+
+      <label>Status <select><option>COMPLETED</option></select></label>
+
+      <div class="form-actions">
+        <button class="save-btn">💾 Zapisz</button>
+        <button class="cancel-btn">Anuluj</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     Notes
+     ══════════════════════════════════════════════════════════════ -->
+<div class="notes">
+  <h3>Założenia projektowe — co się NIE zmienia</h3>
+  <ul>
+    <li><span class="ok">✔</span> <code>url_event</code> = URL #1 — nazwa kolumny, kontrakt RPC, znacznik 🔗 na karcie kalendarza, ścieżka discovery — bez zmian.</li>
+    <li><span class="ok">✔</span> <code>tbl_tournament.url_results</code> — bez zmian. Pokazywany w drilldown rankingu.</li>
+    <li><span class="ok">✔</span> <code>fn_create_event</code> i <code>fn_update_event</code> — istniejące parametry zachowane; cztery nowe parametry <code>p_url_event_2..p_url_event_5</code> dodane jako <em>nullable defaults</em>, więc wszystkie istniejące wywołania (frontend, scraper, promote.py, seed dump) działają bez modyfikacji.</li>
+    <li><span class="ok">✔</span> <code>vw_calendar</code> — kontrakt karty kalendarza nie wymaga ekspozycji slotów #2–#5 (są to dane techniczne dla discovery, nie dla użytkownika końcowego). Można ekspozycję dodać później bez wpływu na obecne komponenty.</li>
+    <li><span class="ok">✔</span> ADR-028 NULL-only refresh — niezmiennik trzyma się trywialnie: scraper EVF zapisuje tylko sloty obecnie NULL/empty.</li>
+    <li><span class="ok">✔</span> ADR-036 schema-driven export PROD — automatycznie obejmie nowe kolumny.</li>
+  </ul>
+
+  <h3>Co się zmienia</h3>
+  <ul>
+    <li><span class="warn">⚠</span> Migracja: <code>ALTER TABLE tbl_event ADD COLUMN url_event_2..5 TEXT</code> (4 nullowalne kolumny).</li>
+    <li><span class="warn">⚠</span> EventManager.svelte: 4 dodatkowe inputy w sekcji <em>URL-e wyników</em>; toggle "Pokaż / Ukryj dodatkowe sloty"; serializacja przy zapisie.</li>
+    <li><span class="warn">⚠</span> populate-urls.yml / <code>python/url_discovery/</code>: pętla po slotach <code>url_event, url_event_2..5</code>, pomija nulle, deduplikuje rezultaty po <code>url_results</code>.</li>
+    <li><span class="warn">⚠</span> Klucze i18n: <code>event_results_url_label</code> (istniejący — "URL #1"), <code>event_results_url_extra_label</code> (nowy — "URL #2..#5"), <code>event_results_url_show_extras</code> / <code>event_results_url_hide_extras</code>.</li>
+  </ul>
+
+  <h3>Decyzje UI</h3>
+  <ul>
+    <li><strong>Slot #1 = primary, oznaczony cyjanową obwódką.</strong> To jest <code>url_event</code> i pełni dotychczasową rolę (link 🔗 w kalendarzu, seed dla auto-population dla 95% wydarzeń).</li>
+    <li><strong>Sloty #2–#5 ukryte za disclosure</strong> domyślnie (zwinięte), aby formularz nie urósł wizualnie dla typowego wydarzenia. Disclosure pokazuje licznik wypełnionych — np. <em>(3 wypełnionych)</em> — żeby admin nie przegapił istnienia dodatkowych URL-i.</li>
+    <li><strong>Brak limitu typu / etykiety na slot.</strong> Sloty są równorzędne — każdy może zawierać URL Engarde, FTL, 4Fence albo inny. Discovery rozpoznaje platformę po URL-u (już to robi).</li>
+    <li><strong>Limit 5 jest hardkodowany w schemacie.</strong> Pokrywa Budapest (3), zostawia headroom (×2). Jeśli kiedyś pojawi się event z 6+ URL-ami, zostaje migracja na <code>tbl_event_url</code> child table — to jest moment, kiedy bardziej skomplikowane rozwiązanie zaczyna się opłacać. Na dziś — overkill.</li>
+  </ul>
+</div>
+
+</body>
+</html>

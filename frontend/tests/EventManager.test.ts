@@ -39,6 +39,10 @@ const MOCK_EVENTS: CalendarEvent[] = [
     bool_has_international: false,
     url_registration: 'https://example.com/register',
     dt_registration_deadline: '2025-01-10',
+    url_event_2: null,
+    url_event_3: null,
+    url_event_4: null,
+    url_event_5: null,
   },
   {
     id_event: 11,
@@ -60,6 +64,10 @@ const MOCK_EVENTS: CalendarEvent[] = [
     bool_has_international: false,
     url_registration: null,
     dt_registration_deadline: null,
+    url_event_2: null,
+    url_event_3: null,
+    url_event_4: null,
+    url_event_5: null,
   },
 ]
 
@@ -498,5 +506,124 @@ describe('EventManager Accordion (Phase 6)', () => {
     await fireEvent.click(saveBtn)
 
     expect(oncreatetournament).toHaveBeenCalledWith(10, expect.objectContaining({ weapon: 'FOIL' }))
+  })
+
+  // ─── ADR-040 — Multi-slot event result URLs ──────────────────────────
+
+  // 9.44a — Edit form populates 5 URL inputs from url_event + url_event_2..5
+  it('9.44a: edit form populates 5 URL inputs from url_event + url_event_2..5', async () => {
+    const eventsWithMultiUrl: CalendarEvent[] = [{
+      ...MOCK_EVENTS[0],
+      url_event: 'https://e1.example/',
+      url_event_2: 'https://e2.example/',
+      url_event_3: 'https://e3.example/',
+      url_event_4: null,
+      url_event_5: null,
+    }]
+    const { container } = render(EventManager, { props: { ...propsWithTournaments, events: eventsWithMultiUrl } })
+    const editBtn = container.querySelector('[data-field="edit-btn"]')!
+    await fireEvent.click(editBtn)
+
+    const u1 = container.querySelector('[data-field="form-url-event"]') as HTMLInputElement
+    const u2 = container.querySelector('[data-field="form-url-event-2"]') as HTMLInputElement
+    const u3 = container.querySelector('[data-field="form-url-event-3"]') as HTMLInputElement
+    const u4 = container.querySelector('[data-field="form-url-event-4"]') as HTMLInputElement
+    const u5 = container.querySelector('[data-field="form-url-event-5"]') as HTMLInputElement
+
+    expect(u1.value).toBe('https://e1.example/')
+    expect(u2.value).toBe('https://e2.example/')
+    expect(u3.value).toBe('https://e3.example/')
+    expect(u4.value).toBe('')
+    expect(u5.value).toBe('')
+  })
+
+  // 9.44b — Disclosure starts closed when slots #2..5 all NULL; auto-opens when any set
+  it('9.44b: disclosure auto-opens when any of slots #2-5 is set on form-open', async () => {
+    // Case A: all of #2-5 null → disclosure closed (slots #2-5 inputs not visible)
+    const { container: cA } = render(EventManager, { props: propsWithTournaments })
+    await fireEvent.click(cA.querySelector('[data-field="edit-btn"]')!)
+    expect(cA.querySelector('[data-field="form-url-event-2"]')).toBeNull()
+
+    // Case B: slot #3 has a value → disclosure auto-opens
+    const eventsB: CalendarEvent[] = [{
+      ...MOCK_EVENTS[0],
+      url_event_3: 'https://e3.example/',
+    }]
+    const { container: cB } = render(EventManager, { props: { ...propsWithTournaments, events: eventsB } })
+    await fireEvent.click(cB.querySelector('[data-field="edit-btn"]')!)
+    expect(cB.querySelector('[data-field="form-url-event-2"]')).not.toBeNull()
+  })
+
+  // 9.44c — Disclosure label shows filled-count
+  it('9.44c: disclosure label shows filled-count for slots #2-5', async () => {
+    const eventsWithMultiUrl: CalendarEvent[] = [{
+      ...MOCK_EVENTS[0],
+      url_event_2: 'https://e2.example/',
+      url_event_4: 'https://e4.example/',
+    }]
+    const { container } = render(EventManager, { props: { ...propsWithTournaments, events: eventsWithMultiUrl } })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+
+    const disclosure = container.querySelector('[data-field="url-extras-disclosure"]') as HTMLElement
+    expect(disclosure).not.toBeNull()
+    expect(disclosure.textContent).toMatch(/2/)  // shows 2 of 4 extras filled
+  })
+
+  // 9.44d — Save handler compacts gap input (left-shift, drop empties, pad NULL)
+  it('9.44d: save compacts gap input [NULL,B,NULL,D,NULL] to urlEvent=B, urlEvent2=D', async () => {
+    const onupdate = vi.fn()
+    const eventsWithMultiUrl: CalendarEvent[] = [{
+      ...MOCK_EVENTS[0],
+      url_event: null,
+      url_event_2: 'B',
+      url_event_3: null,
+      url_event_4: 'D',
+      url_event_5: null,
+    }]
+    const { container } = render(EventManager, { props: { ...propsWithTournaments, events: eventsWithMultiUrl, onupdate } })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+
+    expect(onupdate).toHaveBeenCalledWith(10, expect.objectContaining({
+      urlEvent: 'B',
+      urlEvent2: 'D',
+      urlEvent3: null,
+      urlEvent4: null,
+      urlEvent5: null,
+    }))
+  })
+
+  // 9.44e — Save handler dedupes preserving first occurrence + trims whitespace
+  it('9.44e: save dedupes [A, A, B, "  ", ""] to urlEvent=A, urlEvent2=B', async () => {
+    const onupdate = vi.fn()
+    const eventsWithMultiUrl: CalendarEvent[] = [{
+      ...MOCK_EVENTS[0],
+      url_event: 'A',
+      url_event_2: 'A',         // duplicate
+      url_event_3: 'B',
+      url_event_4: '  ',        // whitespace-only → drop
+      url_event_5: '',          // empty → drop
+    }]
+    const { container } = render(EventManager, { props: { ...propsWithTournaments, events: eventsWithMultiUrl, onupdate } })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+
+    expect(onupdate).toHaveBeenCalledWith(10, expect.objectContaining({
+      urlEvent: 'A',
+      urlEvent2: 'B',
+      urlEvent3: null,
+      urlEvent4: null,
+      urlEvent5: null,
+    }))
+  })
+
+  // 9.44f — Slot #1 input has primary styling marker (data-primary or class)
+  it('9.44f: slot #1 input has primary marker (.url-num.primary or data-primary)', async () => {
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+
+    const primary = container.querySelector('[data-field="url-num-1"].primary')
+                  ?? container.querySelector('[data-field="url-num-1"][data-primary="true"]')
+    expect(primary).not.toBeNull()
   })
 })
