@@ -298,8 +298,13 @@
 
   // Delayed-show pattern: only render the spinner if the refresh takes >200 ms.
   // Sub-200ms refreshes complete silently — no flicker on fast networks.
+  // After a successful refresh, also clear the dispatch banner — its purpose
+  // was to track the dispatch + downstream refresh, which is now complete.
+  // Only clear if the banner hasn't been replaced by a newer dispatch since
+  // this refresh started (compare ts).
   async function runRefreshFor(eventId: number) {
     setRefreshState(eventId, 'pending')
+    const dispatchTsAtStart = dispatchStatus.get(eventId)?.ts
     const visibilityTimer = setTimeout(() => {
       if (refreshState.get(eventId) === 'pending') {
         setRefreshState(eventId, 'visible')
@@ -310,7 +315,15 @@
       clearTimeout(visibilityTimer)
       setRefreshState(eventId, 'success')
       setTimeout(() => {
-        if (refreshState.get(eventId) === 'success') setRefreshState(eventId, null)
+        if (refreshState.get(eventId) === 'success') {
+          setRefreshState(eventId, null)
+          const cur = dispatchStatus.get(eventId)
+          if (cur && cur.ts === dispatchTsAtStart) {
+            const next = new Map(dispatchStatus)
+            next.delete(eventId)
+            dispatchStatus = next
+          }
+        }
       }, 1500)
     } catch {
       clearTimeout(visibilityTimer)
