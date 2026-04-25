@@ -728,4 +728,156 @@ describe('EventManager Accordion (Phase 6)', () => {
     expect(container.querySelector('[data-field="dispatch-status-10"]')).not.toBeNull()
     expect(container.querySelector('[data-field="dispatch-status-20"]')).toBeNull()
   })
+
+  // ─── Refresh triggers (auto + expand) — adr041 follow-up ──────────────
+
+  // 9.45g — Auto-refresh fires onrefresh ~40 seconds after a successful dispatch
+  it('9.45g: auto-refresh fires onrefresh 40s after dispatch success', async () => {
+    vi.useFakeTimers()
+    mockRequestDispatch.mockReset()
+    mockRequestDispatch.mockResolvedValue({
+      ok: true,
+      runs_url: 'https://github.com/x/y/actions/workflows/populate-urls.yml',
+    })
+    const onrefresh = vi.fn().mockResolvedValue(undefined)
+    const { container } = render(EventManager, {
+      props: { ...propsWithTournaments, onrefresh },
+    })
+    await fireEvent.click(container.querySelector('[data-field="event-import-btn"]')!)
+    await vi.advanceTimersByTimeAsync(0)  // resolve dispatch promise
+    expect(onrefresh).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(39_999)
+    expect(onrefresh).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(2)
+    expect(onrefresh).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+
+  // 9.45h — Second dispatch on same event resets the auto-refresh timer
+  it('9.45h: second dispatch resets the 40s auto-refresh timer', async () => {
+    vi.useFakeTimers()
+    mockRequestDispatch.mockReset()
+    mockRequestDispatch.mockResolvedValue({
+      ok: true,
+      runs_url: 'https://github.com/x/y/actions/workflows/populate-urls.yml',
+    })
+    const onrefresh = vi.fn().mockResolvedValue(undefined)
+    const { container } = render(EventManager, {
+      props: { ...propsWithTournaments, onrefresh },
+    })
+    const btn = container.querySelector('[data-field="event-import-btn"]')!
+    await fireEvent.click(btn)
+    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(20_000)  // 20s in
+    await fireEvent.click(btn)                  // second dispatch
+    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(25_000)  // 25s after second click — first timer would have fired here if not reset
+    expect(onrefresh).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(16_000)  // total 41s after second
+    expect(onrefresh).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+
+  // 9.45i — Expanding the accordion (▶ → ▼) calls onrefresh
+  it('9.45i: clicking expand triangle (▶) calls onrefresh once', async () => {
+    const onrefresh = vi.fn().mockResolvedValue(undefined)
+    const { container } = render(EventManager, {
+      props: { ...propsWithTournaments, onrefresh },
+    })
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+    expect(onrefresh).toHaveBeenCalledTimes(1)
+  })
+
+  // 9.45j — Collapsing (▼ → ▶) does NOT call onrefresh
+  it('9.45j: clicking collapse triangle (▼) does NOT call onrefresh', async () => {
+    const onrefresh = vi.fn().mockResolvedValue(undefined)
+    const { container } = render(EventManager, {
+      props: { ...propsWithTournaments, onrefresh },
+    })
+    const expandBtn = container.querySelector('[data-field="expand-btn"]')!
+    await fireEvent.click(expandBtn)  // ▶ → ▼ (refetches)
+    onrefresh.mockClear()
+    await fireEvent.click(expandBtn)  // ▼ → ▶ (no-op for refresh)
+    expect(onrefresh).not.toHaveBeenCalled()
+  })
+
+  // ─── Spinner UX — delayed-show + banner morph + triangle morph ────────
+
+  // 9.45k — Refresh resolving in <200 ms never sets the visible spinner state
+  it('9.45k: fast refresh (<200ms) never renders the spinner state', async () => {
+    vi.useFakeTimers()
+    const onrefresh = vi.fn().mockImplementation(() => Promise.resolve())
+    const { container } = render(EventManager, {
+      props: { ...propsWithTournaments, onrefresh },
+    })
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+    await vi.advanceTimersByTimeAsync(50)  // promise already resolved
+    expect(container.querySelector('[data-field="refresh-spinner-10"]')).toBeNull()
+    vi.useRealTimers()
+  })
+
+  // 9.45l — Slow dispatch-triggered refresh morphs the dispatch banner through
+  // Refreshing → Refreshed states
+  it('9.45l: slow refresh morphs the dispatch banner to "Refreshing…" then "Refreshed"', async () => {
+    vi.useFakeTimers()
+    mockRequestDispatch.mockReset()
+    mockRequestDispatch.mockResolvedValue({
+      ok: true,
+      runs_url: 'https://github.com/x/y/actions/workflows/populate-urls.yml',
+    })
+    let resolveRefresh: () => void = () => {}
+    const onrefresh = vi.fn().mockImplementation(() => new Promise<void>((r) => { resolveRefresh = r }))
+    const { container } = render(EventManager, {
+      props: { ...propsWithTournaments, onrefresh },
+    })
+    await fireEvent.click(container.querySelector('[data-field="event-import-btn"]')!)
+    await vi.advanceTimersByTimeAsync(0)
+    // Trigger the auto-refresh
+    await vi.advanceTimersByTimeAsync(40_000)
+    expect(onrefresh).toHaveBeenCalledTimes(1)
+    // After 200ms still pending → banner shows "Refreshing"
+    await vi.advanceTimersByTimeAsync(201)
+    const banner = container.querySelector('[data-field="dispatch-status-10"]')!
+    expect(banner.textContent ?? '').toMatch(/refreshing|🔄/i)
+    // Resolve the refresh
+    resolveRefresh()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(banner.textContent ?? '').toMatch(/refreshed|✓/i)
+    vi.useRealTimers()
+  })
+
+  // 9.45m — Slow expand-triggered refresh on event with no dispatch banner
+  // morphs the expand triangle into a spinner
+  it('9.45m: slow expand-refresh morphs the ▶ triangle into a spinner', async () => {
+    vi.useFakeTimers()
+    let resolveRefresh: () => void = () => {}
+    const onrefresh = vi.fn().mockImplementation(() => new Promise<void>((r) => { resolveRefresh = r }))
+    const { container } = render(EventManager, {
+      props: { ...propsWithTournaments, onrefresh },
+    })
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+    await vi.advanceTimersByTimeAsync(201)
+    const expandBtn = container.querySelector('[data-field="expand-btn"]')!
+    expect(expandBtn.classList.contains('refreshing')).toBe(true)
+    resolveRefresh()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(expandBtn.classList.contains('refreshing')).toBe(false)
+    vi.useRealTimers()
+  })
+
+  // 9.45n — onrefresh rejection sets refresh-failed state, auto-clears
+  it('9.45n: refresh failure renders error state, auto-clears after 3s', async () => {
+    vi.useFakeTimers()
+    const onrefresh = vi.fn().mockRejectedValue(new Error('network blip'))
+    const { container } = render(EventManager, {
+      props: { ...propsWithTournaments, onrefresh },
+    })
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+    await vi.advanceTimersByTimeAsync(0)
+    const expandBtn = container.querySelector('[data-field="expand-btn"]')!
+    expect(expandBtn.classList.contains('refresh-failed')).toBe(true)
+    await vi.advanceTimersByTimeAsync(3_001)
+    expect(expandBtn.classList.contains('refresh-failed')).toBe(false)
+    vi.useRealTimers()
+  })
 })

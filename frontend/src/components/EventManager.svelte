@@ -87,8 +87,13 @@
             </div>
           {/if}
           <div data-field="event-row" class="event-row">
-            <button data-field="expand-btn" class="expand-btn" onclick={() => { toggleExpand(event.id_event) }}>
-              {expandedIds.has(event.id_event) ? '▼' : '▶'}
+            <button data-field="expand-btn"
+                    class="expand-btn"
+                    class:refreshing={refreshState.get(event.id_event) === 'visible'}
+                    class:refresh-success={refreshState.get(event.id_event) === 'success'}
+                    class:refresh-failed={refreshState.get(event.id_event) === 'failed'}
+                    onclick={() => { toggleExpand(event.id_event) }}>
+              {#if refreshState.get(event.id_event) === 'visible'}◐{:else if refreshState.get(event.id_event) === 'success'}✓{:else if refreshState.get(event.id_event) === 'failed'}⚠{:else}{expandedIds.has(event.id_event) ? '▼' : '▶'}{/if}
             </button>
             <span data-field="event-name" class="event-cell">{event.txt_name}</span>
             <span data-field="event-location" class="event-cell">{event.txt_location ?? ''}</span>
@@ -111,10 +116,18 @@
 
           {#if dispatchStatus.get(event.id_event)}
             {@const ds = dispatchStatus.get(event.id_event)!}
-            <div data-field="dispatch-status-{event.id_event}" class="dispatch-status dispatch-{ds.phase}">
-              <span class="dispatch-msg">{ds.message}</span>
-              {#if ds.link}
-                <a class="dispatch-link" href={ds.link} target="_blank" rel="noopener">view run on GitHub Actions ↗</a>
+            {@const rs = refreshState.get(event.id_event)}
+            <div data-field="dispatch-status-{event.id_event}"
+                 class="dispatch-status dispatch-{rs === 'visible' || rs === 'success' ? 'pending' : ds.phase}">
+              {#if rs === 'visible'}
+                <span class="dispatch-msg">🔄 Refreshing tournament data…</span>
+              {:else if rs === 'success'}
+                <span class="dispatch-msg">✓ Refreshed at {new Date().toTimeString().slice(0, 8)}</span>
+              {:else}
+                <span class="dispatch-msg">{ds.message}</span>
+                {#if ds.link}
+                  <a class="dispatch-link" href={ds.link} target="_blank" rel="noopener">view run on GitHub Actions ↗</a>
+                {/if}
               {/if}
             </div>
           {/if}
@@ -266,6 +279,48 @@
   type DispatchState = { phase: DispatchPhase; message: string; link?: string; ts: number }
   let dispatchStatus: Map<number, DispatchState> = $state(new Map())
 
+  // ADR-041 follow-up — refresh state machine (per event):
+  //   idle ─▶ pending ─[<200ms]──▶ success-flash (1.5s) ─▶ idle
+  //               ↘[≥200ms]─▶ visible (spinner shown) ─▶ success-flash ─▶ idle
+  //                                              ↘[error]─▶ failed (3s) ─▶ idle
+  type RefreshPhase = 'pending' | 'visible' | 'success' | 'failed'
+  let refreshState: Map<number, RefreshPhase> = $state(new Map())
+  // Auto-refresh timers scheduled by dispatchAndTrack (per-event). A second
+  // dispatch on the same event clears the prior timer (latest wins).
+  const dispatchTimers: Map<number, ReturnType<typeof setTimeout>> = new Map()
+
+  function setRefreshState(id: number, phase: RefreshPhase | null) {
+    const next = new Map(refreshState)
+    if (phase == null) next.delete(id)
+    else next.set(id, phase)
+    refreshState = next
+  }
+
+  // Delayed-show pattern: only render the spinner if the refresh takes >200 ms.
+  // Sub-200ms refreshes complete silently — no flicker on fast networks.
+  async function runRefreshFor(eventId: number) {
+    setRefreshState(eventId, 'pending')
+    const visibilityTimer = setTimeout(() => {
+      if (refreshState.get(eventId) === 'pending') {
+        setRefreshState(eventId, 'visible')
+      }
+    }, 200)
+    try {
+      await onrefresh()
+      clearTimeout(visibilityTimer)
+      setRefreshState(eventId, 'success')
+      setTimeout(() => {
+        if (refreshState.get(eventId) === 'success') setRefreshState(eventId, null)
+      }, 1500)
+    } catch {
+      clearTimeout(visibilityTimer)
+      setRefreshState(eventId, 'failed')
+      setTimeout(() => {
+        if (refreshState.get(eventId) === 'failed') setRefreshState(eventId, null)
+      }, 3000)
+    }
+  }
+
   function setDispatchStatus(id: number, s: DispatchState) {
     const next = new Map(dispatchStatus)
     next.set(id, s)
@@ -305,6 +360,13 @@
           link: result.runs_url,
           ts: Date.now(),
         })
+        // Auto-refresh ~40s after dispatch success — workflow runs ~20-30s
+        // on GH Actions, 40s gives slack. New dispatch on the same event
+        // clears the prior timer (latest wins, no double-fire).
+        const prev = dispatchTimers.get(statusId)
+        if (prev) clearTimeout(prev)
+        const timerId = setTimeout(() => { void runRefreshFor(statusId) }, 40_000)
+        dispatchTimers.set(statusId, timerId)
       } else {
         setDispatchStatus(statusId, {
           phase: 'error',
@@ -353,6 +415,10 @@
     ondeletetournament = (_id: number) => {},
     onedittournament = (_id: number, _params: Record<string, unknown>) => {},
     oncreatetournament = (_eventId: number, _params: Record<string, unknown>) => {},
+    // ADR-041 follow-up: parent provides a re-fetch hook (typically
+    // App.reloadAdminEvents). Fired automatically 40s after a successful
+    // dispatch and on every accordion expand.
+    onrefresh = () => Promise.resolve(),
   }: {
     events?: CalendarEvent[]
     seasons?: Season[]
@@ -367,6 +433,7 @@
     ondeletetournament?: (id: number) => void
     onedittournament?: (id: number, params: Record<string, unknown>) => void
     oncreatetournament?: (eventId: number, params: Record<string, unknown>) => void
+    onrefresh?: () => void | Promise<void>
   } = $props()
 
   let showForm = $state(false)
@@ -451,10 +518,15 @@
 
   function toggleExpand(eventId: number) {
     const next = new Set(expandedIds)
-    if (next.has(eventId)) {
+    const wasExpanded = next.has(eventId)
+    if (wasExpanded) {
       next.delete(eventId)
     } else {
       next.add(eventId)
+      // ADR-041 follow-up: collapsed → expanded triggers a refresh so the
+      // tournament list reflects any URLs populated by a prior dispatch.
+      // Collapsing (▼ → ▶) is a no-op for refresh.
+      void runRefreshFor(eventId)
     }
     expandedIds = next
   }
@@ -682,6 +754,17 @@
     font-size: 12px;
     color: #4a90d9;
   }
+  /* ADR-041 follow-up: expand triangle morphs into spinner / status glyph
+     during refresh. Colours stay subtle so the calendar isn't visually busy. */
+  .expand-btn.refreshing {
+    color: #2a5a9a;
+    animation: spws-spin 1.1s linear infinite;
+    display: inline-block;
+  }
+  .expand-btn.refresh-success { color: #2a7a3a; }
+  .expand-btn.refresh-failed  { color: #c33; }
+  @keyframes spws-spin { to { transform: rotate(360deg); } }
+
   .dispatch-status {
     margin: 6px 12px 8px 12px;
     padding: 8px 12px;

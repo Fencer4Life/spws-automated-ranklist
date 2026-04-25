@@ -108,6 +108,7 @@
       ondeletetournament={handleDeleteTournament}
       onedittournament={handleEditTournament}
       oncreatetournament={handleCreateTournament}
+      onrefresh={reloadAdminEvents}
     />
   {:else if currentView === 'admin_fencers'}
     <div class="fencer-tabs">

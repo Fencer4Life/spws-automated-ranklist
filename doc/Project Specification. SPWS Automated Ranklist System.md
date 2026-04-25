@@ -1748,9 +1748,9 @@ Every functional and non-functional requirement is listed below with its source 
 |-------|-------|-------|----------|
 | pgTAP | 293 | 16 | `supabase/tests/` |
 | pytest | 314 | 22 | `python/tests/` |
-| vitest | 279 | 25 | `frontend/tests/` |
+| vitest | 287 | 25 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **893** | | |
+| **Total** | **901** | | |
 
 ### Coverage Summary
 
