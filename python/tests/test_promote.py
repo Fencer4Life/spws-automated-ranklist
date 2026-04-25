@@ -370,3 +370,60 @@ class TestPromoteCalendar:
         assert excinfo.value.code != 0
         msg = captured.getvalue().lower()
         assert "calendar" in msg and "event" in msg
+
+
+# prom.8 — Multi-slot event URLs are propagated CERT → PROD (ADR-040)
+
+class TestPromoteCalendarMultiUrl:
+    """Plan test prom.8 — calendar promote ships url_event_2..5 from CERT to PROD
+    via the fn_refresh_evf_event_urls payload (NULL-only invariant per slot)."""
+
+    def test_calendar_mode_propagates_url_event_2_through_5(self):
+        """prom.8: refresh payload carries url_event_2..5 keys when CERT row has them."""
+        from python.pipeline.promote import promote_calendar
+
+        prod_query_calls: list[str] = []
+
+        def cert_query(sql: str):
+            if "bool_active = TRUE" in sql:
+                return [{"txt_code": "SPWS-2025-2026", "dt_start": "2025-08-01",
+                         "dt_end": "2026-07-15", "id_season": 3}]
+            return [{
+                "txt_code": "PEW1-2025-2026", "txt_name": "EVF Circuit Budapest",
+                "dt_start": "2025-09-20", "dt_end": "2025-09-21",
+                "txt_location": "Budapest", "txt_country": "HUN",
+                "txt_venue_address": "Street 1",
+                "url_event":   "https://e/p1",
+                "url_event_2": "https://e/p2",
+                "url_event_3": "https://e/p3",
+                "url_event_4": None,
+                "url_event_5": None,
+                "url_invitation": None, "url_registration": None,
+                "dt_registration_deadline": None, "num_entry_fee": 45.0,
+                "txt_entry_fee_currency": "EUR",
+                "weapons": ["EPEE", "FOIL", "SABRE"], "is_team": False,
+            }]
+
+        def prod_query(sql: str):
+            prod_query_calls.append(sql)
+            if "bool_active = TRUE" in sql:
+                return [{"txt_code": "SPWS-2025-2026", "dt_start": "2025-08-01",
+                         "dt_end": "2026-07-15", "id_season": 5}]
+            if "SELECT id_event, txt_code FROM tbl_event" in sql:
+                return [{"id_event": 99, "txt_code": "PEW1-2025-2026"}]
+            return [{"r": {"touched": 1, "refreshed": 1}}]
+
+        summary = promote_calendar(
+            cert_query_fn=cert_query,
+            prod_query_fn=prod_query,
+            dry_run=False,
+        )
+        refresh_calls = [s for s in prod_query_calls if "fn_refresh_evf_event_urls" in s]
+        assert len(refresh_calls) == 1
+        body = refresh_calls[0]
+        # All five URL slots present in the JSONB payload
+        assert "url_event_2" in body and "https://e/p2" in body
+        assert "url_event_3" in body and "https://e/p3" in body
+        assert "url_event_4" in body  # key present even when value null/empty
+        assert "url_event_5" in body
+        assert summary["refreshed"] == 1

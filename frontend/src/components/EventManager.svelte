@@ -19,7 +19,35 @@
               <label>{t('event_end_label')} <input data-field="form-dt-end" type="date" bind:value={draftDtEnd} /></label>
               <label>{t('event_country_label')} <input data-field="form-country" type="text" bind:value={draftCountry} /></label>
               <label>{t('event_venue_label')} <input data-field="form-venue" type="text" bind:value={draftVenue} /></label>
-              <label>{t('event_results_url_label')} <input data-field="form-url-event" type="text" bind:value={draftUrlEvent} /></label>
+              <div class="url-section">
+                <div class="url-section-header">{t('event_results_url_label')}</div>
+                <div class="url-row">
+                  <span data-field="url-num-1" class="url-num primary">URL #1</span>
+                  <input data-field="form-url-event" type="text" bind:value={draftUrlEvent} />
+                </div>
+                {#if urlExtrasOpen}
+                  <div class="url-row">
+                    <span data-field="url-num-2" class="url-num">URL #2</span>
+                    <input data-field="form-url-event-2" type="text" bind:value={draftUrlEvent2} placeholder={t('event_results_url_extra_placeholder')} />
+                  </div>
+                  <div class="url-row">
+                    <span data-field="url-num-3" class="url-num">URL #3</span>
+                    <input data-field="form-url-event-3" type="text" bind:value={draftUrlEvent3} placeholder={t('event_results_url_extra_placeholder')} />
+                  </div>
+                  <div class="url-row">
+                    <span data-field="url-num-4" class="url-num">URL #4</span>
+                    <input data-field="form-url-event-4" type="text" bind:value={draftUrlEvent4} placeholder={t('event_results_url_extra_placeholder')} />
+                  </div>
+                  <div class="url-row">
+                    <span data-field="url-num-5" class="url-num">URL #5</span>
+                    <input data-field="form-url-event-5" type="text" bind:value={draftUrlEvent5} placeholder={t('event_results_url_extra_placeholder')} />
+                  </div>
+                {/if}
+                <button data-field="url-extras-disclosure" type="button" class="disclosure-btn" onclick={() => { urlExtrasOpen = !urlExtrasOpen }}>
+                  {urlExtrasOpen ? t('event_results_url_disclosure_hide') : t('event_results_url_disclosure_show')}
+                  <span class="filled-count">{t('event_results_url_filled_count').replace('{n}', String(extrasFilledCount))}</span>
+                </button>
+              </div>
               <label>{t('event_invitation_label')} <input data-field="form-invitation" type="text" bind:value={draftInvitation} /></label>
               <label>{t('event_registration_deadline_label')} <input data-field="form-registration-deadline" type="date" bind:value={draftRegistrationDeadline} /></label>
               <label>{t('event_registration_label')} <input data-field="form-registration" type="text" bind:value={draftRegistration} /></label>
@@ -278,6 +306,15 @@
   let draftEntryFee: number | null = $state(null)
   let draftCurrency = $state('PLN')
   let draftUrlEvent = $state('')
+  let draftUrlEvent2 = $state('')
+  let draftUrlEvent3 = $state('')
+  let draftUrlEvent4 = $state('')
+  let draftUrlEvent5 = $state('')
+  let urlExtrasOpen = $state(false)
+  const extrasFilledCount = $derived(
+    [draftUrlEvent2, draftUrlEvent3, draftUrlEvent4, draftUrlEvent5]
+      .filter(s => s.trim().length > 0).length
+  )
   let draftOrganizerId = $state(0)
   let draftWeapons: Set<WeaponType> = $state(new Set(['EPEE', 'FOIL', 'SABRE']))
   let draftStatus = $state('')
@@ -404,6 +441,11 @@
     draftEntryFee = null
     draftCurrency = 'PLN'
     draftUrlEvent = ''
+    draftUrlEvent2 = ''
+    draftUrlEvent3 = ''
+    draftUrlEvent4 = ''
+    draftUrlEvent5 = ''
+    urlExtrasOpen = false
     draftOrganizerId = 0
     draftWeapons = new Set(['EPEE', 'FOIL', 'SABRE'] as WeaponType[])
     showForm = true
@@ -423,6 +465,11 @@
     draftEntryFee = event.num_entry_fee
     draftCurrency = event.txt_entry_fee_currency ?? 'PLN'
     draftUrlEvent = event.url_event ?? ''
+    draftUrlEvent2 = event.url_event_2 ?? ''
+    draftUrlEvent3 = event.url_event_3 ?? ''
+    draftUrlEvent4 = event.url_event_4 ?? ''
+    draftUrlEvent5 = event.url_event_5 ?? ''
+    urlExtrasOpen = !!(event.url_event_2 || event.url_event_3 || event.url_event_4 || event.url_event_5)
     draftOrganizerId = event.id_organizer ?? 0
     draftWeapons = new Set((event.arr_weapons ?? ['EPEE', 'FOIL', 'SABRE']) as WeaponType[])
     draftStatus = event.enum_status
@@ -434,13 +481,32 @@
     editingId = null
   }
 
+  // ADR-040: trim whitespace, drop empties, dedupe preserving first occurrence,
+  // pad with NULL to length 5. Slot positions are non-semantic — compaction
+  // guarantees the "URL #1 is the canonical primary URL" invariant.
+  function compactUrls(urls: (string | null | undefined)[]): (string | null)[] {
+    const seen = new Set<string>()
+    const compact: string[] = []
+    for (const u of urls) {
+      const trimmed = (u ?? '').trim()
+      if (trimmed && !seen.has(trimmed)) {
+        seen.add(trimmed)
+        compact.push(trimmed)
+      }
+    }
+    const padded: (string | null)[] = [...compact]
+    while (padded.length < 5) padded.push(null)
+    return padded.slice(0, 5)
+  }
+
   function handleSave() {
+    const compact = compactUrls([draftUrlEvent, draftUrlEvent2, draftUrlEvent3, draftUrlEvent4, draftUrlEvent5])
     const params = {
       name: draftName,
       location: draftLocation || undefined,
       dtStart: draftDtStart || undefined,
       dtEnd: draftDtEnd || undefined,
-      urlEvent: draftUrlEvent || undefined,
+      urlEvent: compact[0] ?? undefined,
       country: draftCountry || undefined,
       venueAddress: draftVenue || undefined,
       invitation: draftInvitation || undefined,
@@ -450,6 +516,10 @@
       entryFeeCurrency: draftCurrency || undefined,
       organizerId: draftOrganizerId || undefined,
       weapons: [...draftWeapons],
+      urlEvent2: compact[1],
+      urlEvent3: compact[2],
+      urlEvent4: compact[3],
+      urlEvent5: compact[4],
     }
     if (editingId != null) {
       onupdate(editingId, params)
@@ -535,6 +605,52 @@
     font-size: 12px;
     color: #4a90d9;
   }
+  .url-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px dashed #b8d4ee;
+    border-radius: 4px;
+    background: rgba(74, 144, 217, 0.04);
+  }
+  .url-section-header {
+    font-size: 12px;
+    font-weight: 600;
+    color: #4a90d9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .url-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .url-row input { flex: 1; }
+  .url-num {
+    font-size: 11px;
+    font-family: monospace;
+    color: #888;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px 8px;
+    min-width: 56px;
+    text-align: center;
+  }
+  .url-num.primary { color: #4a90d9; border-color: #4a90d9; background: rgba(74, 144, 217, 0.08); }
+  .disclosure-btn {
+    align-self: flex-start;
+    background: none;
+    border: none;
+    color: #4a90d9;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 0;
+  }
+  .disclosure-btn:hover { text-decoration: underline; }
+  .filled-count { color: #888; margin-left: 4px; }
   .fee-row {
     display: flex;
     gap: 6px;

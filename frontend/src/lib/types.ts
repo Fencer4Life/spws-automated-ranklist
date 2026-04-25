@@ -116,6 +116,10 @@ export interface CalendarEvent {
   bool_has_international: boolean
   url_registration: string | null
   dt_registration_deadline: string | null
+  url_event_2: string | null
+  url_event_3: string | null
+  url_event_4: string | null
+  url_event_5: string | null
 }
 
 export interface ScoringConfig {
@@ -203,6 +207,10 @@ export interface CreateEventParams {
   weapons?: WeaponType[]
   registration?: string
   registrationDeadline?: string
+  urlEvent2?: string | null
+  urlEvent3?: string | null
+  urlEvent4?: string | null
+  urlEvent5?: string | null
 }
 
 export interface UpdateEventParams {
@@ -210,7 +218,7 @@ export interface UpdateEventParams {
   location?: string
   dtStart?: string
   dtEnd?: string
-  urlEvent?: string
+  urlEvent?: string | null
   country?: string
   venueAddress?: string
   invitation?: string
@@ -220,6 +228,10 @@ export interface UpdateEventParams {
   weapons?: WeaponType[]
   registration?: string
   registrationDeadline?: string
+  urlEvent2?: string | null
+  urlEvent3?: string | null
+  urlEvent4?: string | null
+  urlEvent5?: string | null
 }
 
 export type MatchStatus = 'PENDING' | 'AUTO_MATCHED' | 'UNMATCHED' | 'APPROVED' | 'NEW_FENCER' | 'DISMISSED'
