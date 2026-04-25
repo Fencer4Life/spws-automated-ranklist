@@ -515,6 +515,43 @@ describe('CalendarView (T8.5)', () => {
     expect(container.querySelector('.registration-deadline')).toBeNull()
   })
 
+  // 11.9 — PEW event card shows code prefix below the date in the date column
+  it('11.9: PEW event card shows code prefix (e.g. PEW7) in .timeline-code', () => {
+    const events = [
+      makeEvent({ id_event: 1, txt_code: 'PEW7-2025-2026', txt_name: 'EVF Circuit Salzburg', dt_start: '2026-04-18', enum_status: 'SCHEDULED', bool_has_international: true }),
+    ]
+    const { container } = render(CalendarView, { props: { events, showEvfToggle: true } })
+    const evfBtn = Array.from(container.querySelectorAll('.scope-filter-btn')).find(b => b.textContent?.trim() === '+EVF')
+    evfBtn && fireEvent.click(evfBtn)
+    const code = container.querySelector('.timeline-event.evf-circuit .timeline-code')
+    expect(code).not.toBeNull()
+    expect(code!.textContent?.trim()).toBe('PEW7')
+  })
+
+  // 11.10 — Two-digit prefix (e.g. PEW10) renders in full
+  it('11.10: PEW10 event card shows full two-digit prefix in .timeline-code', () => {
+    const events = [
+      makeEvent({ id_event: 1, txt_code: 'PEW10-2024-2025', txt_name: 'EVF Circuit X', dt_start: '2025-05-01', enum_status: 'COMPLETED', bool_has_international: true }),
+    ]
+    const { container } = render(CalendarView, { props: { events, showEvfToggle: true } })
+    const evfBtn = Array.from(container.querySelectorAll('.scope-filter-btn')).find(b => b.textContent?.trim() === '+EVF')
+    evfBtn && fireEvent.click(evfBtn)
+    const code = container.querySelector('.timeline-event.evf-circuit .timeline-code')
+    expect(code).not.toBeNull()
+    expect(code!.textContent?.trim()).toBe('PEW10')
+  })
+
+  // 11.11 — Legacy PP-coded events render normalized PPW prefix in card column
+  it('11.11: PP-coded event card shows normalized PPW prefix in .timeline-code', () => {
+    const events = [
+      makeEvent({ id_event: 1, txt_code: 'PP4-2025-2026', txt_name: 'IV Puchar Polski', dt_start: '2026-03-07', enum_status: 'COMPLETED' }),
+    ]
+    const { container } = render(CalendarView, { props: { events } })
+    const code = container.querySelector('.timeline-event .timeline-code')
+    expect(code).not.toBeNull()
+    expect(code!.textContent?.trim()).toBe('PPW4')
+  })
+
   // 11.8 — Season dropdown renders in calendar-filters when seasons provided
   it('11.8: renders season dropdown in calendar filters when seasons provided', () => {
     const seasons = [
