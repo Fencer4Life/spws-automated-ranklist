@@ -84,3 +84,17 @@ The `dt_registration_deadline` regex heuristic had a 0/13 hit rate on live EVF d
 - Migration `20260420000002_evf_refresh_urls.sql` introduces `fn_refresh_evf_event_urls` — new RPC, does not alter `fn_import_evf_events`. pgTAP grows by 4 (12.10–12.13) to 281 total.
 - Admin edits via the Event CRUD UI (FR-60) are protected end-to-end: the refresh RPC is the only auto-write path that touches existing events, and it never overwrites a populated column.
 - Deadline harvesting disabled pending real-world pattern data (`HARVEST_DEADLINE = False` in [python/scrapers/evf_calendar.py](../python/scrapers/evf_calendar.py)). The DB column, regex patterns, and test fixtures remain so re-enabling is a one-line flip.
+
+## Amendment 2026-04-25 — Algorithm rev 3 (superseded by ADR-039)
+
+The original `(dt_start exact + canonical country)` primary / `±N day window + fuzzy-name ≥ threshold` fallback dedup design produced three duplicate event rows during the 2025-26 season when EVF mid-season-renamed three events. The fuzzy-name path scored Napoli↔Naples below the 80% threshold, allowing the rename to be inserted as a fresh row.
+
+**The algorithm is now defined by [ADR-039](039-stale-event-gate.md) — read that as the canonical spec.** Headline changes:
+
+- **Name comparison removed entirely.** EVF rename behaviour means name fuzz cannot be tuned to be both safe (no false negatives) and tight (no false positives).
+- **Location step added** as the fallback when country is missing (Step 4 in ADR-039).
+- **Stale-event gate added** (Step 1): the scraper does not auto-create or auto-update events with `(today − dt_end) ≥ 30 days` or `enum_status = 'COMPLETED'`. Admin handles those manually.
+- **Logical-integrity guard added** (Step 0): a future-COMPLETED row halts the sync via Telegram alert. The scraper refuses to operate on top of corrupted state.
+- **Single matcher across calendar + results paths.** The previous ad-hoc `BETWEEN ±3 days + EXISTS(tournament)` query in `_compare_and_ingest` is gone; both paths now go through `_find_existing_match`.
+
+The legacy duplicates that prompted the rev 3 design were cleaned up via existing `fn_delete_event` (no merge tooling needed — they were empty rows).

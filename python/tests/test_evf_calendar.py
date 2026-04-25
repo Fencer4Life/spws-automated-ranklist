@@ -70,7 +70,12 @@ class TestEvfDedup:
     """Tests evf.4–evf.5: deduplication logic."""
 
     def test_dedup_identifies_existing(self):
-        """evf.4: Events matching existing DB events (date+-7d + name) are flagged."""
+        """evf.4: Events matching existing DB events (date ±7d + location) are flagged.
+
+        Updated for ADR-039: name-fuzzy fallback removed. When country is
+        missing on the existing row, dedup falls back to location string
+        token similarity ≥ 70% (after diacritic-fold).
+        """
         from python.scrapers.evf_calendar import deduplicate_events
 
         scraped = [
@@ -78,9 +83,9 @@ class TestEvfDedup:
             {"name": "EVF Circuit Dublin", "dt_start": "2026-05-30", "location": "Dublin"},
         ]
         existing = [
-            {"txt_name": "PEW7 Salzburg", "dt_start": "2026-04-19"},
+            {"txt_name": "PEW7 Salzburg", "dt_start": "2026-04-19", "txt_location": "Salzburg"},
         ]
-        new, already = deduplicate_events(scraped, existing, date_tolerance=7, name_threshold=50.0)
+        new, already = deduplicate_events(scraped, existing, date_tolerance=7)
         assert len(already) == 1
         assert already[0]["name"] == "EVF Circuit Salzburg"
 
@@ -92,9 +97,9 @@ class TestEvfDedup:
             {"name": "EVF Circuit Dublin", "dt_start": "2026-05-30", "location": "Dublin"},
         ]
         existing = [
-            {"txt_name": "PEW7 Salzburg", "dt_start": "2026-04-19"},
+            {"txt_name": "PEW7 Salzburg", "dt_start": "2026-04-19", "txt_location": "Salzburg"},
         ]
-        new, already = deduplicate_events(scraped, existing, date_tolerance=7, name_threshold=50.0)
+        new, already = deduplicate_events(scraped, existing, date_tolerance=7)
         assert len(new) == 1
         assert new[0]["name"] == "EVF Circuit Dublin"
         assert len(already) == 0
@@ -173,17 +178,21 @@ class TestEvfDedup:
         assert len(new) == 1, "Same day, different country → separate events"
         assert len(already) == 0
 
-    def test_dedup_diacritic_folded_name_fallback(self):
+    def test_dedup_diacritic_folded_location_fallback(self):
         """evf.17: Fallback path (missing country) still works via diacritic-folded
-        fuzzy name — ensures backward compat when scraper can't emit country.
+        location — Jabłonna ↔ Jablonna match after NFKD fold.
+
+        Updated for ADR-039: fallback is now location-based, not name-based.
         """
         from python.scrapers.evf_calendar import deduplicate_events
 
         scraped = [
-            {"name": "EVF Circuit Jablonna", "dt_start": "2026-03-28"},
+            {"name": "EVF Circuit Jablonna", "dt_start": "2026-03-28",
+             "location": "Jablonna"},
         ]
         existing = [
-            {"txt_name": "EVF Circuit Jabłonna", "dt_start": "2026-03-28"},
+            {"txt_name": "EVF Circuit Jabłonna", "dt_start": "2026-03-28",
+             "txt_location": "Jabłonna"},
         ]
         new, already = deduplicate_events(scraped, existing)
         assert len(already) == 1
@@ -207,6 +216,183 @@ class TestEvfDedup:
         pairs = match_scraped_to_existing(scraped, existing)
         assert len(pairs) == 1
         assert pairs[0][1]["id_event"] == 42
+
+
+# =============================================================================
+# evf.19–evf.24: ADR-039 — name fallback removed, stale gate, integrity guard
+# =============================================================================
+class TestDedupAlgorithmRev2:
+    """Tests evf.19–evf.21: name comparison removed, location fallback added."""
+
+    def test_no_name_fuzzy_fallback_for_renames(self):
+        """evf.19: Napoli vs 'EVF Circuit – Naples (ITA)' with country missing
+        on existing must NOT match. The name-fuzzy fallback that produced the
+        PEW-PALAVESUVI duplicate is gone (ADR-039). Without country or
+        location to corroborate, distinct rows stay distinct.
+        """
+        from python.scrapers.evf_calendar import deduplicate_events
+
+        scraped = [
+            {"name": "EVF Circuit – Naples (ITA)", "dt_start": "2026-03-07",
+             "country": "Italy", "location": "Palavesuvio"},
+        ]
+        existing = [
+            # Country and location both missing — only name is similar.
+            {"txt_name": "EVF Circuit Napoli", "dt_start": "2026-03-07"},
+        ]
+        new, already = deduplicate_events(scraped, existing)
+        assert len(new) == 1, "Name-only similarity must NOT trigger a match"
+        assert len(already) == 0
+
+    def test_location_fallback_when_country_missing(self):
+        """evf.20: country missing on either side, location strings overlap
+        ≥ 70% via token_set_ratio (after diacritic fold) → match.
+        """
+        from python.scrapers.evf_calendar import deduplicate_events
+
+        scraped = [
+            {"name": "EVF Circuit Stockholm", "dt_start": "2026-03-14",
+             "location": "Stockholm, Sweden"},
+        ]
+        existing = [
+            # No txt_country, but txt_location overlaps.
+            {"txt_name": "Stockholm International", "dt_start": "2026-03-14",
+             "txt_location": "Stockholm"},
+        ]
+        new, already = deduplicate_events(scraped, existing)
+        assert len(already) == 1
+        assert len(new) == 0
+
+    def test_date_window_edge_seven_vs_eight_days(self):
+        """evf.21: ±7 days matches; ±8 days does not. Confirms the 7-day
+        window is wide enough for HTML/API skew + 6-day team championships
+        but tight enough that adjacent same-country events stay separate.
+        """
+        from python.scrapers.evf_calendar import deduplicate_events
+
+        # 7-day drift: still matches via country
+        scraped_7 = [
+            {"name": "EVF Circuit Madrid", "dt_start": "2026-04-08",
+             "country": "Spain"},
+        ]
+        existing_7 = [
+            {"txt_name": "Madrid Open", "dt_start": "2026-04-01",
+             "txt_country": "Spain"},
+        ]
+        new7, already7 = deduplicate_events(scraped_7, existing_7)
+        assert len(already7) == 1, "7-day drift with same country must match"
+
+        # 8-day drift: no match — outside window even with same country
+        scraped_8 = [
+            {"name": "EVF Circuit Madrid", "dt_start": "2026-04-09",
+             "country": "Spain"},
+        ]
+        existing_8 = [
+            {"txt_name": "Madrid Open", "dt_start": "2026-04-01",
+             "txt_country": "Spain"},
+        ]
+        new8, already8 = deduplicate_events(scraped_8, existing_8)
+        assert len(new8) == 1, "8-day drift must NOT match"
+        assert len(already8) == 0
+
+
+class TestStaleEventGate:
+    """Tests evf.22, evf.24: 30-day window + status-COMPLETED gate (ADR-039)."""
+
+    def test_is_in_scope_classification(self):
+        """evf.22: Four canonical states.
+
+        - Stale (dt_end > 30d ago) AND status != COMPLETED  → out-of-scope
+        - Stale AND status == COMPLETED                      → out-of-scope
+        - Fresh (dt_end within 30d) AND status != COMPLETED  → in-scope
+        - Future event AND status != COMPLETED               → in-scope
+        """
+        from datetime import date
+        from python.scrapers.evf_calendar import is_in_scope
+
+        today = date(2026, 4, 25)
+
+        stale_planned = {"dt_end": "2026-03-25", "enum_status": "PLANNED"}
+        stale_completed = {"dt_end": "2026-03-25", "enum_status": "COMPLETED"}
+        fresh_planned = {"dt_end": "2026-04-20", "enum_status": "PLANNED"}
+        fresh_completed = {"dt_end": "2026-04-20", "enum_status": "COMPLETED"}
+        future_planned = {"dt_end": "2026-05-30", "enum_status": "PLANNED"}
+
+        assert is_in_scope(stale_planned, today=today) is False
+        assert is_in_scope(stale_completed, today=today) is False
+        assert is_in_scope(fresh_planned, today=today) is True
+        assert is_in_scope(fresh_completed, today=today) is False, (
+            "COMPLETED always wins, even within 30-day window"
+        )
+        assert is_in_scope(future_planned, today=today) is True
+
+    def test_caller_prefilter_excludes_out_of_scope(self):
+        """evf.24: The caller-side pre-filter pattern — applying is_in_scope
+        to existing rows BEFORE feeding them to deduplicate_events removes
+        stale and COMPLETED rows so they're not dedup candidates. This is
+        how sync_calendar / sync_results in evf_sync.py invoke the matcher.
+        """
+        from datetime import date
+        from python.scrapers.evf_calendar import deduplicate_events, is_in_scope
+
+        today = date(2026, 4, 25)
+
+        scraped = [
+            {"name": "EVF Circuit Stockholm", "dt_start": "2026-03-14",
+             "country": "Sweden"},
+        ]
+        existing = [
+            # Stockholm Mar 14 — would match by date+country, but COMPLETED.
+            {"id_event": 51, "txt_name": "EVF Circuit Stockholm",
+             "dt_start": "2026-03-14", "txt_country": "Sweden",
+             "dt_end": "2026-03-14", "enum_status": "COMPLETED"},
+            # A future PLANNED Stockholm — different date, won't match.
+            {"id_event": 99, "txt_name": "Future Stockholm",
+             "dt_start": "2030-03-14", "txt_country": "Sweden",
+             "dt_end": "2030-03-14", "enum_status": "PLANNED"},
+        ]
+        in_scope = [e for e in existing if is_in_scope(e, today=today)]
+        assert {e["id_event"] for e in in_scope} == {99}, (
+            "Pre-filter removes the COMPLETED Stockholm row"
+        )
+        new, already = deduplicate_events(scraped, in_scope)
+        assert len(new) == 1, "Without the COMPLETED candidate, scraped row is new"
+        assert len(already) == 0
+
+
+class TestLogicalIntegrityGuard:
+    """Tests evf.23: future-COMPLETED row halts the sync (ADR-039 Step 0)."""
+
+    def test_assert_no_future_completed_raises(self):
+        """evf.23: A row with dt_start > today AND enum_status='COMPLETED'
+        is data corruption. The guard raises LogicalIntegrityError so the
+        sync aborts and Telegram alerts the admin.
+        """
+        from datetime import date
+        from python.scrapers.evf_calendar import (
+            assert_no_future_completed, LogicalIntegrityError,
+        )
+
+        today = date(2026, 4, 25)
+
+        # No violation — this should pass silently.
+        clean = [
+            {"txt_code": "PEW8-2025-2026", "dt_start": "2026-05-02",
+             "enum_status": "PLANNED"},
+            {"txt_code": "PEW4-2025-2026", "dt_start": "2026-03-07",
+             "enum_status": "COMPLETED"},
+        ]
+        assert_no_future_completed(clean, today=today)
+
+        # Violation: future date AND COMPLETED.
+        corrupt = clean + [
+            {"txt_code": "PEW9-2025-2026", "dt_start": "2026-05-30",
+             "enum_status": "COMPLETED"},
+        ]
+        with pytest.raises(LogicalIntegrityError) as exc_info:
+            assert_no_future_completed(corrupt, today=today)
+        # Error message must include the offending code so the admin can act.
+        assert "PEW9-2025-2026" in str(exc_info.value)
 
 
 # =============================================================================
@@ -389,20 +575,30 @@ class TestEvfMatchExisting:
     """evf.13: pair scraped events with their matching DB rows (by date+name)."""
 
     def test_match_scraped_to_existing_returns_pairs(self):
+        """evf.13: pair scraped events with their matching DB rows.
+
+        Updated for ADR-039: matching now uses date + country (STRONG) or
+        date + location (MEDIUM). Name fuzzy matching is gone.
+        """
         from python.scrapers.evf_calendar import match_scraped_to_existing
 
         scraped = [
-            {"name": "EVF Circuit Salzburg", "dt_start": "2026-04-18"},
-            {"name": "EVF Circuit Dublin", "dt_start": "2026-05-30"},
-            {"name": "EVF Circuit Zurich", "dt_start": "2026-06-01"},   # no match
+            {"name": "EVF Circuit Salzburg", "dt_start": "2026-04-18",
+             "country": "Austria"},
+            {"name": "EVF Circuit Dublin", "dt_start": "2026-05-30",
+             "country": "Ireland"},
+            {"name": "EVF Circuit Zurich", "dt_start": "2026-06-01",
+             "country": "Switzerland"},   # no match (no Swiss row in existing)
         ]
         existing = [
-            {"id_event": 101, "txt_name": "PEW7 Salzburg",    "dt_start": "2026-04-19"},
-            {"id_event": 102, "txt_name": "PEW9 Dublin",      "dt_start": "2026-05-30"},
-            {"id_event": 103, "txt_name": "PPW5 Gdansk",      "dt_start": "2026-04-11"},
+            {"id_event": 101, "txt_name": "PEW7 Salzburg",    "dt_start": "2026-04-19",
+             "txt_country": "Austria"},
+            {"id_event": 102, "txt_name": "PEW9 Dublin",      "dt_start": "2026-05-30",
+             "txt_country": "Ireland"},
+            {"id_event": 103, "txt_name": "PPW5 Gdansk",      "dt_start": "2026-04-11",
+             "txt_country": "Polska"},
         ]
-        pairs = match_scraped_to_existing(scraped, existing,
-                                          date_tolerance=7, name_threshold=50.0)
+        pairs = match_scraped_to_existing(scraped, existing, date_tolerance=7)
         names = sorted((s["name"], e["id_event"]) for s, e in pairs)
         assert names == [("EVF Circuit Dublin", 102), ("EVF Circuit Salzburg", 101)]
 

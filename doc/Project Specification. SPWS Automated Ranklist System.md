@@ -203,8 +203,9 @@ Key design decisions are recorded as Architecture Decision Records in [`doc/adr/
 | [025](adr/025-event-centric-ingestion-telegram.md) | Event-centric ingestion + Telegram admin | Accepted |
 | [026](adr/026-cert-prod-promotion.md) | CERT → PROD event promotion | Accepted |
 | [027](adr/027-full-season-seed-export.md) | Full-season seed export from CERT | Superseded by ADR-036 |
-| [028](adr/028-evf-calendar-results-import.md) | EVF calendar + results import (JSON API) | Accepted |
+| [028](adr/028-evf-calendar-results-import.md) | EVF calendar + results import (JSON API) | Accepted (amended by ADR-039) |
 | [029](adr/029-tournament-url-auto-population.md) | Tournament URL auto-population + admin CRUD | Accepted |
+| [039](adr/039-stale-event-gate.md) | EVF scraper dedup algorithm + stale-event gate | Accepted |
 
 ## 6. Implementation Phasing & Solution Approach
 
@@ -1632,7 +1633,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-55 | File import: parse results from .xlsx, .xls, .json, .csv | UC22(i), UC23(c) | 9.58, 9.93–9.100 | Covered (M9, T9.5 UI + T9.10 parsers) |
 | FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new/assign + gender column; Identities tab in Fencers view (ADR-035) | UC4(a-e) | 9.68–9.73, 9.77, 9.78–9.88, 11.1–11.19 | Covered (UI + RPCs + tab in App.svelte) |
 | FR-57 | Identity resolution: disambiguation modal for same-name fencers with age category fit | UC3(f), UC4(b) | 9.74–9.76 | Covered (DisambiguationModal + App.svelte handlers) |
-| FR-58 | EVF calendar import: HTML-primary fetch from veteransfencing.eu with JSON-API cross-reference, event-level URL harvesting (`url_event`, `url_invitation`, `url_registration`), dedup, create events via `fn_import_evf_events` (idempotent-by-code), refresh existing events via `fn_refresh_evf_event_urls` (NULL-only, protects admin edits), raise on total failure. Deadline harvesting disabled pending real-world pattern data. Automated CERT→PROD propagation via `promote.py --mode calendar` (see FR-86). | UC8, UC9 | 12.1–12.13, pytest evf.1–evf.13, prom.5–prom.7 | Covered (ADR-028 rev 2 2026-04-20: insert + refresh + admin-edit protection; ADR-026 calendar mode) |
+| FR-58 | EVF calendar import: HTML-primary fetch from veteransfencing.eu with JSON-API cross-reference, event-level URL harvesting (`url_event`, `url_invitation`, `url_registration`), dedup, create events via `fn_import_evf_events` (idempotent-by-code), refresh existing events via `fn_refresh_evf_event_urls` (NULL-only, protects admin edits), raise on total failure. Deadline harvesting disabled pending real-world pattern data. Dedup algorithm rev 3 (ADR-039 2026-04-25): name comparison removed, location step added, single matcher across calendar + results paths. Automated CERT→PROD propagation via `promote.py --mode calendar` (see FR-86). | UC8, UC9 | 12.1–12.13, pytest evf.1–evf.21, evf.24, prom.5–prom.7 | Covered (ADR-028 rev 3 2026-04-25 → ADR-039: dedup ladder rebuild + insert + refresh + admin-edit protection; ADR-026 calendar mode) |
 | FR-59 | Two-view app shell: sidebar drawer with Ranklista + Kalendarz navigation | UC12, UC21 | 8.27–8.37 | Covered (M8) |
 | FR-60 | Event CRUD via web UI (create, edit, delete events with all fields) | UC22(c) | 9.23–9.24, 9.28, 9.43–9.49 | Covered (M9, T9.1 SQL + T9.3 UI) |
 | FR-61 | Scoring config editor (admin, per-season, structured form) | UC22(f) | 8.62–8.75 | Covered (M8) |
@@ -1669,6 +1670,8 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-93 | Birth year review tab: filter/search/edit/tournament history grouped by season/birth year hints + auto-suggest/age category inconsistency flag | UC16, ADR-035 | 9.100–9.113, 13.1–13.4 | Covered |
 | FR-94 | Derived event display status: PLANNED events whose `dt_end < today` render as amber "Awaiting results" / "Oczekiwanie na wyniki" instead of misleading "Planowany". View-layer helper only — underlying `enum_status` unchanged, preserving ADR-018 rolling carry-over invariant. Self-heals when `fn_ingest_tournament_results` fires. | UC21, ADR-037 | ES.1–ES.11, 8.41b | Covered |
 | FR-95 | Event deletion admin tool: `fn_delete_event(prefix)` RPC (+ Telegram `delete <prefix>` command) performs rollback + removal of `tbl_event` row in a single transaction. Used when an event was created in error (wrong-ingest, erroneous scrape, dedup-bug phantom). Stricter than `rollback` (which keeps the event row for re-ingest). Prefix-matches in the active season, reuses `_resolve_event_prefix` + `fn_delete_tournament_cascade` helpers. Admin-only (REVOKE anon, GRANT authenticated). | UC22(e), UC27, ADR-025 (amendment 2026-04-21) | 10.29–10.32 | Covered |
+| FR-96 | EVF stale-event gate: scraper does not auto-create or auto-update events outside the 30-day fresh window or marked `enum_status='COMPLETED'`. `is_in_scope(event)` predicate is applied to existing CERT rows AND scraped EVF events before passing them to `_find_existing_match` / `_create_cert_event`. Stale events are admin-territory; the cron only ever touches in-flight (≤30 days post-end, not COMPLETED) rows. Implemented in `python/scrapers/evf_calendar.py` (`is_in_scope`, `STALE_WINDOW_DAYS`) and applied at entry of `sync_calendar` / `sync_results` in `evf_sync.py`. | UC25, ADR-039 | pytest evf.22, evf.24 | Covered |
+| FR-97 | EVF logical-integrity guard: a `tbl_event` row with `dt_start > today AND enum_status = 'COMPLETED'` is data corruption and halts the scraper. `assert_no_future_completed(events)` raises `LogicalIntegrityError` at sync entry; the caller sends the **EVF Sync HALT** Telegram alert and exits non-zero so the admin notices and reconciles the row manually before the next cron. | UC25, UC27, ADR-039 | pytest evf.23 | Covered |
 
 ### Non-Functional Requirements
 
@@ -1730,6 +1733,7 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-036](adr/036-prod-export-local-mirror.md) | PROD Export & Local Mirror (Single Monolithic Dump) | ADR-027, ADR-026 |
 | [ADR-037](adr/037-derived-display-status-awaiting-results.md) | Derived Display Status — "Awaiting Results" (view-layer, preserves ADR-018 rolling carry-over) | ADR-018, ADR-025, ADR-028 |
 | [ADR-038](adr/038-evf-intake-polish-only.md) | EVF-Organized Tournaments Ingest POL-Only Rows | FR-54, ADR-019, ADR-020, ADR-025 |
+| [ADR-039](adr/039-stale-event-gate.md) | EVF Scraper Dedup Algorithm + Stale-Event Gate (amends ADR-028) | FR-58, FR-96, FR-97, ADR-028 |
 
 ## Appendix D — Test Baseline
 
@@ -1739,16 +1743,16 @@ Every functional and non-functional requirement is listed below with its source 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
 | pgTAP | 286 | 15 | `supabase/tests/` |
-| pytest | 302 | 22 | `python/tests/` |
+| pytest | 310 | 22 | `python/tests/` |
 | vitest | 267 | 25 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **862** | | |
+| **Total** | **870** | | |
 
 ### Coverage Summary
 
 | Status | Count | FRs |
 |--------|-------|-----|
-| Covered | 88 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-94 |
+| Covered | 90 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-97 |
 | Partial | 2 | FR-53, FR-54 |
 | Superseded | 1 | FR-87 (by FR-88) |
 | Not tested (NFR) | 4 | NFR-01, NFR-03, NFR-04, NFR-08 |

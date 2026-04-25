@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime
+from datetime import date, datetime
 
 import httpx
 import unicodedata
@@ -37,6 +37,22 @@ except ImportError:
     fuzz = None  # type: ignore[assignment]
 
 logger = logging.getLogger("evf.calendar")
+
+
+# Stale-event gate: scraper only auto-creates / auto-updates events whose
+# dt_end is within this many days of today AND status != 'COMPLETED' (ADR-039).
+STALE_WINDOW_DAYS = 30
+
+# Location fallback threshold for dedup when country is missing on either
+# side (ADR-039 Step 4).
+LOCATION_MATCH_THRESHOLD = 70.0
+
+
+class LogicalIntegrityError(RuntimeError):
+    """Raised when CERT contains a row with dt_start in the future AND
+    enum_status='COMPLETED'. This is data corruption — admin must fix
+    manually before the scraper can safely proceed (ADR-039 Step 0).
+    """
 
 
 # Country-name aliases used by EVF + seed data. Each canonical form below
@@ -614,63 +630,134 @@ def filter_by_season(events: list[dict], season_start: str, season_end: str) -> 
 def _find_existing_match(
     s_evt: dict,
     existing: list[dict],
-    date_tolerance: int,
-    name_threshold: float,
+    date_tolerance: int = 7,
+    name_threshold: float = 80.0,  # ignored in rev 2; kept for signature compat
 ) -> dict | None:
-    """Find the best existing-row match for a scraped event (ADR-028 dedup key).
+    """Find the best existing-row match for a scraped event (ADR-039 dedup key).
 
-    Primary: exact dt_start + normalized country. This is the natural key
-    for EVF-organized events (cannot have two different EVF events on the
-    same day in the same country).
+    Algorithm (ADR-039 rev 2):
+      Step 2 — date gate: |dt_start − dt_start| ≤ date_tolerance days.
+      Step 3 — STRONG: same canonical country → match.
+      Step 4 — MEDIUM: country missing on either side, location token-set-
+               ratio (diacritic-folded) ≥ LOCATION_MATCH_THRESHOLD → match.
+      Step 5 — no match → return None.
 
-    Fallback: date tolerance ±N days + fuzzy name ≥ threshold, with
-    diacritic folding so "Jablonna" matches "Jabłonna". Used when country
-    is missing (legacy rows / scrapers that don't emit country).
+    Steps 0 (logical-integrity guard) and 1 (stale-event gate) are caller
+    concerns — they are applied to `existing` BEFORE this function is
+    called. See `assert_no_future_completed` and `is_in_scope`.
+
+    Name comparison was REMOVED in rev 2: EVF actively renames events
+    mid-season (Napoli → Naples (ITA)) and name fuzz produced the
+    PEW-PALAVESUVI-class duplicates. Date + country + location are
+    physical properties that can't be renamed away.
+
+    The `name_threshold` parameter is kept for backwards-compatible call
+    sites but is never read.
     """
     s_date = s_evt.get("dt_start", "")
     s_country = _normalize_country(s_evt.get("country", ""))
 
-    # Primary match: exact dt_start + same canonical country
-    if s_country:
-        for ex in existing:
-            if str(ex.get("dt_start", "")) != s_date:
-                continue
-            if _normalize_country(ex.get("txt_country", "")) == s_country:
-                return ex
-
-    # Fallback: date tolerance + fuzzy name (diacritic-folded)
     try:
-        sd = datetime.strptime(s_date, "%Y-%m-%d")
+        sd = datetime.strptime(s_date, "%Y-%m-%d").date()
     except (ValueError, TypeError):
         return None
 
-    s_name_folded = _diacritic_fold(s_evt.get("name", ""))
-    best: dict | None = None
-    best_score = 0.0
+    s_location_folded = _diacritic_fold(s_evt.get("location", "")).strip()
 
     for ex in existing:
+        # Step 2 — date gate.
         ex_date = str(ex.get("dt_start", ""))
         try:
-            ed = datetime.strptime(ex_date, "%Y-%m-%d")
+            ed = datetime.strptime(ex_date, "%Y-%m-%d").date()
         except (ValueError, TypeError):
             continue
         if abs((sd - ed).days) > date_tolerance:
             continue
 
-        ex_name_folded = _diacritic_fold(ex.get("txt_name", ""))
-        if fuzz is not None:
-            score = float(fuzz.token_set_ratio(s_name_folded, ex_name_folded))
-        else:
-            score = 100.0 if (
-                s_name_folded.lower() in ex_name_folded.lower()
-                or ex_name_folded.lower() in s_name_folded.lower()
-            ) else 0.0
+        # Step 3 — country STRONG match.
+        ex_country = _normalize_country(ex.get("txt_country", ""))
+        if s_country and ex_country and s_country == ex_country:
+            return ex
 
-        if score >= name_threshold and score > best_score:
-            best = ex
-            best_score = score
+        # Step 4 — location MEDIUM match (only when country missing on either side).
+        if not (s_country and ex_country):
+            ex_location_folded = _diacritic_fold(ex.get("txt_location", "")).strip()
+            if s_location_folded and ex_location_folded:
+                # Normalise punctuation/case so token_set_ratio sees clean
+                # word tokens. "Stockholm, Sweden" → "stockholm sweden".
+                a = re.sub(r"[^\w\s]", " ", s_location_folded.lower()).strip()
+                b = re.sub(r"[^\w\s]", " ", ex_location_folded.lower()).strip()
+                if fuzz is not None:
+                    score = float(fuzz.token_set_ratio(a, b))
+                else:
+                    score = 100.0 if (a in b or b in a) else 0.0
+                if score >= LOCATION_MATCH_THRESHOLD:
+                    return ex
 
-    return best
+    return None
+
+
+def is_in_scope(event: dict, today: date | None = None) -> bool:
+    """Return True iff the scraper may auto-create / auto-update this event (ADR-039 Step 1).
+
+    Out-of-scope when:
+      * enum_status == 'COMPLETED', OR
+      * (today − dt_end) ≥ STALE_WINDOW_DAYS days.
+
+    Scraped events from EVF carry no enum_status; only the date clause
+    applies (status defaults absent → treated as not-COMPLETED).
+    The dt_end field falls back to dt_start if missing.
+    """
+    if today is None:
+        today = date.today()
+
+    if event.get("enum_status") == "COMPLETED":
+        return False
+
+    end_str = event.get("dt_end") or event.get("dt_start") or ""
+    try:
+        end = datetime.strptime(str(end_str), "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        # No parseable date → treat as in-scope; the date gate elsewhere
+        # will still reject it from dedup matches.
+        return True
+
+    return (today - end).days < STALE_WINDOW_DAYS
+
+
+def assert_no_future_completed(events: list[dict], today: date | None = None) -> None:
+    """Raise LogicalIntegrityError if any row has dt_start > today AND
+    enum_status = 'COMPLETED' (ADR-039 Step 0).
+
+    A future event cannot have already completed — that's data corruption.
+    The caller must abort the sync, send a Telegram alert, and exit
+    non-zero so the admin notices and fixes the row manually.
+    """
+    if today is None:
+        today = date.today()
+
+    violators: list[dict] = []
+    for ev in events:
+        if ev.get("enum_status") != "COMPLETED":
+            continue
+        try:
+            start = datetime.strptime(str(ev.get("dt_start", "")), "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            continue
+        if start > today:
+            violators.append(ev)
+
+    if violators:
+        msg_parts = []
+        for v in violators:
+            msg_parts.append(
+                f"{v.get('txt_code', '?')} dt_start={v.get('dt_start', '?')} "
+                f"status={v.get('enum_status', '?')}"
+            )
+        raise LogicalIntegrityError(
+            "Future-COMPLETED event(s) detected — manual fix required: "
+            + "; ".join(msg_parts)
+        )
 
 
 def _diacritic_fold(text: str) -> str:
@@ -685,15 +772,17 @@ def match_scraped_to_existing(
     scraped: list[dict],
     existing: list[dict],
     date_tolerance: int = 7,
-    name_threshold: float = 80.0,
+    name_threshold: float = 80.0,  # ignored in rev 2; kept for signature compat
 ) -> list[tuple[dict, dict]]:
     """Pair each scraped event with its best-matching existing DB row, if any.
 
-    Uses (dt_start exact + country) primary, fuzzy-name fallback. Returns
-    `[(scraped_evt, existing_row), ...]` for every scraped event that matched
-    an existing row. Existing rows must carry at least `txt_name` + `dt_start`
-    (+ `txt_country` for the primary path, + `id_event` when the caller plans
-    to feed the refresh RPC).
+    Uses ADR-039 rev 2 dedup ladder: ±date_tolerance day window → canonical
+    country (STRONG) → location token-similarity (MEDIUM, when country missing
+    on either side). Caller is responsible for filtering `existing` through
+    `is_in_scope` and `assert_no_future_completed` before calling this.
+
+    Returns `[(scraped_evt, existing_row), ...]` for every scraped event that
+    matched an existing row.
     """
     pairs: list[tuple[dict, dict]] = []
     for s_evt in scraped:
@@ -707,14 +796,21 @@ def deduplicate_events(
     scraped: list[dict],
     existing: list[dict],
     date_tolerance: int = 7,
-    name_threshold: float = 80.0,
+    name_threshold: float = 80.0,  # ignored in rev 2; kept for signature compat
 ) -> tuple[list[dict], list[dict]]:
-    """Split scraped events into (new, already_imported).
+    """Split scraped events into (new, already_imported) per ADR-039 rev 2.
 
-    Primary dedup key: dt_start (exact) + country (normalised). This catches
-    EVF renames like "Napoli"→"Naples (ITA)" that defeat token_set_ratio.
-    Fallback: ±date_tolerance days + fuzzy name ≥ threshold with diacritic
-    folding (keeps backward compat when country is missing). See ADR-028.
+    Dedup ladder:
+      1. Date gate: |dt_start − dt_start| ≤ date_tolerance days.
+      2. STRONG match: canonical country equal on both sides.
+      3. MEDIUM match: country missing on either side → location
+         token_set_ratio (diacritic-folded) ≥ 70.
+
+    Name comparison removed: EVF mid-season renames produced duplicates.
+    Date + country + location are physical properties.
+
+    Caller is responsible for filtering `existing` through `is_in_scope` and
+    running `assert_no_future_completed` first.
     """
     new: list[dict] = []
     already: list[dict] = []
