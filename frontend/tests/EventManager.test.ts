@@ -638,7 +638,7 @@ describe('EventManager Accordion (Phase 6)', () => {
   // ─── ADR-041 — Edge Function dispatch (server-side, no PAT in browser) ──
 
   // 9.45a — Clicking ⬇ calls requestDispatch with workflow + event_code
-  it('9.45a: clicking ⬇ invokes requestDispatch(populate-urls.yml, { event_code })', async () => {
+  it('9.45a: clicking ⬇ invokes requestDispatch(populate-urls.yml, { event_code, target })', async () => {
     mockRequestDispatch.mockReset()
     mockRequestDispatch.mockResolvedValue({
       ok: true,
@@ -646,7 +646,10 @@ describe('EventManager Accordion (Phase 6)', () => {
     })
     const { container } = render(EventManager, { props: propsWithTournaments })
     await fireEvent.click(container.querySelector('[data-field="event-import-btn"]')!)
-    expect(mockRequestDispatch).toHaveBeenCalledWith('populate-urls.yml', { event_code: 'PPW-WRO-2025-01' })
+    expect(mockRequestDispatch).toHaveBeenCalledWith(
+      'populate-urls.yml',
+      expect.objectContaining({ event_code: 'PPW-WRO-2025-01' }),
+    )
   })
 
   // 9.45b — Pending status renders inline below event-row while in flight
@@ -890,6 +893,34 @@ describe('EventManager Accordion (Phase 6)', () => {
     await vi.advanceTimersByTimeAsync(1_501)
     expect(container.querySelector('[data-field="dispatch-status-10"]')).toBeNull()
     vi.useRealTimers()
+  })
+
+  // 9.45p — Dispatch passes target='cert' when activeEnv='CERT'
+  it('9.45p: dispatch passes target=cert when activeEnv=CERT', async () => {
+    mockRequestDispatch.mockReset()
+    mockRequestDispatch.mockResolvedValue({ ok: true, runs_url: 'x' })
+    const { container } = render(EventManager, {
+      props: { ...propsWithTournaments, activeEnv: 'CERT' as const },
+    })
+    await fireEvent.click(container.querySelector('[data-field="event-import-btn"]')!)
+    expect(mockRequestDispatch).toHaveBeenCalledWith('populate-urls.yml', expect.objectContaining({
+      event_code: 'PPW-WRO-2025-01',
+      target: 'cert',
+    }))
+  })
+
+  // 9.45q — Dispatch passes target='prod' when activeEnv='PROD'
+  it('9.45q: dispatch passes target=prod when activeEnv=PROD', async () => {
+    mockRequestDispatch.mockReset()
+    mockRequestDispatch.mockResolvedValue({ ok: true, runs_url: 'x' })
+    const { container } = render(EventManager, {
+      props: { ...propsWithTournaments, activeEnv: 'PROD' as const },
+    })
+    await fireEvent.click(container.querySelector('[data-field="event-import-btn"]')!)
+    expect(mockRequestDispatch).toHaveBeenCalledWith('populate-urls.yml', expect.objectContaining({
+      event_code: 'PPW-WRO-2025-01',
+      target: 'prod',
+    }))
   })
 
   // 9.45n — onrefresh rejection sets refresh-failed state, auto-clears
