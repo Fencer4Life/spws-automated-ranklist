@@ -150,7 +150,13 @@
 
 
   {#if error}
-    <div class="error-banner">{error}</div>
+    <div class="error-banner {errorType}">
+      <button class="close-x" onclick={() => clearStatus()} title="Dismiss">×</button>
+      {error}
+      {#if errorLink}
+        <br><a href={errorLink} target="_blank" rel="noopener">{errorLink}</a>
+      {/if}
+    </div>
   {/if}
 </div>
 
@@ -331,6 +337,14 @@
   let kadraRows: RankingKadraRow[] = $state([])
   let loading = $state(false)
   let error: string | null = $state(null)
+  let errorType: 'error' | 'success' | 'progress' = $state('error')
+  let errorLink: string | null = $state(null)
+  function setStatus(msg: string, type: 'error' | 'success' | 'progress' = 'error', link: string | null = null) {
+    error = msg
+    errorType = type
+    errorLink = link
+  }
+  function clearStatus() { error = null; errorLink = null }
 
   let isActiveSeason = $derived(seasons.find(s => s.id_season === selectedSeasonId)?.bool_active ?? false)
   let rankingRules: RankingRules | null = $state(null)
@@ -607,15 +621,17 @@
   async function handleImportEvent(eventId: number) {
     const event = calendarEvents.find(e => e.id_event === eventId)
     if (!event) return
-    if (!event.url_event) { error = t('import_no_url'); return }
-    if (!githubPat || !githubRepo) { error = t('import_no_github'); return }
+    if (!event.url_event) { setStatus(t('import_no_url'), 'error'); return }
+    if (!githubPat || !githubRepo) { setStatus(t('import_no_github'), 'error'); return }
     const msg = `${t('import_event_confirm')}\n\n${event.txt_code}\n${event.url_event}`
     if (!confirm(msg)) return
+    setStatus(`⏳ Triggering populate-urls workflow for ${event.txt_code}…`, 'progress')
+    const runsUrl = `https://github.com/${githubRepo}/actions/workflows/populate-urls.yml`
     try {
       await triggerGitHubWorkflow(githubPat, githubRepo, 'populate-urls.yml', { event_code: event.txt_code })
-      error = `${t('import_triggered_ok')}: ${event.txt_code}`
+      setStatus(`✓ ${t('import_triggered_ok')}: ${event.txt_code}\nWatch progress on GitHub Actions:`, 'success', runsUrl)
     } catch (e: unknown) {
-      error = e instanceof Error ? e.message : String(e)
+      setStatus(`✗ Trigger failed: ${e instanceof Error ? e.message : String(e)}`, 'error')
     }
   }
 
@@ -967,14 +983,38 @@
     color: #fff;
   }
   .error-banner {
-    margin-top: 16px;
-    padding: 12px;
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 9999;
+    max-width: min(480px, calc(100vw - 32px));
+    padding: 12px 36px 12px 14px;
     background: #fff0f0;
     border: 1px solid #fcc;
-    border-radius: 4px;
+    border-radius: 6px;
     color: #c33;
     font-size: 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    word-break: break-word;
+    white-space: pre-wrap;
   }
+  .error-banner .close-x {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: #c33;
+    font-size: 18px;
+    line-height: 1;
+    padding: 2px 6px;
+  }
+  .error-banner.success { background: #f0fff4; border-color: #b8e6c4; color: #2a7a3a; }
+  .error-banner.success .close-x { color: #2a7a3a; }
+  .error-banner.progress { background: #f0f6ff; border-color: #b8d4ee; color: #2a5a9a; }
+  .error-banner.progress .close-x { color: #2a5a9a; }
+  .error-banner a { color: inherit; text-decoration: underline; }
 
   @media (max-width: 600px) {
     .ranklist-app {
