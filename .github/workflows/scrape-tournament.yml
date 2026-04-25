@@ -6,10 +6,13 @@ on:
       tournament_code:
         description: 'Tournament code (e.g. PPW4-V2-M-EPEE-2025-2026)'
         required: true
+      target:
+        description: 'Target environment: cert or prod'
+        default: 'cert'
 
 jobs:
   scrape:
-    name: Scrape & Ingest
+    name: Scrape & Ingest (${{ github.event.inputs.target }})
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,8 +26,8 @@ jobs:
 
       - name: Scrape tournament results
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_CERT_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
+          SUPABASE_URL: ${{ github.event.inputs.target == 'prod' && secrets.SUPABASE_PROD_URL || secrets.SUPABASE_CERT_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ github.event.inputs.target == 'prod' && secrets.SUPABASE_PROD_SERVICE_ROLE_KEY || secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
         run: |
           python -m python.tools.scrape_tournament \
             --tournament-code "${{ github.event.inputs.tournament_code }}" \

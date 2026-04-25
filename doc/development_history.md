@@ -441,6 +441,24 @@ One state machine, two render targets (banner-morph or triangle-morph) depending
 - **Appendix D:** vitest 279→287, total 893→901.
 - **Coverage:** FR-99 extended with refresh UX coverage (9.45g–9.45n).
 
+#### Amendment 2026-04-25 — Banner clears after refresh + PROD target
+
+Two small follow-ups:
+
+1. **Dispatch banner clears 1.5s after a successful refresh.** Previously the banner stayed for the full 5-minute auto-clear window; visually screwed up the accordion long after the dispatch + downstream refresh had completed. Now `runRefreshFor`'s success branch — at the end of the 1.5s success-flash — also removes the dispatch banner, guarded by a `dispatchTsAtStart` comparison so a fresh dispatch on the same event during the success-flash window doesn't get its banner prematurely wiped. Test 9.45o asserts banner is gone 1.5s after refresh resolves.
+
+2. **PROD target threading.** The `populate-urls.yml` workflow already accepted `target: cert | prod`; the frontend wasn't passing it, so PROD admin clicks always wrote to CERT. Now `EventManager` accepts an `activeEnv: 'CERT' | 'PROD'` prop and threads `target: activeEnv.toLowerCase()` into both populate-urls and scrape-tournament dispatches. `scrape-tournament.yml` extended with the same `target` input + ternary `SUPABASE_URL/KEY` selection (mirrors populate-urls.yml). Telegram path untouched — GAS doesn't pass `target`, so the workflow's `default: 'cert'` kicks in (backward-compatible). Tests 9.45p (target=cert) and 9.45q (target=prod). 9.45a updated to use `objectContaining` since inputs now carry an extra `target` field.
+
+**Files modified:**
+- `frontend/src/components/EventManager.svelte` — banner-clear in `runRefreshFor` success; new `activeEnv` prop; `target` in dispatch inputs.
+- `frontend/src/App.svelte` — pass `activeEnv` to `<EventManager>`.
+- `.github/workflows/scrape-tournament.yml` — `target` input + ternary env vars.
+- `frontend/tests/EventManager.test.ts` — 3 new tests (9.45o, 9.45p, 9.45q); 9.45a softened to `objectContaining`.
+
+**TDD:**
+- **GREEN:** 293 pgTAP + 314 pytest (9 skipped) + 290 vitest pass.
+- **Appendix D:** vitest 287→290, total 901→904.
+
 ---
 
 ## Archived Documents

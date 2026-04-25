@@ -397,13 +397,23 @@
   }
 
   function handleDispatchEvent(event: CalendarEvent) {
-    return dispatchAndTrack(event.id_event, 'populate-urls.yml', { event_code: event.txt_code }, event.txt_code)
+    return dispatchAndTrack(
+      event.id_event,
+      'populate-urls.yml',
+      { event_code: event.txt_code, target: activeEnv.toLowerCase() },
+      event.txt_code,
+    )
   }
 
   // Tournament dispatch is keyed off the parent event's id so the inline
   // status renders next to the event row (where the tournament list lives).
   function handleDispatchTournament(tourn: Tournament) {
-    return dispatchAndTrack(tourn.id_event, 'scrape-tournament.yml', { tournament_code: tourn.txt_code }, tourn.txt_code)
+    return dispatchAndTrack(
+      tourn.id_event,
+      'scrape-tournament.yml',
+      { tournament_code: tourn.txt_code, target: activeEnv.toLowerCase() },
+      tourn.txt_code,
+    )
   }
 
   const ALL_STATUSES: string[] = ['PLANNED', 'SCHEDULED', 'CHANGED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
@@ -432,6 +442,9 @@
     // App.reloadAdminEvents). Fired automatically 40s after a successful
     // dispatch and on every accordion expand.
     onrefresh = () => Promise.resolve(),
+    // ADR-041: which Supabase env the admin is currently viewing. Threaded
+    // into workflow_dispatch as `target` so the script writes to the right DB.
+    activeEnv = 'CERT' as 'CERT' | 'PROD',
   }: {
     events?: CalendarEvent[]
     seasons?: Season[]
@@ -447,6 +460,7 @@
     onedittournament?: (id: number, params: Record<string, unknown>) => void
     oncreatetournament?: (eventId: number, params: Record<string, unknown>) => void
     onrefresh?: () => void | Promise<void>
+    activeEnv?: 'CERT' | 'PROD'
   } = $props()
 
   let showForm = $state(false)
