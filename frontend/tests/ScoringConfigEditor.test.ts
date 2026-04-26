@@ -187,4 +187,73 @@ describe('ScoringConfigEditor (T8.8)', () => {
     expect(banner!.textContent).toContain('SPWS-2024-2025')
   })
 
+  // ========================================================================
+  // Phase 3 (ph3.37a–ph3.37e) — Section 4b carry-over engine dropdown
+  // ========================================================================
+
+  // ph3.37a — engine dropdown lists ALL values of enum_event_carryover_engine
+  // (extensible by design: when a new engine is added to CARRYOVER_ENGINE_VALUES
+  //  in types.ts, it auto-appears in the dropdown).
+  it('ph3.37a: engine dropdown lists all CARRYOVER_ENGINE_VALUES', () => {
+    const { container } = render(ScoringConfigEditor, { props: defaultProps })
+    const select = container.querySelector('select[data-field="engine-select"]') as HTMLSelectElement
+    expect(select).not.toBeNull()
+    const optionValues = Array.from(select.options).map((o) => o.value)
+    expect(optionValues).toEqual(['EVENT_FK_MATCHING', 'EVENT_CODE_MATCHING'])
+  })
+
+  // ph3.37b — defaults to EVENT_FK_MATCHING when config has no engine set
+  // (new season, prior to first save). When config carries an engine value,
+  // the dropdown reflects it instead.
+  it('ph3.37b: defaults engine to FK when config.engine is undefined', () => {
+    const configNoEngine = { ...MOCK_CONFIG }
+    delete (configNoEngine as { engine?: string }).engine
+    const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: configNoEngine } })
+    const select = container.querySelector('select[data-field="engine-select"]') as HTMLSelectElement
+    expect(select.value).toBe('EVENT_FK_MATCHING')
+  })
+
+  it('ph3.37b: engine dropdown reflects existing config.engine value', () => {
+    const codeConfig: ScoringConfig = { ...MOCK_CONFIG, engine: 'EVENT_CODE_MATCHING' }
+    const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: codeConfig } })
+    const select = container.querySelector('select[data-field="engine-select"]') as HTMLSelectElement
+    expect(select.value).toBe('EVENT_CODE_MATCHING')
+  })
+
+  // ph3.37c — selecting EVENT_CODE_MATCHING surfaces the (legacy) tag + warning hint
+  it('ph3.37c: selecting EVENT_CODE_MATCHING shows the (legacy) tag', async () => {
+    const codeConfig: ScoringConfig = { ...MOCK_CONFIG, engine: 'EVENT_CODE_MATCHING' }
+    const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: codeConfig } })
+    const tag = container.querySelector('[data-field="engine-legacy-tag"]')
+    expect(tag).not.toBeNull()
+    expect(tag!.textContent).toContain('legacy')
+  })
+
+  // ph3.37d — onsave payload includes the `engine` field so App.svelte's handler
+  // can patch tbl_season.enum_carryover_engine separately from the scoring config.
+  it('ph3.37d: onsave payload includes the engine field', async () => {
+    const onsave = vi.fn()
+    const codeConfig: ScoringConfig = { ...MOCK_CONFIG, engine: 'EVENT_CODE_MATCHING' }
+    const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: codeConfig, onsave } })
+
+    // Flip the dropdown to FK
+    const select = container.querySelector('select[data-field="engine-select"]') as HTMLSelectElement
+    await fireEvent.change(select, { target: { value: 'EVENT_FK_MATCHING' } })
+
+    const saveBtn = container.querySelector('.config-save-btn') as HTMLButtonElement
+    await fireEvent.click(saveBtn)
+    expect(onsave).toHaveBeenCalled()
+    const payload = onsave.mock.calls[0][0]
+    expect(payload.engine).toBe('EVENT_FK_MATCHING')
+  })
+
+  // ph3.37e — opening editor on an existing season's 🎯 button shows the
+  // dropdown with that season's current engine value (verifies prop wiring
+  // through the existing config flow, not a regression).
+  it('ph3.37e: existing season editor shows current engine in dropdown', () => {
+    const fkConfig: ScoringConfig = { ...MOCK_CONFIG, engine: 'EVENT_FK_MATCHING' }
+    const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: fkConfig } })
+    const select = container.querySelector('select[data-field="engine-select"]') as HTMLSelectElement
+    expect(select.value).toBe('EVENT_FK_MATCHING')
+  })
 })

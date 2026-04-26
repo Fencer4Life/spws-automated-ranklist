@@ -171,17 +171,41 @@ export async function fetchTournamentDetail(
 }
 
 export async function fetchScoringConfig(seasonId: number): Promise<ScoringConfig | null> {
-  const { data, error } = await getClient().rpc('fn_export_scoring_config', {
+  const client = getClient()
+  const { data, error } = await client.rpc('fn_export_scoring_config', {
     p_id_season: seasonId,
   })
   if (error) return null
-  return (data as ScoringConfig | null) ?? null
+  if (!data) return null
+  // Phase 3 (ADR-045): merge the season's carry-over engine into the returned
+  // config so ScoringConfigEditor's dropdown reflects the live tbl_season value.
+  // The engine is not part of fn_export_scoring_config's payload (it lives on
+  // tbl_season, not tbl_scoring_config).
+  const { data: seasonRow } = await client
+    .from('tbl_season')
+    .select('enum_carryover_engine')
+    .eq('id_season', seasonId)
+    .single()
+  const engine = (seasonRow as { enum_carryover_engine?: string } | null)?.enum_carryover_engine
+  return { ...(data as ScoringConfig), engine: engine as ScoringConfig['engine'] }
 }
 
 export async function saveScoringConfig(config: Record<string, unknown>): Promise<void> {
   const { error } = await getClient().rpc('fn_import_scoring_config', {
     p_config: config,
   })
+  if (error) throw error
+}
+
+// Phase 3 (ADR-045): patch tbl_season.enum_carryover_engine in isolation. Used
+// by App.svelte's scoring-save handler to flip the engine without going through
+// fn_update_season (which doesn't carry an engine param). Direct PostgREST
+// PATCH on the table — RLS allows authenticated writes per existing policy.
+export async function updateSeasonCarryoverEngine(seasonId: number, engine: string): Promise<void> {
+  const { error } = await getClient()
+    .from('tbl_season')
+    .update({ enum_carryover_engine: engine })
+    .eq('id_season', seasonId)
   if (error) throw error
 }
 

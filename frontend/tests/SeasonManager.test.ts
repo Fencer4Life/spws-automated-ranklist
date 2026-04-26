@@ -189,4 +189,62 @@ describe('SeasonManager (T9.2)', () => {
     await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
     expect(onupdate).toHaveBeenCalledWith(1, 'SPWS-2024-2025', '2024-09-01', '2025-06-30', true)
   })
+
+  // ========================================================================
+  // Phase 3 (ph3.37f, ph3.37g) — 🎯 Konfiguracja punktacji button visibility
+  // Past-complete (dt_end < today) seasons hide the button entirely (ADR-045).
+  // Future + active seasons render it as today.
+  // ========================================================================
+
+  // ph3.37f — past-complete season hides 🎯 button on EDIT
+  it('ph3.37f: past-complete season hides the scoring config button', async () => {
+    // Build a season that ended yesterday (definitely "past-complete")
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    const pastSeason: Season = {
+      id_season: 99,
+      txt_code: 'SPWS-PAST',
+      dt_start: '2020-01-01',
+      dt_end: yesterday,
+      bool_active: false,
+    }
+    const onfetchevf = vi.fn().mockResolvedValue(false)
+    const { container } = render(SeasonManager, {
+      props: { ...defaultProps, seasons: [pastSeason], onfetchevf },
+    })
+
+    const editBtn = container.querySelector('[data-field="edit-btn"]') as HTMLButtonElement
+    await fireEvent.click(editBtn)
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-field="season-form"]')).not.toBeNull()
+    })
+
+    // Button must NOT be in the DOM
+    expect(container.querySelector('[data-field="scoring-btn"]')).toBeNull()
+  })
+
+  // ph3.37g — future + active seasons render the 🎯 button
+  it('ph3.37g: future season renders the scoring config button', async () => {
+    // Build a season that ends 30 days from now (definitely "future")
+    const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    const futureSeason: Season = {
+      id_season: 100,
+      txt_code: 'SPWS-FUTURE',
+      dt_start: '2099-01-01',
+      dt_end: future,
+      bool_active: false,
+    }
+    const onfetchevf = vi.fn().mockResolvedValue(false)
+    const { container } = render(SeasonManager, {
+      props: { ...defaultProps, seasons: [futureSeason], onfetchevf },
+    })
+
+    const editBtn = container.querySelector('[data-field="edit-btn"]') as HTMLButtonElement
+    await fireEvent.click(editBtn)
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-field="season-form"]')).not.toBeNull()
+    })
+
+    // Button must be in the DOM
+    expect(container.querySelector('[data-field="scoring-btn"]')).not.toBeNull()
+  })
 })

@@ -237,6 +237,16 @@
   "sc_close": "Close",
   "sc_save": "Save & recalculate",
 
+  "sc_section_engine": "Carry-over engine (rolling-score)",
+  "sc_engine_label": "Engine",
+  "sc_engine_opt_fk": "EVENT_FK_MATCHING — default (FK-based, ADR-042/043)",
+  "sc_engine_opt_code": "EVENT_CODE_MATCHING — (legacy) prefix-string",
+  "sc_engine_legacy_tag": "(legacy)",
+  "sc_engine_hint_fk": "FK uses tbl_event.id_prior_event (Phase 1B+2).",
+  "sc_engine_hint_code": "CODE parses the prefix from txt_code (legacy, kept for compatibility).",
+  "sc_engine_hint_immediate": "Change is immediate after save (replaces runbook §5 \"flip via SQL\").",
+  "sc_engine_hint_extensible": "Extensible list — new engines added to the enum auto-appear here.",
+
   "birth_year_subtitle": "cat. {cat} — birth years: {years}",
   "birth_year_and_older": "and older",
 
