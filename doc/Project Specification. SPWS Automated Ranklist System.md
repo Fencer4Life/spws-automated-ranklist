@@ -1633,7 +1633,7 @@ Every functional and non-functional requirement is listed below with its source 
 | FR-55 | File import: parse results from .xlsx, .xls, .json, .csv | UC22(i), UC23(c) | 9.58, 9.93–9.100 | Covered (M9, T9.5 UI + T9.10 parsers) |
 | FR-56 | Identity resolution admin UI: match candidate queue with approve/dismiss/create-new/assign + gender column; Identities tab in Fencers view (ADR-035) | UC4(a-e) | 9.68–9.73, 9.77, 9.78–9.88, 11.1–11.19 | Covered (UI + RPCs + tab in App.svelte) |
 | FR-57 | Identity resolution: disambiguation modal for same-name fencers with age category fit | UC3(f), UC4(b) | 9.74–9.76 | Covered (DisambiguationModal + App.svelte handlers) |
-| FR-58 | EVF calendar import: HTML-primary fetch from veteransfencing.eu with JSON-API cross-reference, event-level URL harvesting (`url_event`, `url_invitation`, `url_registration`), dedup, create events via `fn_import_evf_events` (idempotent-by-code), refresh existing events via `fn_refresh_evf_event_urls` (NULL-only, protects admin edits), raise on total failure. Deadline harvesting disabled pending real-world pattern data. Dedup algorithm rev 3 (ADR-039 2026-04-25): name comparison removed, location step added, single matcher across calendar + results paths. Automated CERT→PROD propagation via `promote.py --mode calendar` (see FR-86). | UC8, UC9 | 12.1–12.13, pytest evf.1–evf.21, evf.24, prom.5–prom.7 | Covered (ADR-028 rev 3 2026-04-25 → ADR-039: dedup ladder rebuild + insert + refresh + admin-edit protection; ADR-026 calendar mode) |
+| FR-58 | EVF calendar import: HTML-primary fetch from veteransfencing.eu with JSON-API cross-reference, event-level URL harvesting (`url_event`, `url_invitation`, `url_registration`), dedup, create events via `fn_import_evf_events_v2` (allocator-driven code, EVF organizer, FK auto-link, idempotent), refresh existing events via `fn_refresh_evf_event_urls` (NULL-only, protects admin edits), raise on total failure. Deadline harvesting disabled pending real-world pattern data. Dedup algorithm rev 3 (ADR-039 2026-04-25): name comparison removed, location step added, single matcher across calendar + results paths. Code allocator (ADR-043 2026-04-26): three-step ladder (CURRENT_SLOT_REUSE → PRIOR_SEASON_MATCH → NEXT_FREE_ALLOC) + classifier (PEW/IMEW/DMEW; MEW dropped); Telegram alert per NEXT_FREE_ALLOC. Automated CERT→PROD propagation via `promote.py --mode calendar` (see FR-86). | UC8, UC9 | 12.1–12.13, pytest evf.1–evf.21, evf.24, evf.40–evf.42, evf.25–evf.39, prom.5–prom.7 | Covered (ADR-028 rev 3 2026-04-26 → ADR-043: allocator + classifier + EVF organizer; ADR-039: dedup ladder; ADR-026 calendar mode) |
 | FR-59 | Two-view app shell: sidebar drawer with Ranklista + Kalendarz navigation | UC12, UC21 | 8.27–8.37 | Covered (M8) |
 | FR-60 | Event CRUD via web UI (create, edit, delete events with all fields) | UC22(c) | 9.23–9.24, 9.28, 9.43–9.49 | Covered (M9, T9.1 SQL + T9.3 UI) |
 | FR-61 | Scoring config editor (admin, per-season, structured form) | UC22(f) | 8.62–8.75 | Covered (M8) |
@@ -1739,19 +1739,20 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-040](adr/040-multi-slot-event-urls.md) | Multi-Slot Event Result URLs with Compact-on-Save | FR-48, FR-98, ADR-028, ADR-029, ADR-030, ADR-036 |
 | [ADR-041](adr/041-edge-function-dispatch.md) | Server-Side Workflow Dispatch via Supabase Edge Function (no PAT in browser) | FR-99, ADR-029, ADR-025, ADR-026 |
 | [ADR-042](adr/042-carryover-engine-dispatcher.md) | Per-season carry-over engine selection via dispatcher pattern (Phase 1A; supersedes prefix-only mechanism in ADR-018) | ADR-018, ADR-021 |
+| [ADR-043](adr/043-evf-event-allocator.md) | EVF event code allocator + classifier (Phase 2; amends ADR-028: drops MEW kind, EVF organizer, FK auto-link via 3-step ladder) | FR-58, ADR-021, ADR-028, ADR-039, ADR-042 |
 
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 329 assertions (4 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 33 ingest pipeline + 21 identity resolution + 13 EVF import + 5 fencer birth year + 9 cross-gender scoring + 7 ADR-040 multi-slot URLs + 8 ADR-042 dispatcher + 28 ADR-042 FK carryover).
+- pgTAP total: 344 assertions (4 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 33 ingest pipeline + 21 identity resolution + 13 EVF import + 5 fencer birth year + 9 cross-gender scoring + 7 ADR-040 multi-slot URLs + 8 ADR-042 dispatcher + 28 ADR-042 FK carryover + 15 ADR-043 EVF allocator).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
-| pgTAP | 329 | 18 | `supabase/tests/` |
-| pytest | 314 | 22 | `python/tests/` |
-| vitest | 290 | 25 | `frontend/tests/` |
+| pgTAP | 344 | 19 | `supabase/tests/` |
+| pytest | 317 | 22 | `python/tests/` |
+| vitest | 293 | 25 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **940** | | |
+| **Total** | **961** | | |
 
 ### Coverage Summary
 
