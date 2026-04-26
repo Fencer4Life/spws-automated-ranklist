@@ -49,8 +49,8 @@ SELECT is(
    FROM pg_type t
    JOIN pg_enum e ON e.enumtypid = t.oid
    WHERE t.typname = 'enum_event_status'),
-  'PLANNED,SCHEDULED,CHANGED,IN_PROGRESS,COMPLETED,CANCELLED',
-  '1.1e enum_event_status values'
+  'CREATED,PLANNED,SCHEDULED,CHANGED,IN_PROGRESS,SCORED,COMPLETED,CANCELLED',
+  '1.1e enum_event_status values (CREATED before PLANNED, SCORED before COMPLETED — Phase 1B / ADR-042)'
 );
 
 SELECT is(
