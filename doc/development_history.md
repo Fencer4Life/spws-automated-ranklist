@@ -505,6 +505,54 @@ Phase 3a turns the carry-over admin runbook into point-and-click. Six new migrat
 - App.svelte rewires `fn_update_event` callsites to the v2 21-arg signature
 - ~34 vitest assertions ph3.23–ph3.37g + EventManager extensions
 
+#### Amendment 2026-04-26 — Phase 3b carry-over admin UI (24 new vitest)
+
+Phase 3b lands the admin-facing UI on top of Phase 3a's RPCs. Two commits:
+
+**Phase 3b.1 (commit 4b18a93) — engine dropdown + 🎯 button visibility (8 vitest):**
+- ScoringConfigEditor gains Section 4b "🔀 Silnik carry-over" between Intake and Rules. Dropdown lists every value of `CARRYOVER_ENGINE_VALUES` (extensible — new engines added to the SQL enum auto-appear after a `types.ts` update). Default for new seasons = FK; existing seasons reflect their `tbl_season.enum_carryover_engine`. (legacy) tag + amber warning when CODE selected. `onsave` payload carries `engine` so App.svelte's handler can patch `tbl_season.enum_carryover_engine` separately from the scoring config (instant flip, no migration).
+- SeasonManager `🎯 Konfiguracja punktacji` button hidden entirely for past-complete (`dt_end < today`) seasons; future + active seasons render it as before. The existing `readonly` prop on the editor stays as defense-in-depth.
+- api.ts: `fetchScoringConfig` joins `tbl_season.enum_carryover_engine` into the returned config; new `updateSeasonCarryoverEngine` does a direct PostgREST PATCH on `tbl_season`. `EventStatus` type extended with `CREATED` + `SCORED` (drift fix from Phase 1B).
+- Tests: ph3.37a (dropdown lists all enum values), ph3.37b ×2 (default-FK + reflects existing), ph3.37c (legacy tag), ph3.37d (`onsave` payload carries engine), ph3.37e (existing season editor shows current engine), ph3.37f (past-complete hides button), ph3.37g (future renders button).
+
+**Phase 3b.2 (commit 64e6f52) — SeasonManager 3-step wizard + skeleton inventory (16 vitest):**
+- New `SeasonManagerWizard.svelte` (~650 lines) — 3-step modal state machine: Identity (code/dates/int_carryover_days/enum_european_event_type segmented) → Scoring (embedded ScoringConfigEditor pre-filled via `fn_copy_prior_scoring_config(dtStart)` or static defaults if no prior) → Confirm (skeleton breakdown count from prior season's events). Atomic-cancel: `oncommit` fires only on ✓ Utwórz at step 3.
+- SeasonManager: hosts the wizard via `wizardOpen` state. EDIT form gains a 🔁 Carry-over section (days input + IMEW/DMEW segmented) and a 🦴 Skeleton inventory grouped by kind (PPW / PEW / Mistrzostwa) with calendar-style purple boxes. "↶ Cofnij całość" link confirms then calls `fn_revert_season_init`.
+- api.ts: 5 new functions — `copyPriorScoringConfig`, `createSeasonWithSkeletons`, `revertSeasonInit`, `updateSeasonCarryoverFields`, plus the engine helper from 3b.1.
+- App.svelte: 4 new wizard handlers (`handleWizardLoadPrior`, `handleWizardCommit`, `handleFetchSkeletons`, `handleRevertSeasonInit`); `handleUpdateSeason` widened from 5 to 7 args (+ `carryoverDays`, `europeanType`).
+- Tests: 16 wizard tests (`SeasonManagerWizard.test.ts`) covering open/close, validation gates (duplicate code, dt_end<dt_start), step transitions, cancel-at-each-step (3 cases), ← Wstecz preservation, IMEW/DMEW segmented, commit payload assembly. 4 existing SeasonManager tests (9.38 / 9.39 / 8.81 / 8.83) updated to track the architectural change called out in the plan ("now opens 3-step wizard instead of inline form").
+
+**i18n:** +56 keys per locale (PL + EN), all wizard / engine / skeleton inventory labels.
+
+**TDD:**
+- **GREEN:** 369 pgTAP + 317 pytest (9 skipped) + 317 vitest pass (vitest 293 → 317, +24 across 3b.1 + 3b.2).
+- **Coherence**: caught Gate 3 once during 3a (commit 4da1659 → bbd6c7a fix-forward); 3b.1 + 3b.2 ran clean pre-push.
+
+#### Amendment 2026-04-26 — Phase 3c EventManager extensions (14 new vitest)
+
+Phase 3c (commit 29afa4b) finishes the trilogy. The EventManager admin page gains a season selector, surfaces the v2 `fn_update_event` extras (`txt_code` cascade rename + `id_prior_event` picker), and renders a collapsible Skeletons panel.
+
+**EventManager.svelte additions:**
+- Season selector dropdown in the header lists every season; change fires `onseasonchange` callback so App.svelte can update `selectedSeasonId` and refetch events. Callback pattern matches CalendarView.
+- Edit form: `form-event-code` input pre-fills `txt_code`; cascade hint (⚠️ "Renaming cascades to related tournaments") surfaces only when the value differs from the original. `fn_update_event` v2's cascade rebuilds child codes from enum fields on save.
+- Edit form: `form-prior-event` dropdown picker filtered to events from chronologically-prior seasons (`s.dt_end < currentSeason.dt_start`). Empty option = "(none)"; selected value flips `id_prior_event`.
+- Collapsible Skeletons panel below the event list — purple-bordered, count badge ("N pending"), CREATED-only filter (PLANNED/SCORED/COMPLETED rows hidden). Empty state when no skeletons exist.
+- `handleSave` passes `code` only when changed (no-op rename avoided); always passes `priorEventId` (NULL = leave unchanged).
+
+**api.ts:** `updateEvent` now passes `p_code` + `p_id_prior_event` to `fn_update_event` v2. Both default to null so legacy callers are unaffected. `UpdateEventParams` type widened with `code?` + `priorEventId?` fields.
+
+**App.svelte:** EventManager mount adds `onseasonchange={(id) => { selectedSeasonId = id; handleSeasonChange() }}` reusing the existing flow that refetches calendarEvents + scoring config.
+
+**i18n:** +10 keys per locale for season selector / event code / prior event / skeleton panel labels.
+
+**Tests:** 14 new in `EventManager.test.ts` — ph3c.1 (selector renders), ph3c.2 (selector fires callback), ph3c.3 (code pre-fill), ph3c.4 (cascade hint), ph3c.5 (picker filter), ph3c.6 ×2 (code only when changed), ph3c.7 ×2 (priorEventId always threaded), ph3c.8 (panel collapsed by default), ph3c.9 (expand on click), ph3c.10 (CREATED-only filter), ph3c.11 (status badge), ph3c.12 (empty state).
+
+**TDD:**
+- **GREEN:** 369 pgTAP + 317 pytest (9 skipped) + 331 vitest pass (vitest 317 → 331, +14).
+- **Coherence:** all 4 gates green pre-push.
+
+**Phase 3 trilogy complete.** Total deltas across 3a/3b/3c: pgTAP 344 → 369 (+25), vitest 293 → 331 (+38), pytest unchanged. Carry-over admin runbook §3 (manual FK linkage), §4 (biennial placeholder), §5 (engine flip via SQL), §6 (instant rollback), §9 (pre-create CREATED slot) all superseded by point-and-click UI.
+
 ---
 
 ## Archived Documents
