@@ -1,8 +1,8 @@
 # ADR-042: Per-season carry-over engine selection via dispatcher pattern
 
-**Status:** Accepted (Phase 1A + Phase 1B implemented; default engine remains EVENT_CODE_MATCHING per season; admin opts in)
-**Date:** 2026-04-25
-**Relates to:** ADR-018 (Rolling Score for Active Season), ADR-021 (IMEW biennial carry-over)
+**Status:** Accepted — Phase 1A + 1B implemented; **amended Phase 3** (2026-04-26) to flip the column DEFAULT from `EVENT_CODE_MATCHING` to `EVENT_FK_MATCHING` for new seasons and to make engine selection admin-configurable via the ScoringConfigEditor dropdown (see ADR-045). Existing rows are not rewritten; admin opts each one in via the UI.
+**Date:** 2026-04-25 (created), 2026-04-26 (Phase 3 amendment)
+**Relates to:** ADR-018 (Rolling Score for Active Season), ADR-021 (IMEW biennial carry-over), ADR-044 (Phase 3 wizard), ADR-045 (engine selector + default flip)
 
 ## Context
 
@@ -97,6 +97,7 @@ The dispatcher's signature is byte-identical to the renamed engine. PostgREST cl
 
 ## Future work
 
-- **Phase 1B**: implement `fn_*_event_fk_matching` engines using `tbl_event.id_prior_event` and `vw_eligible_event`; add `fn_compare_carryover_engines` for A/B verification; flip SPWS-2025-2026 to `EVENT_FK_MATCHING` after slug-event manual cleanup.
+- **Phase 1B**: implement `fn_*_event_fk_matching` engines using `tbl_event.id_prior_event` and `vw_eligible_event`; add `fn_compare_carryover_engines` for A/B verification; flip SPWS-2025-2026 to `EVENT_FK_MATCHING` after slug-event manual cleanup. *(SHIPPED 2026-04-26 in commit 997ff30.)*
+- **Phase 3 amendment (SHIPPED 2026-04-26 in commit 4da1659):** column DEFAULT flipped to `EVENT_FK_MATCHING` (greenfield seasons only); engine selection moved into the ScoringConfigEditor as a dropdown (Section 4b). Pre-Phase-3 seasons are untouched — admin opts each one in. The legacy CODE branch in the dispatcher remains for compatibility. See ADR-045 for the rationale and ADR-044 for the wizard that exercises the new default.
 - **Eventual cleanup**: when no live season uses `EVENT_CODE_MATCHING`, drop the legacy engine functions and remove the `WHEN 'EVENT_CODE_MATCHING'` branch from dispatchers.
 - **ADR-021** amendment pending Phase 1B (rule unchanged; expression mechanism updated to FK-based).
