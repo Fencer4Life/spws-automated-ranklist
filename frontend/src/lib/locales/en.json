@@ -294,6 +294,17 @@
   "season_skel_pending": "— pending —",
   "season_skel_badge_created": "🦴 CREATED",
 
+  "event_season_selector_label": "Season",
+  "event_code_label": "Event code",
+  "event_code_cascade_hint": "⚠️ Renaming cascades to related tournaments.",
+  "event_prior_event_label": "Prior (carry-over)",
+  "event_prior_event_none": "— (none)",
+  "event_prior_event_hint": "Link to the prior season's event — used by the FK engine.",
+  "event_skel_panel_title": "Skeletons (CREATED)",
+  "event_skel_panel_count": "{n} pending",
+  "event_skel_empty": "No skeletons in the current season.",
+  "event_status_created": "CREATED",
+
   "birth_year_subtitle": "cat. {cat} — birth years: {years}",
   "birth_year_and_older": "and older",
 

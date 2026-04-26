@@ -2,6 +2,27 @@
   <div class="event-manager">
     <div class="event-header">
       <h3>{t('nav_admin_events')}</h3>
+      <!-- Phase 3 (ADR-044): season selector at top of EventManager. Lets admin
+           switch the displayed season without going via the global header.
+           Bound through onseasonchange so App.svelte can refetch events. -->
+      <label class="season-selector-label" data-field="event-season-selector-label">
+        {t('event_season_selector_label')}
+        <select
+          data-field="event-season-selector"
+          value={selectedSeasonId ?? ''}
+          onchange={(e) => {
+            const v = (e.target as HTMLSelectElement).value
+            const id = v === '' ? null : Number(v)
+            onseasonchange(id)
+          }}
+        >
+          {#each seasons as s}
+            <option value={s.id_season}>
+              {s.txt_code}{s.bool_active ? ' — aktywny' : ''}
+            </option>
+          {/each}
+        </select>
+      </label>
       <button data-field="add-event-btn" class="add-btn" onclick={() => { openCreateForm() }}>
         {t('event_add')}
       </button>
@@ -13,6 +34,18 @@
         <div class="event-card">
           {#if showForm && editingId === event.id_event}
             <div data-field="event-form" class="event-form">
+              <!-- Phase 3 (ADR-044): editable txt_code with cascade hint. Save
+                   path uses fn_update_event v2 which rebuilds child tournament
+                   codes from their enum fields. -->
+              <label class="annotate-new" data-field="form-event-code-label">
+                {t('event_code_label')}
+                <input data-field="form-event-code" type="text" bind:value={draftCode} />
+                {#if draftCode && draftCode !== event.txt_code}
+                  <div class="cascade-hint" data-field="form-event-code-cascade-hint">
+                    {t('event_code_cascade_hint')}
+                  </div>
+                {/if}
+              </label>
               <label>{t('event_name_label')} <input data-field="form-name" type="text" bind:value={draftName} /></label>
               <label>{t('event_location_label')} <input data-field="form-location" type="text" bind:value={draftLocation} /></label>
               <label>{t('event_start_label')} <input data-field="form-dt-start" type="date" bind:value={draftDtStart} /></label>
@@ -80,6 +113,23 @@
                   </select>
                 </label>
               {/if}
+              <!-- Phase 3 (ADR-044): id_prior_event picker. Filtered to events
+                   whose season's dt_end < this event's season's dt_start
+                   (chronologically prior). NULL on save = "leave unchanged". -->
+              <label class="annotate-new" data-field="form-prior-event-label">
+                {t('event_prior_event_label')}
+                <select data-field="form-prior-event" bind:value={draftPriorEventId}>
+                  <option value={null}>{t('event_prior_event_none')}</option>
+                  {#each priorEventCandidates(event) as candidate}
+                    <option value={candidate.id_event}>
+                      {candidate.txt_code}{candidate.txt_location ? ` — ${candidate.txt_location}` : ''}
+                    </option>
+                  {/each}
+                </select>
+                <div class="cascade-hint" data-field="form-prior-event-hint">
+                  {t('event_prior_event_hint')}
+                </div>
+              </label>
               <div class="form-actions">
                 <button data-field="form-save-btn" class="save-btn" onclick={() => { handleSave() }}>{t('event_save')}</button>
                 <button data-field="form-cancel-btn" class="cancel-btn" onclick={() => { closeForm() }}>{t('event_cancel')}</button>
@@ -265,6 +315,42 @@
         </div>
       {/if}
     </div>
+
+    <!-- Phase 3 (ADR-044): collapsible panel listing CREATED-status skeletons
+         in the active season. Sits at the bottom of the event list so admin
+         sees the full calendar first; the panel itself is collapsed by default
+         to avoid clutter once skeletons exist. -->
+    <div class="skel-panel" data-field="event-skel-panel">
+      <button
+        type="button"
+        class="skel-panel-header"
+        data-field="event-skel-panel-header"
+        onclick={() => { skelPanelOpen = !skelPanelOpen }}
+      >
+        <span class="skel-chevron" data-field="event-skel-chevron">{skelPanelOpen ? '▼' : '▶'}</span>
+        <span class="skel-title">{t('event_skel_panel_title')}</span>
+        <span class="skel-count" data-field="event-skel-panel-count">
+          {t('event_skel_panel_count').replace('{n}', String(skeletonEvents.length))}
+        </span>
+      </button>
+      {#if skelPanelOpen}
+        <div class="skel-panel-body" data-field="event-skel-panel-body">
+          {#if skeletonEvents.length === 0}
+            <div class="skel-empty">{t('event_skel_empty')}</div>
+          {:else}
+            {#each skeletonEvents as skel}
+              <div class="skel-row" data-field="event-skel-row">
+                <span class="skel-row-code">{skel.txt_code}</span>
+                <span class="skel-row-name">{skel.txt_location ?? '—'}</span>
+                <span class="event-status-badge status-created" data-field="event-skel-row-badge">
+                  {t('event_status_created')}
+                </span>
+              </div>
+            {/each}
+          {/if}
+        </div>
+      {/if}
+    </div>
   </div>
 {/if}
 
@@ -445,6 +531,9 @@
     // ADR-041: which Supabase env the admin is currently viewing. Threaded
     // into workflow_dispatch as `target` so the script writes to the right DB.
     activeEnv = 'CERT' as 'CERT' | 'PROD',
+    // Phase 3 (ADR-044): season selector at top of EventManager calls this on
+    // change. App.svelte updates its `selectedSeasonId` state and refetches.
+    onseasonchange = (_id: number | null) => {},
   }: {
     events?: CalendarEvent[]
     seasons?: Season[]
@@ -461,10 +550,14 @@
     oncreatetournament?: (eventId: number, params: Record<string, unknown>) => void
     onrefresh?: () => void | Promise<void>
     activeEnv?: 'CERT' | 'PROD'
+    onseasonchange?: (id: number | null) => void
   } = $props()
 
   let showForm = $state(false)
   let editingId: number | null = $state(null)
+  // Phase 3 (ADR-044): editable event code + prior-event picker.
+  let draftCode = $state('')
+  let draftPriorEventId: number | null = $state(null)
   let draftName = $state('')
   let draftLocation = $state('')
   let draftDtStart = $state('')
@@ -603,8 +696,30 @@
       : events
   )
 
+  // Phase 3 (ADR-044) — events with enum_status='CREATED' (skeletons). Surfaced
+  // in the collapsible panel at the bottom of the EventManager.
+  let skeletonEvents = $derived(filteredEvents.filter(e => e.enum_status === 'CREATED'))
+  let skelPanelOpen = $state(false)
+
+  // Phase 3 (ADR-044) — id_prior_event picker candidates: events from
+  // chronologically-prior seasons. We don't expose the raw FK to events from
+  // the same or future seasons because those would be invalid carry-over
+  // sources.
+  function priorEventCandidates(currentEvent: CalendarEvent): CalendarEvent[] {
+    const currentSeason = seasons.find(s => s.id_season === currentEvent.id_season)
+    if (!currentSeason) return []
+    const priorSeasonIds = seasons
+      .filter(s => s.dt_end < currentSeason.dt_start)
+      .map(s => s.id_season)
+    return events
+      .filter(e => priorSeasonIds.includes(e.id_season))
+      .sort((a, b) => a.txt_code.localeCompare(b.txt_code))
+  }
+
   function openCreateForm() {
     editingId = null
+    draftCode = ''
+    draftPriorEventId = null
     draftName = ''
     draftLocation = ''
     draftDtStart = ''
@@ -629,6 +744,8 @@
 
   function openEditForm(event: CalendarEvent) {
     editingId = event.id_event
+    draftCode = event.txt_code
+    draftPriorEventId = (event as CalendarEvent & { id_prior_event?: number | null }).id_prior_event ?? null
     draftName = event.txt_name
     draftLocation = event.txt_location ?? ''
     draftDtStart = event.dt_start ?? ''
@@ -696,6 +813,13 @@
       urlEvent3: compact[2],
       urlEvent4: compact[3],
       urlEvent5: compact[4],
+      // Phase 3 (ADR-044): only send `code` when it changed (so update v2's
+      // cascade doesn't fire on no-op saves). priorEventId always sent (NULL
+      // = no change is fine for fresh edits, an explicit value flips the FK).
+      code: editingId != null && draftCode && filteredEvents.find((e) => e.id_event === editingId)?.txt_code !== draftCode
+        ? draftCode
+        : undefined,
+      priorEventId: draftPriorEventId,
     }
     if (editingId != null) {
       onupdate(editingId, params)
@@ -716,6 +840,122 @@
 <style>
   .event-manager {
     padding: 16px;
+  }
+  /* Phase 3 (ADR-044): inline season selector at top of EventManager. */
+  .season-selector-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #555;
+    margin-right: auto;
+  }
+  .season-selector-label select {
+    padding: 5px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 13px;
+    color: #333;
+    font-family: inherit;
+  }
+  /* Phase 3 — txt_code + id_prior_event annotated fields. */
+  .event-form .annotate-new {
+    border-left: 3px solid #fbbf24;
+    padding-left: 10px;
+    background: rgba(251, 191, 36, 0.05);
+  }
+  .event-form .cascade-hint {
+    font-size: 12px;
+    color: #8a6d1b;
+    margin-top: 4px;
+    padding: 4px 8px;
+    background: rgba(251, 191, 36, 0.10);
+    border-radius: 4px;
+  }
+  /* Phase 3 — Skeletons collapsible panel at bottom. */
+  .skel-panel {
+    margin-top: 16px;
+    border: 1px dashed #b794f6;
+    border-radius: 6px;
+    background: #f7f3ff;
+    overflow: hidden;
+  }
+  .skel-panel-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #ede4fb;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    color: #4a2a8a;
+    font-weight: 700;
+  }
+  .skel-panel-header:hover {
+    background: #e2d4f6;
+  }
+  .skel-chevron {
+    font-size: 11px;
+    color: #6b46c1;
+  }
+  .skel-title {
+    flex: 1;
+    font-size: 13px;
+  }
+  .skel-count {
+    background: #b794f6;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .skel-panel-body {
+    padding: 8px 14px 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .skel-empty {
+    font-size: 13px;
+    color: #888;
+    font-style: italic;
+    padding: 8px 0;
+  }
+  .skel-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    background: #fff;
+    border: 1px solid #e2d4f6;
+    border-left: 3px solid #b794f6;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .skel-row-code {
+    font-family: 'SF Mono', Monaco, monospace;
+    font-weight: 700;
+    color: #4a2a8a;
+    min-width: 80px;
+  }
+  .skel-row-name {
+    flex: 1;
+    color: #555;
+  }
+  .event-status-badge.status-created {
+    background: #2a2a3a;
+    color: #fff;
+    border: 1px dashed #888;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
   }
   .event-header {
     display: flex;

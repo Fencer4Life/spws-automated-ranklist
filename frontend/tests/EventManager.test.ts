@@ -939,3 +939,234 @@ describe('EventManager Accordion (Phase 6)', () => {
     vi.useRealTimers()
   })
 })
+
+// ============================================================================
+// Phase 3c (ph3c.1–ph3c.12) — season selector + txt_code edit + id_prior_event
+// picker + Skeletons panel. See ~/.claude/plans/eager-knitting-fog.md.
+// ============================================================================
+
+describe('EventManager Phase 3c', () => {
+  // Multi-season fixture so the season selector + prior-event picker have
+  // something to surface (prior season + a CREATED skeleton in the new season).
+  const PHASE3_SEASONS: Season[] = [
+    { id_season: 1, txt_code: 'SPWS-2024-2025', dt_start: '2024-09-01', dt_end: '2025-06-30', bool_active: false },
+    { id_season: 2, txt_code: 'SPWS-2025-2026', dt_start: '2025-09-01', dt_end: '2026-06-30', bool_active: true },
+  ]
+
+  const PRIOR_EVENT: CalendarEvent = {
+    id_event: 100,
+    txt_code: 'PEW1-2024-2025',
+    txt_name: 'PEW1 Madrid',
+    id_season: 1,
+    txt_season_code: 'SPWS-2024-2025',
+    txt_location: 'Madrid',
+    txt_country: 'ES',
+    txt_venue_address: null,
+    url_invitation: null,
+    num_entry_fee: null,
+    txt_entry_fee_currency: null,
+    dt_start: '2024-11-15',
+    dt_end: '2024-11-15',
+    url_event: null,
+    enum_status: 'COMPLETED',
+    num_tournaments: 6,
+    bool_has_international: true,
+    url_registration: null,
+    dt_registration_deadline: null,
+    url_event_2: null, url_event_3: null, url_event_4: null, url_event_5: null,
+  }
+
+  const SKELETON: CalendarEvent = {
+    id_event: 200,
+    txt_code: 'PEW1-2025-2026',
+    txt_name: 'PEW1-2025-2026',
+    id_season: 2,
+    txt_season_code: 'SPWS-2025-2026',
+    txt_location: 'Madrid',
+    txt_country: 'ES',
+    txt_venue_address: null,
+    url_invitation: null,
+    num_entry_fee: null,
+    txt_entry_fee_currency: null,
+    dt_start: null,
+    dt_end: null,
+    url_event: null,
+    enum_status: 'CREATED',
+    num_tournaments: 6,
+    bool_has_international: true,
+    url_registration: null,
+    dt_registration_deadline: null,
+    url_event_2: null, url_event_3: null, url_event_4: null, url_event_5: null,
+  }
+
+  // A non-skeleton event in the new season (PLANNED status), so the panel
+  // filter has a non-CREATED row to ignore.
+  const PLANNED_EVENT: CalendarEvent = {
+    ...SKELETON,
+    id_event: 201,
+    txt_code: 'PEW2-2025-2026',
+    txt_name: 'PEW2-2025-2026',
+    enum_status: 'PLANNED',
+    txt_location: 'Berlin',
+  }
+
+  function phase3Props(overrides: Record<string, unknown> = {}) {
+    return {
+      events: [PRIOR_EVENT, SKELETON, PLANNED_EVENT],
+      seasons: PHASE3_SEASONS,
+      organizers: MOCK_ORGANIZERS,
+      selectedSeasonId: 2,
+      isAdmin: true,
+      oncreate: vi.fn(),
+      onupdate: vi.fn(),
+      onupdatestatus: vi.fn(),
+      ondelete: vi.fn(),
+      onseasonchange: vi.fn(),
+      ...overrides,
+    }
+  }
+
+  // ph3c.1 — season selector dropdown renders an option per season
+  it('ph3c.1: season selector renders an option for every season', () => {
+    const { container } = render(EventManager, { props: phase3Props() })
+    const select = container.querySelector('[data-field="event-season-selector"]') as HTMLSelectElement
+    expect(select).not.toBeNull()
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['1', '2'])
+  })
+
+  // ph3c.2 — changing the selector calls onseasonchange with the new id
+  it('ph3c.2: changing season selector fires onseasonchange', async () => {
+    const onseasonchange = vi.fn()
+    const { container } = render(EventManager, { props: phase3Props({ onseasonchange }) })
+    const select = container.querySelector('[data-field="event-season-selector"]') as HTMLSelectElement
+    await fireEvent.change(select, { target: { value: '1' } })
+    expect(onseasonchange).toHaveBeenCalledWith(1)
+  })
+
+  // ph3c.3 — edit form has form-event-code input pre-filled with txt_code
+  it('ph3c.3: edit form pre-fills form-event-code with the existing txt_code', async () => {
+    const { container } = render(EventManager, { props: phase3Props() })
+    const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
+    await fireEvent.click(editBtns[0]!) // edit the SKELETON event (in season 2)
+    const codeInput = container.querySelector('[data-field="form-event-code"]') as HTMLInputElement
+    expect(codeInput).not.toBeNull()
+    expect(codeInput.value).toBe('PEW1-2025-2026')
+  })
+
+  // ph3c.4 — changing form-event-code surfaces the cascade hint
+  it('ph3c.4: changing form-event-code shows the cascade hint', async () => {
+    const { container } = render(EventManager, { props: phase3Props() })
+    await fireEvent.click(container.querySelectorAll('[data-field="edit-btn"]')[0]!)
+    // Hint not visible while code matches the existing event
+    expect(container.querySelector('[data-field="form-event-code-cascade-hint"]')).toBeNull()
+    const codeInput = container.querySelector('[data-field="form-event-code"]') as HTMLInputElement
+    await fireEvent.input(codeInput, { target: { value: 'PEW1B-2025-2026' } })
+    expect(container.querySelector('[data-field="form-event-code-cascade-hint"]')).not.toBeNull()
+  })
+
+  // ph3c.5 — id_prior_event picker only lists events from prior seasons
+  it('ph3c.5: form-prior-event picker only lists events from chronologically prior seasons', async () => {
+    const { container } = render(EventManager, { props: phase3Props() })
+    await fireEvent.click(container.querySelectorAll('[data-field="edit-btn"]')[0]!)
+    const select = container.querySelector('[data-field="form-prior-event"]') as HTMLSelectElement
+    expect(select).not.toBeNull()
+    // Options: "(none)" + every event from a prior season. The two same-season
+    // events (skeleton + planned) must NOT appear.
+    const values = Array.from(select.options).map((o) => o.value)
+    expect(values).toContain('100') // PRIOR_EVENT
+    expect(values).not.toContain('200') // SKELETON itself
+    expect(values).not.toContain('201') // PLANNED_EVENT same-season
+  })
+
+  // ph3c.6 — handleSave threads `code` only when changed
+  it('ph3c.6: handleSave passes `code` only when txt_code was edited', async () => {
+    const onupdate = vi.fn()
+    const { container } = render(EventManager, { props: phase3Props({ onupdate }) })
+    await fireEvent.click(container.querySelectorAll('[data-field="edit-btn"]')[0]!)
+    // Save without changing the code → params.code should be undefined
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+    expect(onupdate).toHaveBeenCalled()
+    const params = onupdate.mock.calls[0][1]
+    expect(params.code).toBeUndefined()
+  })
+
+  it('ph3c.6: handleSave passes `code` when txt_code is edited', async () => {
+    const onupdate = vi.fn()
+    const { container } = render(EventManager, { props: phase3Props({ onupdate }) })
+    await fireEvent.click(container.querySelectorAll('[data-field="edit-btn"]')[0]!)
+    const codeInput = container.querySelector('[data-field="form-event-code"]') as HTMLInputElement
+    await fireEvent.input(codeInput, { target: { value: 'PEW1B-2025-2026' } })
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+    const params = onupdate.mock.calls[0][1]
+    expect(params.code).toBe('PEW1B-2025-2026')
+  })
+
+  // ph3c.7 — handleSave always carries `priorEventId` (NULL ok)
+  it('ph3c.7: handleSave threads priorEventId (defaults null when no edit)', async () => {
+    const onupdate = vi.fn()
+    const { container } = render(EventManager, { props: phase3Props({ onupdate }) })
+    await fireEvent.click(container.querySelectorAll('[data-field="edit-btn"]')[0]!)
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+    const params = onupdate.mock.calls[0][1]
+    expect(params).toHaveProperty('priorEventId')
+    expect(params.priorEventId).toBeNull()
+  })
+
+  it('ph3c.7: handleSave threads selected priorEventId from picker', async () => {
+    const onupdate = vi.fn()
+    const { container } = render(EventManager, { props: phase3Props({ onupdate }) })
+    await fireEvent.click(container.querySelectorAll('[data-field="edit-btn"]')[0]!)
+    const select = container.querySelector('[data-field="form-prior-event"]') as HTMLSelectElement
+    await fireEvent.change(select, { target: { value: '100' } })
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+    const params = onupdate.mock.calls[0][1]
+    expect(params.priorEventId).toBe(100)
+  })
+
+  // ph3c.8 — Skeletons panel renders collapsed by default; count = 1 (SKELETON)
+  it('ph3c.8: Skeletons panel renders with the right count, collapsed by default', () => {
+    const { container } = render(EventManager, { props: phase3Props() })
+    const panel = container.querySelector('[data-field="event-skel-panel"]')
+    expect(panel).not.toBeNull()
+    expect(container.querySelector('[data-field="event-skel-panel-body"]')).toBeNull()
+    const count = container.querySelector('[data-field="event-skel-panel-count"]')!
+    expect(count.textContent).toMatch(/\b1\b/) // exactly 1 skeleton in season 2
+  })
+
+  // ph3c.9 — clicking the panel header expands the body
+  it('ph3c.9: clicking the panel header expands the body', async () => {
+    const { container } = render(EventManager, { props: phase3Props() })
+    expect(container.querySelector('[data-field="event-skel-panel-body"]')).toBeNull()
+    await fireEvent.click(container.querySelector('[data-field="event-skel-panel-header"]')!)
+    expect(container.querySelector('[data-field="event-skel-panel-body"]')).not.toBeNull()
+  })
+
+  // ph3c.10 — expanded body lists CREATED rows only (PLANNED is filtered out)
+  it('ph3c.10: expanded panel lists only CREATED events', async () => {
+    const { container } = render(EventManager, { props: phase3Props() })
+    await fireEvent.click(container.querySelector('[data-field="event-skel-panel-header"]')!)
+    const rows = container.querySelectorAll('[data-field="event-skel-row"]')
+    expect(rows.length).toBe(1)
+    expect(rows[0].textContent).toContain('PEW1-2025-2026')
+    expect(rows[0].textContent).not.toContain('PEW2-2025-2026') // PLANNED filtered
+  })
+
+  // ph3c.11 — each skeleton row carries the CREATED status badge
+  it('ph3c.11: skeleton rows render the CREATED status badge', async () => {
+    const { container } = render(EventManager, { props: phase3Props() })
+    await fireEvent.click(container.querySelector('[data-field="event-skel-panel-header"]')!)
+    const badge = container.querySelector('[data-field="event-skel-row-badge"]')!
+    expect(badge.classList.contains('status-created')).toBe(true)
+    expect(badge.textContent).toContain('CREATED')
+  })
+
+  // ph3c.12 — empty state when no CREATED events exist in the selected season
+  it('ph3c.12: panel shows empty state when no skeletons exist', async () => {
+    const { container } = render(EventManager, {
+      props: phase3Props({ events: [PRIOR_EVENT, PLANNED_EVENT] }), // no SKELETON
+    })
+    await fireEvent.click(container.querySelector('[data-field="event-skel-panel-header"]')!)
+    const body = container.querySelector('[data-field="event-skel-panel-body"]')!
+    expect(body.querySelector('.skel-empty')).not.toBeNull()
+  })
+})
