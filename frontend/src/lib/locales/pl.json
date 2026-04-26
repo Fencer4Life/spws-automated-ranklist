@@ -237,6 +237,16 @@
   "sc_close": "Zamknij",
   "sc_save": "Zapisz i przelicz",
 
+  "sc_section_engine": "Silnik carry-over (rolling-score)",
+  "sc_engine_label": "Silnik",
+  "sc_engine_opt_fk": "EVENT_FK_MATCHING — domyślny (FK-based, ADR-042/043)",
+  "sc_engine_opt_code": "EVENT_CODE_MATCHING — (legacy) prefix-string",
+  "sc_engine_legacy_tag": "(legacy)",
+  "sc_engine_hint_fk": "FK używa tbl_event.id_prior_event (Phase 1B+2).",
+  "sc_engine_hint_code": "CODE parsuje prefiks z txt_code (legacy, zachowane dla zgodności).",
+  "sc_engine_hint_immediate": "Zmiana po zapisaniu — natychmiastowa (zastępuje runbook §5 „flip via SQL\").",
+  "sc_engine_hint_extensible": "Lista rozszerzalna — nowe silniki dodane do enum-u pojawiają się tu automatycznie.",
+
   "birth_year_subtitle": "kat. {cat} — roczniki: {years}",
   "birth_year_and_older": "i starsi",
 

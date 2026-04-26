@@ -222,6 +222,7 @@
     deleteEventCascade,
     fetchScoringConfig,
     saveScoringConfig,
+    updateSeasonCarryoverEngine,
     fetchAllTournaments,
     deleteTournamentCascade,
     updateTournament,
@@ -824,7 +825,14 @@
   async function handleSaveScoringConfig(config: ScoringConfig) {
     try {
       await saveScoringConfig(config as unknown as Record<string, unknown>)
+      // Phase 3 (ADR-045): patch the season's carry-over engine separately.
+      // ScoringConfigEditor's save payload now carries `engine` so the dropdown
+      // flip propagates to tbl_season without a migration.
+      if (config.engine && editingScoringSeasonId != null) {
+        await updateSeasonCarryoverEngine(editingScoringSeasonId, config.engine)
+      }
       await refreshEvfToggle()
+      await fetchSeasons()
       editingScoringSeasonId = null
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)

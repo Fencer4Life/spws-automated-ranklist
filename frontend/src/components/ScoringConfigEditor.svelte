@@ -123,6 +123,44 @@
     {/if}
   </div>
 
+  <!-- Section 4b: Carry-over engine selector (Phase 3, ADR-045) -->
+  <div class="config-section engine-section" data-field="engine-section">
+    <div class="config-section-header" onclick={() => toggleSection('engine')}>
+      <span class="section-icon">&#128256;</span>
+      {t('sc_section_engine')}
+      <span class="chevron" class:collapsed={collapsedSections.engine}>&#9660;</span>
+    </div>
+    {#if !collapsedSections.engine}
+      <div class="config-section-body">
+        <div class="field-row">
+          <label>{t('sc_engine_label')}</label>
+          <select
+            data-field="engine-select"
+            bind:value={draft.engine}
+            disabled={readonly}
+            class:legacy={draft.engine === 'EVENT_CODE_MATCHING'}
+          >
+            {#each CARRYOVER_ENGINE_VALUES as engineValue}
+              <option value={engineValue}>{engineLabel(engineValue)}</option>
+            {/each}
+          </select>
+          {#if draft.engine === 'EVENT_CODE_MATCHING'}
+            <span class="engine-legacy-tag" data-field="engine-legacy-tag">{t('sc_engine_legacy_tag')}</span>
+          {/if}
+        </div>
+        <div class="engine-hint" data-field="engine-hint">
+          {#if draft.engine === 'EVENT_CODE_MATCHING'}
+            <strong>{t('sc_engine_hint_code')}</strong>
+          {:else}
+            <strong>{t('sc_engine_hint_fk')}</strong>
+          {/if}
+          <br />
+          {t('sc_engine_hint_immediate')} · {t('sc_engine_hint_extensible')}
+        </div>
+      </div>
+    {/if}
+  </div>
+
   <!-- Section 5: Ranking rules (buckets) -->
   <div class="config-section">
     <div class="config-section-header" onclick={() => toggleSection('rules')}>
@@ -239,6 +277,7 @@
 
 <script lang="ts">
   import type { ScoringConfig, RankingBucket, RankingRules } from '../lib/types'
+  import { CARRYOVER_ENGINE_VALUES } from '../lib/types'
   import { t } from '../lib/locale.svelte'
 
   let {
@@ -255,7 +294,19 @@
     oncancel?: () => void
   } = $props()
 
-  let draft: ScoringConfig = $state(JSON.parse(JSON.stringify(config)))
+  // Default engine for new seasons (no incoming config.engine) is the FK
+  // engine — see ADR-045. Existing configs preserve whatever the season
+  // currently has on tbl_season.enum_carryover_engine.
+  let draft: ScoringConfig = $state({
+    ...JSON.parse(JSON.stringify(config)),
+    engine: config.engine ?? 'EVENT_FK_MATCHING',
+  })
+
+  function engineLabel(engine: string): string {
+    if (engine === 'EVENT_FK_MATCHING') return t('sc_engine_opt_fk')
+    if (engine === 'EVENT_CODE_MATCHING') return t('sc_engine_opt_code')
+    return engine
+  }
 
   let draftRules: RankingRules = $state(
     config.ranking_rules
@@ -268,6 +319,7 @@
     podium: false,
     mult: false,
     intake: false,
+    engine: false,
     rules: false,
   })
 
@@ -329,12 +381,14 @@
   }
 
   function handleSave() {
-    const updated: ScoringConfig = { ...draft, ranking_rules: draftRules }
+    // Include `engine` so App.svelte's handler can patch tbl_season.enum_carryover_engine
+    // separately from tbl_scoring_config (instant flip, no migration).
+    const updated: ScoringConfig = { ...draft, ranking_rules: draftRules, engine: draft.engine }
     onsave(updated)
   }
 
   function handleExport() {
-    const json = JSON.stringify({ ...draft, ranking_rules: draftRules }, null, 2)
+    const json = JSON.stringify({ ...draft, ranking_rules: draftRules, engine: draft.engine }, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -398,6 +452,51 @@
     border-radius: 6px;
     margin-bottom: 12px;
     overflow: hidden;
+  }
+  .config-section.engine-section {
+    border: 2px solid #fbbf24;
+    background: #fff8e1;
+  }
+  .config-section.engine-section .config-section-header {
+    background: #fff8e1;
+    color: #8a6d1b;
+  }
+  .config-section.engine-section .config-section-header:hover {
+    background: #fff0c8;
+  }
+  .config-section.engine-section select {
+    min-width: 320px;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+    background: #fff;
+    color: #333;
+    font-family: inherit;
+  }
+  .config-section.engine-section select.legacy {
+    border-color: #c97a00;
+    color: #8a4a00;
+  }
+  .engine-legacy-tag {
+    display: inline-block;
+    background: #fff3cd;
+    color: #856404;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 6px;
+  }
+  .engine-hint {
+    background: #e1f0ff;
+    border: 1px solid #b3d4f0;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #1a6fbf;
+    line-height: 1.5;
+    margin-top: 8px;
   }
   .config-section-header {
     display: flex;

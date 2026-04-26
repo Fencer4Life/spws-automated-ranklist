@@ -39,14 +39,19 @@
         <div data-field="season-card" class="season-card">
           {#if showForm && editingId === season.id_season}
             <div data-field="season-form" class="season-form">
-              <div class="form-top-row">
-                <span class="tooltip-wrapper">
-                  <button data-field="scoring-btn" class="scoring-btn" onclick={() => { onscoringconfig(season.id_season) }}>
-                    🎯 {t('nav_admin_scoring')}
-                  </button>
-                  <span class="tooltip-text">{t('season_scoring_tooltip')}</span>
-                </span>
-              </div>
+              <!-- 🎯 Konfiguracja punktacji button — visible only for future + active seasons.
+                   Past-complete seasons (dt_end < today) hide it (ADR-045). The existing
+                   `readonly` prop on ScoringConfigEditor stays as defense-in-depth. -->
+              {#if !isSeasonPast(season)}
+                <div class="form-top-row">
+                  <span class="tooltip-wrapper">
+                    <button data-field="scoring-btn" class="scoring-btn" onclick={() => { onscoringconfig(season.id_season) }}>
+                      🎯 {t('nav_admin_scoring')}
+                    </button>
+                    <span class="tooltip-text">{t('season_scoring_tooltip')}</span>
+                  </span>
+                </div>
+              {/if}
               <label>
                 {t('season_code_label')}
                 <input data-field="form-code" type="text" bind:value={draftCode} />
@@ -76,11 +81,10 @@
               </div>
             </div>
             {#if scoringConfig && scoringSeasonId === season.id_season}
-              {@const isSeasonPast = new Date(season.dt_end) < new Date()}
               <ScoringConfigEditor
                 config={scoringConfig}
                 seasonCode={season.txt_code}
-                readonly={isSeasonPast}
+                readonly={isSeasonPast(season)}
                 onsave={onsavescoring}
                 oncancel={onclosescoring}
               />
@@ -145,6 +149,12 @@
   let draftEnd = $state('')
   let draftShowEvf = $state(false)
   let formError: string | null = $state(null)
+
+  // Past-complete season = dt_end strictly before today's date (local TZ).
+  // Used to hide the 🎯 Konfiguracja punktacji button per ADR-045.
+  function isSeasonPast(s: Season): boolean {
+    return new Date(s.dt_end) < new Date(new Date().toDateString())
+  }
 
   function openCreateForm() {
     editingId = null

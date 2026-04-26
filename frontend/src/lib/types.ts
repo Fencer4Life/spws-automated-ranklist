@@ -25,6 +25,12 @@ export interface Season {
   dt_start: string
   dt_end: string
   bool_active: boolean
+  // Phase 3 admin-editable fields. Optional in the runtime payload because
+  // older seed exports / view rows may not surface them yet; UI gracefully
+  // falls back to defaults (366 / null / EVENT_FK_MATCHING).
+  int_carryover_days?: number
+  enum_european_event_type?: EuropeanEventType
+  enum_carryover_engine?: CarryoverEngine
 }
 
 export interface RankingPpwRow {
@@ -91,7 +97,34 @@ export interface DrilldownContext {
   pewBestCount: number
 }
 
-export type EventStatus = 'PLANNED' | 'SCHEDULED' | 'CHANGED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+export type EventStatus = 'CREATED' | 'PLANNED' | 'SCHEDULED' | 'CHANGED' | 'IN_PROGRESS' | 'SCORED' | 'COMPLETED' | 'CANCELLED'
+
+export type CarryoverEngine = 'EVENT_FK_MATCHING' | 'EVENT_CODE_MATCHING'
+
+// Ordered for display purposes (default first, legacy last). When a new engine
+// is added to the SQL enum `enum_event_carryover_engine`, append it here too.
+export const CARRYOVER_ENGINE_VALUES: CarryoverEngine[] = ['EVENT_FK_MATCHING', 'EVENT_CODE_MATCHING']
+
+export type EuropeanEventType = 'IMEW' | 'DMEW' | null
+
+export interface SkeletonByKind {
+  PPW?: number
+  PEW?: number
+  MPW?: number
+  MSW?: number
+  IMEW?: number
+  DMEW?: number
+}
+
+export interface InitSeasonResult {
+  skeletons_created: number
+  by_kind: SkeletonByKind
+}
+
+export interface CreateSeasonWithSkeletonsResult {
+  id_season: number
+  skeletons_created: number
+}
 
 export interface CalendarEvent {
   id_event: number
@@ -143,6 +176,11 @@ export interface ScoringConfig {
   min_participants_ppw: number
   show_evf_toggle: boolean
   ranking_rules: RankingRules | null
+  // Phase 3 — selected carry-over engine for the season. Lives on
+  // tbl_season.enum_carryover_engine but is exposed alongside the scoring
+  // config so the ScoringConfigEditor's engine dropdown can read/write it.
+  // Optional because legacy seasons predate the field; default is FK.
+  engine?: CarryoverEngine
 }
 
 export type ImportStatus = 'PLANNED' | 'PENDING' | 'IMPORTED' | 'SCORED' | 'REJECTED'
