@@ -33,42 +33,29 @@ describe('SeasonManager (T9.2)', () => {
     expect(firstRow.querySelector('[data-field="season-end"]')!.textContent).toContain('2025-06-30')
   })
 
-  // 9.38 — "+ Dodaj sezon" opens create form
-  it('opens create form when add button clicked', async () => {
+  // 9.38 — "+ Dodaj sezon" opens the wizard (Phase 3 architectural change
+  // per plan: inline create form replaced by 3-step wizard. Create flow itself
+  // is exercised in tests/SeasonManagerWizard.test.ts ph3.23–ph3.32.)
+  it('opens wizard modal when add button clicked', async () => {
     const { container } = render(SeasonManager, { props: defaultProps })
     const addBtn = container.querySelector('[data-field="add-season-btn"]')
     expect(addBtn).not.toBeNull()
 
-    // Form should not be visible initially
-    expect(container.querySelector('[data-field="season-form"]')).toBeNull()
+    // Wizard not open initially
+    expect(container.querySelector('[data-field="wizard-overlay"]')).toBeNull()
 
     await fireEvent.click(addBtn!)
-    const form = container.querySelector('[data-field="season-form"]')
-    expect(form).not.toBeNull()
-
-    // Form inputs should be empty for create
-    const codeInput = form!.querySelector('[data-field="form-code"]') as HTMLInputElement
-    expect(codeInput.value).toBe('')
+    expect(container.querySelector('[data-field="wizard-overlay"]')).not.toBeNull()
   })
 
-  // 9.39 — Create form submits txt_code, dt_start, dt_end
-  it('calls oncreate with form values on save', async () => {
-    const oncreate = vi.fn()
-    const { container } = render(SeasonManager, { props: { ...defaultProps, oncreate } })
-
+  // 9.39 — Wizard renders step 1 with empty inputs (smoke; full state-machine
+  // coverage lives in tests/SeasonManagerWizard.test.ts).
+  it('wizard step 1 renders with empty code input', async () => {
+    const { container } = render(SeasonManager, { props: defaultProps })
     await fireEvent.click(container.querySelector('[data-field="add-season-btn"]')!)
-
-    const form = container.querySelector('[data-field="season-form"]')!
-    const codeInput = form.querySelector('[data-field="form-code"]') as HTMLInputElement
-    const startInput = form.querySelector('[data-field="form-start"]') as HTMLInputElement
-    const endInput = form.querySelector('[data-field="form-end"]') as HTMLInputElement
-
-    await fireEvent.input(codeInput, { target: { value: 'NEW-SEASON' } })
-    await fireEvent.input(startInput, { target: { value: '2025-09-01' } })
-    await fireEvent.input(endInput, { target: { value: '2026-06-30' } })
-
-    await fireEvent.click(form.querySelector('[data-field="form-save-btn"]')!)
-    expect(oncreate).toHaveBeenCalledWith('NEW-SEASON', '2025-09-01', '2026-06-30')
+    const codeInput = container.querySelector('[data-field="wizard-code"]') as HTMLInputElement
+    expect(codeInput).not.toBeNull()
+    expect(codeInput.value).toBe('')
   })
 
   // 9.40 — Edit button opens form with pre-filled values
@@ -113,17 +100,13 @@ describe('SeasonManager (T9.2)', () => {
     expect(container.querySelector('[data-field="add-season-btn"]')).toBeNull()
   })
 
-  // 8.81 — EVF checkbox renders in edit form but NOT in create form
-  it('shows EVF checkbox in edit form, not in create form', async () => {
+  // 8.81 — EVF checkbox renders in EDIT form (the wizard handles create with
+  // its own EVF toggle; this test now scopes to the edit-flow checkbox).
+  it('shows EVF checkbox in edit form', async () => {
     const onfetchevf = vi.fn().mockResolvedValue(false)
     const { container } = render(SeasonManager, { props: { ...defaultProps, onfetchevf } })
 
-    // Open CREATE form — no checkbox
-    await fireEvent.click(container.querySelector('[data-field="add-season-btn"]')!)
-    expect(container.querySelector('[data-field="form-evf-toggle"]')).toBeNull()
-
-    // Cancel and open EDIT form — checkbox appears
-    await fireEvent.click(container.querySelector('[data-field="form-cancel-btn"]')!)
+    // Open EDIT form — checkbox appears
     const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
     await fireEvent.click(editBtns[0])
     await vi.waitFor(() => {
@@ -187,7 +170,10 @@ describe('SeasonManager (T9.2)', () => {
 
     // Save
     await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
-    expect(onupdate).toHaveBeenCalledWith(1, 'SPWS-2024-2025', '2024-09-01', '2025-06-30', true)
+    // Phase 3 (ADR-044): onupdate signature now takes 7 args — the trailing
+    // (carryoverDays, europeanType) come from the new EDIT form fields and
+    // default to (366, null) when the season has no Phase-3 data yet.
+    expect(onupdate).toHaveBeenCalledWith(1, 'SPWS-2024-2025', '2024-09-01', '2025-06-30', true, 366, null)
   })
 
   // ========================================================================

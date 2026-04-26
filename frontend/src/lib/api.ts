@@ -19,6 +19,9 @@ import type {
   UpdateTournamentParams,
   FencerListItem,
   FencerTournamentRow,
+  CarryoverEngine,
+  EuropeanEventType,
+  CreateSeasonWithSkeletonsResult,
 } from './types'
 
 let client: SupabaseClient | null = null
@@ -209,6 +212,24 @@ export async function updateSeasonCarryoverEngine(seasonId: number, engine: stri
   if (error) throw error
 }
 
+// Phase 3 (ADR-044): patch tbl_season's carry-over fields directly. Same
+// rationale as updateSeasonCarryoverEngine — fn_update_season is a 4-arg RPC
+// we don't want to widen for these admin-form additions.
+export async function updateSeasonCarryoverFields(
+  seasonId: number,
+  carryoverDays: number,
+  europeanType: EuropeanEventType,
+): Promise<void> {
+  const { error } = await getClient()
+    .from('tbl_season')
+    .update({
+      int_carryover_days: carryoverDays,
+      enum_european_event_type: europeanType,
+    })
+    .eq('id_season', seasonId)
+  if (error) throw error
+}
+
 export async function createSeason(code: string, dtStart: string, dtEnd: string): Promise<number> {
   const { data, error } = await getClient().rpc('fn_create_season', {
     p_code: code,
@@ -231,6 +252,60 @@ export async function updateSeason(id: number, code: string, dtStart: string, dt
 
 export async function deleteSeason(id: number): Promise<void> {
   const { error } = await getClient().rpc('fn_delete_season', { p_id: id })
+  if (error) throw error
+}
+
+// ============================================================================
+// Phase 3 — season-init wizard RPCs (ADR-044)
+// ============================================================================
+
+// Wizard step 2 calls this to pre-fill ScoringConfigEditor with the prior
+// season's config. Returns NULL if no chronological prior exists (first-ever
+// season) — the wizard then keeps ScoringConfigEditor's static defaults.
+export async function copyPriorScoringConfig(dtStart: string): Promise<ScoringConfig | null> {
+  const { data, error } = await getClient().rpc('fn_copy_prior_scoring_config', {
+    p_dt_start: dtStart,
+  })
+  if (error) throw error
+  return (data as ScoringConfig | null) ?? null
+}
+
+// The wizard's atomic commit (✓ Utwórz). Backend wraps season insert + scoring
+// config overwrite + skeleton init in one transaction; any failure rolls
+// everything back so partial state never persists.
+export async function createSeasonWithSkeletons(payload: {
+  code: string
+  dt_start: string
+  dt_end: string
+  carryover_days: number
+  european_type: EuropeanEventType
+  carryover_engine: CarryoverEngine
+  scoring_config: ScoringConfig
+  show_evf: boolean
+}): Promise<CreateSeasonWithSkeletonsResult> {
+  const { data, error } = await getClient().rpc('fn_create_season_with_skeletons', {
+    p_code: payload.code,
+    p_dt_start: payload.dt_start,
+    p_dt_end: payload.dt_end,
+    p_carryover_days: payload.carryover_days,
+    p_european_type: payload.european_type,
+    p_carryover_engine: payload.carryover_engine,
+    p_scoring_config: payload.scoring_config as unknown as Record<string, unknown>,
+    p_show_evf: payload.show_evf,
+  })
+  if (error) throw error
+  // RPC returns a single-row TABLE; PostgREST surfaces it as an array.
+  const row = Array.isArray(data) ? data[0] : data
+  return row as CreateSeasonWithSkeletonsResult
+}
+
+// EDIT form's "↶ Cofnij całość" link. Backend refuses if any skeleton has
+// advanced past CREATED; otherwise deletes children → events → scoring_config
+// → season in a single transaction.
+export async function revertSeasonInit(seasonId: number): Promise<void> {
+  const { error } = await getClient().rpc('fn_revert_season_init', {
+    p_id_season: seasonId,
+  })
   if (error) throw error
 }
 
