@@ -151,13 +151,10 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
         print(f"\n  {len(new)} new, {len(already)} already in CERT")
 
         if new:
-            season_suffix = season["txt_code"].replace("SPWS-", "")
+            # Phase 2 (ADR-043): allocator owns the code; payload omits `code`.
             payload: list[dict] = []
             for evt in new:
-                loc = evt.get("location", "").split(",")[0].strip().upper().replace(" ", "")[:10]
-                code = f"PEW-{loc}-{season_suffix}" if not evt.get("is_team") else f"MEW-{loc}-{season_suffix}"
                 payload.append({
-                    "code": code,
                     "name": evt.get("name", ""),
                     "dt_start": evt.get("dt_start", ""),
                     "dt_end": evt.get("dt_end") or evt.get("dt_start", ""),
@@ -175,11 +172,32 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
                 })
 
             events_json = json.dumps(payload).replace("'", "''")
-            _management_query(ref, token,
-                f"SELECT fn_import_evf_events('{events_json}'::JSONB, {season['id_season']})"
+            result = _management_query(ref, token,
+                f"SELECT fn_import_evf_events_v2('{events_json}'::JSONB, "
+                f"{season['id_season']}) AS r"
             )
+            r = result[0].get("r") if result else {}
+            if isinstance(r, str):
+                r = json.loads(r)
+            r = r or {}
+            created      = int(r.get("created", 0))
+            slot_reused  = int(r.get("slot_reused", 0))
+            prior_match  = int(r.get("prior_matched", 0))
+            alerts       = r.get("alerts") or []
+
+            # One Telegram message per NEXT_FREE_ALLOC alert (admin must
+            # confirm the new city). Reuse / prior-match are summary-only.
+            for a in alerts:
+                _telegram(bot_token, chat_id,
+                    f"🆕 <b>{a.get('code')}</b> — new city "
+                    f"<b>{a.get('location') or '?'}</b> "
+                    f"({a.get('country') or '?'}) — please confirm in admin"
+                )
+
             _telegram(bot_token, chat_id,
-                f"<b>EVF Calendar</b>\n{len(new)} new event(s) imported\n"
+                f"<b>EVF Calendar</b>\n"
+                f"created={created}, slot_reused={slot_reused}, "
+                f"prior_matched={prior_match}, alerts={len(alerts)}\n"
                 f"URL fields: inv={inv} reg={reg} deadline={dln}"
             )
 
@@ -501,30 +519,29 @@ def _compare_and_ingest(
 
 
 def _create_cert_event(ref: str, token: str, evf_evt: dict) -> int | None:
-    """Create a new PEW event on CERT from EVF data."""
+    """Create a new EVF event on CERT from results-path discovery (Phase 2).
+
+    Delegates code allocation + organizer assignment to
+    fn_create_evf_event_from_results, which calls the same allocator the
+    calendar path uses. Returns the new id_event (or existing one if a row
+    with the same allocated code already existed).
+    """
     season = _management_query(ref, token,
-        "SELECT id_season, txt_code FROM tbl_season WHERE bool_active = TRUE"
+        "SELECT id_season FROM tbl_season WHERE bool_active = TRUE"
     )
     if not season:
         return None
 
-    season_suffix = season[0]["txt_code"].replace("SPWS-", "")
-    loc = evf_evt.get("location", "").split(",")[0].strip().upper().replace(" ", "")[:10]
-    code = f"PEW-{loc}-{season_suffix}" if not evf_evt.get("is_team") else f"MEW-{loc}-{season_suffix}"
-    name = evf_evt.get("name", code)
+    name     = (evf_evt.get("name") or "").replace("'", "''")
     dt_start = evf_evt["date"]
-    location = evf_evt.get("location", "")
-    country = evf_evt.get("country", "")
+    location = (evf_evt.get("location") or "").replace("'", "''")
+    country  = (evf_evt.get("country")  or "").replace("'", "''")
+    is_team  = "true" if evf_evt.get("is_team") else "false"
 
-    # Create event
     result = _management_query(ref, token,
-        f"INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, "
-        f"dt_start, txt_location, txt_country, enum_status) "
-        f"VALUES ('{code}', '{name.replace(chr(39), chr(39)+chr(39))}', {season[0]['id_season']}, "
-        f"(SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'), "
-        f"'{dt_start}', '{location.replace(chr(39), chr(39)+chr(39))}', "
-        f"'{country.replace(chr(39), chr(39)+chr(39))}', 'COMPLETED') "
-        f"RETURNING id_event"
+        f"SELECT id_event, txt_code FROM fn_create_evf_event_from_results("
+        f"{season[0]['id_season']}, '{name}', '{dt_start}'::DATE, "
+        f"'{location}', '{country}', {is_team}::BOOLEAN)"
     )
     if result:
         return result[0]["id_event"]

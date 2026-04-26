@@ -1,8 +1,12 @@
 # ADR-028: EVF Calendar + Results Import
 
-**Status:** Accepted (revised 2026-04-20 rev 2 — URL-refresh path added + deadline harvest disabled pending real-world pattern data)
+**Status:** Accepted (revised 2026-04-26 rev 3 — code allocator + EVF organizer fix per ADR-043)
 **Date:** 2026-04-06
-**Relates to:** FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (`url_event`), ADR-030 (`url_registration`/`dt_registration_deadline`)
+**Relates to:** FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (`url_event`), ADR-030 (`url_registration`/`dt_registration_deadline`), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier)
+
+## Amendment 2026-04-26 (rev 3)
+
+The Python scraper no longer constructs venue-slug `code` values. Code allocation is delegated to `fn_import_evf_events_v2` (calendar path) and `fn_create_evf_event_from_results` (results path), both of which call the new allocator + classifier from ADR-043. `id_organizer` is set to `EVF` unconditionally (was incorrectly `SPWS` before). The bogus `MEW-{slug}-{year}` code pattern is gone — team events now go to the singleton `DMEW-{year}` and individual championships to `IMEW-{year}`. See ADR-043 for the allocator's three-step ladder + Telegram alert behaviour.
 
 ## Context
 

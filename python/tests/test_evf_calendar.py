@@ -623,3 +623,152 @@ class TestEvfLiveSmoke:
             assert isinstance(events, list)
         finally:
             client.close()
+
+
+# =============================================================================
+# evf.40–evf.42: Phase 2 — scraper drops `code` field, allocator RPC drives
+# alerting per alloc_path returned by fn_import_evf_events_v2
+# =============================================================================
+class TestEvfPhase2Allocator:
+    """Phase 2 — scraper sends classifier inputs (name, is_team) instead of
+    pre-built code; RPC returns alerts only for NEXT_FREE_ALLOC; per-row
+    telegram fired exclusively for those rows.
+    """
+
+    def _patch_sync(self, monkeypatch, scraped_events, rpc_returns):
+        """Wire up monkeypatches shared by Phase 2 tests.
+
+        - scrape_full_season_calendar → returns scraped_events
+        - _management_query is recorded; for SELECT id_season... returns a
+          fake active season; for fn_import_evf_events_v2 returns rpc_returns
+          (one wrapped row); other queries return [].
+        - _telegram is recorded into sent_msgs.
+        """
+        from python.scrapers import evf_sync
+
+        sql_calls: list[str] = []
+        sent_msgs: list[str] = []
+
+        def fake_mgmt(ref, token, sql):
+            sql_calls.append(sql)
+            sl = sql.lower()
+            if "from tbl_season where bool_active" in sl:
+                return [{
+                    "txt_code": "SPWS-2025-2026",
+                    "dt_start": "2025-09-01",
+                    "dt_end": "2026-08-31",
+                    "id_season": 7,
+                }]
+            if "fn_import_evf_events_v2" in sl:
+                return [{"r": json.dumps(rpc_returns)}]
+            if "from tbl_event" in sl:
+                return []  # no existing events
+            return []
+
+        def fake_telegram(bot_token, chat_id, msg):
+            sent_msgs.append(msg)
+
+        def fake_scrape(start, end):
+            return scraped_events
+
+        monkeypatch.setattr(evf_sync, "_management_query", fake_mgmt)
+        monkeypatch.setattr(evf_sync, "_telegram", fake_telegram)
+        monkeypatch.setattr(evf_sync, "scrape_full_season_calendar", fake_scrape)
+
+        return sql_calls, sent_msgs
+
+    def test_next_free_alloc_emits_telegram_per_alert(self, monkeypatch):
+        """evf.40: One Telegram message per NEXT_FREE_ALLOC alert, with city + new code."""
+        from python.scrapers import evf_sync
+
+        scraped = [{
+            "name": "EVF Circuit – Madrid (ESP)",
+            "dt_start": "2026-06-01", "dt_end": "2026-06-02",
+            "location": "Madrid", "country": "Spain",
+            "weapons": ["EPEE"], "is_team": False,
+            "url": "", "fee": None, "fee_currency": "",
+        }]
+        rpc_returns = {
+            "created": 1, "slot_reused": 0, "prior_matched": 0,
+            "alerts": [
+                {"code": "PEW9-2025-2026", "location": "Madrid", "country": "Spain"},
+            ],
+        }
+        _, sent = self._patch_sync(monkeypatch, scraped, rpc_returns)
+
+        evf_sync.sync_calendar("ref", "token", "bot", "chat", dry_run=False)
+
+        per_row_alerts = [m for m in sent if "Madrid" in m and "PEW9-2025-2026" in m]
+        assert len(per_row_alerts) == 1, (
+            f"expected exactly 1 NEXT_FREE_ALLOC telegram for Madrid, got {len(per_row_alerts)}: {sent}"
+        )
+
+    def test_slot_reuse_and_prior_match_only_in_summary(self, monkeypatch):
+        """evf.41: CURRENT_SLOT_REUSE and PRIOR_SEASON_MATCH do NOT trigger per-row telegram.
+        Only the summary line mentions them.
+        """
+        from python.scrapers import evf_sync
+
+        scraped = [
+            {"name": "EVF Circuit – Salzburg (AUT)", "dt_start": "2026-04-15",
+             "dt_end": "2026-04-16", "location": "Salzburg", "country": "Austria",
+             "weapons": ["EPEE"], "is_team": False, "url": "",
+             "fee": None, "fee_currency": ""},
+            {"name": "EVF Circuit – Krakow (POL)", "dt_start": "2026-05-15",
+             "dt_end": "2026-05-16", "location": "Krakow", "country": "Poland",
+             "weapons": ["EPEE"], "is_team": False, "url": "",
+             "fee": None, "fee_currency": ""},
+        ]
+        rpc_returns = {
+            "created": 0, "slot_reused": 1, "prior_matched": 1,
+            "alerts": [],  # no NEXT_FREE_ALLOC
+        }
+        _, sent = self._patch_sync(monkeypatch, scraped, rpc_returns)
+
+        evf_sync.sync_calendar("ref", "token", "bot", "chat", dry_run=False)
+
+        # No per-row telegram should mention specific cities for slot-reuse / prior-match
+        per_row = [m for m in sent if "Salzburg" in m or "Krakow" in m]
+        assert per_row == [], (
+            f"slot-reuse / prior-match must NOT fire per-row telegrams; got {per_row}"
+        )
+        # Summary message should still be sent (and reference reuse/match counts)
+        summary = [m for m in sent if "slot_reused" in m.lower() or "pre-allocated" in m.lower()
+                   or "prior_matched" in m.lower() or "carried" in m.lower()]
+        assert summary, f"expected a summary message; got {sent}"
+
+    def test_payload_omits_code_includes_classifier_inputs(self, monkeypatch):
+        """evf.42: Payload to RPC has `name` + `is_team` but NOT `code`."""
+        from python.scrapers import evf_sync
+
+        scraped = [{
+            "name": "EVF Circuit – Berlin (GER)",
+            "dt_start": "2026-07-01", "dt_end": "2026-07-02",
+            "location": "Berlin", "country": "Germany",
+            "weapons": ["EPEE"], "is_team": False,
+            "url": "", "fee": None, "fee_currency": "",
+        }]
+        rpc_returns = {
+            "created": 1, "slot_reused": 0, "prior_matched": 0,
+            "alerts": [{"code": "PEW8-2025-2026", "location": "Berlin", "country": "Germany"}],
+        }
+        sql_calls, _ = self._patch_sync(monkeypatch, scraped, rpc_returns)
+
+        evf_sync.sync_calendar("ref", "token", "bot", "chat", dry_run=False)
+
+        rpc_calls = [s for s in sql_calls if "fn_import_evf_events_v2" in s.lower()]
+        assert rpc_calls, f"expected fn_import_evf_events_v2 to be invoked; got {sql_calls}"
+
+        # Find the JSON literal in the SQL string
+        sql = rpc_calls[0]
+        json_start = sql.find("'[")
+        json_end = sql.find("]'", json_start)
+        assert json_start != -1 and json_end != -1, f"no JSONB array literal in: {sql}"
+        payload_str = sql[json_start + 1: json_end + 1].replace("''", "'")
+        payload = json.loads(payload_str)
+
+        assert isinstance(payload, list) and len(payload) == 1
+        evt = payload[0]
+        assert "code" not in evt, f"payload must not include `code`; got keys: {list(evt.keys())}"
+        assert "name" in evt and evt["name"]
+        assert "is_team" in evt
