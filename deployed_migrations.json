@@ -62,8 +62,8 @@
     "schema_fingerprint": "2e5a7d70a667a0fe6b6591fed4862eba"
   },
   "prod": {
-    "last_updated": "2026-04-25T14:03:22Z",
-    "last_sha": "6ebd3e3c91542c1a99ac3833277295cec2569064",
+    "last_updated": "2026-04-26T07:20:19Z",
+    "last_sha": "09827935020c00f0376141e4565979fbd859a8ff",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -117,8 +117,10 @@
       "20260420000002_evf_refresh_urls.sql",
       "20260421000001_fn_delete_event.sql",
       "20260425000001_event_multi_url.sql",
-      "20260425000002_vw_calendar_multi_url.sql"
+      "20260425000002_vw_calendar_multi_url.sql",
+      "20260425000003_carryover_engine_enum.sql",
+      "20260425000004_rolling_function_dispatcher.sql"
     ],
-    "schema_fingerprint": "48a85f89dae43924e8faad66c4e5bee1"
+    "schema_fingerprint": "2e5a7d70a667a0fe6b6591fed4862eba"
   }
 }
