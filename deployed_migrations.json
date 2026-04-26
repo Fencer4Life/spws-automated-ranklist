@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-04-26T07:19:43Z",
-    "last_sha": "09827935020c00f0376141e4565979fbd859a8ff",
+    "last_updated": "2026-04-26T08:08:03Z",
+    "last_sha": "997ff30c7a6c1a2410d5d0cb0eb05946b3f5b2d5",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -57,9 +57,15 @@
       "20260425000001_event_multi_url.sql",
       "20260425000002_vw_calendar_multi_url.sql",
       "20260425000003_carryover_engine_enum.sql",
-      "20260425000004_rolling_function_dispatcher.sql"
+      "20260425000004_rolling_function_dispatcher.sql",
+      "20260425000005_fk_carryover_schema.sql",
+      "20260425000006_backfill_id_prior_event.sql",
+      "20260425000007_vw_eligible_event.sql",
+      "20260425000008_fn_event_fk_matching_engines.sql",
+      "20260425000009_dispatcher_register_fk_engine.sql",
+      "20260425000010_fn_compare_carryover_engines.sql"
     ],
-    "schema_fingerprint": "2e5a7d70a667a0fe6b6591fed4862eba"
+    "schema_fingerprint": "6793a4b0b738b9d854635de2963a99a9"
   },
   "prod": {
     "last_updated": "2026-04-26T07:20:19Z",
