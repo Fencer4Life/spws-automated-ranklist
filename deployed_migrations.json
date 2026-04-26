@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-04-26T10:29:46Z",
-    "last_sha": "2b2fb6727f8ecff5ed0e00d03e9176242fa1784a",
+    "last_updated": "2026-04-26T15:09:08Z",
+    "last_sha": "bbd6c7a7c655d0a8c7e5f6d24e19a80a5bfe94fd",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -66,9 +66,15 @@
       "20260425000010_fn_compare_carryover_engines.sql",
       "20260427000001_event_code_allocator.sql",
       "20260427000002_fn_import_evf_events_v2.sql",
-      "20260427000003_fix_slug_seed_row.sql"
+      "20260427000003_fix_slug_seed_row.sql",
+      "20260428000001_phase3_schema_extensions.sql",
+      "20260428000002_fn_update_event_v2.sql",
+      "20260428000003_fn_init_season.sql",
+      "20260428000004_fn_create_season_with_skeletons.sql",
+      "20260428000005_fn_revert_season_init.sql",
+      "20260428000006_fn_copy_prior_scoring_config.sql"
     ],
-    "schema_fingerprint": "fa3cf9b9763495dc822a4542632d2f96"
+    "schema_fingerprint": "9561b0d6fe5dc88276f90c2161883036"
   },
   "prod": {
     "last_updated": "2026-04-26T10:30:27Z",
