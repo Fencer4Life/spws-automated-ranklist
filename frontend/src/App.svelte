@@ -83,7 +83,6 @@
     <SeasonManager
       {seasons}
       isAdmin={isAdmin}
-      oncreate={handleCreateSeason}
       onupdate={handleUpdateSeason}
       ondelete={handleDeleteSeason}
       onfetchevf={handleFetchEvfToggle}
@@ -92,6 +91,10 @@
       scoringSeasonId={editingScoringSeasonId}
       onsavescoring={handleSaveScoringConfig}
       onclosescoring={() => { editingScoringSeasonId = null }}
+      onwizardloadprior={handleWizardLoadPrior}
+      onwizardcommit={handleWizardCommit}
+      onfetchskeletons={handleFetchSkeletons}
+      onrevertinit={handleRevertSeasonInit}
     />
   {:else if currentView === 'admin_events'}
     <EventManager
@@ -202,7 +205,7 @@
     CalendarEvent,
     TournamentType,
   } from './lib/types'
-  import type { Organizer, ScoringConfig, MatchCandidate, CreateEventParams, UpdateEventParams, Tournament, FencerListItem } from './lib/types'
+  import type { Organizer, ScoringConfig, MatchCandidate, CreateEventParams, UpdateEventParams, Tournament, FencerListItem, EuropeanEventType, CarryoverEngine, SkeletonByKind } from './lib/types'
   import {
     initClient,
     fetchSeasons,
@@ -223,6 +226,10 @@
     fetchScoringConfig,
     saveScoringConfig,
     updateSeasonCarryoverEngine,
+    updateSeasonCarryoverFields,
+    copyPriorScoringConfig,
+    createSeasonWithSkeletons,
+    revertSeasonInit,
     fetchAllTournaments,
     deleteTournamentCascade,
     updateTournament,
@@ -753,18 +760,97 @@
     }
   }
 
-  async function handleUpdateSeason(id: number, code: string, start: string, end: string, showEvf: boolean): Promise<string | null> {
+  async function handleUpdateSeason(
+    id: number,
+    code: string,
+    start: string,
+    end: string,
+    showEvf: boolean,
+    carryoverDays: number = 366,
+    europeanType: EuropeanEventType = null,
+  ): Promise<string | null> {
     try {
       await updateSeason(id, code, start, end)
       const cfg = await fetchScoringConfig(id)
       if (cfg && cfg.show_evf_toggle !== showEvf) {
         await saveScoringConfig({ ...cfg, show_evf_toggle: showEvf } as unknown as Record<string, unknown>)
       }
+      // Phase 3 (ADR-044): patch tbl_season's carry-over fields directly.
+      // Done via the api.ts helper since fn_update_season's signature does
+      // not include them and we don't want to widen it for one column-pair.
+      await updateSeasonCarryoverFields(id, carryoverDays, europeanType)
       seasons = await fetchSeasons()
       if (id === selectedSeasonId) await refreshEvfToggle()
       return null
     } catch (e: unknown) {
       return friendlySeasonError(e)
+    }
+  }
+
+  // Phase 3 (ADR-044) — wizard handlers
+  async function handleWizardLoadPrior(dtStart: string): Promise<{
+    priorConfig: ScoringConfig | null
+    priorCode: string | null
+    priorBreakdown: Required<SkeletonByKind> | null
+  }> {
+    const priorConfig = await copyPriorScoringConfig(dtStart)
+    if (!priorConfig) {
+      return { priorConfig: null, priorCode: null, priorBreakdown: null }
+    }
+    const priorCode = priorConfig.season_code
+    // Compute breakdown by querying prior season's events. Wizard step 3 uses
+    // it to render "5 PPW + 9 PEW" before the user commits.
+    const priorSeason = seasons.find((s) => s.txt_code === priorCode)
+    if (!priorSeason) {
+      return { priorConfig, priorCode, priorBreakdown: null }
+    }
+    const priorEvents = await fetchCalendarEvents(priorSeason.id_season)
+    const breakdown: Required<SkeletonByKind> = {
+      PPW: priorEvents.filter((e) => /^PPW\d+-/.test(e.txt_code)).length,
+      PEW: priorEvents.filter((e) => /^PEW\d+-/.test(e.txt_code)).length,
+      MPW: 1,
+      MSW: 1,
+      IMEW: 0,
+      DMEW: 0,
+    }
+    return { priorConfig, priorCode, priorBreakdown: breakdown }
+  }
+
+  async function handleWizardCommit(payload: {
+    code: string
+    dt_start: string
+    dt_end: string
+    carryover_days: number
+    european_type: EuropeanEventType
+    carryover_engine: CarryoverEngine
+    scoring_config: ScoringConfig
+    show_evf: boolean
+  }): Promise<string | null> {
+    try {
+      await createSeasonWithSkeletons(payload)
+      seasons = await fetchSeasons()
+      return null
+    } catch (e: unknown) {
+      return friendlySeasonError(e)
+    }
+  }
+
+  async function handleFetchSkeletons(seasonId: number): Promise<CalendarEvent[]> {
+    try {
+      const events = await fetchCalendarEvents(seasonId)
+      return events.filter((e) => e.enum_status === 'CREATED')
+    } catch {
+      return []
+    }
+  }
+
+  async function handleRevertSeasonInit(seasonId: number): Promise<string | null> {
+    try {
+      await revertSeasonInit(seasonId)
+      seasons = await fetchSeasons()
+      return null
+    } catch (e: unknown) {
+      return e instanceof Error ? e.message : String(e)
     }
   }
 
