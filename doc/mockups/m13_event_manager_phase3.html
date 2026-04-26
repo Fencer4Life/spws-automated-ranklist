@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M13 Mockup — EventManager Phase 3 (full page)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; }
+
+  h1 { text-align: center; color: #00d4ff; margin-bottom: 6px; font-size: 1.6em; }
+  .subtitle { text-align: center; color: #888; margin-bottom: 20px; font-size: 0.92em; max-width: 980px; margin-left: auto; margin-right: auto; line-height: 1.5; }
+  .legend { text-align: center; margin-bottom: 24px; font-size: 0.78em; color: #aaa; }
+  .legend .key { display: inline-block; padding: 2px 8px; border-radius: 8px; margin: 0 4px; font-weight: 700; font-size: 0.85em; }
+  .legend .key.new { background: #3a2a0a; color: #fbbf24; }
+  .legend .key.existing { background: #1a2744; color: #7fbadc; }
+
+  .app-frame { background: #16213e; border-radius: 8px; overflow: hidden; max-width: 1080px; margin: 0 auto; border: 1px solid #0f3460; }
+
+  .header { background: #0f3460; padding: 10px 16px; display: flex; align-items: center; gap: 12px; font-size: 0.9em; border-bottom: 1px solid #1a4a8a; }
+  .hamburger { font-size: 1.3em; cursor: pointer; color: #00d4ff; }
+  .header-title { font-weight: 700; color: #fff; flex: 1; }
+  .header-pill { background: #1a4a8a; padding: 3px 10px; border-radius: 12px; font-size: 0.78em; color: #7fbadc; }
+  .header-env { background: #ff6b35; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 0.72em; font-weight: 700; }
+  .lang-toggle { font-size: 1.1em; cursor: pointer; user-select: none; }
+  .lang-toggle .on { color: #00d4ff; font-weight: 700; }
+  .lang-toggle .off { color: #555; }
+
+  .breadcrumb { font-size: 0.78em; color: #7fbadc; padding: 12px 16px 4px 16px; }
+
+  /* === NEW: Season selector at top of EventManager === */
+  .season-selector-bar {
+    margin: 8px 16px 14px 16px;
+    background: #0d1b2a;
+    border: 2px solid #fbbf24;
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .season-selector-bar .lbl {
+    font-size: 0.72em; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;
+  }
+  .season-selector-bar select {
+    background: #1a2744; border: 1px solid #1a4a8a; color: #fff;
+    padding: 7px 12px; border-radius: 6px; font-size: 0.92em; font-family: inherit; cursor: pointer;
+    min-width: 180px;
+  }
+  .season-selector-bar .pill-active { background: #0a3622; color: #4ade80; padding: 3px 10px; border-radius: 10px; font-size: 0.72em; font-weight: 700; }
+  .season-selector-bar .annotate { font-size: 0.7em; color: #fbbf24; margin-left: auto; }
+
+  /* Section header (Add event button bar) */
+  .section-header { padding: 0 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .section-header h3 { color: #fff; font-size: 0.95em; font-weight: 700; flex: 1; }
+  .add-btn { background: #0a3622; color: #4ade80; border: 1px solid #4ade80; padding: 6px 14px; border-radius: 6px; font-size: 0.82em; cursor: pointer; font-weight: 700; }
+
+  /* Event card */
+  .event-card { background: #1a2744; border: 1px solid #1a4a8a; border-radius: 8px; margin: 0 16px 12px 16px; overflow: hidden; }
+  .event-row {
+    padding: 10px 14px; display: grid; gap: 10px; align-items: center;
+    grid-template-columns: 28px 1.6fr 1fr 0.8fr 1.2fr 26px 100px 50px 110px;
+    background: #16213e; border-bottom: 1px solid #1a4a8a;
+    font-size: 0.86em;
+  }
+  .expand-btn { background: none; border: 1px solid #1a4a8a; color: #00d4ff; width: 26px; height: 26px; border-radius: 4px; cursor: pointer; font-size: 0.8em; }
+  .ev-name { font-weight: 600; color: #fff; }
+  .ev-loc, .ev-dates { color: #7fbadc; font-size: 0.88em; }
+  .ev-weapons { color: #aaa; font-size: 0.78em; font-family: monospace; }
+  .ev-link a { color: #00d4ff; text-decoration: none; }
+  .ev-status-badge { font-size: 0.7em; padding: 2px 8px; border-radius: 10px; font-weight: 700; text-transform: uppercase; text-align: center; }
+  .status-planned   { background: #1a3a5a; color: #7fbadc; }
+  .status-completed { background: #0a3622; color: #4ade80; }
+  .status-scored    { background: #3a2a0a; color: #fbbf24; }
+  .status-created   { background: #2a2a3a; color: #888; border: 1px dashed #555; }
+  .status-in-progress { background: #2a1a3a; color: #d97aff; }
+  .tourn-count-badge { background: #1a2744; color: #7fbadc; padding: 2px 8px; border-radius: 10px; font-size: 0.78em; text-align: center; }
+  .actions { display: flex; gap: 4px; justify-content: flex-end; }
+  .icon-btn { background: none; border: 1px solid #1a4a8a; color: #7fbadc; width: 26px; height: 26px; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
+  .icon-btn:hover { color: #00d4ff; border-color: #00d4ff; }
+  .icon-btn.delete:hover { color: #ff6b6b; border-color: #ff6b6b; }
+  .icon-btn.import { background: rgba(0, 212, 255, 0.08); }
+
+  /* Edit form (inline above the row) */
+  .edit-form { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; background: #0f1d36; border-bottom: 1px solid #1a4a8a; }
+  .edit-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.74em; color: #7fbadc; text-transform: uppercase; letter-spacing: 0.5px; }
+  .edit-form input, .edit-form select { background: #0d1b2a; border: 1px solid #1a4a8a; color: #e0e0e0; padding: 7px 10px; border-radius: 6px; font-size: 0.88em; font-family: inherit; }
+  .edit-form input:focus, .edit-form select:focus { outline: 1px solid #00d4ff; border-color: #00d4ff; }
+  .edit-form input.mono { font-family: 'SF Mono', Monaco, monospace; font-weight: 700; }
+  .row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-actions { display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid #1a4a8a; margin-top: 6px; }
+  .save-btn { background: #0a3622; color: #4ade80; border: 1px solid #4ade80; padding: 6px 14px; border-radius: 6px; font-size: 0.82em; cursor: pointer; font-weight: 700; }
+  .cancel-btn { background: none; color: #888; border: 1px solid #1a4a8a; padding: 6px 14px; border-radius: 6px; font-size: 0.82em; cursor: pointer; }
+  .form-error { background: #3a1a1a; color: #ff8888; padding: 8px 12px; border-radius: 6px; font-size: 0.82em; }
+
+  /* New-field annotation */
+  .annotate-new { border-left: 3px solid #fbbf24; padding-left: 10px; background: rgba(251, 191, 36, 0.04); }
+  .badge-new {
+    display: inline-block; background: #3a2a0a; color: #fbbf24;
+    padding: 1px 6px; border-radius: 8px; font-size: 0.62em; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-left: 6px;
+  }
+  .field-hint { font-size: 0.74em; color: #fbbf24; margin-top: 4px; padding: 6px 10px; background: rgba(251, 191, 36, 0.08); border-radius: 4px; }
+  .field-hint .ok { color: #4ade80; }
+  .field-hint code { font-family: monospace; background: #1a2744; padding: 1px 5px; border-radius: 3px; color: #fbbf24; }
+
+  /* URL section (existing, condensed for mock) */
+  .url-section { border: 1px dashed #1a4a8a; border-radius: 8px; padding: 10px 12px; background: rgba(0, 212, 255, 0.04); }
+  .url-section-header { font-size: 0.72em; color: #00d4ff; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin-bottom: 8px; }
+  .url-row { display: grid; grid-template-columns: 60px 1fr; gap: 10px; align-items: center; margin-bottom: 6px; }
+  .url-num { font-size: 0.72em; color: #7fbadc; font-weight: 600; background: #1a2744; border: 1px solid #1a4a8a; padding: 6px 0; border-radius: 6px; text-align: center; font-family: monospace; }
+  .url-num.primary { color: #00d4ff; border-color: #00d4ff; background: rgba(0, 212, 255, 0.12); }
+  .disclosure { border: none; background: none; color: #00d4ff; cursor: pointer; font-size: 0.78em; padding: 6px 0 0 0; text-align: left; }
+  .weapons-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .weapon-check { font-size: 0.82em; color: #ccc; text-transform: none; letter-spacing: 0; display: flex; gap: 5px; align-items: center; }
+
+  /* Tournament list (expanded) */
+  .tourn-list { background: #0d1b2a; padding: 8px 14px 12px 14px; border-bottom: 1px solid #1a4a8a; }
+  .tourn-list-header { font-size: 0.72em; color: #7fbadc; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 0; display: flex; align-items: center; gap: 10px; }
+  .tourn-list-header .add-tourn-btn {
+    margin-left: auto; background: #0a3622; color: #4ade80; border: 1px solid #4ade80;
+    padding: 3px 10px; border-radius: 6px; font-size: 0.72em; cursor: pointer; font-weight: 700;
+  }
+  .tourn-row {
+    display: grid; gap: 10px; align-items: center;
+    grid-template-columns: 240px 60px 70px 80px 90px 50px 90px;
+    padding: 6px 0; font-size: 0.82em; border-bottom: 1px solid #16213e;
+  }
+  .tourn-row:last-child { border-bottom: none; }
+  .tourn-code { font-family: monospace; color: #fff; font-size: 0.86em; }
+  .tourn-type-badge { background: #1a3a5a; color: #7fbadc; padding: 1px 7px; border-radius: 8px; font-size: 0.72em; text-align: center; font-weight: 700; }
+  .tourn-cell { color: #aaa; }
+  .import-badge { padding: 1px 6px; border-radius: 8px; font-size: 0.7em; font-weight: 700; text-align: center; text-transform: uppercase; }
+  .import-pending  { background: #1a3a5a; color: #7fbadc; }
+  .import-imported { background: #0a3622; color: #4ade80; }
+  .import-scored   { background: #3a2a0a; color: #fbbf24; }
+  .import-rejected { background: #3a1a1a; color: #ff8888; }
+
+  /* Skeletons panel (Option 1+4 blend) */
+  .skeleton-panel { margin: 0 16px 14px 16px; background: #0d1b2a; border: 1px dashed #4a5a78; border-radius: 8px; overflow: hidden; }
+  .skeleton-panel-header {
+    padding: 10px 14px; display: flex; align-items: center; gap: 10px;
+    background: rgba(74, 90, 120, 0.15); cursor: pointer; user-select: none;
+    font-size: 0.86em;
+  }
+  .skeleton-panel-header:hover { background: rgba(74, 90, 120, 0.25); }
+  .skeleton-panel-header .chev { color: #888; font-size: 0.8em; width: 14px; }
+  .skeleton-panel-header .title { color: #aaa; font-weight: 600; }
+  .skeleton-panel-header .count-badge { background: #2a2a3a; color: #888; padding: 2px 9px; border-radius: 10px; font-size: 0.72em; font-weight: 700; }
+  .skeleton-panel-header .hint { color: #666; font-size: 0.76em; margin-left: auto; font-style: italic; }
+  .skeleton-panel-body { padding: 8px 14px 12px 14px; }
+  .skel-group-label { font-size: 0.7em; color: #666; text-transform: uppercase; letter-spacing: 1px; margin: 10px 0 6px 0; padding-bottom: 4px; border-bottom: 1px solid #1a2744; }
+  .skel-group-label:first-child { margin-top: 0; }
+  .skel-row {
+    display: grid; gap: 10px; align-items: center;
+    grid-template-columns: 110px 1fr 100px 90px 110px;
+    padding: 6px 0; font-size: 0.82em; opacity: 0.7;
+  }
+  .skel-row .skel-code { font-family: monospace; color: #aaa; font-weight: 700; }
+  .skel-row .skel-prior { color: #7fbadc; font-size: 0.78em; }
+  .skel-row .skel-prior code { background: #1a2744; padding: 1px 5px; border-radius: 3px; font-family: monospace; }
+  .skel-row .skel-city { color: #888; }
+
+  /* Notes block at the bottom */
+  .notes { background: #0d1b2a; border: 1px solid #1a4a8a; border-radius: 8px; padding: 16px 18px; margin: 30px auto 0 auto; max-width: 1080px; }
+  .notes h3 { color: #00d4ff; font-size: 0.95em; margin-bottom: 8px; }
+  .notes h4 { color: #fbbf24; font-size: 0.82em; margin: 14px 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+  .notes ul { padding-left: 20px; font-size: 0.85em; color: #ccc; line-height: 1.6; }
+  .notes li { margin-bottom: 4px; }
+  .notes code { background: #1a2744; padding: 1px 5px; border-radius: 3px; color: #fbbf24; font-size: 0.9em; font-family: monospace; }
+  .notes .ok { color: #4ade80; }
+  .notes .new { color: #fbbf24; font-weight: 700; }
+  .notes table { width: 100%; border-collapse: collapse; font-size: 0.82em; margin-top: 8px; }
+  .notes th, .notes td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #1a2744; color: #ccc; }
+  .notes th { color: #00d4ff; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<h1>M13 — EventManager (Phase 3, full page)</h1>
+<p class="subtitle">
+  Full admin EventManager page after Phase 3 lands. <span style="color:#fbbf24">Yellow border = NEW field/section.</span>
+  Existing CREATE / EDIT / DELETE / cascade-delete-tournaments behaviour preserved.
+  Polish-first labels per ADR-005. EN preview at the bottom.
+</p>
+
+<div class="legend">
+  <span class="key new">NEW (Phase 3)</span> = newly added in Phase 3 ·
+  <span class="key existing">EXISTING</span> = preserved as-is from current EventManager
+</div>
+
+<div class="app-frame">
+
+  <!-- App header -->
+  <div class="header">
+    <span class="hamburger">☰</span>
+    <span class="header-title">SPWS Ranklist</span>
+    <span class="header-pill">admin@spws.local</span>
+    <span class="header-env">CERT</span>
+    <span class="lang-toggle"><span class="on">🇵🇱</span> / <span class="off">🇬🇧</span></span>
+  </div>
+
+  <div class="breadcrumb">Admin → Wydarzenia (Events)</div>
+
+  <!-- ========== NEW: Season selector ========== -->
+  <div class="season-selector-bar annotate-new">
+    <span class="lbl">Sezon</span>
+    <select>
+      <option>SPWS-2025-2026 — aktywny</option>
+      <option>SPWS-2024-2025</option>
+      <option>SPWS-2023-2024</option>
+      <option>SPWS-2022-2023</option>
+    </select>
+    <span class="pill-active">AKTYWNY</span>
+    <span class="annotate">NOWE — wybór sezonu (dotąd brak)</span>
+  </div>
+
+  <!-- Add-event header -->
+  <div class="section-header">
+    <h3>Wydarzenia w SPWS-2025-2026</h3>
+    <button class="add-btn">+ Dodaj wydarzenie</button>
+  </div>
+
+  <!-- ========== Event card #1: PLANNED with EDIT FORM OPEN (showing new fields) ========== -->
+  <div class="event-card">
+    <div class="edit-form">
+
+      <!-- ★ NEW field: txt_code editable + cascade hint -->
+      <div class="annotate-new">
+        <label>
+          KOD WYDARZENIA <span class="badge-new">NEW</span>
+          <input type="text" class="mono" value="PEW8-2025-2026" />
+        </label>
+        <div class="field-hint">
+          ⚠️ Zmiana kodu kaskadowo zmieni <strong>6 powiązanych turniejów</strong>:
+          <code>PEW8-2025-2026-{M,F}-{EPEE,FOIL,SABRE}</code>
+        </div>
+      </div>
+
+      <!-- ★ NEW field: id_prior_event picker + auto-link note -->
+      <div class="annotate-new">
+        <label>
+          POPRZEDNIK (CARRY-OVER) <span class="badge-new">NEW</span>
+          <select>
+            <option>— brak —</option>
+            <option>PEW1-2024-2025 — Liège, Belgia</option>
+            <option>PEW2-2024-2025 — Berlin, Niemcy</option>
+            <option>PEW3-2024-2025 — Guildford, Wielka Brytania</option>
+            <option>PEW4-2024-2025 — Jabłonna, Polska</option>
+            <option>PEW5-2024-2025 — Stockholm, Szwecja</option>
+            <option>PEW6-2024-2025 — Praga, Czechy</option>
+            <option>PEW7-2024-2025 — Salzburg, Austria</option>
+            <option selected>PEW8-2024-2025 — München, Niemcy</option>
+            <option>PEW9-2024-2025 — Tallinn, Estonia</option>
+            <option>PEW10-2024-2025 — Roma, Włochy</option>
+          </select>
+        </label>
+        <div class="field-hint">
+          <span class="ok">✓ Auto-połączono</span> z <code>PEW8-2024-2025</code> (München, Niemcy) na podstawie kodu.
+          Wybierz inną z listy aby nadpisać.
+        </div>
+      </div>
+
+      <!-- Existing fields below, condensed -->
+      <label>Nazwa <input type="text" value="EVF Circuit – München (GER)" /></label>
+
+      <div class="row-2col">
+        <label>Lokalizacja <input type="text" value="München" /></label>
+        <label>Kraj <input type="text" value="Germany" /></label>
+      </div>
+
+      <div class="row-2col">
+        <label>Data startu <input type="date" value="2026-04-18" /></label>
+        <label>Data końca <input type="date" value="2026-04-19" /></label>
+      </div>
+
+      <label>Adres <input type="text" value="Sporthalle Sendling, Marbachstr. 80, München" /></label>
+
+      <div class="url-section">
+        <div class="url-section-header">URL WYNIKÓW (do 5 slotów)</div>
+        <div class="url-row">
+          <span class="url-num primary">URL #1</span>
+          <input type="text" value="https://veteransfencing.eu/event/munich-2026/" />
+        </div>
+        <button class="disclosure">▶ Pokaż dodatkowe URL (0/4 wypełnione)</button>
+      </div>
+
+      <div class="row-2col">
+        <label>Komunikat (PDF) <input type="text" value="https://veteransfencing.eu/files/munich-invitation.pdf" /></label>
+        <label>Termin zgłoszeń <input type="date" value="2026-04-01" /></label>
+      </div>
+      <label>URL rejestracji <input type="text" value="https://engarde-service.com/munich2026" /></label>
+
+      <div class="row-2col">
+        <label>Wpisowe (kwota / waluta)
+          <div style="display:flex;gap:6px"><input type="number" value="60" style="flex:1" /><select style="width:80px"><option>EUR</option><option>PLN</option><option>USD</option></select></div>
+        </label>
+        <label>Organizator
+          <select><option>EVF</option><option>SPWS</option><option>FIE</option></select>
+        </label>
+      </div>
+
+      <label>Broń
+        <div class="weapons-row">
+          <label class="weapon-check"><input type="checkbox" checked /> Szpada (EPEE)</label>
+          <label class="weapon-check"><input type="checkbox" checked /> Floret (FOIL)</label>
+          <label class="weapon-check"><input type="checkbox" checked /> Szabla (SABRE)</label>
+        </div>
+      </label>
+
+      <label>Status
+        <select><option>PLANNED</option><option>IN_PROGRESS</option><option>SCORED</option><option>COMPLETED</option><option>CANCELLED</option><option>CREATED (cofnij do szkieletu)</option></select>
+      </label>
+
+      <div class="form-actions">
+        <button class="save-btn">💾 Zapisz</button>
+        <button class="cancel-btn">Anuluj</button>
+      </div>
+    </div>
+
+    <!-- The collapsed row (visible when not editing) — shown here below for context -->
+    <div class="event-row">
+      <button class="expand-btn">▼</button>
+      <span class="ev-name">EVF Circuit – München (GER)</span>
+      <span class="ev-loc">München</span>
+      <span class="ev-weapons">EPEE FOIL SABRE</span>
+      <span class="ev-dates">2026-04-18 – 2026-04-19</span>
+      <span class="ev-link"><a href="#" title="EVF event URL">🔗</a></span>
+      <span class="ev-status-badge status-planned">Planowane</span>
+      <span class="tourn-count-badge">6</span>
+      <span></span>
+      <span class="actions">
+        <button class="icon-btn import" title="Importuj wyniki">⬇</button>
+        <button class="icon-btn" title="Edytuj">✎</button>
+        <button class="icon-btn delete" title="Usuń (kaskada na 6 turniejów)">🗑</button>
+      </span>
+    </div>
+
+    <!-- Tournament list (expanded — shown for this event) -->
+    <div class="tourn-list">
+      <div class="tourn-list-header">
+        TURNIEJE (6) — kaskada: usunięcie wydarzenia usunie wszystkie
+        <button class="add-tourn-btn">+ Dodaj turniej</button>
+      </div>
+      <div class="tourn-row">
+        <span class="tourn-code">PEW8-2025-2026-M-EPEE</span>
+        <span class="tourn-type-badge">PEW</span>
+        <span class="tourn-cell">EPEE</span>
+        <span class="tourn-cell">V2 M</span>
+        <span class="import-badge import-pending">PLANNED</span>
+        <span class="tourn-cell">—</span>
+        <span class="actions">
+          <button class="icon-btn import" title="Importuj">⬇</button>
+          <button class="icon-btn" title="Edytuj">✎</button>
+          <button class="icon-btn delete" title="Usuń turniej">🗑</button>
+        </span>
+      </div>
+      <div class="tourn-row">
+        <span class="tourn-code">PEW8-2025-2026-F-EPEE</span>
+        <span class="tourn-type-badge">PEW</span>
+        <span class="tourn-cell">EPEE</span>
+        <span class="tourn-cell">V2 F</span>
+        <span class="import-badge import-pending">PLANNED</span>
+        <span class="tourn-cell">—</span>
+        <span class="actions">
+          <button class="icon-btn import">⬇</button>
+          <button class="icon-btn">✎</button>
+          <button class="icon-btn delete">🗑</button>
+        </span>
+      </div>
+      <div class="tourn-row">
+        <span class="tourn-code">PEW8-2025-2026-M-FOIL</span>
+        <span class="tourn-type-badge">PEW</span>
+        <span class="tourn-cell">FOIL</span>
+        <span class="tourn-cell">V2 M</span>
+        <span class="import-badge import-pending">PLANNED</span>
+        <span class="tourn-cell">—</span>
+        <span class="actions">
+          <button class="icon-btn import">⬇</button>
+          <button class="icon-btn">✎</button>
+          <button class="icon-btn delete">🗑</button>
+        </span>
+      </div>
+      <div class="tourn-row" style="opacity:0.6">
+        <span class="tourn-cell" style="grid-column: 1 / -1; text-align: center; font-style: italic; color: #666; padding: 4px 0;">… 3 more (F-FOIL, M-SABRE, F-SABRE) …</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Event card #2: COMPLETED, no edit form ========== -->
+  <div class="event-card">
+    <div class="event-row">
+      <button class="expand-btn">▶</button>
+      <span class="ev-name">III Puchar Polski Weteranów</span>
+      <span class="ev-loc">Gdańsk</span>
+      <span class="ev-weapons">EPEE FOIL SABRE</span>
+      <span class="ev-dates">2026-03-15</span>
+      <span class="ev-link"><a href="#">🔗</a></span>
+      <span class="ev-status-badge status-completed">Zakończone</span>
+      <span class="tourn-count-badge">6</span>
+      <span></span>
+      <span class="actions">
+        <button class="icon-btn import">⬇</button>
+        <button class="icon-btn">✎</button>
+        <button class="icon-btn delete">🗑</button>
+      </span>
+    </div>
+  </div>
+
+  <!-- ========== Event card #3: SCORED ========== -->
+  <div class="event-card">
+    <div class="event-row">
+      <button class="expand-btn">▶</button>
+      <span class="ev-name">EVF Circuit – Salzburg (AUT)</span>
+      <span class="ev-loc">Salzburg</span>
+      <span class="ev-weapons">EPEE FOIL SABRE</span>
+      <span class="ev-dates">2026-04-18 – 2026-04-19</span>
+      <span class="ev-link"><a href="#">🔗</a></span>
+      <span class="ev-status-badge status-scored">Zaliczone</span>
+      <span class="tourn-count-badge">6</span>
+      <span></span>
+      <span class="actions">
+        <button class="icon-btn import">⬇</button>
+        <button class="icon-btn">✎</button>
+        <button class="icon-btn delete">🗑</button>
+      </span>
+    </div>
+  </div>
+
+  <!-- ========== Event card #4: DMEW (singleton from Phase 2 fix) ========== -->
+  <div class="event-card">
+    <div class="event-row">
+      <button class="expand-btn">▶</button>
+      <span class="ev-name">European Team Championships 2026 – Cognac</span>
+      <span class="ev-loc">Cognac</span>
+      <span class="ev-weapons">EPEE FOIL SABRE</span>
+      <span class="ev-dates">2026-05-14</span>
+      <span class="ev-link"></span>
+      <span class="ev-status-badge status-planned">Planowane</span>
+      <span class="tourn-count-badge">6</span>
+      <span></span>
+      <span class="actions">
+        <button class="icon-btn import">⬇</button>
+        <button class="icon-btn">✎</button>
+        <button class="icon-btn delete">🗑</button>
+      </span>
+    </div>
+  </div>
+
+  <!-- ========== NEW: Skeletons collapsible panel (Option 1+4 blend) ========== -->
+  <!-- COLLAPSED state -->
+  <div class="skeleton-panel annotate-new">
+    <div class="skeleton-panel-header">
+      <span class="chev">▶</span>
+      <span class="title">Szkielety (CREATED)</span>
+      <span class="count-badge">12 oczekujących</span>
+      <span class="hint">Niewidoczne w publicznym kalendarzu — kliknij aby rozwinąć</span>
+    </div>
+  </div>
+
+  <!-- EXPANDED state (shown immediately below for the mock; in real UI only one would render) -->
+  <div class="skeleton-panel annotate-new">
+    <div class="skeleton-panel-header">
+      <span class="chev">▼</span>
+      <span class="title">Szkielety (CREATED)</span>
+      <span class="count-badge">12 oczekujących</span>
+      <span class="hint">stan: ROZWINIĘTY (alternatywny widok)</span>
+    </div>
+    <div class="skeleton-panel-body">
+
+      <div class="skel-group-label">PPW (krajowe) — 5 szkieletów</div>
+      <div class="skel-row">
+        <span class="skel-code">PPW1-2025-2026</span>
+        <span class="skel-city">— (brak miasta)</span>
+        <span class="ev-status-badge status-created">CREATED</span>
+        <span class="skel-prior">↩ <code>PPW1-2024-2025</code></span>
+        <span class="actions">
+          <button class="icon-btn" title="Edytuj szkielet (przejście CREATED → PLANNED)">✎</button>
+          <button class="icon-btn delete" title="Usuń szkielet">🗑</button>
+        </span>
+      </div>
+      <div class="skel-row">
+        <span class="skel-code">PPW2-2025-2026</span>
+        <span class="skel-city">—</span>
+        <span class="ev-status-badge status-created">CREATED</span>
+        <span class="skel-prior">↩ <code>PPW2-2024-2025</code></span>
+        <span class="actions">
+          <button class="icon-btn">✎</button><button class="icon-btn delete">🗑</button>
+        </span>
+      </div>
+      <div class="skel-row" style="opacity:0.55">
+        <span class="skel-code"></span>
+        <span class="skel-city" style="grid-column: 1 / -1; text-align: center; font-style: italic; color: #555; padding: 2px 0;">PPW3, PPW4, PPW5 (skrócono)</span>
+      </div>
+
+      <div class="skel-group-label">PEW (europejskie) — 5 szkieletów (z miastami z 2024-25)</div>
+      <div class="skel-row">
+        <span class="skel-code">PEW1-2025-2026</span>
+        <span class="skel-city">Liège, Belgia</span>
+        <span class="ev-status-badge status-created">CREATED</span>
+        <span class="skel-prior">↩ <code>PEW1-2024-2025</code></span>
+        <span class="actions">
+          <button class="icon-btn">✎</button><button class="icon-btn delete">🗑</button>
+        </span>
+      </div>
+      <div class="skel-row">
+        <span class="skel-code">PEW7-2025-2026</span>
+        <span class="skel-city">Salzburg, Austria</span>
+        <span class="ev-status-badge status-created">CREATED</span>
+        <span class="skel-prior">↩ <code>PEW7-2024-2025</code></span>
+        <span class="actions">
+          <button class="icon-btn">✎</button><button class="icon-btn delete">🗑</button>
+        </span>
+      </div>
+      <div class="skel-row" style="opacity:0.55">
+        <span class="skel-code"></span>
+        <span class="skel-city" style="grid-column: 1 / -1; text-align: center; font-style: italic; color: #555; padding: 2px 0;">PEW2, PEW3, PEW4 (skrócono)</span>
+      </div>
+
+      <div class="skel-group-label">MPW / MSW / DMEW — 2 szkielety</div>
+      <div class="skel-row">
+        <span class="skel-code">MPW-2025-2026</span>
+        <span class="skel-city">—</span>
+        <span class="ev-status-badge status-created">CREATED</span>
+        <span class="skel-prior">↩ <code>MPW-2024-2025</code></span>
+        <span class="actions">
+          <button class="icon-btn">✎</button><button class="icon-btn delete">🗑</button>
+        </span>
+      </div>
+      <div class="skel-row">
+        <span class="skel-code">MSW-2025-2026</span>
+        <span class="skel-city">—</span>
+        <span class="ev-status-badge status-created">CREATED</span>
+        <span class="skel-prior">↩ <code>MSW-2024-2025</code></span>
+        <span class="actions">
+          <button class="icon-btn">✎</button><button class="icon-btn delete">🗑</button>
+        </span>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================ NOTES ============================ -->
+<div class="notes">
+  <h3>📝 Notatki implementacyjne</h3>
+
+  <h4>Zachowane (EXISTING)</h4>
+  <ul>
+    <li><span class="ok">✓</span> Przycisk <code>+ Dodaj wydarzenie</code> — pełny formularz tworzenia ręcznego</li>
+    <li><span class="ok">✓</span> Edycja wszystkich pól (nazwa, lokalizacja, daty, kraj, adres, broń, opłaty, organizator, multi-URL, status)</li>
+    <li><span class="ok">✓</span> Usunięcie wydarzenia — kaskada na <code>tbl_tournament</code> via <code>fn_delete_event</code></li>
+    <li><span class="ok">✓</span> Edycja turniejów wewnątrz wydarzenia (kod, URL wyników, status, powód)</li>
+    <li><span class="ok">✓</span> Tworzenie nowego turnieju w wydarzeniu</li>
+    <li><span class="ok">✓</span> Import wyników z URL (przyciski ⬇)</li>
+  </ul>
+
+  <h4>Nowe w Phase 3 <span class="new">(5 dodatków)</span></h4>
+  <ul>
+    <li><span class="new">★</span> <strong>Wybór sezonu</strong> u góry strony (dotąd brak — EventManager pokazywał tylko aktywny sezon)</li>
+    <li><span class="new">★</span> <strong>Pole <code>txt_code</code> edytowalne</strong> z kaskadową zmianą kodu wszystkich turniejów-dzieci w jednej transakcji</li>
+    <li><span class="new">★</span> <strong>Pole <code>id_prior_event</code></strong> — dropdown filtrowany do wydarzeń poprzedniego sezonu tego samego typu</li>
+    <li><span class="new">★</span> <strong>Auto-link FK</strong> przy zmianie kodu (re-detect prior po zmianie <code>PEW8 → PEW9</code>)</li>
+    <li><span class="new">★</span> <strong>Panel "Szkielety"</strong> (rozwijany) na dole listy — zwija domyślnie, pokazuje wiersze CREATED grupowane po typie</li>
+  </ul>
+
+  <h4>Ścieżka kaskady przy zmianie <code>txt_code</code></h4>
+  <ul>
+    <li>RPC <code>fn_update_event(...)</code> dostaje nowy parametr <code>p_code TEXT</code></li>
+    <li>W tej samej transakcji: <code>UPDATE tbl_event SET txt_code = ... ;</code> potem <code>UPDATE tbl_tournament SET txt_code = replace(txt_code, OLD, NEW) WHERE id_event = ...</code></li>
+    <li>Frontend pokazuje liczbę turniejów-dzieci pod polem (live), tak admin wie czego się spodziewać</li>
+  </ul>
+
+  <h4>EN preview (po przełączeniu 🇬🇧)</h4>
+  <table>
+    <tr><th>PL</th><th>EN</th></tr>
+    <tr><td>Sezon</td><td>Season</td></tr>
+    <tr><td>Wydarzenia</td><td>Events</td></tr>
+    <tr><td>+ Dodaj wydarzenie</td><td>+ Add event</td></tr>
+    <tr><td>Kod wydarzenia</td><td>Event code</td></tr>
+    <tr><td>Poprzednik (carry-over)</td><td>Prior event (carry-over)</td></tr>
+    <tr><td>Auto-połączono z …</td><td>Auto-linked to …</td></tr>
+    <tr><td>Szkielety (CREATED)</td><td>Skeletons (CREATED)</td></tr>
+    <tr><td>12 oczekujących</td><td>12 pending</td></tr>
+    <tr><td>Niewidoczne w publicznym kalendarzu</td><td>Hidden from public calendar</td></tr>
+    <tr><td>Kaskada: usunięcie wydarzenia usunie 6 turniejów</td><td>Cascade: deleting the event removes 6 tournaments</td></tr>
+  </table>
+</div>
+
+</body>
+</html>
