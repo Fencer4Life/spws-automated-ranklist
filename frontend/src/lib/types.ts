@@ -270,6 +270,11 @@ export interface UpdateEventParams {
   urlEvent3?: string | null
   urlEvent4?: string | null
   urlEvent5?: string | null
+  // Phase 3 (ADR-044): the v2 fn_update_event signature accepts these.
+  // NULL on either means "leave unchanged" — matches organizerId semantics
+  // and preserves backward-compat for callers still on the 19-arg shape.
+  code?: string
+  priorEventId?: number | null
 }
 
 export type MatchStatus = 'PENDING' | 'AUTO_MATCHED' | 'UNMATCHED' | 'APPROVED' | 'NEW_FENCER' | 'DISMISSED'

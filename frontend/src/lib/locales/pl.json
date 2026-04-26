@@ -294,6 +294,17 @@
   "season_skel_pending": "— pending —",
   "season_skel_badge_created": "🦴 CREATED",
 
+  "event_season_selector_label": "Sezon",
+  "event_code_label": "Kod wydarzenia",
+  "event_code_cascade_hint": "⚠️ Zmiana kodu kaskadowo zmieni powiązane turnieje.",
+  "event_prior_event_label": "Poprzednik (carry-over)",
+  "event_prior_event_none": "— (brak)",
+  "event_prior_event_hint": "Powiązanie z wydarzeniem z poprzedniego sezonu — używane przez silnik FK.",
+  "event_skel_panel_title": "Szkielety (CREATED)",
+  "event_skel_panel_count": "{n} oczekujących",
+  "event_skel_empty": "Brak szkieletów w aktualnym sezonie.",
+  "event_status_created": "CREATED",
+
   "birth_year_subtitle": "kat. {cat} — roczniki: {years}",
   "birth_year_and_older": "i starsi",
 

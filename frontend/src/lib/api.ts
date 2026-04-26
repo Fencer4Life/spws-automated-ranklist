@@ -366,6 +366,10 @@ export async function updateEvent(id: number, params: UpdateEventParams): Promis
     p_url_event_3: params.urlEvent3 ?? null,
     p_url_event_4: params.urlEvent4 ?? null,
     p_url_event_5: params.urlEvent5 ?? null,
+    // Phase 3 (ADR-044) — fn_update_event v2 trailing params. NULL means
+    // "leave unchanged" so legacy callers still see no change in behavior.
+    p_code: params.code ?? null,
+    p_id_prior_event: params.priorEventId ?? null,
   })
   if (error) throw error
 }

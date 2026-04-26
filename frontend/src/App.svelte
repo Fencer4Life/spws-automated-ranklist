@@ -113,6 +113,10 @@
       oncreatetournament={handleCreateTournament}
       onrefresh={reloadAdminEvents}
       {activeEnv}
+      onseasonchange={(id) => {
+        selectedSeasonId = id
+        handleSeasonChange()
+      }}
     />
   {:else if currentView === 'admin_fencers'}
     <div class="fencer-tabs">
