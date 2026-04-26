@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M13 Mockup — SeasonManager Phase 3 (3-step wizard + final state)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; }
+
+  h1 { text-align: center; color: #00d4ff; margin-bottom: 6px; font-size: 1.6em; }
+  .subtitle { text-align: center; color: #888; margin-bottom: 20px; font-size: 0.92em; max-width: 980px; margin-left: auto; margin-right: auto; line-height: 1.55; }
+  .legend { text-align: center; margin-bottom: 24px; font-size: 0.78em; color: #aaa; }
+  .legend .key { display: inline-block; padding: 2px 8px; border-radius: 8px; margin: 0 4px; font-weight: 700; font-size: 0.85em; }
+  .legend .key.new { background: #3a2a0a; color: #fbbf24; }
+  .legend .key.existing { background: #1a2744; color: #7fbadc; }
+
+  .app-frame { background: #16213e; border-radius: 8px; overflow: hidden; max-width: 1080px; margin: 0 auto; border: 1px solid #0f3460; position: relative; }
+
+  .header { background: #0f3460; padding: 10px 16px; display: flex; align-items: center; gap: 12px; font-size: 0.9em; border-bottom: 1px solid #1a4a8a; }
+  .hamburger { font-size: 1.3em; cursor: pointer; color: #00d4ff; }
+  .header-title { font-weight: 700; color: #fff; flex: 1; }
+  .header-pill { background: #1a4a8a; padding: 3px 10px; border-radius: 12px; font-size: 0.78em; color: #7fbadc; }
+  .header-env { background: #ff6b35; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 0.72em; font-weight: 700; }
+  .lang-toggle { font-size: 1.1em; cursor: pointer; user-select: none; }
+  .lang-toggle .on { color: #00d4ff; font-weight: 700; }
+  .lang-toggle .off { color: #555; }
+
+  .breadcrumb { font-size: 0.78em; color: #7fbadc; padding: 12px 16px 4px 16px; }
+
+  .section-header { padding: 0 16px; display: flex; align-items: center; gap: 12px; margin: 8px 0 14px 0; }
+  .section-header h3 { color: #fff; font-size: 0.95em; font-weight: 700; flex: 1; }
+  .add-btn { background: #0a3622; color: #4ade80; border: 1px solid #4ade80; padding: 6px 14px; border-radius: 6px; font-size: 0.82em; cursor: pointer; font-weight: 700; }
+
+  /* Season list rows */
+  .season-card { background: #1a2744; border: 1px solid #1a4a8a; border-radius: 8px; margin: 0 16px 12px 16px; overflow: hidden; }
+  .season-row { padding: 10px 14px; display: grid; gap: 10px; align-items: center; grid-template-columns: 200px 110px 110px 90px 1fr 110px; background: #16213e; font-size: 0.86em; }
+  .season-cell { color: #ccc; }
+  .season-cell.code { font-family: monospace; color: #fff; font-weight: 700; }
+  .active-badge { background: #0a3622; color: #4ade80; padding: 2px 9px; border-radius: 10px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; }
+  .actions { display: flex; gap: 4px; justify-content: flex-end; }
+  .icon-btn { background: none; border: 1px solid #1a4a8a; color: #7fbadc; width: 26px; height: 26px; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
+  .icon-btn:hover { color: #00d4ff; border-color: #00d4ff; }
+  .icon-btn.delete:hover { color: #ff6b6b; border-color: #ff6b6b; }
+
+  /* Edit form */
+  .edit-form { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; background: #0f1d36; border-bottom: 1px solid #1a4a8a; }
+  .form-top-row { display: flex; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid #1a4a8a; flex-wrap: wrap; }
+  .scoring-btn { background: #1a3a5a; color: #00d4ff; border: 1px solid #00d4ff; padding: 6px 12px; border-radius: 6px; font-size: 0.82em; cursor: pointer; font-weight: 700; }
+  .scoring-btn:hover { background: #1a4a6a; }
+
+  .edit-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.74em; color: #7fbadc; text-transform: uppercase; letter-spacing: 0.5px; }
+  .edit-form label.checkbox-label { flex-direction: row; align-items: center; gap: 8px; text-transform: none; letter-spacing: 0; color: #ccc; }
+  .edit-form input, .edit-form select { background: #0d1b2a; border: 1px solid #1a4a8a; color: #e0e0e0; padding: 7px 10px; border-radius: 6px; font-size: 0.88em; font-family: inherit; }
+  .edit-form input:focus, .edit-form select:focus { outline: 1px solid #00d4ff; border-color: #00d4ff; }
+  .row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .form-actions { display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid #1a4a8a; margin-top: 6px; }
+  .save-btn { background: #0a3622; color: #4ade80; border: 1px solid #4ade80; padding: 6px 14px; border-radius: 6px; font-size: 0.82em; cursor: pointer; font-weight: 700; }
+  .cancel-btn { background: none; color: #888; border: 1px solid #1a4a8a; padding: 6px 14px; border-radius: 6px; font-size: 0.82em; cursor: pointer; }
+  .cancel-btn.danger { color: #ff8888; border-color: #ff8888; }
+
+  /* New-field annotation */
+  .annotate-new { border-left: 3px solid #fbbf24; padding-left: 10px; background: rgba(251, 191, 36, 0.04); border-radius: 0 6px 6px 0; padding: 8px 12px; }
+  .badge-new { display: inline-block; background: #3a2a0a; color: #fbbf24; padding: 1px 6px; border-radius: 8px; font-size: 0.62em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 6px; }
+  .field-hint { font-size: 0.74em; color: #fbbf24; margin-top: 4px; padding: 6px 10px; background: rgba(251, 191, 36, 0.08); border-radius: 4px; }
+  .field-hint .ok { color: #4ade80; }
+  .field-hint code { font-family: monospace; background: #1a2744; padding: 1px 5px; border-radius: 3px; color: #fbbf24; }
+
+  /* Carry-over section header inside form */
+  .form-section-header { padding: 8px 0 4px 0; margin-top: 6px; border-top: 1px dashed #1a4a8a; font-size: 0.78em; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+
+  /* Segmented control */
+  .segmented { display: inline-flex; border: 1px solid #1a4a8a; border-radius: 6px; overflow: hidden; background: #0d1b2a; }
+  .segmented .seg { padding: 7px 16px; font-size: 0.82em; cursor: pointer; color: #888; border-right: 1px solid #1a4a8a; user-select: none; }
+  .segmented .seg:last-child { border-right: none; }
+  .segmented .seg.active { background: #1a3a5a; color: #00d4ff; font-weight: 700; }
+  .segmented .seg:hover:not(.active) { background: #1a2744; color: #ccc; }
+
+  /* Wizard modal — rendered INLINE within each step's app-frame (no overlay, full natural height) */
+  .modal-overlay { padding: 18px; background: rgba(0, 0, 0, 0.35); }
+  .modal { background: #16213e; border: 1px solid #00d4ff; border-radius: 10px; width: 100%; max-width: 720px; margin: 0 auto; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); overflow: hidden; }
+  .modal.confirm-step { border-color: #b794f6; }
+  .modal-header { background: #0f3460; color: #00d4ff; padding: 12px 18px; font-weight: 700; font-size: 0.95em; border-bottom: 1px solid #00d4ff; display: flex; align-items: center; gap: 10px; }
+  .modal.confirm-step .modal-header { background: #251a3a; color: #b794f6; border-bottom-color: #b794f6; }
+  .step-pill { background: rgba(0, 212, 255, 0.15); color: #00d4ff; padding: 2px 9px; border-radius: 10px; font-size: 0.76em; font-weight: 700; }
+  .modal.confirm-step .step-pill { background: rgba(183, 148, 246, 0.15); color: #b794f6; }
+  .modal-body { padding: 18px; font-size: 0.88em; color: #ccc; line-height: 1.6; }
+  .modal-body label { display: flex; flex-direction: column; gap: 4px; font-size: 0.74em; color: #7fbadc; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .modal-body input, .modal-body select { background: #0d1b2a; border: 1px solid #1a4a8a; color: #e0e0e0; padding: 7px 10px; border-radius: 6px; font-size: 0.92em; font-family: inherit; }
+  .modal-body code { background: #1a2744; padding: 1px 5px; border-radius: 3px; color: #fbbf24; font-family: monospace; }
+  .modal-body .lead { color: #ddd; margin-bottom: 12px; }
+  .modal-actions { padding: 12px 18px; border-top: 1px solid #1a4a8a; display: flex; gap: 8px; justify-content: space-between; align-items: center; background: #0d1b2a; }
+  .modal-actions .progress { color: #888; font-size: 0.8em; }
+  .modal-actions .btn-group { display: flex; gap: 8px; }
+  .modal-actions .next-btn { background: #1a3a5a; color: #00d4ff; border: 1px solid #00d4ff; padding: 8px 16px; border-radius: 6px; font-size: 0.86em; cursor: pointer; font-weight: 700; }
+  .modal-actions .next-btn:hover { background: #1a4a6a; }
+  .modal-actions .back-btn { background: none; color: #888; border: 1px solid #1a4a8a; padding: 8px 14px; border-radius: 6px; font-size: 0.86em; cursor: pointer; }
+  .modal-actions .commit-btn { background: #251a3a; color: #b794f6; border: 1px solid #b794f6; padding: 8px 16px; border-radius: 6px; font-size: 0.86em; cursor: pointer; font-weight: 700; }
+  .modal-actions .commit-btn:hover { background: #2f2147; }
+
+  .modal-checklist { background: #0d1b2a; border: 1px solid #1a4a8a; border-radius: 6px; padding: 10px 14px; margin: 12px 0; }
+  .modal-checklist .item { display: flex; gap: 10px; align-items: center; padding: 4px 0; font-size: 0.86em; }
+  .modal-checklist .item .count { background: #1a3a5a; color: #00d4ff; padding: 1px 7px; border-radius: 8px; font-size: 0.78em; font-weight: 700; min-width: 30px; text-align: center; }
+  .modal-checklist .item .label { flex: 1; color: #ddd; }
+  .modal-warning { background: rgba(251, 191, 36, 0.08); color: #fbbf24; padding: 10px 14px; border-radius: 6px; font-size: 0.82em; border-left: 3px solid #fbbf24; margin-top: 10px; line-height: 1.5; }
+  .modal-info { background: rgba(0, 212, 255, 0.07); color: #7fbadc; padding: 8px 12px; border-radius: 6px; font-size: 0.8em; border-left: 3px solid #00d4ff; margin-top: 8px; line-height: 1.5; }
+
+  /* === ScoringConfigEditor — faithful copy from frontend/src/components/ScoringConfigEditor.svelte === */
+  /* Light theme inside the dark wizard — matches today's production look */
+  .config-banner { background: #4a90d9; color: #fff; padding: 10px 16px; border-radius: 6px 6px 0 0; font-weight: 600; font-size: 14px; }
+  .config-editor { background: #fff; border: 1px solid #ddd; border-radius: 0 0 6px 6px; padding: 14px; color: #333; }
+  .config-info { background: #e1f0ff; border: 1px solid #b3d4f0; border-radius: 6px; padding: 10px 14px; font-size: 13px; color: #1a6fbf; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .info-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #4a90d9; color: #fff; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .config-section { background: #fafbfc; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+  .config-section-header { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: #f0f2f5; border-bottom: 1px solid #e0e0e0; font-size: 13px; font-weight: 700; color: #444; cursor: pointer; user-select: none; }
+  .config-section-header:hover { background: #e8ecf1; }
+  .section-icon { font-size: 15px; }
+  .chevron { margin-left: auto; font-size: 10px; color: #999; }
+  .config-section-body { padding: 12px 14px; }
+  .field-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .field-row label { flex: 0 0 200px; font-size: 13px; color: #555; text-align: right; text-transform: none; letter-spacing: 0; }
+  .field-row input { width: 100px; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; font-family: monospace; background: #fff; color: #333; }
+  .hint { font-size: 11px; color: #aaa; font-style: italic; }
+  .mult-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .mult-card { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 10px; text-align: center; }
+  .type-badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; margin-bottom: 6px; }
+  .type-badge.domestic { background: #e6f4ea; color: #1a7f37; }
+  .type-badge.international { background: #fff8e1; color: #b8860b; }
+  .mult-card input { width: 80px; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; font-family: monospace; text-align: center; background: #fff; color: #333; }
+  .card-label { font-size: 11px; color: #888; margin-top: 4px; }
+  .pool-label { font-size: 12px; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: 0.5px; margin: 8px 0 6px; }
+  .bucket-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; margin-bottom: 6px; }
+  .bucket-types { display: flex; gap: 4px; flex: 1; }
+  .tag { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .tag.domestic { background: #e6f4ea; color: #1a7f37; }
+  .tag.international { background: #fff8e1; color: #b8860b; }
+  .bucket-rule { display: flex; align-items: center; gap: 6px; }
+  .bucket-rule select { padding: 3px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; background: #fff; color: #333; }
+  .bucket-rule input { width: 40px; padding: 3px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; font-family: monospace; text-align: center; background: #fff; color: #333; }
+  .rule-label { font-size: 12px; color: #888; }
+  .always-label { font-size: 12px; color: #1a7f37; font-weight: 600; }
+  .remove-bucket-btn { background: none; border: none; color: #c33; cursor: pointer; font-size: 14px; padding: 2px 4px; }
+  .add-bucket-btn { color: #ff6b35; font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px; border: 1px dashed #ff6b35; border-radius: 4px; background: transparent; margin-top: 4px; }
+  .bucket-divider { border: none; border-top: 1px solid #e0e0e0; margin: 10px 0; }
+
+  /* Calendar-style event boxes */
+  .skel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin-top: 10px; }
+  .cal-box { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid #1a4a8a; border-radius: 6px; background: #16213e; cursor: pointer; transition: background 0.12s; font-size: 0.84em; }
+  .cal-box.created { background: #251a3a; border: 1px solid #b794f6; border-left: 3px solid #b794f6; }
+  .cal-box.created:hover { background: #2f2147; border-color: #d4b5ff; }
+  .cal-code { font-family: 'SF Mono', Monaco, monospace; font-size: 0.78em; font-weight: 700; padding: 2px 8px; border-radius: 10px; min-width: 70px; text-align: center; }
+  .cal-code.pew  { background: #1a3a5a; color: #7fbadc; }
+  .cal-code.ppw  { background: #0a3622; color: #4ade80; }
+  .cal-code.mpw  { background: #0a3622; color: #4ade80; }
+  .cal-code.msw  { background: #3a2a0a; color: #fbbf24; }
+  .cal-code.imew { background: #3a2a0a; color: #fbbf24; }
+  .cal-code.dmew { background: #2a1a3a; color: #d97aff; }
+  .cal-name { flex: 1; color: #ddd; font-size: 0.88em; }
+  .cal-name .empty { color: #666; font-style: italic; font-size: 0.86em; }
+  .cal-badge { font-size: 0.66em; font-weight: 700; padding: 2px 6px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; }
+  .cal-badge.created { background: #b794f6; color: #1a1a2e; }
+
+  .skel-grid-header { font-size: 0.72em; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 0 4px 0; margin-top: 12px; border-bottom: 1px solid #1a2744; display: flex; align-items: center; gap: 10px; }
+  .skel-grid-header .grp-count { background: #1a3a5a; color: #00d4ff; padding: 1px 7px; border-radius: 8px; font-size: 0.92em; font-weight: 700; }
+
+  /* Section labels for each step */
+  .step-label-banner {
+    display: flex; align-items: center; gap: 12px; max-width: 1080px; margin: 30px auto 8px auto;
+    padding: 8px 16px; background: #0f3460; color: #00d4ff; border-radius: 8px 8px 0 0;
+    font-size: 0.95em; font-weight: 700;
+  }
+  .step-label-banner .step-num { background: #00d4ff; color: #0f3460; padding: 3px 10px; border-radius: 12px; font-size: 0.82em; font-weight: 700; }
+  .step-label-banner.done { background: #0a3622; color: #4ade80; }
+  .step-label-banner.done .step-num { background: #4ade80; color: #0a3622; }
+
+  /* Notes block */
+  .notes { background: #0d1b2a; border: 1px solid #1a4a8a; border-radius: 8px; padding: 16px 18px; margin: 30px auto 0 auto; max-width: 1080px; }
+  .notes h3 { color: #00d4ff; font-size: 0.95em; margin-bottom: 8px; }
+  .notes h4 { color: #fbbf24; font-size: 0.82em; margin: 14px 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+  .notes ul { padding-left: 20px; font-size: 0.85em; color: #ccc; line-height: 1.6; }
+  .notes li { margin-bottom: 4px; }
+  .notes code { background: #1a2744; padding: 1px 5px; border-radius: 3px; color: #fbbf24; font-size: 0.9em; font-family: monospace; }
+  .notes .ok { color: #4ade80; }
+  .notes .new { color: #fbbf24; font-weight: 700; }
+  .notes table { width: 100%; border-collapse: collapse; font-size: 0.82em; margin-top: 8px; }
+  .notes th, .notes td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #1a2744; color: #ccc; }
+  .notes th { color: #00d4ff; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<h1>M13 — SeasonManager (Phase 3 — wizard, full flow)</h1>
+<p class="subtitle">
+  Click <strong>+ Dodaj sezon</strong> → 3-step wizard → final EDIT form with auto-generated skeletons.
+  Cancel at any step rolls back the entire transaction (atomic). Both reviews of the count happen:
+  (a) Step 3 confirmation modal lists what will be created;
+  (b) After commit, the EDIT form shows the boxes — visual verification.
+</p>
+
+<div class="legend">
+  <span class="key new">NEW (Phase 3)</span> = newly added in Phase 3 ·
+  <span class="key existing">EXISTING</span> = preserved as-is from current SeasonManager
+</div>
+
+<!-- ============================================================ -->
+<!-- STEP 1 — Identity modal                                       -->
+<!-- ============================================================ -->
+<div class="step-label-banner">
+  <span class="step-num">Krok 1 / 3</span>
+  Tożsamość sezonu + carry-over
+</div>
+<div class="app-frame">
+  <div class="header">
+    <span class="hamburger">☰</span>
+    <span class="header-title">SPWS Ranklist</span>
+    <span class="header-pill">admin@spws.local</span>
+    <span class="header-env">CERT</span>
+    <span class="lang-toggle"><span class="on">🇵🇱</span> / <span class="off">🇬🇧</span></span>
+  </div>
+  <div class="breadcrumb">Admin → Sezony → Nowy sezon</div>
+  <div class="section-header">
+    <h3>Sezony</h3>
+    <button class="add-btn" disabled style="opacity:0.4">+ Dodaj sezon</button>
+  </div>
+  <!-- Existing seasons (dimmed) -->
+  <div class="season-card" style="opacity:0.45">
+    <div class="season-row">
+      <span class="season-cell code">SPWS-2024-2025</span>
+      <span class="season-cell">2024-09-01</span>
+      <span class="season-cell">2025-08-31</span>
+      <span class="season-cell"><span class="active-badge">aktywny</span></span>
+      <span class="season-cell" style="font-style: italic; color: #888; font-size: 0.78em;">60 wydarzeń</span>
+      <span class="season-cell actions"><button class="icon-btn">✎</button><button class="icon-btn delete">🗑</button></span>
+    </div>
+  </div>
+
+  <!-- Modal Step 1 -->
+  <div class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="step-pill">1 / 3</span>
+        Nowy sezon — tożsamość i carry-over
+      </div>
+      <div class="modal-body">
+        <p class="lead">Wprowadź podstawowe dane sezonu. Pola carry-over decydują, jakie szkielety zostaną wygenerowane w kroku 3.</p>
+
+        <label>KOD SEZONU
+          <input type="text" placeholder="SPWS-2025-2026" value="SPWS-2025-2026" />
+        </label>
+
+        <div class="row-2col" style="margin-bottom: 12px;">
+          <label>DATA STARTU
+            <input type="date" value="2025-09-01" />
+          </label>
+          <label>DATA KOŃCA
+            <input type="date" value="2026-08-31" />
+          </label>
+        </div>
+
+        <div class="annotate-new">
+          <label>OKNO CARRY-OVER (DNI) <span class="badge-new">NEW</span>
+            <input type="number" value="366" min="1" max="9999" />
+          </label>
+          <div class="field-hint">Wydarzenia z poprzedniego sezonu starsze niż <strong>366 dni</strong> nie są wciągane do puli rolling. Domyślnie 366 (~rok).</div>
+        </div>
+
+        <div class="annotate-new" style="margin-top: 12px;">
+          <label style="margin-bottom:0">EUROPEJSKA IMPREZA SEZONU <span class="badge-new">NEW</span></label>
+          <div class="segmented" style="margin-top:6px;">
+            <span class="seg">— (brak)</span>
+            <span class="seg">IMEW (indywidualne)</span>
+            <span class="seg active">DMEW (drużynowe)</span>
+          </div>
+          <div class="field-hint">Sterowanie generowaniem szkieletu europejskiego (alternacja biennialna per ADR-021).</div>
+        </div>
+
+        <div class="modal-info">
+          ℹ️ Po kliknięciu <strong>Dalej</strong> przechodzimy do konfiguracji punktacji (w tym wybór silnika carry-over). Anulowanie w dowolnym kroku <strong>nie zapisze niczego</strong> (transakcja).
+        </div>
+      </div>
+      <div class="modal-actions">
+        <span class="progress">●○○ — krok 1 z 3</span>
+        <div class="btn-group">
+          <button class="cancel-btn danger">✕ Anuluj</button>
+          <button class="next-btn">Dalej →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STEP 2 — ScoringConfigEditor                                  -->
+<!-- ============================================================ -->
+<div class="step-label-banner">
+  <span class="step-num">Krok 2 / 3</span>
+  Konfiguracja punktacji (istniejący ScoringConfigEditor)
+</div>
+<div class="app-frame">
+  <div class="header">
+    <span class="hamburger">☰</span>
+    <span class="header-title">SPWS Ranklist</span>
+    <span class="header-pill">admin@spws.local</span>
+    <span class="header-env">CERT</span>
+    <span class="lang-toggle"><span class="on">🇵🇱</span> / <span class="off">🇬🇧</span></span>
+  </div>
+  <div class="breadcrumb">Admin → Sezony → Nowy sezon → Konfiguracja punktacji</div>
+  <div class="section-header"><h3>Sezony</h3><button class="add-btn" disabled style="opacity:0.4">+ Dodaj sezon</button></div>
+  <div class="season-card" style="opacity:0.45">
+    <div class="season-row">
+      <span class="season-cell code">SPWS-2024-2025</span><span class="season-cell">2024-09-01</span><span class="season-cell">2025-08-31</span>
+      <span class="season-cell"><span class="active-badge">aktywny</span></span>
+      <span class="season-cell"></span><span class="season-cell"></span>
+    </div>
+  </div>
+
+  <div class="modal-overlay">
+    <div class="modal" style="max-width: 760px;">
+      <div class="modal-header">
+        <span class="step-pill">2 / 3</span>
+        Konfiguracja punktacji dla SPWS-2025-2026
+      </div>
+      <div class="modal-body" style="padding: 12px;">
+        <p class="lead">Reguły punktacji są wymagane przed wygenerowaniem szkieletów (krok 3). Domyślne wartości skopiowane z poprzedniego sezonu — możesz je zmienić.</p>
+
+        <!-- ============ FAITHFUL COPY OF ScoringConfigEditor.svelte ============ -->
+        <div class="config-banner">Konfiguracja punktacji — SPWS-2025-2026</div>
+
+        <div class="config-editor">
+          <div class="config-info" style="background: #fff8e1; border-color: #f5dc7a; color: #8a6d1b;">
+            <span class="info-icon" style="background: #fbbf24; color: #1a1a2e;">↩</span>
+            <strong>Wartości skopiowane z SPWS-2024-2025</strong> — możesz je zaakceptować jak są (kliknij <em>Dalej →</em>)
+            lub edytować. Jeśli to <strong>pierwszy sezon</strong> w systemie, używane są domyślne wartości startowe.
+          </div>
+
+          <!-- Section 1: Base params -->
+          <div class="config-section">
+            <div class="config-section-header">
+              <span class="section-icon">⚙</span>
+              Parametry bazowe
+              <span class="chevron">▼</span>
+            </div>
+            <div class="config-section-body">
+              <div class="field-row">
+                <label>Wartość MP (punktów)</label>
+                <input type="number" value="20" />
+                <span class="hint">punkty bazowe za turniej</span>
+              </div>
+              <div class="field-row">
+                <label>Spodziewane rundy PPW</label>
+                <input type="number" value="5" />
+                <span class="hint">do obliczania bonusu wytrwałości</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Podium bonuses -->
+          <div class="config-section">
+            <div class="config-section-header">
+              <span class="section-icon">🏆</span>
+              Bonusy podium
+              <span class="chevron">▼</span>
+            </div>
+            <div class="config-section-body">
+              <div class="field-row">
+                <label>🥇 Złoto</label>
+                <input type="number" value="50" />
+                <span class="hint">dodatkowe punkty za 1. miejsce</span>
+              </div>
+              <div class="field-row">
+                <label>🥈 Srebro</label>
+                <input type="number" value="30" />
+              </div>
+              <div class="field-row">
+                <label>🥉 Brąz</label>
+                <input type="number" value="20" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Tournament multipliers -->
+          <div class="config-section">
+            <div class="config-section-header">
+              <span class="section-icon">📊</span>
+              Mnożniki dla typów turniejów
+              <span class="chevron">▼</span>
+            </div>
+            <div class="config-section-body">
+              <div class="mult-grid">
+                <div class="mult-card">
+                  <div><span class="type-badge domestic">PPW</span></div>
+                  <input type="number" step="0.0001" value="1.0000" />
+                  <div class="card-label">Puchar Polski Weteranów</div>
+                </div>
+                <div class="mult-card">
+                  <div><span class="type-badge domestic">MPW</span></div>
+                  <input type="number" step="0.0001" value="1.5000" />
+                  <div class="card-label">Mistrzostwa Polski Weteranów</div>
+                </div>
+                <div class="mult-card">
+                  <div><span class="type-badge international">PEW</span></div>
+                  <input type="number" step="0.0001" value="1.5000" />
+                  <div class="card-label">Puchar Europy Weteranów</div>
+                </div>
+                <div class="mult-card">
+                  <div><span class="type-badge international">MEW</span></div>
+                  <input type="number" step="0.0001" value="2.0000" />
+                  <div class="card-label">Mistrzostwa Europy Weteranów</div>
+                </div>
+                <div class="mult-card">
+                  <div><span class="type-badge international">MSW</span></div>
+                  <input type="number" step="0.0001" value="2.5000" />
+                  <div class="card-label">Mistrzostwa Świata Weteranów</div>
+                </div>
+                <div class="mult-card">
+                  <div><span class="type-badge international">PSW</span></div>
+                  <input type="number" step="0.0001" value="1.5000" />
+                  <div class="card-label">Puchar Świata Weteranów</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Intake rules -->
+          <div class="config-section">
+            <div class="config-section-header">
+              <span class="section-icon">🚦</span>
+              Reguły kwalifikowalności wyników
+              <span class="chevron">▼</span>
+            </div>
+            <div class="config-section-body">
+              <div class="field-row">
+                <label>Min. uczestników (PPW)</label>
+                <input type="number" value="6" />
+              </div>
+              <div class="field-row">
+                <label>Min. uczestników (EVF)</label>
+                <input type="number" value="8" />
+                <span class="hint">PEW / MEW / MSW / PSW</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4b (NEW Phase 3): Carry-over engine selection -->
+          <div class="config-section" style="border: 2px solid #fbbf24; background: #fff8e1;">
+            <div class="config-section-header" style="background: #fff8e1; color: #8a6d1b;">
+              <span class="section-icon">🔀</span>
+              Silnik carry-over (rolling-score)
+              <span style="background: #3a2a0a; color: #fbbf24; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-left: 6px;">NEW</span>
+              <span class="chevron">▼</span>
+            </div>
+            <div class="config-section-body">
+              <div class="field-row">
+                <label>Silnik</label>
+                <select style="width: auto; min-width: 320px; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: #fff; color: #333;">
+                  <option value="EVENT_FK_MATCHING" selected>EVENT_FK_MATCHING — domyślny (FK based, ADR-042/043)</option>
+                  <option value="EVENT_CODE_MATCHING">EVENT_CODE_MATCHING — (legacy) prefix-string</option>
+                </select>
+              </div>
+              <div style="background: #e1f0ff; border: 1px solid #b3d4f0; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #1a6fbf; line-height: 1.5; margin-top: 8px;">
+                <strong>FK</strong> używa <code style="background:#fff;padding:1px 4px;border-radius:3px;font-family:monospace;border:1px solid #b3d4f0">tbl_event.id_prior_event</code> (Phase 1B+2);
+                <strong>CODE</strong> parsuje prefiks z <code style="background:#fff;padding:1px 4px;border-radius:3px;font-family:monospace;border:1px solid #b3d4f0">txt_code</code> (legacy, zachowane dla zgodności).
+                Zmiana po zapisaniu — <strong>natychmiastowa</strong> (zastępuje runbook §5 „flip via SQL").
+                <br>📐 <strong>Lista rozszerzalna</strong>: nowe silniki dodane do enum-u
+                <code style="background:#fff;padding:1px 4px;border-radius:3px;font-family:monospace;border:1px solid #b3d4f0">enum_event_carryover_engine</code>
+                pojawiają się tu automatycznie (bez zmian w kodzie UI).
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 5: Ranking rules (buckets) -->
+          <div class="config-section">
+            <div class="config-section-header">
+              <span class="section-icon">🥇</span>
+              Reguły rankingu (kubełki)
+              <span class="chevron">▼</span>
+            </div>
+            <div class="config-section-body">
+              <!-- Domestic pool -->
+              <div class="rules-domestic">
+                <div class="pool-label">🏠 Pula krajowa</div>
+                <div class="bucket-row">
+                  <div class="bucket-types">
+                    <span class="tag domestic">PPW</span>
+                  </div>
+                  <div class="bucket-rule">
+                    <select><option>najlepsze N</option><option>wszystkie</option></select>
+                    <input type="number" value="3" />
+                    <span class="rule-label">wyniki</span>
+                  </div>
+                  <button class="remove-bucket-btn" title="Usuń">✕</button>
+                </div>
+                <div class="bucket-row">
+                  <div class="bucket-types">
+                    <span class="tag domestic">MPW</span>
+                  </div>
+                  <div class="bucket-rule">
+                    <select><option>wszystkie</option><option>najlepsze N</option></select>
+                    <span class="always-label">zawsze</span>
+                  </div>
+                  <button class="remove-bucket-btn">✕</button>
+                </div>
+                <button class="add-bucket-btn">+ Dodaj kubełek</button>
+              </div>
+
+              <hr class="bucket-divider" />
+
+              <!-- International pool -->
+              <div class="rules-international">
+                <div class="pool-label">🌐 Pula międzynarodowa</div>
+                <div class="bucket-row">
+                  <div class="bucket-types">
+                    <span class="tag international">PEW</span>
+                    <span class="tag international">MEW</span>
+                  </div>
+                  <div class="bucket-rule">
+                    <select><option>najlepsze N</option><option>wszystkie</option></select>
+                    <input type="number" value="2" />
+                    <span class="rule-label">wyniki</span>
+                  </div>
+                  <button class="remove-bucket-btn">✕</button>
+                </div>
+                <div class="bucket-row">
+                  <div class="bucket-types">
+                    <span class="tag international">MSW</span>
+                    <span class="tag international">PSW</span>
+                  </div>
+                  <div class="bucket-rule">
+                    <select><option>wszystkie</option><option>najlepsze N</option></select>
+                    <span class="always-label">zawsze</span>
+                  </div>
+                  <button class="remove-bucket-btn">✕</button>
+                </div>
+                <button class="add-bucket-btn">+ Dodaj kubełek</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- ============ END SCORING CONFIG EDITOR ============ -->
+
+        <div class="modal-info">
+          ℹ️ Konfiguracja zostanie zapisana wraz z resztą sezonu w jednej transakcji. <strong>Nic nie jest jeszcze w bazie.</strong>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <span class="progress">●●○ — krok 2 z 3</span>
+        <div class="btn-group">
+          <button class="cancel-btn danger">✕ Anuluj wszystko</button>
+          <button class="back-btn">← Wstecz</button>
+          <button class="next-btn">Dalej →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STEP 3 — Confirmation: review skeleton count                  -->
+<!-- ============================================================ -->
+<div class="step-label-banner">
+  <span class="step-num">Krok 3 / 3</span>
+  Podgląd szkieletów (review BEFORE commit)
+</div>
+<div class="app-frame">
+  <div class="header">
+    <span class="hamburger">☰</span>
+    <span class="header-title">SPWS Ranklist</span>
+    <span class="header-pill">admin@spws.local</span>
+    <span class="header-env">CERT</span>
+    <span class="lang-toggle"><span class="on">🇵🇱</span> / <span class="off">🇬🇧</span></span>
+  </div>
+  <div class="breadcrumb">Admin → Sezony → Nowy sezon → Podgląd szkieletów</div>
+  <div class="section-header"><h3>Sezony</h3><button class="add-btn" disabled style="opacity:0.4">+ Dodaj sezon</button></div>
+  <div class="season-card" style="opacity:0.45">
+    <div class="season-row">
+      <span class="season-cell code">SPWS-2024-2025</span><span class="season-cell">2024-09-01</span><span class="season-cell">2025-08-31</span>
+      <span class="season-cell"><span class="active-badge">aktywny</span></span>
+      <span class="season-cell"></span><span class="season-cell"></span>
+    </div>
+  </div>
+
+  <div class="modal-overlay">
+    <div class="modal confirm-step">
+      <div class="modal-header">
+        <span class="step-pill">3 / 3</span>
+        🦴 Podgląd szkieletów dla SPWS-2025-2026
+      </div>
+      <div class="modal-body">
+        <p class="lead">
+          Po zatwierdzeniu zostanie utworzonych poniższych <strong>17 wydarzeń</strong> w statusie
+          <code>CREATED</code> + <strong>102 turnieje-dzieci</strong> (każde × M/F × 3 broni).
+          Linki <code>id_prior_event</code> wskazują na odpowiedniki z <strong>SPWS-2024-2025</strong>.
+        </p>
+
+        <div class="modal-checklist">
+          <div class="item"><span class="count">5</span><span class="label">PPW (krajowe) — <code>PPW1..PPW5-2025-2026</code> ↩ <code>PPW1..PPW5-2024-2025</code></span></div>
+          <div class="item"><span class="count">9</span><span class="label">PEW (europejskie) — z miastami z poprzedniego sezonu (Liège, Berlin, Salzburg, München, Stockholm, …)</span></div>
+          <div class="item"><span class="count">1</span><span class="label">MPW (krajowe mistrzostwa) — <code>MPW-2025-2026</code></span></div>
+          <div class="item"><span class="count">1</span><span class="label">MSW (mistrzostwa świata) — <code>MSW-2025-2026</code></span></div>
+          <div class="item"><span class="count">1</span><span class="label">DMEW (drużynowe ME — z ustawienia kroku 1) — <code>DMEW-2025-2026</code></span></div>
+        </div>
+
+        <div class="modal-warning">
+          ⚠️ <strong>Cel parytetu Day-1:</strong> bezpośrednio po utworzeniu (wszystkie szkielety w <code>CREATED</code>), ranklist 2025-26 musi być <em>identyczny</em> z finalnym ranklistem 2024-25 — to jest test akceptacyjny <code>fn_init_season</code>.
+        </div>
+        <div class="modal-info">
+          ℹ️ Anulowanie tutaj <strong>cofa cały kreator</strong> — krok 1 + 2 nie zostają zapisane (transakcja). Nic nie ląduje w bazie aż klikniesz "✓ Utwórz".
+        </div>
+      </div>
+      <div class="modal-actions">
+        <span class="progress">●●● — krok 3 z 3</span>
+        <div class="btn-group">
+          <button class="cancel-btn danger">✕ Anuluj wszystko</button>
+          <button class="back-btn">← Wstecz</button>
+          <button class="commit-btn">✓ Utwórz sezon + 17 szkieletów</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- AFTER COMMIT — EDIT form open with skeleton boxes visible     -->
+<!-- ============================================================ -->
+<div class="step-label-banner done">
+  <span class="step-num">✓ Po zatwierdzeniu</span>
+  EDIT form sezonu — szkielety widoczne jako boxy (visual review)
+</div>
+<div class="app-frame">
+  <div class="header">
+    <span class="hamburger">☰</span>
+    <span class="header-title">SPWS Ranklist</span>
+    <span class="header-pill">admin@spws.local</span>
+    <span class="header-env">CERT</span>
+    <span class="lang-toggle"><span class="on">🇵🇱</span> / <span class="off">🇬🇧</span></span>
+  </div>
+  <div class="breadcrumb">Admin → Sezony → SPWS-2025-2026</div>
+  <div class="section-header"><h3>Sezony</h3><button class="add-btn">+ Dodaj sezon</button></div>
+
+  <div class="season-card">
+    <div class="edit-form">
+
+      <!-- Buttons row: ONLY scoring (no skeleton-init button — wizard handles it) -->
+      <div class="form-top-row">
+        <button class="scoring-btn">🎯 Konfiguracja punktacji</button>
+      </div>
+
+      <label>Kod sezonu <input type="text" value="SPWS-2025-2026" /></label>
+
+      <div class="row-2col">
+        <label>Data startu <input type="date" value="2025-09-01" /></label>
+        <label>Data końca <input type="date" value="2026-08-31" /></label>
+      </div>
+
+      <label class="checkbox-label">
+        <input type="checkbox" checked />
+        Pokaż przełącznik EVF na ranklist + kalendarzu
+      </label>
+
+      <div class="form-section-header">🔁 Carry-over</div>
+
+      <div class="annotate-new">
+        <label>OKNO CARRY-OVER (DNI) <input type="number" value="366" /></label>
+      </div>
+
+      <div class="annotate-new">
+        <label style="margin-bottom:0">EUROPEJSKA IMPREZA SEZONU</label>
+        <div class="segmented" style="margin-top:6px;">
+          <span class="seg">—</span>
+          <span class="seg">IMEW</span>
+          <span class="seg active">DMEW</span>
+        </div>
+        <div class="field-hint">
+          ⓘ Zmiana po wygenerowaniu szkieletów <strong>nie cofnie</strong> istniejących — wpłynie tylko na kolejną generację (po cofnięciu poniżej).
+        </div>
+      </div>
+
+      <!-- Note: silnik carry-over lives w 🎯 Konfiguracja punktacji (przycisk u góry).
+           Tam admin może go zmienić w dowolnym momencie — efekt natychmiastowy po zapisaniu. -->
+
+      <!-- ★ Skeleton inventory — visual review (b) -->
+      <div class="form-section-header" style="color: #b794f6; border-top-color: #1a4a8a;">
+        🦴 Szkielety wygenerowane przez kreator
+        <span style="margin-left: 8px; font-size: 0.84em; color: #888; text-transform: none; letter-spacing: 0; font-weight: 400;">
+          17 boxów · utworzone 2026-04-26 14:23 (admin@spws.local) ·
+          <a href="#" style="color: #ff8888; text-decoration: underline; cursor: pointer;" title="Usuń wszystkie 17 szkieletów + scoring config + sezon (przywróć stan sprzed kreatora)">↶ Cofnij całość</a>
+        </span>
+      </div>
+
+      <div class="skel-grid-header">PPW (krajowe) <span class="grp-count">5</span></div>
+      <div class="skel-grid">
+        <div class="cal-box created" title="PPW1-2025-2026 — kliknij aby otworzyć w Wydarzeniach"><span class="cal-code ppw">PPW1</span><span class="cal-name"><span class="empty">— pending —</span></span><span class="cal-badge created">🦴 CREATED</span></div>
+        <div class="cal-box created"><span class="cal-code ppw">PPW2</span><span class="cal-name"><span class="empty">— pending —</span></span><span class="cal-badge created">🦴 CREATED</span></div>
+        <div class="cal-box created"><span class="cal-code ppw">PPW3</span><span class="cal-name"><span class="empty">— pending —</span></span><span class="cal-badge created">🦴 CREATED</span></div>
+        <div class="cal-box created"><span class="cal-code ppw">PPW4</span><span class="cal-name"><span class="empty">— pending —</span></span><span class="cal-badge created">🦴 CREATED</span></div>
+        <div class="cal-box created"><span class="cal-code ppw">PPW5</span><span class="cal-name"><span class="empty">— pending —</span></span><span class="cal-badge created">🦴 CREATED</span></div>
+      </div>
+
+      <div class="skel-grid-header">PEW (europejskie) <span class="grp-count">9</span></div>
+      <div class="skel-grid">
+        <div class="cal-box created"><span class="cal-code pew">PEW1</span><span class="cal-name">Liège, Belgia</span><span class="cal-badge created">🦴 CREATED</span></div>
+        <div class="cal-box created"><span class="cal-code pew">PEW2</span><span class="cal-name">Berlin, Niemcy</span><span class="cal-badge created">🦴 CREATED</span></div>
+        <div class="cal-box created"><span class="cal-code pew">PEW3</span><span class="cal-name">Guildford, GB</span><span class="cal-badge created">🦴 CREATED</span></div>
+        <div class="cal-box created"><span class="cal-code pew">PEW4</span><span class="cal-name">Jabłonna, Polska</span><span class="cal-badge created">🦴 CREATED</span></div>
+        <div class="cal-box created"><span class="cal-code pew">PEW5</span><span class="cal-name">Stockholm, Szwecja</span><span class="cal-badge created">🦴 CREATED</span></div>
+        <div class="cal-box created"><span class="cal-code pew">PEW6</span><span class="cal-name">Praga, Czechy</span><span class="cal-badge created">🦴 CREATED</span></div>
+        <div class="cal-box created"><span class="cal-code pew">PEW7</span><span class="cal-name">Salzburg, Austria</span><span class="cal-badge created">🦴 CREATED</span></div>
+        <div class="cal-box created"><span class="cal-code pew">PEW8</span><span class="cal-name">München, Niemcy</span><span class="cal-badge created">🦴 CREATED</span></div>
+        <div class="cal-box created"><span class="cal-code pew">PEW9</span><span class="cal-name">Tallinn, Estonia</span><span class="cal-badge created">🦴 CREATED</span></div>
+      </div>
+
+      <div class="skel-grid-header">Mistrzostwa <span class="grp-count">3</span></div>
+      <div class="skel-grid">
+        <div class="cal-box created"><span class="cal-code mpw">MPW</span><span class="cal-name">Mistrzostwa Polski</span><span class="cal-badge created">🦴 CREATED</span></div>
+        <div class="cal-box created"><span class="cal-code msw">MSW</span><span class="cal-name">Mistrzostwa Świata</span><span class="cal-badge created">🦴 CREATED</span></div>
+        <div class="cal-box created"><span class="cal-code dmew">DMEW</span><span class="cal-name">European Team Champs</span><span class="cal-badge created">🦴 CREATED</span></div>
+      </div>
+
+      <div class="form-actions">
+        <button class="save-btn">💾 Zapisz zmiany</button>
+        <button class="cancel-btn">Anuluj</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Other (existing) seasons collapsed -->
+  <div class="season-card">
+    <div class="season-row">
+      <span class="season-cell code">SPWS-2024-2025</span>
+      <span class="season-cell">2024-09-01</span>
+      <span class="season-cell">2025-08-31</span>
+      <span class="season-cell"></span>
+      <span class="season-cell" style="color: #888; font-size: 0.78em; font-style: italic;">archiwalny — 60 wydarzeń</span>
+      <span class="season-cell actions"><button class="icon-btn">✎</button><button class="icon-btn delete">🗑</button></span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- NOTES                                                        -->
+<!-- ============================================================ -->
+<div class="notes">
+  <h3>📝 Notatki implementacyjne — Phase 3 SeasonManager</h3>
+
+  <h4>Przepływ kreatora (atomowa transakcja)</h4>
+  <ul>
+    <li><strong>Krok 1</strong> — modal pyta o kod, daty, <code>int_carryover_days</code>, <code>enum_european_event_type</code>. Nic nie jest zapisywane.</li>
+    <li><strong>Krok 2</strong> — <code>ScoringConfigEditor</code> (istniejący komponent) z domyślnymi wartościami z poprzedniego sezonu. Nic nie jest zapisywane.</li>
+    <li><strong>Krok 3</strong> — modal podglądu pokazuje <strong>liczbę szkieletów</strong> które zostaną utworzone, na podstawie ustawień z kroku 1 + struktury poprzedniego sezonu.</li>
+    <li>Kliknięcie <strong>✓ Utwórz</strong> w kroku 3 wywołuje pojedynczą RPC <code>fn_create_season_with_skeletons(p_code, p_dates, p_carryover_fields, p_scoring_config, p_skeleton_kinds)</code> — wszystko w jednej transakcji.</li>
+    <li><strong>Anulowanie</strong> w dowolnym kroku — frontend stan resetuje, backend nigdy nie został wywołany. Jak gdyby nigdy nic.</li>
+  </ul>
+
+  <h4>Zachowane (EXISTING)</h4>
+  <ul>
+    <li><span class="ok">✓</span> Lista sezonów + EDIT/DELETE</li>
+    <li><span class="ok">✓</span> ScoringConfigEditor (bez zmian; jedyna różnica — wywoływany z kreatora, nie z osobnego przycisku przy tworzeniu)</li>
+    <li><span class="ok">✓</span> Checkbox EVF toggle (ADR-017)</li>
+    <li><span class="ok">✓</span> Kaskada usunięcia sezonu (na <code>tbl_event</code> + <code>tbl_tournament</code>)</li>
+  </ul>
+
+  <h4>Nowe w Phase 3 <span class="new">(4 dodatki)</span></h4>
+  <ul>
+    <li><span class="new">★</span> <strong>Pole <code>int_carryover_days</code></strong> w kreatorze (krok 1) i w edycji (default 366)</li>
+    <li><span class="new">★</span> <strong>Pole <code>enum_european_event_type</code></strong> w kreatorze (krok 1) i w edycji (segmented: — / IMEW / DMEW)</li>
+    <li><span class="new">★</span> <strong>3-step kreator</strong> nowego sezonu — atomowa transakcja</li>
+    <li><span class="new">★</span> <strong>Sekcja boxów szkieletów</strong> w EDIT form — kalendarzowy styl, kolorowane per typ, badge "🦴 CREATED" na każdym, link "↶ Cofnij całość" do pełnej regeneracji</li>
+  </ul>
+
+  <h4>Pierwszy sezon w systemie (no prior to carry from)</h4>
+  <ul>
+    <li>Krok 3 podglądu: pokazuje listę z notą <em>"Brak poprzedniego sezonu — szkielety zostaną utworzone z <code>id_prior_event = NULL</code>"</em></li>
+    <li>Domyślne ilości: 5 PPW, 9 PEW (bez miast), 1 MPW, 1 MSW, IMEW lub DMEW per ustawienie. Admin ręcznie uzupełni miasta po utworzeniu.</li>
+  </ul>
+
+  <h4>"↶ Cofnij całość" — semantyka</h4>
+  <ul>
+    <li>Wywołuje RPC <code>fn_revert_season_init(p_id_season)</code> która usuwa wszystkie szkielety + scoring config + sam sezon w jednej transakcji</li>
+    <li>Działa <strong>tylko</strong> jeśli żaden szkielet nie został podniesiony do <code>PLANNED</code> ani powyżej (= sezon nigdy nie został "uruchomiony")</li>
+    <li>Po cofnięciu admin może uruchomić kreator ponownie z poprawionymi ustawieniami</li>
+  </ul>
+
+  <h4>EN preview (po przełączeniu 🇬🇧)</h4>
+  <table>
+    <tr><th>PL</th><th>EN</th></tr>
+    <tr><td>+ Dodaj sezon</td><td>+ Add season</td></tr>
+    <tr><td>Krok 1/2/3</td><td>Step 1/2/3</td></tr>
+    <tr><td>Tożsamość sezonu + carry-over</td><td>Season identity + carry-over</td></tr>
+    <tr><td>Konfiguracja punktacji</td><td>Scoring config</td></tr>
+    <tr><td>Podgląd szkieletów</td><td>Skeleton preview</td></tr>
+    <tr><td>Anuluj wszystko</td><td>Cancel everything</td></tr>
+    <tr><td>← Wstecz / Dalej →</td><td>← Back / Next →</td></tr>
+    <tr><td>✓ Utwórz sezon + 17 szkieletów</td><td>✓ Create season + 17 skeletons</td></tr>
+    <tr><td>🦴 Szkielety wygenerowane przez kreator</td><td>🦴 Skeletons generated by wizard</td></tr>
+    <tr><td>↶ Cofnij całość</td><td>↶ Revert all</td></tr>
+    <tr><td>Cel parytetu Day-1</td><td>Day-1 parity goal</td></tr>
+    <tr><td>Brak poprzedniego sezonu</td><td>No prior season</td></tr>
+  </table>
+</div>
+
+</body>
+</html>

@@ -53,3 +53,23 @@ BEGIN
   END IF;
 END;
 $phase2$;
+
+-- PEW-LIÈGE-2025-2026: event held; sabre weapons had no entrants and results
+-- cannot be retrieved. Mark event COMPLETED while leaving the empty F-SABRE /
+-- M-SABRE child tournaments in place (matches the PEW-SPORTHALLE / SALLEJEANZ
+-- pattern: COMPLETED event with weapon slots that had zero participants).
+-- Walk the status sequence to satisfy the transition trigger
+-- (PLANNED → IN_PROGRESS → SCORED → COMPLETED).
+DO $liege$
+DECLARE
+  v_id INT;
+BEGIN
+  SELECT id_event INTO v_id FROM tbl_event WHERE txt_code = 'PEW-LIÈGE-2025-2026';
+  IF v_id IS NULL THEN RETURN; END IF;
+  IF (SELECT enum_status::TEXT FROM tbl_event WHERE id_event = v_id) = 'PLANNED' THEN
+    UPDATE tbl_event SET enum_status = 'IN_PROGRESS' WHERE id_event = v_id;
+    UPDATE tbl_event SET enum_status = 'SCORED'      WHERE id_event = v_id;
+    UPDATE tbl_event SET enum_status = 'COMPLETED'   WHERE id_event = v_id;
+  END IF;
+END;
+$liege$;

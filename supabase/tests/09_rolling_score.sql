@@ -267,9 +267,9 @@ SELECT is(
 );
 
 -- R.14 — p_rolling=FALSE regression — no carry-over, no IMEW in current season
--- PPW best-4 (in-test state: PPW4 reinserted, PPW5 empty) = 305.07
+-- PPW best-4 (in-test state: PPW4 reinserted, PPW5 empty) = 356.92
 -- PEW/MEW/MSW best-3: 143.16+138.87+98.96 = 380.99 (Salzburg PEW7 promoted 3rd slot)
--- Total: 305.07+380.99=686.06
+-- Total: 356.92+380.99=686.06
 SELECT is(
   (SELECT total_score FROM fn_ranking_kadra(
     'EPEE', 'M', 'V2',

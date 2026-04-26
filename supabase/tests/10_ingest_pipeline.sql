@@ -517,8 +517,13 @@ BEGIN
 
   -- Create current season — starts after CARRY-PREV ends
   -- (bool_active is auto-derived by trigger; tests use explicit season ID)
-  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
-  VALUES ('CARRY-CURR', '2028-09-01', '2029-06-30', FALSE)
+  -- Phase 3 flipped the column DEFAULT to FK; this fixture is intentionally
+  -- written for the CODE engine (carry-over via txt_code prefix matching, no
+  -- id_prior_event linkage), so pin enum_carryover_engine here to keep the
+  -- test scope honest.
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active, enum_carryover_engine)
+  VALUES ('CARRY-CURR', '2028-09-01', '2029-06-30', FALSE,
+          'EVENT_CODE_MATCHING'::enum_event_carryover_engine)
   RETURNING id_season INTO v_curr_season;
 
   -- Both seasons need scoring_config with json_ranking_rules (JSONB path)
