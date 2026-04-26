@@ -76,14 +76,16 @@ SELECT is(
 UPDATE tbl_season SET enum_carryover_engine = 'EVENT_FK_MATCHING'
 WHERE txt_code = 'SPWS-2025-2026';
 
-SELECT throws_like(
+-- D.7: After Phase 1B (FK engine implemented), dispatcher routes to FK engine
+-- without raising. The "not yet implemented" placeholder from Phase 1A has
+-- been replaced by an actual call to fn_ranking_ppw_event_fk_matching.
+SELECT lives_ok(
   $$ SELECT * FROM fn_ranking_ppw(
        'EPEE'::enum_weapon_type, 'M'::enum_gender_type, 'V2'::enum_age_category,
        (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
        p_rolling := TRUE
      ) $$,
-  '%not yet implemented%',
-  'D.7: dispatcher raises "not yet implemented" when engine is EVENT_FK_MATCHING'
+  'D.7: dispatcher routes EVENT_FK_MATCHING to FK engine without raising (Phase 1B)'
 );
 
 -- Restore default engine for safety (ROLLBACK also cleans up)

@@ -61,7 +61,8 @@ schema_paths = []
 # If enabled, seeds the database after migrations during a db reset.
 enabled = true
 # Single monolithic PROD dump (ADR-036). Updated by ./scripts/export-prod.sh
-sql_paths = ["./seed_prod_latest.sql"]
+# seed_post_backfill.sql runs Phase 1B fn_backfill_id_prior_event() after seed
+sql_paths = ["./seed_prod_latest.sql", "./seed_post_backfill.sql"]
 
 [db.network_restrictions]
 # Enable management of network restrictions.

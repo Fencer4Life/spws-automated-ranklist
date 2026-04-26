@@ -1,6 +1,6 @@
 # ADR-042: Per-season carry-over engine selection via dispatcher pattern
 
-**Status:** Accepted (Phase 1A); Phase 1B will populate the EVENT_FK_MATCHING engine
+**Status:** Accepted (Phase 1A + Phase 1B implemented; default engine remains EVENT_CODE_MATCHING per season; admin opts in)
 **Date:** 2026-04-25
 **Relates to:** ADR-018 (Rolling Score for Active Season), ADR-021 (IMEW biennial carry-over)
 

@@ -1,7 +1,18 @@
 # ADR-021: IMEW Biennial Carry-Over
 
-**Status:** Accepted
+**Status:** Accepted; **amended 2026-04-26 by ADR-042** (mechanism updated to FK-based when EVENT_FK_MATCHING engine is active)
 **Date:** 2026-04-04 (M10)
+
+## Amendment (2026-04-26 — ADR-042 Phase 1B)
+
+This ADR's *rule* — "IMEW results carry biennially" — is unchanged.
+
+The *mechanism* is now engine-dependent (per `tbl_season.enum_carryover_engine`):
+
+- **EVENT_CODE_MATCHING** (legacy, default): rules-based prefix matching as documented below. Type in `rules_types` AND prefix not in `completed_positions` → carry. Works automatically for biennial events because off-year seasons have no event with the matching prefix.
+- **EVENT_FK_MATCHING** (Phase 1B opt-in): explicit `tbl_event.id_prior_event` FK linkage. Biennial carry requires a placeholder current-season event whose `id_prior_event` points to last season's IMEW. Until Phase 3 ships `fn_init_season` (which auto-creates these placeholders), admin must manually insert/link placeholders for biennial events. Without the explicit link, biennial carry-over does NOT fire under FK engine.
+
+The A/B comparison helper (`fn_compare_carryover_engines`) surfaces this divergence pre-flip so admin can fix data first.
 
 ## Context
 
