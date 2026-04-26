@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Admin Event UI — CREATED status visibility (4 options)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+  h1 { text-align: center; font-size: 22px; margin-bottom: 6px; color: #222; }
+  .subtitle { text-align: center; color: #888; font-size: 13px; margin-bottom: 24px; }
+
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; max-width: 1200px; margin: 0 auto; }
+  .view { background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); overflow: hidden; }
+  .view-header { background: #4a90d9; color: #fff; padding: 10px 14px; font-size: 14px; font-weight: 700; }
+  .view-desc { background: #f7f9fc; padding: 8px 14px; font-size: 12px; color: #555; border-bottom: 1px solid #eee; line-height: 1.5; }
+  .view-body { padding: 12px 14px; min-height: 280px; }
+
+  .panel-toggle { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #eef4fb; border: 1px solid #cfdef0; border-radius: 6px; font-size: 13px; cursor: pointer; margin-bottom: 12px; user-select: none; }
+  .panel-toggle:hover { background: #e1ecf6; }
+  .panel-toggle .chevron { font-size: 10px; }
+  .panel-toggle .count { font-weight: 700; color: #2a6faa; }
+
+  .event-row { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid #e0e6ed; border-radius: 5px; margin-bottom: 6px; background: #fff; }
+  .event-row.created { background: #fafbfc; border-style: dashed; opacity: 0.85; }
+  .event-row.planned   { border-left: 3px solid #4a90d9; }
+  .event-row.completed { border-left: 3px solid #1a7f37; background: #f4faf6; }
+  .event-row.scored    { border-left: 3px solid #b07d2b; background: #fdfaf0; }
+  .event-row.created   { border-left: 3px dashed #aaa; }
+  .ev-code  { font-family: 'SF Mono', monospace; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; min-width: 70px; text-align: center; }
+  .ev-code.pew { background: #deedf8; color: #2a6faa; }
+  .ev-code.ppw { background: #e6f4ea; color: #1a7f37; }
+  .ev-code.mpw { background: #e6f4ea; color: #1a7f37; }
+  .ev-code.imew, .ev-code.msw { background: #faf3e0; color: #8a6d1b; }
+  .ev-name { flex: 1; font-size: 13px; }
+  .ev-name .city { font-weight: 600; }
+  .ev-name .empty { color: #aaa; font-style: italic; }
+  .ev-date { font-size: 12px; color: #666; min-width: 60px; }
+  .ev-status { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 700; text-transform: uppercase; }
+  .status-created { background: #e8e8e8; color: #888; }
+  .status-planned { background: #e1f0ff; color: #1a6fbf; }
+  .status-completed { background: #e6f4ea; color: #1a7f37; }
+  .status-scored { background: #fff4e6; color: #b07d2b; }
+
+  .section-divider { font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 1px; padding: 14px 0 6px; border-top: 1px solid #eee; margin-top: 12px; }
+  .skeleton-row { opacity: 0.7; }
+
+  .filter-bar { display: flex; gap: 8px; align-items: center; padding: 8px 0 12px; border-bottom: 1px solid #eee; margin-bottom: 12px; }
+  .filter-chip { padding: 4px 10px; border: 1px solid #ccc; border-radius: 14px; font-size: 11px; cursor: pointer; background: #fff; }
+  .filter-chip.active { background: #4a90d9; color: #fff; border-color: #4a90d9; }
+
+  .tab-bar { display: flex; gap: 0; border-bottom: 2px solid #eee; margin-bottom: 12px; }
+  .tab { padding: 8px 14px; font-size: 12px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; color: #888; }
+  .tab.active { color: #4a90d9; border-bottom-color: #4a90d9; }
+  .tab .badge { background: #4a90d9; color: #fff; border-radius: 10px; font-size: 10px; padding: 1px 6px; margin-left: 4px; }
+  .tab.muted .badge { background: #ccc; color: #555; }
+
+  .pros-cons { padding: 8px 14px; font-size: 11px; background: #fffbe6; border-top: 1px solid #f5dc7a; line-height: 1.5; }
+  .pros-cons .pro { color: #1a7f37; }
+  .pros-cons .con { color: #b03020; }
+</style>
+</head>
+<body>
+
+<h1>Admin Event UI — CREATED status visibility</h1>
+<p class="subtitle">4 layout options. Pick one (or mix). All show real PPW + PEW examples for SPWS-2025-2026.</p>
+
+<div class="grid">
+
+  <!-- ============ OPTION 1: Bottom collapsible panel ============ -->
+  <div class="view">
+    <div class="view-header">Option 1 — Collapsible "Skeletons" panel at bottom</div>
+    <div class="view-desc">Live events fill the main list; CREATED slots collapsed at the bottom. Click to expand. Default state: collapsed (out of sight when not needed).</div>
+    <div class="view-body">
+
+      <!-- Active events -->
+      <div class="event-row planned">
+        <span class="ev-code pew">PEW9</span>
+        <span class="ev-name"><span class="city">Chania</span>, Greece</span>
+        <span class="ev-date">30.05.26</span>
+        <span class="ev-status status-planned">Planned</span>
+      </div>
+      <div class="event-row planned">
+        <span class="ev-code pew">PEW8</span>
+        <span class="ev-name"><span class="city">Salzburg</span>, Austria</span>
+        <span class="ev-date">18.04.26</span>
+        <span class="ev-status status-planned">Planned</span>
+      </div>
+      <div class="event-row scored">
+        <span class="ev-code ppw">PPW4</span>
+        <span class="ev-name"><span class="city">Gdansk</span>, Polska</span>
+        <span class="ev-date">07.03.26</span>
+        <span class="ev-status status-scored">Scored</span>
+      </div>
+      <div class="event-row completed">
+        <span class="ev-code pew">PEW6</span>
+        <span class="ev-name"><span class="city">Stockholm</span>, Sweden</span>
+        <span class="ev-date">14.03.26</span>
+        <span class="ev-status status-completed">Completed</span>
+      </div>
+
+      <!-- Collapsible skeleton panel -->
+      <div class="panel-toggle">
+        <span class="chevron">▶</span>
+        <span class="count">14 pending slots</span>
+        <span style="color:#666; font-size:12px;">— PEW10..15, IMEW, MPW...</span>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <span class="pro">+ Hidden by default; cleanest "live event" view</span><br>
+      <span class="pro">+ One click to access skeletons when filling them</span><br>
+      <span class="con">– Two clicks to edit a CREATED slot</span>
+    </div>
+  </div>
+
+  <!-- ============ OPTION 2: Tab-based separation ============ -->
+  <div class="view">
+    <div class="view-header">Option 2 — Tab bar (Live / Skeletons)</div>
+    <div class="view-desc">Two tabs. "Live" shows PLANNED+ events. "Skeletons" shows CREATED. Each tab has its own focused list.</div>
+    <div class="view-body">
+      <div class="tab-bar">
+        <div class="tab active">Live <span class="badge">12</span></div>
+        <div class="tab muted">Skeletons <span class="badge">14</span></div>
+        <div class="tab muted">All <span class="badge">26</span></div>
+      </div>
+
+      <div class="event-row planned">
+        <span class="ev-code pew">PEW9</span>
+        <span class="ev-name"><span class="city">Chania</span>, Greece</span>
+        <span class="ev-date">30.05.26</span>
+        <span class="ev-status status-planned">Planned</span>
+      </div>
+      <div class="event-row planned">
+        <span class="ev-code pew">PEW8</span>
+        <span class="ev-name"><span class="city">Salzburg</span>, Austria</span>
+        <span class="ev-date">18.04.26</span>
+        <span class="ev-status status-planned">Planned</span>
+      </div>
+      <div class="event-row scored">
+        <span class="ev-code ppw">PPW4</span>
+        <span class="ev-name"><span class="city">Gdansk</span>, Polska</span>
+        <span class="ev-date">07.03.26</span>
+        <span class="ev-status status-scored">Scored</span>
+      </div>
+      <div class="event-row completed">
+        <span class="ev-code pew">PEW6</span>
+        <span class="ev-name"><span class="city">Stockholm</span>, Sweden</span>
+        <span class="ev-date">14.03.26</span>
+        <span class="ev-status status-completed">Completed</span>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <span class="pro">+ Clean mental separation; live work isolated</span><br>
+      <span class="pro">+ "All" tab provides full view when needed</span><br>
+      <span class="con">– You have to remember to switch tabs to fix skeleton dates</span>
+    </div>
+  </div>
+
+  <!-- ============ OPTION 3: Filter chips with default-hide ============ -->
+  <div class="view">
+    <div class="view-header">Option 3 — Filter chips, CREATED hidden by default</div>
+    <div class="view-desc">All events live in one list. Filter chips at top default to hiding CREATED. Click "Skeletons" chip to surface them inline (sorted to bottom).</div>
+    <div class="view-body">
+      <div class="filter-bar">
+        <span class="filter-chip active">Planned</span>
+        <span class="filter-chip active">In progress</span>
+        <span class="filter-chip active">Scored</span>
+        <span class="filter-chip active">Completed</span>
+        <span class="filter-chip">+ Skeletons (14)</span>
+      </div>
+
+      <div class="event-row planned">
+        <span class="ev-code pew">PEW9</span>
+        <span class="ev-name"><span class="city">Chania</span>, Greece</span>
+        <span class="ev-date">30.05.26</span>
+        <span class="ev-status status-planned">Planned</span>
+      </div>
+      <div class="event-row planned">
+        <span class="ev-code pew">PEW8</span>
+        <span class="ev-name"><span class="city">Salzburg</span>, Austria</span>
+        <span class="ev-date">18.04.26</span>
+        <span class="ev-status status-planned">Planned</span>
+      </div>
+      <div class="event-row scored">
+        <span class="ev-code ppw">PPW4</span>
+        <span class="ev-name"><span class="city">Gdansk</span>, Polska</span>
+        <span class="ev-date">07.03.26</span>
+        <span class="ev-status status-scored">Scored</span>
+      </div>
+      <div class="event-row completed">
+        <span class="ev-code pew">PEW6</span>
+        <span class="ev-name"><span class="city">Stockholm</span>, Sweden</span>
+        <span class="ev-date">14.03.26</span>
+        <span class="ev-status status-completed">Completed</span>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <span class="pro">+ Single list; no mental mode-switching</span><br>
+      <span class="pro">+ Multi-status filtering for free</span><br>
+      <span class="con">– Slightly busier header bar</span>
+    </div>
+  </div>
+
+  <!-- ============ OPTION 4: Inline grouped sections ============ -->
+  <div class="view">
+    <div class="view-header">Option 4 — Inline grouped sections (skeletons at bottom, dimmed)</div>
+    <div class="view-desc">All events in one list, divided by status. Skeletons live at the bottom, dimmed but always visible. No toggles. WYSIWYG.</div>
+    <div class="view-body">
+      <div class="event-row planned">
+        <span class="ev-code pew">PEW9</span>
+        <span class="ev-name"><span class="city">Chania</span>, Greece</span>
+        <span class="ev-date">30.05.26</span>
+        <span class="ev-status status-planned">Planned</span>
+      </div>
+      <div class="event-row planned">
+        <span class="ev-code pew">PEW8</span>
+        <span class="ev-name"><span class="city">Salzburg</span>, Austria</span>
+        <span class="ev-date">18.04.26</span>
+        <span class="ev-status status-planned">Planned</span>
+      </div>
+      <div class="event-row scored">
+        <span class="ev-code ppw">PPW4</span>
+        <span class="ev-name"><span class="city">Gdansk</span>, Polska</span>
+        <span class="ev-date">07.03.26</span>
+        <span class="ev-status status-scored">Scored</span>
+      </div>
+      <div class="event-row completed">
+        <span class="ev-code pew">PEW6</span>
+        <span class="ev-name"><span class="city">Stockholm</span>, Sweden</span>
+        <span class="ev-date">14.03.26</span>
+        <span class="ev-status status-completed">Completed</span>
+      </div>
+
+      <div class="section-divider">— pending (CREATED) — 14 slots —</div>
+
+      <div class="event-row created skeleton-row">
+        <span class="ev-code pew">PEW10</span>
+        <span class="ev-name"><span class="empty">— pending —</span></span>
+        <span class="ev-date">—</span>
+        <span class="ev-status status-created">Created</span>
+      </div>
+      <div class="event-row created skeleton-row">
+        <span class="ev-code pew">PEW11</span>
+        <span class="ev-name"><span class="empty">— pending —</span></span>
+        <span class="ev-date">—</span>
+        <span class="ev-status status-created">Created</span>
+      </div>
+      <div class="event-row created skeleton-row">
+        <span class="ev-code imew">DMEW</span>
+        <span class="ev-name"><span class="empty">— pending —</span></span>
+        <span class="ev-date">—</span>
+        <span class="ev-status status-created">Created</span>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <span class="pro">+ Always-visible inventory; no clicks needed</span><br>
+      <span class="pro">+ Single scrollable surface; everything findable by Ctrl+F</span><br>
+      <span class="con">– Longer list; 5+ skeleton rows always-present</span>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1738,19 +1738,20 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-039](adr/039-stale-event-gate.md) | EVF Scraper Dedup Algorithm + Stale-Event Gate (amends ADR-028) | FR-58, FR-96, FR-97, ADR-028 |
 | [ADR-040](adr/040-multi-slot-event-urls.md) | Multi-Slot Event Result URLs with Compact-on-Save | FR-48, FR-98, ADR-028, ADR-029, ADR-030, ADR-036 |
 | [ADR-041](adr/041-edge-function-dispatch.md) | Server-Side Workflow Dispatch via Supabase Edge Function (no PAT in browser) | FR-99, ADR-029, ADR-025, ADR-026 |
+| [ADR-042](adr/042-carryover-engine-dispatcher.md) | Per-season carry-over engine selection via dispatcher pattern (Phase 1A; supersedes prefix-only mechanism in ADR-018) | ADR-018, ADR-021 |
 
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 293 assertions (4 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 33 ingest pipeline + 21 identity resolution + 13 EVF import + 5 fencer birth year + 9 cross-gender scoring + 7 ADR-040 multi-slot URLs).
+- pgTAP total: 301 assertions (4 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 33 ingest pipeline + 21 identity resolution + 13 EVF import + 5 fencer birth year + 9 cross-gender scoring + 7 ADR-040 multi-slot URLs + 8 ADR-042 dispatcher).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
-| pgTAP | 293 | 16 | `supabase/tests/` |
+| pgTAP | 301 | 17 | `supabase/tests/` |
 | pytest | 314 | 22 | `python/tests/` |
 | vitest | 290 | 25 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **904** | | |
+| **Total** | **912** | | |
 
 ### Coverage Summary
 
