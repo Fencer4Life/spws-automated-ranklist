@@ -73,3 +73,86 @@ BEGIN
   END IF;
 END;
 $liege$;
+
+-- Drop PEW-SPORTHALLE-2025-2026 (event 45 in seed): pre-allocator slug-format
+-- duplicate of Munich Dec 6, 2025 already represented under PEW3-2025-2026
+-- with proper url_results + correct field sizes. The duplicate has no URLs
+-- and POL-only int_participant_count, so the engine zeros all rows
+-- (e.g. Marcin Ganszczyk M-SABRE place 6 → score 0.00). Drop entirely; the
+-- five duplicate fencer-records survive in PEW3-V2-M-SABRE-2025-2026 et al.
+-- Two unique records (Ginzery V1 M-FOIL, Zylka V4 M-FOIL) intentionally
+-- dropped per admin decision — re-scrape later if needed.
+DO $drop_sporthalle$
+DECLARE
+  v_id INT;
+BEGIN
+  SELECT id_event INTO v_id FROM tbl_event WHERE txt_code = 'PEW-SPORTHALLE-2025-2026';
+  IF v_id IS NULL THEN RETURN; END IF;
+  DELETE FROM tbl_match_candidate
+   WHERE id_result IN (
+     SELECT r.id_result FROM tbl_result r
+       JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
+      WHERE t.id_event = v_id
+   );
+  DELETE FROM tbl_result
+   WHERE id_tournament IN (SELECT id_tournament FROM tbl_tournament WHERE id_event = v_id);
+  DELETE FROM tbl_tournament WHERE id_event = v_id;
+  DELETE FROM tbl_event      WHERE id_event = v_id;
+END;
+$drop_sporthalle$;
+
+-- PEW3-2024-2025 (Guildford / Orléans multi-slot): correct corrupted dt_start
+-- (was 2024-01-04 — year/month typo) and the txt_location typo (was 'Guilford').
+-- The earliest child tournament is 2024-12-07 (Guildford UK leg). dt_end stays
+-- 2025-01-04 — that's the genuine end of the multi-slot event span.
+DO $fix_guildford$
+BEGIN
+  UPDATE tbl_event
+     SET dt_start = '2024-12-07'::DATE,
+         txt_location = 'Guildford'
+   WHERE txt_code = 'PEW3-2024-2025'
+     AND (dt_start = '2024-01-04'::DATE OR txt_location = 'Guilford');
+END;
+$fix_guildford$;
+
+-- Tournament 380 (PEW3-V2-M-SABRE-2025-2026, Munich Dec 6 2025): the v2 ingest
+-- recorded int_participant_count=2 (POL-only count) instead of the true field
+-- size of 25 (verified against fencingworldwide.com/en/912306-2025/results/).
+-- Sister tournaments 382/384 already carry correct counts; only 380 was missed.
+-- Update count, then recompute scores so all entrants get the right place_pts.
+DO $fix_tourn_380$
+DECLARE
+  v_tid INT;
+BEGIN
+  SELECT id_tournament INTO v_tid
+    FROM tbl_tournament WHERE txt_code = 'PEW3-V2-M-SABRE-2025-2026';
+  IF v_tid IS NULL THEN RETURN; END IF;
+  UPDATE tbl_tournament SET int_participant_count = 25
+   WHERE id_tournament = v_tid AND int_participant_count <> 25;
+  PERFORM fn_calc_tournament_scores(v_tid);
+END;
+$fix_tourn_380$;
+
+-- Phase 4 (ADR-046): re-run splitter after seed loads so LOCAL DB matches the
+-- post-migration shape that PROD/CERT see when the migration applies against
+-- their existing data. Idempotent — safe to re-run.
+SELECT * FROM fn_split_pew_by_weapon();
+SELECT fn_backfill_id_prior_event();
+
+-- Phase 4 location fixes for events whose splitter-kept cluster is at a
+-- different city than the original parent's txt_location indicated.
+-- Munich Dec hosts the early PEW3 weekend in both seasons; Guildford Jan
+-- hosts the split-out cluster (which was originally bundled under PEW3).
+DO $phase4_locations$
+BEGIN
+  UPDATE tbl_event
+     SET txt_location = 'Munich', txt_country = 'Germany'
+   WHERE txt_code IN ('PEW3fs-2024-2025', 'PEW3s-2025-2026')
+     AND (txt_location IS DISTINCT FROM 'Munich' OR txt_country IS DISTINCT FROM 'Germany');
+
+  UPDATE tbl_event
+     SET txt_location = 'Guildford', txt_country = 'Great Britain'
+   WHERE txt_code IN ('PEW11e-2024-2025', 'PEW10efs-2025-2026')
+     AND txt_location IS NULL;
+END;
+$phase4_locations$;

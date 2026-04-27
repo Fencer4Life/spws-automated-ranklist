@@ -86,8 +86,8 @@ CREATE TEMP TABLE _init_result_imew AS
 -- ph3.1 — skeleton count: 5 PPW + 9 PEW (numbered) + 1 MPW + 1 MSW + 1 IMEW = 17
 SELECT is(
   (SELECT skeletons_created FROM _init_result_imew),
-  17,
-  'ph3.1: fn_init_season returns 17 skeletons for typical IMEW season'
+  23,
+  'ph3.1: fn_init_season returns 23 skeletons for typical IMEW season (5 PPW + 15 PEW + MPW + MSW + IMEW; PEW count post-Phase4 split)'
 );
 
 -- ph3.2 — every skeleton event has enum_status='CREATED'
@@ -102,9 +102,9 @@ SELECT is(
 -- ph3.3 — PEW skeletons copy txt_location + txt_country from prior
 SELECT is(
   (SELECT txt_location FROM tbl_event
-     WHERE txt_code = 'PEW1-2026-2027'),
-  (SELECT txt_location FROM tbl_event WHERE txt_code = 'PEW1-2025-2026'),
-  'ph3.3: PEW1 skeleton inherits txt_location from prior PEW1'
+     WHERE txt_code = 'PEW1efs-2026-2027'),
+  (SELECT txt_location FROM tbl_event WHERE txt_code = 'PEW1efs-2025-2026'),
+  'ph3.3: PEW1 skeleton inherits txt_location from prior PEW1efs'
 );
 
 -- ph3.4 — PPW skeletons have NULL location (rotating venues each season)
@@ -131,8 +131,8 @@ SELECT is(
   (SELECT COUNT(*)::INT FROM tbl_tournament t
      JOIN tbl_event e ON e.id_event = t.id_event
     WHERE e.id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027')),
-  17 * 6,
-  'ph3.6: 17 skeletons × 6 child tournaments = 102 total tournaments'
+  23 * 6,
+  'ph3.6: 23 skeletons × 6 child tournaments = 138 total tournaments'
 );
 
 -- ph3.7 — IMEW skeleton present when enum_european_event_type='IMEW'
@@ -262,7 +262,7 @@ ROLLBACK TO SAVEPOINT s_parity;
 
 SAVEPOINT s_create;
 
--- ph3.13 — happy path: returns (id, 17), season + scoring + skeletons exist
+-- ph3.13 — happy path: returns (id, 23), season + scoring + skeletons exist
 SELECT is(
   (SELECT skeletons_created FROM fn_create_season_with_skeletons(
     'SPWS-2027-2028',
@@ -274,8 +274,8 @@ SELECT is(
     '{}'::JSONB,
     FALSE
   )),
-  17,
-  'ph3.13: fn_create_season_with_skeletons returns 17 skeletons (happy path)'
+  23,
+  'ph3.13: fn_create_season_with_skeletons returns 23 skeletons (happy path; post-Phase4 PEW count)'
 );
 
 ROLLBACK TO SAVEPOINT s_create;
@@ -333,13 +333,13 @@ INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_european_event_type)
 SELECT fn_init_season((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
 
 SELECT fn_update_event(
-  (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1-2026-2027'),
+  (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1efs-2026-2027'),
   'PEW1B-2026-2027',               -- p_name (renamed too)
-  (SELECT txt_location FROM tbl_event WHERE txt_code = 'PEW1-2026-2027'),
-  (SELECT dt_start FROM tbl_event WHERE txt_code = 'PEW1-2026-2027'),
-  (SELECT dt_end FROM tbl_event WHERE txt_code = 'PEW1-2026-2027'),
-  (SELECT url_event FROM tbl_event WHERE txt_code = 'PEW1-2026-2027'),
-  (SELECT txt_country FROM tbl_event WHERE txt_code = 'PEW1-2026-2027'),
+  (SELECT txt_location FROM tbl_event WHERE txt_code = 'PEW1efs-2026-2027'),
+  (SELECT dt_start FROM tbl_event WHERE txt_code = 'PEW1efs-2026-2027'),
+  (SELECT dt_end FROM tbl_event WHERE txt_code = 'PEW1efs-2026-2027'),
+  (SELECT url_event FROM tbl_event WHERE txt_code = 'PEW1efs-2026-2027'),
+  (SELECT txt_country FROM tbl_event WHERE txt_code = 'PEW1efs-2026-2027'),
   NULL, NULL, NULL,
   NULL, NULL, NULL,
   NULL, NULL,

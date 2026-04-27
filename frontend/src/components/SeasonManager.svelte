@@ -334,7 +334,7 @@
   }
 
   function codeKindLabel(code: string): string {
-    const m = code.match(/^([A-Z]+\d*)/)
+    const m = code.match(/^([A-Z]+\d*[efs]*)/)
     return m ? m[1] : code
   }
 </script>

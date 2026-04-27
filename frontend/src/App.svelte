@@ -811,7 +811,7 @@
     const priorEvents = await fetchCalendarEvents(priorSeason.id_season)
     const breakdown: Required<SkeletonByKind> = {
       PPW: priorEvents.filter((e) => /^PPW\d+-/.test(e.txt_code)).length,
-      PEW: priorEvents.filter((e) => /^PEW\d+-/.test(e.txt_code)).length,
+      PEW: priorEvents.filter((e) => /^PEW\d+[efs]*-/.test(e.txt_code)).length,
       MPW: 1,
       MSW: 1,
       IMEW: 0,
