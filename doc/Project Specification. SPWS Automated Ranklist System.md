@@ -1744,19 +1744,20 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-043](adr/043-evf-event-allocator.md) | EVF event code allocator + classifier (Phase 2; amends ADR-028: drops MEW kind, EVF organizer, FK auto-link via 3-step ladder) | FR-58, ADR-021, ADR-028, ADR-039, ADR-042 |
 | [ADR-044](adr/044-phase3-wizard.md) | Phase 3 Admin UI + Season-Init Wizard (atomic transaction model; supersedes carry-over admin runbook §3, §4, §5, §6, §9) | FR-100, ADR-018, ADR-021, ADR-042, ADR-043 |
 | [ADR-045](adr/045-engine-selector-default-flip.md) | Carry-over Engine Selectable Per-Season via Admin UI; Default Flipped to FK | FR-101, ADR-042, ADR-044 |
+| [ADR-046](adr/046-pew-weapon-suffix.md) | PEW event codes carry weapon-letter suffix (`PEW{N}{efs}-{season}`); one event = one physical weekend; splitter migration unbundles bundled events | ADR-043, ADR-044 |
 
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 369 assertions (4 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 33 ingest pipeline + 21 identity resolution + 13 EVF import + 5 fencer birth year + 9 cross-gender scoring + 7 ADR-040 multi-slot URLs + 8 ADR-042 dispatcher + 28 ADR-042 FK carryover + 15 ADR-043 EVF allocator + 25 Phase 3a wizard backend).
+- pgTAP total: 379 assertions (4 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 33 ingest pipeline + 21 identity resolution + 13 EVF import + 5 fencer birth year + 9 cross-gender scoring + 7 ADR-040 multi-slot URLs + 8 ADR-042 dispatcher + 28 ADR-042 FK carryover + 15 ADR-043 EVF allocator + 25 Phase 3a wizard backend + 10 ADR-046 PEW weapon-suffix).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
-| pgTAP | 369 | 20 | `supabase/tests/` |
+| pgTAP | 379 | 21 | `supabase/tests/` |
 | pytest | 324 | 23 | `python/tests/` |
 | vitest | 331 | 26 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **1031** | | |
+| **Total** | **1041** | | |
 
 ### Coverage Summary
 

@@ -298,8 +298,8 @@ SELECT is(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
   ) WHERE bool_carried_over = TRUE),
-  2,
-  'R.15: fn_fencer_scores_rolling — ZIELIŃSKI has 2 carried-over rows (MPW + IMEW)'
+  3,
+  'R.15: fn_fencer_scores_rolling — ZIELIŃSKI has 3 carried-over rows (MPW + IMEW + PEW14e; epee circuit position not completed in current per ADR-046 per-weapon split)'
 );
 
 -- R.16 — current rows have bool_carried_over = FALSE
@@ -342,8 +342,8 @@ SELECT is(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
   ) WHERE bool_carried_over = TRUE),
-  1,
-  'R.18: COMPLETED IMEW blocks carry — only MPW remains carried'
+  2,
+  'R.18: COMPLETED IMEW blocks carry — MPW + PEW14e remain (post-Phase4: epee PEW14 position not completed in current season)'
 );
 
 -- Clean up: remove test IMEW event
