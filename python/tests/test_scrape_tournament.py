@@ -5,11 +5,27 @@ Tests 3.17a–3.17d: scrape tournament results from url_results.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def _ftl_auth_patch(mock_resp):
+    """Build a context-manager patcher for get_authed_ftl_client that yields a
+    fake client whose `.get(...)` returns mock_resp. Used by tests that exercise
+    the FTL branch — the live code now goes through ftl_auth (post-2026-04 login wall)."""
+    fake_client = MagicMock()
+    fake_client.get.return_value = mock_resp
+
+    @contextmanager
+    def _factory(timeout: float = 15.0):
+        yield fake_client
+
+    return patch("python.tools.scrape_tournament.get_authed_ftl_client", _factory)
 
 
 class TestScrapeTournament:
@@ -22,13 +38,12 @@ class TestScrapeTournament:
         # FTL JSON fixture
         ftl_json = (FIXTURES / "ftl" / "data_EEC7379682834E588E5B267447C7266A.json").read_text()
 
-        with patch("python.tools.scrape_tournament.httpx") as mock_httpx:
-            mock_resp = MagicMock()
-            mock_resp.status_code = 200
-            mock_resp.json.return_value = __import__("json").loads(ftl_json)
-            mock_resp.text = ftl_json
-            mock_httpx.get.return_value = mock_resp
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = __import__("json").loads(ftl_json)
+        mock_resp.text = ftl_json
 
+        with _ftl_auth_patch(mock_resp):
             results = scrape_and_parse(
                 "https://www.fencingtimelive.com/events/results/EEC7379682834E588E5B267447C7266A"
             )
@@ -141,18 +156,26 @@ def test_every_scraper_returns_full_field_size(platform, url, fixture, expected_
 
     content = fixture.read_bytes() if fixture.suffix == ".json" else fixture.read_text()
 
-    with patch("python.tools.scrape_tournament.httpx") as mock_httpx:
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        if fixture.suffix == ".json":
-            import json as _json
-            mock_resp.json.return_value = _json.loads(content)
-            mock_resp.text = content.decode() if isinstance(content, bytes) else content
-        else:
-            mock_resp.text = content
-            mock_resp.json.return_value = None
-        mock_httpx.get.return_value = mock_resp
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    if fixture.suffix == ".json":
+        import json as _json
+        mock_resp.json.return_value = _json.loads(content)
+        mock_resp.text = content.decode() if isinstance(content, bytes) else content
+    else:
+        mock_resp.text = content
+        mock_resp.json.return_value = None
 
+    if platform == "ftl":
+        # FTL goes through the auth client (post-2026-04 login wall)
+        ctx = _ftl_auth_patch(mock_resp)
+    else:
+        # Other platforms still use plain httpx.get
+        httpx_patch = patch("python.tools.scrape_tournament.httpx")
+        ctx = httpx_patch
+    with ctx as patched:
+        if platform != "ftl":
+            patched.get.return_value = mock_resp
         results = scrape_and_parse(url)
 
     assert len(results) == expected_n, (

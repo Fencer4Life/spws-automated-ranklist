@@ -1753,10 +1753,10 @@ Every functional and non-functional requirement is listed below with its source 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
 | pgTAP | 369 | 20 | `supabase/tests/` |
-| pytest | 317 | 22 | `python/tests/` |
+| pytest | 324 | 23 | `python/tests/` |
 | vitest | 331 | 26 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **1024** | | |
+| **Total** | **1031** | | |
 
 ### Coverage Summary
 

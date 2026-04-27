@@ -30,6 +30,8 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ github.event.inputs.target == 'prod' && secrets.SUPABASE_PROD_SERVICE_ROLE_KEY || secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          FTL_USERNAME: ${{ secrets.FTL_USERNAME }}
+          FTL_PASSWORD: ${{ secrets.FTL_PASSWORD }}
         run: |
           python -m python.tools.populate_tournament_urls \
             --event-code "${{ github.event.inputs.event_code }}" \

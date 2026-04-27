@@ -18,6 +18,7 @@ import httpx
 
 from python.scrapers.base import detect_platform
 from python.scrapers.ftl import parse_ftl_json
+from python.scrapers.ftl_auth import get_authed_ftl_client
 from python.scrapers.engarde import parse_engarde_html
 from python.scrapers.fourfence import parse_fourfence_html
 from python.scrapers.dartagnan import parse_dartagnan_rankings_html
@@ -43,7 +44,8 @@ def scrape_and_parse(url: str | None) -> list[dict]:
         if FTL_RESULTS_PREFIX in url and "/data/" not in url:
             uuid = url.split(FTL_RESULTS_PREFIX)[-1].split("?")[0].split("#")[0]
             data_url = f"{FTL_DATA_PREFIX}{uuid}"
-        resp = httpx.get(data_url, follow_redirects=True, timeout=15)
+        with get_authed_ftl_client() as client:
+            resp = client.get(data_url)
         resp.raise_for_status()
         return parse_ftl_json(resp.json())
 
