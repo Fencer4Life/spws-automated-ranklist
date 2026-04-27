@@ -160,31 +160,32 @@ SEASON = "2025-2026"
 
 def scrape_all() -> list[dict[str, str]]:
     """Fetch all event schedule pages and return tournament URL mappings."""
-    import httpx
+    from python.scrapers.ftl_auth import get_authed_ftl_client
 
     mappings = []
-    for event_prefix, url in EVENT_URLS.items():
-        print(f"Fetching {event_prefix}: {url}", file=sys.stderr)
-        resp = httpx.get(url, follow_redirects=True, timeout=15)
-        resp.raise_for_status()
+    with get_authed_ftl_client() as client:
+        for event_prefix, url in EVENT_URLS.items():
+            print(f"Fetching {event_prefix}: {url}", file=sys.stderr)
+            resp = client.get(url)
+            resp.raise_for_status()
 
-        tournaments = parse_event_schedule(resp.text)
-        for t in tournaments:
-            parsed = parse_tournament_name(t["name"])
-            if parsed is None:
-                print(f"  SKIP: {t['name']}", file=sys.stderr)
-                continue
-            # Handle combined categories (list of tuples) and single (tuple)
-            entries = parsed if isinstance(parsed, list) else [parsed]
-            for weapon, gender, category in entries:
-                code = build_tournament_code(event_prefix, weapon, gender, category, SEASON)
-                result_url = build_result_url(t["uuid"])
-                mappings.append({
-                    "tournament_code": code,
-                    "url_results": result_url,
-                    "ftl_name": t["name"],
-                })
-                print(f"  {code} → {t['uuid']}", file=sys.stderr)
+            tournaments = parse_event_schedule(resp.text)
+            for t in tournaments:
+                parsed = parse_tournament_name(t["name"])
+                if parsed is None:
+                    print(f"  SKIP: {t['name']}", file=sys.stderr)
+                    continue
+                # Handle combined categories (list of tuples) and single (tuple)
+                entries = parsed if isinstance(parsed, list) else [parsed]
+                for weapon, gender, category in entries:
+                    code = build_tournament_code(event_prefix, weapon, gender, category, SEASON)
+                    result_url = build_result_url(t["uuid"])
+                    mappings.append({
+                        "tournament_code": code,
+                        "url_results": result_url,
+                        "ftl_name": t["name"],
+                    })
+                    print(f"  {code} → {t['uuid']}", file=sys.stderr)
 
     return mappings
 

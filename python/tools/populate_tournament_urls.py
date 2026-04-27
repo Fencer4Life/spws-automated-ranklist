@@ -340,7 +340,9 @@ def discover_tournament_urls(event_url: str) -> list[dict]:
     platform = detect_platform(event_url)
 
     if platform == "ftl":
-        resp = httpx.get(event_url, follow_redirects=True, timeout=15)
+        from python.scrapers.ftl_auth import get_authed_ftl_client
+        with get_authed_ftl_client() as client:
+            resp = client.get(event_url)
         resp.raise_for_status()
         return _discover_ftl(resp.text)
 
