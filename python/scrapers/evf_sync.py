@@ -247,6 +247,7 @@ def sync_results(
     cal_events: list[dict] | None = None,
     event_code: str = "",
     dry_run: bool = False,
+    filter_stale: bool = False,
 ) -> None:
     """Discover EVF events with results, scrape, and compare with CERT."""
     season = _get_active_season(ref, token)
@@ -293,6 +294,27 @@ def sync_results(
 
         events_with_results = [e for e in evf_events if e["has_results"] and not e["is_team"]]
         print(f"  {len(events_with_results)} have individual results")
+
+        if filter_stale:
+            # Skip events whose CERT row already has any tbl_result rows under
+            # any child tournament (status SCORED/COMPLETED) so the daily cron
+            # doesn't re-scrape what's already ingested. Keep only events whose
+            # date is past dt_start AND their CERT row is empty (no results).
+            scored_dates = _management_query(ref, token,
+                f"SELECT DISTINCT e.dt_start::TEXT AS dt FROM tbl_event e "
+                f"JOIN tbl_tournament t ON t.id_event = e.id_event "
+                f"JOIN tbl_result r ON r.id_tournament = t.id_tournament "
+                f"WHERE e.id_season = {season['id_season']}"
+            )
+            already_scored = {r["dt"] for r in scored_dates}
+            before = len(events_with_results)
+            events_with_results = [
+                e for e in events_with_results
+                if e["date"] not in already_scored
+            ]
+            skipped = before - len(events_with_results)
+            print(f"  filter-stale: {skipped} skipped (already scored), "
+                  f"{len(events_with_results)} eligible")
 
         for e in evf_events:
             tag = "RESULTS" if e["has_results"] else "NO DATA"
@@ -636,6 +658,8 @@ def main() -> None:
     parser.add_argument("--mode", choices=["calendar", "results", "both"], default="both")
     parser.add_argument("--event-code", default="", help="SPWS event code for single event results")
     parser.add_argument("--dry-run", action="store_true", help="Compare only, don't ingest")
+    parser.add_argument("--filter-stale", action="store_true",
+                        help="Results mode: skip events that already have results in CERT.")
     args = parser.parse_args()
 
     ref = os.environ.get("SUPABASE_CERT_REF", "")
@@ -653,7 +677,8 @@ def main() -> None:
         cal_events = sync_calendar(ref, token, bot_token, chat_id, args.dry_run)
 
     if args.mode in ("results", "both"):
-        sync_results(ref, token, bot_token, chat_id, cal_events, args.event_code, args.dry_run)
+        sync_results(ref, token, bot_token, chat_id, cal_events, args.event_code,
+                     args.dry_run, args.filter_stale)
 
 
 if __name__ == "__main__":

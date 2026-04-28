@@ -772,3 +772,128 @@ class TestEvfPhase2Allocator:
         assert "code" not in evt, f"payload must not include `code`; got keys: {list(evt.keys())}"
         assert "name" in evt and evt["name"]
         assert "is_team" in evt
+
+
+# =============================================================================
+# evf.43: --filter-stale skips events whose CERT row already has results
+# =============================================================================
+class TestFilterStale:
+    """sync_results(filter_stale=True) drops events whose `date` matches a
+    `dt_start` that already has tbl_result rows under any child tournament.
+    Daily cron uses this so stable history isn't re-scraped.
+    """
+
+    def test_filter_stale_skips_already_scored(self, monkeypatch):
+        from python.scrapers import evf_sync
+
+        scrape_calls: list[int] = []  # records each evf_id passed to scrape_event_results
+
+        # Two events: 2026-03-28 already scored; 2026-04-15 fresh.
+        evf_events = [
+            {"evf_id": 87, "name": "Already Scored", "date": "2026-03-28",
+             "location": "X", "country": "Poland", "weapons": ["SABRE"],
+             "categories": ["V2"], "competitions": 1, "total_fencers": 16,
+             "is_team": False, "url": "", "fee": None, "fee_currency": "",
+             "has_results": True},
+            {"evf_id": 99, "name": "Fresh Event", "date": "2026-04-15",
+             "location": "Y", "country": "Italy", "weapons": ["EPEE"],
+             "categories": ["V1"], "competitions": 1, "total_fencers": 8,
+             "is_team": False, "url": "", "fee": None, "fee_currency": "",
+             "has_results": True},
+        ]
+
+        class FakeClient:
+            def __init__(self, *a, **kw): pass
+            def connect(self): pass
+            def close(self): pass
+            def discover_season_events(self, *a, **kw):
+                return evf_events
+
+        def fake_mgmt(ref, token, sql):
+            sl = sql.lower()
+            if "from tbl_season where bool_active" in sl:
+                return [{"id_season": 7, "dt_start": "2025-09-01",
+                         "dt_end": "2026-08-31", "txt_code": "SPWS-2025-2026"}]
+            if "from tbl_event where id_season" in sl:
+                # cert_events list — empty so the matcher's existing-row branch
+                # short-circuits past _compare_and_ingest's heavy logic.
+                return []
+            if "join tbl_result r" in sl and "select distinct" in sl:
+                # filter-stale dates query
+                return [{"dt": "2026-03-28"}]
+            return []
+
+        def fake_scrape_event_results(eid, client=None):
+            scrape_calls.append(eid)
+            return []
+
+        monkeypatch.setattr(evf_sync, "_management_query", fake_mgmt)
+        monkeypatch.setattr(evf_sync, "_telegram", lambda *a, **kw: None)
+        monkeypatch.setattr(evf_sync, "EvfApiClient", FakeClient)
+        monkeypatch.setattr(evf_sync, "scrape_event_results", fake_scrape_event_results)
+        # Bypass the calendar-events matcher path used inside _compare_and_ingest.
+        monkeypatch.setattr(evf_sync, "_match_against_spws", lambda *a, **kw: [])
+
+        evf_sync.sync_results(
+            ref="ref", token="token", bot_token="bot", chat_id="chat",
+            cal_events=None, event_code="", dry_run=False,
+            filter_stale=True,
+        )
+
+        # 2026-03-28 had results → filtered out. Only the fresh 2026-04-15
+        # event (evf_id=99) reaches scrape_event_results.
+        assert scrape_calls == [99], (
+            f"expected only fresh event 99 to be scraped; got {scrape_calls}"
+        )
+
+    def test_filter_stale_off_scrapes_everything(self, monkeypatch):
+        from python.scrapers import evf_sync
+
+        scrape_calls: list[int] = []
+
+        evf_events = [
+            {"evf_id": 87, "name": "A", "date": "2026-03-28",
+             "location": "X", "country": "Poland", "weapons": ["SABRE"],
+             "categories": ["V2"], "competitions": 1, "total_fencers": 16,
+             "is_team": False, "url": "", "fee": None, "fee_currency": "",
+             "has_results": True},
+            {"evf_id": 99, "name": "B", "date": "2026-04-15",
+             "location": "Y", "country": "Italy", "weapons": ["EPEE"],
+             "categories": ["V1"], "competitions": 1, "total_fencers": 8,
+             "is_team": False, "url": "", "fee": None, "fee_currency": "",
+             "has_results": True},
+        ]
+
+        class FakeClient:
+            def __init__(self, *a, **kw): pass
+            def connect(self): pass
+            def close(self):   pass
+            def discover_season_events(self, *a, **kw): return evf_events
+
+        def fake_mgmt(ref, token, sql):
+            sl = sql.lower()
+            if "from tbl_season where bool_active" in sl:
+                return [{"id_season": 7, "dt_start": "2025-09-01",
+                         "dt_end": "2026-08-31", "txt_code": "SPWS-2025-2026"}]
+            return []
+
+        def fake_scrape_event_results(eid, client=None):
+            scrape_calls.append(eid)
+            return []
+
+        monkeypatch.setattr(evf_sync, "_management_query", fake_mgmt)
+        monkeypatch.setattr(evf_sync, "_telegram", lambda *a, **kw: None)
+        monkeypatch.setattr(evf_sync, "EvfApiClient", FakeClient)
+        monkeypatch.setattr(evf_sync, "scrape_event_results", fake_scrape_event_results)
+        monkeypatch.setattr(evf_sync, "_match_against_spws", lambda *a, **kw: [])
+
+        evf_sync.sync_results(
+            ref="ref", token="token", bot_token="bot", chat_id="chat",
+            cal_events=None, event_code="", dry_run=False,
+            filter_stale=False,
+        )
+
+        # filter_stale=False: both events scraped.
+        assert sorted(scrape_calls) == [87, 99], (
+            f"expected both events scraped without filter; got {scrape_calls}"
+        )
