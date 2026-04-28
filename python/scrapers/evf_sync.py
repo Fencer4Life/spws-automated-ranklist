@@ -537,11 +537,13 @@ def _create_cert_event(ref: str, token: str, evf_evt: dict) -> int | None:
     location = (evf_evt.get("location") or "").replace("'", "''")
     country  = (evf_evt.get("country")  or "").replace("'", "''")
     is_team  = "true" if evf_evt.get("is_team") else "false"
+    evf_id   = evf_evt.get("evf_id")
+    evf_id_sql = f"{int(evf_id)}" if evf_id else "NULL"
 
     result = _management_query(ref, token,
         f"SELECT id_event, txt_code FROM fn_create_evf_event_from_results("
         f"{season[0]['id_season']}, '{name}', '{dt_start}'::DATE, "
-        f"'{location}', '{country}', {is_team}::BOOLEAN)"
+        f"'{location}', '{country}', {is_team}::BOOLEAN, {evf_id_sql})"
     )
     if result:
         return result[0]["id_event"]
@@ -567,19 +569,26 @@ def _ingest_evf_results(
         key = (r["weapon"], r["gender"], r["category"])
         groups.setdefault(key, []).append(r)
 
-    # Group ALL results for total participant count
+    # Group ALL results for total participant count + EVF competition id
     total_counts: dict[tuple, int] = {}
+    comp_ids: dict[tuple, int] = {}
     if all_results:
         for r in all_results:
             key = (r["weapon"], r["gender"], r["category"])
             total_counts[key] = total_counts.get(key, 0) + 1
+            cid = r.get("competition_id")
+            if cid and key not in comp_ids:
+                comp_ids[key] = int(cid)
 
     for (weapon, gender, category), group_results in groups.items():
-        # Find or create tournament
+        # Find or create tournament; pass EVF competition id when known so
+        # the FK is set/backfilled at ingest time.
+        comp_id = comp_ids.get((weapon, gender, category))
+        comp_id_sql = f"{int(comp_id)}" if comp_id else "NULL"
         tourn_result = _management_query(ref, token,
             f"SELECT fn_find_or_create_tournament("
             f"{event_id}, '{weapon}', '{gender}', '{category}', "
-            f"'{event_date}'::DATE, 'PEW')"
+            f"'{event_date}'::DATE, 'PEW', {comp_id_sql})"
         )
         if not tourn_result:
             print(f"    ERROR: Could not create tournament {weapon} {gender} {category}")

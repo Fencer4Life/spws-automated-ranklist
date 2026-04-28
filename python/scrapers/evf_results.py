@@ -311,6 +311,7 @@ def scrape_event_results(
                     "category": category,
                     "dob": r.get("fencer_dob", ""),
                     "evf_points": float(r.get("total_points", 0)),
+                    "competition_id": comp_id,
                 })
 
         return all_results
