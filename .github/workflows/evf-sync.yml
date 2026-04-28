@@ -2,8 +2,10 @@ name: EVF Calendar + Results Sync
 
 on:
   schedule:
-    # Every 3 days at 06:00 UTC
-    - cron: '0 6 */3 * *'
+    # Daily at 06:00 UTC. The --filter-stale flag (passed only on scheduled
+    # runs) skips events that already have results in CERT, so the daily
+    # cadence is cheap. Manual workflow_dispatch keeps full-scrape semantics.
+    - cron: '0 6 * * *'
   workflow_dispatch:
     inputs:
       mode:
@@ -12,6 +14,10 @@ on:
       event_code:
         description: 'Event code for results mode (e.g. PEW7-2025-2026)'
         required: false
+      filter_stale:
+        description: 'Skip events already scored in CERT (defaults true on cron, false on manual)'
+        type: boolean
+        default: false
 
 jobs:
   sync:
@@ -28,7 +34,20 @@ jobs:
         run: pip install httpx beautifulsoup4 rapidfuzz pypdf
 
       - name: Run EVF sync
-        run: python -m python.scrapers.evf_sync --mode "${{ github.event.inputs.mode || 'both' }}" --event-code "${{ github.event.inputs.event_code || '' }}"
+        run: |
+          # On scheduled runs, default to --filter-stale so daily cadence is cheap.
+          # On manual dispatch, honour the workflow input toggle.
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            FLAG="--filter-stale"
+          elif [ "${{ github.event.inputs.filter_stale }}" = "true" ]; then
+            FLAG="--filter-stale"
+          else
+            FLAG=""
+          fi
+          python -m python.scrapers.evf_sync \
+            --mode "${{ github.event.inputs.mode || 'both' }}" \
+            --event-code "${{ github.event.inputs.event_code || '' }}" \
+            $FLAG
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_CERT_REF: ${{ secrets.SUPABASE_CERT_REF }}
