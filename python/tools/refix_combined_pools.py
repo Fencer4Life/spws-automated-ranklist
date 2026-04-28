@@ -153,7 +153,8 @@ def fetch_combined_groups(b: Backend) -> list[GroupRow]:
                json_agg(json_build_object(
                  'id', t.id_tournament,
                  'code', t.txt_code,
-                 'cat', t.enum_age_category::TEXT
+                 'cat', t.enum_age_category::TEXT,
+                 'evf_comp', t.id_evf_competition
                ) ORDER BY t.enum_age_category::TEXT) AS tournaments
           FROM dup d
           JOIN tbl_tournament t
@@ -177,7 +178,11 @@ def fetch_combined_groups(b: Backend) -> list[GroupRow]:
     for r in payload:
         out.append(GroupRow(
             url=r["url"], dt=r["dt"], weapon=r["w"], gender=r["g"],
-            tournaments=[{"id": t["id"], "code": t["code"], "cat": t["cat"]} for t in r["tournaments"]],
+            tournaments=[
+                {"id": t["id"], "code": t["code"], "cat": t["cat"],
+                 "evf_comp": t.get("evf_comp")}
+                for t in r["tournaments"]
+            ],
         ))
     return out
 
@@ -298,11 +303,19 @@ def resolve_via_evf(
     out: dict[str, dict] = {}
     for t in group.tournaments:
         target_cat = t["cat"]
-        match = cache.find_comp(group.dt, group.weapon, group.gender, target_cat)
-        if match is None:
-            print(f"    ! no EVF comp for T#{t['id']} {group.weapon}/{group.gender}/{target_cat} on {group.dt}", file=sys.stderr)
-            continue
-        comp_id, comp_total = match
+        # Prefer the FK on the tournament row when set — deterministic, no
+        # date-window guessing. Fall back to the cache lookup when NULL
+        # (legacy rows pre-backfill).
+        comp_id: int | None = None
+        comp_total = 0
+        if t.get("evf_comp"):
+            comp_id = int(t["evf_comp"])
+        else:
+            match = cache.find_comp(group.dt, group.weapon, group.gender, target_cat)
+            if match is None:
+                print(f"    ! no EVF comp for T#{t['id']} {group.weapon}/{group.gender}/{target_cat} on {group.dt}", file=sys.stderr)
+                continue
+            comp_id, comp_total = match
 
         try:
             results = client.get_results(comp_id)
