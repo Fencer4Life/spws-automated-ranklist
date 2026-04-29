@@ -99,6 +99,7 @@
   {:else if currentView === 'admin_events'}
     <EventManager
       events={calendarEvents}
+      priorEvents={priorSeasonEvents}
       tournaments={allTournaments}
       {seasons}
       {organizers}
@@ -219,6 +220,7 @@
     fetchFencerScoresRolling,
     fetchRankingRules,
     fetchCalendarEvents,
+    fetchPriorSeasonEvents,
     fetchOrganizers,
     createSeason,
     updateSeason,
@@ -355,6 +357,7 @@
   let rankingRules: RankingRules | null = $state(null)
 
   let calendarEvents: CalendarEvent[] = $state([])
+  let priorSeasonEvents: CalendarEvent[] = $state([])
   let allTournaments: Tournament[] = $state([])
   let organizers: Organizer[] = $state([])
   let scoringConfig: ScoringConfig | null = $state(null)
@@ -562,6 +565,20 @@
     else if (view === 'admin_fencers') loadMatchCandidates()
   }
 
+  async function loadPriorSeasonEvents() {
+    const currentSeason = seasons.find(s => s.id_season === selectedSeasonId)
+    if (!currentSeason) {
+      priorSeasonEvents = []
+      return
+    }
+    const immediatePrior = seasons
+      .filter(s => s.dt_end < currentSeason.dt_start)
+      .sort((a, b) => b.dt_end.localeCompare(a.dt_end))[0]
+    priorSeasonEvents = immediatePrior
+      ? await fetchPriorSeasonEvents([immediatePrior.id_season])
+      : []
+  }
+
   async function loadAdminEvents() {
     if (demo) return
     try {
@@ -572,6 +589,7 @@
         calendarEvents = await fetchCalendarEvents(selectedSeasonId)
         const eventIds = calendarEvents.map(e => e.id_event)
         allTournaments = await fetchAllTournaments(eventIds)
+        await loadPriorSeasonEvents()
       }
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
@@ -632,6 +650,7 @@
       calendarEvents = await fetchCalendarEvents(selectedSeasonId)
       const eventIds = calendarEvents.map(e => e.id_event)
       allTournaments = await fetchAllTournaments(eventIds)
+      await loadPriorSeasonEvents()
     }
   }
 

@@ -512,6 +512,7 @@
 
   let {
     events = [] as CalendarEvent[],
+    priorEvents = [] as CalendarEvent[],
     seasons = [] as Season[],
     organizers = [] as Organizer[],
     tournaments = [] as Tournament[],
@@ -536,6 +537,7 @@
     onseasonchange = (_id: number | null) => {},
   }: {
     events?: CalendarEvent[]
+    priorEvents?: CalendarEvent[]
     seasons?: Season[]
     organizers?: Organizer[]
     tournaments?: Tournament[]
@@ -708,11 +710,12 @@
   function priorEventCandidates(currentEvent: CalendarEvent): CalendarEvent[] {
     const currentSeason = seasons.find(s => s.id_season === currentEvent.id_season)
     if (!currentSeason) return []
-    const priorSeasonIds = seasons
+    const immediatePrior = seasons
       .filter(s => s.dt_end < currentSeason.dt_start)
-      .map(s => s.id_season)
-    return events
-      .filter(e => priorSeasonIds.includes(e.id_season))
+      .sort((a, b) => b.dt_end.localeCompare(a.dt_end))[0]
+    if (!immediatePrior) return []
+    return priorEvents
+      .filter(e => e.id_season === immediatePrior.id_season)
       .sort((a, b) => a.txt_code.localeCompare(b.txt_code))
   }
 
