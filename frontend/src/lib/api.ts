@@ -144,6 +144,17 @@ export async function fetchCalendarEvents(seasonId: number): Promise<CalendarEve
   return data ?? []
 }
 
+export async function fetchPriorSeasonEvents(seasonIds: number[]): Promise<CalendarEvent[]> {
+  if (seasonIds.length === 0) return []
+  const { data, error } = await getClient()
+    .from('vw_calendar')
+    .select('*')
+    .in('id_season', seasonIds)
+    .order('txt_code', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
 export async function fetchTournamentDetail(
   tournamentId: number,
 ): Promise<TournamentDetail | null> {
