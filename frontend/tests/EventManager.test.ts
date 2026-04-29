@@ -1013,6 +1013,7 @@ describe('EventManager Phase 3c', () => {
   function phase3Props(overrides: Record<string, unknown> = {}) {
     return {
       events: [PRIOR_EVENT, SKELETON, PLANNED_EVENT],
+      priorEvents: [PRIOR_EVENT],
       seasons: PHASE3_SEASONS,
       organizers: MOCK_ORGANIZERS,
       selectedSeasonId: 2,
