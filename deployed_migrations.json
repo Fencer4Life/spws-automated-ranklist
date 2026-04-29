@@ -80,8 +80,8 @@
     "schema_fingerprint": "4f03b4d219f67e63b1fc51c1e4895e2f"
   },
   "prod": {
-    "last_updated": "2026-04-26T15:09:53Z",
-    "last_sha": "bbd6c7a7c655d0a8c7e5f6d24e19a80a5bfe94fd",
+    "last_updated": "2026-04-29T06:49:45Z",
+    "last_sha": "870d0ed87dc12335e5290e71308ccb80835a0572",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -152,8 +152,11 @@
       "20260428000003_fn_init_season.sql",
       "20260428000004_fn_create_season_with_skeletons.sql",
       "20260428000005_fn_revert_season_init.sql",
-      "20260428000006_fn_copy_prior_scoring_config.sql"
+      "20260428000006_fn_copy_prior_scoring_config.sql",
+      "20260429000001_phase4_pew_split.sql",
+      "20260429000002_evf_fk_columns.sql",
+      "20260429000003_evf_fk_ingestion.sql"
     ],
-    "schema_fingerprint": "9561b0d6fe5dc88276f90c2161883036"
+    "schema_fingerprint": "4f03b4d219f67e63b1fc51c1e4895e2f"
   }
 }
