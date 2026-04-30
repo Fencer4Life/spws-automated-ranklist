@@ -553,6 +553,34 @@ Phase 3c (commit 29afa4b) finishes the trilogy. The EventManager admin page gain
 
 **Phase 3 trilogy complete.** Total deltas across 3a/3b/3c: pgTAP 344 → 369 (+25), vitest 293 → 331 (+38), pytest unchanged. Carry-over admin runbook §3 (manual FK linkage), §4 (biennial placeholder), §5 (engine flip via SQL), §6 (instant rollback), §9 (pre-create CREATED slot) all superseded by point-and-click UI.
 
+### V-cat Invariant Trigger + Combined-Pool Splitter Consolidation (ADR-047) — 2026-04-29 → 2026-04-30
+
+**Problem.** Combined-pool ingestion (V0+V1 pools, etc.) had a working splitter only on the FencingTime XML path; FTL JSON, Engarde, 4Fence, Dartagnan and CSV/xlsx paths dumped the entire pool into whichever V-cat tournament admin had pasted the URL onto. Result: 209 V-cat-mismatched rows on LOCAL (and the same on CERT/PROD), where `enum_age_category` of the tournament disagreed with `fn_age_category(fencer.int_birth_year, season_end_year)`.
+
+**Fix (Layers 1–3).** `python/pipeline/age_split.py` now hosts the splitter, exporting `split_combined_results()` (ADR-024 logic) and `birth_year_to_vcat()` helper. Every ingestion path imports from there: `python/scrapers/fencingtime_xml.py` re-exports for backward compatibility, `python/tools/scrape_tournament.py` finds sibling V-cat tournaments sharing a URL and ingests per-V-cat, `python/scrapers/evf_sync.py` adds a defensive WARN cross-check (no reassignment — EVF API is per-category). DB-side: migration `20260429000004_assert_result_vcat_trigger.sql` adds `fn_vcat_violation_msg(...)` (pure helper) + `fn_assert_result_vcat()` BEFORE INSERT/UPDATE trigger on `tbl_result` (NOTICE-only mode).
+
+**Layer 5 admin surface.** Migration `20260430000001_vw_vcat_violation.sql` adds the read-only view `vw_vcat_violation` exposing every existing violator. CLI `python/tools/audit_vcat_violations.py` queries it for LOCAL or via Management API for CERT/PROD.
+
+**Layer 6 cleanup attempt + reversal.** `python/tools/replay_vcat_violations.py` performed an in-DB redo (round 1: 22 BY-derived moves + 178 dupe-deletes; round 2: 9 orphan moves + creation of 7 missing-sibling tournaments). The FATAL flip migration (`20260430000002_assert_result_vcat_fatal.sql`) was applied. The replay's BY-derived logic was then proven partially wrong — Stockholm-class fabricated rows surfaced. Round 2 was fully reversed; the 7 phantom tournaments were dropped. Eight remaining V-cat violators were resolved by per-row admin-approved deletes (GRODNER 7913, NOWAK 8010, KAZIK 10096, BORKOWSKI 10410, BAZAK 10472, OWCZAREK 9217, LIPKOWSKA 9298, KOWALSKA 9299) plus one BY revert + ineligible-row delete (PAWŁOWSKI 8014). Final state: 0 V-cat invariant violators on LOCAL; FATAL trigger active and validated by smoke test.
+
+**Test fixture bypass.** Nine pgTAP test files (01, 02, 03, 07, 08, 09, 10, 11, 19) gained a `ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;` to keep their arbitrary-V-cat fixtures functional. Targeted disable preserves audit + status-transition triggers.
+
+### Source-vs-DB Audit + Phantom-Row Discovery (ADR-048) — 2026-04-30
+
+**Problem.** Layer 2 trigger catches V-cat-vs-BY mismatch; it does not catch fencers who never appeared in the source URL at all (Stockholm-class fabrication). GRODNER's PEW5ef row was the discovery vehicle: BY=1960 → V3 by math, but Engarde's vet2026 results contain no GRODNER in any V-cat — the row was wholly fabricated by some prior ingest.
+
+**Audit.** Full vendor-source cross-check on LOCAL (2655 result rows × 538 unique URLs across FTL / Engarde / 4Fence / Dartagnan / EVF API). Result: 1948 OK matches, 37 weak matches (diacritic noise), **670 phantom rows** (URL fetched + parsed but DB fencer not present, OR URL missing/broken). Phantoms are not international-only — domestic events held 309, international 317.
+
+**Decision.** Verdict policy: any condition where the source can't confirm the fencer (URL error, no URL, parse error, fencer not in parsed list) collapses into PHANTOM. No auto-deletes — every phantom resolution requires per-row admin approval. Bulk phantom-row resolution deferred to the from-scratch re-scrape that will replace all result data with vendor-verified ingestion.
+
+### LOCAL → CERT → PROD Replication (2026-04-30)
+
+**Goal.** CERT and PROD were holding the original 209 violators plus their own pre-existing fabrications. LOCAL was post-cleanup (0 V-cat violators, the 670 audit phantoms documented but not yet deleted). The user chose to replicate LOCAL state to both cloud envs as the new baseline before the from-scratch re-scrape.
+
+**Tooling.** `python/pipeline/export_seed_local.py` wraps `export_seed.py`'s schema-driven monolithic format but reads from LOCAL via `docker exec psql` (Management API is cloud-only). Patches: strip `id_prior_event` from `tbl_event` INSERTs (FK to other rows whose ids change after `TRUNCATE RESTART IDENTITY`) and append `fn_backfill_id_prior_event()` at end; normalise array literals to PG `'{a,b,c}'` text format for clean enum implicit-cast.
+
+**Execution.** Migrations applied to CERT/PROD via Management API: NOTICE-only V-cat trigger + `vw_vcat_violation` view. **FATAL flip not applied** to CERT/PROD — premature until phantoms are cleared by the re-scrape. `seed-remote.sh`'s shell-arg-limit hit on the 2.1 MB seed file was bypassed via `jq --rawfile` + `curl --data-binary @file`. Final state on CERT and PROD identical to LOCAL: 3 seasons / 329 fencers / 60 events / 756 tournaments / 2655 results / 18 carry-over FKs (from `fn_backfill_id_prior_event()`) / 0 V-cat violators.
+
 ---
 
 ## Archived Documents
