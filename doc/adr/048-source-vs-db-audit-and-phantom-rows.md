@@ -43,9 +43,9 @@ Some events have legitimate `no_url` (e.g. PPW1-2025-2026, where the original re
 
 A future schema field `tbl_event.bool_results_lost` (or equivalent) would let the audit exclude legitimately-no-URL events. Deferred until after the from-scratch re-scrape, when the full set of events is known.
 
-### Joint-pool reference field — also deferred
+### Joint-pool reference field — superseded by ADR-049
 
-Currently inferred via shared `url_results` string equality. Brittle when the URL is empty on a child V-cat tournament that physically ran in a joint pool with a sibling (the 221 `no_url` phantoms include some of these). Future field: `tbl_tournament.id_joint_pool_parent INT REFERENCES tbl_tournament(id_tournament)`. Deferred — the from-scratch re-scrape will populate this naturally.
+Original proposal here was a self-referential FK `tbl_tournament.id_joint_pool_parent`. That design was implemented and reverted on 2026-04-30 in favour of a simpler boolean `bool_joint_pool_split` recorded by the ingester at write time. See ADR-049 for the accepted design and rationale.
 
 ## Alternatives considered
 

@@ -139,6 +139,35 @@ def scrape_and_parse(url: str | None) -> list[dict]:
         raise ValueError(f"Unsupported platform: {url}")
 
 
+def plan_joint_pool_actions(siblings: list[dict], buckets: dict[str, list]) -> dict:
+    """ADR-049: decide which sibling rows to delete and which to flag.
+
+    A joint pool exists when more than one tbl_tournament row shares the same
+    (id_event, enum_weapon, enum_gender, url_results) tuple. After splitting
+    the scraped results by birth-year-derived V-cat:
+
+      - Empty buckets indicate sibling rows that the source did not populate.
+        These are admin registration-time mistakes; they go to ``to_delete``.
+      - Non-empty buckets are real V-cat slices of the physical pool;
+        their sibling rows go to ``to_flag`` (will receive
+        bool_joint_pool_split = TRUE).
+
+    Solo tournaments (len(siblings) == 1) return is_joint=False with empty
+    action lists.
+
+    Returns:
+        {"is_joint": bool,
+         "to_delete": list[sibling-dict],
+         "to_flag":   list[sibling-dict]}
+    """
+    if len(siblings) <= 1:
+        return {"is_joint": False, "to_delete": [], "to_flag": []}
+
+    to_delete = [s for s in siblings if not buckets.get(s["enum_age_category"])]
+    to_flag = [s for s in siblings if buckets.get(s["enum_age_category"])]
+    return {"is_joint": True, "to_delete": to_delete, "to_flag": to_flag}
+
+
 def fetch_tournament_with_siblings(supabase_url, headers, tournament_code):
     """Fetch the anchor tournament and every sibling (same event/weapon/gender)
     that shares its url_results.
@@ -284,11 +313,37 @@ def main():
     from python.matcher.pipeline import resolve_tournament_results
     import json
 
+    # ADR-049: classify the sibling set after the V-cat split. Empty siblings
+    # of a joint pool are admin-registration mistakes and are deleted before
+    # the per-cat ingest loop.
+    plan = plan_joint_pool_actions(siblings, split.buckets)
+    for s in plan["to_delete"]:
+        del_resp = httpx.delete(
+            f"{supabase_url}/rest/v1/tbl_tournament"
+            f"?id_tournament=eq.{s['id_tournament']}",
+            headers=headers, timeout=10,
+        )
+        del_resp.raise_for_status()
+        print(f"  deleted empty sibling {s['txt_code']} (0 fencers in source)",
+              file=sys.stderr)
+        telegram_notify(
+            f"<b>scrape_tournament: empty sibling deleted</b>\n"
+            f"<pre>{s['txt_code']}</pre>\n"
+            f"Joint pool URL: {anchor['url_results']}"
+        )
+    deleted_ids = {s["id_tournament"] for s in plan["to_delete"]}
+    siblings = [s for s in siblings if s["id_tournament"] not in deleted_ids]
     sibling_by_cat = {s["enum_age_category"]: s for s in siblings}
+
+    is_joint = plan["is_joint"] and len(siblings) > 1
     total_ingested = 0
+
     for cat, bucket_rows in split.buckets.items():
         target = sibling_by_cat.get(cat)
         if target is None:
+            if not bucket_rows:
+                # Empty bucket whose row was just deleted; skip silently.
+                continue
             print(f"  WARN: V-cat {cat} has {len(bucket_rows)} fencer(s) but no DB row for it", file=sys.stderr)
             continue
         if not bucket_rows:
@@ -319,14 +374,16 @@ def main():
                 "enum_match_status": m.status,
             })
 
-        # int_participant_count = number of fencers placed in this V-cat
-        # (per ADR-038, this is the per-cat field count, not the combined pool)
+        # ADR-049: joint-pool siblings carry the FULL physical pool size as
+        # int_participant_count; solo tournaments keep the per-V-cat slice
+        # count (== len(parsed_rows) in solo, since one bucket holds all rows).
+        p_count = len(parsed_rows) if is_joint else len(bucket_rows)
         ingest_resp = httpx.post(
             f"{supabase_url}/rest/v1/rpc/fn_ingest_tournament_results",
             json={
                 "p_tournament_id": target["id_tournament"],
                 "p_results": json.dumps(payload),
-                "p_participant_count": len(bucket_rows),
+                "p_participant_count": p_count,
             },
             headers={**headers, "Content-Type": "application/json"},
             timeout=30,
@@ -334,6 +391,17 @@ def main():
         if ingest_resp.status_code >= 400:
             print(f"  ERROR ingesting {target['txt_code']}: {ingest_resp.text}", file=sys.stderr)
             sys.exit(1)
+
+        # ADR-049: stamp the joint-pool flag on every non-empty sibling.
+        if is_joint:
+            flag_resp = httpx.patch(
+                f"{supabase_url}/rest/v1/tbl_tournament"
+                f"?id_tournament=eq.{target['id_tournament']}",
+                json={"bool_joint_pool_split": True},
+                headers={**headers, "Content-Type": "application/json"},
+                timeout=10,
+            )
+            flag_resp.raise_for_status()
 
         print(f"  {target['txt_code']}: ingested {len(payload)}/{len(bucket_rows)} placements", file=sys.stderr)
         total_ingested += len(payload)

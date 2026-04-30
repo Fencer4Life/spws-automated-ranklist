@@ -581,6 +581,26 @@ Phase 3c (commit 29afa4b) finishes the trilogy. The EventManager admin page gain
 
 **Execution.** Migrations applied to CERT/PROD via Management API: NOTICE-only V-cat trigger + `vw_vcat_violation` view. **FATAL flip not applied** to CERT/PROD — premature until phantoms are cleared by the re-scrape. `seed-remote.sh`'s shell-arg-limit hit on the 2.1 MB seed file was bypassed via `jq --rawfile` + `curl --data-binary @file`. Final state on CERT and PROD identical to LOCAL: 3 seasons / 329 fencers / 60 events / 756 tournaments / 2655 results / 18 carry-over FKs (from `fn_backfill_id_prior_event()`) / 0 V-cat violators.
 
+### Joint-Pool Split Flag (ADR-049) — 2026-04-30
+
+**Problem.** Two related joint-pool bugs surfaced after the V-cat trigger landed. PPW4 women epee ran V0+V1 as one 7-fencer pool with both DB rows sharing the same FTL URL, but `int_participant_count` on each row stored the per-V-cat slice (4 and 3) instead of the full pool (7) — Gabriela KAMIŃSKA's V1 ranking points were 96.35 instead of 97.22. PPW5 women epee ran V0/V1/V2/V4 as one 11-fencer pool whose source published per-V-cat URLs, so the splitter never even ran. Pre-this-change there was no schema relationship marking sibling V-cat rows as one physical pool — membership was inferable only from URL equality, which is brittle and silent on per-V-cat URL cases.
+
+**Rejected first attempt.** A self-referential FK `tbl_tournament.id_joint_pool_parent` was drafted, applied to LOCAL, and reverted within the same session. Reasons: introduces parent/child asymmetry where none exists in the domain (every V-cat slice is equally a "child"), arbitrary lowest-id tie-break, regex-on-scraped-names backfill, harder admin UI.
+
+**Decision.** Single boolean flag `tbl_tournament.bool_joint_pool_split BOOLEAN NOT NULL DEFAULT FALSE`, set by the ingester at write time. All siblings of a joint pool share `(id_event, enum_weapon, enum_gender, url_results)` and carry the flag TRUE; `int_participant_count` on each = full physical pool size. No parent row, no FK, all siblings equal.
+
+**Schema migrations.** `20260430000003_joint_pool_split.sql` adds the column + partial index `idx_tbl_tournament_joint_split`. `20260430000004_fn_backfill_joint_pool_split.sql` provides idempotent retroactive remediation (shared-URL detection only — PPW5-class needs re-scrape).
+
+**Ingester contract.** `python/tools/scrape_tournament.py` now: (1) extracts pure helper `plan_joint_pool_actions(siblings, buckets)` that classifies the sibling set after the V-cat split; (2) DELETEs sibling rows whose buckets are empty (admin-registration mistake — admin pasted URL on a V-cat with no actual entrants), with Telegram alert per delete; (3) PATCHes `bool_joint_pool_split=TRUE` on every non-empty sibling of a joint pool; (4) passes `p_participant_count = len(parsed_rows)` for joint pools (full physical pool size) instead of `len(bucket_rows)`. Solo tournament behaviour unchanged.
+
+**Backfill execution (2026-04-30).** Function applied + run on LOCAL/CERT/PROD: 86 PPW4-class joint-pool groups detected on each, 206 sibling rows flagged TRUE per env, 186 `int_participant_count` values rewritten on CERT/PROD (LOCAL was net-zero because the rejected FK design's backfill had already corrected counts earlier the same day). 206 affected tournaments re-scored on each via `fn_calc_tournament_scores`. Verification: `PPW4-V1-F-EPEE-2025-2026` row N=7, points=97.22 on all three envs.
+
+**Tests.** pgTAP `25_joint_pool_split.sql` — 7 assertions (column shape, partial index, function existence, sibling flag, count rewrite, standalone untouched, idempotence). pytest `test_scrape_tournament_joint_pool.py` — 4 tests (3 unit on `plan_joint_pool_actions`, 1 main() integration asserting DELETE on empty sibling + PATCH `bool_joint_pool_split=TRUE` + POST `p_participant_count = len(parsed_rows)`). pgTAP file 25: 7/7 GREEN; pytest 354 passed / 9 skipped; vitest 332/332 GREEN.
+
+**ADR-048 update.** Its "Joint-pool reference field — also deferred" subsection now reads "superseded by ADR-049." MEMORY.md ADR registry updated.
+
+**Scope unchanged.** PPW5-class on all three envs is still broken — no DB signal exists for retroactive detection. Will be corrected by the from-scratch re-scrape, where the new ingester contract above writes the flag at ingestion time.
+
 ---
 
 ## Archived Documents
