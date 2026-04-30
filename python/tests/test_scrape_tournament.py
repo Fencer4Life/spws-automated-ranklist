@@ -1,10 +1,12 @@
 """Tests for tournament URL scraping glue (ADR-029 §2.9).
 
 Tests 3.17a–3.17d: scrape tournament results from url_results.
+Tests 4.1–4.4: Layer 4 idempotency + Telegram (combined-pool ingest fix).
 """
 
 from __future__ import annotations
 
+import os
 from contextlib import contextmanager
 
 import pytest
@@ -187,3 +189,86 @@ def test_every_scraper_returns_full_field_size(platform, url, fixture, expected_
     # shares the same downstream contract.
     rpc_participant_count = len(results)
     assert rpc_participant_count == expected_n
+
+
+# ===========================================================================
+# 4.1–4.4 — Layer 4: idempotency + Telegram
+# ===========================================================================
+# These guard the contract `scrape_tournament` exposes for Layer 6 replay:
+# - existing_result_counts MUST hit PostgREST with `Prefer: count=exact`
+#   and parse the Content-Range header (not pull rows into memory).
+# - delete_existing_results MUST delete by id_tournament and tally deleted
+#   rows from the response payload.
+# - telegram_notify falls back to stdout when env vars are absent.
+
+
+def _resp(status=200, *, headers=None, json_body=None, text=""):
+    r = MagicMock()
+    r.status_code = status
+    r.headers = headers or {}
+    r.json.return_value = json_body or []
+    r.text = text
+    r.raise_for_status = MagicMock()
+    return r
+
+
+class TestExistingResultCounts:
+    """4.1 existing_result_counts parses Content-Range correctly."""
+
+    def test_parses_count_from_content_range(self):
+        from python.tools.scrape_tournament import existing_result_counts
+
+        # Two tournaments: one populated (8 rows), one empty.
+        responses = {
+            100: _resp(headers={"content-range": "0-0/8"}),
+            101: _resp(headers={"content-range": "*/0"}),
+        }
+        with patch("python.tools.scrape_tournament.httpx") as mock_httpx:
+            mock_httpx.get.side_effect = lambda url, **kw: responses[
+                int(url.split("id_tournament=eq.")[1].split("&")[0])
+            ]
+            counts = existing_result_counts("http://x", {"apikey": "k"}, [100, 101])
+
+        assert counts == {100: 8, 101: 0}
+
+
+class TestDeleteExistingResults:
+    """4.2 delete_existing_results returns the count of deleted rows."""
+
+    def test_sums_returned_payload(self):
+        from python.tools.scrape_tournament import delete_existing_results
+
+        # Two deletions: 5 rows then 3 rows.
+        with patch("python.tools.scrape_tournament.httpx") as mock_httpx:
+            mock_httpx.delete.side_effect = [
+                _resp(json_body=[{}] * 5),
+                _resp(json_body=[{}] * 3),
+            ]
+            n = delete_existing_results("http://x", {"apikey": "k"}, [100, 101])
+        assert n == 8
+        assert mock_httpx.delete.call_count == 2
+
+
+class TestTelegramNotify:
+    """4.3 / 4.4 telegram_notify behaviour with and without env vars."""
+
+    def test_without_env_falls_back_to_stdout(self, capsys):
+        from python.tools.scrape_tournament import telegram_notify
+
+        # Ensure env vars are absent for this test.
+        with patch.dict(os.environ, {"TELEGRAM_BOT_TOKEN": "", "TELEGRAM_CHAT_ID": ""}):
+            telegram_notify("hello-from-test")
+        out = capsys.readouterr()
+        assert "[Telegram] hello-from-test" in out.err
+
+    def test_with_env_posts_to_api(self):
+        from python.tools.scrape_tournament import telegram_notify
+
+        with patch.dict(os.environ, {"TELEGRAM_BOT_TOKEN": "TOK", "TELEGRAM_CHAT_ID": "CHAT"}):
+            with patch("python.tools.scrape_tournament.httpx") as mock_httpx:
+                mock_httpx.post.return_value = _resp()
+                telegram_notify("layer4-msg")
+                assert mock_httpx.post.called
+                kwargs = mock_httpx.post.call_args.kwargs
+                assert kwargs["data"]["chat_id"] == "CHAT"
+                assert kwargs["data"]["text"] == "layer4-msg"
