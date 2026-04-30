@@ -18,8 +18,18 @@ from __future__ import annotations
 
 import re
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field
 from datetime import datetime
+
+# Splitter symbols moved to python.pipeline.age_split (2026-04-29) so every
+# ingestion path can use the same logic. Re-exported below for backward
+# compatibility with existing imports (`from python.scrapers.fencingtime_xml
+# import split_combined_results`, …).
+from python.pipeline.age_split import (
+    _CATEGORY_AGE_RANGE,
+    _birth_year_from_dob,
+    SplitResult,
+    split_combined_results,
+)
 
 # Polish weapon names → English
 _WEAPON_MAP = {
@@ -32,15 +42,6 @@ _WEAPON_MAP = {
 _GENDER_MAP = {
     "MĘŻCZYZN": "M",
     "KOBIET": "F",
-}
-
-# Age category → (min_age, max_age) inclusive
-_CATEGORY_AGE_RANGE = {
-    "V0": (30, 39),
-    "V1": (40, 49),
-    "V2": (50, 59),
-    "V3": (60, 69),
-    "V4": (70, 999),
 }
 
 ALL_CATEGORIES = ["V0", "V1", "V2", "V3", "V4"]
@@ -60,13 +61,6 @@ def _parse_dob(dob_str: str | None) -> str | None:
         return dt.strftime("%Y-%m-%d")
     except ValueError:
         return None
-
-
-def _birth_year_from_dob(dob_iso: str | None) -> int | None:
-    """Extract year from ISO date string, or None."""
-    if not dob_iso:
-        return None
-    return int(dob_iso[:4])
 
 
 def parse_fencingtime_xml(file_bytes: bytes) -> list[dict]:
@@ -186,84 +180,6 @@ def detect_categories_from_altname(alt_name: str) -> list[str]:
     return [c.upper() for c in cats]
 
 
-@dataclass
-class SplitResult:
-    """Result of splitting combined-category results (ADR-024)."""
-
-    buckets: dict[str, list[dict]] = field(default_factory=dict)
-    unresolved: list[dict] = field(default_factory=list)
-
-
-def split_combined_results(
-    enriched_results: list[dict],
-    categories: list[str],
-    fencer_db: list[dict],
-    season_end_year: int,
-) -> SplitResult:
-    """Split combined-category results into per-category ranked lists.
-
-    For each fencer:
-    1. Use birth_date from XML if available
-    2. Cross-reference fencer_db by name if DOB missing
-    3. If still unknown → add to unresolved AND assign to lowest category
-       (ADR-024: flag PENDING for admin review, don't silently assign)
-
-    Re-ranks within each split: place 1..N per category.
-
-    Args:
-        enriched_results: From parse_fencingtime_xml_enriched()
-        categories: List of categories to split into (e.g., ["V0", "V1"])
-        fencer_db: Master fencer list for DOB cross-reference
-        season_end_year: End year for age calculation
-
-    Returns:
-        SplitResult with buckets (category → results) and unresolved list
-    """
-    # Build name→birth_year lookup from fencer_db
-    db_lookup: dict[str, int] = {}
-    for f in fencer_db:
-        surname = f.get("txt_surname", "")
-        first_name = f.get("txt_first_name", "")
-        name = f"{surname} {first_name}".strip() if first_name else surname
-        by = f.get("int_birth_year")
-        if by is not None:
-            db_lookup[name.upper()] = by
-
-    # Assign each fencer to a category
-    buckets: dict[str, list[dict]] = {cat: [] for cat in categories}
-    unresolved: list[dict] = []
-    lowest_cat = categories[0]  # e.g., "V0" for ["V0", "V1"]
-
-    # Sort by original place to preserve relative ordering
-    sorted_results = sorted(enriched_results, key=lambda r: r["place"])
-
-    for result in sorted_results:
-        birth_year = _birth_year_from_dob(result.get("birth_date"))
-
-        # Cross-reference fencer_db if DOB missing
-        if birth_year is None:
-            birth_year = db_lookup.get(result["fencer_name"].upper())
-
-        # Determine category from birth year
-        assigned_cat = None
-        if birth_year is not None:
-            age = season_end_year - birth_year
-            for cat in categories:
-                age_range = _CATEGORY_AGE_RANGE.get(cat)
-                if age_range and age_range[0] <= age <= age_range[1]:
-                    assigned_cat = cat
-                    break
-
-        # ADR-024: unknown DOB → assign to lowest but track as unresolved
-        if assigned_cat is None:
-            assigned_cat = lowest_cat
-            unresolved.append(dict(result))
-
-        buckets[assigned_cat].append(dict(result))
-
-    # Re-rank within each category
-    for cat, fencers in buckets.items():
-        for i, fencer in enumerate(fencers, 1):
-            fencer["place"] = i
-
-    return SplitResult(buckets=buckets, unresolved=unresolved)
+# split_combined_results / SplitResult / _CATEGORY_AGE_RANGE / _birth_year_from_dob
+# moved to python.pipeline.age_split (2026-04-29). Re-exported above for
+# backward compatibility with existing callers and tests.

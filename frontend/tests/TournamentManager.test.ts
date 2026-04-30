@@ -180,4 +180,32 @@ describe('TournamentManager (T9.4)', () => {
     expect(container.querySelector('[data-field="tournament-list"]')).toBeNull()
     expect(container.querySelector('[data-field="add-tournament-btn"]')).toBeNull()
   })
+
+  // 9.312 — Sibling tournaments may share a url_results (combined-pool case).
+  // Pasting the same FTL URL onto a V0 row and a V1 row is the supported
+  // input shape: scrape_tournament.py finds the siblings via the URL and
+  // calls split_combined_results. This test documents that the UI accepts
+  // and persists the shared URL without de-duping or rejecting it.
+  it('accepts the same url_results on sibling tournaments without modification', async () => {
+    const onupdate = vi.fn()
+    const SHARED_URL = 'https://www.fencingtime.com/2026/Wroclaw/results/123'
+    const sharedTournaments: Tournament[] = [
+      { ...MOCK_TOURNAMENTS[0], id_tournament: 200, enum_age_category: 'V0', url_results: SHARED_URL },
+      { ...MOCK_TOURNAMENTS[0], id_tournament: 201, enum_age_category: 'V1', url_results: SHARED_URL },
+    ]
+    const { container } = render(TournamentManager, {
+      props: { ...defaultProps, tournaments: sharedTournaments, onupdate },
+    })
+
+    const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
+    await fireEvent.click(editBtns[1])
+    const form = container.querySelector('[data-field="tournament-form"]')!
+    const urlInput = form.querySelector('[data-field="form-url-results"]') as HTMLInputElement
+    expect(urlInput.value).toBe(SHARED_URL)
+
+    await fireEvent.click(form.querySelector('[data-field="form-save-btn"]')!)
+    expect(onupdate).toHaveBeenCalledWith(201, expect.objectContaining({
+      urlResults: SHARED_URL,
+    }))
+  })
 })

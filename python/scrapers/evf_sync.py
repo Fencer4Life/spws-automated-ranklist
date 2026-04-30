@@ -254,6 +254,7 @@ def sync_results(
     if not season:
         print("No active season found")
         return
+    season_end_year = int(season["dt_end"][:4])
 
     # Fetch active-season CERT events ONCE — used for invariant guard,
     # scope filter, and per-event dedup via the shared matcher.
@@ -356,7 +357,8 @@ def sync_results(
             # Compare with CERT data and optionally ingest (pass all_results for participant count)
             _compare_and_ingest(ref, token, evf_evt, spws_results, dry_run,
                                 bot_token, chat_id, all_results=all_results,
-                                cert_events_pool=cert_events)
+                                cert_events_pool=cert_events,
+                                season_end_year=season_end_year)
 
     finally:
         client.close()
@@ -368,13 +370,15 @@ def _match_against_spws(
     """Match EVF results against SPWS fencer DB using fuzzy matcher with diacritic folding.
 
     Returns only the EVF results that match a known SPWS fencer, enriched with
-    the matched SPWS surname (with proper diacritics).
+    the matched SPWS surname (with proper diacritics) and SPWS birth year
+    (used by the Layer 1E V-cat cross-check).
     """
     from python.matcher.fuzzy_match import find_best_match
 
     fencer_db = _management_query(ref, token,
         "SELECT id_fencer, txt_surname, txt_first_name, int_birth_year FROM tbl_fencer"
     )
+    by_lookup = {f["id_fencer"]: f.get("int_birth_year") for f in fencer_db}
 
     matched: list[dict] = []
     for r in evf_results:
@@ -384,6 +388,7 @@ def _match_against_spws(
                 **r,
                 "spws_surname": m.matched_name.split()[0] if m.matched_name else r["fencer_name"].split()[0],
                 "spws_id": m.id_fencer,
+                "spws_birth_year": by_lookup.get(m.id_fencer),
                 "match_confidence": m.confidence,
             })
 
@@ -396,6 +401,7 @@ def _compare_and_ingest(
     dry_run: bool, bot_token: str, chat_id: str,
     all_results: list[dict] | None = None,
     cert_events_pool: list[dict] | None = None,
+    season_end_year: int | None = None,
 ) -> None:
     """Compare EVF-matched SPWS results with CERT data, ingest missing.
 
@@ -405,6 +411,22 @@ def _compare_and_ingest(
     the post-match scope check decides whether to update.
     """
     evf_date = evf_evt["date"]
+
+    # Layer 1E defensive cross-check (2026-04-29). EVF API is per-category,
+    # so no splitter is needed — but EVF's category for a given fencer can
+    # disagree with `birth_year_to_vcat(spws_BY, season_end_year)` (different
+    # age-as-of date, different season boundaries). Reassigning would break
+    # the per-competition ranking, so we WARN here and let the Layer 2 DB
+    # trigger be the FATAL guard.
+    if season_end_year is not None:
+        from python.pipeline.age_split import birth_year_to_vcat
+        for r in spws_results:
+            by = r.get("spws_birth_year")
+            spws_vcat = birth_year_to_vcat(by, season_end_year)
+            if spws_vcat and spws_vcat != r.get("category"):
+                print(f"  WARN [Layer 1E] {r.get('spws_surname','?')} "
+                      f"BY={by} → SPWS {spws_vcat}, but EVF places in "
+                      f"{r.get('category','?')} (competition {r.get('competition_id','?')})")
 
     cert_events: list[dict] = []
     if cert_events_pool is not None:

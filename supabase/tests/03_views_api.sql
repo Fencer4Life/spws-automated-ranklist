@@ -19,6 +19,11 @@
 -- =============================================================================
 
 BEGIN;
+-- Layer 6 (2026-04-30): targeted bypass of trg_assert_result_vcat for
+-- legacy test fixtures whose dummy V-cats predate the FATAL invariant
+-- guard. Targeted (not session_replication_role) so audit + status-
+-- transition triggers stay live.
+ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
 SELECT plan(27);
 
 -- ===== SETUP: Create test tournaments and pre-scored results =====
