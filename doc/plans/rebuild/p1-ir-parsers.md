@@ -40,7 +40,12 @@ class ParsedTournament:
 
 ## Deliverables
 
-- New file: `python/pipeline/ir.py` — `ParsedTournament`, `ParsedResult`, `SourceKind` enum (8 values incl. `OPHARDT_HTML`).
+- **Traceability schema** (ADR-055) — migration `supabase/migrations/20260501000003_phase1_ingest_traceability.sql`:
+  - `enum_parser_kind` Postgres enum (mirrors Python `SourceKind` from `python/pipeline/ir.py`)
+  - Stamp columns on `tbl_event` + `tbl_tournament`: `enum_parser_kind`, `dt_last_scraped`, `txt_source_url_used`
+  - Two history tables (`tbl_event_ingest_history`, `tbl_tournament_ingest_history`) with FK CASCADE, UNIQUE on (parent, run_id), cap-of-6 BEFORE INSERT triggers
+  - pgTAP suite `supabase/tests/26_ingest_traceability.sql` (23 assertions)
+- New file: `python/pipeline/ir.py` — `ParsedTournament`, `ParsedResult`, `SourceKind` enum (8 values incl. `OPHARDT_HTML`); the `SourceKind` Python enum stays in lockstep with the `enum_parser_kind` Postgres enum.
 - New file: `python/scrapers/ophardt.py` — Ophardt parser (server-rendered HTML, `requests` + `lxml`/`BeautifulSoup`, no JS runtime).
 - Parser registry in `python/scrapers/__init__.py` covering all 8 sources.
 - Each parser conforms to the IR via `parse(...) → ParsedTournament` factory.
@@ -65,6 +70,7 @@ class ParsedTournament:
 - All existing pytest scraper tests pass.
 - New contract tests pass: each of the 8 parsers → schema-valid `ParsedTournament`.
 - Ophardt parser produces a valid `ParsedTournament` from the captured fixture (Munich 2024 EVF Circuit, Foil Men's O50 → V2).
+- Traceability migration applied; `supabase/tests/26_ingest_traceability.sql` is green (23/23).
 
 ## Cross-references
 

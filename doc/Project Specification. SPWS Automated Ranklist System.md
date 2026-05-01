@@ -1423,11 +1423,12 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 | [ADR-048](adr/048-source-vs-db-audit-and-phantom-rows.md) | Source-vs-DB audit tooling + phantom-row policy (deletion/recovery rules for result rows missing from source) | ADR-024, ADR-047 |
 | [ADR-049](adr/049-joint-pool-split-flag.md) | `bool_joint_pool_split` flag on `tbl_tournament` to drive per-V-cat splitting on joint-pool events; backfill function + pytest-enforced ingester contract | ADR-024, ADR-038, ADR-047, ADR-048 |
 | [ADR-050](adr/050-unified-ingestion-pipeline.md) | Unified Ingestion Pipeline (rebuild, Phases 0-6) — single IR + 8 source mouths + draft tables + per-result provenance on `tbl_result` (replaces `tbl_match_candidate`); supersedes ADR-024, ADR-025, ADR-039, ADR-049 | FR-71, FR-72, FR-79, ADR-024, ADR-025, ADR-039, ADR-049 |
+| [ADR-055](adr/055-ingest-traceability.md) | Ingest traceability: `enum_parser_kind` + per-parser stamp columns on `tbl_event`/`tbl_tournament` + bounded (cap-6) history tables `tbl_event_ingest_history` / `tbl_tournament_ingest_history`; complements ADR-050 identity provenance | ADR-050 |
 
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 404 assertions (4 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 33 ingest pipeline + 21 identity resolution + 13 EVF import + 5 fencer birth year + 9 cross-gender scoring + 7 ADR-040 multi-slot URLs + 8 ADR-042 dispatcher + 28 ADR-042 FK carryover + 15 ADR-043 EVF allocator + 23 Phase 3a wizard backend + 10 ADR-046 PEW weapon-suffix + 9 EVF FK columns/ingestion + 11 ADR-047 V-cat invariant trigger + view + 7 ADR-049 joint-pool split).
+- pgTAP total: 427 assertions (4 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 33 ingest pipeline + 21 identity resolution + 13 EVF import + 5 fencer birth year + 9 cross-gender scoring + 7 ADR-040 multi-slot URLs + 8 ADR-042 dispatcher + 28 ADR-042 FK carryover + 15 ADR-043 EVF allocator + 23 Phase 3a wizard backend + 10 ADR-046 PEW weapon-suffix + 9 EVF FK columns/ingestion + 11 ADR-047 V-cat invariant trigger + view + 7 ADR-049 joint-pool split + 23 ADR-055 ingest traceability).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|

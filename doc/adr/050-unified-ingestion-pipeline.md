@@ -5,7 +5,7 @@
 **Date:** 2026-05-01
 
 **Supersedes:** ADR-024 (Combined Category Splitting), ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-039 (EVF Scraper Dedup + Stale-Event Gate), ADR-049 (Joint-Pool Split Flag).
-**Amended by:** ADR-051 (Frozen-snapshot policy), ADR-052 (URL→data validation), ADR-053 (EVF backup-source + parity gate), ADR-054 (Carry-over FK + 366-day cap).
+**Amended by:** ADR-051 (Frozen-snapshot policy), ADR-052 (URL→data validation), ADR-053 (EVF backup-source + parity gate), ADR-054 (Carry-over FK + 366-day cap), ADR-055 (Ingest traceability — parser-kind enum + cap-6 history tables).
 
 ## Context
 
