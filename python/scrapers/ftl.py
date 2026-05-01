@@ -198,3 +198,131 @@ def parse_ftl_csv(csv_text: str) -> list[dict]:
             "country": row.get("Country", ""),
         })
     return results
+
+
+# =============================================================================
+# IR factory functions (Phase 1 / part 2 — ADR-050)
+#
+# parse_json / parse_csv emit ParsedTournament. The legacy parse_ftl_*
+# functions above remain for existing callers (audit_results.py,
+# scrape_tournament.py) until Phase 6 collapses them.
+# =============================================================================
+
+def _detect_weapon_from_title(title: str | None) -> str | None:
+    """Extract EPEE/FOIL/SABRE from the FTL page title, or None."""
+    if not title:
+        return None
+    title_low = title.lower()
+    for weapon, hints in _FTL_WEAPON_HINTS.items():
+        if any(h in title_low for h in hints):
+            return weapon
+    return None
+
+
+def _split_name_and_marker(raw: str) -> tuple[str, str | None]:
+    """Split an FTL name into (cleaned_name, age_marker).
+
+    Combined-pool FTL events tag each fencer's V-cat with a digit between
+    surname and given name ("ATANASSOW 2 Aleksander") or in a parenthesised
+    suffix ("KAMIŃSKA Gabriela (1)"). The IR keeps the marker as
+    raw_age_marker (string); the cleaned name drops it for matching.
+    """
+    raw = raw.strip()
+    m = _MARKER_RE.match(raw)
+    if m:
+        return f"{m.group(1)} {m.group(3)}", m.group(2)
+    # Suffix form like "KAMIŃSKA Gabriela (1)"
+    m2 = _SUFFIX_CATEGORY_RE.match(raw)
+    if m2:
+        suffix_digit = re.search(r"\((\d+)\)", raw)
+        marker = suffix_digit.group(1) if suffix_digit else None
+        return m2.group(1).strip(), marker
+    return raw, None
+
+
+def parse_json(
+    data: list[dict],
+    source_url: str | None = None,
+    title: str | None = None,
+):
+    """Parse FTL JSON API response into a ParsedTournament.
+
+    Each entry's stable `id` field (32-char hex) becomes the native
+    source_row_id as ``f"ftl:{id}"``. Entries flagged ``excluded=True``
+    are dropped at parse time.
+    """
+    from python.pipeline.ir import ParsedResult, ParsedTournament, SourceKind
+
+    results: list[ParsedResult] = []
+    for entry in data:
+        if entry.get("excluded"):
+            continue
+
+        cleaned_name, marker = _split_name_and_marker(entry["name"])
+        place = _parse_place(str(entry["place"]))
+        country = entry.get("country") or None
+        native_id = entry.get("id")
+
+        results.append(ParsedResult(
+            source_row_id=f"ftl:{native_id}" if native_id else _synthetic_for(
+                len(results) + 1, place, cleaned_name
+            ),
+            fencer_name=cleaned_name,
+            place=place,
+            fencer_country=country,
+            raw_age_marker=marker,
+        ))
+
+    return ParsedTournament(
+        source_kind=SourceKind.FTL,
+        results=results,
+        raw_pool_size=len(results),
+        weapon=_detect_weapon_from_title(title),
+        source_url=source_url,
+    )
+
+
+def parse_csv(
+    csv_text: str,
+    source_url: str | None = None,
+    title: str | None = None,
+):
+    """Parse FTL CSV download into a ParsedTournament.
+
+    CSV has no stable IDs, so each row gets a synthetic ID via
+    ``make_synthetic_id(SourceKind.FTL, row_index, place, name)``.
+    """
+    from python.pipeline.ir import (
+        ParsedResult, ParsedTournament, SourceKind, make_synthetic_id,
+    )
+
+    results: list[ParsedResult] = []
+    reader = csv.DictReader(io.StringIO(csv_text))
+    for i, row in enumerate(reader, start=1):
+        cleaned_name, marker = _split_name_and_marker(row["Name"])
+        place = _parse_place(row["Place"])
+        country = row.get("Country") or None
+
+        results.append(ParsedResult(
+            source_row_id=make_synthetic_id(
+                SourceKind.FTL, row_index=i, place=place, name=cleaned_name,
+            ),
+            fencer_name=cleaned_name,
+            place=place,
+            fencer_country=country,
+            raw_age_marker=marker,
+        ))
+
+    return ParsedTournament(
+        source_kind=SourceKind.FTL,
+        results=results,
+        raw_pool_size=len(results),
+        weapon=_detect_weapon_from_title(title),
+        source_url=source_url,
+    )
+
+
+def _synthetic_for(row_index: int, place: int, name: str) -> str:
+    """Synthetic-ID fallback for FTL JSON entries that somehow lack an `id` field."""
+    from python.pipeline.ir import SourceKind, make_synthetic_id
+    return make_synthetic_id(SourceKind.FTL, row_index=row_index, place=place, name=name)
