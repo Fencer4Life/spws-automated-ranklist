@@ -241,3 +241,133 @@ class TestFileImportIRContract:
 
         with _pytest.raises(ValueError):
             parse(b"whatever", filename="results.txt")
+
+
+# =============================================================================
+# FencingTime XML — XML export from FencingTime v4.7+
+# =============================================================================
+class TestFencingTimeXMLIRContract:
+    """FencingTime XML must emit ParsedTournament with native ID + metadata."""
+
+    SINGLE_FIXTURE = FIXTURES / "fencingtime_xml" / "single_category.xml"
+    NO_DOB_FIXTURE = FIXTURES / "fencingtime_xml" / "no_dob.xml"
+
+    def test_parse_returns_parsed_tournament(self):
+        """ftxml_ir.1: parse returns ParsedTournament with source_kind=FENCINGTIME_XML."""
+        from python.pipeline.ir import ParsedTournament, SourceKind
+        from python.scrapers.fencingtime_xml import parse
+
+        pt = parse(self.SINGLE_FIXTURE.read_bytes())
+
+        assert isinstance(pt, ParsedTournament)
+        assert pt.source_kind == SourceKind.FENCINGTIME_XML
+        assert len(pt.results) == 5
+        assert pt.raw_pool_size == 5
+
+    def test_parse_uses_native_id(self):
+        """ftxml_ir.2: source_row_id uses Tireur.ID, format `ft_xml:{ID}`."""
+        from python.scrapers.fencingtime_xml import parse
+
+        pt = parse(self.SINGLE_FIXTURE.read_bytes())
+
+        # Fixture's first Tireur has ID="-1"; second ID="-2"; etc.
+        ids = {r.source_row_id for r in pt.results}
+        assert any(rid.startswith("ft_xml:") for rid in ids)
+        assert len(ids) == len(pt.results), "every row has a distinct source_row_id"
+
+    def test_parse_birth_date_from_date_naissance(self):
+        """ftxml_ir.3: birth_date populated from DateNaissance attribute (DD.MM.YYYY)."""
+        import datetime
+        from python.scrapers.fencingtime_xml import parse
+
+        pt = parse(self.SINGLE_FIXTURE.read_bytes())
+
+        # Find NOWAK Piotr (Classement=1, DateNaissance=22.07.1970)
+        nowak = next((r for r in pt.results if "NOWAK" in r.fencer_name), None)
+        assert nowak is not None
+        assert nowak.birth_date == datetime.date(1970, 7, 22)
+
+    def test_parse_metadata_weapon_gender_date(self):
+        """ftxml_ir.4: weapon, gender, parsed_date extracted from root attributes."""
+        import datetime
+        from python.scrapers.fencingtime_xml import parse
+
+        pt = parse(self.SINGLE_FIXTURE.read_bytes())
+
+        assert pt.weapon == "EPEE"          # Arme="E" -> EPEE
+        assert pt.gender == "M"             # Sexe="M"
+        assert pt.parsed_date == datetime.date(2026, 2, 21)  # Date="21.02.2026"
+
+    def test_parse_category_hint_from_altname(self):
+        """ftxml_ir.5: category_hint extracted from AltName ('SZPADA MĘŻCZYZN v2' -> 'V2')."""
+        from python.scrapers.fencingtime_xml import parse
+
+        pt = parse(self.SINGLE_FIXTURE.read_bytes())
+
+        assert pt.category_hint == "V2"
+
+    def test_parse_handles_missing_dob(self):
+        """ftxml_ir.6: missing/empty DateNaissance leaves birth_date=None, no exception."""
+        from python.scrapers.fencingtime_xml import parse
+
+        pt = parse(self.NO_DOB_FIXTURE.read_bytes())
+
+        assert len(pt.results) > 0
+        # At least one row should have birth_date=None (the fixture's purpose).
+        no_dob = [r for r in pt.results if r.birth_date is None]
+        assert len(no_dob) >= 1
+
+
+# =============================================================================
+# 4Fence — 4fence.it competition results HTML
+# =============================================================================
+class TestFourFenceIRContract:
+    """4Fence parser must emit ParsedTournament with synthetic IDs (no native)."""
+
+    FIXTURE = FIXTURES / "fourfence" / "clafinale_terni.html"
+
+    def test_parse_html_returns_parsed_tournament(self):
+        """fourfence_ir.1: parse_html returns ParsedTournament with source_kind=FOURFENCE."""
+        from python.pipeline.ir import ParsedTournament, SourceKind
+        from python.scrapers.fourfence import parse_html
+
+        html = self.FIXTURE.read_text()
+        pt = parse_html(html)
+
+        assert isinstance(pt, ParsedTournament)
+        assert pt.source_kind == SourceKind.FOURFENCE
+        assert len(pt.results) > 0
+        assert pt.raw_pool_size == len(pt.results)
+
+    def test_parse_html_synthetic_id_format(self):
+        """fourfence_ir.2: 4Fence has no native ID; uses synthetic format `fourfence:row1:place1:`."""
+        from python.scrapers.fourfence import parse_html
+
+        html = self.FIXTURE.read_text()
+        pt = parse_html(html)
+
+        first = pt.results[0]
+        assert first.source_row_id.startswith("fourfence:row1:place1:")
+
+    def test_parse_html_country_is_none(self):
+        """fourfence_ir.3: 4Fence doesn't surface country reliably — IR shows None, not empty string."""
+        from python.scrapers.fourfence import parse_html
+
+        html = self.FIXTURE.read_text()
+        pt = parse_html(html)
+
+        for r in pt.results:
+            assert r.fencer_country is None, (
+                f"expected None country, got {r.fencer_country!r}"
+            )
+
+    def test_parse_html_results_well_formed(self):
+        """fourfence_ir.4: each result has non-empty name + valid place."""
+        from python.scrapers.fourfence import parse_html
+
+        html = self.FIXTURE.read_text()
+        pt = parse_html(html)
+
+        for r in pt.results:
+            assert r.fencer_name and isinstance(r.fencer_name, str)
+            assert isinstance(r.place, int) and r.place >= 1
