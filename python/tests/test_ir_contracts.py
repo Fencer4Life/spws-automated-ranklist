@@ -125,3 +125,119 @@ class TestFTLIRContract:
 
         assert pt_with_title.weapon == "EPEE"
         assert pt_without.weapon is None
+
+
+# =============================================================================
+# Engarde — engarde-service.com final-classification HTML (multilingual)
+# =============================================================================
+class TestEngardeIRContract:
+    """Engarde parser must emit ParsedTournament with synthetic IDs."""
+
+    HU_FIXTURE = FIXTURES / "engarde" / "clasfinal_hunfencing.html"
+    ES_FIXTURE = FIXTURES / "engarde" / "clasfinal_madrid.html"
+
+    def test_parse_html_returns_parsed_tournament(self):
+        """engarde_ir.1: parse_html returns ParsedTournament with source_kind=ENGARDE."""
+        from python.pipeline.ir import ParsedTournament, SourceKind
+        from python.scrapers.engarde import parse_html
+
+        html = self.HU_FIXTURE.read_text()
+        pt = parse_html(html)
+
+        assert isinstance(pt, ParsedTournament)
+        assert pt.source_kind == SourceKind.ENGARDE
+        assert len(pt.results) > 0
+        assert pt.raw_pool_size == len(pt.results)
+
+    def test_parse_html_synthetic_id_format(self):
+        """engarde_ir.2: Engarde has no native ID; uses synthetic ID format."""
+        from python.scrapers.engarde import parse_html
+
+        html = self.HU_FIXTURE.read_text()
+        pt = parse_html(html)
+
+        first = pt.results[0]
+        assert first.source_row_id.startswith("engarde:row1:place1:")
+
+    def test_parse_html_results_well_formed(self):
+        """engarde_ir.3: each result has non-empty name, place>=1, place is int."""
+        from python.scrapers.engarde import parse_html
+
+        html = self.HU_FIXTURE.read_text()
+        pt = parse_html(html)
+
+        for r in pt.results:
+            assert isinstance(r.place, int) and r.place >= 1
+            assert r.fencer_name and isinstance(r.fencer_name, str)
+
+    def test_parse_html_hungarian_locale_agnostic(self):
+        """engarde_ir.4: Hungarian fixture parses despite localized headers (R012)."""
+        from python.scrapers.engarde import parse_html
+
+        html = self.HU_FIXTURE.read_text()
+        pt = parse_html(html)
+
+        # If parsing failed, results would be empty.
+        assert len(pt.results) >= 5, "HU fixture should yield > 5 fencers"
+        # First-place fencer should have place=1.
+        firsts = [r for r in pt.results if r.place == 1]
+        assert len(firsts) >= 1
+
+    def test_parse_html_spanish_locale_agnostic(self):
+        """engarde_ir.5: Spanish fixture parses too — same parser, no locale code."""
+        from python.scrapers.engarde import parse_html
+
+        html = self.ES_FIXTURE.read_text()
+        pt = parse_html(html)
+
+        assert len(pt.results) > 0
+        for r in pt.results:
+            assert r.fencer_name
+
+
+# =============================================================================
+# file_import — admin upload dispatcher (CSV / XLSX / JSON)
+# =============================================================================
+class TestFileImportIRContract:
+    """file_import dispatcher must emit ParsedTournament with source_kind=FILE_IMPORT."""
+
+    def test_parse_csv_returns_parsed_tournament(self):
+        """file_import_ir.1: CSV bytes route to ParsedTournament."""
+        from python.pipeline.ir import ParsedTournament, SourceKind
+        from python.scrapers.file_import import parse
+
+        csv_bytes = (
+            "Place,Name,Club(s),Division,Country\n"
+            "1,KOWAL Anna,KS Foo,V2,POL\n"
+            "2,NOWAK Beata,KS Bar,V2,POL\n"
+            "3,STEINER Eva,KS Baz,V2,GER\n"
+        ).encode("utf-8")
+        pt = parse(csv_bytes, filename="results.csv")
+
+        assert isinstance(pt, ParsedTournament)
+        assert pt.source_kind == SourceKind.FILE_IMPORT
+        assert len(pt.results) == 3
+        assert pt.raw_pool_size == 3
+        assert pt.results[0].fencer_name.startswith("KOWAL")
+        assert pt.results[0].place == 1
+
+    def test_parse_csv_uses_synthetic_id(self):
+        """file_import_ir.2: CSV path generates synthetic IDs prefixed with `file_import:`."""
+        from python.scrapers.file_import import parse
+
+        csv_bytes = (
+            "Place,Name,Club(s),Division,Country\n"
+            "1,KOWAL Anna,,V2,POL\n"
+        ).encode("utf-8")
+        pt = parse(csv_bytes, filename="results.csv")
+
+        first = pt.results[0]
+        assert first.source_row_id.startswith("file_import:row1:place1:")
+
+    def test_parse_unsupported_extension_raises(self):
+        """file_import_ir.3: Unsupported extension still raises ValueError as the legacy path does."""
+        import pytest as _pytest
+        from python.scrapers.file_import import parse
+
+        with _pytest.raises(ValueError):
+            parse(b"whatever", filename="results.txt")
