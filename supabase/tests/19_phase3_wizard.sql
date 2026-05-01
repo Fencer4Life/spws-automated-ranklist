@@ -386,11 +386,11 @@ SELECT fn_update_event(
   NULL, NULL,
   NULL, NULL, NULL, NULL,
   (SELECT txt_code FROM tbl_event WHERE txt_code = 'PEW1efs-2025-2026'),
-  (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1-2024-2025')  -- p_id_prior_event
+  (SELECT id_event FROM tbl_event WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025') AND txt_code ~ '^PEW1[efs]*-' ORDER BY id_event LIMIT 1)  -- p_id_prior_event
 );
 SELECT is(
   (SELECT id_prior_event FROM tbl_event WHERE txt_code = 'PEW1efs-2025-2026'),
-  (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1-2024-2025'),
+  (SELECT id_event FROM tbl_event WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025') AND txt_code ~ '^PEW1[efs]*-' ORDER BY id_event LIMIT 1),
   'ph3.16: fn_update_event v2 sets id_prior_event when picker value supplied'
 );
 ROLLBACK TO SAVEPOINT s_prior;

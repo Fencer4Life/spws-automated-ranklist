@@ -43,6 +43,15 @@ Every implementation task follows this strict order:
 
 After **any** code change, run the affected suite. Before marking a task complete, run **all three** suites (pgTAP, pytest, vitest) to catch regressions. Never skip test runs.
 
+## Coherence rule (mandatory before commit)
+
+When the **count** of pgTAP assertions changes (test added, removed, plan(N) updated), you **must** update the documented totals in two places — CI Gate 3 reads them and will fail otherwise:
+
+1. **`doc/Project Specification. SPWS Automated Ranklist System.md` Appendix D** — the line `- pgTAP total: N assertions (...)`. Adjust both the headline N and the matching breakdown component (e.g. `25 Phase 3a wizard backend` → `23 Phase 3a wizard backend`).
+2. **`bash scripts/check-coherence.sh`** — run locally before commit. Gate 3 compares actual `plan(N)` sum against the documented total.
+
+If you change `plan(N)` in any test file, the actual sum changes — update the spec same commit.
+
 ## Test ID traceability
 
 Every test carries a plan test ID comment to keep the chain `FR/NFR ↔ RTM ↔ plan test ID ↔ test code` enforceable:
