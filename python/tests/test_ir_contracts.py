@@ -524,3 +524,94 @@ class TestEvfApiIRContract:
 
         first = pt.results[0]
         assert first.source_row_id.startswith("evf_api:row1:place1:")
+
+
+# =============================================================================
+# Ophardt — fencingworldwide.com /results/ page (server-rendered HTML)
+# =============================================================================
+class TestOphardtIRContract:
+    """Ophardt parser must emit ParsedTournament with native /athlete/{id}/ IDs."""
+
+    FIXTURE = (
+        FIXTURES / "ophardt"
+        / "results_903540-2024_munich_foil_men_v2.html"
+    )
+
+    def test_parse_results_returns_parsed_tournament(self):
+        """ophardt_ir.1: parse_results returns ParsedTournament source_kind=OPHARDT_HTML."""
+        from python.pipeline.ir import ParsedTournament, SourceKind
+        from python.scrapers.ophardt import parse_results
+
+        html = self.FIXTURE.read_text()
+        pt = parse_results(html)
+
+        assert isinstance(pt, ParsedTournament)
+        assert pt.source_kind == SourceKind.OPHARDT_HTML
+        assert len(pt.results) > 0
+        assert pt.raw_pool_size == len(pt.results)
+
+    def test_parse_results_native_athlete_id(self):
+        """ophardt_ir.2: native source_row_id from /athlete/{id}/, format `ophardt:athlete{id}`."""
+        from python.scrapers.ophardt import parse_results
+
+        html = self.FIXTURE.read_text()
+        pt = parse_results(html)
+
+        # Munich fixture's 1st place has athlete ID 1780 (PESCE Filippo, ITA).
+        first = pt.results[0]
+        assert first.source_row_id == "ophardt:athlete1780"
+
+    def test_parse_results_first_place_metadata(self):
+        """ophardt_ir.3: first-place row carries name, place=1, country=ITA."""
+        from python.scrapers.ophardt import parse_results
+
+        html = self.FIXTURE.read_text()
+        pt = parse_results(html)
+
+        first = pt.results[0]
+        assert first.place == 1
+        assert "PESCE" in first.fencer_name
+        assert first.fencer_country == "ITA"
+
+    def test_parse_results_ties_handled(self):
+        """ophardt_ir.4: T3. tie rows parse to int place=3 with distinct native IDs."""
+        from python.scrapers.ophardt import parse_results
+
+        html = self.FIXTURE.read_text()
+        pt = parse_results(html)
+
+        thirds = [r for r in pt.results if r.place == 3]
+        assert len(thirds) == 2, "Munich fixture has 2 fencers tied at 3rd place"
+        assert thirds[0].source_row_id != thirds[1].source_row_id
+
+    def test_parse_results_birth_year_unknown(self):
+        """ophardt_ir.5: Ophardt doesn't expose birth date or year — IR fields stay None."""
+        from python.scrapers.ophardt import parse_results
+
+        html = self.FIXTURE.read_text()
+        pt = parse_results(html)
+
+        for r in pt.results:
+            assert r.birth_year is None
+            assert r.birth_date is None
+
+
+# =============================================================================
+# Parser registry — python/scrapers/__init__.py
+# =============================================================================
+class TestParserRegistry:
+    """Registry exposes one canonical parser per SourceKind."""
+
+    def test_registry_covers_all_eight_source_kinds(self):
+        """registry.1: PARSERS dict has an entry for every SourceKind value."""
+        from python.pipeline.ir import SourceKind
+        from python.scrapers import PARSERS
+
+        assert set(PARSERS.keys()) == set(SourceKind)
+
+    def test_registry_entries_are_callable(self):
+        """registry.2: every PARSERS value is a callable."""
+        from python.scrapers import PARSERS
+
+        for kind, fn in PARSERS.items():
+            assert callable(fn), f"{kind} entry is not callable: {fn!r}"

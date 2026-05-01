@@ -9,11 +9,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scrapers.csv_upload import parse_csv_upload
-from scrapers.fencingtime_xml import parse_fencingtime_xml
-from scrapers.xlsx_parser import parse_xlsx
-from scrapers.json_parser import parse_json
-
 
 def parse_file(file_bytes: bytes, filename: str) -> list[dict]:
     """Dispatch file to correct parser by extension.
@@ -28,14 +23,22 @@ def parse_file(file_bytes: bytes, filename: str) -> list[dict]:
     Raises:
         ValueError: If file extension is not supported.
     """
+    # Lazy imports — avoids a circular dependency when this module is
+    # imported as part of `python/scrapers/__init__.py`'s registry build,
+    # and matches the absolute-path convention used by the rest of the
+    # package.
     ext = Path(filename).suffix.lower()
     if ext == ".csv":
+        from python.scrapers.csv_upload import parse_csv_upload
         return parse_csv_upload(file_bytes.decode("utf-8"))
     elif ext in (".xlsx", ".xls"):
+        from python.scrapers.xlsx_parser import parse_xlsx
         return parse_xlsx(file_bytes, ext=ext)
     elif ext == ".json":
+        from python.scrapers.json_parser import parse_json
         return parse_json(file_bytes)
     elif ext == ".xml":
+        from python.scrapers.fencingtime_xml import parse_fencingtime_xml
         return parse_fencingtime_xml(file_bytes)
     else:
         raise ValueError(f"Unsupported file format: {ext}")
