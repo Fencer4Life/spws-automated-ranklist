@@ -183,3 +183,111 @@ def detect_categories_from_altname(alt_name: str) -> list[str]:
 # split_combined_results / SplitResult / _CATEGORY_AGE_RANGE / _birth_year_from_dob
 # moved to python.pipeline.age_split (2026-04-29). Re-exported above for
 # backward compatibility with existing callers and tests.
+
+
+# =============================================================================
+# IR factory (Phase 1 / part 2 — ADR-050)
+#
+# parse() emits ParsedTournament. Native source_row_id from Tireur.ID.
+# Metadata (weapon, gender, date, category_hint) extracted from root attrs.
+# =============================================================================
+
+def _parse_date_dmy(s: str | None):
+    """Parse 'DD.MM.YYYY' → datetime.date, or None if missing/invalid."""
+    if not s or not s.strip():
+        return None
+    try:
+        return datetime.strptime(s.strip(), "%d.%m.%Y").date()
+    except ValueError:
+        return None
+
+
+def _extract_category_hint(alt_name: str | None) -> str | None:
+    """Pull the trailing 'vN' or 'vNvM…' suffix from AltName, uppercased.
+
+    'SZPADA MĘŻCZYZN v2'   -> 'V2'
+    'FLORET KOBIET v0v1'   -> 'V0V1'
+    'SZABLA KOBIET'        -> None
+    """
+    if not alt_name:
+        return None
+    m = re.search(r"(v\d(?:v\d)*)\s*$", alt_name, re.IGNORECASE)
+    return m.group(1).upper() if m else None
+
+
+def parse(
+    file_bytes: bytes,
+    source_url: str | None = None,
+):
+    """Parse FencingTime XML into ParsedTournament.
+
+    Native source_row_id comes from Tireur.ID (`f"ft_xml:{ID}"`); falls
+    back to synthetic if ID is empty. Birth date parsed from
+    DateNaissance (DD.MM.YYYY). Tournament metadata pulled from the root
+    element's attributes.
+    """
+    from python.pipeline.ir import (
+        ParsedResult, ParsedTournament, SourceKind, make_synthetic_id,
+    )
+    from datetime import date  # noqa: F401  (used in birth_date typing)
+
+    root = _parse_root(file_bytes)
+    tireurs = root.find("Tireurs")
+
+    # Metadata from root attrs:
+    arme = root.attrib.get("Arme", "")
+    weapon_map = {"E": "EPEE", "F": "FOIL", "S": "SABRE"}
+    weapon = weapon_map.get(arme) or None
+
+    sexe = root.attrib.get("Sexe", "")
+    alt_name = root.attrib.get("AltName", "")
+    gender = sexe if sexe in ("M", "F") else None
+    for pl_gender, en_gender in _GENDER_MAP.items():
+        if pl_gender in alt_name.upper():
+            gender = en_gender
+            break
+
+    parsed_date = _parse_date_dmy(root.attrib.get("Date"))
+    category_hint = _extract_category_hint(alt_name)
+
+    parsed_results: list[ParsedResult] = []
+    if tireurs is not None:
+        for i, tireur in enumerate(tireurs.findall("Tireur"), start=1):
+            nom = tireur.attrib.get("Nom", "")
+            prenom = tireur.attrib.get("Prenom", "")
+            name = f"{nom} {prenom}".strip() if prenom else nom
+            place = int(tireur.attrib.get("Classement", "0"))
+            country = tireur.attrib.get("Nation") or None
+            xml_id = tireur.attrib.get("ID", "").strip()
+            dob_str = _parse_dob(tireur.attrib.get("DateNaissance"))
+            birth_date = (
+                datetime.strptime(dob_str, "%Y-%m-%d").date()
+                if dob_str else None
+            )
+
+            sid = (
+                f"ft_xml:{xml_id}" if xml_id
+                else make_synthetic_id(
+                    SourceKind.FENCINGTIME_XML,
+                    row_index=i, place=place, name=name,
+                )
+            )
+            parsed_results.append(ParsedResult(
+                source_row_id=sid,
+                fencer_name=name,
+                place=place,
+                fencer_country=country,
+                birth_date=birth_date,
+                birth_year=birth_date.year if birth_date else None,
+            ))
+
+    return ParsedTournament(
+        source_kind=SourceKind.FENCINGTIME_XML,
+        results=parsed_results,
+        raw_pool_size=len(parsed_results),
+        weapon=weapon,
+        gender=gender,
+        parsed_date=parsed_date,
+        category_hint=category_hint,
+        source_url=source_url,
+    )
