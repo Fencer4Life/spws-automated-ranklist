@@ -335,3 +335,86 @@ def find_event_by_date(events: list[dict], date: str) -> dict | None:
         if e.get("opens", "")[:10] == date:
             return e
     return None
+
+
+# =============================================================================
+# IR factory (Phase 1 / part 2 — ADR-050)
+#
+# parse_results is a pure function on the raw EVF API response (a list of
+# result dicts from /results/{comp_id}). No HTTP, no client lifecycle.
+# The orchestrator calls EvfApiClient.get_results(comp_id) and passes the
+# resulting list to parse_results, along with the per-competition metadata
+# (weapon / gender / category / date) it learned from /events/competitions.
+# =============================================================================
+
+def parse_results(
+    raw_results: list[dict],
+    weapon: str | None = None,
+    gender: str | None = None,
+    category_hint: str | None = None,
+    parsed_date=None,
+    source_url: str | None = None,
+):
+    """Parse an EVF results-list response into ParsedTournament.
+
+    Args:
+        raw_results: list of result dicts (e.g. from EvfApiClient.get_results).
+            Each row is expected to carry fencer_surname, fencer_firstname,
+            country_abbr, place, fencer_dob (ISO string or empty),
+            total_points (numeric), and optionally weapon_abbr.
+        weapon, gender, category_hint, parsed_date, source_url: metadata
+            supplied by the orchestrator from the parent /events/competitions
+            response.
+
+    EVF rows have no per-row stable ID — uses make_synthetic_id with the
+    1-based row index.
+    """
+    from datetime import datetime as _dt
+
+    from python.pipeline.ir import (
+        ParsedResult, ParsedTournament, SourceKind, make_synthetic_id,
+    )
+
+    parsed: list[ParsedResult] = []
+    for i, r in enumerate(raw_results, start=1):
+        surname = r.get("fencer_surname", "")
+        first_name = r.get("fencer_firstname", "")
+        fencer_name = f"{surname} {first_name}".strip()
+
+        place = int(r.get("place", 0))
+        country = r.get("country_abbr") or None
+
+        dob_str = (r.get("fencer_dob") or "").strip()
+        if dob_str:
+            try:
+                bd = _dt.strptime(dob_str, "%Y-%m-%d").date()
+                birth_date, birth_year = bd, bd.year
+            except ValueError:
+                birth_date, birth_year = None, None
+        else:
+            birth_date, birth_year = None, None
+
+        parsed.append(ParsedResult(
+            source_row_id=make_synthetic_id(
+                SourceKind.EVF_API,
+                row_index=i,
+                place=place,
+                name=fencer_name,
+            ),
+            fencer_name=fencer_name,
+            place=place,
+            fencer_country=country,
+            birth_date=birth_date,
+            birth_year=birth_year,
+        ))
+
+    return ParsedTournament(
+        source_kind=SourceKind.EVF_API,
+        results=parsed,
+        raw_pool_size=len(parsed),
+        weapon=weapon,
+        gender=gender,
+        category_hint=category_hint,
+        parsed_date=parsed_date,
+        source_url=source_url,
+    )

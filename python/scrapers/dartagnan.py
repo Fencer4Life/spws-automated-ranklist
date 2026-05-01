@@ -218,3 +218,75 @@ def scrape_dartagnan_event(
         enriched.append(comp)
 
     return {"event_url": index_url, "competitions": enriched}
+
+
+# =============================================================================
+# IR factory (Phase 1 / part 2 — ADR-050)
+#
+# parse_rankings is a pure function on a single rankings page's HTML — no
+# HTTP, no event-index logic. The orchestrator handles the index→rankings
+# flow and supplies tournament-level metadata (weapon/gender/category)
+# from the index parse before draft writes.
+# =============================================================================
+
+def parse_rankings(
+    html: str,
+    source_url: str | None = None,
+):
+    """Parse a Dartagnan rankings HTML page into ParsedTournament.
+
+    No HTTP, no event-index parsing — purely transforms a rankings-page
+    HTML string. Tournament metadata (weapon/gender/category) is the
+    orchestrator's responsibility (it learns those from the event index).
+
+    Synthetic source_row_id (no native row IDs in Dartagnan rankings).
+    """
+    from python.pipeline.ir import (
+        ParsedResult, ParsedTournament, SourceKind, make_synthetic_id,
+    )
+
+    soup = BeautifulSoup(html, "html.parser")
+    table = soup.find("table", class_="lists")
+    parsed_results: list[ParsedResult] = []
+
+    if table is not None:
+        row_index = 0
+        for row in table.find_all("tr"):
+            if row.find("th"):
+                continue
+            cells = row.find_all("td")
+            if len(cells) < 6:
+                continue
+
+            place_text = cells[0].get_text(strip=True)
+            if not place_text or not place_text[0].isdigit():
+                continue
+            place = int(re.sub(r"[^0-9]", "", place_text))
+
+            surname = cells[1].get_text(strip=True)
+            firstname = cells[2].get_text(strip=True)
+            fencer_name = _normalize_name(surname, firstname)
+            if not fencer_name:
+                continue
+
+            country = _country_from_flag(cells[5]) or None
+
+            row_index += 1
+            parsed_results.append(ParsedResult(
+                source_row_id=make_synthetic_id(
+                    SourceKind.DARTAGNAN,
+                    row_index=row_index,
+                    place=place,
+                    name=fencer_name,
+                ),
+                fencer_name=fencer_name,
+                place=place,
+                fencer_country=country,
+            ))
+
+    return ParsedTournament(
+        source_kind=SourceKind.DARTAGNAN,
+        results=parsed_results,
+        raw_pool_size=len(parsed_results),
+        source_url=source_url,
+    )
