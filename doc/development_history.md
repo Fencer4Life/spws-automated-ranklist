@@ -705,6 +705,26 @@ To manage complexity, the system was built iteratively, ensuring value was deliv
 
 - **Status:** IN PROGRESS — active rebuild plan at `/Users/aleks/.claude/plans/now-we-have-a-precious-wren.md` (master) with phase subplans at [doc/plans/rebuild/](plans/rebuild/). Original archived plan: [Go-to-PROD Plan](archive/Go-to-PROD.md).
 
+#### Rebuild progress (sub-phases of Phase 2b)
+
+| Sub-phase | Status | Date | Notes |
+|---|---|---|---|
+| 0.0a — CI Node 24 upgrade | ✅ DONE | 2026-04-30 | CI upgraded ahead of the rebuild lifetime |
+| 0.0b — Plan decomposition (master + 9 subplans) | ✅ DONE | 2026-05-01 | `doc/plans/rebuild/` |
+| 0.5 — Spec refactor + RTM externalization | ✅ DONE | 2026-05-01 | Spec 1773 → 1441 lines; RTM externalized to `doc/requirements-traceability-matrix.md`; SuperFive moved to `doc/backlog/superfive-phase-3.md`; `scripts/check-spec-sync.sh` CI gate added |
+| 0 — Schema prep + cert_ref + rules + matcher config + Claude modules | ✅ DONE | 2026-05-01 | Migrations `20260501000001_phase0_schema_prep.sql` + `20260501000002_cert_ref_schema.sql`; ADR-050 stub; rules registry R001-R012 (incl. R005b); `scripts/load-cert-ref.sh`; `python/matcher/config.yaml` |
+| 1 — Traceability schema + IR + 8 parsers + Ophardt + parser registry | ✅ DONE | 2026-05-01 | ADR-055 migration `20260501000003_phase1_ingest_traceability.sql` (23 pgTAP); `python/pipeline/ir.py` (`SourceKind`/`ParsedResult`/`ParsedTournament`/`make_synthetic_id`); 8 parsers IR-conformed (FTL/Engarde/file_import/FT XML/4Fence/Dartagnan/EVF API + new Ophardt); `python/scrapers/__init__.py` `PARSERS` dict; 41 IR contract pytest assertions; cross-language enum sync test |
+| 2 — Draft tables + dry-run loop | ⏳ pending | — | Subplan: `doc/plans/rebuild/p2-drafts.md` |
+| 3 — Stages 1-7 + alias writeback + 3-way diff + interactive CLI | ⏳ pending | — | Subplan: `doc/plans/rebuild/p3-pipeline.md` |
+| 4 — Commit path + frozen snapshot + EVF parity + alias UI | ⏳ pending | — | Subplan: `doc/plans/rebuild/p4-commit-ui.md` |
+| 5 — Operational rebuild (every event reviewed and committed) | ⏳ pending | — | Subplan: `doc/plans/rebuild/p5-execute.md` |
+| 6 — Drop tbl_match_candidate + remove old UI + finalize + LOCAL→CERT→PROD | ⏳ pending | — | Subplan: `doc/plans/rebuild/p6-finalize.md` |
+| 7 — Carry-over FK + 366-day cap + admin UI | ⏳ pending | — | Subplan: `doc/plans/rebuild/p7-carryover.md` |
+
+ADRs landed during the rebuild: [ADR-050](adr/050-unified-ingestion-pipeline.md) (umbrella), [ADR-055](adr/055-ingest-traceability.md) (parser provenance + cap-6 history). ADRs 051-054 are reserved for upcoming sub-phases (frozen snapshot, URL→data validation, EVF backup-source parity, carry-over FK + 366-day cap).
+
+Test totals at end of Phase 1: pgTAP 427 (+23), pytest 402 (+48), vitest 332 (unchanged).
+
 - **Scope (deferred from MVP M9b):**
 
     - **Pipeline orchestration:** End-to-end flow (parse file → fuzzy match → insert results → score) in a single DB transaction per ADR-014.

@@ -142,6 +142,21 @@ For ADR-to-FR cross-references, see Project Specification Appendix C — Archite
 | Infrastructure (NFR) | 2 | NFR-02, NFR-12 |
 | Covered (NFR) | 7 | NFR-05, NFR-06, NFR-07, NFR-09, NFR-10 (partial), NFR-11, NFR-13 |
 
+## Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)
+
+The rebuild introduces infrastructure tests that don't map to user-facing FRs. They are catalogued here for traceability against the architecture decisions that introduced them. For the rebuild's per-sub-phase status, see [doc/development_history.md](development_history.md) §Phase 2b.
+
+| ADR | Scope | Tests | Status |
+|-----|-------|-------|--------|
+| [ADR-050](adr/050-unified-ingestion-pipeline.md) | Unified Ingestion Pipeline — IR contract + 8 parsers + parser registry | `python/tests/test_ir.py::ir.1`–`ir.7` (7 IR contract assertions, incl. cross-language enum sync); `python/tests/test_ir_contracts.py` (41 parser-contract assertions across 9 test classes — `ftl_ir.1`–`7`, `engarde_ir.1`–`5`, `file_import_ir.1`–`3`, `ftxml_ir.1`–`6`, `fourfence_ir.1`–`4`, `dartagnan_ir.1`–`5`, `evf_ir.1`–`4`, `ophardt_ir.1`–`5`, `registry.1`–`2`) | Covered (Phase 1, 2026-05-01) |
+| [ADR-055](adr/055-ingest-traceability.md) | Per-parser provenance stamps on `tbl_event` + `tbl_tournament`; cap-6 history tables; 8 design decisions D1–D8 | `supabase/tests/26_ingest_traceability.sql::26.1`–`26.23` (enum + stamp columns + history tables + FK CASCADE + UNIQUE + cap-of-6 trigger + per-parent isolation) | Covered (Phase 1, 2026-05-01) |
+| ADR-051 (planned) | Frozen-snapshot policy (`txt_source_status`, copy-from-PROD) | TBD — Phase 4 | Pending |
+| ADR-052 (planned) | URL→data validation enforcement | TBD — Phase 3 | Pending |
+| ADR-053 (planned) | EVF backup-source + parity gate | TBD — Phase 4 | Pending |
+| ADR-054 (planned) | Carry-over FK + 366-day cap | TBD — Phase 7 | Pending |
+
+The cross-language enum-sync invariant (Python `SourceKind` ↔ Postgres `enum_parser_kind`) is enforced at runtime by `test_ir.py::test_source_kind_matches_postgres_enum` — drift detector for any future source addition.
+
 ## Cross-references
 
 - ADR registry: Project Specification Appendix C — Architecture Decisions

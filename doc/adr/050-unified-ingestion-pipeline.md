@@ -128,3 +128,19 @@ Considered including ADR-054 cap enforcement + FK default flip in Phase 0–6. R
 - ✅ `doc/rules/` framework — Makefile + README + R001-R012 seed files
 - ✅ Claude-guidance modules aligned (commit 6250f04) — REBUILD WAIVER / REBUILD-NEW markers; `tbl_match_candidate` removal noted
 - ✅ pgTAP 404/404 green; pytest 360/363 (1 pre-existing data-drift, see commit body); vitest 332/332 green
+
+## Status — Phase 1 deliverables (committed 2026-05-01)
+
+Phase 1 ships the **traceability schema** (ADR-055) and the **intermediate representation + 8 parsers + parser registry**. 7 commits land between `4409f95` and `6ae21c0` on `main`.
+
+- ✅ Migration `supabase/migrations/20260501000003_phase1_ingest_traceability.sql` (ADR-055):
+  - `enum_parser_kind` Postgres enum (8 values, mirrors Python `SourceKind`)
+  - Stamp columns on `tbl_event` + `tbl_tournament`: `enum_parser_kind`, `dt_last_scraped`, `txt_source_url_used`
+  - History tables `tbl_event_ingest_history` + `tbl_tournament_ingest_history` with FK CASCADE, UNIQUE(parent, run_id), `BEFORE INSERT` cap-of-6 trigger
+  - 23 pgTAP assertions in `supabase/tests/26_ingest_traceability.sql`
+- ✅ `python/pipeline/ir.py`: `SourceKind`, `ParsedResult`, `ParsedTournament`, `make_synthetic_id()`. Cross-language enum sync test verifies Python ↔ Postgres alignment at runtime.
+- ✅ All 8 parsers conform to the IR via `parse_*()` factories (see [p1-ir-parsers.md](../plans/rebuild/p1-ir-parsers.md) for the per-parser table). Native IDs where available (FencingTime XML, FTL JSON, Ophardt); `make_synthetic_id()` for the rest.
+- ✅ `python/scrapers/__init__.py` `PARSERS` dict — single source of truth mapping each `SourceKind` to its canonical parser; pytest contract guards completeness.
+- ✅ Ophardt parser written from scratch + spike-captured fixture (Munich 2024 EVF Circuit Memoriam Max Geuter, Foil Men's O50). Server-rendered HTML, no Playwright dep needed.
+- ✅ Test totals: pgTAP 404 → 427 (+23 ADR-055); pytest 354 → 402 (+7 IR contract + 41 parser contracts); vitest 332 unchanged.
+- ✅ Coherence + spec-sync gates pass.
