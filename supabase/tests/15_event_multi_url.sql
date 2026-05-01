@@ -27,7 +27,8 @@ $setup$;
 SELECT is(
   (SELECT COUNT(*)::INT
      FROM information_schema.columns
-    WHERE table_name = 'tbl_event'
+    WHERE table_schema = 'public'
+      AND table_name = 'tbl_event'
       AND column_name IN ('url_event_2','url_event_3','url_event_4','url_event_5')
       AND data_type = 'text'
       AND is_nullable = 'YES'),

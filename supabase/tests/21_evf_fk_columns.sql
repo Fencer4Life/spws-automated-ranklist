@@ -14,7 +14,8 @@ SELECT plan(5);
 SELECT is(
   (SELECT data_type || '/' || is_nullable
      FROM information_schema.columns
-    WHERE table_name = 'tbl_event' AND column_name = 'id_evf_event'),
+    WHERE table_schema = 'public'
+      AND table_name = 'tbl_event' AND column_name = 'id_evf_event'),
   'integer/YES',
   '21.1: tbl_event.id_evf_event is a nullable INTEGER column'
 );
@@ -26,7 +27,8 @@ SELECT is(
 SELECT is(
   (SELECT data_type || '/' || is_nullable
      FROM information_schema.columns
-    WHERE table_name = 'tbl_tournament' AND column_name = 'id_evf_competition'),
+    WHERE table_schema = 'public'
+      AND table_name = 'tbl_tournament' AND column_name = 'id_evf_competition'),
   'integer/YES',
   '21.2: tbl_tournament.id_evf_competition is a nullable INTEGER column'
 );
@@ -50,7 +52,8 @@ SELECT is(
 SELECT is(
   (SELECT COUNT(*)::INT
      FROM information_schema.columns
-    WHERE table_name = 'vw_calendar' AND column_name = 'id_evf_event'),
+    WHERE table_schema = 'public'
+      AND table_name = 'vw_calendar' AND column_name = 'id_evf_event'),
   1,
   '21.4: vw_calendar exposes id_evf_event'
 );

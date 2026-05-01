@@ -1422,6 +1422,7 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 | [ADR-047](adr/047-vcat-invariant-trigger-and-splitter-consolidation.md) | V-cat invariant trigger (`trg_assert_result_vcat`) + combined-pool splitter consolidation across all ingestion paths (FTL/Engarde/4Fence/Dartagnan/CSV) | ADR-022, ADR-024 |
 | [ADR-048](adr/048-source-vs-db-audit-and-phantom-rows.md) | Source-vs-DB audit tooling + phantom-row policy (deletion/recovery rules for result rows missing from source) | ADR-024, ADR-047 |
 | [ADR-049](adr/049-joint-pool-split-flag.md) | `bool_joint_pool_split` flag on `tbl_tournament` to drive per-V-cat splitting on joint-pool events; backfill function + pytest-enforced ingester contract | ADR-024, ADR-038, ADR-047, ADR-048 |
+| [ADR-050](adr/050-unified-ingestion-pipeline.md) | Unified Ingestion Pipeline (rebuild, Phases 0-6) — single IR + 8 source mouths + draft tables + per-result provenance on `tbl_result` (replaces `tbl_match_candidate`); supersedes ADR-024, ADR-025, ADR-039, ADR-049 | FR-71, FR-72, FR-79, ADR-024, ADR-025, ADR-039, ADR-049 |
 
 ## Appendix D — Test Baseline
 
