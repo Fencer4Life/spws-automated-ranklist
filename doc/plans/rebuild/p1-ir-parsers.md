@@ -1,10 +1,10 @@
-# Phase 1 — IR + 7 existing parsers (M)
+# Phase 1 — IR + 8 parsers (7 existing + Ophardt) (M)
 
 **Prerequisites:** Phase 0 ([p0-prep.md](p0-prep.md)) — schema, cert_ref, rules, matcher config, Claude modules aligned.
 
 ## Goal
 
-Stand up a normalized intermediate representation (IR). Conform all 7 existing parsers to it. Decide whether Ophardt belongs in this rebuild or defers to Phase 1.5.
+Stand up a normalized intermediate representation (IR). Conform all 7 existing parsers to it. Add Ophardt as the 8th parser — spike confirmed server-rendered HTML, no Playwright dep needed (see [doc/audits/ophardt_format_research.md](../../audits/ophardt_format_research.md)).
 
 ## IR contract
 
@@ -40,13 +40,14 @@ class ParsedTournament:
 
 ## Deliverables
 
-- New file: `python/pipeline/ir.py` — `ParsedTournament`, `ParsedResult`, `SourceKind` enum.
-- Parser registry in `python/scrapers/__init__.py`.
-- Each existing parser conforms to the IR via `parse(...) → ParsedTournament` factory.
+- New file: `python/pipeline/ir.py` — `ParsedTournament`, `ParsedResult`, `SourceKind` enum (8 values incl. `OPHARDT_HTML`).
+- New file: `python/scrapers/ophardt.py` — Ophardt parser (server-rendered HTML, `requests` + `lxml`/`BeautifulSoup`, no JS runtime).
+- Parser registry in `python/scrapers/__init__.py` covering all 8 sources.
+- Each parser conforms to the IR via `parse(...) → ParsedTournament` factory.
 - pytest contract tests: each parser produces a schema-valid `ParsedTournament`.
-- Engarde HU test fixture added to `python/tests/fixtures/engarde/hu/`.
+- Test fixtures: Engarde HU at `python/tests/fixtures/engarde/hu/`; Ophardt at `python/tests/fixtures/ophardt/` (event page + tournament results page snapshots from EVF Circuit Memoriam Max Geuter, Munich 2024).
 
-## Sources to refactor (7 existing)
+## Sources (8 total)
 
 | Source | File | Change required |
 |---|---|---|
@@ -57,20 +58,13 @@ class ParsedTournament:
 | Dartagnan | [python/scrapers/dartagnan.py](../../../python/scrapers/dartagnan.py) | Refactor to emit IR |
 | EVF API | [python/scrapers/evf_results.py](../../../python/scrapers/evf_results.py) | Refactor to emit IR; harden CATEGORY_MAP missing-key path (must error, not return None) |
 | CSV/XLSX/JSON | [python/scrapers/file_import.py](../../../python/scrapers/file_import.py) | Wire to orchestrator (currently orphaned) |
-
-## Ophardt research spike (manual fetch + writeup)
-
-- Output: `doc/audits/ophardt_format_research.md`
-- Decision criteria:
-  - HTML-server-rendered → in-scope, write parser this phase or 1.5
-  - SPA / Playwright-only → defer to Phase 1.5 or out-of-scope (heavy dep)
-- File `python/scrapers/ophardt.py` is created **only if** the research outcome is favorable.
+| Ophardt (NEW) | `python/scrapers/ophardt.py` (to create) | Server-rendered HTML on `fencingworldwide.com`; results table at `/{lang}/{tournamentId}-{year}/results/`; emits IR with stable `source_row_id="ophardt:{athleteId}"`; locale-mixed breadcrumb (German labels on `/en/` URLs) — reuse Engarde lookup tables. Birth year not exposed; rely on event-level `category_hint` + Ophardt athlete ID for identity. Spike: [doc/audits/ophardt_format_research.md](../../audits/ophardt_format_research.md). |
 
 ## Risk gate
 
 - All existing pytest scraper tests pass.
-- New contract tests pass (each parser → schema-valid `ParsedTournament`).
-- Ophardt decision documented in `doc/audits/ophardt_format_research.md`.
+- New contract tests pass: each of the 8 parsers → schema-valid `ParsedTournament`.
+- Ophardt parser produces a valid `ParsedTournament` from the captured fixture (Munich 2024 EVF Circuit, Foil Men's O50 → V2).
 
 ## Cross-references
 
