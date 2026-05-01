@@ -1,7 +1,7 @@
 -- =============================================================================
 -- T9.0: Admin Auth Migration — REVOKE/GRANT Tests
 -- =============================================================================
--- Tests 9.01–9.05 from doc/MVP_development_plan.md §T9.0.
+-- Tests 9.01–9.05 from doc/archive/MVP_development_plan.md §T9.0.
 -- Verifies that write functions are revoked from anon/PUBLIC and granted
 -- to authenticated only. Read-only fn_export_scoring_config stays anon.
 -- =============================================================================

@@ -257,7 +257,7 @@ class TestPromoteEvent:
 
 
 class TestPromoteCalendar:
-    """Plan test IDs prom.5–prom.7 — see doc/evf_calendar_promote_plan.md."""
+    """Plan test IDs prom.5–prom.7 — see doc/archive/evf_calendar_promote_plan.md."""
 
     def test_calendar_mode_imports_new_events_on_prod(self):
         """prom.5: calendar mode calls fn_import_evf_events on PROD for CERT-only events."""

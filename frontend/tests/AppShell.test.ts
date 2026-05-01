@@ -1,5 +1,5 @@
 // Plan tests: 8.27 (hamburger), 8.33, 8.34, 8.37, BY.1-BY.7
-// See doc/MVP_development_plan.md §M8 T8.4, §M10 birth year subtitle.
+// See doc/archive/MVP_development_plan.md §M8 T8.4, §M10 birth year subtitle.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'

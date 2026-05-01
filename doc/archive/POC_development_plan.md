@@ -1,4 +1,4 @@
-> **ARCHIVED** — This document is superseded by [Development History](development_history.md) and the [Project Specification](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). Kept for git history reference only.
+> **ARCHIVED** — This document is superseded by [Development History](../development_history.md) and the [Project Specification](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). Kept for git history reference only.
 
 # POC Development Plan — SPWS Automated Ranklist System
 
@@ -74,10 +74,10 @@ Tests are the living specification. If a test doesn't exist for a requirement, t
 
 ### 1.7 Cross-References
 
-This plan is the implementation companion to the [Project Specification](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). The following specification artifacts provide traceability and decision context:
+This plan is the implementation companion to the [Project Specification](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). The following specification artifacts provide traceability and decision context:
 
 - **Requirements Traceability Matrix (Appendix C)** — maps 52 Functional Requirements (FR-01–FR-52) and 13 Non-Functional Requirements (NFR-01–NFR-13) to their verifying tests. Test IDs in the RTM (e.g., `3.1a–g`, `5.4–5.7`) reference the numbered tests in this plan's milestone tables.
-- **Architecture Decision Records ([`doc/adr/`](adr/))** — 14 ADRs documenting key design decisions with rationale and tradeoffs. Referenced in milestone implementation notes below where relevant.
+- **Architecture Decision Records ([`doc/adr/`](../adr/))** — 14 ADRs documenting key design decisions with rationale and tradeoffs. Referenced in milestone implementation notes below where relevant.
 
 The "Derives From" column in each milestone's test table maps tests → spec sections (§ references and UC IDs). The RTM provides the reverse mapping: spec requirements → tests.
 
@@ -267,7 +267,7 @@ graph LR
 - **Bugs fixed during GREEN:**
   1. Audit trigger originally used `CASE TG_TABLE_NAME WHEN ... THEN OLD.id_event ...` — PostgreSQL evaluates all CASE branches regardless of match, causing `record "old" has no field "id_event"` errors on non-event tables. Fixed by passing PK column name as `TG_ARGV[0]` and extracting via `to_jsonb(OLD)->>v_pk_col`.
   2. RLS test for `authenticated` role required setting JWT claims via `set_config('request.jwt.claim.role', 'authenticated', TRUE)` in addition to `SET LOCAL ROLE authenticated`, because Supabase's `auth.role()` reads from JWT claims, not the PG role.
-- **Design decision:** Single admin account with three RLS roles — see [ADR-004](adr/004-single-admin-account.md).
+- **Design decision:** Single admin account with three RLS roles — see [ADR-004](../adr/004-single-admin-account.md).
 - **Event transition state machine:**
   ```
   PLANNED → SCHEDULED → IN_PROGRESS → COMPLETED
@@ -338,7 +338,7 @@ graph LR
   1. PostgreSQL's `ROUND(double precision, integer)` does not exist — `LN()`, `POWER()`, `CEIL()`, `FLOOR()` all return `double precision`, but `ROUND` with a precision argument only accepts `NUMERIC`. Fixed by adding explicit `::NUMERIC` casts on all expressions passed to `ROUND(..., 2)`.
   2. Test 2.7 (MPW multiplier comparison) originally compared `MPW_final = ROUND(PPW_final * 1.2, 2)`, which fails due to double-rounding: `ROUND(ROUND(sum, 2) * 1.2, 2) ≠ ROUND(sum * 1.2, 2)` when the intermediate rounding shifts the value. Fixed by verifying that PPW and MPW share identical component values (place_pts, de_bonus, podium_bonus) and that the final_score ratio is within 0.01 of 1.2.
 - **Formula revision (post-M2):** The original M2 implementation used `3×N^(1/3)` as the per-DE-round bonus multiplier. After comparing against the SPWS reference Excel (`Bonus za rundę = 10`, a fixed scoring parameter), this was changed to a flat **10 pts per DE round** via migration `20250304000001_fix_de_bonus_formula.sql`. The podium bonus formula (`gold/silver/bronze × 3×N^(1/3)`) was not changed — it matches the Excel's dynamic formula. Tests 2.4 and 2.5 were updated accordingly (expected values changed from `~30` to `40` and `~43` to `50`). All existing tournament scores were recomputed.
-- **Design decisions:** Hybrid scoring config (DB table + JSON export/import) — see [ADR-001](adr/001-hybrid-scoring-config.md). Calculate-once-store-forever (immutable scores) — see [ADR-002](adr/002-calculate-once-store-forever.md).
+- **Design decisions:** Hybrid scoring config (DB table + JSON export/import) — see [ADR-001](../adr/001-hybrid-scoring-config.md). Calculate-once-store-forever (immutable scores) — see [ADR-002](../adr/002-calculate-once-store-forever.md).
 
 ---
 
@@ -503,7 +503,7 @@ graph LR
 - `vw_score` excludes `id_fencer IS NULL` rows (unlinked results from PEW/MEW unmatched or pre-matching).
 - `fn_ranking_ppw` uses CTEs for best-K PPW selection + conditional MPW drop logic.
 - Test 5.12 verifies that unlinked results (NULL `id_fencer`) are excluded from ranking output — aligned with intake rules where PPW/MPW auto-create fencers (so no NULL `id_fencer` for domestic) and PEW/MEW skip unmatched (so skipped results never reach the view).
-- **Design decisions:** Identity by FK, not by name — see [ADR-003](adr/003-identity-by-fk-not-name.md). JSONB bucket-based ranking rules — see [ADR-006](adr/006-jsonb-ranking-rules.md). Age category by birth year (cross-category carryover) — see [ADR-010](adr/010-age-category-by-birth-year.md).
+- **Design decisions:** Identity by FK, not by name — see [ADR-003](../adr/003-identity-by-fk-not-name.md). JSONB bucket-based ranking rules — see [ADR-006](../adr/006-jsonb-ranking-rules.md). Age category by birth year (cross-category carryover) — see [ADR-010](../adr/010-age-category-by-birth-year.md).
 - Migration file: `supabase/migrations/20250306000002_exclude_zero_domestic.sql` — domestic-participation requirement (§8.5(7)): adds `WHERE total_score > 0` to `fn_ranking_ppw` and `WHERE COALESCE(d.ppw_total, 0) > 0` to `fn_ranking_kadra`. Tests 5.24–5.25 (2 additional pgTAP assertions, total now 19).
 
 ---
@@ -637,15 +637,15 @@ PPW drill-down (toggle = PPW): same layout, no International section. Domestic c
 **Shadow DOM tradeoff (test 6.7):**
 The spec originally called for a Svelte custom element with Shadow DOM for CSS isolation when embedded in WordPress. During implementation, this was deferred because Svelte 5's `customElement: true` compiler option is incompatible with `@testing-library/svelte` (which uses the Svelte 4 `new Component()` API via `compatibility.componentApi: 4`). Enabling `customElement: true` globally breaks all unit tests. The POC uses direct `mount()` instead, trading Shadow DOM isolation for a full unit test suite (33 vitest tests). **Shadow DOM isolation is a hard requirement for MVP (Phase 2)** — the component must ship as a proper `<spws-ranklist>` custom element with encapsulated styles before WordPress deployment. See §6.2 of the Project Specification.
 
-**Design decisions:** Shadow DOM deferred to MVP — see [ADR-007](adr/007-shadow-dom-deferred.md). Svelte 5 `$state` for i18n — see [ADR-005](adr/005-svelte-state-i18n.md). PSW/MSW in international ranking pool — see [ADR-008](adr/008-psw-msw-international-pool.md).
+**Design decisions:** Shadow DOM deferred to MVP — see [ADR-007](../adr/007-shadow-dom-deferred.md). Svelte 5 `$state` for i18n — see [ADR-005](../adr/005-svelte-state-i18n.md). PSW/MSW in international ranking pool — see [ADR-008](../adr/008-psw-msw-international-pool.md).
 
 **Verification:**
 - Vitest unit tests pass for component logic (28 tests across 6 test files).
 - pgTAP total: 236 assertions (1 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 7 T8.2 + 5 T8.3 + 5 T9.0 + 23 T9.1 + 21 M10 rolling + 27 ingest pipeline + 13 identity resolution + 4 EVF import).
 - Manual test: open `index.html` in browser with `demo` attribute, verify ranklist loads with mock data, drilldown modal shows score breakdown with markers and summary rows.
 
-**CERT/PROD Deployment (infrastructure — not a plan test):** See [ADR-009](adr/009-cert-prod-runtime-toggle.md) for architectural rationale, [ADR-011](adr/011-artifact-release-pipeline.md) for release pipeline design.
-- Three-tier release pipeline: LOCAL (Docker) → CERT (cloud) → PROD (cloud). See [CI/CD Operations Manual](cicd-operations-manual.md).
+**CERT/PROD Deployment (infrastructure — not a plan test):** See [ADR-009](../adr/009-cert-prod-runtime-toggle.md) for architectural rationale, [ADR-011](../adr/011-artifact-release-pipeline.md) for release pipeline design.
+- Three-tier release pipeline: LOCAL (Docker) → CERT (cloud) → PROD (cloud). See [CI/CD Operations Manual](../cicd-operations-manual.md).
 - `.github/workflows/release.yml` replaces `deploy.yml` — triggered by CI success, deploys Pages + CERT (auto) + PROD (manual approval).
 - Schema fingerprint verification ensures LOCAL/CERT/PROD parity after each deployment.
 - `deployed_migrations.json` tracks applied migrations per environment. `release-manifest.json` provides audit trail.
@@ -661,9 +661,9 @@ The spec originally called for a Svelte custom element with Shadow DOM for CSS i
 
 **Use Cases:** UC1 (automation), §7 (alerting)
 
-**Status:** Deferred to MVP M9. Individual components (scrapers M3, matcher M4, scoring M2) are complete and tested. Orchestration pipeline, admin CRUD UI, and identity resolution admin UI will be implemented in M9. See [ADR-013](adr/013-poc-mvp-transition.md).
+**Status:** Deferred to MVP M9. Individual components (scrapers M3, matcher M4, scoring M2) are complete and tested. Orchestration pipeline, admin CRUD UI, and identity resolution admin UI will be implemented in M9. See [ADR-013](../adr/013-poc-mvp-transition.md).
 
-**Purpose:** Wire everything together into an automated scheduled ingestion pipeline. The release pipeline (schema deployment + frontend) is already implemented in M6 via `release.yml` — see [ADR-011](adr/011-artifact-release-pipeline.md). Tests here focus on orchestration logic — individual scraper, matcher, and scoring behaviors are already tested in M3, M4, and M2 respectively.
+**Purpose:** Wire everything together into an automated scheduled ingestion pipeline. The release pipeline (schema deployment + frontend) is already implemented in M6 via `release.yml` — see [ADR-011](../adr/011-artifact-release-pipeline.md). Tests here focus on orchestration logic — individual scraper, matcher, and scoring behaviors are already tested in M3, M4, and M2 respectively.
 
 **Acceptance Tests (RED):**
 
@@ -691,7 +691,7 @@ The spec originally called for a Svelte custom element with Shadow DOM for CSS i
 - `python/pipeline/discord.py` — Discord webhook integration.
 - GitHub Actions secrets: `SUPABASE_URL`, `SUPABASE_KEY` (service_role), `DISCORD_WEBHOOK_URL`.
 
-**Deferred:** Data rollback snapshots evaluated and deferred — see [ADR-012](adr/012-sql-pre-deploy-snapshots.md).
+**Deferred:** Data rollback snapshots evaluated and deferred — see [ADR-012](../adr/012-sql-pre-deploy-snapshots.md).
 
 **Verification:**
 - All pytest tests pass (pipeline logic tested with mocked DB and HTTP calls).
@@ -769,7 +769,7 @@ The POC is considered complete when ALL of the following are true:
 - [x] Season and tournament lifecycle management working via Supabase Dashboard.
 - [x] Public ranking view accessible via PostgREST API (anonymous read).
 - [x] Web Component renders ranking table with working filters and drill-down in the local Shadow Wrapper.
-- [ ] ~~GitHub Actions pipeline runs on schedule, scrapes → matches → scores, and sends Discord alert on failure.~~ **Deferred to MVP M9** — see [ADR-013](adr/013-poc-mvp-transition.md).
+- [ ] ~~GitHub Actions pipeline runs on schedule, scrapes → matches → scores, and sends Discord alert on failure.~~ **Deferred to MVP M9** — see [ADR-013](../adr/013-poc-mvp-transition.md).
 - [x] All 15 Phase 1 use cases (UC1–5, UC7–13, UC18–20) have at least one passing acceptance test. *(UC1 automation and UC4 admin UI deferred to M9; all other UCs covered.)*
 - [x] Requirements Traceability Matrix (Appendix C) reviewed — all "Gap" and "Partial" items tracked below.
 
@@ -799,13 +799,13 @@ The POC is considered complete when ALL of the following are true:
 
 ### Transition to MVP
 
-See [ADR-013](adr/013-poc-mvp-transition.md). MVP scope documented in [MVP Development Plan](MVP_development_plan.md) and [Project Specification §6.2](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#phase-2-minimum-viable-product-mvp).
+See [ADR-013](../adr/013-poc-mvp-transition.md). MVP scope documented in [MVP Development Plan](MVP_development_plan.md) and [Project Specification §6.2](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#phase-2-minimum-viable-product-mvp).
 
 ---
 
 ## 7. Known Test Gaps
 
-The following requirements from the [RTM (Appendix C)](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#appendix-c--requirements-traceability-matrix) have incomplete or missing test coverage. All items carry forward to MVP — see [ADR-013](adr/013-poc-mvp-transition.md).
+The following requirements from the [RTM (Appendix C)](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#appendix-c--requirements-traceability-matrix) have incomplete or missing test coverage. All items carry forward to MVP — see [ADR-013](../adr/013-poc-mvp-transition.md).
 
 ### Gaps (no test)
 

@@ -1,5 +1,5 @@
 // Plan tests: 6.1, 6.5, 6.11 — RanklistTable component.
-// See doc/POC_development_plan.md §M6 test table.
+// See doc/archive/POC_development_plan.md §M6 test table.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'

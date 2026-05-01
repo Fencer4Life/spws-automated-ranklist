@@ -1,7 +1,7 @@
 -- =============================================================================
 -- T9.1: CRUD SQL + Delete Cascade Tests
 -- =============================================================================
--- Tests 9.18–9.36 from doc/MVP_development_plan.md §T9.1.
+-- Tests 9.18–9.36 from doc/archive/MVP_development_plan.md §T9.1.
 -- Verifies CRUD functions for seasons, events, tournaments, plus cascade
 -- deletes and permission enforcement (REVOKE from anon).
 -- =============================================================================

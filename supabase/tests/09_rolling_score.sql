@@ -1,7 +1,7 @@
 -- =============================================================================
 -- M10: Rolling Score Tests
 -- =============================================================================
--- Tests R.1–R.12 from doc/MVP_development_plan.md §M10.
+-- Tests R.1–R.12 from doc/archive/MVP_development_plan.md §M10.
 -- R.1-R.3:  fn_event_position helper
 -- R.4-R.12: fn_ranking_ppw with p_rolling parameter
 -- =============================================================================

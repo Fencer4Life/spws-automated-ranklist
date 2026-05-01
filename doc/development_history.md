@@ -414,7 +414,7 @@ The PAT should be **fine-grained, scoped to this repo only, with `Actions: read 
 1. **Auto-refresh ~40s after dispatch success.** `setTimeout(onrefresh, 40_000)` scheduled in `dispatchAndTrack`'s success branch, per-event timer ID tracked so a second dispatch on the same event resets the clock (latest wins, no double-fire).
 2. **Refetch on every accordion expand (▶ → ▼).** `toggleExpand` calls `runRefreshFor(eventId)` on the collapsed→expanded transition; collapsing is a no-op for refresh. Maps to natural admin intent ("show me this event's tournaments now"). Always fires regardless of whether a dispatch happened — consistent semantics, no stale-tracking state.
 
-**Spinner UX (clever, not generic — see [`doc/adr041_refresh_ux_plan.md`](adr041_refresh_ux_plan.md)):**
+**Spinner UX (clever, not generic — see [`doc/archive/adr041_refresh_ux_plan.md`](archive/adr041_refresh_ux_plan.md)):**
 
 - **Delayed-show ≥200 ms** — sub-200ms refreshes (the 95% case on CERT) render zero spinner. No flicker on fast networks.
 - **Per-event `Map<id_event, RefreshPhase>`** — no global overlay. A slow refresh on one event doesn't blank-out the rest of the calendar.
@@ -607,6 +607,6 @@ Phase 3c (commit 29afa4b) finishes the trilogy. The EventManager admin page gain
 
 The following documents contain the original detailed plans. They are superseded by this history and the Project Specification:
 
-- `doc/POC_development_plan.md` — POC milestones M0–M6 (archived)
-- `doc/MVP_development_plan.md` — MVP milestones M8–M10 (archived)
-- `doc/Go-to-PROD.md` — Go-to-PROD items 2.1–2.9 (archived)
+- `doc/archive/POC_development_plan.md` — POC milestones M0–M6 (archived)
+- `doc/archive/MVP_development_plan.md` — MVP milestones M8–M10 (archived)
+- `doc/archive/Go-to-PROD.md` — Go-to-PROD items 2.1–2.9 (archived)

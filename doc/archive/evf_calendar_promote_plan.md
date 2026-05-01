@@ -1,8 +1,8 @@
 # EVF Calendar Promote (CERT → PROD) — Implementation Plan
 
 **Date:** 2026-04-20
-**ADR:** [ADR-026](adr/026-cert-prod-promotion.md) — Calendar Promote Mode amendment
-**Related:** [ADR-011](adr/011-artifact-release-pipeline.md) (three-tier pipeline), [ADR-028](adr/028-evf-calendar-results-import.md) (EVF scraper), [ADR-036](adr/036-prod-export-local-mirror.md) (PROD export)
+**ADR:** [ADR-026](../adr/026-cert-prod-promotion.md) — Calendar Promote Mode amendment
+**Related:** [ADR-011](../adr/011-artifact-release-pipeline.md) (three-tier pipeline), [ADR-028](../adr/028-evf-calendar-results-import.md) (EVF scraper), [ADR-036](../adr/036-prod-export-local-mirror.md) (PROD export)
 **RTM:** FR-58 (EVF calendar import), FR-86 (CERT→PROD promotion)
 
 ## Problem
@@ -103,8 +103,8 @@ Sent by `promote.py` on success; failure alert is sent by the workflow's `if: fa
 | [python/tests/test_promote.py](../python/tests/test_promote.py) | +3 tests `prom.5–prom.7`. |
 | [.github/workflows/promote.yml](../.github/workflows/promote.yml) | Added workflow-level concurrency group `prod-write`. |
 | [.github/workflows/evf-sync.yml](../.github/workflows/evf-sync.yml) | New `promote-calendar` job, `needs: sync`, shared concurrency group. |
-| [doc/adr/026-cert-prod-promotion.md](adr/026-cert-prod-promotion.md) | "Calendar Promote Mode (amendment, 2026-04-20)" subsection. |
-| [doc/Project Specification. SPWS Automated Ranklist System.md](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md) | Appendix C revision + RTM FR-58 / FR-86 updates. |
+| [doc/adr/026-cert-prod-promotion.md](../adr/026-cert-prod-promotion.md) | "Calendar Promote Mode (amendment, 2026-04-20)" subsection. |
+| [doc/Project Specification. SPWS Automated Ranklist System.md](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md) | Appendix C revision + RTM FR-58 / FR-86 updates. |
 
 ## Explicitly NOT changed
 

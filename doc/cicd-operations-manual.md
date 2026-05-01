@@ -302,7 +302,7 @@ Go to **Actions** tab → click the latest **Release** run → see all job statu
 3. **Update pgTAP tests** if your migration changes behavior:
    - Add/update tests in `supabase/tests/`
    - Update the `SELECT plan(N)` number to match your assertion count
-   - Update the "pgTAP total: N assertions" line in `doc/POC_development_plan.md`
+   - Update the "pgTAP total: N assertions" line in `doc/archive/POC_development_plan.md`
 
 4. **Commit and push:**
    ```bash
@@ -328,7 +328,7 @@ The coherence job runs 4 gates during CI:
 |------|---------------|-------------|
 | **Version sync** | `pyproject.toml` version == `package.json` version | Update the version that's out of sync |
 | **ADR count** | Number of `doc/adr/*.md` files == number of ADR rows in spec Appendix C | Add the missing ADR row to the spec (or create the missing ADR file) |
-| **pgTAP total** | Sum of all `SELECT plan(N)` in test files == "pgTAP total: N" in POC plan | Update the documented total in `doc/POC_development_plan.md` |
+| **pgTAP total** | Sum of all `SELECT plan(N)` in test files == "pgTAP total: N" in POC plan | Update the documented total in `doc/archive/POC_development_plan.md` |
 | **Migration↔doc sync** | New migration has corresponding spec/ADR/POC change | Warning only — add a doc update if applicable |
 
 ---

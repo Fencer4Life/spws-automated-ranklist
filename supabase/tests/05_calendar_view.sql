@@ -1,7 +1,7 @@
 -- =============================================================================
 -- T8.2: Calendar API View — Acceptance Tests
 -- =============================================================================
--- Tests 8.11–8.17 from doc/m8_implementation_plan.md §T8.2.
+-- Tests 8.11–8.17 from doc/archive/m8_implementation_plan.md §T8.2.
 -- Verifies vw_calendar provides events + tournament counts for Calendar UI.
 -- =============================================================================
 

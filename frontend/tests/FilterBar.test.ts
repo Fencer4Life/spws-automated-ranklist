@@ -1,5 +1,5 @@
 // Plan tests: 6.2, 6.4, 6.10, 6.12 — FilterBar component.
-// See doc/POC_development_plan.md §M6 test table.
+// See doc/archive/POC_development_plan.md §M6 test table.
 
 import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'

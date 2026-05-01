@@ -3,7 +3,7 @@
 **Status:** Accepted (amended 2026-04-20 — calendar promote mode added for the EVF scraper; see "Calendar Promote Mode" below)
 **Date:** 2026-04-05
 **Relates to:** ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-011 (Three-Tier Release Pipeline), ADR-028 (EVF Calendar + Results Import)
-**Companion implementation plan:** [doc/evf_calendar_promote_plan.md](../evf_calendar_promote_plan.md)
+**Companion implementation plan:** [doc/archive/evf_calendar_promote_plan.md](../archive/evf_calendar_promote_plan.md)
 
 ## Context
 

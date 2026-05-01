@@ -1,7 +1,7 @@
 -- =============================================================================
 -- Go-to-PROD: Ingest Pipeline Tests
 -- =============================================================================
--- Tests 10.1–10.7 from doc/Go-to-PROD.md (ADR-022).
+-- Tests 10.1–10.7 from doc/archive/Go-to-PROD.md (ADR-022).
 -- Verifies fn_ingest_tournament_results: atomic insert, scoring, re-import,
 -- match candidates, import status, rollback, participant count.
 -- =============================================================================

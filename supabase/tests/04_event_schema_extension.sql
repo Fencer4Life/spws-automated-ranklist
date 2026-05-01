@@ -1,7 +1,7 @@
 -- =============================================================================
 -- T8.1: tbl_event Schema Extension — Acceptance Tests
 -- =============================================================================
--- Tests 8.05–8.10 from doc/m8_implementation_plan.md §T8.1.
+-- Tests 8.05–8.10 from doc/archive/m8_implementation_plan.md §T8.1.
 -- Verifies the 4 new nullable columns added to tbl_event for calendar display.
 -- =============================================================================
 

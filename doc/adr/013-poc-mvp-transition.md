@@ -35,8 +35,8 @@ Milestone numbering continues from POC (M8, M9) rather than restarting at M1 to 
 
 ## Consequences
 
-- POC Development Plan (`POC_development_plan.md`) is frozen — M6 marked COMPLETED, M7 marked DEFERRED
-- New `MVP_development_plan.md` created for M8-M9
+- POC Development Plan (`archive/POC_development_plan.md`) is frozen — M6 marked COMPLETED, M7 marked DEFERRED
+- New `archive/MVP_development_plan.md` created for M8-M9
 - Project Specification §6.1 (POC) marked COMPLETED, §6.2 (MVP) rewritten with agreed scope
 - RTM extended with FR-43 to FR-52 (all Planned status)
 - 236 existing test assertions (117 pgTAP + 91 pytest + 28 vitest) provide the foundation for MVP development

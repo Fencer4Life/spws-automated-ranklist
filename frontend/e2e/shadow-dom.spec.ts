@@ -1,5 +1,5 @@
 // Plan tests: 8.55, 8.56, 8.57, 8.58, 8.59, 8.60, 8.61
-// See doc/m8_implementation_plan.md §T8.7.
+// See doc/archive/m8_implementation_plan.md §T8.7.
 
 import { test, expect } from '@playwright/test'
 
