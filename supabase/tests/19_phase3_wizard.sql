@@ -1,7 +1,7 @@
 -- =============================================================================
 -- Phase 3 — Admin UI + season-init wizard backend RPCs
 -- =============================================================================
--- Tests ph3.1 - ph3.22c from doc/MVP_development_plan.md (Phase 3 plan).
+-- Tests ph3.1 - ph3.22c from doc/archive/MVP_development_plan.md (Phase 3 plan).
 -- Covers four new RPCs:
 --   * fn_init_season(p_id_season)                          → ph3.1-ph3.11
 --   * fn_create_season_with_skeletons(...)                 → ph3.13-ph3.14, ph3.22b

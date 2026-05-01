@@ -1,5 +1,5 @@
 // Plan tests: 6.5, 6.6, 6.8, 6.10, 6.11, 6.12, 6.15, 6.16 — DrilldownModal component.
-// See doc/POC_development_plan.md §M6 test table.
+// See doc/archive/POC_development_plan.md §M6 test table.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render } from '@testing-library/svelte'

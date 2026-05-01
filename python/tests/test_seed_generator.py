@@ -1,6 +1,6 @@
 """
 T8.3: Multi-Category Seed Data — pytest tests for generate_season_seed.py.
-Tests 8.25–8.26 from doc/m8_implementation_plan.md §T8.3.
+Tests 8.25–8.26 from doc/archive/m8_implementation_plan.md §T8.3.
 Tests 9.142–9.148 from ADR-020: domestic auto-create for unmatched fencers.
 """
 

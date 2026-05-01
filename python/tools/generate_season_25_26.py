@@ -1,7 +1,7 @@
 """
 generate_season_25_26.py
 ------------------------
-Reads doc/SZPADA-2-2025-2026.xlsx and:
+Reads doc/assets/SZPADA-2-2025-2026.xlsx and:
   1. Reports new fencers found in the Ranking tab (for manual review / seed.sql update)
   2. Generates supabase/data/season_2025_26.sql with tournament + result data
 
@@ -25,7 +25,7 @@ from rapidfuzz import fuzz
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-XLSX_PATH = Path("doc/SZPADA-2-2025-2026.xlsx")
+XLSX_PATH = Path("doc/assets/SZPADA-2-2025-2026.xlsx")
 OUT_PATH   = Path("supabase/data/season_2025_26.sql")
 SEASON_CODE = "SPWS-2025-2026"
 DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"

@@ -1,5 +1,5 @@
 // Plan tests: 9.06, 9.07, 9.08, 9.09, 9.10, 9.11, 9.12, 9.13, 9.14, 9.15, 9.16, 9.17
-// See doc/MVP_development_plan.md §T9.0.
+// See doc/archive/MVP_development_plan.md §T9.0.
 // Replaces admin.test.ts (tests 8.48–8.54) after auth migration to Supabase Auth + TOTP MFA.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'

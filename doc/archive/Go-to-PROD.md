@@ -1,4 +1,4 @@
-> **ARCHIVED** — This document is superseded by [Development History](development_history.md) and the [Project Specification](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). Kept for git history reference only.
+> **ARCHIVED** — This document is superseded by [Development History](../development_history.md) and the [Project Specification](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). Kept for git history reference only.
 
 # Go-to-PROD Plan — SPWS Automated Ranklist System
 
@@ -429,7 +429,7 @@ Items 2.1–2.2, 2.4–2.7, 2.9 are complete. Only 2.3 and 2.8 remain as optiona
 | Not tested (NFR) | 4 | NFR-01, NFR-03, NFR-04, NFR-08 |
 | Infrastructure | 2 | NFR-02, NFR-12 |
 
-Full RTM: [Project Specification Appendix C](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#appendix-c--requirements-traceability-matrix)
+Full RTM: [Project Specification Appendix C](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#appendix-c--requirements-traceability-matrix)
 
 ## 6. ADR Registry
 
@@ -444,4 +444,4 @@ Full RTM: [Project Specification Appendix C](Project%20Specification.%20SPWS%20A
 | ADR-028 | EVF Calendar + Results Import | Accepted |
 | ADR-029 | Tournament URL Auto-Population + Admin CRUD | Accepted |
 
-See [full ADR index](adr/) and [Project Specification Appendix C](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#appendix-c--requirements-traceability-matrix).
+See [full ADR index](../adr/) and [Project Specification Appendix C](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#appendix-c--requirements-traceability-matrix).

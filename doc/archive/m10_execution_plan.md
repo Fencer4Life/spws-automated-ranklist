@@ -133,7 +133,7 @@ Execute sequentially. Each task follows TDD: write tests → RED → implement �
 - **Files:**
   - `frontend/src/lib/locales/pl.json` — add keys: `rolling_carried_over`, `rolling_progress`, `rolling_from_season`, `rolling_banner_text`
   - `frontend/src/lib/locales/en.json` — same keys in English
-  - `doc/MVP_development_plan.md` — mark M10 as COMPLETED, add implementation notes + final test counts
+  - `doc/archive/MVP_development_plan.md` — mark M10 as COMPLETED, add implementation notes + final test counts
   - `doc/Project Specification. SPWS Automated Ranklist System.md` — update FR-65/FR-66 status from Planned → Covered
 - **After:** Run all 3 test suites to confirm final green state
 

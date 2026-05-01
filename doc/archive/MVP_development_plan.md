@@ -1,4 +1,4 @@
-> **ARCHIVED** — This document is superseded by [Development History](development_history.md) and the [Project Specification](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). Kept for git history reference only.
+> **ARCHIVED** — This document is superseded by [Development History](../development_history.md) and the [Project Specification](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). Kept for git history reference only.
 
 # MVP Development Plan — SPWS Automated Ranklist System
 
@@ -47,17 +47,17 @@ The POC (M0-M6) established the foundation. **236 test assertions** across 3 sui
 
 | ADR | Title | Scope |
 |-----|-------|-------|
-| [ADR-013](adr/013-poc-mvp-transition.md) | POC-to-MVP Transition | Project phasing |
-| [ADR-014](adr/014-delete-reimport-strategy.md) | Delete + Re-import in Transaction | UC23 re-import |
-| [ADR-004](adr/004-single-admin-account.md) | ~~Single Admin Account~~ (Superseded by ADR-016) | Auth model |
-| [ADR-016](adr/016-supabase-auth-totp-mfa.md) | Supabase Auth + TOTP MFA for Admin Access | Auth model |
-| [ADR-007](adr/007-shadow-dom-deferred.md) | Shadow DOM (target: M8) | CSS isolation |
-| [ADR-015](adr/015-m8-ui-design-decisions.md) | M8 UI Design Decisions | All 7 approved mockups |
-| [ADR-017](adr/017-season-configurable-evf-toggle.md) | Season-Configurable EVF Toggle | FR-34, FR-44, FR-64 |
-| [ADR-018](adr/018-rolling-score.md) | Rolling Score for Active Season | FR-15, FR-16, FR-65, FR-66 |
-| [ADR-019](adr/019-domestic-only-fencer-seed.md) | Domestic-Only Fencer Seed | seed_tbl_fencer.sql |
-| [ADR-020](adr/020-seed-generator-domestic-auto-create.md) | Seed Generator Domestic Auto-Create | generate_season_seed.py |
-| [ADR-021](adr/021-imew-biennial-carry-over.md) | IMEW Biennial Carry-Over | FR-65, FR-68 |
+| [ADR-013](../adr/013-poc-mvp-transition.md) | POC-to-MVP Transition | Project phasing |
+| [ADR-014](../adr/014-delete-reimport-strategy.md) | Delete + Re-import in Transaction | UC23 re-import |
+| [ADR-004](../adr/004-single-admin-account.md) | ~~Single Admin Account~~ (Superseded by ADR-016) | Auth model |
+| [ADR-016](../adr/016-supabase-auth-totp-mfa.md) | Supabase Auth + TOTP MFA for Admin Access | Auth model |
+| [ADR-007](../adr/007-shadow-dom-deferred.md) | Shadow DOM (target: M8) | CSS isolation |
+| [ADR-015](../adr/015-m8-ui-design-decisions.md) | M8 UI Design Decisions | All 7 approved mockups |
+| [ADR-017](../adr/017-season-configurable-evf-toggle.md) | Season-Configurable EVF Toggle | FR-34, FR-44, FR-64 |
+| [ADR-018](../adr/018-rolling-score.md) | Rolling Score for Active Season | FR-15, FR-16, FR-65, FR-66 |
+| [ADR-019](../adr/019-domestic-only-fencer-seed.md) | Domestic-Only Fencer Seed | seed_tbl_fencer.sql |
+| [ADR-020](../adr/020-seed-generator-domestic-auto-create.md) | Seed Generator Domestic Auto-Create | generate_season_seed.py |
+| [ADR-021](../adr/021-imew-biennial-carry-over.md) | IMEW Biennial Carry-Over | FR-65, FR-68 |
 
 ### 1.6 POC Test Gaps Carried Forward
 
@@ -394,7 +394,7 @@ Pipeline orchestration (T9.11), EVF calendar import (T9.12–T9.13), automated i
 
 ## 3. FR-to-Milestone Mapping
 
-Quick reference — full details in [RTM (Appendix C)](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#appendix-c--requirements-traceability-matrix).
+Quick reference — full details in [RTM (Appendix C)](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md#appendix-c--requirements-traceability-matrix).
 
 ### M8 Requirements
 
@@ -449,8 +449,8 @@ Quick reference — full details in [RTM (Appendix C)](Project%20Specification.%
 
 ## 4. Cross-References
 
-- [Project Specification](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md) — Full spec (§6.2 = MVP scope, Appendix C = RTM with FR-01 to FR-67)
-- [CI/CD Operations Manual](cicd-operations-manual.md) — Release pipeline (LOCAL→CERT→PROD)
+- [Project Specification](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md) — Full spec (§6.2 = MVP scope, Appendix C = RTM with FR-01 to FR-67)
+- [CI/CD Operations Manual](../cicd-operations-manual.md) — Release pipeline (LOCAL→CERT→PROD)
 - [POC Development Plan](POC_development_plan.md) — Historical reference only (M0-M6 archived)
 - [Go-to-PROD Plan](Go-to-PROD.md) — Deferred scope from M9b (pipeline, orchestration, EVF import, identity DB wiring)
 - `doc/mockups/` — 10 approved HTML mockups (see §2 M8 + M10 mockup tables)

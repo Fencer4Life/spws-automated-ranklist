@@ -1,5 +1,5 @@
 // Plan tests: 8.62, 8.63, 8.64, 8.65, 8.66, 8.67, 8.68, 8.69, 8.70, 8.71, 8.72, 8.73, 8.74, 8.75
-// See doc/m8_implementation_plan.md §T8.8.
+// See doc/archive/m8_implementation_plan.md §T8.8.
 
 import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'

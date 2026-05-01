@@ -217,7 +217,7 @@ To manage complexity, the system will be built iteratively, ensuring value is de
 
 - **Scope:** Male Epee V2 (50+) category only.
 
-- **Status:** All deliverables complete except automated ingestion pipeline (deferred to MVP M9). See [POC Development Plan](POC_development_plan.md#poc-completion-summary) and [ADR-013](adr/013-poc-mvp-transition.md).
+- **Status:** All deliverables complete except automated ingestion pipeline (deferred to MVP M9). See [POC Development Plan](archive/POC_development_plan.md#poc-completion-summary) and [ADR-013](adr/013-poc-mvp-transition.md).
 
 - **Use Cases:** UC1–UC5 (ingestion, matching, scoring), UC7–UC11 (season/config management), UC12–UC13 (public ranklist + drill-down), UC18–UC20 (scoring config export/import/calibration).
 
@@ -251,7 +251,7 @@ To manage complexity, the system will be built iteratively, ensuring value is de
 
 - **Scope:** All 30 sub-rankings (3 Weapons × 2 Genders × 5 Categories V0–V4; see §9.1.1 for age brackets). Combined V3+4-F category for women. V0 is domestic-only — no Kadra ranking (see §9.4).
 
-- **Status:** All 3 milestones complete. **544 test assertions** (189 pgTAP + 175 pytest + 173 vitest + 7 Playwright). See [MVP Development Plan](MVP_development_plan.md).
+- **Status:** All 3 milestones complete. **544 test assertions** (189 pgTAP + 175 pytest + 173 vitest + 7 Playwright). See [MVP Development Plan](archive/MVP_development_plan.md).
 
 - **Milestones:**
 
@@ -293,7 +293,7 @@ To manage complexity, the system will be built iteratively, ensuring value is de
 
 - **Goal:** Complete the automated ingestion pipeline and deploy the full system to production on the SPWS WordPress site.
 
-- **Status:** Planning. See [Go-to-PROD Plan](Go-to-PROD.md).
+- **Status:** Planning. See [Go-to-PROD Plan](archive/Go-to-PROD.md).
 
 - **Scope (deferred from MVP M9b):**
 
@@ -1724,7 +1724,7 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-023](adr/023-email-ingestion-gas-storage.md) | Email Ingestion via GAS + Supabase Storage | FR-75, FR-76, FR-77 |
 | [ADR-024](adr/024-combined-category-splitting.md) | Combined Category Splitting Strategy | FR-71, ADR-010 |
 | [ADR-025](adr/025-event-centric-ingestion-telegram.md) | Event-Centric Ingestion + Telegram Admin | FR-79–85, ADR-022/023/024 |
-| [ADR-026](adr/026-cert-prod-promotion.md) | CERT → PROD Event Promotion via Python (amended 2026-04-20 — calendar promote mode; see [evf_calendar_promote_plan.md](evf_calendar_promote_plan.md)) | FR-86, FR-58, ADR-025, ADR-028 |
+| [ADR-026](adr/026-cert-prod-promotion.md) | CERT → PROD Event Promotion via Python (amended 2026-04-20 — calendar promote mode; see [evf_calendar_promote_plan.md](archive/evf_calendar_promote_plan.md)) | FR-86, FR-58, ADR-025, ADR-028 |
 | [ADR-027](adr/027-full-season-seed-export.md) | ~~Full-Season Seed Export from CERT~~ (Superseded by ADR-036) | FR-88, FR-89, ADR-025/026 |
 | [ADR-028](adr/028-evf-calendar-results-import.md) | EVF Calendar + Results Import (rev 2 2026-04-20: URL refresh path + admin-edit protection + deadline harvest disabled) | FR-58, ADR-025, ADR-029, ADR-030 |
 | [ADR-029](adr/029-tournament-url-auto-population.md) | Tournament URL Auto-Population + Admin CRUD | FR-53, FR-54, ADR-025 |

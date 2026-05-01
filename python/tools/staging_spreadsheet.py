@@ -5,8 +5,8 @@ Generates and manages the .ods staging spreadsheet used as a human-editable
 intermediate layer between raw source files and SQL seed scripts.
 
 Three modes:
-  mock     — Generate doc/staging_data_mock.ods with sample data for review
-  populate — (future) Read source data → write doc/staging_data.ods
+  mock     — Generate doc/assets/staging_data_mock.ods with sample data for review
+  populate — (future) Read source data → write doc/assets/staging_data.ods
   export   — (future) Read curated spreadsheet → generate SQL seed files
 
 Usage:
@@ -1187,8 +1187,8 @@ def main() -> None:
     mock_parser.add_argument(
         "--output",
         type=Path,
-        default=Path("doc/staging_data_mock.ods"),
-        help="Output file path (default: doc/staging_data_mock.ods)",
+        default=Path("doc/assets/staging_data_mock.ods"),
+        help="Output file path (default: doc/assets/staging_data_mock.ods)",
     )
 
     populate_parser = subparsers.add_parser(
@@ -1196,7 +1196,7 @@ def main() -> None:
     )
     populate_parser.add_argument("--input", type=Path, required=True)
     populate_parser.add_argument(
-        "--output", type=Path, default=Path("doc/staging_data.ods"),
+        "--output", type=Path, default=Path("doc/assets/staging_data.ods"),
     )
 
     export_parser = subparsers.add_parser(

@@ -1,7 +1,7 @@
 -- =============================================================================
 -- T8.3: Multi-Category Seed Data — Acceptance Tests
 -- =============================================================================
--- Tests 8.20–8.24 from doc/m8_implementation_plan.md §T8.3.
+-- Tests 8.20–8.24 from doc/archive/m8_implementation_plan.md §T8.3.
 -- Verifies that after db reset, tournaments exist for all 30 sub-rankings.
 -- =============================================================================
 

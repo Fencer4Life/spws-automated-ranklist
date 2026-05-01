@@ -215,7 +215,7 @@ Steps:
 
 | File | Change |
 |---|---|
-| [doc/Project Specification. SPWS Automated Ranklist System.md](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md) | RTM FR-54 row: extend to mention Dartagnan + add `dart.1–dart.8, dart.url.1` to Tests column. Appendix D pytest count `274 → 282` (+8 new, excluding dart.8 which is integration-marked). |
+| [doc/Project Specification. SPWS Automated Ranklist System.md](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md) | RTM FR-54 row: extend to mention Dartagnan + add `dart.1–dart.8, dart.url.1` to Tests column. Appendix D pytest count `274 → 282` (+8 new, excluding dart.8 which is integration-marked). |
 | No new ADR | Dartagnan is just another format alongside FTL/Engarde/4fence — same architectural pattern. |
 | No update to memory | Project memory is for the user's persistent preferences, not per-feature notes. |
 

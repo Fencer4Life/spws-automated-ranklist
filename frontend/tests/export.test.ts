@@ -1,5 +1,5 @@
 // Plan tests: 6.13, 6.14 — ODS export functions.
-// See doc/POC_development_plan.md §M6 test table.
+// See doc/archive/POC_development_plan.md §M6 test table.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 

@@ -1,5 +1,5 @@
 // Plan tests: 8.01, 8.02, 8.03, 8.04 — CERT/PROD env toggle.
-// See doc/m8_implementation_plan.md §T8.0.
+// See doc/archive/m8_implementation_plan.md §T8.0.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
