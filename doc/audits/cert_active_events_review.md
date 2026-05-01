@@ -1,0 +1,29 @@
+# CERT active-season events — admin review
+
+| Your notes | #  | Event code                  | dt_start   | dt_end     | City                       | Status     | url_event                                                                                     |
+|------------|----|-----------------------------|------------|------------|----------------------------|------------|-----------------------------------------------------------------------------------------------|
+|            | 1  | PEW8f-2025-2026             | 2025-03-29 | 2025-03-29 | Chania                     | PLANNED    | https://www.veteransfencing.eu/event/evf-circuit-athens-gre/                                  |
+|            | 2  | PEW1efs-2025-2026           | 2025-09-20 | 2025-09-21 | Budapest                   | COMPLETED  | https://engarde-service.com/tournament/hunfencing/2025_09_20_pbt                              |
+|            | 3  | PPW1-2025-2026              | 2025-10-25 | 2025-10-26 | Opole                      | COMPLETED  | https://fencingtimelive.com/tournaments/eventSchedule/BF6E1ADD88844A8CAC2F8CD353D082F9#today |
+|            | 4  | PPW2-2025-2026              | 2025-10-25 | 2025-10-26 | Poznań                     | COMPLETED  | https://fencingtimelive.com/tournaments/eventSchedule/BC4FAB2F4A5E466DAA8FC46EB73E50F6#today |
+|            | 5  | PEW2efs-2025-2026           | 2025-11-01 | 2025-11-02 | Madrid                     | COMPLETED  | https://engarde-service.com/tournament/aeve_esgrima/evf_madrid_2025                           |
+|            | 6  | PEW3s-2025-2026             | 2025-12-06 | 2025-12-06 | Munich                     | COMPLETED  | https://fencingtimelive.com/tournaments/eventSchedule/E2A7B077F2824DD8A7F2E413B4211296#today |
+|            | 7  | PPW3-2025-2026              | 2025-12-13 | 2025-12-14 | Warszawa-Łomianki          | COMPLETED  | https://fencingtimelive.com/tournaments/eventSchedule/D099355BC4334343949BD91172023B49#today |
+|            | 8  | PEW10efs-2025-2026          | 2026-01-10 | 2026-01-11 | Guildford                  | COMPLETED  | (none)                                                                                        |
+|            | 9  | PEW-SALLEJEANZ-2025-2026    | 2026-02-07 | 2026-02-07 | Salle Jean Zay             | COMPLETED  | https://www.veteransfencing.eu/event/evf-circuit-faches/                                      |
+|            | 10 | PEW5s-2025-2026             | 2026-02-07 | 2026-02-07 | Stockholm                  | COMPLETED  | https://engarde-service.com/tournament/sthlm/vet2026                                          |
+|            | 11 | PPW4-2025-2026              | 2026-02-21 | 2026-02-22 | Gdańsk                     | COMPLETED  | https://fencingtimelive.com/tournaments/eventSchedule/D586C1250E8C41D3BB9B9E5772CB998F#today |
+|            | 12 | PEW4efs-2025-2026           | 2026-03-07 | 2026-03-07 | Napoli                     | COMPLETED  | https://www.4fence.it/FIS/Risultati/2026-03-08-07_Napoli_-_4_Prova_Circuito_Nazionale_Master_2025-2/ |
+|            | 13 | PEW13ef-2025-2026           | 2026-03-14 | 2026-03-14 | *(empty)*                  | COMPLETED  | (none)                                                                                        |
+|            | 14 | PEW6efs-2025-2026           | 2026-03-28 | 2026-03-29 | Jabłonna                   | COMPLETED  | https://www.fencingtimelive.com/tournaments/eventSchedule/98F13C10A47B49FFA2D39E4D47F1EDA8#today |
+|            | 15 | PEW14f-2025-2026            | 2026-03-29 | 2026-03-29 | *(empty)*                  | COMPLETED  | (none)                                                                                        |
+|            | 16 | PEW-LIÈGE-2025-2026         | 2026-04-11 | 2026-04-11 | Liège                      | COMPLETED  | https://www.veteransfencing.eu/event/evf-circuit-liege/                                       |
+|            | 17 | PPW5-2025-2026              | 2026-04-11 | 2026-04-11 | Gdańsk                     | COMPLETED  | https://www.fencingtimelive.com/tournaments/eventSchedule/2F7708500E2F4F199D4FC25A7B74D0D0#today |
+|            | 18 | PEW7ef-2025-2026            | 2026-04-18 | 2026-04-19 | Salzburg                   | COMPLETED  | https://www.dartagnan.live/turniere/EuropeanVeteransCup_2026/de/index.html                    |
+|            | 19 | PEW15f-2025-2026            | 2026-05-02 | 2026-05-02 | *(empty)*                  | COMPLETED  | (none)                                                                                        |
+|            | 20 | DMEW-2025-2026              | 2026-05-14 | 2026-05-14 | Complexe Sportif Omnispo   | PLANNED    | https://www.veteransfencing.eu/event/european-team-championships-2026-cognac-fr/              |
+|            | 21 | PEW9-2025-2026              | 2026-05-30 | 2026-05-31 | Dublin                     | PLANNED    | https://www.veteransfencing.eu/event/evf-circuit-dublin-irl/                                  |
+|            | 22 | MPW-2025-2026               | 2026-06-20 | 2026-06-21 | Warszawa                   | SCHEDULED  | (none)                                                                                        |
+|            | 23 | PEW11e-2025-2026            | 2026-10-01 | 2026-10-01 | *(empty)*                  | COMPLETED  | (none)                                                                                        |
+|            | 24 | IMSW-2025-2026              | 2026-10-11 | 2026-10-18 | Tbilisi                    | PLANNED    | (none)                                                                                        |
+|            | 25 | PEW12s-2025-2026            | 2026-11-11 | 2026-11-11 | *(empty)*                  | COMPLETED  | (none)                                                                                        |
