@@ -24,7 +24,7 @@ jobs:
     outputs:
       schema_fingerprint: ${{ steps.fingerprint.outputs.fingerprint }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # --- Schema fingerprint from LOCAL Docker Supabase ---
       - uses: supabase/setup-cli@v1
@@ -49,7 +49,7 @@ jobs:
         run: bash scripts/generate-manifest.sh "${{ steps.fingerprint.outputs.fingerprint }}"
 
       # --- Frontend build ---
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "20"
           cache: npm
@@ -101,7 +101,7 @@ jobs:
     environment: cert
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Check for pending CERT migrations
         id: check
@@ -172,7 +172,7 @@ jobs:
     environment: production
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: main
 
