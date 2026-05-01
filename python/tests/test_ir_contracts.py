@@ -371,3 +371,156 @@ class TestFourFenceIRContract:
         for r in pt.results:
             assert r.fencer_name and isinstance(r.fencer_name, str)
             assert isinstance(r.place, int) and r.place >= 1
+
+
+# =============================================================================
+# Dartagnan — dartagnan.live competition rankings page
+# =============================================================================
+class TestDartagnanIRContract:
+    """Dartagnan parse_rankings: pure function on rankings HTML, no I/O."""
+
+    FIXTURE = FIXTURES / "dartagnan" / "6687-rankings.html"
+    EMPTY_FIXTURE = FIXTURES / "dartagnan" / "7027-rankings-empty.html"
+
+    def test_parse_rankings_returns_parsed_tournament(self):
+        """dartagnan_ir.1: parse_rankings returns ParsedTournament source_kind=DARTAGNAN."""
+        from python.pipeline.ir import ParsedTournament, SourceKind
+        from python.scrapers.dartagnan import parse_rankings
+
+        html = self.FIXTURE.read_text()
+        pt = parse_rankings(html)
+
+        assert isinstance(pt, ParsedTournament)
+        assert pt.source_kind == SourceKind.DARTAGNAN
+        assert len(pt.results) > 0
+        assert pt.raw_pool_size == len(pt.results)
+
+    def test_parse_rankings_synthetic_id_format(self):
+        """dartagnan_ir.2: synthetic IDs prefixed `dartagnan:row1:place1:`."""
+        from python.scrapers.dartagnan import parse_rankings
+
+        html = self.FIXTURE.read_text()
+        pt = parse_rankings(html)
+
+        first = pt.results[0]
+        assert first.source_row_id.startswith("dartagnan:row1:place1:")
+
+    def test_parse_rankings_country_from_flag(self):
+        """dartagnan_ir.3: country (3-letter ISO) extracted from flag img src."""
+        from python.scrapers.dartagnan import parse_rankings
+
+        html = self.FIXTURE.read_text()
+        pt = parse_rankings(html)
+
+        # At least one row should have a 3-letter country code (HUN, GER, etc.)
+        countries = {r.fencer_country for r in pt.results if r.fencer_country}
+        assert any(len(c) == 3 and c.isupper() for c in countries), (
+            f"expected at least one 3-letter ISO code, got {countries}"
+        )
+
+    def test_parse_rankings_metadata_unknown_at_this_layer(self):
+        """dartagnan_ir.4: weapon/gender/category_hint are None — parser only sees the rankings page.
+
+        The orchestrator scrapes the event index separately to learn weapon/gender/category
+        per competition, then injects them. The rankings parser is pure on the rankings HTML.
+        """
+        from python.scrapers.dartagnan import parse_rankings
+
+        html = self.FIXTURE.read_text()
+        pt = parse_rankings(html)
+
+        assert pt.weapon is None
+        assert pt.gender is None
+        assert pt.category_hint is None
+
+    def test_parse_rankings_empty_table_returns_empty_results(self):
+        """dartagnan_ir.5: rankings page with no rows returns ParsedTournament with empty results, no exception."""
+        from python.scrapers.dartagnan import parse_rankings
+
+        html = self.EMPTY_FIXTURE.read_text()
+        pt = parse_rankings(html)
+
+        assert pt.results == []
+        assert pt.raw_pool_size == 0
+
+
+# =============================================================================
+# EVF API — api.veteransfencing.eu /results/{comp_id}
+# =============================================================================
+class TestEvfApiIRContract:
+    """EVF parse_results: pure function on raw API response data, no I/O."""
+
+    SAMPLE_DATA = [
+        {
+            "fencer_surname": "KOWAL", "fencer_firstname": "Anna",
+            "country_abbr": "POL", "place": 1,
+            "fencer_dob": "1980-05-12", "total_points": 158.6,
+            "weapon_abbr": "WE",
+        },
+        {
+            "fencer_surname": "STEINER", "fencer_firstname": "Eva",
+            "country_abbr": "GER", "place": 2,
+            "fencer_dob": "1975-11-03", "total_points": 145.0,
+            "weapon_abbr": "WE",
+        },
+        {
+            "fencer_surname": "NOWAK", "fencer_firstname": "Beata",
+            "country_abbr": "POL", "place": 3,
+            "fencer_dob": "", "total_points": 130.5,  # missing DOB
+            "weapon_abbr": "WE",
+        },
+    ]
+
+    def test_parse_results_returns_parsed_tournament(self):
+        """evf_ir.1: parse_results returns ParsedTournament source_kind=EVF_API."""
+        from python.pipeline.ir import ParsedTournament, SourceKind
+        from python.scrapers.evf_results import parse_results
+
+        pt = parse_results(self.SAMPLE_DATA)
+
+        assert isinstance(pt, ParsedTournament)
+        assert pt.source_kind == SourceKind.EVF_API
+        assert len(pt.results) == 3
+        assert pt.raw_pool_size == 3
+
+    def test_parse_results_metadata_passthrough(self):
+        """evf_ir.2: weapon, gender, category_hint, parsed_date passed in by orchestrator land in IR."""
+        import datetime
+        from python.scrapers.evf_results import parse_results
+
+        pt = parse_results(
+            self.SAMPLE_DATA,
+            weapon="EPEE", gender="F",
+            category_hint="V2",
+            parsed_date=datetime.date(2026, 4, 18),
+            source_url="https://api.veteransfencing.eu/fe/results/301",
+        )
+        assert pt.weapon == "EPEE"
+        assert pt.gender == "F"
+        assert pt.category_hint == "V2"
+        assert pt.parsed_date == datetime.date(2026, 4, 18)
+        assert pt.source_url == "https://api.veteransfencing.eu/fe/results/301"
+
+    def test_parse_results_birth_date_from_dob(self):
+        """evf_ir.3: fencer_dob ISO string -> birth_date datetime.date; missing -> None."""
+        import datetime
+        from python.scrapers.evf_results import parse_results
+
+        pt = parse_results(self.SAMPLE_DATA)
+
+        kowal = next(r for r in pt.results if r.fencer_name.startswith("KOWAL"))
+        assert kowal.birth_date == datetime.date(1980, 5, 12)
+        assert kowal.birth_year == 1980
+
+        nowak = next(r for r in pt.results if r.fencer_name.startswith("NOWAK"))
+        assert nowak.birth_date is None
+        assert nowak.birth_year is None
+
+    def test_parse_results_synthetic_id(self):
+        """evf_ir.4: EVF result rows have no native per-row ID — uses synthetic format."""
+        from python.scrapers.evf_results import parse_results
+
+        pt = parse_results(self.SAMPLE_DATA)
+
+        first = pt.results[0]
+        assert first.source_row_id.startswith("evf_api:row1:place1:")
