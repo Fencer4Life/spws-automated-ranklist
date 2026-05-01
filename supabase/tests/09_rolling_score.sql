@@ -139,16 +139,17 @@ SELECT is(
 
 -- R.9 — p_rolling=TRUE, category crossing V2→V3
 -- TRACZ born 1966: V2 in 2024-25 (age 59), V3 in 2025-26 (age 60)
--- Current V3: PPW1=25.09+PPW3=4.15, carried MPW-V2=7.18
--- Best-4 PPW: 25.09+4.15=29.24, MPW=7.18, Total=53.99
+-- Current V3 PPW: PPW1=25.09 + PPW3=4.15 = 29.24
+-- Carried from prior V2: MPW-V2=7.18
+-- Total: 29.24 + 7.18 = 36.42 (PEW results do not count in fn_ranking_ppw)
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
     'EPEE', 'M', 'V3',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TRACZ' AND txt_first_name = 'Jerzy')),
-  53.99::NUMERIC,
-  'R.9: p_rolling=TRUE category crossing — TRACZ V2→V3 total 53.99'
+  36.42::NUMERIC,
+  'R.9: p_rolling=TRUE category crossing — TRACZ V2→V3 total 36.42'
 );
 
 -- R.10 — p_rolling=TRUE, carryover from PPW5-V2-M-EPEE-2024-2025

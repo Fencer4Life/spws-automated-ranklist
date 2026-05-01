@@ -54,12 +54,15 @@ SELECT lives_ok(
 RESET ROLE;
 
 -- 9.05 — fn_calc_tournament_scores succeeds as authenticated
--- Use tournament 7 (GP1-V0-F-EPEE-2023-2024) — historical-season seed row that
--- always has results. Tournament 1 (DMEW-F-EPEE) is intentionally empty (team
--- placeholder, no individual results) so it cannot satisfy lives_ok.
+-- Use GP1-V0-F-EPEE-2023-2024 — historical-season seed row that always has
+-- results. (Looked up by txt_code; auto-generated id_tournament shifts when
+-- splitter / cleanup migrations alter the seed.)
 SET LOCAL ROLE authenticated;
 SELECT lives_ok(
-  $$SELECT fn_calc_tournament_scores(7)$$,
+  format(
+    $$SELECT fn_calc_tournament_scores(%s)$$,
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'GP1-V0-F-EPEE-2023-2024')
+  ),
   '9.05: fn_calc_tournament_scores succeeds as authenticated'
 );
 RESET ROLE;

@@ -139,6 +139,25 @@ $fix_tourn_380$;
 SELECT * FROM fn_split_pew_by_weapon();
 SELECT fn_backfill_id_prior_event();
 
+-- Phase 4 child-code reconciliation: when fn_split_pew_by_weapon Step 2 finds
+-- a parent event already correctly suffixed, it skips the rename — including
+-- the child rename. This leaves child tournaments with legacy codes (e.g.,
+-- PEW-SPORTHALLE-2025-2026-F-FOIL still under PEW21fs-2025-2026 after the
+-- splitter ran during a prior migration apply). Reconcile child codes here
+-- so they match parent prefix. Idempotent — finds no mismatches on re-run.
+UPDATE tbl_tournament t
+   SET txt_code = (
+     regexp_replace(e.txt_code, '-\d{4}-\d{4}$', '')
+     || '-' || t.enum_age_category::TEXT
+     || '-' || t.enum_gender::TEXT
+     || '-' || t.enum_weapon::TEXT
+     || '-' || regexp_replace(e.txt_code, '^PEW\d+[efs]*-', '')
+   )
+  FROM tbl_event e
+ WHERE t.id_event = e.id_event
+   AND e.txt_code ~ '^PEW\d+[efs]+-'
+   AND t.txt_code !~ ('^' || regexp_replace(e.txt_code, '-\d{4}-\d{4}$', '') || '-');
+
 -- Phase 4 location fixes for events whose splitter-kept cluster is at a
 -- different city than the original parent's txt_location indicated.
 -- Munich Dec hosts the early PEW3 weekend in both seasons; Guildford Jan
