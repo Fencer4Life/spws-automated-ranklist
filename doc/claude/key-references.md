@@ -13,3 +13,12 @@
 | [doc/claude/testing.md](testing.md) | Commands, TDD workflow, test ID traceability |
 | [doc/claude/documenting.md](documenting.md) | Scope-change pass, RTM check, ADR workflow |
 | [doc/claude/conventions.md](conventions.md) | Documentation rules, data-integrity hard rules, working style |
+| [doc/requirements-traceability-matrix.md](../requirements-traceability-matrix.md) | Externalized RTM (FRs + NFRs + Coverage Summary) — Phase 0.5 |
+| [doc/backlog/superfive-phase-3.md](../backlog/superfive-phase-3.md) | SuperFive Phase 3 backlog (extracted from spec §9.8 + Appendix B) |
+| [scripts/check-spec-sync.sh](../../scripts/check-spec-sync.sh) | Phase 0.5 spec-sync invariants (5 gates) |
+| /Users/aleks/.claude/plans/now-we-have-a-precious-wren.md | Active rebuild plan (REBUILD-ACTIVE through Phase 6) |
+| [doc/plans/rebuild/](../plans/rebuild/) | Per-phase rebuild subplans (p0-0, p0, p1..p7) |
+| [doc/rules/](../rules/) | Rules registry (R001-R012, Pandoc-built HTML) — REBUILD-ACTIVE |
+| [doc/overrides/](../overrides/) | Per-event override YAML files — REBUILD-ACTIVE |
+| [scripts/load-cert-ref.sh](../../scripts/load-cert-ref.sh) | Loads PROD seed into cert_ref schema — REBUILD-ACTIVE |
+| [python/matcher/config.yaml](../../python/matcher/config.yaml) | Matcher thresholds + Polish normalizations + nicknames (single tuning surface) |
