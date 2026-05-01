@@ -10,5 +10,13 @@
       "Bash(python python/tools/import_events_from_excel.py --folder reference/ --season SPWS-2024-25)",
       "Bash(find /Users/aleks/coding/SPWSranklist -maxdepth 2 -name external_files -o -name external*)"
     ]
+  },
+  "enabledPlugins": {
+    "feature-dev@claude-plugins-official": true,
+    "supabase@claude-plugins-official": true,
+    "explanatory-output-style@claude-plugins-official": true,
+    "firecrawl@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "telegram@claude-plugins-official": true
   }
 }
