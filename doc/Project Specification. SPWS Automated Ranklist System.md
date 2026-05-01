@@ -1432,10 +1432,10 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
-| pgTAP | 379 | 21 | `supabase/tests/` |
-| pytest | 324 | 23 | `python/tests/` |
-| vitest | 331 | 26 | `frontend/tests/` |
+| pgTAP | 427 | 27 | `supabase/tests/` |
+| pytest | 402 | 25 | `python/tests/` |
+| vitest | 332 | 26 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **1041** | | |
+| **Total** | **1168** | | |
 
 <!-- Coverage Summary moved to doc/requirements-traceability-matrix.md in Phase 0.5 (2026-05-01). -->
