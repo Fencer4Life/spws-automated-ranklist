@@ -610,3 +610,117 @@ The following documents contain the original detailed plans. They are superseded
 - `doc/archive/POC_development_plan.md` — POC milestones M0–M6 (archived)
 - `doc/archive/MVP_development_plan.md` — MVP milestones M8–M10 (archived)
 - `doc/archive/Go-to-PROD.md` — Go-to-PROD items 2.1–2.9 (archived)
+
+---
+
+## Appendix: Implementation Phasing & Solution Approach
+
+*Extracted from Project Specification §6 in Phase 0.5 (2026-05-01). The spec now points back to this appendix.*
+
+To manage complexity, the system was built iteratively, ensuring value was delivered at each stage while keeping the final, holistic requirements in mind.
+
+### Phase 1: Proof of Concept (POC) — COMPLETED (2026-03-25)
+
+- **Goal:** Validate the core math, scraping viability, admin workflow, and UI portability.
+
+- **Scope:** Male Epee V2 (50+) category only.
+
+- **Status:** All deliverables complete except automated ingestion pipeline (deferred to MVP M9). See [POC Development Plan](archive/POC_development_plan.md#poc-completion-summary) and [ADR-013](adr/013-poc-mvp-transition.md).
+
+- **Use Cases:** UC1–UC5 (ingestion, matching, scoring), UC7–UC11 (season/config management), UC12–UC13 (public ranklist + drill-down), UC18–UC20 (scoring config export/import/calibration).
+
+> ⚠ ADR-050 (Phase 6) drops `tbl_match_candidate`; provenance moves to `tbl_result.{txt_scraped_name, num_match_confidence, enum_match_method}`. The deliverables list below describes the as-built MVP, not the post-rebuild target.
+
+- **Deliverables:**
+
+    - Python scrapers for FencingTimeLive, Engarde, and 4Fence — logic ported from existing VBA macros.
+
+    - Full PostgreSQL schema: `tbl_fencer`, `tbl_organizer`, `tbl_event`, `tbl_tournament`, `tbl_result`, `tbl_season`, `tbl_scoring_config`, `tbl_match_candidate`, `tbl_audit_log`.
+
+    - Scoring engine (`fn_calc_tournament_scores`) implementing the EVF/SPWS Log Formula (spec §8.1).
+
+    - SQL Views: `vw_score` (denormalised drill-down), `vw_ranking_ppw` (PPW ranking with configurable best-of + conditional MPW drop).
+
+    - Season & scoring configuration management via Admin UI (Supabase Dashboard for POC).
+
+    - **Hybrid scoring config workflow (spec §8.6):** `fn_export_scoring_config` and `fn_import_scoring_config` SQL functions enabling JSON export/import for rapid local editing. Python helpers (`calibrate_config.py`, `calibrate_compare.py`) for the calibration loop.
+
+    - Supabase Auth with RLS policies: public read on ranking views, admin write on all tables.
+
+    - Identity resolution pipeline (RapidFuzz matcher + `tbl_match_candidate` for admin review).
+
+    - GitHub Actions pipeline with error handling, retries, and Telegram alerting.
+
+    - DB migration scripts (Supabase CLI migrations) and seed data for one test season (including default `tbl_scoring_config` with calibrated parameters).
+
+    - Web Component running locally in a "Shadow Wrapper" mimicking WordPress CSS, featuring the Ranklist View (with weapon/gender/category filters) and Drill-down Audit View.
+
+### Phase 2: Minimum Viable Product (MVP) — COMPLETED (2026-04-04)
+
+- **Goal:** Full operational system replacing the Excel system for all 30 sub-rankings.
+
+- **Scope:** All 30 sub-rankings (3 Weapons × 2 Genders × 5 Categories V0–V4; see spec §9.1.1a for age brackets). Combined V3+4-F category for women. V0 is domestic-only — no Kadra ranking (see spec §9.4).
+
+- **Status:** All 3 milestones complete. **544 test assertions** (189 pgTAP + 175 pytest + 173 vitest + 7 Playwright). See [MVP Development Plan](archive/MVP_development_plan.md).
+
+- **Milestones:**
+
+    | # | Milestone | Status | Key Deliverables |
+    |---|-----------|--------|-----------------|
+    | M8 | Multi-Category Data + Calendar UI + Schema Extensions | COMPLETED (2026-03-26) | 30-category seed data, Calendar view, 6 `tbl_event` columns, Shadow DOM, admin auth, scoring config editor |
+    | M9 | Admin CRUD + Identity Resolution + Tooling | COMPLETED (2026-04-04) | Supabase Auth + TOTP MFA, CRUD SQL + UI (seasons/events/tournaments), identity admin UI, file import parsers, seed generator tooling (ADR-019, ADR-020) |
+    | M10 | Rolling Score for Active Season | COMPLETED (2026-03-29) | `p_rolling` parameter on ranking functions, `fn_fencer_scores_rolling`, carried-over visual distinction, calendar progress indicator, birth year subtitle |
+
+- **Deliverables (completed):**
+
+    - All 30 categories seeded (3 weapons × 2 genders × 5 age categories) with data from `doc/external_files/` Excel files.
+
+    - **Calendar view** (`<spws-calendar>` custom element): vertical chronological event browser with season filter, past/future/all toggle, mobile-friendly layout. Two-view app: Ranklist | Calendar.
+
+    - **Schema extensions:** 6 columns on `tbl_event`: `txt_country`, `txt_venue_address`, `url_invitation`, `num_entry_fee`, `txt_entry_fee_currency`, `arr_weapons`.
+
+    - **Admin authentication:** Supabase Auth with email + password and mandatory TOTP MFA ([ADR-016](adr/016-supabase-auth-totp-mfa.md)). Write functions REVOKE'd from `anon`; require `authenticated` JWT. 59-minute inactivity timeout.
+
+    - **Admin CRUD UI:** Authenticated web interface for season, event, and tournament management. Delete cascades to child records. Two import paths: event-level batch (multi-select modal) and tournament-level single (file upload). Manual tournament creation via "+ Dodaj turniej". File import supports .xlsx/.xls/.json/.csv.
+
+    - **Identity resolution admin UI:** Web interface for match candidate queue with approve/dismiss/create-new actions and disambiguation modal ([ADR-016](adr/016-supabase-auth-totp-mfa.md)). Frontend complete; DB wiring deferred to Go-to-PROD.
+
+    - **Rolling score for active season:** Position-matched carry-over from previous season with declared-counterpart constraint ([ADR-018](adr/018-rolling-score.md)). Visual distinction in DrilldownModal (striped bars, `↩` marker) and CalendarView (progress slots). Birth year range subtitle on ranklist view.
+
+    - **Season-configurable EVF toggle:** PPW/Kadra toggle visibility controlled by per-season `bool_show_evf_toggle` flag ([ADR-017](adr/017-season-configurable-evf-toggle.md)).
+
+    - **Shadow DOM isolation:** Both `<spws-ranklist>` and `<spws-calendar>` ship as custom elements with Shadow DOM encapsulation ([ADR-007](adr/007-shadow-dom-deferred.md)).
+
+    - **Seed generator tooling:** `generate_season_seed.py` with domestic auto-create ([ADR-020](adr/020-seed-generator-domestic-auto-create.md)), `sort_and_clean_fencers.py` for master fencer list maintenance ([ADR-019](adr/019-domestic-only-fencer-seed.md)).
+
+    - **Scoring config editor:** Structured form with 5 collapsible sections, per-season config, bucket editor for ranking rules.
+
+    - Web Components deployed to CERT environment; PROD deployment pending Go-to-PROD phase.
+
+- **Architecture decisions (MVP):** ADR-013 (POC→MVP transition), ADR-014 (delete+reimport), ADR-015 (M8 UI decisions), ADR-016 (Supabase Auth + TOTP MFA), ADR-017 (EVF toggle), ADR-018 (rolling score), ADR-019 (domestic-only seed), ADR-020 (seed generator auto-create).
+
+### Phase 2b: Go-to-PROD
+
+- **Goal:** Complete the automated ingestion pipeline and deploy the full system to production on the SPWS WordPress site.
+
+- **Status:** IN PROGRESS — active rebuild plan at `/Users/aleks/.claude/plans/now-we-have-a-precious-wren.md` (master) with phase subplans at [doc/plans/rebuild/](plans/rebuild/). Original archived plan: [Go-to-PROD Plan](archive/Go-to-PROD.md).
+
+- **Scope (deferred from MVP M9b):**
+
+    - **Pipeline orchestration:** End-to-end flow (parse file → fuzzy match → insert results → score) in a single DB transaction per ADR-014.
+    - **Identity resolution DB wiring:** Connect IdentityManager/DisambiguationModal callbacks to Supabase RPC for approve/dismiss/create-new actions.
+    - **URL scraping tab:** Second tab in import modals for scraping results directly from tournament URLs.
+    - **EVF calendar import:** Scrape veteransfencing.eu, deduplicate against existing events, create events + tournaments.
+    - **Automated ingestion pipeline** (`ingest.yml`): GitHub Actions workflow with scheduled + manual dispatch.
+    - **Pipeline observability:** Structured logging for all pipeline operations.
+    - **PROD deployment:** Deploy Web Components to the live WordPress site.
+
+### Phase 3: Advanced Integrations
+
+- **Goal:** Pool-level tracking and Kadra tier automation.
+
+- **Deliverables:**
+
+    - **SuperFive Ranking:** Upgrade scrapers to pull V/M (victories/matches), TS (touches scored), and Ind (indicator) metrics from PPW pool rounds. Implement `tbl_pool_result` (see spec §9.8) and a separate `vw_ranking_superfive` view. SuperFive relates only to PPW pool-round data, not DE results.
+
+    - **Kadra Tier Classification:** Add `vw_kadra_tiers` view that classifies fencers into Kadra A, B, C, or D based on configurable thresholds (start counts and point thresholds stored in `tbl_scoring_config.json_extra`). This is used only for National Team nomination discussions and is kept as a separate view from `vw_ranking_kadra`.
