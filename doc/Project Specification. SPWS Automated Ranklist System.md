@@ -1745,11 +1745,14 @@ Every functional and non-functional requirement is listed below with its source 
 | [ADR-044](adr/044-phase3-wizard.md) | Phase 3 Admin UI + Season-Init Wizard (atomic transaction model; supersedes carry-over admin runbook §3, §4, §5, §6, §9) | FR-100, ADR-018, ADR-021, ADR-042, ADR-043 |
 | [ADR-045](adr/045-engine-selector-default-flip.md) | Carry-over Engine Selectable Per-Season via Admin UI; Default Flipped to FK | FR-101, ADR-042, ADR-044 |
 | [ADR-046](adr/046-pew-weapon-suffix.md) | PEW event codes carry weapon-letter suffix (`PEW{N}{efs}-{season}`); one event = one physical weekend; splitter migration unbundles bundled events | ADR-043, ADR-044 |
+| [ADR-047](adr/047-vcat-invariant-trigger-and-splitter-consolidation.md) | V-cat invariant trigger (`trg_assert_result_vcat`) + combined-pool splitter consolidation across all ingestion paths (FTL/Engarde/4Fence/Dartagnan/CSV) | ADR-022, ADR-024 |
+| [ADR-048](adr/048-source-vs-db-audit-and-phantom-rows.md) | Source-vs-DB audit tooling + phantom-row policy (deletion/recovery rules for result rows missing from source) | ADR-024, ADR-047 |
+| [ADR-049](adr/049-joint-pool-split-flag.md) | `bool_joint_pool_split` flag on `tbl_tournament` to drive per-V-cat splitting on joint-pool events; backfill function + pytest-enforced ingester contract | ADR-024, ADR-038, ADR-047, ADR-048 |
 
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 388 assertions (4 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 33 ingest pipeline + 21 identity resolution + 13 EVF import + 5 fencer birth year + 9 cross-gender scoring + 7 ADR-040 multi-slot URLs + 8 ADR-042 dispatcher + 28 ADR-042 FK carryover + 15 ADR-043 EVF allocator + 25 Phase 3a wizard backend + 10 ADR-046 PEW weapon-suffix + 9 EVF FK columns/ingestion).
+- pgTAP total: 406 assertions (4 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 33 ingest pipeline + 21 identity resolution + 13 EVF import + 5 fencer birth year + 9 cross-gender scoring + 7 ADR-040 multi-slot URLs + 8 ADR-042 dispatcher + 28 ADR-042 FK carryover + 15 ADR-043 EVF allocator + 25 Phase 3a wizard backend + 10 ADR-046 PEW weapon-suffix + 9 EVF FK columns/ingestion + 11 ADR-047 V-cat invariant trigger + view + 7 ADR-049 joint-pool split).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
