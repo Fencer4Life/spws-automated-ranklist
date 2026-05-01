@@ -1,0 +1,63 @@
+# Matcher tuning configuration (Phase 0, ADR-050)
+#
+# Single source of truth for fuzzy-matching thresholds, name normalizations,
+# and known nicknames. The orchestrator hot-reloads this file between event
+# runs during the rebuild (Phase 5) so the operator can tune borderline
+# cases by editing this file and re-running an event.
+#
+# Phase 0 boots this with values that mirror the existing in-code constants
+# (python/matcher/fuzzy_match.py) so adopting config.yaml is a no-op
+# behavior-wise. Per-rebuild tuning happens in Phase 3+.
+
+# ---------------------------------------------------------------------------
+# Thresholds — same scoring scale as RapidFuzz (0–100).
+# ---------------------------------------------------------------------------
+thresholds:
+  # ≥ this score: AUTO_MATCH (link directly without admin review)
+  auto_match: 95
+  # ≥ this score: surface as borderline candidate for admin pick
+  pending: 50
+  # < pending: low confidence —
+  #   * domestic (PPW/MPW): SPWS auto-creates fencer (R006)
+  #   * international (PEW/MEW/MSW): row is skipped entirely
+  # No explicit threshold — the gap below `pending` is the auto-create / skip zone.
+
+# ---------------------------------------------------------------------------
+# Polish diacritic normalization — applied when `use_diacritic_folding` is
+# enabled. fold_diacritics() in fuzzy_match.py also handles Unicode NFD
+# decomposition for languages beyond Polish (German ü, French ç, etc.).
+# These mappings document the explicit Polish character handling.
+# ---------------------------------------------------------------------------
+diacritic_folding:
+  enabled_default: false   # opt-in per call; pipeline.py decides per-source
+  polish_explicit:
+    "ł": "l"
+    "Ł": "L"
+    # The remaining diacritics fold via NFD decomposition automatically;
+    # listed here for documentation:
+    # ą → a, ć → c, ę → e, ń → n, ó → o, ś → s, ź → z, ż → z
+
+# ---------------------------------------------------------------------------
+# Nickname map — exact-match shortcuts. When a scraped name matches a key
+# (case-insensitive), the value list is treated as additional candidate
+# full forms. Empty in Phase 0; populated as the rebuild surfaces patterns.
+#
+# Example seed (uncomment when adding):
+#   nicknames:
+#     "TK":
+#       - "KOWALSKI Tomasz"
+#       - "KAMIŃSKI Tomasz"
+# ---------------------------------------------------------------------------
+nicknames: {}
+
+# ---------------------------------------------------------------------------
+# Diagnostic config — controls per-event diff verbosity in Phase 3.
+# ---------------------------------------------------------------------------
+diagnostics:
+  # When generating doc/staging/<event>.diff.md, include a histogram of
+  # match-confidence scores so the operator can spot threshold-tuning
+  # opportunities quickly.
+  confidence_histogram: true
+  # When ambiguous (multi-candidate) matches occur, surface top-N candidates
+  # in the diff instead of just the winning one.
+  alternatives_top_n: 5

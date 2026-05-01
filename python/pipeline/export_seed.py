@@ -294,56 +294,14 @@ def export_monolithic(ref: str, token: str) -> str:
             )
             total_results += 1
 
-    # --- tbl_match_candidate (bulk) ---
-    print("  tbl_match_candidate (bulk)...", file=sys.stderr)
-    all_mc = q("""
-    SELECT mc.txt_scraped_name, mc.num_confidence, mc.enum_status::TEXT,
-           mc.txt_admin_note,
-           f.txt_surname AS fencer_surname, f.txt_first_name AS fencer_first,
-           t.txt_code AS tourn_code, r.int_place
-    FROM tbl_match_candidate mc
-    JOIN tbl_result r ON r.id_result = mc.id_result
-    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
-    LEFT JOIN tbl_fencer f ON f.id_fencer = mc.id_fencer
-    ORDER BY mc.id_match
-    """)
-    total_mc = 0
-    if all_mc:
-        lines.append(f"\n-- tbl_match_candidate ({len(all_mc)} rows)")
-        for mc in all_mc:
-            scraped = esc(mc["txt_scraped_name"])
-            conf = str(mc["num_confidence"]) if mc["num_confidence"] is not None else "NULL"
-            status = mc["enum_status"]
-            note = f"'{esc(mc['txt_admin_note'])}'" if mc.get("txt_admin_note") else "NULL"
-            t_code = esc(mc["tourn_code"])
-            place = mc["int_place"]
+    # tbl_match_candidate export removed in Phase 0 (ADR-050).
+    # Provenance moves to tbl_result.{txt_scraped_name, num_match_confidence,
+    # enum_match_method} and is exported as part of tbl_result rows above.
+    # Phase 6 drops the table entirely. Old seed files that still contain
+    # COPY tbl_match_candidate sections must be regenerated with this version
+    # before being restored — see open risk #6 in the rebuild plan master.
 
-            # Reconstruct id_result via tournament code + fencer + place
-            fencer_surname = esc(mc.get("fencer_surname") or "")
-            fencer_first = esc(mc.get("fencer_first") or "")
-
-            # id_fencer subselect (NULL if no fencer linked)
-            if mc.get("fencer_surname"):
-                fencer_sel = f"(SELECT id_fencer FROM tbl_fencer WHERE txt_surname = '{fencer_surname}' AND txt_first_name = '{fencer_first}' LIMIT 1)"
-            else:
-                fencer_sel = "NULL"
-
-            # id_result subselect via tournament + place + fencer
-            result_sel = (
-                f"(SELECT r.id_result FROM tbl_result r "
-                f"JOIN tbl_tournament t ON t.id_tournament = r.id_tournament "
-                f"WHERE t.txt_code = '{t_code}' AND r.int_place = {place} "
-                f"AND r.id_fencer = {fencer_sel} LIMIT 1)"
-            )
-
-            lines.append(
-                f"INSERT INTO tbl_match_candidate (id_result, id_fencer, txt_scraped_name, num_confidence, enum_status, txt_admin_note) "
-                f"SELECT {result_sel}, {fencer_sel}, '{scraped}', {conf}, '{status}'::enum_match_status, {note} "
-                f"WHERE {result_sel} IS NOT NULL;"
-            )
-            total_mc += 1
-
-    lines.append(f"\n-- Total: {total_tournaments} tournaments, {total_results} results, {total_mc} match candidates")
+    lines.append(f"\n-- Total: {total_tournaments} tournaments, {total_results} results")
     return "\n".join(lines) + "\n"
 
 
