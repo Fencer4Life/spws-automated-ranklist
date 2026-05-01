@@ -25,7 +25,7 @@ The rebuild is structured as 9 phases (0.0a → 7), each gated by explicit deliv
 | 0.0b | Plan decomposition (master + 9 subplans) | done in commit 5891bb5 |
 | 0.5 | Spec refactor + RTM externalization | done in commit 12dd202 |
 | 0 | Schema prep + cert_ref + rules + matcher config + Claude module edits | [p0-prep.md](../plans/rebuild/p0-prep.md) |
-| 1 | IR + 7 parsers + Ophardt research spike | [p1-ir-parsers.md](../plans/rebuild/p1-ir-parsers.md) |
+| 1 | IR + 8 parsers (7 existing + Ophardt server-rendered HTML, per spike outcome [doc/audits/ophardt_format_research.md](../audits/ophardt_format_research.md)) | [p1-ir-parsers.md](../plans/rebuild/p1-ir-parsers.md) |
 | 2 | Draft tables + dry-run loop | [p2-drafts.md](../plans/rebuild/p2-drafts.md) |
 | 3 | Stages 1-7 + alias writeback + 3-way diff + interactive CLI | [p3-pipeline.md](../plans/rebuild/p3-pipeline.md) |
 | 4 | Commit path + frozen snapshot + EVF parity + alias UI | [p4-commit-ui.md](../plans/rebuild/p4-commit-ui.md) |
