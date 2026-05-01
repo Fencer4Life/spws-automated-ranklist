@@ -2,6 +2,8 @@
 
 ## Data flow
 
+**Steady-state (post-Phase 6):**
+
 ```
 Email (.zip/.xml)  →  Google Apps Script (gas_email_ingestion.js)
                           ↓ uploads to Supabase Storage
@@ -12,6 +14,19 @@ Email (.zip/.xml)  →  Google Apps Script (gas_email_ingestion.js)
                       LOCAL → CERT → PROD (per-tournament promotion)
 ```
 
+**During rebuild (current — through Phase 6):**
+
+```
+Source URL/file/EVF API → ingest_cli.py review-event
+                            ↓ Parse → IR (ParsedTournament)
+                            ↓ Stages 1-7: validate, splitter, matcher, alias-write
+                            ↓ Write to tbl_*_draft (run_id)
+                        3-way diff: Source / cert_ref / draft → doc/staging/<event>.diff.md
+                            ↓ admin reviews, iterates with overrides
+                            ↓ fn_commit_event_draft → live tables + audit
+                        After rebuild: Phase 6 promotes LOCAL → CERT → PROD
+```
+
 EVF calendar/results are pulled by [python/scrapers/evf_sync.py](../../python/scrapers/evf_sync.py) on a 3-day cron (`evf-sync.yml`). Ingestion of every other source (FTL/Engarde/4Fence/FencingTime/CSV/XLSX) is **atomic per-tournament** via `fn_ingest_tournament_results` in a single SQL transaction (delete → insert → score).
 
 ## Database (Supabase / PostgreSQL)
@@ -19,14 +34,18 @@ EVF calendar/results are pulled by [python/scrapers/evf_sync.py](../../python/sc
 - 78 numbered SQL migrations in [supabase/migrations/](../../supabase/migrations/) (date-prefixed `YYYYMMDDNNNNNN_*.sql`); never edit a migration after it has been deployed — always add a new one.
 - 25 pgTAP test files in [supabase/tests/](../../supabase/tests/) numbered `00`–`25`. Each starts with `SELECT plan(N);` — the **sum across all files** must equal the documented total (Gate 3 in `check-coherence.sh`).
 - Two-tier event model: `tbl_event` (parent, calendar entry) → `tbl_tournament` (child, weapon/gender/category slot, created at ingestion only — never at event creation).
-- Scoring engine is in SQL (`fn_*` SECURITY DEFINER functions). Ranking config is JSONB per season. Rolling carry-over for active season is rules-based with a 366-day cap (`tbl_season.int_carryover_days`) — see ADR-018, ADR-021.
+- Scoring engine is in SQL (`fn_*` SECURITY DEFINER functions). Ranking config is JSONB per season. Rolling carry-over for active season is rules-based. The 366-day cap column tbl_season.int_carryover_days exists with default 366 but enforcement lands in Phase 7 (ADR-054). See ADR-018, ADR-021.
 - Carry-over engine is per-season selectable (legacy heuristic vs FK-linked); dispatcher pattern (ADR-042/045).
 - All public-facing reads go through `vw_*` views; admin writes through SECURITY DEFINER `fn_*` RPCs (write-permission revoked from anon — ADR-016).
 
 ## Python ([python/](../../python/))
 
 - `scrapers/` — source-specific parsers, all subclass `base.py`. EVF has split modules: `evf_calendar.py`, `evf_results.py`, `evf_sync.py`.
-- `matcher/` — RapidFuzz fuzzy identity resolution with diacritic folding + alias support; `pipeline.py` orchestrates AUTO_MATCHED / PENDING / UNMATCHED states. **For international ingest (PEW/MEW/MSW), only AUTO_MATCHED rows are stored** — PENDING/UNMATCHED are dismissed (no identity-queue pollution).
+- `matcher/` — RapidFuzz fuzzy identity resolution with diacritic folding + alias support. Three outcomes per scraped name:
+  - High confidence (≥95): AUTO_MATCH → tbl_result.id_fencer
+  - Borderline (50–94): surface in event diff for admin pick
+  - Low confidence: SPWS auto-creates fencer with estimated BY (R006); EVF/FIE skips row.
+  Cross-event memory: tbl_fencer.json_name_aliases write-back on USER_CONFIRMED. Tuning: python/matcher/config.yaml only.
 - `pipeline/` — `orchestrator.py` is the single entrypoint; `db_connector.py` wraps Supabase RPCs; `notifications.py` is Telegram (never Discord); `promote.py` handles CERT→PROD per-tournament transfer; `export_seed_local.py` rebuilds LOCAL from a PROD/CERT seed.
 - `tools/` — one-off CLI utilities (URL population, ad-hoc imports, audits, season-seed generation).
 

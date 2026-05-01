@@ -24,6 +24,15 @@ npm run test:e2e                        # Playwright
 
 # Coherence gates (same as CI)
 bash scripts/check-coherence.sh
+bash scripts/check-spec-sync.sh                            # Phase 0.5 layout invariants
+
+# Rebuild-period commands (REBUILD-ACTIVE through Phase 6)
+bash scripts/load-cert-ref.sh                              # populate cert_ref schema from PROD seed
+python -m pipeline.ingest_cli review-event <code>          # interactive per-event review
+python -m pipeline.ingest_cli list-drafts                  # list pending review drafts
+python -m pipeline.ingest_cli resume --run-id <UUID>       # resume interrupted draft
+python -m pipeline.ingest_cli commit-draft --run-id <UUID>
+make -C doc/rules                                          # build doc/rules/*.html from markdown
 ```
 
 ## TDD Workflow (mandatory)
