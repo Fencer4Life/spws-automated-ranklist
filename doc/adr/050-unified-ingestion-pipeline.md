@@ -5,7 +5,8 @@
 **Date:** 2026-05-01
 
 **Supersedes:** ADR-024 (Combined Category Splitting), ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-039 (EVF Scraper Dedup + Stale-Event Gate), ADR-049 (Joint-Pool Split Flag).
-**Amended by:** ADR-051 (Frozen-snapshot policy), ADR-052 (URL→data validation), ADR-053 (EVF backup-source + parity gate), ADR-054 (Carry-over FK + 366-day cap), ADR-055 (Ingest traceability — parser-kind enum + cap-6 history tables).
+**Amended by:** ADR-052 (URL→data validation), ADR-053 (EVF backup-source + parity gate + EVF_PUBLISHED promotion), ADR-054 (Carry-over FK + 366-day cap), ADR-055 (Ingest traceability — parser-kind enum + cap-6 history tables).
+**Superseded concepts:** Frozen-snapshot status was retired 2026-05-02 — cert_ref fallback became just-another-parser through the standard pipeline; no special status needed. ADR-051 was reserved for that policy and is now empty.
 
 ## Context
 
@@ -28,7 +29,7 @@ The rebuild is structured as 9 phases (0.0a → 7), each gated by explicit deliv
 | 1 | IR + 8 parsers (7 existing + Ophardt server-rendered HTML, per spike outcome [doc/audits/ophardt_format_research.md](../audits/ophardt_format_research.md)) | [p1-ir-parsers.md](../plans/rebuild/p1-ir-parsers.md) |
 | 2 | Draft tables + dry-run loop | [p2-drafts.md](../plans/rebuild/p2-drafts.md) |
 | 3 | Stages 1-7 + alias writeback + 3-way diff + interactive CLI | [p3-pipeline.md](../plans/rebuild/p3-pipeline.md) |
-| 4 | Commit path + frozen snapshot + EVF parity + alias UI | [p4-commit-ui.md](../plans/rebuild/p4-commit-ui.md) |
+| 4 | Commit path + EVF parity + alias UI | [p4-commit-ui.md](../plans/rebuild/p4-commit-ui.md) |
 | 5 | Operational rebuild — every event reviewed and committed | [p5-execute.md](../plans/rebuild/p5-execute.md) |
 | 6 | Drop tbl_match_candidate + remove old UI + finalize + LOCAL→CERT→PROD | [p6-finalize.md](../plans/rebuild/p6-finalize.md) |
 | 7 | Carry-over FK + 366-day cap + admin UI | [p7-carryover.md](../plans/rebuild/p7-carryover.md) |
@@ -69,13 +70,13 @@ Single config file `python/matcher/config.yaml` — thresholds, Polish normaliza
 
 EVF API is a **backup source** for EVF-organized events only. Post-commit parity gate (ADR-053) verifies POL count + placements + score within ±0.5; failures route to `enum_status = 'SCORED'` with notes in `tbl_event.txt_parity_notes`. Transitive trust: if the unified pipeline agrees with EVF API on EVF-organized events, the engine handles SPWS+FIE events correctly too.
 
-### Frozen snapshot
+### Cert_ref fallback as a parser
 
-`tbl_event.txt_source_status` enum (`LIVE_SOURCE | FROZEN_SNAPSHOT | NO_SOURCE`) — Phase 4 (ADR-051). `FROZEN_SNAPSHOT` events copy verbatim from `cert_ref` schema (a parallel read-only mirror of PROD loaded once at rebuild start by `scripts/load-cert-ref.sh`).
+When operator picks `[5]` in the review CLI (no live URL available), cert_ref placements are produced as a `ParsedTournament` IR via a small parser module and fed through the standard Stages 1-11 pipeline. The engine still computes points; no special status is recorded. Stage 7 (URL→data validation) is skipped for this path because there is no URL to validate.
 
-### Memory rule waiver
+### Status enum (Phase 4 — see ADR-053)
 
-The "Never delete tournament/result/event rows without per-row approval" rule (per `memory/feedback_no_delete_without_asking.md`) is **waived for the rebuild lifetime only** — the rebuild explicitly drops `tbl_tournament` + `tbl_result` + `tbl_match_candidate` rows in bulk during Phase 5 commit operations. ADR-051 documents the waiver. Rule reactivates in Phase 6.
+`tbl_event.txt_source_status` carries two values: `ENGINE_COMPUTED` (engine output, default for every event regardless of organizer) and `EVF_PUBLISHED` (EVF-organized events whose engine output passed the parity gate and was overwritten with EVF's authoritative published numbers). DB-level CHECK constraint enforces `EVF_PUBLISHED` is only valid for `txt_organizer = 'EVF'`.
 
 ## Alternatives considered
 
@@ -204,14 +205,14 @@ Phase 3 ships the **unified pipeline body** — Stages 1-7, the override system,
 - ✅ Updated `python/pipeline/orchestrator.py` — added `run_pipeline()` dispatcher resolving stages by name (so monkeypatch tests work); legacy `process_xml_file` annotated with deprecation note pointing to `run_pipeline`.
 - ✅ Extended `python/pipeline/db_connector.py` — `find_event_by_code()`, `fetch_cert_rows_for_event()` (Phase 3 stub), `call_age_categories_batch()` (Stage 4 batch RPC wrapper).
 - ✅ `python/pipeline/three_way_diff.py` — 4-bucket classifier (`classify`, `build_diff`), 7-bin confidence histogram, markdown renderer, `write_diff` to `doc/staging/<event_code>.diff.md`. Bucket semantics per `project_cert_prod_not_baseline.md` (CERT is reference-only, not baseline). 12 pytest assertions in `test_three_way_diff.py`.
-- ✅ `python/pipeline/review_cli.py` — `ReviewSession` with injectable prompt + output (testable without stdin). 4 source-of-truth choices (recorded URL / paste URL / paste path / EVF API; frozen-snapshot deferred to Phase 4). Lifecycle: event summary → choice → fetch → run_iteration (overrides hot-reloaded each iteration) → diff → action prompt → commit/discard/iterate. 15 pytest assertions in `test_review_cli.py` (incl. EVF API path per `project_evf_predominance.md` — EVF events are predominant, source-of-truth on EVF site).
+- ✅ `python/pipeline/review_cli.py` — `ReviewSession` with injectable prompt + output (testable without stdin). 4 source-of-truth choices (recorded URL / paste URL / paste path / EVF API; cert_ref fallback parser added Phase 4). Lifecycle: event summary → choice → fetch → run_iteration (overrides hot-reloaded each iteration) → diff → action prompt → commit/discard/iterate. 15 pytest assertions in `test_review_cli.py` (incl. EVF API path per `project_evf_predominance.md` — EVF events are predominant, source-of-truth on EVF site).
 - ✅ End-to-end integration tests in `python/tests/test_pipeline_integration.py` — 4 tests against live LOCAL Supabase (skip cleanly when unreachable, matching the established pattern).
 - ✅ Test totals: pgTAP 457 → 465 (+8); pytest 422 → 505 (+83 across 6 new test modules); vitest 332 unchanged.
 - ✅ Coherence + spec-sync gates pass.
 
 **Deferred to Phase 4 (per master plan boundaries, not time pressure):**
 
-1. **Frozen-snapshot source-of-truth** — needs ADR-051 frozen-snapshot semantics.
+1. **Cert_ref fallback parser** — produces `ParsedTournament` IR from `cert_ref.tbl_*` rows; integrated as 9th parser in the registry. No special pipeline branch; engine still runs.
 2. **Production fetcher wiring** — `Fetcher` raises `NotImplementedError` for `fetch_url`/`fetch_path`/`fetch_evf_api`; tests inject mocks. Phase 4 wires the existing 8 scrapers to the Fetcher methods.
 3. **`fetch_cert_rows_for_event` real query** — Phase 3 stub returns `[]`; Phase 4 implements when cert_ref is operationally populated.
 4. **EVF parity gate** (R011) — Phase 4 ADR-053.

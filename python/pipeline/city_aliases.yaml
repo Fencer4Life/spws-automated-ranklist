@@ -1,0 +1,40 @@
+# Phase 4 (ADR-052) — City alias map for Stage 7 URL→data validation.
+#
+# Format: <canonical>: [<alias1>, <alias2>, ...]
+# Comparison normalizes case + diacritics on both sides, then applies
+# any alias → canonical, then strict equal.
+#
+# Add new entries when Stage 7 false-halts on a city alias mismatch.
+# Adding an alias is a 1-line PR.
+
+# Polish cities
+Warszawa: [Warsaw, Warschau, Varsovie, Varšava]
+Kraków: [Krakow, Cracow, Krakau]
+Wrocław: [Wroclaw, Breslau]
+Poznań: [Poznan, Posen]
+Gdańsk: [Gdansk, Danzig]
+Łódź: [Lodz]
+Katowice: [Kattowitz]
+Lublin: []
+Bydgoszcz: []
+Szczecin: [Stettin]
+Sopot: []
+
+# Other European veterans-fencing locales
+München: [Munich, Munchen, Monachium]
+Wien: [Vienna]
+Praha: [Prague, Prag]
+Bratislava: [Pressburg]
+Helsinki: [Helsingfors]
+Budapest: []
+Roma: [Rome]
+Milano: [Milan]
+Paris: [Paryż]
+London: [Londyn]
+Cagliari: []
+Reims: []
+Faches-Thumesnil: []
+Guildford: []
+Castelbuono: []
+
+# Future-proofing — operators add as needed

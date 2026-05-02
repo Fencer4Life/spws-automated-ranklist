@@ -5,7 +5,7 @@ The verification mechanism for the rebuild. For each event being re-ingested
 in Phase 5, this module compares three views of the same event's results:
 
   Source     — what the upstream parser produces NOW (parsed IR)
-  CERT       — what cert_ref schema records (frozen snapshot of CERT/PROD;
+  CERT       — what cert_ref schema records (point-in-time copy of CERT/PROD;
                note: CERT/PROD share LOCAL's drift per
                project_cert_prod_not_baseline.md — REFERENCE only, not baseline)
   New LOCAL  — what the new pipeline draft tables produce

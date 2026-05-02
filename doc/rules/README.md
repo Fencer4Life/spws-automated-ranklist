@@ -31,7 +31,6 @@ The markdown sources are the source of truth — HTML is for browsing.
 | [R007](R007.md) | Rolling-score 366-day cap | 018, 054 | 7 |
 | [R008](R008.md) | Carry-over FK linkage | 042, 045, 054 | 7 |
 | [R009](R009.md) | URL→data validation | 052 | 3 |
-| [R010](R010.md) | Frozen snapshot | 051 | 4 |
 | [R011](R011.md) | Source priority by organizer (EVF backup-only) | 053 | 3 |
 | [R012](R012.md) | Engarde multilingual handling | 050 | 1 |
 

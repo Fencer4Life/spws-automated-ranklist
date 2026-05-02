@@ -4,7 +4,7 @@ Per-file disposition for `/Users/aleks/.claude/projects/-Users-aleks-coding-SPWS
 
 - **KEEP** — stays as-is; rule/fact still load-bearing.
 - **UPDATE-PHASE-N** — file needs revision when Phase N lands.
-- **WAIVE-DURING-REBUILD** — rule is suspended for rebuild lifetime; reactivates Phase 6 (per ADR-051).
+- **DELETED** — file removed; concept retired or rule will be reintroduced post-rebuild.
 - **DELETE-IN-PHASE-6** — file is rebuild-historical; superseded after promotion.
 
 Phase 6 will rerun this audit to confirm dispositions still apply.
@@ -47,7 +47,7 @@ All KEEP unless noted — these are user-feedback rules that survive the rebuild
 | feedback_fencer_ppw_mpw_only.md | KEEP | |
 | feedback_international_no_pending.md | UPDATE-PHASE-6 | "PENDING" goes away in new identity model — rule still holds (low-confidence international = skip) but framing needs the AUTO_MATCH/USER_CONFIRMED vocab |
 | feedback_lang_toggle.md | KEEP | |
-| feedback_no_delete_without_asking.md | **WAIVE-DURING-REBUILD** | ADR-051 documents the waiver; reactivates Phase 6 |
+| ~~feedback_no_delete_without_asking.md~~ | **DELETED** | Removed 2026-05-02 at Phase 4 start; will be reintroduced post-rebuild in revised form. The Phase 4 alias-UI Discard operation handles result-row deletion with per-row preview, satisfying the rule's spirit during the rebuild. |
 | feedback_no_layer_shorthand.md | KEEP | |
 | feedback_no_xls_scan.md | KEEP | |
 | feedback_season_create_form_top.md | KEEP | |
@@ -74,7 +74,8 @@ All KEEP unless noted — these are user-feedback rules that survive the rebuild
 
 ## Action items
 
-- **Phase 0 (this commit):** waiver on `feedback_no_delete_without_asking.md` is documented in conventions.md (REBUILD-WAIVER marker) and in this matrix.
+- **Phase 0 (2026-05-01):** waiver on `feedback_no_delete_without_asking.md` was originally documented in conventions.md.
+- **Phase 4 start (2026-05-02):** rule deleted entirely. Architectural simplifications (cert_ref-as-parser instead of FROZEN_SNAPSHOT bypass; alias UI's per-row preview Discard) made the formal waiver unnecessary. Will be reintroduced post-rebuild in revised form.
 - **Phase 3:** update `project_split_combined_pool_fix.md` with rebuild context as the unified splitter lands.
-- **Phase 6:** rerun this audit; execute UPDATE-PHASE-6 / DELETE-IN-PHASE-6 dispositions; reactivate the no-delete rule; remove rebuild markers from conventions.md.
+- **Phase 6:** rerun this audit; execute UPDATE-PHASE-6 / DELETE-IN-PHASE-6 dispositions; remove rebuild markers from conventions.md.
 - **Phase 7:** update carry-over project memory files with cap-enforcement/FK-default-flip outcomes.

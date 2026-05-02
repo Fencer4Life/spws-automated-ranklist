@@ -116,7 +116,7 @@ Equality: id_fencer-preferred, fencer_name-fallback (case-insensitive). `build_d
 5. `prompt_action()` — commit / discard / iterate
 6. `commit()` / `discard()` — invokes `DraftStore` RPCs
 
-CLI entry: `python -m pipeline.review_cli <event_code>`. Frozen-snapshot source-of-truth deferred to Phase 4 per master plan boundary (needs ADR-051).
+CLI entry: `python -m pipeline.review_cli <event_code>`. Cert_ref fallback parser added in Phase 4 as the 9th parser (no special status).
 
 15 pytest assertions in `test_review_cli.py` (incl. EVF API path per `project_evf_predominance.md` correction — EVF events are predominant, source-of-truth on EVF site).
 
@@ -138,7 +138,7 @@ CLI entry: `python -m pipeline.review_cli <event_code>`. Frozen-snapshot source-
 
 ## Deferred to Phase 4 (per master plan boundaries, not time pressure)
 
-- **Frozen-snapshot source-of-truth** — needs ADR-051.
+- **Cert_ref fallback parser** — Phase 4 ships it as just-another-parser, no special status.
 - **Production fetcher wiring** — `Fetcher` raises `NotImplementedError` for `fetch_url` / `fetch_path` / `fetch_evf_api`; tests inject mocks. Phase 4 wires the existing scrapers (FT-XML / FTL / Engarde / 4Fence / Dartagnan / Ophardt / file_import / EVF API) to the Fetcher methods.
 - **`fetch_cert_rows_for_event` query** — returns `[]` in Phase 3 (cert_ref is populated in Phase 4 via `scripts/load-cert-ref.sh`). Phase 4 wires the actual cert_ref join.
 - **EVF parity gate (R011)** — Phase 4 ADR-053.
@@ -148,5 +148,5 @@ CLI entry: `python -m pipeline.review_cli <event_code>`. Frozen-snapshot source-
 
 - Master plan: [now-we-have-a-precious-wren.md](/Users/aleks/.claude/plans/now-we-have-a-precious-wren.md)
 - Predecessor: [p2-drafts.md](p2-drafts.md)
-- Successor: [p4-commit-ui.md](p4-commit-ui.md) — Stage 8 (commit) + frozen snapshot + EVF parity gate + alias UI
+- Successor: [p4-commit-ui.md](p4-commit-ui.md) — Stage 8 (commit) + EVF parity gate + alias UI
 - Implements rules: R001 (combined-pool, S4), R002 (joint-pool, S5), R005b (V0/EVF, S6), R006 (auto-create domestic, S6)

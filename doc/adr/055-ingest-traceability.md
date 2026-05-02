@@ -52,7 +52,7 @@ CREATE TYPE enum_parser_kind AS ENUM (
 );
 ```
 
-**Stamp columns** (added to both `tbl_event` and `tbl_tournament`, all nullable — events may exist before any scrape, FROZEN_SNAPSHOT events have no live source):
+**Stamp columns** (added to both `tbl_event` and `tbl_tournament`, all nullable — events may exist before any scrape; cert_ref-fallback events also produce stamps via the cert_ref parser):
 
 ```sql
 ALTER TABLE tbl_event       ADD COLUMN enum_parser_kind     enum_parser_kind,
@@ -154,7 +154,7 @@ Considered. Rejected because Phase 2/3 designs the orchestrator and the diff ren
 
 ## Migration path for existing data
 
-`enum_parser_kind`, `dt_last_scraped`, `txt_source_url_used` are nullable on add. Pre-rebuild rows have NULL — semantics: "no scrape recorded under the new model." Phase 5 (per ADR-050) re-ingests every event, populating the columns and the history table on each commit. After Phase 5: all production-active events have non-NULL stamps; FROZEN_SNAPSHOT events stay NULL (correct — there is no live source).
+`enum_parser_kind`, `dt_last_scraped`, `txt_source_url_used` are nullable on add. Pre-rebuild rows have NULL — semantics: "no scrape recorded under the new model." Phase 5 (per ADR-050) re-ingests every event, populating the columns and the history table on each commit. After Phase 5: all production-active events have non-NULL stamps. Events sourced via the cert_ref fallback parser (no live URL available) get `enum_parser_kind = 'CERT_REF'` and `txt_source_url_used = NULL`.
 
 CERT/PROD inherit the schema via Phase 6 promotion (per ADR-050). The rebuild restores from rebuilt LOCAL, so the columns and history tables arrive fully populated.
 
@@ -162,5 +162,5 @@ CERT/PROD inherit the schema via Phase 6 promotion (per ADR-050). The rebuild re
 
 - **Phase 2 (drafts):** when the draft → live commit path is wired, write to `tbl_*_ingest_history` atomically with the live-table writes inside `fn_commit_event_draft(p_run_id)`.
 - **Phase 4 (commit + UI):** admin Calendar/Event view should surface `enum_parser_kind` as a badge and `dt_last_scraped` as a relative timestamp. History modal shows the last 6 entries.
-- **Phase 5 (execute):** every event reviewed and committed populates these columns; risk-gate verifies non-NULL coverage on all active (non-FROZEN_SNAPSHOT) events.
+- **Phase 5 (execute):** every event reviewed and committed populates these columns; risk-gate verifies non-NULL coverage on all active events.
 - **Multi-admin futures:** `txt_admin_user` was rejected in this ADR (D7 / alternative trail) but can be added later via ALTER TABLE if SPWS adds more than one admin operator.

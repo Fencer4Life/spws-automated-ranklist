@@ -16,8 +16,8 @@ Source-of-truth choices (per master plan):
   4  EVF API (authoritative for EVF events — see project_evf_predominance.md)
   q  Skip this event
 
-Frozen-snapshot choice deferred to Phase 4 per master plan boundary
-(needs ADR-051 for the frozen-snapshot semantics).
+Cert_ref fallback choice [5] added in Phase 4 as just-another-parser
+(no special status — engine still computes points like every other source).
 
 Architectural decisions (Phase 3 design RFC, locked 2026-05-02):
   - Q4: separate module from ingest_cli (own arg surface, own concerns).
