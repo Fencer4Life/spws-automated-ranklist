@@ -237,6 +237,220 @@ class Fetcher:
         )
         return cert_ref_parse({"tournament": tournament or {}, "results": rows})
 
+    # ------------------------------------------------------------------
+    # Phase 5 — event-level fetch (multi-tournament expansion)
+    # ------------------------------------------------------------------
+
+    def fetch_event_url_with_skips(
+        self, event_url: str
+    ) -> "tuple[list, list[dict]]":
+        """Phase 5 (ADR-057): same as fetch_event_url but ALSO returns the
+        list of brackets the splitter skipped at parse time, so the runner
+        can surface them in the per-event summary for operator verification.
+
+        Returns: (parsed_list, skipped_list). skipped_list entries:
+          {"weapon": str|None, "name": str, "url": str, "reason": str}
+        """
+        skipped: list[dict] = []
+        if _is_ftl_event_schedule(event_url):
+            from python.scrapers.ftl_auth import get_authed_ftl_client
+            from python.tools.scrape_ftl_event_urls import (
+                parse_event_schedule,
+                parse_tournament_name,
+                MIKST_PATTERN,
+                SKIP_PATTERNS,
+            )
+            FTL_DATA_PREFIX = "https://www.fencingtimelive.com/events/results/data/"
+            results: list = []
+            with get_authed_ftl_client() as authed:
+                resp = authed.get(event_url)
+                resp.raise_for_status()
+                # parse_event_schedule(with_skips=True) returns BOTH the
+                # kept brackets and the splitter-rejected ones (Mixed / DE /
+                # etc.) so we can surface them in the per-event summary.
+                raw_entries, name_skips = parse_event_schedule(
+                    resp.text, with_skips=True
+                )
+
+                # Splitter-time name-pattern skips → record with weapon probe
+                for sk in name_skips:
+                    name_s = sk["name"]
+                    upper = name_s.upper()
+                    wpn = None
+                    for k in ("EPEE", "FOIL", "SABRE", "SABER", "FLORET",
+                              "SZABLA", "SZPADA", "ÉPÉE"):
+                        if k in upper:
+                            wpn = {"FLORET": "FOIL", "SZABLA": "SABRE",
+                                   "SZPADA": "EPEE", "ÉPÉE": "EPEE",
+                                   "SABER": "SABRE"}.get(k, k)
+                            break
+                    skipped.append({
+                        "weapon": wpn,
+                        "name": name_s,
+                        "url": f"{FTL_DATA_PREFIX}{sk['uuid']}",
+                        "reason": sk.get("reason", "splitter skip"),
+                    })
+
+                for raw in raw_entries:
+                    name = raw["name"]
+                    per_url = f"{FTL_DATA_PREFIX}{raw['uuid']}"
+                    # Bracket name was kept by parse_event_schedule; try to
+                    # extract weapon/gender/V-cat. Returning None here means
+                    # parse_tournament_name found the name unparseable.
+                    parsed_name = parse_tournament_name(name)
+                    if parsed_name is None:
+                        skipped.append({
+                            "weapon": None, "name": name, "url": per_url,
+                            "reason": "unparseable bracket name",
+                        })
+                        continue
+                    is_combined = isinstance(parsed_name, list)
+                    if is_combined:
+                        weapon, gender, _ = parsed_name[0]
+                        category = None
+                    else:
+                        weapon, gender, category = parsed_name
+                    saved_http = self._http
+                    try:
+                        self._http = authed
+                        per_parsed = self.fetch_url(per_url)
+                    finally:
+                        self._http = saved_http
+                    annotated = _annotate_parsed(
+                        per_parsed,
+                        weapon=weapon, gender=gender,
+                        age_category=category,
+                        ftl_source_name=name,
+                    )
+                    results.append(annotated)
+            return results, skipped
+        return [self.fetch_url(event_url)], skipped
+
+    def fetch_event_url(self, event_url: str) -> "list[ParsedTournament]":
+        """Expand an event-level URL into per-tournament ParsedTournament IRs.
+
+        Phase 5 entry point. Always start from the event URL; first step is
+        to determine the per-tournament URLs, then fetch + parse each.
+
+        FTL eventSchedule URLs (`/tournaments/eventSchedule/<UUID>`) get
+        expanded via `python.tools.scrape_ftl_event_urls.parse_event_schedule`
+        + an authed FTL client (FTL pages require login since 2026-04).
+
+        For non-FTL or single-tournament URLs, returns a list of length 1
+        wrapping the existing fetch_url result, so callers don't have to
+        special-case URL kinds.
+
+        Raises:
+            ValueError if the event URL produces zero parseable tournaments.
+        """
+        if _is_ftl_event_schedule(event_url):
+            from python.scrapers.ftl_auth import get_authed_ftl_client
+            from python.tools.scrape_ftl_event_urls import (
+                parse_event_schedule,
+                parse_tournament_name,
+            )
+            FTL_DATA_PREFIX = "https://www.fencingtimelive.com/events/results/data/"
+            with get_authed_ftl_client() as authed:
+                # 1. Discover per-tournament UUIDs from the eventSchedule page
+                resp = authed.get(event_url)
+                resp.raise_for_status()
+                raw_entries = parse_event_schedule(resp.text)
+
+                # 2. Map names → (weapon, gender, category) and per-tournament URL.
+                #    A tuple means a single-V-cat bracket — emit one IR with
+                #    that category. A list means combined-pool ("all cats" or
+                #    "v0v1v2") — emit ONE IR with category_hint=None and let
+                #    Stage 4 (combined-pool split) handle the V-cat split via
+                #    per-fencer marker. Emitting one IR per category here
+                #    causes duplicate pipeline runs against identical data.
+                results: list = []
+                for raw in raw_entries:
+                    parsed_name = parse_tournament_name(raw["name"])
+                    if parsed_name is None:
+                        continue
+                    is_combined = isinstance(parsed_name, list)
+                    if is_combined:
+                        weapon, gender, _ = parsed_name[0]
+                        category = None  # Stage 4 splits via marker
+                    else:
+                        weapon, gender, category = parsed_name
+
+                    per_url = f"{FTL_DATA_PREFIX}{raw['uuid']}"
+
+                    # 3. Fetch + parse each per-tournament results page
+                    #    via the authed client (FTL JSON API endpoint)
+                    saved_http = self._http
+                    try:
+                        self._http = authed
+                        per_parsed = self.fetch_url(per_url)
+                    finally:
+                        self._http = saved_http
+
+                    annotated = _annotate_parsed(
+                        per_parsed,
+                        weapon=weapon,
+                        gender=gender,
+                        age_category=category,
+                        ftl_source_name=raw["name"],
+                    )
+                    results.append(annotated)
+
+                if not results:
+                    raise ValueError(
+                        f"fetch_event_url: zero parseable tournaments from "
+                        f"FTL eventSchedule {event_url!r}"
+                    )
+                return results
+
+        # Non-FTL-eventSchedule URLs — single-tournament path
+        return [self.fetch_url(event_url)]
+
+
+def _is_ftl_event_schedule(url: str) -> bool:
+    """True iff `url` is an FTL master event-schedule page (multi-tournament)."""
+    return bool(url) and "fencingtimelive.com" in url and "/tournaments/eventSchedule/" in url
+
+
+def _to_human_results_url(url: str | None) -> str | None:
+    """Convert an FTL JSON-data results URL to its human-friendly results page.
+
+    The pipeline FETCHES `/events/results/data/<UUID>` (JSON API) but stores
+    `url_results` for users to click. `/data/` belongs in `txt_source_url_used`
+    only — strip it for the human-facing field. Non-FTL URLs are passed through.
+    """
+    if not url:
+        return url
+    return url.replace(
+        "/events/results/data/",
+        "/events/results/",
+    )
+
+
+def _annotate_parsed(parsed, *, weapon, gender, age_category, ftl_source_name):
+    """Stamp weapon/gender/category_hint onto a ParsedTournament IR.
+
+    The eventSchedule splitter knows the V-cat / weapon / gender from the
+    sub-tournament's display name; the per-tournament JSON API doesn't
+    always echo them. We override here so Stage 7 URL→data validation
+    sees the right values. (`age_category` from the splitter maps to the
+    IR's `category_hint` field.)
+
+    Mutates a shallow copy via dataclasses.replace when possible; falls
+    back to attribute set when the IR isn't a dataclass.
+    """
+    try:
+        import dataclasses as _dc
+        if _dc.is_dataclass(parsed):
+            return _dc.replace(parsed, weapon=weapon, gender=gender,
+                                category_hint=age_category)
+    except Exception:
+        pass
+    setattr(parsed, "weapon", weapon)
+    setattr(parsed, "gender", gender)
+    setattr(parsed, "category_hint", age_category)
+    setattr(parsed, "_ftl_source_name", ftl_source_name)
+    return parsed
+
 
 # ===========================================================================
 # ReviewSession — the per-event interactive lifecycle
@@ -398,6 +612,7 @@ class ReviewSession:
             overrides=overrides,
             db=self.db,
             season_end_year=self.season_end_year,
+            event_code=self.event_code,
         )
         self._last_ctx = ctx
 
@@ -420,29 +635,72 @@ class ReviewSession:
         if self.run_id is None:
             self.run_id = str(uuid.uuid4())
 
-        # Write tournament_drafts (one per category if combined; else one)
-        # For Phase 3, build minimal draft rows from ctx.event + ctx.matches.
-        # Production-rich draft rows happen in Phase 4 commit-path work.
-        self.draft_store.write_tournament_drafts(
-            tournaments=self._build_tournament_draft_rows(ctx),
+        # ADR-056 (Phase 5): build tournament_drafts from ctx.vcat_groups (one
+        # per V-cat group, populated by s7_split_by_vcat) and link result_drafts
+        # via the returned id_tournament_draft. Replaces the old placeholder-=0
+        # path that prevented fn_commit_event_draft from migrating result rows.
+        tournament_rows = self._build_tournament_draft_rows(ctx)
+
+        # Phase 5 follow-up: VALIDATE every url_results before saving.
+        # The validator fetches via the authed FTL client and rejects login
+        # walls, HTTP errors, and the JSON data endpoint. Verdicts are
+        # attached to the row dict (`_url_check`) so the runner can render
+        # them in the summary; bad URLs do NOT block writing the draft —
+        # the operator decides at sign-off whether to commit. (The check
+        # is skipped when the caller passes self.skip_url_validation,
+        # set by tests / offline mode.)
+        if not getattr(self, "skip_url_validation", False):
+            self._validate_draft_urls(tournament_rows)
+
+        tournament_ids = self.draft_store.write_tournament_drafts(
+            tournaments=tournament_rows,
             run_id=self.run_id,
         )
-        self.draft_store.write_result_drafts(
-            results=self._build_result_draft_rows(ctx),
-            run_id=self.run_id,
-        )
+        # Map vcat → id_tournament_draft for the result-row linkage
+        vcats_in_order = [r["enum_age_category"] for r in tournament_rows]
+        vcat_to_tournament_id = dict(zip(vcats_in_order, tournament_ids))
+
+        result_rows = self._build_result_draft_rows(ctx, vcat_to_tournament_id)
+        if result_rows:
+            self.draft_store.write_result_drafts(
+                results=result_rows,
+                run_id=self.run_id,
+            )
 
         diff_path = self._write_diff(ctx, staging_dir, halted=False)
         return ctx, diff_path
 
     def _build_tournament_draft_rows(self, ctx) -> list[dict]:
-        """Translate PipelineContext into tbl_tournament_draft rows.
+        """Translate PipelineContext.vcat_groups into tbl_tournament_draft rows.
 
-        Phase 3 minimal: one row per V-cat (or one if not combined-pool).
+        ADR-056 (Phase 5): one row per V-cat group derived from matched
+        fencers' birth years. `bool_joint_pool_split` is true iff the
+        source bracket spanned ≥2 V-cats. Falls back to ctx.splits /
+        category_hint when vcat_groups is empty (e.g. legacy callers).
         """
         event_id = (ctx.event or {}).get("id_event")
         rows = []
-        if ctx.is_combined_pool and ctx.splits:
+
+        if getattr(ctx, "vcat_groups", None):
+            # ADR-049 refinement: bool_joint_pool_split flags only the
+            # OUTLIER V-cat children — i.e. groups whose V-cat differs from
+            # the bracket's nominal V-cat (`category_hint`, parsed from the
+            # bracket name). The dominant child (V-cat == nominal) keeps
+            # FALSE so it remains a "clean" V-cat ranking.
+            # Combined-pool brackets (no nominal V-cat → category_hint is
+            # None) flag every child TRUE, since there is no single
+            # anchor V-cat to be "the real one".
+            nominal_vcat = getattr(ctx.parsed, "category_hint", None)
+            for vcat in sorted(ctx.vcat_groups.keys()):
+                if not ctx.vcat_groups[vcat]:
+                    continue
+                row = self._draft_row_skeleton(ctx, event_id, vcat)
+                if nominal_vcat is None:
+                    row["bool_joint_pool_split"] = ctx.is_joint_pool
+                else:
+                    row["bool_joint_pool_split"] = (vcat != nominal_vcat)
+                rows.append(row)
+        elif ctx.is_combined_pool and ctx.splits:
             for vcat in sorted(ctx.splits.keys()):
                 rows.append(self._draft_row_skeleton(ctx, event_id, vcat))
         else:
@@ -451,7 +709,45 @@ class ReviewSession:
             ))
         return rows
 
+    def _validate_draft_urls(self, tournament_rows: list[dict]) -> None:
+        """Fetch every draft `url_results` and store the verdict on self.
+
+        Phase 5 follow-up: catches the FTL login-wall problem (200 + login
+        HTML) and the never-should-have-leaked `/events/results/data/<UUID>`
+        format. Verdicts go into `self.url_check_results` keyed by
+        txt_code (NOT into the row dict — Postgres would reject unknown
+        columns on insert). Caching by URL avoids re-fetching when an
+        outlier-V-cat draft shares a URL with its dominant-V-cat sibling.
+        """
+        from python.pipeline.url_reachability import check_results_url
+
+        if not hasattr(self, "url_check_results"):
+            self.url_check_results: dict[str, object] = {}
+        cache: dict[str, object] = {}
+        for row in tournament_rows:
+            url = row.get("url_results")
+            code = row.get("txt_code", "?")
+            if url is None:
+                continue
+            if url in cache:
+                verdict = cache[url]
+            else:
+                verdict = check_results_url(url)
+                cache[url] = verdict
+            self.url_check_results[code] = verdict
+            try:
+                self._say(
+                    f"  url-check {code}: "
+                    f"{'OK' if verdict.ok else verdict.reason}"
+                    + (f" ({verdict.evidence})" if not verdict.ok and verdict.evidence else "")
+                )
+            except Exception:  # noqa: BLE001
+                pass  # _say is best-effort logging only
+
     def _draft_row_skeleton(self, ctx, event_id, vcat) -> dict:
+        # url_results is the human-friendly results page (what users see in a
+        # browser); txt_source_url_used keeps the actual fetched endpoint
+        # (e.g. FTL JSON `/events/results/data/<UUID>`) for the audit trail.
         return {
             "id_event": event_id,
             "txt_code": f"{self.event_code}-{vcat}-{ctx.parsed.weapon}-{ctx.parsed.gender}",
@@ -460,29 +756,45 @@ class ReviewSession:
             "enum_gender": ctx.parsed.gender,
             "enum_age_category": vcat,
             "dt_tournament": ctx.parsed.parsed_date.isoformat() if ctx.parsed.parsed_date else None,
-            "url_results": ctx.parsed.source_url,
+            "url_results": _to_human_results_url(ctx.parsed.source_url),
             "enum_parser_kind": ctx.parsed.source_kind.value,
             "txt_source_url_used": ctx.parsed.source_url,
         }
 
-    def _build_result_draft_rows(self, ctx) -> list[dict]:
-        """Translate ctx.matches into tbl_result_draft rows.
+    def _build_result_draft_rows(
+        self, ctx, vcat_to_tournament_id: dict[str, int] | None = None,
+    ) -> list[dict]:
+        """Translate vcat_groups → tbl_result_draft rows with proper linkage.
 
-        Phase 3 minimal: each StageMatchResult → one draft row. The
-        id_tournament_draft linkage is filled in by the commit path
-        (Phase 4 work) — Phase 3 puts a placeholder of 0 (caller wires it).
+        ADR-056: each match in ctx.vcat_groups[V] gets the V's tournament_draft
+        id assigned to id_tournament_draft (replaces the Phase-3 =0 placeholder
+        that prevented fn_commit_event_draft from migrating result rows).
         """
-        return [
-            {
-                "id_fencer": m.id_fencer,
-                "id_tournament_draft": 0,  # placeholder; Phase 4 fills via mapping
-                "int_place": m.place,
-                "txt_scraped_name": m.scraped_name,
-                "num_match_confidence": m.confidence,
-                "enum_match_method": m.method,
-            }
-            for m in ctx.matches
-        ]
+        method_map = {
+            "AUTO_MATCHED": "AUTO_MATCH",
+            "USER_CONFIRMED": "USER_CONFIRMED",
+            "AUTO_CREATED": "AUTO_CREATED",
+            "BY_ESTIMATED": "BY_ESTIMATED",
+        }
+        rows: list[dict] = []
+        if not getattr(ctx, "vcat_groups", None) or not vcat_to_tournament_id:
+            return rows
+        for vcat, matches in ctx.vcat_groups.items():
+            tournament_id = vcat_to_tournament_id.get(vcat)
+            if tournament_id is None:
+                continue
+            for m in matches:
+                if m.method not in method_map:
+                    continue  # PENDING / EXCLUDED — not finalized, skip
+                rows.append({
+                    "id_fencer": m.id_fencer,
+                    "id_tournament_draft": tournament_id,
+                    "int_place": m.place,
+                    "txt_scraped_name": m.scraped_name,
+                    "num_match_confidence": m.confidence,
+                    "enum_match_method": method_map[m.method],
+                })
+        return rows
 
     def _write_diff(self, ctx, staging_dir: Path | None, *, halted: bool) -> Path:
         """Build + write the 3-way diff markdown for this iteration."""

@@ -22,3 +22,6 @@ test-results/
 .~lock.*#
 doc/external_files/
 *.egg-info/
+
+# Playwright MCP browser sessions (transient)
+.playwright-mcp/

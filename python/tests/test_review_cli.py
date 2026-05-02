@@ -62,6 +62,10 @@ def _make_session(prompt_answers, db=None, store=None, fetcher=None,
         output=output_lines.append,
         fetcher=fetcher,
     )
+    # Phase 5 follow-up: every test session skips live URL reachability
+    # checks by default. Tests that want to verify the validator wire-in
+    # set this to False explicitly.
+    session.skip_url_validation = True
     return session, db, store, fetcher, output_lines
 
 
@@ -214,7 +218,7 @@ class TestRunIteration:
         from python.pipeline.types import StageMatchResult
 
         # Stub run_pipeline to return a synthetic context with one match
-        def fake_run_pipeline(parsed, overrides, db, season_end_year):
+        def fake_run_pipeline(parsed, overrides, db, season_end_year, event_code=None):
             from python.pipeline.types import Overrides, PipelineContext
             ctx = PipelineContext(parsed=parsed, overrides=overrides or Overrides(),
                                   season_end_year=season_end_year)
@@ -223,12 +227,20 @@ class TestRunIteration:
                 StageMatchResult(scraped_name="X", place=1, id_fencer=42,
                                  confidence=99.0, method="AUTO_MATCHED"),
             ]
+            # ADR-056: run_iteration now writes via vcat_groups; populate
+            # synthetically so the test's draft-write assertions still hold.
+            ctx.vcat_groups = {"V1": list(ctx.matches)}
+            ctx.is_joint_pool = False
             return ctx
         monkeypatch.setattr(review_cli, "run_pipeline", fake_run_pipeline)
 
         # Stub cert_ref query (Phase 3 reads but for now we mock)
         session, db, store, *_ = _make_session(prompt_answers=[])
         db.fetch_cert_rows_for_event.return_value = []
+        # ADR-056: write_tournament_drafts returns list of ids — stub a list
+        # of length 1 so the runner's vcat→id linkage map is non-empty and
+        # write_result_drafts gets called.
+        store.write_tournament_drafts.return_value = [101]
 
         parsed = ParsedTournament(
             source_kind=SourceKind.FENCINGTIME_XML,
@@ -272,6 +284,118 @@ class TestPromptAction:
 # ---------------------------------------------------------------------------
 # End-to-end orchestration
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Joint flag semantics + url_results transform (Phase 5 follow-up)
+# ---------------------------------------------------------------------------
+
+class TestJointFlagAndUrlTransform:
+    """Phase 5 follow-up: bool_joint_pool_split must flag only the
+    OUTLIER V-cat children, not the dominant V-cat child whose V-cat
+    matches the bracket's nominal V-cat. And url_results must be the
+    human-friendly /events/results/<UUID> URL, not the JSON data endpoint
+    /events/results/data/<UUID> we actually fetched.
+    """
+
+    def _make_ctx(self, *, category_hint: str | None, vcat_groups: dict,
+                  source_url: str = "https://example.test/x"):
+        from python.pipeline.ir import ParsedTournament, SourceKind
+        from python.pipeline.types import Overrides, PipelineContext
+
+        parsed = ParsedTournament(
+            source_kind=SourceKind.FENCINGTIME_XML,
+            results=[],
+            parsed_date=date(2026, 4, 1),
+            weapon="EPEE",
+            gender="M",
+            season_end_year=2026,
+            source_url=source_url,
+            category_hint=category_hint,
+        )
+        ctx = PipelineContext(parsed=parsed, overrides=Overrides(), season_end_year=2026)
+        ctx.event = {"id_event": 99, "txt_code": "TEST-EVT-1"}
+        ctx.vcat_groups = vcat_groups
+        ctx.is_joint_pool = len(vcat_groups) >= 2
+        return ctx
+
+    # 5.J1 single V-cat group → joint=FALSE
+    def test_single_group_joint_false(self):
+        from python.pipeline.types import StageMatchResult
+        m = StageMatchResult(scraped_name="X", place=1, id_fencer=1,
+                             confidence=99.0, method="AUTO_MATCHED")
+        session, *_ = _make_session(prompt_answers=[])
+        ctx = self._make_ctx(category_hint="V2", vcat_groups={"V2": [m]})
+        rows = session._build_tournament_draft_rows(ctx)
+        assert len(rows) == 1
+        assert rows[0]["enum_age_category"] == "V2"
+        assert rows[0]["bool_joint_pool_split"] is False
+
+    # 5.J2 single-V-cat-named bracket with outlier → dominant FALSE, outlier TRUE
+    def test_named_bracket_with_outlier_only_outlier_flagged(self):
+        from python.pipeline.types import StageMatchResult
+        dom1 = StageMatchResult(scraped_name="A", place=1, id_fencer=1,
+                                confidence=99.0, method="AUTO_MATCHED")
+        dom2 = StageMatchResult(scraped_name="B", place=2, id_fencer=2,
+                                confidence=99.0, method="AUTO_MATCHED")
+        outlier = StageMatchResult(scraped_name="C", place=3, id_fencer=3,
+                                   confidence=99.0, method="AUTO_MATCHED")
+        session, *_ = _make_session(prompt_answers=[])
+        ctx = self._make_ctx(
+            category_hint="V2",
+            vcat_groups={"V2": [dom1, dom2], "V3": [outlier]},
+        )
+        rows = session._build_tournament_draft_rows(ctx)
+        by_vcat = {r["enum_age_category"]: r for r in rows}
+        assert by_vcat["V2"]["bool_joint_pool_split"] is False
+        assert by_vcat["V3"]["bool_joint_pool_split"] is True
+
+    # 5.J3 combined-pool bracket (no nominal V-cat) → all groups TRUE
+    def test_combined_pool_all_groups_flagged(self):
+        from python.pipeline.types import StageMatchResult
+        a = StageMatchResult(scraped_name="A", place=1, id_fencer=1,
+                             confidence=99.0, method="AUTO_MATCHED")
+        b = StageMatchResult(scraped_name="B", place=2, id_fencer=2,
+                             confidence=99.0, method="AUTO_MATCHED")
+        c = StageMatchResult(scraped_name="C", place=3, id_fencer=3,
+                             confidence=99.0, method="AUTO_MATCHED")
+        session, *_ = _make_session(prompt_answers=[])
+        ctx = self._make_ctx(
+            category_hint=None,
+            vcat_groups={"V1": [a], "V2": [b], "V3": [c]},
+        )
+        rows = session._build_tournament_draft_rows(ctx)
+        assert len(rows) == 3
+        assert all(r["bool_joint_pool_split"] is True for r in rows)
+
+    # 5.J4 url_results transforms FTL data endpoint → human URL
+    def test_url_results_transformed_for_ftl(self):
+        from python.pipeline.types import StageMatchResult
+        m = StageMatchResult(scraped_name="X", place=1, id_fencer=1,
+                             confidence=99.0, method="AUTO_MATCHED")
+        session, *_ = _make_session(prompt_answers=[])
+        ctx = self._make_ctx(
+            category_hint="V2", vcat_groups={"V2": [m]},
+            source_url="https://www.fencingtimelive.com/events/results/data/22488366AC2E4DA9A7A7828054EB230C",
+        )
+        rows = session._build_tournament_draft_rows(ctx)
+        r = rows[0]
+        assert r["url_results"] == "https://www.fencingtimelive.com/events/results/22488366AC2E4DA9A7A7828054EB230C"
+        # txt_source_url_used keeps the actual fetched endpoint (audit trail)
+        assert r["txt_source_url_used"] == "https://www.fencingtimelive.com/events/results/data/22488366AC2E4DA9A7A7828054EB230C"
+
+    # 5.J5 non-FTL URLs are passed through unchanged
+    def test_non_ftl_url_unchanged(self):
+        from python.pipeline.types import StageMatchResult
+        m = StageMatchResult(scraped_name="X", place=1, id_fencer=1,
+                             confidence=99.0, method="AUTO_MATCHED")
+        session, *_ = _make_session(prompt_answers=[])
+        ctx = self._make_ctx(
+            category_hint="V2", vcat_groups={"V2": [m]},
+            source_url="https://engarde-service.com/some/path",
+        )
+        rows = session._build_tournament_draft_rows(ctx)
+        assert rows[0]["url_results"] == "https://engarde-service.com/some/path"
+
 
 class TestRun:
     def test_skip_choice_exits_without_writes(self):

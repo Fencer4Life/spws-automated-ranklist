@@ -187,11 +187,26 @@ def _is_pew(event_row: dict) -> bool:
     return code.startswith("PEW")
 
 
+def _coerce_date(v):
+    """Accept ISO string / date / datetime / None; return date or None."""
+    from datetime import datetime
+    if v is None:
+        return None
+    if isinstance(v, date) and not isinstance(v, datetime):
+        return v
+    if isinstance(v, datetime):
+        return v.date()
+    try:
+        return date.fromisoformat(str(v)[:10])
+    except ValueError:
+        return None
+
+
 def _check_date(event_row: dict, scraped: ScrapedMetadata, result: ValidationResult) -> None:
     if scraped.parsed_date is None:
         return
-    expected_start: date | None = event_row.get("dt_start")
-    expected_end: date | None = event_row.get("dt_end") or expected_start
+    expected_start = _coerce_date(event_row.get("dt_start"))
+    expected_end = _coerce_date(event_row.get("dt_end")) or expected_start
     if expected_start is None:
         return  # event row has no date — can't compare
 

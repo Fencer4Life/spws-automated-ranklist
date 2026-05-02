@@ -42,18 +42,117 @@ class DbConnector:
         """Find an event by txt_code (Phase 3 ADR-050 — review_cli lookup).
 
         Returns dict with id_event, txt_code, txt_name, url_results,
-        dt_start, dt_end, enum_status — or None if not found.
+        dt_start, dt_end, enum_status, id_season, id_organizer, txt_location
+        — or None if not found.
+
+        Phase 5: id_season is included so Stage 2 can resolve the correct
+        season (not assume the active one).
         """
         resp = (
             self._sb.table("tbl_event")
-            .select("id_event, txt_code, txt_name, url_results, "
-                    "dt_start, dt_end, enum_status")
+            .select("id_event, txt_code, txt_name, "
+                    "url_event, url_event_2, url_event_3, url_event_4, url_event_5, "
+                    "dt_start, dt_end, enum_status, id_season, "
+                    "id_organizer, txt_location")
             .eq("txt_code", event_code)
             .execute()
         )
         if resp.data:
             return resp.data[0]
         return None
+
+    def find_season_by_id(self, id_season: int) -> dict | None:
+        """Look up a season row by id_season (Phase 5 — Stage 2 uses
+        this to derive season_end_year for the resolved event).
+
+        Returns {id_season, txt_code, dt_start, dt_end} or None.
+        """
+        resp = (
+            self._sb.table("tbl_season")
+            .select("id_season, txt_code, dt_start, dt_end")
+            .eq("id_season", id_season)
+            .execute()
+        )
+        if resp.data:
+            return resp.data[0]
+        return None
+
+    def fetch_genders_batch(self, id_fencers: list[int]) -> dict[int, str | None]:
+        """Phase 5 — batch fetch enum_gender for matched fencers.
+
+        Used by `s7_pool_round_check` to detect pool rounds via gender
+        distribution structural signal. Returns {id_fencer: 'M'|'F'|None}.
+        """
+        if not id_fencers:
+            return {}
+        resp = (
+            self._sb.table("tbl_fencer")
+                    .select("id_fencer,enum_gender")
+                    .in_("id_fencer", id_fencers)
+                    .execute()
+        )
+        return {row["id_fencer"]: row.get("enum_gender") for row in (resp.data or [])}
+
+    def fetch_fencer_basics_batch(self, id_fencers: list[int]) -> dict[int, dict]:
+        """Phase 5 — batch fetch surname / first_name / aliases / birth-year
+        flags for matched fencers. Used by the runner to build the per-event
+        fencer-matching summary (alias usage, BY-estimated tracking).
+
+        Returns {id_fencer: {txt_surname, txt_first_name, json_name_aliases,
+        int_birth_year, bool_birth_year_estimated}}.
+        """
+        if not id_fencers:
+            return {}
+        resp = (
+            self._sb.table("tbl_fencer")
+                    .select("id_fencer,txt_surname,txt_first_name,"
+                            "json_name_aliases,int_birth_year,"
+                            "bool_birth_year_estimated")
+                    .in_("id_fencer", id_fencers)
+                    .execute()
+        )
+        return {row["id_fencer"]: row for row in (resp.data or [])}
+
+    def fetch_birth_years_batch(self, id_fencers: list[int]) -> dict[int, int | None]:
+        """ADR-056 (Phase 5) — batch fetch int_birth_year for matched fencers.
+
+        Returns dict {id_fencer: int_birth_year}. Fencers whose row was not
+        found are absent from the dict; fencers whose int_birth_year is NULL
+        appear with value None. Empty input → empty dict (no DB call).
+        """
+        if not id_fencers:
+            return {}
+        resp = (
+            self._sb.table("tbl_fencer")
+                    .select("id_fencer,int_birth_year")
+                    .in_("id_fencer", id_fencers)
+                    .execute()
+        )
+        return {row["id_fencer"]: row.get("int_birth_year") for row in (resp.data or [])}
+
+    def find_seasons_containing_dates(
+        self, event_dt_start: str, event_dt_end: str
+    ) -> list[dict]:
+        """Return every season whose date range contains BOTH event dates.
+
+        Phase 5: Stage 2 uses this to resolve which season the event truly
+        belongs to (not to be confused with the FK on tbl_event.id_season,
+        which historical seed data has wrong for some events). Exactly-one
+        match is required; zero or many is a showstopper handled by the
+        caller.
+
+        A season `s` "contains" the event iff
+            s.dt_start <= event_dt_start AND s.dt_end >= event_dt_end.
+        """
+        resp = (
+            self._sb.table("tbl_season")
+            .select("id_season, txt_code, dt_start, dt_end")
+            .lte("dt_start", event_dt_start)
+            .gte("dt_end", event_dt_end)
+            .order("dt_start")
+            .execute()
+        )
+        return list(resp.data or [])
 
     def fetch_cert_rows_for_event(self, event_code: str) -> list[dict]:
         """Fetch cert_ref result rows for an event (Phase 4 — 3-way diff CERT column).
