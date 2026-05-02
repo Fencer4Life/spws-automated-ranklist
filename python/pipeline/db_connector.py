@@ -99,15 +99,15 @@ class DbConnector:
         fencer-matching summary (alias usage, BY-estimated tracking).
 
         Returns {id_fencer: {txt_surname, txt_first_name, json_name_aliases,
-        int_birth_year, bool_birth_year_estimated}}.
+        json_user_confirmed_aliases, int_birth_year, bool_birth_year_estimated}}.
         """
         if not id_fencers:
             return {}
         resp = (
             self._sb.table("tbl_fencer")
                     .select("id_fencer,txt_surname,txt_first_name,"
-                            "json_name_aliases,int_birth_year,"
-                            "bool_birth_year_estimated")
+                            "json_name_aliases,json_user_confirmed_aliases,"
+                            "int_birth_year,bool_birth_year_estimated")
                     .in_("id_fencer", id_fencers)
                     .execute()
         )

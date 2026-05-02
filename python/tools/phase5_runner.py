@@ -465,11 +465,34 @@ def main() -> int:
     for w in pool_warnings:
         print(w, file=sys.stderr)
 
+    # ─── SIGN-OFF STOP ─────────────────────────────────────────────
+    # No auto-commit. The runner writes drafts + summary and STOPS here
+    # so the user can review the staging .md and decide whether to commit.
+    # To sign off, re-invoke with --commit-run-id <run_id>.
+    #
+    # IMPORTANT — order: render the .md *before* the stage-time alias
+    # flush. `_build_fencer_matching_summary` queries tbl_fencer.aliases
+    # to split matches into `alias_existing` vs `alias_new_needed`. If
+    # we flush first, the freshly-flushed ❌ aliases would look like
+    # `alias_existing` in the verdict table, and the operator would lose
+    # visibility of the wrong matches the matcher just produced.
+    md = _multi_summary_md(
+        args.event_code, event_meta, ctxs, db=db,
+        pool_brackets=pool_brackets, pool_warnings=pool_warnings,
+        run_id=session.run_id,
+        url_check_results=getattr(session, "url_check_results", {}),
+    )
+    out_path = Path(args.staging_dir) / f"{args.event_code}.md"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(md, encoding="utf-8")
+    print(f"→ Wrote {out_path}", file=sys.stderr)
+
     # ─── PHASE 5 OPTION-1 STAGE-TIME ALIAS FLUSH ──────────────────────────
     # Pre-write EVERY pending alias pair (✓ ❓ ❌) to tbl_fencer.json_name_aliases
-    # so the FencerAliasManager UI surfaces them all. The user uses
-    # Transfer / Discard / Create on the bad ones — those RPCs are now
-    # draft-aware (migration 20260502000009), so tbl_result_draft follows.
+    # AFTER the .md so the verdict table shows wrong-match ❌ rows
+    # accurately. The flush populates the FencerAliasManager UI for the
+    # operator's resolution: Transfer / Discard / Create — those RPCs
+    # are now draft-aware (migration 20260502000009).
     #
     # Source = in-memory ctx.matches across every bracket (NOT
     # tbl_result_draft) so we also catch PENDING-method rows. PENDING
@@ -513,21 +536,6 @@ def main() -> int:
                 )
         except Exception as e:  # noqa: BLE001
             print(f"  ⚠ stage-time alias flush failed: {e}", file=sys.stderr)
-
-    # ─── SIGN-OFF STOP ─────────────────────────────────────────────
-    # No auto-commit. The runner writes drafts + summary and STOPS here
-    # so the user can review the staging .md and decide whether to commit.
-    # To sign off, re-invoke with --commit-run-id <run_id>.
-    md = _multi_summary_md(
-        args.event_code, event_meta, ctxs, db=db,
-        pool_brackets=pool_brackets, pool_warnings=pool_warnings,
-        run_id=session.run_id,
-        url_check_results=getattr(session, "url_check_results", {}),
-    )
-    out_path = Path(args.staging_dir) / f"{args.event_code}.md"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(md, encoding="utf-8")
-    print(f"→ Wrote {out_path}", file=sys.stderr)
     return 0
 
 
@@ -880,6 +888,43 @@ def _split_polish_name(name: str) -> tuple[str, str]:
     return surname, first
 
 
+def _estimate_birth_year_for_vcat(
+    vcat: str | None, season_end_year: int | None,
+) -> tuple[int | None, str]:
+    """Suggest a birth year + range for a fencer in V-cat `vcat`.
+
+    Phase 5 — when the operator clicks "+ Create new fencer" in
+    FencerAliasManager, they need a sensible BY default. The bracket's
+    nominal V-cat (parsed.category_hint) constrains the BY: V0 <40,
+    V1 40-49, V2 50-59, V3 60-69, V4 ≥70 — measured at season-end-year.
+
+    Returns:
+        (suggested_BY, range_str) — suggested_BY is the YOUNGEST eligible
+        year for the V-cat (most common case for vet brackets); range_str
+        is "1964–1973" or similar for context. Returns (None, "—") when
+        season_end_year is unknown or vcat doesn't map.
+
+    Example: V2 + season_end_year=2023 → (1973, "1964–1973").
+    """
+    if not season_end_year or not vcat:
+        return None, "—"
+    bands = {
+        "V0": (None, 39),    # under 40
+        "V1": (40, 49),
+        "V2": (50, 59),
+        "V3": (60, 69),
+        "V4": (70, None),    # 70+
+    }
+    band = bands.get(vcat)
+    if band is None:
+        return None, "—"
+    age_min, age_max = band
+    by_max = season_end_year - age_min if age_min is not None else season_end_year - 30
+    by_min = (season_end_year - age_max) if age_max is not None else 1900
+    # Suggest the YOUNGEST eligible year (= largest BY)
+    return by_max, f"{by_min}–{by_max}"
+
+
 def _classify_alias_pair(scraped: str, canonical: str) -> tuple[str, str]:
     """Classify a (scraped, canonical) alias-needed pair.
 
@@ -983,6 +1028,9 @@ def _build_fencer_matching_summary(db, ctxs: list) -> dict:
                 "ftl_bracket": getattr(parsed, "_ftl_source_name", None) or "—",
                 "weapon": getattr(parsed, "weapon", "?"),
                 "gender": getattr(parsed, "gender", "?"),
+                "category_hint": getattr(parsed, "category_hint", None),
+                "season_end_year": getattr(parsed, "season_end_year", None)
+                                   or getattr(ctx, "season_end_year", None),
             })
 
     if not rows:
@@ -1018,8 +1066,11 @@ def _build_fencer_matching_summary(db, ctxs: list) -> dict:
         canonical = f"{f.get('txt_surname','')} {f.get('txt_first_name','')}".strip()
         canonical_alt = f"{f.get('txt_first_name','')} {f.get('txt_surname','')}".strip()
         aliases = f.get("json_name_aliases") or []
-        if not isinstance(aliases, list):  # tolerate malformed seed shapes
+        if not isinstance(aliases, list):
             aliases = []
+        confirmed = f.get("json_user_confirmed_aliases") or []
+        if not isinstance(confirmed, list):
+            confirmed = []
         scraped_norm = _norm(r["scraped_name"])
         canonical_norm = _norm(canonical)
         canonical_alt_norm = _norm(canonical_alt)
@@ -1032,10 +1083,14 @@ def _build_fencer_matching_summary(db, ctxs: list) -> dict:
             "by_estimated": bool(f.get("bool_birth_year_estimated")),
         }
 
-        # Alias classification
+        # Alias classification — uses `json_user_confirmed_aliases` (NOT
+        # plain `json_name_aliases`) as the "settled" signal. Stage-time
+        # flush polluted `json_name_aliases` with every pending pair for
+        # UI surfacing; only entries the operator explicitly Kept via UI
+        # land in the user-confirmed list.
         if scraped_norm == canonical_norm or scraped_norm == canonical_alt_norm:
             by_canonical += 1
-        elif any(scraped_norm == _norm(a) for a in aliases):
+        elif any(scraped_norm == _norm(a) for a in confirmed):
             alias_existing.append(detail)
         else:
             alias_new_needed.append(detail)
@@ -1099,24 +1154,38 @@ def _format_fencer_matching_section(stats: dict) -> list[str]:
 
         lines.append("**🆕 Aliases that would be created on commit — verdict table:**")
         lines.append("")
-        lines.append("| Scraped | Resolved | Looks like |")
-        lines.append("|---|---|---|")
+        # Suggested BY column helps the operator pre-fill the
+        # FencerAliasManager "+ Create new fencer" form when a row turns
+        # out to be a real new person. Computed from the bracket's
+        # nominal V-cat (parsed.category_hint) + season_end_year.
+        lines.append("| Scraped | Resolved | Looks like | Suggested BY (range) |")
+        lines.append("|---|---|---|---|")
         for icon, reason, d in verdicts:
+            sugg, rng = _estimate_birth_year_for_vcat(
+                d.get("category_hint"), d.get("season_end_year"),
+            )
+            by_cell = f"{sugg} ({rng})" if sugg else "—"
             lines.append(
-                f"| `{d['scraped_name']}` | {d['canonical']} | {icon} {reason} |"
+                f"| `{d['scraped_name']}` | {d['canonical']} | "
+                f"{icon} {reason} | {by_cell} |"
             )
         lines.append("")
-        # Detail (id_fencer / existing aliases / bracket / place) for the
+        # Detail (id_fencer / existing aliases / bracket / place / V-cat / BY) for the
         # operator who needs to act on a flagged row
-        lines.append("<details><summary>Per-alias context (id_fencer, existing aliases, bracket, place)</summary>")
+        lines.append("<details><summary>Per-alias context (id_fencer, existing aliases, bracket, V-cat, place, BY)</summary>")
         lines.append("")
-        lines.append("| Scraped | Resolved (id_fencer) | Existing aliases | Bracket | Place |")
-        lines.append("|---|---|---|---|---:|")
+        lines.append("| Scraped | Resolved (id_fencer) | Existing aliases | Bracket | V-cat | Place | Suggested BY |")
+        lines.append("|---|---|---|---|---|---:|---|")
         for icon, reason, d in verdicts:
             existing = "; ".join(d["aliases"]) if d["aliases"] else "_(none)_"
+            sugg, rng = _estimate_birth_year_for_vcat(
+                d.get("category_hint"), d.get("season_end_year"),
+            )
+            by_cell = f"{sugg} ({rng})" if sugg else "—"
             lines.append(
                 f"| `{d['scraped_name']}` | {d['canonical']} (#{d['id_fencer']}) | "
-                f"{existing} | {d['ftl_bracket']} | {d['place']} |"
+                f"{existing} | {d['ftl_bracket']} | "
+                f"{d.get('category_hint') or '—'} | {d['place']} | {by_cell} |"
             )
         lines.append("")
         lines.append("</details>")
