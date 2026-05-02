@@ -38,6 +38,52 @@ class DbConnector:
             return resp.data[0]
         return None
 
+    def find_event_by_code(self, event_code: str) -> dict | None:
+        """Find an event by txt_code (Phase 3 ADR-050 — review_cli lookup).
+
+        Returns dict with id_event, txt_code, txt_name, url_results,
+        dt_start, dt_end, enum_status — or None if not found.
+        """
+        resp = (
+            self._sb.table("tbl_event")
+            .select("id_event, txt_code, txt_name, url_results, "
+                    "dt_start, dt_end, enum_status")
+            .eq("txt_code", event_code)
+            .execute()
+        )
+        if resp.data:
+            return resp.data[0]
+        return None
+
+    def fetch_cert_rows_for_event(self, event_code: str) -> list[dict]:
+        """Fetch existing cert_ref rows for an event (Phase 3 — 3-way diff source).
+
+        Joins cert_ref.tbl_result + cert_ref.tbl_tournament + cert_ref.tbl_fencer
+        for the given event txt_code. Returns list of dicts with at minimum:
+        {fencer_name, place, id_fencer}. Empty list if cert_ref is unpopulated.
+
+        Phase 3 stub: returns []. Phase 4 wires the cert_ref query when
+        cert_ref schema is loaded operationally.
+        """
+        return []
+
+    def call_age_categories_batch(
+        self, birth_years: list[int], season_end_year: int,
+    ) -> dict[int, str | None]:
+        """Batch-resolve V-cat for a list of birth years (ADR-050 R001 / Stage 4).
+
+        ONE RPC call per pool (not per fencer). The Postgres function
+        fn_age_categories_batch (Phase 0) returns rows of (birth_year, age_category).
+
+        Returns:
+          {birth_year: V-cat-string}. V-cat is None for under-30 birth years.
+        """
+        resp = self._sb.rpc(
+            "fn_age_categories_batch",
+            {"p_birth_years": birth_years, "p_season_end_year": season_end_year},
+        ).execute()
+        return {row["birth_year"]: row["age_category"] for row in resp.data}
+
     def find_or_create_tournament(
         self, event_id: int, weapon: str, gender: str,
         category: str, date: str, tournament_type: str,

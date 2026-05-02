@@ -1,14 +1,24 @@
 """
 Ingestion pipeline orchestrator.
 
-Parses FencingTime XML → resolves identities → calls DB ingest RPC.
-Routes notifications through TelegramNotifier at each step.
+Two entry points:
+
+  - process_xml_file  (legacy, FT-XML-specific) — kept for back-compat with
+    existing CLI paths. Phase 4 turns it into a thin shim over run_pipeline.
+
+  - run_pipeline      (Phase 3, ADR-050) — generic stage-based pipeline.
+    Takes a ParsedTournament IR (from any of 8 parsers) + Overrides + db,
+    runs S1-S7 in order, returns PipelineContext. Halts via HaltError →
+    populates ctx.halted_at_stage + halt_reason + halt_detail.
+
+Routes notifications through TelegramNotifier at each step (legacy path).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 from python.scrapers.fencingtime_xml import (
     detect_categories_from_altname,
@@ -22,6 +32,62 @@ from python.matcher.pipeline import (
     auto_create_fencer,
     resolve_tournament_results,
 )
+from python.pipeline import stages
+from python.pipeline.types import HaltError, Overrides, PipelineContext
+
+
+# ---------------------------------------------------------------------------
+# Phase 3 (ADR-050) — stage-based pipeline dispatcher
+# ---------------------------------------------------------------------------
+
+# Stages run in this order; a HaltError from any stage stops the loop.
+# To enable monkeypatch-based tests, we resolve stage functions by name from
+# the `stages` module on each call (so monkeypatch.setattr(stages, name, fn)
+# is honoured) rather than capturing function references at import time.
+_STAGE_NAMES = (
+    "s1_validate_ir",
+    "s2_resolve_event",
+    "s3_detect_combined_pool",
+    "s4_split_via_batch",
+    "s5_detect_joint_pool",
+    "s6_resolve_identity",
+    "s7_validate",
+)
+
+
+def run_pipeline(
+    parsed,
+    overrides: Overrides,
+    db: Any,
+    season_end_year: int,
+) -> PipelineContext:
+    """Run pipeline stages S1-S7 against a ParsedTournament IR.
+
+    Args:
+      parsed: ParsedTournament from python/pipeline/ir.py
+      overrides: Overrides from python/pipeline/overrides.py (may be empty)
+      db: DbConnector instance (or test mock)
+      season_end_year: active season's end year (e.g., 2026 for 2025-2026)
+
+    Returns:
+      PipelineContext with stage outputs populated. If any stage raised
+      HaltError, ctx.halted_at_stage / halt_reason / halt_detail are set
+      and remaining stages are skipped.
+
+    Unexpected exceptions (not HaltError) propagate as bugs — the dispatcher
+    does NOT catch them, so test failures and runtime crashes surface clearly.
+    """
+    ctx = PipelineContext(parsed=parsed, overrides=overrides, season_end_year=season_end_year)
+    for stage_name in _STAGE_NAMES:
+        stage_fn = getattr(stages, stage_name)
+        try:
+            stage_fn(ctx, db)
+        except HaltError as e:
+            ctx.halted_at_stage = stage_name
+            ctx.halt_reason = e.reason
+            ctx.halt_detail = e.detail
+            break
+    return ctx
 
 
 @dataclass
@@ -46,7 +112,18 @@ def process_xml_file(
     tournament_type: str = "PPW",
     dry_run: bool = False,
 ) -> IngestResult:
-    """Process a single FencingTime XML file through the pipeline.
+    """LEGACY entry point — FT-XML-specific direct-write pipeline.
+
+    Status (Phase 3, ADR-050): kept untouched for back-compat with the
+    `--from-storage` and direct-file ingest paths in ingest_cli.py.
+    Phase 6 deletes this function entirely once review_cli.py + run_pipeline
+    own the operational rebuild.
+
+    For new code, use run_pipeline(parsed, overrides, db, season_end_year)
+    above — it accepts a ParsedTournament IR (any of 8 sources, not just
+    FT-XML) and runs S1-S7 in order.
+
+    Process a single FencingTime XML file through the pipeline.
 
     Args:
         file_bytes: Raw XML content.
