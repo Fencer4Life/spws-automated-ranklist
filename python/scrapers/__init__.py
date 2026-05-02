@@ -17,6 +17,7 @@ every :class:`SourceKind` has an entry and every entry is callable.
 from __future__ import annotations
 
 from python.pipeline.ir import SourceKind
+from python.scrapers.cert_ref import parse as _cert_ref_parse
 from python.scrapers.dartagnan import parse_rankings as _dartagnan_parse_rankings
 from python.scrapers.engarde import parse_html as _engarde_parse_html
 from python.scrapers.evf_results import parse_results as _evf_parse_results
@@ -36,6 +37,7 @@ PARSERS = {
     SourceKind.EVF_API:         _evf_parse_results,
     SourceKind.FILE_IMPORT:     _file_import_parse,
     SourceKind.OPHARDT_HTML:    _ophardt_parse_results,
+    SourceKind.CERT_REF:        _cert_ref_parse,
 }
 
 

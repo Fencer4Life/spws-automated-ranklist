@@ -35,14 +35,14 @@ SELECT has_type(
 );
 
 
--- ===== 26.2 — enum has all 8 source kinds =====
+-- ===== 26.2 — enum has all 9 source kinds (8 + CERT_REF added Phase 4) =====
 SELECT is(
   (SELECT array_agg(enumlabel::TEXT ORDER BY enumsortorder)
      FROM pg_enum
     WHERE enumtypid = 'enum_parser_kind'::regtype),
   ARRAY['FENCINGTIME_XML','FTL','ENGARDE','FOURFENCE',
-        'DARTAGNAN','EVF_API','FILE_IMPORT','OPHARDT_HTML'],
-  '26.2: enum_parser_kind has the 8 source kinds in declared order'
+        'DARTAGNAN','EVF_API','FILE_IMPORT','OPHARDT_HTML','CERT_REF'],
+  '26.2: enum_parser_kind has the 9 source kinds in declared order'
 );
 
 

@@ -602,8 +602,8 @@ class TestOphardtIRContract:
 class TestParserRegistry:
     """Registry exposes one canonical parser per SourceKind."""
 
-    def test_registry_covers_all_eight_source_kinds(self):
-        """registry.1: PARSERS dict has an entry for every SourceKind value."""
+    def test_registry_covers_all_source_kinds(self):
+        """registry.1: PARSERS dict has an entry for every SourceKind value (9 since Phase 4)."""
         from python.pipeline.ir import SourceKind
         from python.scrapers import PARSERS
 

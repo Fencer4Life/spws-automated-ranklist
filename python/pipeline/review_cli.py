@@ -61,25 +61,108 @@ class SourceChoice:
     value: str | None  # URL or path; None for skip
 
 
+def _detect_source_kind_from_url(url: str) -> str:
+    """Map a URL to a SourceKind label by hostname pattern.
+
+    Recognized hostnames:
+      fencingtimelive.com → FTL (JSON API endpoint expected by FTL parser)
+      engarde-* / engarde / hemafencing → ENGARDE
+      4fence.com / 4fence.world → FOURFENCE
+      fencingworldwide.com / ophardt.online → OPHARDT_HTML
+      dartagnan.org / dartagnan.com → DARTAGNAN
+      veteransfencing.eu → EVF_API
+    Falls back to FENCINGTIME_XML for *.xml file URLs.
+    """
+    u = (url or "").lower()
+    if "fencingtimelive.com" in u or "fencingtime.com" in u:
+        return "FTL"
+    if "engarde" in u or "hemafencing" in u:
+        return "ENGARDE"
+    if "4fence" in u:
+        return "FOURFENCE"
+    if "fencingworldwide.com" in u or "ophardt" in u:
+        return "OPHARDT_HTML"
+    if "dartagnan" in u:
+        return "DARTAGNAN"
+    if "veteransfencing.eu" in u:
+        return "EVF_API"
+    if u.endswith(".xml"):
+        return "FENCINGTIME_XML"
+    return "FTL"  # default — most common live source
+
+
 class Fetcher:
-    """Default fetcher: dispatches URLs to the right scraper by URL pattern,
+    """Default fetcher: dispatches URLs to the right scraper by hostname,
     paths to the file-import module by extension, and EVF events to the
     EVF API client.
 
-    Production wiring covers all 8 sources from Phase 1's parser registry.
-    Tests inject a mock to avoid real I/O.
+    Production wiring covers all 9 sources from Phase 1's parser registry
+    (8 vendors + cert_ref fallback). Tests inject a mock to avoid real I/O.
     """
+
+    def __init__(self, http_client=None) -> None:
+        # Lazy import + injectable httpx client for tests
+        if http_client is None:
+            try:
+                import httpx
+                http_client = httpx.Client(timeout=30.0, follow_redirects=True)
+            except ImportError:  # pragma: no cover
+                http_client = None
+        self._http = http_client
+
+    def _get(self, url: str) -> str:
+        """HTTP GET → text body. Raises on non-2xx."""
+        if self._http is None:
+            raise RuntimeError("Fetcher: no HTTP client available")
+        resp = self._http.get(url)
+        resp.raise_for_status()
+        return resp.text
+
     def fetch_url(self, url: str):
-        raise NotImplementedError(
-            "Fetcher.fetch_url: production wiring lands in Phase 3b. "
-            "Inject a mock for tests."
-        )
+        """Fetch a URL and dispatch to the matching parser by hostname pattern."""
+        kind = _detect_source_kind_from_url(url)
+        if kind == "FTL":
+            # FTL JSON API: results endpoint typically returns JSON list
+            import json as _json
+            from python.scrapers.ftl import parse_json
+            text = self._get(url)
+            try:
+                data = _json.loads(text)
+            except _json.JSONDecodeError:
+                # Some FTL pages serve HTML instead of JSON; fall back
+                from python.scrapers.fencingtime_xml import parse as _ft_xml_parse
+                return _ft_xml_parse(text.encode("utf-8"), source_url=url)
+            return parse_json(data, source_url=url)
+        if kind == "ENGARDE":
+            from python.scrapers.engarde import parse_html
+            return parse_html(self._get(url), source_url=url)
+        if kind == "FOURFENCE":
+            from python.scrapers.fourfence import parse_html
+            return parse_html(self._get(url), source_url=url)
+        if kind == "OPHARDT_HTML":
+            from python.scrapers.ophardt import parse_results
+            return parse_results(self._get(url), source_url=url)
+        if kind == "DARTAGNAN":
+            from python.scrapers.dartagnan import parse_rankings
+            return parse_rankings(self._get(url), source_url=url)
+        if kind == "EVF_API":
+            from python.scrapers.evf_results import parse_results
+            return parse_results(self._get(url), source_url=url)
+        if kind == "FENCINGTIME_XML":
+            from python.scrapers.fencingtime_xml import parse as ft_xml_parse
+            return ft_xml_parse(self._get(url).encode("utf-8"), source_url=url)
+        raise ValueError(f"Fetcher.fetch_url: no parser for URL {url!r} (detected kind={kind})")
 
     def fetch_path(self, path: str):
-        raise NotImplementedError(
-            "Fetcher.fetch_path: production wiring lands in Phase 3b. "
-            "Inject a mock for tests."
-        )
+        """Read a local file and dispatch to file_import / ft_xml by extension."""
+        from pathlib import Path
+        p = Path(path)
+        data = p.read_bytes()
+        if p.suffix.lower() == ".xml":
+            from python.scrapers.fencingtime_xml import parse as ft_xml_parse
+            return ft_xml_parse(data, source_url=f"file://{p}")
+        from python.scrapers.file_import import parse as file_import_parse
+        return file_import_parse(data, source_url=f"file://{p}", filename=p.name)
 
     def fetch_evf_api(self, event: dict):
         """Fetch tournament results for an event via the EVF API.
@@ -89,11 +172,34 @@ class Fetcher:
         EVF events are authoritative on the EVF site (see
         project_evf_predominance.md), so this is the high-value path for
         EVF event review.
+
+        Phase 4: thin wrapper around python.scrapers.evf_results.parse_results
+        once the operator-supplied EVF API endpoint URL is known. The actual
+        EVF API endpoint URL must be on the event row (url_results) or
+        synthesized from the event's id/date — operator's responsibility.
         """
-        raise NotImplementedError(
-            "Fetcher.fetch_evf_api: production wiring lands in Phase 3b. "
-            "Inject a mock for tests."
+        url = (event or {}).get("url_results")
+        if not url:
+            raise ValueError(
+                "Fetcher.fetch_evf_api: event has no url_results to fetch from"
+            )
+        from python.scrapers.evf_results import parse_results
+        return parse_results(self._get(url), source_url=url)
+
+    def fetch_cert_ref(self, event_code: str, db) -> "ParsedTournament":
+        """Fetch cert_ref placements for an event and parse to IR.
+
+        Phase 4 (ADR-050): operator picks `[5] cert_ref placements` when
+        no live URL is available. Reads cert_ref via DbConnector RPC,
+        hands to python.scrapers.cert_ref.parse.
+        """
+        from python.scrapers.cert_ref import parse as cert_ref_parse
+        rows = db.fetch_cert_rows_for_event(event_code) if hasattr(db, "fetch_cert_rows_for_event") else []
+        tournament = (
+            db.fetch_cert_tournament_for_event(event_code)
+            if hasattr(db, "fetch_cert_tournament_for_event") else None
         )
+        return cert_ref_parse({"tournament": tournament or {}, "results": rows})
 
 
 # ===========================================================================
@@ -156,6 +262,7 @@ class ReviewSession:
             self._say("  [2] Paste a different URL")
             self._say("  [3] Paste a local file path (XML / CSV / JSON / XLSX)")
             self._say("  [4] EVF API (authoritative for EVF events)")
+            self._say("  [5] cert_ref placements (no live URL — fallback to backup snapshot)")
             self._say("  [q] Skip this event")
             choice = self._prompt("> ").strip().lower()
 
@@ -183,8 +290,11 @@ class ReviewSession:
             if choice == "4":
                 # EVF API — value carries the event_code; fetcher resolves the rest
                 return SourceChoice(kind="evf_api", value=self.event_code)
+            if choice == "5":
+                # cert_ref fallback — value carries the event_code
+                return SourceChoice(kind="cert_ref", value=self.event_code)
 
-            self._say(f"⚠ Invalid choice {choice!r}. Pick 1, 2, 3, 4, or q.")
+            self._say(f"⚠ Invalid choice {choice!r}. Pick 1, 2, 3, 4, 5, or q.")
 
     # ---- Stage 3: fetch + parse ----
 
@@ -199,6 +309,8 @@ class ReviewSession:
             if event is None:
                 raise ValueError(f"EVF API path: event {self.event_code} not found in DB")
             return self.fetcher.fetch_evf_api(event)
+        if choice.kind == "cert_ref":
+            return self.fetcher.fetch_cert_ref(self.event_code, self.db)
         raise ValueError(f"fetch_source called with unsupported kind: {choice.kind!r}")
 
     # ---- Stage 4: pipeline + drafts + diff ----
