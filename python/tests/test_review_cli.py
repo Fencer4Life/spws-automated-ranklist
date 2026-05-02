@@ -6,7 +6,7 @@ Plan IDs P3.RC1-P3.RC12.
 The review_cli orchestrates the per-event lifecycle:
   1. Show event summary
   2. Prompt for source-of-truth choice (1=recorded URL, 2=paste URL,
-     3=paste path, q=skip; EVF API + frozen snapshot deferred to Phase 4)
+     3=paste path, 4=EVF API, 5=cert_ref fallback, q=skip)
   3. Fetch + parse → ParsedTournament IR
   4. Run pipeline (S1-S7) → draft tables
   5. Generate 3-way diff markdown

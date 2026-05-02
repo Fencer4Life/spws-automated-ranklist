@@ -9,18 +9,14 @@ check, ADR maintenance workflow, and diagram rules. Mandatory before marking any
 A LOCAL DB rebuild is in progress per
 /Users/aleks/.claude/plans/now-we-have-a-precious-wren.md.
 
-Rules below carry REBUILD WAIVER or REBUILD-NEW markers where behavior
-differs from steady-state. Waivers expire at end of Phase 6 (ADR-051).
+Rules below carry REBUILD-NEW markers where behavior differs from steady-state.
 
 ## Data integrity (hard rules — user has been burned)
 
-- **Never delete tournament/result/event rows without per-row approval.**
-  Show mapping, propose reassignment, ask first.
-  REBUILD-WAIVER active until Phase 6 (ADR-051).
 - **URLs are admin-managed only.** `url_event` / `url_results` are hand-entered
   (FTL/Engarde/4Fence/Ophardt). Never auto-fill from EVF site / WP API.
 - **Validate URL→data match on every write**: scrape the URL, compare
-  date/name/weapon/category, REJECT on mismatch. Plus pgTAP/pytest coverage.
+  date/name/weapon/category/city/country, REJECT on mismatch. ADR-052 + pgTAP/pytest.
 - **Adding a column to `tbl_event`?** Rebuild `vw_calendar` in the same migration —
   admin form round-trip silently breaks otherwise.
 - **`seed_tbl_fencer.sql` contains only PPW/MPW participants** — never PEW/IMSW/PS fencers.

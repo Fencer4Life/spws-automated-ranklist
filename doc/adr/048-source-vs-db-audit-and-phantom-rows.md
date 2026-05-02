@@ -35,7 +35,7 @@ Per user direction (2026-04-30): URL-error / no-URL / unsupported-platform / par
 
 ### Per-row deletion discipline
 
-Phantom rows are not auto-deleted. Per `feedback_no_delete_without_asking.md`, every delete requires explicit per-row admin approval. The 8 deletes applied 2026-04-30 (GRODNER 7913, NOWAK 8010, KAZIK 10096, BORKOWSKI 10410, BAZAK 10472, OWCZAREK 9217, LIPKOWSKA 9298, KOWALSKA 9299, plus PAWŁOWSKI's ineligible PEW6efs row 8014) were each individually authorised after the user verified against the source URL.
+Phantom rows are not auto-deleted. The historical `feedback_no_delete_without_asking.md` memory rule (deleted 2026-05-02; will be reintroduced post-rebuild) required explicit per-row admin approval before any tournament/result/event delete. The 8 deletes applied 2026-04-30 (GRODNER 7913, NOWAK 8010, KAZIK 10096, BORKOWSKI 10410, BAZAK 10472, OWCZAREK 9217, LIPKOWSKA 9298, KOWALSKA 9299, plus PAWŁOWSKI's ineligible PEW6efs row 8014) were each individually authorised after the user verified against the source URL.
 
 ### "Results lost" event flag — deferred
 

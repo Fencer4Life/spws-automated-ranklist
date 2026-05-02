@@ -7,7 +7,7 @@
 ### Database migrations
 
 - Add `tbl_result.{txt_scraped_name TEXT, num_match_confidence NUMERIC, enum_match_method enum_match_method}` where `enum_match_method` is one of `AUTO_MATCH | USER_CONFIRMED | AUTO_CREATED | BY_ESTIMATED`.
-- Add `tbl_event.txt_source_status` enum: `LIVE_SOURCE | FROZEN_SNAPSHOT | NO_SOURCE`.
+- Add `tbl_event.txt_source_status` enum (Phase 0 shipped `LIVE_SOURCE | FROZEN_SNAPSHOT | NO_SOURCE`; superseded by `ENGINE_COMPUTED | EVF_PUBLISHED` per ADR-053 in Phase 4).
 - Add `fn_age_categories_batch(p_birth_years INT[], p_season_end_year INT)` returning batch results — replaces per-row `fn_age_category` calls inside the splitter.
 - Rewrite `fn_ingest_tournament_results` removing `tbl_match_candidate` writes (table itself stays present but unwritten until Phase 6).
 
@@ -47,7 +47,6 @@ Format per rule file: **Statement · Why · Trigger · Implementation (file:line
 | R007 | Rolling-score 366-day cap | 018, 054 | 7 |
 | R008 | Carry-over FK linkage | 042, 045, 054 | 7 |
 | R009 | URL→data validation | 052 | 3 |
-| R010 | Frozen snapshot | 051 | 4 |
 | R011 | Source priority by organizer (EVF backup-only) | 053 | 3 |
 | R012 | Engarde multilingual handling | 050 | 1 |
 
@@ -77,14 +76,10 @@ check, ADR maintenance workflow, and diagram rules. Mandatory before marking any
 A LOCAL DB rebuild is in progress per
 /Users/aleks/.claude/plans/now-we-have-a-precious-wren.md.
 
-Rules below carry REBUILD WAIVER or REBUILD-NEW markers where behavior
-differs from steady-state. Waivers expire at end of Phase 6 (ADR-051).
+Rules below carry REBUILD-NEW markers where behavior differs from steady-state.
 
 ## Data integrity (hard rules — user has been burned)
 
-- **Never delete tournament/result/event rows without per-row approval.**
-  Show mapping, propose reassignment, ask first.
-  REBUILD-WAIVER active until Phase 6 (ADR-051).
 - **URLs are admin-managed only.** `url_event` / `url_results` are hand-entered
   (FTL/Engarde/4Fence/Ophardt). Never auto-fill from EVF site / WP API.
 - **Validate URL→data match on every write**: scrape the URL, compare
@@ -210,4 +205,4 @@ Phase 6: update "49 ADRs" → "54 ADRs"; remove REBUILD-ACTIVE rows for plan fil
 - Master plan: [now-we-have-a-precious-wren.md](/Users/aleks/.claude/plans/now-we-have-a-precious-wren.md)
 - Predecessor: [p0-0-ci-upgrade.md](p0-0-ci-upgrade.md)
 - Successor: [p1-ir-parsers.md](p1-ir-parsers.md) — IR + 7 parsers + Ophardt spike
-- Rules registry framework feeds: [p3-pipeline.md](p3-pipeline.md) (R001, R002, R005, R006, R009, R011, R012), [p4-commit-ui.md](p4-commit-ui.md) (R010), [p7-carryover.md](p7-carryover.md) (R007, R008)
+- Rules registry framework feeds: [p3-pipeline.md](p3-pipeline.md) (R001, R002, R005, R006, R009, R011, R012), [p7-carryover.md](p7-carryover.md) (R007, R008). R010 (frozen snapshot) was retired 2026-05-02 along with the FROZEN_SNAPSHOT concept.

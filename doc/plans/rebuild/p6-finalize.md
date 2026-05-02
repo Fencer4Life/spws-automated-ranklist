@@ -1,6 +1,6 @@
 # Phase 6 — Drop tbl_match_candidate + remove old UI + finalize + promote (M)
 
-**Prerequisites:** Phase 5 ([p5-execute.md](p5-execute.md)) — operational rebuild complete, all events committed or marked `FROZEN_SNAPSHOT`.
+**Prerequisites:** Phase 5 ([p5-execute.md](p5-execute.md)) — operational rebuild complete, all events committed.
 
 ## Goal
 
@@ -50,7 +50,7 @@ Finalize the rebuild. Drop the obsolete `tbl_match_candidate` infrastructure. Re
 
 ### Memory
 
-- **Reactivate "no delete without per-row approval"** memory rule — waiver from ADR-051 expires here.
+- Reintroduce a "no delete without per-row approval" memory rule (or revised equivalent) post-rebuild; the original was deleted at Phase 4 start (2026-05-02) since architectural simplifications removed the need for a formal rebuild-scoped waiver.
 
 ### Claude-guidance modules — finalize (post-rebuild)
 
@@ -74,5 +74,4 @@ Finalize the rebuild. Drop the obsolete `tbl_match_candidate` infrastructure. Re
 - Master plan: [now-we-have-a-precious-wren.md](/Users/aleks/.claude/plans/now-we-have-a-precious-wren.md)
 - Predecessor: [p5-execute.md](p5-execute.md)
 - Successor: [p7-carryover.md](p7-carryover.md) — Phase 7 carry-over completion runs against the now-clean rebuilt data
-- ADRs finalized: 050, 051, 052, 053; 054 stub committed (Phase 7 completes it)
-- Memory waiver from ADR-051 expires here
+- ADRs finalized: 050, 052, 053; 054 stub committed (Phase 7 completes it). ADR-051 reserved-but-empty (frozen-snapshot concept retired 2026-05-02).

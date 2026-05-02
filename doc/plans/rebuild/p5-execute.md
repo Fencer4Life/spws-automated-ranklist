@@ -1,6 +1,6 @@
 # Phase 5 — Operational rebuild (XL)
 
-**Prerequisites:** Phase 4 ([p4-commit-ui.md](p4-commit-ui.md)) — full commit pipeline + parity gate + frozen-snapshot + alias UI all live.
+**Prerequisites:** Phase 4 ([p4-commit-ui.md](p4-commit-ui.md)) — full commit pipeline + parity gate + alias UI all live.
 
 ## Goal
 
@@ -19,7 +19,7 @@ Walk every event in the LOCAL DB through the unified pipeline. Per-event interac
    (tournament+result counts), organizer
 3. Prompt: source-of-truth choice
    [1] Use recorded URL  [2] Paste URL  [3] Paste XML path
-   [4] EVF API (if EVF-organized)  [5] No source — frozen snapshot
+   [4] EVF API (if EVF-organized)  [5] cert_ref placements (no live URL)
    [q] Skip
 4. Run unified pipeline against chosen source → write to draft tables (run_id)
 5. Generate doc/staging/<event_code>.diff.md with 3 columns:
@@ -33,7 +33,7 @@ Walk every event in the LOCAL DB through the unified pipeline. Per-event interac
 7. Move to next event (oldest first, SPWS first then EVF)
 ```
 
-For frozen snapshots (step 3 → choice 5): pipeline degenerates to `cert_ref.tbl_*` → `tbl_*_draft` copy, sets `tbl_event.txt_source_status = 'FROZEN_SNAPSHOT'`. Diff shows only CERT vs LOCAL (Source = ∅). Approve → commit.
+For the cert_ref fallback (step 3 → choice 5): the cert_ref parser produces `ParsedTournament` IR from `cert_ref.tbl_*` rows; pipeline runs Stages 1-11 normally; engine still computes points. Stage 7 (URL→data validation) is skipped since there's no URL. Status remains `ENGINE_COMPUTED` like every other event.
 
 ## Per-event automation
 
