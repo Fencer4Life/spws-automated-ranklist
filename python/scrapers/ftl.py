@@ -46,12 +46,15 @@ def _clean_name(raw_name: str) -> str:
     return raw
 
 
-def _parse_place(place_str: str) -> int:
+def _parse_place(place_str: str) -> int | None:
     """Parse FTL place string, stripping tie indicator.
 
-    "1" → 1, "3T" → 3, "52T" → 52
+    "1" → 1, "3T" → 3, "52T" → 52, "DNS"/"DNF" → None, "" → None
     """
-    return int(re.sub(r"[A-Za-z]", "", place_str))
+    digits = re.sub(r"[A-Za-z]", "", place_str or "").strip()
+    if not digits:
+        return None
+    return int(digits)
 
 
 def parse_ftl_json(data: list[dict]) -> list[dict]:
@@ -67,9 +70,12 @@ def parse_ftl_json(data: list[dict]) -> list[dict]:
     for entry in data:
         if entry.get("excluded"):
             continue
+        place = _parse_place(str(entry.get("place") or ""))
+        if place is None:
+            continue
         results.append({
             "fencer_name": _clean_name(entry["name"]),
-            "place": _parse_place(str(entry["place"])),
+            "place": place,
             "country": entry.get("country", ""),
         })
     return results
@@ -258,8 +264,13 @@ def parse_json(
         if entry.get("excluded"):
             continue
 
+        # FTL emits empty/"DNS"/"DNF" `place` for fencers who didn't finish —
+        # skip them; they don't contribute to scoring.
+        place = _parse_place(str(entry.get("place") or ""))
+        if place is None:
+            continue
+
         cleaned_name, marker = _split_name_and_marker(entry["name"])
-        place = _parse_place(str(entry["place"]))
         country = entry.get("country") or None
         native_id = entry.get("id")
 

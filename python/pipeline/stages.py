@@ -93,17 +93,72 @@ def s1_validate_ir(ctx: PipelineContext, db: Any) -> None:
 # ===========================================================================
 
 def s2_resolve_event(ctx: PipelineContext, db: Any) -> None:
-    """Look up the event in the active season by parsed_date.
+    """Resolve the event for this parse.
 
-    Halts: EVENT_NOT_RESOLVED if no event found for the date.
+    Phase 5: prefer ctx.event_code (set by the operator-driven runner) and
+    look up directly by code — avoids the active-season assumption that
+    breaks historical re-ingest.
+
+    Legacy path: if event_code is unset (older callers, file-import flows),
+    fall back to find_event_by_date which still uses the active season.
+
+    Halts: EVENT_NOT_RESOLVED if neither lookup finds the event.
     """
-    date_str = ctx.parsed.parsed_date.isoformat()
-    event = db.find_event_by_date(date_str)
-    if event is None:
-        raise HaltError(
-            HaltReason.EVENT_NOT_RESOLVED,
-            f"No event scheduled for date {date_str} in active season"
-        )
+    event = None
+    if ctx.event_code:
+        event = db.find_event_by_code(ctx.event_code)
+        if event is None:
+            raise HaltError(
+                HaltReason.EVENT_NOT_RESOLVED,
+                f"No event found for txt_code={ctx.event_code!r}"
+            )
+
+        # Phase 5: resolve the season by event dates, not by the FK on the
+        # event row (some historical events have wrong id_season). Find the
+        # season whose date range contains BOTH event.dt_start and dt_end.
+        # Exactly one match required; zero or many is a showstopper.
+        if hasattr(db, "find_seasons_containing_dates"):
+            ev_start = event.get("dt_start")
+            ev_end = event.get("dt_end") or ev_start
+            ev_start_s = str(ev_start)[:10] if ev_start else None
+            ev_end_s = str(ev_end)[:10] if ev_end else None
+            if ev_start_s and ev_end_s:
+                seasons = db.find_seasons_containing_dates(ev_start_s, ev_end_s)
+                if len(seasons) == 0:
+                    raise HaltError(
+                        HaltReason.EVENT_NOT_RESOLVED,
+                        f"No season contains event dates "
+                        f"{ev_start_s} – {ev_end_s} (event {ctx.event_code!r})"
+                    )
+                if len(seasons) > 1:
+                    codes = ", ".join(s.get("txt_code", "?") for s in seasons)
+                    raise HaltError(
+                        HaltReason.EVENT_NOT_RESOLVED,
+                        f"Multiple seasons contain event dates "
+                        f"{ev_start_s} – {ev_end_s}: {codes} (showstopper — "
+                        f"season ranges overlap)"
+                    )
+                season = seasons[0]
+                from datetime import date as _date
+                dt_end = season["dt_end"]
+                if isinstance(dt_end, str):
+                    try:
+                        dt_end = _date.fromisoformat(dt_end[:10])
+                    except ValueError:
+                        dt_end = None
+                if dt_end:
+                    ctx.season_end_year = dt_end.year
+                # Stamp resolved season on the event dict for downstream stages
+                event["id_season"] = season["id_season"]
+                event["txt_season_code"] = season.get("txt_code")
+    else:
+        date_str = ctx.parsed.parsed_date.isoformat()
+        event = db.find_event_by_date(date_str)
+        if event is None:
+            raise HaltError(
+                HaltReason.EVENT_NOT_RESOLVED,
+                f"No event scheduled for date {date_str} in active season"
+            )
     ctx.event = event
 
 
@@ -379,3 +434,162 @@ def s7_validate(ctx: PipelineContext, db: Any) -> None:
     if val.has_halt:
         summary = "; ".join(f"{f.field}: {f.message}" for f in val.halts)
         raise HaltError(HaltReason.URL_DATA_MISMATCH, summary)
+
+
+# ===========================================================================
+# ADR-056 — V-cat split by post-match fencer birth year (Phase 5)
+# ===========================================================================
+
+def vcat_for_age(age: int | None) -> str | None:
+    """Map an age (years on the event year) to a V-cat enum value.
+
+    < 40 → V0, 40-49 → V1, 50-59 → V2, 60-69 → V3, ≥ 70 → V4.
+    Returns None for None / negative age.
+    """
+    if age is None or age < 0:
+        return None
+    if age < 40:
+        return "V0"
+    if age < 50:
+        return "V1"
+    if age < 60:
+        return "V2"
+    if age < 70:
+        return "V3"
+    return "V4"
+
+
+def s7_split_by_vcat(ctx: PipelineContext, db: Any) -> None:
+    """Group matched fencers by V-cat derived from their birth year.
+
+    ADR-056: post-match canonical V-cat assignment. Replaces the marker-based
+    Stage 4 split as the primary V-cat source. Marker-based path is retained
+    upstream as a fast-path for sources that emit reliable per-fencer markers
+    (cert_ref, EVF API).
+
+    Inputs:  ctx.matches with id_fencer set on AUTO_MATCHED / AUTO_CREATED rows.
+    Outputs: ctx.vcat_groups: {V-cat: [StageMatchResult]}
+             ctx.is_joint_pool: True iff vcat_groups has ≥2 V-cats
+             ctx.unassigned_matches: PENDING / UNMATCHED / null-BY rows for review
+
+    Does not raise. Operator decides whether unassigned rows block commit.
+    """
+    # Fencing-convention: V-cat is based on age at the END of the season
+    # (the season_end_year), not the calendar year of the event. Trigger
+    # `fn_assert_result_vcat` enforces this; mismatching here causes commit
+    # failures on the V-cat invariant.
+    reference_year = ctx.season_end_year
+
+    # Collect ids of matches that have an id_fencer (AUTO_MATCHED / AUTO_CREATED)
+    matched_ids = [
+        m.id_fencer for m in ctx.matches
+        if getattr(m, "id_fencer", None) is not None
+    ]
+    by_map: dict[int, int | None] = (
+        db.fetch_birth_years_batch(matched_ids)
+        if matched_ids and hasattr(db, "fetch_birth_years_batch")
+        else {}
+    )
+
+    groups: dict[str, list] = {}
+    unassigned: list = []
+    for m in ctx.matches:
+        if getattr(m, "id_fencer", None) is None:
+            unassigned.append(m)
+            continue
+        by = by_map.get(m.id_fencer)
+        vcat = vcat_for_age(reference_year - by) if by is not None else None
+        if vcat is None:
+            unassigned.append(m)
+            continue
+        groups.setdefault(vcat, []).append(m)
+
+    ctx.vcat_groups = groups
+    ctx.unassigned_matches = unassigned
+    ctx.is_joint_pool = len(groups) >= 2
+
+
+# ===========================================================================
+# Phase 5 — Pool-round structural detection (gender-distribution signal)
+# ===========================================================================
+
+# Minimum bracket size where the percentage rule is meaningful. Below this,
+# tiny brackets pass regardless of gender mix (insufficient signal).
+_POOL_CHECK_MIN_FENCERS = 4
+
+# Pool round = "MASSIVE gender mix" per user 2026-05-02. ADR-034 allows
+# a small number of cross-gender fencers in a real tournament (a woman
+# competing in a men's bracket when there's no women's bracket); those
+# get re-assigned at scoring time, the bracket is still a real tournament.
+# Threshold combines absolute count + ratio so we don't flag ADR-034
+# singletons-in-tiny-brackets nor a couple of cross-gender entries in a
+# medium bracket.
+_POOL_CHECK_MIN_MINORITY_COUNT = 3      # ≥3 cross-gender fencers (more than ADR-034 noise)
+_POOL_CHECK_MIN_MINORITY_RATIO = 0.20   # ≥20% minority share (genuine mix)
+
+
+def s7_pool_round_check(ctx: PipelineContext, db: Any) -> None:
+    """Halt the bracket if its matched-fencer gender distribution looks
+    like a pool round (M+F mixed) rather than a real per-gender tournament.
+
+    Phase 5 (post-ADR-056 follow-up): the FTL splitter classifies brackets
+    by display name, but pool rounds aren't always named recognizably.
+    Real per-gender tournaments have near-pure gender distribution (single-
+    fencer outliers tolerated). Pool rounds are deeply mixed.
+
+    Halts: POOL_ROUND_DETECTED if minority-gender share ≥
+    _POOL_CHECK_MIN_MINORITY_RATIO in a bracket of ≥
+    _POOL_CHECK_MIN_FENCERS matched fencers.
+
+    Also halts if the bracket's parsed gender disagrees with the
+    matched-fencer majority gender (data error / misnamed bracket).
+
+    No-op when:
+      - Fewer than _POOL_CHECK_MIN_FENCERS matched fencers (insufficient signal).
+      - No matched fencers carry id_fencer (all PENDING/UNMATCHED).
+      - DB doesn't expose fetch_genders_batch (defensive — keeps tests green).
+    """
+    matched_ids = [
+        m.id_fencer for m in ctx.matches
+        if getattr(m, "id_fencer", None) is not None
+    ]
+    if len(matched_ids) < _POOL_CHECK_MIN_FENCERS:
+        return  # insufficient signal
+    if not hasattr(db, "fetch_genders_batch"):
+        return
+
+    gender_map = db.fetch_genders_batch(matched_ids) or {}
+    genders = [gender_map.get(i) for i in matched_ids]
+    genders = [g for g in genders if g in ("M", "F")]
+    if len(genders) < _POOL_CHECK_MIN_FENCERS:
+        return
+
+    n = len(genders)
+    n_m = sum(1 for g in genders if g == "M")
+    n_f = n - n_m
+    minority = min(n_m, n_f)
+    minority_ratio = minority / n
+
+    # Mixed-gender pool round: ≥3 cross-gender fencers AND ≥20% minority share
+    # (both must apply — ADR-034 allows up to ~2 cross-gender fencers in a
+    # legit per-gender tournament; and 1-2 outliers in a tiny bracket can hit
+    # 15-30% ratio without indicating a real pool round).
+    if minority >= _POOL_CHECK_MIN_MINORITY_COUNT and minority_ratio >= _POOL_CHECK_MIN_MINORITY_RATIO:
+        ctx.is_pool_round = True
+        raise HaltError(
+            HaltReason.POOL_ROUND_DETECTED,
+            f"bracket has {n_m}M/{n_f}F (minority {minority_ratio:.0%}, "
+            f"count {minority}) — looks like a pool round, not a per-gender "
+            f"tournament; above ADR-034 cross-gender tolerance"
+        )
+
+    # Wrong-name bracket: parsed gender disagrees with majority
+    parsed_gender = getattr(ctx.parsed, "gender", None)
+    majority_gender = "M" if n_m >= n_f else "F"
+    if parsed_gender and parsed_gender != majority_gender:
+        ctx.is_pool_round = True
+        raise HaltError(
+            HaltReason.POOL_ROUND_DETECTED,
+            f"bracket parsed as gender={parsed_gender!r} but matched-fencer "
+            f"majority is {majority_gender!r} ({n_m}M/{n_f}F) — name/data mismatch"
+        )

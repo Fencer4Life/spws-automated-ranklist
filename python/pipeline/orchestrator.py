@@ -52,6 +52,8 @@ _STAGE_NAMES = (
     "s5_detect_joint_pool",
     "s6_resolve_identity",
     "s7_validate",
+    "s7_pool_round_check",  # Phase 5: structural pool-round detection (post-match gender mix)
+    "s7_split_by_vcat",     # ADR-056: post-match V-cat assignment from birth_year
 )
 
 
@@ -60,6 +62,7 @@ def run_pipeline(
     overrides: Overrides,
     db: Any,
     season_end_year: int,
+    event_code: str | None = None,
 ) -> PipelineContext:
     """Run pipeline stages S1-S7 against a ParsedTournament IR.
 
@@ -77,7 +80,12 @@ def run_pipeline(
     Unexpected exceptions (not HaltError) propagate as bugs — the dispatcher
     does NOT catch them, so test failures and runtime crashes surface clearly.
     """
-    ctx = PipelineContext(parsed=parsed, overrides=overrides, season_end_year=season_end_year)
+    ctx = PipelineContext(
+        parsed=parsed,
+        overrides=overrides,
+        season_end_year=season_end_year,
+        event_code=event_code,
+    )
     for stage_name in _STAGE_NAMES:
         stage_fn = getattr(stages, stage_name)
         try:

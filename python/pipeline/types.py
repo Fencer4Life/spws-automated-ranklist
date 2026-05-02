@@ -39,6 +39,7 @@ class HaltReason(str, Enum):
     COUNT_MISMATCH = "COUNT_MISMATCH"
     URL_DATA_MISMATCH = "URL_DATA_MISMATCH"
     OVERRIDE_INVALID = "OVERRIDE_INVALID"
+    POOL_ROUND_DETECTED = "POOL_ROUND_DETECTED"  # Phase 5: structural pool-round detection
 
 
 class HaltError(Exception):
@@ -167,6 +168,10 @@ class PipelineContext:
     parsed: Any                         # ParsedTournament from python/pipeline/ir.py
     overrides: Overrides
     season_end_year: int
+    event_code: str | None = None       # Phase 5: pre-known event code; S2 uses
+                                        # find_event_by_code instead of date-based
+                                        # active-season lookup. Avoids "active
+                                        # season" assumption for historical re-ingest.
 
     # Stage outputs (written by the stage that owns them)
     event: dict | None = None           # S2 writes: {id_event, txt_code, organizer_hint, ...}
@@ -177,6 +182,12 @@ class PipelineContext:
     count_validation: dict | None = None  # S7 writes: {expected, actual, ok}
     url_validation: Any = None             # S7 writes: ValidationResult (Phase 4 ADR-052)
     pew_cascade_pending: bool = False      # S7 sets True on PEW weapon-mismatch (ADR-046)
+
+    # ADR-056 (Phase 5) — V-cat split by post-match fencer birth year
+    vcat_groups: dict = field(default_factory=dict)  # {V-cat: [StageMatchResult]}
+    is_joint_pool: bool = False            # True iff vcat_groups has ≥2 V-cats
+    unassigned_matches: list = field(default_factory=list)  # PENDING/UNMATCHED/BY-NULL
+    is_pool_round: bool = False            # set true by s7_pool_round_check on mixed-gender brackets
 
     # Halt state (set by dispatcher when HaltError caught)
     halted_at_stage: str | None = None
