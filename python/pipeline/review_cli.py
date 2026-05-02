@@ -725,6 +725,12 @@ class ReviewSession:
                     row["bool_joint_pool_split"] = ctx.is_joint_pool
                 else:
                     row["bool_joint_pool_split"] = (vcat != nominal_vcat)
+                # Phase 5 — int_participant_count = how many matched
+                # fencers in this V-cat group. Required for
+                # fn_calc_tournament_scores at commit. Joint-pool
+                # siblings get re-summed to the full physical pool size
+                # by the commit RPC (joint-pool branch).
+                row["int_participant_count"] = len(ctx.vcat_groups[vcat])
                 rows.append(row)
         elif ctx.is_combined_pool and ctx.splits:
             for vcat in sorted(ctx.splits.keys()):
