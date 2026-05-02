@@ -249,14 +249,13 @@ def derive_pending_from_run_id(
         if hasattr(db, "fetch_fencer_basics_batch") else {}
     )
 
-    # Skip rows where the scraped name is already in the matched fencer's
-    # `json_name_aliases` — this is the user-confirmed signal. After the
-    # operator clicks Keep / Transfer / Create-new in FencerAliasManager,
-    # the alias is on the fencer and the (scraped, canonical) pair is no
-    # longer "pending review". Trusting this overrides the classifier's
-    # ❌ verdict for surnames that are real transliteration variants
-    # (e.g. NIKOŁAJCZUK Aleksander → NIKALAICHUK Aliaksandr) once the
-    # user has explicitly accepted them.
+    # Phase 5 user-confirmed-alias filter (migration 20260502000010):
+    # skip rows where the scraped name is in the matched fencer's
+    # `json_user_confirmed_aliases` (operator clicked Keep). Plain
+    # `json_name_aliases` is NOT a user-confirmed signal because the
+    # stage-time flush populates it with every pending pair (incl. ❌)
+    # for UI surfacing. We need the explicit confirmation column so
+    # unresolved wrong-match flushes still surface as ❌ blockers.
     def _norm(s: str) -> str:
         return " ".join(str(s or "").split()).casefold()
 
@@ -265,11 +264,11 @@ def derive_pending_from_run_id(
         f = basics.get(r["id_fencer"])
         if not f:
             continue
-        aliases = f.get("json_name_aliases") or []
-        if not isinstance(aliases, list):
-            aliases = []
+        confirmed = f.get("json_user_confirmed_aliases") or []
+        if not isinstance(confirmed, list):
+            confirmed = []
         scraped_norm = _norm(r["txt_scraped_name"])
-        if any(scraped_norm == _norm(a) for a in aliases):
+        if any(scraped_norm == _norm(a) for a in confirmed):
             continue
         filtered_rows.append(r)
 

@@ -282,6 +282,9 @@ def test_derive_pending_treats_existing_alias_as_user_confirmed():
         197: {
             "txt_surname": "NIKALAICHUK", "txt_first_name": "Aliaksandr",
             "json_name_aliases": ["NIKOŁAJCZUK Aleksander"],
+            # User clicked Keep → entry persisted to user_confirmed list
+            # via fn_confirm_fencer_alias (Phase 5 migration 10).
+            "json_user_confirmed_aliases": ["NIKOŁAJCZUK Aleksander"],
         },
     }
     out = derive_pending_from_run_id(db, run_id="run-x")

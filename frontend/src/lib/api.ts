@@ -632,3 +632,17 @@ export async function discardFencerAliasAndResults(
   if (error) throw new Error(`fn_discard_fencer_alias_and_results: ${error.message}`)
   return data as AliasDiscardResult
 }
+
+// Phase 5 — operator clicks Keep ➜ alias is appended to
+// json_user_confirmed_aliases so the staging verdict logic stops
+// surfacing it as ❌ on subsequent runs.
+export async function confirmFencerAlias(
+  idFencer: number, alias: string,
+): Promise<unknown> {
+  const { data, error } = await getClient().rpc('fn_confirm_fencer_alias', {
+    p_id_fencer: idFencer,
+    p_alias: alias,
+  })
+  if (error) throw new Error(`fn_confirm_fencer_alias: ${error.message}`)
+  return data
+}

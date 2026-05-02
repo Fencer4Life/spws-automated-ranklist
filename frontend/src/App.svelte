@@ -267,6 +267,7 @@
     transferFencerAlias,
     splitFencerFromAlias,
     discardFencerAliasAndResults,
+    confirmFencerAlias,
   } from './lib/api'
   import {
     MOCK_SEASONS,
@@ -774,8 +775,18 @@
     }
   }
 
-  function handleAliasKeep(_id: number, _alias: string) {
-    // No-op: keeping an alias requires no action — it's already on the fencer.
+  async function handleAliasKeep(id: number, alias: string) {
+    // Phase 5 — Keep persists the operator's confirmation to
+    // tbl_fencer.json_user_confirmed_aliases via fn_confirm_fencer_alias,
+    // so the staging verdict stops re-surfacing this alias as ❌ on
+    // subsequent runs. Idempotent.
+    aliasError = null
+    try {
+      await confirmFencerAlias(id, alias)
+      await loadAliasFencers()
+    } catch (e: unknown) {
+      aliasError = e instanceof Error ? e.message : String(e)
+    }
   }
 
   async function handleAliasTransfer(fromId: number, alias: string) {

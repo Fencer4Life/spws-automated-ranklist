@@ -262,6 +262,7 @@ class Fetcher:
             )
             FTL_DATA_PREFIX = "https://www.fencingtimelive.com/events/results/data/"
             results: list = []
+            event_url = _normalize_ftl_url(event_url)
             with get_authed_ftl_client() as authed:
                 resp = authed.get(event_url)
                 resp.raise_for_status()
@@ -350,6 +351,7 @@ class Fetcher:
                 parse_tournament_name,
             )
             FTL_DATA_PREFIX = "https://www.fencingtimelive.com/events/results/data/"
+            event_url = _normalize_ftl_url(event_url)
             with get_authed_ftl_client() as authed:
                 # 1. Discover per-tournament UUIDs from the eventSchedule page
                 resp = authed.get(event_url)
@@ -409,6 +411,30 @@ class Fetcher:
 def _is_ftl_event_schedule(url: str) -> bool:
     """True iff `url` is an FTL master event-schedule page (multi-tournament)."""
     return bool(url) and "fencingtimelive.com" in url and "/tournaments/eventSchedule/" in url
+
+
+def _normalize_ftl_url(url: str | None) -> str | None:
+    """Force `www.fencingtimelive.com` host on FTL URLs.
+
+    Phase 5 follow-up: FTL's auth cookies are scoped to the
+    `www.fencingtimelive.com` host. Hitting the bare-hostname form
+    (`fencingtimelive.com/…`) produces a 200 + redirect to
+    `/account/login` because the cookies don't apply, and our parsers
+    silently see 0 brackets. Some seed URLs lack the `www.` prefix
+    (e.g. GP2-2023-2024). Normalize at fetch time so a single-host
+    cookie jar works regardless of seed shape.
+    """
+    if not url:
+        return url
+    return url.replace(
+        "https://fencingtimelive.com/",
+        "https://www.fencingtimelive.com/",
+        1,
+    ).replace(
+        "http://fencingtimelive.com/",
+        "https://www.fencingtimelive.com/",
+        1,
+    )
 
 
 def _to_human_results_url(url: str | None) -> str | None:
