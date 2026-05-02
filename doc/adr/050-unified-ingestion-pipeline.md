@@ -144,3 +144,39 @@ Phase 1 ships the **traceability schema** (ADR-055) and the **intermediate repre
 - ✅ Ophardt parser written from scratch + spike-captured fixture (Munich 2024 EVF Circuit Memoriam Max Geuter, Foil Men's O50). Server-rendered HTML, no Playwright dep needed.
 - ✅ Test totals: pgTAP 404 → 427 (+23 ADR-055); pytest 354 → 402 (+7 IR contract + 41 parser contracts); vitest 332 unchanged.
 - ✅ Coherence + spec-sync gates pass.
+
+## Status — Phase 2 deliverables (committed 2026-05-02)
+
+Phase 2 ships the **draft scratch state + dry-run loop** — the infrastructure that Phase 3 will populate via the IR pipeline and Phase 4 will commit through.
+
+**Locked design decisions** (5-question micro-RFC, conversation 2026-05-01):
+
+| # | Decision | Rationale |
+|---|---|---|
+| D1 | `--dry-run` = no DB writes anywhere | Cleaner than rollback-then-discard. `fn_dry_run_event_draft` is a stateless validator/counter; Python computes diff from in-memory IR. |
+| D2 | RPCs return JSONB; never throw on missing run_id | CLI inspects counts; zero-count routes to Telegram via `notifier.warning()` + exit code 1. Successes go to stdout only. |
+| D3 | Tournament-level diff + match-method aggregate | Per-fencer detail and 3-way diff against live = Phase 3 (kept the boundary clean). |
+| D4 | `20260501000004_phase2_draft_tables.sql` | Today's date + next slot; future phases drift to commit date if past the week. |
+| D5 | Extend `DbConnector` (Supabase REST) | All txn boundaries inside SQL functions. **No psycopg2 at runtime.** |
+
+**Shipped:**
+
+- ✅ Migration `supabase/migrations/20260501000004_phase2_draft_tables.sql`:
+  - `tbl_tournament_draft` (22 cols, draft-local PK + 20 mirror cols + `txt_run_id UUID`) + index on `txt_run_id`
+  - `tbl_result_draft` (17 cols, draft-local PK + `id_tournament_draft` linkage + 13 mirror cols + `txt_run_id UUID`) + index on `txt_run_id`
+  - **Loose**: zero FK constraints (drafts may stage unresolved values)
+  - `fn_commit_event_draft(UUID) RETURNS JSONB` — atomic move via CTE chain (`txt_code` → live id mapping), sets `bool_joint_pool_split` on siblings sharing `url_results`, appends `tbl_*_ingest_history` (Phase 1 ADR-055), writes audit, deletes drafts
+  - `fn_discard_event_draft(UUID) RETURNS JSONB` — deletes drafts, writes `DRAFT_DISCARD` audit always
+  - `fn_dry_run_event_draft(JSONB) RETURNS JSONB` — pure function; counts + joint-pool sibling group detection from IR payload; no writes
+  - 30 pgTAP assertions in `supabase/tests/27_draft_tables.sql`
+- ✅ `python/pipeline/draft_store.py` — `DraftStore` wraps the supabase REST client. Methods: `write_tournament_drafts`, `write_result_drafts`, `read_drafts`, `list_drafts`, `commit`, `discard`, `dry_run`. 9 pytest assertions.
+- ✅ `python/pipeline/draft_diff.py` — `format_diff(run_id, payload, rpc_result, event_match)`. Renders title, event match, would-create counts, per-tournament table, match-method aggregate. 5 pytest assertions.
+- ✅ Extended `python/pipeline/ingest_cli.py` with 4 mutually-exclusive draft-management flags: `--commit-draft <UUID>`, `--discard-draft <UUID>`, `--list-drafts`, `--resume-run-id <UUID>`. Zero-count outcomes route to `notifier.warning()` + exit 1. 6 pytest assertions.
+- ✅ Test totals: pgTAP 427 → 457 (+30); pytest 402 → 422 (+9 draft_store + 5 draft_diff + 6 CLI mgmt, excl. pre-existing `test_prod_mirror` CI skip); vitest 332 unchanged.
+- ✅ Coherence + spec-sync gates pass.
+
+**Deviations from plan text** (documented in migration header):
+
+1. Plan said `LIKE tbl_tournament INCLUDING ALL`; reality uses **explicit DDL**. Reason: `LIKE INCLUDING ALL` would inherit the SERIAL sequence and collide draft inserts with live PK allocation. Explicit DDL gives drafts their own `id_tournament_draft` sequence and renames the linkage column on `tbl_result_draft` for clarity.
+2. Plan said `txt_run_id TEXT NOT NULL`; reality uses **`UUID NOT NULL`** to match what Phase 1 already shipped on `tbl_*_ingest_history.txt_run_id`. The `txt_` prefix on a UUID column is a name/type mismatch inherited from Phase 1.
+3. `--dry-run` orchestrator integration is **deferred to Phase 3** — Phase 2 keeps the existing path-based `--dry-run` (calls `process_xml_file(dry_run=True)`); the IR-driven dry-run that builds a JSONB payload from the new parsers and invokes `fn_dry_run_event_draft` lands in Phase 3 alongside the orchestrator rewrite. The Phase 2 risk gate is satisfied by `--resume-run-id` (re-renders diff from existing drafts) and `format_diff` proven via tests.
