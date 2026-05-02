@@ -183,7 +183,8 @@
   "disambiguation_title": "Wybierz zawodnika",
 
   "fencer_tab_identities": "Tożsamości",
-  "fencer_tab_birth_year": "Daty urodzenia",
+  "fencer_tab_birth_year": "Rok urodzenia",
+  "fencer_tab_aliases": "Aliasy",
   "fencer_header_count": "Szermierze ({count})",
   "birth_year_filter_all": "Wszystkie",
   "birth_year_filter_estimated": "Szacowany",

@@ -186,6 +186,59 @@ class DbConnector:
         )
         return resp.data[0]["id_fencer"]
 
+    # -----------------------------------------------------------------------
+    # Phase 4 (ADR-046, ADR-053) — post-commit hooks + parity gate
+    # -----------------------------------------------------------------------
+
+    def pew_recompute_event_code(self, id_event: int) -> int:
+        """Stage 8b cascade-rename. Returns count of tbl_event/tbl_tournament rows renamed.
+
+        Idempotent. No-op for non-PEW events. Calls fn_pew_recompute_event_code.
+        """
+        resp = self._sb.rpc(
+            "fn_pew_recompute_event_code", {"p_id_event": id_event}
+        ).execute()
+        # RPC returns INT scalar
+        return int(resp.data) if resp.data is not None else 0
+
+    def event_results_for_parity(self, id_event: int) -> list[dict]:
+        """Return POL fencer rows shaped for the parity gate's `local_results`."""
+        resp = self._sb.rpc(
+            "fn_event_results_for_parity", {"p_id_event": id_event}
+        ).execute()
+        return resp.data or []
+
+    def promote_evf_published(
+        self, id_event: int, evf_scores: list[dict]
+    ) -> dict:
+        """Atomic: overwrite num_final_score per fencer + flip status + audit."""
+        resp = self._sb.rpc(
+            "fn_promote_evf_published",
+            {"p_id_event": id_event, "p_evf_scores": evf_scores},
+        ).execute()
+        return resp.data or {}
+
+    def annotate_parity_fail(self, id_event: int, notes: str) -> dict:
+        resp = self._sb.rpc(
+            "fn_annotate_parity_fail",
+            {"p_id_event": id_event, "p_notes": notes},
+        ).execute()
+        return resp.data or {}
+
+    def evf_events_pending_parity(self, max_age_days: int = 60) -> list[dict]:
+        resp = self._sb.rpc(
+            "fn_evf_events_pending_parity",
+            {"p_max_age_days": max_age_days},
+        ).execute()
+        return resp.data or []
+
+    def update_event_parity_notes(self, id_event: int, notes: str) -> None:
+        """Direct table update used by the daily sweep when annotating "EVF API
+        empty after 30 days" — uses fn_annotate_parity_fail so the audit log
+        trail stays consistent.
+        """
+        self.annotate_parity_fail(id_event, notes)
+
 
 def create_db_connector() -> DbConnector:
     """Create a DbConnector from environment variables."""

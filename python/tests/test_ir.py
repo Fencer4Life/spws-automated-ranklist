@@ -89,6 +89,10 @@ def test_parsed_tournament_fields():
         "gender",
         "category_hint",
         "source_url",
+        # Phase 4 (ADR-052): URL→data validation surface (opportunistic):
+        "tournament_name",
+        "city",
+        "country",
         # Orchestrator-injected:
         "season_end_year",
         "organizer_hint",

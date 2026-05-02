@@ -103,6 +103,11 @@ class ParsedTournament:
     category_hint: str | None = None
     source_url: str | None = None
 
+    # Phase 4 (ADR-052): scrapers populate opportunistically for URL→data validation.
+    tournament_name: str | None = None
+    city: str | None = None
+    country: str | None = None
+
     season_end_year: int | None = None
     organizer_hint: str | None = None
     source_artifact_path: str | None = None

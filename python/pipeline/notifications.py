@@ -152,3 +152,79 @@ class TelegramNotifier:
         self.warning(
             f"{event_name} results not found ({days} days overdue). Provide URL?"
         )
+
+    # --- Phase 4 (ADR-052, ADR-053) — commit / parity / cascade lifecycle ---
+
+    def notify_event_commit(
+        self, event_code: str, summary: dict, *,
+        cascade_renamed_to: str | None = None,
+        parity_passed: bool | None = None,
+    ) -> None:
+        """Single combined message for a per-event commit + post-commit hooks.
+
+        Per ADR-053 within-event batching: commit + cascade-rename + parity
+        results all concatenate into one Telegram message so the operator
+        sees the full outcome of one ingestion run as a single notification.
+        """
+        lines = [
+            f"📨 {event_code} committed",
+            f"  • {summary.get('matched', 0)} matched, "
+            f"{summary.get('pending', 0)} pending, "
+            f"{summary.get('auto_created', 0)} auto-created, "
+            f"{summary.get('skipped', 0)} skipped",
+        ]
+        if cascade_renamed_to:
+            lines.append(f"  • PEW cascade: txt_code → {cascade_renamed_to}")
+        if parity_passed is True:
+            lines.append("  • EVF parity ✅ — promoted to EVF_PUBLISHED")
+        elif parity_passed is False:
+            lines.append("  • EVF parity 🚨 FAIL — see follow-up alert")
+        self._send("\n".join(lines))
+
+    def notify_evf_parity_fail(
+        self, event_code: str, fail_details: list, parity_notes: str
+    ) -> None:
+        """All failing fencers listed verbatim per ADR-053 (no truncation)."""
+        lines = [
+            f"🚨 EVF parity FAIL: {event_code}",
+            f"  Notes: {parity_notes}",
+        ]
+        for f in fail_details:
+            lines.append(
+                f"  • [{getattr(f, 'sub_check', '?')}] "
+                f"{getattr(f, 'fencer_name', '?')}: "
+                f"{getattr(f, 'message', '')}"
+            )
+        self._send("\n".join(lines))
+
+    def notify_evf_promoted(self, event_code: str, fencers_overwritten: int) -> None:
+        self.success(
+            f"{event_code}: EVF parity passed — promoted to EVF_PUBLISHED. "
+            f"{fencers_overwritten} fencers' scores overwritten with EVF API values."
+        )
+
+    def notify_stage_halt(
+        self, event_code: str, stage: str, reason: str, detail: str
+    ) -> None:
+        self.error(
+            f"Pipeline halted on {event_code} at {stage}: {reason}\n  {detail}"
+        )
+
+    def notify_evf_api_empty(self, event_code: str, days: int) -> None:
+        self.info(
+            f"{event_code}: EVF API empty after {days} days. "
+            f"Annotated and stopped probing."
+        )
+
+    def notify_parity_sweep_summary(
+        self, n_checked: int, n_promoted: int, n_failed: int, n_empty: int
+    ) -> None:
+        self.info(
+            f"📊 EVF parity sweep: checked {n_checked}, promoted {n_promoted}, "
+            f"failed {n_failed}, empty {n_empty}."
+        )
+
+    def notify_pew_cascade(self, event_code: str, new_code: str, rows_renamed: int) -> None:
+        self.info(
+            f"PEW cascade: {event_code} → {new_code} ({rows_renamed} rows renamed)."
+        )

@@ -586,3 +586,84 @@ class TestS7Validate:
         s7_validate(ctx, MagicMock())
         assert ctx.count_validation["ok"] is True
         assert any("Count diff" in w for w in ctx.warnings)
+
+    def test_url_validation_halts_on_date_mismatch(self):
+        """P4.S7.4 scraped date outside event ±1d window → HaltError(URL_DATA_MISMATCH)."""
+        from python.pipeline.stages import s7_validate
+        from python.pipeline.types import HaltError, HaltReason, StageMatchResult
+
+        ctx = _make_ctx(parsed=_make_parsed(
+            results=[_make_result("X", 1, birth_year=1970)],
+            parsed_date=date(2026, 6, 15),  # 2.5 months away from event window
+        ))
+        ctx.event = {
+            "txt_code": "PPW1-2025-2026",
+            "dt_start": date(2026, 4, 1),
+            "dt_end": date(2026, 4, 1),
+            "enum_weapon": "EPEE",
+            "enum_gender": "M",
+            "enum_age_category": "V1",
+        }
+        ctx.matches = [
+            StageMatchResult(scraped_name="X", place=1, id_fencer=1,
+                             confidence=99.0, method="AUTO_MATCHED"),
+        ]
+        with pytest.raises(HaltError) as exc:
+            s7_validate(ctx, MagicMock())
+        assert exc.value.reason == HaltReason.URL_DATA_MISMATCH
+        assert "date" in str(exc.value).lower()
+
+    def test_url_validation_pew_weapon_mismatch_flags_cascade(self):
+        """P4.S7.5 PEW event + weapon mismatch → no halt; ctx.pew_cascade_pending = True."""
+        from python.pipeline.stages import s7_validate
+        from python.pipeline.types import StageMatchResult
+
+        ctx = _make_ctx(parsed=_make_parsed(
+            results=[_make_result("X", 1, birth_year=1970)],
+            weapon="SABRE",  # scraped SABRE
+        ))
+        ctx.event = {
+            "txt_code": "PEW3-2025-2026",
+            "dt_start": date(2026, 4, 1),
+            "dt_end": date(2026, 4, 1),
+            "enum_weapon": "EPEE",  # event currently EPEE-only
+            "enum_gender": "M",
+            "enum_age_category": "V1",
+        }
+        ctx.matches = [
+            StageMatchResult(scraped_name="X", place=1, id_fencer=1,
+                             confidence=99.0, method="AUTO_MATCHED"),
+        ]
+        s7_validate(ctx, MagicMock())  # must not halt
+        assert ctx.pew_cascade_pending is True
+        assert ctx.url_validation is not None
+        assert ctx.url_validation.has_halt is False
+
+    def test_url_validation_skipped_for_cert_ref(self):
+        """P4.S7.6 cert_ref source → URL→data validation skipped entirely."""
+        from python.pipeline.ir import SourceKind
+        from python.pipeline.stages import s7_validate
+        from python.pipeline.types import StageMatchResult
+
+        parsed = _make_parsed(
+            results=[_make_result("X", 1, birth_year=1970)],
+            weapon="SABRE",
+        )
+        parsed.source_kind = SourceKind.CERT_REF
+        ctx = _make_ctx(parsed=parsed)
+        ctx.event = {
+            "txt_code": "PPW1-2025-2026",
+            "dt_start": date(2026, 4, 1),
+            "dt_end": date(2026, 4, 1),
+            "enum_weapon": "EPEE",  # would normally halt; cert_ref skips
+            "enum_gender": "M",
+            "enum_age_category": "V1",
+        }
+        ctx.matches = [
+            StageMatchResult(scraped_name="X", place=1, id_fencer=1,
+                             confidence=99.0, method="AUTO_MATCHED"),
+        ]
+        s7_validate(ctx, MagicMock())  # must not halt
+        assert ctx.url_validation is None
+        assert ctx.pew_cascade_pending is False
+        assert any("cert_ref" in w for w in ctx.warnings)

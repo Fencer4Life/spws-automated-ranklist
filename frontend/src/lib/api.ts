@@ -22,6 +22,7 @@ import type {
   CarryoverEngine,
   EuropeanEventType,
   CreateSeasonWithSkeletonsResult,
+  FencerWithAliases,
 } from './types'
 
 let client: SupabaseClient | null = null
@@ -556,4 +557,78 @@ export async function triggerGitHubWorkflow(
     const text = await resp.text()
     throw new Error(`GitHub Actions trigger failed (${resp.status}): ${text}`)
   }
+}
+
+// ===========================================================================
+// Phase 4 (ADR-050) — Fencer alias management
+// ===========================================================================
+
+export async function listFencerAliases(): Promise<FencerWithAliases[]> {
+  const { data, error } = await getClient().rpc('fn_list_fencer_aliases')
+  if (error) throw new Error(`fn_list_fencer_aliases: ${error.message}`)
+  return (data ?? []) as FencerWithAliases[]
+}
+
+export interface AliasTransferResult {
+  alias: string
+  from_fencer: number
+  to_fencer: number
+  results_moved: number
+  tournaments_recomputed: number
+}
+
+export async function transferFencerAlias(
+  fromFencer: number, toFencer: number, alias: string,
+): Promise<AliasTransferResult> {
+  const { data, error } = await getClient().rpc('fn_transfer_fencer_alias', {
+    p_from_fencer: fromFencer,
+    p_to_fencer: toFencer,
+    p_alias: alias,
+  })
+  if (error) throw new Error(`fn_transfer_fencer_alias: ${error.message}`)
+  return data as AliasTransferResult
+}
+
+export interface NewFencerData {
+  txt_surname: string
+  txt_first_name: string
+  int_birth_year: number
+  enum_gender: GenderType
+  txt_nationality?: string
+  txt_club?: string
+}
+
+export interface AliasSplitResult {
+  new_fencer_id: number
+  transfer_result: AliasTransferResult
+}
+
+export async function splitFencerFromAlias(
+  fromFencer: number, alias: string, newFencerData: NewFencerData,
+): Promise<AliasSplitResult> {
+  const { data, error } = await getClient().rpc('fn_split_fencer_from_alias', {
+    p_from_fencer: fromFencer,
+    p_alias: alias,
+    p_new_fencer_data: newFencerData,
+  })
+  if (error) throw new Error(`fn_split_fencer_from_alias: ${error.message}`)
+  return data as AliasSplitResult
+}
+
+export interface AliasDiscardResult {
+  alias: string
+  fencer: number
+  results_deleted: number
+  tournaments_recomputed: number
+}
+
+export async function discardFencerAliasAndResults(
+  fromFencer: number, alias: string,
+): Promise<AliasDiscardResult> {
+  const { data, error } = await getClient().rpc('fn_discard_fencer_alias_and_results', {
+    p_from_fencer: fromFencer,
+    p_alias: alias,
+  })
+  if (error) throw new Error(`fn_discard_fencer_alias_and_results: ${error.message}`)
+  return data as AliasDiscardResult
 }
