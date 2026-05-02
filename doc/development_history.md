@@ -714,7 +714,7 @@ To manage complexity, the system was built iteratively, ensuring value was deliv
 | 0.5 — Spec refactor + RTM externalization | ✅ DONE | 2026-05-01 | Spec 1773 → 1441 lines; RTM externalized to `doc/requirements-traceability-matrix.md`; SuperFive moved to `doc/backlog/superfive-phase-3.md`; `scripts/check-spec-sync.sh` CI gate added |
 | 0 — Schema prep + cert_ref + rules + matcher config + Claude modules | ✅ DONE | 2026-05-01 | Migrations `20260501000001_phase0_schema_prep.sql` + `20260501000002_cert_ref_schema.sql`; ADR-050 stub; rules registry R001-R012 (incl. R005b); `scripts/load-cert-ref.sh`; `python/matcher/config.yaml` |
 | 1 — Traceability schema + IR + 8 parsers + Ophardt + parser registry | ✅ DONE | 2026-05-01 | ADR-055 migration `20260501000003_phase1_ingest_traceability.sql` (23 pgTAP); `python/pipeline/ir.py` (`SourceKind`/`ParsedResult`/`ParsedTournament`/`make_synthetic_id`); 8 parsers IR-conformed (FTL/Engarde/file_import/FT XML/4Fence/Dartagnan/EVF API + new Ophardt); `python/scrapers/__init__.py` `PARSERS` dict; 41 IR contract pytest assertions; cross-language enum sync test |
-| 2 — Draft tables + dry-run loop | ⏳ pending | — | Subplan: `doc/plans/rebuild/p2-drafts.md` |
+| 2 — Draft tables + dry-run loop | ✅ DONE | 2026-05-02 | Migration `20260501000004_phase2_draft_tables.sql` (30 pgTAP — `27.1`–`27.26`): `tbl_tournament_draft` + `tbl_result_draft` (loose, no FKs, draft-local PK + `txt_run_id UUID`); 3 RPCs (`fn_commit_event_draft`, `fn_discard_event_draft`, `fn_dry_run_event_draft`) returning JSONB counts + never throwing on missing run_id. `python/pipeline/draft_store.py` (DraftStore wrapping Supabase REST; 9 pytest); `python/pipeline/draft_diff.py` (markdown formatter; 5 pytest). Extended `python/pipeline/ingest_cli.py` with `--commit-draft` / `--discard-draft` / `--list-drafts` / `--resume-run-id` (mutex group; zero-count → `notifier.warning()` + exit 1; 6 pytest). 5 design decisions D1-D5 locked in micro-RFC, captured in ADR-050 §"Status — Phase 2 deliverables". `--dry-run` orchestrator integration deferred to Phase 3. |
 | 3 — Stages 1-7 + alias writeback + 3-way diff + interactive CLI | ⏳ pending | — | Subplan: `doc/plans/rebuild/p3-pipeline.md` |
 | 4 — Commit path + frozen snapshot + EVF parity + alias UI | ⏳ pending | — | Subplan: `doc/plans/rebuild/p4-commit-ui.md` |
 | 5 — Operational rebuild (every event reviewed and committed) | ⏳ pending | — | Subplan: `doc/plans/rebuild/p5-execute.md` |
@@ -724,6 +724,7 @@ To manage complexity, the system was built iteratively, ensuring value was deliv
 ADRs landed during the rebuild: [ADR-050](adr/050-unified-ingestion-pipeline.md) (umbrella), [ADR-055](adr/055-ingest-traceability.md) (parser provenance + cap-6 history). ADRs 051-054 are reserved for upcoming sub-phases (frozen snapshot, URL→data validation, EVF backup-source parity, carry-over FK + 366-day cap).
 
 Test totals at end of Phase 1: pgTAP 427 (+23), pytest 402 (+48), vitest 332 (unchanged).
+Test totals at end of Phase 2: pgTAP 457 (+30), pytest 422 (+20, excl. pre-existing `test_prod_mirror` CI skip), vitest 332 (unchanged).
 
 - **Scope (deferred from MVP M9b):**
 
