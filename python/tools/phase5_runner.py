@@ -446,7 +446,12 @@ def main() -> int:
                         or getattr(parsed, "tournament_name", None)
                         or "?"
                     )
-                    pool_brackets.append((parsed.weapon or "?", bracket_name))
+                    pool_brackets.append({
+                        "weapon": parsed.weapon or "?",
+                        "name": bracket_name,
+                        "url": getattr(parsed, "source_url", None),
+                        "reason": getattr(ctx, "halt_detail", "") or "",
+                    })
             except Exception as e:
                 print(f"     EXCEPTION: {e}", file=sys.stderr)
                 ctxs.append((slot, parsed, None, str(e)))
