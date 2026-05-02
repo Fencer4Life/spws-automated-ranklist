@@ -180,3 +180,46 @@ Phase 2 ships the **draft scratch state + dry-run loop** — the infrastructure 
 1. Plan said `LIKE tbl_tournament INCLUDING ALL`; reality uses **explicit DDL**. Reason: `LIKE INCLUDING ALL` would inherit the SERIAL sequence and collide draft inserts with live PK allocation. Explicit DDL gives drafts their own `id_tournament_draft` sequence and renames the linkage column on `tbl_result_draft` for clarity.
 2. Plan said `txt_run_id TEXT NOT NULL`; reality uses **`UUID NOT NULL`** to match what Phase 1 already shipped on `tbl_*_ingest_history.txt_run_id`. The `txt_` prefix on a UUID column is a name/type mismatch inherited from Phase 1.
 3. `--dry-run` orchestrator integration is **deferred to Phase 3** — Phase 2 keeps the existing path-based `--dry-run` (calls `process_xml_file(dry_run=True)`); the IR-driven dry-run that builds a JSONB payload from the new parsers and invokes `fn_dry_run_event_draft` lands in Phase 3 alongside the orchestrator rewrite. The Phase 2 risk gate is satisfied by `--resume-run-id` (re-renders diff from existing drafts) and `format_diff` proven via tests.
+
+## Status — Phase 3 deliverables (committed 2026-05-02)
+
+Phase 3 ships the **unified pipeline body** — Stages 1-7, the override system, the alias-writeback RPC, the 3-way diff verifier, and the interactive review CLI that operators use during the Phase 5 rebuild.
+
+**Locked design decisions** (5-question micro-RFC, conversation 2026-05-02):
+
+| Q | Decision | Rationale |
+|---|---|---|
+| Q1 | Override YAML — 5 surfaces (identity, splitter, URL, match-method, joint-pool); EVF V0 ack omitted | V0+EVF = data corruption per R005b — fix upstream, no override. |
+| Q2 | Procedural pipeline + `PipelineContext` dataclass; halt-by-exception | Lower ceremony than class-based; matches existing `process_xml_file` style; cleaner unit tests. |
+| Q3 | Keep `process_xml_file` untouched + deprecation note | Phase 6 deletes it; "shim" framing wrong — back-compat is just "don't touch." |
+| Q4 | Separate `python/pipeline/review_cli.py` module | Own arg surface; zero breakage to ingest_cli. |
+| Q5 | 3-way diff in pure Python | One-language end-to-end; SQL JOIN performance moot at event scale. |
+
+**Shipped (10 modules, 91 new tests):**
+
+- ✅ `python/pipeline/types.py` — `HaltError` + `HaltReason` enum + `Overrides` (5 sub-classes) + `PipelineContext` + `StageMatchResult`. 8 pytest assertions (P3.T1-P3.T8).
+- ✅ `python/pipeline/overrides.py` — YAML parser for the 5 override surfaces, jsonschema-style validation, `OverrideValidationError` with file path. PyYAML promoted to runtime dep. 15 pytest assertions (P3.OV1-P3.OV15).
+- ✅ Migration `supabase/migrations/20260502000001_phase3_fn_alias_writeback.sql` — `fn_update_fencer_aliases(INT, TEXT) RETURNS JSONB` with NULL→array init, case-insensitive dedup, whitespace trim, empty-rejection. 8 pgTAP assertions in `supabase/tests/28_alias_writeback.sql`.
+- ✅ `python/pipeline/stages.py` — 7 stage functions S1-S7 with halt-by-exception and override application. 29 pytest assertions in `test_pipeline_stages.py` (per-stage isolation + dispatcher tests).
+- ✅ Updated `python/pipeline/orchestrator.py` — added `run_pipeline()` dispatcher resolving stages by name (so monkeypatch tests work); legacy `process_xml_file` annotated with deprecation note pointing to `run_pipeline`.
+- ✅ Extended `python/pipeline/db_connector.py` — `find_event_by_code()`, `fetch_cert_rows_for_event()` (Phase 3 stub), `call_age_categories_batch()` (Stage 4 batch RPC wrapper).
+- ✅ `python/pipeline/three_way_diff.py` — 4-bucket classifier (`classify`, `build_diff`), 7-bin confidence histogram, markdown renderer, `write_diff` to `doc/staging/<event_code>.diff.md`. Bucket semantics per `project_cert_prod_not_baseline.md` (CERT is reference-only, not baseline). 12 pytest assertions in `test_three_way_diff.py`.
+- ✅ `python/pipeline/review_cli.py` — `ReviewSession` with injectable prompt + output (testable without stdin). 4 source-of-truth choices (recorded URL / paste URL / paste path / EVF API; frozen-snapshot deferred to Phase 4). Lifecycle: event summary → choice → fetch → run_iteration (overrides hot-reloaded each iteration) → diff → action prompt → commit/discard/iterate. 15 pytest assertions in `test_review_cli.py` (incl. EVF API path per `project_evf_predominance.md` — EVF events are predominant, source-of-truth on EVF site).
+- ✅ End-to-end integration tests in `python/tests/test_pipeline_integration.py` — 4 tests against live LOCAL Supabase (skip cleanly when unreachable, matching the established pattern).
+- ✅ Test totals: pgTAP 457 → 465 (+8); pytest 422 → 505 (+83 across 6 new test modules); vitest 332 unchanged.
+- ✅ Coherence + spec-sync gates pass.
+
+**Deferred to Phase 4 (per master plan boundaries, not time pressure):**
+
+1. **Frozen-snapshot source-of-truth** — needs ADR-051 frozen-snapshot semantics.
+2. **Production fetcher wiring** — `Fetcher` raises `NotImplementedError` for `fetch_url`/`fetch_path`/`fetch_evf_api`; tests inject mocks. Phase 4 wires the existing 8 scrapers to the Fetcher methods.
+3. **`fetch_cert_rows_for_event` real query** — Phase 3 stub returns `[]`; Phase 4 implements when cert_ref is operationally populated.
+4. **EVF parity gate** (R011) — Phase 4 ADR-053.
+5. **URL→data deep validation** (R009/ADR-052) — Phase 4.
+
+**Domain corrections captured during Phase 3 design (saved as project memories):**
+
+- `project_cert_prod_not_baseline.md` — CERT/PROD share LOCAL's drift; reference only, not trust source.
+- `project_evf_predominance.md` — EVF events outnumber SPWS; SPWS quality is critical; EVF errors recoverable via EVF API.
+- `project_evf_eligibility_v1plus.md` — EVF requires age 40+; V0 in EVF data = corruption, hard halt.
+- `feedback_be_the_architect.md` — User delegated all technical decisions; ask only about domain-specific requirements.
