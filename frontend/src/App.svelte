@@ -129,6 +129,9 @@
         <button class="tab-btn" class:active={fencerTab === 'birth_year_review'} onclick={() => { fencerTab = 'birth_year_review' }}>
           {t('fencer_tab_birth_year')}
         </button>
+        <button class="tab-btn" class:active={fencerTab === 'aliases'} onclick={() => { fencerTab = 'aliases'; loadAliasFencers() }}>
+          {t('fencer_tab_aliases')}
+        </button>
       </div>
     </div>
     {#if fencerTab === 'identities'}
@@ -144,7 +147,7 @@
         onundismiss={handleUndismissMatch}
         onupdategender={handleUpdateFencerGender}
       />
-    {:else}
+    {:else if fencerTab === 'birth_year_review'}
       <BirthYearReview
         fencers={allFencers}
         isAdmin={isAdmin}
@@ -152,6 +155,16 @@
         onupdatebirthyear={handleUpdateFencerBirthYear}
         onupdategender={handleUpdateFencerGender}
         onfetchhistory={handleFetchTournamentHistory}
+      />
+    {:else}
+      <FencerAliasManager
+        fencers={aliasFencers}
+        isAdmin={isAdmin}
+        errorMsg={aliasError}
+        onkeep={handleAliasKeep}
+        ontransfer={handleAliasTransfer}
+        oncreate={handleAliasCreate}
+        ondiscard={handleAliasDiscard}
       />
     {/if}
   {/if}
@@ -210,7 +223,7 @@
     CalendarEvent,
     TournamentType,
   } from './lib/types'
-  import type { Organizer, ScoringConfig, MatchCandidate, CreateEventParams, UpdateEventParams, Tournament, FencerListItem, EuropeanEventType, CarryoverEngine, SkeletonByKind } from './lib/types'
+  import type { Organizer, ScoringConfig, MatchCandidate, CreateEventParams, UpdateEventParams, Tournament, FencerListItem, FencerWithAliases, EuropeanEventType, CarryoverEngine, SkeletonByKind } from './lib/types'
   import {
     initClient,
     fetchSeasons,
@@ -250,6 +263,10 @@
     updateFencerBirthYear,
     fetchFencerTournamentHistory,
     refreshActiveSeason,
+    listFencerAliases,
+    transferFencerAlias,
+    splitFencerFromAlias,
+    discardFencerAliasAndResults,
   } from './lib/api'
   import {
     MOCK_SEASONS,
@@ -274,6 +291,7 @@
   import EventManager from './components/EventManager.svelte'
   import IdentityManager from './components/IdentityManager.svelte'
   import BirthYearReview from './components/BirthYearReview.svelte'
+  import FencerAliasManager from './components/FencerAliasManager.svelte'
   import { getAuthState, startAuth, signIn, confirmEnroll, verifyChallenge, signOut, reset as resetAuth } from './lib/admin-auth.svelte'
 
   // ADR-041: github-pat / github-repo attributes removed. Workflow dispatch
@@ -368,6 +386,8 @@
   let identityError: string | null = $state(null)
   let birthYearError: string | null = $state(null)
   let fencerTab = $state('identities')
+  let aliasFencers: FencerWithAliases[] = $state([])
+  let aliasError: string | null = $state(null)
 
   let modalOpen = $state(false)
   let modalFencerName = $state('')
@@ -740,6 +760,82 @@
 
   async function handleFetchTournamentHistory(fencerId: number) {
     return await fetchFencerTournamentHistory(fencerId)
+  }
+
+  // Phase 4 (ADR-050) — alias management. Modal-based UX (FencerSearchModal /
+  // CreateFencerModal reuse) is a follow-up; v1 uses browser dialogs as a
+  // placeholder so the locked Option A layout can ship.
+  async function loadAliasFencers() {
+    aliasError = null
+    try {
+      aliasFencers = await listFencerAliases()
+    } catch (e: unknown) {
+      aliasError = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  function handleAliasKeep(_id: number, _alias: string) {
+    // No-op: keeping an alias requires no action — it's already on the fencer.
+  }
+
+  async function handleAliasTransfer(fromId: number, alias: string) {
+    aliasError = null
+    const target = window.prompt(`Transfer alias "${alias}" — destination id_fencer:`)
+    if (!target) return
+    const toId = Number(target)
+    if (!Number.isFinite(toId) || toId <= 0) {
+      aliasError = `Invalid id_fencer: ${target}`
+      return
+    }
+    try {
+      await transferFencerAlias(fromId, toId, alias)
+      await loadAliasFencers()
+    } catch (e: unknown) {
+      aliasError = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleAliasCreate(fromId: number, alias: string) {
+    aliasError = null
+    const surname = window.prompt(`Create new fencer from alias "${alias}". Surname:`)
+    if (!surname) return
+    const firstName = window.prompt('First name:')
+    if (!firstName) return
+    const byStr = window.prompt('Birth year (YYYY):')
+    const birthYear = Number(byStr)
+    if (!Number.isFinite(birthYear) || birthYear < 1900 || birthYear > 2030) {
+      aliasError = `Invalid birth year: ${byStr}`
+      return
+    }
+    const gender = window.prompt('Gender (M/F):')
+    if (gender !== 'M' && gender !== 'F') {
+      aliasError = `Invalid gender: ${gender}`
+      return
+    }
+    try {
+      await splitFencerFromAlias(fromId, alias, {
+        txt_surname: surname,
+        txt_first_name: firstName,
+        int_birth_year: birthYear,
+        enum_gender: gender,
+      })
+      await loadAliasFencers()
+    } catch (e: unknown) {
+      aliasError = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleAliasDiscard(fromId: number, alias: string) {
+    aliasError = null
+    if (!window.confirm(`Discard alias "${alias}" and DELETE all results tagged with it?`)) {
+      return
+    }
+    try {
+      await discardFencerAliasAndResults(fromId, alias)
+      await loadAliasFencers()
+    } catch (e: unknown) {
+      aliasError = e instanceof Error ? e.message : String(e)
+    }
   }
 
   async function loadScoringConfig() {

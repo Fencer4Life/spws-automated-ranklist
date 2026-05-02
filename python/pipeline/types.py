@@ -175,6 +175,8 @@ class PipelineContext:
     joint_pool_siblings: list[str] = field(default_factory=list)  # S5 writes (tournament_codes)
     matches: list[StageMatchResult] = field(default_factory=list)  # S6 writes
     count_validation: dict | None = None  # S7 writes: {expected, actual, ok}
+    url_validation: Any = None             # S7 writes: ValidationResult (Phase 4 ADR-052)
+    pew_cascade_pending: bool = False      # S7 sets True on PEW weapon-mismatch (ADR-046)
 
     # Halt state (set by dispatcher when HaltError caught)
     halted_at_stage: str | None = None

@@ -15,7 +15,18 @@ export interface RankingRules {
 }
 export type RankingMode = 'PPW' | 'KADRA'
 export type AppView = 'ranklist' | 'calendar' | 'admin_seasons' | 'admin_events' | 'admin_fencers'
-export type FencerTab = 'identities' | 'birth_year_review'
+export type FencerTab = 'identities' | 'birth_year_review' | 'aliases'
+
+// Phase 4 (ADR-050) alias UI — vw_fencer_aliases shape.
+export interface FencerWithAliases {
+  id_fencer: number
+  txt_first_name: string
+  txt_surname: string
+  json_name_aliases: string[]
+  json_revoked_aliases: string[]
+  alias_count: number
+  ts_last_alias_added: string | null
+}
 export type BirthYearFilter = 'ALL' | 'ESTIMATED' | 'MISSING' | 'CONFIRMED'
 export type Environment = 'CERT' | 'PROD'
 

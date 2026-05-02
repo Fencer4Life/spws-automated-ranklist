@@ -184,6 +184,7 @@
 
   "fencer_tab_identities": "Identities",
   "fencer_tab_birth_year": "Birth year review",
+  "fencer_tab_aliases": "Aliases",
   "fencer_header_count": "Fencers ({count})",
   "birth_year_filter_all": "All",
   "birth_year_filter_estimated": "Estimated",

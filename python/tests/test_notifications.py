@@ -290,3 +290,146 @@ class TestOverdueNotifications:
             msg = mock_send.call_args[1].get("message") or mock_send.call_args[0][2]
             assert "MEW Budapest" in msg
             assert "10" in msg
+
+
+# ===========================================================================
+# Phase 4 (ADR-052, ADR-053) — commit / parity / cascade lifecycle
+# ===========================================================================
+
+
+class TestPhase4Notifications:
+    """P4.NT.1 – P4.NT.7: Phase 4 commit-lifecycle templates."""
+
+    def _last_msg(self, mock):
+        return mock.call_args[1].get("message") or mock.call_args[0][2]
+
+    def test_notify_event_commit_basic(self):
+        """P4.NT.1 notify_event_commit emits combined commit summary."""
+        from python.pipeline.notifications import TelegramNotifier
+
+        with patch("python.pipeline.notifications.send_telegram_alert") as mock_send:
+            n = TelegramNotifier("t", "c")
+            n.notify_event_commit(
+                event_code="PPW1-2025-2026",
+                summary={"matched": 30, "pending": 1, "auto_created": 0, "skipped": 2},
+            )
+            msg = self._last_msg(mock_send)
+            assert "PPW1-2025-2026" in msg
+            assert "30 matched" in msg
+            assert "📨" in msg
+
+    def test_notify_event_commit_with_cascade(self):
+        """P4.NT.2 cascade rename appears in combined commit message."""
+        from python.pipeline.notifications import TelegramNotifier
+
+        with patch("python.pipeline.notifications.send_telegram_alert") as mock_send:
+            n = TelegramNotifier("t", "c")
+            n.notify_event_commit(
+                event_code="PEW3-2025-2026",
+                summary={"matched": 50, "pending": 0, "auto_created": 0, "skipped": 0},
+                cascade_renamed_to="PEW3ef-2025-2026",
+            )
+            msg = self._last_msg(mock_send)
+            assert "PEW cascade" in msg
+            assert "PEW3ef-2025-2026" in msg
+
+    def test_notify_event_commit_with_parity_pass(self):
+        """P4.NT.3 parity-pass shows promotion line."""
+        from python.pipeline.notifications import TelegramNotifier
+
+        with patch("python.pipeline.notifications.send_telegram_alert") as mock_send:
+            n = TelegramNotifier("t", "c")
+            n.notify_event_commit(
+                event_code="PEW3-2025-2026",
+                summary={"matched": 50, "pending": 0, "auto_created": 0, "skipped": 0},
+                parity_passed=True,
+            )
+            msg = self._last_msg(mock_send)
+            assert "EVF parity" in msg
+            assert "EVF_PUBLISHED" in msg
+
+    def test_notify_evf_parity_fail_lists_all_fencers(self):
+        """P4.NT.4 parity-fail enumerates every failing fencer (no truncation)."""
+        from dataclasses import dataclass
+        from python.pipeline.notifications import TelegramNotifier
+
+        @dataclass
+        class _F:
+            sub_check: str
+            fencer_name: str
+            message: str
+
+        fails = [
+            _F("score", "Kowalski Adam", "engine=42.0 vs EVF=44.0"),
+            _F("placement", "Nowak Jan", "local place=3 vs EVF Pos=2"),
+            _F("count", "<count>", "POL count mismatch: local=10, EVF=11"),
+        ]
+        with patch("python.pipeline.notifications.send_telegram_alert") as mock_send:
+            n = TelegramNotifier("t", "c")
+            n.notify_evf_parity_fail(
+                event_code="PEW3-2025-2026",
+                fail_details=fails,
+                parity_notes="3 mismatches",
+            )
+            msg = self._last_msg(mock_send)
+            assert "🚨" in msg
+            assert "Kowalski Adam" in msg
+            assert "Nowak Jan" in msg
+            assert "POL count mismatch" in msg
+
+    def test_notify_evf_promoted(self):
+        """P4.NT.5 EVF promotion message names the event + fencer count."""
+        from python.pipeline.notifications import TelegramNotifier
+
+        with patch("python.pipeline.notifications.send_telegram_alert") as mock_send:
+            n = TelegramNotifier("t", "c")
+            n.notify_evf_promoted("PEW3-2025-2026", fencers_overwritten=42)
+            msg = self._last_msg(mock_send)
+            assert "PEW3-2025-2026" in msg
+            assert "42" in msg
+            assert "EVF_PUBLISHED" in msg
+
+    def test_notify_stage_halt(self):
+        """P4.NT.6 stage halt names the stage + reason."""
+        from python.pipeline.notifications import TelegramNotifier
+
+        with patch("python.pipeline.notifications.send_telegram_alert") as mock_send:
+            n = TelegramNotifier("t", "c")
+            n.notify_stage_halt(
+                event_code="PPW1-2025-2026",
+                stage="s7_validate",
+                reason="URL_DATA_MISMATCH",
+                detail="weapon: event=EPEE vs scraped=SABRE",
+            )
+            msg = self._last_msg(mock_send)
+            assert "PPW1-2025-2026" in msg
+            assert "s7_validate" in msg
+            assert "URL_DATA_MISMATCH" in msg
+
+    def test_notify_parity_sweep_summary(self):
+        """P4.NT.7 daily sweep summary shows checked/promoted/failed/empty counts."""
+        from python.pipeline.notifications import TelegramNotifier
+
+        with patch("python.pipeline.notifications.send_telegram_alert") as mock_send:
+            n = TelegramNotifier("t", "c")
+            n.notify_parity_sweep_summary(
+                n_checked=12, n_promoted=10, n_failed=1, n_empty=1
+            )
+            msg = self._last_msg(mock_send)
+            assert "checked 12" in msg
+            assert "promoted 10" in msg
+            assert "failed 1" in msg
+            assert "empty 1" in msg
+
+    def test_silent_mode_no_send(self):
+        """P4.NT.8 bot_token=None silences the new templates too."""
+        from python.pipeline.notifications import TelegramNotifier
+
+        with patch("python.pipeline.notifications.send_telegram_alert") as mock_send:
+            n = TelegramNotifier(None, None)
+            n.notify_event_commit("X", {"matched": 0, "pending": 0,
+                                         "auto_created": 0, "skipped": 0})
+            n.notify_evf_promoted("X", 0)
+            n.notify_parity_sweep_summary(0, 0, 0, 0)
+            n.notify_pew_cascade("X", "Y", 0)
+            mock_send.assert_not_called()

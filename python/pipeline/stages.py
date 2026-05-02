@@ -310,14 +310,28 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
 # ===========================================================================
 
 def s7_validate(ctx: PipelineContext, db: Any) -> None:
-    """Validate result count against parsed.raw_pool_size, and surface URL.
+    """Validate result count + URL→data per-field comparison (Phase 4 ADR-052).
 
-    Halts: COUNT_MISMATCH if expected/actual differ by more than 1
-    (off-by-one is warned, not halted — common case is excluded fencers).
+    Two sub-stages combined:
 
-    URL→data deep validation (re-fetch + cross-check) deferred to a
-    dedicated module/Phase 4. Phase 3 just records the URL we'd validate.
+      a) Count: compare len(ctx.matches) to parsed.raw_pool_size.
+         Halts COUNT_MISMATCH on diff > 1; off-by-one warns.
+
+      b) URL→data: opportunistic per-field comparison between scraped
+         metadata (ctx.parsed) and the canonical event row (ctx.event).
+         Six halt-fields (date / weapon / gender / age category / country
+         / city); name warns. PEW weapon-mismatch sets ctx.pew_cascade_pending
+         instead of halting. Combined-pool sources skip age-category.
+         Cert_ref source skips URL→data entirely (no URL to validate).
+         Skipped when ctx.event is None (e.g. legacy / unit-test paths).
     """
+    from python.pipeline.ir import SourceKind
+    from python.pipeline.url_validation import (
+        ScrapedMetadata,
+        validate_metadata,
+    )
+
+    # ---- (a) Count validation ----
     expected = ctx.parsed.raw_pool_size
     actual = len(ctx.matches)
 
@@ -336,11 +350,32 @@ def s7_validate(ctx: PipelineContext, db: Any) -> None:
 
     ctx.count_validation = {"expected": expected, "actual": actual, "ok": True}
 
-    # URL surface (deep validation deferred)
-    url = (
-        ctx.overrides.url.validation_url
-        if ctx.overrides.url
-        else ctx.parsed.source_url
+    # ---- (b) URL→data validation (ADR-052) ----
+    if ctx.event is None:
+        ctx.warnings.append("S7: no event resolved; URL→data validation skipped")
+        return
+    if ctx.parsed.source_kind == SourceKind.CERT_REF:
+        # Cert_ref pulls from the snapshot table — no URL to cross-check.
+        ctx.warnings.append("S7: cert_ref source — URL→data validation skipped")
+        return
+
+    scraped = ScrapedMetadata(
+        parsed_date=ctx.parsed.parsed_date,
+        weapon=ctx.parsed.weapon,
+        gender=ctx.parsed.gender,
+        age_category=ctx.parsed.category_hint,
+        is_combined_pool=ctx.is_combined_pool,
+        city=ctx.parsed.city,
+        country=ctx.parsed.country,
+        tournament_name=ctx.parsed.tournament_name,
     )
-    if not url:
-        ctx.warnings.append("S7: no URL for validation (neither parsed.source_url nor override)")
+    val = validate_metadata(ctx.event, scraped)
+    ctx.url_validation = val
+    ctx.pew_cascade_pending = val.pew_cascade_pending
+
+    for w in val.warns:
+        ctx.warnings.append(f"S7 warn: {w.message}")
+
+    if val.has_halt:
+        summary = "; ".join(f"{f.field}: {f.message}" for f in val.halts)
+        raise HaltError(HaltReason.URL_DATA_MISMATCH, summary)

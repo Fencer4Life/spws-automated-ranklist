@@ -17,7 +17,7 @@ vi.mock('@supabase/supabase-js', () => {
   }
 })
 
-import { initClient, fetchSeasons, fetchRankingPpw, fetchRankingKadra, fetchFencerScores, fetchCalendarEvents, approveMatch, dismissMatch, createFencerFromMatch } from '../src/lib/api'
+import { initClient, fetchSeasons, fetchRankingPpw, fetchRankingKadra, fetchFencerScores, fetchCalendarEvents, approveMatch, dismissMatch, createFencerFromMatch, listFencerAliases, transferFencerAlias, splitFencerFromAlias, discardFencerAliasAndResults } from '../src/lib/api'
 import { __mockRpc, __mockFrom } from '@supabase/supabase-js'
 
 const mockRpc = __mockRpc as ReturnType<typeof vi.fn>
@@ -199,6 +199,71 @@ describe('createFencerFromMatch', () => {
     await createFencerFromMatch(3, 'KOWALSKI', 'Jan', 1985)
     expect(mockRpc).toHaveBeenCalledWith('fn_create_fencer_from_match', {
       p_match_id: 3, p_surname: 'KOWALSKI', p_first_name: 'Jan', p_birth_year: 1985, p_gender: null, p_birth_year_estimated: true,
+    })
+  })
+})
+
+// =========================================================================
+// Phase 4 (ADR-050) — alias UI RPC wrappers (P4.UI.1 – P4.UI.4)
+// =========================================================================
+
+describe('listFencerAliases', () => {
+  it('P4.UI.1 calls fn_list_fencer_aliases and returns rows', async () => {
+    const rows = [{
+      id_fencer: 1, txt_first_name: 'Adam', txt_surname: 'Kowalski',
+      json_name_aliases: ['KOWALSKI A.'], json_revoked_aliases: [],
+      alias_count: 1, ts_last_alias_added: '2026-04-30',
+    }]
+    mockRpc.mockResolvedValue({ data: rows, error: null })
+    const result = await listFencerAliases()
+    expect(mockRpc).toHaveBeenCalledWith('fn_list_fencer_aliases')
+    expect(result).toEqual(rows)
+  })
+
+  it('throws on RPC error', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'RLS denied' } })
+    await expect(listFencerAliases()).rejects.toThrow(/RLS denied/)
+  })
+})
+
+describe('transferFencerAlias', () => {
+  it('P4.UI.2 calls fn_transfer_fencer_alias with from/to/alias', async () => {
+    const out = { alias: 'X', from_fencer: 1, to_fencer: 2, results_moved: 4, tournaments_recomputed: 2 }
+    mockRpc.mockResolvedValue({ data: out, error: null })
+    const result = await transferFencerAlias(1, 2, 'X')
+    expect(mockRpc).toHaveBeenCalledWith('fn_transfer_fencer_alias', {
+      p_from_fencer: 1, p_to_fencer: 2, p_alias: 'X',
+    })
+    expect(result).toEqual(out)
+  })
+})
+
+describe('splitFencerFromAlias', () => {
+  it('P4.UI.3 calls fn_split_fencer_from_alias with new fencer payload', async () => {
+    const newData = {
+      txt_surname: 'Kowalski', txt_first_name: 'Andrzej',
+      int_birth_year: 1980, enum_gender: 'M' as const, txt_nationality: 'POL',
+    }
+    mockRpc.mockResolvedValue({
+      data: { new_fencer_id: 99, transfer_result: { alias: 'X', from_fencer: 1, to_fencer: 99, results_moved: 2, tournaments_recomputed: 1 } },
+      error: null,
+    })
+    await splitFencerFromAlias(1, 'X', newData)
+    expect(mockRpc).toHaveBeenCalledWith('fn_split_fencer_from_alias', {
+      p_from_fencer: 1, p_alias: 'X', p_new_fencer_data: newData,
+    })
+  })
+})
+
+describe('discardFencerAliasAndResults', () => {
+  it('P4.UI.4 calls fn_discard_fencer_alias_and_results with from/alias', async () => {
+    mockRpc.mockResolvedValue({
+      data: { alias: 'X', fencer: 1, results_deleted: 3, tournaments_recomputed: 2 },
+      error: null,
+    })
+    await discardFencerAliasAndResults(1, 'X')
+    expect(mockRpc).toHaveBeenCalledWith('fn_discard_fencer_alias_and_results', {
+      p_from_fencer: 1, p_alias: 'X',
     })
   })
 })

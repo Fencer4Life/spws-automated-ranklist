@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M11 Fencer Aliases — 4 design options to choose from</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+  h1.page-title { text-align: center; margin-bottom: 6px; font-size: 26px; color: #222; }
+  .subtitle { text-align: center; color: #888; font-size: 13px; margin-bottom: 24px; max-width: 760px; margin-left: auto; margin-right: auto; }
+  .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 1640px; margin: 0 auto; }
+
+  .option-box { background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  .option-label { background: #4a90d9; color: #fff; padding: 8px 14px; font-size: 13px; font-weight: 700; letter-spacing: 0.3px; }
+  .option-label .pill { display: inline-block; padding: 1px 7px; border-radius: 10px; background: rgba(255,255,255,0.25); font-size: 11px; margin-left: 6px; }
+
+  /* Header — matches calendar mockup */
+  .header { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: #f5f7fa; border-bottom: 1px solid #ddd; }
+  .hamburger { font-size: 16px; cursor: pointer; padding: 1px 5px; border: 1px solid #ccc; border-radius: 4px; background: #fff; line-height: 1; }
+  .header-title { font-size: 14px; color: #222; font-weight: 700; white-space: nowrap; }
+  .spacer { flex: 1; }
+  .lang-toggle { display: flex; gap: 4px; }
+  .lang-btn { padding: 1px 5px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 12px; cursor: pointer; }
+  .lang-btn.active { background: #4a90d9; border-color: #4a90d9; }
+
+  /* Filter bar */
+  .filter-bar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fafbfc; border-bottom: 1px solid #eee; font-size: 12px; }
+  .filter-bar input[type=text] { flex: 1; padding: 4px 7px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
+  .filter-bar label { display: flex; align-items: center; gap: 4px; color: #555; cursor: pointer; user-select: none; font-size: 11px; }
+
+  /* Aliases — shared chip styling */
+  .alias-string { padding: 3px 7px; background: #fff7d8; border: 1px solid #f0d88a; border-radius: 4px; color: #6a4a0a; font-family: 'Menlo', monospace; font-size: 11px; }
+  .alias-action-btn { padding: 3px 7px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 10px; font-weight: 600; cursor: pointer; }
+  .alias-action-btn.keep     { color: #1a7f37; border-color: #b4dfbf; background: #f5fbf6; }
+  .alias-action-btn.transfer { color: #2a6faa; }
+  .alias-action-btn.create   { color: #1a7f37; }
+  .alias-action-btn.discard  { color: #b04040; border-color: #e8c0c0; background: #fff8f8; }
+  .alias-action-btn:hover { background: #f5f7fa; }
+
+  .fencer-name { font-weight: 600; color: #222; }
+  .fencer-meta { font-size: 11px; color: #888; }
+  .alias-count-badge { display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 11px; background: #ffeac4; color: #b07d2b; font-weight: 600; font-size: 12px; text-align: center; }
+
+  /* =============== Option A — Expandable table =============== */
+  .opt-a table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .opt-a th { background: #f5f7fa; text-align: left; padding: 6px 14px; font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #ddd; }
+  .opt-a td { padding: 7px 14px; border-bottom: 1px solid #eee; vertical-align: top; }
+  .opt-a tr.expanded td { background: #fbfcfd; border-bottom: 1px solid #ddd; }
+  .opt-a .row-toggle { cursor: pointer; user-select: none; color: #4a90d9; font-weight: 700; padding: 0 6px 0 0; display: inline-block; width: 14px; }
+  .opt-a .alias-detail { padding: 4px 14px 8px 30px; }
+  .opt-a .alias-row { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px dashed #eee; }
+  .opt-a .alias-row:last-child { border-bottom: none; }
+
+  /* =============== Option B — Cards =============== */
+  .opt-b .cards { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .opt-b .card { border: 1px solid #ddd; border-radius: 6px; padding: 8px 12px; background: #fff; }
+  .opt-b .card-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px; border-bottom: 1px solid #eee; margin-bottom: 6px; }
+  .opt-b .alias-chips { display: flex; flex-direction: column; gap: 5px; }
+  .opt-b .chip-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+
+  /* =============== Option C — Two-pane =============== */
+  .opt-c .two-pane { display: flex; min-height: 320px; }
+  .opt-c .pane-list { flex: 0 0 240px; border-right: 1px solid #eee; overflow-y: auto; max-height: 420px; }
+  .opt-c .pane-detail { flex: 1; padding: 12px 14px; }
+  .opt-c .list-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; font-size: 12px; }
+  .opt-c .list-row.selected { background: #eaf2fb; border-left: 3px solid #4a90d9; padding-left: 9px; }
+  .opt-c .list-row:hover { background: #f8f9fb; }
+  .opt-c .pane-detail h3 { font-size: 14px; color: #222; margin-bottom: 4px; }
+  .opt-c .pane-detail .meta-line { font-size: 11px; color: #888; margin-bottom: 10px; }
+  .opt-c .alias-row { display: flex; gap: 5px; align-items: center; padding: 5px 0; border-bottom: 1px dashed #eee; }
+  .opt-c .alias-row:last-child { border-bottom: none; }
+
+  /* =============== Option D — Inline editor / dense list =============== */
+  .opt-d .dense { font-family: 'Menlo', monospace; padding: 8px 12px; font-size: 11px; }
+  .opt-d .dense-row { display: grid; grid-template-columns: 1.4fr 2fr auto; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f0f0f0; align-items: start; }
+  .opt-d .dense-fencer { font-weight: 700; color: #222; font-size: 12px; }
+  .opt-d .dense-fencer .meta { display: block; font-weight: 400; color: #888; font-size: 10px; margin-top: 2px; }
+  .opt-d .dense-aliases { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .opt-d .dense-alias { display: inline-flex; align-items: center; gap: 3px; background: #fff7d8; border: 1px solid #f0d88a; border-radius: 3px; padding: 1px 4px; }
+  .opt-d .dense-alias .mini-action { display: inline-flex; gap: 2px; margin-left: 3px; }
+  .opt-d .dense-alias .mini-action button { border: none; background: transparent; cursor: pointer; padding: 0 2px; font-size: 10px; color: #888; }
+  .opt-d .dense-alias .mini-action button:hover { color: #4a90d9; }
+  .opt-d .dense-alias .mini-action button.k { color: #1a7f37; }
+  .opt-d .dense-alias .mini-action button.t { color: #2a6faa; }
+  .opt-d .dense-alias .mini-action button.c { color: #1a7f37; }
+  .opt-d .dense-alias .mini-action button.d { color: #b04040; }
+</style>
+</head>
+
+<body>
+
+<h1 class="page-title">M11 Fencer Aliases — 4 design options</h1>
+<p class="subtitle">Phase 4 (ADR-050): view + correct matcher-driven aliases. Four UI layouts to choose from below — same backing data &amp; same per-alias action set (Keep · Transfer · Create new fencer · Discard · …additional actions stay open). No free-text alias input.</p>
+
+<div class="options-grid">
+
+<!-- =================================================================
+     OPTION A — Expandable table (one row per fencer, alias chips on expand)
+     ================================================================= -->
+<div class="option-box opt-a">
+  <div class="option-label">Option A — Expandable table <span class="pill">classic admin</span></div>
+
+  <div class="header">
+    <button class="hamburger">&#9776;</button>
+    <span class="header-title">&#128279; Aliasy zawodników</span>
+    <span class="spacer"></span>
+    <div class="lang-toggle">
+      <button class="lang-btn">&#127468;&#127463;</button>
+      <button class="lang-btn active">&#127477;&#127473;</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" placeholder="Filter by surname / first name…">
+    <label><input type="checkbox" checked> aliases only</label>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:60%;">Fencer</th>
+        <th style="width:20%;">Birth · Country</th>
+        <th style="width:20%; text-align:right;">Aliases</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="row-toggle">▾</span><span class="fencer-name">Kowalski Adam</span><div class="fencer-meta">id_fencer #1284</div></td>
+        <td>1968 · POL</td>
+        <td style="text-align:right;"><span class="alias-count-badge">3</span></td>
+      </tr>
+      <tr class="expanded">
+        <td colspan="3">
+          <div class="alias-detail">
+            <div class="alias-row"><span class="alias-string">KOWALSKI ADAM</span>
+              <button class="alias-action-btn keep">✓ Keep</button>
+              <button class="alias-action-btn transfer">↪ Transfer</button>
+              <button class="alias-action-btn create">+ Create</button>
+              <button class="alias-action-btn discard">✕ Discard</button>
+            </div>
+            <div class="alias-row"><span class="alias-string">A. KOWALSKI</span>
+              <button class="alias-action-btn keep">✓ Keep</button>
+              <button class="alias-action-btn transfer">↪ Transfer</button>
+              <button class="alias-action-btn create">+ Create</button>
+              <button class="alias-action-btn discard">✕ Discard</button>
+            </div>
+            <div class="alias-row"><span class="alias-string">KOWALSKI A.</span>
+              <button class="alias-action-btn keep">✓ Keep</button>
+              <button class="alias-action-btn transfer">↪ Transfer</button>
+              <button class="alias-action-btn create">+ Create</button>
+              <button class="alias-action-btn discard">✕ Discard</button>
+            </div>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="row-toggle">▸</span><span class="fencer-name">Nowak Jan</span><div class="fencer-meta">id_fencer #842</div></td>
+        <td>1972 · POL</td>
+        <td style="text-align:right;"><span class="alias-count-badge">1</span></td>
+      </tr>
+      <tr>
+        <td><span class="row-toggle">▸</span><span class="fencer-name">Wiśniewska Anna</span><div class="fencer-meta">id_fencer #1051</div></td>
+        <td>1981 · POL</td>
+        <td style="text-align:right;"><span class="alias-count-badge">2</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- =================================================================
+     OPTION B — Cards (one card per fencer, all aliases inline)
+     ================================================================= -->
+<div class="option-box opt-b">
+  <div class="option-label">Option B — Cards <span class="pill">all-visible, scrollable</span></div>
+
+  <div class="header">
+    <button class="hamburger">&#9776;</button>
+    <span class="header-title">&#128279; Aliasy zawodników</span>
+    <span class="spacer"></span>
+    <div class="lang-toggle">
+      <button class="lang-btn">&#127468;&#127463;</button>
+      <button class="lang-btn active">&#127477;&#127473;</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" placeholder="Filter by surname / first name…">
+    <label><input type="checkbox" checked> aliases only</label>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-head">
+        <div><span class="fencer-name">Kowalski Adam</span> <span class="fencer-meta">— #1284, 1968 · POL</span></div>
+        <span class="alias-count-badge">3</span>
+      </div>
+      <div class="alias-chips">
+        <div class="chip-row"><span class="alias-string">KOWALSKI ADAM</span>
+          <button class="alias-action-btn keep">✓</button>
+          <button class="alias-action-btn transfer">↪</button>
+          <button class="alias-action-btn create">+</button>
+          <button class="alias-action-btn discard">✕</button>
+        </div>
+        <div class="chip-row"><span class="alias-string">A. KOWALSKI</span>
+          <button class="alias-action-btn keep">✓</button>
+          <button class="alias-action-btn transfer">↪</button>
+          <button class="alias-action-btn create">+</button>
+          <button class="alias-action-btn discard">✕</button>
+        </div>
+        <div class="chip-row"><span class="alias-string">KOWALSKI A.</span>
+          <button class="alias-action-btn keep">✓</button>
+          <button class="alias-action-btn transfer">↪</button>
+          <button class="alias-action-btn create">+</button>
+          <button class="alias-action-btn discard">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div><span class="fencer-name">Nowak Jan</span> <span class="fencer-meta">— #842, 1972 · POL</span></div>
+        <span class="alias-count-badge">1</span>
+      </div>
+      <div class="alias-chips">
+        <div class="chip-row"><span class="alias-string">J. NOWAK</span>
+          <button class="alias-action-btn keep">✓</button>
+          <button class="alias-action-btn transfer">↪</button>
+          <button class="alias-action-btn create">+</button>
+          <button class="alias-action-btn discard">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div><span class="fencer-name">Wiśniewska Anna</span> <span class="fencer-meta">— #1051, 1981 · POL</span></div>
+        <span class="alias-count-badge">2</span>
+      </div>
+      <div class="alias-chips">
+        <div class="chip-row"><span class="alias-string">WISNIEWSKA ANNA</span>
+          <button class="alias-action-btn keep">✓</button>
+          <button class="alias-action-btn transfer">↪</button>
+          <button class="alias-action-btn create">+</button>
+          <button class="alias-action-btn discard">✕</button>
+        </div>
+        <div class="chip-row"><span class="alias-string">A. WIŚNIEWSKA</span>
+          <button class="alias-action-btn keep">✓</button>
+          <button class="alias-action-btn transfer">↪</button>
+          <button class="alias-action-btn create">+</button>
+          <button class="alias-action-btn discard">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- =================================================================
+     OPTION C — Two-pane (master/detail)
+     ================================================================= -->
+<div class="option-box opt-c">
+  <div class="option-label">Option C — Two-pane (master/detail) <span class="pill">desktop-first</span></div>
+
+  <div class="header">
+    <button class="hamburger">&#9776;</button>
+    <span class="header-title">&#128279; Aliasy zawodników</span>
+    <span class="spacer"></span>
+    <div class="lang-toggle">
+      <button class="lang-btn">&#127468;&#127463;</button>
+      <button class="lang-btn active">&#127477;&#127473;</button>
+    </div>
+  </div>
+
+  <div class="two-pane">
+    <div class="pane-list">
+      <div class="filter-bar" style="border-bottom: 1px solid #eee;">
+        <input type="text" placeholder="Filter…">
+      </div>
+      <div class="list-row selected">
+        <div><span class="fencer-name">Kowalski Adam</span><div class="fencer-meta">#1284 · 1968</div></div>
+        <span class="alias-count-badge">3</span>
+      </div>
+      <div class="list-row">
+        <div><span class="fencer-name">Nowak Jan</span><div class="fencer-meta">#842 · 1972</div></div>
+        <span class="alias-count-badge">1</span>
+      </div>
+      <div class="list-row">
+        <div><span class="fencer-name">Wiśniewska Anna</span><div class="fencer-meta">#1051 · 1981</div></div>
+        <span class="alias-count-badge">2</span>
+      </div>
+      <div class="list-row">
+        <div><span class="fencer-name">Zalewski Tomasz</span><div class="fencer-meta">#1605 · 1959</div></div>
+        <span class="alias-count-badge">4</span>
+      </div>
+    </div>
+
+    <div class="pane-detail">
+      <h3>Kowalski Adam <span class="fencer-meta">— #1284</span></h3>
+      <div class="meta-line">1968 · POL · 3 aliases · ts_last_alias_added 2026-04-30</div>
+      <div class="alias-row">
+        <span class="alias-string">KOWALSKI ADAM</span>
+        <button class="alias-action-btn keep">✓ Keep</button>
+        <button class="alias-action-btn transfer">↪ Transfer</button>
+        <button class="alias-action-btn create">+ Create</button>
+        <button class="alias-action-btn discard">✕ Discard</button>
+      </div>
+      <div class="alias-row">
+        <span class="alias-string">A. KOWALSKI</span>
+        <button class="alias-action-btn keep">✓ Keep</button>
+        <button class="alias-action-btn transfer">↪ Transfer</button>
+        <button class="alias-action-btn create">+ Create</button>
+        <button class="alias-action-btn discard">✕ Discard</button>
+      </div>
+      <div class="alias-row">
+        <span class="alias-string">KOWALSKI A.</span>
+        <button class="alias-action-btn keep">✓ Keep</button>
+        <button class="alias-action-btn transfer">↪ Transfer</button>
+        <button class="alias-action-btn create">+ Create</button>
+        <button class="alias-action-btn discard">✕ Discard</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- =================================================================
+     OPTION D — Dense inline (ops-friendly batch view)
+     ================================================================= -->
+<div class="option-box opt-d">
+  <div class="option-label">Option D — Dense inline <span class="pill">batch-ops, keyboard-driven</span></div>
+
+  <div class="header">
+    <button class="hamburger">&#9776;</button>
+    <span class="header-title">&#128279; aliases — dense view</span>
+    <span class="spacer"></span>
+    <div class="lang-toggle">
+      <button class="lang-btn">&#127468;&#127463;</button>
+      <button class="lang-btn active">&#127477;&#127473;</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" placeholder="Filter…">
+    <label><input type="checkbox" checked> aliases only</label>
+    <label><input type="checkbox"> ≥ 2 aliases</label>
+  </div>
+
+  <div class="dense">
+    <div class="dense-row">
+      <div class="dense-fencer">Kowalski Adam<span class="meta">#1284 · 1968 · POL</span></div>
+      <div class="dense-aliases">
+        <span class="dense-alias">KOWALSKI ADAM
+          <span class="mini-action">
+            <button class="k" title="Keep">✓</button><button class="t" title="Transfer">↪</button><button class="c" title="Create">+</button><button class="d" title="Discard">✕</button>
+          </span>
+        </span>
+        <span class="dense-alias">A. KOWALSKI
+          <span class="mini-action">
+            <button class="k">✓</button><button class="t">↪</button><button class="c">+</button><button class="d">✕</button>
+          </span>
+        </span>
+        <span class="dense-alias">KOWALSKI A.
+          <span class="mini-action">
+            <button class="k">✓</button><button class="t">↪</button><button class="c">+</button><button class="d">✕</button>
+          </span>
+        </span>
+      </div>
+      <span class="alias-count-badge">3</span>
+    </div>
+    <div class="dense-row">
+      <div class="dense-fencer">Nowak Jan<span class="meta">#842 · 1972 · POL</span></div>
+      <div class="dense-aliases">
+        <span class="dense-alias">J. NOWAK
+          <span class="mini-action">
+            <button class="k">✓</button><button class="t">↪</button><button class="c">+</button><button class="d">✕</button>
+          </span>
+        </span>
+      </div>
+      <span class="alias-count-badge">1</span>
+    </div>
+    <div class="dense-row">
+      <div class="dense-fencer">Wiśniewska Anna<span class="meta">#1051 · 1981 · POL</span></div>
+      <div class="dense-aliases">
+        <span class="dense-alias">WISNIEWSKA ANNA
+          <span class="mini-action">
+            <button class="k">✓</button><button class="t">↪</button><button class="c">+</button><button class="d">✕</button>
+          </span>
+        </span>
+        <span class="dense-alias">A. WIŚNIEWSKA
+          <span class="mini-action">
+            <button class="k">✓</button><button class="t">↪</button><button class="c">+</button><button class="d">✕</button>
+          </span>
+        </span>
+      </div>
+      <span class="alias-count-badge">2</span>
+    </div>
+    <div class="dense-row">
+      <div class="dense-fencer">Zalewski Tomasz<span class="meta">#1605 · 1959 · POL</span></div>
+      <div class="dense-aliases">
+        <span class="dense-alias">T. ZALEWSKI<span class="mini-action"><button class="k">✓</button><button class="t">↪</button><button class="c">+</button><button class="d">✕</button></span></span>
+        <span class="dense-alias">ZALEWSKI T.<span class="mini-action"><button class="k">✓</button><button class="t">↪</button><button class="c">+</button><button class="d">✕</button></span></span>
+        <span class="dense-alias">ZALEWSKI TOMEK<span class="mini-action"><button class="k">✓</button><button class="t">↪</button><button class="c">+</button><button class="d">✕</button></span></span>
+        <span class="dense-alias">TOM ZALEWSKI<span class="mini-action"><button class="k">✓</button><button class="t">↪</button><button class="c">+</button><button class="d">✕</button></span></span>
+      </div>
+      <span class="alias-count-badge">4</span>
+    </div>
+  </div>
+</div>
+
+</div><!-- /options-grid -->
+
+</body>
+</html>

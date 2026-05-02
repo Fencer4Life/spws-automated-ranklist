@@ -1,0 +1,63 @@
+name: EVF Parity Sweep
+
+# Phase 4 (ADR-053) — daily probe of every EVF event still at
+# ENGINE_COMPUTED status. PASS → promote to EVF_PUBLISHED, overwrite
+# scores with EVF API verbatim. FAIL → annotate txt_parity_notes.
+# Empty after 30 days → annotate and stop probing.
+
+on:
+  schedule:
+    # Daily at 04:00 UTC. Cheap — only EVF events at ENGINE_COMPUTED
+    # within the last 60 days are probed.
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      max_age_days:
+        description: 'Skip events older than N days (default 60)'
+        default: '60'
+      evf_empty_stop_days:
+        description: 'Annotate "EVF API empty" after N days past dt_end (default 30)'
+        default: '30'
+
+jobs:
+  parity-sweep:
+    name: EVF Parity Sweep
+    runs-on: ubuntu-latest
+    # Serialise with other ingestion writers (commits, ingest, promote).
+    concurrency:
+      group: prod-write
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install httpx beautifulsoup4 rapidfuzz supabase pyyaml
+
+      - name: Run parity sweep
+        env:
+          MAX_AGE_DAYS: ${{ github.event.inputs.max_age_days || '60' }}
+          EVF_EMPTY_STOP_DAYS: ${{ github.event.inputs.evf_empty_stop_days || '30' }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_PROD }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY_PROD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -m python.pipeline.evf_parity_sweep \
+            --max-age-days "$MAX_AGE_DAYS" \
+            --evf-empty-stop-days "$EVF_EMPTY_STOP_DAYS"
+
+      - name: Notify failure
+        if: failure()
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            -d chat_id="${TG_CHAT}" \
+            -d text="🚨 EVF parity sweep FAILED. Check: https://github.com/${REPO}/actions/runs/${RUN_ID}"

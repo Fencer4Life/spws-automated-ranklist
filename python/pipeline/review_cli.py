@@ -37,6 +37,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
+from python.pipeline.commit_lifecycle import run_post_commit_hooks
 from python.pipeline.db_connector import create_db_connector
 from python.pipeline.draft_store import DraftStore
 from python.pipeline.notifications import TelegramNotifier
@@ -48,6 +49,41 @@ from python.pipeline.three_way_diff import (
     render_markdown,
     write_diff,
 )
+
+
+# ===========================================================================
+# Parity-payload extractor for the EVF API path
+# ===========================================================================
+
+def _extract_parity_payload(parsed) -> list[dict] | None:
+    """Best-effort extract of EVF parity payload from a ParsedTournament.
+
+    Returns list of {name, pos, points} dicts when the parsed IR came from
+    the EVF API and exposed per-fencer EVF points alongside place. Returns
+    None for non-EVF sources or when the IR doesn't carry score detail.
+
+    The IR's ParsedResult shape (as of Phase 1) doesn't carry a `points`
+    field directly, so EVF-side score extraction relies on the parser
+    annotating its rows. If the EVF parser doesn't expose points yet,
+    callers fall back to "no parity check this run" gracefully.
+    """
+    from python.pipeline.ir import SourceKind
+    if parsed is None:
+        return None
+    if getattr(parsed, "source_kind", None) != SourceKind.EVF_API:
+        return None
+    payload: list[dict] = []
+    for r in getattr(parsed, "results", []) or []:
+        # Look for a vendor-set `points` attribute on ParsedResult; absent → skip
+        pts = getattr(r, "points", None)
+        if pts is None:
+            continue
+        payload.append({
+            "name": getattr(r, "fencer_name", ""),
+            "pos": getattr(r, "place", 0),
+            "points": float(pts),
+        })
+    return payload or None
 
 
 # ===========================================================================
@@ -222,6 +258,7 @@ class ReviewSession:
         output: Callable[[str], None] = print,
         fetcher: Fetcher | None = None,
         season_end_year: int = 2026,
+        notifier: Any | None = None,
     ) -> None:
         self.event_code = event_code
         self.db = db
@@ -231,6 +268,12 @@ class ReviewSession:
         self.fetcher = fetcher or Fetcher()
         self.season_end_year = season_end_year
         self.run_id: str | None = None  # set on first iteration
+        self.notifier = notifier
+        # Phase 4: parity payload captured if/when operator picks the EVF API
+        # path; consumed by run_post_commit_hooks after commit.
+        self._evf_parity_payload: list[dict] | None = None
+        self._last_ctx: Any = None
+        self._last_summary: dict = {}
 
     # ---- Output helpers ----
 
@@ -299,21 +342,44 @@ class ReviewSession:
     # ---- Stage 3: fetch + parse ----
 
     def fetch_source(self, choice: SourceChoice):
-        """Dispatch to the fetcher; returns ParsedTournament IR."""
+        """Dispatch to the fetcher; returns ParsedTournament IR.
+
+        Phase 4: when the operator picks the EVF API path, also capture the
+        parity payload (per-fencer name/pos/points) for the post-commit
+        parity gate. Other paths leave _evf_parity_payload = None.
+        """
         if choice.kind in ("recorded", "url"):
-            return self.fetcher.fetch_url(choice.value)
+            parsed = self.fetcher.fetch_url(choice.value)
+            # If the operator's URL happens to be the EVF API, the parsed IR
+            # already came from python.scrapers.evf_results — extract a payload
+            # for parity (best-effort, ignored when None).
+            self._evf_parity_payload = _extract_parity_payload(parsed)
+            return parsed
         if choice.kind == "path":
             return self.fetcher.fetch_path(choice.value)
         if choice.kind == "evf_api":
             event = self.db.find_event_by_code(self.event_code)
             if event is None:
                 raise ValueError(f"EVF API path: event {self.event_code} not found in DB")
-            return self.fetcher.fetch_evf_api(event)
+            parsed = self.fetcher.fetch_evf_api(event)
+            self._evf_parity_payload = _extract_parity_payload(parsed)
+            return parsed
         if choice.kind == "cert_ref":
             return self.fetcher.fetch_cert_ref(self.event_code, self.db)
         raise ValueError(f"fetch_source called with unsupported kind: {choice.kind!r}")
 
     # ---- Stage 4: pipeline + drafts + diff ----
+
+    def _summary_from_ctx(self, ctx) -> dict:
+        """Build the matched/pending/auto_created/skipped counts for Telegram."""
+        matched = sum(1 for m in ctx.matches if m.method == "AUTO_MATCHED")
+        pending = sum(1 for m in ctx.matches if m.method == "PENDING")
+        auto_created = sum(1 for m in ctx.matches if m.method == "AUTO_CREATED")
+        skipped = sum(1 for m in ctx.matches if m.method == "EXCLUDED")
+        return {
+            "matched": matched, "pending": pending,
+            "auto_created": auto_created, "skipped": skipped,
+        }
 
     def run_iteration(self, parsed, staging_dir: Path | None = None):
         """Run one full pipeline iteration for the parsed IR.
@@ -333,12 +399,20 @@ class ReviewSession:
             db=self.db,
             season_end_year=self.season_end_year,
         )
+        self._last_ctx = ctx
 
         if ctx.halted:
             self._say(
                 f"⚠ Pipeline halted at {ctx.halted_at_stage}: "
                 f"{ctx.halt_reason.value if ctx.halt_reason else '?'} — {ctx.halt_detail}"
             )
+            if self.notifier is not None:
+                self.notifier.notify_stage_halt(
+                    self.event_code,
+                    ctx.halted_at_stage or "?",
+                    ctx.halt_reason.value if ctx.halt_reason else "?",
+                    ctx.halt_detail,
+                )
             # Still write what we have to draft for inspection
             return ctx, self._write_diff(ctx, staging_dir, halted=True)
 
@@ -461,6 +535,48 @@ class ReviewSession:
             return {"error": "no run_id (no iteration ran)"}
         result = self.draft_store.commit(self.run_id)
         self._say(f"✅ Committed draft {self.run_id}: {result}")
+
+        # Phase 4 (ADR-046, ADR-053) post-commit hooks: PEW cascade + parity gate +
+        # combined Telegram batch. Only fires when we have a valid PipelineContext
+        # (not the case on degraded paths where Stage 7 never ran).
+        if self._last_ctx is not None and self._last_ctx.event is not None:
+            summary = self._summary_from_ctx(self._last_ctx)
+            self._last_summary = summary
+            try:
+                lifecycle = run_post_commit_hooks(
+                    db=self.db,
+                    ctx=self._last_ctx,
+                    summary=summary,
+                    evf_results=self._evf_parity_payload,
+                    notifier=self.notifier,
+                )
+                if lifecycle.cascade_renamed_to:
+                    self._say(
+                        f"↻ PEW cascade rename: {self._last_ctx.event.get('txt_code')} "
+                        f"→ {lifecycle.cascade_renamed_to} ({lifecycle.cascade_rows} rows)"
+                    )
+                if lifecycle.parity_ran and lifecycle.parity_passed:
+                    self._say(
+                        f"✅ EVF parity passed — promoted to EVF_PUBLISHED "
+                        f"({lifecycle.fencers_overwritten} fencers overwritten)"
+                    )
+                elif lifecycle.parity_ran and not lifecycle.parity_passed:
+                    self._say(
+                        f"🚨 EVF parity FAILED — stay ENGINE_COMPUTED. "
+                        f"Notes: {lifecycle.parity_notes}"
+                    )
+                result.setdefault("post_commit", {})
+                result["post_commit"] = {
+                    "cascade_ran": lifecycle.cascade_ran,
+                    "cascade_renamed_to": lifecycle.cascade_renamed_to,
+                    "parity_ran": lifecycle.parity_ran,
+                    "parity_passed": lifecycle.parity_passed,
+                    "fencers_overwritten": lifecycle.fencers_overwritten,
+                    "parity_notes": lifecycle.parity_notes,
+                }
+            except Exception as e:  # pragma: no cover — defensive
+                self._say(f"⚠ Post-commit hooks raised: {e}")
+
         return result
 
     def discard(self) -> dict:
@@ -525,6 +641,7 @@ def main() -> None:
         db=db,
         draft_store=store,
         season_end_year=args.season_end_year,
+        notifier=notifier,
     )
     try:
         terminal_state = session.run()
