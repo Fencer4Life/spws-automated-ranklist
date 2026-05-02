@@ -39,7 +39,13 @@ MIKST_PATTERN = re.compile(r"\bMIKS(?:T)?\b|\bMIXED\b", re.IGNORECASE)
 # below). Per user feedback 2026-05-02: case-specific, treat as V0.
 SKIP_PATTERNS = re.compile(
     r"\bDE\b|AMATOR|TURNIEJ\b.*AMATOR|ELIMINACJ|"
-    r"\bJUNIOR\b|\bCADET\b|\bU\d+\b",
+    # Youth/junior tiers — never veterans. JUNIORZY/JUNIORKI Polish forms,
+    # CADET/KADET, MŁODZIK (junior in Polish), and U-N brackets (U-9
+    # through U-20). The U regex matches both `U10` and `U-10` shapes.
+    r"\bJUNIOR(?:ZY|KI|EM|ÓW)?\b|"
+    r"\bCADET\b|\bKADET\b|"
+    r"\bMŁODZI[KCZ]?\b|"
+    r"\bU-?\d+\b",
     re.IGNORECASE,
 )
 SENIOR_PATTERN = re.compile(r"\bSENIOR\b", re.IGNORECASE)
@@ -49,6 +55,11 @@ SENIOR_PATTERN = re.compile(r"\bSENIOR\b", re.IGNORECASE)
 # (all V-cats present; Stage 4 splits by per-fencer marker).
 VET_AGE_RE = re.compile(r"\bVet[-\s]?(\d{2})\b", re.IGNORECASE)
 VET_BARE_RE = re.compile(r"\bVet\b", re.IGNORECASE)
+# `Vet-ABC` (and any `Vet-<alpha>` suffix that isn't an age) is a combined-
+# V-cat veterans bracket: A/B/C designate categories, NOT a specific age.
+# Treat as a multi-V-cat pool — Stage 4 / s7_split_by_vcat assigns each
+# fencer's V-cat from birth year.
+VET_ALPHA_RE = re.compile(r"\bVet[-\s]?([A-Za-z]{2,})\b", re.IGNORECASE)
 
 
 def _vet_age_to_vcat(age_str: str) -> str | None:
@@ -175,6 +186,13 @@ def parse_tournament_name(
     # uses Senior as the under-40 / V0 bucket).
     if SENIOR_PATTERN.search(name):
         return (weapon, gender, "V0")
+
+    # `Vet-ABC` etc. — combined-V-cat veterans bracket where A/B/C are
+    # category labels (not ages). Treat as a combined pool spanning all
+    # five V-cats; Stage 4 / s7_split_by_vcat assigns each fencer's V-cat
+    # from their birth year. Per user feedback 2026-05-02.
+    if VET_ALPHA_RE.search(name):
+        return [(weapon, gender, f"V{i}") for i in range(5)]
 
     # Bare "Vet [Gender] [Weapon]" (no age suffix) = V1, the base veteran
     # category (40-49). Pool rounds are emitted as "Mixed [Weapon]" not
