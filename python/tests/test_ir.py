@@ -48,10 +48,10 @@ def _local_pg_enum_values(enum_name: str) -> list[str]:
     return [v for v in result.stdout.strip().split("\n") if v]
 
 
-def test_source_kind_has_eight_values():
-    """ir.1: SourceKind enum has 8 declared source kinds."""
+def test_source_kind_has_nine_values():
+    """ir.1: SourceKind enum has 9 declared source kinds (8 + CERT_REF added Phase 4)."""
     from python.pipeline.ir import SourceKind
-    assert len(list(SourceKind)) == 8
+    assert len(list(SourceKind)) == 9
 
 
 def test_source_kind_matches_postgres_enum():

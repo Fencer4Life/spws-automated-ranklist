@@ -56,16 +56,41 @@ class DbConnector:
         return None
 
     def fetch_cert_rows_for_event(self, event_code: str) -> list[dict]:
-        """Fetch existing cert_ref rows for an event (Phase 3 — 3-way diff source).
+        """Fetch cert_ref result rows for an event (Phase 4 — 3-way diff CERT column).
 
-        Joins cert_ref.tbl_result + cert_ref.tbl_tournament + cert_ref.tbl_fencer
-        for the given event txt_code. Returns list of dicts with at minimum:
-        {fencer_name, place, id_fencer}. Empty list if cert_ref is unpopulated.
-
-        Phase 3 stub: returns []. Phase 4 wires the cert_ref query when
-        cert_ref schema is loaded operationally.
+        Calls fn_cert_ref_rows_for_event RPC, which joins cert_ref.tbl_event
+        + tbl_tournament + tbl_result + tbl_fencer. Returns list of dicts
+        with at minimum: {place, fencer_name, id_fencer, num_final_score,
+        enum_age_category, txt_first_name, txt_surname, txt_nationality,
+        int_birth_year}. Three_way_diff joins by `place`.
+        Empty list if cert_ref schema is unpopulated for the event_code.
         """
-        return []
+        try:
+            resp = self._sb.rpc(
+                "fn_cert_ref_rows_for_event",
+                {"p_event_code": event_code},
+            ).execute()
+        except Exception:
+            return []
+        rows = resp.data or []
+        # Normalize: build a `place` key (three_way_diff joins by it)
+        for r in rows:
+            r["place"] = r.get("int_place")
+        return rows
+
+    def fetch_cert_tournament_for_event(self, event_code: str) -> dict | None:
+        """Fetch the first cert_ref tournament for an event (Phase 4 — cert_ref parser input).
+
+        Returns dict matching tbl_tournament columns, or None if absent.
+        """
+        try:
+            resp = self._sb.rpc(
+                "fn_cert_ref_tournament_for_event",
+                {"p_event_code": event_code},
+            ).execute()
+        except Exception:
+            return None
+        return resp.data[0] if resp.data else None
 
     def call_age_categories_batch(
         self, birth_years: list[int], season_end_year: int,

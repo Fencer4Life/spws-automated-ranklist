@@ -57,6 +57,7 @@ class SourceKind(str, Enum):
     EVF_API = "EVF_API"
     FILE_IMPORT = "FILE_IMPORT"
     OPHARDT_HTML = "OPHARDT_HTML"
+    CERT_REF = "CERT_REF"  # Phase 4 (ADR-050): cert_ref fallback when no live URL
 
 
 @dataclass
