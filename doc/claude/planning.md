@@ -76,11 +76,42 @@ Required artefacts:
 - ADR(s) in [doc/adr/](../adr/)
 - ADR registry rows in spec Appendix C
 - FR rows in spec §3 RTM with `Covered` status
-- Test count updates in spec Appendix B + [doc/claude/testing.md](testing.md)
+- Test count updates in spec Appendix D + [doc/claude/testing.md](testing.md) — **see rule 7a below; this is a CI-enforced hard gate**
 - [doc/development_history.md](../development_history.md) close-out section
 - MEMORY entry under `~/.claude/projects/.../memory/`
 - [doc/cicd-operations-manual.md](../cicd-operations-manual.md) updates for any new workflow / env var
   / runbook step
+
+## 7a. CI coherence gates — NEVER forget to update these (hard CI fail otherwise)
+
+The CI runs [scripts/check-coherence.sh](../../scripts/check-coherence.sh) which has FOUR
+gates — three are hard fails, one a warning:
+
+| Gate | Check | Hard fail? | What to update when adding code |
+|------|-------|-----------|---------------------------------|
+| 1 | `pyproject.toml` version == `frontend/package.json` version | YES | Bump both together when releasing. |
+| 2 | ADR file count in `doc/adr/` == ADR rows matching `\| [ADR-0` in spec Appendix C | YES | **Every new `doc/adr/NNN-*.md` file MUST have a matching row in spec Appendix C. Every superseded ADR keeps its row.** |
+| 3 | Sum of `SELECT plan(N)` across `supabase/tests/*.sql` == `pgTAP total: N assertions` line in spec Appendix D | YES | **Every new pgTAP `plan(N)` MUST be added into the documented total. Update the `pgTAP total: N assertions` line in spec Appendix D and the per-suite Count column in the table below it.** |
+| 4 | New migration in `supabase/migrations/` accompanied by spec/ADR change | warning | Land docs alongside migrations. |
+
+**Workflow before pushing**:
+
+1. After adding/changing pgTAP tests: re-run `bash scripts/check-coherence.sh`.
+   If Gate 3 fails, update the `pgTAP total: N assertions` line in spec
+   Appendix D until it matches.
+2. After adding/superseding an ADR: confirm the file in `doc/adr/` and the
+   row in spec Appendix C are both present. Re-run coherence.
+3. After bumping a version: bump both `pyproject.toml` and
+   `frontend/package.json`. Re-run coherence.
+4. **The user has been burned by Gate 3 failures more than once. Run
+   coherence locally before every push that touches tests, ADRs, or version.**
+
+`scripts/check-coherence.sh` exits 0 on PASS, 1 on any hard-fail. CI invokes
+it as a required check on `main`, so a failed gate blocks the merge / push.
+
+This is rule SEVEN-A on purpose — it's the most-forgotten gate in the
+documentation suite, and the user explicitly asked it be canonicalised
+"so you don't forget EVER".
 
 ## 8. Operational hooks — CI/CD and Telegram
 
