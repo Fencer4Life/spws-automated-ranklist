@@ -1437,16 +1437,21 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 548 assertions (543 prior + 5 fencer-name auto-trim trigger (5.14) defence-in-depth for the leading-space corruption from the legacy window.prompt admin flow).
+- pgTAP total: 552 assertions (548 prior + 4 alias-JSONB corruption repair (5.15) and fn_update_fencer_aliases defence-in-depth for the legacy seed-export bug that stored json_name_aliases as a JSON-string-of-postgres-array-literal).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
-| pgTAP | 548 | 39 | `supabase/tests/` |
-| pytest | 651 | 32 | `python/tests/` |
+| pgTAP | 552 | 40 | `supabase/tests/` |
+| pytest | 668 | 33 | `python/tests/` |
 | vitest | 372 | 31 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **1578** | | |
+| **Total** | **1599** | | |
 
-**Phase 5.5 additions** (this entry): pgTAP +21 (5.10 + 5.11 + 5.12), pytest +30 (5.5 md_writer + 5.6 storage_md + 5.8 parity_delta + 5.9 telegram_send_document, plus rebuild-session pytest), vitest +28 (5.1 birthYearEstimate + 5.2 CreateFencerFromAliasModal + 5.3 api.regenStagingReport + 5.4 FencerAliasManager.unreviewed). The process_xml_file rewrite (5.7) and the wiring of `App.svelte` cascade banner (covered here as integration, no new test ID) remain. Test totals will move again once 5.7 lands.
+**Phase 5.5 additions** (this entry): pgTAP +21 (5.10 + 5.11 + 5.12) + 4 (5.15), pytest +30 (5.5 md_writer + 5.6 storage_md + 5.8 parity_delta + 5.9 telegram_send_document, plus rebuild-session pytest) + 4 (5.16 review_cli PENDING-inclusion fix), vitest +28 (5.1 birthYearEstimate + 5.2 CreateFencerFromAliasModal + 5.3 api.regenStagingReport + 5.4 FencerAliasManager.unreviewed). The process_xml_file rewrite (5.7) and the wiring of `App.svelte` cascade banner (covered here as integration, no new test ID) remain. Test totals will move again once 5.7 lands.
+
+**Bug-fix slate (5.15 + 5.16 + 5.17, 2026-05-03)** — caught during GP1-2023-2024 rescrape:
+- **5.15** — alias JSONB corruption: 9 `tbl_fencer` rows had `json_name_aliases` stored as a JSON string `'"{\"WOJTAS Bogdan\"}"'` instead of array `'["WOJTAS Bogdan"]'`. Migration `20260503000005` repairs and `fn_update_fencer_aliases` is hardened to tolerate non-array JSONB.
+- **5.16** — `review_cli._build_result_draft_rows` was silently dropping PENDING matches → 9 result rows lost. Now writes PENDING with `enum_match_method=NULL` so operator can triage in UI; matcher's best-guess `id_fencer` preserved for cascade-RPC target.
+- **5.17** — `flush_pending_aliases` was swallowing exceptions silently into a counter. Now prints to stderr so silent writeback failures are visible during ingestion.
 
 <!-- Coverage Summary moved to doc/requirements-traceability-matrix.md in Phase 0.5 (2026-05-01). -->

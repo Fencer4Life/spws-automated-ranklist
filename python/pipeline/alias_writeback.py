@@ -131,6 +131,23 @@ def flush_pending_aliases(
             ).execute()
             result["written"] += 1
         except Exception as exc:  # noqa: BLE001
+            # Phase 5.5 (5.17): print to stderr so operators see silent
+            # writeback failures during ingestion. Bug history (2026-05-03):
+            # 9 fencers had corrupted json_name_aliases (JSON-string-of-pg-
+            # array-literal) which made fn_update_fencer_aliases throw
+            # "cannot extract elements from a scalar" — exceptions were
+            # swallowed silently into result["errors"], operator never knew
+            # that wrong-match aliases failed to land in the UI. The
+            # corruption is now repaired (migration 20260503000005) AND
+            # fn_update_fencer_aliases is hardened, but defence in depth:
+            # surface every silent failure to stderr.
+            import sys
+            print(
+                f"  ⚠ alias-flush error for fencer #{p.id_fencer} "
+                f"alias={p.scraped_name!r} ({p.icon}): "
+                f"{type(exc).__name__}: {exc}",
+                file=sys.stderr,
+            )
             result["errors"].append(
                 (p.id_fencer, p.scraped_name, f"{type(exc).__name__}: {exc}")
             )
