@@ -35,6 +35,10 @@
         <input data-field="aliases-only" type="checkbox" bind:checked={aliasesOnly} />
         aliases only
       </label>
+      <label>
+        <input data-field="unreviewed-only" type="checkbox" bind:checked={unreviewedOnly} />
+        unreviewed only
+      </label>
     </div>
 
     <table data-field="alias-table" class="alias-table">
@@ -48,10 +52,12 @@
       <tbody>
         {#each filteredFencers as f (f.id_fencer)}
           {@const expanded = expandedId === f.id_fencer}
+          {@const unreviewed = (f.int_unreviewed_alias_count ?? 0) > 0}
           <tr
             data-field="fencer-row"
             class="fencer-row"
             class:expanded
+            class:has-unreviewed={unreviewed}
             onclick={() => toggle(f.id_fencer)}
           >
             <td class="col-fencer">
@@ -63,6 +69,12 @@
               {fencerMeta(f)}
             </td>
             <td class="col-count">
+              {#if unreviewed}
+                <span data-field="unreviewed-badge" class="unreviewed-badge"
+                      title="{f.int_unreviewed_alias_count} alias(es) need review">
+                  🔍 {f.int_unreviewed_alias_count}
+                </span>
+              {/if}
               <span class="alias-count-badge" class:zero={f.alias_count === 0}>
                 {f.alias_count}
               </span>
@@ -73,7 +85,12 @@
               <td colspan="3">
                 <div class="alias-detail">
                   {#each f.json_name_aliases as alias (alias)}
-                    <div data-field="alias-row" class="alias-row">
+                    {@const aliasUnreviewed = !isAliasReviewed(f, alias)}
+                    <div
+                      data-field="alias-row"
+                      class="alias-row"
+                      class:unreviewed={aliasUnreviewed}
+                    >
                       <span class="alias-string">{alias}</span>
                       <button
                         data-field="btn-keep"
@@ -130,22 +147,50 @@
 
   let filterQuery = $state('')
   let aliasesOnly = $state(true)
+  let unreviewedOnly = $state(false)
   let expandedId: number | null = $state(null)
+  let autoExpanded = $state(false)
 
   const totalAliases = $derived(
     fencers.reduce((acc, f) => acc + (f.alias_count ?? 0), 0)
   )
 
+  // Phase 5.5 (5.4): unreviewed-first sort. Rows with int_unreviewed_alias_count > 0
+  // float to the top (DESC by count); rest alphabetical by surname.
   const filteredFencers = $derived.by(() => {
     const q = filterQuery.trim().toLowerCase()
-    return fencers
+    const filtered = fencers
       .filter((f) => !aliasesOnly || (f.alias_count ?? 0) > 0)
+      .filter((f) => !unreviewedOnly || (f.int_unreviewed_alias_count ?? 0) > 0)
       .filter((f) => {
         if (!q) return true
         const hay = `${f.txt_surname} ${f.txt_first_name}`.toLowerCase()
         return hay.includes(q)
       })
+    return [...filtered].sort((a, b) => {
+      const ua = a.int_unreviewed_alias_count ?? 0
+      const ub = b.int_unreviewed_alias_count ?? 0
+      if (ua !== ub) return ub - ua  // unreviewed-first DESC
+      return a.txt_surname.localeCompare(b.txt_surname)
+    })
   })
+
+  // Phase 5.5 (5.4): auto-expand the first unreviewed-fencer row on mount.
+  $effect(() => {
+    if (autoExpanded) return
+    const firstUnreviewed = filteredFencers.find(
+      (f) => (f.int_unreviewed_alias_count ?? 0) > 0
+    )
+    if (firstUnreviewed) {
+      expandedId = firstUnreviewed.id_fencer
+      autoExpanded = true
+    }
+  })
+
+  function isAliasReviewed(f: FencerWithAliases, alias: string): boolean {
+    const confirmed = f.json_user_confirmed_aliases ?? []
+    return confirmed.includes(alias)
+  }
 
   function toggle(id: number) {
     expandedId = expandedId === id ? null : id
@@ -180,6 +225,19 @@
   .fencer-row { cursor: pointer; }
   .fencer-row:hover { background: #fafbfc; }
   .fencer-row.expanded { background: #fbfcfd; border-bottom: 1px solid #ddd; }
+  /* Phase 5.5 (5.4) — amber left border + lighter background for unreviewed fencers */
+  .fencer-row.has-unreviewed > td:first-child { border-left: 4px solid #f5b942; padding-left: 10px; }
+  .fencer-row.has-unreviewed { background: #fffbf0; }
+  .unreviewed-badge {
+    display: inline-block;
+    margin-right: 6px;
+    padding: 1px 8px;
+    border-radius: 11px;
+    background: #fff1d6;
+    color: #b07d2b;
+    font-weight: 600;
+    font-size: 11px;
+  }
   .row-toggle { display: inline-block; width: 14px; color: #4a90d9; font-weight: 700; padding-right: 6px; }
   .fencer-name { font-weight: 600; color: #222; }
   .fencer-meta { font-size: 11px; color: #888; }
@@ -191,6 +249,13 @@
   .alias-row { display: flex; gap: 10px; align-items: center; padding: 5px 0; border-bottom: 1px dashed #eee; }
   .alias-row:last-child { border-bottom: none; }
   .alias-string { flex: 1; padding: 4px 8px; background: #fff7d8; border: 1px solid #f0d88a; border-radius: 4px; color: #6a4a0a; font-family: 'Menlo', monospace; font-size: 12px; }
+  /* Phase 5.5 (5.4) — un-reviewed alias chip stands out with amber background + 🔍 prefix */
+  .alias-row.unreviewed .alias-string {
+    background: #fff1d6;
+    border-color: #f5b942;
+    color: #5a3e00;
+  }
+  .alias-row.unreviewed .alias-string::before { content: '🔍 '; opacity: 0.85; }
 
   .alias-btn { padding: 4px 9px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 11px; font-weight: 600; cursor: pointer; }
   .alias-btn.keep { color: #1a7f37; border-color: #b4dfbf; background: #f5fbf6; }

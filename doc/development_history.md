@@ -746,7 +746,14 @@ Closes the remaining gaps preventing CERT-only operation while preserving the in
 - **2 GH workflows + edge fn allowlist:** `.github/workflows/regen-report.yml` + `.github/workflows/phase5-event-runner.yml` (env-var hardened against command injection, regex-validated event_code). `dispatch-workflow` ALLOWED_WORKFLOWS grew from 2 → 4.
 - **RTM additions:** FR-102 (unified pipeline), FR-103 (`.md` to Storage), FR-104 (Telegram delivery), FR-105 (EVF delta-only), FR-106 (alias triage UX), FR-107 (LOCAL guarantee), FR-108 (Telegram operator commands).
 
-Test totals at Phase 5.5 (in progress): pgTAP 508 → **543** (+35), pytest 564 → **594+** (+30 from 5.5/5.6/5.8/5.9; full count after process_xml_file rewrite + Workstream 4 vitest + GAS smoke), vitest 344 (Workstream 4 frontend pending: 5.1–5.4).
+Test totals at Phase 5.5 (in progress, second push): pgTAP 508 → **543** (+35), pytest 564 → **647** (+30 from 5.5/5.6/5.8/5.9 plus rebuild-session pytest), vitest 344 → **372** (+28 from 5.1 birthYearEstimate, 5.2 CreateFencerFromAliasModal, 5.3 api.regenStagingReport, 5.4 FencerAliasManager unreviewed-first sort).
+
+**Workstream 4 (alias triage UI) shipped this push (2026-05-03 second commit)**:
+- `frontend/src/lib/birthYearEstimate.ts` — TS port of `_estimate_birth_year_for_vcat` (9 tests, 5.1).
+- `frontend/src/components/CreateFencerFromAliasModal.svelte` — modal mirroring `CreateFencerModal.svelte` with BY suggestion derived from `(latest_category_hint, latest_season_end_year)`; stricter validation (BY required, in [1900, 2030]); 7 tests, 5.2.
+- `frontend/src/components/FencerAliasManager.svelte` — unreviewed-first sort, `class:has-unreviewed` left-border + `🔍 N` badge, auto-expand the first unreviewed-fencer row on mount, "unreviewed only" filter checkbox, per-alias `class:unreviewed` chip with 🔍 prefix; 8 tests, 5.4; existing 7 tests preserved.
+- `frontend/src/lib/api.ts` — `regenStagingReport(eventCode)` gated by `VITE_DEPLOY_ENV` (LOCAL no-op returns `{skipped: 'local'}`, CERT/PROD invokes `dispatch-workflow` for `regen-report.yml` with target=cert|prod); extended TS `FencerWithAliases` + new `NewFencerData` + `AliasMutationResult` types; 4 tests, 5.3.
+- `frontend/src/App.svelte` — modal mounted, `handleAliasCreate` rewritten to open the modal with prepopulated context (instead of the four sequential `window.prompt()` calls), new `handleAliasCreateConfirm` runs split → cascade banner with per-tournament list → cross-event ⚠ warning → per-event `regenStagingReport` loop. `error` banner gains `white-space: pre-line` so multi-step output renders.
 
 **Pending in Phase 5.5 (next focused sessions):**
 - Frontend alias UI (Workstream 4): `CreateFencerFromAliasModal.svelte`, FencerAliasManager unreviewed-first sort + amber highlight, App.svelte cascade banner.

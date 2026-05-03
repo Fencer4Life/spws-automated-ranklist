@@ -18,6 +18,9 @@ export type AppView = 'ranklist' | 'calendar' | 'admin_seasons' | 'admin_events'
 export type FencerTab = 'identities' | 'birth_year_review' | 'aliases'
 
 // Phase 4 (ADR-050) alias UI — vw_fencer_aliases shape.
+// Phase 5.5 (ADR-058+059) extends with alias staging context + reviewed
+// counts (migration 20260503000001). New fields are optional so older view
+// versions don't break the type.
 export interface FencerWithAliases {
   id_fencer: number
   txt_first_name: string
@@ -26,6 +29,39 @@ export interface FencerWithAliases {
   json_revoked_aliases: string[]
   alias_count: number
   ts_last_alias_added: string | null
+  // Phase 5.5 additions
+  json_user_confirmed_aliases?: string[]
+  int_unreviewed_alias_count?: number
+  latest_category_hint?: string | null
+  latest_season_end_year?: number | null
+}
+
+// Phase 5.5 (ADR-058+059) — payload for fn_split_fencer_from_alias.
+export interface NewFencerData {
+  txt_surname: string
+  txt_first_name: string
+  int_birth_year: number
+  enum_gender: GenderType
+}
+
+// Phase 5.5 (ADR-050+058) — extended alias-RPC return shape (migration
+// 20260503000002). id_tournaments + tournament_labels surface the cross-
+// event cascade so the UI banner can list which tournaments were touched.
+export interface AliasMutationResult {
+  alias: string
+  from_fencer: number
+  to_fencer?: number
+  new_fencer_id?: number
+  results_moved?: number
+  results_deleted?: number
+  draft_results_moved?: number
+  draft_results_deleted?: number
+  tournaments_recomputed: number
+  id_tournaments: number[]
+  tournament_labels: string[]
+  revoked?: boolean
+  // For split: the transfer_result is nested
+  transfer_result?: AliasMutationResult
 }
 export type BirthYearFilter = 'ALL' | 'ESTIMATED' | 'MISSING' | 'CONFIRMED'
 export type Environment = 'CERT' | 'PROD'
