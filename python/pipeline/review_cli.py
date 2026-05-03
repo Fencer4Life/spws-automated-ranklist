@@ -801,6 +801,15 @@ class ReviewSession:
         ADR-056: each match in ctx.vcat_groups[V] gets the V's tournament_draft
         id assigned to id_tournament_draft (replaces the Phase-3 =0 placeholder
         that prevented fn_commit_event_draft from migrating result rows).
+
+        Phase 5.5 (5.16) PENDING/EXCLUDED inclusion fix: previously, PENDING
+        matches were silently dropped from draft writes, taking the result
+        row with them — operator had nothing to triage. Now PENDING rows are
+        written with `enum_match_method=NULL` so the UI can filter on
+        "needs review". The matcher's best-guess id_fencer is preserved so
+        the FencerAliasManager cascade RPC has a target to split-from.
+        EXCLUDED (international non-POL per ADR-038) remains dropped — those
+        rows are intentionally not part of SPWS scoring.
         """
         method_map = {
             "AUTO_MATCHED": "AUTO_MATCH",
@@ -816,15 +825,15 @@ class ReviewSession:
             if tournament_id is None:
                 continue
             for m in matches:
-                if m.method not in method_map:
-                    continue  # PENDING / EXCLUDED — not finalized, skip
+                if m.method == "EXCLUDED":
+                    continue  # ADR-038 — international non-POL row, intentional drop
                 rows.append({
                     "id_fencer": m.id_fencer,
                     "id_tournament_draft": tournament_id,
                     "int_place": m.place,
                     "txt_scraped_name": m.scraped_name,
                     "num_match_confidence": m.confidence,
-                    "enum_match_method": method_map[m.method],
+                    "enum_match_method": method_map.get(m.method),  # None for PENDING
                 })
         return rows
 

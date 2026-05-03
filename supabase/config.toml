@@ -62,7 +62,9 @@ schema_paths = []
 enabled = true
 # Single monolithic PROD dump (ADR-036). Updated by ./scripts/export-prod.sh
 # seed_post_backfill.sql runs Phase 1B fn_backfill_id_prior_event() after seed
-sql_paths = ["./seed_prod_latest.sql", "./seed_post_backfill.sql"]
+# seed_event_snapshot.sql preserves operator's manual cleanup of tbl_event/tbl_season
+#   (idempotent INSERT...ON CONFLICT DO UPDATE; regenerate via scripts/snapshot-events.sh)
+sql_paths = ["./seed_prod_latest.sql", "./seed_post_backfill.sql", "./seed_event_snapshot.sql"]
 
 [db.network_restrictions]
 # Enable management of network restrictions.
