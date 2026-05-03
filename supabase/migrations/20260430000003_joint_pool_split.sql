@@ -16,13 +16,13 @@
 -- ---------------------------------------------------------------------------
 
 ALTER TABLE tbl_tournament
-  ADD COLUMN bool_joint_pool_split BOOLEAN NOT NULL DEFAULT FALSE;
+  ADD COLUMN IF NOT EXISTS bool_joint_pool_split BOOLEAN NOT NULL DEFAULT FALSE;
 
 COMMENT ON COLUMN tbl_tournament.bool_joint_pool_split IS
   'TRUE = this row is one V-cat slice of a physically combined pool. '
   'Siblings share (id_event, enum_weapon, enum_gender) + url_results. '
   'int_participant_count on each sibling = full physical pool size.';
 
-CREATE INDEX idx_tbl_tournament_joint_split
+CREATE INDEX IF NOT EXISTS idx_tbl_tournament_joint_split
   ON tbl_tournament (id_event, enum_weapon, enum_gender)
   WHERE bool_joint_pool_split = TRUE;
