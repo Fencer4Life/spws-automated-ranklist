@@ -1437,15 +1437,15 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 543 assertions (493 prior + 8 ADR-058+061 alias-view-context (5.10) + 8 ADR-050 alias RPC tournament cascade (5.11) + 5 ADR-058 staging-reports bucket RLS (5.12); LOCAL skips 5 of 5.12 because storage disabled per `config.toml`).
+- pgTAP total: 548 assertions (543 prior + 5 fencer-name auto-trim trigger (5.14) defence-in-depth for the leading-space corruption from the legacy window.prompt admin flow).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
-| pgTAP | 543 | 38 | `supabase/tests/` |
-| pytest | 647 | 31 | `python/tests/` |
+| pgTAP | 548 | 39 | `supabase/tests/` |
+| pytest | 651 | 32 | `python/tests/` |
 | vitest | 372 | 31 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **1569** | | |
+| **Total** | **1578** | | |
 
 **Phase 5.5 additions** (this entry): pgTAP +21 (5.10 + 5.11 + 5.12), pytest +30 (5.5 md_writer + 5.6 storage_md + 5.8 parity_delta + 5.9 telegram_send_document, plus rebuild-session pytest), vitest +28 (5.1 birthYearEstimate + 5.2 CreateFencerFromAliasModal + 5.3 api.regenStagingReport + 5.4 FencerAliasManager.unreviewed). The process_xml_file rewrite (5.7) and the wiring of `App.svelte` cascade banner (covered here as integration, no new test ID) remain. Test totals will move again once 5.7 lands.
 
