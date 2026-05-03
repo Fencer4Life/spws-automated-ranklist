@@ -49,12 +49,11 @@ BEGIN
         USING (bucket_id = 'staging-reports')
     $sql$;
 
-    EXECUTE $sql$
-      COMMENT ON POLICY "staging_reports_authenticated_read" ON storage.objects IS
-        'Phase 5.5 (ADR-058) — authenticated users can read staging-reports objects. '
-        'service_role bypasses RLS for writes (CI workflows + edge functions). '
-        'No INSERT/UPDATE/DELETE policy for authenticated.'
-    $sql$;
+    -- COMMENT ON POLICY ... ON storage.objects requires ownership of
+    -- storage.objects, which the Supabase Management API role lacks
+    -- (CERT deploy fails with 42501 must be owner of relation objects).
+    -- The policy itself is the source of truth; rationale lives in
+    -- this migration's header + ADR-058. Skipping the COMMENT.
   ELSE
     RAISE NOTICE 'Phase 5.5 (ADR-058+061): storage schema not present (LOCAL); '
                  'staging-reports bucket migration is a no-op. CERT/PROD will '

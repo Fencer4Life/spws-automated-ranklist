@@ -25,8 +25,8 @@ fi
 # shellcheck disable=SC1091
 set -a; source .env; set +a
 
-if [[ -z "${SUPABASE_URL:-}" || -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]]; then
-  echo "❌ SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing from .env" >&2
+if [[ -z "${SUPABASE_URL:-}" || -z "${SUPABASE_KEY:-}" ]]; then
+  echo "❌ SUPABASE_URL or SUPABASE_KEY missing from .env" >&2
   exit 1
 fi
 
