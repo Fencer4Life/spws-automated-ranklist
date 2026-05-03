@@ -117,8 +117,9 @@ For ADR-to-FR cross-references, see Project Specification Appendix C — Archite
 | FR-106 | Alias triage UX: FencerAliasManager sorts unreviewed-aliases-first with amber visual highlight + "🔍 N" badge; auto-expand first unreviewed fencer on mount; "unreviewed only" filter checkbox. Modal-based "Create new fencer" replaces window.prompt chain (prepopulated with surname/firstname parsed + BY suggestion from V-cat × season-end-year). Cascade tournament list (id_tournaments[] + tournament_labels[] from extended RPCs) surfaced post-mutation in the status banner; cross-event ⚠ warning when prior signed-off events were touched. | ADR-050 (Phase 5.5), ADR-058+059 | 5.10 (vw_fencer_aliases ext), 5.11 (RPC tournament cascade), 5.1–5.4 (vitest — pending) | Partial |
 | FR-107 | LOCAL operator workflow guarantee: `phase5_runner` / `phase5_report` default `--md-target=local` (filesystem write to `doc/staging/<event>.md`, no Storage upload, no Telegram); CERT/PROD CI workflows pass `--md-target=storage` explicitly. `dispatch-workflow` allowlist gains `phase5-event-runner.yml` + `regen-report.yml` for admin UI + GAS Telegram dispatch. | ADR-061 | 5.5 (md_writer target switch), L1–L6 LOCAL smoke | Covered |
 | FR-108 | Telegram operator commands (extends ADR-025): `/regen <event_code>`, `/stage <event_code>`, `/parity <event_code>`, `/verdict <event_code>` — all dispatched from GAS `checkTelegramCommands` to GitHub workflows or Storage downloads. `/help` text rewritten to enumerate commands + describe auto-delivered documents (filename pattern, when fired). | ADR-061 | C16 (CERT smoke — manual) | Pending (GAS extension + smoke) |
+| FR-109 | FTL event-schedule discovery skips brackets whose first significant token isn't in the SPWS-recognised vocabulary (Polish/English weapon, gender, V-cat, format markers); skipped entries surface in the per-event staging md with reason `"guest event (non-SPWS bracket name)"`. Closes the PPW4-2024-2025 AKADEMICKIE bug where a foreign competition shared the FTL schedule URL and produced duplicate `(id_fencer, id_tournament_draft)` pairs that blocked commit. Complementary to FR-? structural pool-round detection (ADR-057) — name whitelist at discovery, structural detection post-match. | ADR-062 | 5.21.1–5.21.4 (pytest `test_scrapers.py::TestFTLEventSchedule`) | Covered |
 
-> **Note:** FR-69 was retired before assignment; gap is intentional. FR-102–FR-108 added Phase 5.5 (2026-05-03). Total active FRs = 107.
+> **Note:** FR-69 was retired before assignment; gap is intentional. FR-102–FR-108 added Phase 5.5 (2026-05-03). FR-109 added Phase 5.5 follow-up (2026-05-03, ADR-062). Total active FRs = 108.
 
 ## Non-Functional Requirements
 
@@ -142,7 +143,7 @@ For ADR-to-FR cross-references, see Project Specification Appendix C — Archite
 
 | Status | Count | FRs |
 |--------|-------|-----|
-| Covered | 97 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-101, FR-103, FR-104, FR-107 |
+| Covered | 98 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-101, FR-103, FR-104, FR-107, FR-109 |
 | Partial | 5 | FR-53, FR-54, FR-102, FR-105, FR-106 |
 | Pending | 1 | FR-108 (GAS extension + CERT smoke) |
 | Superseded | 1 | FR-87 (by FR-88) |

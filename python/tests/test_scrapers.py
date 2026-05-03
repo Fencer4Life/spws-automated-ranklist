@@ -615,6 +615,116 @@ class TestFTLEventSchedule:
         assert parse_tournament_name("FLORET ELIMINACJE") is None
         assert parse_tournament_name("SZPADA ELIMINACJE") is None
 
+    # ── 5.21 — guest-event bracket detection (PPW4 AKADEMICKIE bug) ─────────
+    # Background: PPW4-2024-2025's FTL event-schedule URL also lists brackets
+    # for an unrelated competition ("Akademickie Mistrzostwa Warszawy i
+    # Mazowsza") held the same day. Those brackets parse as SABRE-M/F with
+    # joint-pool V-cat markers and the runner ingested them as if they were
+    # PPW4 sub-tournaments → fencers who competed in both events ended up
+    # with duplicate result-rows (5 dups blocked the commit on
+    # uq_result_fencer_tournament). Fix: skip brackets whose first
+    # significant token isn't in the SPWS recognised vocabulary.
+
+    _AKADEMICKIE_SCHEDULE_HTML = """
+    <html><body><table><tbody>
+      <tr id="ev_AAA">
+        <td><a href="/events/view/AAA000000000000000000000000000A1">
+          Szpada mężczyzn kategoria 0
+        </a></td>
+      </tr>
+      <tr id="ev_BBB">
+        <td><a href="/events/view/BBB000000000000000000000000000B2">
+          Akademickie Mistrzostwa Warszawy i Mazowsza - szabla mężczyzn
+        </a></td>
+      </tr>
+      <tr id="ev_CCC">
+        <td><a href="/events/view/CCC000000000000000000000000000C3">
+          Akademickie Mistrzostwa Warszawy i Mazowsza - szabla kobiety
+        </a></td>
+      </tr>
+      <tr id="ev_DDD">
+        <td><a href="/events/view/DDD000000000000000000000000000D4">
+          Szpada kobiet i mężczyzn - grupy
+        </a></td>
+      </tr>
+    </tbody></table></body></html>
+    """
+
+    def test_parse_event_schedule_skips_guest_event_brackets(self):
+        """5.21.1: brackets whose name starts with non-SPWS tokens (e.g. a
+        guest-event name like 'Akademickie Mistrzostwa…') are surfaced in the
+        skipped list, NOT silently ingested as PPW sub-tournaments."""
+        from python.tools.scrape_ftl_event_urls import parse_event_schedule
+
+        kept, skipped = parse_event_schedule(
+            self._AKADEMICKIE_SCHEDULE_HTML, with_skips=True
+        )
+        kept_uuids = {k["uuid"] for k in kept}
+        skipped_uuids = {s["uuid"] for s in skipped}
+        assert "BBB000000000000000000000000000B2" in skipped_uuids, (
+            "AKADEMICKIE szabla mężczyzn must be skipped (guest event)"
+        )
+        assert "CCC000000000000000000000000000C3" in skipped_uuids, (
+            "AKADEMICKIE szabla kobiety must be skipped (guest event)"
+        )
+        assert "BBB000000000000000000000000000B2" not in kept_uuids
+        assert "CCC000000000000000000000000000C3" not in kept_uuids
+
+    def test_parse_event_schedule_keeps_spws_conventional_brackets(self):
+        """5.21.2: regression guard — Polish PPW-conventional bracket names
+        starting with weapon word (Szpada/Floret/Szabla) are still kept,
+        even when they contain dashes ('Szpada kobiet i mężczyzn - grupy')."""
+        from python.tools.scrape_ftl_event_urls import parse_event_schedule
+
+        kept, _ = parse_event_schedule(
+            self._AKADEMICKIE_SCHEDULE_HTML, with_skips=True
+        )
+        kept_uuids = {k["uuid"] for k in kept}
+        assert "AAA000000000000000000000000000A1" in kept_uuids, (
+            "'Szpada mężczyzn kategoria 0' must be kept"
+        )
+        assert "DDD000000000000000000000000000D4" in kept_uuids, (
+            "'Szpada kobiet i mężczyzn - grupy' must be kept "
+            "(weapon word at start, dash present is fine)"
+        )
+
+    def test_parse_event_schedule_guest_event_skip_reason(self):
+        """5.21.3: skipped guest-event entries carry an informative reason so
+        the per-event staging summary tells the operator why they got skipped."""
+        from python.tools.scrape_ftl_event_urls import parse_event_schedule
+
+        _, skipped = parse_event_schedule(
+            self._AKADEMICKIE_SCHEDULE_HTML, with_skips=True
+        )
+        for s in skipped:
+            if s["uuid"].startswith("BBB"):
+                assert "guest" in s["reason"].lower() or "non-spws" in s["reason"].lower(), (
+                    f"reason should mention guest/non-SPWS; got {s['reason']!r}"
+                )
+                break
+        else:
+            raise AssertionError("no skipped entry for AKADEMICKIE BBB UUID")
+
+    def test_parse_event_schedule_keeps_english_men_women_prefix(self):
+        """5.21.4: regression guard — English bracket names starting with
+        'Men's'/'Women's' (existing 3.15j-l fixtures) must still be kept."""
+        from python.tools.scrape_ftl_event_urls import parse_event_schedule
+
+        html = """
+        <html><body><table><tbody>
+          <tr><td><a href="/events/view/EEE000000000000000000000000000E5">
+            Men's Sabre Category 3 and 4
+          </a></td></tr>
+          <tr><td><a href="/events/view/FFF000000000000000000000000000F6">
+            Women's Foil Category 1 and 2
+          </a></td></tr>
+        </tbody></table></body></html>
+        """
+        kept, _ = parse_event_schedule(html, with_skips=True)
+        kept_uuids = {k["uuid"] for k in kept}
+        assert "EEE000000000000000000000000000E5" in kept_uuids
+        assert "FFF000000000000000000000000000F6" in kept_uuids
+
 
 # ===========================================================================
 # Dartagnan parser: index + rankings pages (dart.1–dart.6, dart.8)

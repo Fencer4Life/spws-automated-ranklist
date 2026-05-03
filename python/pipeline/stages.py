@@ -460,49 +460,66 @@ def vcat_for_age(age: int | None) -> str | None:
 
 
 def s7_split_by_vcat(ctx: PipelineContext, db: Any) -> None:
-    """Group matched fencers by V-cat derived from their birth year.
+    """Group matched fencers by V-cat.
 
-    ADR-056: post-match canonical V-cat assignment. Replaces the marker-based
-    Stage 4 split as the primary V-cat source. Marker-based path is retained
-    upstream as a fast-path for sources that emit reliable per-fencer markers
-    (cert_ref, EVF API).
+    ADR-056 (revised 2026-05-03): bracket-label V-cat overrides BY derivation
+    for past tournaments. When `ctx.parsed.category_hint` is a single V-cat
+    string (e.g. parsed from FTL `Vet Men's Saber` → V1), every matched
+    fencer is grouped under that V-cat regardless of canonical BY+season_end
+    math. The organizer's bracket placement is the source of truth for past
+    tournament data; applying canonical BY-V-cat across a season boundary
+    (a fencer turning 50 on event date but season end is next year) would
+    retroactively move their result into a ranklist they never competed in.
+
+    Joint-pool brackets (parsed name returns a list → `category_hint=None`)
+    keep the BY-derivation path: each fencer's V-cat comes from
+    `BY + ctx.season_end_year`. ADR-049's `bool_joint_pool_split` flags these.
 
     Inputs:  ctx.matches with id_fencer set on AUTO_MATCHED / AUTO_CREATED rows.
+             ctx.parsed.category_hint — single V-cat str (bracket label) or None.
     Outputs: ctx.vcat_groups: {V-cat: [StageMatchResult]}
              ctx.is_joint_pool: True iff vcat_groups has ≥2 V-cats
              ctx.unassigned_matches: PENDING / UNMATCHED / null-BY rows for review
 
     Does not raise. Operator decides whether unassigned rows block commit.
     """
-    # Fencing-convention: V-cat is based on age at the END of the season
-    # (the season_end_year), not the calendar year of the event. Trigger
-    # `fn_assert_result_vcat` enforces this; mismatching here causes commit
-    # failures on the V-cat invariant.
-    reference_year = ctx.season_end_year
-
-    # Collect ids of matches that have an id_fencer (AUTO_MATCHED / AUTO_CREATED)
-    matched_ids = [
-        m.id_fencer for m in ctx.matches
-        if getattr(m, "id_fencer", None) is not None
-    ]
-    by_map: dict[int, int | None] = (
-        db.fetch_birth_years_batch(matched_ids)
-        if matched_ids and hasattr(db, "fetch_birth_years_batch")
-        else {}
-    )
+    bracket_vcat = getattr(ctx.parsed, "category_hint", None)
 
     groups: dict[str, list] = {}
     unassigned: list = []
-    for m in ctx.matches:
-        if getattr(m, "id_fencer", None) is None:
-            unassigned.append(m)
-            continue
-        by = by_map.get(m.id_fencer)
-        vcat = vcat_for_age(reference_year - by) if by is not None else None
-        if vcat is None:
-            unassigned.append(m)
-            continue
-        groups.setdefault(vcat, []).append(m)
+
+    if isinstance(bracket_vcat, str) and bracket_vcat:
+        # Single-V-cat bracket: every matched fencer goes to the bracket V-cat.
+        # BY-unknown matched fencers are still placed in the bracket (organizer
+        # already accepted them) — admin reviews BY mismatches via staging .md.
+        for m in ctx.matches:
+            if getattr(m, "id_fencer", None) is None:
+                unassigned.append(m)
+                continue
+            groups.setdefault(bracket_vcat, []).append(m)
+    else:
+        # Joint-pool: BY-derivation per fencer (existing ADR-056 behaviour).
+        # Reference year is season_end_year — V-cat = age at end of season.
+        reference_year = ctx.season_end_year
+        matched_ids = [
+            m.id_fencer for m in ctx.matches
+            if getattr(m, "id_fencer", None) is not None
+        ]
+        by_map: dict[int, int | None] = (
+            db.fetch_birth_years_batch(matched_ids)
+            if matched_ids and hasattr(db, "fetch_birth_years_batch")
+            else {}
+        )
+        for m in ctx.matches:
+            if getattr(m, "id_fencer", None) is None:
+                unassigned.append(m)
+                continue
+            by = by_map.get(m.id_fencer)
+            vcat = vcat_for_age(reference_year - by) if by is not None else None
+            if vcat is None:
+                unassigned.append(m)
+                continue
+            groups.setdefault(vcat, []).append(m)
 
     ctx.vcat_groups = groups
     ctx.unassigned_matches = unassigned

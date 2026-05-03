@@ -279,7 +279,9 @@ const MOCK_TOURNAMENTS: Tournament[] = [
     dt_tournament: '2025-01-15',
     int_participant_count: 32,
     num_multiplier: 1.0,
-    url_results: null,
+    // 5.20.3 fixture: tournament 100 has a results URL (the live shape — every
+    // committed tournament under the new pipeline has url_results set)
+    url_results: 'https://www.fencingtimelive.com/events/results/ABC123',
     enum_import_status: 'SCORED',
     txt_import_status_reason: null,
   },
@@ -349,6 +351,35 @@ describe('EventManager Accordion (Phase 6)', () => {
     const first = tournRows[0]
     expect(first.querySelector('[data-field="tourn-code"]')!.textContent).toContain('PPW-WRO-V2-M-EPEE')
     expect(first.querySelector('[data-field="tourn-import-status"]')!.textContent).toContain('SCORED')
+  })
+
+  // 5.20.3 — Tournament code with url_results renders as link to URL in new tab
+  it('5.20.3: tournament code with url_results renders as <a target="_blank"> in EventManager accordion', async () => {
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+
+    const tournRows = container.querySelectorAll('[data-field="tournament-row"]')
+    // Tournament 100 has url_results set → code cell should contain a link
+    const codeCell = tournRows[0].querySelector('[data-field="tourn-code"]')!
+    const link = codeCell.querySelector('a')
+    expect(link).not.toBeNull()
+    expect(link!.getAttribute('href')).toBe('https://www.fencingtimelive.com/events/results/ABC123')
+    expect(link!.getAttribute('target')).toBe('_blank')
+    expect(link!.getAttribute('rel')).toContain('noopener')
+    expect(link!.getAttribute('rel')).toContain('noreferrer')
+    expect(link!.textContent).toContain('PPW-WRO-V2-M-EPEE')
+  })
+
+  // 5.20.4 — Tournament code WITHOUT url_results renders as plain text (no link)
+  it('5.20.4: tournament code without url_results renders as plain text in EventManager', async () => {
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+
+    const tournRows = container.querySelectorAll('[data-field="tournament-row"]')
+    // Tournament 101 has url_results=null → no link
+    const codeCell = tournRows[1].querySelector('[data-field="tourn-code"]')!
+    expect(codeCell.querySelector('a')).toBeNull()
+    expect(codeCell.textContent).toContain('PPW-WRO-V1-M-EPEE')
   })
 
   // 9.207 — Tournament row shows participant count

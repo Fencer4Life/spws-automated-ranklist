@@ -57,6 +57,32 @@ SKIP_PATTERNS = re.compile(
 )
 SENIOR_PATTERN = re.compile(r"\bSENIOR\b", re.IGNORECASE)
 
+# Plan test 5.21.x — guest-event bracket detection.
+# FTL event-schedule pages occasionally list brackets from a *different*
+# competition that happens to be hosted on the same day at the same venue
+# (e.g. "Akademickie Mistrzostwa Warszawy i Mazowsza" alongside PPW4-2024).
+# Those brackets parse as weapon+gender so the rest of the pipeline ingests
+# them as if they were PPW sub-tournaments; fencers who competed in BOTH
+# events end up with duplicate result-rows (uq_result_fencer_tournament
+# blocks commit). Guard: a real SPWS bracket name's first significant token
+# is always one of WEAPON / GENDER / V-cat-marker words below. Anything else
+# is a guest event — skip with a reason.
+SPWS_BRACKET_FIRST_TOKEN = re.compile(
+    r"^\s*(?:"
+    # Polish weapons
+    r"SZPADA|FLORET|SZABLA|"
+    # English weapons (Épée handled via accent-insensitive prefix)
+    r"EPEE|ÉPÉE|FOIL|SABRE|SABER|"
+    # Gender-first English ("Men's Foil…") and gender-first Polish
+    r"MEN(?:'S|S)?|WOMEN(?:'S|S)?|"
+    r"KOBIET[AYĘ]?|MĘŻCZYZN[IY]?|"
+    # Veteran / age-tier / format markers that may lead the bracket name
+    r"VET(?:ERAN[IY]?)?|SENIOR|MIXED|MIKST|"
+    r"CAT(?:EGORY)?|KATEGORI[AĘ]"
+    r")\b",
+    re.IGNORECASE,
+)
+
 # FTL English veteran-category convention: "Vet-50" → V2, "Vet-60" → V3,
 # "Vet-70" → V4, "Vet-40" → V1; bare "Vet" without number = combined-pool
 # (all V-cats present; Stage 4 splits by per-fencer marker).
@@ -121,6 +147,12 @@ def parse_event_schedule(html: str, *, with_skips: bool = False):
         if SKIP_PATTERNS.search(name):
             skipped.append({"uuid": uuid, "name": name,
                             "reason": "DE / amateur / junior / U-age skip pattern"})
+            continue
+        if not SPWS_BRACKET_FIRST_TOKEN.match(name):
+            # 5.21 — guest event hosted on the same FTL schedule page;
+            # see comment on SPWS_BRACKET_FIRST_TOKEN above.
+            skipped.append({"uuid": uuid, "name": name,
+                            "reason": "guest event (non-SPWS bracket name)"})
             continue
         kept.append({"uuid": uuid, "name": name})
     if with_skips:
