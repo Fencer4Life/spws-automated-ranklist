@@ -18,7 +18,16 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 }
 
-const ALLOWED_WORKFLOWS = new Set(["populate-urls.yml", "scrape-tournament.yml"])
+// Phase 5.5 (ADR-061): added phase5-event-runner.yml + regen-report.yml so
+// the admin UI's "Stage event" button and the alias-mutation regen cascade
+// can dispatch via this same allowlist. GAS dispatches directly with its own
+// PAT and bypasses this allowlist (different auth surface).
+const ALLOWED_WORKFLOWS = new Set([
+  "populate-urls.yml",
+  "scrape-tournament.yml",
+  "phase5-event-runner.yml",
+  "regen-report.yml",
+])
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {

@@ -346,6 +346,72 @@ function handleCommand(props, command, arg) {
       triggerGitHubWorkflow(githubPatTS, githubRepoTS, 'scrape-tournament.yml', { tournament_code: arg });
       return '<b>Scrape Tournament</b>\n<pre>' + arg + '</pre>\n<i>Scraping results from URL and ingesting...</i>';
 
+    // ─── Phase 5.5 (ADR-061) — verdict .md operator commands ─────────────
+    case 'stage':
+      // Trigger phase5-event-runner.yml — runs Phase-5 pipeline against the
+      // event's URL (must already be on tbl_event.url_results). Produces
+      // drafts + uploads full.md to Storage + Telegram-sends the document.
+      var stageCode = String(arg).toUpperCase();
+      if (!stageCode) return '<i>Usage:</i> <pre>stage EVENT-A-2024-2025</pre>';
+      if (!/^[A-Z0-9_-]+$/.test(stageCode)) return '<i>Invalid event_code (must match [A-Z0-9_-]+)</i>';
+      triggerGitHubWorkflow(
+        props.getProperty('GITHUB_PAT'),
+        props.getProperty('GITHUB_REPO'),
+        'phase5-event-runner.yml',
+        { event_code: stageCode, target: 'cert' }
+      );
+      return '📥 <b>Stage Event</b>\n<pre>' + stageCode + '</pre>\n<i>Workflow phase5-event-runner.yml dispatched. Watch for the staging full.md document.</i>';
+
+    case 'regen':
+      // Trigger regen-report.yml — re-renders full.md from current DB state,
+      // uploads + Telegram-sends. Useful when operator wants a fresh verdict
+      // without doing an alias mutation (or after manual SQL changes).
+      var regenCode = String(arg).toUpperCase();
+      if (!regenCode) return '<i>Usage:</i> <pre>regen EVENT-A-2024-2025</pre>';
+      if (!/^[A-Z0-9_-]+$/.test(regenCode)) return '<i>Invalid event_code (must match [A-Z0-9_-]+)</i>';
+      triggerGitHubWorkflow(
+        props.getProperty('GITHUB_PAT'),
+        props.getProperty('GITHUB_REPO'),
+        'regen-report.yml',
+        { event_code: regenCode, target: 'cert' }
+      );
+      return '🔄 <b>Regen Verdict</b>\n<pre>' + regenCode + '</pre>\n<i>Workflow regen-report.yml dispatched. Watch for the regenerated full.md document.</i>';
+
+    case 'parity':
+      // Trigger one-off EVF parity check for a single event. Sends delta .md
+      // if drift detected; silent if no-drift (per ADR-060).
+      var parityCode = String(arg).toUpperCase();
+      if (!parityCode) return '<i>Usage:</i> <pre>parity EVENT-A-2024-2025</pre>';
+      if (!/^[A-Z0-9_-]+$/.test(parityCode)) return '<i>Invalid event_code (must match [A-Z0-9_-]+)</i>';
+      triggerGitHubWorkflow(
+        props.getProperty('GITHUB_PAT'),
+        props.getProperty('GITHUB_REPO'),
+        'evf-parity-sweep.yml',
+        { event_code: parityCode, target: 'cert' }
+      );
+      return '📊 <b>EVF Parity</b>\n<pre>' + parityCode + '</pre>\n<i>Workflow evf-parity-sweep.yml dispatched. If drift detected, a delta .md will arrive.</i>';
+
+    case 'verdict':
+      // Fetch staging-reports/{event_code}/full.md from Storage and re-send
+      // as Telegram document. Useful if operator deleted the original message
+      // or wants to re-import to Obsidian.
+      var verdictCode = String(arg).toUpperCase();
+      if (!verdictCode) return '<i>Usage:</i> <pre>verdict EVENT-A-2024-2025</pre>';
+      if (!/^[A-Z0-9_-]+$/.test(verdictCode)) return '<i>Invalid event_code (must match [A-Z0-9_-]+)</i>';
+      try {
+        var sbUrl = props.getProperty('SUPABASE_URL');
+        var sbKey = props.getProperty('SUPABASE_SERVICE_ROLE_KEY');
+        var mdBytes = downloadFromSupabaseStorage(sbUrl, sbKey, 'staging-reports', verdictCode + '/full.md');
+        if (!mdBytes) {
+          return '⚠ <code>staging-reports/' + verdictCode + '/full.md</code> not found.\n<i>Try</i> <code>regen ' + verdictCode + '</code> <i>to (re)create it.</i>';
+        }
+        sendTelegramDocument(props, mdBytes, verdictCode + '-full.md',
+          '📄 <b>' + verdictCode + '</b> · full · <i>re-fetched via /verdict</i>');
+        return '📄 Sent <code>' + verdictCode + '/full.md</code> as document.';
+      } catch (e) {
+        return '❌ verdict fetch failed: ' + e.message;
+      }
+
     // --- Emergency ---
     case 'pause':
       props.setProperty('PAUSED', 'true');
@@ -442,6 +508,25 @@ function handleCommand(props, command, arg) {
         '<pre>t-scrape &lt;tournament_code&gt;</pre>',
         'Scrape results from tournament URL and ingest',
         '',
+        '<b><u>Phase 5.5 — Verdict .md (ADR-058+059+061)</u></b>',
+        '',
+        '<pre>stage &lt;event&gt;</pre>',
+        'Run Phase-5 pipeline on event URL → drafts + full.md to Storage + Telegram',
+        '',
+        '<pre>regen &lt;event&gt;</pre>',
+        'Re-render full.md from current DB state, upload + Telegram (no re-ingest)',
+        '',
+        '<pre>parity &lt;event&gt;</pre>',
+        'Run EVF parity check for one event; sends delta .md if drift detected',
+        '',
+        '<pre>verdict &lt;event&gt;</pre>',
+        'Re-fetch staging-reports/&lt;event&gt;/full.md and send as Telegram document',
+        '',
+        '<i>Auto-delivered documents</i>:',
+        '  <code>&lt;event&gt;-full.md</code> after first ingest + post-triage regen',
+        '  <code>&lt;event&gt;-delta-&lt;ts&gt;.md</code> after EVF parity sweeps with drift',
+        '<i>Tap → Open with → Obsidian to archive in your vault.</i>',
+        '',
         '<b><u>Emergency</u></b>',
         '',
         '<pre>pause</pre>',
@@ -519,6 +604,55 @@ function uploadToSupabaseStorage(url, key, path, bytes, contentType) {
   });
   if (response.getResponseCode() >= 400) {
     throw new Error('Storage upload failed: ' + response.getContentText());
+  }
+}
+
+// Phase 5.5 (ADR-061): generic Storage download helper for the /verdict
+// command. Downloads bucket/path and returns the raw bytes (Blob in GAS),
+// or null on 404. Mirrors the upload helper above; takes any bucket name.
+function downloadFromSupabaseStorage(url, key, bucket, path) {
+  var endpoint = url + '/storage/v1/object/' + bucket + '/' + path;
+  var response = UrlFetchApp.fetch(endpoint, {
+    method: 'get',
+    headers: {
+      'Authorization': 'Bearer ' + key,
+      'apikey': key,
+    },
+    muteHttpExceptions: true,
+  });
+  var code = response.getResponseCode();
+  if (code === 404 || code === 400) {
+    return null; // not found
+  }
+  if (code >= 400) {
+    throw new Error('Storage download failed (' + code + '): ' + response.getContentText());
+  }
+  return response.getBlob();
+}
+
+// Phase 5.5 (ADR-059): send a document attachment via Telegram Bot API.
+// Bytes is a Blob; filename and caption are strings. Mirrors the Python
+// TelegramNotifier.send_document. parse_mode HTML so bold/code render.
+function sendTelegramDocument(props, bytesBlob, filename, caption) {
+  var token = props.getProperty('TELEGRAM_BOT_TOKEN');
+  var chatId = props.getProperty('TELEGRAM_CHAT_ID');
+  if (!token || !chatId) return; // null-safe per ADR-061
+
+  var url = 'https://api.telegram.org/bot' + token + '/sendDocument';
+  // GAS multipart upload — payload is an object; UrlFetchApp builds the form.
+  var blob = bytesBlob.setName(filename).setContentType('text/markdown');
+  var resp = UrlFetchApp.fetch(url, {
+    method: 'post',
+    payload: {
+      chat_id: chatId,
+      caption: caption,
+      parse_mode: 'HTML',
+      document: blob,
+    },
+    muteHttpExceptions: true,
+  });
+  if (resp.getResponseCode() >= 400) {
+    throw new Error('Telegram sendDocument failed: ' + resp.getContentText());
   }
 }
 

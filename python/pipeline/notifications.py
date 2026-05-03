@@ -3,12 +3,18 @@ Telegram notification hub for the ingestion pipeline.
 
 All pipeline events (routine, warnings, alerts, overdue reminders)
 route through TelegramNotifier. Pass bot_token=None for silent mode
-(unit tests, dry-run).
+(unit tests, dry-run, LOCAL devs without env vars per ADR-061).
 
 Uses send_telegram_alert() from scrapers.base as the low-level sender.
+Phase 5.5 (ADR-059) adds send_document + send_staging_report for .md
+delivery via Bot API multipart/form-data.
 """
 
 from __future__ import annotations
+
+from typing import Any, Literal
+
+import httpx
 
 from python.scrapers.base import send_telegram_alert
 
@@ -228,3 +234,77 @@ class TelegramNotifier:
         self.info(
             f"PEW cascade: {event_code} → {new_code} ({rows_renamed} rows renamed)."
         )
+
+    # --- Phase 5.5 (ADR-059) — verdict .md document delivery ---
+
+    def send_document(
+        self,
+        file_bytes: bytes,
+        filename: str,
+        caption: str,
+        *,
+        chat_id: str | None = None,
+    ) -> dict[str, Any]:
+        """POST multipart/form-data to https://api.telegram.org/bot<token>/sendDocument.
+
+        Returns Telegram API response dict on success, or
+        {'skipped': True, 'reason': '...'} if token/chat_id missing.
+
+        Plan-test-ID 5.9. Bot API doc verified at core.telegram.org/bots/api;
+        size limit 50 MB (our .md files are ~30 KB full / ~5 KB delta).
+        """
+        chat = chat_id or self._chat_id
+        if not self._token or not chat:
+            return {"skipped": True, "reason": "no token/chat_id"}
+
+        url = f"https://api.telegram.org/bot{self._token}/sendDocument"
+        files = {"document": (filename, file_bytes, "text/markdown")}
+        data = {"chat_id": chat, "caption": caption, "parse_mode": "HTML"}
+        resp = httpx.post(url, files=files, data=data, timeout=30.0)
+        resp.raise_for_status()
+        return resp.json()
+
+    def send_staging_report(
+        self,
+        event_code: str,
+        md_bytes: bytes,
+        *,
+        kind: Literal["full", "delta"],
+        extras: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Wraps send_document with a structured caption for verdict .md.
+
+        Filename rules:
+          full:  {event_code}-full.md
+          delta: {event_code}-delta-{extras['timestamp']}.md
+
+        Caption rules: leading icon (📄 full, 🔄 delta), event_code, kind,
+        plus contextual extras (tournament_count, pending_aliases, changes,
+        reason). Operator can mentally sort scrollback by these tags.
+
+        Plan-test-ID 5.9. ADR-059.
+        """
+        if kind not in ("full", "delta"):
+            raise ValueError(f"kind must be 'full' or 'delta', got {kind!r}")
+
+        if kind == "full":
+            filename = f"{event_code}-full.md"
+            icon = "📄"
+        else:
+            ts = extras.get("timestamp", "")
+            filename = f"{event_code}-delta-{ts}.md"
+            icon = "🔄"
+
+        # Build caption: "<icon> <b>{event_code}</b> · {kind} · {bullets}"
+        parts = [f"{icon} <b>{event_code}</b> · {kind}"]
+        if "tournament_count" in extras:
+            parts.append(f"{extras['tournament_count']} tournaments")
+        if "pending_aliases" in extras:
+            parts.append(f"{extras['pending_aliases']} ❌ aliases pending")
+        if "changes" in extras:
+            parts.append(f"{extras['changes']} changes")
+        if "reason" in extras:
+            parts.append(f"reason: {extras['reason']}")
+        caption = " · ".join(parts) + "\n<i>Save to Obsidian vault if needed.</i>"
+
+        return self.send_document(md_bytes, filename, caption)

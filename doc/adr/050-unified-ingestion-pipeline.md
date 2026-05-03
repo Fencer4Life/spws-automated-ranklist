@@ -224,3 +224,42 @@ Phase 3 ships the **unified pipeline body** — Stages 1-7, the override system,
 - `project_evf_predominance.md` — EVF events outnumber SPWS; SPWS quality is critical; EVF errors recoverable via EVF API.
 - `project_evf_eligibility_v1plus.md` — EVF requires age 40+; V0 in EVF data = corruption, hard halt.
 - `feedback_be_the_architect.md` — User delegated all technical decisions; ask only about domain-specific requirements.
+
+## Status — Phase 5.5 deliverables (in progress 2026-05-03)
+
+Phase 5.5 closes the remaining gaps preventing CERT-only operation:
+
+1. **Legacy `process_xml_file` direct-write retired** — rewritten as a thin shim over `run_pipeline` + DraftStore so email-arrived XML produces drafts identical to manual `phase5_runner`. The "LEGACY" comment block in [orchestrator.py](../../python/pipeline/orchestrator.py) is removed. *(Pending implementation; plan-test-ID 5.7.)*
+
+2. **Verdict `.md` persisted to Supabase Storage** — new bucket `staging-reports` with per-event subfolder structure (`{event_code}/full.md` replace-on-regen + `{event_code}/deltas/{ts}.md` append-only). Backed by new modules `python/pipeline/storage_md.py` + `python/pipeline/md_writer.py`. ADR-058. Plan-test-IDs 5.5, 5.6, 5.12.
+
+3. **Telegram document delivery** — `TelegramNotifier.send_document` extends [notifications.py](../../python/pipeline/notifications.py) with multipart/form-data POST to Bot API `sendDocument`. Higher-level `send_staging_report(kind='full'|'delta', extras=...)` wraps with structured caption. ADR-059. Plan-test-ID 5.9.
+
+4. **EVF parity sweep emits delta-only `.md`** — `python/pipeline/parity_delta.py` renders before→after diff tables; never overwrites `full.md` from sweep. ADR-060. Plan-test-ID 5.8.
+
+5. **LOCAL parity preserved** — all new infra gated to CERT/PROD via `--md-target` CLI flag (default `local`) and `VITE_DEPLOY_ENV` env switch. LOCAL operator continues today's filesystem + shell-rerun habit unchanged. ADR-061.
+
+6. **Alias triage UX overhaul** — FencerAliasManager sorts unreviewed-aliases-first with amber highlight; modal-based "Create new fencer" replaces window.prompt chain; cascade tournament list surfaced post-mutation via extended RPC return shape (`id_tournaments[]` + `tournament_labels[]`). Migrations `20260503000001` + `20260503000002`. Plan-test-IDs 5.1–5.4 (vitest, pending), 5.10, 5.11.
+
+7. **CERT command surface via Telegram** — 4 new GAS commands `/regen`, `/stage`, `/parity`, `/verdict` + extended `/help`. Edge-fn `dispatch-workflow` allowlist gains `phase5-event-runner.yml` + `regen-report.yml`. ADR-061. *(GAS extension pending.)*
+
+**Shipped 2026-05-03 (this date):**
+
+- ✅ Migrations `supabase/migrations/20260503000001_phase5_alias_view_with_context.sql` (+8 pgTAP), `20260503000002_phase5_alias_rpcs_return_tournaments.sql` (+8), `20260503000003_phase5_staging_reports_bucket.sql` (+5; LOCAL skips when storage disabled).
+- ✅ pgTAP suites `35_alias_view_context.sql`, `36_alias_rpcs_return_tournaments.sql`, `37_staging_reports_bucket_rls.sql` — all green on LOCAL.
+- ✅ Python modules `storage_md.py`, `md_writer.py`, `parity_delta.py` — all GREEN (24 new pytest assertions).
+- ✅ `TelegramNotifier.send_document` + `send_staging_report` extension — GREEN (6 new pytest assertions).
+- ✅ GH workflows `.github/workflows/regen-report.yml` + `.github/workflows/phase5-event-runner.yml` (security-hardened: env vars throughout, regex-validated event_code).
+- ✅ `supabase/functions/dispatch-workflow/index.ts` ALLOWED_WORKFLOWS extended (2 → 4 entries).
+- ✅ Test totals: pgTAP 508 → 543 (+35); pytest +30 (24 new + 6 Telegram); vitest unchanged (pending).
+- ✅ ADRs 058/059/060/061 written with `Status: Proposed`.
+- ✅ `doc/claude/planning.md` written and referenced from CLAUDE.md (canonicalises planning rules).
+
+**Pending (next sessions):**
+
+- Frontend alias UI (Workstream 4): CreateFencerFromAliasModal.svelte, FencerAliasManager.svelte sort/highlight/auto-expand, cascade banner in App.svelte.
+- `process_xml_file` rewrite (Workstream 2): the biggest refactor; plan-test-ID 5.7 will assert email path now produces drafts (not direct writes).
+- `phase5_runner` / `phase5_report` CLI extensions: `--md-target` + `--send-telegram` flags wired into the existing inline `Path.write_text()` paths.
+- `evf_parity_sweep.py` wiring: build ParityChange list → call `parity_delta.render` → upload + Telegram.
+- GAS Telegram commands + `/help` rewrite.
+- Ops manual update + LOCAL/CERT smoke runs.

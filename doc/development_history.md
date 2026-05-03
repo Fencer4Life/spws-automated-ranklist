@@ -728,6 +728,34 @@ Test totals at end of Phase 2: pgTAP 457 (+30), pytest 422 (+20, excl. pre-exist
 Test totals at end of Phase 3: pgTAP 465 (+8), pytest 505 (+83 across 6 new test modules; integration tests skip when LOCAL DB unreachable in CI), vitest 332 (unchanged).
 Test totals at end of Phase 4: pgTAP 508 (+43 — 12 parity-lifecycle, 16 alias-management, 5 cert_ref, 10 promote-RPCs, plus prior cert_ref enum / 9-parser updates), pytest 564 (+59 across `test_url_validation`, `test_evf_parity`, `test_commit_lifecycle`, `test_evf_parity_sweep`, `test_cert_ref_parser`, plus notification + S7 assertions; excludes pre-existing `test_prod_mirror` CI skip), vitest 344 (+12: 4 alias-RPC + 7 alias-component + 1 type-shape).
 
+#### Phase 5.5 — Unified ingestion + Storage verdicts + Telegram delivery + alias triage UX (in progress, started 2026-05-03)
+
+Closes the remaining gaps preventing CERT-only operation while preserving the in-progress LOCAL rebuild verbatim. Five workstreams + planning canonicalisation:
+
+- **Planning canonicalisation:** [doc/claude/planning.md](claude/planning.md) written and referenced from CLAUDE.md. Promotes 16 planning rules from user-MEMORY (verify-before-claim, walk-through scenarios, LOCAL parity, TDD strict order, ADR draft sign-off, doc completeness, CI/CD + Telegram operational hooks, per-event sign-off) to project-canonical instructions every Claude session sees.
+- **4 ADRs proposed:** [ADR-058](adr/058-staging-reports-storage-bucket.md) (`staging-reports` bucket), [ADR-059](adr/059-telegram-document-delivery.md) (Telegram `sendDocument` as primary verdict surface), [ADR-060](adr/060-evf-parity-delta-md.md) (EVF delta-only `.md`), [ADR-061](adr/061-local-parity-and-telegram-commands.md) (LOCAL preserved + 4 new GAS commands).
+- **3 SQL migrations + 3 pgTAP suites GREEN:**
+    - `20260503000001` extends `vw_fencer_aliases` + `fn_list_fencer_aliases` with `latest_category_hint`, `latest_season_end_year`, `json_user_confirmed_aliases` passthrough, `int_unreviewed_alias_count`. Default order is unreviewed-first DESC. (8 pgTAP, 5.10).
+    - `20260503000002` extends `fn_transfer_fencer_alias` + `fn_discard_fencer_alias_and_results` to return `id_tournaments INT[]` + `tournament_labels TEXT[]` alongside the existing `tournaments_recomputed` count. Cross-event cascades become visible to UI. (8 pgTAP, 5.11).
+    - `20260503000003` declares the `staging-reports` Storage bucket via DO block guarded against missing `storage.buckets` (LOCAL no-op, CERT/PROD applies). RLS: authenticated SELECT, service_role writes. (5 pgTAP, 5.12 — skips on LOCAL).
+- **3 Python modules + 24 pytest GREEN:**
+    - `python/pipeline/storage_md.py` — bucket I/O wrapper with event_code regex validation (5.6, 7 tests).
+    - `python/pipeline/md_writer.py` — target router (`local`/`storage`/`both`/`none`), defaults to `local` for shell flows (5.5, 7 tests).
+    - `python/pipeline/parity_delta.py` — renders before→after `.md` from `ParityChange` records, returns None on empty input (5.8, 4 tests).
+- **Telegram extension + 6 pytest GREEN:** `TelegramNotifier.send_document` + `send_staging_report(kind, extras)` POST `multipart/form-data` to Bot API; null-safe when token/chat_id missing (LOCAL default). Verified `sendDocument` accepts arbitrary types via [core.telegram.org/bots/api](https://core.telegram.org/bots/api); ≤50 MB limit (our `.md` ~30 KB). (5.9).
+- **2 GH workflows + edge fn allowlist:** `.github/workflows/regen-report.yml` + `.github/workflows/phase5-event-runner.yml` (env-var hardened against command injection, regex-validated event_code). `dispatch-workflow` ALLOWED_WORKFLOWS grew from 2 → 4.
+- **RTM additions:** FR-102 (unified pipeline), FR-103 (`.md` to Storage), FR-104 (Telegram delivery), FR-105 (EVF delta-only), FR-106 (alias triage UX), FR-107 (LOCAL guarantee), FR-108 (Telegram operator commands).
+
+Test totals at Phase 5.5 (in progress): pgTAP 508 → **543** (+35), pytest 564 → **594+** (+30 from 5.5/5.6/5.8/5.9; full count after process_xml_file rewrite + Workstream 4 vitest + GAS smoke), vitest 344 (Workstream 4 frontend pending: 5.1–5.4).
+
+**Pending in Phase 5.5 (next focused sessions):**
+- Frontend alias UI (Workstream 4): `CreateFencerFromAliasModal.svelte`, FencerAliasManager unreviewed-first sort + amber highlight, App.svelte cascade banner.
+- `process_xml_file` rewrite (Workstream 2, plan-test-ID 5.7): the email path joins `run_pipeline` + DraftStore. This is the largest remaining refactor; deferred to a focused session.
+- `phase5_runner` / `phase5_report` CLI flag wiring (`--md-target`, `--send-telegram`).
+- `evf_parity_sweep.py` extension to call `parity_delta.render` + `notifier.send_staging_report`.
+- GAS Telegram extension: 4 new commands + `/help` rewrite + `downloadFromSupabaseStorage` helper.
+- Ops manual updates + LOCAL smoke L1-L6 + CERT smoke C1-C16.
+
 - **Scope (deferred from MVP M9b):**
 
     - **Pipeline orchestration:** End-to-end flow (parse file → fuzzy match → insert results → score) in a single DB transaction per ADR-014.
