@@ -1117,6 +1117,17 @@ def _build_fencer_matching_summary(db, ctxs: list) -> dict:
         for m in ctx.matches:
             if m.id_fencer is None:
                 continue
+            # Capture the SOURCE bracket URL the scraped name actually came
+            # from, before stage 7 V-cat split (which routes wrong-matched
+            # rows to the matched fencer's BY-derived V-cat tournament — a
+            # different URL when the source was a single-V-cat bracket, or
+            # the SAME URL but a different visible bracket when the source
+            # was joint-pool).  Operators verifying a wrong match need the
+            # source URL, not the misroute destination.  Convert the data/
+            # JSON endpoint to the human results page so the link works in
+            # a browser.
+            src_url = getattr(parsed, "source_url", None) or ""
+            human_url = src_url.replace("/events/results/data/", "/events/results/")
             rows.append({
                 "scraped_name": m.scraped_name,
                 "id_fencer": m.id_fencer,
@@ -1129,6 +1140,7 @@ def _build_fencer_matching_summary(db, ctxs: list) -> dict:
                 "category_hint": getattr(parsed, "category_hint", None),
                 "season_end_year": getattr(parsed, "season_end_year", None)
                                    or getattr(ctx, "season_end_year", None),
+                "source_url": human_url or None,
             })
 
     if not rows:
@@ -1256,34 +1268,41 @@ def _format_fencer_matching_section(stats: dict) -> list[str]:
         # FencerAliasManager "+ Create new fencer" form when a row turns
         # out to be a real new person. Computed from the bracket's
         # nominal V-cat (parsed.category_hint) + season_end_year.
-        lines.append("| Scraped | Resolved | Looks like | Suggested BY (range) |")
-        lines.append("|---|---|---|---|")
+        # Source URL points to the actual bracket the scraped name came
+        # from (pre-stage-7), so the operator can click through to FTL
+        # and verify the name + V-cat. Wrong-match rows misroute to a
+        # different V-cat tournament — that destination URL would not
+        # contain the name, so we deliberately keep the source URL here.
+        lines.append("| Scraped | Resolved | Looks like | Suggested BY (range) | Source URL |")
+        lines.append("|---|---|---|---|---|")
         for icon, reason, d in verdicts:
             sugg, rng = _estimate_birth_year_for_vcat(
                 d.get("category_hint"), d.get("season_end_year"),
             )
             by_cell = f"{sugg} ({rng})" if sugg else "—"
+            url_cell = f"[link]({d['source_url']})" if d.get("source_url") else "—"
             lines.append(
                 f"| `{d['scraped_name']}` | {d['canonical']} | "
-                f"{icon} {reason} | {by_cell} |"
+                f"{icon} {reason} | {by_cell} | {url_cell} |"
             )
         lines.append("")
         # Detail (id_fencer / existing aliases / bracket / place / V-cat / BY) for the
         # operator who needs to act on a flagged row
         lines.append("<details><summary>Per-alias context (id_fencer, existing aliases, bracket, V-cat, place, BY)</summary>")
         lines.append("")
-        lines.append("| Scraped | Resolved (id_fencer) | Existing aliases | Bracket | V-cat | Place | Suggested BY |")
-        lines.append("|---|---|---|---|---|---:|---|")
+        lines.append("| Scraped | Resolved (id_fencer) | Existing aliases | Bracket | V-cat | Place | Suggested BY | Source URL |")
+        lines.append("|---|---|---|---|---|---:|---|---|")
         for icon, reason, d in verdicts:
             existing = "; ".join(d["aliases"]) if d["aliases"] else "_(none)_"
             sugg, rng = _estimate_birth_year_for_vcat(
                 d.get("category_hint"), d.get("season_end_year"),
             )
             by_cell = f"{sugg} ({rng})" if sugg else "—"
+            url_cell = f"[link]({d['source_url']})" if d.get("source_url") else "—"
             lines.append(
                 f"| `{d['scraped_name']}` | {d['canonical']} (#{d['id_fencer']}) | "
                 f"{existing} | {d['ftl_bracket']} | "
-                f"{d.get('category_hint') or '—'} | {d['place']} | {by_cell} |"
+                f"{d.get('category_hint') or '—'} | {d['place']} | {by_cell} | {url_cell} |"
             )
         lines.append("")
         lines.append("</details>")

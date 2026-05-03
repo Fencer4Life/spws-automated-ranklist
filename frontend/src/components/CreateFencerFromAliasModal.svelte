@@ -25,10 +25,24 @@
       <div class="scraped-info">
         <span class="label">Alias:</span>
         <span class="scraped-name">{alias}</span>
-        {#if categoryHint}
-          <span class="ctx-pill" data-field="ctx-pill">{categoryHint}{seasonEndYear ? ` · ${seasonEndYear}` : ''}</span>
+        {#if effectiveCategoryHint}
+          <span class="ctx-pill" data-field="ctx-pill">{effectiveCategoryHint}{seasonEndYear ? ` · ${seasonEndYear}` : ''}</span>
         {/if}
       </div>
+
+      {#if sourceBracketUrl}
+        <div class="source-bracket-row">
+          <span class="label">Source bracket:</span>
+          <a
+            data-field="source-bracket-link"
+            href={sourceBracketUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            verify on FTL ↗
+          </a>
+        </div>
+      {/if}
 
       <div class="form-body">
         <label class="form-field">
@@ -62,7 +76,7 @@
           />
           {#if estimate}
             <span data-field="by-hint" class="hint">
-              Suggested {estimate.suggested} for {categoryHint} (range {estimate.range[0]}–{estimate.range[1]})
+              Suggested {estimate.suggested} for {effectiveCategoryHint} (range {estimate.range[0]}–{estimate.range[1]})
             </span>
           {/if}
         </label>
@@ -100,7 +114,9 @@
     alias = '',
     fromFencerId = 0,
     categoryHint = null as string | null,
+    sourceCategoryHint = null as string | null,
     seasonEndYear = null as number | null,
+    sourceBracketUrl = null as string | null,
     onconfirm = (_data: NewFencerData) => {},
     onclose = () => {},
   }: {
@@ -108,18 +124,27 @@
     alias?: string
     fromFencerId?: number
     categoryHint?: string | null
+    sourceCategoryHint?: string | null
     seasonEndYear?: number | null
+    sourceBracketUrl?: string | null
     onconfirm?: (data: NewFencerData) => void
     onclose?: () => void
   } = $props()
+
+  // 5.18.5 — prefer source-bracket V-cat (parsed.category_hint at ingestion)
+  // over destination V-cat (where stage 7 placed the row). For wrong-match
+  // misroutes the destination is wrong; the source is what the operator
+  // actually wants for BY pre-fill. Falls back to destination when source
+  // is null (joint-pool source bracket, V-cat unknown until stage 7).
+  const effectiveCategoryHint = $derived(sourceCategoryHint ?? categoryHint)
 
   let surname = $state('')
   let firstName = $state('')
   let gender: GenderType = $state('M')
   let birthYearInput: number | undefined = $state(undefined)
 
-  // Computed BY suggestion based on alias staging context.
-  const estimate = $derived(estimateBirthYear(categoryHint, seasonEndYear))
+  // Computed BY suggestion based on alias staging context (source-preferred).
+  const estimate = $derived(estimateBirthYear(effectiveCategoryHint, seasonEndYear))
 
   // Reset form whenever the modal opens with new context.
   $effect(() => {
@@ -215,6 +240,23 @@
     padding: 2px 8px;
     border-radius: 11px;
     font-weight: 600;
+  }
+  .source-bracket-row {
+    padding: 8px 20px;
+    background: #f0f7ff;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 12px;
+    border-bottom: 1px solid #d8e8f5;
+  }
+  .source-bracket-row a {
+    color: #0969da;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .source-bracket-row a:hover {
+    text-decoration: underline;
   }
   .form-body {
     padding: 16px 20px;

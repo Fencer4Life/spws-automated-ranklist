@@ -820,6 +820,14 @@ class ReviewSession:
         rows: list[dict] = []
         if not getattr(ctx, "vcat_groups", None) or not vcat_to_tournament_id:
             return rows
+        # Source V-cat (5.18) — captured from parsed.category_hint, NOT from
+        # the destination tournament's V-cat. The two diverge for wrong-match
+        # rows that stage 7 misrouted (matched fencer's BY drives the
+        # split). Persisted per row so the alias-modal's BY pre-fill can
+        # use the source V-cat range, which is what the operator actually
+        # wants. Joint-pool sources have category_hint=None — we leave the
+        # column NULL so the modal shows no hint instead of a misleading one.
+        source_vcat = getattr(ctx.parsed, "category_hint", None)
         for vcat, matches in ctx.vcat_groups.items():
             tournament_id = vcat_to_tournament_id.get(vcat)
             if tournament_id is None:
@@ -834,6 +842,7 @@ class ReviewSession:
                     "txt_scraped_name": m.scraped_name,
                     "num_match_confidence": m.confidence,
                     "enum_match_method": method_map.get(m.method),  # None for PENDING
+                    "enum_source_age_category": source_vcat,
                 })
         return rows
 

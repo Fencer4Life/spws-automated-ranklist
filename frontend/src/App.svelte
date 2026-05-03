@@ -186,7 +186,9 @@
     alias={createAliasContext?.alias ?? ''}
     fromFencerId={createAliasContext?.fromId ?? 0}
     categoryHint={createAliasContext?.categoryHint ?? null}
+    sourceCategoryHint={createAliasContext?.sourceCategoryHint ?? null}
     seasonEndYear={createAliasContext?.seasonEndYear ?? null}
+    sourceBracketUrl={createAliasContext?.sourceBracketUrl ?? null}
     onconfirm={handleAliasCreateConfirm}
     onclose={handleAliasCreateClose}
   />
@@ -410,7 +412,9 @@
     fromId: number
     alias: string
     categoryHint: string | null
+    sourceCategoryHint: string | null  // 5.18 — source bracket V-cat (preferred over destination)
     seasonEndYear: number | null
+    sourceBracketUrl: string | null    // 5.18 — verify-on-FTL link
   } | null = $state(null)
   let aliasCreateSteps: string[] = $state([])  // progressive checkmarks rendered in the status banner
 
@@ -836,11 +840,18 @@
   async function handleAliasCreate(fromId: number, alias: string) {
     aliasError = null
     const fencer = aliasFencers.find((f) => f.id_fencer === fromId)
+    // 5.18 — extra source-V-cat + bracket URL context. The view returns
+    // these per-fencer (most-recent draft/live row); they're populated for
+    // events scraped after migration 20260503000007 lands. For pre-5.18
+    // events the source-V-cat is null and the modal falls back to
+    // categoryHint (destination), which is what we did before.
     createAliasContext = {
       fromId,
       alias,
       categoryHint: fencer?.latest_category_hint ?? null,
+      sourceCategoryHint: fencer?.latest_source_category_hint ?? null,
       seasonEndYear: fencer?.latest_season_end_year ?? null,
+      sourceBracketUrl: fencer?.latest_source_bracket_url ?? null,
     }
     createAliasModalOpen = true
   }
