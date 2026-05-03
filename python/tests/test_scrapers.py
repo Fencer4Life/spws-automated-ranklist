@@ -725,6 +725,77 @@ class TestFTLEventSchedule:
         assert "EEE000000000000000000000000000E5" in kept_uuids
         assert "FFF000000000000000000000000000F6" in kept_uuids
 
+    # ── 5.22 — Polish nominative-plural "MĘŻCZYŹNI" + "GRUPY ZBIORCZE" pool ─
+    # Background: PPW5-2024-2025's organizer named brackets using the Polish
+    # nominative plural "MĘŻCZYŹNI" (with Ź — Z-acute) instead of the genitive
+    # "MĘŻCZYZN" (plain Z) used by other organizers. The existing GENDER_MALE
+    # regex only matched the genitive, so 14 of 26 PPW5 brackets silently
+    # got "unparseable bracket name" and were dropped. PPW5 also uses
+    # "GRUPY ZBIORCZE" ("collective groups") for pool rounds, equivalent to
+    # MIKST/Mixed in other events.
+
+    def test_parse_tournament_name_sabre_meżczyzni_v0(self):
+        """5.22.1: SZABLA MĘŻCZYŹNI V0 → (SABRE, M, V0). Polish nominative
+        plural form 'MĘŻCZYŹNI' (with Ź) recognized as masculine."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        result = parse_tournament_name("SZABLA MĘŻCZYŹNI V0")
+        assert result == ("SABRE", "M", "V0"), (
+            f"expected (SABRE,M,V0); got {result!r}"
+        )
+
+    def test_parse_tournament_name_foil_meżczyzni_v3(self):
+        """5.22.2: FLORET MĘŻCZYŹNI V3 → (FOIL, M, V3). Same nominative
+        plural variant; verifies the regex covers all weapon prefixes."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        result = parse_tournament_name("FLORET MĘŻCZYŹNI V3")
+        assert result == ("FOIL", "M", "V3"), (
+            f"expected (FOIL,M,V3); got {result!r}"
+        )
+
+    def test_parse_tournament_name_szpada_meżczyzn_singular(self):
+        """5.22.2b: regression guard — original 'MĘŻCZYZN' (genitive, no Ź)
+        form must still parse. Don't regress PPW1-PPW4 grammar."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        result = parse_tournament_name("SZPADA MĘŻCZYZN kategoria 2")
+        assert result == ("EPEE", "M", "V2")
+
+    def test_parse_event_schedule_skips_grupy_zbiorcze(self):
+        """5.22.3: 'GRUPY ZBIORCZE' brackets are pool rounds (Polish:
+        'collective groups'); skip at parse_event_schedule time with the
+        same MIKST/pool-round reason."""
+        from python.tools.scrape_ftl_event_urls import parse_event_schedule
+
+        html = """
+        <html><body><table><tbody>
+          <tr><td><a href="/events/view/AAA000000000000000000000000G001">
+            SZPADA GRUPY ZBIORCZE
+          </a></td></tr>
+          <tr><td><a href="/events/view/BBB000000000000000000000000G002">
+            SZABLA GRUPY ZBIORCZE
+          </a></td></tr>
+          <tr><td><a href="/events/view/CCC000000000000000000000000G003">
+            FLORET GRUPY ZBIORCZE
+          </a></td></tr>
+          <tr><td><a href="/events/view/DDD000000000000000000000000G004">
+            SZABLA MĘŻCZYŹNI V0
+          </a></td></tr>
+        </tbody></table></body></html>
+        """
+        kept, skipped = parse_event_schedule(html, with_skips=True)
+        skipped_uuids = {s["uuid"] for s in skipped}
+        kept_uuids = {k["uuid"] for k in kept}
+        assert "AAA000000000000000000000000G001" in skipped_uuids, (
+            "SZPADA GRUPY ZBIORCZE must be pool-round-skipped"
+        )
+        assert "BBB000000000000000000000000G002" in skipped_uuids
+        assert "CCC000000000000000000000000G003" in skipped_uuids
+        assert "DDD000000000000000000000000G004" in kept_uuids, (
+            "real V0 SABRE-M bracket alongside GRUPY ZBIORCZE must be kept"
+        )
+
 
 # ===========================================================================
 # Dartagnan parser: index + rankings pages (dart.1–dart.6, dart.8)

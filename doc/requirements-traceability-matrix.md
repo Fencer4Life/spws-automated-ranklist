@@ -118,8 +118,9 @@ For ADR-to-FR cross-references, see Project Specification Appendix C — Archite
 | FR-107 | LOCAL operator workflow guarantee: `phase5_runner` / `phase5_report` default `--md-target=local` (filesystem write to `doc/staging/<event>.md`, no Storage upload, no Telegram); CERT/PROD CI workflows pass `--md-target=storage` explicitly. `dispatch-workflow` allowlist gains `phase5-event-runner.yml` + `regen-report.yml` for admin UI + GAS Telegram dispatch. | ADR-061 | 5.5 (md_writer target switch), L1–L6 LOCAL smoke | Covered |
 | FR-108 | Telegram operator commands (extends ADR-025): `/regen <event_code>`, `/stage <event_code>`, `/parity <event_code>`, `/verdict <event_code>` — all dispatched from GAS `checkTelegramCommands` to GitHub workflows or Storage downloads. `/help` text rewritten to enumerate commands + describe auto-delivered documents (filename pattern, when fired). | ADR-061 | C16 (CERT smoke — manual) | Pending (GAS extension + smoke) |
 | FR-109 | FTL event-schedule discovery skips brackets whose first significant token isn't in the SPWS-recognised vocabulary (Polish/English weapon, gender, V-cat, format markers); skipped entries surface in the per-event staging md with reason `"guest event (non-SPWS bracket name)"`. Closes the PPW4-2024-2025 AKADEMICKIE bug where a foreign competition shared the FTL schedule URL and produced duplicate `(id_fencer, id_tournament_draft)` pairs that blocked commit. Complementary to FR-? structural pool-round detection (ADR-057) — name whitelist at discovery, structural detection post-match. | ADR-062 | 5.21.1–5.21.4 (pytest `test_scrapers.py::TestFTLEventSchedule`) | Covered |
+| FR-110 | FTL bracket-name parser tolerates Polish-grammar variants used by different SPWS organizers: `GENDER_MALE` accepts both genitive (`MĘŻCZYZN`, plain Z) and nominative (`MĘŻCZYŹNI`, with Ź) plural roots with optional plural suffix; `MIKST_PATTERN` recognises `GRUPY ZBIORCZE` as a pool-round indicator equivalent to MIKST/Mixed. Closes the PPW5-2024-2025 silent-drop bug (14/26 brackets lost). Regression-locked on the original genitive form. | ADR-063 | 5.22.1, 5.22.2, 5.22.2b (regression), 5.22.3 (pytest `test_scrapers.py::TestFTLEventSchedule`) | Covered |
 
-> **Note:** FR-69 was retired before assignment; gap is intentional. FR-102–FR-108 added Phase 5.5 (2026-05-03). FR-109 added Phase 5.5 follow-up (2026-05-03, ADR-062). Total active FRs = 108.
+> **Note:** FR-69 was retired before assignment; gap is intentional. FR-102–FR-108 added Phase 5.5 (2026-05-03). FR-109 added Phase 5.5 follow-up (2026-05-03, ADR-062). FR-110 added same day (2026-05-03, ADR-063). Total active FRs = 109.
 
 ## Non-Functional Requirements
 
@@ -143,7 +144,7 @@ For ADR-to-FR cross-references, see Project Specification Appendix C — Archite
 
 | Status | Count | FRs |
 |--------|-------|-----|
-| Covered | 98 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-101, FR-103, FR-104, FR-107, FR-109 |
+| Covered | 99 | FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-101, FR-103, FR-104, FR-107, FR-109, FR-110 |
 | Partial | 5 | FR-53, FR-54, FR-102, FR-105, FR-106 |
 | Pending | 1 | FR-108 (GAS extension + CERT smoke) |
 | Superseded | 1 | FR-87 (by FR-88) |
