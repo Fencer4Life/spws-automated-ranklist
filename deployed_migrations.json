@@ -105,8 +105,8 @@
     "schema_fingerprint": "314a9bc12961c634fd38506258cc84e0"
   },
   "prod": {
-    "last_updated": "2026-04-29T06:49:45Z",
-    "last_sha": "870d0ed87dc12335e5290e71308ccb80835a0572",
+    "last_updated": "2026-05-03T12:17:49Z",
+    "last_sha": "d440a632f89245265dd2efee3df14b24e925aae7",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -180,8 +180,33 @@
       "20260428000006_fn_copy_prior_scoring_config.sql",
       "20260429000001_phase4_pew_split.sql",
       "20260429000002_evf_fk_columns.sql",
-      "20260429000003_evf_fk_ingestion.sql"
+      "20260429000003_evf_fk_ingestion.sql",
+      "20260429000004_assert_result_vcat_trigger.sql",
+      "20260430000001_vw_vcat_violation.sql",
+      "20260430000002_assert_result_vcat_fatal.sql",
+      "20260430000003_joint_pool_split.sql",
+      "20260430000004_fn_backfill_joint_pool_split.sql",
+      "20260501000001_phase0_schema_prep.sql",
+      "20260501000002_cert_ref_schema.sql",
+      "20260501000003_phase1_ingest_traceability.sql",
+      "20260501000004_phase2_draft_tables.sql",
+      "20260502000001_phase3_fn_alias_writeback.sql",
+      "20260502000002_phase4_evf_parity_lifecycle.sql",
+      "20260502000003_phase4_alias_management.sql",
+      "20260502000004_phase4_cert_ref_parser_enum.sql",
+      "20260502000005_phase4_cert_ref_query_rpcs.sql",
+      "20260502000006_phase4_pew_cascade_hook.sql",
+      "20260502000007_phase4_evf_promote_rpcs.sql",
+      "20260502000008_phase4_fix_alias_scalar_seed.sql",
+      "20260502000009_phase5_alias_draft_aware.sql",
+      "20260502000010_phase5_user_confirmed_aliases.sql",
+      "20260502000011_phase5_commit_runs_scoring.sql",
+      "20260503000001_phase5_alias_view_with_context.sql",
+      "20260503000002_phase5_alias_rpcs_return_tournaments.sql",
+      "20260503000003_phase5_staging_reports_bucket.sql",
+      "20260503000004_phase5_fencer_trim_trigger.sql",
+      "20260503000005_phase5_5_fix_alias_jsonb_corruption.sql"
     ],
-    "schema_fingerprint": "4f03b4d219f67e63b1fc51c1e4895e2f"
+    "schema_fingerprint": "314a9bc12961c634fd38506258cc84e0"
   }
 }
