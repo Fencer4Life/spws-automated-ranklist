@@ -712,13 +712,19 @@ def _append_event_to_seed(db, event_code: str) -> int:
               .execute()
         ).data or []
 
-    # Build fencer-id → (surname, first_name) lookup for the result sub-selects
+    # Build fencer-id → (surname, first_name, …) lookup for the result sub-selects
+    # AND for the new tbl_fencer INSERT emission (5.13). The select widens to
+    # include int_birth_year + enum_gender + txt_nationality so the seed-export
+    # can carry fencers added during alias triage. Without these, after
+    # ./scripts/reset-dev.sh the result rows lose their FK target and
+    # ingestion mis-matches the alias all over again.
     fencer_ids = list({r["id_fencer"] for r in results if r.get("id_fencer")})
     fencer_map: dict[int, dict] = {}
     if fencer_ids:
         rows = (
             sb.table("tbl_fencer")
-              .select("id_fencer,txt_surname,txt_first_name")
+              .select("id_fencer,txt_surname,txt_first_name,int_birth_year,"
+                      "enum_gender,txt_nationality")
               .in_("id_fencer", fencer_ids)
               .execute()
         ).data or []
@@ -742,6 +748,37 @@ def _append_event_to_seed(db, event_code: str) -> int:
     lines.append(f"-- ========= Event {event_code} (committed {ts}) =========")
     lines.append("")
 
+    # Fencers (5.13) — emit INSERT INTO tbl_fencer for every fencer touched by
+    # this event's results. ON CONFLICT (txt_surname, txt_first_name) DO NOTHING
+    # so baseline fencers (already in seed_tbl_fencer.sql) are no-ops; only
+    # newly-added rows from Create-new-fencer triage actually insert.
+    #
+    # Defence in depth (5.13.2): trim surname + first_name on emit so any
+    # leading/trailing-whitespace corruption from the legacy window.prompt
+    # flow ('  Bartosz') doesn't propagate into the seed.
+    seen_fencers: set[tuple[str, str]] = set()
+    for fid in sorted(fencer_map.keys()):
+        f = fencer_map[fid]
+        surname = (f.get("txt_surname") or "").strip()
+        first = (f.get("txt_first_name") or "").strip()
+        if not surname or not first:
+            continue
+        key = (surname, first)
+        if key in seen_fencers:
+            continue
+        seen_fencers.add(key)
+        by = f.get("int_birth_year")
+        gender = f.get("enum_gender")
+        nationality = f.get("txt_nationality") or "PL"
+        lines.append(
+            f"INSERT INTO tbl_fencer (txt_surname, txt_first_name, "
+            f"int_birth_year, enum_gender, txt_nationality) VALUES ("
+            f"{_sql_quote(surname)}, {_sql_quote(first)}, "
+            f"{_sql_quote(by)}, {_sql_quote(gender)}, "
+            f"{_sql_quote(nationality)})\n"
+            f"ON CONFLICT DO NOTHING;"
+        )
+
     # Tournaments — straight INSERT by event txt_code
     for t in tournaments:
         cols = ("id_event", "txt_code", "txt_name", "enum_type", "num_multiplier",
@@ -759,15 +796,17 @@ def _append_event_to_seed(db, event_code: str) -> int:
             f"ON CONFLICT (txt_code) DO NOTHING;"
         )
 
-    # Results — sub-SELECT by fencer (surname,first_name) + tournament (txt_code)
+    # Results — sub-SELECT by fencer (surname,first_name) + tournament (txt_code).
+    # 5.13.2: same .strip() applied as for the fencer INSERT above so the
+    # sub-SELECT lookup matches.
     n_rows = 0
     for r in results:
         f = fencer_map.get(r["id_fencer"])
         tcode = tournament_code_map.get(r["id_tournament"])
         if not f or not tcode:
             continue
-        surname = _sql_quote(f["txt_surname"])
-        first = _sql_quote(f["txt_first_name"])
+        surname = _sql_quote((f["txt_surname"] or "").strip())
+        first = _sql_quote((f["txt_first_name"] or "").strip())
         tcode_q = _sql_quote(tcode)
         place = _sql_quote(r.get("int_place"))
         score = _sql_quote(r.get("num_final_score"))
