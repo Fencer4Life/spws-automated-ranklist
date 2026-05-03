@@ -231,11 +231,33 @@ def export_monolithic(ref: str, token: str) -> str:
     ORDER BY e.txt_code, t.txt_code
     """)
 
-    # Bulk fetch ALL results with fencer names and tournament codes
+    # Bulk fetch ALL results with fencer names and tournament codes.
+    # Schema-driven: discover all data columns of tbl_result (sans auto-id +
+    # FKs which we re-resolve via sub-SELECT). This picks up ADR-056-revision
+    # `enum_source_age_category` and any future-added provenance columns —
+    # without it, post-revision `fn_assert_result_vcat` falls back to the
+    # BY-derived check and rejects rows whose source bracket V-cat differs
+    # from BY+season_end_year canonical math (the GP1-V1-SABRE-M case).
     print("  tbl_result (bulk)...", file=sys.stderr)
-    all_results = q("""
+    r_cols = discover_cols(ref, token, "tbl_result")
+    # Skip auto-id + FKs we re-resolve via subquery, and skip score-engine
+    # output columns that get recomputed by fn_calc_tournament_scores on
+    # post-seed run (avoid drift between exported and recomputed values).
+    _R_SKIP = {
+        "id_result", "id_fencer", "id_tournament",
+        "num_place_pts", "num_de_bonus", "num_podium_bonus",
+        "num_final_score", "ts_points_calc",
+    }
+    r_cols_data = [c for c in r_cols if c["name"] not in _R_SKIP]
+    r_data_select = ", ".join(
+        f"r.{c['name']}::TEXT" if c["type"] in ("date", "USER-DEFINED")
+        else f"r.{c['name']}"
+        for c in r_cols_data
+    )
+    all_results = q(f"""
     SELECT t.txt_code AS tourn_code, r.int_place, r.num_final_score,
-           f.txt_surname, f.txt_first_name
+           f.txt_surname, f.txt_first_name,
+           {r_data_select}
     FROM tbl_result r
     JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
     JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
@@ -278,19 +300,31 @@ def export_monolithic(ref: str, token: str) -> str:
         total_tournaments += 1
 
         # Results for this tournament
+        # Build INSERT column list: 2 FK sub-SELECTs + every discovered
+        # data column (incl. enum_source_age_category for ADR-056 trigger).
+        r_insert_cols = (
+            ["id_fencer", "id_tournament"] + [c["name"] for c in r_cols_data]
+        )
         for r in results_by_tourn.get(t_code, []):
             surname = esc(r["txt_surname"])
             first_name = esc(r["txt_first_name"])
-            score = str(r["num_final_score"]) if r["num_final_score"] is not None else "NULL"
+            fencer_sub = (
+                f"(SELECT id_fencer FROM tbl_fencer "
+                f"WHERE txt_surname = '{surname}' AND txt_first_name = '{first_name}' LIMIT 1)"
+            )
+            tournament_sub = (
+                f"(SELECT id_tournament FROM tbl_tournament WHERE txt_code = '{esc(t_code)}')"
+            )
+            data_vals = [
+                sql_val(r.get(c["name"]), c["type"]) for c in r_cols_data
+            ]
+            select_cols = ", ".join([fencer_sub, tournament_sub] + data_vals)
             lines.append(
-                f"INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score) "
-                f"SELECT "
-                f"(SELECT id_fencer FROM tbl_fencer WHERE txt_surname = '{surname}' AND txt_first_name = '{first_name}' LIMIT 1), "
-                f"(SELECT id_tournament FROM tbl_tournament WHERE txt_code = '{esc(t_code)}'), "
-                f"{r['int_place']}, {score} "
-                f"WHERE NOT EXISTS (SELECT 1 FROM tbl_result WHERE id_fencer = "
-                f"(SELECT id_fencer FROM tbl_fencer WHERE txt_surname = '{surname}' AND txt_first_name = '{first_name}' LIMIT 1) "
-                f"AND id_tournament = (SELECT id_tournament FROM tbl_tournament WHERE txt_code = '{esc(t_code)}'));"
+                f"INSERT INTO tbl_result ({', '.join(r_insert_cols)}) "
+                f"SELECT {select_cols} "
+                f"WHERE NOT EXISTS (SELECT 1 FROM tbl_result "
+                f"WHERE id_fencer = {fencer_sub} "
+                f"AND id_tournament = {tournament_sub});"
             )
             total_results += 1
 
