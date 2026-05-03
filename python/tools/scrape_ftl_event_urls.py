@@ -32,8 +32,18 @@ WEAPON_MAP: dict[str, str] = {
 }
 
 GENDER_FEMALE = re.compile(r"KOBIET[AYE]?|WOMEN'?S?", re.IGNORECASE)
-GENDER_MALE = re.compile(r"MĘŻCZYZN[I]?|MEN'?S?", re.IGNORECASE)
-MIKST_PATTERN = re.compile(r"\bMIKS(?:T)?\b|\bMIXED\b", re.IGNORECASE)
+# Polish has two plural cases for "men" used in fencing-bracket naming:
+#   MĘŻCZYZN    — genitive plural ("of men"), used with "kategoria N"
+#   MĘŻCZYŹNI   — nominative plural ("the men"), used with "Vn" V-cat suffix
+# `[ZŹ]` allows either Z (genitive root) or Ź (nominative root, with acute);
+# `[IY]?` handles the optional plural-ending suffix. Plan test 5.22.1/5.22.2.
+GENDER_MALE = re.compile(r"MĘŻCZY[ZŹ]N[IY]?|MEN'?S?", re.IGNORECASE)
+# Plan test 5.22.3 — `GRUPY ZBIORCZE` (Polish: "collective groups") is a
+# pool-round indicator used by some SPWS organizers in lieu of `MIKST`.
+MIKST_PATTERN = re.compile(
+    r"\bMIKS(?:T)?\b|\bMIXED\b|\bGRUPY\s+ZBIORCZE\b",
+    re.IGNORECASE,
+)
 # Skip DE (Direct Elimination) sub-events, amateur, junior/cadet/U-age events.
 # NOT skipping "Senior" — for some FTL events Senior = V0 (heuristic mapping
 # below). Per user feedback 2026-05-02: case-specific, treat as V0.

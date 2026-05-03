@@ -1434,6 +1434,7 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 | [ADR-060](adr/060-evf-parity-delta-md.md) | EVF parity sweep emits delta-only `.md` (only changed rows; never overwrites `full.md` from sweep); silent on no-drift; `full.md` is owned by operator-driven actions (first ingest, alias mutation regen) — keeps `full.md` semantically "operator-validated state at last regen" | ADR-053, ADR-058, ADR-059 |
 | [ADR-061](adr/061-local-parity-and-telegram-commands.md) | LOCAL operator workflow preserved verbatim (filesystem `.md`, no Storage, no Telegram by default) — all new infra gated to CERT/PROD via `--md-target` CLI flag and `VITE_DEPLOY_ENV` env switch; CERT command surface extended via 4 new GAS Telegram commands (`/regen`, `/stage`, `/parity`, `/verdict`) + extended `/help`; `dispatch-workflow` allowlist gains `phase5-event-runner.yml` + `regen-report.yml` | ADR-025, ADR-041, ADR-050 |
 | [ADR-062](adr/062-spws-bracket-name-filter.md) | FTL event-schedule discovery skips brackets whose first significant token isn't in the SPWS-recognised vocabulary (Polish/English weapon, gender, V-cat, format markers) — closes a class of bug where a guest competition shares the same FTL schedule URL (e.g. AKADEMICKIE Mistrzostwa alongside PPW4-2024-2025), survives existing `MIKST_PATTERN` / `SKIP_PATTERNS` filters, gets ingested as if it were the SPWS event, and produces duplicate `(id_fencer, id_tournament_draft)` pairs that block commit on `uq_result_fencer_tournament`; complementary to ADR-057 (structural pool-round) — name-first whitelist at discovery, structural detection post-match | ADR-050, ADR-057 |
+| [ADR-063](adr/063-polish-plural-and-grupy-zbiorcze.md) | Polish-grammar-tolerant FTL bracket parsing: `GENDER_MALE` widens `MĘŻCZYZN[I]?` → `MĘŻCZY[ZŹ]N[IY]?` to accept both genitive (Z) and nominative (Ź) plural roots; `MIKST_PATTERN` adds `GRUPY ZBIORCZE` (Polish "collective groups") as a pool-round indicator — closes silent data-loss bug where 14 of 26 PPW5-2024-2025 brackets dropped at the splitter as `unparseable bracket name` because the organizer used a different (equally valid) Polish convention than PPW1-PPW4 organizers; regression-test-locked via 5.22.2b on the original genitive form | ADR-050, ADR-057, ADR-062 |
 
 ## Appendix D — Test Baseline
 
@@ -1443,10 +1444,10 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
 | pgTAP | 562 | 42 | `supabase/tests/` |
-| pytest | 679 | 34 | `python/tests/` |
+| pytest | 683 | 34 | `python/tests/` |
 | vitest | 371 | 31 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **1619** | | |
+| **Total** | **1623** | | |
 
 **Phase 5.5 additions** (this entry): pgTAP +21 (5.10 + 5.11 + 5.12) + 4 (5.15) + 8 (5.18.A/B/C/D), pytest +30 (5.5 md_writer + 5.6 storage_md + 5.8 parity_delta + 5.9 telegram_send_document, plus rebuild-session pytest) + 4 (5.16 review_cli PENDING-inclusion fix) + 3 (5.18.4 source-V-cat capture), vitest +28 (5.1 birthYearEstimate + 5.2 CreateFencerFromAliasModal + 5.3 api.regenStagingReport + 5.4 FencerAliasManager.unreviewed) + 5 (5.18.5 modal source-V-cat + bracket URL). The process_xml_file rewrite (5.7) and the wiring of `App.svelte` cascade banner (covered here as integration, no new test ID) remain. Test totals will move again once 5.7 lands.
 
@@ -1473,5 +1474,10 @@ The admin EventManager accordion rendered tournament codes as plain `<span>` tex
 PPW4's FTL event-schedule URL listed 25 brackets. Two of them (`A81C3A30…` szabla mężczyzn + `677AE3BE…` szabla kobiety) belonged to a *different* competition — "Akademickie Mistrzostwa Warszawy i Mazowsza" — held back-to-back at the same venue. The men's bracket parsed as SABRE+M with V-cat markers `(0)/(1)/(2)`, so `s7_split_by_vcat` treated it as a joint pool, emitted V0/V1/V2 PPW4 drafts, and the consolidator merged them into the actual PPW4 SABRE-M brackets by `txt_code`. Five fencers who competed in BOTH events (KOŃCZYŁO V2, MIKOŁAJCZUK V0, REDZIŃSKI V0, PRZYSTAJKO V1, TECŁAW V1) ended up with duplicate `(id_fencer, id_tournament_draft)` pairs blocking commit on `uq_result_fencer_tournament`. Fix at the cheapest layer (discovery): `parse_event_schedule` gains a third filter (alongside `MIKST_PATTERN` and `SKIP_PATTERNS`) requiring the bracket name's first significant token to match `SPWS_BRACKET_FIRST_TOKEN` — Polish/English weapons, genders, V-cat / age / format markers. Names that don't match → skipped with reason `"guest event (non-SPWS bracket name)"` and surfaced in the per-event staging md. Verified on PPW4 re-stage: 0 duplicate pairs across 18 tournaments / 102 results.
 
 Test totals: pytest 675→679 (+4 in `test_scrapers.py::TestFTLEventSchedule` for 5.21.1/.2/.3/.4). pgTAP unchanged (562). vitest unchanged (371).
+
+**5.22 ADR-063 — Polish-plural-case + GRUPY ZBIORCZE pool indicator (2026-05-03)** — caught during PPW5-2024-2025 ingest:
+PPW5 silently dropped 14 of 26 brackets at the FTL splitter ("unparseable bracket name") because the organizer used different — but equally valid — Polish grammar than PPW1-PPW4. (1) `MĘŻCZYŹNI` (nominative plural, with Ź — Z-acute) instead of the genitive `MĘŻCZYZN` used in `kategoria N` constructs by other organizers. (2) `GRUPY ZBIORCZE` (Polish "collective groups") for preliminary all-fencer pool rounds, instead of MIKST/Mixed. Fix in `python/tools/scrape_ftl_event_urls.py`: `GENDER_MALE` widens `MĘŻCZYZN[I]?` → `MĘŻCZY[ZŹ]N[IY]?` (covers both Z/Ź roots, optional plural suffix); `MIKST_PATTERN` extends with `\bGRUPY\s+ZBIORCZE\b` so these brackets get the existing pool-round skip path. Verified on PPW5 re-stage after discard: 14 tournaments / 59 results / 0 duplicate pairs (was 5 tournaments / 25 results pre-fix).
+
+Test totals: pytest 679→683 (+4 in `test_scrapers.py::TestFTLEventSchedule` for 5.22.1/.2/.2b/.3 — the .2b assertion regression-locks the original genitive `MĘŻCZYZN` form). pgTAP unchanged (562). vitest unchanged (371).
 
 <!-- Coverage Summary moved to doc/requirements-traceability-matrix.md in Phase 0.5 (2026-05-01). -->
