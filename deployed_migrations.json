@@ -1,6 +1,6 @@
 {
   "cert": {
-    "last_updated": "2026-04-29T06:48:27Z",
+    "last_updated": "2026-05-03T12:01:00Z",
     "last_sha": "870d0ed87dc12335e5290e71308ccb80835a0572",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
@@ -75,7 +75,12 @@
       "20260428000006_fn_copy_prior_scoring_config.sql",
       "20260429000001_phase4_pew_split.sql",
       "20260429000002_evf_fk_columns.sql",
-      "20260429000003_evf_fk_ingestion.sql"
+      "20260429000003_evf_fk_ingestion.sql",
+      "20260429000004_assert_result_vcat_trigger.sql",
+      "20260430000001_vw_vcat_violation.sql",
+      "20260430000002_assert_result_vcat_fatal.sql",
+      "20260430000003_joint_pool_split.sql",
+      "20260430000004_fn_backfill_joint_pool_split.sql"
     ],
     "schema_fingerprint": "4f03b4d219f67e63b1fc51c1e4895e2f"
   },
