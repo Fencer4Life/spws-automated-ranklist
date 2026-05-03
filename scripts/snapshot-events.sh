@@ -45,13 +45,20 @@ python - <<'PYEOF'
 from python.pipeline.db_connector import create_db_connector
 from datetime import datetime, UTC
 
-def sqlit(v):
+# Columns whose Postgres type is enum_*[] need an explicit cast on the
+# array literal — Postgres won't auto-coerce text[] → enum[].
+ARRAY_CASTS = {
+    "arr_weapons": "::enum_weapon_type[]",
+}
+
+def sqlit(v, col=None):
     if v is None: return 'NULL'
     if isinstance(v, bool): return 'TRUE' if v else 'FALSE'
     if isinstance(v, (int, float)): return str(v)
     if isinstance(v, list):
         inner = ','.join("'" + str(x).replace("'","''") + "'" for x in v)
-        return f"ARRAY[{inner}]"
+        cast = ARRAY_CASTS.get(col, "")
+        return f"ARRAY[{inner}]{cast}"
     s = str(v).replace("'", "''")
     return f"'{s}'"
 
@@ -74,7 +81,7 @@ out = [
 season_cols = sorted(seasons[0].keys()) if seasons else []
 for s in seasons:
     cols = [c for c in season_cols if s.get(c) is not None]
-    vals = [sqlit(s[c]) for c in cols]
+    vals = [sqlit(s[c], c) for c in cols]
     updates = ', '.join(f"{c}=EXCLUDED.{c}" for c in cols if c != 'id_season')
     out.append(
         f"INSERT INTO tbl_season ({', '.join(cols)}) VALUES ({', '.join(vals)})\n"
@@ -85,7 +92,7 @@ out.append("-- ========== tbl_event ==========")
 event_cols = sorted(events[0].keys()) if events else []
 for e in events:
     cols = [c for c in event_cols if e.get(c) is not None]
-    vals = [sqlit(e[c]) for c in cols]
+    vals = [sqlit(e[c], c) for c in cols]
     updates = ', '.join(f"{c}=EXCLUDED.{c}" for c in cols if c != 'id_event')
     out.append(
         f"INSERT INTO tbl_event ({', '.join(cols)}) VALUES ({', '.join(vals)})\n"
