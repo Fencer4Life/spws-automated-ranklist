@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-05-03T12:11:00Z",
-    "last_sha": "870d0ed87dc12335e5290e71308ccb80835a0572",
+    "last_updated": "2026-05-03T12:16:15Z",
+    "last_sha": "d440a632f89245265dd2efee3df14b24e925aae7",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -97,9 +97,12 @@
       "20260502000010_phase5_user_confirmed_aliases.sql",
       "20260502000011_phase5_commit_runs_scoring.sql",
       "20260503000001_phase5_alias_view_with_context.sql",
-      "20260503000002_phase5_alias_rpcs_return_tournaments.sql"
+      "20260503000002_phase5_alias_rpcs_return_tournaments.sql",
+      "20260503000003_phase5_staging_reports_bucket.sql",
+      "20260503000004_phase5_fencer_trim_trigger.sql",
+      "20260503000005_phase5_5_fix_alias_jsonb_corruption.sql"
     ],
-    "schema_fingerprint": "4f03b4d219f67e63b1fc51c1e4895e2f"
+    "schema_fingerprint": "314a9bc12961c634fd38506258cc84e0"
   },
   "prod": {
     "last_updated": "2026-04-29T06:49:45Z",
