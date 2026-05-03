@@ -1442,11 +1442,11 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
 | pgTAP | 543 | 38 | `supabase/tests/` |
-| pytest | 426 | 28 | `python/tests/` |
-| vitest | 332 | 26 | `frontend/tests/` |
+| pytest | 647 | 31 | `python/tests/` |
+| vitest | 372 | 31 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **1308** | | |
+| **Total** | **1569** | | |
 
-**Phase 5.5 additions** (this entry): pgTAP +21 (5.10 + 5.11 + 5.12), pytest +24 (5.5 md_writer + 5.6 storage_md + 5.8 parity_delta + 5.9 telegram_send_document). Frontend (vitest) tests for the alias UI (5.1-5.4) and the process_xml_file rewrite (5.7) are still pending; counts will update on completion.
+**Phase 5.5 additions** (this entry): pgTAP +21 (5.10 + 5.11 + 5.12), pytest +30 (5.5 md_writer + 5.6 storage_md + 5.8 parity_delta + 5.9 telegram_send_document, plus rebuild-session pytest), vitest +28 (5.1 birthYearEstimate + 5.2 CreateFencerFromAliasModal + 5.3 api.regenStagingReport + 5.4 FencerAliasManager.unreviewed). The process_xml_file rewrite (5.7) and the wiring of `App.svelte` cascade banner (covered here as integration, no new test ID) remain. Test totals will move again once 5.7 lands.
 
 <!-- Coverage Summary moved to doc/requirements-traceability-matrix.md in Phase 0.5 (2026-05-01). -->

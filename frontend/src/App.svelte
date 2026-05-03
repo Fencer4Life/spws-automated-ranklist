@@ -173,12 +173,23 @@
   {#if error}
     <div class="error-banner {errorType}">
       <button class="close-x" onclick={() => clearStatus()} title="Dismiss">×</button>
-      {error}
+      <span style="white-space: pre-line">{error}</span>
       {#if errorLink}
         <br><a href={errorLink} target="_blank" rel="noopener">{errorLink}</a>
       {/if}
     </div>
   {/if}
+
+  <!-- Phase 5.5 (ADR-058+059+061) — Create-new-fencer modal -->
+  <CreateFencerFromAliasModal
+    open={createAliasModalOpen}
+    alias={createAliasContext?.alias ?? ''}
+    fromFencerId={createAliasContext?.fromId ?? 0}
+    categoryHint={createAliasContext?.categoryHint ?? null}
+    seasonEndYear={createAliasContext?.seasonEndYear ?? null}
+    onconfirm={handleAliasCreateConfirm}
+    onclose={handleAliasCreateClose}
+  />
 </div>
 
 <AdminSignInModal
@@ -266,6 +277,7 @@
     listFencerAliases,
     transferFencerAlias,
     splitFencerFromAlias,
+    regenStagingReport,  // Phase 5.5 (ADR-058+059+061)
     discardFencerAliasAndResults,
     confirmFencerAlias,
   } from './lib/api'
@@ -293,6 +305,8 @@
   import IdentityManager from './components/IdentityManager.svelte'
   import BirthYearReview from './components/BirthYearReview.svelte'
   import FencerAliasManager from './components/FencerAliasManager.svelte'
+  // Phase 5.5 (ADR-058+059) — alias-create modal + cascade banner regen.
+  import CreateFencerFromAliasModal from './components/CreateFencerFromAliasModal.svelte'
   import { getAuthState, startAuth, signIn, confirmEnroll, verifyChallenge, signOut, reset as resetAuth } from './lib/admin-auth.svelte'
 
   // ADR-041: github-pat / github-repo attributes removed. Workflow dispatch
@@ -389,6 +403,16 @@
   let fencerTab = $state('identities')
   let aliasFencers: FencerWithAliases[] = $state([])
   let aliasError: string | null = $state(null)
+
+  // Phase 5.5 (ADR-058+059+061) — Create-new-fencer modal + cascade-banner state.
+  let createAliasModalOpen = $state(false)
+  let createAliasContext: {
+    fromId: number
+    alias: string
+    categoryHint: string | null
+    seasonEndYear: number | null
+  } | null = $state(null)
+  let aliasCreateSteps: string[] = $state([])  // progressive checkmarks rendered in the status banner
 
   let modalOpen = $state(false)
   let modalFencerName = $state('')
@@ -806,35 +830,110 @@
     }
   }
 
+  // Phase 5.5 (ADR-058+059+061) — open the modal instead of the prompt chain.
+  // Pulls latest_category_hint + latest_season_end_year from the alias view
+  // so the modal can prepopulate the BY suggestion via estimateBirthYear.
   async function handleAliasCreate(fromId: number, alias: string) {
     aliasError = null
-    const surname = window.prompt(`Create new fencer from alias "${alias}". Surname:`)
-    if (!surname) return
-    const firstName = window.prompt('First name:')
-    if (!firstName) return
-    const byStr = window.prompt('Birth year (YYYY):')
-    const birthYear = Number(byStr)
-    if (!Number.isFinite(birthYear) || birthYear < 1900 || birthYear > 2030) {
-      aliasError = `Invalid birth year: ${byStr}`
-      return
+    const fencer = aliasFencers.find((f) => f.id_fencer === fromId)
+    createAliasContext = {
+      fromId,
+      alias,
+      categoryHint: fencer?.latest_category_hint ?? null,
+      seasonEndYear: fencer?.latest_season_end_year ?? null,
     }
-    const gender = window.prompt('Gender (M/F):')
-    if (gender !== 'M' && gender !== 'F') {
-      aliasError = `Invalid gender: ${gender}`
-      return
-    }
+    createAliasModalOpen = true
+  }
+
+  async function handleAliasCreateConfirm(data: {
+    txt_surname: string
+    txt_first_name: string
+    int_birth_year: number
+    enum_gender: 'M' | 'F'
+  }) {
+    if (!createAliasContext) return
+    const { fromId, alias } = createAliasContext
+    const eventCode = stagingEventCode  // Phase-5 selected event code (see below)
+    createAliasModalOpen = false
+    aliasError = null
+    aliasCreateSteps = []
+    errorType = 'progress'
+
     try {
-      await splitFencerFromAlias(fromId, alias, {
-        txt_surname: surname,
-        txt_first_name: firstName,
-        int_birth_year: birthYear,
-        enum_gender: gender,
-      })
+      const result = await splitFencerFromAlias(fromId, alias, data) as any
+      const newId = result?.new_fencer_id
+      const tr = result?.transfer_result ?? {}
+      aliasCreateSteps = [
+        `✓ Fencer created (id #${newId} — ${data.txt_surname} ${data.txt_first_name}, BY=${data.int_birth_year}, ${data.enum_gender})`,
+        `✓ Removed from #${fromId} (${tr.results_moved ?? 0} results + ${tr.draft_results_moved ?? 0} drafts)`,
+        `✓ Reassigned to #${newId} (${tr.tournaments_recomputed ?? 0} tournaments recomputed)`,
+      ]
+
+      // Cascade tournament list (id_tournaments[] + tournament_labels[] from
+      // the extended RPC return per migration 20260503000002).
+      const ids: number[] = tr.id_tournaments ?? []
+      const labels: string[] = tr.tournament_labels ?? []
+      if (ids.length > 0) {
+        for (let i = 0; i < ids.length; i++) {
+          aliasCreateSteps = [...aliasCreateSteps, `   • ${labels[i] ?? '?'}  [t#${ids[i]}]`]
+        }
+      }
+
+      // Distinct event_codes touched (the prefix before the first ' / ')
+      const distinctEvents = Array.from(new Set(
+        labels.map((l) => l.split(' / ')[0]).filter(Boolean)
+      ))
+      const otherEvents = eventCode
+        ? distinctEvents.filter((ec) => ec !== eventCode)
+        : distinctEvents
+      if (otherEvents.length > 0) {
+        aliasCreateSteps = [
+          ...aliasCreateSteps,
+          `⚠ ${otherEvents.length} prior event(s) recomputed: ${otherEvents.join(', ')}`,
+        ]
+      }
+
+      // Regen .md for each affected event_code (CERT/PROD only; LOCAL no-ops).
+      const eventsToRegen = eventCode
+        ? Array.from(new Set([eventCode, ...distinctEvents]))
+        : distinctEvents
+      for (const ec of eventsToRegen) {
+        aliasCreateSteps = [...aliasCreateSteps, `⏳ Regenerating ${ec}/full.md...`]
+        try {
+          const r = await regenStagingReport(ec)
+          aliasCreateSteps = aliasCreateSteps.slice(0, -1).concat(
+            r?.skipped === 'local'
+              ? `ℹ ${ec}/full.md regen skipped on LOCAL (rerun phase5_report from shell)`
+              : `✓ ${ec}/full.md regenerated · sent to Telegram`,
+          )
+        } catch (e: unknown) {
+          aliasCreateSteps = aliasCreateSteps.slice(0, -1).concat(
+            `❌ ${ec}/full.md regen failed: ${e instanceof Error ? e.message : String(e)}`,
+          )
+        }
+      }
+
+      errorType = 'success'
+      error = aliasCreateSteps.join('\n')
       await loadAliasFencers()
     } catch (e: unknown) {
-      aliasError = e instanceof Error ? e.message : String(e)
+      errorType = 'error'
+      error = `Create-new-fencer failed: ${e instanceof Error ? e.message : String(e)}`
     }
   }
+
+  function handleAliasCreateClose() {
+    createAliasModalOpen = false
+    createAliasContext = null
+  }
+
+  // Phase 5.5 — placeholder for the staging event_code. Phase 5 admin views
+  // already track the selected event in their own state; for the cascade-
+  // banner cross-event compare, the operator's "current event" is whichever
+  // event they were last viewing in the alias UI. Until that lifting is
+  // done, leave this null — the banner still works (it lists touched events
+  // generically without the ⚠ "other events" warning).
+  let stagingEventCode: string | null = $state(null)
 
   async function handleAliasDiscard(fromId: number, alias: string) {
     aliasError = null

@@ -37,6 +37,12 @@ export function getClient(): SupabaseClient {
   return client
 }
 
+// Testing-only seam: allows vitest to inject a mocked client without spinning
+// up createClient(). Not exported to runtime callers (treat as internal).
+export function _setClientForTesting(c: SupabaseClient | null): void {
+  client = c
+}
+
 export async function refreshActiveSeason(): Promise<void> {
   await getClient().rpc('fn_refresh_active_season')
 }
@@ -645,4 +651,40 @@ export async function confirmFencerAlias(
   })
   if (error) throw new Error(`fn_confirm_fencer_alias: ${error.message}`)
   return data
+}
+
+// ===========================================================================
+// Phase 5.5 (ADR-058+059+061) — Verdict .md regen via dispatch-workflow
+// ===========================================================================
+
+export interface RegenStagingReportResult {
+  ok?: boolean
+  skipped?: 'local'
+  runs_url?: string
+}
+
+// Dispatches regen-report.yml on CERT/PROD via the dispatch-workflow edge fn.
+// On LOCAL (VITE_DEPLOY_ENV unset / empty / 'LOCAL'), this is a NO-OP per
+// ADR-061 — the LOCAL operator continues to rerun phase5_report from shell
+// after a triage session, which is the habit they have today. The function
+// returns {skipped: 'local'} so the caller can render an informational
+// step instead of a "regen complete" step.
+export async function regenStagingReport(
+  eventCode: string,
+): Promise<RegenStagingReportResult> {
+  const env = ((import.meta.env.VITE_DEPLOY_ENV ?? '') as string).toUpperCase()
+  if (env !== 'CERT' && env !== 'PROD') {
+    return { skipped: 'local' }
+  }
+  const target = env === 'PROD' ? 'prod' : 'cert'
+  const { data, error } = await getClient().functions.invoke('dispatch-workflow', {
+    body: {
+      workflow: 'regen-report.yml',
+      inputs: { event_code: eventCode, target },
+    },
+  })
+  if (error) {
+    throw new Error(`regenStagingReport: ${error.message ?? String(error)}`)
+  }
+  return data as RegenStagingReportResult
 }
