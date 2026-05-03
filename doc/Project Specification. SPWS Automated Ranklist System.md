@@ -1437,21 +1437,24 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 552 assertions (548 prior + 4 alias-JSONB corruption repair (5.15) and fn_update_fencer_aliases defence-in-depth for the legacy seed-export bug that stored json_name_aliases as a JSON-string-of-postgres-array-literal).
+- pgTAP total: 560 assertions (552 prior + 8 source-V-cat capture (5.18.A/B/C/D): column on tbl_result_draft + tbl_result, fn_commit_event_draft draft→live carry, vw_fencer_aliases.latest_source_category_hint + latest_source_bracket_url).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
-| pgTAP | 552 | 40 | `supabase/tests/` |
-| pytest | 668 | 33 | `python/tests/` |
-| vitest | 372 | 31 | `frontend/tests/` |
+| pgTAP | 560 | 41 | `supabase/tests/` |
+| pytest | 671 | 33 | `python/tests/` |
+| vitest | 377 | 32 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **1599** | | |
+| **Total** | **1615** | | |
 
-**Phase 5.5 additions** (this entry): pgTAP +21 (5.10 + 5.11 + 5.12) + 4 (5.15), pytest +30 (5.5 md_writer + 5.6 storage_md + 5.8 parity_delta + 5.9 telegram_send_document, plus rebuild-session pytest) + 4 (5.16 review_cli PENDING-inclusion fix), vitest +28 (5.1 birthYearEstimate + 5.2 CreateFencerFromAliasModal + 5.3 api.regenStagingReport + 5.4 FencerAliasManager.unreviewed). The process_xml_file rewrite (5.7) and the wiring of `App.svelte` cascade banner (covered here as integration, no new test ID) remain. Test totals will move again once 5.7 lands.
+**Phase 5.5 additions** (this entry): pgTAP +21 (5.10 + 5.11 + 5.12) + 4 (5.15) + 8 (5.18.A/B/C/D), pytest +30 (5.5 md_writer + 5.6 storage_md + 5.8 parity_delta + 5.9 telegram_send_document, plus rebuild-session pytest) + 4 (5.16 review_cli PENDING-inclusion fix) + 3 (5.18.4 source-V-cat capture), vitest +28 (5.1 birthYearEstimate + 5.2 CreateFencerFromAliasModal + 5.3 api.regenStagingReport + 5.4 FencerAliasManager.unreviewed) + 5 (5.18.5 modal source-V-cat + bracket URL). The process_xml_file rewrite (5.7) and the wiring of `App.svelte` cascade banner (covered here as integration, no new test ID) remain. Test totals will move again once 5.7 lands.
 
 **Bug-fix slate (5.15 + 5.16 + 5.17, 2026-05-03)** — caught during GP1-2023-2024 rescrape:
 - **5.15** — alias JSONB corruption: 9 `tbl_fencer` rows had `json_name_aliases` stored as a JSON string `'"{\"WOJTAS Bogdan\"}"'` instead of array `'["WOJTAS Bogdan"]'`. Migration `20260503000005` repairs and `fn_update_fencer_aliases` is hardened to tolerate non-array JSONB.
 - **5.16** — `review_cli._build_result_draft_rows` was silently dropping PENDING matches → 9 result rows lost. Now writes PENDING with `enum_match_method=NULL` so operator can triage in UI; matcher's best-guess `id_fencer` preserved for cascade-RPC target.
 - **5.17** — `flush_pending_aliases` was swallowing exceptions silently into a counter. Now prints to stderr so silent writeback failures are visible during ingestion.
+
+**5.18 source-V-cat plumbing (2026-05-03)** — caught during GP3-2023-2024 triage:
+The Create-new-fencer-from-alias modal pre-filled BY using `latest_category_hint` (the V-cat where stage 7 *placed* the row, which is the misroute destination for wrong-match rows). Operator got wrong year suggestions every time they triaged a wrong match. Fix in 5 layers: migration `20260503000006` adds `enum_source_age_category` to `tbl_result_draft` + `tbl_result`; `_build_result_draft_rows` populates it from `parsed.category_hint`; migration `20260503000007` patches `fn_commit_event_draft` to copy the column draft→live and extends `vw_fencer_aliases` with `latest_source_category_hint`; migration `20260503000008` adds `latest_source_bracket_url` to the view (URL normalised from `/data/` JSON endpoint to human page form); `CreateFencerFromAliasModal` prefers `sourceCategoryHint` over `categoryHint` and renders a `verify on FTL ↗` link when the URL is present. Joint-pool source brackets emit `category_hint=None` so the column is NULL — the modal correctly shows no hint in that case.
 
 <!-- Coverage Summary moved to doc/requirements-traceability-matrix.md in Phase 0.5 (2026-05-01). -->

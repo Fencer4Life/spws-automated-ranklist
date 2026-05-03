@@ -34,6 +34,11 @@ export interface FencerWithAliases {
   int_unreviewed_alias_count?: number
   latest_category_hint?: string | null
   latest_season_end_year?: number | null
+  // Phase 5.5 (5.18) — source-bracket V-cat + URL, used by Create-new-fencer
+  // modal to pre-fill BY from the SOURCE bracket (not the misroute
+  // destination) and link to FTL for verification.
+  latest_source_category_hint?: string | null
+  latest_source_bracket_url?: string | null
 }
 
 // Phase 5.5 (ADR-058+059) — payload for fn_split_fencer_from_alias.
