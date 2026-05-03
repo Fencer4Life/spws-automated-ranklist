@@ -646,13 +646,21 @@ def _consolidate_duplicate_codes(db, run_id: str) -> int:
                .delete()
                .eq("id_tournament_draft", i).execute())
             removed += 1
-        # Update keeper's joint flag if any contributor had it set
+        # ADR-056 revision (2026-05-03): recompute int_participant_count to
+        # match the merged result_draft count. Pre-revision this drifted
+        # because the keeper's count stayed at the source-URL fencer count
+        # (set at draft-write time per `len(ctx.vcat_groups[vcat])`), losing
+        # the count contribution from merged-in drafts. Surfaced by
+        # GP1-V2-SABRE-M showing 8/10 mismatch after consolidation.
+        merged_count = sum(counts.values())
+        keeper_update: dict = {"int_participant_count": merged_count}
         if any_joint:
-            (sb.table("tbl_tournament_draft")
-               .update({"bool_joint_pool_split": True})
-               .eq("id_tournament_draft", keeper_id).execute())
+            keeper_update["bool_joint_pool_split"] = True
+        (sb.table("tbl_tournament_draft")
+           .update(keeper_update)
+           .eq("id_tournament_draft", keeper_id).execute())
         print(f"  ↻ merged {len(group)} duplicate {code} drafts → "
-              f"keeper id={keeper_id} ({sum(counts.values())} results consolidated)",
+              f"keeper id={keeper_id} ({merged_count} results consolidated)",
               file=sys.stderr)
     return removed
 

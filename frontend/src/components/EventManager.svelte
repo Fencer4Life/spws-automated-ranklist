@@ -212,7 +212,13 @@
                   </div>
                 {:else}
                   <div data-field="tournament-row" class="tourn-row">
-                    <span data-field="tourn-code" class="tourn-cell tourn-code">{tourn.txt_code}</span>
+                    <span data-field="tourn-code" class="tourn-cell tourn-code">
+                      {#if tourn.url_results}
+                        <a href={tourn.url_results} target="_blank" rel="noopener noreferrer" class="tourn-code-link">{tourn.txt_code}</a>
+                      {:else}
+                        {tourn.txt_code}
+                      {/if}
+                    </span>
                     <span class="tourn-cell tourn-type-badge">{tourn.enum_type}</span>
                     <span class="tourn-cell">{tourn.enum_weapon}</span>
                     <span class="tourn-cell">{tourn.enum_age_category} {tourn.enum_gender}</span>
@@ -1285,6 +1291,18 @@
     font-size: 12px;
     color: #4a90d9;
     min-width: 180px;
+  }
+  .tourn-code-link {
+    color: inherit;
+    text-decoration: none;
+  }
+  .tourn-code-link:hover {
+    text-decoration: underline;
+  }
+  .tourn-code-link::after {
+    content: " ↗";
+    font-size: 10px;
+    color: #999;
   }
   .tourn-type-badge {
     font-size: 10px;
