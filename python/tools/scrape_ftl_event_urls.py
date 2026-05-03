@@ -38,7 +38,14 @@ MIKST_PATTERN = re.compile(r"\bMIKS(?:T)?\b|\bMIXED\b", re.IGNORECASE)
 # NOT skipping "Senior" — for some FTL events Senior = V0 (heuristic mapping
 # below). Per user feedback 2026-05-02: case-specific, treat as V0.
 SKIP_PATTERNS = re.compile(
-    r"\bDE\b|AMATOR|TURNIEJ\b.*AMATOR|ELIMINACJ|"
+    # English-only `Cat N DE` form: a digit-category followed by DE is the
+    # old FTL final-elimination sub-event (the parent `Cat N` bracket is
+    # the real result). Skip it. Does NOT match the Polish `DE kat. N`
+    # form (DE precedes the digit), nor `Szpada Kobiet DE` (no preceding
+    # digit). Those Polish forms are the actual scored brackets and must
+    # be kept.
+    r"\b(?:cat(?:egory)?\.?)\s*\d\s*DE\b|"
+    r"AMATOR|TURNIEJ\b.*AMATOR|ELIMINACJ|"
     # Youth/junior tiers — never veterans. JUNIORZY/JUNIORKI Polish forms,
     # CADET/KADET, MŁODZIK (junior in Polish), and U-N brackets (U-9
     # through U-20). The U regex matches both `U10` and `U-10` shapes.
@@ -165,6 +172,17 @@ def parse_tournament_name(
     if combined_match:
         cats = [f"V{combined_match.group(1)}", f"V{combined_match.group(2)}"]
         return [(weapon, gender, c) for c in cats]
+
+    # Polish DE-with-range: `kat.0-2`, `kat. 3-4`, `kat 1-3`. Inclusive range.
+    # Common SPWS form for Floret/Szabla DE that combines low-density V-cats.
+    range_match = re.search(
+        r"\bkat\.?\s*(\d)\s*-\s*(\d)", name, re.IGNORECASE
+    )
+    if range_match:
+        a, b = int(range_match.group(1)), int(range_match.group(2))
+        lo, hi = min(a, b), max(a, b)
+        if 0 <= lo <= 4 and 0 <= hi <= 4:
+            return [(weapon, gender, f"V{i}") for i in range(lo, hi + 1)]
 
     # Check for "v0v1v2" style combined categories (e.g., "FLORET MĘŻCZYZN v0v1v2")
     v_combined = re.findall(r"v([0-4])", name, re.IGNORECASE)

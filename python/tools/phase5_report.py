@@ -65,7 +65,24 @@ def main(argv: list[str] | None = None) -> int:
     )
     p.add_argument(
         "--staging-dir", default="doc/staging",
-        help="Where to write the .md (default: doc/staging).",
+        help="Where to write the .md when --md-target=local|both (default: doc/staging).",
+    )
+    p.add_argument(
+        "--md-target", default="local",
+        choices=["local", "storage", "both", "none"],
+        help="Where to persist the .md (ADR-058+061). Default 'local' "
+             "preserves today's behaviour. CI workflows pass 'storage'.",
+    )
+    p.add_argument(
+        "--send-telegram", action="store_true",
+        help="Telegram-deliver the regenerated full.md as a sendDocument "
+             "attachment (ADR-059). Defaults off; requires TELEGRAM_BOT_TOKEN "
+             "+ TELEGRAM_CHAT_ID env vars (null-safe per ADR-061).",
+    )
+    p.add_argument(
+        "--telegram-reason", default="regen",
+        help="Tag included in the Telegram caption so operator can sort scrollback "
+             "(e.g. 'regen', 'first-ingest'). Default 'regen'.",
     )
     args = p.parse_args(argv)
 
@@ -103,10 +120,48 @@ def main(argv: list[str] | None = None) -> int:
         run_id=run_id,
         url_check_results={},
     )
-    out_path = Path(args.staging_dir) / f"{args.event_code}.md"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(md, encoding="utf-8")
-    print(f"→ Wrote {out_path}", file=sys.stderr)
+    # Phase 5.5 (ADR-058+061): route via md_writer instead of inline write.
+    # Default --md-target=local preserves today's behaviour bit-for-bit.
+    from python.pipeline.md_writer import write_for_event
+
+    sb_client = None
+    if args.md_target in ("storage", "both"):
+        sb_client = db.client  # supabase-py client with service-role auth
+
+    out = write_for_event(
+        event_code=args.event_code,
+        md_text=md,
+        target=args.md_target,
+        staging_dir=Path(args.staging_dir),
+        supabase_client=sb_client,
+    )
+    if out:
+        print(f"→ Wrote {out}", file=sys.stderr)
+
+    # Optional Telegram delivery (ADR-059). Null-safe: skipped silently when
+    # TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID env vars absent.
+    if args.send_telegram:
+        import os
+        from python.pipeline.notifications import TelegramNotifier
+        notifier = TelegramNotifier(
+            bot_token=os.environ.get("TELEGRAM_BOT_TOKEN"),
+            chat_id=os.environ.get("TELEGRAM_CHAT_ID"),
+        )
+        # Best-effort: count pending aliases via DB if possible
+        extras = {"reason": args.telegram_reason}
+        result = notifier.send_staging_report(
+            event_code=args.event_code,
+            md_bytes=md.encode("utf-8"),
+            kind="full",
+            extras=extras,
+        )
+        if result.get("skipped"):
+            print(
+                f"→ Telegram skipped ({result.get('reason')}); .md still written",
+                file=sys.stderr,
+            )
+        else:
+            print(f"→ Telegram document sent for {args.event_code}", file=sys.stderr)
     return 0
 
 

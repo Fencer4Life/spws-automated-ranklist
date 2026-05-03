@@ -1427,18 +1427,26 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 | [ADR-052](adr/052-url-data-validation.md) | URL→data validation enforcement at Stage 7: opportunistic six-field halt (date / weapon / gender / age category / country / city) + name-warn; PEW weapon-mismatch flags cascade-rename instead of halting; combined-pool sources skip age-category check; cert_ref source path skips Stage 7 entirely; YAML-based city alias normalization | FR-53, FR-54, ADR-029, ADR-046, ADR-049, ADR-050 |
 | [ADR-053](adr/053-evf-parity-gate.md) | EVF backup-source + parity gate + EVF_PUBLISHED promotion lifecycle: two-state `txt_source_status` enum (ENGINE_COMPUTED / EVF_PUBLISHED); status × organizer invariant enforced via trigger (SPWS / FIE pinned to ENGINE_COMPUTED); auto post-commit parity gate for EVF events with three sub-checks (POL count / placements / score within ±0.5); auto-promote on PASS; annotate-only on FAIL; daily cron sweep + 30-day EVF-empty annotation; amends ADR-028 and ADR-038 | ADR-028, ADR-038, ADR-050, ADR-052 |
 | [ADR-055](adr/055-ingest-traceability.md) | Ingest traceability: `enum_parser_kind` + per-parser stamp columns on `tbl_event`/`tbl_tournament` + bounded (cap-6) history tables `tbl_event_ingest_history` / `tbl_tournament_ingest_history`; complements ADR-050 identity provenance | ADR-050 |
+| [ADR-056](adr/056-vcat-from-birthyear.md) | V-cat assignment moves to a post-match step deriving V-cat from `tbl_fencer.int_birth_year` against the event year; replaces unreliable per-source name-parsing / per-fencer marker heuristics; joint-pool flag becomes a derived property (set true iff matched fencers span ≥2 V-cats); also fixes the Phase-3 placeholder bug in result_draft → tournament_draft linkage so `fn_commit_event_draft` migrates result rows; supersedes the marker-based primary path in ADR-050 Stage 4 (marker still allowed as fast-path for cert_ref / EVF API) | ADR-047, ADR-049, ADR-050, ADR-055 |
+| [ADR-057](adr/057-pool-round-structural-detection.md) | Pool-round detection moves to a post-match structural data signal (matched-fencer gender mix above ADR-034 cross-gender tolerance: ≥3 minority fencers AND ≥20% minority ratio) plus a per-event invariant (≤2 pool rounds per weapon); name-regex (`Mixed`, `DE`, `AMATOR`, `Junior`, `Cadet`) stays as a fast-path advisory but is no longer load-bearing; supersedes the brittle "skip-by-name" path in ADR-050 splitter | ADR-034, ADR-049, ADR-050, ADR-056 |
+| [ADR-058](adr/058-staging-reports-storage-bucket.md) | `staging-reports` Supabase Storage bucket persists per-event verdict `.md` files (`{event_code}/full.md` replace-on-regen + `{event_code}/deltas/{ts}.md` append-only) so CERT/PROD operators read verdicts via Telegram (ADR-059) without local repo access; LOCAL fallback to filesystem via `--md-target=local` (ADR-061) | ADR-050, ADR-061 |
+| [ADR-059](adr/059-telegram-document-delivery.md) | Telegram `sendDocument` is the primary verdict read surface — bot delivers `.md` as document attachments (multipart/form-data, MIME `text/markdown`, ≤50 MB Bot API limit; our files ~30 KB); operator reads on phone → Obsidian via "Open with"; auto-fired on first ingest, post-triage regen, and EVF deltas; null-safe LOCAL behaviour | ADR-025, ADR-058 |
+| [ADR-060](adr/060-evf-parity-delta-md.md) | EVF parity sweep emits delta-only `.md` (only changed rows; never overwrites `full.md` from sweep); silent on no-drift; `full.md` is owned by operator-driven actions (first ingest, alias mutation regen) — keeps `full.md` semantically "operator-validated state at last regen" | ADR-053, ADR-058, ADR-059 |
+| [ADR-061](adr/061-local-parity-and-telegram-commands.md) | LOCAL operator workflow preserved verbatim (filesystem `.md`, no Storage, no Telegram by default) — all new infra gated to CERT/PROD via `--md-target` CLI flag and `VITE_DEPLOY_ENV` env switch; CERT command surface extended via 4 new GAS Telegram commands (`/regen`, `/stage`, `/parity`, `/verdict`) + extended `/help`; `dispatch-workflow` allowlist gains `phase5-event-runner.yml` + `regen-report.yml` | ADR-025, ADR-041, ADR-050 |
 
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 493 assertions (4 smoke + 69 M1 + 28 M2 + 27 M5/M6 views + 6 T8.1 + 10 T8.2 + 5 T8.3 + 5 T9.0 + 30 T9.1 + 21 M10 rolling + 33 ingest pipeline + 21 identity resolution + 13 EVF import + 5 fencer birth year + 9 cross-gender scoring + 7 ADR-040 multi-slot URLs + 8 ADR-042 dispatcher + 28 ADR-042 FK carryover + 15 ADR-043 EVF allocator + 23 Phase 3a wizard backend + 10 ADR-046 PEW weapon-suffix + 9 EVF FK columns/ingestion + 11 ADR-047 V-cat invariant trigger + view + 7 ADR-049 joint-pool split + 23 ADR-055 ingest traceability + 30 ADR-050 Phase 2 draft tables + 8 ADR-050 Phase 3 alias writeback + 12 ADR-053 EVF parity lifecycle + 16 ADR-050 Phase 4 alias management).
+- pgTAP total: 543 assertions (493 prior + 8 ADR-058+061 alias-view-context (5.10) + 8 ADR-050 alias RPC tournament cascade (5.11) + 5 ADR-058 staging-reports bucket RLS (5.12); LOCAL skips 5 of 5.12 because storage disabled per `config.toml`).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
-| pgTAP | 427 | 27 | `supabase/tests/` |
-| pytest | 402 | 25 | `python/tests/` |
+| pgTAP | 543 | 38 | `supabase/tests/` |
+| pytest | 426 | 28 | `python/tests/` |
 | vitest | 332 | 26 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **1168** | | |
+| **Total** | **1308** | | |
+
+**Phase 5.5 additions** (this entry): pgTAP +21 (5.10 + 5.11 + 5.12), pytest +24 (5.5 md_writer + 5.6 storage_md + 5.8 parity_delta + 5.9 telegram_send_document). Frontend (vitest) tests for the alias UI (5.1-5.4) and the process_xml_file rewrite (5.7) are still pending; counts will update on completion.
 
 <!-- Coverage Summary moved to doc/requirements-traceability-matrix.md in Phase 0.5 (2026-05-01). -->

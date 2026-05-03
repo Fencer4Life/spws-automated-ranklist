@@ -589,3 +589,70 @@ python -m python.tools.audit_results --env local --pol-only
 | `.github/workflows/promote.yml` | CERT → PROD promotion + seed export |
 | `.github/workflows/export-seed.yml` | Manual seed export from PROD or CERT |
 | `scripts/gas_email_ingestion.js` | GAS Telegram bot + email ingestion |
+| `.github/workflows/regen-report.yml` | Phase 5.5: re-render verdict full.md, upload to Storage, Telegram-send |
+| `.github/workflows/phase5-event-runner.yml` | Phase 5.5: run unified Phase-5 pipeline against tbl_event.url_results, drafts + Storage + Telegram |
+| `python/pipeline/storage_md.py` | Phase 5.5: staging-reports bucket I/O wrapper (ADR-058) |
+| `python/pipeline/md_writer.py` | Phase 5.5: verdict .md target router (local/storage/both/none) (ADR-058+061) |
+| `python/pipeline/parity_delta.py` | Phase 5.5: EVF parity delta .md renderer (ADR-060) |
+
+---
+
+## 13. Phase 5.5 — Verdict `.md` Persistence + Telegram Delivery (ADR-058 / 059 / 060 / 061)
+
+After a Phase-5 ingestion (email XML or event URL), the operator receives the verdict `.md` directly on Telegram and reads it in their Obsidian vault. No admin-UI navigation needed for routine verdict reading.
+
+### Architecture
+
+```
+EMAIL XML   →  GAS  →  xml-inbox/staging  →  ingest.yml             ┐
+                                                                     │
+EVENT URL   →  admin UI  →  dispatch-workflow  →  phase5-event-runner.yml  │ ──>  run_pipeline + DraftStore  ──>  staging-reports/{event_code}/full.md  ──>  Telegram sendDocument
+                                                                     │                                          (Supabase Storage, private bucket)        (operator phone → Obsidian)
+EVENT URL   →  Telegram /stage  →  GAS  →  phase5-event-runner.yml  ┘
+
+Operator alias mutation in admin UI:
+  fn_split/transfer/discard  ──>  cascade scoring  ──>  regen-report.yml  ──>  Storage replace + Telegram
+
+Daily 03:00 UTC cron:
+  evf-parity-sweep.yml  ──>  if drift, parity_delta.render → staging-reports/{event_code}/deltas/{ts}.md → Telegram (delta caption)
+                       ──>  if no drift, silent
+```
+
+### One-time CERT/PROD setup
+
+1. Create the `staging-reports` Supabase Storage bucket via dashboard OR `supabase storage create staging-reports --public=false` against the project. Migration `20260503000003` is a no-op on LOCAL; for CERT/PROD the bucket must be created manually (or via `supabase db push` if storage is enabled at the schema level).
+2. Verify RLS policy `staging_reports_authenticated_read` exists (the migration creates it once `storage.objects` is present).
+3. Verify the `dispatch-workflow` edge function allowlist includes `phase5-event-runner.yml` and `regen-report.yml` (Phase 5.5 deploy).
+4. Confirm secrets present: `SUPABASE_CERT_URL`, `SUPABASE_CERT_SERVICE_ROLE_KEY`, `SUPABASE_PROD_URL`, `SUPABASE_PROD_SERVICE_ROLE_KEY`, `FTL_USERNAME`, `FTL_PASSWORD`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` — all already required by existing workflows.
+
+### Telegram operator commands cheat-sheet
+
+| Command | Action | Workflow / API |
+|---|---|---|
+| `/stage <event_code>` | Run Phase-5 pipeline against `tbl_event.url_results`; drafts + `full.md` + Telegram | `phase5-event-runner.yml` |
+| `/regen <event_code>` | Re-render `full.md` from current DB state; replace + Telegram | `regen-report.yml` |
+| `/parity <event_code>` | Run EVF parity check for one event; sends delta `.md` if drift | `evf-parity-sweep.yml` (single-event mode) |
+| `/verdict <event_code>` | Re-fetch `staging-reports/<X>/full.md` from Storage and Telegram-send | direct Storage download via service-role |
+
+Auto-delivered documents (no command needed):
+- `<event_code>-full.md` — after first ingestion + each operator-driven regen
+- `<event_code>-delta-<yyyyMMdd_HHmmss>.md` — after EVF parity sweep that found drift
+
+### Disaster recovery
+
+| Symptom | Recovery |
+|---------|----------|
+| Storage `staging-reports/<X>/full.md` accidentally deleted | Telegram `/regen <X>` (re-renders from DB) |
+| Bucket wiped entirely | Recreate via `supabase storage create staging-reports --public=false`, then `/regen <X>` per event |
+| Telegram message lost / cleared | `/verdict <X>` re-fetches the latest `full.md` from Storage and re-sends |
+| Edge function returns "invalid_workflow" | Confirm allowlist update was deployed (`supabase functions deploy dispatch-workflow`) |
+| Workflow fails with "invalid event_code" | event_code must match `^[A-Z0-9_-]+$` (validated at workflow + Storage level) |
+
+### LOCAL operator workflow (unchanged)
+
+Per ADR-061, LOCAL workflow is preserved verbatim:
+- `python -m python.tools.phase5_runner --event-code <X>` writes `doc/staging/<X>.md` (filesystem only)
+- No Telegram fired (token absent on LOCAL by default)
+- No Storage upload (bucket migration is a no-op when `storage.buckets` table doesn't exist)
+- Admin UI alias triage improvements work against LOCAL DB; the operator continues to rerun `phase5_report` from shell after triage sessions
+- To exercise CERT-style behaviour from LOCAL: pass `--md-target=storage` + `--send-telegram` and set the env vars (against a test bot)

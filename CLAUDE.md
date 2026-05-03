@@ -14,5 +14,6 @@ SPWS Automated Ranklist System — automated ranking for the Polish Veterans Fen
 - [doc/claude/architecture.md](doc/claude/architecture.md) — data flow, database, Python, frontend dual-build, CI/CD.
 - [doc/claude/testing.md](doc/claude/testing.md) — commands, mandatory TDD workflow, after-change rule.
 - [doc/claude/documenting.md](doc/claude/documenting.md) — scope-change pass, RTM check, ADR maintenance.
+- [doc/claude/planning.md](doc/claude/planning.md) — planning gate, verify-before-claim, scenario walk-throughs, LOCAL parity rule, TDD strict order, ADR draft sign-off, doc completeness, CI/CD + Telegram operational hooks, per-event sign-off, plan file readability for future sessions.
 - [doc/claude/conventions.md](doc/claude/conventions.md) — data-integrity hard rules, working style.
 - [doc/claude/key-references.md](doc/claude/key-references.md) — index of spec, ADRs, scripts, MCP/PAT.

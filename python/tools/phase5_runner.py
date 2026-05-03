@@ -261,6 +261,21 @@ def main() -> int:
              "User reviews the staging .md first; when satisfied, sign off "
              "by running with this flag. No new ingestion happens in this mode.",
     )
+    # Phase 5.5 (ADR-058+059+061) — verdict .md persistence + Telegram delivery.
+    parser.add_argument(
+        "--md-target", default="local",
+        choices=["local", "storage", "both", "none"],
+        help="Where to persist the staging .md (ADR-058+061). Default 'local' "
+             "preserves today's behaviour (filesystem doc/staging/<X>.md). CI "
+             "workflows pass 'storage' to upload to staging-reports bucket.",
+    )
+    parser.add_argument(
+        "--send-telegram", action="store_true",
+        help="Telegram-deliver the staging full.md as a sendDocument attachment "
+             "after writing (ADR-059). Defaults off; requires TELEGRAM_BOT_TOKEN "
+             "+ TELEGRAM_CHAT_ID env vars (null-safe per ADR-061 — silently "
+             "skipped on LOCAL where these are not set).",
+    )
     args = parser.parse_args()
 
     # In ingestion mode (no --commit-run-id), --event-code is required
@@ -487,10 +502,49 @@ def main() -> int:
         run_id=session.run_id,
         url_check_results=getattr(session, "url_check_results", {}),
     )
-    out_path = Path(args.staging_dir) / f"{args.event_code}.md"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(md, encoding="utf-8")
-    print(f"→ Wrote {out_path}", file=sys.stderr)
+    # Phase 5.5 (ADR-058+059+061): route via md_writer + optional Telegram.
+    # Default --md-target=local writes doc/staging/<X>.md identically to before.
+    from python.pipeline.md_writer import write_for_event
+
+    sb_client = None
+    if args.md_target in ("storage", "both"):
+        sb_client = db.client  # supabase-py service-role client
+
+    out = write_for_event(
+        event_code=args.event_code,
+        md_text=md,
+        target=args.md_target,
+        staging_dir=Path(args.staging_dir),
+        supabase_client=sb_client,
+    )
+    if out:
+        print(f"→ Wrote {out}", file=sys.stderr)
+
+    if args.send_telegram:
+        import os
+        from python.pipeline.notifications import TelegramNotifier
+        notifier = TelegramNotifier(
+            bot_token=os.environ.get("TELEGRAM_BOT_TOKEN"),
+            chat_id=os.environ.get("TELEGRAM_CHAT_ID"),
+        )
+        # Best-effort tournament count from ctxs
+        extras = {
+            "tournament_count": len(ctxs),
+            "reason": "first-ingest",
+        }
+        result = notifier.send_staging_report(
+            event_code=args.event_code,
+            md_bytes=md.encode("utf-8"),
+            kind="full",
+            extras=extras,
+        )
+        if result.get("skipped"):
+            print(
+                f"→ Telegram skipped ({result.get('reason')}); .md still persisted",
+                file=sys.stderr,
+            )
+        else:
+            print(f"→ Telegram document sent for {args.event_code}", file=sys.stderr)
 
     # ─── PHASE 5 OPTION-1 STAGE-TIME ALIAS FLUSH ──────────────────────────
     # Pre-write EVERY pending alias pair (✓ ❓ ❌) to tbl_fencer.json_name_aliases

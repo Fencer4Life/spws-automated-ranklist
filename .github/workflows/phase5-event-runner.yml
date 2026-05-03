@@ -1,0 +1,81 @@
+name: Phase 5 Event Runner
+
+# Phase 5.5 (ADR-058 + ADR-059 + ADR-061) — runs the unified Phase-5 pipeline
+# against an event whose URL is already on tbl_event.url_results. Produces
+# tbl_*_draft rows + uploads staging-reports/{event_code}/full.md to Storage
+# + Telegram-sends the document to the operator.
+#
+# Triggered by:
+#   * Admin UI "Stage event" button → dispatch-workflow edge fn
+#   * Telegram /stage <event_code> command from GAS
+#   * Manual: gh workflow run phase5-event-runner.yml -f event_code=<X> -f target=<env>
+#
+# Security: all user-controlled inputs validated before shell interpolation.
+
+on:
+  workflow_dispatch:
+    inputs:
+      event_code:
+        description: 'Event code, e.g. EVENT-A-2024-2025 (URL must be on tbl_event.url_results)'
+        required: true
+      target:
+        description: 'Target env: cert | prod'
+        default: 'cert'
+
+jobs:
+  stage-event:
+    name: Stage event
+    runs-on: ubuntu-latest
+    env:
+      EVENT_CODE: ${{ inputs.event_code }}
+      TARGET_ENV: ${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install supabase httpx rapidfuzz beautifulsoup4 pyyaml
+
+      - name: Validate inputs
+        run: |
+          if ! [[ "$EVENT_CODE" =~ ^[A-Z0-9_-]+$ ]]; then
+            echo "::error::invalid event_code (must match [A-Z0-9_-]+)"
+            exit 1
+          fi
+          if [[ "$TARGET_ENV" != "cert" && "$TARGET_ENV" != "prod" ]]; then
+            echo "::error::target must be cert or prod"
+            exit 1
+          fi
+
+      - name: Run Phase-5 pipeline + upload .md to Storage
+        env:
+          SUPABASE_URL: ${{ inputs.target == 'prod'
+            && secrets.SUPABASE_PROD_URL
+            || secrets.SUPABASE_CERT_URL }}
+          SUPABASE_KEY: ${{ inputs.target == 'prod'
+            && secrets.SUPABASE_PROD_SERVICE_ROLE_KEY
+            || secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
+          FTL_USERNAME: ${{ secrets.FTL_USERNAME }}
+          FTL_PASSWORD: ${{ secrets.FTL_PASSWORD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -m python.tools.phase5_runner \
+            --event-code "$EVENT_CODE" \
+            --md-target storage \
+            --send-telegram
+
+      - name: Notify failure
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
+        run: |
+          MSG="❌ phase5-event-runner.yml failed for ${EVENT_CODE} (${TARGET_ENV}). Check: ${RUN_URL}"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MSG}" > /dev/null
