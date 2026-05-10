@@ -304,6 +304,15 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
     fencer_db = db.fetch_fencer_db()
     domestic = _is_domestic(ctx.event)
 
+    # ADR-064: asymmetric F-bracket filter — domestic events only. When
+    # parsed.gender is 'F' on a SPWS-organized bracket, M-gender candidates
+    # are dropped from the matcher's candidate set (federation rule: men
+    # cannot legitimately appear in women's tournaments). bracket_gender
+    # stays None for non-domestic events and for compound brackets where
+    # parsed.gender hasn't been set yet (ADR-056 V-cat split happens at s7).
+    parsed_gender = getattr(ctx.parsed, "gender", None)
+    matcher_bracket_gender = parsed_gender if domestic else None
+
     matches: list[StageMatchResult] = []
     for cat, r in rows:
         # Path 1: identity override
@@ -333,6 +342,7 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
             best = find_best_match(
                 r.fencer_name, fencer_db,
                 age_category=cat, season_end_year=ctx.season_end_year,
+                bracket_gender=matcher_bracket_gender,
             )
             matches.append(StageMatchResult(
                 scraped_name=r.fencer_name, place=r.place,
@@ -346,6 +356,7 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
         best = find_best_match(
             r.fencer_name, fencer_db,
             age_category=cat, season_end_year=ctx.season_end_year,
+            bracket_gender=matcher_bracket_gender,
         )
         method = best.status  # AUTO_MATCHED | PENDING | UNMATCHED
         if method == "UNMATCHED":

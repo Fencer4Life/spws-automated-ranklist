@@ -253,12 +253,16 @@ def _process_category(
         notifier.notify_duplicate_import(tourn_info)
 
     # Resolve identities using matcher pipeline (ADR-038: pass countries so
-    # EVF events drop non-POL rows before matching)
+    # EVF events drop non-POL rows before matching).
+    # ADR-064: bracket_gender threaded so the asymmetric F-bracket filter
+    # drops M-gender candidates for domestic events (PPW/MPW). Non-domestic
+    # types (PEW/MEW/MSW) ignore bracket_gender per ADR-064 scope.
     scraped_names = [r["fencer_name"] for r in enriched_results]
     scraped_countries = [r.get("country") for r in enriched_results]
     resolved = resolve_tournament_results(
         scraped_names, fencer_db, t_type, category, season_end_year,
         scraped_countries=scraped_countries,
+        bracket_gender=gender,
     )
 
     # Build JSONB payload for RPC
