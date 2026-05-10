@@ -1,0 +1,57 @@
+
+=== PPW2-2025-2026 (url) ===
+  organizer=SPWS dt_start=2025-10-25 city='Poznań'
+   ⚠ bracket 'SZPADA KOBIET 2 WETERANI' mislabeled as V2: per-fencer markers V1=1 → downgrading to joint-pool
+  [  1] ? — 0 results, skip
+  [  2] ? — 0 results, skip
+  [  3] ? — 0 results, skip
+  [  4] ? — 0 results, skip
+  [  5] ? — FOIL/M/V1 n=4   url-check PPW2-2025-2026-V1-FOIL-M: OK
+OK
+  [  6] ? — 0 results, skip
+  [  7] ? — 0 results, skip
+  [  8] ? — 0 results, skip
+  [  9] ? — SABRE/M/V4 n=4   url-check PPW2-2025-2026-V4-SABRE-M: OK
+OK
+  [ 10] ? — SABRE/M/V3 n=2   url-check PPW2-2025-2026-V3-SABRE-M: OK
+OK
+  [ 11] ? — SABRE/M/V2 n=9   url-check PPW2-2025-2026-V2-SABRE-M: OK
+OK
+  [ 12] ? — SABRE/M/V1 n=5   url-check PPW2-2025-2026-V1-SABRE-M: OK
+OK
+  [ 13] ? — SABRE/M/V0 n=3   url-check PPW2-2025-2026-V0-SABRE-M: OK
+OK
+  [ 14] ? — SABRE/F/V2 n=2   url-check PPW2-2025-2026-V2-SABRE-F: OK
+OK
+  [ 15] ? — 0 results, skip
+  [ 16] ? — SABRE/F/V0 n=2   url-check PPW2-2025-2026-V0-SABRE-F: OK
+OK
+  [ 17] ? — EPEE/F/V0 n=2   url-check PPW2-2025-2026-V0-EPEE-F: OK
+OK
+  [ 18] ? — EPEE/F/V1 n=3   url-check PPW2-2025-2026-V1-EPEE-F: OK
+OK
+  [ 19] ? — EPEE/F/None n=7   url-check PPW2-2025-2026-V0-EPEE-F: OK
+  url-check PPW2-2025-2026-V1-EPEE-F: OK
+  url-check PPW2-2025-2026-V2-EPEE-F: OK
+OK
+  [ 20] ? — EPEE/M/V0 n=3   url-check PPW2-2025-2026-V0-EPEE-M: OK
+OK
+  [ 21] ? — EPEE/M/V1 n=6   url-check PPW2-2025-2026-V1-EPEE-M: OK
+OK
+  [ 22] ? — EPEE/M/V2 n=8   url-check PPW2-2025-2026-V2-EPEE-M: OK
+OK
+  [ 23] ? — EPEE/M/V3 n=5   url-check PPW2-2025-2026-V3-EPEE-M: OK
+OK
+  [ 24] ? — EPEE/M/V4 n=5   url-check PPW2-2025-2026-V4-EPEE-M: OK
+OK
+  ↻ merged 2 duplicate PPW2-2025-2026-V0-EPEE-F drafts → keeper id=143 (3 results consolidated)
+  ↻ merged 2 duplicate PPW2-2025-2026-V1-EPEE-F drafts → keeper id=144 (6 results consolidated)
+  ↻ deduped 4 duplicate (id_fencer, id_tournament_draft) result_drafts (kept best place per fencer)
+  → wrote doc/staging/PPW2-2025-2026.md
+  summary: drafted=16 halted=0 errors=0 run_id=ad301df7-9962-48dc-bb25-9610106b3e37
+  flushing 3 ✓ aliases to tbl_fencer...
+  ✓ aliases written: 3, errors: 0
+  committing run ad301df7-9962-48dc-bb25-9610106b3e37...
+  ✓ committed: {'run_id': 'ad301df7-9962-48dc-bb25-9610106b3e37', 'history_rows': 16, 'results_committed': 66, 'tournaments_scored': 16, 'tournaments_committed': 16, 'joint_pool_siblings_flagged': 0}
+
+✓ All events ingested successfully

@@ -1,0 +1,18 @@
+=== Step 3a: snapshot pre-delete counts on PROD ===
+  PROD pre: scoped_tourns=343, active_tourns=229, evf_tourns=298, scoped_results=1451, active_results=728, evf_results=772
+
+=== Step 3b: DELETE scoped tbl_result on PROD ===
+  deleted results: 1451
+
+=== Step 3c: DELETE scoped tbl_tournament on PROD ===
+  deleted tournaments: 343
+
+=== Step 3d: invariant — active 2025-26 + EVF unchanged ===
+  PROD mid: active_tourns=229 (expected 229), evf_tourns=298 (expected 298)
+  PROD mid: active_results=728 (expected 728), evf_results=772 (expected 772)
+  ✓ active + EVF invariants preserved
+
+=== Step 4a: pull CERT tournaments + results in scope ===
+  CERT tournaments to insert: 264
+  CERT results to insert: 1428
+  Wrote doc/staging/path-c-2026-05-04/cert_data.json

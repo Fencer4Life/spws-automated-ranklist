@@ -1,0 +1,23 @@
+Tournaments to recalc: 264
+  progress: 30/264
+  progress: 60/264
+  progress: 90/264
+  ERR GP7-2023-2024-V2-SABRE-M: The read operation timed out
+  ERR GP7-2023-2024-V4-SABRE-M: The read operation timed out
+  progress: 118/264
+  progress: 148/264
+  progress: 178/264
+  progress: 208/264
+  progress: 238/264
+
+TOTAL: 262/264 OK, 2 errors
+  ('GP7-2023-2024-V2-SABRE-M', 'The read operation timed out')
+  ('GP7-2023-2024-V4-SABRE-M', 'The read operation timed out')
+
+PROD post-recalc score state:
+  ['SPWS-2023-2024', 837, '31052.44', 837]
+  ['SPWS-2024-2025', 591, '21679.61', 591]
+
+LOCAL reference for comparison:
+  ['SPWS-2023-2024', '837', '31052.44', '837']
+  ['SPWS-2024-2025', '591', '21679.61', '591']
