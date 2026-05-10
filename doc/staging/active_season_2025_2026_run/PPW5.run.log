@@ -1,0 +1,111 @@
+
+=== PPW5-2025-2026 (xml) ===
+  organizer=SPWS dt_start=2026-04-11 city='Gdańsk'
+  [  1] RESULTS_GRVETXE_2026-0.xml (split→M) — EPEE/M/None n=36   url-check PPW5-2025-2026-V0-EPEE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V1-EPEE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V2-EPEE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V3-EPEE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V4-EPEE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [  2] RESULTS_GRVETXE_2026-0.xml (split→F) — EPEE/F/None n=11   url-check PPW5-2025-2026-V0-EPEE-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V1-EPEE-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V2-EPEE-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V4-EPEE-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [  3] RESULTS_GRVETXF_2026-1.xml (split→M) — FOIL/M/None n=9   url-check PPW5-2025-2026-V0-FOIL-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V1-FOIL-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V2-FOIL-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V3-FOIL-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V4-FOIL-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [  4] RESULTS_GRVETXF_2026-1.xml (split→F) — FOIL/F/None n=7   url-check PPW5-2025-2026-V0-FOIL-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V1-FOIL-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V2-FOIL-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V3-FOIL-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V4-FOIL-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [  5] RESULTS_GRVETXS_2026-2.xml (split→M) — SABRE/M/None n=17   url-check PPW5-2025-2026-V0-SABRE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V2-SABRE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V3-SABRE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V4-SABRE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [  6] RESULTS_GRVETXS_2026-2.xml (split→F) — SABRE/F/None n=2   url-check PPW5-2025-2026-V1-SABRE-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V4-SABRE-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [  7] RESULTS_ME_2026-10.xml (split→M) — EPEE/M/None n=6   url-check PPW5-2025-2026-V3-EPEE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [  8] RESULTS_ME_2026-11.xml (split→M) — EPEE/M/None n=6   url-check PPW5-2025-2026-V4-EPEE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [  9] RESULTS_ME_2026-7.xml (split→M) — EPEE/M/None n=5   url-check PPW5-2025-2026-V0-EPEE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 10] RESULTS_ME_2026-8.xml (split→M) — EPEE/M/None n=8   url-check PPW5-2025-2026-V0-EPEE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V1-EPEE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 11] RESULTS_ME_2026-9.xml (split→M) — EPEE/M/None n=11   url-check PPW5-2025-2026-V2-EPEE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 12] RESULTS_MF_2026-13.xml (split→M) — FOIL/M/None n=4   url-check PPW5-2025-2026-V0-FOIL-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V1-FOIL-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 13] RESULTS_MF_2026-14.xml (split→M) — FOIL/M/None n=4   url-check PPW5-2025-2026-V2-FOIL-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V3-FOIL-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 14] RESULTS_MS_2026-16.xml (split→M) — SABRE/M/None n=4   url-check PPW5-2025-2026-V0-SABRE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V1-SABRE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V4-SABRE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 15] RESULTS_WE_2026-3.xml (split→F) — EPEE/F/None n=4   url-check PPW5-2025-2026-V0-EPEE-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 16] RESULTS_WE_2026-4.xml (split→F) — EPEE/F/None n=3   url-check PPW5-2025-2026-V1-EPEE-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 17] RESULTS_WE_2026-5.xml (split→F) — EPEE/F/None n=2   url-check PPW5-2025-2026-V2-EPEE-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 18] RESULTS_WE_2026-6.xml (split→F) — EPEE/F/None n=2   url-check PPW5-2025-2026-V4-EPEE-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 19] RESULTS_WF_2026-12.xml (split→F) — FOIL/F/None n=3   url-check PPW5-2025-2026-V0-FOIL-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V1-FOIL-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 20] RESULTS_WF_2026-15.xml (split→F) — FOIL/F/None n=2   url-check PPW5-2025-2026-V2-FOIL-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 21] RESULTS_XF_2026-20.xml (split→F) — FOIL/F/None n=2   url-check PPW5-2025-2026-V3-FOIL-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+  url-check PPW5-2025-2026-V4-FOIL-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 22] RESULTS_XS_2026-17.xml (split→M) — SABRE/M/None n=8   url-check PPW5-2025-2026-V2-SABRE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 23] RESULTS_XS_2026-18.xml (split→M) — SABRE/M/None n=3   url-check PPW5-2025-2026-V3-SABRE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 24] RESULTS_XS_2026-19.xml (split→M) — SABRE/M/None n=3   url-check PPW5-2025-2026-V4-SABRE-M: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  [ 25] RESULTS_XS_2026-19.xml (split→F) — SABRE/F/None n=1   url-check PPW5-2025-2026-V4-SABRE-F: UNREACHABLE (UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.)
+OK
+  ↻ merged 3 duplicate PPW5-2025-2026-V0-EPEE-M drafts → keeper id=241 (12 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V1-EPEE-M drafts → keeper id=242 (14 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V2-EPEE-M drafts → keeper id=243 (22 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V3-EPEE-M drafts → keeper id=244 (12 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V4-EPEE-M drafts → keeper id=245 (12 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V0-EPEE-F drafts → keeper id=246 (8 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V1-EPEE-F drafts → keeper id=247 (6 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V2-EPEE-F drafts → keeper id=248 (4 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V4-EPEE-F drafts → keeper id=249 (4 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V0-FOIL-M drafts → keeper id=250 (6 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V1-FOIL-M drafts → keeper id=251 (2 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V2-FOIL-M drafts → keeper id=252 (6 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V3-FOIL-M drafts → keeper id=253 (2 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V0-FOIL-F drafts → keeper id=255 (4 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V1-FOIL-F drafts → keeper id=256 (2 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V2-FOIL-F drafts → keeper id=257 (4 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V3-FOIL-F drafts → keeper id=258 (2 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V4-FOIL-F drafts → keeper id=259 (2 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V0-SABRE-M drafts → keeper id=260 (4 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V2-SABRE-M drafts → keeper id=261 (16 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V3-SABRE-M drafts → keeper id=262 (6 results consolidated)
+  ↻ merged 3 duplicate PPW5-2025-2026-V4-SABRE-M drafts → keeper id=263 (8 results consolidated)
+  ↻ merged 2 duplicate PPW5-2025-2026-V4-SABRE-F drafts → keeper id=265 (2 results consolidated)
+  ↻ deduped 80 duplicate (id_fencer, id_tournament_draft) result_drafts (kept best place per fencer)
+  → wrote doc/staging/PPW5-2025-2026.md
+  summary: drafted=25 halted=0 errors=0 run_id=0c982fea-783f-4f9e-bec7-4447b541db99
+  flushing 2 ✓ aliases to tbl_fencer...
+  ✓ aliases written: 2, errors: 0
+  committing run 0c982fea-783f-4f9e-bec7-4447b541db99...
+  ✓ committed: {'run_id': '0c982fea-783f-4f9e-bec7-4447b541db99', 'history_rows': 26, 'results_committed': 83, 'tournaments_scored': 26, 'tournaments_committed': 26, 'joint_pool_siblings_flagged': 0}
+
+✓ All events ingested successfully

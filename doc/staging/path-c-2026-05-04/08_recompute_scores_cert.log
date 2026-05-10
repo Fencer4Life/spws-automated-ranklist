@@ -1,0 +1,15 @@
+CERT tournaments to recalc: 264
+  progress: 30/264
+  progress: 60/264
+  progress: 90/264
+  progress: 120/264
+  progress: 150/264
+  progress: 180/264
+  progress: 210/264
+  progress: 240/264
+
+CERT: 264/264 OK, 0 errors
+
+CERT final:
+  ['SPWS-2023-2024', 837, '31052.44']
+  ['SPWS-2024-2025', 591, '21679.61']

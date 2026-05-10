@@ -1,0 +1,31 @@
+To insert: 264 tournaments
+PROD event map: 16 entries
+  ERROR batch starting 0: Management API error: 400 {"message":"Failed to run sql query: ERROR:  42704: type \"enum_gender\" does not exist\nLINE 7:   (5, 'GP1-2023-2024-V0-EPEE-F', NULL, 'PPW'::enum_tournament_type, 'EPEE'::e
+  ERROR batch starting 25: Management API error: 400 {"message":"Failed to run sql query: ERROR:  42704: type \"enum_gender\" does not exist\nLINE 7:   (7, 'GP2-2023-2024-V1-SABRE-M', NULL, 'PPW'::enum_tournament_type, 'SABRE':
+  ERROR batch starting 50: Management API error: 400 {"message":"Failed to run sql query: ERROR:  42704: type \"enum_gender\" does not exist\nLINE 7:   (2, 'GP3-2023-2024-V3-EPEE-M', NULL, 'PPW'::enum_tournament_type, 'EPEE'::e
+  ERROR batch starting 75: Management API error: 400 {"message":"Failed to run sql query: ERROR:  42704: type \"enum_gender\" does not exist\nLINE 7:   (14, 'GP5-2023-2024-V0-FOIL-M', NULL, 'PPW'::enum_tournament_type, 'FOIL'::
+  ERROR batch starting 100: Management API error: 400 {"message":"Failed to run sql query: ERROR:  42704: type \"enum_gender\" does not exist\nLINE 7:   (16, 'GP6-2023-2024-V3-SABRE-M', NULL, 'PPW'::enum_tournament_type, 'SABRE'
+  ERROR batch starting 125: Management API error: 400 {"message":"Failed to run sql query: ERROR:  42704: type \"enum_gender\" does not exist\nLINE 7:   (23, 'GP8-2023-2024-V1-SABRE-M', NULL, 'PPW'::enum_tournament_type, 'SABRE'
+  ERROR batch starting 150: Management API error: 400 {"message":"Failed to run sql query: ERROR:  42704: type \"enum_gender\" does not exist\nLINE 7:   (22, 'MPW-2023-2024-V4-FOIL-M', NULL, 'PPW'::enum_tournament_type, 'FOIL'::
+  ERROR batch starting 175: Management API error: 400 {"message":"Failed to run sql query: ERROR:  42704: type \"enum_gender\" does not exist\nLINE 7:   (39, 'MPW-2024-2025-V4-SABRE-M', NULL, 'PPW'::enum_tournament_type, 'SABRE'
+  ERROR batch starting 200: Management API error: 400 {"message":"Failed to run sql query: ERROR:  42704: type \"enum_gender\" does not exist\nLINE 7:   (27, 'PPW2-2024-2025-V2-EPEE-F', NULL, 'PPW'::enum_tournament_type, 'EPEE':
+  ERROR batch starting 225: Management API error: 400 {"message":"Failed to run sql query: ERROR:  42704: type \"enum_gender\" does not exist\nLINE 7:   (29, 'PPW3-2024-2025-V3-EPEE-F', NULL, 'PPW'::enum_tournament_type, 'EPEE':
+  ERROR batch starting 250: Management API error: 400 {"message":"Failed to run sql query: ERROR:  42704: type \"enum_gender\" does not exist\nLINE 7:   (36, 'PPW5-2024-2025-V0-EPEE-M', NULL, 'PPW'::enum_tournament_type, 'EPEE':
+
+TOTAL: 0 tournaments inserted, 11 batch errors
+PROD scoped tournaments now: 0 (target 264)
+To insert: 264 tournaments
+  batch 1: inserted 25/264
+  batch 2: inserted 50/264
+  batch 3: inserted 75/264
+  batch 4: inserted 100/264
+  batch 5: inserted 125/264
+  batch 6: inserted 150/264
+  batch 7: inserted 175/264
+  batch 8: inserted 200/264
+  batch 9: inserted 225/264
+  batch 10: inserted 250/264
+  batch 11: inserted 264/264
+
+TOTAL inserted: 264, errors: 0
+PROD scoped tournaments: 264 (target 264)

@@ -1,0 +1,13 @@
+To insert: 1428 results
+PROD tournament map: 264
+PROD fencer map: 364
+Buildable: 1428, missing FK: 0
+  batch 1: 50/1428
+  batch 6: 300/1428
+  batch 11: 550/1428
+  batch 16: 800/1428
+  batch 21: 1050/1428
+  batch 26: 1300/1428
+
+TOTAL inserted: 1428, errors: 0
+PROD scoped results: 1428 (target 1428)

@@ -1,0 +1,17 @@
+LOCAL fencers: 364
+PROD fencers (pre): 329
+  progress: 4 inserted, 46 updated, 0 errors
+  progress: 6 inserted, 94 updated, 0 errors
+  progress: 14 inserted, 136 updated, 0 errors
+  progress: 18 inserted, 182 updated, 0 errors
+  progress: 23 inserted, 227 updated, 0 errors
+  progress: 29 inserted, 271 updated, 1 errors
+  progress: 33 inserted, 317 updated, 1 errors
+
+Final: 35 inserted, 328 updated, 1 errors
+ERRORS:
+  (('SKRYPKA', 'Glib', '1991'), 'UPDATE', 'The read operation timed out')
+SKRYPKA Glib UPDATE retry: OK
+PROD fencers (post-final): 364
+PROD alias coverage: [364, 59, 59, 1]
+LOCAL alias coverage: ['364', '59', '59', '1']

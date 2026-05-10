@@ -1,0 +1,64 @@
+
+=== PPW3-2025-2026 (url) ===
+  organizer=SPWS dt_start=2025-12-13 city='Warszawa-Łomianki'
+  [  1] ? — FOIL/M/V2 n=2   url-check PPW3-2025-2026-V2-FOIL-M: OK
+OK
+  [  2] ? — FOIL/F/V0 n=2   url-check PPW3-2025-2026-V0-FOIL-F: OK
+OK
+  [  3] ? — FOIL/F/V2 n=2   url-check PPW3-2025-2026-V2-FOIL-F: OK
+OK
+  [  4] ? — FOIL/F/V4 n=2   url-check PPW3-2025-2026-V4-FOIL-F: OK
+OK
+  [  5] ? — FOIL/M/V4 n=3   url-check PPW3-2025-2026-V4-FOIL-M: OK
+OK
+  [  6] ? — FOIL/M/V3 n=2   url-check PPW3-2025-2026-V3-FOIL-M: OK
+OK
+  [  7] ? — FOIL/M/None n=3   url-check PPW3-2025-2026-V0-FOIL-M: OK
+  url-check PPW3-2025-2026-V1-FOIL-M: OK
+OK
+  [  8] ? — EPEE/M/V1 n=11   url-check PPW3-2025-2026-V1-EPEE-M: OK
+OK
+  [  9] ? — EPEE/F/V2 n=6   url-check PPW3-2025-2026-V2-EPEE-F: OK
+OK
+  [ 10] ? — EPEE/M/V0 n=12   url-check PPW3-2025-2026-V0-EPEE-M: OK
+OK
+  [ 11] ? — EPEE/F/V1 n=6   url-check PPW3-2025-2026-V1-EPEE-F: OK
+OK
+  [ 12] ? — EPEE/F/V0 n=5   url-check PPW3-2025-2026-V0-EPEE-F: OK
+OK
+  [ 13] ? — EPEE/M/V4 n=6   url-check PPW3-2025-2026-V4-EPEE-M: OK
+OK
+  [ 14] ? — EPEE/M/V3 n=8   url-check PPW3-2025-2026-V3-EPEE-M: OK
+OK
+  [ 15] ? — EPEE/M/V2 n=19   url-check PPW3-2025-2026-V2-EPEE-M: OK
+OK
+  [ 16] ? — SABRE/F/None n=2   url-check PPW3-2025-2026-V2-SABRE-F: OK
+  url-check PPW3-2025-2026-V3-SABRE-F: OK
+OK
+  [ 17] ? — SABRE/M/V4 n=4   url-check PPW3-2025-2026-V4-SABRE-M: OK
+OK
+  [ 18] ? — SABRE/M/V3 n=2   url-check PPW3-2025-2026-V3-SABRE-M: OK
+OK
+  [ 19] ? — SABRE/M/V2 n=12   url-check PPW3-2025-2026-V2-SABRE-M: OK
+OK
+  [ 20] ? — SABRE/M/None n=3   url-check PPW3-2025-2026-V0-SABRE-M: OK
+  url-check PPW3-2025-2026-V1-SABRE-M: OK
+OK
+  [ 21] ? — EPEE/F/None n=11 ⚠ Pipeline halted at s7_pool_round_check: POOL_ROUND_DETECTED — bracket has 3M/8F (minority 27%, count 3) — looks like a pool round, not a per-gender tournament; above ADR-034 cross-gender tolerance
+HALT @ s7_pool_round_check: bracket has 3M/8F (minority 27%, count 3) — looks like a pool round, not a per-gender tournament; above ADR-034 cross-gender tolerance
+  [ 22] ? — EPEE/M/None n=18   url-check PPW3-2025-2026-V0-EPEE-M: OK
+  url-check PPW3-2025-2026-V1-EPEE-M: OK
+  url-check PPW3-2025-2026-V2-EPEE-M: OK
+  url-check PPW3-2025-2026-V3-EPEE-M: OK
+OK
+  ↻ merged 2 duplicate PPW3-2025-2026-V1-EPEE-M drafts → keeper id=477 (17 results consolidated)
+  ↻ merged 2 duplicate PPW3-2025-2026-V0-EPEE-M drafts → keeper id=479 (19 results consolidated)
+  ↻ merged 2 duplicate PPW3-2025-2026-V3-EPEE-M drafts → keeper id=483 (9 results consolidated)
+  ↻ merged 2 duplicate PPW3-2025-2026-V2-EPEE-M drafts → keeper id=484 (22 results consolidated)
+  ↻ deduped 9 duplicate (id_fencer, id_tournament_draft) result_drafts (kept best place per fencer)
+  → wrote doc/staging/PPW3-2025-2026.md
+  summary: drafted=21 halted=1 errors=0 run_id=675e6738-d037-49bb-a8ea-2f38da67cb50
+  stage-time alias flush: 2 written to tbl_fencer (all verdicts; UI will surface for review), 0 errors
+
+⛔ HALT after PPW3-2025-2026: pipeline_halts=1 errors=0; alias data flushed to tbl_fencer for UI review at http://localhost:5173/?admin=1 — resolve and re-stage  (run_id=675e6738-d037-49bb-a8ea-2f38da67cb50)
+   → review doc/staging/PPW3-2025-2026.md, then `python -m python.tools.phase5_runner --event-code PPW3-2025-2026 --commit-run-id 675e6738-d037-49bb-a8ea-2f38da67cb50` after fixing.
