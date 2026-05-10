@@ -41,8 +41,8 @@ jobs:
         env:
           MAX_AGE_DAYS: ${{ github.event.inputs.max_age_days || '60' }}
           EVF_EMPTY_STOP_DAYS: ${{ github.event.inputs.evf_empty_stop_days || '30' }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL_PROD }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY_PROD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_PROD_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_PROD_SERVICE_ROLE_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
