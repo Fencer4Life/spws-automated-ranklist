@@ -876,9 +876,16 @@ class ReviewSession:
         # url_results is the human-friendly results page (what users see in a
         # browser); txt_source_url_used keeps the actual fetched endpoint
         # (e.g. FTL JSON `/events/results/data/<UUID>`) for the audit trail.
+        # ADR-046: child code is `{parent_kind}-V{cat}-{gender}-{weapon}-{season}`.
+        import re as _re
+        m = _re.match(r"^(.*)-(\d{4}-\d{4})$", self.event_code)
+        if m:
+            parent_kind, season = m.group(1), m.group(2)
+        else:
+            parent_kind, season = self.event_code, ""
         return {
             "id_event": event_id,
-            "txt_code": f"{self.event_code}-{vcat}-{ctx.parsed.weapon}-{ctx.parsed.gender}",
+            "txt_code": f"{parent_kind}-{vcat}-{ctx.parsed.gender}-{ctx.parsed.weapon}-{season}",
             "enum_type": "PPW",  # caller can override per event type
             "enum_weapon": ctx.parsed.weapon,
             "enum_gender": ctx.parsed.gender,

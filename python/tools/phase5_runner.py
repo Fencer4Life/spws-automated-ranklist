@@ -403,6 +403,15 @@ def main() -> int:
     # project_spws_country_default.md
     country_default = "PL" if event_meta["organizer_code"] == "SPWS" else None
 
+    # ADR-066: per-event minimum-participants threshold (read once, applied
+    # per parsed bracket below).
+    from python.pipeline.db_connector import (
+        derive_tourn_type_from_event_code,
+        gate_below_min_participants,
+    )
+    id_season = event_meta["_full_row"]["id_season"]
+    tourn_type = derive_tourn_type_from_event_code(args.event_code)
+
     # Loop every populated URL slot; accumulate per-tournament IRs across all
     ctxs: list = []  # list of (slot, parsed, ctx, error)
     pool_brackets: list[dict] = []  # {weapon, name, url, reason}
@@ -438,13 +447,16 @@ def main() -> int:
                 city_default=event_meta.get("txt_location"),
             )
             n_results = len(getattr(parsed, "results", []) or [])
-            if n_results == 0:
-                # V0 (or any sub-tournament) with zero results: skip pipeline,
-                # nothing to ingest.
-                print(f"   [{i}/{len(parsed_list)}] skip (0 results) — "
+            skip, gate_reason = gate_below_min_participants(
+                db, id_season, tourn_type, n_results,
+            )
+            if skip:
+                # ADR-066: bracket has fewer competitors than the season
+                # config requires; skip pipeline, nothing to ingest.
+                print(f"   [{i}/{len(parsed_list)}] {gate_reason}, skip — "
                       f"{getattr(parsed, 'weapon', '?')}/{getattr(parsed, 'gender', '?')}/"
                       f"{getattr(parsed, 'age_category', '?')}", file=sys.stderr)
-                ctxs.append((slot, parsed, None, "0 results"))
+                ctxs.append((slot, parsed, None, gate_reason))
                 continue
             print(f"   [{i}/{len(parsed_list)}] Stages 1-7 "
                   f"({getattr(parsed, 'weapon', '?')}/{getattr(parsed, 'gender', '?')}/"
@@ -1531,11 +1543,15 @@ def _multi_summary_md(
     excs = 0
     ok = 0
     empty = 0
+    below_min: list[tuple[object, str]] = []  # (parsed, reason) — ADR-066
     for _, parsed, ctx, err in ctxs:
         if parsed is None:
             excs += 1
         elif err == "0 results":
             empty += 1
+        elif isinstance(err, str) and err.startswith("BELOW_MIN_PARTICIPANTS"):
+            empty += 1
+            below_min.append((parsed, err))
         elif err or ctx is None:
             excs += 1
         elif ctx.halted:
@@ -1546,9 +1562,43 @@ def _multi_summary_md(
     lines.append("")
     lines.append(f"- ✅ clean: **{ok}**")
     lines.append(f"- ❌ halted: **{halted}**")
-    lines.append(f"- ⊘ empty: **{empty}** (skipped — no fencers)")
+    lines.append(f"- ⊘ empty: **{empty}** (skipped — no fencers / below threshold)")
     lines.append(f"- 🔥 exceptions: **{excs}**")
     lines.append("")
+
+    # ADR-066: itemise brackets dropped by the min-participants gate so the
+    # operator sees what was excluded and can confirm the threshold is right.
+    if below_min:
+        lines.append(
+            f"### ⚠ Skipped — below min-participants threshold ({len(below_min)} brackets)"
+        )
+        lines.append("")
+        lines.append(
+            "These brackets were dropped at ingestion because their fencer count "
+            "is below `tbl_scoring_config.int_min_participants_{ppw,evf}` for "
+            "the season. Adjust the season config to lower the threshold if "
+            "they should count."
+        )
+        lines.append("")
+        lines.append("| Bracket | Wpn | Gen | V-cat | n | Reason | Source URL |")
+        lines.append("|---|---|---|---|---:|---|---|")
+        for parsed, reason in below_min:
+            name = (
+                getattr(parsed, "_ftl_source_name", None)
+                or getattr(parsed, "tournament_name", None)
+                or "?"
+            )
+            wpn = getattr(parsed, "weapon", "?") or "?"
+            gen = getattr(parsed, "gender", "?") or "?"
+            vcat = (
+                getattr(parsed, "category_hint", None)
+                or getattr(parsed, "age_category", None)
+                or "—"
+            )
+            n = len(getattr(parsed, "results", []) or [])
+            url = getattr(parsed, "source_url", "—") or "—"
+            lines.append(f"| {name} | {wpn} | {gen} | {vcat} | {n} | `{reason}` | {url} |")
+        lines.append("")
 
     # Tournament rows — show committed (live) if any, else show drafts
     if db is not None:

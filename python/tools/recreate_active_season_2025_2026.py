@@ -136,21 +136,34 @@ def _parse_ppw1_xlsx(file_path: Path):
     if header_idx is None:
         raise ValueError(f"{file_path.name}: PP1 sheet has no recognizable header")
 
-    parsed_results = []
+    # ADR-066 walkover: pre-scan for non-empty fencer-name rows.
+    # If exactly one such row has no place, treat it as place=1.
+    candidates: list[tuple[int, tuple, str]] = []  # (row_index, row, name)
     for i, row in enumerate(rows[header_idx + 1:], start=1):
         if col_place >= len(row) or col_name >= len(row):
             continue
-        place_val = row[col_place]
         name_val = row[col_name]
-        if place_val is None or name_val is None:
-            continue
-        try:
-            place = int(float(str(place_val)))
-        except (ValueError, TypeError):
+        if name_val is None:
             continue
         name = str(name_val).strip()
         if not name:
             continue
+        candidates.append((i, row, name))
+    is_walkover = len(candidates) == 1
+
+    parsed_results = []
+    for i, row, name in candidates:
+        place_val = row[col_place]
+        if place_val is None:
+            if is_walkover:
+                place = 1
+            else:
+                continue
+        else:
+            try:
+                place = int(float(str(place_val)))
+            except (ValueError, TypeError):
+                continue
         country = None
         if col_country is not None and col_country < len(row) and row[col_country]:
             country = str(row[col_country]).strip() or None
@@ -374,6 +387,15 @@ def ingest_event(event_code: str, *, db, do_commit: bool) -> tuple[str | None, b
     city_default = event_meta.get("txt_location")
     country_default = "PL" if event_meta["organizer_code"] == "SPWS" else None
 
+    # ADR-066: resolve the per-season minimum-participants threshold once
+    # per event; gate every parsed bracket against it inside the loop.
+    from python.pipeline.db_connector import (
+        derive_tourn_type_from_event_code,
+        gate_below_min_participants,
+    )
+    id_season = event_meta["_full_row"]["id_season"]
+    tourn_type = derive_tourn_type_from_event_code(event_code)
+
     # Build the parsed-IR iterator
     if handler_kind == "xlsx":
         src_iter = _iter_ppw1(fetcher)
@@ -404,9 +426,12 @@ def ingest_event(event_code: str, *, db, do_commit: bool) -> tuple[str | None, b
             city_default=city_default,
         )
         n_results = len(getattr(parsed, "results", []) or [])
-        if n_results == 0:
-            print(f"  [{i:3d}] {label} — 0 results, skip", flush=True)
-            ctxs.append((1, parsed, None, "0 results"))
+        skip, reason = gate_below_min_participants(
+            db, id_season, tourn_type, n_results,
+        )
+        if skip:
+            print(f"  [{i:3d}] {label} — {reason}, skip", flush=True)
+            ctxs.append((1, parsed, None, reason))
             continue
         print(f"  [{i:3d}] {label} — {getattr(parsed, 'weapon', '?')}/"
               f"{getattr(parsed, 'gender', '?')}/"

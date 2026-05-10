@@ -65,14 +65,24 @@ def parse_ftl_json(data: list[dict]) -> list[dict]:
 
     Returns:
         List of dicts with keys: fencer_name, place, country
+
+    ADR-066: walkover semantics. FTL emits `place: null` for "Finished"
+    brackets where only one fencer registered (no fencing happened, no
+    ranking computed). When the bracket has exactly one non-`excluded`
+    entry, treat the missing place as place=1 (the lone competitor wins
+    by default). Threshold gating then happens upstream via
+    `int_min_participants_ppw` / `_evf`.
     """
+    non_excluded = [e for e in data if not e.get("excluded")]
+    is_walkover = len(non_excluded) == 1
     results = []
-    for entry in data:
-        if entry.get("excluded"):
-            continue
+    for entry in non_excluded:
         place = _parse_place(str(entry.get("place") or ""))
         if place is None:
-            continue
+            if is_walkover:
+                place = 1
+            else:
+                continue
         results.append({
             "fencer_name": _clean_name(entry["name"]),
             "place": place,
@@ -96,10 +106,11 @@ def parse_ftl_with_marker(data: list[dict]) -> list[dict]:
     category re-split logic in python/tools/refix_combined_pools.py keys off
     this marker.
     """
+    # ADR-066: walkover semantics — see parse_ftl_json above.
+    non_excluded = [e for e in data if not e.get("excluded")]
+    is_walkover = len(non_excluded) == 1
     results = []
-    for entry in data:
-        if entry.get("excluded"):
-            continue
+    for entry in non_excluded:
         raw = entry["name"].strip()
         m = _MARKER_RE.match(raw)
         if m:
@@ -108,9 +119,12 @@ def parse_ftl_with_marker(data: list[dict]) -> list[dict]:
         else:
             cleaned = raw
             marker = None
+        place = _parse_place(str(entry.get("place") or ""))
+        if place is None and is_walkover:
+            place = 1
         results.append({
             "fencer_name": cleaned,
-            "place": _parse_place(str(entry["place"])),
+            "place": place,
             "country": entry.get("country", ""),
             "marker": marker,
         })
@@ -256,19 +270,27 @@ def parse_json(
     Each entry's stable `id` field (32-char hex) becomes the native
     source_row_id as ``f"ftl:{id}"``. Entries flagged ``excluded=True``
     are dropped at parse time.
+
+    ADR-066: when a bracket has exactly one non-`excluded` entry and
+    its place is null/empty, treat it as a walkover (place=1). Threshold
+    gating then decides whether the bracket counts (per the season's
+    `int_min_participants_ppw`/`_evf`).
     """
     from python.pipeline.ir import ParsedResult, ParsedTournament, SourceKind
 
+    non_excluded = [e for e in data if not e.get("excluded")]
+    is_walkover = len(non_excluded) == 1
     results: list[ParsedResult] = []
-    for entry in data:
-        if entry.get("excluded"):
-            continue
-
+    for entry in non_excluded:
         # FTL emits empty/"DNS"/"DNF" `place` for fencers who didn't finish —
-        # skip them; they don't contribute to scoring.
+        # skip them; they don't contribute to scoring. Single-competitor
+        # walkover is the one exception (see docstring).
         place = _parse_place(str(entry.get("place") or ""))
         if place is None:
-            continue
+            if is_walkover:
+                place = 1
+            else:
+                continue
 
         cleaned_name, marker = _split_name_and_marker(entry["name"])
         country = entry.get("country") or None
