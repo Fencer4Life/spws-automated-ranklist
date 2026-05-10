@@ -345,6 +345,104 @@ class DbConnector:
         self.annotate_parity_fail(id_event, notes)
 
 
+# Tournament type → tbl_scoring_config column.
+# ADR-066: PPW/MPW/PSW (domestic SPWS) gate on int_min_participants_ppw;
+# PEW/MEW/MSW (international classification) gate on int_min_participants_evf.
+_PPW_TYPES = frozenset({"PPW", "MPW", "PSW"})
+_EVF_TYPES = frozenset({"PEW", "MEW", "MSW"})
+
+
+def get_min_participants(db: "DbConnector", id_season: int, tourn_type: str) -> int:
+    """Return the per-season minimum-participants threshold for a
+    tournament type.
+
+    ADR-066: tournaments with `n_competitors < threshold` are skipped at
+    ingestion (no tbl_tournament row, no points awarded). Read from
+    `tbl_scoring_config.int_min_participants_{ppw,evf}` keyed by
+    `id_season`. Default 1 (include everything) when:
+      - the season has no scoring_config row, OR
+      - the tournament type is unrecognised.
+    """
+    if tourn_type in _PPW_TYPES:
+        column = "int_min_participants_ppw"
+    elif tourn_type in _EVF_TYPES:
+        column = "int_min_participants_evf"
+    else:
+        return 1
+    rows = (
+        db._sb.table("tbl_scoring_config")
+        .select(column)
+        .eq("id_season", id_season)
+        .execute()
+        .data
+    ) or []
+    if not rows:
+        return 1
+    val = rows[0].get(column)
+    return int(val) if val is not None else 1
+
+
+def derive_tourn_type_from_event_code(event_code: str) -> "str | None":
+    """Map a `tbl_event.txt_code` to its tournament type for ADR-066 routing.
+
+    Active season uses prefixes (per ADR-046 + spec):
+      - PPW{N} (domestic Puchar Polski Weteranów)            → PPW
+      - MPW (Mistrzostwa Polski Weteranów championship)      → MPW
+      - PSW (Mistrzostwa Szkolne Weteranów school champ)     → PSW
+      - PEW{N}{efs}* (international circuit)                  → PEW
+      - MEW (international individual championship)          → MEW
+      - IMEW (alternation pair with DMEW; individual)        → MEW
+      - DMEW (international team championship)               → MPW (team semantics)
+      - MSW (international SuperSenior championship)         → MSW
+      - IMSW (alternation pair; individual SuperSenior)      → MSW
+
+    Returns None for codes that don't match any known prefix (defensive
+    fallback — `gate_below_min_participants` then defaults to threshold=1).
+    """
+    if not event_code:
+        return None
+    prefix = event_code.split("-", 1)[0]
+    if prefix.startswith("PPW") and prefix[3:].isdigit():
+        return "PPW"
+    if prefix == "MPW":
+        return "MPW"
+    if prefix == "PSW":
+        return "PSW"
+    if prefix.startswith("PEW"):
+        rest = prefix[3:]
+        head = ""
+        for ch in rest:
+            if ch.isdigit():
+                head += ch
+            else:
+                break
+        suffix = rest[len(head):]
+        if head and (not suffix or all(c in "efs" for c in suffix.lower())):
+            return "PEW"
+    if prefix == "MEW" or prefix == "IMEW":
+        return "MEW"
+    if prefix == "DMEW":
+        return "MPW"
+    if prefix == "MSW" or prefix == "IMSW":
+        return "MSW"
+    return None
+
+
+def gate_below_min_participants(
+    db: "DbConnector", id_season: int, tourn_type: str, n_results: int,
+) -> "tuple[bool, str | None]":
+    """ADR-066 ingestion gate.
+
+    Strict less-than: returns (True, reason) when `n_results < threshold`,
+    else (False, None). Reason string is `BELOW_MIN_PARTICIPANTS (n=X, min=Y)`
+    so the staging summary can render it.
+    """
+    threshold = get_min_participants(db, id_season, tourn_type)
+    if n_results < threshold:
+        return True, f"BELOW_MIN_PARTICIPANTS (n={n_results}, min={threshold})"
+    return False, None
+
+
 def create_db_connector() -> DbConnector:
     """Create a DbConnector from environment variables."""
     from supabase import create_client
