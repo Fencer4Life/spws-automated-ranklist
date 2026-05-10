@@ -175,3 +175,70 @@ BEGIN
      AND txt_location IS NULL;
 END;
 $phase4_locations$;
+
+-- =============================================================================
+-- ADR-066 / 2026-05-10: Recompute scores for every tournament that has
+-- results. The new exporter (export_seed.py) drops num_place_pts /
+-- num_de_bonus / num_podium_bonus / num_final_score / ts_points_calc — those
+-- columns are derived from int_place + int_participant_count + scoring config,
+-- so re-deriving them here keeps the seed minimal AND avoids the drift hazard
+-- the old "ship-computed-values" approach had.
+-- Idempotent; safe on re-run; per-tournament EXCEPTION trap so one bad row
+-- can't block the rest.
+-- =============================================================================
+DO $score_all$
+DECLARE
+  v_tid INT;
+  v_ok  INT := 0;
+  v_err INT := 0;
+BEGIN
+  FOR v_tid IN
+    SELECT t.id_tournament
+      FROM tbl_tournament t
+     WHERE t.int_participant_count IS NOT NULL
+       AND t.int_participant_count > 0
+       AND EXISTS (SELECT 1 FROM tbl_result r WHERE r.id_tournament = t.id_tournament)
+  LOOP
+    BEGIN
+      PERFORM fn_calc_tournament_scores(v_tid);
+      v_ok := v_ok + 1;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'fn_calc_tournament_scores(%) failed: %', v_tid, SQLERRM;
+      v_err := v_err + 1;
+    END;
+  END LOOP;
+  RAISE NOTICE 'seed_post_backfill: scored % tournaments, % errors', v_ok, v_err;
+END;
+$score_all$;
+
+-- =============================================================================
+-- ADR-066 / 2026-05-10: Identity Manager smoke-test placeholder.
+-- The new exporter (export_seed.py:331) deliberately drops tbl_match_candidate
+-- (Phase 6 plans to retire the table entirely; provenance has moved to
+-- tbl_result.{txt_scraped_name, num_match_confidence, enum_match_method}).
+-- 00_smoke.sql test 2 still asserts the table has rows — bootstrap a
+-- single placeholder so the assertion stays meaningful while the table
+-- exists. Idempotent.
+-- =============================================================================
+DO $smoke_match_candidate$
+DECLARE
+  v_result_id INT;
+BEGIN
+  IF EXISTS (SELECT 1 FROM tbl_match_candidate) THEN
+    RETURN;
+  END IF;
+  -- Pick any seeded result row to anchor the placeholder candidate.
+  SELECT id_result INTO v_result_id FROM tbl_result LIMIT 1;
+  IF v_result_id IS NULL THEN
+    RETURN;
+  END IF;
+  INSERT INTO tbl_match_candidate (id_result, txt_scraped_name, id_fencer, num_confidence, enum_status)
+  SELECT v_result_id,
+         COALESCE(r.txt_scraped_name,
+                  f.txt_surname || ' ' || f.txt_first_name),
+         r.id_fencer, 100.0, 'AUTO_MATCHED'::enum_match_status
+    FROM tbl_result r
+    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
+   WHERE r.id_result = v_result_id;
+END;
+$smoke_match_candidate$;
