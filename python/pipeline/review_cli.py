@@ -317,6 +317,25 @@ class Fetcher:
                         per_parsed = self.fetch_url(per_url)
                     finally:
                         self._http = saved_http
+                    # ADR-065 (2026-05-08): per-fencer V-cat marker check.
+                    # When the bracket name parses to a single V-cat but
+                    # the fencers' embedded markers span multiple V-cats
+                    # (Polish operator dumped a joint pool into a misnamed
+                    # single-V-cat bracket), downgrade to joint-pool so
+                    # ADR-056's BY-derivation path routes each fencer to
+                    # her actual V-cat.
+                    has_conflict, marker_summary = _bracket_marker_conflict(
+                        per_parsed, category
+                    )
+                    if has_conflict:
+                        import sys as _sys
+                        print(
+                            f"   ⚠ bracket {name!r} mislabeled as {category}: "
+                            f"per-fencer markers {marker_summary} "
+                            f"→ downgrading to joint-pool",
+                            file=_sys.stderr,
+                        )
+                        category = None
                     annotated = _annotate_parsed(
                         per_parsed,
                         weapon=weapon, gender=gender,
@@ -450,6 +469,83 @@ def _to_human_results_url(url: str | None) -> str | None:
         "/events/results/data/",
         "/events/results/",
     )
+
+
+import re as _re
+
+# ---------------------------------------------------------------------------
+# Polish FTL per-fencer V-cat markers
+#
+# Some Polish FTL operators encode the per-fencer V-cat in the fencer name
+# string itself, between the surname and first name, in one of these formats:
+#   - "(N)"   parenthesized digit:   "PĘCZEK (0) Sandra"      → 0
+#   - " N "   bare digit:            "KAMIŃSKA  1 Gabriela"   → 1
+#   - " (N) " parens with whitespace: "WASILCZUK (2) Beata"    → 2
+# N is restricted to 0-4 (the valid V-cats; nothing else is meaningful).
+#
+# These markers are evidence that the organizer EXPLICITLY tagged each
+# fencer's age category — they were not relying on the bracket name alone.
+# When a bracket label says "V2" but the fencers have markers spanning
+# multiple V-cats (e.g. one "(0)", three "1", three "2"), the bracket is
+# misregistered: actually a joint pool that the organizer couldn't be
+# bothered to set up correctly in FTL. Downstream we treat such brackets as
+# joint-pool (BY-derivation per ADR-056).
+# ---------------------------------------------------------------------------
+
+_VCAT_MARKER_RE = _re.compile(r"\s+\(?([0-4])\)?\s+")
+
+
+def _extract_vcat_marker(fencer_name: str) -> int | None:
+    """Return the V-cat digit embedded in a fencer name, or None if absent.
+
+    Examples:
+      "PĘCZEK (0) Sandra"      → 0
+      "KAMIŃSKA   1 Gabriela"  → 1
+      "MITSKEVICH Dziyana"     → None  (no marker)
+    """
+    if not fencer_name:
+        return None
+    m = _VCAT_MARKER_RE.search(fencer_name)
+    return int(m.group(1)) if m else None
+
+
+def _bracket_marker_conflict(parsed, bracket_vcat: str | None) -> tuple[bool, str]:
+    """Inspect parsed.results for V-cat markers and detect bracket misregistration.
+
+    Returns (has_conflict, summary):
+      has_conflict=True when any fencer's marker disagrees with bracket_vcat.
+      summary = short human-readable string of the marker distribution.
+
+    Behaviour:
+      - bracket_vcat=None (joint-pool already)        → (False, "joint")
+      - no fencer has a marker                        → (False, "no markers")
+      - all marker-bearing fencers agree              → (False, "consistent V{N}")
+      - any marker-bearing fencer disagrees           → (True, "mixed: V0=a V1=b ...")
+    """
+    if bracket_vcat is None:
+        return (False, "joint")
+    results = getattr(parsed, "results", None) or []
+    if not results:
+        return (False, "no results")
+    counts = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
+    n_marked = 0
+    for r in results:
+        m = _extract_vcat_marker(getattr(r, "fencer_name", "") or "")
+        if m is None:
+            continue
+        counts[m] += 1
+        n_marked += 1
+    if n_marked == 0:
+        return (False, "no markers")
+    expected = bracket_vcat[1:] if bracket_vcat.startswith("V") else bracket_vcat
+    try:
+        expected_n = int(expected)
+    except (ValueError, TypeError):
+        return (False, f"unparseable bracket V-cat {bracket_vcat!r}")
+    nonzero = {k: v for k, v in counts.items() if v > 0}
+    summary = " ".join(f"V{k}={v}" for k, v in sorted(nonzero.items()))
+    has_conflict = any(k != expected_n for k in nonzero.keys())
+    return (has_conflict, summary)
 
 
 def _annotate_parsed(parsed, *, weapon, gender, age_category, ftl_source_name):

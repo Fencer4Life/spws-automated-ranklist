@@ -57,7 +57,7 @@ At s6 identity resolution time, apply a **one-sided** gender filter to the match
 - **ADR-038** (EVF intake Polish-only) — clarifies the domestic/international intake split. This ADR deliberately excludes EVF/PEW/MEW/MSW because international intake has its own rule.
 - **ADR-003** (Identity by FK) — fencer identity is still tracked by FK; this ADR adds a gender-eligibility constraint to the candidate set, not a name-resolution change.
 - **ADR-056** (post-match V-cat assignment) — same s6/s7 stage neighborhood; this ADR refines s6 candidate selection without changing V-cat split logic.
-- **ADR-063** (FTL per-fencer V-cat marker check) — orthogonal Phase 5 fix in the same s7 neighborhood (V-cat marker check vs. gender filter); both reduce false halts.
+- **ADR-065** (FTL per-fencer V-cat marker check) — orthogonal Phase 5 fix in the same s7 neighborhood (V-cat marker check vs. gender filter); both reduce false halts.
 
 ## Tests
 
