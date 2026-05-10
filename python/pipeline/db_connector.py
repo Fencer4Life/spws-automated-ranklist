@@ -17,10 +17,16 @@ class DbConnector:
         self._sb = supabase_client
 
     def fetch_fencer_db(self) -> list[dict]:
-        """Return all fencers with fields needed for fuzzy matching."""
+        """Return all fencers with fields needed for fuzzy matching.
+
+        ADR-064: enum_gender is selected so the matcher's asymmetric
+        F-bracket filter can drop M-gender candidates from the candidate
+        set when bracket_gender='F' (domestic events only).
+        """
         resp = (
             self._sb.table("tbl_fencer")
-            .select("id_fencer, txt_surname, txt_first_name, int_birth_year, json_name_aliases")
+            .select("id_fencer, txt_surname, txt_first_name, int_birth_year, "
+                    "json_name_aliases, enum_gender")
             .execute()
         )
         return resp.data

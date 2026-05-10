@@ -208,6 +208,7 @@ def find_best_match(
     pending_threshold: float | None = None,
     use_diacritic_folding: bool = False,
     use_token_set_ratio: bool = False,
+    bracket_gender: str | None = None,
 ) -> MatchResult:
     """Find the best matching fencer for a scraped name.
 
@@ -223,7 +224,8 @@ def find_best_match(
         scraped_name: Name as extracted by scraper (e.g., "KOWALSKI Jan")
         fencer_db: List of fencer dicts with keys:
             id_fencer, txt_surname, txt_first_name, json_name_aliases,
-            int_birth_year (optional, used for disambiguation)
+            int_birth_year (optional, used for disambiguation),
+            enum_gender (optional, used by ADR-064 asymmetric F-bracket filter)
         age_category: Tournament age category (V0–V4), optional
         season_end_year: End year of the season (e.g., 2025 for
             SPWS-2024-2025), optional
@@ -231,12 +233,25 @@ def find_best_match(
         pending_threshold: Score threshold for PENDING (default: 50)
         use_diacritic_folding: Strip diacritics before comparing (default: False)
         use_token_set_ratio: Use max(token_sort, token_set) (default: False)
+        bracket_gender: Bracket gender for ADR-064 asymmetric filter. When 'F',
+            candidates with enum_gender='M' are dropped before name-distance
+            scoring (federation rule: men cannot legitimately appear in
+            women's brackets). NULL-gender candidates remain eligible. When
+            'M' or None, no filter is applied — ADR-034 handles legitimate
+            F-in-M cases at scoring time via fn_effective_gender. The caller
+            (resolve_tournament_results) gates this to domestic events only.
 
     Returns:
         MatchResult with status AUTO_MATCHED, PENDING, or UNMATCHED
     """
     auto_thresh = auto_match_threshold if auto_match_threshold is not None else AUTO_MATCH_THRESHOLD
     pend_thresh = pending_threshold if pending_threshold is not None else PENDING_THRESHOLD
+
+    # ADR-064: asymmetric F-bracket filter. Drop M candidates before scoring.
+    if bracket_gender == "F":
+        fencer_db = [
+            f for f in fencer_db if f.get("enum_gender") != "M"
+        ]
 
     if not fencer_db:
         return MatchResult(

@@ -72,6 +72,7 @@ def auto_create_fencer(
     scraped_name: str,
     category: str,
     season_end_year: int,
+    gender_default: str | None = None,
 ) -> dict:
     """Build a new fencer dict from a scraped name for auto-creation.
 
@@ -82,17 +83,25 @@ def auto_create_fencer(
         scraped_name: Name as extracted by scraper (e.g., "SMITH John")
         category: Tournament age category (V0–V4)
         season_end_year: End year of the season (e.g., 2025 for SPWS-2024-2025)
+        gender_default: Optional bracket-inherited gender (ADR-064). When the
+            matcher's asymmetric F-bracket filter rejects all M candidates
+            and falls through to this auto-create path, the new fencer
+            inherits the bracket's gender (always 'F' in the ADR-064 path).
+            Omitted by legacy callers that don't carry bracket gender.
 
     Returns:
         Dict with fields for tbl_fencer insertion
     """
     surname, first_name = parse_scraped_name(scraped_name)
-    return {
+    record = {
         "txt_surname": surname,
         "txt_first_name": first_name,
         "int_birth_year": estimate_birth_year(category, season_end_year),
         "bool_birth_year_estimated": True,
     }
+    if gender_default is not None:
+        record["enum_gender"] = gender_default
+    return record
 
 
 def resolve_tournament_results(
@@ -102,13 +111,14 @@ def resolve_tournament_results(
     age_category: str,
     season_end_year: int,
     scraped_countries: list[str | None] | None = None,
+    bracket_gender: str | None = None,
 ) -> ResolvedTournament:
     """Match scraped names against master data with tournament-type rules.
 
     Args:
         scraped_names: Names as extracted by scrapers
         fencer_db: Master fencer list (id_fencer, txt_surname, txt_first_name,
-                   json_name_aliases)
+                   json_name_aliases, enum_gender)
         tournament_type: PPW, MPW, PEW, MEW, or MSW
         age_category: V0, V1, V2, V3, or V4
         season_end_year: End year of the season (e.g., 2025 for SPWS-2024-2025)
@@ -119,12 +129,21 @@ def resolve_tournament_results(
             at an international tournament also dismisses the row
             (fail-closed). SPWS-organized (domestic) tournaments ignore this
             parameter; all rows pass to the matcher.
+        bracket_gender: Bracket gender for ADR-064 asymmetric filter. Forwarded
+            to find_best_match ONLY for domestic events (PPW/MPW). When 'F'
+            in a domestic bracket, M-gender candidates are dropped from the
+            matcher's candidate set; rows that fall through to UNMATCHED are
+            auto-created with enum_gender='F' inherited from the bracket.
+            International tournaments ignore this parameter (out of scope per
+            ADR-064; international intake follows ADR-038's POL-only rule).
 
     Returns:
         ResolvedTournament with matched, auto_created, and skipped lists
     """
     result = ResolvedTournament()
     is_domestic = tournament_type in DOMESTIC_TYPES
+    # ADR-064: filter is domestic-only. International intake out of scope.
+    effective_bracket_gender = bracket_gender if is_domestic else None
 
     for idx, name in enumerate(scraped_names):
         # ADR-038: EVF events — drop non-POL rows before matching.
@@ -134,7 +153,10 @@ def resolve_tournament_results(
                 result.skipped.append(name)
                 continue
 
-        match = find_best_match(name, fencer_db, age_category, season_end_year)
+        match = find_best_match(
+            name, fencer_db, age_category, season_end_year,
+            bracket_gender=effective_bracket_gender,
+        )
 
         if match.status == "AUTO_MATCHED":
             result.matched.append(match)
@@ -147,7 +169,8 @@ def resolve_tournament_results(
             if is_domestic:
                 # Auto-create new fencer for domestic tournaments
                 new_fencer = auto_create_fencer(
-                    name, age_category, season_end_year
+                    name, age_category, season_end_year,
+                    gender_default=effective_bracket_gender,
                 )
                 result.auto_created.append(new_fencer)
                 result.matched.append(

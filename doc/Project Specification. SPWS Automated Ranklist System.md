@@ -1435,6 +1435,7 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 | [ADR-061](adr/061-local-parity-and-telegram-commands.md) | LOCAL operator workflow preserved verbatim (filesystem `.md`, no Storage, no Telegram by default) — all new infra gated to CERT/PROD via `--md-target` CLI flag and `VITE_DEPLOY_ENV` env switch; CERT command surface extended via 4 new GAS Telegram commands (`/regen`, `/stage`, `/parity`, `/verdict`) + extended `/help`; `dispatch-workflow` allowlist gains `phase5-event-runner.yml` + `regen-report.yml` | ADR-025, ADR-041, ADR-050 |
 | [ADR-062](adr/062-spws-bracket-name-filter.md) | FTL event-schedule discovery skips brackets whose first significant token isn't in the SPWS-recognised vocabulary (Polish/English weapon, gender, V-cat, format markers) — closes a class of bug where a guest competition shares the same FTL schedule URL (e.g. AKADEMICKIE Mistrzostwa alongside PPW4-2024-2025), survives existing `MIKST_PATTERN` / `SKIP_PATTERNS` filters, gets ingested as if it were the SPWS event, and produces duplicate `(id_fencer, id_tournament_draft)` pairs that block commit on `uq_result_fencer_tournament`; complementary to ADR-057 (structural pool-round) — name-first whitelist at discovery, structural detection post-match | ADR-050, ADR-057 |
 | [ADR-063](adr/063-polish-plural-and-grupy-zbiorcze.md) | Polish-grammar-tolerant FTL bracket parsing: `GENDER_MALE` widens `MĘŻCZYZN[I]?` → `MĘŻCZY[ZŹ]N[IY]?` to accept both genitive (Z) and nominative (Ź) plural roots; `MIKST_PATTERN` adds `GRUPY ZBIORCZE` (Polish "collective groups") as a pool-round indicator — closes silent data-loss bug where 14 of 26 PPW5-2024-2025 brackets dropped at the splitter as `unparseable bracket name` because the organizer used a different (equally valid) Polish convention than PPW1-PPW4 organizers; regression-test-locked via 5.22.2b on the original genitive form | ADR-050, ADR-057, ADR-062 |
+| [ADR-064](adr/064-asymmetric-gender-filter-matcher.md) | Asymmetric gender filter at matcher time (domestic events only): when `parsed.gender == 'F'` on PPW/MPW/GP brackets, `find_best_match` drops `tbl_fencer` rows with `enum_gender = 'M'` from the candidate set before name-distance scoring (federation rule: men cannot legitimately appear in women's tournaments); F and NULL-gender candidates remain eligible; UNMATCHED falls through to NEW_FENCER auto-create with bracket-inherited `enum_gender='F'`; M brackets and non-domestic types (PEW/MEW/MSW) bypass the filter — ADR-034's `fn_effective_gender` continues to handle legitimate F-in-M scoring at ranking time; closes Phase 5 PPW3-2025-2026 Women's Épée halt where 3 international women fuzzy-matched onto Polish men via name overlap and tripped `s7_pool_round_check` (3M/8F mix) before draft writes | ADR-003, ADR-034, ADR-038, ADR-056 |
 
 ## Appendix D — Test Baseline
 
@@ -1444,10 +1445,12 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
 | pgTAP | 562 | 42 | `supabase/tests/` |
-| pytest | 683 | 34 | `python/tests/` |
+| pytest | 707 | 36 | `python/tests/` |
 | vitest | 371 | 31 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **1623** | | |
+| **Total** | **1647** | | |
+
+**ADR-064 contribution (2026-05-10):** pytest +12 (4.61–4.72 in `test_matcher_gender_filter.py`) — asymmetric F-bracket gender filter at matcher time for domestic events.
 
 **Phase 5.5 additions** (this entry): pgTAP +21 (5.10 + 5.11 + 5.12) + 4 (5.15) + 8 (5.18.A/B/C/D), pytest +30 (5.5 md_writer + 5.6 storage_md + 5.8 parity_delta + 5.9 telegram_send_document, plus rebuild-session pytest) + 4 (5.16 review_cli PENDING-inclusion fix) + 3 (5.18.4 source-V-cat capture), vitest +28 (5.1 birthYearEstimate + 5.2 CreateFencerFromAliasModal + 5.3 api.regenStagingReport + 5.4 FencerAliasManager.unreviewed) + 5 (5.18.5 modal source-V-cat + bracket URL). The process_xml_file rewrite (5.7) and the wiring of `App.svelte` cascade banner (covered here as integration, no new test ID) remain. Test totals will move again once 5.7 lands.
 
