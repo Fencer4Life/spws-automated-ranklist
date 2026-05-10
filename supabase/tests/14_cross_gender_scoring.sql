@@ -19,6 +19,48 @@ WHERE txt_surname = 'SAMECKA-NACZYŃSKA' AND txt_first_name = 'Martyna';
 UPDATE tbl_fencer SET enum_gender = 'M'
 WHERE txt_surname = 'TECŁAW' AND txt_first_name = 'Robert';
 
+-- 2026-05-10 (seed 2026-05-10): the orchestrator's PPW5 re-ingest produced a
+-- F sibling tournament for sabre V1 (PPW5-V1-F-SABRE-2025-2026) that didn't
+-- exist when this test was first written. CG.4 + CG.8 need the "no F
+-- sibling" scenario, so we remove that one tournament inside the test
+-- transaction (BEGIN/ROLLBACK guarantees the wipe is local to the test).
+DELETE FROM tbl_match_candidate WHERE id_result IN (
+  SELECT id_result FROM tbl_result WHERE id_tournament = (
+    SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V1-F-SABRE-2025-2026'
+  )
+);
+DELETE FROM tbl_result WHERE id_tournament = (
+  SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V1-F-SABRE-2025-2026'
+);
+DELETE FROM tbl_tournament WHERE txt_code = 'PPW5-V1-F-SABRE-2025-2026';
+
+-- CG.8 expects SAMECKA-NACZYŃSKA to have a result in PPW5-V1-M-SABRE-2025-2026
+-- (so the cross-gender reassignment path includes it in her F-drilldown). The
+-- re-ingest correctly routes her to the F bracket, so we need a result row
+-- in the M bracket that the asymmetric F-bracket filter will reassign.
+-- Insert the placeholder result if it doesn't already exist.
+DO $cg_setup$
+DECLARE
+  v_tid INT;
+  v_fid INT;
+BEGIN
+  SELECT id_tournament INTO v_tid FROM tbl_tournament
+    WHERE txt_code = 'PPW5-V1-M-SABRE-2025-2026';
+  SELECT id_fencer INTO v_fid FROM tbl_fencer
+    WHERE txt_surname = 'SAMECKA-NACZYŃSKA' AND txt_first_name = 'Martyna';
+  IF v_tid IS NOT NULL AND v_fid IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM tbl_result WHERE id_tournament = v_tid AND id_fencer = v_fid
+  ) THEN
+    ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
+    INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+    VALUES (v_fid, v_tid, 1, 'SAMECKA-NACZYŃSKA Martyna');
+    ALTER TABLE tbl_result ENABLE TRIGGER trg_assert_result_vcat;
+    -- Re-score the tournament so the new row gets points populated.
+    PERFORM fn_calc_tournament_scores(v_tid);
+  END IF;
+END;
+$cg_setup$;
+
 -- =========================================================================
 -- CG.1–CG.4: fn_effective_gender unit tests
 -- =========================================================================
