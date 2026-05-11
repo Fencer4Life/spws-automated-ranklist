@@ -89,9 +89,17 @@ def read_cert_event(
     for t in tourn_rows:
         tid = t["id_tournament"]
         result_rows = query_fn(
-            f"SELECT r.id_fencer, r.int_place, mc.txt_scraped_name, "
-            f"mc.num_confidence, mc.enum_status::TEXT AS enum_match_status "
+            f"SELECT r.id_fencer, r.int_place, "
+            f"COALESCE(NULLIF(r.txt_scraped_name,''), mc.txt_scraped_name, "
+            f"  f.txt_surname || ' ' || f.txt_first_name) AS txt_scraped_name, "
+            f"COALESCE(mc.num_confidence, r.num_match_confidence, 100) AS num_confidence, "
+            f"COALESCE(mc.enum_status::TEXT, "
+            f"  CASE r.enum_match_method::TEXT "
+            f"    WHEN 'AUTO_MATCH' THEN 'AUTO_MATCHED' "
+            f"    WHEN 'USER_CONFIRMED' THEN 'USER_CONFIRMED' "
+            f"    ELSE 'AUTO_MATCHED' END) AS enum_match_status "
             f"FROM tbl_result r "
+            f"JOIN tbl_fencer f ON f.id_fencer = r.id_fencer "
             f"LEFT JOIN tbl_match_candidate mc ON mc.id_result = r.id_result "
             f"WHERE r.id_tournament = {tid} ORDER BY r.int_place"
         )
@@ -242,12 +250,18 @@ def promote_event(
         except Exception as e:
             errors.append(f"{tourn_code}: {e}")
 
-    # Update event status on PROD
+    # Update event status on PROD. fn_validate_event_transition rejects
+    # PLANNED → COMPLETED directly, so step through IN_PROGRESS.
     try:
+        prod_query_fn(
+            f"UPDATE tbl_event SET enum_status = 'IN_PROGRESS' "
+            f"WHERE id_event = {prod_event_id} "
+            f"AND enum_status = 'PLANNED'"
+        )
         prod_query_fn(
             f"UPDATE tbl_event SET enum_status = 'COMPLETED' "
             f"WHERE id_event = {prod_event_id} "
-            f"AND enum_status IN ('PLANNED', 'IN_PROGRESS')"
+            f"AND enum_status = 'IN_PROGRESS'"
         )
     except Exception as e:
         errors.append(f"Event status update: {e}")

@@ -316,8 +316,12 @@ def _dedupe_result_drafts(db, run_id: str) -> int:
     tournament_draft rows by txt_code but does not dedupe result_draft
     rows that share a fencer within a merged tournament. Without this
     step, fn_commit_event_draft fails with uq_result_fencer_tournament.
+
+    Env-agnostic: routes the DELETE through `docker exec` for LOCAL
+    (http://127.0.0.1:...) or the Supabase Management API for hosted
+    refs (CERT/PROD). Same SQL both ways.
     """
-    import subprocess
+    import os
     sql = f"""
 WITH ranked AS (
   SELECT id_result_draft,
@@ -336,15 +340,53 @@ del AS (
 )
 SELECT COUNT(*) FROM del;
 """
-    r = subprocess.run(
-        ['docker', 'exec', '-i', 'supabase_db_SPWSranklist',
-         'psql', '-U', 'postgres', '-tA', '-c', sql],
-        capture_output=True, text=True, timeout=60,
-    )
-    if r.returncode != 0:
-        print(f"  ⚠ dedupe failed: {r.stderr[-200:]}", flush=True)
-        return 0
-    n = int(r.stdout.strip().split("\n")[-1] or "0")
+    supa_url = os.environ.get("SUPABASE_URL", "")
+    if "127.0.0.1" in supa_url or "localhost" in supa_url:
+        import subprocess
+        r = subprocess.run(
+            ['docker', 'exec', '-i', 'supabase_db_SPWSranklist',
+             'psql', '-U', 'postgres', '-tA', '-c', sql],
+            capture_output=True, text=True, timeout=60,
+        )
+        if r.returncode != 0:
+            print(f"  ⚠ dedupe failed: {r.stderr[-200:]}", flush=True)
+            return 0
+        n = int(r.stdout.strip().split("\n")[-1] or "0")
+    else:
+        # Hosted Supabase (CERT/PROD): route through Management API
+        # (same channel python/pipeline/promote.py uses for cross-env SQL).
+        import re
+        import httpx
+        m = re.match(r"https://([a-z0-9]+)\.supabase\.co", supa_url)
+        if not m:
+            print(f"  ⚠ dedupe skipped: cannot parse ref from "
+                  f"SUPABASE_URL={supa_url!r}", flush=True)
+            return 0
+        ref = m.group(1)
+        token = os.environ.get("SUPABASE_ACCESS_TOKEN")
+        if not token:
+            print("  ⚠ dedupe skipped: SUPABASE_ACCESS_TOKEN not set",
+                  flush=True)
+            return 0
+        try:
+            resp = httpx.post(
+                f"https://api.supabase.com/v1/projects/{ref}/database/query",
+                headers={"Authorization": f"Bearer {token}",
+                         "Content-Type": "application/json"},
+                json={"query": sql},
+                timeout=30,
+            )
+            if resp.status_code >= 400:
+                print(f"  ⚠ dedupe failed (HTTP {resp.status_code}): "
+                      f"{resp.text[:200]}", flush=True)
+                return 0
+            data = resp.json()
+            # Management API returns list of rows; "SELECT COUNT(*) FROM del"
+            # yields [{"count": N}].
+            n = int(data[0].get("count", 0)) if data else 0
+        except Exception as e:
+            print(f"  ⚠ dedupe failed: {e}", flush=True)
+            return 0
     if n:
         print(f"  ↻ deduped {n} duplicate (id_fencer, id_tournament_draft) "
               f"result_drafts (kept best place per fencer)", flush=True)
