@@ -603,6 +603,32 @@ Phase 3c (commit 29afa4b) finishes the trilogy. The EventManager admin page gain
 
 ---
 
+### LOCAL/CERT/PROD unification + active 2025-26 promote (2026-05-17)
+
+**Goal.** Bring CERT and PROD into byte-identical alignment with LOCAL (the post-rebuild source of truth) and complete the active-2025-26 cycle (PPW1–PPW5) end-to-end on all three envs.
+
+**Phases.**
+
+- **Phase A — verify EVF surface.** Confirmed EVF events identical across LOCAL/CERT/PROD (58 events / 260 tournaments / 691 results). EVF data lived on LOCAL alongside SPWS, not only on CERT/PROD as initially assumed. This unblocked a non-destructive unification strategy.
+- **Phase B — `tbl_fencer` id renumber.** CERT had 35 ghost fencers (Polish-named, leftovers from the legacy pipeline) and 310 fencers whose `id_fencer` differed from LOCAL's. PROD had the same 35 ghosts but its remaining 329 ids already matched LOCAL. Deleted the ghosts (cascade through `tbl_result`, `tbl_match_candidate`) and renumbered CERT's 310 fencers using a two-pass sentinel approach (drop FKs → negate via `UPDATE … SET id = -id` → reassign via `UPDATE FROM VALUES (-old, new)` → restore FKs). PROD: 0 renumbers. End state: 329 fencers per env, same ids everywhere.
+- **Phase B.2 — alias JSONB normalization.** Discovered LOCAL's `json_name_aliases / json_user_confirmed_aliases / json_revoked_aliases` were stored as JSONB strings wrapping Postgres array literals (`"{\"a\",\"b\"}"`) rather than proper JSONB arrays. The pipeline's alias matcher reads them as arrays and silently treats stringified arrays as a single token, blocking some commits at the alias gate. Normalized all 671 rows on LOCAL via `to_jsonb((value #>> '{}')::text[])`, then synced to CERT + PROD.
+- **Phase C — historical SPWS resync.** For each of 17 completed SPWS events on LOCAL (GP1–8 + MPW + IMEW across 2023-24 and 2024-25), wiped CERT/PROD's children via direct DELETE (since `fn_rollback_event` is active-season-scoped) and replayed LOCAL's tournaments + results through `fn_find_or_create_tournament` + `fn_ingest_tournament_results`. EVF events untouched.
+- **Phase D — active 2025-26 cycle.** Re-ingested PPW1–PPW5 on CERT via `python -m python.tools.recreate_active_season_2025_2026 --event PPWn` (driver path; user picked "Path A" over the GAS email path for PPW4/5) and promoted each to PROD via `gh workflow run promote.yml`. Final counts byte-identical across LOCAL/CERT/PROD: PPW1 23/85, PPW2 24/74, PPW3 25/128, PPW4 24/88, PPW5 26/83.
+
+**Side-fixes shipped along the way (commits `97267d5`, `23aa6db`, `c3252e1`).**
+
+- `promote.py` — three bug fixes for cross-env copy of Phase-5-pipeline results: (a) `txt_scraped_name` falls back from `tbl_result` → `tbl_match_candidate` → fencer-name composite (Phase 5 stopped writing match_candidate rows); (b) event status transitions step PLANNED → IN_PROGRESS → COMPLETED (direct PLANNED → COMPLETED was rejected by `fn_validate_event_transition`); (c) `enum_source_age_category` is propagated end-to-end so `fn_assert_result_vcat`'s "bracket-label wins" early-exit fires on PROD (ADR-056 revision behavior).
+- `recreate_active_season_2025_2026.py` — dedup function replaced LOCAL-only `docker exec ... psql` with Supabase Management API when `SUPABASE_URL` is not 127.0.0.1; same SQL both ways.
+- New migration `20260511000001_ingest_results_carry_source_vcat.sql` — `fn_ingest_tournament_results` now reads `enum_source_age_category` from each payload entry (optional; defaults to NULL when omitted — backwards compatible).
+
+**Known cosmetic divergence (deferred).** `enum_match_method` on PROD for the 287 active-2025-26 results: 287 AUTO_MATCH vs LOCAL/CERT 274 AUTO_MATCH + 13 NULL. The 13 NULL rows are V-cat-marker-downgrade fencers whose pipeline path leaves the column NULL; `fn_ingest_tournament_results` defaults them to AUTO_MATCH via the legacy enum_match_status mapping. Fix would require another migration; impact is presentational only.
+
+**Ephemeral tooling** (not committed, regenerate from project memory): `/tmp/phase_b_unify_fencer.py`, `/tmp/phase_b2_sync_aliases.py`, `/tmp/phase_c_resync_spws_history.py`, `/tmp/run_event_cycle.sh`.
+
+**Memory.** [project_local_cert_prod_unification_2026-05-17.md](../doc-redacted-path).
+
+---
+
 ## Archived Documents
 
 The following documents contain the original detailed plans. They are superseded by this history and the Project Specification:
