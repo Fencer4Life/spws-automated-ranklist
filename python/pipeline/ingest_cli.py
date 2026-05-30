@@ -1,10 +1,27 @@
 """
 CLI entry point for the ingestion pipeline.
 
+Two ingest modes:
+
+1. **Unified XML ingest (Phase 6, post-ADR-050)** — `ingest_xml_unified()`.
+   Routes local XMLs through the same S1-S7 pipeline + DraftStore the URL
+   path uses, so url_results lands on every draft row and the joint-pool
+   detector inside fn_commit_event_draft fires on commit (ADR-049).
+
+2. **Legacy direct write** — `run_ingest()` → `orchestrator.process_xml_file`.
+   Bypasses drafts and joint-pool detection; kept only for backward
+   compatibility with `--from-storage` until the storage harness migrates.
+   Emits a DeprecationWarning on every call.
+
 Usage:
+    # Unified (post-fix) — for a known event_code with url_event populated:
+    python -m pipeline.ingest_cli --event-code PPW4-SPWS-2025-2026 \\
+        path/to/file1.xml path/to/file2.xml --season-end-year 2026
+    # Then commit the draft batch:
+    python -m pipeline.ingest_cli --commit-draft <run_id>
+
+    # Legacy direct write (deprecated):
     python -m pipeline.ingest_cli path/to/file.xml --season-end-year 2026
-    python -m pipeline.ingest_cli path/to/archive.zip --season-end-year 2026 --dry-run
-    python -m pipeline.ingest_cli --from-storage --season-end-year 2026
 """
 
 from __future__ import annotations
@@ -12,6 +29,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import uuid
 import zipfile
 from dataclasses import dataclass, field
 from io import BytesIO
@@ -92,6 +110,128 @@ def run_ingest(
         )
         notifier.summary(r)
         return r
+
+
+def ingest_xml_unified(
+    path: str | list[str],
+    event_code: str,
+    season_end_year: int,
+    url_event_override: str | None = None,
+    db=None,
+    notifier=None,
+    dry_run: bool = False,
+) -> str | None:
+    """Unified XML ingest — the post-ADR-050 replacement for `process_xml_file`.
+
+    Looks up the event's `url_event` (from `tbl_event.url_event` unless
+    `url_event_override` is given), parses each XML with that URL set as
+    `source_url`, runs the S1-S7 pipeline via `run_pipeline`, and
+    materializes drafts under a single `run_id` via `DraftStore`.
+
+    The caller commits via `--commit-draft <run_id>`, which routes through
+    `fn_commit_event_draft` — the function that sets `bool_joint_pool_split`
+    on sibling rows sharing `url_results` and re-sums
+    `int_participant_count` to the full pool size (ADR-049). Bypassing this
+    path (as `process_xml_file` did) silently leaves V-cat slices like
+    35 / 36 fencers instead of the full combined-pool size.
+
+    Args:
+        path: One XML path, or a list of XML paths under the same event.
+        event_code: Event identifier (e.g. "PPW4-SPWS-2025-2026").
+        season_end_year: Active season's end year (e.g. 2026).
+        url_event_override: If given, used instead of tbl_event.url_event.
+        db: DbConnector (created from env if None).
+        notifier: TelegramNotifier (created from env if None).
+        dry_run: Parse + pipeline only; do not write drafts.
+
+    Returns:
+        run_id (str) if drafts were materialized; None if dry_run.
+
+    Raises:
+        ValueError: event_code not found, or no url_event populated.
+    """
+    # Defer imports so test patches on these symbols are honoured.
+    from python.scrapers import fencingtime_xml as _ft_xml
+    from python.pipeline.review_cli import ReviewSession
+
+    if db is None:
+        db = create_db_connector()
+    if notifier is None:
+        notifier = TelegramNotifier(
+            os.environ.get("TELEGRAM_BOT_TOKEN"),
+            os.environ.get("TELEGRAM_CHAT_ID"),
+        )
+
+    event = db.find_event_by_code(event_code)
+    if event is None:
+        raise ValueError(
+            f"Event {event_code!r} not found in tbl_event. "
+            f"Populate it first or check the spelling."
+        )
+
+    url_event = (
+        url_event_override
+        or event.get("url_event")
+        or event.get("url_results")
+    )
+    if not url_event:
+        raise ValueError(
+            f"Event {event_code!r} has no url_event populated. "
+            f"Populate it first:\n"
+            f"  UPDATE tbl_event SET url_event = '<URL>' "
+            f"WHERE txt_code = '{event_code}';"
+        )
+
+    paths = [path] if isinstance(path, (str, Path)) else list(path)
+
+    draft_store = DraftStore(db)
+    session = ReviewSession(
+        event_code=event_code,
+        db=db,
+        draft_store=draft_store,
+        # ReviewSession's prompt/output callables are unused in batch mode —
+        # we drive run_iteration directly without going through its
+        # interactive loop. Pass safe defaults so nothing blocks on stdin.
+        prompt=lambda _msg: "q",
+        output=print,
+        season_end_year=season_end_year,
+        notifier=notifier,
+    )
+    # Skip URL reachability validation in batch — the operator vouches for
+    # the url_event they populated, and the offline batch path may not have
+    # network access to FTL's authed endpoint.
+    session.skip_url_validation = True
+
+    for p in paths:
+        p_str = str(p)
+        file_bytes = Path(p_str).read_bytes()
+        parsed = _ft_xml.parse(file_bytes, source_url=url_event)
+
+        if dry_run:
+            # Run S1-S7 but skip draft writes — useful for diagnostics.
+            from python.pipeline.orchestrator import run_pipeline
+            from python.pipeline.overrides import load_for_event
+            ctx = run_pipeline(
+                parsed=parsed,
+                overrides=load_for_event(event_code),
+                db=db,
+                season_end_year=season_end_year,
+                event_code=event_code,
+            )
+            print(
+                f"[dry-run] {p_str}: matches={len(ctx.matches)}, "
+                f"halted={ctx.halted}, "
+                f"halt={(ctx.halt_reason.value if ctx.halt_reason else '-')}"
+            )
+            continue
+
+        ctx, _ = session.run_iteration(parsed)
+        print(
+            f"  {p_str}: matches={len(ctx.matches)}, halted={ctx.halted}, "
+            f"run_id={session.run_id}"
+        )
+
+    return session.run_id if not dry_run else None
 
 
 def _handle_draft_commands(args, notifier) -> bool:
@@ -187,12 +327,24 @@ def _count_joint_groups(tournaments: list[dict]) -> int:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Ingest FencingTime XML results")
-    parser.add_argument("path", nargs="?", help="Path to .xml or .zip file")
+    parser.add_argument("path", nargs="*",
+                        help="Path(s) to .xml or .zip file(s). With "
+                             "--event-code, multiple XMLs land in a single "
+                             "draft batch (one run_id).")
     parser.add_argument("--season-end-year", type=int)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--tournament-type", default="PPW")
     parser.add_argument("--from-storage", action="store_true",
-                        help="Process files from Supabase Storage staging/")
+                        help="Process files from Supabase Storage staging/ "
+                             "(legacy direct-write path; deprecated).")
+    parser.add_argument("--event-code", default=None,
+                        help="Route XML through the unified pipeline for "
+                             "this event_code (recommended). Joint-pool + "
+                             "url_results are handled at commit via "
+                             "fn_commit_event_draft (ADR-049).")
+    parser.add_argument("--url-event", default=None,
+                        help="Override tbl_event.url_event for this run "
+                             "(used only with --event-code).")
     # Phase 2 (ADR-050) draft-management commands. Mutually exclusive with
     # each other; do not require --season-end-year.
     draft_group = parser.add_mutually_exclusive_group()
@@ -269,14 +421,40 @@ def main() -> None:
         except Exception as e:
             notifier.notify_pipeline_failure(str(e))
             raise
+    elif args.event_code:
+        # Unified pipeline path (post-ADR-050).
+        if not args.path:
+            parser.error("--event-code requires at least one XML path")
+        notifier = TelegramNotifier(
+            os.environ.get("TELEGRAM_BOT_TOKEN"),
+            os.environ.get("TELEGRAM_CHAT_ID"),
+        )
+        try:
+            run_id = ingest_xml_unified(
+                path=args.path,
+                event_code=args.event_code,
+                season_end_year=args.season_end_year,
+                url_event_override=args.url_event,
+                dry_run=args.dry_run,
+                notifier=notifier,
+            )
+            if run_id:
+                print(f"Draft batch run_id: {run_id}")
+                print(f"Commit with: python -m python.pipeline.ingest_cli "
+                      f"--commit-draft {run_id}")
+        except Exception as e:
+            notifier.notify_pipeline_failure(str(e))
+            raise
     elif args.path:
         notifier = TelegramNotifier(
             os.environ.get("TELEGRAM_BOT_TOKEN"),
             os.environ.get("TELEGRAM_CHAT_ID"),
         )
         try:
+            # Legacy path: nargs="*" gives a list; take the first element.
+            path = args.path[0] if isinstance(args.path, list) else args.path
             result = run_ingest(
-                path=args.path,
+                path=path,
                 season_end_year=args.season_end_year,
                 dry_run=args.dry_run,
                 tournament_type=args.tournament_type,
