@@ -203,16 +203,48 @@ def _parse_date_dmy(s: str | None):
 
 
 def _extract_category_hint(alt_name: str | None) -> str | None:
-    """Pull the trailing 'vN' or 'vNvM…' suffix from AltName, uppercased.
+    """Pull the trailing V-cat suffix from AltName.
 
-    'SZPADA MĘŻCZYZN v2'   -> 'V2'
-    'FLORET KOBIET v0v1'   -> 'V0V1'
-    'SZABLA KOBIET'        -> None
+    Recognised forms (case-insensitive):
+      - 'vN' / 'vNvM…'                  e.g. 'SZPADA MĘŻCZYZN v2', 'v0v1'
+      - 'kat. N' / 'kat N' / 'kat N-M'  e.g. 'Szpada mężczyzn kat. 1',
+                                              'Floret kobiet kat 0-1',
+                                              'Floret mężczyzn kat. 2-3'
+      - 'katN'                          (defensive — same digits without space)
+
+    Returns:
+      - A single V-cat string ('V0' .. 'V4') for single-V-cat brackets.
+      - **None** for multi-V-cat (joint-pool) brackets, signalling
+        s7_split_by_vcat to do birth-year-based per-fencer V-cat
+        derivation (ADR-056). Returning a literal 'V0V1' would (a) leak
+        into `enum_age_category` (enum reject), (b) collapse the entire
+        joint pool into one phantom V-cat.
+      - None when no V-cat marker is present (caller decides).
+
+    Examples::
+      'SZPADA MĘŻCZYZN v2'        -> 'V2'      (single V-cat, v-form)
+      'Szpada mężczyzn kat. 1'    -> 'V1'      (single V-cat, kat-form)
+      'Floret mężczyzn kat. 2-3'  -> None      (joint pool, kat-form)
+      'FLORET KOBIET v0v1'        -> None      (joint pool, v-form)
+      'SZABLA KOBIET'             -> None      (no V-cat suffix)
     """
     if not alt_name:
         return None
+    # Form A: trailing "v0v1..." (legacy FT XML / SPWS export style)
     m = re.search(r"(v\d(?:v\d)*)\s*$", alt_name, re.IGNORECASE)
-    return m.group(1).upper() if m else None
+    if m:
+        tokens = re.findall(r"v\d", m.group(1).lower())
+        return tokens[0].upper() if len(tokens) == 1 else None
+    # Form B: trailing "kat. N" / "kat N" / "kat N-M" (Polish convention,
+    # 2025-26 PPW5 onwards). Hyphen separates V-cats — same multi-V-cat
+    # semantics as v0v1.
+    m = re.search(r"kat\.?\s*(\d(?:[-\d]+)?)\s*$", alt_name, re.IGNORECASE)
+    if m:
+        digits = [d for d in re.findall(r"\d", m.group(1))]
+        if len(digits) == 1:
+            return f"V{digits[0]}"
+        return None  # multi-V-cat joint pool
+    return None
 
 
 def parse(
@@ -281,6 +313,18 @@ def parse(
                 birth_year=birth_date.year if birth_date else None,
             ))
 
+    # Structural pool-only detection (user instruction 2026-05-27): an XML
+    # is a qualifier round when it has-pool-no-tableau — i.e. `<Poule>`
+    # elements are present AND `<Tableau>` elements are absent. Only those
+    # files (ELIMINACJE-style qualifiers) must be skipped — only DE brackets
+    # feed the ranklist. Detection is purely structural, never name-based
+    # (`AltName`/`Sexe` are unreliable across event organizers). A skeleton
+    # XML with neither <Poule> nor <Tableau> is NOT a qualifier — it might
+    # be a minimal fixture or an early-published bracket.
+    has_pool = bool(root.findall(".//Poule"))
+    has_tableau = bool(root.findall(".//Tableau"))
+    is_pool_only = has_pool and not has_tableau
+
     return ParsedTournament(
         source_kind=SourceKind.FENCINGTIME_XML,
         results=parsed_results,
@@ -290,4 +334,5 @@ def parse(
         parsed_date=parsed_date,
         category_hint=category_hint,
         source_url=source_url,
+        is_pool_only_qualifier=is_pool_only,
     )

@@ -97,6 +97,9 @@ def test_parsed_tournament_fields():
         "season_end_year",
         "organizer_hint",
         "source_artifact_path",
+        # Structural skip flag (user instruction 2026-05-27): set by the
+        # parser; s1_validate_ir halts with POOL_ROUND_DETECTED when True.
+        "is_pool_only_qualifier",
     }
     assert actual == expected, f"diff (actual ^ expected): {actual ^ expected}"
 

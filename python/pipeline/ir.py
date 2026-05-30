@@ -112,6 +112,13 @@ class ParsedTournament:
     organizer_hint: str | None = None
     source_artifact_path: str | None = None
 
+    # Structural skip flag (user instruction 2026-05-27). True when the
+    # source has pool-round data but no DE/tableau — i.e. it is an
+    # ELIMINACJE-style qualifier that does not contribute to the ranklist.
+    # Set by the parser based on data structure, never on names.
+    # `s1_validate_ir` halts with HaltReason.POOL_ROUND_DETECTED when True.
+    is_pool_only_qualifier: bool = False
+
 
 # ---------------------------------------------------------------------------
 # Synthetic source_row_id helper for parsers without native stable IDs

@@ -75,17 +75,38 @@ def _is_domestic(event: dict | None) -> bool:
 def s1_validate_ir(ctx: PipelineContext, db: Any) -> None:
     """Validate the ParsedTournament IR has all required fields.
 
-    Halts: IR_INVALID if results empty or required fields missing.
+    Halts:
+      - POOL_ROUND_DETECTED if the parser flagged the source as a
+        pool-only qualifier (no DE — ELIMINACJE round). This check runs
+        FIRST so we halt before complaining about missing date/weapon/
+        gender on a file we're going to drop anyway.
+      - IR_INVALID if results empty or required fields missing.
     """
     p = ctx.parsed
+    # User instruction 2026-05-27: structural pool-only skip applies to
+    # every source. The parser is responsible for setting the flag based
+    # on data structure, never on names.
+    if getattr(p, "is_pool_only_qualifier", False):
+        ctx.is_pool_round = True
+        raise HaltError(
+            HaltReason.POOL_ROUND_DETECTED,
+            "source has pool data but no DE/tableau — qualifier round, "
+            "does not contribute to ranklist (skipping per ADR-067 / "
+            "structural pool-only rule)"
+        )
     if not p.results:
         raise HaltError(HaltReason.IR_INVALID, "ParsedTournament has no results")
     if p.parsed_date is None:
         raise HaltError(HaltReason.IR_INVALID, "ParsedTournament.parsed_date is required")
     if p.weapon is None:
         raise HaltError(HaltReason.IR_INVALID, "ParsedTournament.weapon is required")
-    if p.gender is None:
-        raise HaltError(HaltReason.IR_INVALID, "ParsedTournament.gender is required")
+    # gender=None is INTENTIONALLY allowed (user instruction 2026-05-27, ADR-34).
+    # Some organizers publish brackets with no gender marker in AltName and
+    # `Sexe="X"` (e.g. PPW5 'Szabla kat. 4'). Cross-gender / mixed tournaments
+    # are legitimate; ADR-34 reassigns women's points to the women's ranklist
+    # at query time via fn_effective_gender. The draft writer defaults the
+    # stored gender to 'M' so the NOT NULL enum_gender column accepts the row;
+    # the ranking-query layer does the right thing afterwards.
 
 
 # ===========================================================================
