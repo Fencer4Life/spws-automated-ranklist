@@ -202,10 +202,25 @@ def ingest_xml_unified(
     # network access to FTL's authed endpoint.
     session.skip_url_validation = True
 
+    # Strip any pre-existing #fragment (e.g. FTL's `#today` decoration)
+    # so we don't end up with double-hash URLs like `...#today#FILE.xml`.
+    # The first `#` is what browsers honour, so a single per-file fragment
+    # keeps the URL clickable AND distinct per source file.
+    url_event_base = url_event.split("#", 1)[0]
+
     for p in paths:
         p_str = str(p)
         file_bytes = Path(p_str).read_bytes()
-        parsed = _ft_xml.parse(file_bytes, source_url=url_event)
+        # Per-file source_url: event URL + filename fragment. Result:
+        #   * each XML file gets a distinct url_results (the fragment),
+        #     so the joint-pool detector only groups siblings *within*
+        #     one XML (legitimate V0+V1 combined bracket) and never
+        #     across files (standalone V2/V3/V4 stay independent).
+        #   * The URL remains clickable to the event page (browsers
+        #     ignore the # fragment when no matching id exists), so the
+        #     UI shows a working link instead of a dead `file://`.
+        per_file_url = f"{url_event_base}#{Path(p_str).name}"
+        parsed = _ft_xml.parse(file_bytes, source_url=per_file_url)
 
         if dry_run:
             # Run S1-S7 but skip draft writes — useful for diagnostics.

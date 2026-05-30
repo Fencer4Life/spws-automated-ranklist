@@ -100,8 +100,13 @@ def s1_validate_ir(ctx: PipelineContext, db: Any) -> None:
         raise HaltError(HaltReason.IR_INVALID, "ParsedTournament.parsed_date is required")
     if p.weapon is None:
         raise HaltError(HaltReason.IR_INVALID, "ParsedTournament.weapon is required")
-    if p.gender is None:
-        raise HaltError(HaltReason.IR_INVALID, "ParsedTournament.gender is required")
+    # gender=None is INTENTIONALLY allowed (user instruction 2026-05-27, ADR-34).
+    # Some organizers publish brackets with no gender marker in AltName and
+    # `Sexe="X"` (e.g. PPW5 'Szabla kat. 4'). Cross-gender / mixed tournaments
+    # are legitimate; ADR-34 reassigns women's points to the women's ranklist
+    # at query time via fn_effective_gender. The draft writer defaults the
+    # stored gender to 'M' so the NOT NULL enum_gender column accepts the row;
+    # the ranking-query layer does the right thing afterwards.
 
 
 # ===========================================================================
