@@ -629,6 +629,28 @@ Phase 3c (commit 29afa4b) finishes the trilogy. The EventManager admin page gain
 
 ---
 
+### PPW4/PPW5 XML ingest re-do — structural pool-only skip + unified pipeline (2026-05-27)
+
+**Goal.** Resolve user-reported bug: PPW4-V1-M-EPEE-2025-2026 and PPW5-V1-M-EPEE-2025-2026 showed `int_participant_count = 35 / 36` (phantom values) and dead `file://` URLs on `tbl_tournament.url_results`. The Maciej Sękowski drill-down made the symptom visible.
+
+**Root cause.** Architectural divergence between two parallel XML-ingestion paths (legacy `orchestrator.process_xml_file` vs unified `review_cli.run_iteration`). The legacy path bypassed `fn_commit_event_draft`, so the joint-pool detector keyed off a shared `file://` URL across all 5 V-cat siblings and re-summed `int_participant_count` to the POL-only count across phantom buckets (35 PPW4 / 36 PPW5). Compounding the problem: the legacy path ingested combined-pool ELIMINACJE qualifier XMLs (`<Poule>` only, no `<Tableau>`) as if they were ranking-relevant brackets, with the splitter carving them into phantom V0-V4 buckets that did not correspond to any real DE bracket on FTL.
+
+**Fix landed on branch `fix/xml-ingest-unified-pipeline`** (3 commits, ADR-067):
+
+- **`b4dc173`** — `python.pipeline.ingest_cli.ingest_xml_unified(path, event_code, season_end_year, …)`: routes local XML through `run_pipeline` + `DraftStore` + `fn_commit_event_draft`, same path URL scrape uses. CLI gains `--event-code <code>` flag; operator commits via existing `--commit-draft <run_id>`. Legacy `process_xml_file` marked `@deprecated` with runtime `DeprecationWarning`; deletion in a follow-up cycle.
+- **`93a2771`** — `ParsedTournament.is_pool_only_qualifier: bool` field; FT XML parser sets it structurally (`<Poule>` present AND `<Tableau>` absent — i.e. has-pool-no-tableau). `s1_validate_ir` halts with `POOL_ROUND_DETECTED` when set. Detection never relies on `AltName`/`Sexe`/filename per user instruction (organizer naming is unreliable across events/years). Legacy path patched with same structural pre-check.
+- **`347eb19`** — Per-file URL fragments (`<url_event>#<filename>`) so the joint-pool detector groups siblings only within one combined-bracket XML, never across files. FT XML AltName regex recognizes both `vN` (legacy) and Polish `kat. N` (PPW5 convention; surfaced because the new regex collapsed `kat. 1` to `category_hint=None` → BY-derivation → duplicate V0/V1 draft rows from one V1 XML). `s1` allows `gender=None` per ADR-34 (draft writer defaults to `'M'`, `fn_effective_gender` reassigns women's points at query time).
+
+**Cross-verification.** PPW5 has live FTL per-V-cat brackets (`2F7708500E2F4F199D4FC25A7B74D0D0`). PPW5 M-Epee per-V-cat counts after re-ingest = 5 / 8 / 11 / 6 / 6 — exact match to FTL bracket sizes. PPW4 FTL event-schedule page returns empty (event not published live); only the local XML serves as source.
+
+**LOCAL outcome.** PPW4 24 tournaments / 87 results, PPW5 22 tournaments / 81 results. Maciej Sękowski V1 M-Epee: PPW4 35/139.4 → 10/109.39 (real V0+V1 joint pool from `VABCME` combined bracket), PPW5 36/139.7 → 8/98.00 (real V1 standalone bracket). CERT/PROD promotion was deferred (no LOCAL→CERT path exists; promote.py is CERT→PROD only).
+
+**Test additions.** `python/tests/test_ingest_cli_unified.py` (4 assertions: 67.U1–67.U4) + `python/tests/test_pool_only_skip.py` (8 assertions: 67.P1–67.P8) + `python/tests/test_ir.py` contract update. Three-suite GREEN: pgTAP 566, pytest 753, vitest 371.
+
+**Memory.** [project_ppw4_ppw5_xml_redo_2026-05-27.md](../doc-redacted-path).
+
+---
+
 ## Archived Documents
 
 The following documents contain the original detailed plans. They are superseded by this history and the Project Specification:
