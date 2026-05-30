@@ -883,12 +883,20 @@ class ReviewSession:
             parent_kind, season = m.group(1), m.group(2)
         else:
             parent_kind, season = self.event_code, ""
+        # ADR-34 (cross-gender scoring): when the parser couldn't determine
+        # a single gender (e.g. FT XML with Sexe="X" and no Polish gender
+        # keyword in AltName, like 'Szabla kat. 4'), default to 'M'. The
+        # tbl_tournament.enum_gender column is NOT NULL ('M','F'), so we
+        # must pick one — 'M' matches the veterans-event default. The
+        # ranking layer (`fn_effective_gender`) reassigns any women's
+        # points to the women's ranklist at query time.
+        gender = ctx.parsed.gender or "M"
         return {
             "id_event": event_id,
-            "txt_code": f"{parent_kind}-{vcat}-{ctx.parsed.gender}-{ctx.parsed.weapon}-{season}",
+            "txt_code": f"{parent_kind}-{vcat}-{gender}-{ctx.parsed.weapon}-{season}",
             "enum_type": "PPW",  # caller can override per event type
             "enum_weapon": ctx.parsed.weapon,
-            "enum_gender": ctx.parsed.gender,
+            "enum_gender": gender,
             "enum_age_category": vcat,
             "dt_tournament": ctx.parsed.parsed_date.isoformat() if ctx.parsed.parsed_date else None,
             "url_results": _to_human_results_url(ctx.parsed.source_url),
