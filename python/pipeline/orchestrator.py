@@ -165,7 +165,30 @@ def process_xml_file(
         notifier.notify_pipeline_failure(f"XML parse error: {filename} — {e}")
         return result
 
-    # 2. Skip preliminary rounds (Sexe="X")
+    # 2a. Structural pool-only skip (user instruction 2026-05-27): an XML
+    # with has-pool-no-tableau is an ELIMINACJE-style qualifier (pool data
+    # only, no DE) and must be dropped — only DE brackets feed the
+    # ranklist. Detection is structural, never name-based (Sexe / AltName /
+    # filename are unreliable across organizers).
+    import xml.etree.ElementTree as _ET
+    try:
+        _root = _ET.fromstring(file_bytes)
+        _has_pool = bool(_root.findall(".//Poule"))
+        _has_tab  = bool(_root.findall(".//Tableau"))
+        if _has_pool and not _has_tab:
+            result.skipped_files.append(filename)
+            notifier.info(
+                f"Skipped pool-only qualifier (has pool, no DE/tableau): {filename}"
+            )
+            return result
+    except _ET.ParseError:
+        # If we can't even parse the XML for structural check, leave
+        # downstream parsers to handle the error path consistently.
+        pass
+
+    # 2b. Skip preliminary rounds with Sexe="X" when AltName doesn't override
+    # the gender — historical guard, now mostly redundant with the structural
+    # check above. Kept for defence-in-depth.
     if metadata.get("gender") == "X":
         result.skipped_files.append(filename)
         notifier.info(f"Skipped preliminary round: {filename}")

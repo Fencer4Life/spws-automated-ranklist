@@ -225,6 +225,16 @@ def ingest_xml_unified(
             )
             continue
 
+        # Pre-check for structural pool-only files — skip cleanly with a
+        # log line before the session writes anything. The pipeline would
+        # halt on these anyway via s1_validate_ir, but pre-checking lets
+        # us avoid noisy halt-state output for an expected-skip.
+        if getattr(parsed, "is_pool_only_qualifier", False):
+            print(
+                f"  {p_str}: SKIPPED (pool-only qualifier — no DE bracket)"
+            )
+            continue
+
         ctx, _ = session.run_iteration(parsed)
         print(
             f"  {p_str}: matches={len(ctx.matches)}, halted={ctx.halted}, "
