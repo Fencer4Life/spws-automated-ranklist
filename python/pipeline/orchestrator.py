@@ -120,18 +120,19 @@ def process_xml_file(
     tournament_type: str = "PPW",
     dry_run: bool = False,
 ) -> IngestResult:
-    """LEGACY entry point — FT-XML-specific direct-write pipeline.
+    """DEPRECATED — direct-write XML ingest. Use `ingest_xml_unified` instead.
 
-    Status (Phase 3, ADR-050): kept untouched for back-compat with the
-    `--from-storage` and direct-file ingest paths in ingest_cli.py.
-    Phase 6 deletes this function entirely once review_cli.py + run_pipeline
-    own the operational rebuild.
+    Bug class this function carries: it writes straight to `tbl_tournament`
+    via `db.find_or_create_tournament` + `db.ingest_results`, which means
+    `url_results` is never set and `fn_commit_event_draft` is never called.
+    The joint-pool detector (ADR-049) lives inside `fn_commit_event_draft`,
+    so combined-pool V-cat siblings ingested through here end up with
+    `bool_joint_pool_split = FALSE` and `int_participant_count` = V-cat
+    slice (e.g. 35 / 36) instead of the full physical pool size.
 
-    For new code, use run_pipeline(parsed, overrides, db, season_end_year)
-    above — it accepts a ParsedTournament IR (any of 8 sources, not just
-    FT-XML) and runs S1-S7 in order.
-
-    Process a single FencingTime XML file through the pipeline.
+    Replacement: `python.pipeline.ingest_cli.ingest_xml_unified` — routes
+    through `run_pipeline` (S1-S7) + `DraftStore` so commit fires the
+    joint-pool detector. Same operator gesture, correct semantics.
 
     Args:
         file_bytes: Raw XML content.
@@ -145,6 +146,15 @@ def process_xml_file(
     Returns:
         IngestResult with counts and any errors.
     """
+    import warnings
+    warnings.warn(
+        "process_xml_file is deprecated; use "
+        "python.pipeline.ingest_cli.ingest_xml_unified instead. "
+        "The legacy path bypasses fn_commit_event_draft, so url_results "
+        "and bool_joint_pool_split (ADR-049) are silently wrong.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     result = IngestResult()
 
     # 1. Parse metadata
