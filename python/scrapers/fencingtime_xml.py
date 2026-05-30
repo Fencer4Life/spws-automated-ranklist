@@ -281,6 +281,18 @@ def parse(
                 birth_year=birth_date.year if birth_date else None,
             ))
 
+    # Structural pool-only detection (user instruction 2026-05-27): an XML
+    # is a qualifier round when it has-pool-no-tableau — i.e. `<Poule>`
+    # elements are present AND `<Tableau>` elements are absent. Only those
+    # files (ELIMINACJE-style qualifiers) must be skipped — only DE brackets
+    # feed the ranklist. Detection is purely structural, never name-based
+    # (`AltName`/`Sexe` are unreliable across event organizers). A skeleton
+    # XML with neither <Poule> nor <Tableau> is NOT a qualifier — it might
+    # be a minimal fixture or an early-published bracket.
+    has_pool = bool(root.findall(".//Poule"))
+    has_tableau = bool(root.findall(".//Tableau"))
+    is_pool_only = has_pool and not has_tableau
+
     return ParsedTournament(
         source_kind=SourceKind.FENCINGTIME_XML,
         results=parsed_results,
@@ -290,4 +302,5 @@ def parse(
         parsed_date=parsed_date,
         category_hint=category_hint,
         source_url=source_url,
+        is_pool_only_qualifier=is_pool_only,
     )
