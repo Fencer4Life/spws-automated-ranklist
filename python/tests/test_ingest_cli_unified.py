@@ -101,11 +101,20 @@ class TestUnifiedXmlIngest:
                 db=mock_db,
                 notifier=_silent_notifier(),
             )
-        assert captured.get("source_url") == \
-            "https://fencingtimelive.com/events/results/TESTUUID", (
-                "url_event must be threaded to fencingtime_xml.parse as "
-                "source_url so the draft writer can compute url_results from it"
-            )
+        # Per-file URL = url_event + "#" + filename — gives each XML a unique
+        # source_url so the joint-pool detector only groups siblings *within*
+        # one combined-bracket file (legitimate V0+V1) and not across files.
+        # The base URL stays clickable in the UI because browsers ignore an
+        # unmatched fragment.
+        expected_base = "https://fencingtimelive.com/events/results/TESTUUID"
+        captured_url = captured.get("source_url", "")
+        assert captured_url.startswith(expected_base), (
+            f"url_event must be the base of source_url; got {captured_url!r}"
+        )
+        assert "#" in captured_url and captured_url.endswith(".xml"), (
+            f"source_url must carry a per-file fragment so each XML file's "
+            f"draft rows get a distinct url_results; got {captured_url!r}"
+        )
 
     def test_unified_ingest_writes_drafts_via_draftstore(self):
         """ingest_xml_unified must route through DraftStore (so commit goes

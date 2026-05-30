@@ -203,16 +203,48 @@ def _parse_date_dmy(s: str | None):
 
 
 def _extract_category_hint(alt_name: str | None) -> str | None:
-    """Pull the trailing 'vN' or 'vNvM…' suffix from AltName, uppercased.
+    """Pull the trailing V-cat suffix from AltName.
 
-    'SZPADA MĘŻCZYZN v2'   -> 'V2'
-    'FLORET KOBIET v0v1'   -> 'V0V1'
-    'SZABLA KOBIET'        -> None
+    Recognised forms (case-insensitive):
+      - 'vN' / 'vNvM…'                  e.g. 'SZPADA MĘŻCZYZN v2', 'v0v1'
+      - 'kat. N' / 'kat N' / 'kat N-M'  e.g. 'Szpada mężczyzn kat. 1',
+                                              'Floret kobiet kat 0-1',
+                                              'Floret mężczyzn kat. 2-3'
+      - 'katN'                          (defensive — same digits without space)
+
+    Returns:
+      - A single V-cat string ('V0' .. 'V4') for single-V-cat brackets.
+      - **None** for multi-V-cat (joint-pool) brackets, signalling
+        s7_split_by_vcat to do birth-year-based per-fencer V-cat
+        derivation (ADR-056). Returning a literal 'V0V1' would (a) leak
+        into `enum_age_category` (enum reject), (b) collapse the entire
+        joint pool into one phantom V-cat.
+      - None when no V-cat marker is present (caller decides).
+
+    Examples::
+      'SZPADA MĘŻCZYZN v2'        -> 'V2'      (single V-cat, v-form)
+      'Szpada mężczyzn kat. 1'    -> 'V1'      (single V-cat, kat-form)
+      'Floret mężczyzn kat. 2-3'  -> None      (joint pool, kat-form)
+      'FLORET KOBIET v0v1'        -> None      (joint pool, v-form)
+      'SZABLA KOBIET'             -> None      (no V-cat suffix)
     """
     if not alt_name:
         return None
+    # Form A: trailing "v0v1..." (legacy FT XML / SPWS export style)
     m = re.search(r"(v\d(?:v\d)*)\s*$", alt_name, re.IGNORECASE)
-    return m.group(1).upper() if m else None
+    if m:
+        tokens = re.findall(r"v\d", m.group(1).lower())
+        return tokens[0].upper() if len(tokens) == 1 else None
+    # Form B: trailing "kat. N" / "kat N" / "kat N-M" (Polish convention,
+    # 2025-26 PPW5 onwards). Hyphen separates V-cats — same multi-V-cat
+    # semantics as v0v1.
+    m = re.search(r"kat\.?\s*(\d(?:[-\d]+)?)\s*$", alt_name, re.IGNORECASE)
+    if m:
+        digits = [d for d in re.findall(r"\d", m.group(1))]
+        if len(digits) == 1:
+            return f"V{digits[0]}"
+        return None  # multi-V-cat joint pool
+    return None
 
 
 def parse(
