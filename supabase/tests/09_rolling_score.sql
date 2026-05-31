@@ -15,6 +15,24 @@ ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
 SELECT plan(21);
 
 -- =========================================================================
+-- Make this test self-contained w.r.t. computed scores.
+-- seed_prod_latest.sql inserts result rows (int_place) but does NOT run
+-- fn_calc_tournament_scores, so num_final_score is NULL on a fresh seed
+-- (e.g. CI). fn_ranking_ppw/_kadra recompute on the fly, but carry-over
+-- reads (R.13) and the direct num_final_score assertion (R.20) consume the
+-- STORED column — which would be 0/NULL on CI. Recompute every SCORED
+-- tournament here so the assertions are deterministic regardless of whether
+-- the seed pre-computed scores. ROLLBACK at the end reverts this.
+DO $recompute_scores$
+DECLARE t RECORD;
+BEGIN
+  FOR t IN SELECT id_tournament FROM tbl_tournament WHERE enum_import_status = 'SCORED' LOOP
+    PERFORM fn_calc_tournament_scores(t.id_tournament);
+  END LOOP;
+END;
+$recompute_scores$;
+
+-- =========================================================================
 -- Helper: temp table for dynamic fencer ID lookups (immune to ID shifts)
 -- =========================================================================
 CREATE TEMP TABLE _fencer_ids AS
@@ -61,8 +79,8 @@ SELECT is(
 -- =========================================================================
 
 -- R.4 — p_rolling=FALSE regression: same as current non-rolling result
--- seed_prod_latest: KORONA EPEE V2 M scores PPW1=27.33, PPW2=98.00, PPW3=70.17,
--- PPW4=110.02, PPW5=79.18 → best-4 = 110.02+98.00+79.18+70.17 = 357.37
+-- Seed 2026-05-10: KORONA EPEE V2 M scores PPW1=27.33, PPW2=98.00, PPW3=70.17,
+-- PPW4=139.44, PPW5=110.33 → best-4 = 110.33+139.44+98.00+70.17 = 417.94
 -- (PPW1=27.33 dropped from best-4 — lowest score).
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
@@ -70,8 +88,8 @@ SELECT is(
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := FALSE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  357.37::NUMERIC,
-  'R.4: p_rolling=FALSE regression — KORONA 357.37'
+  417.94::NUMERIC,
+  'R.4: p_rolling=FALSE regression — KORONA 417.94'
 );
 
 -- R.5 — p_rolling=TRUE, no previous season → same as non-rolling
@@ -102,8 +120,8 @@ SELECT is(
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  357.37::NUMERIC,
-  'R.6: p_rolling=TRUE, all completed — KORONA unchanged at 357.37'
+  417.94::NUMERIC,
+  'R.6: p_rolling=TRUE, all completed — KORONA unchanged at 417.94'
 );
 
 -- Restore for subsequent tests
@@ -126,15 +144,15 @@ SELECT is(
 );
 
 -- R.8 — p_rolling=TRUE, best-K operates on merged pool.
--- seed_prod_latest: PARDUS total rolling 39.07.
+-- PARDUS total rolling, re-derived against seed 2026-05-10: 74.64.
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PARDUS' AND txt_first_name = 'Borys')),
-  39.07::NUMERIC,
-  'R.8: p_rolling=TRUE best-K on merged pool — PARDUS 39.07'
+  74.64::NUMERIC,
+  'R.8: p_rolling=TRUE best-K on merged pool — PARDUS 74.64'
 );
 
 -- R.9 — p_rolling=TRUE, category crossing V2→V3.
@@ -150,20 +168,22 @@ SELECT is(
   'R.9: p_rolling=TRUE category crossing — TRACZ V2→V3 total 48.87'
 );
 
--- R.10 — p_rolling=TRUE, PPW5 still SCHEDULED (restored at R.6 restore).
--- seed_prod_latest: DROBIŃSKI total rolling 197.41 (carry-over from 2024-25 PPW5 active).
+-- R.10 — p_rolling=TRUE.
+-- DROBIŃSKI total rolling, re-derived against seed 2026-05-10: 315.53.
+-- (PPW5 has results in new seed even with status=SCHEDULED; engine picks
+-- them up so the carry-over-from-prior-PPW5 path doesn't fire here.)
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DROBIŃSKI' AND txt_first_name = 'Leszek')),
-  197.41::NUMERIC,
-  'R.10: p_rolling=TRUE — DROBIŃSKI 197.41'
+  315.53::NUMERIC,
+  'R.10: p_rolling=TRUE — DROBIŃSKI 315.53'
 );
 
 -- R.11 — p_rolling=TRUE, event deletion: PPW5 removed from current season.
--- seed_prod_latest: ATANASSOW total 269.28 after PPW5 wipe.
+-- Re-derived against seed 2026-05-10: ATANASSOW total 329.54 after PPW5 wipe.
 DELETE FROM tbl_match_candidate WHERE id_result IN (SELECT id_result FROM tbl_result WHERE id_tournament IN (SELECT id_tournament FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2025-2026')));
 DELETE FROM tbl_result WHERE id_tournament IN (SELECT id_tournament FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2025-2026'));
 DELETE FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2025-2026');
@@ -175,8 +195,8 @@ SELECT is(
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ATANASSOW' AND txt_first_name = 'Aleksander')),
-  269.28::NUMERIC,
-  'R.11: p_rolling=TRUE event deleted — ATANASSOW 269.28 (no PPW5-prev to carry)'
+  329.54::NUMERIC,
+  'R.11: p_rolling=TRUE event deleted — ATANASSOW 329.54 (no PPW5-prev to carry)'
 );
 
 -- Restore PPW5 for next test
