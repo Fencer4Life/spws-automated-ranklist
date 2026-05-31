@@ -300,13 +300,13 @@ SEASON = "2025-2026"
 
 def scrape_all() -> list[dict[str, str]]:
     """Fetch all event schedule pages and return tournament URL mappings."""
-    from python.scrapers.ftl_auth import get_authed_ftl_client
+    from python.scrapers.ftl_auth import get_authed_ftl_client, normalize_ftl_url
 
     mappings = []
     with get_authed_ftl_client() as client:
         for event_prefix, url in EVENT_URLS.items():
             print(f"Fetching {event_prefix}: {url}", file=sys.stderr)
-            resp = client.get(url)
+            resp = client.get(normalize_ftl_url(url))
             resp.raise_for_status()
 
             tournaments = parse_event_schedule(resp.text)
