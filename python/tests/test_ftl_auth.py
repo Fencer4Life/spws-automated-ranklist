@@ -26,8 +26,9 @@ _LOGIN_HTML = """<!doctype html>
 
 @pytest.fixture
 def ftl_creds(monkeypatch):
-    monkeypatch.setenv("FTL_USERNAME", "spws.weterani@gmail.com")
-    monkeypatch.setenv("FTL_PASSWORD", "Sedes123;")
+    # Dummy credentials — real ones live in .env (gitignored) and GitHub Secrets.
+    monkeypatch.setenv("FTL_USERNAME", "test@example.com")
+    monkeypatch.setenv("FTL_PASSWORD", "test-password")
 
 
 @pytest.fixture
@@ -82,8 +83,8 @@ def test_post_body_contains_username_password(ftl_creds):
     assert login_route.called
     posted = login_route.calls.last.request
     body = posted.content.decode()
-    assert "username=spws.weterani%40gmail.com" in body
-    assert "password=Sedes123%3B" in body
+    assert "username=test%40example.com" in body
+    assert "password=test-password" in body
 
 
 # ===========================================================================
@@ -162,5 +163,35 @@ def test_raises_on_login_post_failure(ftl_creds):
     )
 
     with pytest.raises(FtlAuthError, match="Invalid email"):
+        with get_authed_ftl_client():
+            pass
+
+
+# ===========================================================================
+# 3.20g — Credentials rejected (200 but redirected back to login) → FtlAuthError
+# ===========================================================================
+@respx.mock
+def test_raises_when_redirected_back_to_login(ftl_creds):
+    """3.20g POST /login → 302 back to /account/login → FtlAuthError "credentials rejected".
+
+    FTL redirects failed logins back to /account/login via 302. After httpx
+    follows the redirect, login_resp.url is /account/login which the helper
+    treats as a rejected-credential signal. The error must tell the operator
+    to update credentials in .env and GitHub Secrets.
+    """
+    from python.scrapers.ftl_auth import FtlAuthError, get_authed_ftl_client
+
+    respx.get("https://www.fencingtimelive.com/account/login").mock(
+        return_value=httpx.Response(200, html=_LOGIN_HTML)
+    )
+    # FTL responds to bad credentials with 302 → /account/login
+    respx.post("https://www.fencingtimelive.com/login").mock(
+        return_value=httpx.Response(
+            302,
+            headers={"location": "https://www.fencingtimelive.com/account/login?error=invalid"},
+        )
+    )
+
+    with pytest.raises(FtlAuthError, match="credentials rejected"):
         with get_authed_ftl_client():
             pass
