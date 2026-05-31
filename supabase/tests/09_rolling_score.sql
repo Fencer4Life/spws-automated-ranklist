@@ -15,14 +15,25 @@ ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
 SELECT plan(21);
 
 -- =========================================================================
--- Make this test self-contained w.r.t. computed scores.
--- seed_prod_latest.sql inserts result rows (int_place) but does NOT run
--- fn_calc_tournament_scores, so num_final_score is NULL on a fresh seed
--- (e.g. CI). fn_ranking_ppw/_kadra recompute on the fly, but carry-over
--- reads (R.13) and the direct num_final_score assertion (R.20) consume the
--- STORED column — which would be 0/NULL on CI. Recompute every SCORED
--- tournament here so the assertions are deterministic regardless of whether
--- the seed pre-computed scores. ROLLBACK at the end reverts this.
+-- Self-contained carry-over fixture (test-only; reverted by ROLLBACK).
+--
+-- The carried IMEW tournaments that R.13 (KORONA kadra) and R.20 (ZIELIŃSKI
+-- exact IMEW score) depend on are CALIBRATED against the full 2024-25 IMEW
+-- field, but seed_prod_latest.sql ships an incomplete snapshot of them
+-- (only a few result rows, with int_participant_count truncated to that
+-- handful: V2=3, V1=4). With a truncated count, fn_calc_tournament_scores
+-- sees int_place > int_participant_count and yields 0 — so on a fresh seed
+-- (CI) the carried IMEW score is 0 and R.13 lands at 733.50, R.20 at 0.00.
+--
+-- fn_ranking_ppw/_kadra recompute current-season scores on the fly, but the
+-- carry-over path (R.13) and the direct num_final_score read (R.20) consume
+-- the STORED column. So we (1) restore the real participant_count for the two
+-- carried IMEW tournaments, then (2) recompute every SCORED tournament, making
+-- both assertions deterministic regardless of the seed's snapshot.
+-- Verified: counts 110/68 → R.13=739.46, R.20=85.59; counts 3/4 → 733.50/0.00.
+UPDATE tbl_tournament SET int_participant_count = 110 WHERE txt_code = 'IMEW-V2-M-EPEE-2024-2025';
+UPDATE tbl_tournament SET int_participant_count = 68  WHERE txt_code = 'IMEW-V1-M-EPEE-2024-2025';
+
 DO $recompute_scores$
 DECLARE t RECORD;
 BEGIN
