@@ -340,9 +340,11 @@ def discover_tournament_urls(event_url: str) -> list[dict]:
     platform = detect_platform(event_url)
 
     if platform == "ftl":
-        from python.scrapers.ftl_auth import get_authed_ftl_client
+        from python.scrapers.ftl_auth import get_authed_ftl_client, normalize_ftl_url
+        # FTL's session cookie is host-only on www; the DB stores apex URLs.
+        # Normalize so the authed cookie is sent (else the fetch 302s to login).
         with get_authed_ftl_client() as client:
-            resp = client.get(event_url)
+            resp = client.get(normalize_ftl_url(event_url))
         resp.raise_for_status()
         return _discover_ftl(resp.text)
 
