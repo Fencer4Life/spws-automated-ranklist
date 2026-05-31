@@ -19,33 +19,17 @@ WHERE txt_surname = 'SAMECKA-NACZYŃSKA' AND txt_first_name = 'Martyna';
 UPDATE tbl_fencer SET enum_gender = 'M'
 WHERE txt_surname = 'TECŁAW' AND txt_first_name = 'Robert';
 
--- 2026-05-10 (seed 2026-05-10): the orchestrator's PPW5 re-ingest produced a
--- F sibling tournament for sabre V1 (PPW5-V1-F-SABRE-2025-2026) that didn't
--- exist when this test was first written. CG.4 + CG.8 need the "no F
--- sibling" scenario, so we remove that one tournament inside the test
--- transaction (BEGIN/ROLLBACK guarantees the wipe is local to the test).
-DELETE FROM tbl_match_candidate WHERE id_result IN (
-  SELECT id_result FROM tbl_result WHERE id_tournament = (
-    SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V1-F-SABRE-2025-2026'
-  )
-);
-DELETE FROM tbl_result WHERE id_tournament = (
-  SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW5-V1-F-SABRE-2025-2026'
-);
-DELETE FROM tbl_tournament WHERE txt_code = 'PPW5-V1-F-SABRE-2025-2026';
-
--- CG.8 expects SAMECKA-NACZYŃSKA to have a result in PPW5-V1-M-SABRE-2025-2026
--- (so the cross-gender reassignment path includes it in her F-drilldown). The
--- re-ingest correctly routes her to the F bracket, so we need a result row
--- in the M bracket that the asymmetric F-bracket filter will reassign.
--- Insert the placeholder result if it doesn't already exist.
+-- seed_prod_latest: PPW5 no longer has a V1 SABRE bracket (only V0/V2/V3/V4).
+-- CG.8 uses PPW4-V1-M-SABRE-2025-2026 instead (PPW4 has M-only V1 sabre,
+-- no F sibling) — same cross-gender scenario, different event.
+-- Insert SAMECKA-NACZYŃSKA into the M bracket if she isn't already there.
 DO $cg_setup$
 DECLARE
   v_tid INT;
   v_fid INT;
 BEGIN
   SELECT id_tournament INTO v_tid FROM tbl_tournament
-    WHERE txt_code = 'PPW5-V1-M-SABRE-2025-2026';
+    WHERE txt_code = 'PPW4-V1-M-SABRE-2025-2026';
   SELECT id_fencer INTO v_fid FROM tbl_fencer
     WHERE txt_surname = 'SAMECKA-NACZYŃSKA' AND txt_first_name = 'Martyna';
   IF v_tid IS NOT NULL AND v_fid IS NOT NULL AND NOT EXISTS (
@@ -147,9 +131,9 @@ SELECT ok(
       (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SAMECKA-NACZYŃSKA' AND txt_first_name = 'Martyna'),
       'SABRE'::enum_weapon_type, 'F'::enum_gender_type, 'V1'::enum_age_category
     )
-    WHERE txt_tournament_code = 'PPW5-V1-M-SABRE-2025-2026'
+    WHERE txt_tournament_code = 'PPW4-V1-M-SABRE-2025-2026'
   ),
-  'CG.8: fencer drilldown F sabre V1 includes reassigned PPW5-M result'
+  'CG.8: fencer drilldown F sabre V1 includes reassigned PPW4-M result'
 );
 
 -- =========================================================================
