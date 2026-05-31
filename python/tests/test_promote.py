@@ -236,7 +236,8 @@ class TestPromoteEvent:
             [{"fn_ingest_tournament_results": {"inserted": 2, "scored": True}}],  # first results
             [{"fn_find_or_create_tournament": 201}],  # second tournament
             [{"fn_ingest_tournament_results": {"inserted": 1, "scored": True}}],  # second results
-            [],  # update event status
+            [],  # update event status → IN_PROGRESS
+            [],  # update event status → COMPLETED
         ]
 
         result = promote_event(

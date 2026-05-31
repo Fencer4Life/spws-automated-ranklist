@@ -54,7 +54,12 @@ def _prod_count(table: str) -> int:
 @pytest.fixture(scope="module")
 def prod_counts() -> dict[str, int]:
     """Fetch all PROD counts once per test session."""
-    return {table: _prod_count(table) for table in TABLES}
+    try:
+        return {table: _prod_count(table) for table in TABLES}
+    except RuntimeError as exc:
+        if "401" in str(exc):
+            pytest.skip(f"SUPABASE_ACCESS_TOKEN rejected (expired?): {exc}")
+        raise
 
 
 @pytest.mark.parametrize("table", TABLES)
