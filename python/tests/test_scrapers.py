@@ -523,6 +523,21 @@ class TestFTLEventSchedule:
         result = parse_tournament_name("SZPADA MĘŻCZYZN O WETERANI")
         assert result == ("EPEE", "M", "V0")
 
+    def test_parse_tournament_name_polish_kat_no_gender_defaults_male(self):
+        """3.15g2 (ADR-067 + ADR-34): Polish `kat. N` brackets with no gender
+        keyword (the FT XML `Sexe="X"` case, e.g. 'Szabla kat. 4' / 'Szabla
+        kat. 0') must parse to (weapon, 'M', V-cat) — gender defaults to 'M'
+        like the XML draft writer (review_cli), with fn_effective_gender
+        reassigning any women at query time. Previously returned None, so the
+        URL discovery path silently dropped PPW5 V0/V4 sabre brackets that the
+        XML path ingests.
+        """
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        assert parse_tournament_name("Szabla kat. 4") == ("SABRE", "M", "V4")
+        assert parse_tournament_name("Szabla kat. 0") == ("SABRE", "M", "V0")
+        assert parse_tournament_name("Floret kat. 2") == ("FOIL", "M", "V2")
+
     def test_build_tournament_code(self):
         """3.15h: Build tournament code from components."""
         from python.tools.scrape_ftl_event_urls import build_tournament_code
