@@ -44,3 +44,15 @@ Both forms are correct organizer-dependent Polish. Our parser was tightly typed 
 - pytest 5.22.2 — `parse_tournament_name("FLORET MĘŻCZYŹNI V3")` → `(FOIL, M, V3)`
 - pytest 5.22.2b — regression guard: original `"SZPADA MĘŻCZYZN kategoria 2"` (genitive) → `(EPEE, M, V2)` still parses
 - pytest 5.22.3 — `parse_event_schedule` skips `GRUPY ZBIORCZE` brackets as pool rounds; real `MĘŻCZYŹNI V0` bracket alongside is kept
+
+## Amendment (2026-06-03) — no-gender `kat. N` brackets default to `M` (ADR-34 parity)
+
+`parse_tournament_name` previously returned `None` for a weapon-bearing bracket
+with **no gender keyword** (the FT `Sexe="X"` case, e.g. Polish `Szabla kat. 4` /
+`Szabla kat. 0`). The URL discovery path therefore silently dropped the PPW5 V0/V4
+men's-sabre brackets that the XML ingest path keeps (the XML path defaults gender
+to `M` per ADR-34 and lets `fn_effective_gender` reassign any women at query time).
+Fix: when weapon + category are present but no gender keyword matches, default
+gender to `M` — making URL ingest byte-identical to XML ingest for PPW4/PPW5.
+Guest-event names are still filtered upstream by `SPWS_BRACKET_FIRST_TOKEN`.
+Test: pytest 3.15g2 (`test_scrapers.py::TestFTLEventSchedule::test_parse_tournament_name_polish_kat_no_gender_defaults_male`).

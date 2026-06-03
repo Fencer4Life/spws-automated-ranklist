@@ -651,6 +651,42 @@ Phase 3c (commit 29afa4b) finishes the trilogy. The EventManager admin page gain
 
 ---
 
+### PPW4/PPW5 URL re-ingest to CERT/PROD + participant-count fix (2026-06-03)
+
+**Goal.** Propagate the 2026-05-27 correction to CERT/PROD (which still carried the
+inflated joint-pool `int_participant_count`: PPW4 M-Épée V0–V4 all = 35, M-Sabre = 21),
+re-ingesting from the **live FTL event-level URL** through the one unified pipeline.
+
+**URL == XML parity bug (the one real code fix).** The URL discovery path
+(`scrape_ftl_event_urls.parse_tournament_name`) returned `None` for weapon-bearing
+brackets with no gender keyword (FT `Sexe="X"`, Polish `Szabla kat. 4` / `kat. 0`),
+so it silently dropped the PPW5 V0/V4 sabre brackets the XML path keeps. Fix: default
+gender to `M` (ADR-34) — see ADR-063 amendment. After the fix the URL handler
+(`recreate_active_season_2025_2026.ingest_event` via `Fetcher.fetch_event_url_with_skips`
+→ `run_pipeline` → `fn_commit_event_draft`) produces byte-identical output to the XML
+handler: PPW4 24t/87r, PPW5 22t/81r.
+
+**Deployment (LOCAL + CERT + PROD all identical).** Per env/event: wipe children →
+re-ingest via URL → commit. Notes: `fn_commit_event_draft` does plain INSERT (no
+ON CONFLICT) so the event must be wiped first; `tbl_match_candidate.id_result` FK rows
+(promote.py TEE-writes on PROD) must be deleted before `tbl_result`; PROD's PPW5
+`url_event` was NULL (drift) and was set to the FTL eventSchedule URL. Verified all 3:
+Maciej Sękowski V1 M-Épée PPW4 10/109.39, PPW5 8/98.00.
+
+**Group B — participant-count reconcile (CERT/PROD via PostgREST, Management API token
+expired).** 65 tournaments (IMEW-2023-24 + IMEW-2024-25 international field sizes
+collapsed to result-counts, e.g. IMEW-V2-M-EPEE 6→224; + GP1/2/3 drift) PATCHed to
+LOCAL values and re-scored. 2 empty 0-result tournaments left out per operator.
+
+**Tests / seed.** Seed regenerated from corrected LOCAL → `seed_prod_2026-06-03.sql`
+(symlink repointed). 6 pgTAP magic numbers recalibrated after the count correction
+(09_rolling_score R.4/R.6/R.8/R.10/R.11; 14_cross_gender CG.8 retargeted to
+PPW5-V0-M-SABRE). +1 pytest (3.15g2). Three-suite GREEN: pgTAP 566, pytest 754, vitest 371.
+
+**Memory.** [project_ppw4_ppw5_url_reingest_2026-06-03.md](../doc-redacted-path).
+
+---
+
 ## Archived Documents
 
 The following documents contain the original detailed plans. They are superseded by this history and the Project Specification:

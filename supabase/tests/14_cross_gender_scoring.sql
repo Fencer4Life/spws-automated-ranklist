@@ -34,18 +34,18 @@ DELETE FROM tbl_result WHERE id_tournament = (
 );
 DELETE FROM tbl_tournament WHERE txt_code = 'PPW5-V1-F-SABRE-2025-2026';
 
--- CG.8 expects SAMECKA-NACZYŃSKA to have a result in PPW5-V1-M-SABRE-2025-2026
--- (so the cross-gender reassignment path includes it in her F-drilldown). The
--- re-ingest correctly routes her to the F bracket, so we need a result row
--- in the M bracket that the asymmetric F-bracket filter will reassign.
--- Insert the placeholder result if it doesn't already exist.
+-- CG.8 expects SAMECKA-NACZYŃSKA (born 1985 → V1 by age) to have a result in a
+-- men's sabre bracket so the cross-gender reassignment path surfaces it in her
+-- F V1 drilldown. After the 2026-06-03 PPW5 URL re-ingest she has a real result
+-- in PPW5-V0-M-SABRE-2025-2026 (PPW5 sabre brackets are kat 0/2/3/4 — no V1).
+-- The placeholder below is a no-op when the real row already exists.
 DO $cg_setup$
 DECLARE
   v_tid INT;
   v_fid INT;
 BEGIN
   SELECT id_tournament INTO v_tid FROM tbl_tournament
-    WHERE txt_code = 'PPW5-V1-M-SABRE-2025-2026';
+    WHERE txt_code = 'PPW5-V0-M-SABRE-2025-2026';
   SELECT id_fencer INTO v_fid FROM tbl_fencer
     WHERE txt_surname = 'SAMECKA-NACZYŃSKA' AND txt_first_name = 'Martyna';
   IF v_tid IS NOT NULL AND v_fid IS NOT NULL AND NOT EXISTS (
@@ -147,7 +147,7 @@ SELECT ok(
       (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SAMECKA-NACZYŃSKA' AND txt_first_name = 'Martyna'),
       'SABRE'::enum_weapon_type, 'F'::enum_gender_type, 'V1'::enum_age_category
     )
-    WHERE txt_tournament_code = 'PPW5-V1-M-SABRE-2025-2026'
+    WHERE txt_tournament_code = 'PPW5-V0-M-SABRE-2025-2026'
   ),
   'CG.8: fencer drilldown F sabre V1 includes reassigned PPW5-M result'
 );

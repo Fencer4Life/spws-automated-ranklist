@@ -205,7 +205,16 @@ def parse_tournament_name(
     elif GENDER_MALE.search(name):
         gender = "M"
     else:
-        return None
+        # ADR-34 + ADR-067: a bracket with a weapon but no gender keyword
+        # (the FT XML `Sexe="X"` case, e.g. Polish 'Szabla kat. 4' /
+        # 'Szabla kat. 0') defaults to 'M' — exactly like the XML draft
+        # writer (review_cli `gender = ctx.parsed.gender or "M"`).
+        # fn_effective_gender reassigns any women to the women's ranklist at
+        # query time. Weapon is confirmed above and guest-event names are
+        # already filtered upstream (SPWS_BRACKET_FIRST_TOKEN), so returning
+        # None here would silently drop a real scored bracket — which is why
+        # the URL path previously lost PPW5 V0/V4 sabre.
+        gender = "M"
 
     # Check for combined categories: "Category 3 and 4" or "1+2+3 + 4"
     combined_match = re.search(

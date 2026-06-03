@@ -1449,14 +1449,16 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
 | pgTAP | 566 | 43 | `supabase/tests/` |
-| pytest | 753 | 42 | `python/tests/` |
+| pytest | 754 | 42 | `python/tests/` |
 | vitest | 371 | 31 | `frontend/tests/` |
 | Playwright | 7 | 1 | `frontend/e2e/` |
-| **Total** | **1697** | | |
+| **Total** | **1698** | | |
 
 **ADR-067 contribution (2026-05-27):** pytest +12 — 4 in `test_ingest_cli_unified.py` (67.U1–67.U4: `ingest_xml_unified` function exists; URL threading to fencingtime_xml.parse via `source_url`; drafts routed through `DraftStore`; legacy `process_xml_file` `DeprecationWarning`) and 8 in `test_pool_only_skip.py` (67.P1–67.P8: parser sets `is_pool_only_qualifier` for `<Poule>`-without-`<Tableau>` files; flag False for DE brackets; `Sexe='X'` alone never triggers skip — must be structural; pipeline halts with `POOL_ROUND_DETECTED`; legacy path skips pool-only via structural check; legacy path INGESTS `Sexe='X'`-but-has-`<Tableau>` regression guard; live PPW5 ELIMINACJE and V1-DE file sanity). Plus 1 in `test_ir.py::test_parsed_tournament_fields` contract updated for `is_pool_only_qualifier`. Total +12 includes that contract-edit (not a new test ID).
 
 **ADR-068 contribution (2026-05-31):** pytest +4 in `test_ftl_auth.py` (3.20h–k: `normalize_ftl_url` apex→www; yielded client rewrites apex host to www; cached session reused without a second `POST /login`; resource fetch redirected to `/account/login` raises `FtlAuthError`). File total 8→12. No pgTAP/vitest change (FTL auth is Python-only).
+
+**URL==XML parser-parity fix (2026-06-03):** pytest +1 in `test_scrapers.py::TestFTLEventSchedule` (3.15g2: `parse_tournament_name` defaults gender to `M` per ADR-34 for weapon-bearing brackets with no gender keyword, e.g. Polish `Szabla kat. 4`/`kat. 0` — so the URL discovery path no longer drops PPW5 V0/V4 sabre, matching the XML path). No new pgTAP assertions: 6 existing magic numbers recalibrated after the PPW4/PPW5 participant-count correction (09_rolling_score R.4/R.6 KORONA 417.94→357.37, R.8 PARDUS 74.64→39.07, R.10 DROBIŃSKI 315.53→197.41, R.11 ATANASSOW 329.54→269.28; 14_cross_gender CG.8 retargeted to PPW5-V0-M-SABRE). pgTAP total unchanged at 566.
 
 **ADR-064 contribution (2026-05-10):** pytest +12 (4.61–4.72 in `test_matcher_gender_filter.py`) — asymmetric F-bracket gender filter at matcher time for domestic events.
 
