@@ -1411,7 +1411,7 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 | [ADR-036](adr/036-prod-export-local-mirror.md) | PROD Export & Local Mirror (Single Monolithic Dump) | ADR-027, ADR-026 |
 | [ADR-037](adr/037-derived-display-status-awaiting-results.md) | Derived Display Status — "Awaiting Results" (view-layer, preserves ADR-018 rolling carry-over) | ADR-018, ADR-025, ADR-028 |
 | [ADR-038](adr/038-evf-intake-polish-only.md) | EVF-Organized Tournaments Ingest POL-Only Rows | FR-54, ADR-019, ADR-020, ADR-025 |
-| [ADR-039](adr/039-stale-event-gate.md) | EVF Scraper Dedup Algorithm + Stale-Event Gate (amends ADR-028) | FR-58, FR-96, FR-97, ADR-028 |
+| [ADR-039](adr/039-stale-event-gate.md) | EVF Scraper Dedup Algorithm + Stale-Event Gate (amends ADR-028; rev 2 2026-06-13: Step 0 self-heals future-COMPLETED rows from authoritative FTL dates before halting) | FR-58, FR-96, FR-97, ADR-028, ADR-069 |
 | [ADR-040](adr/040-multi-slot-event-urls.md) | Multi-Slot Event Result URLs with Compact-on-Save | FR-48, FR-98, ADR-028, ADR-029, ADR-030, ADR-036 |
 | [ADR-041](adr/041-edge-function-dispatch.md) | Server-Side Workflow Dispatch via Supabase Edge Function (no PAT in browser) | FR-99, ADR-029, ADR-025, ADR-026 |
 | [ADR-042](adr/042-carryover-engine-dispatcher.md) | Per-season carry-over engine selection via dispatcher pattern (Phase 1A; amended Phase 3 — engine now admin-configurable, default flipped to FK; supersedes prefix-only mechanism in ADR-018) | ADR-018, ADR-021, ADR-044, ADR-045 |

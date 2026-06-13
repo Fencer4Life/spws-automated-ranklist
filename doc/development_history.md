@@ -687,6 +687,37 @@ PPW5-V0-M-SABRE). +1 pytest (3.15g2). Three-suite GREEN: pgTAP 566, pytest 754, 
 
 ---
 
+### EVF sync self-heal of future-COMPLETED rows (ADR-039 rev 2) — 2026-06-13
+
+**Problem.** The daily **EVF Calendar + Results Sync** GitHub Action had failed every run
+since ~2026-06-06. Not a bug — the ADR-039 Step 0 logical-integrity guard correctly
+halted because CERT held two future-COMPLETED rows: `PEW63e-2025-2026` (`2026-10-01`)
+and `PEW64s-2025-2026` (`2026-11-11`). Both are slices of the **BVF 6 Weapon
+International 2026** (Guildford, Jan 10–11), scored from FTL but left with placeholder
+filler dates during the EVF combined-pool re-fix.
+
+**Fix.** ADR-039 amended to rev 2: Step 0 now self-heals before halting. `sync_calendar`
+collects violators (`find_future_completed`), re-derives each real date from the
+authoritative (login-walled) FTL results page via the ADR-069 authed session
+(`get_authed_ftl_client` → `fetch_ftl_event_metadata`), and rewrites
+`tbl_event.dt_start`/`dt_end` + FTL-backed `tbl_tournament.dt_tournament` on CERT.
+Decision is a pure function (`compute_future_completed_corrections`); only un-healable
+rows (no FTL date / `FtlAuthError` / FTL date still future) keep the rev-1 hard halt.
+`evf-sync.yml` gained `FTL_USERNAME`/`FTL_PASSWORD` (the heal can't auth without them).
+Active seed `seed_prod_2026-06-03.sql` corrected to the real Jan dates. CERT self-heals
+on the next run; the calendar-promote job carries corrected dates to PROD.
+
+**Known follow-up (out of scope, "just fix the dates").** `PEW64s-V1-M-SABRE` shares an
+FTL URL with `PEW62-V1-M-SABRE` — a likely double-count to reconcile separately.
+
+**Tests.** +5 pytest (evf.44–evf.48): heal logic + orchestration. pytest 760, vitest 371.
+pgTAP `09_rolling_score` pre-existing harness/seed-drift failures unchanged by this work
+(verified by reverting the seed edit — identical failure set).
+
+**Memory.** [project_evf_sync_self_heal_2026-06-13.md](../doc-redacted-path).
+
+---
+
 ## Archived Documents
 
 The following documents contain the original detailed plans. They are superseded by this history and the Project Specification:
