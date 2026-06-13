@@ -168,7 +168,13 @@ def fetch_ftl_event_metadata(url: str, http_client) -> dict | None:
     uuid = extract_ftl_uuid(url)
     if not uuid:
         return None
-    page_url = f"https://www.fencingtimelive.com/events/results/{uuid}"
+    # Preserve the URL form: an eventSchedule UUID lives in a different space
+    # from a results UUID, so rewriting eventSchedule → /events/results/ would
+    # 302 to the login wall. Default to the results path for bare/unknown forms.
+    if "/tournaments/eventschedule/" in (url or "").lower():
+        page_url = f"https://www.fencingtimelive.com/tournaments/eventSchedule/{uuid}"
+    else:
+        page_url = f"https://www.fencingtimelive.com/events/results/{uuid}"
     try:
         r = http_client.get(page_url)
     except Exception:

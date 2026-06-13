@@ -396,18 +396,18 @@ class TestLogicalIntegrityGuard:
 
 
 class TestFutureCompletedHealing:
-    """Tests evf.44–evf.46: self-healing fallback (ADR-070).
+    """Tests evf.44–evf.46: self-healing fallback (ADR-039 rev 2).
 
-    Before halting on a future-COMPLETED row, the sync re-derives the real
-    event date from the authoritative FTL results page and rewrites the bogus
-    placeholder date. Only rows that cannot be healed (no FTL date, or an FTL
-    date that is itself still in the future) keep the sync halted.
+    A future-COMPLETED row is healed by re-deriving its real date from the
+    authoritative event URL (FTL eventSchedule) / matched calendar event. When
+    no valid past date can be recovered, the row is returned as a `status_flip`
+    so the caller demotes its status (never a hard halt on this class).
     """
 
     def test_heals_violator_from_recovered_past_dates(self):
-        """evf.44: a violator whose FTL lookup yields valid past date(s) is
-        rewritten — earliest date → dt_start, latest → dt_end — and dropped
-        from the un-healable list."""
+        """evf.44: a violator whose date lookup yields valid past date(s) is
+        rewritten — earliest date → dt_start, latest → dt_end — and produces no
+        status flip."""
         from datetime import date
         from python.scrapers.evf_calendar import compute_future_completed_corrections
 
@@ -427,10 +427,10 @@ class TestFutureCompletedHealing:
         def lookup(ev):
             return recovered.get(ev["id_event"], [])
 
-        corrections, remaining = compute_future_completed_corrections(
+        corrections, status_flips = compute_future_completed_corrections(
             violators, lookup, today=today
         )
-        assert remaining == [], "both violators are healable"
+        assert status_flips == [], "both violators are date-healable"
         by_id = {c["id_event"]: c for c in corrections}
         assert by_id[80]["dt_start"] == "2026-01-10"
         assert by_id[80]["dt_end"] == "2026-01-10"
@@ -439,9 +439,9 @@ class TestFutureCompletedHealing:
         # The correction must carry the code so the caller can log/UPDATE it.
         assert by_id[80]["txt_code"] == "PEW63e-2025-2026"
 
-    def test_unhealable_when_no_date_recovered(self):
-        """evf.45: if FTL yields no date (login wall, 404, results pulled), the
-        violator is NOT corrected — it stays in `remaining` so the sync halts."""
+    def test_status_flip_when_no_date_recovered(self):
+        """evf.45: if no date can be recovered (event URL NULL, login wall, 404),
+        the violator becomes a status_flip — the caller demotes its status."""
         from datetime import date
         from python.scrapers.evf_calendar import compute_future_completed_corrections
 
@@ -450,16 +450,16 @@ class TestFutureCompletedHealing:
             {"txt_code": "PEW64s-2025-2026", "id_event": 81,
              "dt_start": "2026-11-11", "enum_status": "COMPLETED"},
         ]
-        corrections, remaining = compute_future_completed_corrections(
+        corrections, status_flips = compute_future_completed_corrections(
             violators, lambda ev: [], today=today
         )
         assert corrections == []
-        assert [r["txt_code"] for r in remaining] == ["PEW64s-2025-2026"]
+        assert [r["txt_code"] for r in status_flips] == ["PEW64s-2025-2026"]
 
-    def test_unhealable_when_recovered_date_still_future(self):
+    def test_status_flip_when_recovered_date_still_future(self):
         """evf.46: a recovered date that is itself in the future cannot satisfy
-        the invariant (a COMPLETED row must not start in the future), so the
-        row stays un-healed rather than swapping one bad date for another."""
+        the invariant, so the row becomes a status_flip rather than swapping one
+        bad date for another."""
         from datetime import date
         from python.scrapers.evf_calendar import compute_future_completed_corrections
 
@@ -468,11 +468,11 @@ class TestFutureCompletedHealing:
             {"txt_code": "PEW63e-2025-2026", "id_event": 80,
              "dt_start": "2026-10-01", "enum_status": "COMPLETED"},
         ]
-        corrections, remaining = compute_future_completed_corrections(
+        corrections, status_flips = compute_future_completed_corrections(
             violators, lambda ev: ["2026-12-25"], today=today
         )
         assert corrections == []
-        assert [r["txt_code"] for r in remaining] == ["PEW63e-2025-2026"]
+        assert [r["txt_code"] for r in status_flips] == ["PEW63e-2025-2026"]
 
 
 # =============================================================================

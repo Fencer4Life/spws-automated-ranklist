@@ -33,18 +33,23 @@ NOT (dt_start > today AND enum_status = 'COMPLETED')
 
 Any row violating it is, in the original design (rev 1), a hard halt: raise `LogicalIntegrityError`, send the **EVF Sync HALT** Telegram alert, exit non-zero, and wait for a manual SQL fix.
 
-#### rev 2 (2026-06-13) — self-heal before halt
+#### rev 2 (2026-06-13) — self-heal, never hard-halt
 
-Rev 1 halted the *entire* daily pipeline for the most common cause of a Step 0 violation: an event already scored from FTL that was left with a **placeholder date** (e.g. `PEW63e`/`PEW64s`, scored from the BVF 6-Weapon International but stamped `2026-10-01`/`2026-11-11`). This is recoverable data, yet it took the cron down daily and demanded hand-written SQL.
+Rev 1 halted the *entire* daily pipeline for the most common cause of a Step 0 violation: an event already scored from FTL that was left with a **placeholder date** (e.g. `PEW63e`/`PEW64s`, scored from the BVF 6-Weapon International — Guildford GBR — but stamped `2026-10-01`/`2026-11-11`). This is recoverable, yet it took the cron down daily and demanded hand-written SQL.
 
-Rev 2 inserts a self-healing pass *before* the halt:
+Rev 2 replaces the halt with a **self-heal pass** keyed on the **event URL** (`tbl_event.url_event`), the authoritative source for an event's real date. Per violator:
 
-1. Collect the future-COMPLETED violators (`find_future_completed`).
-2. For each, re-derive the real event date from the **authoritative FTL results page(s)** of its tournaments, reusing the authed FTL session from ADR-069 (`get_authed_ftl_client` → `fetch_ftl_event_metadata`). FTL pages are login-walled, so the session is mandatory.
-3. A violator is **healable** iff FTL yields a valid date `≤ today`. Heal = rewrite `tbl_event.dt_start`/`dt_end` (earliest→latest recovered date) and the FTL-backed `tbl_tournament.dt_tournament` on CERT, then send an informational **EVF Sync self-healed** Telegram notice.
-4. Only rows that **cannot** be healed — no FTL date (404 / results pulled), no authed session (`FtlAuthError`), or an FTL date still in the future — keep the rev-1 hard halt (`LogicalIntegrityError` + **EVF Sync HALT** alert).
+1. **Recover the event date** (`_resolve_event_date`), in priority order:
+   - **(a)** the row's own `url_event`;
+   - **(b) primary — EVF calendar:** match the violator to the event the sync already scraped that run (via `match_scraped_to_existing` with the **date gate disabled** — the date is the broken field — so it keys on country/location per Steps 3–4) and take that event's URL + date;
+   - **(c) fallback — FTL:** the event's tournament results pages.
+   The event URL (FTL `eventSchedule` or `events/results`) is fetched with the authed ADR-069 session (`get_authed_ftl_client` → `fetch_ftl_event_metadata`, which now accepts both URL forms).
+2. **Date-healable** (a valid date `≤ today` was recovered) → rewrite `dt_start`/`dt_end` + the FTL-backed `dt_tournament`, and **populate `url_event`** with the resolved URL. Status stays `COMPLETED`.
+3. **Not date-healable** (no event URL, no calendar match, no FTL date, or auth failure) → **demote `enum_status` `COMPLETED` → `PLANNED`** so the row is no longer future-COMPLETED. `url_event`/date get populated later by the calendar / `populate_tournament_urls` flow; the demotion is logged via the informational **EVF Sync self-heal** Telegram notice.
 
-FTL remains the sole authority; the heal never invents a date. The hard guard (`assert_no_future_completed`) is retained as the post-heal last line of defence. The decision of *what* to correct is a pure function (`compute_future_completed_corrections`); the DB/HTTP side-effects live in `evf_sync._heal_future_completed`.
+The status demotion must bypass `fn_validate_event_transition` (Section 3 of `lifecycle_triggers`), which makes `COMPLETED` terminal — the heal disables `trg_event_transition` for that single `UPDATE` (a deliberate system-level reconciliation; the everyday lifecycle contract is unchanged).
+
+**Consequence — the sync no longer hard-halts on this class.** A future-COMPLETED row is either date-healed or demoted; either way the guard clears. `assert_no_future_completed` is retained only as a post-heal belt-and-braces assertion. FTL/calendar remain the sole date authorities — the heal never invents a date. The decision of corrections-vs-flips is a pure function (`compute_future_completed_corrections` → `(corrections, status_flips)`); DB/HTTP side-effects live in `evf_sync._heal_future_completed`.
 
 ### Step 1 — Stale-event gate
 
@@ -105,10 +110,10 @@ EVF actively renames events mid-season (the Napoli↔Naples incident). Date + co
 
 | Trigger | Template |
 |---|---|
-| Step 0 invariant violation (un-healable, rev 2) | `<b>EVF Sync HALT</b>\n<pre>Future-COMPLETED, un-healable: {rows}</pre>\nManual fix required.` |
-| Step 0 self-heal applied (informational, rev 2) | `<b>EVF Sync self-healed {n} row(s)</b>\n<pre>{codes}</pre>\nDates re-derived from FTL.` |
-| Step 0 self-heal blocked by FTL auth (rev 2) | `<b>EVF Sync self-heal blocked</b>\n<pre>{FtlAuthError}</pre>` |
+| Step 0 self-heal applied (informational, rev 2) | `<b>EVF Sync self-heal (Step 0)</b>\n<pre>healed dates: {codes} \| demoted→PLANNED: {codes}</pre>` |
 | Step 1 events filtered (informational) | Logged to stdout; no separate Telegram unless wanted by future iteration. |
+
+> rev 2 removed the **EVF Sync HALT** message for this class — a future-COMPLETED row is now always either date-healed or demoted, so the sync no longer halts (and no longer needs manual SQL) on it.
 
 The full outbound-message catalogue lives in the operations manual.
 
@@ -122,11 +127,13 @@ The full outbound-message catalogue lives in the operations manual.
 | `evf.22` | `is_in_scope` correctly classifies stale-PLANNED, stale-COMPLETED, fresh-PLANNED, fresh-COMPLETED, future-PLANNED. |
 | `evf.23` | `assert_no_future_completed` raises `LogicalIntegrityError` when given a future-COMPLETED row. |
 | `evf.24` | Caller-side `is_in_scope` pre-filter excludes COMPLETED rows from `deduplicate_events` candidates. |
-| `evf.44` | rev 2: `compute_future_completed_corrections` heals a violator from a recovered past date (earliest→dt_start, latest→dt_end). |
-| `evf.45` | rev 2: no FTL date recovered → violator stays un-healed (caller halts). |
-| `evf.46` | rev 2: recovered date still in the future → un-healed (no swapping one bad date for another). |
-| `evf.47` | rev 2: `_heal_future_completed` issues the `UPDATE tbl_event` + `UPDATE tbl_tournament` and reports zero remaining. |
-| `evf.48` | rev 2: un-recoverable FTL lookup issues no `UPDATE` and returns the violator. |
+| `evf.44` | rev 2: `compute_future_completed_corrections` heals a violator from a recovered past date (earliest→dt_start, latest→dt_end); no status flip. |
+| `evf.45` | rev 2: no date recovered → violator returned as a `status_flip` (not a halt). |
+| `evf.46` | rev 2: recovered date still in the future → `status_flip` (no swapping one bad date for another). |
+| `evf.47` | rev 2: `_heal_future_completed` heals from the **event URL** — `UPDATE tbl_event` sets dt + populates `url_event`; no flip. |
+| `evf.48` | rev 2: no recoverable date → no date `UPDATE`; the row's status is demoted instead. |
+| `evf.49` | rev 2: the demotion bypasses the lifecycle trigger (`DISABLE`/`ENABLE TRIGGER trg_event_transition` around `enum_status='PLANNED'`). |
+| `evf.50` | rev 2: `fetch_ftl_event_metadata` parses the date from a `/tournaments/eventSchedule/` event URL (not only `/events/results/`). |
 
 (Plus existing `evf.4`, `evf.5`, `evf.13`, `evf.14`–`evf.18` updated to align with the new ladder.)
 
