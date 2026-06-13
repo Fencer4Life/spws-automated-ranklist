@@ -27,7 +27,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(30);
+SELECT plan(31);
 
 
 -- =============================================================================
@@ -353,6 +353,18 @@ SELECT is(
       AND bool_joint_pool_split = TRUE),
   2,
   '27.19: fn_commit_event_draft sets bool_joint_pool_split=TRUE on the 2 siblings sharing url_results'
+);
+
+
+-- ===== 27.27 — joint-pool siblings carry PER-V-CAT own count (ADR-049 amended 2026-06-04) =====
+-- Reverses the original ADR-049 full-pool-size rule: each V-cat slice now stores
+-- its OWN result count (V0=4, V1=3), NOT the summed physical-pool size (7,7).
+-- The fixture above stages V0 with 4 result drafts and V1 with 3.
+SELECT is(
+  (SELECT array_agg(int_participant_count ORDER BY txt_code) FROM tbl_tournament
+    WHERE txt_code IN ('VW27E-V0-F-EPEE', 'VW27E-V1-F-EPEE')),
+  ARRAY[4, 3],
+  '27.27: joint-pool siblings carry per-V-cat own result count (4,3), not the summed full-pool (7,7)'
 );
 
 
