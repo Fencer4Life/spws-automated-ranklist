@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-05-31T20:36:57Z",
-    "last_sha": "9b96185480ba7e63696af1f2a551817614064d06",
+    "last_updated": "2026-06-13T10:13:40Z",
+    "last_sha": "dc9aa6ef376682136d898b51c984e38ac4f05021",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -106,9 +106,10 @@
       "20260503000008_phase5_5_alias_view_source_url.sql",
       "20260503000009_adr056_revision_bracket_label_vcat.sql",
       "20260511000001_ingest_results_carry_source_vcat.sql",
-      "20260517000001_ingest_results_preserve_match_method.sql"
+      "20260517000001_ingest_results_preserve_match_method.sql",
+      "20260604000001_adr049_amend_per_vcat_count.sql"
     ],
-    "schema_fingerprint": "43077d5674f96e861c7ffc46f900b7e6"
+    "schema_fingerprint": "65efa854143a9ed75331cce8b62a2496"
   },
   "prod": {
     "last_updated": "2026-05-31T20:37:40Z",
