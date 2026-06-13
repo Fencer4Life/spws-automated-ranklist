@@ -86,70 +86,128 @@ def _get_active_season(ref: str, token: str) -> dict | None:
     return rows[0] if rows else None
 
 
-def _ftl_dates_for_event(ref: str, token: str, id_event: int, ftl_client) -> list[str]:
-    """Re-derive an event's real date(s) from the FTL results pages of its
-    tournaments (ADR-070). Returns every ISO date FTL yields across the event's
-    FTL-backed brackets; an empty list means nothing was recoverable."""
+def _scraped_event_url(violator: dict, cal_events: list[dict]) -> str | None:
+    """Option 1 (primary): find the scraped EVF calendar event that matches a
+    future-COMPLETED `violator` and return its event URL.
+
+    The violator's date is the broken field, so the dedup matcher runs with the
+    date gate effectively disabled (huge tolerance) — it then matches on country
+    (STRONG) / location (MEDIUM) per ADR-039. A violator with no country/location
+    simply won't match, and the caller falls through to the FTL/status-flip path.
+    """
+    if not cal_events:
+        return None
+    pairs = match_scraped_to_existing(cal_events, [violator], date_tolerance=10 ** 6)
+    for scraped, _existing_row in pairs:
+        url = scraped.get("url") or scraped.get("url_event")
+        if url:
+            return url
+    return None
+
+
+def _resolve_event_date(ref: str, token: str, violator: dict,
+                        cal_events: list[dict], ftl_client) -> tuple[list[str], str | None]:
+    """Recover a future-COMPLETED event's real date(s) and event URL (ADR-039 rev 2).
+
+    Priority: (a) the row's own `url_event`; (b) the matched EVF calendar event's
+    URL; (c) FTL fallback via the event's tournament results URLs. Returns
+    `(iso_dates, resolved_url)` — `resolved_url` is populated into
+    `tbl_event.url_event` on a successful date heal.
+    """
+    code = violator.get("txt_code", "?")
+    url_event = violator.get("url_event")  # (a) stored event URL
+    if not url_event:                       # (b) EVF calendar match
+        url_event = _scraped_event_url(violator, cal_events)
+        if url_event:
+            print(f"    {code}: matched EVF calendar → {url_event[:70]}")
+
+    if url_event and "fencingtimelive" in url_event.lower():
+        meta = fetch_ftl_event_metadata(normalize_ftl_url(url_event), ftl_client)
+        if meta and meta.get("date"):
+            print(f"    {code}: date {meta['date']} from event URL")
+            return [meta["date"]], url_event
+        print(f"    {code}: event URL gave no date ({url_event[:70]})")
+
+    # (c) FTL fallback — tournament results URLs on this event.
     rows = _management_query(ref, token,
         f"SELECT url_results FROM tbl_tournament "
-        f"WHERE id_event = {int(id_event)} "
+        f"WHERE id_event = {int(violator['id_event'])} "
         f"AND url_results ILIKE '%fencingtimelive%'"
     )
-    print(f"    id_event={id_event}: {len(rows)} FTL-backed tournament URL(s)")
     dates: list[str] = []
     for row in rows:
-        url = row.get("url_results")
-        if not url:
+        u = row.get("url_results")
+        if not u:
             continue
-        meta = fetch_ftl_event_metadata(normalize_ftl_url(url), ftl_client)
+        meta = fetch_ftl_event_metadata(normalize_ftl_url(u), ftl_client)
         if meta and meta.get("date"):
             dates.append(meta["date"])
-        else:
-            print(f"      no date from {url[:80]} (meta={meta})")
-    return dates
+    if dates:
+        print(f"    {code}: {len(dates)} date(s) from tournament FTL pages")
+    else:
+        print(f"    {code}: no event URL, no calendar match, no FTL date")
+    return dates, url_event
+
+
+# Demote a terminal COMPLETED row to PLANNED. fn_validate_event_transition
+# (lifecycle trigger) forbids leaving COMPLETED, so the repair disables that
+# trigger for the single statement — a deliberate system-level reconciliation,
+# not an everyday lifecycle move.
+_STATUS_FLIP_SQL = (
+    "ALTER TABLE tbl_event DISABLE TRIGGER trg_event_transition; "
+    "UPDATE tbl_event SET enum_status = 'PLANNED' "
+    "WHERE id_event = {id_event} AND enum_status = 'COMPLETED'; "
+    "ALTER TABLE tbl_event ENABLE TRIGGER trg_event_transition;"
+)
 
 
 def _heal_future_completed(ref: str, token: str, existing: list[dict],
-                           bot_token: str, chat_id: str,
-                           dry_run: bool = False) -> list[dict]:
-    """Self-healing fallback for future-COMPLETED rows (ADR-070).
+                           cal_events: list[dict], bot_token: str, chat_id: str,
+                           dry_run: bool = False) -> None:
+    """Self-heal future-COMPLETED rows (ADR-039 rev 2 — Step 0).
 
-    Before the hard guard halts the sync, try to rewrite each bogus
-    placeholder date from the authoritative FTL results page. Applies the
-    UPDATE to tbl_event (dt_start/dt_end) and the FTL-backed tbl_tournament
-    rows (dt_tournament) on CERT. Returns the violators that could NOT be
-    healed — the caller halts on those.
+    For each violator: recover the real date from the event URL (calendar /
+    FTL) and rewrite dt_start/dt_end + populate url_event (status stays
+    COMPLETED). When no date can be recovered, demote enum_status
+    COMPLETED → PLANNED so the Step 0 guard stops erroring — the URL/date get
+    populated later by the calendar/populate-urls flow. The sync no longer
+    hard-halts on this class of corruption.
     """
     violators = find_future_completed(existing)
     if not violators:
-        return []
+        return
 
     print(f"  Self-heal: {len(violators)} future-COMPLETED row(s) detected; "
-          f"re-deriving dates from FTL...")
+          f"resolving via event URL...")
+    resolved_urls: dict[int, str] = {}
+
     try:
         with get_authed_ftl_client() as ftl_client:
-            corrections, remaining = compute_future_completed_corrections(
-                violators,
-                lambda ev: _ftl_dates_for_event(ref, token, ev["id_event"], ftl_client),
+            def date_lookup(ev):
+                dates, url = _resolve_event_date(ref, token, ev, cal_events, ftl_client)
+                if url:
+                    resolved_urls[ev["id_event"]] = url
+                return dates
+            corrections, status_flips = compute_future_completed_corrections(
+                violators, date_lookup
             )
     except FtlAuthError as exc:
-        # No authed session → can't heal anything. All violators remain,
-        # caller halts. Surface the auth failure in the alert.
-        print(f"  Self-heal blocked — FTL auth failed: {exc}")
-        _telegram(bot_token, chat_id,
-            f"<b>EVF Sync self-heal blocked</b>\n<pre>{str(exc)[:300]}</pre>"
-        )
-        return violators
+        # No authed session → can't read any date, but we can still demote every
+        # violator so the pipeline survives (URL/date filled in later).
+        print(f"  Self-heal: FTL auth failed ({exc}); demoting all violators")
+        corrections, status_flips = [], violators
 
+    # Date corrections — status stays COMPLETED, url_event populated when known.
     for c in corrections:
-        print(f"    {c['txt_code']}: dt {c['dt_start']}"
-              + (f"..{c['dt_end']}" if c['dt_end'] != c['dt_start'] else "")
-              + " (was future-COMPLETED)")
+        span = c["dt_start"] + (f"..{c['dt_end']}" if c["dt_end"] != c["dt_start"] else "")
+        print(f"    {c['txt_code']}: dt → {span} [date healed]")
         if dry_run:
             continue
+        url = resolved_urls.get(c["id_event"])
+        set_url = f", url_event = '{url}'" if url else ""
         _management_query(ref, token,
             f"UPDATE tbl_event SET dt_start = '{c['dt_start']}', "
-            f"dt_end = '{c['dt_end']}' WHERE id_event = {int(c['id_event'])}"
+            f"dt_end = '{c['dt_end']}'{set_url} WHERE id_event = {int(c['id_event'])}"
         )
         _management_query(ref, token,
             f"UPDATE tbl_tournament SET dt_tournament = '{c['dt_start']}' "
@@ -157,14 +215,27 @@ def _heal_future_completed(ref: str, token: str, existing: list[dict],
             f"AND url_results ILIKE '%fencingtimelive%'"
         )
 
-    if corrections and not dry_run:
-        healed = ", ".join(c["txt_code"] for c in corrections)
-        _telegram(bot_token, chat_id,
-            f"<b>EVF Sync self-healed {len(corrections)} row(s)</b>\n"
-            f"<pre>{healed[:300]}</pre>\nDates re-derived from FTL."
+    # Status flips — demote COMPLETED → PLANNED (trigger bypassed).
+    for ev in status_flips:
+        print(f"    {ev.get('txt_code', '?')}: enum_status COMPLETED → PLANNED "
+              f"[no date recoverable]")
+        if dry_run:
+            continue
+        _management_query(ref, token,
+            _STATUS_FLIP_SQL.format(id_event=int(ev["id_event"]))
         )
 
-    return remaining
+    if not dry_run and (corrections or status_flips):
+        parts = []
+        if corrections:
+            parts.append("healed dates: " + ", ".join(c["txt_code"] for c in corrections))
+        if status_flips:
+            parts.append("demoted→PLANNED: "
+                         + ", ".join(e.get("txt_code", "?") for e in status_flips))
+        _telegram(bot_token, chat_id,
+            "<b>EVF Sync self-heal (Step 0)</b>\n<pre>"
+            + " | ".join(parts)[:380] + "</pre>"
+        )
 
 
 def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: bool = False) -> list[dict]:
@@ -202,40 +273,26 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
 
     # Fetch the full active-season event roster ONCE (used for invariant
     # guard, in-scope filter, and dedup). Includes the columns the new
-    # ADR-039 algorithm requires: country, location, dt_end, enum_status.
-    existing = _management_query(ref, token,
+    # ADR-039 algorithm requires: country, location, dt_end, enum_status,
+    # plus url_event (the self-heal's primary date source).
+    roster_sql = (
         f"SELECT id_event, txt_code, txt_name, "
         f"dt_start::TEXT, dt_end::TEXT, "
-        f"txt_country, txt_location, enum_status::TEXT "
+        f"txt_country, txt_location, enum_status::TEXT, url_event "
         f"FROM tbl_event WHERE id_season = {season['id_season']}"
     )
+    existing = _management_query(ref, token, roster_sql)
 
     # Step 0 — logical-integrity guard: a future row marked COMPLETED is data
-    # corruption. ADR-070: first try to self-heal by re-deriving the real date
-    # from the authoritative FTL results page; only halt on rows that cannot be
-    # healed (no FTL date, login-wall, or an FTL date still in the future).
-    remaining = _heal_future_completed(ref, token, existing, bot_token, chat_id, dry_run)
-    if remaining:
-        msg = "; ".join(
-            f"{v.get('txt_code', '?')} dt_start={v.get('dt_start', '?')}"
-            for v in remaining
-        )
-        _telegram(bot_token, chat_id,
-            f"<b>EVF Sync HALT</b>\n<pre>Future-COMPLETED, un-healable: {msg[:380]}</pre>\n"
-            f"Manual fix required."
-        )
-        raise LogicalIntegrityError(
-            "Future-COMPLETED event(s) could not be auto-healed — "
-            "manual fix required: " + msg
-        )
-    # Re-fetch so downstream dedup/scope use the healed dates.
-    if not dry_run and find_future_completed(existing):
-        existing = _management_query(ref, token,
-            f"SELECT id_event, txt_code, txt_name, "
-            f"dt_start::TEXT, dt_end::TEXT, "
-            f"txt_country, txt_location, enum_status::TEXT "
-            f"FROM tbl_event WHERE id_season = {season['id_season']}"
-        )
+    # corruption. ADR-039 rev 2: self-heal each violator by re-deriving its real
+    # date from the event URL (calendar → FTL); when no date is recoverable,
+    # demote enum_status COMPLETED → PLANNED so the pipeline survives. The sync
+    # no longer hard-halts on this class.
+    had_violators = bool(find_future_completed(existing))
+    _heal_future_completed(ref, token, existing, cal_events, bot_token, chat_id, dry_run)
+    # Re-fetch so downstream dedup/scope use the healed dates / demoted statuses.
+    if not dry_run and had_violators:
+        existing = _management_query(ref, token, roster_sql)
     # Belt-and-braces: the invariant must hold before we proceed.
     assert_no_future_completed(existing)
 

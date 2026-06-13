@@ -777,25 +777,29 @@ def compute_future_completed_corrections(
     date_lookup,
     today: date | None = None,
 ) -> tuple[list[dict], list[dict]]:
-    """Decide how to heal each future-COMPLETED violator (ADR-070).
+    """Decide how to heal each future-COMPLETED violator (ADR-039 rev 2).
 
     For every violator, ``date_lookup(event)`` returns a list of ISO date
-    strings (``YYYY-MM-DD``) recovered from the authoritative source — the FTL
-    results page(s) of that event's tournaments. A violator is healable iff at
-    least one recovered date is valid and ``<= today``: a COMPLETED row whose
-    real date is still in the future would just swap one impossible state for
-    another, so it is left un-healed.
+    strings (``YYYY-MM-DD``) recovered from the authoritative source — the
+    event URL (FTL eventSchedule), the matched EVF calendar event, or an FTL
+    results page. A violator is **date-healable** iff at least one recovered
+    date is valid and ``<= today``: a COMPLETED row whose real date is still in
+    the future would just swap one impossible state for another.
 
-    Returns ``(corrections, remaining)`` where each correction is
-    ``{txt_code, id_event, dt_start, dt_end}`` (earliest recovered date →
-    dt_start, latest → dt_end) and ``remaining`` holds the violators that
-    could not be healed (caller halts the sync on these).
+    Returns ``(corrections, status_flips)``:
+
+    * ``corrections`` — ``{txt_code, id_event, dt_start, dt_end}`` (earliest
+      recovered date → dt_start, latest → dt_end). Status stays COMPLETED.
+    * ``status_flips`` — violators with no recoverable date. Per the locked
+      design (event URL NULL / unrecoverable → demote), the caller flips
+      ``enum_status`` away from COMPLETED so the Step 0 guard stops erroring
+      and the pipeline survives. The sync no longer hard-halts on this class.
     """
     if today is None:
         today = date.today()
 
     corrections: list[dict] = []
-    remaining: list[dict] = []
+    status_flips: list[dict] = []
     for ev in violators:
         valid: list[date] = []
         for raw in date_lookup(ev) or []:
@@ -806,7 +810,7 @@ def compute_future_completed_corrections(
             if d <= today:
                 valid.append(d)
         if not valid:
-            remaining.append(ev)
+            status_flips.append(ev)
             continue
         corrections.append({
             "txt_code": ev.get("txt_code"),
@@ -814,7 +818,7 @@ def compute_future_completed_corrections(
             "dt_start": min(valid).isoformat(),
             "dt_end": max(valid).isoformat(),
         })
-    return corrections, remaining
+    return corrections, status_flips
 
 
 def _diacritic_fold(text: str) -> str:

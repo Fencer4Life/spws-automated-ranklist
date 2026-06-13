@@ -696,21 +696,31 @@ and `PEW64s-2025-2026` (`2026-11-11`). Both are slices of the **BVF 6 Weapon
 International 2026** (Guildford, Jan 10–11), scored from FTL but left with placeholder
 filler dates during the EVF combined-pool re-fix.
 
-**Fix.** ADR-039 amended to rev 2: Step 0 now self-heals before halting. `sync_calendar`
-collects violators (`find_future_completed`), re-derives each real date from the
-authoritative (login-walled) FTL results page via the ADR-069 authed session
-(`get_authed_ftl_client` → `fetch_ftl_event_metadata`), and rewrites
-`tbl_event.dt_start`/`dt_end` + FTL-backed `tbl_tournament.dt_tournament` on CERT.
-Decision is a pure function (`compute_future_completed_corrections`); only un-healable
-rows (no FTL date / `FtlAuthError` / FTL date still future) keep the rev-1 hard halt.
-`evf-sync.yml` gained `FTL_USERNAME`/`FTL_PASSWORD` (the heal can't auth without them).
-Active seed `seed_prod_2026-06-03.sql` corrected to the real Jan dates. CERT self-heals
-on the next run; the calendar-promote job carries corrected dates to PROD.
+**Fix (rev 2, redesigned around the EVENT URL).** Step 0 self-heals and **never hard-halts**
+on this class. `sync_calendar` → `_heal_future_completed` recovers each violator's real date
+from the **event URL** (`tbl_event.url_event` → EVF-calendar match → FTL fallback; authed
+ADR-069 session; `fetch_ftl_event_metadata` now accepts both `eventSchedule` and `results`
+URL forms). Date-healable rows get `dt_start`/`dt_end` + `dt_tournament` rewritten and
+**`url_event` populated** (status stays COMPLETED). When no date is recoverable, the row's
+`enum_status` is demoted COMPLETED → PLANNED — bypassing the terminal-COMPLETED lifecycle
+trigger `trg_event_transition` — so the guard clears and the URL/date get filled later by
+the calendar / populate-urls flow. `compute_future_completed_corrections` is pure, returning
+`(corrections, status_flips)`. `evf-sync.yml` gained `FTL_USERNAME`/`FTL_PASSWORD`.
+
+**Diagnosis pivot.** The first attempt read tournament `url_results` (NULL on CERT) and
+re-halted. The real fix uses the event URL: PEW62/63e/64s are all the one Guildford event,
+whose FTL eventSchedule page (`…/E2A7B077F2824DD8A7F2E413B4211296`) yields Jan 10–11 2026.
+
+**Data fix.** On CERT, populated `url_event` (Guildford eventSchedule) + real dates on
+PEW62efs/PEW63e/PEW64s and their tournaments → 0 future-COMPLETED rows remain. PROD has none
+of these events. Active seed `seed_prod_2026-06-03.sql` updated (dates + url_event).
 
 **Known follow-up (out of scope, "just fix the dates").** `PEW64s-V1-M-SABRE` shares an
-FTL URL with `PEW62-V1-M-SABRE` — a likely double-count to reconcile separately.
+FTL URL with `PEW62-V1-M-SABRE` — a likely double-count to reconcile separately. (Tournament
+`url_results` left NULL on CERT to avoid re-introducing it.)
 
-**Tests.** +5 pytest (evf.44–evf.48): heal logic + orchestration. pytest 760, vitest 371.
+**Tests.** +8 pytest (evf.44–evf.50): heal logic, event-URL orchestration, trigger-bypassed
+status flip, eventSchedule URL parsing. pytest 763, vitest 371.
 pgTAP `09_rolling_score` pre-existing harness/seed-drift failures unchanged by this work
 (verified by reverting the seed edit — identical failure set).
 
