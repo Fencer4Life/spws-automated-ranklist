@@ -40,8 +40,8 @@ SELECT has_function(
 -- Two siblings (V0+V1) share url_results = 'https://test/joint' (joint pool).
 -- One standalone (V2) has a unique url_results = 'https://test/standalone'.
 -- Result rows: 4 V0 fencers in A, 3 V1 fencers in B, 5 V2 fencers in C.
--- Expected after backfill: A.flag=TRUE, B.flag=TRUE, A.count=B.count=7,
--- C unchanged.
+-- Expected after backfill: A.flag=TRUE, B.flag=TRUE, A.count=4, B.count=3
+-- (per-V-cat own count — ADR-049 amended 2026-06-04), C unchanged.
 DO $fix$
 DECLARE
   v_season INT;
@@ -136,12 +136,13 @@ SELECT is(
 );
 
 
--- ===== 25.5 — siblings get int_participant_count rewritten to full pool size =====
+-- ===== 25.5 — siblings get int_participant_count set to PER-V-CAT own count =====
+-- ADR-049 amended 2026-06-04: per-V-cat own count (V0=4, V1=3), NOT full pool (7,7).
 SELECT is(
   (SELECT array_agg(int_participant_count ORDER BY txt_code) FROM tbl_tournament
     WHERE txt_code IN ('VW25E-V0-F-EPEE', 'VW25E-V1-F-EPEE')),
-  ARRAY[7, 7],
-  '25.5: backfill rewrites int_participant_count to full pool size (4+3=7) on each sibling'
+  ARRAY[4, 3],
+  '25.5: backfill sets int_participant_count to per-V-cat own count (4 and 3), not summed full pool'
 );
 
 

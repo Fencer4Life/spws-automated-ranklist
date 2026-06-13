@@ -27,6 +27,7 @@ import io
 from python.pipeline.db_connector import create_db_connector
 from python.pipeline.draft_store import DraftStore
 from python.pipeline.review_cli import Fetcher, ReviewSession, _annotate_parsed
+from python.pipeline.types import HaltReason
 from python.tools.phase5_runner import (
     _fetch_event_meta,
     _coerce_date,
@@ -410,6 +411,63 @@ CHRONO_ORDER = [
 ]
 
 
+def _populate_tournament_urls(event_code: str) -> None:
+    """C3: fill empty per-bracket result URLs after commit via the existing
+    populate entry point. No-op when the commit already wrote them. Passes the
+    live SUPABASE_URL/KEY explicitly (create_db_connector reads SUPABASE_KEY;
+    populate reads SUPABASE_SERVICE_ROLE_KEY — handing them through keeps the
+    same env regardless of var name)."""
+    import os as _os
+    import subprocess as _subprocess
+    import sys as _sys
+    print(f"  populating tournament result URLs for {event_code}...", flush=True)
+    pop = _subprocess.run(
+        [_sys.executable, "-m", "python.tools.populate_tournament_urls",
+         "--event-code", event_code,
+         "--supabase-url", _os.environ.get("SUPABASE_URL", "http://127.0.0.1:54321"),
+         "--supabase-key", _os.environ.get("SUPABASE_KEY", "")],
+        capture_output=True, text=True,
+    )
+    if pop.stdout:
+        print(pop.stdout, flush=True)
+    if pop.stderr:
+        print(pop.stderr, flush=True)
+    if pop.returncode != 0:
+        print(f"  ⚠ populate_tournament_urls exited {pop.returncode} "
+              f"(commit already succeeded; URLs may need manual fill)", flush=True)
+
+
+def _post_commit_validate_counts(db, id_event: int, *, season_end_year: int):
+    """C2 (ADR-068): re-fetch each committed tournament's url_results and compare
+    its per-V-cat FTL membership to the stored int_participant_count. Returns a
+    list of CountFinding (halt = mismatch, warn = no-url/fetch-error).
+
+    Safe for this tool because it only ingests SPWS-domestic PPW events, where
+    everyone enters the ranklist so int_participant_count == per-V-cat bracket
+    size. (International events use ADR-038 full-field counts and must not be
+    validated this way.)"""
+    from python.scrapers.ftl_auth import get_authed_ftl_client
+    from python.pipeline.participant_count_validation import (
+        validate_event_participant_counts,
+    )
+    rows = (
+        db._sb.table("tbl_tournament")
+        .select("txt_code,enum_age_category,url_results,int_participant_count")
+        .eq("id_event", id_event)
+        .execute()
+    ).data or []
+    try:
+        with get_authed_ftl_client() as client:
+            vfetcher = Fetcher(http_client=client)
+            return validate_event_participant_counts(
+                rows, vfetcher, season_end_year=season_end_year,
+            )
+    except Exception as e:  # noqa: BLE001 — fetcher/auth unavailable → skip, warn
+        print(f"  ⚠ participant-count URL validation skipped "
+              f"(fetcher unavailable): {e}", flush=True)
+        return []
+
+
 def ingest_event(event_code: str, *, db, do_commit: bool) -> tuple[str | None, bool, str]:
     """
     Stage drafts for one event from its primary source. Optionally commit.
@@ -626,10 +684,33 @@ def ingest_event(event_code: str, *, db, do_commit: bool) -> tuple[str | None, b
     try:
         resp = db._sb.rpc("fn_commit_event_draft", {"p_run_id": session.run_id}).execute()
         print(f"  ✓ committed: {resp.data}", flush=True)
-        return session.run_id, True, "committed"
     except Exception as e:
         print(f"  ✗ commit failed: {e}", flush=True)
         return session.run_id, False, f"commit_failed: {e}"
+
+    # C3 — fill empty per-bracket result URLs (no-op if commit already wrote them)
+    _populate_tournament_urls(event_code)
+
+    # C2 (ADR-068) — post-commit per-tournament participant-count URL validation.
+    findings = _post_commit_validate_counts(
+        db, event_meta["id_event"], season_end_year=2026,
+    )
+    halts = [f for f in findings if f.severity == "halt"]
+    warns = [f for f in findings if f.severity == "warn"]
+    for f in halts:
+        print(f"  ❌ count-mismatch {f.txt_code}: {f.message}",
+              file=sys.stderr, flush=True)
+    if warns:
+        print(f"  ⚠ {len(warns)} participant-count check warning(s) "
+              f"(no URL / fetch error)", flush=True)
+    if halts:
+        return session.run_id, False, (
+            f"{HaltReason.PARTICIPANT_COUNT_MISMATCH.value}: {len(halts)} "
+            f"tournament(s) disagree with their result-URL bracket — event flagged"
+        )
+    print(f"  ✓ participant-count URL validation passed "
+          f"({len(halts)} mismatches, {len(warns)} warnings)", flush=True)
+    return session.run_id, True, "committed"
 
 
 def main() -> int:

@@ -3,7 +3,7 @@
 Tests 26.1-26.3: plan_joint_pool_actions() pure helper.
 Test 26.4: full main() integration — joint pool with empty sibling triggers
 DELETE, PATCH on remaining siblings, and POST p_participant_count =
-len(parsed_rows).
+per-V-cat slice size (ADR-049 amended 2026-06-04: per-V-cat, not full pool).
 """
 
 from __future__ import annotations
@@ -101,7 +101,7 @@ class TestMainJointPoolIntegration:
       - DELETE /rest/v1/tbl_tournament for the empty sibling
       - PATCH bool_joint_pool_split=TRUE on every non-empty sibling
       - POST fn_ingest_tournament_results with p_participant_count =
-        len(parsed_rows) (full physical pool size, not per-V-cat slice)
+        per-V-cat slice size (ADR-049 amended 2026-06-04: per-V-cat, not full pool)
     """
 
     def test_joint_pool_with_empty_sibling(self, monkeypatch):
@@ -237,8 +237,9 @@ class TestMainJointPoolIntegration:
             f"V1(1241). Got: {patched_ids}"
         )
 
-        # ----- Assert: POST p_participant_count = 7 (len(parsed_rows)) on each
-        # joint-pool sibling -----
+        # ----- Assert: POST p_participant_count = PER-V-CAT slice size on each
+        # joint-pool sibling (ADR-049 amended 2026-06-04: per-V-cat, not full
+        # pool). V0 bucket = 4 fencers, V1 bucket = 3. -----
         ingest_posts = [
             p for p in recorded["posts"]
             if "fn_ingest_tournament_results" in p["url"]
@@ -247,9 +248,12 @@ class TestMainJointPoolIntegration:
             f"Expected 2 ingest POSTs (one per non-empty sibling). "
             f"Got {len(ingest_posts)}."
         )
-        for post in ingest_posts:
-            body = post.get("json", {})
-            assert body.get("p_participant_count") == 7, (
-                f"Joint-pool ingest must pass p_participant_count = "
-                f"len(parsed_rows) = 7. Got {body.get('p_participant_count')}."
-            )
+        counts_by_tid = {
+            post.get("json", {}).get("p_tournament_id"):
+                post.get("json", {}).get("p_participant_count")
+            for post in ingest_posts
+        }
+        assert counts_by_tid == {1240: 4, 1241: 3}, (
+            f"Joint-pool ingest must pass per-V-cat slice size "
+            f"(V0=4, V1=3), not the summed full pool (7). Got {counts_by_tid}."
+        )

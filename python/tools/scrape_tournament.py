@@ -374,10 +374,12 @@ def main():
                 "enum_match_status": m.status,
             })
 
-        # ADR-049: joint-pool siblings carry the FULL physical pool size as
-        # int_participant_count; solo tournaments keep the per-V-cat slice
-        # count (== len(parsed_rows) in solo, since one bucket holds all rows).
-        p_count = len(parsed_rows) if is_joint else len(bucket_rows)
+        # ADR-049 (amended 2026-06-04): every tournament — joint-pool sibling
+        # or solo — carries its PER-V-CAT slice size as int_participant_count.
+        # The earlier full-physical-pool rule for joint pools is reversed:
+        # each V-cat is ranked and scored on its own field size, not the
+        # combined pool. See ADR-049 amendment + ADR-069.
+        p_count = len(bucket_rows)
         ingest_resp = httpx.post(
             f"{supabase_url}/rest/v1/rpc/fn_ingest_tournament_results",
             json={

@@ -40,6 +40,7 @@ class HaltReason(str, Enum):
     URL_DATA_MISMATCH = "URL_DATA_MISMATCH"
     OVERRIDE_INVALID = "OVERRIDE_INVALID"
     POOL_ROUND_DETECTED = "POOL_ROUND_DETECTED"  # Phase 5: structural pool-round detection
+    PARTICIPANT_COUNT_MISMATCH = "PARTICIPANT_COUNT_MISMATCH"  # ADR-069: post-commit URL count check
 
 
 class HaltError(Exception):

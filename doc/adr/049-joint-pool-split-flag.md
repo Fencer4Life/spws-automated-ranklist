@@ -79,3 +79,43 @@ PPW5-class rows (per-V-cat URLs, single physical pool) cannot be detected from e
   - 26.4 main(): full integration on joint pool with empty sibling — DELETE on V2, PATCH `bool_joint_pool_split=TRUE` on V0/V1, POST `p_participant_count = len(parsed_rows)` on each non-empty sibling
 
 Coverage updates: pgTAP totals +7; pytest totals +4 (354 passing, 9 skipped).
+
+## Amendment 2026-06-04 — count is per-V-cat, not full pool
+
+**Status:** Accepted (supersedes the count clause of the original Decision).
+**Relates to:** ADR-024 (Combined Category Splitting — per-category tournaments
+with independent placement), ADR-069 (participant-count URL validator).
+
+The original Decision set `int_participant_count` on every joint-pool sibling to
+the **full physical pool size** (sum of `tbl_result` rows across all siblings
+sharing one `url_results`). This is **reversed**: each V-cat sibling now stores
+its **own** result count.
+
+**Rationale (domain, SPWS):** each V-cat is ranked and scored on its own field
+size, even when fencers physically share one pool. Counting the combined pool
+inflated `int_participant_count` and over-credited ranking points (e.g.
+`PPW3-V0-M-FOIL` and `PPW3-V1-M-FOIL` shared a 3-fencer pool and were both
+stored as 3; correct is 2 and 1). This is consistent with ADR-024, which
+already mandates separate per-category tournaments with independent re-ranking;
+the full-pool count was the outlier.
+
+**What changes:**
+- `bool_joint_pool_split` is retained as an **informational badge only** — it
+  still flags siblings that share a `url_results`, but no longer drives the
+  count.
+- The count recompute in `fn_commit_event_draft` and the Step-2 recompute in
+  `fn_backfill_joint_pool_split` both switch from `GROUP BY url_results` (sum)
+  to `GROUP BY id_tournament` (each sibling's own result count). Migration
+  `20260604000001_adr049_amend_per_vcat_count.sql`.
+- The legacy `scrape_tournament.py` ingester contract (step 3) now passes
+  `p_participant_count = len(bucket_rows)` (per-V-cat slice) for joint pools too.
+
+**Scoring consequence:** joint-pool tournaments (the 14 combined-pool groups in
+PPW3/PPW4/PPW5) get smaller field sizes → fewer ranking points. `int_participant_count`
+is corrected on those events by re-scrape (also repairs result-row contamination)
+or by re-running `fn_backfill_joint_pool_split` (count only).
+
+**Tests:** 25.5 now asserts per-V-cat `[4, 3]` (was `[7, 7]`); new 27.27 asserts
+`fn_commit_event_draft` writes per-V-cat counts on joint siblings; 26.4 (pytest)
+asserts the ingester posts per-V-cat slice sizes. The pgTAP invariant
+`int_participant_count == own result count` for joint rows is the durable guard.
