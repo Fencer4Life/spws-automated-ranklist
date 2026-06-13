@@ -725,13 +725,13 @@ def is_in_scope(event: dict, today: date | None = None) -> bool:
     return (today - end).days < STALE_WINDOW_DAYS
 
 
-def assert_no_future_completed(events: list[dict], today: date | None = None) -> None:
-    """Raise LogicalIntegrityError if any row has dt_start > today AND
+def find_future_completed(events: list[dict], today: date | None = None) -> list[dict]:
+    """Return the rows that are future-COMPLETED — dt_start > today AND
     enum_status = 'COMPLETED' (ADR-039 Step 0).
 
-    A future event cannot have already completed — that's data corruption.
-    The caller must abort the sync, send a Telegram alert, and exit
-    non-zero so the admin notices and fixes the row manually.
+    A future event cannot have already completed; such a row is data
+    corruption. Shared by `assert_no_future_completed` (hard guard) and the
+    self-healing fallback (ADR-070).
     """
     if today is None:
         today = date.today()
@@ -746,7 +746,19 @@ def assert_no_future_completed(events: list[dict], today: date | None = None) ->
             continue
         if start > today:
             violators.append(ev)
+    return violators
 
+
+def assert_no_future_completed(events: list[dict], today: date | None = None) -> None:
+    """Raise LogicalIntegrityError if any row is future-COMPLETED (ADR-039 Step 0).
+
+    A future event cannot have already completed — that's data corruption.
+    The caller must abort the sync, send a Telegram alert, and exit non-zero
+    so the admin notices. As of ADR-070 the caller first attempts to
+    auto-heal each violator from its authoritative FTL date; this guard is the
+    last line of defence for rows that could not be healed.
+    """
+    violators = find_future_completed(events, today=today)
     if violators:
         msg_parts = []
         for v in violators:
@@ -758,6 +770,51 @@ def assert_no_future_completed(events: list[dict], today: date | None = None) ->
             "Future-COMPLETED event(s) detected — manual fix required: "
             + "; ".join(msg_parts)
         )
+
+
+def compute_future_completed_corrections(
+    violators: list[dict],
+    date_lookup,
+    today: date | None = None,
+) -> tuple[list[dict], list[dict]]:
+    """Decide how to heal each future-COMPLETED violator (ADR-070).
+
+    For every violator, ``date_lookup(event)`` returns a list of ISO date
+    strings (``YYYY-MM-DD``) recovered from the authoritative source — the FTL
+    results page(s) of that event's tournaments. A violator is healable iff at
+    least one recovered date is valid and ``<= today``: a COMPLETED row whose
+    real date is still in the future would just swap one impossible state for
+    another, so it is left un-healed.
+
+    Returns ``(corrections, remaining)`` where each correction is
+    ``{txt_code, id_event, dt_start, dt_end}`` (earliest recovered date →
+    dt_start, latest → dt_end) and ``remaining`` holds the violators that
+    could not be healed (caller halts the sync on these).
+    """
+    if today is None:
+        today = date.today()
+
+    corrections: list[dict] = []
+    remaining: list[dict] = []
+    for ev in violators:
+        valid: list[date] = []
+        for raw in date_lookup(ev) or []:
+            try:
+                d = datetime.strptime(str(raw), "%Y-%m-%d").date()
+            except (ValueError, TypeError):
+                continue
+            if d <= today:
+                valid.append(d)
+        if not valid:
+            remaining.append(ev)
+            continue
+        corrections.append({
+            "txt_code": ev.get("txt_code"),
+            "id_event": ev.get("id_event"),
+            "dt_start": min(valid).isoformat(),
+            "dt_end": max(valid).isoformat(),
+        })
+    return corrections, remaining
 
 
 def _diacritic_fold(text: str) -> str:

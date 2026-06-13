@@ -25,8 +25,16 @@ from python.scrapers.evf_calendar import (
     match_scraped_to_existing,
     is_in_scope,
     assert_no_future_completed,
+    find_future_completed,
+    compute_future_completed_corrections,
     LogicalIntegrityError,
     STALE_WINDOW_DAYS,
+)
+from python.scrapers.ftl import fetch_ftl_event_metadata
+from python.scrapers.ftl_auth import (
+    get_authed_ftl_client,
+    normalize_ftl_url,
+    FtlAuthError,
 )
 from python.scrapers.evf_results import (
     EvfApiClient,
@@ -78,6 +86,83 @@ def _get_active_season(ref: str, token: str) -> dict | None:
     return rows[0] if rows else None
 
 
+def _ftl_dates_for_event(ref: str, token: str, id_event: int, ftl_client) -> list[str]:
+    """Re-derive an event's real date(s) from the FTL results pages of its
+    tournaments (ADR-070). Returns every ISO date FTL yields across the event's
+    FTL-backed brackets; an empty list means nothing was recoverable."""
+    rows = _management_query(ref, token,
+        f"SELECT url_results FROM tbl_tournament "
+        f"WHERE id_event = {int(id_event)} "
+        f"AND url_results ILIKE '%fencingtimelive%'"
+    )
+    dates: list[str] = []
+    for row in rows:
+        url = row.get("url_results")
+        if not url:
+            continue
+        meta = fetch_ftl_event_metadata(normalize_ftl_url(url), ftl_client)
+        if meta and meta.get("date"):
+            dates.append(meta["date"])
+    return dates
+
+
+def _heal_future_completed(ref: str, token: str, existing: list[dict],
+                           bot_token: str, chat_id: str,
+                           dry_run: bool = False) -> list[dict]:
+    """Self-healing fallback for future-COMPLETED rows (ADR-070).
+
+    Before the hard guard halts the sync, try to rewrite each bogus
+    placeholder date from the authoritative FTL results page. Applies the
+    UPDATE to tbl_event (dt_start/dt_end) and the FTL-backed tbl_tournament
+    rows (dt_tournament) on CERT. Returns the violators that could NOT be
+    healed — the caller halts on those.
+    """
+    violators = find_future_completed(existing)
+    if not violators:
+        return []
+
+    print(f"  Self-heal: {len(violators)} future-COMPLETED row(s) detected; "
+          f"re-deriving dates from FTL...")
+    try:
+        with get_authed_ftl_client() as ftl_client:
+            corrections, remaining = compute_future_completed_corrections(
+                violators,
+                lambda ev: _ftl_dates_for_event(ref, token, ev["id_event"], ftl_client),
+            )
+    except FtlAuthError as exc:
+        # No authed session → can't heal anything. All violators remain,
+        # caller halts. Surface the auth failure in the alert.
+        _telegram(bot_token, chat_id,
+            f"<b>EVF Sync self-heal blocked</b>\n<pre>{str(exc)[:300]}</pre>"
+        )
+        return violators
+
+    for c in corrections:
+        print(f"    {c['txt_code']}: dt {c['dt_start']}"
+              + (f"..{c['dt_end']}" if c['dt_end'] != c['dt_start'] else "")
+              + " (was future-COMPLETED)")
+        if dry_run:
+            continue
+        _management_query(ref, token,
+            f"UPDATE tbl_event SET dt_start = '{c['dt_start']}', "
+            f"dt_end = '{c['dt_end']}' WHERE id_event = {int(c['id_event'])}"
+        )
+        _management_query(ref, token,
+            f"UPDATE tbl_tournament SET dt_tournament = '{c['dt_start']}' "
+            f"WHERE id_event = {int(c['id_event'])} "
+            f"AND url_results ILIKE '%fencingtimelive%'"
+        )
+
+    if corrections and not dry_run:
+        healed = ", ".join(c["txt_code"] for c in corrections)
+        _telegram(bot_token, chat_id,
+            f"<b>EVF Sync self-healed {len(corrections)} row(s)</b>\n"
+            f"<pre>{healed[:300]}</pre>\nDates re-derived from FTL."
+        )
+
+    return remaining
+
+
 def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: bool = False) -> list[dict]:
     """Scrape EVF calendar (past+future) and sync to CERT.
 
@@ -121,16 +206,34 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
         f"FROM tbl_event WHERE id_season = {season['id_season']}"
     )
 
-    # Step 0 — logical-integrity guard: a future row marked COMPLETED is
-    # data corruption; halt the sync and alert the admin.
-    try:
-        assert_no_future_completed(existing)
-    except LogicalIntegrityError as exc:
+    # Step 0 — logical-integrity guard: a future row marked COMPLETED is data
+    # corruption. ADR-070: first try to self-heal by re-deriving the real date
+    # from the authoritative FTL results page; only halt on rows that cannot be
+    # healed (no FTL date, login-wall, or an FTL date still in the future).
+    remaining = _heal_future_completed(ref, token, existing, bot_token, chat_id, dry_run)
+    if remaining:
+        msg = "; ".join(
+            f"{v.get('txt_code', '?')} dt_start={v.get('dt_start', '?')}"
+            for v in remaining
+        )
         _telegram(bot_token, chat_id,
-            f"<b>EVF Sync HALT</b>\n<pre>{str(exc)[:400]}</pre>\n"
+            f"<b>EVF Sync HALT</b>\n<pre>Future-COMPLETED, un-healable: {msg[:380]}</pre>\n"
             f"Manual fix required."
         )
-        raise
+        raise LogicalIntegrityError(
+            "Future-COMPLETED event(s) could not be auto-healed — "
+            "manual fix required: " + msg
+        )
+    # Re-fetch so downstream dedup/scope use the healed dates.
+    if not dry_run and find_future_completed(existing):
+        existing = _management_query(ref, token,
+            f"SELECT id_event, txt_code, txt_name, "
+            f"dt_start::TEXT, dt_end::TEXT, "
+            f"txt_country, txt_location, enum_status::TEXT "
+            f"FROM tbl_event WHERE id_season = {season['id_season']}"
+        )
+    # Belt-and-braces: the invariant must hold before we proceed.
+    assert_no_future_completed(existing)
 
     # Match scraped events against the FULL existing roster (so a COMPLETED
     # PEW7 still hides Salzburg from being auto-created as a venue-coded
