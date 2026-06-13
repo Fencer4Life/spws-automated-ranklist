@@ -95,6 +95,7 @@ def _ftl_dates_for_event(ref: str, token: str, id_event: int, ftl_client) -> lis
         f"WHERE id_event = {int(id_event)} "
         f"AND url_results ILIKE '%fencingtimelive%'"
     )
+    print(f"    id_event={id_event}: {len(rows)} FTL-backed tournament URL(s)")
     dates: list[str] = []
     for row in rows:
         url = row.get("url_results")
@@ -103,6 +104,8 @@ def _ftl_dates_for_event(ref: str, token: str, id_event: int, ftl_client) -> lis
         meta = fetch_ftl_event_metadata(normalize_ftl_url(url), ftl_client)
         if meta and meta.get("date"):
             dates.append(meta["date"])
+        else:
+            print(f"      no date from {url[:80]} (meta={meta})")
     return dates
 
 
@@ -132,6 +135,7 @@ def _heal_future_completed(ref: str, token: str, existing: list[dict],
     except FtlAuthError as exc:
         # No authed session → can't heal anything. All violators remain,
         # caller halts. Surface the auth failure in the alert.
+        print(f"  Self-heal blocked — FTL auth failed: {exc}")
         _telegram(bot_token, chat_id,
             f"<b>EVF Sync self-heal blocked</b>\n<pre>{str(exc)[:300]}</pre>"
         )
