@@ -360,7 +360,7 @@ authorization_url_path = "/oauth/consent"
 allow_dynamic_registration = false
 
 [edge_runtime]
-enabled = false
+enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
 # `per_worker` (default) — enables hot reload during local development.
 # `oneshot` — fallback mode if hot reload causes issues (e.g. in large repos or with symlinks).
@@ -370,8 +370,9 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
+# Edge function secrets are loaded from supabase/functions/.env (gitignored).
+# See that file for GH_DISPATCH_PAT and GH_REPO.
 # [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
 
 # ADR-041: Server-side workflow dispatch. PAT lives only as a Supabase env
 # secret (GH_DISPATCH_PAT, GH_REPO) — never in the browser.
