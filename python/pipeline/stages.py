@@ -23,7 +23,8 @@ import re
 from collections import defaultdict
 from typing import Any
 
-from python.matcher.fuzzy_match import find_best_match
+from python.matcher.fuzzy_match import find_best_match, normalize_name, parse_scraped_name
+from python.matcher.pipeline import estimate_birth_year
 from python.pipeline.types import (
     HaltError,
     HaltReason,
@@ -66,6 +67,216 @@ def _is_domestic(event: dict | None) -> bool:
     AUTO_CREATED (domestic) vs EXCLUDED (international) for unmatched rows.
     """
     return _organizer_for_event(event) == "SPWS"
+
+
+# ===========================================================================
+# S0 — Roster reconciliation (ADR-050 / ADR-056 / ADR-010 / ADR-038)
+# ===========================================================================
+
+# 2-letter → IOC 3-letter nationality folding. Only the bulk POL case actually
+# matters for the high-precision dedup (a stored "PL" must not look different
+# from a scraped "POL", or we would create a duplicate of an existing Pole).
+# Foreign newcomers don't exact-name-collide, so an exhaustive table is moot.
+_NAT_FOLD = {"PL": "POL"}
+
+# FTL (N) age marker / category_hint digit → V-cat token.
+_VCAT_DIGIT = re.compile(r"([0-4])")
+
+
+def _norm_nat(nat: str | None) -> str | None:
+    """Fold a nationality code to a comparable form (uppercase, PL→POL)."""
+    if not nat:
+        return None
+    n = nat.strip().upper()
+    return _NAT_FOLD.get(n, n)
+
+
+def _row_authoritative_vcat(ctx: PipelineContext, r: Any) -> str | None:
+    """The V-cat that authoritatively governs this result row.
+
+    Precedence (per ADR-056 / Stage-0 plan):
+      1. bracket `category_hint` — single-cat brackets carry the V-cat label.
+      2. per-fencer FTL `(N)` `raw_age_marker` — combined pools mark each row.
+      3. None — unmarked fencer in a combined pool (V-cat unknown).
+    """
+    ch = getattr(ctx.parsed, "category_hint", None)
+    if isinstance(ch, str):
+        m = _VCAT_DIGIT.search(ch)
+        if m:
+            return f"V{m.group(1)}"
+    rm = getattr(r, "raw_age_marker", None)
+    if rm is not None:
+        m = _VCAT_DIGIT.search(str(rm))
+        if m:
+            return f"V{m.group(1)}"
+    return None
+
+
+def _find_exact_fencer(
+    scraped_name: str, nationality: str | None, fencer_db: list[dict],
+) -> int | None:
+    """HIGH-PRECISION existence check — exact, NOT fuzzy.
+
+    A fencer is the same person iff the normalized (surname, first_name) match
+    exactly, OR the scraped full name equals one of their stored aliases. When
+    both nationalities are known and differ (folded), they are treated as
+    DIFFERENT people (a foreign newcomer who collides on an exact Polish name
+    must still be created separately). Diacritics are folded so BARAŃSKI ==
+    BARANSKI; this is the same normalization the fuzzy matcher uses, but here
+    we require an EXACT post-fold equality, never a distance score.
+
+    Returns the matching id_fencer, or None.
+    """
+    s_sur, s_fst = parse_scraped_name(scraped_name)
+    s_sur_n = normalize_name(s_sur, use_diacritic_folding=True)
+    s_fst_n = normalize_name(s_fst, use_diacritic_folding=True)
+    s_full_n = normalize_name(scraped_name, use_diacritic_folding=True)
+    scraped_nat = _norm_nat(nationality)
+
+    for f in fencer_db:
+        f_nat = _norm_nat(f.get("txt_nationality"))
+        nat_conflict = (
+            scraped_nat is not None and f_nat is not None and scraped_nat != f_nat
+        )
+        # Exact (surname, first_name) match.
+        f_sur_n = normalize_name(f.get("txt_surname") or "", use_diacritic_folding=True)
+        f_fst_n = normalize_name(f.get("txt_first_name") or "", use_diacritic_folding=True)
+        if f_sur_n == s_sur_n and f_fst_n == s_fst_n and not nat_conflict:
+            return f["id_fencer"]
+        # Exact alias match (aliases are confirmed equivalences → nationality
+        # is not re-litigated here).
+        for alias in (f.get("json_name_aliases") or []):
+            if normalize_name(alias, use_diacritic_folding=True) == s_full_n:
+                return f["id_fencer"]
+    return None
+
+
+def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
+    """Stage 0 — reconcile the master roster against this bracket's rows.
+
+    Runs FIRST, before the fuzzy matcher (s6), so that genuinely-new
+    participants exist in master data (the matcher then exact-matches them
+    instead of fuzzy-gluing them to the nearest existing name), and so that
+    every fencer's stored birth year stays consistent with the V-cat of the
+    brackets they actually competed in (ADR-010: ranking category is
+    BY-derived, so a wrong/estimated BY files a result under the wrong
+    ranking).
+
+    Two mirror jobs per row, keyed on the row's authoritative V-cat:
+      1. NEW fencer (high-precision exact dedup) → create with
+         int_birth_year = band midpoint (NULL if V-cat unknown),
+         bool_birth_year_estimated = TRUE.
+      2. MATCHED fencer whose stored BY conflicts with the bracket V-cat →
+         correct to the band midpoint. Estimated keeps the flag; CONFIRMED is
+         overwritten AND downgraded to estimated (surfaced loudly).
+
+    International events (PEW/MEW/MSW, ADR-038) are skipped entirely. Never
+    halts; on any condition it can't act on, it leaves the row for downstream
+    stages / admin. Idempotent: the exact check prevents re-creation and a
+    BY already at its band midpoint produces no further conflict.
+    """
+    # ADR-038: skip international/EXCLUDED events. Derive organizer from the
+    # admin-canonical event code (available at construction; ctx.event isn't
+    # resolved until S2, keeping S0 source-agnostic).
+    if _organizer_for_event({"txt_code": ctx.event_code}) in ("EVF", "FIE"):
+        return
+
+    season_end = ctx.season_end_year
+    bracket_gender = getattr(ctx.parsed, "gender", None)
+    source = getattr(ctx.parsed.source_kind, "value", str(ctx.parsed.source_kind))
+
+    fencer_db = db.fetch_fencer_db()
+    # Track per-run touches so a fencer appearing in two conflicting brackets
+    # within one run is flagged once, not thrashed back and forth.
+    touched: dict[int, str] = {}
+
+    for r in ctx.parsed.results:
+        if getattr(r, "bool_excluded", False):
+            continue
+
+        vcat = _row_authoritative_vcat(ctx, r)
+        nat = getattr(r, "fencer_country", None)
+        existing_id = _find_exact_fencer(r.fencer_name, nat, fencer_db)
+
+        if existing_id is None:
+            # ---- Job 1: create the new participant ----
+            surname, first_name = parse_scraped_name(r.fencer_name)
+            by = estimate_birth_year(vcat, season_end) if vcat else None
+            payload = {
+                "txt_surname": surname,
+                "txt_first_name": first_name,
+                "int_birth_year": by,
+                "bool_birth_year_estimated": by is not None,
+                "txt_nationality": nat or "PL",
+            }
+            if bracket_gender:
+                payload["enum_gender"] = bracket_gender
+            new_id = db.insert_fencer(payload)
+            # Make subsequent rows in this same bracket see the new fencer
+            # (within-run idempotence + dedup).
+            fencer_db.append({
+                "id_fencer": new_id,
+                "txt_surname": surname,
+                "txt_first_name": first_name,
+                "int_birth_year": by,
+                "bool_birth_year_estimated": by is not None,
+                "txt_nationality": nat or "PL",
+                "enum_gender": bracket_gender,
+                "json_name_aliases": [],
+            })
+            ctx.created_fencers.append({
+                "id_fencer": new_id,
+                "scraped_name": r.fencer_name,
+                "txt_surname": surname,
+                "txt_first_name": first_name,
+                "nationality": nat or "PL",
+                "vcat": vcat,
+                "birth_year": by,
+                "estimated": by is not None,
+                "source": source,
+            })
+            continue
+
+        # ---- Job 2: reconcile a matched fencer's birth year ----
+        if vcat is None:
+            continue  # no authoritative V-cat → nothing to reconcile against
+
+        row = next((f for f in fencer_db if f["id_fencer"] == existing_id), None)
+        stored_by = row.get("int_birth_year") if row else None
+        if stored_by is None:
+            continue  # missing BY is an admin task, not a conflict to correct
+
+        current_vcat = vcat_for_age(season_end - stored_by)
+        if current_vcat == vcat:
+            continue  # already consistent
+
+        # Conflict. Guard against cross-bracket thrash within one run.
+        if existing_id in touched and touched[existing_id] != vcat:
+            ctx.reconcile_conflicts.append({
+                "id_fencer": existing_id,
+                "scraped_name": r.fencer_name,
+                "first_vcat": touched[existing_id],
+                "second_vcat": vcat,
+                "source": source,
+            })
+            continue
+
+        new_by = estimate_birth_year(vcat, season_end)
+        was_confirmed = not bool(row.get("bool_birth_year_estimated"))
+        db.update_fencer_birth_year(existing_id, new_by, estimated=True)
+        if row is not None:
+            row["int_birth_year"] = new_by
+            row["bool_birth_year_estimated"] = True
+        touched[existing_id] = vcat
+        ctx.reconciled_fencers.append({
+            "id_fencer": existing_id,
+            "scraped_name": r.fencer_name,
+            "vcat": vcat,
+            "old_birth_year": stored_by,
+            "new_birth_year": new_by,
+            "was_confirmed": was_confirmed,
+            "source": source,
+        })
 
 
 # ===========================================================================

@@ -26,3 +26,17 @@ Rank fencers by their birth-year-derived category using `fn_age_category(birth_y
 - Cross-category carryover: BARAŃSKI (born 1964, V3 by birth year) with V2 tournament results appears in V3 ranking but NOT in V2 ranking (tests 5.14–5.15).
 - Python matcher: `season_end_year` (not `tournament_year`) used throughout `fuzzy_match.py` and `pipeline.py` for consistency.
 - Identity resolution: `birth_year_matches_category()` uses the same age ranges for duplicate name disambiguation (ADR cross-ref: no conflict with ADR-003 Identity by FK).
+
+## Amendment (2026-06-13) — Stage-0 keeps stored BY consistent with brackets
+
+Because ranking category is BY-derived (`fn_age_category(birth_year, season_end)`),
+a wrong/estimated birth year files a result under the *wrong* ranking. The new
+Stage-0 reconciliation (ADR-056, 2026-06-13) makes this self-correcting at
+ingestion: when a matched fencer's stored BY implies a different V-cat than the
+bracket they actually competed in, Stage 0 corrects the BY to that band's
+midpoint (estimated kept; CONFIRMED downgraded + surfaced loudly). New
+participants are created up front with an estimated band-midpoint BY so they
+land in the correct ranking immediately. The estimate convention is the band
+midpoint (V0→35 … V4→75, season-relative), replacing the youngest-edge —
+ranking-neutral because both map to the same band. This ADR's BY-derived ranking
+is the justification for that reconciliation.

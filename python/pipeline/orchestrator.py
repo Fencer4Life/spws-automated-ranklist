@@ -45,6 +45,8 @@ from python.pipeline.types import HaltError, Overrides, PipelineContext
 # the `stages` module on each call (so monkeypatch.setattr(stages, name, fn)
 # is honoured) rather than capturing function references at import time.
 _STAGE_NAMES = (
+    "s0_reconcile_roster",  # ADR-050/056/010/038: create new participants +
+                            # reconcile conflicting birth years BEFORE matching
     "s1_validate_ir",
     "s2_resolve_event",
     "s3_detect_combined_pool",

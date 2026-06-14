@@ -728,6 +728,62 @@ pgTAP `09_rolling_score` pre-existing harness/seed-drift failures unchanged by t
 
 ---
 
+### Stage 0 — roster reconciliation in the unified pipeline (ADR-056 rev) — 2026-06-13
+
+**Goal.** Stop "class-B" contamination: genuinely-new participants (e.g. the
+foreign women in PPW3's combined women's épée pool `E81CEE6F` — RABAB,
+MITSKEVICH, KALECKA, SKRINSKAITĖ, RIVERA CASTRO, …) were being fuzzy-glued by
+the matcher onto the nearest existing Polish name, and stored birth years
+drifted out of step with the V-cat brackets fencers actually competed in
+(ADR-010: ranking category is BY-derived).
+
+**Change.** New FIRST pipeline stage `s0_reconcile_roster` (registered before
+`s1_validate_ir` in `python/pipeline/orchestrator.py`), source-agnostic at the
+IR layer, running before the matcher. Two mirror jobs per row, keyed on the
+row's authoritative V-cat (bracket `category_hint` → else FTL `(N)`
+`raw_age_marker` → else unknown): (1) create absent participants by a
+HIGH-PRECISION exact check (normalized surname+first+alias, nationality-folded;
+NOT fuzzy) with an estimated band-midpoint BY (NULL when V-cat unmarked); (2)
+correct a matched fencer's stored BY that conflicts with the bracket V-cat to the
+band midpoint — estimated kept, **CONFIRMED overwritten + downgraded to
+estimated** and surfaced loudly in the staging .md top blocks + the admin
+Birth-year review tab. International (PEW/MEW/MSW) events skipped (ADR-038).
+Idempotent; never halts.
+
+**Estimate convention.** Changed the BY estimate from the band youngest-edge to
+the band **MIDPOINT** anchor (V0→35, V1→45, V2→55, V3→65, V4→75; season-relative)
+in `python/matcher/pipeline.py::estimate_birth_year` (single source of truth),
+mirrored in `frontend/src/lib/birthYearEstimate.ts` + the runner's
+`_estimate_birth_year_for_vcat`. Ranking-neutral (both map to the same band). A
+one-time guarded backfill migration `20260613000002` re-midpoints existing
+estimated fencers, rewriting a BY only when `fn_age_category` is unchanged for
+every result-season (neutral by construction).
+
+**Reuse, no new DB objects.** Creation uses the existing `db.insert_fencer`;
+reconciliation uses the existing `fn_update_fencer_birth_year` RPC (audit-logged).
+No new RPC, no new column (reuses `bool_birth_year_estimated`).
+
+**Tests.** pytest `test_s0_reconcile_roster.py` (28 assertions: midpoint,
+authoritative-V-cat, high-precision create incl. NULL-BY/alias/nationality-fold,
+reconcile estimated+confirmed, international-skip, idempotence, cross-bracket
+conflict, staging-md) + updated `test_matcher` midpoint expectations; pgTAP
+`43_stage0_reconciliation.sql` (RPC transitions + audit-trigger preservation +
+NULL/midpoint inserts); vitest `birthYearEstimate` midpoint + `BirthYearReview`
+9.111b (inconsistency flag for estimated/downgraded BYs). All three suites green
+(pytest 791, vitest 372, pgTAP 577).
+
+**E2E (LOCAL).** `reset-dev.sh` → ingest PPW3: the 9 unmarked women created with
+NULL BY + flagged (BLR/LTU/CRC nationalities), NOT glued to Poles (329→359
+fencers); two real CONFIRMED→downgraded reconciliations surfaced (POKRYWA,
+PAWŁOWSKI); constructed estimated-conflict reconciled to band midpoint.
+
+**ADRs.** Amended ADR-056 (Stage-0 rev + midpoint table), ADR-050 (s0 stage),
+ADR-010 (BY-derived justification), ADR-038 (skip international). No new ADRs.
+
+**Memory.** [project_stage0_reconciliation_done_2026-06-13.md](../doc-redacted-path).
+
+---
+
 ## Archived Documents
 
 The following documents contain the original detailed plans. They are superseded by this history and the Project Specification:

@@ -170,6 +170,24 @@ describe('BirthYearReview (ADR-035)', () => {
     expect(flag).not.toBeNull()
   })
 
+  // 9.111b (ADR-056 Stage-0) — inconsistency flag ALSO shows for an ESTIMATED
+  // birth year that conflicts with a bracket the fencer competed in. This is
+  // the loud admin signal for a was-CONFIRMED→downgraded reconciliation (or any
+  // estimated BY that disagrees with an organizer's bracket placement).
+  it('inconsistency flag shown for estimated (downgraded) birth year mismatch', async () => {
+    const onfetchhistory = vi.fn().mockResolvedValue(MOCK_HISTORY)
+    // estimated=true, BY 1950 → age 75 in 2025 → V4, but competed in V2.
+    const downgraded = [
+      { id_fencer: 6, txt_surname: 'OBNIZONY', txt_first_name: 'Jan', int_birth_year: 1950, txt_club: null, enum_gender: 'M' as const, bool_birth_year_estimated: true, txt_nationality: 'PL' },
+    ]
+    const { container } = render(BirthYearReview, { props: { ...defaultProps, fencers: downgraded, onfetchhistory } })
+    const rows = container.querySelectorAll('[data-field="fencer-row"]')
+    await fireEvent.click(rows[0].querySelector('.card-header')!)
+    await new Promise(r => setTimeout(r, 10))
+    const flag = container.querySelector('[data-field="inconsistency-flag"]')
+    expect(flag).not.toBeNull()
+  })
+
   // 9.112 — Count badges reflect filter counts
   it('count badges reflect filter counts', () => {
     const { container } = render(BirthYearReview, { props: defaultProps })

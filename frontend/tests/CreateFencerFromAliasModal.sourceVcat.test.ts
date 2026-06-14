@@ -26,13 +26,13 @@ describe('CreateFencerFromAliasModal — source V-cat (5.18.5)', () => {
 
   // 5.18.5.1 — when sourceCategoryHint is set, BY pre-fills from SOURCE,
   // not from categoryHint (destination).
-  it('pre-fills BY from sourceCategoryHint (V2 → 1974), ignoring destination V0', () => {
+  it('pre-fills BY from sourceCategoryHint (V2 → 1969), ignoring destination V0', () => {
     const { container } = render(CreateFencerFromAliasModal, { props: baseProps })
     const by = container.querySelector('[data-field="birth-year-input"]') as HTMLInputElement
-    // V2 + season-end 2024 → suggested 1974
-    expect(by.value).toBe('1974')
-    // NOT 1994 (V0 estimate)
-    expect(by.value).not.toBe('1994')
+    // V2 + season-end 2024 → suggested 1969 (midpoint anchor 55)
+    expect(by.value).toBe('1969')
+    // NOT 1989 (V0 midpoint estimate)
+    expect(by.value).not.toBe('1989')
   })
 
   // 5.18.5.2 — falls back to categoryHint (destination) when source is null
@@ -41,8 +41,8 @@ describe('CreateFencerFromAliasModal — source V-cat (5.18.5)', () => {
       props: { ...baseProps, sourceCategoryHint: null, categoryHint: 'V1' },
     })
     const by = container.querySelector('[data-field="birth-year-input"]') as HTMLInputElement
-    // V1 + 2024 → 1984
-    expect(by.value).toBe('1984')
+    // V1 + 2024 → 1979 (midpoint anchor 45)
+    expect(by.value).toBe('1979')
   })
 
   // 5.18.5.3 — renders a clickable link to sourceBracketUrl so the operator

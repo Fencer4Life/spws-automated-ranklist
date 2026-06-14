@@ -1017,12 +1017,12 @@ def _estimate_birth_year_for_vcat(
     V1 40-49, V2 50-59, V3 60-69, V4 ≥70 — measured at season-end-year.
 
     Returns:
-        (suggested_BY, range_str) — suggested_BY is the YOUNGEST eligible
-        year for the V-cat (most common case for vet brackets); range_str
-        is "1964–1973" or similar for context. Returns (None, "—") when
-        season_end_year is unknown or vcat doesn't map.
+        (suggested_BY, range_str) — suggested_BY is the band MIDPOINT anchor
+        (ADR-056 Stage-0 convention, 2026-06-13: V0→35, V1→45, V2→55, V3→65,
+        V4→75); range_str is the full band "1965–1974" or similar for context.
+        Returns (None, "—") when season_end_year is unknown or vcat doesn't map.
 
-    Example: V2 + season_end_year=2023 → (1973, "1964–1973").
+    Example: V2 + season_end_year=2024 → (1969, "1965–1974").
     """
     if not season_end_year or not vcat:
         return None, "—"
@@ -1039,8 +1039,12 @@ def _estimate_birth_year_for_vcat(
     age_min, age_max = band
     by_max = season_end_year - age_min if age_min is not None else season_end_year - 30
     by_min = (season_end_year - age_max) if age_max is not None else 1900
-    # Suggest the YOUNGEST eligible year (= largest BY)
-    return by_max, f"{by_min}–{by_max}"
+    # Suggest the band MIDPOINT — must match python.matcher.pipeline
+    # estimate_birth_year (the single source of truth) so the staging-.md
+    # "calc BY" equals what Stage 0 actually wrote.
+    from python.matcher.pipeline import estimate_birth_year
+    suggested = estimate_birth_year(vcat, season_end_year)
+    return suggested, f"{by_min}–{by_max}"
 
 
 def _classify_alias_pair(scraped: str, canonical: str) -> tuple[str, str]:
@@ -1462,6 +1466,108 @@ def _format_pending_alias_writes_section(pending: list) -> list[str]:
     return lines
 
 
+def _format_stage0_section(ctxs: list) -> list[str]:
+    """Render the Stage-0 roster-reconciliation top blocks (ADR-050/056).
+
+    Aggregates `created_fencers` / `reconciled_fencers` / `reconcile_conflicts`
+    across every bracket ctx in this run. Two blocks placed at the TOP of the
+    staging .md so the operator confirms newly-created birth years and catches
+    was-CONFIRMED→downgraded reconciliations before signing off.
+    """
+    created: list[dict] = []
+    reconciled: list[dict] = []
+    conflicts: list[dict] = []
+    for entry in ctxs:
+        ctx = entry[2] if len(entry) > 2 else None
+        if ctx is None:
+            continue
+        created.extend(getattr(ctx, "created_fencers", []) or [])
+        reconciled.extend(getattr(ctx, "reconciled_fencers", []) or [])
+        conflicts.extend(getattr(ctx, "reconcile_conflicts", []) or [])
+
+    # De-dupe by id_fencer (a created fencer can recur across sibling brackets).
+    def _dedupe(rows: list[dict]) -> list[dict]:
+        seen: set = set()
+        out: list[dict] = []
+        for r in rows:
+            key = r.get("id_fencer")
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(r)
+        return out
+
+    created = _dedupe(created)
+    reconciled = _dedupe(reconciled)
+
+    lines: list[str] = []
+    if not created and not reconciled and not conflicts:
+        return lines
+
+    if created:
+        lines.append("## 🆕 New fencers created this ingestion — CONFIRM BIRTH YEARS")
+        lines.append("")
+        lines.append("Stage 0 created these participants by HIGH-PRECISION exact "
+                     "match (not fuzzy), so the matcher links results to them "
+                     "rather than gluing to a wrong existing name. Birth years are "
+                     "**estimated** band midpoints (or `—` when the V-cat was "
+                     "unmarked); confirm/edit them in the **Birth-year review** "
+                     "admin tab.")
+        lines.append("")
+        lines.append("| Name | Nat | V-cat | calc BY | flag | source |")
+        lines.append("|---|---|---|---|---|---|")
+        for c in created:
+            by = c.get("birth_year")
+            by_cell = str(by) if by is not None else "—"
+            flag = "🟡 estimated" if c.get("estimated") else "🔴 missing"
+            lines.append(
+                f"| {c.get('scraped_name', '?')} | {c.get('nationality') or '—'} "
+                f"| {c.get('vcat') or '—'} | {by_cell} | {flag} "
+                f"| {c.get('source', '?')} |"
+            )
+        lines.append("")
+
+    if reconciled:
+        lines.append("## ✏️ Birth years adjusted this ingestion")
+        lines.append("")
+        lines.append("Stage 0 corrected a stored birth year that conflicted with "
+                     "the V-cat of a bracket the fencer competed in (ranking "
+                     "category is BY-derived — ADR-010). A ⚠ marks a value that "
+                     "was **CONFIRMED** and has been overwritten **and downgraded "
+                     "to estimated** — verify the organizer didn't simply place "
+                     "the fencer in the wrong bracket.")
+        lines.append("")
+        lines.append("| Name | V-cat | old BY | new BY | note | source |")
+        lines.append("|---|---|---|---|---|---|")
+        for r in reconciled:
+            note = ("⚠ was CONFIRMED → downgraded" if r.get("was_confirmed")
+                    else "estimated → re-estimated")
+            lines.append(
+                f"| {r.get('scraped_name', '?')} | {r.get('vcat') or '—'} "
+                f"| {r.get('old_birth_year')} | {r.get('new_birth_year')} "
+                f"| {note} | {r.get('source', '?')} |"
+            )
+        lines.append("")
+
+    if conflicts:
+        lines.append("### ⚠ Cross-bracket birth-year conflicts (not auto-resolved)")
+        lines.append("")
+        lines.append("A fencer appeared in two brackets with conflicting V-cats in "
+                     "one run; Stage 0 wrote once and flagged the rest. Resolve "
+                     "manually in the Birth-year review tab.")
+        lines.append("")
+        lines.append("| Name | first V-cat | conflicting V-cat | source |")
+        lines.append("|---|---|---|---|")
+        for c in conflicts:
+            lines.append(
+                f"| {c.get('scraped_name', '?')} | {c.get('first_vcat') or '—'} "
+                f"| {c.get('second_vcat') or '—'} | {c.get('source', '?')} |"
+            )
+        lines.append("")
+
+    return lines
+
+
 def _multi_summary_md(
     event_code: str, event_meta: dict, ctxs: list, db=None,
     pool_brackets: list | None = None, pool_warnings: list | None = None,
@@ -1476,6 +1582,11 @@ def _multi_summary_md(
     lines: list[str] = []
     lines.append(f"# Phase 5 ingestion summary — `{event_code}`")
     lines.append("")
+
+    # Stage-0 roster reconciliation (ADR-050/056) — surfaced at the very TOP
+    # so newly-created birth years and was-CONFIRMED downgrades are confirmed
+    # before anything else.
+    lines.extend(_format_stage0_section(ctxs))
 
     # ⭐ Fencer matching is the most important part of the scrape ingestion
     # quality report — it surfaces alias false-positives, BY estimation,

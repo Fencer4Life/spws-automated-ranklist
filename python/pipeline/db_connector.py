@@ -22,11 +22,17 @@ class DbConnector:
         ADR-064: enum_gender is selected so the matcher's asymmetric
         F-bracket filter can drop M-gender candidates from the candidate
         set when bracket_gender='F' (domestic events only).
+
+        ADR-050 Stage 0: txt_nationality + bool_birth_year_estimated are also
+        selected so s0_reconcile_roster can run its high-precision exact dedup
+        (nationality belt-and-suspenders) and decide estimated vs confirmed
+        reconciliation. Harmless extra columns for the matcher.
         """
         resp = (
             self._sb.table("tbl_fencer")
             .select("id_fencer, txt_surname, txt_first_name, int_birth_year, "
-                    "json_name_aliases, enum_gender")
+                    "json_name_aliases, enum_gender, txt_nationality, "
+                    "bool_birth_year_estimated")
             .execute()
         )
         return resp.data
@@ -290,6 +296,25 @@ class DbConnector:
             .execute()
         )
         return resp.data[0]["id_fencer"]
+
+    def update_fencer_birth_year(
+        self, fencer_id: int, birth_year: int, estimated: bool = False
+    ) -> None:
+        """Reconcile a fencer's birth year (ADR-050 Stage 0).
+
+        Thin wrapper over the existing fn_update_fencer_birth_year RPC
+        (migration 20260412000004) so the audit trigger preserves the prior
+        value. Used by s0_reconcile_roster to correct a stored BY that
+        conflicts with the V-cat of a bracket the fencer competed in.
+        """
+        self._sb.rpc(
+            "fn_update_fencer_birth_year",
+            {
+                "p_fencer_id": fencer_id,
+                "p_birth_year": birth_year,
+                "p_estimated": estimated,
+            },
+        ).execute()
 
     # -----------------------------------------------------------------------
     # Phase 4 (ADR-046, ADR-053) — post-commit hooks + parity gate
