@@ -25,7 +25,7 @@ Corrections to master data **auto-recompute** the affected tournaments — re-de
 |------|---------|-------------------|-----------|
 | **Plugin** ⚑ | unit of logic | a self-contained step implementing the `IngestPlugin` contract | §4.1, §5 |
 | **Orchestrator** ⚑ | the runner | generic, domain-ignorant; executes a plan one-directionally | §4.2 |
-| **Flow** ⚑ | named scenario | e.g. `FRESH_INGEST_DOMESTIC` / `_INTERNATIONAL`, `RECOMPUTE`, `DEDUP_SWEEP`, `POST_COMMIT`, `EVF_SYNC` | §6 |
+| **Flow** ⚑ | named scenario | the 4 domestic flows: `INGEST_DOMESTIC`, `RECOMPUTE_DOMESTIC`, `DEDUP_SWEEP`, `POST_COMMIT` (international `FRESH_INGEST_INTERNATIONAL`/`EVF_SYNC` deferred §12) | §6 |
 | **FlowParams** ⚑ | pre-execution inputs | everything knowable before running (flow, source, env, mode) | §4.3 |
 | **Rule / RuleBook** ⚑ | declarative sequencing | a Rule = a named flow = ordered `Step`s; the RuleBook = `dict[Flow → Rule]` | §4.3, §6 |
 | **RuleEngine** ⚑ | the planner | resolves `FlowParams → ExecutionPlan` before execution | §4.3 |
@@ -33,7 +33,7 @@ Corrections to master data **auto-recompute** the affected tournaments — re-de
 | **Context** ⚑ | forward payload | the data that flows one direction through plugins | §4.1 |
 | **Services** ⚑ | injected deps | `db`, `config`, `matcher`, `notifier` handed to each plugin | §4.1 |
 | **effects** ⚑ | side-effect declaration | `{}` pure / `master_data` / `live` / `external` | §4.1 |
-| **Middleware** ⚑ | cross-cutting wrapper | timing, logging, provenance, halt→Telegram, around every plugin | §4.4 |
+| **Middleware** ⚑ | cross-cutting wrapper | timing, logging, provenance, escalate→Telegram, around every plugin | §4.4 |
 | **Plugin kind** ⚑ | plugin type | one of Source / Gate / Transform / Mutator / Reactor | §4.1a |
 | **Reactor** ⚑ | event-driven plugin kind | observes a signal → emits a Flow (e.g. `SelfHealing`) | §4.1a |
 | **Signal** ⚑ | domain event | emitted by Mutators (`master_data.changed`, `live.committed`), observed by Reactors | §4.1a |
@@ -41,9 +41,12 @@ Corrections to master data **auto-recompute** the affected tournaments — re-de
 | **ResolveFencers** ⚑ | the roster plugin | owner of *name → governed fencer*; merged S0⊕S6; runs early | §5.1 |
 | **MDM** ⚑ | Master Data Management | governing `tbl_fencer` as a deduplicated entity store | §5.1 |
 | **CDC** ⚑ | Change Data Capture | trigger that records which events a master-data edit affects | §8 |
-| **Recompute** ⚑ | re-derive from stored data | after a master-data change: re-derive V-cats + re-score affected tournaments; **no source, no re-match** | [014](adr/014-delete-reimport-strategy.md), §8 |
-| **Debounce / watermark** ⚑ | coalescing | wait N min after the last edit, then one recompute covers all queued tournaments | §8 |
+| **Recompute** ⚑ | re-derive from stored data | after a master-data change: re-derive V-cats + re-score the affected **event** (`RECOMPUTE_DOMESTIC`); **no source, no re-match** | [014](adr/014-delete-reimport-strategy.md), §8 |
+| **Debounce / watermark** ⚑ | coalescing | wait N min after the last edit, then one recompute covers all queued events | §8 |
 | **Fixpoint** ⚑ | convergence | recompute settles (change-gated trigger + idempotent recompute) | §8 |
+| **Fault** ⚑ | recoverable problem | `ctx.fault(kind)` — never a halt; auto-resolved inline so the flow reaches Commit | §5.2, [074](adr/074-no-halt-fault-resolution.md) |
+| **REMEDIATIONBOOK** ⚑ | fault policy | `dict[FaultKind → Remediation]` (RuleBook sibling): inline fix + escalation policy | §5.2, [074](adr/074-no-halt-fault-resolution.md) |
+| **Escalate** ⚑ | the error plugin | post-commit Telegram, last resort, informational; never blocks | §5.2, [074](adr/074-no-halt-fault-resolution.md) |
 
 ### 0.2 Domain — tournament types & age categories
 | Abbr. | Meaning | Short description | Read more |
@@ -84,19 +87,20 @@ foundation**, and **self-healing** (a correction propagates automatically).
 | # | Business rule | Where in the architecture | Why (ADR) |
 |---|---------------|---------------------------|-----------|
 | BR-1 | Ingest FTL, Engarde, 4Fence, Ophardt, FT XML, EVF API, CSV/XLSX/JSON, cert_ref | `ParseSource` plugin + `PARSERS` | [050](adr/050-unified-ingestion-pipeline.md) |
-| BR-2 | Domestic (PPW/MPW) admit **everyone**; unmatched auto-created | `FRESH_INGEST_DOMESTIC` → `ResolveFencers(intake=DOMESTIC)` | [020](adr/020-seed-generator-domestic-auto-create.md), [038](adr/038-evf-intake-polish-only.md) |
-| BR-3 | International (PEW/MEW/MSW) admit **POL-only** | `FRESH_INGEST_INTERNATIONAL` → `ResolveFencers(intake=INTERNATIONAL)` | [038](adr/038-evf-intake-polish-only.md) |
+| BR-2 | Domestic (PPW/MPW) admit **everyone**; unmatched auto-created | `INGEST_DOMESTIC` → `ResolveFencers(intake=DOMESTIC)` | [020](adr/020-seed-generator-domestic-auto-create.md), **070** |
+| BR-3 *(deferred §12)* | International (PEW/MEW/MSW) admit **POL-only** | `FRESH_INGEST_INTERNATIONAL` → `ResolveFencers(intake=INTERNATIONAL)` | [038](adr/038-evf-intake-polish-only.md) |
 | BR-4 | Identity by durable **FK**, never name | `ResolveFencers`, `tbl_result.id_fencer` | [003](adr/003-identity-by-fk-not-name.md) |
 | BR-5 | Age category from **birth year** + season | `ResolveFencers` governs BY; `SplitByAge`/`AssignFinalVcat` consume it | [010](adr/010-age-category-by-birth-year.md), [056](adr/056-vcat-from-birthyear.md) |
 | BR-6 | Re-import **atomic & idempotent** | `Commit` plugin (atomic `fn_write_event`) | [014](adr/014-delete-reimport-strategy.md), [022](adr/022-ingestion-db-transaction.md) |
 | BR-7 | Combined pools split + counted per V-cat | `SplitByAge`/`DetectJointPool`/`AssignFinalVcat`, commit RPC | [024](adr/024-combined-category-splitting.md), [049](adr/049-joint-pool-split-flag.md) |
-| BR-8 | Min-participant gate at **ingestion** | `ValidateCounts` plugin | [066](adr/066-min-participants-ingestion-gate.md) |
+| BR-8 | Min-participant check at **ingestion** — sub-min bracket **auto-dropped**, never halts | `ValidateCounts` plugin (fault `BELOW_MIN`) | [066](adr/066-min-participants-ingestion-gate.md), **074** |
 | BR-9 | Every committed row carries **provenance** | `StampProvenance` middleware + history | [050](adr/050-unified-ingestion-pipeline.md), [055](adr/055-ingest-traceability.md) |
 | **BR-10′** ⚑ | **No human review gate** — auto-decide by calibrated confidence; ties bias to create-then-dedup | `ResolveFencers` policy + auto-`Commit` | **ADR-070** |
 | **BR-11′** ⚑ | **Master data is the foundation** — clean, deduped, BY-coherent roster, resolved **early** | `ResolveFencers` plugin + `DEDUP_SWEEP` flow | **ADR-071** |
-| **BR-12** ⚑ | **A master-data change auto-recomputes affected tournaments**, debounced into one rerun | CDC trigger → `RECOMPUTE` flow | **ADR-072** |
+| **BR-12** ⚑ | **A master-data change auto-recomputes the affected event**, debounced into one rerun | CDC trigger → `RECOMPUTE_DOMESTIC` flow | **ADR-072** |
 | **BR-13** ⚑ | **Source retention** — re-ingest can use retained bytes when the live URL is dead (`source=retained`) | `ParseSource` (`source_artifact_path`) | [050](adr/050-unified-ingestion-pipeline.md), **ADR-072** |
 | **BR-14** ⚑ | **Sequence is declarative & inspectable before execution** | RuleEngine → ExecutionPlan | **ADR-073** |
+| **BR-15′** ⚑ | **No hard halt** — a domain problem auto-resolves inline (`REMEDIATIONBOOK`); flow always commits; Telegram escalation is informational last-resort | gates `ctx.fault` + `Escalate` plugin | **ADR-074** |
 
 UC coverage: UC1–UC4, UC23–UC31 **minus** the manual-review gate (UC4 becomes an audit view, not a gate).
 
@@ -126,7 +130,7 @@ UC coverage: UC1–UC4, UC23–UC31 **minus** the manual-review gate (UC4 become
   converges to a fixpoint. — **ADR-072**, [014](adr/014-delete-reimport-strategy.md)
 - **One IR · structural-over-regex · full traceability.** Unchanged. — [050](adr/050-unified-ingestion-pipeline.md)/[057](adr/057-pool-round-structural-detection.md)/[067](adr/067-structural-pool-only-skip-unified-xml-ingest.md)/[055](adr/055-ingest-traceability.md)
 
-> ADR-051/054 do not exist. New: **ADR-070** (ResolveFencers / auto-resolution, no gate), **ADR-071** (MDM + dedup), **ADR-072** (CDC recompute), **ADR-073** (plugin + rule-engine architecture). Amends [050](adr/050-unified-ingestion-pipeline.md) (stages → plugins) and [056](adr/056-vcat-from-birthyear.md) (Stage-0 absorbed into `ResolveFencers`).
+> ADR-051/054 do not exist. New: **ADR-070** (ResolveFencers / auto-resolution, no gate), **ADR-071** (MDM + dedup), **ADR-072** (CDC recompute), **ADR-073** (plugin + rule-engine architecture), **ADR-074** (no hard halt — fault resolution + Escalate). Amends [050](adr/050-unified-ingestion-pipeline.md) (stages → plugins; review gate removed) and [056](adr/056-vcat-from-birthyear.md) (Stage-0 absorbed into `ResolveFencers`); ADR-074 reverses the halt-by-exception model of [050](adr/050-unified-ingestion-pipeline.md)/[057](adr/057-pool-round-structural-detection.md)/[067](adr/067-structural-pool-only-skip-unified-xml-ingest.md) and amends [038](adr/038-evf-intake-polish-only.md)/[066](adr/066-min-participants-ingestion-gate.md)/[069](adr/069-participant-count-url-validator.md).
 
 ---
 
@@ -196,7 +200,7 @@ flowchart TB
     PCR -. emits POST_COMMIT flow .-> PC
     ROSTER -. master_data changed .-> SH
     EDITM -. master_data changed .-> SH
-    SH -. emits RECOMPUTE per tournament .-> EP
+    SH -. emits RECOMPUTE_DOMESTIC per event .-> EP
 ```
 
 ---
@@ -237,15 +241,15 @@ Every plugin declares a `kind`. The kind determines its contract and where it ru
 
 | Kind | Runs | Contract | Members |
 |------|------|----------|---------|
-| **Source** | first, in the plan | produces the initial Context | `ParseSource` |
-| **Gate** | in the plan | pure check; may `Halt` | `ValidateIR`, `ValidateCounts`, `DetectPoolRound`, `ParticipantCount` |
-| **Transform** | in the plan | pure; enriches Context; may `Halt` if underivable | `ResolveEvent`, `DetectCombinedPool`, `SplitByAge`, `DetectJointPool`, `AssignFinalVcat` |
-| **Mutator** | in the plan | persists state and **emits a signal** | `ResolveFencers`, `Commit`, `PewCascade`, `EvfParity`, `Notify` |
+| **Source** | first, in the plan | produces the initial Context | `ParseSource`, `LoadCommitted` |
+| **Gate** | in the plan | pure check; records `ctx.fault`, **never halts** (ADR-074) | `ValidateIR`, `ValidateCounts`, `DetectPoolRound`, `ParticipantCount` |
+| **Transform** | in the plan | pure; enriches Context; records `ctx.fault` if underivable | `ResolveEvent`, `DetectCombinedPool`, `SplitByAge`, `DetectJointPool`, `AssignFinalVcat` |
+| **Mutator** | in the plan | persists state and **emits a signal** | `ResolveFencers`, `Commit`, `Notify`, `Escalate` (deferred §12: `PewCascade`, `EvfParity`) |
 | **Reactor** | **outside** the plan | **observes a signal → emits a Flow** | **`SelfHealing`**, `PostCommit` |
 
 **The event seam:** *Mutators emit signals; Reactors turn signals into Flows.* This is how the loop closes
 with **no back-edges** in the forward pipeline — `ResolveFencers` (Mutator) emits `master_data.changed`;
-`SelfHealing` (Reactor) observes it and emits `Flow.RECOMPUTE`.
+`SelfHealing` (Reactor) observes it and emits `Flow.RECOMPUTE_DOMESTIC`.
 
 Reactors use a different contract from forward-flow plugins (`on`/`emits`/`react` instead of `reads`/`writes`/`run`):
 
@@ -253,11 +257,11 @@ Reactors use a different contract from forward-flow plugins (`on`/`emits`/`react
 class Reactor(Protocol):           # kind = REACTOR — event-driven, not in the forward plan
     name:  str
     on:    frozenset[str]          # signals observed, e.g. {"master_data.changed"}
-    emits: Flow                    # the flow it triggers, e.g. Flow.RECOMPUTE
+    emits: Flow                    # the flow it triggers, e.g. Flow.RECOMPUTE_DOMESTIC
     def react(self, signal: Signal, svc: Services) -> None: ...   # (debounced) → run_flow(emits, …)
 ```
 
-`SelfHealing.on = {"master_data.changed"}`, `emits = RECOMPUTE` — its implementation is the CDC trigger +
+`SelfHealing.on = {"master_data.changed"}`, `emits = RECOMPUTE_DOMESTIC` — its implementation is the CDC trigger +
 `tbl_recompute_queue` + debounced worker (§8), exactly as `Commit`'s implementation is an RPC.
 `PostCommit.on = {"live.committed"}`, `emits = POST_COMMIT`.
 
@@ -318,35 +322,33 @@ class RuleEngine:                       # executes a RULE from the RuleBook
 
 ### 4.4 Middleware (cross-cutting, keeps plugins pure)
 
-`Timing` · `StructuredLog` · `StampProvenance` ([055](adr/055-ingest-traceability.md)) · `HaltToTelegram` ([059](adr/059-telegram-document-delivery.md)). Each wraps every `plugin.run`, so plugins stay pure domain logic.
+`Timing` · `StructuredLog` · `StampProvenance` ([055](adr/055-ingest-traceability.md)) · `EscalateToTelegram` ([059](adr/059-telegram-document-delivery.md)/**074**). Each wraps every `plugin.run`, so plugins stay pure domain logic.
 
 ---
 
 ## 5. Plugin catalog (execution order)
 
-| Plugin | Kind | `applies()` | `effects` | Encapsulates | Halts | ADR |
-|--------|------|-------------|-----------|--------------|-------|-----|
+| Plugin | Kind | `applies()` | `effects` | Encapsulates | Fault → auto-resolution (ADR-074) | ADR |
+|--------|------|-------------|-----------|--------------|-----------------------------------|-----|
 | `ParseSource` ⚑◑ | Source | always | pure (+retain) | `PARSERS` dispatch, source retention | — | [050](adr/050-unified-ingestion-pipeline.md) |
-| `ValidateIR` ◑ | Gate | always | pure | structural checks, pool-only skip | `IR_INVALID`, `POOL_ROUND_DETECTED` | [067](adr/067-structural-pool-only-skip-unified-xml-ingest.md) |
-| `ResolveEvent` ◑ | Transform | always | pure (db read) | event/season/organizer/domestic | `EVENT_NOT_RESOLVED` | [025](adr/025-event-centric-ingestion-telegram.md) |
-| **`ResolveFencers`** ⭐⚑◑ | **Mutator** | always; `intake` param | **`master_data`** | **merged S0⊕S6**, runs first of the core — owns *name → governed fencer* (see §5.1); obeys the flow's **`intake`** param (DOMESTIC/INTERNATIONAL — no internal organizer branch); **emits `master_data.changed`** | `V0_PROHIBITED_ON_INTERNATIONAL` | [003](adr/003-identity-by-fk-not-name.md)/[010](adr/010-age-category-by-birth-year.md)/[020](adr/020-seed-generator-domestic-auto-create.md)/[038](adr/038-evf-intake-polish-only.md)/[056](adr/056-vcat-from-birthyear.md)/[064](adr/064-asymmetric-gender-filter-matcher.md)/**070** |
+| `ValidateIR` ◑ | Gate | always | pure | structural checks, pool-only skip | `IR_INVALID` → skip artifact; `POOL_ROUND` → skip bracket | [067](adr/067-structural-pool-only-skip-unified-xml-ingest.md) |
+| `ResolveEvent` ◑ | Transform | always | pure (db read) | event/season/organizer/domestic | `EVENT_NOT_RESOLVED` → Abort + escalate (cannot ingest into a nonexistent event) | [025](adr/025-event-centric-ingestion-telegram.md) |
+| **`ResolveFencers`** ⭐⚑◑ | **Mutator** | always; `intake` param | **`master_data`** | **merged S0⊕S6**, runs first of the core — owns *name → governed fencer* (see §5.1); obeys the flow's **`intake`** param (DOMESTIC; INTERNATIONAL deferred §12 — no internal organizer branch); **emits `master_data.changed`** | none on domestic (V0 allowed); intl V0-exclusion deferred §12 | [003](adr/003-identity-by-fk-not-name.md)/[010](adr/010-age-category-by-birth-year.md)/[020](adr/020-seed-generator-domestic-auto-create.md)/[056](adr/056-vcat-from-birthyear.md)/[064](adr/064-asymmetric-gender-filter-matcher.md)/**070** |
 | `DetectCombinedPool` ◑ | Transform | always | pure | multi-V-cat detection from **governed** BY spread | — | [024](adr/024-combined-category-splitting.md) |
-| `SplitByAge` ◑ | Transform | combined only | pure (db read) | group rows by **governed** birth year (`fn_age_categories_batch`) | `SPLITTER_UNRESOLVED` | [024](adr/024-combined-category-splitting.md)/[047](adr/047-vcat-invariant-trigger-and-splitter-consolidation.md) |
+| `SplitByAge` ◑ | Transform | combined only | pure (db read) | group rows by **governed** birth year (`fn_age_categories_batch`) | `SPLITTER_UNRESOLVED` → keep combined + escalate | [024](adr/024-combined-category-splitting.md)/[047](adr/047-vcat-invariant-trigger-and-splitter-consolidation.md) |
 | `DetectJointPool` ◑ | Transform | siblings/override | pure | sibling grouping | — | [049](adr/049-joint-pool-split-flag.md) |
-| `ValidateCounts` ◑ | Gate | always | pure (url read) | count + min-participants + URL→data | `COUNT_MISMATCH`, `URL_DATA_MISMATCH` | [052](adr/052-url-data-validation.md)/[066](adr/066-min-participants-ingestion-gate.md) |
-| `DetectPoolRound` ◑ | Gate | always | pure (db read) | structural gender-mix | `POOL_ROUND_DETECTED` | [057](adr/057-pool-round-structural-detection.md)/[063](adr/063-polish-plural-and-grupy-zbiorcze.md) |
+| `ValidateCounts` ◑ | Gate | always | pure (url read) | count + min-participants (from `event.is_domestic`) + URL→data | `BELOW_MIN` → drop bracket; `COUNT_MISMATCH`/`URL_DATA_MISMATCH` → accept + escalate | [052](adr/052-url-data-validation.md)/[066](adr/066-min-participants-ingestion-gate.md) |
+| `DetectPoolRound` ◑ | Gate | always | pure (db read) | structural gender-mix | `POOL_ROUND` → skip bracket | [057](adr/057-pool-round-structural-detection.md)/[063](adr/063-polish-plural-and-grupy-zbiorcze.md) |
 | `AssignFinalVcat` ◑ | Transform | always | pure | per-result V-cat from reconciled BY | — | [056](adr/056-vcat-from-birthyear.md) |
 | `Commit` ◑ | **Mutator** | always | `live` | **atomic delete-old + insert + score → live** (idempotent, no draft); **emits `live.committed`** | — | [014](adr/014-delete-reimport-strategy.md)/[022](adr/022-ingestion-db-transaction.md)/[049](adr/049-joint-pool-split-flag.md)/[055](adr/055-ingest-traceability.md) |
 
 **Reactors (kind: Reactor — event-driven, run *outside* the forward plan):**
-`SelfHealing` — on `master_data.changed` → emits `Flow.RECOMPUTE` (debounced; impl = CDC trigger + `tbl_recompute_queue` + worker, §8). The trigger is **column-aware**: BY / merge / nationality → `RECOMPUTE`; name/alias edits → no historical action (FK is durable) — **ADR-072** ·
+`SelfHealing` — on `master_data.changed` → emits `Flow.RECOMPUTE_DOMESTIC` (debounced; impl = CDC trigger + `tbl_recompute_queue` + worker, §8). The trigger is **column-aware**: BY / merge / nationality → `RECOMPUTE_DOMESTIC`; name/alias edits → no historical action (FK is durable) — **ADR-072** ·
 `PostCommit` — on `live.committed` → emits `Flow.POST_COMMIT`.
 
-**POST_COMMIT flow plugins:** `PewCascade` (Mutator, [046](adr/046-pew-weapon-suffix.md)) · `EvfParity` (Mutator, [053](adr/053-evf-parity-gate.md)) · `ParticipantCount` (Gate, [069](adr/069-participant-count-url-validator.md)) · `Notify` (Mutator/external, [059](adr/059-telegram-document-delivery.md)).
+**POST_COMMIT flow plugins (domestic):** `ParticipantCount` (Gate, [069](adr/069-participant-count-url-validator.md) — now a **fault**, not a halt, per **ADR-074**) · `Notify` (Mutator/external, [059](adr/059-telegram-document-delivery.md)) · `Escalate` (Mutator/external — Telegram last resort, **ADR-074**). Deferred (§12): `PewCascade` ([046](adr/046-pew-weapon-suffix.md)), `EvfParity` ([053](adr/053-evf-parity-gate.md)).
 
-**EVF discovery:** `EvfDiscover` (Source) — scrapes the EVF calendar and emits one `FRESH_INGEST_INTERNATIONAL` per discovered event ([028](adr/028-evf-calendar-results-import.md)). Never emits the domestic flow.
-
-**RECOMPUTE source:** `LoadCommitted` (Source) — loads the affected tournaments' stored, FK-linked results for re-derivation (no fetch, no re-match).
+**`RECOMPUTE_DOMESTIC` source:** `LoadCommitted` (Source) — loads the affected **event's** stored, FK-linked results across its V-cat brackets for re-derivation (no fetch, no re-match).
 
 ### 5.1 `ResolveFencers` — the heart (merged S0⊕S6, runs early)
 
@@ -367,12 +369,11 @@ PHASE A — settle the roster (exact only, high precision):
   if id: AUTO_MATCHED(exact); if vcat conflicts stored BY → reconcile to band midpoint (ADR-056)
 
 PHASE B — resolve the remainder (fuzzy, against the now-reconciled roster):
-  if intake == INTERNATIONAL and vcat == V0:  HALT V0_PROHIBITED_ON_INTERNATIONAL   # R005b, hard
-  best = find_best_match(r, age=vcat, bracket_gender=(parsed.gender if intake==DOMESTIC else None))  # ADR-064
+  best = find_best_match(r, age=vcat, bracket_gender=parsed.gender)          # ADR-064 — domestic: gender-filter on
   if best.conf ≥ AUTO_LINK_THRESHOLD and age-band+gender corroborate:
-      link; AUTO_MATCHED(fuzzy); fn_update_fencer_aliases(id, r.name)      # exact next run
-  elif intake == DOMESTIC: create_fencer(by = midpoint(vcat)); AUTO_CREATED   # ADR-020
-  else:                    EXCLUDED                                          # ADR-038 (INTERNATIONAL)
+      link; AUTO_MATCHED(fuzzy); fn_update_fencer_aliases(id, r.name)        # exact next run
+  else: create_fencer(by = midpoint(vcat)); AUTO_CREATED                     # ADR-020 — domestic admits everyone, V0 ok
+  # DEFERRED §12 (intake=INTERNATIONAL): bracket_gender=None; vcat==V0 → ctx.fault(V0_EXCLUDE) drops the row (ADR-038/074 — exclusion, NOT a halt); UNMATCHED → EXCLUDED
 → writes ctx.matches (row → id_fencer + governed birth_year + method + confidence); effects: master_data
 ```
 
@@ -423,7 +424,7 @@ REMEDIATIONBOOK = {
 
 ---
 
-## 6. The RuleBook — every supported FLOW
+## 6. The RuleBook — the domestic pipeline (4 flows)
 
 A **Rule** is a named **FLOW**: an ordered sequence of plugin calls that encodes one piece of business
 logic. The **RuleBook** is the set of *all flows we support* — it is the executable statement of the
@@ -515,7 +516,7 @@ RULEBOOK = {
 
 ### 6.3 Plan-time vs run-time conditionality (two levers, kept apart)
 
-- **`Step.when`** gates at **plan time** on `FlowParams` (knowable before execution) — e.g. `EvfParity` only when `organizer_hint == "EVF"`. The RuleEngine drops the step from the plan entirely.
+- **`Step.when`** gates at **plan time** on `FlowParams` (knowable before execution) — e.g. a step that runs only `when organizer_hint == "EVF"` (used by the deferred international flows, §12). No domestic step is plan-time-gated; `when` exists for the deferred flows. The RuleEngine drops a non-matching step from the plan entirely.
 - **`plugin.applies(ctx)`** gates at **run time** on `Context` data (only knowable after parsing) — e.g. `SplitByAge` only when the resolved pool is combined. The step is in the plan; the orchestrator SKIPs it.
 
 The RuleBook lists every step that *could* run; `when` prunes before, `applies()` prunes during.
@@ -587,12 +588,12 @@ ResolveFencers RAN(merges 4 dup pairs via fn_merge_fencers) → emits master_dat
 | `python/pipeline/plugins/post_commit/*.py` ◑ | reshaped | `pew_cascade`, `evf_parity`, `participant_count`, `notify` |
 | `python/pipeline/middleware/*.py` ⚑ | new | `timing`, `structured_log`, `stamp_provenance`, `halt_to_telegram` |
 | `python/pipeline/run.py` ⚑ | new | `run_flow(params, ctx, svc)` — the single entry point |
-| `python/pipeline/recompute/worker.py` ⚑ | new | debounced queue drainer → `run_flow(RECOMPUTE)` |
+| `python/pipeline/recompute/worker.py` ⚑ | new | debounced queue drainer → `run_flow(RECOMPUTE_DOMESTIC)` |
 | `matcher/` · `scrapers/` · `db_connector.py` | reused | matcher, parsers (+`source_artifact_path`), DB I/O — see [current §6/§6.1](ingestion-pipeline-design.md#6-code-chunk-reference-table) |
 
 **New DB objects:** `tbl_recompute_queue`, `trg_fencer_change_enqueue`, `fn_enqueue_affected_events`, `fn_merge_fencers`, optional `tbl_flow_rule`. `Commit` writes live atomically via `fn_write_event` (delete-old + insert + score in one transaction, ADR-022). **The draft tables and the `fn_commit_event_draft` / `fn_discard_event_draft` / `fn_dry_run_event_draft` RPCs are removed — there is no review gate to stage for.** Existing RPCs (`fn_calc_tournament_scores`, `fn_age_categories_batch`, `fn_update_fencer_aliases`) reused unchanged.
 
-**Data sources** (acquisition + parser per source) are unchanged — see [current design §6.1](ingestion-pipeline-design.md#61-data-sources--what-they-are-how-they-are-sourced-and-which-code-implements-them). Only addition: `ParseSource` persists `source_artifact_path` so a dead-URL event can be re-ingested from retained bytes (`source=retained`, BR-13). `LoadCommitted` (RECOMPUTE's source) reads stored results, not artifacts.
+**Data sources** (acquisition + parser per source) are unchanged — see [current design §6.1](ingestion-pipeline-design.md#61-data-sources--what-they-are-how-they-are-sourced-and-which-code-implements-them). Only addition: `ParseSource` persists `source_artifact_path` so a dead-URL event can be re-ingested from retained bytes (`source=retained`, BR-13). `LoadCommitted` (`RECOMPUTE_DOMESTIC`'s source) reads stored results, not artifacts.
 
 ---
 
@@ -619,17 +620,17 @@ flowchart TB
 
 | Trigger | Flow | Mechanism |
 |---------|------|-----------|
-| Operator CLI / UI button | `FRESH_INGEST_DOMESTIC` (or `_INTERNATIONAL`) | `python -m pipeline.run --flow fresh_ingest_domestic …` |
-| Email with results (SPWS) | `FRESH_INGEST_DOMESTIC` | GAS → Storage → `ingest` workflow → `run_flow` ([023](adr/023-email-ingestion-gas-storage.md)) |
-| `tbl_fencer` edited (BY / merge / nationality) | `RECOMPUTE` (per affected tournament) | CDC trigger → queue → **debounced** worker via pg_cron → Edge Function ([041](adr/041-edge-function-dispatch.md)) |
+| Operator CLI / UI button | `INGEST_DOMESTIC` | `python -m pipeline.run --flow ingest_domestic …` |
+| Email with results (SPWS) | `INGEST_DOMESTIC` | GAS → Storage → `ingest` workflow → `run_flow` ([023](adr/023-email-ingestion-gas-storage.md)) |
+| `tbl_fencer` edited (BY / merge / nationality) | `RECOMPUTE_DOMESTIC` (per affected event) | CDC trigger → queue → **debounced** worker via pg_cron → Edge Function ([041](adr/041-edge-function-dispatch.md)) |
 | Scheduled | `DEDUP_SWEEP` | pg_cron / scheduled GitHub Action |
-| After every `Commit` | `POST_COMMIT` | Commit chains a separate post-commit run |
-| Scheduled | `EVF_SYNC` | existing `evf-sync` workflow → `FRESH_INGEST_INTERNATIONAL` per discovered event |
+| Every `live.committed` | `POST_COMMIT` | `PostCommit` reactor fires a separate post-commit run |
+| *Deferred (§12)* | `EVF_SYNC` | existing `evf-sync` workflow → `FRESH_INGEST_INTERNATIONAL` per discovered event |
 
 **Debounce / batching (several corrections → one rerun):** edits land in `tbl_fencer` immediately and bump a
 `ts_last_master_change` watermark; only the recompute is deferred. The worker drains **only when quiet ≥
 `DEBOUNCE_WINDOW`**, claims the PENDING set (edits during a drain queue for the next window), and recomputes
-each affected tournament **once** (queue dedups by `id_tournament`) — reading the fully-corrected roster. Optional Telegram
+each affected event **once** (queue dedups by `id_event`) — reading the fully-corrected roster. Optional Telegram
 `flush now` / `hold` move the watermark. **Fixpoint:** trigger fires only on real change + recompute is
 idempotent ⇒ the loop settles.
 
@@ -645,26 +646,28 @@ Existing ingestion ADRs unchanged (see [current §7](ingestion-pipeline-design.m
 **New / amended:**
 | ADR | Title | Status | Touches |
 |-----|-------|--------|---------|
-| **ADR-070** ⚑ | `ResolveFencers` auto-resolution (merged S0⊕S6, runs early), no human gate | proposed | `ResolveFencers` plugin, auto-`Commit` |
-| **ADR-071** ⚑ | MDM + eventual-consistency dedup (`DEDUP_SWEEP`, `fn_merge_fencers`) | proposed | `ResolveFencers` whole-roster mode |
-| **ADR-072** ⚑ | Master-data-change-triggered idempotent recompute (CDC queue + debounce) | proposed | trigger, queue, worker, `RECOMPUTE` flow |
-| **ADR-073** ⚑ | Plugin + rule-engine ingestion architecture | proposed | contract, orchestrator, RuleEngine, flows |
+| [ADR-070](adr/070-resolve-fencers-auto-resolution.md) ⚑ | `ResolveFencers` auto-resolution (merged S0⊕S6, runs early), no human gate | proposed | `ResolveFencers` plugin, auto-`Commit` |
+| [ADR-071](adr/071-mdm-dedup-sweep.md) ⚑ | MDM + eventual-consistency dedup (`DEDUP_SWEEP`, `fn_merge_fencers`) | proposed | `ResolveFencers` whole-roster mode |
+| [ADR-072](adr/072-cdc-recompute-debounce.md) ⚑ | Master-data-change-triggered idempotent recompute (CDC queue + debounce) | proposed | trigger, queue, worker, `RECOMPUTE_DOMESTIC` flow |
+| [ADR-073](adr/073-plugin-rule-engine-architecture.md) ⚑ | Plugin + rule-engine ingestion architecture | proposed | contract, orchestrator, RuleEngine, flows |
+| [ADR-074](adr/074-no-halt-fault-resolution.md) ⚑ | No hard halt — `REMEDIATIONBOOK` fault resolution + `Escalate` (Telegram last resort) | proposed | orchestrator, gates, `REMEDIATIONBOOK`, `Escalate` |
 | [ADR-050](adr/050-unified-ingestion-pipeline.md) | Unified ingestion pipeline | **amend** | stages → plugins; **draft-then-review removed** — `Commit` writes live atomically (reverts to ADR-022); DRY_RUN dropped |
 | [ADR-056](adr/056-vcat-from-birthyear.md) | V-cat from birth year (Stage 0) | **amend** | Stage-0 absorbed into `ResolveFencers`; now runs early |
+| [ADR-038](adr/038-evf-intake-polish-only.md) / [057](adr/057-pool-round-structural-detection.md) / [066](adr/066-min-participants-ingestion-gate.md) / [067](adr/067-structural-pool-only-skip-unified-xml-ingest.md) / [069](adr/069-participant-count-url-validator.md) | (various halts) | **amend (ADR-074)** | halt → `ctx.fault`: V0-international → exclude; below-min → drop; pool-round/IR → skip; count-mismatch → accept + escalate. No hard halt. |
 | [ADR-006](adr/006-jsonb-ranking-rules.md) | JSONB rules in DB | **precedent** | optional `tbl_flow_rule` for configurable RuleBook |
 
 ---
 
 ## 10. Build order & verification (TDD, RED first)
 
-1. **Core + engine** — `contract.py`, `orchestrator.py`, `rule_engine.py`, `rulebook.py`, `run.py`. Tests: planner ("flow X ⇒ sequence Z", incl. `ResolveFencers` before `SplitByAge`), DAG-validation rejects mis-order, orchestrator skip/halt/trace.
-2. **Plugins from existing stages** — wrap current `stages.py` logic into plugins; RuleBook reproduces today's behaviour. **Parity gate:** old vs new produce byte-identical output on the same inputs.
-3. **ResolveFencers merge + reorder** — fold S0+S6 into `ResolveFencers`, move it before the split, switch `SplitByAge` to read governed BY; add auto-link policy + calibrate `AUTO_LINK_THRESHOLD`. Tests: exact-link / fuzzy-link / create / reconcile / intl-exclude / V0-halt / two-phase BY settling / split-uses-governed-BY; calibration regression bounding false-link rate.
-4. **Recompute + re-ingest** — `RECOMPUTE` flow (`LoadCommitted` + re-score affected tournaments) + `source_artifact_path` retention so a `FRESH_INGEST_*` flow can re-ingest a dead-URL event (`source=retained`). Tests: recompute twice == once (idempotence); re-ingest replaces cleanly.
+1. **Core + engine** — `contract.py`, `orchestrator.py`, `rule_engine.py`, `rulebook.py`, `run.py`. Tests: planner ("flow X ⇒ sequence Z", incl. `ResolveFencers` before `SplitByAge`), DAG-validation rejects mis-order, orchestrator skip/**fault**/trace (never halts; only infra `Abort` breaks a run).
+2. **Plugins from existing stages + no-halt** — wrap current `stages.py` logic into plugins; RuleBook reproduces today's behaviour, but **every former `Halt` becomes a `ctx.fault`** resolved inline via `REMEDIATIONBOOK`; `Escalate` fires per policy. **Parity gate:** old vs new produce byte-identical output on the same inputs. Tests: below-min → drop → commit; count-mismatch → accept + escalate; flow reaches `Commit` despite a fault; `Escalate` only per policy.
+3. **ResolveFencers merge + reorder** — fold S0+S6 into `ResolveFencers`, move it before the split, switch `SplitByAge` to read governed BY; add auto-link policy + calibrate `AUTO_LINK_THRESHOLD`. Tests: exact-link / fuzzy-link / create / reconcile / two-phase BY settling / split-uses-governed-BY; calibration regression bounding false-link rate.
+4. **Recompute + re-ingest** — `RECOMPUTE_DOMESTIC` flow (`LoadCommitted` whole event + re-score the affected event) + `source_artifact_path` retention so an `INGEST_DOMESTIC` flow can re-ingest a dead-URL event (`source=retained`). Tests: recompute twice == once (idempotence); boundary-crossing BY re-partitions to the correct bracket; re-ingest replaces cleanly.
 5. **CDC + dedup** — `tbl_recompute_queue`, `trg_fencer_change_enqueue`, `fn_enqueue_affected_events`, `fn_merge_fencers`, debounced worker, dispatch. Tests: trigger fires only on real change + enqueues correct events (pgTAP); debounce/claim/coalesce + recompute-to-quiescence (pytest).
-6. **Docs:** ADR-070/071/072/073; amend ADR-050/056; RTM rows; spec; fold this file into [ingestion-pipeline-design.md](ingestion-pipeline-design.md) as the new current state.
+6. **Docs:** ADR-070/071/072/073/074; amend ADR-050/056/038/066/067/069; RTM rows (FR-112–117); spec Appendix C; fold this file into [ingestion-pipeline-design.md](ingestion-pipeline-design.md) as the new current state.
 
-**End-to-end check:** seed a roster with a known duplicate + a wrong BY → run `DEDUP_SWEEP` → confirm merge + reconcile + auto-`RECOMPUTE` of affected tournaments; ingest two events → confirm exact-match + correct V-cats derived from governed BY; then correct one BY and merge two duplicates in quick succession → confirm **one** debounced recompute re-derives exactly the affected tournaments and the ranklist matches the hand-computed expectation.
+**End-to-end check:** seed a roster with a known duplicate + a wrong BY → run `DEDUP_SWEEP` → confirm merge + reconcile + auto-`RECOMPUTE_DOMESTIC` of affected events; ingest two events → confirm exact-match + correct V-cats derived from governed BY; then correct one BY and merge two duplicates in quick succession → confirm **one** debounced recompute re-derives exactly the affected events and the ranklist matches the hand-computed expectation. Confirm a below-min bracket auto-drops (no halt) and surfaces in the Telegram escalation.
 
 ---
 
@@ -673,7 +676,7 @@ Existing ingestion ADRs unchanged (see [current §7](ingestion-pipeline-design.m
 - `AUTO_LINK_THRESHOLD` — set by calibration, not by guess.
 - RuleBook **code-defined** (ship first) vs **`tbl_flow_rule`** DB-backed ([ADR-006](adr/006-jsonb-ranking-rules.md) pattern) for deploy-free flow changes.
 - Recompute dispatch latency: pg_cron cadence (recommended) vs `LISTEN/NOTIFY` daemon (near-real-time).
-- ADR-070/071/072/073 as four ADRs vs one umbrella.
+- ~~ADR-070/071/072/073 as four ADRs vs one umbrella~~ — **resolved:** shipped as five separate ADRs (070–074), 2026-06-14.
 
 ---
 
