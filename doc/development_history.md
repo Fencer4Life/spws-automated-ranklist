@@ -954,12 +954,12 @@ Test totals at Phase 5.5 (in progress, second push): pgTAP 508 → **543** (+35)
     - **Pipeline observability:** Structured logging for all pipeline operations.
     - **PROD deployment:** Deploy Web Components to the live WordPress site.
 
-### Phase 3: Advanced Integrations
+### Phase 3: Advanced Integrations - No Longer planned.
 
 - **Goal:** Pool-level tracking and Kadra tier automation.
 
 - **Deliverables:**
 
-    - **SuperFive Ranking:** Upgrade scrapers to pull V/M (victories/matches), TS (touches scored), and Ind (indicator) metrics from PPW pool rounds. Implement `tbl_pool_result` (see spec §9.8) and a separate `vw_ranking_superfive` view. SuperFive relates only to PPW pool-round data, not DE results.
+    - **SuperFive Ranking:** DEPRICATED. No longer planned to Upgrade scrapers to pull V/M (victories/matches), TS (touches scored), and Ind (indicator) metrics from PPW pool rounds. Implement `tbl_pool_result` (see spec §9.8) and a separate `vw_ranking_superfive` view. SuperFive relates only to PPW pool-round data, not DE results.
 
-    - **Kadra Tier Classification:** Add `vw_kadra_tiers` view that classifies fencers into Kadra A, B, C, or D based on configurable thresholds (start counts and point thresholds stored in `tbl_scoring_config.json_extra`). This is used only for National Team nomination discussions and is kept as a separate view from `vw_ranking_kadra`.
+    - **Kadra Tier Classification:** DEPRICATED. No longer planned to Add `vw_kadra_tiers` view that classifies fencers into Kadra A, B, C, or D based on configurable thresholds (start counts and point thresholds stored in `tbl_scoring_config.json_extra`). This is used only for National Team nomination discussions and is kept as a separate view from `vw_ranking_kadra`.
