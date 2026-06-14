@@ -107,7 +107,8 @@ UC coverage: UC1–UC4, UC23–UC31 **minus** the manual-review gate (UC4 become
 - **Rule-driven sequencing.** What runs, and in what order, is resolved from declarative rules **before**
   execution — not hardcoded. Adding a scenario = adding rules. — **ADR-073**
 - **One direction.** Data flows forward through `Context`; a plugin never calls another plugin or the
-  orchestrator. Halt stops forward motion. Post-commit is a *separate* forward pass.
+  orchestrator. A fault does **not** stop forward motion — it is recorded and auto-resolved inline (below).
+  Post-commit is a *separate* forward pass.
 - **One concern per plugin, dependencies injected.** Single responsibility; all I/O via `Services`; testable
   in isolation. — **ADR-073**
 - **Master data first — resolved first.** `ResolveFencers` runs *before* every structural step — even
@@ -116,10 +117,14 @@ UC coverage: UC1–UC4, UC23–UC31 **minus** the manual-review gate (UC4 become
   Trust is established first, then consumed. — **ADR-071**
 - **Full automation, asymmetric safety.** No human gate; bias every uncertain call toward the *recoverable*
   failure (create-new + later dedup) over the *unrecoverable* one (wrong link). — **ADR-070/071**
-- **Change-triggered idempotent recompute.** Master-data edits are the trigger; `RECOMPUTE` re-derives
-  V-cats and re-scores the affected tournaments from stored data (no source, no re-match); the loop converges
-  to a fixpoint. — **ADR-072**, [014](adr/014-delete-reimport-strategy.md)
-- **One IR · halt-by-exception · structural-over-regex · full traceability.** Unchanged. — [050](adr/050-unified-ingestion-pipeline.md)/[057](adr/057-pool-round-structural-detection.md)/[067](adr/067-structural-pool-only-skip-unified-xml-ingest.md)/[055](adr/055-ingest-traceability.md)
+- **No hard halt — resolve-and-converge.** A domain problem is a `ctx.fault`, not a halt: the gate applies
+  the explicit `REMEDIATIONBOOK` fix inline (drop a sub-min bracket, skip a pool round, accept-and-flag a
+  count mismatch) and the flow **runs on to a committed state**. Telegram escalation is informational and
+  last-resort, *after* commit. Only true infra `Abort` stops a run, and it is retried. — **ADR-074**, §5.2
+- **Change-triggered idempotent recompute.** Master-data edits are the trigger; `RECOMPUTE_DOMESTIC`
+  re-derives V-cats and re-scores the affected **event** from stored data (no source, no re-match); the loop
+  converges to a fixpoint. — **ADR-072**, [014](adr/014-delete-reimport-strategy.md)
+- **One IR · structural-over-regex · full traceability.** Unchanged. — [050](adr/050-unified-ingestion-pipeline.md)/[057](adr/057-pool-round-structural-detection.md)/[067](adr/067-structural-pool-only-skip-unified-xml-ingest.md)/[055](adr/055-ingest-traceability.md)
 
 > ADR-051/054 do not exist. New: **ADR-070** (ResolveFencers / auto-resolution, no gate), **ADR-071** (MDM + dedup), **ADR-072** (CDC recompute), **ADR-073** (plugin + rule-engine architecture). Amends [050](adr/050-unified-ingestion-pipeline.md) (stages → plugins) and [056](adr/056-vcat-from-birthyear.md) (Stage-0 absorbed into `ResolveFencers`).
 
@@ -209,7 +214,7 @@ class IngestPlugin(Protocol):
 
     def applies(self, ctx: Context) -> bool: ...        # explicit "if needed" guard (data-derived)
     def run(self, ctx: Context, svc: Services) -> None: # forward-only; write only declared keys; idempotent
-        ...                                             # raise Halt(reason, detail); ctx.warn(...) for soft diagnostics
+        ...                                             # ctx.fault(kind, detail) → auto-resolve inline + keep going; ctx.warn(...) soft note
 ```
 
 **Invariants (what makes it maintainable + safely re-runnable):**
@@ -222,7 +227,7 @@ class IngestPlugin(Protocol):
 | Idempotent / deterministic | recompute & re-ingest are safe; self-healing loop converges |
 | Dependency injection (I/O via `svc`) | trivially mockable; swap matcher for a calibration variant |
 
-**Outcomes** recorded in `ctx.trace`: **RAN** · **SKIPPED** (`applies()` false) · **HALTED** (`Halt`). Plus non-halting `ctx.warn()` diagnostics (e.g. URL name-mismatch).
+**Outcomes** recorded in `ctx.trace`: **RAN** · **SKIPPED** (`applies()` false) · **FAULT** (`ctx.fault` — auto-resolved inline per the `REMEDIATIONBOOK` rule, **flow continues**). Plus `ctx.warn()` soft diagnostics. A flow aborts **only** on a true infra `Abort` (DB down), which is retried — never a human gate.
 
 `Context` = the forward payload (IR + accumulated keys + trace + warnings). `Services` = injected `db`, `config`, `matcher`, `calibration`, `notifier`.
 
@@ -266,10 +271,10 @@ class Orchestrator:
                 ctx.trace.skipped(plugin.name); continue
             try:
                 compose(self.middleware, plugin.run)(ctx, svc)   # cross-cutting wraps pure plugin
-                ctx.trace.ran(plugin.name)
-            except Halt as h:
-                ctx.halt(plugin.name, h); break                  # halt stops forward motion
-        return ctx
+                ctx.trace.ran(plugin.name)                       # plugins call ctx.fault() internally; never halts here
+            except Abort as a:
+                ctx.abort(plugin.name, a); break                 # ONLY genuine infra failure (retried, no human gate)
+        return ctx                                               # always reaches Commit; faults auto-resolved inline
 ```
 
 `ExecutionPlan.validate_dag()` (run at plan time, §4.3) guarantees every plugin's `reads` were produced by an earlier plugin's `writes` — **mis-ordering fails before a single row is touched.**
@@ -278,8 +283,10 @@ class Orchestrator:
 
 ```python
 class Flow(str, Enum):
-    FRESH_INGEST_DOMESTIC="fresh_ingest_domestic"; FRESH_INGEST_INTERNATIONAL="fresh_ingest_international"
-    RECOMPUTE="recompute"; POST_COMMIT="post_commit"; DEDUP_SWEEP="dedup_sweep"; EVF_SYNC="evf_sync"
+    # ── Full domestic automated pipeline (first-run scope) ──
+    INGEST_DOMESTIC="ingest_domestic"; RECOMPUTE_DOMESTIC="recompute_domestic"
+    DEDUP_SWEEP="dedup_sweep"; POST_COMMIT="post_commit"
+    # ── Deferred — international only (§12): FRESH_INGEST_INTERNATIONAL, EVF_SYNC ──
 
 @dataclass(frozen=True)
 class FlowParams:                       # everything knowable BEFORE execution
@@ -405,74 +412,64 @@ class Rule:
 RULEBOOK: dict[Flow, Rule] = { ... }                 # ALL supported flows (§6.2)
 ```
 
-### 6.2 The RuleBook — all flows we support
+### 6.2 The RuleBook — the domestic pipeline (4 flows)
+
+The full domestic automated pipeline is **four flows + two reactors**. No human gate anywhere; every
+gate auto-resolves inline (§5.2) so each flow always reaches `Commit`. The international flows are
+deferred (§12) — none of them can touch a domestic event.
 
 ```python
 RULEBOOK = {
 
-  Flow.FRESH_INGEST_DOMESTIC: Rule(Flow.FRESH_INGEST_DOMESTIC,
-    "Ingest an SPWS (PPW/MPW) event: admit everyone, auto-create unmatched, V0 allowed.",
+  # ── 1. Keep the active season current ────────────────────────────────────
+  Flow.INGEST_DOMESTIC: Rule(Flow.INGEST_DOMESTIC,
+    "Ingest an active-season SPWS (PPW/MPW) event: admit everyone, auto-create unmatched, V0 "
+    "allowed, combined pools split + counted per V-cat. Never halts — gates auto-resolve inline.",
     steps=(
-      Step("ParseSource"),          # Source — params: source="live" (default) | "retained" (dead URL)
-      Step("ValidateIR"),           # Gate
-      Step("ResolveEvent"),         # Transform
-      Step("ResolveFencers", params={"intake": "DOMESTIC"}),  # Mutator — create unmatched, V0 ok, gender-filter on
-      Step("DetectCombinedPool"),   # Transform — from governed BY
+      Step("ParseSource"),          # Source — source="live" (default) | "retained" (dead URL)
+      Step("ValidateIR"),           # Gate  — structural; auto-skips a pool-only/unrankable bracket
+      Step("ResolveEvent"),         # Transform — event/season/organizer; sets is_domestic
+      Step("ResolveFencers", params={"intake": "DOMESTIC"}),  # Mutator — exact→fuzzy→create; reconcile BY; gender-filter on; emits master_data.changed
+      Step("DetectCombinedPool"),   # Transform — from GOVERNED birth years
       Step("SplitByAge"),           # Transform — applies() only if combined
-      Step("DetectJointPool"),      # Transform
-      Step("ValidateCounts", params={"min_participants": 1}), # Gate
-      Step("DetectPoolRound"),      # Gate
-      Step("AssignFinalVcat"),      # Transform
-      Step("Commit"),               # Mutator — atomic write to live; emits live.committed
+      Step("DetectJointPool"),      # Transform — sibling grouping (ADR-049)
+      Step("ValidateCounts"),       # Gate  — min from event.is_domestic; sub-min bracket auto-dropped, never halts
+      Step("DetectPoolRound"),      # Gate  — auto-skips a gender-mixed pool round, never halts
+      Step("AssignFinalVcat"),      # Transform — per-result V-cat from reconciled BY
+      Step("Commit"),               # Mutator — atomic delete-old + insert + score → live; emits live.committed
     )),
 
-  Flow.FRESH_INGEST_INTERNATIONAL: Rule(Flow.FRESH_INGEST_INTERNATIONAL,
-    "Ingest an EVF/FIE (PEW/MEW/MSW/PSW) event: POL-only, exclude unmatched, HALT on V0.",
+  # ── 2. Self-heal an event after a birth-year / identity correction ────────
+  Flow.RECOMPUTE_DOMESTIC: Rule(Flow.RECOMPUTE_DOMESTIC,
+    "Re-derive + re-score an AFFECTED EVENT after a master-data change. Event-granular: a BY change "
+    "can relocate a result between the event's V-cat brackets, so the whole event is the unit (a "
+    "single bracket can't absorb a relocation — the moving result is stored under its OLD bracket). "
+    "Works from stored, FK-linked results — no source, no re-match. Never halts. Auto-fired by the "
+    "SelfHealing reactor on master_data.changed.",
     steps=(
-      Step("ParseSource"),
-      Step("ValidateIR"),
-      Step("ResolveEvent"),
-      Step("ResolveFencers", params={"intake": "INTERNATIONAL"}),  # Mutator — POL-only, exclude unmatched, HALT V0, no gender-filter
-      Step("DetectCombinedPool"),
-      Step("SplitByAge"),
-      Step("DetectJointPool"),
-      Step("ValidateCounts", params={"min_participants": 5}),
-      Step("DetectPoolRound"),
-      Step("AssignFinalVcat"),
-      Step("Commit"),
+      Step("LoadCommitted"),        # Source — ALL of the event's FK-linked results across its V-cat brackets (+ stored joint-pool flags + is_domestic)
+      Step("AssignFinalVcat"),      # Transform — re-derive each result's V-cat from the corrected BY (re-partitions the event)
+      Step("ValidateCounts"),       # Gate  — sub-min bracket auto-dropped, never halts
+      Step("Commit"),               # Mutator — re-partition into V-cat brackets (create/drop), recount, re-score; emits live.committed
     )),
 
-  Flow.RECOMPUTE: Rule(Flow.RECOMPUTE,
-    "Re-derive + re-score the AFFECTED tournaments after a master-data change. "
-    "No source, no re-match — works from stored, FK-linked results.",
-    steps=(
-      Step("LoadCommitted"),        # Source — load the affected tournaments' stored results
-      Step("AssignFinalVcat"),      # Transform — re-derive each result's V-cat from the governed BY
-      Step("Commit"),               # Mutator — relocate moved results, recount, re-score; emits live.committed
-    )),
-
+  # ── 3. Whole-roster dedup + BY reconcile (the source of self-healing) ─────
   Flow.DEDUP_SWEEP: Rule(Flow.DEDUP_SWEEP,
-    "Whole-roster master-data maintenance: dedup + BY reconcile. "
-    "Mutations fan out to RECOMPUTE via the SelfHealing reactor.",
+    "Whole-roster master-data maintenance: dedup duplicate fencers + reconcile conflicting birth "
+    "years. Each merge/reconcile emits master_data.changed, which the SelfHealing reactor turns into "
+    "RECOMPUTE_DOMESTIC for every affected event — the sort IS the rebuild.",
     steps=(
-      Step("ResolveFencers", params={"scope": "whole_roster"}),   # Mutator
+      Step("ResolveFencers", params={"scope": "whole_roster"}),   # Mutator — fn_merge_fencers; emits master_data.changed
       Step("Notify"),                                             # Mutator/external
     )),
 
+  # ── 4. Validate + notify after every commit (fired by PostCommit reactor) ─
   Flow.POST_COMMIT: Rule(Flow.POST_COMMIT,
-    "Emitted by the PostCommit reactor on live.committed.",
+    "Fired by the PostCommit reactor on live.committed — from BOTH INGEST_DOMESTIC and "
+    "RECOMPUTE_DOMESTIC, so ParticipantCount re-validates after a recompute too. Validates and notifies.",
     steps=(
-      Step("PewCascade"),                                          # Mutator
-      Step("EvfParity", when=lambda p: p.organizer_hint == "EVF"), # Mutator (EVF events only)
-      Step("ParticipantCount"),                                    # Gate
-      Step("Notify"),                                              # Mutator/external
-    )),
-
-  Flow.EVF_SYNC: Rule(Flow.EVF_SYNC,
-    "Scheduled EVF calendar discovery; emits one FRESH_INGEST_INTERNATIONAL per discovered event. "
-    "Never touches SPWS events.",
-    steps=(
-      Step("EvfDiscover"),          # Source — scrapes calendar, emits FRESH_INGEST_INTERNATIONAL per event
+      Step("ParticipantCount"),     # Gate  — URL participant-count validator (ADR-069); fault auto-flags, never halts
+      Step("Notify"),               # Mutator/external — Telegram summary; Escalate if a fault needs eyes
     )),
 }
 ```
@@ -488,40 +485,52 @@ The RuleBook lists every step that *could* run; `when` prunes before, `applies()
 
 | Flow | `RuleEngine.plan(...)` → ExecutionPlan |
 |------|----------------------------------------|
-| `FRESH_INGEST_DOMESTIC` | Parse → ValidateIR → ResolveEvent → **ResolveFencers(DOMESTIC)** → DetectCombinedPool → SplitByAge → DetectJointPool → ValidateCounts(min=1) → DetectPoolRound → AssignFinalVcat → Commit |
-| `FRESH_INGEST_INTERNATIONAL` | *same sequence*, but **ResolveFencers(INTERNATIONAL)** (POL-only, HALT V0, no gender-filter) + ValidateCounts(min=5) |
-| `RECOMPUTE` | LoadCommitted → AssignFinalVcat → Commit (affected tournaments only; no source, no re-match) |
+| `INGEST_DOMESTIC` | Parse → ValidateIR → ResolveEvent → **ResolveFencers(DOMESTIC)** → DetectCombinedPool → SplitByAge → DetectJointPool → ValidateCounts → DetectPoolRound → AssignFinalVcat → Commit |
+| `RECOMPUTE_DOMESTIC` | LoadCommitted (whole event) → AssignFinalVcat → ValidateCounts → Commit (re-partition + recount + re-score affected event; no source, no re-match) |
 | `DEDUP_SWEEP` | ResolveFencers (whole-roster) → Notify |
-| `POST_COMMIT` | PewCascade → EvfParity\* → ParticipantCount → Notify |
-| `EVF_SYNC` | EvfDiscover → (emits FRESH_INGEST_INTERNATIONAL per discovered event) |
+| `POST_COMMIT` | ParticipantCount → Notify (fired by PostCommit reactor on live.committed — from both INGEST_DOMESTIC and RECOMPUTE_DOMESTIC) |
 
-> Re-ingesting an existing event (corrected source, or new parse/match logic) is just the matching `FRESH_INGEST_*` flow run again — `Commit` is idempotent (delete-old + insert). Pass `source=retained` only when the live URL is dead.
+> **Self-healing loop:** `DEDUP_SWEEP` (or a BY reconcile inside `INGEST_DOMESTIC`) emits `master_data.changed` → `SelfHealing` reactor → `RECOMPUTE_DOMESTIC` per affected event → its `Commit` emits `live.committed` → `PostCommit` reactor → `POST_COMMIT`. No back-edges; `Commit`'s `effects=live` (not `master_data`) is what makes the loop converge.
+> Re-ingesting an existing event (corrected source, or new parse/match logic) is just `INGEST_DOMESTIC` run again — `Commit` is idempotent (delete-old + insert). Pass `source=retained` only when the live URL is dead.
+> Deferred international flows (`FRESH_INGEST_INTERNATIONAL`, `EVF_SYNC`) — see §12.
 
 ### 6.5 Example execution traces
 
-**Flow A — FRESH_INGEST_DOMESTIC, single-cat PPW (FTL):**
+**Flow A — INGEST_DOMESTIC, single-cat PPW (FTL):**
 ```
-FlowParams(FRESH_INGEST_DOMESTIC, source=FTL, env=LOCAL, organizer="SPWS")
+FlowParams(INGEST_DOMESTIC, source=FTL, env=LOCAL, organizer="SPWS")
 ParseSource RAN · ValidateIR RAN · ResolveEvent RAN(domestic)
 ResolveFencers RAN(10 exact, 1 reconciled BY, 1 created → matches[] with governed BY)
 DetectCombinedPool RAN(False — governed BYs all V2) · SplitByAge SKIPPED(applies=False) · DetectJointPool RAN
 ValidateCounts RAN · DetectPoolRound RAN · AssignFinalVcat RAN · Commit RAN → live (atomic) → emits live.committed
+→ PostCommit reactor → POST_COMMIT: ParticipantCount RAN · Notify RAN(Telegram)
 ```
 
-**Flow C — RECOMPUTE after a master-data correction (self-healing):**
+**Flow B — INGEST_DOMESTIC, a bracket falls below min (NO HALT):**
 ```
-Edit tbl_fencer: 1 fencer BY moves V2→V3 → trg enqueues affected tournaments {PPW4-V2-épée-M, PPW4-V3-épée-M}
-→ 2-min debounce → worker claims batch
-For each tournament: run_flow(RECOMPUTE) → LoadCommitted(stored results) → AssignFinalVcat(governed BY) → Commit
-  → fencer's result relocates V2→V3; both tournaments recounted + re-scored (N changed). No source, no re-match.
-Notify RAN(Telegram) → loop quiesces
+... ValidateCounts RAN → PPW3-V4-foil-F has 2 entries < min → ctx.fault(BELOW_MIN)
+    → REMEDIATIONBOOK: auto-drop that bracket, escalate=ON_LOSS → CONTINUE
+AssignFinalVcat RAN(remaining brackets) · Commit RAN → live (atomic)
+→ POST_COMMIT: ParticipantCount RAN · Notify RAN(Telegram: "PPW3-V4-foil-F dropped 2<min — FYI, last resort")
+Flow COMPLETED. No halt, no sign-off, no human gate.
+```
+
+**Flow C — RECOMPUTE_DOMESTIC after a birth-year correction (self-healing):**
+```
+Edit tbl_fencer: 1 fencer BY moves V2→V3 → trg enqueues affected EVENT {PPW4} (dedup by id_event)
+→ DEBOUNCE_WINDOW quiet → worker claims batch
+run_flow(RECOMPUTE_DOMESTIC, event=PPW4) → LoadCommitted(ALL PPW4 results across its V-cat brackets)
+  → AssignFinalVcat(this fencer now V3) → ValidateCounts(no bracket below min) → Commit
+  → result re-partitioned out of V2-épée-M into V3-épée-M (bracket created if absent); both recounted + re-scored
+  → Commit effects=live (NOT master_data) ⇒ does not re-trigger SelfHealing ⇒ loop converges. No source, no re-match.
+→ POST_COMMIT: ParticipantCount RAN · Notify RAN(Telegram) → loop quiesces
 ```
 
 **Flow D — DEDUP_SWEEP (bootstrap & maintenance):**
 ```
 FlowParams(DEDUP_SWEEP) → plan = ResolveFencers(whole_roster) → Notify
-ResolveFencers RAN(merges 4 dup pairs via fn_merge_fencers) → fires trg → enqueues affected events
-→ RECOMPUTE auto-runs per affected tournament. The sort IS the rebuild.
+ResolveFencers RAN(merges 4 dup pairs via fn_merge_fencers) → emits master_data.changed → SelfHealing enqueues affected events
+→ RECOMPUTE_DOMESTIC auto-runs per affected event. The sort IS the rebuild.
 ```
 
 ---
@@ -626,3 +635,25 @@ Existing ingestion ADRs unchanged (see [current §7](ingestion-pipeline-design.m
 - RuleBook **code-defined** (ship first) vs **`tbl_flow_rule`** DB-backed ([ADR-006](adr/006-jsonb-ranking-rules.md) pattern) for deploy-free flow changes.
 - Recompute dispatch latency: pg_cron cadence (recommended) vs `LISTEN/NOTIFY` daemon (near-real-time).
 - ADR-070/071/072/073 as four ADRs vs one umbrella.
+
+---
+
+## 12. Deferred — international only (NOT needed for the domestic pipeline)
+
+The domestic pipeline (§6) is complete and fully automated on its own — ingest, self-heal, validate,
+notify. The **only** deferred items are **international-event** machinery; none of it can touch an SPWS
+domestic (PPW/MPW) event. Each slots in later as a new RuleBook entry / plugin with **no change** to the
+orchestrator or the domestic plugins (that's the whole point of the rule engine). Full sketches live in
+git history `cfff30b`.
+
+| Deferred | Why it is international, not domestic | Slots in later as |
+|----------|--------------------------------------|-------------------|
+| `FRESH_INGEST_INTERNATIONAL` | EVF/FIE intake: POL-only, V0 **excluded** (not halted), min=5 — domestic admits **everyone incl. V0** | a Rule reusing the domestic plugins with `intake=INTERNATIONAL` |
+| `EVF_SYNC` | scrapes the **EVF (European)** calendar → one international ingest per discovered event | a Rule + `EvfDiscover` source |
+| `PewCascade` ([046](adr/046-pew-weapon-suffix.md)) | **PEW = European** veterans events (weapon-suffix cascade); domestic events are PPW/MPW | a `POST_COMMIT` step gated `when organizer == EVF` |
+| `EvfParity` ([053](adr/053-evf-parity-gate.md)) | parity-checks against the **EVF API** — moot for SPWS events, where SPWS *is* the authority | a `POST_COMMIT` step gated `when organizer == EVF` |
+
+**In scope and required** for the full domestic automated pipeline: the 4 flows (`INGEST_DOMESTIC`,
+`RECOMPUTE_DOMESTIC`, `DEDUP_SWEEP`, `POST_COMMIT`), the 2 reactors (`SelfHealing`, `PostCommit`), the CDC
+recompute queue + debounce, inline fault auto-resolution driven by the `REMEDIATIONBOOK` + `Escalate`
+(Telegram, last resort). Nothing here halts; the pipeline always runs to a committed, notified state.
