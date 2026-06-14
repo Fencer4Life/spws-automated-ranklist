@@ -27,13 +27,31 @@ from python.matcher.fuzzy_match import MatchResult, find_best_match, parse_scrap
 DOMESTIC_TYPES = {"PPW", "MPW"}
 INTERNATIONAL_TYPES = {"PEW", "MEW", "MSW"}
 
-# Age category → minimum age (youngest boundary)
+# Age category → minimum age (youngest boundary). Retained for any caller
+# that needs the band's lower edge; the *estimate* now uses the midpoint.
 _CATEGORY_MIN_AGE = {
     "V0": 30,
     "V1": 40,
     "V2": 50,
     "V3": 60,
     "V4": 70,
+}
+
+# Age category → MIDPOINT anchor age (ADR-056, Stage-0 reconciliation 2026-06-13).
+# Bounded bands (V1-V3) use the true band centre; the open-ended V0 (<40) and
+# V4 (≥70) bands use a deliberate convention anchor (35 / 75). The estimated
+# birth year is `season_end_year - anchor_age`. Ranking-neutral vs. the old
+# youngest-edge estimate: both map to the same V-cat band, so changing the
+# convention (and backfilling existing estimated fencers) never moves anyone
+# between rankings — it only shifts the year within the band.
+# This is the SINGLE source of truth for the midpoint; the frontend mirror is
+# frontend/src/lib/birthYearEstimate.ts (kept in lockstep via vitest 5.1).
+_CATEGORY_MIDPOINT_AGE = {
+    "V0": 35,
+    "V1": 45,
+    "V2": 55,
+    "V3": 65,
+    "V4": 75,
 }
 
 
@@ -47,10 +65,12 @@ class ResolvedTournament:
 
 
 def estimate_birth_year(category: str, season_end_year: int) -> int:
-    """Estimate birth year from age category using youngest boundary.
+    """Estimate birth year from age category using the band MIDPOINT.
 
-    Uses the minimum age for the category: a fencer in V2 (50-59) in a
-    season ending 2025 is assumed born in 2025-50 = 1975.
+    ADR-056 (Stage-0 reconciliation, 2026-06-13): uses the midpoint anchor
+    age for the category — a fencer in V2 (50-59) in a season ending 2025 is
+    assumed born in 2025-55 = 1970 (band centre), not the youngest edge.
+    Ranking-neutral: the estimate still lands in the same V-cat band.
 
     Args:
         category: Age category (V0, V1, V2, V3, V4)
@@ -62,10 +82,10 @@ def estimate_birth_year(category: str, season_end_year: int) -> int:
     Raises:
         ValueError: If category is not recognized
     """
-    min_age = _CATEGORY_MIN_AGE.get(category)
-    if min_age is None:
+    anchor_age = _CATEGORY_MIDPOINT_AGE.get(category)
+    if anchor_age is None:
         raise ValueError(f"Unknown age category: {category}")
-    return season_end_year - min_age
+    return season_end_year - anchor_age
 
 
 def auto_create_fencer(

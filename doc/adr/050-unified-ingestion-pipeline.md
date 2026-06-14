@@ -38,6 +38,21 @@ The rebuild is structured as 9 phases (0.0a → 7), each gated by explicit deliv
 
 8 source mouths feed a normalized intermediate representation (IR). Stages 1–11 are uniform across sources. The IR contract (see [p1-ir-parsers.md](../plans/rebuild/p1-ir-parsers.md)):
 
+**Stage 0 — roster reconciliation (added 2026-06-13, ADR-056 rev).** A new
+FIRST stage `s0_reconcile_roster` runs *before* `s1_validate_ir` (and therefore
+before the matcher). For every result row it (1) creates genuinely-new
+participants by a HIGH-PRECISION exact check (so the matcher exact-matches them
+instead of fuzzy-gluing them to the nearest existing name) with an estimated
+band-midpoint birth year (NULL when the V-cat is unmarked), and (2) corrects a
+matched fencer's stored birth year when it conflicts with the bracket's
+authoritative V-cat (estimated kept; CONFIRMED downgraded, surfaced loudly).
+International events (PEW/MEW/MSW, ADR-038) are skipped. It never halts and is
+idempotent. See ADR-056 (2026-06-13 revision) for the full rule + midpoint
+table. The full stage tuple is now:
+`s0_reconcile_roster → s1_validate_ir → s2_resolve_event → s3_detect_combined_pool
+→ s4_split_via_batch → s5_detect_joint_pool → s6_resolve_identity → s7_validate
+→ s7_pool_round_check → s7_split_by_vcat`.
+
 - `ParsedTournament` — date, weapon, gender, season_end_year, organizer hint, source kind, raw pool size, category hint, list of results.
 - `ParsedResult` — name, country, birth year, place, raw age marker, source vcat hint, excluded flag, source row id.
 - `MatchResult` gains `alternatives: list[Candidate]` so per-event diffs can render top-N candidates for ambiguous matches.

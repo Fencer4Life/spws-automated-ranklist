@@ -388,13 +388,14 @@ class TestDomesticIntake:
         )
         assert resolved.auto_created[0]["bool_birth_year_estimated"] is True
 
-    def test_ppw_auto_created_birth_year_youngest_boundary(self, fencer_db):
-        """4.14 PPW auto-created fencer birth_year uses youngest boundary."""
+    def test_ppw_auto_created_birth_year_midpoint(self, fencer_db):
+        """4.14 PPW auto-created fencer birth_year uses the band midpoint
+        (ADR-056 Stage-0 convention, 2026-06-13)."""
         resolved = resolve_tournament_results(
             ["MÜLLER Hans"], fencer_db, "PPW", "V2", 2025
         )
-        # V2 in season ending 2025: youngest boundary = 2025 - 50 = 1975
-        assert resolved.auto_created[0]["int_birth_year"] == 1975
+        # V2 in season ending 2025: midpoint anchor 55 = 2025 - 55 = 1970
+        assert resolved.auto_created[0]["int_birth_year"] == 1970
 
     def test_mpw_unmatched_also_auto_creates(self, fencer_db):
         """4.14b MPW follows same rules as PPW (domestic)."""
@@ -532,28 +533,31 @@ class TestAdr038PolOnlyGate:
 
 
 # ---------------------------------------------------------------------------
-# 4.19–4.21  Birth year estimation from age category
+# 4.19–4.21  Birth year estimation from age category (ADR-056 midpoint convention)
 # ---------------------------------------------------------------------------
+# Stage-0 reconciliation (2026-06-13): the estimate is now the BAND MIDPOINT
+# anchor age (V0→35, V1→45, V2→55, V3→65, V4→75), replacing the youngest-edge.
+# Ranking-neutral: midpoint and youngest-edge map to the same V-cat band.
 class TestBirthYearEstimation:
     def test_v0_category(self):
-        """4.19 V0 → season_end_year - 30."""
-        assert estimate_birth_year("V0", 2025) == 1995
+        """4.19 V0 → season_end_year - 35 (midpoint anchor)."""
+        assert estimate_birth_year("V0", 2025) == 1990
 
     def test_v2_category(self):
-        """4.20 V2 → season_end_year - 50."""
-        assert estimate_birth_year("V2", 2025) == 1975
+        """4.20 V2 → season_end_year - 55 (midpoint anchor)."""
+        assert estimate_birth_year("V2", 2025) == 1970
 
     def test_v4_category(self):
-        """4.21 V4 → season_end_year - 70."""
-        assert estimate_birth_year("V4", 2025) == 1955
+        """4.21 V4 → season_end_year - 75 (midpoint anchor)."""
+        assert estimate_birth_year("V4", 2025) == 1950
 
     def test_v1_category(self):
-        """9.83 V1 → season_end_year - 40."""
-        assert estimate_birth_year("V1", 2025) == 1985
+        """9.83 V1 → season_end_year - 45 (midpoint anchor)."""
+        assert estimate_birth_year("V1", 2025) == 1980
 
     def test_v3_category(self):
-        """9.84 V3 → season_end_year - 60."""
-        assert estimate_birth_year("V3", 2025) == 1965
+        """9.84 V3 → season_end_year - 65 (midpoint anchor)."""
+        assert estimate_birth_year("V3", 2025) == 1960
 
     def test_unknown_category_raises(self):
         """Unknown category raises ValueError."""
@@ -580,10 +584,10 @@ class TestAutoCreateFencer:
         assert "bool_birth_year_estimated" in fencer
 
     def test_birth_year_estimated_flag(self):
-        """4.24 bool_birth_year_estimated is True."""
+        """4.24 bool_birth_year_estimated is True; BY = V2 midpoint (1970)."""
         fencer = auto_create_fencer("SMITH John", "V2", 2025)
         assert fencer["bool_birth_year_estimated"] is True
-        assert fencer["int_birth_year"] == 1975
+        assert fencer["int_birth_year"] == 1970
 
 
 # ===========================================================================

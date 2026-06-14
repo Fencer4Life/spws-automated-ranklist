@@ -37,13 +37,13 @@ describe('CreateFencerFromAliasModal', () => {
     expect(first.value).toBe('Jean')
   })
 
-  // 5.2.3 — V2 + 2024 → birthYearInput=1974, hint visible
-  it('categoryHint=V2 + seasonEndYear=2024 → BY=1974, hint rendered', () => {
+  // 5.2.3 — V2 + 2024 → birthYearInput=1969 (midpoint), hint visible
+  it('categoryHint=V2 + seasonEndYear=2024 → BY=1969, hint rendered', () => {
     const { container } = render(CreateFencerFromAliasModal, {
       props: { ...baseProps, categoryHint: 'V2', seasonEndYear: 2024 },
     })
     const by = container.querySelector('[data-field="birth-year-input"]') as HTMLInputElement
-    expect(by.value).toBe('1974')
+    expect(by.value).toBe('1969')
     const hint = container.querySelector('[data-field="by-hint"]') as HTMLElement
     expect(hint).not.toBeNull()
     expect(hint.textContent).toMatch(/V2/)
@@ -79,7 +79,7 @@ describe('CreateFencerFromAliasModal', () => {
     expect(onconfirm).toHaveBeenCalledWith({
       txt_surname: 'DUPONT',
       txt_first_name: 'Jean',
-      int_birth_year: 1974,
+      int_birth_year: 1969,
       enum_gender: 'M',
     })
   })

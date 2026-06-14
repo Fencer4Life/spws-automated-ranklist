@@ -45,3 +45,13 @@ Implementation:
 - Pre-existing pollution from earlier EVF imports is not automatically cleaned — each affected event needs `fn_rollback_event('<code>')` + re-ingest under the new rule.
 - Scrapers without `country` output (plain text / legacy CSV) are effectively blocked from ingesting into EVF tournaments; operators must extend the scraper or manually add country before ingest.
 - Superseding effect: ADR-020's "International unmatched → skip" rule still holds; this ADR **widens** the skip to also cover AUTO_MATCHED and PENDING for non-POL rows at EVF events.
+
+## Amendment (2026-06-13) — Stage-0 reconciliation skips international events
+
+The new first pipeline stage `s0_reconcile_roster` (ADR-056, 2026-06-13) creates
+new participants and reconciles conflicting birth years for SPWS-domestic events
+only. International/EXCLUDED events (PEW/MEW/MSW) are **skipped entirely** by
+Stage 0 — no creation, no reconciliation — consistent with this ADR's POL-only
+intake. Their `int_participant_count` is full-field (not per-V-cat) and their
+rosters are not SPWS master data, so Stage 0 must not touch them. The skip is
+keyed on the event-code organizer (EVF/FIE → skip), evaluated before any DB read.

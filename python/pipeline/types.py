@@ -174,6 +174,14 @@ class PipelineContext:
                                         # active-season lookup. Avoids "active
                                         # season" assumption for historical re-ingest.
 
+    # Stage 0 (ADR-050/056/010/038) — roster reconciliation outputs.
+    # Populated by s0_reconcile_roster before the matcher; consumed by the
+    # staging .md top blocks + Admin UI surfacing. Each dict carries enough
+    # context to render a row without re-querying.
+    created_fencers: list[dict] = field(default_factory=list)
+    reconciled_fencers: list[dict] = field(default_factory=list)
+    reconcile_conflicts: list[dict] = field(default_factory=list)
+
     # Stage outputs (written by the stage that owns them)
     event: dict | None = None           # S2 writes: {id_event, txt_code, organizer_hint, ...}
     is_combined_pool: bool = False      # S3 writes

@@ -165,3 +165,95 @@ parser paths where bracket label is the strongest signal.
 - pgTAP 5.19.4 — `fn_assert_result_vcat` uses `enum_source_age_category` when set on the result row.
 - pgTAP 5.19.5 — `fn_assert_result_vcat` falls back to BY-derived V-cat when `enum_source_age_category` is null (joint-pool path).
 - pytest 5.19.6 — integration: V1-bracket fencer with V2-canonical BY routes to V1-SABRE-M tournament (regression test for the GP1 bug).
+
+## Revision (2026-06-13) — Stage-0 birth-year reconciliation + midpoint estimate
+
+### Context (revised)
+
+The bracket-label rule above keeps a fencer in the V-cat the organizer placed
+them in for past tournaments, and surfaces a BY/V-cat mismatch in the staging
+.md for the operator to catch. But two gaps remained:
+
+1. **Genuinely-new participants** (foreign women in PPW3's combined women's
+   épée pool `E81CEE6F` — RABAB, MITSKEVICH, KALECKA, …) had no `tbl_fencer`
+   row, so the fuzzy matcher (s6) glued them onto the nearest existing Polish
+   name ("class-B" contamination), spilling wrong rows into V-cat brackets.
+2. **Stored birth years drifted** out of step with the brackets a fencer
+   actually competed in (ADR-010: ranking category is BY-derived, so a wrong
+   BY files a result under the wrong ranking).
+
+### Decision (revised)
+
+A new FIRST pipeline stage **`s0_reconcile_roster`** (before `s1_validate_ir`,
+i.e. before the matcher) reconciles the master roster against each bracket's
+rows, keyed on the row's **authoritative V-cat** (bracket `category_hint` →
+else FTL `(N)` `raw_age_marker` → else unknown):
+
+1. **New fencer** — high-precision EXACT check (normalized surname+first_name,
+   diacritic-folded, plus alias membership; nationality folded so PL==POL but a
+   *different* known nationality means a different person — NOT the fuzzy
+   scorer). If absent, create with `int_birth_year` = **band midpoint** and
+   `bool_birth_year_estimated = TRUE`. V-cat unknown (unmarked combined-pool
+   row) → `int_birth_year = NULL`, parked for admin.
+2. **Matched fencer whose stored BY conflicts** with the bracket V-cat
+   (`vcat_for_age(season_end − stored_BY) ≠ bracket_vcat`) → correct to the
+   band midpoint. Estimated keeps the flag; **CONFIRMED is overwritten AND
+   downgraded to estimated** (surfaced loudly in the staging .md top block + the
+   admin Birth-year review tab so an organizer-bracket error is catchable). The
+   audit trigger preserves the prior value.
+
+**International events (PEW/MEW/MSW, ADR-038) are skipped entirely.**
+
+### Midpoint convention (replaces youngest-edge)
+
+The birth-year ESTIMATE is now the band **midpoint anchor age**, replacing the
+former youngest-edge. `int_birth_year = season_end_year − anchor`:
+
+| V-cat | band | anchor age | BY (season_end 2026) |
+|---|---|---|---|
+| V0 | < 40 | 35 | 1991 |
+| V1 | 40–49 | 45 | 1981 |
+| V2 | 50–59 | 55 | 1971 |
+| V3 | 60–69 | 65 | 1961 |
+| V4 | ≥ 70 | 75 | 1951 |
+
+Open-ended V0/V4 anchors (35/75) are a deliberate convention; bounded bands are
+true midpoints. **Ranking-neutral**: youngest-edge and midpoint map to the same
+band, so the convention change + the one-time backfill never move anyone between
+rankings — only the year within the band shifts. Single source of truth:
+`python.matcher.pipeline.estimate_birth_year` (`_CATEGORY_MIDPOINT_AGE`);
+mirrored in `frontend/src/lib/birthYearEstimate.ts` (vitest 5.1 keeps lockstep).
+
+### Idempotence
+
+The exact existence check prevents re-creation; once a BY equals its band
+midpoint, `vcat_for_age` returns the same band so no further conflict fires. A
+fencer appearing in two conflicting brackets in one run is written once and the
+conflict flagged (`ctx.reconcile_conflicts`), never thrashed.
+
+### One-time backfill (migration 20260613000002)
+
+Re-midpoints existing `bool_birth_year_estimated = TRUE` fencers. **Neutral by
+construction**: rewrites a BY only when `fn_age_category` is unchanged for EVERY
+season the fencer has a result in (the exact join `fn_ranking_ppw` uses), so no
+result can move between rankings; boundary fencers are skipped. Idempotent.
+
+### Reuse (no new DB objects)
+
+Creation uses the existing `db.insert_fencer` (plain INSERT; the high-precision
+dedup is in Python). Reconciliation uses the existing
+`fn_update_fencer_birth_year` RPC (audit-logged). No new RPC, no new column.
+
+### Test scope (TDD, plan IDs 10.x)
+
+- pytest 10.1–10.9 — `python/tests/test_s0_reconcile_roster.py`: midpoint table;
+  authoritative-V-cat precedence; high-precision create (incl. NULL-BY unknown
+  V-cat, alias dedup, nationality-fold, same-name-diff-nationality split);
+  reconcile estimated-keep-flag + confirmed-downgrade; no-conflict no-write;
+  international skip; idempotence; cross-bracket conflict flagged; staging .md
+  top blocks.
+- pgTAP 43.1–43.9 — `supabase/tests/43_stage0_reconciliation.sql`:
+  `fn_update_fencer_birth_year` re-estimate + downgrade transitions, audit-trigger
+  old-value preservation, NULL-BY + midpoint-BY plain inserts.
+- vitest 5.1 + 9.111b — midpoint estimate; inconsistency flag now fires for
+  estimated (downgraded) BYs.

@@ -260,7 +260,13 @@
   })())
 
   let inconsistencyWarning = $derived((() => {
-    if (!editBirthYear || editEstimated) return null
+    // ADR-056 Stage-0 (2026-06-13): warn for BOTH confirmed AND estimated birth
+    // years. A reconciled (was-CONFIRMED → downgraded-to-estimated) value, or
+    // any estimate that disagrees with a bracket the fencer actually competed
+    // in, is the loud admin signal for a possible organizer-bracket error.
+    // The check is season-aware (uses each row's own season), so it does not
+    // fire on legitimate ageing across band boundaries.
+    if (!editBirthYear) return null
     for (const row of tournamentHistory) {
       const seasonEndYear = parseInt(row.txt_season_code.replace(/.*(\d{4})$/, '$1')) || null
       if (!seasonEndYear) continue
