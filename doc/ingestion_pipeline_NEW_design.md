@@ -132,14 +132,14 @@ UC coverage: UC1–UC4, UC23–UC31 **minus** the manual-review gate (UC4 become
 
 ## 3. THE BIG CHART — three layers, plugins named, with ADRs
 
-⚑ new · ◑ changed. `(ADR-NNN)` = why a node exists. Note `ResolveFencers` runs **first of the core**, even before `DetectCombinedPool`. The two ingest flows (`FRESH_INGEST_DOMESTIC` / `_INTERNATIONAL`) share this core, differing only in `ResolveFencers`'s `intake` param (§6).
+⚑ new · ◑ changed. `(ADR-NNN)` = why a node exists. Note `ResolveFencers` runs **first of the core**, even before `DetectCombinedPool`. The chart shows `INGEST_DOMESTIC`'s plugin order; `RECOMPUTE_DOMESTIC` reuses `AssignFinalVcat`+`Commit`, `DEDUP_SWEEP` runs `ResolveFencers` whole-roster, `POST_COMMIT` is the reactor-fired tail (§6). No node halts — faults auto-resolve inline (§5.2). International flows are deferred (§12).
 
 ```mermaid
 flowchart TB
     %% ===== LAYER 1: RULE ENGINE (plan time) =====
     subgraph L1["1 · Rule Engine (plan time) — ADR-073"]
         direction TB
-        RB["⚑ RuleBook — the FLOWS (Rules) we support<br/>code-defined, optionally tbl_flow_rule per ADR-006"]
+        RB["⚑ RuleBook — 4 domestic FLOWS + REMEDIATIONBOOK<br/>INGEST_DOMESTIC · RECOMPUTE_DOMESTIC · DEDUP_SWEEP · POST_COMMIT<br/>code-defined, optionally tbl_flow_rule per ADR-006"]
         FP["⚑ FlowParams (flow · source · env · organizer)"]
         RE["⚑ RuleEngine.plan(FlowParams)<br/>look up flow → prune steps by predicate → validate DAG"]
         EP["⚑ ExecutionPlan (ordered · immutable · inspectable)"]
@@ -149,8 +149,8 @@ flowchart TB
 
     %% ===== LAYER 2: ORCHESTRATOR (run time) =====
     subgraph L2["2 · Orchestrator (run time) — ADR-073"]
-        ORC["⚑ execute(plan, ctx, svc)<br/>for each plugin: applies? → middleware(run) → Halt/trace<br/>ONE DIRECTION ONLY"]
-        MW["⚑ middleware: Timing · Log ·<br/>StampProvenance (ADR-055) · HaltToTelegram (ADR-059)"]
+        ORC["⚑ execute(plan, ctx, svc)<br/>for each plugin: applies? → middleware(run) → trace<br/>faults auto-resolved inline · NEVER halts · ONE DIRECTION ONLY"]
+        MW["⚑ middleware: Timing · Log ·<br/>StampProvenance (ADR-055) · EscalateToTelegram (ADR-059/074)"]
         MW -.wraps.-> ORC
     end
 
@@ -158,14 +158,14 @@ flowchart TB
     subgraph L3["3 · Plugins (logic) — one concern each"]
         direction TB
         P1["ParseSource ⚑◑ · Source<br/>PARSERS dispatch + retain bytes (ADR-050)"]
-        P2["ValidateIR ◑ · Gate<br/>structural + pool-only (ADR-067)"]
+        P2["ValidateIR ◑ · Gate<br/>structural + pool-only skip (ADR-067)"]
         P3["ResolveEvent ◑ · Transform<br/>event/season/organizer/domestic (ADR-025)"]
-        P4["⭐ ResolveFencers ⚑◑ · Mutator (MERGED S0⊕S6 — runs FIRST of the core)<br/>exact→fuzzy(policy)→create · reconcile BY · alias writeback · dedup<br/>effects: master_data · HALT V0_PROHIBITED (ADR-003/010/020/038/056/064/070)"]
+        P4["⭐ ResolveFencers ⚑◑ · Mutator (MERGED S0⊕S6 — runs FIRST of the core)<br/>exact→fuzzy(policy)→create · reconcile BY · alias writeback · dedup<br/>intake=DOMESTIC: create unmatched, V0 ok · emits master_data changed (ADR-003/010/020/056/064/070)"]
         P5["DetectCombinedPool ◑ · Transform<br/>from GOVERNED birth years (ADR-024)"]
         P6["SplitByAge ◑ · Transform<br/>group by GOVERNED birth year (ADR-024/047)"]
         P7["DetectJointPool ◑ · Transform<br/>siblings (ADR-049)"]
-        P8["ValidateCounts ◑ · Gate<br/>count + min-participants + URL→data (ADR-052/066)"]
-        P9["DetectPoolRound ◑ · Gate<br/>gender-mix (ADR-057/063)"]
+        P8["ValidateCounts ◑ · Gate<br/>count + min · sub-min bracket auto-dropped (ADR-052/066)"]
+        P9["DetectPoolRound ◑ · Gate<br/>gender-mix · auto-skips bracket (ADR-057/063)"]
         P10["AssignFinalVcat ◑ · Transform<br/>V-cat from reconciled BY (ADR-056)"]
         P12["Commit ◑ · Mutator<br/>atomic delete-old+insert+score → live; emits live committed (ADR-014/022/049/055)"]
         P1-->P2-->P3-->P4-->P5-->P6-->P7-->P8-->P9-->P10-->P12
@@ -173,19 +173,19 @@ flowchart TB
 
     %% ===== REACTORS (event-driven, OUTSIDE the forward plan) =====
     subgraph RX["⚑ Reactors — observe a signal, emit a Flow (ADR-072)"]
-        SH["⚑ SelfHealing (kind: Reactor)<br/>on master_data.changed → emits Flow.RECOMPUTE (debounced)<br/>impl: trg_fencer_change_enqueue → tbl_recompute_queue → worker"]
-        PCR["PostCommit (kind: Reactor)<br/>on live.committed → emits Flow.POST_COMMIT"]
+        SH["⚑ SelfHealing (kind: Reactor)<br/>on master_data.changed → emits RECOMPUTE_DOMESTIC (debounced)<br/>impl: trg_fencer_change_enqueue → tbl_recompute_queue → worker"]
+        PCR["PostCommit (kind: Reactor)<br/>on live.committed → emits POST_COMMIT"]
     end
 
-    %% ===== POST_COMMIT flow (plugins the PostCommit reactor emits) =====
-    subgraph PC["POST_COMMIT flow"]
-        PCx["PewCascade (ADR-046) → EvfParity* (ADR-053) →<br/>ParticipantCount (ADR-069) → Notify (ADR-059)"]
+    %% ===== POST_COMMIT flow (domestic members) =====
+    subgraph PC["POST_COMMIT flow (domestic)"]
+        PCx["ParticipantCount (ADR-069) →<br/>Notify + Escalate last resort (ADR-059/074)"]
     end
 
     %% ===== STATE =====
     LIVE[("LIVE: tbl_tournament / tbl_result → ranking views (auto-reflect)")]
     ROSTER[("tbl_fencer — governed roster")]
-    EDITM["manual tbl_fencer edit"]
+    EDITM["manual tbl_fencer edit / DEDUP_SWEEP"]
 
     EP --> ORC --> L3
     ROSTER --> P4
@@ -381,6 +381,45 @@ PHASE B — resolve the remainder (fuzzy, against the now-reconciled roster):
 - **Asymmetric safety:** a wrong link is unrecoverable corruption (BR-9); a duplicate is recoverable by the dedup sweep. Bias to create-over-uncertain-link.
 - **Same code, two entry points:** the per-bracket `ResolveFencers` plugin and the whole-roster `DEDUP_SWEEP` flow run the *same* dedup/reconcile logic — there is **no separate MDM subsystem**.
 - **Triggers self-healing:** because its `effects` is `master_data`, every create/merge/reconcile fires the CDC trigger (§8).
+
+### 5.2 No-halt fault resolution — the `REMEDIATIONBOOK` + `Escalate`
+
+The pipeline **never hard-halts** on a domain problem. A gate/transform that hits one calls
+`ctx.fault(kind, detail)`; the orchestrator does **not** stop. The fault is resolved by an explicit,
+declarative policy — the **`REMEDIATIONBOOK`** (a sibling of the RuleBook, so error policy stays out of
+hidden `if`s inside plugins) — applied **inline**, so the flow runs on to `Commit`. Only `Abort` (genuine
+infra failure, e.g. DB down) breaks a run, and it is retried — never gated by a human.
+
+```python
+class FaultKind(str, Enum):
+    BELOW_MIN; COUNT_MISMATCH; POOL_ROUND; SPLITTER_UNRESOLVED; IR_INVALID; URL_DATA_MISMATCH
+
+class Escalation(str, Enum):  NEVER; ON_LOSS; ALWAYS    # when to Telegram — informational, last resort
+
+@dataclass(frozen=True)
+class Remediation:
+    auto:     Callable        # deterministic inline fix: drop_bracket / skip_bracket / accept_parsed / ...
+    escalate: Escalation      # last-resort Telegram, AFTER the event has committed
+
+# Domestic policy — small and explicit. No V0 rule here: domestic admits V0 (V0-exclusion is international, §12).
+REMEDIATIONBOOK = {
+  FaultKind.BELOW_MIN:           Remediation(auto=drop_bracket,   escalate=ON_LOSS),  # ADR-066
+  FaultKind.POOL_ROUND:          Remediation(auto=skip_bracket,   escalate=ON_LOSS),  # ADR-057/063
+  FaultKind.COUNT_MISMATCH:      Remediation(auto=accept_parsed,  escalate=ALWAYS),   # ADR-052/069 — needs eyes
+  FaultKind.URL_DATA_MISMATCH:   Remediation(auto=accept_parsed,  escalate=ALWAYS),   # ADR-052
+  FaultKind.SPLITTER_UNRESOLVED: Remediation(auto=keep_combined,  escalate=ALWAYS),   # rare: governed BY should prevent it
+  FaultKind.IR_INVALID:          Remediation(auto=skip_artifact,  escalate=ALWAYS),   # ADR-067
+}
+```
+
+- **`Escalate`** — the "error plugin" (Mutator, `effects: external`). It runs **last**, as part of
+  `POST_COMMIT`'s `Notify`, *after* the event is already committed in its best automatically-resolved state.
+  It sends a Telegram message **only** for faults whose policy is `ALWAYS`, or `ON_LOSS` when the inline fix
+  actually dropped data. It asks a human to look — it **never blocks** the pipeline.
+- **Self-healing is the other half.** A problem that needs a *different flow* (a master-data correction →
+  re-derive an event) is **not** a fault — it travels the Mutator→signal→Reactor seam (`master_data.changed`
+  → `SelfHealing` → `RECOMPUTE_DOMESTIC`, §8). Faults fix the *current* run inline; self-healing fixes
+  *other* events asynchronously. Together: full automation, no gate. — **ADR-070/074**
 
 ---
 
