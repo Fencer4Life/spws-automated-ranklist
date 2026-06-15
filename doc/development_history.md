@@ -784,6 +784,46 @@ ADR-010 (BY-derived justification), ADR-038 (skip international). No new ADRs.
 
 ---
 
+### NEW ingestion pipeline — rule-driven plugin rebuild (ADR-070–074) — 2026-06-15
+
+Rebuilt the ingestion pipeline from a fixed stage monolith into a **rule-driven plugin
+pipeline** (design doc [ingestion_pipeline_NEW_design.md](ingestion_pipeline_NEW_design.md),
+now CURRENT). Domestic-only scope: 4 flows (`INGEST_DOMESTIC`, `RECOMPUTE_DOMESTIC`,
+`DEDUP_SWEEP`, `POST_COMMIT`) + 2 reactors (`SelfHealing`, `PostCommit`); international deferred
+(design §12). Built TDD, RED-first, in five milestones — reuse-first throughout (the plugins
+*wrap* the existing `stages.py` functions via `python/pipeline/plugins/bridge.py`; no domain
+logic was rewritten).
+
+- **M1 — Core + engine** (`core/contract.py`, `core/orchestrator.py`, `engine/{flows,rulebook,rule_engine}.py`,
+  `run.py`): the `IngestPlugin` contract, generic one-direction `Orchestrator`, `RuleEngine.plan` →
+  DAG-validated `ExecutionPlan`. Tests N1.1–N1.18.
+- **M2 — Plugins + no-halt** (`plugins/*`): each plugin wraps a stage; `HaltError → ctx.fault`; the
+  declarative `REMEDIATIONBOOK` applies inline fixes via middleware so the flow always reaches `Commit`;
+  `Escalate` is last-resort Telegram. Tests N2.1–N2.9.
+- **M3 — ResolveFencers merge** (`plugins/resolve_fencers.py`): merged Stage-0 ⊕ Stage-6 into one early
+  two-phase plugin (exact + band-midpoint reconcile, then fuzzy link-or-create); link policy inherits the
+  matcher's calibrated `AUTO_MATCHED` status; `DetectCombinedPool`/`SplitByAge` read the governed BY.
+  Tests N3.1–N3.9.
+- **M4 — RECOMPUTE_DOMESTIC** (`plugins/recompute.py`, `db_connector.fetch_event_results`): event-granular
+  self-heal from stored FK rows (no source, no re-match) + `source_artifact_path` retention. Tests N4.1–N4.6.
+- **M5 — CDC + dedup** (migration `20260615000001`, `recompute/worker.py`): `tbl_recompute_queue` +
+  watermark, column-aware `trg_fencer_change_enqueue`, `fn_enqueue_affected_events`, `fn_merge_fencers`,
+  debounced worker, `DEDUP_SWEEP` whole-roster sweep. pgTAP 44.1–44.11 (live) + pytest N5.1–N5.6.
+
+**Tests.** pgTAP 577 → 588; pytest +49 across `test_rule_engine`, `test_pipeline_core`,
+`test_pipeline_plugins`, `test_resolve_fencers`, `test_recompute`, `test_recompute_worker`.
+
+**ADRs.** ADR-070–074 Accepted; amended ADR-050 (stages→plugins, draft tables removed), ADR-056
+(Stage-0 absorbed), ADR-038/066/067/069 (halts → faults), reversed halt-by-exception in ADR-050/057/067.
+RTM FR-112–117 Covered.
+
+**Deferred (design §12, international only):** `FRESH_INGEST_INTERNATIONAL`, `EVF_SYNC`, `PewCascade`,
+`EvfParity`; real pg_cron wiring of the recompute worker; `LISTEN/NOTIFY` dispatch; `tbl_flow_rule`.
+
+**Memory.** [project_new_pipeline_build_2026-06-14.md](../doc-redacted-path).
+
+---
+
 ## Archived Documents
 
 The following documents contain the original detailed plans. They are superseded by this history and the Project Specification:
