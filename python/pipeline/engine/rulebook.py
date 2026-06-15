@@ -58,13 +58,13 @@ def _build_plugins() -> dict[str, object]:
         DetectPoolRound,
         ParseSource,
         ResolveEvent,
-        ResolveFencers,
         SplitByAge,
         ValidateCounts,
         ValidateIR,
     )
     from python.pipeline.plugins.post_commit import Notify, ParticipantCount
     from python.pipeline.plugins.recompute import LoadCommitted
+    from python.pipeline.plugins.resolve_fencers import ResolveFencers
 
     instances = [
         ParseSource(), ValidateIR(), ResolveEvent(), ResolveFencers(),
