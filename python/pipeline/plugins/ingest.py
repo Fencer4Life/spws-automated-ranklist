@@ -36,6 +36,11 @@ class ParseSource(BasePlugin):
         if parsed is None:
             from python.pipeline.core.contract import Abort
             raise Abort(plugin=self.name, detail="no parsed IR provided (svc.config['parsed'])")
+        # BR-13 (ADR-072): retain the source artifact path so a dead-URL event
+        # can be re-ingested from retained bytes (source="retained").
+        artifact = cfg.get("source_artifact_path")
+        if artifact is not None and getattr(parsed, "source_artifact_path", None) is None:
+            parsed.source_artifact_path = artifact
         ensure_pctx(
             ctx,
             parsed=parsed,
@@ -149,7 +154,17 @@ class ValidateCounts(BasePlugin):
     reads = frozenset({"matches", "event"})
 
     def run(self, ctx: Context, svc: Services) -> None:
-        run_stage(ctx, "s7_validate", svc.db)  # COUNT_MISMATCH / URL_DATA_MISMATCH -> fault
+        pctx = get_pctx(ctx)
+        # s7_validate compares against the source parse (count + URL→data). On
+        # RECOMPUTE there is no source (parsed=None), so skip it; the min-
+        # participants gate still runs against the loaded matches (ADR-072).
+        has_source = (
+            pctx is not None
+            and getattr(pctx, "parsed", None) is not None
+            and getattr(pctx.parsed, "results", None)
+        )
+        if has_source:
+            run_stage(ctx, "s7_validate", svc.db)  # COUNT_MISMATCH / URL_DATA_MISMATCH -> fault
         self._check_min_participants(ctx, svc)
 
     def _check_min_participants(self, ctx: Context, svc: Services) -> None:
