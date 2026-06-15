@@ -150,6 +150,9 @@ class StageMatchResult:
     method: str                         # AUTO_MATCHED | PENDING | AUTO_CREATED | EXCLUDED
     alternatives: list[dict] = field(default_factory=list)  # top-N candidates for ambiguous
     notes: str = ""                     # operator-facing detail (override applied, V0 halt, etc.)
+    governed_birth_year: int | None = None  # ADR-070: governed BY emitted by ResolveFencers
+                                            # (reconciled for exact/fuzzy links, midpoint for
+                                            # created). Consumed by DetectCombinedPool/SplitByAge.
 
 
 @dataclass

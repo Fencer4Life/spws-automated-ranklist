@@ -13,6 +13,7 @@ from __future__ import annotations
 from python.pipeline.core.contract import Context, PluginKind, Services
 from python.pipeline.plugins.base import BasePlugin
 from python.pipeline.plugins.bridge import ensure_pctx, get_pctx, run_stage
+from python.pipeline.stages import vcat_for_age
 
 
 # ---------------------------------------------------------------------------
@@ -71,29 +72,25 @@ class ResolveEvent(BasePlugin):
             ctx.set("event", pctx.event)
 
 
-class ResolveFencers(BasePlugin):
-    """MERGED roster + identity (M2 composite). Runs s0 → s3 → s4 → s6 on the
-    shared pctx so the matcher sees the same per-row V-cat as today. The deep
-    two-phase merge + governed-BY reorder is M3 (ADR-070)."""
-    name = "ResolveFencers"
-    kind = PluginKind.MUTATOR
-    reads = frozenset({"parsed", "event"})
-    writes = frozenset({"matches"})
-    effects = frozenset({"master_data"})
+# ResolveFencers (the merged, early identity plugin) lives in resolve_fencers.py.
 
-    def run(self, ctx: Context, svc: Services) -> None:
-        run_stage(ctx, "s0_reconcile_roster", svc.db)
-        run_stage(ctx, "s3_detect_combined_pool", svc.db)
-        run_stage(ctx, "s4_split_via_batch", svc.db)   # SPLITTER_UNRESOLVED -> fault
-        run_stage(ctx, "s6_resolve_identity", svc.db)
-        pctx = get_pctx(ctx)
-        if pctx is not None:
-            ctx.set("matches", pctx.matches)
+
+def _governed_vcats(matches, season_end) -> dict:
+    """Group matched rows by the V-cat derived from their GOVERNED birth year
+    (ADR-070/056). The governed BY is emitted by ResolveFencers per row."""
+    groups: dict[str, list] = {}
+    for m in matches:
+        by = getattr(m, "governed_birth_year", None)
+        vcat = vcat_for_age(season_end - by) if by is not None else None
+        if vcat is not None:
+            groups.setdefault(vcat, []).append(m)
+    return groups
 
 
 class DetectCombinedPool(BasePlugin):
-    """Mirror the combined-pool flag already computed in ResolveFencers (s3).
-    M3 makes this detect from the governed BY spread."""
+    """Detect a combined (multi-V-cat) pool from the GOVERNED birth-year spread
+    of the resolved roster (ADR-024/070) — robust even when the source omitted
+    age markers, since the fencers' governed BYs are known."""
     name = "DetectCombinedPool"
     kind = PluginKind.TRANSFORM
     reads = frozenset({"matches"})
@@ -101,12 +98,17 @@ class DetectCombinedPool(BasePlugin):
 
     def run(self, ctx: Context, svc: Services) -> None:
         pctx = get_pctx(ctx)
-        ctx.set("combined", bool(pctx.is_combined_pool) if pctx else False)
+        season_end = pctx.season_end_year if pctx else None
+        matches = ctx.get("matches") or []
+        combined = season_end is not None and len(_governed_vcats(matches, season_end)) >= 2
+        ctx.set("combined", combined)
+        if pctx is not None:
+            pctx.is_combined_pool = combined
 
 
 class SplitByAge(BasePlugin):
-    """Mirror the V-cat split already computed in ResolveFencers (s4). M3 makes
-    this group by governed BY and drops the redundant pre-run."""
+    """Group the resolved rows by GOVERNED birth year (ADR-070). Replaces the
+    old splitter's reliance on scraped birth years / the batch RPC."""
     name = "SplitByAge"
     kind = PluginKind.TRANSFORM
     reads = frozenset({"matches", "combined"})
@@ -117,7 +119,12 @@ class SplitByAge(BasePlugin):
 
     def run(self, ctx: Context, svc: Services) -> None:
         pctx = get_pctx(ctx)
-        ctx.set("splits", pctx.splits if pctx else None)
+        season_end = pctx.season_end_year if pctx else None
+        matches = ctx.get("matches") or []
+        splits = _governed_vcats(matches, season_end) if season_end is not None else {}
+        ctx.set("splits", splits)
+        if pctx is not None:
+            pctx.splits = splits
 
 
 class DetectJointPool(BasePlugin):
