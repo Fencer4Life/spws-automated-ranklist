@@ -179,6 +179,45 @@ class DbConnector:
             for r in rows
         ]
 
+    # -- CDC recompute queue + dedup (ADR-071 / ADR-072) --------------------
+
+    def merge_fencers(self, survivor_id: int, duplicate_id: int) -> None:
+        """ADR-071 — merge a duplicate into the survivor (re-point results + fold
+        aliases + enqueue both sides). Thin wrapper over fn_merge_fencers."""
+        self._sb.rpc("fn_merge_fencers", {
+            "p_survivor": survivor_id, "p_duplicate": duplicate_id}).execute()
+
+    def enqueue_affected_events(self, id_fencer: int) -> int:
+        """Enqueue every event a fencer participated in (fn_enqueue_affected_events)."""
+        resp = self._sb.rpc("fn_enqueue_affected_events", {"p_id_fencer": id_fencer}).execute()
+        return resp.data if isinstance(resp.data, int) else 0
+
+    def recompute_watermark(self):
+        """Return ts_last_master_change (the debounce watermark), or None."""
+        resp = self._sb.table("tbl_recompute_watermark").select(
+            "ts_last_master_change").limit(1).execute()
+        rows = resp.data or []
+        return rows[0]["ts_last_master_change"] if rows else None
+
+    def claim_recompute_batch(self) -> list[int]:
+        """Claim the PENDING recompute events: flip them to CLAIMED and return the
+        distinct id_events (the queue already dedups PENDING per event)."""
+        pend = self._sb.table("tbl_recompute_queue").select("id_event").eq(
+            "enum_status", "PENDING").execute()
+        ids = sorted({r["id_event"] for r in (pend.data or [])})
+        if ids:
+            self._sb.table("tbl_recompute_queue").update(
+                {"enum_status": "CLAIMED", "ts_claimed": "now()"}
+            ).eq("enum_status", "PENDING").in_("id_event", ids).execute()
+        return ids
+
+    def mark_recompute_done(self, id_events: list[int]) -> None:
+        """Flip claimed rows for these events to DONE."""
+        if not id_events:
+            return
+        self._sb.table("tbl_recompute_queue").update({"enum_status": "DONE"}).eq(
+            "enum_status", "CLAIMED").in_("id_event", id_events).execute()
+
     def find_seasons_containing_dates(
         self, event_dt_start: str, event_dt_end: str
     ) -> list[dict]:

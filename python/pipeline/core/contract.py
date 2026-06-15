@@ -146,6 +146,7 @@ class Context:
     trace: Trace = field(default_factory=Trace)
     warnings: list[str] = field(default_factory=list)
     faults: list[Fault] = field(default_factory=list)
+    params: dict[str, Any] = field(default_factory=dict)  # active Step.params (set by orchestrator)
 
     _active_plugin: str | None = field(default=None, repr=False)
     _active_writes: frozenset[str] | None = field(default=None, repr=False)

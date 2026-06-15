@@ -1450,7 +1450,7 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 577 assertions (562 prior + 4 ADR-066 (5.M8.1–5.M8.4): min-participants threshold schema invariants + `fn_export_scoring_config` JSONB round-trip; +1 ADR-049 amendment 27.27: `fn_commit_event_draft` writes per-V-cat own count on joint siblings — 25.5 reworded in place, no count change; +10 ADR-056 rev Stage-0 (43.1–43.10 in `43_stage0_reconciliation.sql`): `fn_update_fencer_birth_year` estimated/CONFIRMED reconcile, audit-trigger restore trail, plain-INSERT NULL/midpoint BY — file committed in 760d563, total bumped here to close the Gate-3 doc-lag).
+- pgTAP total: 588 assertions (562 prior + 4 ADR-066 (5.M8.1–5.M8.4): min-participants threshold schema invariants + `fn_export_scoring_config` JSONB round-trip; +1 ADR-049 amendment 27.27: `fn_commit_event_draft` writes per-V-cat own count on joint siblings — 25.5 reworded in place, no count change; +10 ADR-056 rev Stage-0 (43.1–43.10 in `43_stage0_reconciliation.sql`): `fn_update_fencer_birth_year` estimated/CONFIRMED reconcile, audit-trigger restore trail, plain-INSERT NULL/midpoint BY — file committed in 760d563, total bumped here to close the Gate-3 doc-lag; +11 ADR-072/071 CDC+dedup (44.1–44.11 in `44_cdc_recompute_dedup.sql`): tbl_recompute_queue schema, column-aware `trg_fencer_change_enqueue` (BY/nationality enqueue, name no-op), dedup coalescing, debounce watermark, `fn_merge_fencers` re-point + alias fold + delete).
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|

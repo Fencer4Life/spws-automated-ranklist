@@ -30,7 +30,11 @@ class Orchestrator:
         self.middleware = list(middleware or [])
 
     def execute(self, plan, ctx: Context, svc: Services) -> Context:
-        for plugin in plan.plugins:
+        for step in plan.steps:
+            plugin = plan.registry[step.plugin]
+            # Expose this step's params (e.g. scope="whole_roster", intake=...)
+            # to the plugin for the duration of its run (design §6.3).
+            ctx.params = dict(getattr(step, "params", {}) or {})
             if not plugin.applies(ctx):
                 ctx.trace.record(plugin.name, Outcome.SKIPPED)
                 continue

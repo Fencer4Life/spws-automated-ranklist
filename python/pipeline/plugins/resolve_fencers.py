@@ -48,6 +48,9 @@ class ResolveFencers(BasePlugin):
     effects = frozenset({"master_data"})
 
     def run(self, ctx: Context, svc: Services) -> None:
+        if ctx.params.get("scope") == "whole_roster":
+            self._sweep(ctx, svc)   # DEDUP_SWEEP (ADR-071) — same dedup logic, whole roster
+            return
         pctx = get_pctx(ctx)
         db = svc.db
         domestic = _is_domestic(pctx.event)
@@ -128,6 +131,34 @@ class ResolveFencers(BasePlugin):
 
         pctx.matches = matches
         ctx.set("matches", matches)
+
+    # ------------------------------------------------------------------ #
+    # DEDUP_SWEEP — whole-roster dedup (ADR-071), same primitive (fn_merge_fencers)
+    # ------------------------------------------------------------------ #
+    def _sweep(self, ctx: Context, svc: Services) -> None:
+        from python.matcher.fuzzy_match import normalize_name
+        from python.pipeline.stages import _norm_nat
+
+        db = svc.db
+        groups: dict[tuple, list[int]] = {}
+        for f in db.fetch_fencer_db():
+            key = (
+                normalize_name(f.get("txt_surname") or "", use_diacritic_folding=True),
+                normalize_name(f.get("txt_first_name") or "", use_diacritic_folding=True),
+                _norm_nat(f.get("txt_nationality")),
+            )
+            groups.setdefault(key, []).append(f["id_fencer"])
+
+        merged: list[tuple[int, int]] = []
+        for ids in groups.values():
+            if len(ids) > 1:
+                survivor = min(ids)                       # stable survivor choice
+                for dup in sorted(ids):
+                    if dup != survivor:
+                        db.merge_fencers(survivor, dup)   # re-point + fold + enqueue both
+                        merged.append((survivor, dup))
+        ctx.data["_merged_pairs"] = merged                # for the Notify summary
+        ctx.set("matches", [])                            # whole-roster: no per-row matches
 
     # ------------------------------------------------------------------ #
     # policy
