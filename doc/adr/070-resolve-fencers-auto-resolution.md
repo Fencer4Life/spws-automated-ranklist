@@ -1,7 +1,7 @@
 # ADR-070: `ResolveFencers` auto-resolution (merged Stage-0 ⊕ Stage-6, runs early), no human review gate
 
-**Status:** Proposed (design-only, 2026-06-14). Target architecture in
-[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §5.1. **Not yet implemented.**
+**Status:** Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
+[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §5.1. **Implemented** — see [development_history](../development_history.md).
 **Date:** 2026-06-14
 **Relates to:** ADR-003 (identity by FK), ADR-010/056 (V-cat from birth year), ADR-020/038 (domestic
 auto-create / international POL-only), ADR-064 (asymmetric gender filter), ADR-071 (dedup sweep),
@@ -60,7 +60,7 @@ making full automation defensible.
 - The draft tables + `fn_commit_event_draft` / `fn_discard_event_draft` / `fn_dry_run_event_draft` RPCs
   become dead and are removed (ADR-073).
 
-## Tests (planned — design §10, RED first)
+## Tests (implemented — design §10, RED first)
 
 exact-link / fuzzy-link / create / reconcile-BY / two-phase BY settling / split-uses-governed-BY;
 calibration regression bounding the false-link rate.

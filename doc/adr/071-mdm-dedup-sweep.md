@@ -1,7 +1,7 @@
 # ADR-071: Master-data management + eventual-consistency dedup (`DEDUP_SWEEP`)
 
-**Status:** Proposed (design-only, 2026-06-14). Target architecture in
-[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §5.1 / §6. **Not yet implemented.**
+**Status:** Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
+[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §5.1 / §6. **Implemented** — see [development_history](../development_history.md).
 **Date:** 2026-06-14
 **Relates to:** ADR-070 (`ResolveFencers`), ADR-072 (recompute / self-healing), ADR-003 (FK identity),
 ADR-056 (band-midpoint BY reconcile), ADR-055 (provenance).
@@ -47,7 +47,7 @@ seeded with known duplicates + wrong BYs.
 - Bootstrapping a roster with known duplicates + wrong birth years becomes a single `DEDUP_SWEEP` run that
   fans out to per-event recomputes automatically.
 
-## Tests (planned — design §10, RED first)
+## Tests (implemented — design §10, RED first)
 
 merge re-points results + folds aliases; BY reconcile to midpoint; sweep enqueues exactly the affected
 events for recompute; idempotent (a second sweep no-ops).

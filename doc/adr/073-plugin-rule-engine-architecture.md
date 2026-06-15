@@ -1,7 +1,7 @@
 # ADR-073: Plugin + rule-engine ingestion architecture
 
-**Status:** Proposed (design-only, 2026-06-14). Target architecture in
-[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §3–§7. **Not yet implemented.**
+**Status:** Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
+[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §3–§7. **Implemented** — see [development_history](../development_history.md).
 **Date:** 2026-06-14
 **Relates to:** **amends** ADR-050 (the stage-monolith becomes plugins; draft tables removed); ADR-006
 (JSONB rules — precedent for an optional `tbl_flow_rule`); ADR-055 (provenance middleware); hosts the
@@ -57,7 +57,7 @@ wrapping every `run`, keeping plugins pure. The `RuleBook` ships **code-defined*
 - New layout: `python/pipeline/core/` (contract, orchestrator), `engine/` (rulebook, rule_engine, flows),
   `plugins/`, `middleware/`, `run.py`.
 
-## Tests (planned — design §10, RED first)
+## Tests (implemented — design §10, RED first)
 
 planner resolves flow → sequence (incl. `ResolveFencers` before `SplitByAge`); DAG-validation rejects
 mis-order; orchestrator skip / fault / trace; **parity gate** — wrapped legacy stages produce

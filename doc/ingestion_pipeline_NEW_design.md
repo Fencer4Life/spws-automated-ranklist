@@ -1,7 +1,7 @@
 # Ingestion Pipeline — NEW Design (proposed)
 
-**Status:** 🟡 **DESIGN / PROPOSED** — target architecture, not yet implemented.
-**Supersedes:** the as-is map in [ingestion-pipeline-design.md](ingestion-pipeline-design.md) (keep that as the "current" reference until this lands).
+**Status:** ✅ **IMPLEMENTED / CURRENT** — built in milestones M1–M5 (2026-06-15); ADR-070–074 Accepted. See [development_history](development_history.md) for the build log.
+**Supersedes:** the stage-based architecture mapped in [ingestion-pipeline-design.md](ingestion-pipeline-design.md). The plugins *wrap* those stage functions (the bridge in `python/pipeline/plugins/bridge.py`), so that document remains the reference for the underlying stage logic; this document is the current architecture of record.
 **Shape:** a **rule-driven plugin pipeline**. Three layers, one direction:
 
 > **RuleBook + RuleEngine → ExecutionPlan → Orchestrator → Plugins (incl. ResolveFencers) → CDC-triggered Recompute / Dedup**

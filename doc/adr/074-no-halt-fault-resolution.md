@@ -1,7 +1,7 @@
 # ADR-074: No hard halt — declarative fault resolution + last-resort escalation
 
-**Status:** Proposed (design-only, 2026-06-14). Target architecture in
-[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §2 / §5.2. **Not yet implemented.**
+**Status:** Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
+[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §2 / §5.2. **Implemented** — see [development_history](../development_history.md).
 **Date:** 2026-06-14
 **Relates to:** **reverses** the halt-by-exception model of ADR-050 / ADR-057 / ADR-067; **amends**
 ADR-038 (V0), ADR-066 (min-participants), ADR-069 (participant-count "HALT gate"); ADR-073 (orchestrator),
@@ -62,7 +62,7 @@ self-healing fixes *other* events asynchronously. Together: full automation, no 
 - Telegram volume is bounded by escalation policy, not one message per problem.
 - Data loss (a dropped bracket) is always surfaced (`ON_LOSS`), so a *silent* drop is impossible.
 
-## Tests (planned — design §10, RED first)
+## Tests (implemented — design §10, RED first)
 
 below-min → drop + continue → commit; count-mismatch → accept + escalate; flow reaches `Commit` despite a
 fault; `Escalate` fires only per policy; infra `Abort` is retried, not gated.

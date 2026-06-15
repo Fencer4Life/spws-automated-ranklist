@@ -1,7 +1,7 @@
 # ADR-072: Master-data-change-triggered idempotent recompute (CDC queue + debounce)
 
-**Status:** Proposed (design-only, 2026-06-14). Target architecture in
-[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §6 / §8. **Not yet implemented.**
+**Status:** Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
+[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §6 / §8. **Implemented** — see [development_history](../development_history.md).
 **Date:** 2026-06-14
 **Relates to:** ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY),
 ADR-070 (identity) / ADR-071 (dedup) — the change *sources*; ADR-041 (edge-function dispatch),
@@ -56,7 +56,7 @@ affected event(s) **from stored, FK-linked results — no source fetch, no re-ma
 - `ValidateCounts` on recompute is **no-halt** (ADR-074): a relocation that drops a bracket below min
   auto-drops it and the heal still completes — a correction is never blockable.
 
-## Tests (planned — design §10, RED first)
+## Tests (implemented — design §10, RED first)
 
 trigger fires only on real change + enqueues the correct events (pgTAP); debounce / claim / coalesce;
 recompute-twice == once (idempotence); a boundary-crossing BY change re-partitions to the correct bracket;

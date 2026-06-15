@@ -1,6 +1,13 @@
 # Ingestion Pipeline — Design & Code Map
 
-**Status:** Living design document · **Scope:** the end-to-end ingestion pipeline (sources → live ranked results)
+> **⚠️ ARCHITECTURE SUPERSEDED (2026-06-15).** The current ingestion architecture is the
+> **rule-driven plugin pipeline** in [ingestion_pipeline_NEW_design.md](ingestion_pipeline_NEW_design.md)
+> (built M1–M5, ADR-070–074). The stage functions mapped below still exist and are *wrapped* by the
+> plugins (via `python/pipeline/plugins/bridge.py`), so this document remains the authoritative reference
+> for the **stage-layer logic** (`stages.py` S0–S7c) the plugins delegate to — but the orchestration,
+> the no-halt fault model, early `ResolveFencers`, self-healing recompute, and dedup live in the NEW doc.
+
+**Status:** Living design document (stage-layer reference) · **Scope:** the end-to-end ingestion pipeline (sources → live ranked results)
 **Audience:** maintainers who need to see *every code chunk*, what it does, and *why* (ADR rationale).
 
 > **DB schema is intentionally NOT detailed here.** For the schema (tables, columns, enums,
