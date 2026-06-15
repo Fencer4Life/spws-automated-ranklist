@@ -787,16 +787,23 @@ class TestEvfPhase2Allocator:
         """evf.41: CURRENT_SLOT_REUSE and PRIOR_SEASON_MATCH do NOT trigger per-row telegram.
         Only the summary line mentions them.
         """
+        from datetime import date, timedelta
+
         from python.scrapers import evf_sync
 
+        # Relative-to-today dates so the ADR-039 stale-gate (>30 days past) never
+        # suppresses these events as the clock advances (was hardcoded 2026-04/05,
+        # which silently went stale once today rolled past them).
+        d1 = date.today() + timedelta(days=14)
+        d2 = date.today() + timedelta(days=44)
         scraped = [
-            {"name": "EVF Circuit – Salzburg (AUT)", "dt_start": "2026-04-15",
-             "dt_end": "2026-04-16", "location": "Salzburg", "country": "Austria",
-             "weapons": ["EPEE"], "is_team": False, "url": "",
+            {"name": "EVF Circuit – Salzburg (AUT)", "dt_start": d1.isoformat(),
+             "dt_end": (d1 + timedelta(days=1)).isoformat(), "location": "Salzburg",
+             "country": "Austria", "weapons": ["EPEE"], "is_team": False, "url": "",
              "fee": None, "fee_currency": ""},
-            {"name": "EVF Circuit – Krakow (POL)", "dt_start": "2026-05-15",
-             "dt_end": "2026-05-16", "location": "Krakow", "country": "Poland",
-             "weapons": ["EPEE"], "is_team": False, "url": "",
+            {"name": "EVF Circuit – Krakow (POL)", "dt_start": d2.isoformat(),
+             "dt_end": (d2 + timedelta(days=1)).isoformat(), "location": "Krakow",
+             "country": "Poland", "weapons": ["EPEE"], "is_team": False, "url": "",
              "fee": None, "fee_currency": ""},
         ]
         rpc_returns = {
