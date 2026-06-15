@@ -142,6 +142,43 @@ class DbConnector:
         )
         return {row["id_fencer"]: row.get("int_birth_year") for row in (resp.data or [])}
 
+    def fetch_event_results(self, id_event: int) -> list[dict]:
+        """ADR-072 — load an event's committed, FK-linked results across ALL its
+        V-cat tournaments, each with the fencer's GOVERNED birth year, for
+        RECOMPUTE_DOMESTIC (no source fetch, no re-match).
+
+        Returns [{id_fencer, place, enum_age_category, int_birth_year}]. Empty
+        if the event has no committed tournaments yet. Reuses
+        `fetch_birth_years_batch` so the BY is always the governed value.
+        """
+        tr = (
+            self._sb.table("tbl_tournament")
+            .select("id_tournament")
+            .eq("id_event", id_event)
+            .execute()
+        )
+        tids = [r["id_tournament"] for r in (tr.data or [])]
+        if not tids:
+            return []
+        rr = (
+            self._sb.table("tbl_result")
+            .select("id_fencer,int_place,enum_age_category,id_tournament")
+            .in_("id_tournament", tids)
+            .execute()
+        )
+        rows = rr.data or []
+        ids = [r["id_fencer"] for r in rows if r.get("id_fencer") is not None]
+        by_map = self.fetch_birth_years_batch(ids)
+        return [
+            {
+                "id_fencer": r.get("id_fencer"),
+                "place": r.get("int_place"),
+                "enum_age_category": r.get("enum_age_category"),
+                "int_birth_year": by_map.get(r.get("id_fencer")),
+            }
+            for r in rows
+        ]
+
     def find_seasons_containing_dates(
         self, event_dt_start: str, event_dt_end: str
     ) -> list[dict]:
