@@ -26,11 +26,16 @@ def run_flow(
 ) -> Context:
     # Imported lazily so the registry can be patched/injected in tests.
     from python.pipeline.engine.rulebook import PLUGINS, RULEBOOK
+    from python.pipeline.plugins.remediation import remediation_middleware
 
     rulebook = rulebook if rulebook is not None else RULEBOOK
     plugins = plugins if plugins is not None else PLUGINS
     ctx = ctx if ctx is not None else Context()
     svc = svc if svc is not None else Services()
+    # No-halt: the REMEDIATIONBOOK middleware turns each fault into its inline fix
+    # (ADR-074). Tests may pass an explicit middleware list to override.
+    if middleware is None:
+        middleware = [remediation_middleware]
 
     plan = RuleEngine(rulebook, plugins).plan(params)
-    return Orchestrator(middleware or []).execute(plan, ctx, svc)
+    return Orchestrator(middleware).execute(plan, ctx, svc)
