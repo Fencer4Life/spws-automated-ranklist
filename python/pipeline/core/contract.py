@@ -159,7 +159,14 @@ class Context:
         return key in self.data
 
     def set(self, key: str, value: Any) -> None:
-        if self._active_writes is not None and key not in self._active_writes:
+        # Underscore-prefixed keys are PRIVATE scratch (not part of the declared
+        # DAG contract) and bypass write-discipline — e.g. the M2 `_legacy`
+        # PipelineContext bridge. Public keys must be declared in `writes`.
+        if (
+            not key.startswith("_")
+            and self._active_writes is not None
+            and key not in self._active_writes
+        ):
             raise WriteDisciplineError(
                 f"plugin {self._active_plugin!r} wrote undeclared key {key!r} "
                 f"(declared writes: {sorted(self._active_writes)})"

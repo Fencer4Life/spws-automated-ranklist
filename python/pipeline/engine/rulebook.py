@@ -42,41 +42,40 @@ def _spec(name, kind, reads=(), writes=(), effects=()) -> PluginSpec:
     return PluginSpec(name, kind, frozenset(reads), frozenset(writes), frozenset(effects))
 
 
-PLUGINS: dict[str, PluginSpec] = {
-    # ── INGEST_DOMESTIC forward plan (design §5 / §6.4) ──────────────────
-    "ParseSource":        _spec("ParseSource",        PluginKind.SOURCE,
-                                 writes={"parsed"}),
-    "ValidateIR":         _spec("ValidateIR",         PluginKind.GATE,
-                                 reads={"parsed"}),
-    "ResolveEvent":       _spec("ResolveEvent",       PluginKind.TRANSFORM,
-                                 reads={"parsed"}, writes={"event"}),
-    "ResolveFencers":     _spec("ResolveFencers",     PluginKind.MUTATOR,
-                                 reads={"parsed", "event"}, writes={"matches"},
-                                 effects={"master_data"}),
-    "DetectCombinedPool": _spec("DetectCombinedPool", PluginKind.TRANSFORM,
-                                 reads={"matches"}, writes={"combined"}),
-    "SplitByAge":         _spec("SplitByAge",         PluginKind.TRANSFORM,
-                                 reads={"matches", "combined"}, writes={"splits"}),
-    "DetectJointPool":    _spec("DetectJointPool",    PluginKind.TRANSFORM,
-                                 reads={"event", "matches"}, writes={"joint_pool"}),
-    "ValidateCounts":     _spec("ValidateCounts",     PluginKind.GATE,
-                                 reads={"matches", "event"}),
-    "DetectPoolRound":    _spec("DetectPoolRound",    PluginKind.GATE,
-                                 reads={"matches"}),
-    "AssignFinalVcat":    _spec("AssignFinalVcat",    PluginKind.TRANSFORM,
-                                 reads={"matches"}, writes={"final_vcats"}),
-    "Commit":             _spec("Commit",             PluginKind.MUTATOR,
-                                 reads={"matches", "final_vcats", "event"},
-                                 writes={"committed"}, effects={"live"}),
-    # ── RECOMPUTE_DOMESTIC source ────────────────────────────────────────
-    "LoadCommitted":      _spec("LoadCommitted",      PluginKind.SOURCE,
-                                 writes={"matches", "event"}),
-    # ── POST_COMMIT members ──────────────────────────────────────────────
-    "ParticipantCount":   _spec("ParticipantCount",   PluginKind.GATE,
-                                 reads={"event"}),
-    "Notify":             _spec("Notify",             PluginKind.MUTATOR,
-                                 reads={"event"}, effects={"external"}),
-}
+def _build_plugins() -> dict[str, object]:
+    """The runnable PLUGINS registry — one instance per plugin (M2).
+
+    Each instance carries the same contract metadata (`reads/writes/effects/kind`)
+    the M1 specs declared, so the DAG validator + planner are unaffected; now it
+    also has `applies`/`run` so the Orchestrator can execute it. Built lazily to
+    avoid importing the stage layer at module import where it isn't needed.
+    """
+    from python.pipeline.plugins.ingest import (
+        AssignFinalVcat,
+        Commit,
+        DetectCombinedPool,
+        DetectJointPool,
+        DetectPoolRound,
+        ParseSource,
+        ResolveEvent,
+        ResolveFencers,
+        SplitByAge,
+        ValidateCounts,
+        ValidateIR,
+    )
+    from python.pipeline.plugins.post_commit import Notify, ParticipantCount
+    from python.pipeline.plugins.recompute import LoadCommitted
+
+    instances = [
+        ParseSource(), ValidateIR(), ResolveEvent(), ResolveFencers(),
+        DetectCombinedPool(), SplitByAge(), DetectJointPool(), ValidateCounts(),
+        DetectPoolRound(), AssignFinalVcat(), Commit(),
+        LoadCommitted(), ParticipantCount(), Notify(),
+    ]
+    return {p.name: p for p in instances}
+
+
+PLUGINS: dict[str, object] = _build_plugins()
 
 
 # ===========================================================================
