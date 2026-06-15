@@ -112,8 +112,8 @@
     "schema_fingerprint": "65efa854143a9ed75331cce8b62a2496"
   },
   "prod": {
-    "last_updated": "2026-06-13T10:15:54Z",
-    "last_sha": "dc9aa6ef376682136d898b51c984e38ac4f05021",
+    "last_updated": "2026-06-15T21:25:40Z",
+    "last_sha": "607caef31c8b0f64cd87b953d05b73bef7787745",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -219,7 +219,9 @@
       "20260503000009_adr056_revision_bracket_label_vcat.sql",
       "20260511000001_ingest_results_carry_source_vcat.sql",
       "20260517000001_ingest_results_preserve_match_method.sql",
-      "20260604000001_adr049_amend_per_vcat_count.sql"
+      "20260604000001_adr049_amend_per_vcat_count.sql",
+      "20260613000001_adr049_data_fix_ppw345_counts.sql",
+      "20260613000002_adr056_backfill_estimated_midpoint.sql"
     ],
     "schema_fingerprint": "65efa854143a9ed75331cce8b62a2496"
   }
