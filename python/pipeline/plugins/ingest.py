@@ -211,13 +211,39 @@ class AssignFinalVcat(BasePlugin):
 
 
 class Commit(BasePlugin):
-    """Atomic delete-old + insert + score -> live (ADR-014/022). Skips when an
-    inline remediation marked the artifact unrankable (`_skip_commit`)."""
+    """Atomic delete-old + insert + score -> live, per V-cat bracket (ADR-014/022).
+
+    For each V-cat in `final_vcats` it resolves/creates the bracket's tournament
+    (`db.find_or_create_tournament`) and calls the existing atomic RPC
+    `fn_ingest_tournament_results` via `db.ingest_results(tournament_id, rows,
+    participant_count)`. The RPC deletes-then-inserts that tournament's rows and
+    re-scores it in one transaction, so re-running the flow is idempotent (BR-6).
+
+    `participant_count` is the bracket's OWN committed-row count — per the ADR-049
+    amendment (2026-06-04) each V-cat slice is scored on its own field size, never
+    the summed physical pool, so the per-bracket loop produces the correct count
+    for combined/joint pools for free.
+
+    Skips entirely when an inline remediation marked the artifact unrankable
+    (`_skip_commit`). RECOMPUTE_DOMESTIC has no source parse and no per-bracket
+    weapon/gender/date yet (LoadCommitted flattens them away); its live write-back
+    is deferred to Step C, so on `parsed=None` Commit records a non-skipped,
+    deferred commit and returns without touching the DB.
+    """
     name = "Commit"
     kind = PluginKind.MUTATOR
     reads = frozenset({"matches", "final_vcats", "event"})
     writes = frozenset({"committed"})
     effects = frozenset({"live"})
+
+    # StageMatchResult.method (new provenance vocabulary) -> the legacy
+    # enum_match_status string fn_ingest_tournament_results casts. Anything not
+    # listed (e.g. PENDING) passes through; the RPC defaults unknowns to AUTO_MATCH.
+    _METHOD_TO_STATUS = {
+        "AUTO_MATCHED": "AUTO_MATCHED",
+        "AUTO_CREATED": "NEW_FENCER",
+        "USER_CONFIRMED": "APPROVED",
+    }
 
     def run(self, ctx: Context, svc: Services) -> None:
         if ctx.get("_skip_commit"):
@@ -228,11 +254,74 @@ class Commit(BasePlugin):
             return
         pctx = get_pctx(ctx)
         db = svc.db
-        result = None
-        if db is not None and hasattr(db, "ingest_results"):
-            result = db.ingest_results(pctx)
+        event = ctx.get("event") or (pctx.event if pctx else None)
+        final_vcats = ctx.get("final_vcats")
+        if final_vcats is None:
+            final_vcats = dict(pctx.vcat_groups) if pctx and pctx.vcat_groups else {}
+
+        parsed = getattr(pctx, "parsed", None) if pctx else None
+        if parsed is None:
+            # RECOMPUTE_DOMESTIC — per-bracket write-back deferred to Step C.
+            ctx.set("committed", {
+                "skipped": False,
+                "persisted": False,
+                "reason": "recompute_persist_deferred",
+                "vcat_groups": sorted(final_vcats.keys()),
+            })
+            return
+
+        event_id = event["id_event"]
+        weapon = parsed.weapon
+        gender = parsed.gender
+        date = _iso_date(parsed.parsed_date)
+        ttype = self._tournament_type(pctx, event)
+
+        written: list[dict] = []
+        for vcat in sorted(final_vcats.keys()):
+            rows = [self._row(m) for m in final_vcats[vcat]
+                    if getattr(m, "id_fencer", None) is not None]
+            if not rows:
+                continue
+            tournament_id = db.find_or_create_tournament(
+                event_id, weapon, gender, vcat, date, ttype)
+            db.ingest_results(tournament_id, rows, participant_count=len(rows))
+            written.append({"vcat": vcat, "id_tournament": tournament_id, "n": len(rows)})
+
         ctx.set("committed", {
             "skipped": False,
-            "vcat_groups": sorted((pctx.vcat_groups or {}).keys()) if pctx else [],
-            "result": result,
+            "persisted": True,
+            "tournaments": written,
+            "vcat_groups": sorted(final_vcats.keys()),
+            # `live.committed` is the signal the PostCommit reactor observes
+            # (Step D); recorded here as intent until that chaining is wired.
+            "emitted": "live.committed",
         })
+
+    def _row(self, m) -> dict:
+        return {
+            "id_fencer": m.id_fencer,
+            "int_place": m.place,
+            "txt_scraped_name": m.scraped_name,
+            "num_confidence": m.confidence,
+            "enum_match_status": self._METHOD_TO_STATUS.get(m.method, m.method),
+        }
+
+    @staticmethod
+    def _tournament_type(pctx, event) -> str | None:
+        from python.pipeline.db_connector import derive_tourn_type_from_event_code
+        code = (pctx.event_code if pctx else None) or (event or {}).get("txt_code")
+        return derive_tourn_type_from_event_code(code) or (event or {}).get("enum_type")
+
+
+def _iso_date(d) -> str | None:
+    """Normalize a parsed date to the PostgreSQL ISO `YYYY-MM-DD` the RPC expects.
+    Handles a `datetime.date`, an ISO string, or a `DD.MM.YYYY` source string."""
+    if d is None:
+        return None
+    if hasattr(d, "isoformat"):
+        return d.isoformat()
+    from datetime import datetime
+    try:
+        return datetime.strptime(str(d), "%d.%m.%Y").strftime("%Y-%m-%d")
+    except ValueError:
+        return str(d)
