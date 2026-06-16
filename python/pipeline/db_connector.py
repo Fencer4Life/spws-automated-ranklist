@@ -73,6 +73,19 @@ class DbConnector:
             return resp.data[0]
         return None
 
+    def find_event_by_id(self, id_event: int) -> dict | None:
+        """Look up an event by id_event (ADR-072 — RECOMPUTE_DOMESTIC resolves the
+        enqueued event to derive its season_end_year). Returns
+        {id_event, txt_code, dt_start, dt_end, id_season, enum_status} or None.
+        """
+        resp = (
+            self._sb.table("tbl_event")
+            .select("id_event, txt_code, dt_start, dt_end, id_season, enum_status")
+            .eq("id_event", id_event)
+            .execute()
+        )
+        return resp.data[0] if resp.data else None
+
     def find_season_by_id(self, id_season: int) -> dict | None:
         """Look up a season row by id_season (Phase 5 — Stage 2 uses
         this to derive season_end_year for the resolved event).
@@ -147,23 +160,29 @@ class DbConnector:
         V-cat tournaments, each with the fencer's GOVERNED birth year, for
         RECOMPUTE_DOMESTIC (no source fetch, no re-match).
 
-        Returns [{id_fencer, place, enum_age_category, int_birth_year}]. Empty
-        if the event has no committed tournaments yet. Reuses
-        `fetch_birth_years_batch` so the BY is always the governed value.
+        Returns [{id_fencer, place, enum_age_category, int_birth_year, weapon,
+        gender, date, id_tournament}]. Empty if the event has no committed
+        tournaments yet. Reuses `fetch_birth_years_batch` so the BY is always the
+        governed value. weapon/gender/date carry the source tournament's
+        enum_weapon/enum_gender/dt_tournament so Commit can re-partition by
+        (weapon, gender, governed-V-cat) on recompute (Step C).
         """
         tr = (
             self._sb.table("tbl_tournament")
-            .select("id_tournament")
+            .select("id_tournament,enum_weapon,enum_gender,enum_age_category,dt_tournament")
             .eq("id_event", id_event)
             .execute()
         )
-        tids = [r["id_tournament"] for r in (tr.data or [])]
-        if not tids:
+        tmeta = {r["id_tournament"]: r for r in (tr.data or [])}
+        if not tmeta:
             return []
+        # NOTE: the V-cat (enum_age_category) lives on tbl_tournament, NOT
+        # tbl_result — joining it off the parent tournament is what the original
+        # (never-live-run) query got wrong.
         rr = (
             self._sb.table("tbl_result")
-            .select("id_fencer,int_place,enum_age_category,id_tournament")
-            .in_("id_tournament", tids)
+            .select("id_fencer,int_place,id_tournament")
+            .in_("id_tournament", list(tmeta))
             .execute()
         )
         rows = rr.data or []
@@ -173,11 +192,45 @@ class DbConnector:
             {
                 "id_fencer": r.get("id_fencer"),
                 "place": r.get("int_place"),
-                "enum_age_category": r.get("enum_age_category"),
+                "enum_age_category": tmeta[r["id_tournament"]].get("enum_age_category"),
                 "int_birth_year": by_map.get(r.get("id_fencer")),
+                "weapon": tmeta[r["id_tournament"]].get("enum_weapon"),
+                "gender": tmeta[r["id_tournament"]].get("enum_gender"),
+                "date": tmeta[r["id_tournament"]].get("dt_tournament"),
+                "id_tournament": r.get("id_tournament"),
             }
             for r in rows
         ]
+
+    def fetch_event_tournaments(self, id_event: int) -> list[dict]:
+        """Return an event's committed tournaments (id + weapon/gender/V-cat).
+
+        ADR-072 (Step C) — RECOMPUTE_DOMESTIC uses this to detect brackets that
+        a birth-year relocation has *emptied*: a tournament present here but not
+        rewritten by the re-partition must be cleared (`clear_tournament_results`).
+        """
+        resp = (
+            self._sb.table("tbl_tournament")
+            .select("id_tournament,enum_weapon,enum_gender,enum_age_category")
+            .eq("id_event", id_event)
+            .execute()
+        )
+        return list(resp.data or [])
+
+    def clear_tournament_results(self, tournament_id: int) -> None:
+        """Empty a tournament that a recompute relocation left with no fencers:
+        delete its results (+ legacy match_candidate rows) and zero its count.
+        Idempotent — a bracket with no results ranks nothing (ADR-072 drop)."""
+        rids = [
+            r["id_result"] for r in
+            self._sb.table("tbl_result").select("id_result")
+            .eq("id_tournament", tournament_id).execute().data or []
+        ]
+        if rids:
+            self._sb.table("tbl_match_candidate").delete().in_("id_result", rids).execute()
+        self._sb.table("tbl_result").delete().eq("id_tournament", tournament_id).execute()
+        self._sb.table("tbl_tournament").update(
+            {"int_participant_count": 0}).eq("id_tournament", tournament_id).execute()
 
     # -- CDC recompute queue + dedup (ADR-071 / ADR-072) --------------------
 

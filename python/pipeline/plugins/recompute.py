@@ -36,6 +36,13 @@ class LoadCommitted(BasePlugin):
             event = db.find_event_by_id(id_event)
         event = event or {"id_event": id_event}
 
+        # The CDC trigger only knows id_fencer → events; it cannot pass a
+        # season_end_year. Derive it from the event's season so the self-heal
+        # loop runs unattended (ADR-072). An explicit config value wins.
+        season_end_year = cfg.get("season_end_year")
+        if season_end_year is None:
+            season_end_year = self._derive_season_end_year(db, event)
+
         rows = db.fetch_event_results(id_event)
         matches = [
             StageMatchResult(
@@ -45,6 +52,11 @@ class LoadCommitted(BasePlugin):
                 confidence=100.0,
                 method="AUTO_MATCHED",
                 governed_birth_year=r.get("int_birth_year"),
+                # Step C: carry the source bracket's weapon/gender/date so Commit
+                # can re-partition by (weapon, gender, governed-V-cat).
+                weapon=r.get("weapon"),
+                gender=r.get("gender"),
+                tournament_date=r.get("date"),
             )
             for r in rows
         ]
@@ -54,10 +66,23 @@ class LoadCommitted(BasePlugin):
         # the source/URL checks (see ingest.ValidateCounts).
         pctx = ensure_pctx(
             ctx, parsed=None,
-            season_end_year=cfg.get("season_end_year"),
+            season_end_year=season_end_year,
             event_code=event.get("txt_code"),
         )
         pctx.event = event
         pctx.matches = matches
         ctx.set("event", event)
         ctx.set("matches", matches)
+
+    @staticmethod
+    def _derive_season_end_year(db, event) -> int | None:
+        """End-year of the event's season — preferred via the FK id_season,
+        falling back to the event's own dt_end year."""
+        id_season = event.get("id_season")
+        if id_season is not None and hasattr(db, "find_season_by_id"):
+            season = db.find_season_by_id(id_season)
+            dt_end = (season or {}).get("dt_end")
+            if dt_end:
+                return int(str(dt_end)[:4])
+        dt_end = event.get("dt_end")
+        return int(str(dt_end)[:4]) if dt_end else None

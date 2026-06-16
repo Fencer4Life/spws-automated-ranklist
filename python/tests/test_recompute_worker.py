@@ -98,3 +98,28 @@ class TestDedupSweep:
         ]
         run_module.run_flow(FlowParams(Flow.DEDUP_SWEEP), svc=Services(db=db))
         db.merge_fencers.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Worker CLI entry (Step C scheduling) — N5.7
+# ---------------------------------------------------------------------------
+
+class TestWorkerCli:
+    def test_drain_cli_invokes_drain(self, monkeypatch):
+        """N5.7 `python -m ...worker --drain` builds a connector and drains once."""
+        from python.pipeline.recompute import worker
+
+        fake_db = object()
+        monkeypatch.setattr(worker, "create_db_connector", lambda: fake_db, raising=False)
+        seen = {}
+
+        def fake_drain(db, **kw):
+            seen["db"] = db
+            seen["debounce"] = kw.get("debounce_window")
+            return [42]
+
+        monkeypatch.setattr(worker, "drain_recompute_queue", fake_drain)
+        rc = worker.main(["--drain", "--debounce", "0"])
+        assert rc == 0
+        assert seen["db"] is fake_db
+        assert seen["debounce"] == 0

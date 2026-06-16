@@ -55,6 +55,16 @@ affected event(s) **from stored, FK-linked results — no source fetch, no re-ma
   debounced `python/pipeline/recompute/worker.py`.
 - `ValidateCounts` on recompute is **no-halt** (ADR-074): a relocation that drops a bracket below min
   auto-drops it and the heal still completes — a correction is never blockable.
+- **Scheduler realization (Step C, 2026-06-16).** The drain runs as a **GitHub Actions cron**
+  (`recompute-drain.yml`, every 15 min against CERT, `python -m python.pipeline.recompute.worker
+  --drain`) — the repo's established scheduler pattern (cf. `evf-sync.yml`) — rather than the
+  pg_cron→Edge-Function sketch above. This drops the pg_cron / edge-runtime dependency (neither is
+  enabled on LOCAL); the worker's 120 s `DEBOUNCE_WINDOW` does the coalescing the cron cadence does not.
+  LOCAL stays manual. pg_cron / LISTEN-NOTIFY remain available as a later latency knob (design §11).
+- **RECOMPUTE write-back partition key (Step C).** `Commit` re-persists by **(weapon, gender,
+  governed-V-cat)**, not V-cat alone — an event spans many weapon/gender brackets — and **clears** a
+  bracket a relocation empties. The recompute reader (`fetch_event_results`) reads the V-cat / weapon /
+  gender off `tbl_tournament` (where they live), not `tbl_result`.
 
 ## Tests (implemented — design §10, RED first)
 

@@ -261,13 +261,9 @@ class Commit(BasePlugin):
 
         parsed = getattr(pctx, "parsed", None) if pctx else None
         if parsed is None:
-            # RECOMPUTE_DOMESTIC — per-bracket write-back deferred to Step C.
-            ctx.set("committed", {
-                "skipped": False,
-                "persisted": False,
-                "reason": "recompute_persist_deferred",
-                "vcat_groups": sorted(final_vcats.keys()),
-            })
+            # RECOMPUTE_DOMESTIC — no source parse: re-partition the loaded rows
+            # by (weapon, gender, governed-V-cat) and re-write each bracket.
+            self._commit_recompute(ctx, svc, pctx, event)
             return
 
         event_id = event["id_event"]
@@ -296,6 +292,71 @@ class Commit(BasePlugin):
             # (Step D); recorded here as intent until that chaining is wired.
             "emitted": "live.committed",
         })
+
+    def _commit_recompute(self, ctx: Context, svc: Services, pctx, event) -> None:
+        """Re-persist a recomputed event (ADR-072, Step C).
+
+        Groups the loaded matches by (weapon, gender, governed-V-cat) — an event
+        spans many weapon/gender brackets, so V-cat alone would merge weapons —
+        resolves each bracket's tournament and re-writes it via the atomic RPC
+        (delete-old + insert + score), then CLEARS any pre-existing bracket the
+        re-partition emptied (a birth-year relocation moved its only fencer out).
+        """
+        db = svc.db
+        event_id = event["id_event"]
+        season_end = pctx.season_end_year if pctx else None
+        ttype = self._tournament_type(pctx, event)
+        matches = ctx.get("matches") or []
+
+        groups: dict[tuple, list] = {}
+        for m in matches:
+            if getattr(m, "id_fencer", None) is None:
+                continue
+            by = getattr(m, "governed_birth_year", None)
+            vcat = vcat_for_age(season_end - by) if (by is not None and season_end) else None
+            if vcat is None:
+                continue
+            groups.setdefault((m.weapon, m.gender, vcat), []).append(m)
+
+        written: list[dict] = []
+        written_ids: set = set()
+        for (weapon, gender, vcat), rows_m in groups.items():
+            rows = [self._row(m) for m in rows_m]
+            date = _iso_date(rows_m[0].tournament_date)
+            tournament_id = db.find_or_create_tournament(
+                event_id, weapon, gender, vcat, date, ttype)
+            db.ingest_results(tournament_id, rows, participant_count=len(rows))
+            written.append({"vcat": vcat, "weapon": weapon, "gender": gender,
+                            "id_tournament": tournament_id, "n": len(rows)})
+            written_ids.add(tournament_id)
+
+        # Drop: clear pre-existing brackets the re-partition no longer fills.
+        cleared: list[int] = []
+        existing = self._existing_tournaments(db, event_id)
+        rewritten_keys = {(w, g, v) for (w, g, v) in groups}
+        for t in existing:
+            key = (t.get("enum_weapon"), t.get("enum_gender"), t.get("enum_age_category"))
+            if t.get("id_tournament") not in written_ids and key not in rewritten_keys:
+                if hasattr(db, "clear_tournament_results"):
+                    db.clear_tournament_results(t["id_tournament"])
+                    cleared.append(t["id_tournament"])
+
+        ctx.set("committed", {
+            "skipped": False,
+            "persisted": True,
+            "mode": "recompute",
+            "tournaments": written,
+            "cleared": cleared,
+            "emitted": "live.committed",
+        })
+
+    @staticmethod
+    def _existing_tournaments(db, event_id) -> list:
+        fn = getattr(db, "fetch_event_tournaments", None)
+        if not callable(fn):
+            return []
+        res = fn(event_id)
+        return res if isinstance(res, list) else []
 
     def _row(self, m) -> dict:
         return {
