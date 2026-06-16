@@ -14,6 +14,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Callable
 
+# Module-level so a scheduled `main()` run can build a live connector, and tests
+# can monkeypatch it. The heavy `supabase` import stays lazy inside the factory.
+from python.pipeline.db_connector import create_db_connector
+
 DEBOUNCE_WINDOW_SECONDS = 120  # ~2 min (design §11 knob)
 
 
@@ -60,3 +64,35 @@ def drain_recompute_queue(
         run(id_event, db=db, svc=svc)
     db.mark_recompute_done(events)
     return events
+
+
+def main(argv: list[str] | None = None) -> int:
+    """CLI entry for the scheduled self-heal drain (ADR-072, Step C scheduling).
+
+    Invoked by `recompute-drain.yml` on a GitHub Actions cron against CERT (the
+    repo's established scheduler pattern; the worker's own DEBOUNCE_WINDOW
+    coalesces bursts, so a coarse cron is fine). LOCAL stays manual.
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Drain the recompute queue once if the roster is quiescent.")
+    parser.add_argument("--drain", action="store_true",
+                        help="Drain the queue once (required — the only action).")
+    parser.add_argument("--debounce", type=int, default=DEBOUNCE_WINDOW_SECONDS,
+                        help="Seconds of roster quiet required before draining.")
+    args = parser.parse_args(argv)
+    if not args.drain:
+        parser.error("nothing to do; pass --drain")
+
+    db = create_db_connector()
+    events = drain_recompute_queue(db, debounce_window=args.debounce)
+    if events:
+        print(f"recomputed {len(events)} event(s): {events}")
+    else:
+        print("queue quiescent (nothing drained)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

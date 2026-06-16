@@ -1,0 +1,59 @@
+name: Recompute Self-Heal Drain
+
+# ADR-072 (Step C): the self-healing recompute worker. A master-data correction
+# (birth year / nationality / a DEDUP_SWEEP merge) enqueues the affected events
+# via the CDC trigger `trg_fencer_change_enqueue`; this scheduled job drains the
+# queue and re-derives V-cats + re-scores each affected event from stored,
+# FK-linked results (no source fetch, no re-match). The worker's own 120s
+# DEBOUNCE_WINDOW coalesces bursts, so a coarse cron is fine.
+#
+# CERT only. LOCAL stays manual (`python -m python.pipeline.recompute.worker
+# --drain`). The repo schedules with GitHub Actions cron (same pattern as
+# evf-sync.yml), not pg_cron — no edge-runtime / pg_cron dependency.
+
+on:
+  schedule:
+    # Every 15 minutes. Combined with the worker's 120s debounce, a single edit
+    # or a multi-fencer DEDUP_SWEEP coalesces into one rerun per affected event.
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      debounce:
+        description: 'Seconds of roster quiet required before draining (0 = drain now)'
+        required: false
+        default: '120'
+
+jobs:
+  drain:
+    name: Drain recompute queue (CERT)
+    runs-on: ubuntu-latest
+    # Serialise with other CERT writers so a recompute never races an ingest.
+    concurrency:
+      group: cert-recompute
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install supabase
+
+      - name: Drain the recompute queue
+        run: |
+          python -m python.pipeline.recompute.worker --drain --debounce "$DEBOUNCE"
+        env:
+          # Via env (not inline ${{ }}) so the operator-supplied input is never
+          # interpolated into the shell command — workflow-injection safe.
+          DEBOUNCE: ${{ github.event.inputs.debounce || '120' }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_CERT_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d text="Recompute self-heal drain FAILED. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

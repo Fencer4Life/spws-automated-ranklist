@@ -174,15 +174,15 @@ class TestCommittedPayload:
         db.ingest_results.assert_not_called()
         assert ctx.get("committed") == {"skipped": True, "dropped": ["V0"]}
 
-    def test_recompute_persist_deferred_without_source(self):
-        """N7.8 RECOMPUTE (parsed=None) carries no per-bracket weapon/gender/date;
-        per-bracket write-back is deferred to Step C, but Commit still RUNs and
-        reports a non-skipped (deferred) commit so the flow converges."""
-        fv = {"V1": [_match(101, 1, "1")]}
+    def test_recompute_routes_to_recompute_path(self):
+        """N7.8 RECOMPUTE (parsed=None) routes to the recompute write-back path
+        (mode=recompute, Step C — see test_recompute_persist.py for its behavior),
+        NOT the INGEST per-final_vcats loop. With matches carrying no governed BY
+        there is nothing to place, so no rows are written, but it is not skipped."""
+        fv = {"V1": [_match(101, 1, "1")]}  # _match sets no governed_birth_year
         db = _db()
         ctx = _run(_ctx(fv, parsed=False), db)
         db.ingest_results.assert_not_called()
         committed = ctx.get("committed")
         assert committed["skipped"] is False
-        assert committed["persisted"] is False
-        assert committed["reason"] == "recompute_persist_deferred"
+        assert committed["mode"] == "recompute"

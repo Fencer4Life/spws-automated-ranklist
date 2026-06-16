@@ -839,10 +839,32 @@ logic was rewritten).
   **combined pool** (synthetic 2×V1 + 2×V2, split into two brackets scored on own counts) both
   byte-matched the legacy path. Test-created fencers swept by id snapshot. Next: Step C (schedule the
   self-healing worker + live heal).
+- **Step C — self-healing recompute, live + scheduled** (`Commit._commit_recompute`,
+  `db_connector.{fetch_event_results,fetch_event_tournaments,clear_tournament_results,find_event_by_id}`,
+  `recompute.LoadCommitted`, `recompute/worker.main`, `recompute-drain.yml`) — 2026-06-16. **RECOMPUTE
+  write-back** (deferred from Step A) is now real: `Commit` groups the loaded matches by
+  **(weapon, gender, governed-V-cat)** — an event spans many weapon/gender brackets, so V-cat alone would
+  wrongly merge weapons — resolves each bracket's tournament and re-writes it via the atomic RPC, then
+  **clears** any pre-existing bracket a birth-year relocation emptied. `StageMatchResult` gained
+  `weapon`/`gender`/`tournament_date`; `LoadCommitted` derives `season_end_year` from the event's season
+  (the CDC trigger only passes `id_fencer→events`). **Two live-Postgres bugs in the never-run M4 reader
+  fixed:** `fetch_event_results` selected `enum_age_category`/weapon/gender off `tbl_result` where they
+  don't exist — they live on `tbl_tournament`. **Live LOCAL heal E2E:** ingested 3 épée-M V2 fencers,
+  corrected one fencer's BY to cross V2→V3, the CDC trigger enqueued the event, the debounced worker
+  recomputed it, and the fencer relocated to a fresh V3 bracket **while V2 was re-scored on its new
+  2-person field** (82.98/5.33 → 71.34/3.78) — no human action beyond the BY edit. **Scheduling:**
+  `worker.main` (`python -m python.pipeline.recompute.worker --drain`) + `recompute-drain.yml` (GitHub
+  Actions cron every 15 min against CERT, workflow-injection-safe input via env). Deliberately uses the
+  repo's existing GH-cron scheduler pattern (evf-sync) instead of the design's pg_cron→Edge-Function
+  sketch — no pg_cron/edge-runtime dependency; the worker's 120s debounce coalesces bursts. LOCAL stays
+  manual. The cron→CERT chain is CERT-deploy (verified on next CERT deploy); the trigger→queue→worker→
+  recompute→persist core is LOCAL-verified. Tests N9.1–N9.7 (`test_recompute_persist.py`) + N5.7
+  (worker CLI). Next: Step D (chain the PostCommit reactor).
 
-**Tests.** pgTAP 577 → 588; pytest +49 (M1–M5) +8 (Step A, N7.1–N7.8) +6 (Step B, N8.1–N8.6) across
-`test_rule_engine`, `test_pipeline_core`, `test_pipeline_plugins`, `test_resolve_fencers`,
-`test_recompute`, `test_recompute_worker`, `test_commit_persist`, `test_ingest_cli_flow`.
+**Tests.** pgTAP 577 → 588; pytest +49 (M1–M5) +8 (Step A, N7.1–N7.8) +6 (Step B, N8.1–N8.6) +8
+(Step C, N9.1–N9.7 + N5.7) across `test_rule_engine`, `test_pipeline_core`, `test_pipeline_plugins`,
+`test_resolve_fencers`, `test_recompute`, `test_recompute_worker`, `test_commit_persist`,
+`test_ingest_cli_flow`, `test_recompute_persist`.
 
 **ADRs.** ADR-070–074 Accepted; amended ADR-050 (stages→plugins, draft tables removed), ADR-056
 (Stage-0 absorbed), ADR-038/066/067/069 (halts → faults), reversed halt-by-exception in ADR-050/057/067.

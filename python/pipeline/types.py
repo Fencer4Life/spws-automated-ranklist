@@ -153,6 +153,14 @@ class StageMatchResult:
     governed_birth_year: int | None = None  # ADR-070: governed BY emitted by ResolveFencers
                                             # (reconciled for exact/fuzzy links, midpoint for
                                             # created). Consumed by DetectCombinedPool/SplitByAge.
+    # RECOMPUTE_DOMESTIC (ADR-072, Step C): the source tournament's weapon /
+    # gender / date, carried per row so Commit can re-partition by
+    # (weapon, gender, governed-V-cat) — an event spans many weapon/gender
+    # brackets, so V-cat alone is not enough. Unset (None) on INGEST, where the
+    # single source's weapon/gender/date come from `parsed`.
+    weapon: str | None = None
+    gender: str | None = None
+    tournament_date: Any = None
 
 
 @dataclass
