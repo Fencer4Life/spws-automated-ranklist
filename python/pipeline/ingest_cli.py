@@ -259,6 +259,95 @@ def ingest_xml_unified(
     return session.run_id if not dry_run else None
 
 
+def ingest_via_flow(
+    path: str | list[str],
+    event_code: str,
+    season_end_year: int,
+    url_event_override: str | None = None,
+    db=None,
+    notifier=None,
+) -> list:
+    """NEW pipeline ingest (Step B) — route each source through `run_flow`.
+
+    Parses each XML via the `fencingtime_xml` parser (the FENCINGTIME_XML entry
+    in the `scrapers.PARSERS` registry), injects the IR into `svc.config["parsed"]`,
+    and runs `INGEST_DOMESTIC`. `Commit` writes live atomically per V-cat bracket
+    (Step A) — there is NO draft/review gate (ADR-074: faults auto-resolve inline,
+    auto-commit). This is the operator entry point the engine previously lacked.
+
+    Per-file `source_url` = `url_event#<filename>` (same convention as the legacy
+    unified path) so each file's rows carry distinct provenance. Pool-only
+    qualifier files (no DE bracket) are skipped cleanly.
+
+    Returns one `Context` per ingested file (skipped files omitted).
+
+    Raises:
+        ValueError: event_code not found in tbl_event.
+    """
+    # Deferred imports so test patches on these symbols are honoured and the
+    # heavy engine modules only load when this path is taken.
+    from python.scrapers import fencingtime_xml as _ft_xml
+    from python.pipeline.core.contract import Services
+    from python.pipeline.engine.flows import Flow, FlowParams
+    from python.pipeline.overrides import load_for_event
+    from python.pipeline.run import run_flow
+
+    if db is None:
+        db = create_db_connector()
+    if notifier is None:
+        notifier = TelegramNotifier(
+            os.environ.get("TELEGRAM_BOT_TOKEN"),
+            os.environ.get("TELEGRAM_CHAT_ID"),
+        )
+
+    event = db.find_event_by_code(event_code)
+    if event is None:
+        raise ValueError(
+            f"Event {event_code!r} not found in tbl_event. "
+            f"Populate it first or check the spelling."
+        )
+
+    url_event = (
+        url_event_override
+        or event.get("url_event")
+        or event.get("url_results")
+    )
+    url_event_base = (url_event or "").split("#", 1)[0]
+    overrides = load_for_event(event_code)
+    paths = [path] if isinstance(path, (str, Path)) else list(path)
+
+    contexts = []
+    for p in paths:
+        p_str = str(p)
+        file_bytes = Path(p_str).read_bytes()
+        per_file_url = (
+            f"{url_event_base}#{Path(p_str).name}" if url_event_base else None
+        )
+        parsed = _ft_xml.parse(file_bytes, source_url=per_file_url)
+
+        if getattr(parsed, "is_pool_only_qualifier", False):
+            print(f"  {p_str}: SKIPPED (pool-only qualifier — no DE bracket)")
+            continue
+
+        svc = Services(db=db, config={
+            "parsed": parsed,
+            "overrides": overrides,
+            "season_end_year": season_end_year,
+            "event_code": event_code,
+        })
+        ctx = run_flow(FlowParams(Flow.INGEST_DOMESTIC), svc=svc)
+        committed = ctx.get("committed") or {}
+        if committed.get("skipped"):
+            print(f"  {p_str}: SKIPPED (dropped {committed.get('dropped')})")
+        else:
+            tournaments = committed.get("tournaments") or []
+            print(f"  {p_str}: committed {len(tournaments)} bracket(s): "
+                  + ", ".join(f"{t['vcat']}→t{t['id_tournament']}(n={t['n']})"
+                              for t in tournaments))
+        contexts.append(ctx)
+    return contexts
+
+
 def _handle_draft_commands(args, notifier) -> bool:
     """Phase 2 (ADR-050) draft-management commands.
 
@@ -369,7 +458,12 @@ def main() -> None:
                              "fn_commit_event_draft (ADR-049).")
     parser.add_argument("--url-event", default=None,
                         help="Override tbl_event.url_event for this run "
-                             "(used only with --event-code).")
+                             "(used only with --event-code / --flow).")
+    parser.add_argument("--flow", choices=["ingest_domestic"], default=None,
+                        help="Route through the NEW rule-driven pipeline "
+                             "(run_flow). Requires --event-code. Commit writes "
+                             "live atomically per V-cat bracket — no draft gate "
+                             "(ADR-074).")
     # Phase 2 (ADR-050) draft-management commands. Mutually exclusive with
     # each other; do not require --season-end-year.
     draft_group = parser.add_mutually_exclusive_group()
@@ -400,6 +494,29 @@ def main() -> None:
             _handle_draft_commands(args, notifier)
         except SystemExit:
             raise
+        except Exception as e:
+            notifier.notify_pipeline_failure(str(e))
+            raise
+        return
+
+    if args.flow:
+        # NEW rule-driven pipeline path (Step B). Auto-commit, no draft gate.
+        if not args.event_code:
+            parser.error("--flow requires --event-code")
+        if not args.path:
+            parser.error("--flow requires at least one XML path")
+        notifier = TelegramNotifier(
+            os.environ.get("TELEGRAM_BOT_TOKEN"),
+            os.environ.get("TELEGRAM_CHAT_ID"),
+        )
+        try:
+            ingest_via_flow(
+                path=args.path,
+                event_code=args.event_code,
+                season_end_year=args.season_end_year,
+                url_event_override=args.url_event,
+                notifier=notifier,
+            )
         except Exception as e:
             notifier.notify_pipeline_failure(str(e))
             raise

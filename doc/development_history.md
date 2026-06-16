@@ -825,10 +825,24 @@ logic was rewritten).
   throwaway PPW9 event with two real fencers — `tbl_result` rows persisted with computed
   `num_final_score` (71.34 / 8.56), tournament status `SCORED`, then cleaned up. First true end-to-end
   ingest through the new pipeline. Next: Step B (wire `run_flow` into `ingest_cli` + parity).
+- **Step B — `run_flow` wired into the CLI** (`ingest_cli.ingest_via_flow` + `--flow ingest_domestic`)
+  — 2026-06-16: the engine previously had no operator entry point (`run_flow` was referenced only by
+  `run.py`, `worker.py`, tests; the CLI drove the OLD draft pipeline). `ingest_via_flow` parses each XML
+  via the `fencingtime_xml` parser (PARSERS registry), injects the IR into `svc.config["parsed"]`, and
+  runs `INGEST_DOMESTIC` through `run_flow` — `Commit` writes live atomically per V-cat bracket (Step A),
+  **no draft/review gate** (ADR-074 auto-commit). Per-file `source_url = url_event#<filename>`; pool-only
+  qualifiers skipped; unknown event_code → ValueError. Tests N8.1–N8.6 (`test_ingest_cli_flow.py`).
+  **Live LOCAL parity acceptance:** ingested the same XML through the NEW `run_flow` CLI and the OLD
+  draft-commit path into a throwaway event and diffed committed `tbl_result` by
+  `(vcat, scraped_name, place) → num_final_score` (scoring depends on place + participant_count, not
+  identity, isolating commit+scoring). **Single-cat** (single_category.xml, 5 fencers, V2) and
+  **combined pool** (synthetic 2×V1 + 2×V2, split into two brackets scored on own counts) both
+  byte-matched the legacy path. Test-created fencers swept by id snapshot. Next: Step C (schedule the
+  self-healing worker + live heal).
 
-**Tests.** pgTAP 577 → 588; pytest +49 (M1–M5) +8 (Step A, N7.1–N7.8) across `test_rule_engine`,
-`test_pipeline_core`, `test_pipeline_plugins`, `test_resolve_fencers`, `test_recompute`,
-`test_recompute_worker`, `test_commit_persist`.
+**Tests.** pgTAP 577 → 588; pytest +49 (M1–M5) +8 (Step A, N7.1–N7.8) +6 (Step B, N8.1–N8.6) across
+`test_rule_engine`, `test_pipeline_core`, `test_pipeline_plugins`, `test_resolve_fencers`,
+`test_recompute`, `test_recompute_worker`, `test_commit_persist`, `test_ingest_cli_flow`.
 
 **ADRs.** ADR-070–074 Accepted; amended ADR-050 (stages→plugins, draft tables removed), ADR-056
 (Stage-0 absorbed), ADR-038/066/067/069 (halts → faults), reversed halt-by-exception in ADR-050/057/067.
