@@ -860,11 +860,25 @@ logic was rewritten).
   manual. The cron→CERT chain is CERT-deploy (verified on next CERT deploy); the trigger→queue→worker→
   recompute→persist core is LOCAL-verified. Tests N9.1–N9.7 (`test_recompute_persist.py`) + N5.7
   (worker CLI). Next: Step D (chain the PostCommit reactor).
+- **Step D — PostCommit reactor chained** (`reactors.py`, `run.run_flow`) — 2026-06-16: the
+  `Commit → live.committed → POST_COMMIT` chain is now real (was conceptual, §3.4). After a committing
+  flow (`INGEST_DOMESTIC` / `RECOMPUTE_DOMESTIC`) reaches `Commit`, `run_flow` fires `POST_COMMIT`
+  (ParticipantCount + Notify) on a child Context carrying the committed event + faults + dropped
+  brackets, so escalation policy (ALWAYS / ON_LOSS) sees the same loss the commit produced.
+  `should_react_post_commit` gates on a `committed` outcome **and** the rulebook actually offering a
+  POST_COMMIT rule (so custom/partial rulebooks in tests don't trigger a plan they don't define);
+  `react=False` on the recursive call + POST_COMMIT having no Commit make the loop converge with no
+  back-edge. **Acceptance met:** an ingest that dropped a below-min bracket auto-sends the
+  `escalate:BELOW_MIN` ON_LOSS Telegram; a clean ingest sends only the summary. Tests N10.1–N10.7
+  (`test_post_commit_chain.py`). **This closes the "engine without a steering wheel" gap** — the four
+  flows + both reactors (SelfHealing via the CDC trigger/worker, PostCommit via run_flow chaining) now
+  run end-to-end; an operator ingest persists live, self-heals on master-data edits, and notifies.
 
 **Tests.** pgTAP 577 → 588; pytest +49 (M1–M5) +8 (Step A, N7.1–N7.8) +6 (Step B, N8.1–N8.6) +8
-(Step C, N9.1–N9.7 + N5.7) across `test_rule_engine`, `test_pipeline_core`, `test_pipeline_plugins`,
-`test_resolve_fencers`, `test_recompute`, `test_recompute_worker`, `test_commit_persist`,
-`test_ingest_cli_flow`, `test_recompute_persist`.
+(Step C, N9.1–N9.7 + N5.7) +7 (Step D, N10.1–N10.7) across `test_rule_engine`, `test_pipeline_core`,
+`test_pipeline_plugins`, `test_resolve_fencers`, `test_recompute`, `test_recompute_worker`,
+`test_commit_persist`, `test_ingest_cli_flow`, `test_recompute_persist`, `test_post_commit_chain`.
+Final this session: pytest 873, vitest 372, pgTAP 588.
 
 **ADRs.** ADR-070–074 Accepted; amended ADR-050 (stages→plugins, draft tables removed), ADR-056
 (Stage-0 absorbed), ADR-038/066/067/069 (halts → faults), reversed halt-by-exception in ADR-050/057/067.

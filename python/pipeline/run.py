@@ -23,6 +23,7 @@ def run_flow(
     rulebook: dict | None = None,
     plugins: dict | None = None,
     middleware: list[Middleware] | None = None,
+    react: bool = True,
 ) -> Context:
     # Imported lazily so the registry can be patched/injected in tests.
     from python.pipeline.engine.rulebook import PLUGINS, RULEBOOK
@@ -38,4 +39,25 @@ def run_flow(
         middleware = [remediation_middleware]
 
     plan = RuleEngine(rulebook, plugins).plan(params)
-    return Orchestrator(middleware).execute(plan, ctx, svc)
+    result = Orchestrator(middleware).execute(plan, ctx, svc)
+
+    # PostCommit reactor (ADR-074, design §2.6): a committing flow emits
+    # `live.committed` -> auto-fire POST_COMMIT (participant-count + Telegram
+    # summary + per-policy escalation). No back-edge: POST_COMMIT has no Commit,
+    # so it sets no `committed` and never re-fires -> the loop converges.
+    if react:
+        from python.pipeline.engine.flows import Flow
+        from python.pipeline.reactors import (
+            build_post_commit_context,
+            should_react_post_commit,
+        )
+        if should_react_post_commit(params.flow, result, rulebook):
+            child = build_post_commit_context(result)
+            id_event = (result.get("event") or {}).get("id_event")
+            result.data["_post_commit"] = run_flow(
+                FlowParams(Flow.POST_COMMIT, id_event=id_event),
+                ctx=child, svc=svc,
+                rulebook=rulebook, plugins=plugins, middleware=middleware,
+                react=False,
+            )
+    return result
