@@ -810,8 +810,25 @@ logic was rewritten).
   watermark, column-aware `trg_fencer_change_enqueue`, `fn_enqueue_affected_events`, `fn_merge_fencers`,
   debounced worker, `DEDUP_SWEEP` whole-roster sweep. pgTAP 44.1–44.11 (live) + pytest N5.1–N5.6.
 
-**Tests.** pgTAP 577 → 588; pytest +49 across `test_rule_engine`, `test_pipeline_core`,
-`test_pipeline_plugins`, `test_resolve_fencers`, `test_recompute`, `test_recompute_worker`.
+- **Step A — `Commit` actually persists** (`plugins/ingest.py` `Commit.run`) — 2026-06-16: until now
+  `Commit` called `db.ingest_results(pctx)` with the wrong arguments and only "passed" because tests
+  used a `MagicMock` DB — no row ever reached `tbl_result` through the new pipeline. Rewritten to, per
+  V-cat bracket in `final_vcats`: resolve/create the bracket's tournament (`db.find_or_create_tournament`)
+  and call the existing atomic RPC `fn_ingest_tournament_results` via `db.ingest_results(tournament_id,
+  rows, participant_count)` (delete-old + insert + score in one transaction, idempotent — ADR-014/022).
+  `participant_count` is each bracket's OWN row count (ADR-049 amendment 2026-06-04 — per-V-cat, never
+  the summed pool), so combined/joint pools score correctly for free. The new `method`→legacy
+  `enum_match_status` map (`AUTO_CREATED`→`NEW_FENCER`, …) keeps the RPC's enum cast valid. `_skip_commit`
+  short-circuits; `RECOMPUTE_DOMESTIC` (parsed=None) records a deferred commit (live write-back is Step C,
+  since `LoadCommitted` flattens per-bracket weapon/gender/date). Tests N7.1–N7.8 (`test_commit_persist.py`).
+  **Live LOCAL acceptance:** ran the full `INGEST_DOMESTIC` flow via `run_flow` against real Postgres on a
+  throwaway PPW9 event with two real fencers — `tbl_result` rows persisted with computed
+  `num_final_score` (71.34 / 8.56), tournament status `SCORED`, then cleaned up. First true end-to-end
+  ingest through the new pipeline. Next: Step B (wire `run_flow` into `ingest_cli` + parity).
+
+**Tests.** pgTAP 577 → 588; pytest +49 (M1–M5) +8 (Step A, N7.1–N7.8) across `test_rule_engine`,
+`test_pipeline_core`, `test_pipeline_plugins`, `test_resolve_fencers`, `test_recompute`,
+`test_recompute_worker`, `test_commit_persist`.
 
 **ADRs.** ADR-070–074 Accepted; amended ADR-050 (stages→plugins, draft tables removed), ADR-056
 (Stage-0 absorbed), ADR-038/066/067/069 (halts → faults), reversed halt-by-exception in ADR-050/057/067.
