@@ -39,6 +39,7 @@ def write_for_event(
     *,
     staging_dir: Path | str | None = None,
     supabase_client=None,
+    timestamp: str | None = None,
 ) -> str | None:
     """Persist a rendered .md for one event to the chosen target(s).
 
@@ -69,7 +70,10 @@ def write_for_event(
     if target in ("local", "both"):
         sdir = Path(staging_dir) if staging_dir is not None else DEFAULT_STAGING_DIR
         sdir.mkdir(parents=True, exist_ok=True)
-        out = sdir / f"{event_code}.md"
+        # ADR-075: an optional timestamp stem (`<EVENT>.<ts>.md`) lets the operator
+        # keep + compare reruns of the same event. Default preserves `<EVENT>.md`.
+        stem = f"{event_code}.{timestamp}" if timestamp else event_code
+        out = sdir / f"{stem}.md"
         out.write_text(md_text, encoding="utf-8")
         local_path = str(out)
 

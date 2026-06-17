@@ -184,12 +184,15 @@ flowchart TB
     %% ===== POST_COMMIT flow (domestic members) =====
     subgraph PC["POST_COMMIT flow (domestic)"]
         PCx["ParticipantCount (ADR-069) →<br/>Notify + Escalate last resort (ADR-059/074)"]
+        SFx["⚑ StagingFormatter (Mutator · effects=docs, ADR-075)<br/>event-scoped only: merge _bracket_reports →<br/>STAGING_TEMPLATE + three_way_diff"]
+        PCx --> SFx
     end
 
     %% ===== STATE =====
     LIVE[("LIVE: tbl_tournament / tbl_result → ranking views (auto-reflect)")]
     ROSTER[("tbl_fencer — governed roster")]
     EDITM["manual tbl_fencer edit / DEDUP_SWEEP"]
+    STAGE[/"⚑ doc/staging/&lt;EVENT&gt;.&lt;ts&gt;.md + .diff.md (ADR-075)"/]
 
     EP --> ORC --> L3
     ROSTER --> P4
@@ -198,6 +201,8 @@ flowchart TB
     P12 --> LIVE
     P12 -. emits live committed .-> PCR
     PCR -. emits POST_COMMIT flow .-> PC
+    L3 -. each plugin: ctx.add_report(fragment) .-> SFx
+    SFx --> STAGE
     ROSTER -. master_data changed .-> SH
     EDITM -. master_data changed .-> SH
     SH -. emits RECOMPUTE_DOMESTIC per event .-> EP
@@ -233,7 +238,7 @@ class IngestPlugin(Protocol):
 
 **Outcomes** recorded in `ctx.trace`: **RAN** · **SKIPPED** (`applies()` false) · **FAULT** (`ctx.fault` — auto-resolved inline per the `REMEDIATIONBOOK` rule, **flow continues**). Plus `ctx.warn()` soft diagnostics. A flow aborts **only** on a true infra `Abort` (DB down), which is retried — never a human gate.
 
-`Context` = the forward payload (IR + accumulated keys + trace + warnings). `Services` = injected `db`, `config`, `matcher`, `calibration`, `notifier`.
+`Context` has **five forward channels**: `data` (the write-disciplined DAG currency), `trace` (what *ran*), `warnings` (soft diagnostics), `faults` (recoverable problems) and — since **ADR-075** — `report` (the "what to tell the human" channel). `ctx.add_report(section, **payload)` appends a `ReportFragment` tagged with the active plugin's name + kind; like `fault()`/`warn()` it is a forward signal, **not** a DAG key, so it bypasses write-discipline and is callable by **every plugin kind**. The terminal `StagingFormatter` plugin shapes the accumulated fragments into the per-event review files (§5.2a). `Services` = injected `db`, `config`, `matcher`, `calibration`, `notifier`.
 
 ### 4.1a Plugin kinds (types)
 
@@ -244,8 +249,10 @@ Every plugin declares a `kind`. The kind determines its contract and where it ru
 | **Source** | first, in the plan | produces the initial Context | `ParseSource`, `LoadCommitted` |
 | **Gate** | in the plan | pure check; records `ctx.fault`, **never halts** (ADR-074) | `ValidateIR`, `ValidateCounts`, `DetectPoolRound`, `ParticipantCount` |
 | **Transform** | in the plan | pure; enriches Context; records `ctx.fault` if underivable | `ResolveEvent`, `DetectCombinedPool`, `SplitByAge`, `DetectJointPool`, `AssignFinalVcat` |
-| **Mutator** | in the plan | persists state and **emits a signal** | `ResolveFencers`, `Commit`, `Notify`, `Escalate` (deferred §12: `PewCascade`, `EvfParity`) |
+| **Mutator** | in the plan | persists state and **emits a signal** | `ResolveFencers`, `Commit`, `Notify`, `Escalate`, **`StagingFormatter`** ⚑ (deferred §12: `PewCascade`, `EvfParity`) |
 | **Reactor** | **outside** the plan | **observes a signal → emits a Flow** | **`SelfHealing`**, `PostCommit` |
+
+**Every kind serializes its own report fragment (ADR-075).** Regardless of kind, a plugin calls `self.report(ctx, section, **payload)` (→ `ctx.add_report`) to record its contribution to the staging report as it runs — Source emits the parsed bracket, Gates emit their checks, Transforms emit the structure, Mutators emit identity/commit. The terminal **`StagingFormatter`** (Mutator, `effects={"docs"}`) is the ONLY plugin that reads the accumulated fragments and writes files; it renders at **event scope** only (when the CLI seeds `_bracket_reports`), so the per-bracket POST_COMMIT the `PostCommit` reactor fires SKIPs it.
 
 **The event seam:** *Mutators emit signals; Reactors turn signals into Flows.* This is how the loop closes
 with **no back-edges** in the forward pipeline — `ResolveFencers` (Mutator) emits `master_data.changed`;
@@ -346,7 +353,7 @@ class RuleEngine:                       # executes a RULE from the RuleBook
 `SelfHealing` — on `master_data.changed` → emits `Flow.RECOMPUTE_DOMESTIC` (debounced; impl = CDC trigger + `tbl_recompute_queue` + worker, §8). The trigger is **column-aware**: BY / merge / nationality → `RECOMPUTE_DOMESTIC`; name/alias edits → no historical action (FK is durable) — **ADR-072** ·
 `PostCommit` — on `live.committed` → emits `Flow.POST_COMMIT`.
 
-**POST_COMMIT flow plugins (domestic):** `ParticipantCount` (Gate, [069](adr/069-participant-count-url-validator.md) — now a **fault**, not a halt, per **ADR-074**) · `Notify` (Mutator/external, [059](adr/059-telegram-document-delivery.md)) · `Escalate` (Mutator/external — Telegram last resort, **ADR-074**). Deferred (§12): `PewCascade` ([046](adr/046-pew-weapon-suffix.md)), `EvfParity` ([053](adr/053-evf-parity-gate.md)).
+**POST_COMMIT flow plugins (domestic):** `ParticipantCount` (Gate, [069](adr/069-participant-count-url-validator.md) — now a **fault**, not a halt, per **ADR-074**) · `Notify` (Mutator/external, [059](adr/059-telegram-document-delivery.md)) · `Escalate` (Mutator/external — Telegram last resort, **ADR-074**) · **`StagingFormatter`** ⚑ (Mutator/`docs` — the terminal staging-report shaper, [075](adr/075-staging-report-fragment-channel.md); `applies` only at event scope). Deferred (§12): `PewCascade` ([046](adr/046-pew-weapon-suffix.md)), `EvfParity` ([053](adr/053-evf-parity-gate.md)).
 
 **`RECOMPUTE_DOMESTIC` source:** `LoadCommitted` (Source) — loads the affected **event's** stored, FK-linked results across its V-cat brackets for re-derivation (no fetch, no re-match).
 
@@ -421,6 +428,60 @@ REMEDIATIONBOOK = {
   re-derive an event) is **not** a fault — it travels the Mutator→signal→Reactor seam (`master_data.changed`
   → `SelfHealing` → `RECOMPUTE_DOMESTIC`, §8). Faults fix the *current* run inline; self-healing fixes
   *other* events asynchronously. Together: full automation, no gate. — **ADR-070/074**
+
+### 5.2a Staging report — the fifth Context channel + terminal formatter (ADR-075)
+
+ADR-074 removed the draft/review gate (auto-commit, no draft tables), which also removed the OLD
+pipeline's two **human-review files** per event. ADR-075 restores them as an **informational,
+post-commit** layer — no drafts, no blocking gate — so the operator can still audit a run (new fencers,
+birth-year reconciliations, match quality, NULL/estimated BY, committed tournaments, pool-rounds) and a
+3-way diff (Source / CERT / New LOCAL) + confidence histogram.
+
+**Option B — distributed emission, shaped once at the end.** The files aggregate information produced
+*throughout* ingestion. Rather than one terminal plugin reverse-engineering that from the legacy pctx
+(Option A — rejected: brittle, couples to side-effects), **every plugin serializes its own fragment**
+to the `report` channel as it runs, and **one terminal `StagingFormatter` shapes the accumulated
+fragments** into the files from a template.
+
+- **The channel.** `Context.report: list[ReportFragment]`; `ReportFragment(plugin, kind, section, payload)`.
+  `ctx.add_report(section, **payload)` (and the `BasePlugin.report` convenience) tag the fragment with the
+  active plugin name + kind. Bypasses write-discipline (not a DAG key), so every kind can emit.
+- **Who emits what.**
+
+  | Plugin (kind) | Section | Fragment |
+  |---|---|---|
+  | `ParseSource` (Source) | `SOURCE` | weapon, gender, category_hint, date, n_rows, source_url |
+  | `ValidateIR` (Gate) | `VALIDATION` | check=ir, ok |
+  | `ResolveEvent` (Transform) | `EVENT` | id_event, txt_code, txt_name, dt_start |
+  | `ResolveFencers` (Mutator) | `IDENTITY` | matches[], created[], reconciled[], conflicts[] |
+  | `DetectCombinedPool`/`SplitByAge`/`DetectJointPool` (Transform) | `STRUCTURE` | combined, splits, joint_pool_siblings |
+  | `ValidateCounts` (Gate) | `VALIDATION` | check=count, below_min, count_mismatch |
+  | `DetectPoolRound` (Gate) | `VALIDATION` | check=pool_round, is_pool_round |
+  | `AssignFinalVcat` (Transform) | `STRUCTURE` | final_vcats |
+  | `Commit` (Mutator) | `COMMIT` | tournaments[], skipped, dropped, cleared |
+  | `ParticipantCount` (Gate) | `VALIDATION` | check=participant_count, expected, actual |
+  | `Notify` (Mutator) | `REACTION` | sent, escalated[] |
+
+- **The formatter.** `StagingFormatter` (Mutator, `effects={"docs"}`) owns `STAGING_TEMPLATE` (an ordered
+  `(heading, renderer)` spec — the "template"; no Jinja dep), merges all brackets' fragments
+  (`_bracket_reports`), and writes both files. The `.md` is rendered from the template; the `.diff.md`
+  reuses `three_way_diff` verbatim, fed from the `IDENTITY` matches + `db.fetch_cert_rows_for_event`.
+- **Event scope + timestamp.** The CLI fires ONE event-level `POST_COMMIT` after the bracket loop
+  (`_fire_staging_report`), seeding `_bracket_reports` (and schedule-level skips). `StagingFormatter.applies`
+  is True only then; the per-bracket reactor fire SKIPs it. One UTC stamp per run names both files —
+  `doc/staging/<EVENT>.<YYYYMMDD-HHMMSSZ>.md` / `.diff.md` — so reruns of the same event are comparable.
+
+```mermaid
+flowchart LR
+    subgraph BR["per-bracket INGEST_DOMESTIC runs"]
+        direction TB
+        S["ParseSource → … → Commit<br/>each plugin: ctx.add_report(section, …)"]
+    end
+    S -->|ctx.report| AGG["CLI _fire_staging_report<br/>seeds _bracket_reports (all brackets)"]
+    AGG -->|event-scoped POST_COMMIT| SF["StagingFormatter (Mutator · effects=docs)<br/>merge fragments → STAGING_TEMPLATE + three_way_diff"]
+    SF --> MD["doc/staging/&lt;EVENT&gt;.&lt;ts&gt;.md"]
+    SF --> DIFF["doc/staging/&lt;EVENT&gt;.&lt;ts&gt;.diff.md"]
+```
 
 ---
 
@@ -614,8 +675,9 @@ flowchart TB
     end
     RF["run_flow(FlowParams): RuleEngine.plan → Orchestrator.execute"]
     DBX[("Supabase: RPCs · live · queue · tbl_fencer")]; TG["Telegram"]
+    STG[/"doc/staging/&lt;EVENT&gt;.&lt;ts&gt;.md + .diff.md (ADR-075)"/]
     CLI-->RF; EMAIL-->GHA-->RF; EDIT-->CRON-->EDGE-->GHA; CRON-->EDGE
-    RF-->DBX; RF-->TG
+    RF-->DBX; RF-->TG; RF-->STG
 ```
 
 | Trigger | Flow | Mechanism |
@@ -651,6 +713,7 @@ Existing ingestion ADRs unchanged (see [current §7](ingestion-pipeline-design.m
 | [ADR-072](adr/072-cdc-recompute-debounce.md) ⚑ | Master-data-change-triggered idempotent recompute (CDC queue + debounce) | proposed | trigger, queue, worker, `RECOMPUTE_DOMESTIC` flow |
 | [ADR-073](adr/073-plugin-rule-engine-architecture.md) ⚑ | Plugin + rule-engine ingestion architecture | proposed | contract, orchestrator, RuleEngine, flows |
 | [ADR-074](adr/074-no-halt-fault-resolution.md) ⚑ | No hard halt — `REMEDIATIONBOOK` fault resolution + `Escalate` (Telegram last resort) | proposed | orchestrator, gates, `REMEDIATIONBOOK`, `Escalate` |
+| [ADR-075](adr/075-staging-report-fragment-channel.md) ⚑ | Staging report — fifth Context channel (`report`) + per-plugin fragment emission + terminal `StagingFormatter` (template + 3-way diff, timestamped) | proposed | `Context`, every plugin, `StagingFormatter`, `POST_COMMIT`, `ingest_cli`, `md_writer`/`three_way_diff` |
 | [ADR-050](adr/050-unified-ingestion-pipeline.md) | Unified ingestion pipeline | **amend** | stages → plugins; **draft-then-review removed** — `Commit` writes live atomically (reverts to ADR-022); DRY_RUN dropped |
 | [ADR-056](adr/056-vcat-from-birthyear.md) | V-cat from birth year (Stage 0) | **amend** | Stage-0 absorbed into `ResolveFencers`; now runs early |
 | [ADR-038](adr/038-evf-intake-polish-only.md) / [057](adr/057-pool-round-structural-detection.md) / [066](adr/066-min-participants-ingestion-gate.md) / [067](adr/067-structural-pool-only-skip-unified-xml-ingest.md) / [069](adr/069-participant-count-url-validator.md) | (various halts) | **amend (ADR-074)** | halt → `ctx.fault`: V0-international → exclude; below-min → drop; pool-round/IR → skip; count-mismatch → accept + escalate. No hard halt. |

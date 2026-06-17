@@ -168,12 +168,16 @@ class TestRunFlow:
             "ParticipantCount": _Plugin("ParticipantCount", reads=frozenset({"event"})),
             "Notify": _Plugin("Notify", reads=frozenset({"event"}),
                               effects=frozenset({"external"})),
+            # ADR-075: POST_COMMIT now ends with StagingFormatter (renders only at
+            # event scope; a stub here exercises run_flow wiring).
+            "StagingFormatter": _Plugin("StagingFormatter", reads=frozenset({"event"}),
+                                        effects=frozenset({"docs"})),
         }
         ctx = Context()
         ctx.data["event"] = {"id_event": 1}
         out = run_module.run_flow(
             FlowParams(Flow.POST_COMMIT), ctx=ctx, svc=Services(), plugins=plugins
         )
-        assert out.trace.names == ["ParticipantCount", "Notify"]
+        assert out.trace.names == ["ParticipantCount", "Notify", "StagingFormatter"]
         assert out.trace.outcome_of("ParticipantCount") == Outcome.RAN
         assert out.trace.outcome_of("Notify") == Outcome.RAN

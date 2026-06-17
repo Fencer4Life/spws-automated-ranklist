@@ -131,6 +131,21 @@ class ResolveFencers(BasePlugin):
 
         pctx.matches = matches
         ctx.set("matches", matches)
+        # ADR-075: serialize identity resolution to the staging report. The legacy
+        # pctx still carries created/reconciled/conflicts (kept for the bridge), but
+        # the report channel is the file's self-contained source of truth.
+        self.report(
+            ctx, "IDENTITY",
+            matches=[{
+                "scraped_name": m.scraped_name, "id_fencer": m.id_fencer,
+                "place": m.place, "method": m.method, "confidence": m.confidence,
+                "governed_birth_year": m.governed_birth_year,
+                "notes": getattr(m, "notes", None),
+            } for m in matches],
+            created=list(pctx.created_fencers),
+            reconciled=list(pctx.reconciled_fencers),
+            conflicts=list(pctx.reconcile_conflicts),
+        )
 
     # ------------------------------------------------------------------ #
     # DEDUP_SWEEP — whole-roster dedup (ADR-071), same primitive (fn_merge_fencers)

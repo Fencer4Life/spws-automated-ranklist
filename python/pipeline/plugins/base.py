@@ -22,3 +22,9 @@ class BasePlugin:
 
     def run(self, ctx: Context, svc: Services) -> None:  # pragma: no cover - abstract
         raise NotImplementedError
+
+    def report(self, ctx: Context, section: str, **payload) -> None:
+        """Serialize this plugin's contribution to the staging-report channel
+        (ADR-075), tagged with its own name + kind. Every plugin kind may call
+        this; the terminal StagingFormatter shapes the fragments into the files."""
+        ctx.add_report(section, plugin=self.name, kind=self.kind, **payload)

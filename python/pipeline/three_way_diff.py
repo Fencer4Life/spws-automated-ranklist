@@ -243,15 +243,24 @@ def _project_root() -> Path:
     return here.parent.parent.parent
 
 
-def write_diff(event_code: str, content: str, staging_dir: Path | None = None) -> Path:
-    """Write the markdown diff to <staging_dir>/<event_code>.diff.md.
+def write_diff(
+    event_code: str,
+    content: str,
+    staging_dir: Path | None = None,
+    *,
+    timestamp: str | None = None,
+) -> Path:
+    """Write the markdown diff to <staging_dir>/<event_code>[.<ts>].diff.md.
 
     Default staging_dir: <project_root>/doc/staging/. Created if missing.
+    An optional `timestamp` stem (ADR-075) lets reruns be kept + compared; the
+    default preserves `<event_code>.diff.md`.
     """
     if staging_dir is None:
         staging_dir = _project_root() / "doc" / "staging"
     staging_dir = Path(staging_dir)
     staging_dir.mkdir(parents=True, exist_ok=True)
-    path = staging_dir / f"{event_code}.diff.md"
+    stem = f"{event_code}.{timestamp}" if timestamp else event_code
+    path = staging_dir / f"{stem}.diff.md"
     path.write_text(content)
     return path

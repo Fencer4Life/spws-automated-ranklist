@@ -72,9 +72,9 @@ class TestResolvedSequences:
         assert plan.steps[0].params.get("scope") == "whole_roster"
 
     def test_post_commit_sequence(self):
-        """N1.5 plan(POST_COMMIT) -> ParticipantCount -> Notify."""
+        """N1.5 plan(POST_COMMIT) -> ParticipantCount -> Notify -> StagingFormatter (ADR-075)."""
         plan = _engine().plan(FlowParams(Flow.POST_COMMIT))
-        assert plan.names == ["ParticipantCount", "Notify"]
+        assert plan.names == ["ParticipantCount", "Notify", "StagingFormatter"]
 
 
 # ---------------------------------------------------------------------------

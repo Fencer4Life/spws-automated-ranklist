@@ -44,6 +44,8 @@ class ParticipantCount(BasePlugin):
         actual = cfg.get("committed_participant_count")
         if expected is not None and actual is not None and expected != actual:
             ctx.fault(FaultKind.COUNT_MISMATCH, f"URL {expected} != committed {actual}")
+        self.report(ctx, "VALIDATION", check="participant_count",
+                    expected=expected, actual=actual)
 
 
 class Notify(BasePlugin):
@@ -55,9 +57,13 @@ class Notify(BasePlugin):
 
     def run(self, ctx: Context, svc: Services) -> None:
         notifier = svc.notifier
+        sent = False
         if notifier is not None and hasattr(notifier, "send"):
             notifier.send(self._summary(ctx))
-        escalate_faults(ctx, svc)
+            sent = True
+        escalated = escalate_faults(ctx, svc)
+        self.report(ctx, "REACTION", sent=sent,
+                    escalated=[f.kind.value for f in escalated])
 
     @staticmethod
     def _summary(ctx: Context) -> str:
