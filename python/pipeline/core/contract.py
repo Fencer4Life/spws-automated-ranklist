@@ -94,6 +94,22 @@ class TraceEntry:
     outcome: Outcome
 
 
+@dataclass(frozen=True)
+class ReportFragment:
+    """One plugin's serialized contribution to the staging report (ADR-075).
+
+    The `report` channel is the fifth Context channel (peer to data/trace/
+    warnings/faults): the "what to tell the human" log. Every plugin kind emits
+    its own fragment as it runs; the terminal `StagingFormatter` plugin shapes the
+    accumulated fragments into the per-event `.md` / `.diff.md` files. `kind` is
+    recorded so the output is legible by plugin TYPE.
+    """
+    plugin: str
+    kind: "PluginKind | None"
+    section: str
+    payload: dict[str, Any] = field(default_factory=dict)
+
+
 @dataclass
 class Trace:
     """Ordered record of what the orchestrator did, plugin by plugin."""
@@ -146,9 +162,11 @@ class Context:
     trace: Trace = field(default_factory=Trace)
     warnings: list[str] = field(default_factory=list)
     faults: list[Fault] = field(default_factory=list)
+    report: list[ReportFragment] = field(default_factory=list)  # ADR-075 staging-report channel
     params: dict[str, Any] = field(default_factory=dict)  # active Step.params (set by orchestrator)
 
     _active_plugin: str | None = field(default=None, repr=False)
+    _active_kind: "PluginKind | None" = field(default=None, repr=False)
     _active_writes: frozenset[str] | None = field(default=None, repr=False)
     _faulted_active: bool = field(default=False, repr=False)
 
@@ -183,18 +201,40 @@ class Context:
     def warn(self, msg: str) -> None:
         self.warnings.append(msg)
 
+    def add_report(
+        self,
+        section: str,
+        *,
+        plugin: str | None = None,
+        kind: "PluginKind | None" = None,
+        **payload: Any,
+    ) -> None:
+        """Append a staging-report fragment (ADR-075). Like fault()/warn(): a
+        forward signal, NOT a DAG key — bypasses write-discipline and is available
+        to EVERY plugin kind. `plugin`/`kind` default to the active plugin (set by
+        the orchestrator's _begin); BasePlugin.report passes them explicitly so a
+        plugin can serialize even outside orchestrator bracketing."""
+        self.report.append(ReportFragment(
+            plugin if plugin is not None else (self._active_plugin or "?"),
+            kind if kind is not None else self._active_kind,
+            section,
+            payload,
+        ))
+
     def faults_of(self, kind: FaultKind) -> list[Fault]:
         return [f for f in self.faults if f.kind == kind]
 
     # -- orchestrator bookkeeping (not for plugins) ------------------------
     def _begin(self, plugin: "IngestPlugin") -> None:
         self._active_plugin = plugin.name
+        self._active_kind = getattr(plugin, "kind", None)
         self._active_writes = frozenset(plugin.writes)
         self._faulted_active = False
 
     def _end(self) -> bool:
         faulted = self._faulted_active
         self._active_plugin = None
+        self._active_kind = None
         self._active_writes = None
         self._faulted_active = False
         return faulted

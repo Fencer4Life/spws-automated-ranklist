@@ -873,16 +873,34 @@ logic was rewritten).
   (`test_post_commit_chain.py`). **This closes the "engine without a steering wheel" gap** — the four
   flows + both reactors (SelfHealing via the CDC trigger/worker, PostCommit via run_flow chaining) now
   run end-to-end; an operator ingest persists live, self-heals on master-data edits, and notifies.
+- **Step E — staging report restored as a first-class plugin output** (ADR-075;
+  `core/contract.py`, `plugins/base.py`, all INGEST plugins, `plugins/staging_formatter.py`,
+  `engine/rulebook.py`, `ingest_cli.py`, `md_writer.py`, `three_way_diff.py`) — 2026-06-16. ADR-074's
+  auto-commit removed the OLD draft-then-review `.md`/`.diff.md`; the PPW3 from-URL debug run showed the
+  cost (silent markerless-fencer drops, no surfaced report). Restored as **informational/post-commit**
+  via **Option B (distributed emission)**, chosen by the user over a single reconstructing plugin: a
+  **fifth Context channel** `report` (`ReportFragment(plugin, kind, section, payload)` +
+  `ctx.add_report`/`BasePlugin.report`, bypasses write-discipline, every plugin kind emits) — every
+  plugin serializes its own fragment as it runs, and one terminal **`StagingFormatter`** (Mutator,
+  `effects=docs`) merges all brackets' fragments (`_bracket_reports`) into `doc/staging/<EVENT>.<ts>.md`
+  (rendered from `STAGING_TEMPLATE`, an ordered section spec — the "template", no Jinja dep) + `.diff.md`
+  (reuses `three_way_diff` verbatim). Event-scoped: the CLI's `_fire_staging_report` fires ONE
+  event-level `POST_COMMIT` after the bracket loop seeding `_bracket_reports`; the per-bracket reactor
+  fire SKIPs the formatter. One UTC timestamp per run names both files so reruns of the same event are
+  comparable (the user asked for this explicitly); `md_writer.write_for_event` + `three_way_diff.write_diff`
+  gained a backward-compatible `timestamp` param. Tests N11.1–N11.7 (`test_staging_report.py`).
 
-**Tests.** pgTAP 577 → 588; pytest +49 (M1–M5) +8 (Step A, N7.1–N7.8) +6 (Step B, N8.1–N8.6) +8
-(Step C, N9.1–N9.7 + N5.7) +7 (Step D, N10.1–N10.7) across `test_rule_engine`, `test_pipeline_core`,
-`test_pipeline_plugins`, `test_resolve_fencers`, `test_recompute`, `test_recompute_worker`,
-`test_commit_persist`, `test_ingest_cli_flow`, `test_recompute_persist`, `test_post_commit_chain`.
-Final this session: pytest 873, vitest 372, pgTAP 588.
+**Tests.** pgTAP 577 → 588 (unchanged in Step E — Python-only); pytest +49 (M1–M5) +8 (Step A, N7.1–N7.8)
++6 (Step B, N8.1–N8.6) +8 (Step C, N9.1–N9.7 + N5.7) +7 (Step D, N10.1–N10.7) +N11.1–N11.7 (Step E)
+across `test_rule_engine`, `test_pipeline_core`, `test_pipeline_plugins`, `test_resolve_fencers`,
+`test_recompute`, `test_recompute_worker`, `test_commit_persist`, `test_ingest_cli_flow`,
+`test_recompute_persist`, `test_post_commit_chain`, `test_staging_report`.
+Final this session: pytest 895, vitest 372, pgTAP 588.
 
-**ADRs.** ADR-070–074 Accepted; amended ADR-050 (stages→plugins, draft tables removed), ADR-056
-(Stage-0 absorbed), ADR-038/066/067/069 (halts → faults), reversed halt-by-exception in ADR-050/057/067.
-RTM FR-112–117 Covered.
+**ADRs.** ADR-070–074 Accepted; ADR-075 Accepted (staging report — fifth Context channel + terminal
+formatter); amended ADR-050 (stages→plugins, draft tables removed; review artifact restored by ADR-075),
+ADR-056 (Stage-0 absorbed), ADR-038/066/067/069 (halts → faults), reversed halt-by-exception in
+ADR-050/057/067. RTM FR-112–118 Covered.
 
 **Deferred (design §12, international only):** `FRESH_INGEST_INTERNATIONAL`, `EVF_SYNC`, `PewCascade`,
 `EvfParity`; real pg_cron wiring of the recompute worker; `LISTEN/NOTIFY` dispatch; `tbl_flow_rule`.

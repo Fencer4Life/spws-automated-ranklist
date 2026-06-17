@@ -65,12 +65,13 @@ def _build_plugins() -> dict[str, object]:
     from python.pipeline.plugins.post_commit import Notify, ParticipantCount
     from python.pipeline.plugins.recompute import LoadCommitted
     from python.pipeline.plugins.resolve_fencers import ResolveFencers
+    from python.pipeline.plugins.staging_formatter import StagingFormatter
 
     instances = [
         ParseSource(), ValidateIR(), ResolveEvent(), ResolveFencers(),
         DetectCombinedPool(), SplitByAge(), DetectJointPool(), ValidateCounts(),
         DetectPoolRound(), AssignFinalVcat(), Commit(),
-        LoadCommitted(), ParticipantCount(), Notify(),
+        LoadCommitted(), ParticipantCount(), Notify(), StagingFormatter(),
     ]
     return {p.name: p for p in instances}
 
@@ -146,10 +147,13 @@ RULEBOOK: dict[Flow, Rule] = {
         Flow.POST_COMMIT,
         "Fired by the PostCommit reactor on live.committed (from both INGEST_DOMESTIC "
         "and RECOMPUTE_DOMESTIC). Validates participant count and notifies; Escalate "
-        "fires Telegram only per REMEDIATIONBOOK policy.",
+        "fires Telegram only per REMEDIATIONBOOK policy. StagingFormatter (ADR-075) "
+        "renders the per-event review files, but only at event scope (when the CLI "
+        "seeds `_bracket_reports`); the per-bracket reactor fire SKIPs it.",
         steps=(
             Step("ParticipantCount"),
             Step("Notify"),
+            Step("StagingFormatter"),
         ),
         seeds=frozenset({"event"}),
     ),

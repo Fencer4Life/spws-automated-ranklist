@@ -49,6 +49,16 @@ class ParseSource(BasePlugin):
             event_code=cfg.get("event_code"),
         )
         ctx.set("parsed", parsed)
+        # ADR-075: serialize this source's contribution to the staging report.
+        self.report(
+            ctx, "SOURCE",
+            weapon=getattr(parsed, "weapon", None),
+            gender=getattr(parsed, "gender", None),
+            category_hint=getattr(parsed, "category_hint", None),
+            date=_iso_date(getattr(parsed, "parsed_date", None)),
+            n_rows=len(getattr(parsed, "results", []) or []),
+            source_url=getattr(parsed, "source_url", None),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +71,10 @@ class ValidateIR(BasePlugin):
     reads = frozenset({"parsed"})
 
     def run(self, ctx: Context, svc: Services) -> None:
+        from python.pipeline.core.contract import FaultKind
         run_stage(ctx, "s1_validate_ir", svc.db)
+        self.report(ctx, "VALIDATION", check="ir",
+                    ok=not ctx.faults_of(FaultKind.IR_INVALID))
 
 
 class ResolveEvent(BasePlugin):
@@ -75,6 +88,11 @@ class ResolveEvent(BasePlugin):
         pctx = get_pctx(ctx)
         if pctx is not None and pctx.event is not None:
             ctx.set("event", pctx.event)
+            ev = pctx.event
+            self.report(ctx, "EVENT",
+                        id_event=ev.get("id_event"), txt_code=ev.get("txt_code"),
+                        txt_name=ev.get("txt_name"),
+                        dt_start=str(ev["dt_start"]) if ev.get("dt_start") else None)
 
 
 # ResolveFencers (the merged, early identity plugin) lives in resolve_fencers.py.
@@ -109,6 +127,7 @@ class DetectCombinedPool(BasePlugin):
         ctx.set("combined", combined)
         if pctx is not None:
             pctx.is_combined_pool = combined
+        self.report(ctx, "STRUCTURE", combined=combined)
 
 
 class SplitByAge(BasePlugin):
@@ -130,6 +149,8 @@ class SplitByAge(BasePlugin):
         ctx.set("splits", splits)
         if pctx is not None:
             pctx.splits = splits
+        self.report(ctx, "STRUCTURE",
+                    splits={k: len(v) for k, v in splits.items()})
 
 
 class DetectJointPool(BasePlugin):
@@ -142,7 +163,9 @@ class DetectJointPool(BasePlugin):
         run_stage(ctx, "s5_detect_joint_pool", svc.db)
         pctx = get_pctx(ctx)
         if pctx is not None:
-            ctx.set("joint_pool", list(pctx.joint_pool_siblings))
+            sibs = list(pctx.joint_pool_siblings)
+            ctx.set("joint_pool", sibs)
+            self.report(ctx, "STRUCTURE", joint_pool_siblings=sibs)
 
 
 class ValidateCounts(BasePlugin):
@@ -166,6 +189,11 @@ class ValidateCounts(BasePlugin):
         if has_source:
             run_stage(ctx, "s7_validate", svc.db)  # COUNT_MISMATCH / URL_DATA_MISMATCH -> fault
         self._check_min_participants(ctx, svc)
+        from python.pipeline.core.contract import FaultKind
+        self.report(ctx, "VALIDATION", check="count",
+                    below_min=bool(ctx.faults_of(FaultKind.BELOW_MIN)),
+                    count_mismatch=bool(ctx.faults_of(FaultKind.COUNT_MISMATCH)),
+                    detail=getattr(pctx, "count_validation", None) if pctx else None)
 
     def _check_min_participants(self, ctx: Context, svc: Services) -> None:
         from python.pipeline.core.contract import FaultKind
@@ -194,7 +222,10 @@ class DetectPoolRound(BasePlugin):
     reads = frozenset({"matches"})
 
     def run(self, ctx: Context, svc: Services) -> None:
+        from python.pipeline.core.contract import FaultKind
         run_stage(ctx, "s7_pool_round_check", svc.db)  # POOL_ROUND_DETECTED -> fault
+        self.report(ctx, "VALIDATION", check="pool_round",
+                    is_pool_round=bool(ctx.faults_of(FaultKind.POOL_ROUND)))
 
 
 class AssignFinalVcat(BasePlugin):
@@ -207,7 +238,10 @@ class AssignFinalVcat(BasePlugin):
         run_stage(ctx, "s7_split_by_vcat", svc.db)
         pctx = get_pctx(ctx)
         if pctx is not None:
-            ctx.set("final_vcats", dict(pctx.vcat_groups))
+            fv = dict(pctx.vcat_groups)
+            ctx.set("final_vcats", fv)
+            self.report(ctx, "STRUCTURE",
+                        final_vcats={k: len(v) for k, v in fv.items()})
 
 
 class Commit(BasePlugin):
@@ -247,10 +281,12 @@ class Commit(BasePlugin):
 
     def run(self, ctx: Context, svc: Services) -> None:
         if ctx.get("_skip_commit"):
-            ctx.set("committed", {
+            committed = {
                 "skipped": True,
                 "dropped": list(ctx.get("_dropped_brackets", [])),
-            })
+            }
+            ctx.set("committed", committed)
+            self.report(ctx, "COMMIT", **committed)
             return
         pctx = get_pctx(ctx)
         db = svc.db
@@ -281,7 +317,8 @@ class Commit(BasePlugin):
             tournament_id = db.find_or_create_tournament(
                 event_id, weapon, gender, vcat, date, ttype)
             db.ingest_results(tournament_id, rows, participant_count=len(rows))
-            written.append({"vcat": vcat, "id_tournament": tournament_id, "n": len(rows)})
+            written.append({"vcat": vcat, "weapon": weapon, "gender": gender,
+                            "id_tournament": tournament_id, "n": len(rows)})
 
         ctx.set("committed", {
             "skipped": False,
@@ -292,6 +329,7 @@ class Commit(BasePlugin):
             # (Step D); recorded here as intent until that chaining is wired.
             "emitted": "live.committed",
         })
+        self.report(ctx, "COMMIT", **ctx.get("committed"))
 
     def _commit_recompute(self, ctx: Context, svc: Services, pctx, event) -> None:
         """Re-persist a recomputed event (ADR-072, Step C).
@@ -349,6 +387,7 @@ class Commit(BasePlugin):
             "cleared": cleared,
             "emitted": "live.committed",
         })
+        self.report(ctx, "COMMIT", **ctx.get("committed"))
 
     @staticmethod
     def _existing_tournaments(db, event_id) -> list:

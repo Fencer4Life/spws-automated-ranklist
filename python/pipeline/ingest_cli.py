@@ -329,22 +329,165 @@ def ingest_via_flow(
             print(f"  {p_str}: SKIPPED (pool-only qualifier — no DE bracket)")
             continue
 
-        svc = Services(db=db, config={
-            "parsed": parsed,
-            "overrides": overrides,
-            "season_end_year": season_end_year,
-            "event_code": event_code,
-        })
-        ctx = run_flow(FlowParams(Flow.INGEST_DOMESTIC), svc=svc)
-        committed = ctx.get("committed") or {}
-        if committed.get("skipped"):
-            print(f"  {p_str}: SKIPPED (dropped {committed.get('dropped')})")
-        else:
-            tournaments = committed.get("tournaments") or []
-            print(f"  {p_str}: committed {len(tournaments)} bracket(s): "
-                  + ", ".join(f"{t['vcat']}→t{t['id_tournament']}(n={t['n']})"
-                              for t in tournaments))
+        ctx = _run_parsed_through_flow(parsed, event_code, season_end_year, overrides, db, label=p_str)
         contexts.append(ctx)
+    _fire_staging_report(event, contexts, db, notifier=notifier)  # ADR-075
+    return contexts
+
+
+def _run_parsed_through_flow(parsed, event_code, season_end_year, overrides, db, *, label=""):
+    """Route one already-parsed IR bracket through `run_flow(INGEST_DOMESTIC)` and
+    print a one-line commit summary. Shared by the file path (`ingest_via_flow`)
+    and the URL path (`ingest_event_from_url`)."""
+    from python.pipeline.core.contract import Services
+    from python.pipeline.engine.flows import Flow, FlowParams
+    from python.pipeline.run import run_flow
+
+    svc = Services(db=db, config={
+        "parsed": parsed,
+        "overrides": overrides,
+        "season_end_year": season_end_year,
+        "event_code": event_code,
+    })
+    ctx = run_flow(FlowParams(Flow.INGEST_DOMESTIC), svc=svc)
+    committed = ctx.get("committed") or {}
+    faults = [f.kind.value for f in ctx.faults]
+    if committed.get("skipped"):
+        print(f"  {label}: SKIPPED (dropped {committed.get('dropped')}) faults={faults}")
+    else:
+        tournaments = committed.get("tournaments") or []
+        summary = ", ".join(f"{t['vcat']}→t{t['id_tournament']}(n={t['n']})" for t in tournaments)
+        print(f"  {label}: committed {len(tournaments)} bracket(s): {summary} faults={faults}")
+    return ctx
+
+
+def _fire_staging_report(event, contexts, db, *, schedule_skips=None, notifier=None):
+    """Event-scoped POST_COMMIT fire (ADR-075) — render the per-event review files.
+
+    The per-bracket runs each accumulated a `report` (the fifth Context channel);
+    here we seed ONE event-level Context with all of them (`_bracket_reports`) so
+    `StagingFormatter` shapes them into `<EVENT>.<ts>.md` + `.diff.md` exactly once.
+    `react=False`: this IS a POST_COMMIT, so it must not re-fire itself.
+    """
+    if not contexts:
+        return None
+    from python.pipeline.core.contract import Context, Services
+    from python.pipeline.engine.flows import Flow, FlowParams
+    from python.pipeline.run import run_flow
+
+    ctx = Context()
+    ctx.data["_bracket_reports"] = [c.report for c in contexts]
+    ctx.data["event"] = event
+    if schedule_skips:
+        ctx.data["_schedule_skips"] = schedule_skips
+    svc = Services(db=db, config={"event_code": event.get("txt_code")}, notifier=notifier)
+    return run_flow(
+        FlowParams(Flow.POST_COMMIT, id_event=event.get("id_event")),
+        ctx=ctx, svc=svc, react=False,
+    )
+
+
+def _wipe_event_live(db, id_event: int) -> tuple[int, int]:
+    """Delete an event's committed results + tournaments (for a clean re-ingest).
+    Returns (results_deleted, tournaments_deleted). Keeps the event row."""
+    sb = db._sb
+    tids = [t["id_tournament"] for t in
+            sb.table("tbl_tournament").select("id_tournament").eq("id_event", id_event).execute().data or []]
+    rids = [r["id_result"] for r in
+            (sb.table("tbl_result").select("id_result").in_("id_tournament", tids).execute().data or [])] if tids else []
+    if rids:
+        sb.table("tbl_match_candidate").delete().in_("id_result", rids).execute()
+        sb.table("tbl_result").delete().in_("id_tournament", tids).execute()
+    for tid in tids:
+        sb.table("tbl_tournament").delete().eq("id_tournament", tid).execute()
+    return len(rids), len(tids)
+
+
+# FTL endpoints (reused by the URL ingest path).
+_FTL_DATA = "https://www.fencingtimelive.com/events/results/data/"
+_FTL_RESULTS = "https://www.fencingtimelive.com/events/results/"
+
+
+def ingest_event_from_url(
+    event_code: str,
+    season_end_year: int,
+    db=None,
+    notifier=None,
+    replace: bool = False,
+) -> list:
+    """NEW pipeline ingest of a whole SPWS FTL event from its `url_event`
+    (eventSchedule) — the URL entry the engine previously lacked (§3.2 gap).
+
+    REUSES the existing scrapers end-to-end: `get_authed_ftl_client` (auth),
+    `parse_event_schedule` (bracket discovery + MIKST/DE/guest skip filters),
+    `parse_tournament_name` (name → weapon/gender/V-cat, combined → split-by-BY),
+    `ftl.parse_json` (FTL data → IR). Each discovered bracket is routed through
+    `run_flow(INGEST_DOMESTIC)` (Step B), so `Commit` writes live per V-cat bracket.
+
+    `replace=True` wipes the event's existing results+tournaments first (a clean
+    re-ingest). No notifier is built unless one is passed (avoids Telegram).
+    """
+    from datetime import date as _date
+
+    from python.scrapers import ftl
+    from python.scrapers.ftl_auth import get_authed_ftl_client, normalize_ftl_url
+    from python.pipeline.ir import ParsedTournament, SourceKind
+    from python.pipeline.overrides import load_for_event
+    from python.tools.scrape_ftl_event_urls import (
+        parse_event_schedule, parse_tournament_name,
+    )
+
+    if db is None:
+        db = create_db_connector()
+
+    event = db.find_event_by_code(event_code)
+    if event is None:
+        raise ValueError(f"Event {event_code!r} not found in tbl_event.")
+    url_event = event.get("url_event") or event.get("url_results")
+    if not url_event:
+        raise ValueError(f"Event {event_code!r} has no url_event populated.")
+
+    overrides = load_for_event(event_code)
+    dt = str(event.get("dt_start") or "")[:10]
+    parsed_date = _date.fromisoformat(dt) if dt else None
+    contexts = []
+
+    with get_authed_ftl_client() as client:
+        sched = client.get(normalize_ftl_url(url_event))
+        sched.raise_for_status()
+        kept, skipped = parse_event_schedule(sched.text, with_skips=True)
+        print(f"discovered {len(kept)} bracket(s), {len(skipped)} skipped")
+        for s in skipped:
+            print(f"  SKIP {s['name']!r}: {s['reason']}")
+
+        if replace:
+            nr, nt = _wipe_event_live(db, event["id_event"])
+            print(f"replace: deleted {nr} results + {nt} tournaments\n")
+
+        for b in kept:
+            pn = parse_tournament_name(b["name"])
+            if pn is None:
+                print(f"  SKIP {b['name']!r}: unparseable name")
+                continue
+            combined = isinstance(pn, list)
+            weapon, gender = (pn[0][0], pn[0][1]) if combined else (pn[0], pn[1])
+            category = None if combined else pn[2]
+            results_url = f"{_FTL_RESULTS}{b['uuid']}"
+            resp = client.get(f"{_FTL_DATA}{b['uuid']}")
+            resp.raise_for_status()
+            base = ftl.parse_json(resp.json(), source_url=results_url)
+            parsed = ParsedTournament(
+                source_kind=SourceKind.FTL, results=base.results,
+                raw_pool_size=len(base.results), weapon=weapon, gender=gender,
+                category_hint=category, parsed_date=parsed_date,
+                season_end_year=season_end_year, source_url=results_url,
+                organizer_hint="SPWS",
+            )
+            label = f"{b['name']} [{weapon}/{gender}/{category or 'COMB'}, {len(base.results)} src]"
+            contexts.append(
+                _run_parsed_through_flow(parsed, event_code, season_end_year, overrides, db, label=label))
+
+    _fire_staging_report(event, contexts, db, schedule_skips=skipped)  # ADR-075
     return contexts
 
 
@@ -464,6 +607,13 @@ def main() -> None:
                              "(run_flow). Requires --event-code. Commit writes "
                              "live atomically per V-cat bracket — no draft gate "
                              "(ADR-074).")
+    parser.add_argument("--from-url", action="store_true",
+                        help="With --flow: ingest the whole event from its "
+                             "tbl_event.url_event (FTL eventSchedule), reusing the "
+                             "FTL scrapers. No XML paths needed.")
+    parser.add_argument("--replace", action="store_true",
+                        help="With --flow --from-url: wipe the event's existing "
+                             "results+tournaments before re-ingesting.")
     # Phase 2 (ADR-050) draft-management commands. Mutually exclusive with
     # each other; do not require --season-end-year.
     draft_group = parser.add_mutually_exclusive_group()
@@ -503,20 +653,28 @@ def main() -> None:
         # NEW rule-driven pipeline path (Step B). Auto-commit, no draft gate.
         if not args.event_code:
             parser.error("--flow requires --event-code")
-        if not args.path:
-            parser.error("--flow requires at least one XML path")
         notifier = TelegramNotifier(
             os.environ.get("TELEGRAM_BOT_TOKEN"),
             os.environ.get("TELEGRAM_CHAT_ID"),
         )
         try:
-            ingest_via_flow(
-                path=args.path,
-                event_code=args.event_code,
-                season_end_year=args.season_end_year,
-                url_event_override=args.url_event,
-                notifier=notifier,
-            )
+            if args.from_url:
+                ingest_event_from_url(
+                    event_code=args.event_code,
+                    season_end_year=args.season_end_year,
+                    notifier=notifier,
+                    replace=args.replace,
+                )
+            else:
+                if not args.path:
+                    parser.error("--flow requires at least one XML path (or --from-url)")
+                ingest_via_flow(
+                    path=args.path,
+                    event_code=args.event_code,
+                    season_end_year=args.season_end_year,
+                    url_event_override=args.url_event,
+                    notifier=notifier,
+                )
         except Exception as e:
             notifier.notify_pipeline_failure(str(e))
             raise

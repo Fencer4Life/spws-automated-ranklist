@@ -57,8 +57,12 @@ class TestIngestViaFlow:
                 db=_event_db(), notifier=_silent_notifier())
 
         assert mock_parse.call_count == 1
-        assert len(seen) == 1
-        params, svc = seen[0]
+        # One INGEST_DOMESTIC per file; the event-scoped POST_COMMIT (ADR-075
+        # StagingFormatter fire) is a separate run_flow and is filtered out here.
+        from python.pipeline.engine.flows import Flow
+        ingest_calls = [(p, s) for (p, s) in seen if p.flow == Flow.INGEST_DOMESTIC]
+        assert len(ingest_calls) == 1
+        params, svc = ingest_calls[0]
         assert svc.config["parsed"] is mock_parse.return_value
         assert svc.config["event_code"] == "PPW4-2025-2026"
         assert svc.config["season_end_year"] == 2026
@@ -146,3 +150,79 @@ class TestCliRouting:
             called["args"] = mock_flow.call_args
         assert called["args"].kwargs["event_code"] == "PPW4-2025-2026"
         assert called["args"].kwargs["season_end_year"] == 2026
+
+
+class TestIngestEventFromUrl:
+    """Step B URL path — ingest a whole event from its url_event, reusing the
+    FTL scrapers (parse_event_schedule / parse_tournament_name / ftl.parse_json)."""
+
+    def test_discovers_brackets_and_runs_flow_per_bracket(self):
+        """N8.7 fetch eventSchedule -> discover brackets -> run_flow per bracket,
+        with weapon/gender/V-cat from the bracket name and results from FTL data."""
+        from python.pipeline import ingest_cli
+
+        db = MagicMock()
+        db.find_event_by_code.return_value = {
+            "id_event": 1, "txt_code": "PPW3-2025-2026",
+            "url_event": "https://fencingtimelive.com/tournaments/eventSchedule/ABC",
+            "dt_start": "2025-12-13"}
+
+        class _Resp:
+            def __init__(self, text="", js=None): self.text = text; self._js = js or []
+            def raise_for_status(self): pass
+            def json(self): return self._js
+
+        class _Client:
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+            def get(self, url):
+                if "eventSchedule" in url:
+                    return _Resp(text="<schedule/>")
+                return _Resp(js=[{"id": "f1", "name": "KOWALSKI Jan", "place": "1", "country": "POL"}])
+
+        seen = []
+
+        def fake_run_flow(p, svc=None, **k):
+            seen.append((p, svc))
+            return MagicMock(get=lambda *a: {}, faults=[], report=[])
+
+        with patch("python.scrapers.ftl_auth.get_authed_ftl_client", return_value=_Client()), \
+             patch("python.scrapers.ftl_auth.normalize_ftl_url", side_effect=lambda u: u), \
+             patch("python.tools.scrape_ftl_event_urls.parse_event_schedule",
+                   return_value=([{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2"}], [])), \
+             patch("python.pipeline.run.run_flow", side_effect=fake_run_flow):
+            ingest_cli.ingest_event_from_url(
+                event_code="PPW3-2025-2026", season_end_year=2026,
+                db=db, notifier=_silent_notifier())
+
+        # One INGEST_DOMESTIC per discovered bracket; the event-scoped POST_COMMIT
+        # (ADR-075 staging fire) is filtered out here.
+        from python.pipeline.engine.flows import Flow
+        ingest_calls = [s for (p, s) in seen if p.flow == Flow.INGEST_DOMESTIC]
+        assert len(ingest_calls) == 1
+        parsed = ingest_calls[0].config["parsed"]
+        assert (parsed.weapon, parsed.gender, parsed.category_hint) == ("EPEE", "M", "V2")
+        assert len(parsed.results) == 1 and parsed.results[0].fencer_name == "KOWALSKI Jan"
+
+    def test_replace_wipes_event_first(self):
+        """N8.8 --replace deletes existing results+tournaments before re-ingest."""
+        from python.pipeline import ingest_cli
+
+        db = MagicMock()
+        db.find_event_by_code.return_value = {
+            "id_event": 9, "txt_code": "PPW3-2025-2026",
+            "url_event": "https://x/eventSchedule/ABC", "dt_start": "2025-12-13"}
+        wiped = {}
+        with patch("python.scrapers.ftl_auth.get_authed_ftl_client") as gc, \
+             patch("python.scrapers.ftl_auth.normalize_ftl_url", side_effect=lambda u: u), \
+             patch("python.tools.scrape_ftl_event_urls.parse_event_schedule", return_value=([], [])), \
+             patch("python.pipeline.ingest_cli._wipe_event_live",
+                   side_effect=lambda d, ide: (wiped.__setitem__("id", ide), (5, 3))[1]):
+            client = MagicMock()
+            client.__enter__.return_value = client
+            client.get.return_value = MagicMock(raise_for_status=lambda: None, text="")
+            gc.return_value = client
+            ingest_cli.ingest_event_from_url(
+                event_code="PPW3-2025-2026", season_end_year=2026,
+                db=db, notifier=_silent_notifier(), replace=True)
+        assert wiped["id"] == 9
