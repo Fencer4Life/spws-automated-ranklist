@@ -901,18 +901,36 @@ logic was rewritten).
   status (+skip/exception reasons). **No sign-off** (full automation). `url_results` left blank unless
   admin-entered (admin-managed URL rule). Tests N12.1–N12.7. Live PPW3 from-url re-ingest confirms
   section-by-section parity with OLD `doc/staging/PPW3-2025-2026.md`.
+- **Step F — overlap-clobber fix: discard pools-only, keep one listing per category (ADR-076)** —
+  2026-06-18: the from-URL ingest committed **wrong counts** because several FTL rounds resolving to the
+  same `event·weapon·gender·age_category` overwrote each other (delete-reimport, last-writer-wins).
+  **Rule 1** — drop pools-only rounds (no DE/Tableau) via `_ftl_has_direct_elimination` (the from-URL
+  analog of ADR-067's XML `<Poule>`-no-`<Tableau>`), + fixed the bogus bundled skip reasons (an
+  `ELIMINACJE` round is a pools-only qualifier, not "DE/amateur/junior"). **Rule 2 keep-rule**
+  (`_resolve_sources`) — one source per category: a dedicated single listing beats a BRACKET; else the
+  smaller BRACKET wins; `Commit` honours a per-listing `commit_cats` allow-set so no category is
+  double-written. Set-aside duplicates are **flagged, never stalled/merged** (incomparable place numbers).
+  Discovered rounds + status persist on `tbl_event.json_ingest_sources` (display-only — never scored) +
+  admin `json_source_overrides` (`fn_set_event_source_override`, exposed on `vw_calendar`); the **event
+  accordion** renders committed ✅ / dropped ⊘ / skipped ⚠ rows with a skip/process toggle + **Re-ingest**
+  button (`ingest-event.yml`, ADR-041 dispatch). Staging report gains duplicate flags + a "Category split
+  per source listing (fencers + BY)" section. Tests N13.1–N13.6 (pytest + pgTAP 45.1–45.6 + vitest).
+  **Dry-run + live validated:** PPW3 drops the pools-only `Szpada kat. Veteran` + flags the amateur
+  `Men's Épée`; PPW4 + PPW5 clean (every category one source, no intervention).
 
 **Tests.** pgTAP 577 → 588 (unchanged in Step E — Python-only); pytest +49 (M1–M5) +8 (Step A, N7.1–N7.8)
 +6 (Step B, N8.1–N8.6) +8 (Step C, N9.1–N9.7 + N5.7) +7 (Step D, N10.1–N10.7) +N11.1–N11.7 (Step E) +N12.1–N12.7 (Step E.2 richness)
 across `test_rule_engine`, `test_pipeline_core`, `test_pipeline_plugins`, `test_resolve_fencers`,
 `test_recompute`, `test_recompute_worker`, `test_commit_persist`, `test_ingest_cli_flow`,
-`test_recompute_persist`, `test_post_commit_chain`, `test_staging_report`.
-Final this session: pytest 895, vitest 372, pgTAP 588.
+`test_recompute_persist`, `test_post_commit_chain`, `test_staging_report`, `test_scrapers`;
+Step F (N13.1–N13.6) + pgTAP 45.1–45.6.
+Final: pytest 912, vitest 374, pgTAP 594.
 
 **ADRs.** ADR-070–074 Accepted; ADR-075 Accepted (staging report — fifth Context channel + terminal
-formatter); amended ADR-050 (stages→plugins, draft tables removed; review artifact restored by ADR-075),
-ADR-056 (Stage-0 absorbed), ADR-038/066/067/069 (halts → faults), reversed halt-by-exception in
-ADR-050/057/067. RTM FR-112–118 Covered.
+formatter); ADR-076 Accepted (overlap-clobber: pools-only discard + one-listing-per-category keep-rule +
+UI source overrides); amended ADR-050 (stages→plugins, draft tables removed; review artifact restored by
+ADR-075), ADR-056 (Stage-0 absorbed), ADR-067 (extended to FTL JSON by ADR-076),
+ADR-038/066/067/069 (halts → faults), reversed halt-by-exception in ADR-050/057/067. RTM FR-112–119 Covered.
 
 **Deferred (design §12, international only):** `FRESH_INGEST_INTERNATIONAL`, `EVF_SYNC`, `PewCascade`,
 `EvfParity`; real pg_cron wiring of the recompute worker; `LISTEN/NOTIFY` dispatch; `tbl_flow_rule`.

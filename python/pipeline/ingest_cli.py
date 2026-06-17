@@ -335,10 +335,12 @@ def ingest_via_flow(
     return contexts
 
 
-def _run_parsed_through_flow(parsed, event_code, season_end_year, overrides, db, *, label=""):
+def _run_parsed_through_flow(parsed, event_code, season_end_year, overrides, db,
+                             *, label="", commit_cats=None):
     """Route one already-parsed IR bracket through `run_flow(INGEST_DOMESTIC)` and
     print a one-line commit summary. Shared by the file path (`ingest_via_flow`)
-    and the URL path (`ingest_event_from_url`)."""
+    and the URL path (`ingest_event_from_url`). `commit_cats` (the keep-rule's owned
+    set, N13.3) restricts which categories `Commit` may write — None ⇒ write all."""
     from python.pipeline.core.contract import Services
     from python.pipeline.engine.flows import Flow, FlowParams
     from python.pipeline.run import run_flow
@@ -348,6 +350,7 @@ def _run_parsed_through_flow(parsed, event_code, season_end_year, overrides, db,
         "overrides": overrides,
         "season_end_year": season_end_year,
         "event_code": event_code,
+        "commit_cats": commit_cats,
     })
     ctx = run_flow(FlowParams(Flow.INGEST_DOMESTIC), svc=svc)
     committed = ctx.get("committed") or {}
@@ -361,12 +364,15 @@ def _run_parsed_through_flow(parsed, event_code, season_end_year, overrides, db,
     return ctx
 
 
-def _fire_staging_report(event, contexts, db, *, schedule_skips=None, notifier=None):
+def _fire_staging_report(event, contexts, db, *, schedule_skips=None, notifier=None,
+                         source_decisions=None):
     """Event-scoped POST_COMMIT fire (ADR-075) — render the per-event review files.
 
     The per-bracket runs each accumulated a `report` (the fifth Context channel);
     here we seed ONE event-level Context with all of them (`_bracket_reports`) so
     `StagingFormatter` shapes them into `<EVENT>.<ts>.md` + `.diff.md` exactly once.
+    `source_decisions` (N13) is the keep-rule's per-round verdict (committed / dropped
+    pools-only / skipped duplicate) for the omitted + duplicate sections.
     `react=False`: this IS a POST_COMMIT, so it must not re-fire itself.
     """
     if not contexts:
@@ -380,6 +386,8 @@ def _fire_staging_report(event, contexts, db, *, schedule_skips=None, notifier=N
     ctx.data["event"] = event
     if schedule_skips:
         ctx.data["_schedule_skips"] = schedule_skips
+    if source_decisions:
+        ctx.data["_source_decisions"] = source_decisions
     svc = Services(db=db, config={"event_code": event.get("txt_code")}, notifier=notifier)
     return run_flow(
         FlowParams(Flow.POST_COMMIT, id_event=event.get("id_event")),
@@ -406,6 +414,89 @@ def _wipe_event_live(db, id_event: int) -> tuple[int, int]:
 # FTL endpoints (reused by the URL ingest path).
 _FTL_DATA = "https://www.fencingtimelive.com/events/results/data/"
 _FTL_RESULTS = "https://www.fencingtimelive.com/events/results/"
+
+
+def _ftl_has_direct_elimination(client, uuid: str) -> bool:
+    """True iff the FTL results page for this round has a DE/Tableau bracket (N13.1).
+
+    A round with pools but no Tableau is a **pools-only qualifier** (ADR-067) and must
+    never be scored — this is the from-URL analog of the XML `<Poule>`-no-`<Tableau>`
+    check (which only the fencingtime_xml parser had)."""
+    import re
+    resp = client.get(f"{_FTL_RESULTS}{uuid}")
+    resp.raise_for_status()
+    return bool(re.search(r"(?i)tableau", resp.text))
+
+
+def _resolve_sources(rounds, overrides=None):
+    """Apply the keep-rule to the discovered FTL rounds (N13.3, ADR domain logic).
+
+    `rounds`: list of dicts `{name, uuid, url, weapon, gender, cats:list[str],
+    count:int, has_de:bool}`. `overrides`: `{"skip":[url…], "process":[url…]}` (admin
+    choices from the event accordion; `process` forces a round to win, `skip` drops it).
+
+    Returns one enriched record per round: `status` (committed|dropped|skipped),
+    `commit_cats` (the categories it owns / will write), `reason`, and `duplicate_of`
+    (for a set-aside round, the categories it lost and to which kept round).
+
+    Rules: (1) no DE → dropped (pools-only). (2) per `(weapon,gender,category)` keep
+    exactly one source — a dedicated single (one category) beats a BRACKET; else the
+    smaller-count source; an admin `process` url forces; an admin `skip` url drops.
+    """
+    from collections import defaultdict
+
+    overrides = overrides or {}
+    skip_urls = set(overrides.get("skip") or [])
+    process_urls = set(overrides.get("process") or [])
+
+    rec = {r["uuid"]: {**r, "single": len(r["cats"]) == 1, "status": None,
+                       "commit_cats": [], "reason": "", "duplicate_of": []}
+           for r in rounds}
+
+    alive = []
+    for r in rounds:
+        d = rec[r["uuid"]]
+        if not r["has_de"]:
+            d["status"], d["reason"] = "dropped", "pools-only (no DE)"
+        elif r["url"] in skip_urls:
+            d["status"], d["reason"] = "skipped", "admin: skipped"
+        else:
+            alive.append(r)
+
+    candidates = defaultdict(list)
+    for r in alive:
+        for v in r["cats"]:
+            candidates[(r["weapon"], r["gender"], v)].append(r)
+
+    owner = {}
+    for cat, cs in candidates.items():
+        forced = [r for r in cs if r["url"] in process_urls]
+        singles = [r for r in cs if len(r["cats"]) == 1]
+        if len(forced) == 1:
+            owner[cat] = forced[0]
+        elif len(singles) == 1:
+            owner[cat] = singles[0]
+        elif len(singles) > 1:
+            owner[cat] = None                      # anomaly: two dedicated singles
+        else:
+            owner[cat] = min(cs, key=lambda r: r["count"])   # smaller BRACKET wins
+
+    for r in alive:
+        d = rec[r["uuid"]]
+        owned = [v for v in r["cats"]
+                 if owner.get((r["weapon"], r["gender"], v)) is r]
+        d["commit_cats"] = owned
+        if owned:
+            d["status"] = "committed"
+        else:
+            d["status"] = "skipped"
+            d["reason"] = "duplicate — categories owned by a kept source"
+            d["duplicate_of"] = [
+                {"category": v, "kept": k["name"]}
+                for v in r["cats"]
+                if (k := owner.get((r["weapon"], r["gender"], v))) is not None and k is not r
+            ]
+    return list(rec.values())
 
 
 def ingest_event_from_url(
@@ -447,7 +538,8 @@ def ingest_event_from_url(
     if not url_event:
         raise ValueError(f"Event {event_code!r} has no url_event populated.")
 
-    overrides = load_for_event(event_code)
+    overrides = load_for_event(event_code)                      # identity/alias overrides
+    src_overrides = event.get("json_source_overrides")          # admin skip/process (N13.4 col; None until set)
     dt = str(event.get("dt_start") or "")[:10]
     parsed_date = _date.fromisoformat(dt) if dt else None
     contexts = []
@@ -456,14 +548,16 @@ def ingest_event_from_url(
         sched = client.get(normalize_ftl_url(url_event))
         sched.raise_for_status()
         kept, skipped = parse_event_schedule(sched.text, with_skips=True)
-        print(f"discovered {len(kept)} bracket(s), {len(skipped)} skipped")
+        print(f"discovered {len(kept)} round(s), {len(skipped)} schedule-skipped")
         for s in skipped:
-            print(f"  SKIP {s['name']!r}: {s['reason']}")
+            print(f"  schedule-skip {s['name']!r}: {s['reason']}")
 
         if replace:
             nr, nt = _wipe_event_live(db, event["id_event"])
             print(f"replace: deleted {nr} results + {nt} tournaments\n")
 
+        # 1) classify each kept round: DE present? which categories? how many fencers?
+        round_recs = []
         for b in kept:
             pn = parse_tournament_name(b["name"])
             if pn is None:
@@ -471,24 +565,68 @@ def ingest_event_from_url(
                 continue
             combined = isinstance(pn, list)
             weapon, gender = (pn[0][0], pn[0][1]) if combined else (pn[0], pn[1])
-            category = None if combined else pn[2]
-            results_url = f"{_FTL_RESULTS}{b['uuid']}"
+            cats = [t[2] for t in pn] if combined else [pn[2]]
+            url = f"{_FTL_RESULTS}{b['uuid']}"
+            has_de = _ftl_has_direct_elimination(client, b["uuid"])   # Rule 1 (pools-only drop)
             resp = client.get(f"{_FTL_DATA}{b['uuid']}")
             resp.raise_for_status()
-            base = ftl.parse_json(resp.json(), source_url=results_url)
-            parsed = ParsedTournament(
-                source_kind=SourceKind.FTL, results=base.results,
-                raw_pool_size=len(base.results), weapon=weapon, gender=gender,
-                category_hint=category, parsed_date=parsed_date,
-                season_end_year=season_end_year, source_url=results_url,
-                organizer_hint="SPWS", tournament_name=b["name"],  # ADR-075 G3: name for omitted-bracket report
-            )
-            label = f"{b['name']} [{weapon}/{gender}/{category or 'COMB'}, {len(base.results)} src]"
-            contexts.append(
-                _run_parsed_through_flow(parsed, event_code, season_end_year, overrides, db, label=label))
+            base = ftl.parse_json(resp.json(), source_url=url)
+            round_recs.append(dict(
+                name=b["name"], uuid=b["uuid"], url=url, weapon=weapon, gender=gender,
+                cats=cats, count=len(base.results), has_de=has_de, _base=base))
 
-    _fire_staging_report(event, contexts, db, schedule_skips=skipped)  # ADR-075
+        # 2) keep-rule: one source per category (Rule 2), honouring admin overrides
+        decisions = _resolve_sources(round_recs, overrides=src_overrides)
+        dec = {d["uuid"]: d for d in decisions}
+
+        # 3) ingest only the categories each committed round OWNS (commit_cats)
+        for r in round_recs:
+            d = dec[r["uuid"]]
+            if d["status"] != "committed":
+                print(f"  {d['status'].upper()} {r['name']!r}: {d['reason']}")
+                continue
+            combined = len(r["cats"]) != 1
+            parsed = ParsedTournament(
+                source_kind=SourceKind.FTL, results=r["_base"].results,
+                raw_pool_size=len(r["_base"].results), weapon=r["weapon"], gender=r["gender"],
+                category_hint=None if combined else r["cats"][0], parsed_date=parsed_date,
+                season_end_year=season_end_year, source_url=r["url"],
+                organizer_hint="SPWS", tournament_name=r["name"])
+            label = f"{r['name']} [{r['weapon']}/{r['gender']}, owns {d['commit_cats']}]"
+            contexts.append(_run_parsed_through_flow(
+                parsed, event_code, season_end_year, overrides, db,
+                label=label, commit_cats=set(d["commit_cats"])))
+
+    # 4) persist the discovered rounds + status for the event accordion (N13.4)
+    sources = _ingest_source_records(decisions, skipped)
+    if hasattr(db, "set_event_ingest_sources"):
+        try:
+            db.set_event_ingest_sources(event["id_event"], sources)
+        except Exception as e:  # never fail an ingest on the display-data write
+            print(f"  (ingest-sources persist skipped: {e})")
+
+    _fire_staging_report(event, contexts, db, schedule_skips=skipped,
+                         source_decisions=sources)  # ADR-075
     return contexts
+
+
+def _ingest_source_records(decisions, schedule_skips):
+    """Shape the keep-rule decisions + schedule skips into the display records stored
+    on `tbl_event.json_ingest_sources` and shown in the accordion (N13.4)."""
+    out = []
+    for d in decisions:
+        out.append({
+            "name": d["name"], "url": d["url"],
+            "weapon": d.get("weapon"), "gender": d.get("gender"),
+            "categories": d.get("cats", []), "count": d.get("count"),
+            "status": d["status"], "reason": d.get("reason", ""),
+            "committed_categories": d.get("commit_cats", []),
+            "duplicate_of": d.get("duplicate_of", []),
+        })
+    for s in (schedule_skips or []):
+        out.append({"name": s["name"], "url": None, "status": "dropped",
+                    "reason": s["reason"], "categories": [], "count": None})
+    return out
 
 
 def _handle_draft_commands(args, notifier) -> bool:

@@ -84,6 +84,8 @@ def _bracket_model(report) -> dict:
     return {
         "label": f"{weapon}/{gender}/{category}",
         "weapon": weapon, "gender": gender, "category": category,
+        "source_name": src.get("tournament_name"),
+        "season_end": src.get("season_end_year"),
         "matches": ident.get("matches", []),
         "created": ident.get("created", []),
         "reconciled": ident.get("reconciled", []),
@@ -123,6 +125,14 @@ def _render_automation_gaps(m) -> str:
     if m["schedule_skips"]:
         gaps.append(f"- **{len(m['schedule_skips'])} schedule-level skip(s)** "
                     f"(present on the event page, never ingested).")
+    set_aside = [d for d in m["source_decisions"] if d.get("status") == "skipped"]
+    if set_aside:
+        gaps.append(f"- **{len(set_aside)} duplicate source(s) set aside** — another round "
+                    f"already covers their categories; review + toggle in the accordion: "
+                    f"{', '.join(d.get('name', '?') for d in set_aside)}")
+    dropped = [d for d in m["source_decisions"] if d.get("status") == "dropped"]
+    if dropped:
+        gaps.append(f"- **{len(dropped)} pools-only round(s) dropped** (no DE — qualification phase).")
     dups = [c for c in m["created"] if c.get("near_miss") and (c["near_miss"].get("name"))]
     if dups:
         gaps.append(f"- **{len(dups)} newly-created fencer(s) have a close existing match** "
@@ -275,24 +285,76 @@ def _render_committed(m) -> str:
 
 
 def _render_omitted(m) -> str:
-    """G3 — brackets present on the event page but NOT ingested as tournaments."""
+    """G3 / N13 — sources present on the event page but NOT scored: pools-only rounds
+    (dropped), duplicate sources (set aside by the keep-rule), and schedule skips."""
     rows = []
+    seen = set()
+    # N13 keep-rule decisions: dropped (pools-only) + skipped (duplicate) sources.
+    for d in m["source_decisions"]:
+        if d.get("status") in ("dropped", "skipped"):
+            dup = d.get("duplicate_of") or []
+            extra = ""
+            if dup:
+                extra = " — duplicate of " + ", ".join(
+                    f"{x.get('category')}→{x.get('kept')}" for x in dup)
+            rows.append((d.get("weapon") or "?", d.get("name") or "?",
+                         (d.get("reason") or "") + extra,
+                         f"n={d.get('count')}" if d.get("count") is not None else "",
+                         d.get("url") or ""))
+            seen.add(d.get("url"))
+    # Pool-rounds detected mid-flow (gender-mix) not already covered above.
     for b in m["pool_rounds"]:
+        if b.get("url") in seen:
+            continue
         rows.append((b.get("weapon", "?"), b.get("name") or "?",
-                     b.get("reason") or "pool round", b.get("url") or ""))
+                     b.get("reason") or "pool round", "", b.get("url") or ""))
     for s in m["schedule_skips"]:
+        if s.get("url") in seen:
+            continue
         rows.append((s.get("weapon", "?"), s.get("name", "?"),
-                     s.get("reason", "skip"), s.get("url", "")))
+                     s.get("reason", "skip"), "", s.get("url", "")))
     if not rows:
-        return "_No brackets omitted — every discovered bracket was ingested._"
-    lines = ["These brackets were **present but omitted from processing** (not scored as tournaments):",
-             "", "| Weapon | Bracket name | Reason | URL |", "|---|---|---|---|"]
-    for w, name, reason, url in rows:
-        lines.append(f"| {w} | {name} | {reason} | {url} |")
-    # Misclassification guard (conditional ⚠ only — no standing table).
+        return "_No sources omitted — every discovered round was ingested._"
+    lines = ["These rounds were **present but omitted from scoring**:",
+             "", "| Weapon | Round | Reason | Stats | URL |", "|---|---|---|---|---|"]
+    for w, name, reason, stats, url in rows:
+        lines.append(f"| {w} | {name} | {reason} | {stats} | {url} |")
     for warn in _check_pool_round_count(m["pool_rounds"]):
         lines += ["", f"> {warn}"]
     return "\n".join(lines)
+
+
+def _render_source_split(m) -> str:
+    """N13.5 — per ingested source listing, one row per resulting category with the
+    fencers + birth year, marked committed ✅ / set-aside ⚠ (owned by another source)."""
+    if not m["brackets"]:
+        return "_No ingested sources._"
+    from collections import defaultdict
+    out: list[str] = []
+    for b in m["brackets"]:
+        by_vcat: dict = defaultdict(list)
+        for mm in b["matches"]:
+            by_vcat[_vcat_of(mm.get("governed_birth_year"), b.get("season_end"))].append(mm)
+        committed_vcats = {t.get("vcat")
+                           for t in (b.get("committed") or {}).get("tournaments", [])}
+        name = b.get("source_name") or b["label"]
+        out += [f"### {name} — {b['weapon']}·{b['gender']}", "",
+                "| Category | committed? | fencers (BY) |", "|---|---|---|"]
+        for v in sorted(by_vcat, key=lambda x: (x is None, x or "")):
+            mark = "✅" if v in committed_vcats else "⚠ set-aside"
+            fencers = ", ".join(
+                f"{mm.get('scraped_name')} ({mm.get('governed_birth_year') or '—'})"
+                for mm in by_vcat[v])
+            out.append(f"| {v or '—'} | {mark} | {fencers} |")
+        out.append("")
+    return "\n".join(out)
+
+
+def _vcat_of(birth_year, season_end):
+    if birth_year is None or season_end is None:
+        return None
+    from python.pipeline.stages import vcat_for_age
+    return vcat_for_age(season_end - birth_year)
 
 
 def _render_parse_status(m) -> str:
@@ -344,13 +406,14 @@ STAGING_TEMPLATE = [
     ("## Birth-year reconciliations", _render_reconciled),
     ("## Fencer matching", _render_matching),
     ("## Committed tournaments", _render_committed),
-    ("## Brackets present but omitted from processing", _render_omitted),
+    ("## Category split per source listing", _render_source_split),
+    ("## Rounds present but omitted from scoring", _render_omitted),
     ("## Bracket parse status", _render_parse_status),
     ("", _render_footer),
 ]
 
 
-def _assemble(event_code, db, bracket_reports, schedule_skips) -> dict:
+def _assemble(event_code, db, bracket_reports, schedule_skips, source_decisions=None) -> dict:
     brackets = [_bracket_model(r) for r in bracket_reports]
 
     matches_flat = [(mm, b["label"]) for b in brackets for mm in b["matches"]]
@@ -409,13 +472,15 @@ def _assemble(event_code, db, bracket_reports, schedule_skips) -> dict:
         "reconciled": reconciled, "conflicts": conflicts,
         "alias_writebacks": alias_writebacks, "alias_verdicts": alias_verdicts,
         "pool_rounds": pool_rounds, "schedule_skips": schedule_skips or [],
+        "source_decisions": source_decisions or [],
         "fencer_by_id": fencer_by_id, "null_by": null_by, "estimated_by": estimated_by,
         "event_meta": event_meta, "live_rows": live_rows,
     }
 
 
-def render_staging_md(event_code, db, bracket_reports, schedule_skips, stamp) -> str:
-    m = _assemble(event_code, db, bracket_reports, schedule_skips)
+def render_staging_md(event_code, db, bracket_reports, schedule_skips, stamp,
+                      source_decisions=None) -> str:
+    m = _assemble(event_code, db, bracket_reports, schedule_skips, source_decisions)
     lines = [f"# Automation report — {event_code}", "", f"_Generated {stamp} (UTC)_", ""]
     for heading, renderer in STAGING_TEMPLATE:
         if heading:
@@ -447,7 +512,8 @@ class StagingFormatter(BasePlugin):
 
         # --- the .md (template) ---
         from python.pipeline.md_writer import write_for_event
-        md = render_staging_md(event_code, db, reports, ctx.get("_schedule_skips"), stamp)
+        md = render_staging_md(event_code, db, reports, ctx.get("_schedule_skips"), stamp,
+                               source_decisions=ctx.get("_source_decisions"))
         write_for_event(event_code, md, target="local",
                         staging_dir=staging_dir, timestamp=stamp)
 

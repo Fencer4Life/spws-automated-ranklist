@@ -205,6 +205,22 @@ export interface CalendarEvent {
   url_event_3: string | null
   url_event_4: string | null
   url_event_5: string | null
+  json_ingest_sources?: IngestSource[] | null
+  json_source_overrides?: { skip?: string[]; process?: string[] } | null
+}
+
+// N13.4 — a discovered FTL round + the keep-rule's verdict, shown in the event accordion.
+export interface IngestSource {
+  name: string
+  url: string | null
+  weapon?: string | null
+  gender?: string | null
+  status: 'committed' | 'dropped' | 'skipped'
+  reason?: string
+  count?: number | null
+  categories?: string[]
+  committed_categories?: string[]
+  duplicate_of?: { category: string; kept: string }[]
 }
 
 export interface ScoringConfig {

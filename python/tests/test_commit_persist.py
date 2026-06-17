@@ -186,3 +186,33 @@ class TestCommittedPayload:
         committed = ctx.get("committed")
         assert committed["skipped"] is False
         assert committed["mode"] == "recompute"
+
+
+# ---------------------------------------------------------------------------
+# N13.2 — commit_cats allow-set (overlap-clobber fix): a listing writes only the
+# categories it was kept for; the rest are recorded as held (set-aside duplicate).
+# ---------------------------------------------------------------------------
+
+class TestCommitCatsAllowSet:
+    def test_filters_to_commit_cats(self):
+        """N13.2 with ctx.params['commit_cats'] present, Commit persists only those
+        age-categories and records the rest as held (not written)."""
+        fv = {"V0": [_match(101, 1, "A A")],
+              "V1": [_match(102, 1, "B B")],
+              "V2": [_match(103, 1, "C C")]}
+        db = _db()
+        ctx = _ctx(fv)
+        ctx.params = {"commit_cats": {"V0", "V2"}}
+        _run(ctx, db)
+        assert db.find_or_create_tournament.call_count == 2          # V0, V2 only
+        committed = ctx.get("committed")
+        assert {t["vcat"] for t in committed["tournaments"]} == {"V0", "V2"}
+        assert committed["held"] == ["V1"]                           # set-aside, not written
+
+    def test_absent_commit_cats_writes_all(self):
+        """N13.2 with no commit_cats (file/XML path), Commit writes every V-cat — unchanged."""
+        fv = {"V0": [_match(101, 1, "A A")], "V1": [_match(102, 1, "B B")]}
+        db = _db()
+        ctx = _run(_ctx(fv), db)
+        assert db.find_or_create_tournament.call_count == 2
+        assert ctx.get("committed").get("held", []) == []

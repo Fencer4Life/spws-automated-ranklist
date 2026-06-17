@@ -344,5 +344,9 @@
   "import_triggered_ok": "Import uruchomiony",
   "import_no_github": "Brak konfiguracji GitHub (PAT/repo)",
   "import_event_confirm": "Odkryć i importować wyniki wszystkich turniejów?",
-  "tooltip_import_event": "Importuj wyniki ze strony wydarzenia"
+  "tooltip_import_event": "Importuj wyniki ze strony wydarzenia",
+  "ingest_sources_title": "Źródła importu (rundy wykryte na stronie wydarzenia)",
+  "source_skip": "pomiń",
+  "source_process": "przetwórz",
+  "reingest_event": "Importuj ponownie"
 }

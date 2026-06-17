@@ -67,6 +67,35 @@ SKIP_PATTERNS = re.compile(
 )
 SENIOR_PATTERN = re.compile(r"\bSENIOR\b", re.IGNORECASE)
 
+# N13.1 — accurate, per-reason classification for skipped schedule entries. The old
+# code lumped all of these under one `SKIP_PATTERNS` reason string ("DE / amateur /
+# junior / U-age"), which mislabels e.g. an ELIMINACJE round (a pools-only qualifier).
+# Each sub-pattern carries its TRUE reason so the staging/automation report is honest.
+_QUALIFIER_RE = re.compile(r"ELIMINACJ", re.IGNORECASE)
+_AMATEUR_RE = re.compile(r"AMATOR", re.IGNORECASE)
+_DE_SUBEVENT_RE = re.compile(r"\b(?:cat(?:egory)?\.?)\s*\d\s*DE\b", re.IGNORECASE)
+_JUNIOR_RE = re.compile(
+    r"\bJUNIOR(?:ZY|KI|EM|ÓW)?\b|\bCADET\b|\bKADET\b|\bMŁODZI[KCZ]?\b|\bU-?\d+\b",
+    re.IGNORECASE,
+)
+
+
+def _skip_reason(name: str) -> str | None:
+    """The specific, truthful reason this schedule entry is name-skipped (N13.1),
+    or None if it is not skipped. Union of these == MIKST_PATTERN ∪ SKIP_PATTERNS,
+    so the kept/skipped partition is unchanged — only the reasons are now accurate."""
+    if MIKST_PATTERN.search(name):
+        return "mixed-gender pool (not a per-gender tournament)"
+    if _QUALIFIER_RE.search(name):
+        return "qualification / eliminations pool (pools-only — no DE)"
+    if _AMATEUR_RE.search(name):
+        return "amateur event (not scored)"
+    if _DE_SUBEVENT_RE.search(name):
+        return "DE sub-event (the parent bracket is the result)"
+    if _JUNIOR_RE.search(name):
+        return "junior / age-restricted (non-veteran)"
+    return None
+
 # Plan test 5.21.x — guest-event bracket detection.
 # FTL event-schedule pages occasionally list brackets from a *different*
 # competition that happens to be hosted on the same day at the same venue
@@ -150,13 +179,9 @@ def parse_event_schedule(html: str, *, with_skips: bool = False):
     for link in links:
         name = link.get_text(strip=True)
         uuid = link["href"].split("/events/view/")[-1]
-        if MIKST_PATTERN.search(name):
-            skipped.append({"uuid": uuid, "name": name,
-                            "reason": "Mixed/MIKST (pool round)"})
-            continue
-        if SKIP_PATTERNS.search(name):
-            skipped.append({"uuid": uuid, "name": name,
-                            "reason": "DE / amateur / junior / U-age skip pattern"})
+        reason = _skip_reason(name)
+        if reason:
+            skipped.append({"uuid": uuid, "name": name, "reason": reason})
             continue
         if not SPWS_BRACKET_FIRST_TOKEN.match(name):
             # 5.21 — guest event hosted on the same FTL schedule page;

@@ -487,6 +487,28 @@ class TestFTLEventSchedule:
         names_upper = [r["name"].upper() for r in results]
         assert not any("MIKST" in n or "MIKS " in n for n in names_upper)
 
+    def test_parse_event_schedule_accurate_skip_reasons(self):
+        """N13.1: each name-skip carries its TRUE reason — an ELIMINACJE round is a
+        pools-only qualifier, NOT 'DE / amateur / junior / U-age' (the old bundled lie)."""
+        from python.tools.scrape_ftl_event_urls import parse_event_schedule
+
+        html = (
+            '<a href="/events/view/U1">Szpada Mężczyzn kat. 2</a>'
+            '<a href="/events/view/U2">FLORET ELIMINACJE</a>'
+            '<a href="/events/view/U3">Turniej Amatorów w szpadzie</a>'
+            '<a href="/events/view/U4">SZPADA JUNIORZY</a>'
+            '<a href="/events/view/U5">MIKST FLORET</a>'
+        )
+        kept, skipped = parse_event_schedule(html, with_skips=True)
+        reasons = {s["name"]: s["reason"] for s in skipped}
+        assert "pool" in reasons["FLORET ELIMINACJE"].lower()      # qualifier / pools-only
+        assert "amateur" not in reasons["FLORET ELIMINACJE"].lower()
+        assert "junior" not in reasons["FLORET ELIMINACJE"].lower()
+        assert "amateur" in reasons["Turniej Amatorów w szpadzie"].lower()
+        assert "junior" in reasons["SZPADA JUNIORZY"].lower() or "age" in reasons["SZPADA JUNIORZY"].lower()
+        assert "mixed" in reasons["MIKST FLORET"].lower() or "pool" in reasons["MIKST FLORET"].lower()
+        assert any(k["name"] == "Szpada Mężczyzn kat. 2" for k in kept)
+
     def test_parse_tournament_name_epee_m_v2(self):
         """3.15c: SZPADA MĘŻCZYZN 2 WETERANI → (EPEE, M, V2)."""
         from python.tools.scrape_ftl_event_urls import parse_tournament_name

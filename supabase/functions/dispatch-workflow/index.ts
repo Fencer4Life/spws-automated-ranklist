@@ -27,6 +27,9 @@ const ALLOWED_WORKFLOWS = new Set([
   "scrape-tournament.yml",
   "phase5-event-runner.yml",
   "regen-report.yml",
+  // N13.6: NEW-pipeline from-URL re-ingest (keep-rule + source overrides) — the
+  // "Re-ingest event" button in the event accordion dispatches this.
+  "ingest-event.yml",
 ])
 
 Deno.serve(async (req) => {

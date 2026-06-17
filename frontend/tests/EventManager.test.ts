@@ -7,9 +7,12 @@ import { render, fireEvent } from '@testing-library/svelte'
 // Mock the api module before importing EventManager so the dispatch path is stubbable
 vi.mock('../src/lib/api', () => ({
   requestDispatch: vi.fn(),
+  setEventSourceOverride: vi.fn(() => Promise.resolve()),
+  reingestEvent: vi.fn(() => Promise.resolve({ ok: true })),
 }))
-import { requestDispatch } from '../src/lib/api'
+import { requestDispatch, setEventSourceOverride } from '../src/lib/api'
 const mockRequestDispatch = vi.mocked(requestDispatch)
+const mockSetSourceOverride = vi.mocked(setEventSourceOverride)
 
 import EventManager from '../src/components/EventManager.svelte'
 
@@ -1200,5 +1203,58 @@ describe('EventManager Phase 3c', () => {
     await fireEvent.click(container.querySelector('[data-field="event-skel-panel-header"]')!)
     const body = container.querySelector('[data-field="event-skel-panel-body"]')!
     expect(body.querySelector('.skel-empty')).not.toBeNull()
+  })
+
+  // N13.6 — overlap-clobber: the accordion shows discovered ingest sources with
+  // committed/dropped/skipped status and a skip/process toggle that persists.
+  describe('ingest sources (N13.6)', () => {
+    const eventWithSources: CalendarEvent = {
+      ...MOCK_EVENTS[0],
+      id_event: 99,
+      json_ingest_sources: [
+        { name: 'Szpada Mężczyzn kat. 0', url: 'u_k0', status: 'committed',
+          reason: '', count: 12, categories: ['V0'] },
+        { name: 'Szpada kat. Veteran', url: 'u_vet', status: 'dropped',
+          reason: 'pools-only (no DE)', count: 76, categories: ['V0', 'V1'] },
+        { name: "Men's Épée", url: 'u_men', status: 'skipped',
+          reason: 'duplicate', count: 18, categories: ['V0'],
+          duplicate_of: [{ category: 'V0', kept: 'Szpada Mężczyzn kat. 0' }] },
+      ],
+      json_source_overrides: null,
+    }
+
+    const srcProps = {
+      events: [eventWithSources],
+      seasons: MOCK_SEASONS,
+      organizers: MOCK_ORGANIZERS,
+      selectedSeasonId: 1,
+      isAdmin: true,
+      oncreate: vi.fn(),
+      onupdate: vi.fn(),
+      onupdatestatus: vi.fn(),
+      ondelete: vi.fn(),
+    }
+
+    beforeEach(() => { mockSetSourceOverride.mockClear() })
+
+    it('renders source rows with status + reason when expanded', async () => {
+      const { container } = render(EventManager, { props: srcProps })
+      await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+      const rows = container.querySelectorAll('[data-field="ingest-source-row"]')
+      expect(rows.length).toBe(3)
+      const text = container.querySelector('[data-field="ingest-sources"]')!.textContent!
+      expect(text).toContain('Szpada kat. Veteran')
+      expect(text).toContain('pools-only')
+      expect(text).toContain("Men's Épée")
+      expect(text).toContain('V0→Szpada Mężczyzn kat. 0')   // duplicate flag
+    })
+
+    it('toggling a source skip persists via the RPC', async () => {
+      const { container } = render(EventManager, { props: srcProps })
+      await fireEvent.click(container.querySelector('[data-field="expand-btn"]')!)
+      const toggle = container.querySelectorAll('[data-field="src-toggle"]')[0] as HTMLElement
+      await fireEvent.click(toggle)
+      expect(mockSetSourceOverride).toHaveBeenCalledWith(99, { skip: ['u_k0'] })
+    })
   })
 })

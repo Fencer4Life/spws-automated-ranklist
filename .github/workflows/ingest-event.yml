@@ -1,0 +1,88 @@
+name: Ingest event (NEW pipeline, from URL)
+
+# N13.6 — NEW rule-driven pipeline from-URL re-ingest for one event. Runs the
+# keep-rule (pools-only drop + one-source-per-category + duplicate flag), applying
+# any admin skip/process choices saved on tbl_event.json_source_overrides, and
+# writes the discovered rounds + status back to tbl_event.json_ingest_sources for
+# the event accordion.
+#
+# Triggered by:
+#   * Admin UI "Re-ingest event" button → dispatch-workflow edge fn (allowlisted)
+#   * Manual: gh workflow run ingest-event.yml -f event_code=<X> -f season_end_year=<Y> -f target=<env>
+#
+# Security: all user-controlled inputs validated before shell interpolation.
+
+on:
+  workflow_dispatch:
+    inputs:
+      event_code:
+        description: 'Event code, e.g. PPW3-2025-2026 (url_event must be on tbl_event)'
+        required: true
+      season_end_year:
+        description: 'Season end year, e.g. 2026'
+        required: true
+      target:
+        description: 'Target env: cert | prod'
+        default: 'cert'
+
+jobs:
+  ingest-event:
+    name: Re-ingest event (from URL)
+    runs-on: ubuntu-latest
+    env:
+      EVENT_CODE: ${{ inputs.event_code }}
+      SEASON_END_YEAR: ${{ inputs.season_end_year }}
+      TARGET_ENV: ${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install supabase httpx rapidfuzz beautifulsoup4 pyyaml
+
+      - name: Validate inputs
+        run: |
+          if ! [[ "$EVENT_CODE" =~ ^[A-Z0-9_-]+$ ]]; then
+            echo "::error::invalid event_code (must match [A-Z0-9_-]+)"
+            exit 1
+          fi
+          if ! [[ "$SEASON_END_YEAR" =~ ^[0-9]{4}$ ]]; then
+            echo "::error::invalid season_end_year (must be 4 digits)"
+            exit 1
+          fi
+          if [[ "$TARGET_ENV" != "cert" && "$TARGET_ENV" != "prod" ]]; then
+            echo "::error::target must be cert or prod"
+            exit 1
+          fi
+
+      - name: Re-ingest event from URL (keep-rule + source overrides)
+        env:
+          SUPABASE_URL: ${{ inputs.target == 'prod'
+            && secrets.SUPABASE_PROD_URL
+            || secrets.SUPABASE_CERT_URL }}
+          SUPABASE_KEY: ${{ inputs.target == 'prod'
+            && secrets.SUPABASE_PROD_SERVICE_ROLE_KEY
+            || secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
+          FTL_USERNAME: ${{ secrets.FTL_USERNAME }}
+          FTL_PASSWORD: ${{ secrets.FTL_PASSWORD }}
+        run: |
+          python -m python.pipeline.ingest_cli \
+            --flow ingest_domestic \
+            --event-code "$EVENT_CODE" \
+            --season-end-year "$SEASON_END_YEAR" \
+            --from-url --replace
+
+      - name: Notify failure
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
+        run: |
+          MSG="❌ ingest-event.yml failed for ${EVENT_CODE} (${TARGET_ENV}). Check: ${RUN_URL}"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MSG}" > /dev/null
