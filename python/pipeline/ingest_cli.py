@@ -481,7 +481,7 @@ def ingest_event_from_url(
                 raw_pool_size=len(base.results), weapon=weapon, gender=gender,
                 category_hint=category, parsed_date=parsed_date,
                 season_end_year=season_end_year, source_url=results_url,
-                organizer_hint="SPWS",
+                organizer_hint="SPWS", tournament_name=b["name"],  # ADR-075 G3: name for omitted-bracket report
             )
             label = f"{b['name']} [{weapon}/{gender}/{category or 'COMB'}, {len(base.results)} src]"
             contexts.append(
