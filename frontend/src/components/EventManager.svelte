@@ -183,6 +183,30 @@
           {/if}
 
           {#if expandedIds.has(event.id_event)}
+            {#if event.json_ingest_sources && event.json_ingest_sources.length}
+              <div data-field="ingest-sources" class="ingest-sources">
+                <div class="ingest-sources-title">{t('ingest_sources_title')}</div>
+                {#each event.json_ingest_sources as src}
+                  <div data-field="ingest-source-row" class="ingest-source-row src-{src.status}">
+                    <span class="src-status-icon">{src.status === 'committed' ? '✅' : src.status === 'dropped' ? '⊘' : '⚠'}</span>
+                    <span class="src-name">{src.name}</span>
+                    <span class="src-reason">{src.reason ?? ''}{#if src.duplicate_of && src.duplicate_of.length} — {src.duplicate_of.map((d) => `${d.category}→${d.kept}`).join(', ')}{/if}</span>
+                    {#if src.count != null}<span class="src-count">n={src.count}</span>{/if}
+                    {#if src.url}
+                      <button data-field="src-toggle" class="src-toggle"
+                              onclick={() => { toggleSourceSkip(event, src.url!) }}>
+                        {isSourceSkipped(event, src.url) ? t('source_process') : t('source_skip')}
+                      </button>
+                    {/if}
+                  </div>
+                {/each}
+                {#if sourceErr.get(event.id_event)}
+                  <div data-field="source-err" class="source-err">{sourceErr.get(event.id_event)}</div>
+                {/if}
+                <button data-field="reingest-btn" class="reingest-btn"
+                        onclick={() => { handleReingest(event) }}>{t('reingest_event')}</button>
+              </div>
+            {/if}
             <div data-field="tournament-list" class="tournament-list">
               {#each tournamentsForEvent(event.id_event) as tourn}
                 {#if editingTournId === tourn.id_tournament}
@@ -364,7 +388,7 @@
   import type { CalendarEvent, Season, Organizer, WeaponType, Tournament, TournamentType, GenderType, AgeCategory } from '../lib/types'
   import { t } from '../lib/locale.svelte'
   import { getEventDisplayStatus } from '../lib/eventStatus'
-  import { requestDispatch } from '../lib/api'
+  import { requestDispatch, setEventSourceOverride, reingestEvent } from '../lib/api'
 
   // ADR-041: Per-event dispatch status, rendered inline below each event-row.
   type DispatchPhase = 'pending' | 'success' | 'error'
@@ -642,6 +666,51 @@
     tournCreateCategory = 'V2'
     tournCreateType = 'PPW'
     tournCreateUrl = ''
+  }
+
+  // N13.6 — per-event source skip overrides (overlap-clobber resolution). Seeded
+  // from the saved json_source_overrides; toggling persists via the RPC, then the
+  // operator clicks Re-ingest (existing dispatch) to apply the choice.
+  let sourceSkips: Map<number, Set<string>> = $state(new Map())
+  let sourceErr: Map<number, string> = $state(new Map())
+
+  function skipSetFor(event: CalendarEvent): Set<string> {
+    let s = sourceSkips.get(event.id_event)
+    if (!s) {
+      s = new Set(event.json_source_overrides?.skip ?? [])
+      sourceSkips.set(event.id_event, s)
+    }
+    return s
+  }
+  function isSourceSkipped(event: CalendarEvent, url: string): boolean {
+    return skipSetFor(event).has(url)
+  }
+  async function toggleSourceSkip(event: CalendarEvent, url: string) {
+    const s = skipSetFor(event)
+    if (s.has(url)) { s.delete(url) } else { s.add(url) }
+    sourceSkips = new Map(sourceSkips)            // trigger reactivity
+    try {
+      await setEventSourceOverride(event.id_event, { skip: [...s] })
+      sourceErr.delete(event.id_event); sourceErr = new Map(sourceErr)
+    } catch (e) {
+      // UI debug, never console — surface inline.
+      sourceErr.set(event.id_event, String(e)); sourceErr = new Map(sourceErr)
+    }
+  }
+
+  function seasonEndYearOf(event: CalendarEvent): number {
+    const m = (event.txt_season_code ?? '').match(/(\d{4})\D*$/)
+    if (m) return Number(m[1])
+    return event.dt_end ? Number(event.dt_end.slice(0, 4)) : new Date().getFullYear()
+  }
+  async function handleReingest(event: CalendarEvent) {
+    try {
+      const res = await reingestEvent(event.txt_code, seasonEndYearOf(event))
+      sourceErr.set(event.id_event, res.ok ? '✓ Re-ingest dispatched' : `Re-ingest failed: ${res.message}`)
+    } catch (e) {
+      sourceErr.set(event.id_event, String(e))
+    }
+    sourceErr = new Map(sourceErr)
   }
 
   function toggleExpand(eventId: number) {

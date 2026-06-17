@@ -58,6 +58,8 @@ class ParseSource(BasePlugin):
             date=_iso_date(getattr(parsed, "parsed_date", None)),
             n_rows=len(getattr(parsed, "results", []) or []),
             source_url=getattr(parsed, "source_url", None),
+            tournament_name=getattr(parsed, "tournament_name", None),
+            season_end_year=cfg.get("season_end_year"),
         )
 
 
@@ -317,11 +319,26 @@ class Commit(BasePlugin):
         date = _iso_date(parsed.parsed_date)
         ttype = self._tournament_type(pctx, event)
 
+        # Overlap-clobber fix (ADR-075-adjacent): the from-URL keep-rule hands this
+        # listing the exact age-categories it OWNS via `commit_cats`. Categories not
+        # in the set are owned by a more-specific listing (or a chosen alternative) —
+        # this listing must NOT write them (else it clobbers via delete-reimport).
+        # Absent (file/XML path) ⇒ write everything, unchanged. The from-URL flow
+        # passes it via `svc.config` (the orchestrator resets ctx.params per step);
+        # ctx.params is the direct-call fallback (unit tests).
+        commit_cats = (svc.config or {}).get("commit_cats")
+        if commit_cats is None:
+            commit_cats = ctx.params.get("commit_cats")
+
         written: list[dict] = []
+        held: list[str] = []
         for vcat in sorted(final_vcats.keys()):
             rows = [self._row(m) for m in final_vcats[vcat]
                     if getattr(m, "id_fencer", None) is not None]
             if not rows:
+                continue
+            if commit_cats is not None and vcat not in commit_cats:
+                held.append(vcat)            # set aside — owned by another listing
                 continue
             tournament_id = db.find_or_create_tournament(
                 event_id, weapon, gender, vcat, date, ttype)
@@ -334,6 +351,7 @@ class Commit(BasePlugin):
             "persisted": True,
             "tournaments": written,
             "vcat_groups": sorted(final_vcats.keys()),
+            "held": held,
             # `live.committed` is the signal the PostCommit reactor observes
             # (Step D); recorded here as intent until that chaining is wired.
             "emitted": "live.committed",

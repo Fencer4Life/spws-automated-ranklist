@@ -245,8 +245,9 @@ class TestStagingFormatterMd:
         for a, b in [("## Event", "## Detected automation gaps"),
                      ("## Detected automation gaps", "## Fencer matching"),
                      ("## Fencer matching", "## Committed tournaments"),
-                     ("## Committed tournaments", "## Brackets present but omitted from processing"),
-                     ("## Committed tournaments", "## Bracket parse status")]:
+                     ("## Committed tournaments", "## Category split per source listing"),
+                     ("## Category split per source listing", "## Rounds present but omitted from scoring"),
+                     ("## Rounds present but omitted from scoring", "## Bracket parse status")]:
             assert md.index(a) < md.index(b), f"{a} must precede {b}"
         assert "## Sign-off" not in md
 
@@ -581,3 +582,61 @@ class TestRichSections:
         assert "minority 38%" in md                       # skip reason surfaced
         assert "Sign-off" not in md and "sign off" not in md.lower()
         assert "admin" in md.lower()                      # footer admin URL
+
+
+class TestSourceDecisionsRendering:
+    """N13.5 — keep-rule decisions (dropped pools-only + duplicate set-aside) surface
+    in the omitted + automation-gaps sections; the per-source category split renders."""
+
+    def test_dropped_duplicate_and_split(self, tmp_path):
+        from python.pipeline.core.contract import Context, Services
+        from python.pipeline.plugins.staging_formatter import StagingFormatter
+
+        rep = [
+            _frag("SOURCE", plugin="ParseSource", weapon="EPEE", gender="M",
+                  category_hint=None, n_rows=2,
+                  tournament_name="Szpada kat. 0-1", season_end_year=2026),
+            _frag("IDENTITY", plugin="ResolveFencers",
+                  matches=[{"scraped_name": "A A", "id_fencer": 1, "place": 1,
+                            "method": "AUTO_MATCHED", "confidence": 100.0,
+                            "governed_birth_year": 1990},
+                           {"scraped_name": "B B", "id_fencer": 2, "place": 2,
+                            "method": "AUTO_MATCHED", "confidence": 100.0,
+                            "governed_birth_year": 1980}],
+                  created=[], reconciled=[], conflicts=[], alias_writebacks=[]),
+            _frag("COMMIT", plugin="Commit", skipped=False, persisted=True,
+                  tournaments=[{"vcat": "V0", "id_tournament": 1, "n": 1},
+                               {"vcat": "V1", "id_tournament": 2, "n": 1}], held=[]),
+        ]
+        source_decisions = [
+            {"name": "kat. Veteran", "url": "u_vet", "weapon": "EPEE", "gender": "M",
+             "status": "dropped", "reason": "pools-only (no DE)", "count": 76,
+             "categories": ["V0", "V1"], "duplicate_of": []},
+            {"name": "Men's Épée", "url": "u_men", "weapon": "EPEE", "gender": "M",
+             "status": "skipped", "reason": "duplicate — categories owned by a kept source",
+             "count": 18, "categories": ["V0"],
+             "duplicate_of": [{"category": "V0", "kept": "kat. 0"}]},
+        ]
+        ctx = Context()
+        ctx.data["_bracket_reports"] = [rep]
+        ctx.data["event"] = {"id_event": 7, "txt_code": "PPW3-2025-2026"}
+        ctx.data["_source_decisions"] = source_decisions
+        db = MagicMock()
+        db.fetch_cert_rows_for_event.return_value = []
+        db.fetch_fencer_db.return_value = []
+        svc = Services(db=db, config={"staging_dir": str(tmp_path)})
+        with patch("python.pipeline.plugins.staging_formatter._fetch_event_meta",
+                   return_value={"_full_row": {}, "urls": []}), \
+             patch("python.pipeline.plugins.staging_formatter._live_tournament_rows",
+                   return_value=[]):
+            StagingFormatter().run(ctx, svc)
+
+        md = [p for p in tmp_path.glob("*.md") if not p.name.endswith(".diff.md")][0].read_text()
+        # dropped pools-only + duplicate set-aside in the omitted section
+        assert "kat. Veteran" in md and "pools-only" in md
+        assert "Men's Épée" in md and "V0→kat. 0" in md
+        # automation-gaps flag
+        assert "duplicate source(s) set aside" in md
+        # per-source category split with fencers + BY
+        assert "Category split per source listing" in md
+        assert "Szpada kat. 0-1" in md and "A A (1990)" in md and "B B (1980)" in md

@@ -178,7 +178,9 @@ class TestIngestEventFromUrl:
             def get(self, url):
                 if "eventSchedule" in url:
                     return _Resp(text="<schedule/>")
-                return _Resp(js=[{"id": "f1", "name": "KOWALSKI Jan", "place": "1", "country": "POL"}])
+                if "/results/data/" in url:          # FTL data endpoint → standings JSON
+                    return _Resp(js=[{"id": "f1", "name": "KOWALSKI Jan", "place": "1", "country": "POL"}])
+                return _Resp(text="<li>Tableau</li>")  # results page → has DE (not pools-only)
 
         seen = []
 
@@ -226,3 +228,77 @@ class TestIngestEventFromUrl:
                 event_code="PPW3-2025-2026", season_end_year=2026,
                 db=db, notifier=_silent_notifier(), replace=True)
         assert wiped["id"] == 9
+
+
+class TestFtlDirectElimination:
+    """N13.1 — pools-only detection on the from-URL path (ADR-067 analog)."""
+
+    def test_detects_tableau(self):
+        from python.pipeline import ingest_cli
+
+        class _Client:
+            def __init__(self, html): self._html = html
+            def get(self, url):
+                r = MagicMock(); r.text = self._html; r.raise_for_status = lambda: None
+                return r
+
+        assert ingest_cli._ftl_has_direct_elimination(_Client("<li>Tableau</li>"), "U1") is True
+        assert ingest_cli._ftl_has_direct_elimination(_Client("<li>Pools only</li>"), "U2") is False
+
+
+class TestResolveSources:
+    """N13.3 — the keep-rule: pools-only dropped; one source per category
+    (single beats BRACKET; else smaller BRACKET); overrides win; rest set aside."""
+
+    @staticmethod
+    def _round(name, uuid, weapon, gender, cats, count, has_de=True):
+        return dict(name=name, uuid=uuid, url=f"https://r/{uuid}", weapon=weapon,
+                    gender=gender, cats=list(cats), count=count, has_de=has_de)
+
+    def _by_uuid(self, sources):
+        return {s["uuid"]: s for s in sources}
+
+    def test_pools_only_dropped_singles_win_bracket_set_aside(self):
+        from python.pipeline.ingest_cli import _resolve_sources
+        R = self._round
+        rounds = [
+            R("kat.0", "k0", "EPEE", "M", ["V0"], 12),
+            R("kat.1", "k1", "EPEE", "M", ["V1"], 11),
+            R("kat.2", "k2", "EPEE", "M", ["V2"], 19),
+            R("kat.3", "k3", "EPEE", "M", ["V3"], 8),
+            R("kat.4", "k4", "EPEE", "M", ["V4"], 6),
+            R("kat. Veteran", "vet", "EPEE", "M", ["V0","V1","V2","V3","V4"], 76, has_de=False),
+            R("Men's Épée", "men", "EPEE", "M", ["V0","V1","V2"], 18),
+        ]
+        s = self._by_uuid(_resolve_sources(rounds))
+        assert s["vet"]["status"] == "dropped"                 # pools-only (no DE)
+        for k, v in [("k0","V0"),("k1","V1"),("k2","V2"),("k3","V3"),("k4","V4")]:
+            assert s[k]["status"] == "committed" and s[k]["commit_cats"] == [v]
+        assert s["men"]["status"] == "skipped"                 # owns nothing → set aside
+        assert s["men"]["commit_cats"] == []
+        # the set-aside is flagged as a duplicate of the kept singles
+        assert s["men"].get("duplicate_of")                    # non-empty
+
+    def test_rule_2b_smaller_bracket_wins_when_no_single(self):
+        from python.pipeline.ingest_cli import _resolve_sources
+        R = self._round
+        rounds = [
+            R("A 0-1", "a", "FOIL", "M", ["V0","V1"], 3),
+            R("B 0-1", "b", "FOIL", "M", ["V0","V1"], 8),
+        ]
+        s = self._by_uuid(_resolve_sources(rounds))
+        assert s["a"]["status"] == "committed" and set(s["a"]["commit_cats"]) == {"V0","V1"}
+        assert s["b"]["status"] == "skipped"                   # larger BRACKET set aside
+
+    def test_admin_override_process_wins(self):
+        from python.pipeline.ingest_cli import _resolve_sources
+        R = self._round
+        rounds = [
+            R("kat.0", "k0", "EPEE", "M", ["V0"], 12),
+            R("Men's Épée", "men", "EPEE", "M", ["V0"], 18),
+        ]
+        # admin says: process the Men's round for this event (skip the default single)
+        ov = {"process": ["https://r/men"], "skip": ["https://r/k0"]}
+        s = self._by_uuid(_resolve_sources(rounds, overrides=ov))
+        assert s["men"]["status"] == "committed" and s["men"]["commit_cats"] == ["V0"]
+        assert s["k0"]["status"] == "skipped"

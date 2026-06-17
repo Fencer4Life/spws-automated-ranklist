@@ -151,6 +151,30 @@ export async function fetchCalendarEvents(seasonId: number): Promise<CalendarEve
   return data ?? []
 }
 
+// N13.4 — admin saves a per-event source skip/process override from the accordion.
+export async function setEventSourceOverride(
+  eventId: number,
+  overrides: { skip?: string[]; process?: string[] },
+): Promise<void> {
+  const { error } = await getClient().rpc('fn_set_event_source_override', {
+    p_event_id: eventId,
+    p_overrides: overrides,
+  })
+  if (error) throw error
+}
+
+// N13.6 — dispatch the NEW-pipeline from-URL re-ingest (keep-rule + saved overrides).
+export async function reingestEvent(
+  eventCode: string,
+  seasonEndYear: number,
+): Promise<DispatchResult> {
+  return requestDispatch('ingest-event.yml', {
+    event_code: eventCode,
+    season_end_year: String(seasonEndYear),
+    target: 'cert',
+  })
+}
+
 export async function fetchPriorSeasonEvents(seasonIds: number[]): Promise<CalendarEvent[]> {
   if (seasonIds.length === 0) return []
   const { data, error } = await getClient()

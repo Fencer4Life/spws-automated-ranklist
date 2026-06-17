@@ -65,13 +65,23 @@ class DbConnector:
             .select("id_event, txt_code, txt_name, "
                     "url_event, url_event_2, url_event_3, url_event_4, url_event_5, "
                     "dt_start, dt_end, enum_status, id_season, "
-                    "id_organizer, txt_location")
+                    "id_organizer, txt_location, json_source_overrides")
             .eq("txt_code", event_code)
             .execute()
         )
         if resp.data:
             return resp.data[0]
         return None
+
+    def set_event_ingest_sources(self, id_event: int, sources: list) -> None:
+        """Persist the from-URL ingest's discovered rounds + status for the event
+        accordion (N13.4). Display-only JSONB; never enters scored tables."""
+        (
+            self._sb.table("tbl_event")
+            .update({"json_ingest_sources": sources})
+            .eq("id_event", id_event)
+            .execute()
+        )
 
     def find_event_by_id(self, id_event: int) -> dict | None:
         """Look up an event by id_event (ADR-072 — RECOMPUTE_DOMESTIC resolves the
