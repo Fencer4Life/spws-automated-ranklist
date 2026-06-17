@@ -889,9 +889,21 @@ logic was rewritten).
   fire SKIPs the formatter. One UTC timestamp per run names both files so reruns of the same event are
   comparable (the user asked for this explicitly); `md_writer.write_for_event` + `three_way_diff.write_diff`
   gained a backward-compatible `timestamp` param. Tests N11.1–N11.7 (`test_staging_report.py`).
+- **Step E.2 — richness parity + automation-report framing (ADR-075 rev)** — 2026-06-17: the first
+  `.md` was ~1/3 the OLD pipeline's content; reworked the formatter to reach parity by **iterating per
+  bracket** + **reusing the OLD pure DB-readers** (`_fetch_event_meta`, `_live_tournament_rows`,
+  `_check_pool_round_count`, `_classify_alias_pair` — no pctx). Enriched two fragments: `DetectPoolRound`
+  (name/reason/url/weapon) + `ResolveFencers` (`alias_writebacks` + per-created fuzzy **near-miss** so a
+  likely duplicate is visible). The file is now an **automation report**: leads with *Detected automation
+  gaps*, then full event header / created (+near-miss) / BY reconciliations (Fencer·BY·status·reason) /
+  fencer matching (method · name-resolution · alias verdicts · BY-quality · NULL+estimated tables w/
+  bracket+place) / committed tournaments (live, deduped, distinct) / brackets present-but-omitted / parse
+  status (+skip/exception reasons). **No sign-off** (full automation). `url_results` left blank unless
+  admin-entered (admin-managed URL rule). Tests N12.1–N12.7. Live PPW3 from-url re-ingest confirms
+  section-by-section parity with OLD `doc/staging/PPW3-2025-2026.md`.
 
 **Tests.** pgTAP 577 → 588 (unchanged in Step E — Python-only); pytest +49 (M1–M5) +8 (Step A, N7.1–N7.8)
-+6 (Step B, N8.1–N8.6) +8 (Step C, N9.1–N9.7 + N5.7) +7 (Step D, N10.1–N10.7) +N11.1–N11.7 (Step E)
++6 (Step B, N8.1–N8.6) +8 (Step C, N9.1–N9.7 + N5.7) +7 (Step D, N10.1–N10.7) +N11.1–N11.7 (Step E) +N12.1–N12.7 (Step E.2 richness)
 across `test_rule_engine`, `test_pipeline_core`, `test_pipeline_plugins`, `test_resolve_fencers`,
 `test_recompute`, `test_recompute_worker`, `test_commit_persist`, `test_ingest_cli_flow`,
 `test_recompute_persist`, `test_post_commit_chain`, `test_staging_report`.

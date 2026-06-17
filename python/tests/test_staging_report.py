@@ -241,11 +241,14 @@ class TestStagingFormatterMd:
         md_files = [p for p in mds if not p.name.endswith(".diff.md")]
         assert len(md_files) == 1
         md = md_files[0].read_text()
-        for a, b in [("## Event", "## Fencer matching"),
+        # ADR-075 richness rework: new section order, no sign-off (G9).
+        for a, b in [("## Event", "## Detected automation gaps"),
+                     ("## Detected automation gaps", "## Fencer matching"),
                      ("## Fencer matching", "## Committed tournaments"),
-                     ("## Committed tournaments", "## Pool rounds / counts"),
-                     ("## Pool rounds / counts", "## Sign-off")]:
+                     ("## Committed tournaments", "## Brackets present but omitted from processing"),
+                     ("## Committed tournaments", "## Bracket parse status")]:
             assert md.index(a) < md.index(b), f"{a} must precede {b}"
+        assert "## Sign-off" not in md
 
     def test_schedule_skips_surface_in_validation_section(self, monkeypatch, tmp_path):
         """N11.5 schedule-level pool-only skips appear in the file (they never ran,
@@ -376,3 +379,205 @@ class TestEventScopedFire:
         assert "args" in fire  # fired exactly once
         assert fire["kwargs"].get("schedule_skips") == [
             {"weapon": "FOIL", "name": "Floret kat. Veteran", "reason": "pool-only"}]
+
+
+# ===========================================================================
+# N12 — richness parity with the OLD staging .md
+# ===========================================================================
+
+class TestFragmentEnrichments:
+    """N12.1 — the two thin fragments gain the fields the rich renderers need."""
+
+    def test_pool_round_fragment_carries_name_reason_url_weapon(self, monkeypatch):
+        """N12.1 (G3) DetectPoolRound emits name/reason/url/weapon on a POOL_ROUND."""
+        from python.pipeline.core.contract import Context, Services
+        from python.pipeline.plugins.bridge import ensure_pctx
+        from python.pipeline.plugins.ingest import DetectPoolRound
+        from python.pipeline.ir import ParsedTournament, SourceKind
+        from python.pipeline import stages
+        from python.pipeline.types import HaltError, HaltReason
+
+        parsed = ParsedTournament(
+            source_kind=SourceKind.FTL, results=[], weapon="FOIL", gender="M",
+            tournament_name="Floret kat. Veteran", source_url="https://x/data/ABC")
+        ctx = Context()
+        ensure_pctx(ctx, parsed=parsed, season_end_year=2026, event_code="PPW3-2025-2026")
+
+        def boom(pctx, db):
+            raise HaltError(HaltReason.POOL_ROUND_DETECTED, "10M/6F minority 38%")
+        monkeypatch.setattr(stages, "s7_pool_round_check", boom)
+
+        plugin = DetectPoolRound()
+        ctx._begin(plugin)
+        plugin.run(ctx, Services(db=MagicMock()))
+        ctx._end()
+
+        frag = [f for f in ctx.report if f.payload.get("check") == "pool_round"][0]
+        assert frag.payload["is_pool_round"] is True
+        assert frag.payload["weapon"] == "FOIL"
+        assert frag.payload["name"] == "Floret kat. Veteran"
+        assert frag.payload["url"] == "https://x/data/ABC"
+        assert "minority" in frag.payload["reason"]
+
+    def test_identity_fragment_has_alias_writebacks_and_created_near_miss(self, monkeypatch):
+        """N12.1 (G4/G5) IDENTITY fragment carries `alias_writebacks` and each
+        created fencer carries its fuzzy `near_miss` candidate (why not linked)."""
+        from python.pipeline.ir import ParsedResult
+        from python.tests.test_pipeline_plugins import _ingest, _make_parsed, _fencer
+
+        # A brand-new domestic name with no good match → ResolveFencers creates it.
+        parsed = _make_parsed(
+            results=[ParsedResult(source_row_id="t:1", fencer_name="ZIMMERMAN Klaus",
+                                  place=1, fencer_country="POL")],
+            category_hint="V1")
+        ctx = _ingest(monkeypatch, parsed=parsed,
+                      fencer_db=[_fencer(101, "KOWALSKI", "Jan", 1980)])
+
+        ident = _by_section(ctx)["IDENTITY"][0]
+        assert "alias_writebacks" in ident.payload          # list (may be empty)
+        assert len(ident.payload["created"]) == 1
+        assert "near_miss" in ident.payload["created"][0]   # candidate or None
+
+
+# --- helpers to build synthetic per-bracket reports -------------------------
+
+def _frag(section, plugin="P", kind=None, **payload):
+    from python.pipeline.core.contract import ReportFragment, PluginKind
+    return ReportFragment(plugin, kind or PluginKind.TRANSFORM, section, payload)
+
+
+def _bracket(weapon="EPEE", gender="M", category="V2", *, matches=None,
+             created=None, reconciled=None, alias_writebacks=None,
+             committed=None, pool_round=None, count=None):
+    """One bracket's report (list of fragments)."""
+    rep = [_frag("SOURCE", weapon=weapon, gender=gender, category_hint=category,
+                 n_rows=len(matches or []))]
+    rep.append(_frag("IDENTITY", matches=matches or [], created=created or [],
+                     reconciled=reconciled or [], conflicts=[],
+                     alias_writebacks=alias_writebacks or []))
+    if count is not None:
+        rep.append(_frag("VALIDATION", check="count", below_min=count.get("below_min", False),
+                         count_mismatch=count.get("count_mismatch", False)))
+    if pool_round is not None:
+        rep.append(_frag("VALIDATION", check="pool_round", is_pool_round=True,
+                         name=pool_round["name"], reason=pool_round["reason"],
+                         url=pool_round["url"], weapon=weapon))
+    else:
+        rep.append(_frag("VALIDATION", check="pool_round", is_pool_round=False))
+    if committed is not None:
+        rep.append(_frag("COMMIT", **committed))
+    return rep
+
+
+def _run_formatter(bracket_reports, tmp_path, *, event=None, schedule_skips=None,
+                   event_meta=None, live_rows=None, fencer_db=None):
+    from python.pipeline.core.contract import Context, Services
+    from python.pipeline.plugins.staging_formatter import StagingFormatter
+    ctx = Context()
+    ctx.data["_bracket_reports"] = bracket_reports
+    ctx.data["event"] = event or {"id_event": 66, "txt_code": "PPW3-2025-2026"}
+    if schedule_skips is not None:
+        ctx.data["_schedule_skips"] = schedule_skips
+    db = MagicMock()
+    db.fetch_cert_rows_for_event.return_value = []
+    db.fetch_fencer_db.return_value = fencer_db or []
+    svc = Services(db=db, config={"staging_dir": str(tmp_path)})
+    with patch("python.pipeline.plugins.staging_formatter._fetch_event_meta",
+               return_value=event_meta or {"_full_row": {}, "urls": []}), \
+         patch("python.pipeline.plugins.staging_formatter._live_tournament_rows",
+               return_value=live_rows or []):
+        StagingFormatter().run(ctx, svc)
+    md = [p for p in tmp_path.glob("*.md") if not p.name.endswith(".diff.md")][0].read_text()
+    return md
+
+
+class TestRichSections:
+    def test_g1_header_dumps_full_event_row_and_urls(self, tmp_path):
+        """N12.2 (G1) header dumps every populated tbl_event field + URL slots."""
+        meta = {"_full_row": {
+            "txt_code": "PPW3-2025-2026", "txt_name": "III PPW",
+            "txt_location": "Warszawa", "enum_status": "COMPLETED",
+            "num_entry_fee": 250, "url_invitation": "https://inv"},
+            "urls": [(1, "https://fencingtimelive.com/eventSchedule/ABC")]}
+        md = _run_formatter([_bracket()], tmp_path, event_meta=meta)
+        assert "txt_location" in md and "Warszawa" in md
+        assert "enum_status" in md and "COMPLETED" in md
+        assert "num_entry_fee" in md and "250" in md
+        assert "https://fencingtimelive.com/eventSchedule/ABC" in md  # url slot
+
+    def test_g2_committed_distinct_with_code_url_joint_totals(self, tmp_path):
+        """N12.3 (G2) committed tournaments from live rows: code/url/joint/totals, deduped."""
+        live = [
+            {"id_tournament": 1, "txt_code": "PPW3-V2-M-EPEE-2025-2026", "enum_age_category": "V2",
+             "enum_weapon": "EPEE", "enum_gender": "M", "dt_tournament": "2025-12-13",
+             "url_results": "https://r/1", "bool_joint_pool_split": True, "int_participant_count": 19},
+            {"id_tournament": 2, "txt_code": "PPW3-V3-M-EPEE-2025-2026", "enum_age_category": "V3",
+             "enum_weapon": "EPEE", "enum_gender": "M", "dt_tournament": "2025-12-13",
+             "url_results": "https://r/2", "bool_joint_pool_split": False, "int_participant_count": 8},
+        ]
+        md = _run_formatter([_bracket()], tmp_path, live_rows=live)
+        assert "PPW3-V2-M-EPEE-2025-2026" in md and "https://r/1" in md
+        assert "2 tournaments" in md and "27 results" in md  # totals 19+8
+        assert md.count("PPW3-V2-M-EPEE-2025-2026") == 1     # deduped
+
+    def test_g3_omitted_table_no_noise_no_standing_count(self, tmp_path):
+        """N12.4 (G3) omitted brackets table; no pool_round:no noise; no standing per-weapon table."""
+        b_ok = _bracket("EPEE", "M", "V2", committed={"skipped": False, "tournaments": []})
+        b_pool = _bracket("FOIL", "M", "COMB", pool_round={
+            "name": "Floret kat. Veteran", "reason": "10M/6F minority 38%", "url": "https://d/FOIL"})
+        md = _run_formatter([b_ok, b_pool], tmp_path,
+                            schedule_skips=[{"weapon": "EPEE", "name": "Turniej Amatorów",
+                                             "reason": "amateur skip"}])
+        assert "Floret kat. Veteran" in md and "https://d/FOIL" in md and "minority" in md
+        assert "Turniej Amatorów" in md
+        assert "pool_round: no" not in md
+        assert "Per-weapon pool-round count" not in md
+
+    def test_g4_matching_paths_quality_nullby_table(self, tmp_path):
+        """N12.5 (G4) matching: method + name-resolution + BY-quality + NULL-BY table (bracket+place)."""
+        matches = [
+            {"scraped_name": "KOWALSKI Jan", "id_fencer": 101, "place": 1,
+             "method": "AUTO_MATCHED", "confidence": 100.0, "governed_birth_year": 1980},
+            {"scraped_name": "NOWAK Adam", "id_fencer": 102, "place": 2,
+             "method": "AUTO_MATCHED", "confidence": 95.0, "governed_birth_year": None},
+        ]
+        fdb = [{"id_fencer": 101, "txt_surname": "KOWALSKI", "txt_first_name": "Jan",
+                "int_birth_year": 1980, "bool_birth_year_estimated": False, "json_name_aliases": []},
+               {"id_fencer": 102, "txt_surname": "NOWAK", "txt_first_name": "Adam",
+                "int_birth_year": None, "bool_birth_year_estimated": False, "json_name_aliases": []}]
+        md = _run_formatter([_bracket("EPEE", "M", "V2", matches=matches)], tmp_path, fencer_db=fdb)
+        assert "By method" in md and "AUTO_MATCHED" in md
+        assert "MISSING" in md or "NULL" in md          # BY-quality bucket
+        assert "NOWAK Adam" in md                         # the NULL-BY fencer listed
+        assert "EPEE" in md and "/M/V2" in md or "V2" in md  # bracket context present
+
+    def test_g5_created_with_near_miss(self, tmp_path):
+        """N12.6 (G5) created fencer shows its fuzzy near-miss candidate."""
+        created = [{"scraped_name": "ZIMMERMAN Klaus", "nationality": "GER", "vcat": "V1",
+                    "birth_year": 1981, "estimated": True,
+                    "near_miss": {"id_fencer": 101, "name": "ZIMMERMANN Klaus", "confidence": 78.0}}]
+        md = _run_formatter([_bracket(matches=[], created=created)], tmp_path)
+        assert "ZIMMERMAN Klaus" in md
+        assert "ZIMMERMANN Klaus" in md and "78" in md   # near-miss candidate + score
+
+    def test_g6_reconciled_columns(self, tmp_path):
+        """N12.6 (G6) reconciled: Fencer/BY/BY-status/status-reason."""
+        rec = [{"scraped_name": "POKRYWA Bartosz", "id_fencer": 221, "vcat": "V1",
+                "old_birth_year": 1984, "new_birth_year": 1981, "was_confirmed": True}]
+        md = _run_formatter([_bracket(reconciled=rec)], tmp_path)
+        assert "POKRYWA Bartosz" in md and "1981" in md
+        assert "estimated" in md.lower()
+        assert "CONFIRMED" in md or "downgrad" in md.lower()  # status reason
+
+    def test_g7_g8_g9_status_gaps_no_signoff(self, tmp_path):
+        """N12.7 (G7/G8/G9) parse-status tally + reasons, automation-gaps, NO sign-off."""
+        b_ok = _bracket("EPEE", "M", "V2", committed={"skipped": False,
+                        "tournaments": [{"vcat": "V2", "id_tournament": 1, "n": 19}]})
+        b_pool = _bracket("FOIL", "M", "COMB", pool_round={
+            "name": "Floret kat. Veteran", "reason": "minority 38%", "url": "https://d/F"})
+        md = _run_formatter([b_ok, b_pool], tmp_path)
+        assert "parse status" in md.lower() or "Bracket" in md
+        assert "automation gap" in md.lower()           # G8 centerpiece
+        assert "minority 38%" in md                       # skip reason surfaced
+        assert "Sign-off" not in md and "sign off" not in md.lower()
+        assert "admin" in md.lower()                      # footer admin URL

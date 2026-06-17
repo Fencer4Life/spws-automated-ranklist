@@ -224,8 +224,17 @@ class DetectPoolRound(BasePlugin):
     def run(self, ctx: Context, svc: Services) -> None:
         from python.pipeline.core.contract import FaultKind
         run_stage(ctx, "s7_pool_round_check", svc.db)  # POOL_ROUND_DETECTED -> fault
+        prs = ctx.faults_of(FaultKind.POOL_ROUND)
+        pctx = get_pctx(ctx)
+        parsed = getattr(pctx, "parsed", None) if pctx else None
+        # G3 (ADR-075): carry the bracket name + reason + URL so the staging report
+        # can list it under "present but omitted from processing".
         self.report(ctx, "VALIDATION", check="pool_round",
-                    is_pool_round=bool(ctx.faults_of(FaultKind.POOL_ROUND)))
+                    is_pool_round=bool(prs),
+                    name=getattr(parsed, "tournament_name", None) if parsed else None,
+                    weapon=getattr(parsed, "weapon", None) if parsed else None,
+                    url=getattr(parsed, "source_url", None) if parsed else None,
+                    reason=prs[-1].detail if prs else None)
 
 
 class AssignFinalVcat(BasePlugin):

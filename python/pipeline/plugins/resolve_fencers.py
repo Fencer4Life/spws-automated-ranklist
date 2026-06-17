@@ -69,6 +69,7 @@ class ResolveFencers(BasePlugin):
         matches: list[StageMatchResult] = []
         touched: dict[int, str] = {}
         remaining: list[tuple[str | None, Any]] = []
+        alias_writebacks: list[dict] = []  # G4: scraped→canonical pairs recorded as aliases
 
         # ---- PHASE A — exact match + BY reconcile ----
         for vcat, r in rows:
@@ -109,6 +110,10 @@ class ResolveFencers(BasePlugin):
 
             if best.id_fencer is not None and self._should_link(best, auto_thresh):
                 self._alias_writeback(db, best.id_fencer, r.fencer_name)
+                alias_writebacks.append({
+                    "scraped": r.fencer_name, "id_fencer": best.id_fencer,
+                    "canonical": best.matched_name,
+                })
                 matches.append(StageMatchResult(
                     scraped_name=r.fencer_name, place=r.place, id_fencer=best.id_fencer,
                     confidence=best.confidence, method="AUTO_MATCHED",
@@ -117,7 +122,7 @@ class ResolveFencers(BasePlugin):
                 ))
             elif domestic:
                 new_id, gby = self._create(db, fencer_db, r, vcat, season_end,
-                                           parsed_gender, ctx)
+                                           parsed_gender, ctx, best=best)
                 matches.append(StageMatchResult(
                     scraped_name=r.fencer_name, place=r.place, id_fencer=new_id,
                     confidence=best.confidence, method="AUTO_CREATED",
@@ -145,6 +150,7 @@ class ResolveFencers(BasePlugin):
             created=list(pctx.created_fencers),
             reconciled=list(pctx.reconciled_fencers),
             conflicts=list(pctx.reconcile_conflicts),
+            alias_writebacks=alias_writebacks,
         )
 
     # ------------------------------------------------------------------ #
@@ -218,7 +224,7 @@ class ResolveFencers(BasePlugin):
         })
         return new_by
 
-    def _create(self, db, fencer_db, r, vcat, season_end, gender, ctx) -> tuple[int, int | None]:
+    def _create(self, db, fencer_db, r, vcat, season_end, gender, ctx, best=None) -> tuple[int, int | None]:
         from python.matcher.fuzzy_match import parse_scraped_name
         surname, first_name = parse_scraped_name(r.fencer_name)
         nat = getattr(r, "fencer_country", None)
@@ -236,10 +242,16 @@ class ResolveFencers(BasePlugin):
             "int_birth_year": by, "bool_birth_year_estimated": by is not None,
             "txt_nationality": nat or "PL", "enum_gender": gender, "json_name_aliases": [],
         })
+        # G5 (ADR-075): record the fuzzy near-miss the matcher rejected, so the
+        # staging report can flag a creation that may actually be a duplicate.
+        near_miss = None
+        if best is not None and getattr(best, "matched_name", None) is not None:
+            near_miss = {"id_fencer": best.id_fencer, "name": best.matched_name,
+                         "confidence": best.confidence}
         ctx.get("_legacy").created_fencers.append({
             "id_fencer": new_id, "scraped_name": r.fencer_name, "txt_surname": surname,
             "txt_first_name": first_name, "nationality": nat or "PL", "vcat": vcat,
-            "birth_year": by, "estimated": by is not None,
+            "birth_year": by, "estimated": by is not None, "near_miss": near_miss,
         })
         return new_id, by
 

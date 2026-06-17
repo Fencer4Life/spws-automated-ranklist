@@ -470,6 +470,19 @@ fragments** into the files from a template.
   (`_fire_staging_report`), seeding `_bracket_reports` (and schedule-level skips). `StagingFormatter.applies`
   is True only then; the per-bracket reactor fire SKIPs it. One UTC stamp per run names both files —
   `doc/staging/<EVENT>.<YYYYMMDD-HHMMSSZ>.md` / `.diff.md` — so reruns of the same event are comparable.
+- **Richness parity + "automation report" framing (ADR-075 rev, 2026-06-17).** The `.md` is an
+  **automation report**: it leads with **Detected automation gaps** (the things the fully-automated run
+  could not resolve — pool-rounds omitted, created fencers with a close existing match, NULL/estimated
+  birth years, suspected wrong alias links, dropped/below-min brackets) and there is **no sign-off**
+  (full automation, ADR-074). The formatter iterates **per bracket** (so each match/fault carries its
+  bracket label + place) and reaches content-parity with the OLD pipeline by **reusing its pure
+  DB-readers** — `_fetch_event_meta` (full `tbl_event` row + URL slots), `_live_tournament_rows`
+  (authoritative, deduped committed tournaments), `_check_pool_round_count` (conditional ⚠ only),
+  `_classify_alias_pair` (alias verdicts) — with no `pctx`. Sections: full event header · automation
+  gaps · created (+ fuzzy near-miss) · BY reconciliations (Fencer·BY·status·reason) · fencer matching
+  (by-method · name-resolution paths · alias verdicts · BY-quality · NULL/estimated tables) · committed
+  tournaments · brackets present-but-omitted · bracket parse status (+ skip/exception reasons).
+  `url_results` stays **blank unless an admin entered it** (admin-managed URL rule — never scrape-filled).
 
 ```mermaid
 flowchart LR
