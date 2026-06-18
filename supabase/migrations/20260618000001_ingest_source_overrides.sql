@@ -30,7 +30,9 @@ LANGUAGE sql AS $$
 $$;
 
 -- Expose both columns on vw_calendar so the admin form round-trips (the
--- tbl_event-new-column → rebuild-vw_calendar rule). Recreate the view verbatim + 2 cols.
+-- tbl_event-new-column → rebuild-vw_calendar rule). Recreate the view from its
+-- CURRENT full definition (20260429 evf_fk_columns: incl. url_event_2..5 +
+-- id_evf_event) PLUS the two new columns — do NOT regress earlier additions.
 DROP VIEW IF EXISTS vw_calendar;
 CREATE VIEW vw_calendar AS
 SELECT
@@ -42,6 +44,8 @@ SELECT
   e.arr_weapons,
   e.dt_start, e.dt_end, e.url_event, e.enum_status,
   e.url_registration, e.dt_registration_deadline,
+  e.url_event_2, e.url_event_3, e.url_event_4, e.url_event_5,
+  e.id_evf_event,
   COUNT(t.id_tournament)::INT AS num_tournaments,
   COALESCE(BOOL_OR(t.enum_type IN ('PEW','MEW','MSW','PSW')), FALSE) AS bool_has_international,
   e.json_ingest_sources, e.json_source_overrides
