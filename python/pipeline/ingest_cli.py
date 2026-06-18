@@ -624,8 +624,13 @@ def _ingest_source_records(decisions, schedule_skips):
             "duplicate_of": d.get("duplicate_of", []),
         })
     for s in (schedule_skips or []):
-        out.append({"name": s["name"], "url": None, "status": "dropped",
-                    "reason": s["reason"], "categories": [], "count": None})
+        # Build the FTL results URL from the skip's uuid so the operator can click
+        # and validate a name-skipped round (e.g. ELIMINACJE) really is a pools round.
+        uuid = s.get("uuid")
+        out.append({"name": s["name"],
+                    "url": f"{_FTL_RESULTS}{uuid}" if uuid else None,
+                    "status": "dropped", "reason": s["reason"],
+                    "categories": [], "count": None})
     return out
 
 
