@@ -46,6 +46,7 @@ class Section:
 
 
 ADMIN_URL = "http://localhost:5173/?admin=1"
+_FTL_RESULTS = "https://www.fencingtimelive.com/events/results/"  # for schedule-skip URL fallback
 
 
 def _utc_stamp() -> str:
@@ -85,6 +86,7 @@ def _bracket_model(report) -> dict:
         "label": f"{weapon}/{gender}/{category}",
         "weapon": weapon, "gender": gender, "category": category,
         "source_name": src.get("tournament_name"),
+        "source_url": src.get("source_url"),
         "season_end": src.get("season_end_year"),
         "matches": ident.get("matches", []),
         "created": ident.get("created", []),
@@ -99,12 +101,17 @@ def _bracket_model(report) -> dict:
 # Section renderers — each takes the assembled model and returns markdown.
 # ---------------------------------------------------------------------------
 
+# tbl_event columns that are huge operational JSONB rendered in their own sections —
+# never dump them into the human-readable event-header field table (N13.5).
+_HEADER_SKIP = {"json_ingest_sources", "json_source_overrides"}
+
+
 def _render_header(m) -> str:
     full = (m["event_meta"] or {}).get("_full_row") or {}
     lines = ["| Field | Value |", "|---|---|"]
     for k in sorted(full.keys()):
         v = full[k]
-        if v is None or v == "" or v == []:
+        if v is None or v == "" or v == [] or k in _HEADER_SKIP:
             continue
         lines.append(f"| `{k}` | {v} |")
     urls = (m["event_meta"] or {}).get("urls") or []
@@ -270,17 +277,30 @@ def _render_committed(m) -> str:
     rows = m["live_rows"]
     if not rows:
         return "_No committed tournaments found._"
+    # Map each committed category → the FTL source round it came from. For a category
+    # split out of a BRACKET this is the combined round's URL (so the operator can open
+    # one link and validate the whole split against FTL). Built from the keep-rule's
+    # source decisions; `url_results`/`txt_source_url_used` stay admin-managed (often blank).
+    src_url: dict = {}
+    for d in m["source_decisions"]:
+        if d.get("status") != "committed" or not d.get("url"):
+            continue
+        for cat in d.get("committed_categories", []):
+            src_url[(d.get("weapon"), d.get("gender"), cat)] = d["url"]
+
     total_results = sum(r.get("int_participant_count") or 0 for r in rows)
     lines = [f"**{len(rows)} tournaments, {total_results} results.**", "",
-             "| Code | V-cat | Wpn | Gen | Date | Joint | Results | Source URL |",
+             "| Code | V-cat | Wpn | Gen | Date | Joint | Results | FTL source (click to validate) |",
              "|---|---|---|---|---|---|---:|---|"]
     for r in rows:
         joint = "✓" if r.get("bool_joint_pool_split") else ""
-        url = r.get("url_results") or r.get("txt_source_url_used") or ""
+        ftl = (src_url.get((r.get("enum_weapon"), r.get("enum_gender"), r.get("enum_age_category")))
+               or r.get("url_results") or r.get("txt_source_url_used"))
+        link = f"[↗ FTL]({ftl})" if ftl else ""
         lines.append(f"| `{r.get('txt_code', '?')}` | {r.get('enum_age_category', '?')} "
                      f"| {r.get('enum_weapon', '?')} | {r.get('enum_gender', '?')} "
                      f"| {r.get('dt_tournament', '?')} | {joint} "
-                     f"| {r.get('int_participant_count', '?')} | {url} |")
+                     f"| {r.get('int_participant_count', '?')} | {link} |")
     return "\n".join(lines)
 
 
@@ -301,24 +321,29 @@ def _render_omitted(m) -> str:
                          (d.get("reason") or "") + extra,
                          f"n={d.get('count')}" if d.get("count") is not None else "",
                          d.get("url") or ""))
-            seen.add(d.get("url"))
+            seen.add(d.get("name"))                 # dedup by round name (URL may differ/none)
     # Pool-rounds detected mid-flow (gender-mix) not already covered above.
     for b in m["pool_rounds"]:
-        if b.get("url") in seen:
+        if b.get("name") in seen:
             continue
         rows.append((b.get("weapon", "?"), b.get("name") or "?",
                      b.get("reason") or "pool round", "", b.get("url") or ""))
+        seen.add(b.get("name"))
     for s in m["schedule_skips"]:
-        if s.get("url") in seen:
+        if s.get("name") in seen:
             continue
+        url = s.get("url") or (f"{_FTL_RESULTS}{s['uuid']}" if s.get("uuid") else "")
         rows.append((s.get("weapon", "?"), s.get("name", "?"),
-                     s.get("reason", "skip"), "", s.get("url", "")))
+                     s.get("reason", "skip"), "", url))
+        seen.add(s.get("name"))
     if not rows:
         return "_No sources omitted — every discovered round was ingested._"
     lines = ["These rounds were **present but omitted from scoring**:",
-             "", "| Weapon | Round | Reason | Stats | URL |", "|---|---|---|---|---|"]
+             "", "| Weapon | Round | Reason | Stats | FTL source (click to validate) |",
+             "|---|---|---|---|---|"]
     for w, name, reason, stats, url in rows:
-        lines.append(f"| {w} | {name} | {reason} | {stats} | {url} |")
+        link = f"[↗ FTL]({url})" if url else ""
+        lines.append(f"| {w} | {name} | {reason} | {stats} | {link} |")
     for warn in _check_pool_round_count(m["pool_rounds"]):
         lines += ["", f"> {warn}"]
     return "\n".join(lines)
@@ -338,11 +363,18 @@ def _render_source_split(m) -> str:
         committed_vcats = {t.get("vcat")
                            for t in (b.get("committed") or {}).get("tournaments", [])}
         name = b.get("source_name") or b["label"]
-        out += [f"### {name} — {b['weapon']}·{b['gender']}", "",
+        link = f" — [↗ FTL]({b['source_url']})" if b.get("source_url") else ""
+        out += [f"### {name} — {b['weapon']}·{b['gender']}{link}", "",
                 "| Category | committed? | fencers (BY) |", "|---|---|---|"]
         for v in sorted(by_vcat, key=lambda x: (x is None, x or "")):
-            mark = "✅" if v in committed_vcats else "⚠ set-aside"
-            fencers = ", ".join(
+            if v is None:
+                mark = "🚨 no birth year"
+            elif v in committed_vcats:
+                mark = "✅"
+            else:
+                mark = "⚠ set-aside"
+            # One fencer per line (<br> inside the cell) — comma-runs are unreadable.
+            fencers = "<br>".join(
                 f"{mm.get('scraped_name')} ({mm.get('governed_birth_year') or '—'})"
                 for mm in by_vcat[v])
             out.append(f"| {v or '—'} | {mark} | {fencers} |")
