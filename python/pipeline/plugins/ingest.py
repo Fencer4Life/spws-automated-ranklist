@@ -11,9 +11,28 @@ switches the split to read governed BY.
 from __future__ import annotations
 
 from python.pipeline.core.contract import Context, PluginKind, Services
+from python.pipeline.ir import SourceKind
 from python.pipeline.plugins.base import BasePlugin
 from python.pipeline.plugins.bridge import ensure_pctx, get_pctx, run_stage
 from python.pipeline.stages import vcat_for_age
+
+# N14 (ADR-073): tbl_tournament.url_results is populated during commit ONLY from
+# viewable WEB results pages. XML / EVF-API / file sources never write it (the
+# EVF API URL is a JSON endpoint, not a page; url_event stays admin-managed).
+_WEB_SOURCE_KINDS = frozenset({
+    SourceKind.FTL, SourceKind.ENGARDE, SourceKind.FOURFENCE,
+    SourceKind.DARTAGNAN, SourceKind.OPHARDT_HTML,
+})
+
+
+def _url_results_for(parsed) -> str | None:
+    """The results-page URL to persist for this parsed source, or None to preserve
+    the existing value (non-web source, or no http source_url)."""
+    src = getattr(parsed, "source_url", None)
+    if (src and str(src).startswith("http")
+            and getattr(parsed, "source_kind", None) in _WEB_SOURCE_KINDS):
+        return str(src)
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -330,6 +349,11 @@ class Commit(BasePlugin):
         if commit_cats is None:
             commit_cats = ctx.params.get("commit_cats")
 
+        # N14 (ADR-073): persist the tournament's results-page URL from the parsed
+        # WEB source so the fencer Drilldown links work without a separate populate
+        # dispatch. None for XML/EVF/file → fn_find_or_create_tournament preserves.
+        url_results = _url_results_for(parsed)
+
         written: list[dict] = []
         held: list[str] = []
         for vcat in sorted(final_vcats.keys()):
@@ -341,7 +365,8 @@ class Commit(BasePlugin):
                 held.append(vcat)            # set aside — owned by another listing
                 continue
             tournament_id = db.find_or_create_tournament(
-                event_id, weapon, gender, vcat, date, ttype)
+                event_id, weapon, gender, vcat, date, ttype,
+                url_results=url_results)
             db.ingest_results(tournament_id, rows, participant_count=len(rows))
             written.append({"vcat": vcat, "weapon": weapon, "gender": gender,
                             "id_tournament": tournament_id, "n": len(rows)})

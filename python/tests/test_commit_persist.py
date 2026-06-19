@@ -94,7 +94,7 @@ class TestPerBracketPersist:
         db = _db()
         _run(_ctx(fv), db)
         db.find_or_create_tournament.assert_called_once_with(
-            7, "EPEE", "M", "V1", "2026-04-01", "PPW")
+            7, "EPEE", "M", "V1", "2026-04-01", "PPW", url_results=None)
 
     def test_ingest_rows_shape_and_count(self):
         """N7.2 ingest_results gets RPC-shaped rows + the bracket's OWN count as
