@@ -62,7 +62,8 @@ jobs:
             echo "::error::target must be cert or prod"
             exit 1
           fi
-          if [[ -n "$URL_EVENT" && ! "$URL_EVENT" =~ ^https?://[A-Za-z0-9./?=&_#%:-]+$ ]]; then
+          URL_RE='^https?://[A-Za-z0-9._~:/?#@!$&()*+,;=%-]+$'
+          if [[ -n "$URL_EVENT" && ! "$URL_EVENT" =~ $URL_RE ]]; then
             echo "::error::invalid url_event (must be empty or an http(s) URL)"
             exit 1
           fi
