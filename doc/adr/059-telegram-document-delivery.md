@@ -47,6 +47,7 @@ POSTs `multipart/form-data` to `https://api.telegram.org/bot<token>/sendDocument
 |---|---|---|
 | Email XML ingestion (`ingest.yml` → `ingest_cli`) | ✅ `full.md` per resolved event | First materialisation. |
 | Event-URL ingestion (`phase5-event-runner.yml` → `phase5_runner`) | ✅ `full.md` | Same. |
+| NEW-pipeline from-URL re-ingest (`ingest-event.yml` → `ingest_cli --from-url --send-telegram`) | ✅ `full.md` + `.diff.md` | **N15 (2026-06-19):** the Telegram `ingest <prefix> <url>` loop — staging back to phone for review before `promote`. Reuses `send_staging_report`/`send_document`. |
 | Operator alias mutation → `regen-report.yml` → `phase5_report` | ✅ `full.md` (auto, tagged `reason='regen'`) | Operator wants every regenerated verdict on phone. |
 | EVF daily parity sweep detects ≥1 change | ✅ `delta.md` | Unattended overnight; operator wakes up to read changes. |
 | EVF parity sweep finds zero drift | ❌ silent | No-op silence. |

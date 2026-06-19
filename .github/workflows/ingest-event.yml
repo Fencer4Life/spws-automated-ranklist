@@ -24,6 +24,10 @@ on:
       target:
         description: 'Target env: cert | prod'
         default: 'cert'
+      url_event:
+        description: 'Optional FTL eventSchedule URL — set as tbl_event.url_event (admin-managed) before ingest. Blank = use the stored url_event.'
+        required: false
+        default: ''
 
 jobs:
   ingest-event:
@@ -33,6 +37,7 @@ jobs:
       EVENT_CODE: ${{ inputs.event_code }}
       SEASON_END_YEAR: ${{ inputs.season_end_year }}
       TARGET_ENV: ${{ inputs.target }}
+      URL_EVENT: ${{ inputs.url_event }}
     steps:
       - uses: actions/checkout@v5
 
@@ -57,6 +62,10 @@ jobs:
             echo "::error::target must be cert or prod"
             exit 1
           fi
+          if [[ -n "$URL_EVENT" && ! "$URL_EVENT" =~ ^https?://[A-Za-z0-9./?=&_#%:-]+$ ]]; then
+            echo "::error::invalid url_event (must be empty or an http(s) URL)"
+            exit 1
+          fi
 
       - name: Re-ingest event from URL (keep-rule + source overrides)
         env:
@@ -68,12 +77,18 @@ jobs:
             || secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
           FTL_USERNAME: ${{ secrets.FTL_USERNAME }}
           FTL_PASSWORD: ${{ secrets.FTL_PASSWORD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          python -m python.pipeline.ingest_cli \
-            --flow ingest_domestic \
-            --event-code "$EVENT_CODE" \
-            --season-end-year "$SEASON_END_YEAR" \
-            --from-url --replace
+          ARGS=(--flow ingest_domestic
+                --event-code "$EVENT_CODE"
+                --season-end-year "$SEASON_END_YEAR"
+                --from-url --replace
+                --send-telegram --md-target storage)
+          if [[ -n "$URL_EVENT" ]]; then
+            ARGS+=(--url-event "$URL_EVENT")
+          fi
+          python -m python.pipeline.ingest_cli "${ARGS[@]}"
 
       - name: Notify failure
         if: failure()
