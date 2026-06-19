@@ -69,6 +69,153 @@ These steps are done once in the GitHub web UI.
 
 ---
 
+## 1.3 Credentials & secrets — the three trust zones
+
+Secrets are split across **three isolated zones**. The browser never holds a privileged secret; every
+privileged action is performed server-side (CI runner or Edge Function). No secret is committed to git.
+
+```
+Browser (UI)            Edge Function (server)        Pipeline (CI runner / LOCAL)
+─────────────           ──────────────────────        ────────────────────────────
+anon key + URL          GH_DISPATCH_PAT, GH_REPO       service-role key + URL
+admin JWT (Supabase     (Supabase function secrets)    FTL_USERNAME / FTL_PASSWORD
+  Auth + MFA)           verifies caller JWT,           TELEGRAM_BOT_TOKEN / _CHAT_ID
+RLS-gated, public         allowlists workflows,        read from os.environ
+NO service-role / PAT      forwards workflow_dispatch   NO browser exposure
+/ FTL creds               PAT never reaches browser
+```
+
+### Zone A — the UI (browser)
+
+- The `<spws-ranklist>` web component receives the Supabase **URL + anon key** (and a soft `admin-password`)
+  as **HTML attributes** ([frontend/src/main.ts](../frontend/src/main.ts): `supabase-cert-url/-key`,
+  `supabase-prod-url/-key`, `admin-password`). `App.svelte` picks the CERT or PROD pair by
+  `VITE_DEPLOY_ENV` and calls `initClient(url, key)` → `createClient` ([frontend/src/lib/api.ts](../frontend/src/lib/api.ts)).
+- The key is always the **anon (public) key** — safe to ship in HTML; every read/write is gated by
+  Postgres **RLS**. The service-role key is **never** in the bundle.
+- **Admin authorization** is Supabase **Auth (GoTrue): email + password + TOTP MFA** → a JWT
+  (`signIn` in `App.svelte`, `auth.step` sign_in → mfa_enroll/mfa_challenge). RLS admin policies enforce the
+  JWT; the `admin-password` attribute only gates *showing* the admin affordance client-side, it is not the
+  security boundary.
+- **Privileged GitHub dispatch from the UI** (the ⬇ "import" / populate / re-ingest buttons) does **not**
+  carry a PAT. It calls the `dispatch-workflow` Edge Function (Zone B) — ADR-041 / FR-99.
+
+### Zone B — the Edge Function (`supabase/functions/dispatch-workflow`)
+
+- Holds `GH_DISPATCH_PAT` (fine-grained, this repo, Actions read+write) and `GH_REPO` as **Supabase
+  function secrets** (`Deno.env.get`, [index.ts](../supabase/functions/dispatch-workflow/index.ts)).
+- Verifies the caller's Supabase JWT, checks the workflow against an **allowlist**
+  (`populate-urls.yml`, `scrape-tournament.yml`, `phase5-event-runner.yml`, `regen-report.yml`,
+  `ingest-event.yml`), then POSTs `workflow_dispatch` with `Authorization: Bearer <PAT>`.
+- The **PAT never reaches the browser**. Set it with `supabase secrets set GH_DISPATCH_PAT=… GH_REPO=…`.
+
+### Zone C — the pipeline (Python, CI runner or LOCAL)
+
+All pipeline credentials are read from **`os.environ`** — there is **no `load_dotenv`**:
+
+| Secret | Read by | Purpose |
+|---|---|---|
+| `SUPABASE_URL` + `SUPABASE_KEY` (**service-role**) | `ingest_cli`, `db_connector`, `promote.py` | full DB read/write (bypasses RLS) — server-side only |
+| `FTL_USERNAME` / `FTL_PASSWORD` | `python/scrapers/ftl_auth.py` `get_authed_ftl_client` | log in to FencingTimeLive to scrape authed results pages |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | `TelegramNotifier` | operator alerts (never Discord) |
+
+- **CI:** GitHub **repository secrets** are injected per-step via the workflow `env:` block, e.g.
+  [ingest-event.yml](../.github/workflows/ingest-event.yml) maps `SUPABASE_KEY` ←
+  `secrets.SUPABASE_{CERT,PROD}_SERVICE_ROLE_KEY` (chosen by the `target` input), plus `FTL_USERNAME`/
+  `FTL_PASSWORD` and the Telegram pair. Add these to the GitHub secrets in §1.2.
+- **LOCAL:** the same names live in the repo-root **`.env`** (git-ignored). Because nothing auto-loads it,
+  you must export it into the shell before running the CLI:
+  ```bash
+  set -a; source .env; set +a       # exports FTL_USERNAME/PASSWORD, SUPABASE_URL/KEY (127.0.0.1), TELEGRAM…
+  python -m python.pipeline.ingest_cli --flow ingest_domestic --event-code PPW3-2025-2026 \
+      --season-end-year 2026 --from-url      # url_results populated inline (ADR-073 N14)
+  ```
+  LOCAL `.env` `SUPABASE_URL` must be `http://127.0.0.1:54321` — **never run `--replace` with CERT/PROD
+  creds loaded** (it wipes the event before re-ingest).
+
+**Rule of thumb:** anon key → browser; service-role key + FTL + Telegram → pipeline only; PAT → Edge Function
+only. If a change would put any Zone-B/C secret into the browser bundle, it is wrong.
+
+---
+
+## 1.4 Rotating a credential when it stops working
+
+Each secret lives in **one or more of four stores**. When a credential breaks, regenerate it at the source,
+then update **every** store that holds it, then verify. The four stores:
+
+| Store | Where | How to edit |
+|---|---|---|
+| **GitHub repo secrets** | repo → Settings → Secrets and variables → Actions | "Update" each secret (value only) |
+| **Supabase function secrets** | per project (CERT + PROD) | `supabase secrets set NAME=value --project-ref <ref>` (or dashboard → Edge Functions → Manage secrets) |
+| **LOCAL `.env`** | repo-root `.env` (git-ignored) | edit the line; re-run `set -a; source .env; set +a` |
+| **UI embed** | the page that embeds `<spws-ranklist …>` (e.g. the WordPress page/HTML widget) | edit the `supabase-*-key` / `-url` attribute |
+
+> ⚠ Never commit a secret. `.env` is git-ignored — keep it that way. After any rotation, the **old** value
+> should be revoked at the source so a leaked copy is dead.
+
+### Symptom → which credential
+
+| Symptom | Credential | Stores to update |
+|---|---|---|
+| CI ingest/promote/recompute fails with 401 / "permission denied" / RLS error | `SUPABASE_*_SERVICE_ROLE_KEY` (Zone C) | GitHub secrets + LOCAL `.env` (`SUPABASE_KEY`) |
+| `supabase db push` / migrate-deploy step fails auth | `SUPABASE_ACCESS_TOKEN` | GitHub secrets + LOCAL `.env` |
+| UI loads nothing / "Invalid API key" / 401 in browser console | `SUPABASE_*_ANON_KEY` (Zone A) | UI embed attribute + GitHub secrets (`SUPABASE_CERT/PROD_ANON_KEY`, used to render the embed) |
+| Admin can't sign in (but data loads) | Supabase **Auth** user (not a key) — reset password / re-enrol MFA in the dashboard | Supabase dashboard → Authentication → Users |
+| FTL scrape: `FtlAuthError`, "Discovered 0 URLs", login-redirect, or "account suspended" | `FTL_USERNAME` / `FTL_PASSWORD` (Zone C) | GitHub secrets + LOCAL `.env` |
+| UI ⬇ buttons: `Dispatch failed: Edge Function returned a non-2xx` / `gh_dispatch_failed` / 401 from GitHub | `GH_DISPATCH_PAT` (Zone B) | Supabase **function** secrets (CERT + PROD) |
+| No Telegram alerts | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | GitHub secrets + LOCAL `.env` |
+
+### Step-by-step per credential
+
+**FTL_USERNAME / FTL_PASSWORD** (FencingTimeLive scrape login)
+1. Log in to FencingTimeLive; if the password changed/expired, reset it on their site (or create a fresh account).
+2. GitHub → repo secrets → update `FTL_USERNAME` and `FTL_PASSWORD`.
+3. LOCAL `.env` → update both lines.
+4. Verify (LOCAL): `set -a; source .env; set +a` then
+   `python -c "from python.scrapers.ftl_auth import get_authed_ftl_client; get_authed_ftl_client(); print('OK')"`
+   — prints `OK` on success, raises `FtlAuthError` on bad creds.
+
+**SUPABASE service-role key** (pipeline DB writes — CERT/PROD)
+1. Supabase dashboard → the project → Settings → API → **service_role** → *Reset* (or copy the rotated value).
+2. GitHub → update `SUPABASE_CERT_SERVICE_ROLE_KEY` and/or `SUPABASE_PROD_SERVICE_ROLE_KEY`.
+3. LOCAL `.env` (`SUPABASE_KEY`) only if you point LOCAL at a remote — normally LOCAL stays `127.0.0.1` (the
+   local key from `supabase status`, which the dev stack regenerates on reset, never a remote service-role key).
+4. Verify: re-run the affected workflow (Actions → Run workflow) or `python -m python.pipeline.ingest_cli …`.
+
+**SUPABASE_ACCESS_TOKEN** (Supabase CLI — migration deploys)
+1. https://supabase.com/dashboard/account/tokens → Generate new token (revoke the old one).
+2. GitHub → update `SUPABASE_ACCESS_TOKEN`; LOCAL `.env` if you deploy from your machine.
+3. Verify: `supabase projects list` (LOCAL) or re-run the deploy workflow.
+
+**SUPABASE anon key** (UI, public)
+1. Anon keys rotate only if you reset the project's JWT secret (Settings → API). Copy the new anon key.
+2. Update the **UI embed** `supabase-cert-key` / `supabase-prod-key` attribute on the embedding page, and the
+   GitHub `SUPABASE_*_ANON_KEY` secrets if the embed HTML is generated by a workflow.
+3. Verify: hard-refresh the site; data loads, no 401 in the console.
+
+**GH_DISPATCH_PAT** (Edge Function → GitHub dispatch)
+1. GitHub → Settings → Developer settings → **Fine-grained PAT**: this repo only, **Actions: Read and write**;
+   regenerate/replace the expiring one.
+2. Set it on **both** Supabase projects hosting the function:
+   `supabase secrets set GH_DISPATCH_PAT=<new> GH_REPO=<owner/repo> --project-ref <cert-ref>` and again with
+   `<prod-ref>` (or dashboard → Edge Functions → Manage secrets). No redeploy needed — `Deno.env.get` reads it
+   at invocation.
+3. Verify: in the admin UI press a ⬇ button → expect success-with-link, not a 502.
+   *(The GitHub **MCP** PAT in `.vscode/mcp.json` is a separate token for local GitHub API ops — rotate it
+   there if MCP calls start failing; it is unrelated to the dispatch PAT.)*
+
+**TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID**
+1. Regenerate the bot token via **@BotFather** (`/revoke` → `/token`); the chat id only changes if you move the
+   target chat/channel.
+2. GitHub → update both; LOCAL `.env` likewise.
+3. Verify: `set -a; source .env; set +a` then
+   `curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getMe"` → `{"ok":true,…}`.
+
+After any rotation, run `bash scripts/check-coherence.sh` (unaffected by secrets, but confirms the repo is
+still consistent) and re-run the one workflow that failed to confirm green.
+
+---
+
 ## 2. Day-to-Day Workflow
 
 ### What happens when you push to main
