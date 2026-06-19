@@ -337,6 +337,16 @@ def discover_tournament_urls(event_url: str) -> list[dict]:
     """
     import httpx
 
+    # N14 (ADR-073) — NOT DONE: Ophardt (fencingworldwide.com) event-index discovery
+    # is unimplemented in the standalone button/tool. url_results for Ophardt rounds is
+    # populated during full ingestion (Commit plugin gate), so this path is not a
+    # fallback for Ophardt events. Fail with a clear message rather than a generic one.
+    if "fencingworldwide.com" in event_url.lower() or "ophardt" in event_url.lower():
+        raise NotImplementedError(
+            "Ophardt (fencingworldwide.com) event-URL populate is NOT IMPLEMENTED "
+            "(N14/ADR-073). url_results for Ophardt is populated during full ingestion "
+            "only. Re-ingest the event instead of using the populate button.")
+
     platform = detect_platform(event_url)
 
     if platform == "ftl":

@@ -918,13 +918,27 @@ logic was rewritten).
   **Dry-run + live validated:** PPW3 drops the pools-only `Szpada kat. Veteran` + flags the amateur
   `Men's Épée`; PPW4 + PPW5 clean (every category one source, no intervention).
 
+- **Step G — populate tournament `url_results` during ingestion (ADR-073 amendment)** — 2026-06-18: the
+  fencer Drilldown links each result to its FTL/Engarde/4fence/Ophardt results page from
+  `tbl_tournament.url_results` (via `vw_score`), which previously relied on the flaky event-level "populate
+  from event URL" dispatch button (502 on `workflow_dispatch`). The from-URL ingest already holds each
+  committed tournament's results-page URL (`parsed.source_url`), so the **`Commit` plugin** now writes it
+  inline via a new `fn_find_or_create_tournament(p_url_results)` arg (migration `20260619000001`, which drops
+  the prior 7-arg overload first to keep 6-arg calls unambiguous). Gated on WEB source kinds
+  (`_WEB_SOURCE_KINDS` = FTL/ENGARDE/FOURFENCE/DARTAGNAN/OPHARDT_HTML + http source_url): re-ingest
+  overwrites; `FENCINGTIME_XML`/`EVF_API`/`FILE_IMPORT` and non-http pass NULL → preserve (EVF API URL is a
+  JSON endpoint, not a page; `url_event` stays admin-managed). Staging report's Committed section shows the
+  persisted link + a `Tournament URLs populated: N/M` summary. Tests N14.4–N14.8 (`test_url_results_on_ingest.py`)
+  + pgTAP 46.1–46.5. (Standalone tool's `ophardt` discovery branch deferred — `fencingworldwide.com` event
+  index needs a parser + fixture; the pipeline already covers ophardt url_results during ingestion.)
+
 **Tests.** pgTAP 577 → 588 (unchanged in Step E — Python-only); pytest +49 (M1–M5) +8 (Step A, N7.1–N7.8)
 +6 (Step B, N8.1–N8.6) +8 (Step C, N9.1–N9.7 + N5.7) +7 (Step D, N10.1–N10.7) +N11.1–N11.7 (Step E) +N12.1–N12.7 (Step E.2 richness)
 across `test_rule_engine`, `test_pipeline_core`, `test_pipeline_plugins`, `test_resolve_fencers`,
 `test_recompute`, `test_recompute_worker`, `test_commit_persist`, `test_ingest_cli_flow`,
 `test_recompute_persist`, `test_post_commit_chain`, `test_staging_report`, `test_scrapers`;
-Step F (N13.1–N13.6) + pgTAP 45.1–45.6.
-Final: pytest 912, vitest 374, pgTAP 594.
+Step F (N13.1–N13.6) + pgTAP 45.1–45.6; Step G (N14.4–N14.8) + pgTAP 46.1–46.5.
+Final: pytest 930, vitest 375, pgTAP 599.
 
 **ADRs.** ADR-070–074 Accepted; ADR-075 Accepted (staging report — fifth Context channel + terminal
 formatter); ADR-076 Accepted (overlap-clobber: pools-only discard + one-listing-per-category keep-rule +

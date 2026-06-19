@@ -92,6 +92,7 @@ foundation**, and **self-healing** (a correction propagates automatically).
 | BR-4 | Identity by durable **FK**, never name | `ResolveFencers`, `tbl_result.id_fencer` | [003](adr/003-identity-by-fk-not-name.md) |
 | BR-5 | Age category from **birth year** + season | `ResolveFencers` governs BY; `SplitByAge`/`AssignFinalVcat` consume it | [010](adr/010-age-category-by-birth-year.md), [056](adr/056-vcat-from-birthyear.md) |
 | BR-6 | Re-import **atomic & idempotent** | `Commit` plugin (atomic `fn_write_event`) | [014](adr/014-delete-reimport-strategy.md), [022](adr/022-ingestion-db-transaction.md) |
+| BR-6′ ⚑ | Each tournament's **`url_results`** is populated during commit (drilldown link) | `Commit` writes the parsed WEB-source URL via `fn_find_or_create_tournament(p_url_results)` — gated on `_WEB_SOURCE_KINDS` (FTL/ENGARDE/FOURFENCE/DARTAGNAN/OPHARDT_HTML); XML/EVF-API/file preserve | **073 (N14 amendment)**, [068](adr/068-ftl-www-host-normalization.md) |
 | BR-7 | Combined pools split + counted per V-cat | `SplitByAge`/`DetectJointPool`/`AssignFinalVcat`, commit RPC | [024](adr/024-combined-category-splitting.md), [049](adr/049-joint-pool-split-flag.md) |
 | BR-8 | Min-participant check at **ingestion** — sub-min bracket **auto-dropped**, never halts | `ValidateCounts` plugin (fault `BELOW_MIN`) | [066](adr/066-min-participants-ingestion-gate.md), **074** |
 | BR-9 | Every committed row carries **provenance** | `StampProvenance` middleware + history | [050](adr/050-unified-ingestion-pipeline.md), [055](adr/055-ingest-traceability.md) |

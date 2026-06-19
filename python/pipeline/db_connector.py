@@ -362,8 +362,13 @@ class DbConnector:
     def find_or_create_tournament(
         self, event_id: int, weapon: str, gender: str,
         category: str, date: str, tournament_type: str,
+        url_results: str | None = None,
     ) -> int:
         """Find or create tournament under event (ADR-025).
+
+        `url_results` (N14, ADR-073): when supplied (a web source's results page,
+        gated in the Commit plugin) it is persisted/overwritten on the tournament;
+        NULL preserves the existing value (admin/non-web URLs never wiped).
 
         Returns id_tournament.
         """
@@ -376,6 +381,7 @@ class DbConnector:
                 "p_age_category": category,
                 "p_date": date,
                 "p_type": tournament_type,
+                "p_url_results": url_results,
             },
         ).execute()
         return resp.data

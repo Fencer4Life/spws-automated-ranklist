@@ -160,6 +160,15 @@ def _render_automation_gaps(m) -> str:
     mism = [b for b in m["brackets"] if (b.get("count") or {}).get("count_mismatch")]
     if mism:
         gaps.append(f"- **{len(mism)} bracket(s) with a URL↔data count mismatch** (accepted, flag).")
+    # N14 (ADR-073): the standalone "populate from event URL" (⬇) button does NOT yet
+    # support Ophardt (fencingworldwide.com event-index discovery is unimplemented).
+    # During ingestion url_results IS populated for OPHARDT_HTML rounds; this warns the
+    # operator the button is not a fallback for Ophardt events.
+    urls = [u for (_slot, u) in ((m["event_meta"] or {}).get("urls") or []) if u]
+    if any(("fencingworldwide.com" in u or "ophardt" in u.lower()) for u in urls):
+        gaps.append("- **⚠ Ophardt event** — the *populate from event URL* (⬇) button does **not** "
+                    "support Ophardt yet (NOT DONE; fencingworldwide.com index discovery unimplemented). "
+                    "`url_results` is populated during full ingestion only; the button is not a fallback here.")
     if not gaps:
         return "_No automation gaps detected — nothing needs admin attention._"
     return ("These items the automation could not fully resolve. The event is **already committed**; "
@@ -289,18 +298,29 @@ def _render_committed(m) -> str:
             src_url[(d.get("weapon"), d.get("gender"), cat)] = d["url"]
 
     total_results = sum(r.get("int_participant_count") or 0 for r in rows)
-    lines = [f"**{len(rows)} tournaments, {total_results} results.**", "",
-             "| Code | V-cat | Wpn | Gen | Date | Joint | Results | FTL source (click to validate) |",
-             "|---|---|---|---|---|---|---:|---|"]
+    # N14 (ADR-073): the link column is the value persisted to tbl_tournament.url_results.
+    # A URL from this run's keep-rule (src_url) was (re)written; a URL only on the live
+    # row (admin/XML/EVF) was preserved, not written. Count populated rows for a summary.
+    populated = 0
+    body: list[str] = []
     for r in rows:
         joint = "✓" if r.get("bool_joint_pool_split") else ""
-        ftl = (src_url.get((r.get("enum_weapon"), r.get("enum_gender"), r.get("enum_age_category")))
-               or r.get("url_results") or r.get("txt_source_url_used"))
-        link = f"[↗ FTL]({ftl})" if ftl else ""
-        lines.append(f"| `{r.get('txt_code', '?')}` | {r.get('enum_age_category', '?')} "
-                     f"| {r.get('enum_weapon', '?')} | {r.get('enum_gender', '?')} "
-                     f"| {r.get('dt_tournament', '?')} | {joint} "
-                     f"| {r.get('int_participant_count', '?')} | {link} |")
+        written = src_url.get((r.get("enum_weapon"), r.get("enum_gender"), r.get("enum_age_category")))
+        url = written or r.get("url_results") or r.get("txt_source_url_used")
+        if url:
+            populated += 1
+            link = f"[↗ results]({url})" + ("" if written else " _(preserved)_")
+        else:
+            link = ""
+        body.append(f"| `{r.get('txt_code', '?')}` | {r.get('enum_age_category', '?')} "
+                    f"| {r.get('enum_weapon', '?')} | {r.get('enum_gender', '?')} "
+                    f"| {r.get('dt_tournament', '?')} | {joint} "
+                    f"| {r.get('int_participant_count', '?')} | {link} |")
+    lines = [f"**{len(rows)} tournaments, {total_results} results.** "
+             f"Tournament URLs populated: {populated}/{len(rows)} (web sources).", "",
+             "| Code | V-cat | Wpn | Gen | Date | Joint | Results | Results URL (url_results) |",
+             "|---|---|---|---|---|---|---:|---|"]
+    lines.extend(body)
     return "\n".join(lines)
 
 
