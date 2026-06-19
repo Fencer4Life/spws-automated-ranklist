@@ -1,122 +1,83 @@
-# Telegram `ingest` command — manual GAS update guide
+# Telegram `ingest` command — how to update the GAS script
 
-Adds an **`ingest <prefix> <url> [cert|prod]`** command to your Telegram bot, mirroring the existing
-**`promote`** command. It dispatches the `ingest-event.yml` GitHub Actions workflow, which re-ingests the
-event from the FTL URL on CERT (or PROD), populates `url_results`, and sends the staging report(s) back to
-Telegram. **`promote` is unchanged** — review the staging docs, then `promote <prefix>` as usual.
+Adds **`ingest <prefix> <url> [cert|prod]`** to the Telegram bot: re-ingest one event from its FTL URL on
+CERT (or PROD), populate `url_results`, and get the staging report(s) back in the chat. Then review and
+`promote`. The bare `ingest` (no args) keeps its old "process emailed staging files" behaviour.
 
-> This is the **only out-of-repo step**. The GAS (Google Apps Script) project lives in your Google account
-> (set up per ADR-023/025 for email polling + `checkTelegramCommands`), so it can't be edited from the repo.
-
-## What the command does
+**The full, ready-to-paste script is in the repo:** [`doc/gas/Code.gs`](gas/Code.gs). It is the *entire* GAS
+project with the change already applied — you replace your whole `Code.gs` with it. **No new Script
+Properties** are needed (it reuses `GITHUB_PAT`, `GITHUB_REPO`, `SUPABASE_ACCESS_TOKEN`/`SUPABASE_PROJECT_REF`,
+`SUPABASE_PROD_REF` that your existing commands already use), and `ingest-event.yml` is already on `main`.
 
 ```
-ingest PPW4 https://fencingtimelive.com/tournaments/eventSchedule/D0993…  cert
-        └prefix┘ └────────────── FTL eventSchedule URL ──────────────┘  └target (optional, default cert)┘
-```
-→ dispatches `ingest-event.yml` with `{event_code, season_end_year, target, url_event:<url>}`.
-
-## Steps
-
-1. **Open the script** — [script.google.com](https://script.google.com) → your **SPWS** Apps Script project
-   (the one that already runs `checkTelegramCommands()` on a 5-minute trigger).
-2. **Find the anchor** — `Ctrl-F` for **`promote`** inside `checkTelegramCommands()`. That `case`/`if` block is
-   your template: it already (a) resolves an event by prefix in the active season and (b) POSTs a
-   `workflow_dispatch`. **Copy how it does both** — you'll reuse the same two pieces.
-3. **Paste the `ingest` case** next to `promote` (snippet below). **Adjust the 3 names marked `// ADJUST`** to
-   match your existing code:
-   - the **PAT** constant (whatever `promote` uses, e.g. `GH_PAT` / `GITHUB_TOKEN`),
-   - the **repo** string (e.g. `"Fencer4Life/spws-automated-ranklist"`),
-   - the **prefix→event_code resolver** (`promote` already has one — reuse it, don't write a new one).
-4. **Update `/help`** — add one line: `ingest <prefix> <url> [cert|prod] — re-ingest an event from its FTL URL + staging to Telegram`.
-5. **Save** (Ctrl-S). The existing 5-minute `getUpdates` trigger picks it up — **no redeploy** needed (unless
-   your project is a *web-app* deployment: Deploy → Manage deployments → redeploy the head).
-6. **Test** — in the Telegram chat send:
-   `ingest PPW4 https://fencingtimelive.com/tournaments/eventSchedule/<uuid> cert`
-   Within ~5 min the run starts; when it finishes you receive the full `PPW4-…-full.md` + the `-diff.md`
-   documents. Then review and `promote PPW4`.
-
-## Snippet (adapt the 3 `// ADJUST` names to your code)
-
-```javascript
-// --- Telegram command: ingest <prefix> <url> [cert|prod] ------------------
-// Mirrors the `promote` command. Dispatches ingest-event.yml on GitHub Actions.
-function handleIngestCommand_(text, chatId) {
-  // text e.g. "ingest PPW4 https://fencingtimelive.com/...  cert"
-  const parts = text.trim().split(/\s+/);          // [ "ingest", prefix, url, target? ]
-  if (parts.length < 3) {
-    sendTelegram_(chatId, "Usage: ingest <prefix> <url> [cert|prod]");
-    return;
-  }
-  const prefix = parts[1];
-  const url    = parts[2];
-  const target = (parts[3] || "cert").toLowerCase();
-
-  if (!/^https?:\/\//.test(url)) {
-    sendTelegram_(chatId, "❌ ingest: <url> must be an http(s) FTL eventSchedule URL");
-    return;
-  }
-  if (target !== "cert" && target !== "prod") {
-    sendTelegram_(chatId, "❌ ingest: target must be cert or prod");
-    return;
-  }
-
-  // Reuse the SAME active-season prefix resolver `promote` uses.   // ADJUST (resolver name)
-  const eventCode = resolveEventCodeByPrefix_(prefix);             // -> e.g. "PPW4-2025-2026"
-  if (!eventCode) {
-    sendTelegram_(chatId, "❌ ingest: no active-season event matching '" + prefix + "'");
-    return;
-  }
-  // season_end_year = trailing year of the event code (…-2025-2026 -> 2026)
-  const m = eventCode.match(/-(\d{4})$/);
-  const seasonEndYear = m ? m[1] : "";
-
-  const repo = "Fencer4Life/spws-automated-ranklist";             // ADJUST (repo)
-  const pat  = GH_PAT;                                            // ADJUST (PAT constant)
-
-  const resp = UrlFetchApp.fetch(
-    "https://api.github.com/repos/" + repo + "/actions/workflows/ingest-event.yml/dispatches",
-    {
-      method: "post",
-      contentType: "application/json",
-      headers: { "Authorization": "token " + pat, "Accept": "application/vnd.github+json" },
-      muteHttpExceptions: true,
-      payload: JSON.stringify({
-        ref: "main",
-        inputs: {
-          event_code: eventCode,
-          season_end_year: seasonEndYear,
-          target: target,
-          url_event: url
-        }
-      })
-    });
-
-  const code = resp.getResponseCode();
-  if (code === 204) {
-    sendTelegram_(chatId, "⏳ ingest dispatched: " + eventCode + " (" + target +
-                          "). Staging report will arrive when it finishes.");
-  } else {
-    sendTelegram_(chatId, "❌ ingest dispatch failed (" + code + "): " +
-                          resp.getContentText().slice(0, 300));
-  }
-}
+ingest PPW4 https://fencingtimelive.com/tournaments/eventSchedule/<uuid>  cert
+       └prefix┘ └────────────── FTL eventSchedule URL ───────────────┘  └target (opt, default cert)┘
 ```
 
-Wire it into the dispatcher next to `promote`, e.g.:
-```javascript
-} else if (cmd === "ingest") {
-  handleIngestCommand_(text, chatId);
-}
+---
+
+## 1. Log into the right Google account
+
+1. Open [accounts.google.com](https://accounts.google.com) on a **desktop browser** (the Apps Script editor
+   barely works on mobile).
+2. Sign in with the Google account that runs the SPWS automation — the one that receives the result emails /
+   owns the bot wiring (ADR-023 set the script up there, e.g. `spws.weterani@gmail.com`). Switch account via
+   the top-right avatar if you have several.
+
+## 2. Open Apps Script & find the project
+
+1. Go to **[script.google.com](https://script.google.com)**.
+2. Left sidebar → **My Projects** — the list of all Apps Script projects this account owns.
+3. Identify the right one:
+   - name like **"SPWS" / "Ranklist" / "Telegram" / "Ingestion"**;
+   - not sure? open a candidate and **Ctrl-F** for `checkTelegramCommands` or `promote` — the right project has them;
+   - or open **⏰ Triggers** (clock icon, left sidebar) — the right project has time-based triggers running
+     **every 5 minutes** (`checkEmailForResults` + `checkTelegramCommands`).
+   - If `script.google.com` shows nothing, the script may be **bound to a Google Sheet**: open that Sheet →
+     **Extensions → Apps Script**.
+
+## 3. Replace the whole `Code.gs`
+
+1. In the editor, open the file that holds `checkTelegramCommands` (usually **`Code.gs`**).
+2. Open [`doc/gas/Code.gs`](gas/Code.gs) from this repo → **Select All (Ctrl-A) → Copy**.
+3. Back in the Apps Script editor: click in the code, **Select All (Ctrl-A) → Paste** (overwrite everything).
+4. **Save** (Ctrl-S, or the 💾 icon).
+
+No redeploy needed — the existing 5-minute trigger picks it up. (Only if your project is a *web-app*
+deployment: Deploy → Manage deployments → redeploy the head.)
+
+## 4. Test
+
+From the Telegram chat:
+
 ```
-*(`sendTelegram_` / `resolveEventCodeByPrefix_` / `GH_PAT` are placeholder names — use whatever your existing
-script already defines; `promote` references the same ones.)*
+ingest PPW4 https://fencingtimelive.com/tournaments/eventSchedule/D586C1250E8C41D3BB9B9E5772CB998F cert
+```
+
+You get `⏳ Event Re-ingest Triggered`, then ~1 min later the full `.md` + `.diff.md` staging documents.
+Review them, then `promote PPW4`.
+
+---
+
+## What changed (for verification)
+
+Only two blocks differ from the previous script — everything else is byte-identical.
+
+**(a) `case 'ingest':`** is now overloaded — `ingest <prefix> <url> [cert|prod]` resolves the prefix to the
+canonical event code via `fn_event_status` (same as `status`/`promote`), derives the season-end year from the
+code, and dispatches `ingest-event.yml` with `{event_code, season_end_year, target, url_event}`. A bare
+`ingest` still dispatches `ingest.yml` (emailed-staging path).
+
+**(b) Help → Pipeline** — the `ingest` entry now documents `ingest <prefix> <url> [cert|prod]` plus the
+bare-`ingest` legacy line.
 
 ## Troubleshooting
 
-| Symptom | Cause | Fix |
+| Reply / symptom | Cause | Fix |
 |---|---|---|
-| `dispatch failed (401/403)` | PAT wrong/expired or missing Actions: read+write | Rotate per cicd-operations-manual §1.4 (the dispatch PAT) |
-| `dispatch failed (422)` | `ingest-event.yml` not on the default branch, or a bad input name | Confirm the workflow is on `main`; inputs are `event_code/season_end_year/target/url_event` |
-| `no active-season event matching` | prefix doesn't match an event this season | Check the prefix (same matching as `promote`) |
-| No staging docs arrive | run failed, or `TELEGRAM_*` secrets unset on the runner | Open the Actions run; verify repo secrets `TELEGRAM_BOT_TOKEN/CHAT_ID` |
+| `No matching event on cert` | prefix matched no active-season event | check the prefix (same matching as `status`/`promote`) |
+| `GitHub dispatch failed: ... 401/403` | `GITHUB_PAT` expired / missing Actions: read+write | rotate per [cicd-operations-manual §1.4](cicd-operations-manual.md) |
+| `... 404` | `GITHUB_REPO` wrong | must be `Fencer4Life/spws-automated-ranklist` |
+| `... 422` | `ingest-event.yml` not on the default branch | confirm the workflow is on `main` |
+| No staging docs arrive | the run failed, or `TELEGRAM_*` secrets unset on the runner | open the Actions run; verify repo secrets `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` |
+| Nothing happens | command not reaching the handler | the script overloads the existing `ingest` case — make sure you replaced the **whole** `Code.gs` |
