@@ -10,9 +10,14 @@ Properties** are needed (it reuses `GITHUB_PAT`, `GITHUB_REPO`, `SUPABASE_ACCESS
 `SUPABASE_PROD_REF` that your existing commands already use), and `ingest-event.yml` is already on `main`.
 
 ```
-ingest PPW4 https://fencingtimelive.com/tournaments/eventSchedule/<uuid>  cert
-       └prefix┘ └────────────── FTL eventSchedule URL ───────────────┘  └target (opt, default cert)┘
+ingest PPW5-2025-2026 https://www.fencingtimelive.com/tournaments/eventSchedule/<uuid>  cert
+       └─ full event code ─┘ └──────────────── FTL eventSchedule URL ──────────────┘  └target (opt, default cert)┘
 ```
+
+Use the **full event code** (e.g. `PPW5-2025-2026`), not just `PPW5`. The command dispatches the workflow
+directly (like `promote`) and does **not** call the Supabase Management API, so it never depends on
+`SUPABASE_ACCESS_TOKEN`. Arguments may be on one line or split across lines (newlines count as spaces) — but
+keep it to **one** `ingest` per message.
 
 ---
 
@@ -63,10 +68,10 @@ Review them, then `promote PPW4`.
 
 Only two blocks differ from the previous script — everything else is byte-identical.
 
-**(a) `case 'ingest':`** is now overloaded — `ingest <prefix> <url> [cert|prod]` resolves the prefix to the
-canonical event code via `fn_event_status` (same as `status`/`promote`), derives the season-end year from the
-code, and dispatches `ingest-event.yml` with `{event_code, season_end_year, target, url_event}`. A bare
-`ingest` still dispatches `ingest.yml` (emailed-staging path).
+**(a) `case 'ingest':`** is now overloaded — `ingest <EVENT-CODE> <url> [cert|prod]` derives the season-end
+year from the code and dispatches `ingest-event.yml` with `{event_code, season_end_year, target, url_event}`
+**directly** (no Management API call — independent of `SUPABASE_ACCESS_TOKEN`). A bare `ingest` still dispatches
+`ingest.yml` (emailed-staging path).
 
 **(b) Help → Pipeline** — the `ingest` entry now documents `ingest <prefix> <url> [cert|prod]` plus the
 bare-`ingest` legacy line.
@@ -75,7 +80,8 @@ bare-`ingest` legacy line.
 
 | Reply / symptom | Cause | Fix |
 |---|---|---|
-| `No matching event on cert` | prefix matched no active-season event | check the prefix (same matching as `status`/`promote`) |
+| `Usage: ingest <EVENT-CODE> …` | you gave a bare prefix, not the full code | use the full code, e.g. `PPW5-2025-2026` |
+| `Error: {"message":"Unauthorized"}` | `SUPABASE_ACCESS_TOKEN` Script Property expired/missing — breaks the **data-read** commands (`status`/`season`/…). `ingest`/`promote` don't need it. | set a fresh token: supabase.com/dashboard/account/tokens → add to Script Properties |
 | `GitHub dispatch failed: ... 401/403` | `GITHUB_PAT` expired / missing Actions: read+write | rotate per [cicd-operations-manual §1.4](cicd-operations-manual.md) |
 | `... 404` | `GITHUB_REPO` wrong | must be `Fencer4Life/spws-automated-ranklist` |
 | `... 422` | `ingest-event.yml` not on the default branch | confirm the workflow is on `main` |
