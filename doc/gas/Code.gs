@@ -261,23 +261,21 @@ function handleCommand(props, command, arg) {
       //   ingest            (no args)        → legacy: process already-staged email XMLs.
       var iParts = arg ? arg.split(/\s+/) : [];
       if (iParts.length >= 2 && /^https?:\/\//.test(iParts[1])) {
-        var iPrefix = iParts[0];
+        var iEvent = iParts[0];                                   // full event code, e.g. PPW5-2025-2026
         var iUrl = iParts[1];
         var iTarget = (iParts[2] || 'cert').toLowerCase();
+        var iYm = iEvent.match(/-(\d{4})-(\d{4})$/);             // season-end year = 2nd group
+        if (!iYm) {
+          return '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt; [cert|prod]</pre>\n'
+               + '<i>Use the full event code, e.g. PPW5-2025-2026</i>';
+        }
         if (iTarget !== 'cert' && iTarget !== 'prod') {
-          return '<b>Usage</b>\n<pre>ingest &lt;prefix&gt; &lt;url&gt; [cert|prod]</pre>\n<i>target must be cert or prod</i>';
+          return '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt; [cert|prod]</pre>\n<i>target must be cert or prod</i>';
         }
-        // Resolve the prefix to the canonical event_code on the chosen env (like status/promote).
-        var iRef = (iTarget === 'prod') ? props.getProperty('SUPABASE_PROD_REF') : null;
-        var iStatus = callRpc(null, null, 'fn_event_status', { p_prefix: iPrefix }, iRef);
-        var iEvent = (iStatus && iStatus.event_code) ? iStatus.event_code : null;
-        if (!iEvent) {
-          return '<b>Ingest</b>\n<pre>' + iPrefix + '</pre>\n<i>No matching event on ' + iTarget + '.</i>';
-        }
-        var iYm = iEvent.match(/-(\d{4})$/);
-        var iYear = iYm ? iYm[1] : '';
+        // Dispatch straight to the workflow (like `promote`) — no Management API call,
+        // so it does not depend on SUPABASE_ACCESS_TOKEN. ingest_cli matches the exact code.
         triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'),
-          'ingest-event.yml', { event_code: iEvent, season_end_year: iYear, target: iTarget, url_event: iUrl });
+          'ingest-event.yml', { event_code: iEvent, season_end_year: iYm[2], target: iTarget, url_event: iUrl });
         return '<b>Event Re-ingest Triggered</b>\n'
           + '<pre>' + iEvent + '</pre>\n'
           + 'Target: <b>' + iTarget + '</b>\n'
@@ -439,8 +437,8 @@ function handleCommand(props, command, arg) {
         '',
         '<b><u>Pipeline</u></b>',
         '',
-        '<pre>ingest &lt;prefix&gt; &lt;url&gt; [cert|prod]</pre>',
-        'Re-ingest one event from its FTL URL → staging report (full + diff) to Telegram (default cert)',
+        '<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt; [cert|prod]</pre>',
+        'Re-ingest one event from its FTL URL → staging report (full + diff) to Telegram (default cert). Full code, e.g. PPW5-2025-2026',
         '',
         '<pre>ingest</pre>',
         '(no args) Trigger ingestion from emailed staging files',
