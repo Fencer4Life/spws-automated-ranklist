@@ -345,8 +345,6 @@
   "import_no_github": "GitHub configuration missing (PAT/repo)",
   "import_event_confirm": "Discover and import results for all tournaments?",
   "tooltip_import_event": "Import results from event page",
-  "ingest_sources_title": "Ingest sources (rounds discovered on the event page)",
-  "source_skip": "skip",
-  "source_process": "process",
-  "reingest_event": "Re-ingest event"
+  "skip_ingestion": "skip ingestion",
+  "tooltip_skip_ingestion": "Skip this round's FTL source on the next re-ingest"
 }
