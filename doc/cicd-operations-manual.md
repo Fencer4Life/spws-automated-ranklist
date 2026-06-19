@@ -502,7 +502,8 @@ The Telegram bot (`@spws_ranklist_bot`) is the primary admin interface for event
 ### Event lifecycle flow
 
 ```
-Ingest XML → /status → /complete → /promote → PROD + seed export
+/ingest <prefix> <url> → CERT re-ingest + staging to Telegram → review → /promote → PROD + seed export
+   (or) Ingest XML → /status → /complete → /promote → PROD + seed export
                          ↕           ↕
                       /rollback    /delete
 ```
@@ -515,6 +516,7 @@ Ingest XML → /status → /complete → /promote → PROD + seed export
 | `/complete <event>` | Mark event COMPLETED on CERT | CERT DB only |
 | `/rollback <event>` | Delete all tournaments + results, reset to PLANNED | CERT DB only |
 | `/delete <event>` | Rollback **and** delete the `tbl_event` row itself (use for phantom / erroneous events) | CERT DB only |
+| `/ingest <prefix> <url> [cert\|prod]` | Re-ingest the event from its FTL URL (keep-rule + `url_results`); staging report(s) sent back to Telegram | Dispatches `ingest-event.yml` (default CERT). Setup: [telegram-ingest-command-gas.md](telegram-ingest-command-gas.md) |
 | `/promote <event>` | Copy CERT event data to PROD | PROD updated + **seed export to git** (ADR-036) |
 | `/results <event>` | Show top 3 per tournament | Read-only |
 | `/pending <event>` | Show PENDING match candidates | Read-only |

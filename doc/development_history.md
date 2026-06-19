@@ -932,13 +932,25 @@ logic was rewritten).
   + pgTAP 46.1–46.5. (Standalone tool's `ophardt` discovery branch deferred — `fencingworldwide.com` event
   index needs a parser + fixture; the pipeline already covers ophardt url_results during ingestion.)
 
+- **Step H — `ingest <prefix> <url>` Telegram loop + staging-to-Telegram (N15, ADR-025/059 amendments)** —
+  2026-06-19: closed the operator loop **ingest on CERT → review staging on the phone → promote**. Reused the
+  existing GAS `getUpdates`→`workflow_dispatch`+PAT path (the same one `promote` uses) — a new Telegram
+  lifecycle command `ingest <prefix> <url> [cert|prod]` (18 commands) dispatches `ingest-event.yml`. The
+  from-URL ingest gained `url_event_override` (admin-managed write of `tbl_event.url_event` via new
+  `db_connector.set_event_url_event`), `send_telegram`, and `md_target`; after the POST_COMMIT staging fire it
+  sends the full `.md` + `.diff.md` to Telegram via ADR-059's `send_staging_report`/`send_document`
+  (`StagingFormatter` now stashes the rendered bytes on ctx + honours `md_target` for Storage). `ingest-event.yml`
+  gained an optional `url_event` input + `--send-telegram --md-target storage`. No webhook, no new ADR — pure
+  reuse. The external GAS snippet is delivered as `doc/telegram-ingest-command-gas.md` (manual paste). Tests
+  N15.1–N15.4 (`test_ingest_telegram_staging.py`). `promote` unchanged.
+
 **Tests.** pgTAP 577 → 588 (unchanged in Step E — Python-only); pytest +49 (M1–M5) +8 (Step A, N7.1–N7.8)
 +6 (Step B, N8.1–N8.6) +8 (Step C, N9.1–N9.7 + N5.7) +7 (Step D, N10.1–N10.7) +N11.1–N11.7 (Step E) +N12.1–N12.7 (Step E.2 richness)
 across `test_rule_engine`, `test_pipeline_core`, `test_pipeline_plugins`, `test_resolve_fencers`,
 `test_recompute`, `test_recompute_worker`, `test_commit_persist`, `test_ingest_cli_flow`,
 `test_recompute_persist`, `test_post_commit_chain`, `test_staging_report`, `test_scrapers`;
-Step F (N13.1–N13.6) + pgTAP 45.1–45.6; Step G (N14.4–N14.8) + pgTAP 46.1–46.5.
-Final: pytest 930, vitest 375, pgTAP 599.
+Step F (N13.1–N13.6) + pgTAP 45.1–45.6; Step G (N14.4–N14.8) + pgTAP 46.1–46.5; Step H (N15.1–N15.4, Python-only).
+Final: pytest 936, vitest 375, pgTAP 599.
 
 **ADRs.** ADR-070–074 Accepted; ADR-075 Accepted (staging report — fifth Context channel + terminal
 formatter); ADR-076 Accepted (overlap-clobber: pools-only discard + one-listing-per-category keep-rule +

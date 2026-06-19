@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from types import SimpleNamespace
 
 from python.pipeline.core.contract import Context, PluginKind, Services
+from python.pipeline.md_writer import write_for_event  # module-level (N15: md_target routing + test patch seam)
 from python.pipeline.plugins.base import BasePlugin
 
 # Reused OLD pure helpers (DB-read / pure — no pctx). Imported at call sites in
@@ -559,15 +560,19 @@ class StagingFormatter(BasePlugin):
         event = ctx.get("event") or {}
         event_code = event.get("txt_code") or ctx.params.get("event_code") or "EVENT"
         staging_dir = (svc.config or {}).get("staging_dir")
+        # N15: md_target routes where the full report lands. Default local (back-compat);
+        # CERT/PROD runs pass "storage" so the .md survives the ephemeral runner + is
+        # browsable. The raw supabase client (for storage upload) lives on the connector.
+        md_target = (svc.config or {}).get("md_target", "local")
         stamp = _utc_stamp()
         db = svc.db
+        sb = getattr(db, "_sb", None)
 
         # --- the .md (template) ---
-        from python.pipeline.md_writer import write_for_event
         md = render_staging_md(event_code, db, reports, ctx.get("_schedule_skips"), stamp,
                                source_decisions=ctx.get("_source_decisions"))
-        write_for_event(event_code, md, target="local",
-                        staging_dir=staging_dir, timestamp=stamp)
+        write_for_event(event_code, md, target=md_target,
+                        staging_dir=staging_dir, supabase_client=sb, timestamp=stamp)
 
         # --- the .diff.md (3-way diff, reused verbatim) ---
         from python.pipeline.three_way_diff import (
@@ -590,5 +595,11 @@ class StagingFormatter(BasePlugin):
         from pathlib import Path
         write_diff(event_code, diff_md,
                    Path(staging_dir) if staging_dir else None, timestamp=stamp)
+
+        # N15: expose the rendered bytes so the caller (ingest_event_from_url) can send
+        # the exact full + diff documents to Telegram without re-rendering.
+        ctx.data["_rendered_md"] = md
+        ctx.data["_rendered_diff"] = diff_md
+        ctx.data["_staging_stamp"] = stamp
 
         self.report(ctx, Section.REACTION, staging_md=True, staging_diff=True, timestamp=stamp)

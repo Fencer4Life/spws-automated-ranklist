@@ -73,6 +73,17 @@ class DbConnector:
             return resp.data[0]
         return None
 
+    def set_event_url_event(self, id_event: int, url_event: str) -> None:
+        """Persist an admin-supplied event URL to tbl_event.url_event (N15 — the
+        Telegram `ingest <prefix> <url>` command provides the FTL eventSchedule URL).
+        Admin-managed write; url_event stays operator-entered, never auto-scraped."""
+        (
+            self._sb.table("tbl_event")
+            .update({"url_event": url_event})
+            .eq("id_event", id_event)
+            .execute()
+        )
+
     def set_event_ingest_sources(self, id_event: int, sources: list) -> None:
         """Persist the from-URL ingest's discovered rounds + status for the event
         accordion (N13.4). Display-only JSONB; never enters scored tables."""

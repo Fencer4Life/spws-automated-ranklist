@@ -364,8 +364,34 @@ def _run_parsed_through_flow(parsed, event_code, season_end_year, overrides, db,
     return ctx
 
 
+def _send_staging_via_telegram(notifier, event_code, post_ctx, *, n_tournaments=None):
+    """N15 — send the rendered staging report(s) to Telegram (reuses ADR-059
+    send_staging_report / send_document). `post_ctx` is the POST_COMMIT Context the
+    StagingFormatter stashed `_rendered_md` / `_rendered_diff` on. Best-effort: a
+    Telegram hiccup never fails the (already-committed) ingest."""
+    if notifier is None or post_ctx is None:
+        return
+    md = post_ctx.get("_rendered_md")
+    diff = post_ctx.get("_rendered_diff")
+    try:
+        if md:
+            extras = {"reason": "cert-reingest",
+                      "promote_hint": f"reply `promote {event_code.split('-')[0]}` to push to PROD"}
+            if n_tournaments is not None:
+                extras["tournament_count"] = n_tournaments
+            notifier.send_staging_report(
+                event_code=event_code, md_bytes=md.encode("utf-8"),
+                kind="full", extras=extras)
+        if diff:
+            notifier.send_document(
+                diff.encode("utf-8"), f"{event_code}-diff.md",
+                f"🔀 <b>{event_code}</b> · 3-way diff")
+    except Exception as e:                       # never fail a committed ingest on delivery
+        print(f"  (Telegram staging send skipped: {e})")
+
+
 def _fire_staging_report(event, contexts, db, *, schedule_skips=None, notifier=None,
-                         source_decisions=None):
+                         source_decisions=None, md_target="local"):
     """Event-scoped POST_COMMIT fire (ADR-075) — render the per-event review files.
 
     The per-bracket runs each accumulated a `report` (the fifth Context channel);
@@ -388,7 +414,9 @@ def _fire_staging_report(event, contexts, db, *, schedule_skips=None, notifier=N
         ctx.data["_schedule_skips"] = schedule_skips
     if source_decisions:
         ctx.data["_source_decisions"] = source_decisions
-    svc = Services(db=db, config={"event_code": event.get("txt_code")}, notifier=notifier)
+    svc = Services(db=db,
+                   config={"event_code": event.get("txt_code"), "md_target": md_target},
+                   notifier=notifier)
     return run_flow(
         FlowParams(Flow.POST_COMMIT, id_event=event.get("id_event")),
         ctx=ctx, svc=svc, react=False,
@@ -505,6 +533,9 @@ def ingest_event_from_url(
     db=None,
     notifier=None,
     replace: bool = False,
+    url_event_override: str | None = None,
+    send_telegram: bool = False,
+    md_target: str = "local",
 ) -> list:
     """NEW pipeline ingest of a whole SPWS FTL event from its `url_event`
     (eventSchedule) — the URL entry the engine previously lacked (§3.2 gap).
@@ -534,7 +565,14 @@ def ingest_event_from_url(
     event = db.find_event_by_code(event_code)
     if event is None:
         raise ValueError(f"Event {event_code!r} not found in tbl_event.")
-    url_event = event.get("url_event") or event.get("url_results")
+    # N15: the Telegram `ingest <prefix> <url>` command supplies the FTL URL. It is an
+    # admin-managed write to tbl_event.url_event (operator-entered, never auto-scraped),
+    # then we ingest from it.
+    if url_event_override:
+        if hasattr(db, "set_event_url_event"):
+            db.set_event_url_event(event["id_event"], url_event_override)
+        event["url_event"] = url_event_override
+    url_event = url_event_override or event.get("url_event") or event.get("url_results")
     if not url_event:
         raise ValueError(f"Event {event_code!r} has no url_event populated.")
 
@@ -605,8 +643,11 @@ def ingest_event_from_url(
         except Exception as e:  # never fail an ingest on the display-data write
             print(f"  (ingest-sources persist skipped: {e})")
 
-    _fire_staging_report(event, contexts, db, schedule_skips=skipped,
-                         source_decisions=sources)  # ADR-075
+    post = _fire_staging_report(event, contexts, db, schedule_skips=skipped,
+                                source_decisions=sources, notifier=notifier,
+                                md_target=md_target)  # ADR-075
+    if send_telegram:
+        _send_staging_via_telegram(notifier, event_code, post, n_tournaments=len(contexts))
     return contexts
 
 
@@ -757,6 +798,13 @@ def main() -> None:
     parser.add_argument("--replace", action="store_true",
                         help="With --flow --from-url: wipe the event's existing "
                              "results+tournaments before re-ingesting.")
+    parser.add_argument("--send-telegram", action="store_true",
+                        help="With --flow --from-url: send the staging report(s) "
+                             "(full + diff) to Telegram (ADR-059 reuse).")
+    parser.add_argument("--md-target", choices=["local", "storage", "both"],
+                        default="local",
+                        help="Where the staging .md lands: local FS (default), the "
+                             "Supabase Storage bucket, or both.")
     # Phase 2 (ADR-050) draft-management commands. Mutually exclusive with
     # each other; do not require --season-end-year.
     draft_group = parser.add_mutually_exclusive_group()
@@ -807,6 +855,9 @@ def main() -> None:
                     season_end_year=args.season_end_year,
                     notifier=notifier,
                     replace=args.replace,
+                    url_event_override=args.url_event,
+                    send_telegram=args.send_telegram,
+                    md_target=args.md_target,
                 )
             else:
                 if not args.path:
