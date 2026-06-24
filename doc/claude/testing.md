@@ -35,6 +35,32 @@ python -m pipeline.ingest_cli commit-draft --run-id <UUID>
 make -C doc/rules                                          # build doc/rules/*.html from markdown
 ```
 
+## Linting & type-checking (LSP)
+
+Python uses an LSP/static-analysis stack (installed 2026-06-24, enforced 2026-06-24):
+**ruff** (lint + format) and **basedpyright** (type-checker). Both are `dev` optional-deps
+in `pyproject.toml`; config lives in `[tool.ruff]`/`[tool.ruff.lint]` and `[tool.basedpyright]`.
+Editor wiring is in `.vscode/settings.json` (ruff = formatter, format-on-save + organize-imports;
+basedpyright in `standard` mode) and `.vscode/extensions.json`.
+
+```bash
+source .venv/bin/activate
+ruff check python/            # lint  (BLOCKS CI)
+ruff format python/           # auto-format
+ruff format --check python/   # format gate (BLOCKS CI)
+basedpyright python/          # type-check (non-blocking report for now)
+```
+
+- **ruff is clean and ENFORCED in CI** — the `ruff check` and `ruff format --check` steps in
+  `.github/workflows/ci.yml` block the build. Keep `ruff check python/` at zero findings.
+- **Line length** is owned by the formatter (E501 is disabled in lint); `ruff format` wraps to
+  `line-length = 100` and `format --check` enforces it. Don't hand-wrap strings to satisfy E501.
+- **basedpyright** is still a non-blocking report (~268 annotation-level findings). Fix genuine
+  None-safety / unbound / argument-type bugs it flags; the rest is legacy annotation debt paid
+  down incrementally. Remove its `continue-on-error` in CI once clean.
+- Protect deliberate re-exports (`# noqa: F401` or `__all__`) and order-dependent imports
+  (`# noqa: E402`) — `ruff --fix` will otherwise strip them.
+
 ## TDD Workflow (mandatory)
 
 Every implementation task follows this strict order:
