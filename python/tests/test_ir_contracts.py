@@ -93,7 +93,7 @@ class TestFTLIRContract:
         # Build a synthetic dataset including an excluded entry.
         data = [
             {"id": "AAA", "place": "1", "excluded": False, "name": "ALPHA", "country": "POL"},
-            {"id": "BBB", "place": "2", "excluded": True,  "name": "BETA",  "country": "POL"},
+            {"id": "BBB", "place": "2", "excluded": True, "name": "BETA", "country": "POL"},
             {"id": "CCC", "place": "3", "excluded": False, "name": "GAMMA", "country": "POL"},
         ]
         pt = parse_json(data)
@@ -207,11 +207,11 @@ class TestFileImportIRContract:
         from python.scrapers.file_import import parse
 
         csv_bytes = (
-            "Place,Name,Club(s),Division,Country\n"
-            "1,KOWAL Anna,KS Foo,V2,POL\n"
-            "2,NOWAK Beata,KS Bar,V2,POL\n"
-            "3,STEINER Eva,KS Baz,V2,GER\n"
-        ).encode("utf-8")
+            b"Place,Name,Club(s),Division,Country\n"
+            b"1,KOWAL Anna,KS Foo,V2,POL\n"
+            b"2,NOWAK Beata,KS Bar,V2,POL\n"
+            b"3,STEINER Eva,KS Baz,V2,GER\n"
+        )
         pt = parse(csv_bytes, filename="results.csv")
 
         assert isinstance(pt, ParsedTournament)
@@ -225,10 +225,7 @@ class TestFileImportIRContract:
         """file_import_ir.2: CSV path generates synthetic IDs prefixed with `file_import:`."""
         from python.scrapers.file_import import parse
 
-        csv_bytes = (
-            "Place,Name,Club(s),Division,Country\n"
-            "1,KOWAL Anna,,V2,POL\n"
-        ).encode("utf-8")
+        csv_bytes = b"Place,Name,Club(s),Division,Country\n1,KOWAL Anna,,V2,POL\n"
         pt = parse(csv_bytes, filename="results.csv")
 
         first = pt.results[0]
@@ -237,6 +234,7 @@ class TestFileImportIRContract:
     def test_parse_unsupported_extension_raises(self):
         """file_import_ir.3: Unsupported extension still raises ValueError as the legacy path does."""
         import pytest as _pytest
+
         from python.scrapers.file_import import parse
 
         with _pytest.raises(ValueError):
@@ -278,6 +276,7 @@ class TestFencingTimeXMLIRContract:
     def test_parse_birth_date_from_date_naissance(self):
         """ftxml_ir.3: birth_date populated from DateNaissance attribute (DD.MM.YYYY)."""
         import datetime
+
         from python.scrapers.fencingtime_xml import parse
 
         pt = parse(self.SINGLE_FIXTURE.read_bytes())
@@ -290,12 +289,13 @@ class TestFencingTimeXMLIRContract:
     def test_parse_metadata_weapon_gender_date(self):
         """ftxml_ir.4: weapon, gender, parsed_date extracted from root attributes."""
         import datetime
+
         from python.scrapers.fencingtime_xml import parse
 
         pt = parse(self.SINGLE_FIXTURE.read_bytes())
 
-        assert pt.weapon == "EPEE"          # Arme="E" -> EPEE
-        assert pt.gender == "M"             # Sexe="M"
+        assert pt.weapon == "EPEE"  # Arme="E" -> EPEE
+        assert pt.gender == "M"  # Sexe="M"
         assert pt.parsed_date == datetime.date(2026, 2, 21)  # Date="21.02.2026"
 
     def test_parse_category_hint_from_altname(self):
@@ -357,9 +357,7 @@ class TestFourFenceIRContract:
         pt = parse_html(html)
 
         for r in pt.results:
-            assert r.fencer_country is None, (
-                f"expected None country, got {r.fencer_country!r}"
-            )
+            assert r.fencer_country is None, f"expected None country, got {r.fencer_country!r}"
 
     def test_parse_html_results_well_formed(self):
         """fourfence_ir.4: each result has non-empty name + valid place."""
@@ -452,21 +450,30 @@ class TestEvfApiIRContract:
 
     SAMPLE_DATA = [
         {
-            "fencer_surname": "KOWAL", "fencer_firstname": "Anna",
-            "country_abbr": "POL", "place": 1,
-            "fencer_dob": "1980-05-12", "total_points": 158.6,
+            "fencer_surname": "KOWAL",
+            "fencer_firstname": "Anna",
+            "country_abbr": "POL",
+            "place": 1,
+            "fencer_dob": "1980-05-12",
+            "total_points": 158.6,
             "weapon_abbr": "WE",
         },
         {
-            "fencer_surname": "STEINER", "fencer_firstname": "Eva",
-            "country_abbr": "GER", "place": 2,
-            "fencer_dob": "1975-11-03", "total_points": 145.0,
+            "fencer_surname": "STEINER",
+            "fencer_firstname": "Eva",
+            "country_abbr": "GER",
+            "place": 2,
+            "fencer_dob": "1975-11-03",
+            "total_points": 145.0,
             "weapon_abbr": "WE",
         },
         {
-            "fencer_surname": "NOWAK", "fencer_firstname": "Beata",
-            "country_abbr": "POL", "place": 3,
-            "fencer_dob": "", "total_points": 130.5,  # missing DOB
+            "fencer_surname": "NOWAK",
+            "fencer_firstname": "Beata",
+            "country_abbr": "POL",
+            "place": 3,
+            "fencer_dob": "",
+            "total_points": 130.5,  # missing DOB
             "weapon_abbr": "WE",
         },
     ]
@@ -486,11 +493,13 @@ class TestEvfApiIRContract:
     def test_parse_results_metadata_passthrough(self):
         """evf_ir.2: weapon, gender, category_hint, parsed_date passed in by orchestrator land in IR."""
         import datetime
+
         from python.scrapers.evf_results import parse_results
 
         pt = parse_results(
             self.SAMPLE_DATA,
-            weapon="EPEE", gender="F",
+            weapon="EPEE",
+            gender="F",
             category_hint="V2",
             parsed_date=datetime.date(2026, 4, 18),
             source_url="https://api.veteransfencing.eu/fe/results/301",
@@ -504,6 +513,7 @@ class TestEvfApiIRContract:
     def test_parse_results_birth_date_from_dob(self):
         """evf_ir.3: fencer_dob ISO string -> birth_date datetime.date; missing -> None."""
         import datetime
+
         from python.scrapers.evf_results import parse_results
 
         pt = parse_results(self.SAMPLE_DATA)
@@ -532,10 +542,7 @@ class TestEvfApiIRContract:
 class TestOphardtIRContract:
     """Ophardt parser must emit ParsedTournament with native /athlete/{id}/ IDs."""
 
-    FIXTURE = (
-        FIXTURES / "ophardt"
-        / "results_903540-2024_munich_foil_men_v2.html"
-    )
+    FIXTURE = FIXTURES / "ophardt" / "results_903540-2024_munich_foil_men_v2.html"
 
     def test_parse_results_returns_parsed_tournament(self):
         """ophardt_ir.1: parse_results returns ParsedTournament source_kind=OPHARDT_HTML."""

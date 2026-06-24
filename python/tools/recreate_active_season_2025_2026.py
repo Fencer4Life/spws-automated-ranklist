@@ -22,22 +22,19 @@ import argparse
 import sys
 from pathlib import Path
 
-import io
-
 from python.pipeline.db_connector import create_db_connector
 from python.pipeline.draft_store import DraftStore
 from python.pipeline.review_cli import Fetcher, ReviewSession, _annotate_parsed
 from python.pipeline.types import HaltReason
 from python.tools.phase5_runner import (
-    _fetch_event_meta,
+    _check_pool_round_count,
     _coerce_date,
-    _stamp_event_metadata,
     _consolidate_duplicate_codes,
     _drop_empty_tournament_drafts,
-    _check_pool_round_count,
+    _fetch_event_meta,
     _multi_summary_md,
+    _stamp_event_metadata,
 )
-
 
 # ---------------------------------------------------------------------------
 # Source paths (relative to repo root)
@@ -95,11 +92,15 @@ def _ppw1_xlsx_files() -> list[Path]:
 # match by substring rather than exact token.
 # ---------------------------------------------------------------------------
 
+
 def _parse_ppw1_xlsx(file_path: Path):
     """Read sheet `PP1` of a SPWS PPW workbook → ParsedTournament IR."""
     import openpyxl
     from python.pipeline.ir import (
-        ParsedResult, ParsedTournament, SourceKind, make_synthetic_id,
+        ParsedResult,
+        ParsedTournament,
+        SourceKind,
+        make_synthetic_id,
     )
 
     wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
@@ -134,13 +135,13 @@ def _parse_ppw1_xlsx(file_path: Path):
             col_country = country_idx
             break
 
-    if header_idx is None:
+    if header_idx is None or col_place is None or col_name is None:
         raise ValueError(f"{file_path.name}: PP1 sheet has no recognizable header")
 
     # ADR-066 walkover: pre-scan for non-empty fencer-name rows.
     # If exactly one such row has no place, treat it as place=1.
     candidates: list[tuple[int, tuple, str]] = []  # (row_index, row, name)
-    for i, row in enumerate(rows[header_idx + 1:], start=1):
+    for i, row in enumerate(rows[header_idx + 1 :], start=1):
         if col_place >= len(row) or col_name >= len(row):
             continue
         name_val = row[col_name]
@@ -168,14 +169,19 @@ def _parse_ppw1_xlsx(file_path: Path):
         country = None
         if col_country is not None and col_country < len(row) and row[col_country]:
             country = str(row[col_country]).strip() or None
-        parsed_results.append(ParsedResult(
-            source_row_id=make_synthetic_id(
-                SourceKind.FILE_IMPORT, row_index=i, place=place, name=name,
-            ),
-            fencer_name=name,
-            place=place,
-            fencer_country=country,
-        ))
+        parsed_results.append(
+            ParsedResult(
+                source_row_id=make_synthetic_id(
+                    SourceKind.FILE_IMPORT,
+                    row_index=i,
+                    place=place,
+                    name=name,
+                ),
+                fencer_name=name,
+                place=place,
+                fencer_country=country,
+            )
+        )
 
     return ParsedTournament(
         source_kind=SourceKind.FILE_IMPORT,
@@ -190,24 +196,26 @@ def _parse_ppw1_xlsx(file_path: Path):
 # Per-event ingestion driver
 # ---------------------------------------------------------------------------
 
+
 def _iter_ppw1(fetcher: Fetcher):
     files = _ppw1_xlsx_files()
     if len(files) != 30:
-        raise ValueError(
-            f"PPW1 expected 30 ranking XLSX files, found {len(files)} in {XLS_DIR}"
-        )
+        raise ValueError(f"PPW1 expected 30 ranking XLSX files, found {len(files)} in {XLS_DIR}")
     for f in files:
         weapon, gender, age = _xlsx_metadata_from_filename(f.name)
         parsed = _parse_ppw1_xlsx(f)
         annotated = _annotate_parsed(
-            parsed, weapon=weapon, gender=gender,
-            age_category=age, ftl_source_name=f.name,
+            parsed,
+            weapon=weapon,
+            gender=gender,
+            age_category=age,
+            ftl_source_name=f.name,
         )
         yield annotated, f.name
 
 
-import re as _re_xml
-import dataclasses as _dc_xml
+import dataclasses as _dc_xml  # noqa: E402  (deliberate local import near use)
+import re as _re_xml  # noqa: E402
 
 _COMPOUND_VCAT_RE = _re_xml.compile(r"^V\d(V\d)+$", _re_xml.IGNORECASE)
 
@@ -224,7 +232,7 @@ def _normalize_compound_vcat(parsed):
         try:
             return _dc_xml.replace(parsed, category_hint=None)
         except (TypeError, ValueError):
-            setattr(parsed, "category_hint", None)
+            parsed.category_hint = None
     return parsed
 
 
@@ -240,6 +248,7 @@ def _split_mixed_gender_xml(file_path: Path):
     Pipeline can then apply ADR-056 BY-derivation per fencer for V-cat.
     """
     import xml.etree.ElementTree as ET
+
     from python.scrapers.fencingtime_xml import parse as ft_xml_parse
 
     data = file_path.read_bytes()
@@ -292,8 +301,11 @@ def _iter_xml_dir(fetcher: Fetcher, xml_dir: Path):
     for f in files:
         for parsed in _split_mixed_gender_xml(f):
             parsed = _normalize_compound_vcat(parsed)
-            label = f.name if getattr(parsed, "gender", None) in (None,) else \
-                    f"{f.name} (split→{parsed.gender})"
+            label = (
+                f.name
+                if getattr(parsed, "gender", None) in (None,)
+                else f"{f.name} (split→{parsed.gender})"
+            )
             yield parsed, label
 
 
@@ -323,6 +335,7 @@ def _dedupe_result_drafts(db, run_id: str) -> int:
     refs (CERT/PROD). Same SQL both ways.
     """
     import os
+
     sql = f"""
 WITH ranked AS (
   SELECT id_result_draft,
@@ -344,10 +357,23 @@ SELECT COUNT(*) FROM del;
     supa_url = os.environ.get("SUPABASE_URL", "")
     if "127.0.0.1" in supa_url or "localhost" in supa_url:
         import subprocess
+
         r = subprocess.run(
-            ['docker', 'exec', '-i', 'supabase_db_SPWSranklist',
-             'psql', '-U', 'postgres', '-tA', '-c', sql],
-            capture_output=True, text=True, timeout=60,
+            [
+                "docker",
+                "exec",
+                "-i",
+                "supabase_db_SPWSranklist",
+                "psql",
+                "-U",
+                "postgres",
+                "-tA",
+                "-c",
+                sql,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
         )
         if r.returncode != 0:
             print(f"  ⚠ dedupe failed: {r.stderr[-200:]}", flush=True)
@@ -357,29 +383,29 @@ SELECT COUNT(*) FROM del;
         # Hosted Supabase (CERT/PROD): route through Management API
         # (same channel python/pipeline/promote.py uses for cross-env SQL).
         import re
+
         import httpx
+
         m = re.match(r"https://([a-z0-9]+)\.supabase\.co", supa_url)
         if not m:
-            print(f"  ⚠ dedupe skipped: cannot parse ref from "
-                  f"SUPABASE_URL={supa_url!r}", flush=True)
+            print(
+                f"  ⚠ dedupe skipped: cannot parse ref from SUPABASE_URL={supa_url!r}", flush=True
+            )
             return 0
         ref = m.group(1)
         token = os.environ.get("SUPABASE_ACCESS_TOKEN")
         if not token:
-            print("  ⚠ dedupe skipped: SUPABASE_ACCESS_TOKEN not set",
-                  flush=True)
+            print("  ⚠ dedupe skipped: SUPABASE_ACCESS_TOKEN not set", flush=True)
             return 0
         try:
             resp = httpx.post(
                 f"https://api.supabase.com/v1/projects/{ref}/database/query",
-                headers={"Authorization": f"Bearer {token}",
-                         "Content-Type": "application/json"},
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
                 json={"query": sql},
                 timeout=30,
             )
             if resp.status_code >= 400:
-                print(f"  ⚠ dedupe failed (HTTP {resp.status_code}): "
-                      f"{resp.text[:200]}", flush=True)
+                print(f"  ⚠ dedupe failed (HTTP {resp.status_code}): {resp.text[:200]}", flush=True)
                 return 0
             data = resp.json()
             # Management API returns list of rows; "SELECT COUNT(*) FROM del"
@@ -389,17 +415,20 @@ SELECT COUNT(*) FROM del;
             print(f"  ⚠ dedupe failed: {e}", flush=True)
             return 0
     if n:
-        print(f"  ↻ deduped {n} duplicate (id_fencer, id_tournament_draft) "
-              f"result_drafts (kept best place per fencer)", flush=True)
+        print(
+            f"  ↻ deduped {n} duplicate (id_fencer, id_tournament_draft) "
+            f"result_drafts (kept best place per fencer)",
+            flush=True,
+        )
     return n
 
 
 EVENT_HANDLERS = {
-    "PPW1-2025-2026": ("xlsx",  None),
-    "PPW2-2025-2026": ("url",   None),
-    "PPW3-2025-2026": ("url",   None),
-    "PPW4-2025-2026": ("xml",   PPW4_XML_DIR),
-    "PPW5-2025-2026": ("xml",   PPW5_XML_DIR),
+    "PPW1-2025-2026": ("xlsx", None),
+    "PPW2-2025-2026": ("url", None),
+    "PPW3-2025-2026": ("url", None),
+    "PPW4-2025-2026": ("xml", PPW4_XML_DIR),
+    "PPW5-2025-2026": ("xml", PPW5_XML_DIR),
 }
 
 CHRONO_ORDER = [
@@ -420,21 +449,33 @@ def _populate_tournament_urls(event_code: str) -> None:
     import os as _os
     import subprocess as _subprocess
     import sys as _sys
+
     print(f"  populating tournament result URLs for {event_code}...", flush=True)
     pop = _subprocess.run(
-        [_sys.executable, "-m", "python.tools.populate_tournament_urls",
-         "--event-code", event_code,
-         "--supabase-url", _os.environ.get("SUPABASE_URL", "http://127.0.0.1:54321"),
-         "--supabase-key", _os.environ.get("SUPABASE_KEY", "")],
-        capture_output=True, text=True,
+        [
+            _sys.executable,
+            "-m",
+            "python.tools.populate_tournament_urls",
+            "--event-code",
+            event_code,
+            "--supabase-url",
+            _os.environ.get("SUPABASE_URL", "http://127.0.0.1:54321"),
+            "--supabase-key",
+            _os.environ.get("SUPABASE_KEY", ""),
+        ],
+        capture_output=True,
+        text=True,
     )
     if pop.stdout:
         print(pop.stdout, flush=True)
     if pop.stderr:
         print(pop.stderr, flush=True)
     if pop.returncode != 0:
-        print(f"  ⚠ populate_tournament_urls exited {pop.returncode} "
-              f"(commit already succeeded; URLs may need manual fill)", flush=True)
+        print(
+            f"  ⚠ populate_tournament_urls exited {pop.returncode} "
+            f"(commit already succeeded; URLs may need manual fill)",
+            flush=True,
+        )
 
 
 def _post_commit_validate_counts(db, id_event: int, *, season_end_year: int):
@@ -446,10 +487,11 @@ def _post_commit_validate_counts(db, id_event: int, *, season_end_year: int):
     everyone enters the ranklist so int_participant_count == per-V-cat bracket
     size. (International events use ADR-038 full-field counts and must not be
     validated this way.)"""
-    from python.scrapers.ftl_auth import get_authed_ftl_client
     from python.pipeline.participant_count_validation import (
         validate_event_participant_counts,
     )
+    from python.scrapers.ftl_auth import get_authed_ftl_client
+
     rows = (
         db._sb.table("tbl_tournament")
         .select("txt_code,enum_age_category,url_results,int_participant_count")
@@ -460,11 +502,14 @@ def _post_commit_validate_counts(db, id_event: int, *, season_end_year: int):
         with get_authed_ftl_client() as client:
             vfetcher = Fetcher(http_client=client)
             return validate_event_participant_counts(
-                rows, vfetcher, season_end_year=season_end_year,
+                rows,
+                vfetcher,
+                season_end_year=season_end_year,
             )
     except Exception as e:  # noqa: BLE001 — fetcher/auth unavailable → skip, warn
-        print(f"  ⚠ participant-count URL validation skipped "
-              f"(fetcher unavailable): {e}", flush=True)
+        print(
+            f"  ⚠ participant-count URL validation skipped (fetcher unavailable): {e}", flush=True
+        )
         return []
 
 
@@ -478,8 +523,11 @@ def ingest_event(event_code: str, *, db, do_commit: bool) -> tuple[str | None, b
     fetcher = Fetcher()
     store = DraftStore(db)
     session = ReviewSession(
-        event_code=event_code, db=db, draft_store=store,
-        season_end_year=2026, fetcher=fetcher,
+        event_code=event_code,
+        db=db,
+        draft_store=store,
+        season_end_year=2026,
+        fetcher=fetcher,
     )
 
     event_meta = _fetch_event_meta(db, event_code)
@@ -493,6 +541,7 @@ def ingest_event(event_code: str, *, db, do_commit: bool) -> tuple[str | None, b
         derive_tourn_type_from_event_code,
         gate_below_min_participants,
     )
+
     id_season = event_meta["_full_row"]["id_season"]
     tourn_type = derive_tourn_type_from_event_code(event_code)
 
@@ -516,27 +565,38 @@ def ingest_event(event_code: str, *, db, do_commit: bool) -> tuple[str | None, b
     drafted = 0
 
     print(f"\n=== {event_code} ({handler_kind}) ===", flush=True)
-    print(f"  organizer={event_meta['organizer_code']} dt_start={event_meta['dt_start']} "
-          f"city={city_default!r}", flush=True)
+    print(
+        f"  organizer={event_meta['organizer_code']} dt_start={event_meta['dt_start']} "
+        f"city={city_default!r}",
+        flush=True,
+    )
 
     for i, (parsed, label) in enumerate(src_iter, start=1):
         parsed = _stamp_event_metadata(
-            parsed, parsed_date=parsed_date,
+            parsed,
+            parsed_date=parsed_date,
             country_default=country_default,
             city_default=city_default,
         )
         n_results = len(getattr(parsed, "results", []) or [])
         skip, reason = gate_below_min_participants(
-            db, id_season, tourn_type, n_results,
+            db,
+            id_season,
+            tourn_type,
+            n_results,
         )
         if skip:
             print(f"  [{i:3d}] {label} — {reason}, skip", flush=True)
             ctxs.append((1, parsed, None, reason))
             continue
-        print(f"  [{i:3d}] {label} — {getattr(parsed, 'weapon', '?')}/"
-              f"{getattr(parsed, 'gender', '?')}/"
-              f"{getattr(parsed, 'category_hint', getattr(parsed, 'age_category', '?'))} "
-              f"n={n_results}", flush=True, end=" ")
+        print(
+            f"  [{i:3d}] {label} — {getattr(parsed, 'weapon', '?')}/"
+            f"{getattr(parsed, 'gender', '?')}/"
+            f"{getattr(parsed, 'category_hint', getattr(parsed, 'age_category', '?'))} "
+            f"n={n_results}",
+            flush=True,
+            end=" ",
+        )
         try:
             ctx, _ = session.run_iteration(parsed, staging_dir=Path("doc/staging"))
             ctxs.append((1, parsed, ctx, None))
@@ -544,12 +604,14 @@ def ingest_event(event_code: str, *, db, do_commit: bool) -> tuple[str | None, b
                 halts += 1
                 print(f"HALT @ {ctx.halted_at_stage}: {ctx.halt_detail}", flush=True)
                 if getattr(ctx, "is_pool_round", False):
-                    pool_brackets.append({
-                        "weapon": parsed.weapon or "?",
-                        "name": label,
-                        "url": getattr(parsed, "source_url", None),
-                        "reason": getattr(ctx, "halt_detail", "") or "",
-                    })
+                    pool_brackets.append(
+                        {
+                            "weapon": parsed.weapon or "?",
+                            "name": label,
+                            "url": getattr(parsed, "source_url", None),
+                            "reason": getattr(ctx, "halt_detail", "") or "",
+                        }
+                    )
             else:
                 drafted += 1
                 print("OK", flush=True)
@@ -578,8 +640,12 @@ def ingest_event(event_code: str, *, db, do_commit: bool) -> tuple[str | None, b
 
     # Write per-event staging summary (.md)
     md = _multi_summary_md(
-        event_code, event_meta, ctxs, db=db,
-        pool_brackets=pool_brackets, pool_warnings=pool_warnings,
+        event_code,
+        event_meta,
+        ctxs,
+        db=db,
+        pool_brackets=pool_brackets,
+        pool_warnings=pool_warnings,
         run_id=session.run_id,
         url_check_results=getattr(session, "url_check_results", {}),
     )
@@ -588,8 +654,10 @@ def ingest_event(event_code: str, *, db, do_commit: bool) -> tuple[str | None, b
     out_path.write_text(md)
     print(f"  → wrote {out_path}", flush=True)
 
-    print(f"  summary: drafted={drafted} halted={halts} errors={errs} run_id={session.run_id}",
-          flush=True)
+    print(
+        f"  summary: drafted={drafted} halted={halts} errors={errs} run_id={session.run_id}",
+        flush=True,
+    )
 
     if not do_commit:
         return session.run_id, True, "stage-only"
@@ -608,14 +676,17 @@ def ingest_event(event_code: str, *, db, do_commit: bool) -> tuple[str | None, b
     # what makes Phase-5 sign-off a real review gate — without it, the
     # UI shows nothing to act on and ❌ pairs are invisible.
     from python.pipeline.alias_writeback import (
-        derive_pending_from_run_id, has_blocking_pairs,
+        derive_pending_from_run_id,
         flush_pending_aliases,
     )
+
     stage_pending = derive_pending_from_run_id(db, session.run_id)
     if stage_pending:
         try:
             stage_flush = flush_pending_aliases(
-                db, stage_pending, include_all=True,
+                db,
+                stage_pending,
+                include_all=True,
             )
             print(
                 f"  stage-time alias flush: "
@@ -639,10 +710,14 @@ def ingest_event(event_code: str, *, db, do_commit: bool) -> tuple[str | None, b
     # check goes here — AFTER stage-flush so the UI is loaded with the
     # successful brackets' aliases for operator review.
     if halts > 0 or errs > 0:
-        return session.run_id, False, (
-            f"pipeline_halts={halts} errors={errs}; alias data flushed "
-            f"to tbl_fencer for UI review at "
-            f"http://localhost:5173/?admin=1 — resolve and re-stage"
+        return (
+            session.run_id,
+            False,
+            (
+                f"pipeline_halts={halts} errors={errs}; alias data flushed "
+                f"to tbl_fencer for UI review at "
+                f"http://localhost:5173/?admin=1 — resolve and re-stage"
+            ),
         )
     blockers = [p for p in pending if p.icon == "❌"]
     ambiguous = [p for p in pending if p.icon == "❓"]
@@ -651,30 +726,40 @@ def ingest_event(event_code: str, *, db, do_commit: bool) -> tuple[str | None, b
     if blockers or ambiguous:
         # Halt — surface alias proposals for operator review in UI.
         import sys as _sys
-        print(f"  ⛔ alias review required:", file=_sys.stderr)
+
+        print("  ⛔ alias review required:", file=_sys.stderr)
         print(f"     ❌ {len(blockers)} blocking (probably wrong matches)", file=_sys.stderr)
         print(f"     ❓ {len(ambiguous)} ambiguous (uncertain)", file=_sys.stderr)
         print(f"     ✓ {len(confirmed)} would auto-write on resolution", file=_sys.stderr)
         for p in blockers[:20]:
-            print(f"     ❌ #{p.id_fencer} {p.scraped_name!r} → {p.canonical!r} ({p.reason})",
-                  file=_sys.stderr)
+            print(
+                f"     ❌ #{p.id_fencer} {p.scraped_name!r} → {p.canonical!r} ({p.reason})",
+                file=_sys.stderr,
+            )
         for p in ambiguous[:20]:
-            print(f"     ❓ #{p.id_fencer} {p.scraped_name!r} → {p.canonical!r} ({p.reason})",
-                  file=_sys.stderr)
+            print(
+                f"     ❓ #{p.id_fencer} {p.scraped_name!r} → {p.canonical!r} ({p.reason})",
+                file=_sys.stderr,
+            )
         print(
-            f"  → resolve at http://localhost:5173/?admin=1 (FencerAliasManager UI), "
-            f"then re-stage this event.",
+            "  → resolve at http://localhost:5173/?admin=1 (FencerAliasManager UI), "
+            "then re-stage this event.",
             file=_sys.stderr,
         )
-        return session.run_id, False, (
-            f"alias_review_required (❌={len(blockers)}, ❓={len(ambiguous)})"
+        return (
+            session.run_id,
+            False,
+            (f"alias_review_required (❌={len(blockers)}, ❓={len(ambiguous)})"),
         )
 
     if confirmed:
         print(f"  flushing {len(confirmed)} ✓ aliases to tbl_fencer...", flush=True)
         flush_result = flush_pending_aliases(db, pending)
-        print(f"  ✓ aliases written: {flush_result['written']}, "
-              f"errors: {len(flush_result['errors'])}", flush=True)
+        print(
+            f"  ✓ aliases written: {flush_result['written']}, "
+            f"errors: {len(flush_result['errors'])}",
+            flush=True,
+        )
         if flush_result["errors"]:
             for fid, alias, msg in flush_result["errors"][:5]:
                 print(f"     ⚠ #{fid} {alias!r}: {msg}", flush=True)
@@ -693,32 +778,42 @@ def ingest_event(event_code: str, *, db, do_commit: bool) -> tuple[str | None, b
 
     # C2 (ADR-068) — post-commit per-tournament participant-count URL validation.
     findings = _post_commit_validate_counts(
-        db, event_meta["id_event"], season_end_year=2026,
+        db,
+        event_meta["id_event"],
+        season_end_year=2026,
     )
     halts = [f for f in findings if f.severity == "halt"]
     warns = [f for f in findings if f.severity == "warn"]
     for f in halts:
-        print(f"  ❌ count-mismatch {f.txt_code}: {f.message}",
-              file=sys.stderr, flush=True)
+        print(f"  ❌ count-mismatch {f.txt_code}: {f.message}", file=sys.stderr, flush=True)
     if warns:
-        print(f"  ⚠ {len(warns)} participant-count check warning(s) "
-              f"(no URL / fetch error)", flush=True)
-    if halts:
-        return session.run_id, False, (
-            f"{HaltReason.PARTICIPANT_COUNT_MISMATCH.value}: {len(halts)} "
-            f"tournament(s) disagree with their result-URL bracket — event flagged"
+        print(
+            f"  ⚠ {len(warns)} participant-count check warning(s) (no URL / fetch error)",
+            flush=True,
         )
-    print(f"  ✓ participant-count URL validation passed "
-          f"({len(halts)} mismatches, {len(warns)} warnings)", flush=True)
+    if halts:
+        return (
+            session.run_id,
+            False,
+            (
+                f"{HaltReason.PARTICIPANT_COUNT_MISMATCH.value}: {len(halts)} "
+                f"tournament(s) disagree with their result-URL bracket — event flagged"
+            ),
+        )
+    print(
+        f"  ✓ participant-count URL validation passed "
+        f"({len(halts)} mismatches, {len(warns)} warnings)",
+        flush=True,
+    )
     return session.run_id, True, "committed"
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--event", default="all",
-                        help="PPW1 / PPW2 / PPW3 / PPW4 / PPW5 / all (default)")
-    parser.add_argument("--no-commit", action="store_true",
-                        help="Stage drafts only, do not commit")
+    parser.add_argument(
+        "--event", default="all", help="PPW1 / PPW2 / PPW3 / PPW4 / PPW5 / all (default)"
+    )
+    parser.add_argument("--no-commit", action="store_true", help="Stage drafts only, do not commit")
     args = parser.parse_args()
 
     if args.event == "all":
@@ -736,10 +831,12 @@ def main() -> int:
         run_id, ok, reason = ingest_event(ec, db=db, do_commit=not args.no_commit)
         if not ok:
             print(f"\n⛔ HALT after {ec}: {reason}  (run_id={run_id})", file=sys.stderr)
-            print(f"   → review doc/staging/{ec}.md, then "
-                  f"`python -m python.tools.phase5_runner --event-code {ec} "
-                  f"--commit-run-id {run_id}` after fixing.",
-                  file=sys.stderr)
+            print(
+                f"   → review doc/staging/{ec}.md, then "
+                f"`python -m python.tools.phase5_runner --event-code {ec} "
+                f"--commit-run-id {run_id}` after fixing.",
+                file=sys.stderr,
+            )
             return 2
 
     print("\n✓ All events ingested successfully", flush=True)

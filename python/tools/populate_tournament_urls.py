@@ -19,11 +19,10 @@ import xml.etree.ElementTree as ET
 
 from python.scrapers.base import detect_platform
 from python.tools.scrape_ftl_event_urls import (
+    build_result_url,
     parse_event_schedule,
     parse_tournament_name,
-    build_result_url,
 )
-
 
 # ── FTL Discovery ────────────────────────────────────────────────────────
 
@@ -38,13 +37,15 @@ def _discover_ftl(html: str) -> list[dict]:
             continue
         entries = parsed if isinstance(parsed, list) else [parsed]
         for weapon, gender, category in entries:
-            results.append({
-                "weapon": weapon,
-                "gender": gender,
-                "category": category,
-                "url": build_result_url(t["uuid"]),
-                "source_name": t["name"],
-            })
+            results.append(
+                {
+                    "weapon": weapon,
+                    "gender": gender,
+                    "category": category,
+                    "url": build_result_url(t["uuid"]),
+                    "source_name": t["name"],
+                }
+            )
     return results
 
 
@@ -108,9 +109,7 @@ def _parse_engarde_gender(sexe: str, titre: str) -> str | None:
     return ENGARDE_GENDER_MAP.get(sexe)
 
 
-def parse_engarde_competitions_xml(
-    xml_text: str, org: str, event: str
-) -> list[dict]:
+def parse_engarde_competitions_xml(xml_text: str, org: str, event: str) -> list[dict]:
     """Parse Engarde getCompeForDisplay XML into tournament URL list.
 
     Filters out TABLE/DE entries (t_ prefix in slug) and non-individual events.
@@ -148,14 +147,16 @@ def parse_engarde_competitions_xml(
 
         url = f"{ENGARDE_BASE}/{org}/{event}/{slug}/clasfinal.htm"
         for cat in categories:
-            results.append({
-                "weapon": weapon,
-                "gender": gender,
-                "category": cat,
-                "url": url,
-                "source_name": titre,
-                "slug": slug,
-            })
+            results.append(
+                {
+                    "weapon": weapon,
+                    "gender": gender,
+                    "category": cat,
+                    "url": url,
+                    "source_name": titre,
+                    "slug": slug,
+                }
+            )
 
     return results
 
@@ -176,9 +177,7 @@ FOURFENCE_CATEGORY_MAP = {
 }
 
 
-def discover_dartagnan_tournament_urls(
-    index_html: str, index_url: str
-) -> list[dict]:
+def discover_dartagnan_tournament_urls(index_html: str, index_url: str) -> list[dict]:
     """Discover Dartagnan per-category rankings URLs from an event index page.
 
     Returns [{weapon, gender, category, url, source_name}, ...].
@@ -189,13 +188,15 @@ def discover_dartagnan_tournament_urls(
     competitions = parse_dartagnan_event_index(index_html, index_url)
     results = []
     for c in competitions:
-        results.append({
-            "weapon": c["weapon"],
-            "gender": c["gender"],
-            "category": c["category"],
-            "url": c["rankings_url"],
-            "source_name": f"{c['weapon']} {c['gender']} {c['category']} ({c['id']})",
-        })
+        results.append(
+            {
+                "weapon": c["weapon"],
+                "gender": c["gender"],
+                "category": c["category"],
+                "url": c["rankings_url"],
+                "source_name": f"{c['weapon']} {c['gender']} {c['category']} ({c['id']})",
+            }
+        )
     return results
 
 
@@ -213,13 +214,15 @@ def generate_fourfence_urls(base_url: str) -> list[dict]:
         for gender in ("M", "F"):
             for category, c_code in FOURFENCE_CATEGORY_MAP.items():
                 url = f"{base_url}index.php?a={w_code}&s={gender}&c={c_code}&f=clafinale"
-                results.append({
-                    "weapon": weapon,
-                    "gender": gender,
-                    "category": category,
-                    "url": url,
-                    "source_name": f"{weapon} {gender} {category}",
-                })
+                results.append(
+                    {
+                        "weapon": weapon,
+                        "gender": gender,
+                        "category": category,
+                        "url": url,
+                        "source_name": f"{weapon} {gender} {category}",
+                    }
+                )
     return results
 
 
@@ -246,15 +249,17 @@ def match_urls_to_tournaments(
         key = (d["weapon"], d["gender"], d["category"])
         if key in lookup:
             t = lookup[key]
-            matched.append({
-                "id_tournament": t["id_tournament"],
-                "url": d["url"],
-                "weapon": d["weapon"],
-                "gender": d["gender"],
-                "category": d["category"],
-                "source_name": d.get("source_name", ""),
-                "existing_url": t.get("url_results"),
-            })
+            matched.append(
+                {
+                    "id_tournament": t["id_tournament"],
+                    "url": d["url"],
+                    "weapon": d["weapon"],
+                    "gender": d["gender"],
+                    "category": d["category"],
+                    "source_name": d.get("source_name", ""),
+                    "existing_url": t.get("url_results"),
+                }
+            )
         else:
             unmatched.append(d)
 
@@ -264,9 +269,7 @@ def match_urls_to_tournaments(
 # ── Top-level discovery dispatcher ───────────────────────────────────────
 
 
-def discover_tournament_urls_from_html(
-    html_or_xml: str, platform: str, **kwargs
-) -> list[dict]:
+def discover_tournament_urls_from_html(html_or_xml: str, platform: str, **kwargs) -> list[dict]:
     """Discover tournament URLs from page content (for testing without HTTP).
 
     Args:
@@ -345,12 +348,14 @@ def discover_tournament_urls(event_url: str) -> list[dict]:
         raise NotImplementedError(
             "Ophardt (fencingworldwide.com) event-URL populate is NOT IMPLEMENTED "
             "(N14/ADR-073). url_results for Ophardt is populated during full ingestion "
-            "only. Re-ingest the event instead of using the populate button.")
+            "only. Re-ingest the event instead of using the populate button."
+        )
 
     platform = detect_platform(event_url)
 
     if platform == "ftl":
         from python.scrapers.ftl_auth import get_authed_ftl_client, normalize_ftl_url
+
         # FTL's session cookie is host-only on www; the DB stores apex URLs.
         # Normalize so the authed cookie is sent (else the fetch 302s to login).
         with get_authed_ftl_client() as client:
@@ -389,9 +394,7 @@ def discover_tournament_urls(event_url: str) -> list[dict]:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Populate tournament result URLs from event page"
-    )
+    parser = argparse.ArgumentParser(description="Populate tournament result URLs from event page")
     parser.add_argument("--event-code", required=True, help="Event code (e.g., PP4-2025-2026)")
     parser.add_argument("--supabase-url", default=None, help="Supabase URL")
     parser.add_argument("--supabase-key", default=None, help="Supabase service role key")
@@ -399,6 +402,7 @@ def main():
     args = parser.parse_args()
 
     import os
+
     supabase_url = args.supabase_url or os.environ.get("SUPABASE_URL", "http://127.0.0.1:54321")
     supabase_key = args.supabase_key or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 
@@ -419,7 +423,8 @@ def main():
         sys.exit(1)
     event = events[0]
     slot_urls = [
-        event.get(k) for k in ("url_event", "url_event_2", "url_event_3", "url_event_4", "url_event_5")
+        event.get(k)
+        for k in ("url_event", "url_event_2", "url_event_3", "url_event_4", "url_event_5")
         if event.get(k)
     ]
     if not slot_urls:
@@ -427,8 +432,7 @@ def main():
         sys.exit(1)
 
     print(
-        f"Event: {event['txt_code']} → {len(slot_urls)} URL slot(s): "
-        + ", ".join(slot_urls),
+        f"Event: {event['txt_code']} → {len(slot_urls)} URL slot(s): " + ", ".join(slot_urls),
         file=sys.stderr,
     )
 
@@ -454,19 +458,28 @@ def main():
     new_urls = [m for m in matched if not m.get("existing_url")]
     existing = [m for m in matched if m.get("existing_url")]
 
-    print(f"\nResults:", file=sys.stderr)
-    print(f"  Matched: {len(matched)} ({len(new_urls)} new, {len(existing)} already had URL)", file=sys.stderr)
+    print("\nResults:", file=sys.stderr)
+    print(
+        f"  Matched: {len(matched)} ({len(new_urls)} new, {len(existing)} already had URL)",
+        file=sys.stderr,
+    )
     print(f"  Unmatched (no DB tournament): {len(unmatched)}", file=sys.stderr)
 
     for m in new_urls:
         print(f"  NEW: {m['weapon']} {m['gender']} {m['category']} → {m['url']}", file=sys.stderr)
     for m in existing:
-        print(f"  SKIP: {m['weapon']} {m['gender']} {m['category']} (already has URL)", file=sys.stderr)
+        print(
+            f"  SKIP: {m['weapon']} {m['gender']} {m['category']} (already has URL)",
+            file=sys.stderr,
+        )
     for u in unmatched:
-        print(f"  MISS: {u['weapon']} {u['gender']} {u['category']} — {u.get('source_name', '')}", file=sys.stderr)
+        print(
+            f"  MISS: {u['weapon']} {u['gender']} {u['category']} — {u.get('source_name', '')}",
+            file=sys.stderr,
+        )
 
     if args.dry_run:
-        print(f"\nDRY RUN — no DB updates", file=sys.stderr)
+        print("\nDRY RUN — no DB updates", file=sys.stderr)
         return
 
     # 6. Update DB
@@ -481,7 +494,10 @@ def main():
         if resp.status_code in (200, 204):
             updated += 1
         else:
-            print(f"  FAIL: {m['weapon']} {m['gender']} {m['category']} — HTTP {resp.status_code}", file=sys.stderr)
+            print(
+                f"  FAIL: {m['weapon']} {m['gender']} {m['category']} — HTTP {resp.status_code}",
+                file=sys.stderr,
+            )
 
     print(f"\nUpdated {updated}/{len(new_urls)} tournament URLs", file=sys.stderr)
 

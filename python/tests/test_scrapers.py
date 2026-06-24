@@ -11,7 +11,7 @@ These tests verify the Python scraper modules:
 
 import json
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -286,7 +286,7 @@ class TestTelegramAlert:
         from python.scrapers.base import send_telegram_alert
 
         with patch("python.scrapers.base.httpx") as mock_httpx:
-            mock_client = mock_httpx.Client.return_value.__enter__ = lambda s: s
+            mock_httpx.Client.return_value.__enter__ = lambda s: s
             mock_httpx.post = lambda *a, **kw: None
 
             send_telegram_alert(
@@ -443,7 +443,10 @@ class TestURLDispatcher:
         """Engarde URL routed to Engarde parser."""
         from python.scrapers.base import detect_platform
 
-        assert detect_platform("https://engarde-service.com/competition/test/clasfinal.htm") == "engarde"
+        assert (
+            detect_platform("https://engarde-service.com/competition/test/clasfinal.htm")
+            == "engarde"
+        )
 
     def test_fourfence_url_detected(self):
         """4Fence URL routed to 4Fence parser."""
@@ -501,12 +504,17 @@ class TestFTLEventSchedule:
         )
         kept, skipped = parse_event_schedule(html, with_skips=True)
         reasons = {s["name"]: s["reason"] for s in skipped}
-        assert "pool" in reasons["FLORET ELIMINACJE"].lower()      # qualifier / pools-only
+        assert "pool" in reasons["FLORET ELIMINACJE"].lower()  # qualifier / pools-only
         assert "amateur" not in reasons["FLORET ELIMINACJE"].lower()
         assert "junior" not in reasons["FLORET ELIMINACJE"].lower()
         assert "amateur" in reasons["Turniej Amatorów w szpadzie"].lower()
-        assert "junior" in reasons["SZPADA JUNIORZY"].lower() or "age" in reasons["SZPADA JUNIORZY"].lower()
-        assert "mixed" in reasons["MIKST FLORET"].lower() or "pool" in reasons["MIKST FLORET"].lower()
+        assert (
+            "junior" in reasons["SZPADA JUNIORZY"].lower()
+            or "age" in reasons["SZPADA JUNIORZY"].lower()
+        )
+        assert (
+            "mixed" in reasons["MIKST FLORET"].lower() or "pool" in reasons["MIKST FLORET"].lower()
+        )
         assert any(k["name"] == "Szpada Mężczyzn kat. 2" for k in kept)
 
     def test_parse_tournament_name_epee_m_v2(self):
@@ -572,7 +580,9 @@ class TestFTLEventSchedule:
         from python.tools.scrape_ftl_event_urls import build_result_url
 
         url = build_result_url("0387CC20A25B4EBA9BDAFAB148E8C12B")
-        assert url == "https://www.fencingtimelive.com/events/results/0387CC20A25B4EBA9BDAFAB148E8C12B"
+        assert (
+            url == "https://www.fencingtimelive.com/events/results/0387CC20A25B4EBA9BDAFAB148E8C12B"
+        )
 
     def test_parse_tournament_name_english_epee(self):
         """3.15j: English name — Men's Epee Category 2 → (EPEE, M, V2)."""
@@ -693,9 +703,7 @@ class TestFTLEventSchedule:
         skipped list, NOT silently ingested as PPW sub-tournaments."""
         from python.tools.scrape_ftl_event_urls import parse_event_schedule
 
-        kept, skipped = parse_event_schedule(
-            self._AKADEMICKIE_SCHEDULE_HTML, with_skips=True
-        )
+        kept, skipped = parse_event_schedule(self._AKADEMICKIE_SCHEDULE_HTML, with_skips=True)
         kept_uuids = {k["uuid"] for k in kept}
         skipped_uuids = {s["uuid"] for s in skipped}
         assert "BBB000000000000000000000000000B2" in skipped_uuids, (
@@ -713,9 +721,7 @@ class TestFTLEventSchedule:
         even when they contain dashes ('Szpada kobiet i mężczyzn - grupy')."""
         from python.tools.scrape_ftl_event_urls import parse_event_schedule
 
-        kept, _ = parse_event_schedule(
-            self._AKADEMICKIE_SCHEDULE_HTML, with_skips=True
-        )
+        kept, _ = parse_event_schedule(self._AKADEMICKIE_SCHEDULE_HTML, with_skips=True)
         kept_uuids = {k["uuid"] for k in kept}
         assert "AAA000000000000000000000000000A1" in kept_uuids, (
             "'Szpada mężczyzn kategoria 0' must be kept"
@@ -730,9 +736,7 @@ class TestFTLEventSchedule:
         the per-event staging summary tells the operator why they got skipped."""
         from python.tools.scrape_ftl_event_urls import parse_event_schedule
 
-        _, skipped = parse_event_schedule(
-            self._AKADEMICKIE_SCHEDULE_HTML, with_skips=True
-        )
+        _, skipped = parse_event_schedule(self._AKADEMICKIE_SCHEDULE_HTML, with_skips=True)
         for s in skipped:
             if s["uuid"].startswith("BBB"):
                 assert "guest" in s["reason"].lower() or "non-spws" in s["reason"].lower(), (
@@ -777,9 +781,7 @@ class TestFTLEventSchedule:
         from python.tools.scrape_ftl_event_urls import parse_tournament_name
 
         result = parse_tournament_name("SZABLA MĘŻCZYŹNI V0")
-        assert result == ("SABRE", "M", "V0"), (
-            f"expected (SABRE,M,V0); got {result!r}"
-        )
+        assert result == ("SABRE", "M", "V0"), f"expected (SABRE,M,V0); got {result!r}"
 
     def test_parse_tournament_name_foil_meżczyzni_v3(self):
         """5.22.2: FLORET MĘŻCZYŹNI V3 → (FOIL, M, V3). Same nominative
@@ -787,9 +789,7 @@ class TestFTLEventSchedule:
         from python.tools.scrape_ftl_event_urls import parse_tournament_name
 
         result = parse_tournament_name("FLORET MĘŻCZYŹNI V3")
-        assert result == ("FOIL", "M", "V3"), (
-            f"expected (FOIL,M,V3); got {result!r}"
-        )
+        assert result == ("FOIL", "M", "V3"), f"expected (FOIL,M,V3); got {result!r}"
 
     def test_parse_tournament_name_szpada_meżczyzn_singular(self):
         """5.22.2b: regression guard — original 'MĘŻCZYZN' (genitive, no Ź)
@@ -840,9 +840,7 @@ class TestFTLEventSchedule:
 class TestDartagnanParser:
     """Dartagnan (dartagnan.live) parser tests using saved HTML fixtures."""
 
-    INDEX_URL = (
-        "https://www.dartagnan.live/turniere/EuropeanVeteransCup_2026/de/index.html"
-    )
+    INDEX_URL = "https://www.dartagnan.live/turniere/EuropeanVeteransCup_2026/de/index.html"
 
     def test_parse_dartagnan_event_index_returns_competitions(self):
         """dart.1: index.html parsed into competitions with metadata + rankings URL."""
@@ -957,7 +955,8 @@ class TestDartagnanParser:
 
         # The 6687 competition has results populated
         men_epee_v1 = [
-            c for c in result["competitions"]
+            c
+            for c in result["competitions"]
             if c["weapon"] == "EPEE" and c["gender"] == "M" and c["category"] == "V1"
         ]
         assert len(men_epee_v1) == 1

@@ -57,14 +57,14 @@ def convert_file(path: Path) -> int:
     # This regex matches the entire INSERT INTO tbl_result ... VALUES (...); block
     pattern = re.compile(
         r"(INSERT INTO tbl_result \(id_fencer, id_tournament, int_place, txt_scraped_name\)\s*"
-        r"VALUES \(\s*)"           # group 1: INSERT preamble up to first value
-        r"\d+"                      # the numeric fencer ID to replace
-        r"(,\s*"                   # group 2: comma after ID
+        r"VALUES \(\s*)"  # group 1: INSERT preamble up to first value
+        r"\d+"  # the numeric fencer ID to replace
+        r"(,\s*"  # group 2: comma after ID
         r"\(SELECT id_tournament[^)]+\),\s*"  # tournament subselect
-        r"\d+,\s*"                 # int_place
-        r"'([^']*(?:''[^']*)*)')" # group 3: txt_scraped_name content (handles escaped quotes)
-        r"(\s*\))"                 # group 4: closing paren
-        , re.DOTALL
+        r"\d+,\s*"  # int_place
+        r"'([^']*(?:''[^']*)*)')"  # group 3: txt_scraped_name content (handles escaped quotes)
+        r"(\s*\))",  # group 4: closing paren
+        re.DOTALL,
     )
 
     count = 0

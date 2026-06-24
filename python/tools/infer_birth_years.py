@@ -12,7 +12,6 @@ Usage:
 """
 
 import re
-import unicodedata
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -39,12 +38,28 @@ CATEGORY_AGE_RANGE = {
 def strip_diacritics(s: str) -> str:
     """Strip Polish diacritics to ASCII equivalent."""
     # Manual mapping for Polish-specific chars
-    POLISH_MAP = str.maketrans({
-        "ą": "a", "ć": "c", "ę": "e", "ł": "l", "ń": "n",
-        "ó": "o", "ś": "s", "ź": "z", "ż": "z",
-        "Ą": "A", "Ć": "C", "Ę": "E", "Ł": "L", "Ń": "N",
-        "Ó": "O", "Ś": "S", "Ź": "Z", "Ż": "Z",
-    })
+    POLISH_MAP = str.maketrans(
+        {
+            "ą": "a",
+            "ć": "c",
+            "ę": "e",
+            "ł": "l",
+            "ń": "n",
+            "ó": "o",
+            "ś": "s",
+            "ź": "z",
+            "ż": "z",
+            "Ą": "A",
+            "Ć": "C",
+            "Ę": "E",
+            "Ł": "L",
+            "Ń": "N",
+            "Ó": "O",
+            "Ś": "S",
+            "Ź": "Z",
+            "Ż": "Z",
+        }
+    )
     return s.translate(POLISH_MAP)
 
 
@@ -53,9 +68,7 @@ def parse_fencers(path: Path) -> dict[int, dict]:
     text = path.read_text(encoding="utf-8")
     fencers = {}
     # Match each VALUES tuple line
-    pattern = re.compile(
-        r"\('([^']+)',\s+'([^']+)',\s+(NULL|\d+)\)"
-    )
+    pattern = re.compile(r"\('([^']+)',\s+'([^']+)',\s+(NULL|\d+)\)")
     fencer_id = 0
     for line_num, line in enumerate(text.splitlines(), 1):
         m = pattern.search(line)
@@ -78,14 +91,7 @@ def scan_tournament_observations(data_dir: Path) -> dict[int, list[tuple[int, st
 
     # Pattern to extract fencer_id from INSERT INTO tbl_result blocks
     # Format: INSERT INTO tbl_result (...)\nVALUES (\n    <id>,
-    result_pattern = re.compile(
-        r"INSERT INTO tbl_result.*?VALUES\s*\(\s*(\d+),", re.DOTALL
-    )
-    # Pattern to extract category from tournament code in same block
-    # Tournament code format: PPW1-V2-M-EPEE-2024-2025
-    tournament_pattern = re.compile(
-        r"txt_code = '([^']+)'"
-    )
+    result_pattern = re.compile(r"INSERT INTO tbl_result.*?VALUES\s*\(\s*(\d+),", re.DOTALL)
 
     for season_dir in sorted(data_dir.iterdir()):
         if not season_dir.is_dir():
@@ -164,7 +170,7 @@ def detect_diacritic_duplicates(fencers: dict[int, dict]) -> list[tuple[int, int
         norm_index[norm_key].append(fid)
 
     duplicates = []
-    for norm_key, ids in norm_index.items():
+    for _norm_key, ids in norm_index.items():
         if len(ids) > 1:
             duplicates.append(tuple(sorted(ids)))
 
@@ -196,8 +202,10 @@ def main():
         for fid in dup_ids:
             f = fencers[fid]
             obs_count = len(observations.get(fid, []))
-            print(f"  id={fid:>3} line={f['line_num']:>3}  {f['surname']:25} {f['first_name']:15} "
-                  f"birth={f['birth_year'] or 'NULL':>5}  results={obs_count}")
+            print(
+                f"  id={fid:>3} line={f['line_num']:>3}  {f['surname']:25} {f['first_name']:15} "
+                f"birth={f['birth_year'] or 'NULL':>5}  results={obs_count}"
+            )
         # Recommend keeping the one with birth year / more results
         print()
 
@@ -206,9 +214,9 @@ def main():
     print("BIRTH YEAR INFERENCE")
     print("=" * 70)
 
-    confirmed = []   # exact birth year from crossing
-    estimated = []    # midpoint from single category
-    conflicts = []    # contradictory observations
+    confirmed = []  # exact birth year from crossing
+    estimated = []  # midpoint from single category
+    conflicts = []  # contradictory observations
 
     for fid, f in sorted(fencers.items()):
         if f["birth_year"] is not None:
@@ -232,23 +240,29 @@ def main():
     print(f"\n  CONFIRMED (exact, from category crossing): {len(confirmed)}")
     for fid, f, year, obs in confirmed:
         cats = " + ".join(f"{cat}@{yr}" for yr, cat in sorted(set(obs)))
-        print(f"    id={fid:>3} line={f['line_num']:>3}  {f['surname']:25} {f['first_name']:15} → {year}  ({cats})")
+        print(
+            f"    id={fid:>3} line={f['line_num']:>3}  {f['surname']:25} {f['first_name']:15} → {year}  ({cats})"
+        )
 
     print(f"\n  ESTIMATED (midpoint, single category): {len(estimated)}")
     for fid, f, midpoint, cat_str, min_yr, max_yr in estimated:
-        print(f"    id={fid:>3} line={f['line_num']:>3}  {f['surname']:25} {f['first_name']:15} → {midpoint}  "
-              f"({cat_str}, range {min_yr}-{max_yr})")
+        print(
+            f"    id={fid:>3} line={f['line_num']:>3}  {f['surname']:25} {f['first_name']:15} → {midpoint}  "
+            f"({cat_str}, range {min_yr}-{max_yr})"
+        )
 
     if conflicts:
         print(f"\n  CONFLICTS (contradictory observations): {len(conflicts)}")
         for fid, f, obs in conflicts:
-            print(f"    id={fid:>3} line={f['line_num']:>3}  {f['surname']:25} {f['first_name']:15}  obs={obs}")
+            print(
+                f"    id={fid:>3} line={f['line_num']:>3}  {f['surname']:25} {f['first_name']:15}  obs={obs}"
+            )
 
     # --- Summary ---
     total_inferred = len(confirmed) + len(estimated)
     remaining_null = null_count - total_inferred
     print(f"\n{'=' * 70}")
-    print(f"SUMMARY")
+    print("SUMMARY")
     print(f"  Total NULL birth years: {null_count}")
     print(f"  Confirmed (crossing):   {len(confirmed)}")
     print(f"  Estimated (midpoint):   {len(estimated)}")
@@ -262,10 +276,12 @@ def main():
         print(f"\n{'=' * 70}")
         print("SEED FILE UPDATES (copy these into seed_tbl_fencer.sql)")
         print(f"{'=' * 70}")
-        for fid, f, year, obs in confirmed:
+        for _fid, f, year, _obs in confirmed:
             print(f"  line {f['line_num']:>3}: NULL → {year}  -- CONFIRMED from category crossing")
-        for fid, f, midpoint, cat_str, min_yr, max_yr in estimated:
-            print(f"  line {f['line_num']:>3}: NULL → {midpoint}  -- ESTIMATED from {cat_str} category (range {min_yr}-{max_yr})")
+        for _fid, f, midpoint, cat_str, min_yr, max_yr in estimated:
+            print(
+                f"  line {f['line_num']:>3}: NULL → {midpoint}  -- ESTIMATED from {cat_str} category (range {min_yr}-{max_yr})"
+            )
 
 
 if __name__ == "__main__":

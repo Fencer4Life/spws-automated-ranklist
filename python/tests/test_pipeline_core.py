@@ -7,13 +7,16 @@ Maps to FR-112 / ADR-073 (architecture) and orchestrator-level FR-116 / ADR-074
 These tests use test-double plugins so the orchestrator is exercised in
 isolation from real domain logic (which lands in M2).
 """
+
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 import pytest
 
+from python.pipeline import run as run_module
 from python.pipeline.core.contract import (
     Abort,
     Context,
@@ -27,12 +30,11 @@ from python.pipeline.core.contract import (
 from python.pipeline.core.orchestrator import Orchestrator
 from python.pipeline.engine.flows import Flow, FlowParams
 from python.pipeline.engine.rule_engine import ExecutionPlan
-from python.pipeline import run as run_module
-
 
 # ---------------------------------------------------------------------------
 # Test-double plugin
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class _Plugin:
@@ -70,6 +72,7 @@ def _plan(plugins: list[_Plugin]) -> ExecutionPlan:
 # Orchestrator behaviour
 # ---------------------------------------------------------------------------
 
+
 class TestOrchestrator:
     def test_skipped_when_not_applicable(self):
         """N1.11 applies()==False -> SKIPPED, run() never called."""
@@ -80,16 +83,16 @@ class TestOrchestrator:
 
     def test_normal_plugin_runs_and_writes(self):
         """N1.12 a normal plugin -> RAN, declared writes land in ctx."""
-        p = _Plugin("W", writes=frozenset({"matches"}),
-                    body=lambda ctx, svc: ctx.set("matches", [1, 2, 3]))
+        p = _Plugin(
+            "W", writes=frozenset({"matches"}), body=lambda ctx, svc: ctx.set("matches", [1, 2, 3])
+        )
         ctx = Orchestrator().execute(_plan([p]), Context(), Services())
         assert ctx.trace.outcome_of("W") == Outcome.RAN
         assert ctx.get("matches") == [1, 2, 3]
 
     def test_fault_does_not_halt_run(self):
         """N1.13 ctx.fault does not stop the run; later plugins still execute."""
-        faulter = _Plugin("Gate",
-                          body=lambda ctx, svc: ctx.fault(FaultKind.BELOW_MIN, "2<min"))
+        faulter = _Plugin("Gate", body=lambda ctx, svc: ctx.fault(FaultKind.BELOW_MIN, "2<min"))
         after = _Plugin("After")
         ctx = Orchestrator().execute(_plan([faulter, after]), Context(), Services())
         assert ctx.trace.outcome_of("Gate") == Outcome.FAULT
@@ -101,6 +104,7 @@ class TestOrchestrator:
 
     def test_abort_stops_run(self):
         """N1.14 Abort stops the run; later plugins are not executed."""
+
         def boom(ctx, svc):
             raise Abort("DbDown", "connection refused")
 
@@ -113,8 +117,7 @@ class TestOrchestrator:
 
     def test_write_discipline_enforced(self):
         """N1.15 writing a key outside `writes` raises WriteDisciplineError."""
-        rogue = _Plugin("Rogue", writes=frozenset(),
-                        body=lambda ctx, svc: ctx.set("ghost", 1))
+        rogue = _Plugin("Rogue", writes=frozenset(), body=lambda ctx, svc: ctx.set("ghost", 1))
         with pytest.raises(WriteDisciplineError):
             Orchestrator().execute(_plan([rogue]), Context(), Services())
 
@@ -148,6 +151,7 @@ class TestOrchestrator:
 # compose() unit
 # ---------------------------------------------------------------------------
 
+
 class TestCompose:
     def test_empty_middleware_is_identity(self):
         """N1.16 compose([]) returns the run callable unchanged in behaviour."""
@@ -161,17 +165,20 @@ class TestCompose:
 # run_flow end-to-end wiring
 # ---------------------------------------------------------------------------
 
+
 class TestRunFlow:
     def test_run_flow_wires_plan_and_execute(self):
         """N1.18 run_flow resolves a plan and executes it, tracing each plugin."""
         plugins = {
             "ParticipantCount": _Plugin("ParticipantCount", reads=frozenset({"event"})),
-            "Notify": _Plugin("Notify", reads=frozenset({"event"}),
-                              effects=frozenset({"external"})),
+            "Notify": _Plugin(
+                "Notify", reads=frozenset({"event"}), effects=frozenset({"external"})
+            ),
             # ADR-075: POST_COMMIT now ends with StagingFormatter (renders only at
             # event scope; a stub here exercises run_flow wiring).
-            "StagingFormatter": _Plugin("StagingFormatter", reads=frozenset({"event"}),
-                                        effects=frozenset({"docs"})),
+            "StagingFormatter": _Plugin(
+                "StagingFormatter", reads=frozenset({"event"}), effects=frozenset({"docs"})
+            ),
         }
         ctx = Context()
         ctx.data["event"] = {"id_event": 1}

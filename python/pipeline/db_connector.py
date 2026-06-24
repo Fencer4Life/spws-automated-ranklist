@@ -30,9 +30,11 @@ class DbConnector:
         """
         resp = (
             self._sb.table("tbl_fencer")
-            .select("id_fencer, txt_surname, txt_first_name, int_birth_year, "
-                    "json_name_aliases, enum_gender, txt_nationality, "
-                    "bool_birth_year_estimated")
+            .select(
+                "id_fencer, txt_surname, txt_first_name, int_birth_year, "
+                "json_name_aliases, enum_gender, txt_nationality, "
+                "bool_birth_year_estimated"
+            )
             .execute()
         )
         return resp.data
@@ -62,10 +64,12 @@ class DbConnector:
         """
         resp = (
             self._sb.table("tbl_event")
-            .select("id_event, txt_code, txt_name, "
-                    "url_event, url_event_2, url_event_3, url_event_4, url_event_5, "
-                    "dt_start, dt_end, enum_status, id_season, "
-                    "id_organizer, txt_location, json_source_overrides")
+            .select(
+                "id_event, txt_code, txt_name, "
+                "url_event, url_event_2, url_event_3, url_event_4, url_event_5, "
+                "dt_start, dt_end, enum_status, id_season, "
+                "id_organizer, txt_location, json_source_overrides"
+            )
             .eq("txt_code", event_code)
             .execute()
         )
@@ -133,9 +137,9 @@ class DbConnector:
             return {}
         resp = (
             self._sb.table("tbl_fencer")
-                    .select("id_fencer,enum_gender")
-                    .in_("id_fencer", id_fencers)
-                    .execute()
+            .select("id_fencer,enum_gender")
+            .in_("id_fencer", id_fencers)
+            .execute()
         )
         return {row["id_fencer"]: row.get("enum_gender") for row in (resp.data or [])}
 
@@ -151,11 +155,13 @@ class DbConnector:
             return {}
         resp = (
             self._sb.table("tbl_fencer")
-                    .select("id_fencer,txt_surname,txt_first_name,"
-                            "json_name_aliases,json_user_confirmed_aliases,"
-                            "int_birth_year,bool_birth_year_estimated")
-                    .in_("id_fencer", id_fencers)
-                    .execute()
+            .select(
+                "id_fencer,txt_surname,txt_first_name,"
+                "json_name_aliases,json_user_confirmed_aliases,"
+                "int_birth_year,bool_birth_year_estimated"
+            )
+            .in_("id_fencer", id_fencers)
+            .execute()
         )
         return {row["id_fencer"]: row for row in (resp.data or [])}
 
@@ -170,9 +176,9 @@ class DbConnector:
             return {}
         resp = (
             self._sb.table("tbl_fencer")
-                    .select("id_fencer,int_birth_year")
-                    .in_("id_fencer", id_fencers)
-                    .execute()
+            .select("id_fencer,int_birth_year")
+            .in_("id_fencer", id_fencers)
+            .execute()
         )
         return {row["id_fencer"]: row.get("int_birth_year") for row in (resp.data or [])}
 
@@ -243,23 +249,29 @@ class DbConnector:
         delete its results (+ legacy match_candidate rows) and zero its count.
         Idempotent — a bracket with no results ranks nothing (ADR-072 drop)."""
         rids = [
-            r["id_result"] for r in
-            self._sb.table("tbl_result").select("id_result")
-            .eq("id_tournament", tournament_id).execute().data or []
+            r["id_result"]
+            for r in self._sb.table("tbl_result")
+            .select("id_result")
+            .eq("id_tournament", tournament_id)
+            .execute()
+            .data
+            or []
         ]
         if rids:
             self._sb.table("tbl_match_candidate").delete().in_("id_result", rids).execute()
         self._sb.table("tbl_result").delete().eq("id_tournament", tournament_id).execute()
-        self._sb.table("tbl_tournament").update(
-            {"int_participant_count": 0}).eq("id_tournament", tournament_id).execute()
+        self._sb.table("tbl_tournament").update({"int_participant_count": 0}).eq(
+            "id_tournament", tournament_id
+        ).execute()
 
     # -- CDC recompute queue + dedup (ADR-071 / ADR-072) --------------------
 
     def merge_fencers(self, survivor_id: int, duplicate_id: int) -> None:
         """ADR-071 — merge a duplicate into the survivor (re-point results + fold
         aliases + enqueue both sides). Thin wrapper over fn_merge_fencers."""
-        self._sb.rpc("fn_merge_fencers", {
-            "p_survivor": survivor_id, "p_duplicate": duplicate_id}).execute()
+        self._sb.rpc(
+            "fn_merge_fencers", {"p_survivor": survivor_id, "p_duplicate": duplicate_id}
+        ).execute()
 
     def enqueue_affected_events(self, id_fencer: int) -> int:
         """Enqueue every event a fencer participated in (fn_enqueue_affected_events)."""
@@ -268,16 +280,24 @@ class DbConnector:
 
     def recompute_watermark(self):
         """Return ts_last_master_change (the debounce watermark), or None."""
-        resp = self._sb.table("tbl_recompute_watermark").select(
-            "ts_last_master_change").limit(1).execute()
+        resp = (
+            self._sb.table("tbl_recompute_watermark")
+            .select("ts_last_master_change")
+            .limit(1)
+            .execute()
+        )
         rows = resp.data or []
         return rows[0]["ts_last_master_change"] if rows else None
 
     def claim_recompute_batch(self) -> list[int]:
         """Claim the PENDING recompute events: flip them to CLAIMED and return the
         distinct id_events (the queue already dedups PENDING per event)."""
-        pend = self._sb.table("tbl_recompute_queue").select("id_event").eq(
-            "enum_status", "PENDING").execute()
+        pend = (
+            self._sb.table("tbl_recompute_queue")
+            .select("id_event")
+            .eq("enum_status", "PENDING")
+            .execute()
+        )
         ids = sorted({r["id_event"] for r in (pend.data or [])})
         if ids:
             self._sb.table("tbl_recompute_queue").update(
@@ -290,11 +310,10 @@ class DbConnector:
         if not id_events:
             return
         self._sb.table("tbl_recompute_queue").update({"enum_status": "DONE"}).eq(
-            "enum_status", "CLAIMED").in_("id_event", id_events).execute()
+            "enum_status", "CLAIMED"
+        ).in_("id_event", id_events).execute()
 
-    def find_seasons_containing_dates(
-        self, event_dt_start: str, event_dt_end: str
-    ) -> list[dict]:
+    def find_seasons_containing_dates(self, event_dt_start: str, event_dt_end: str) -> list[dict]:
         """Return every season whose date range contains BOTH event dates.
 
         Phase 5: Stage 2 uses this to resolve which season the event truly
@@ -354,7 +373,9 @@ class DbConnector:
         return resp.data[0] if resp.data else None
 
     def call_age_categories_batch(
-        self, birth_years: list[int], season_end_year: int,
+        self,
+        birth_years: list[int],
+        season_end_year: int,
     ) -> dict[int, str | None]:
         """Batch-resolve V-cat for a list of birth years (ADR-050 R001 / Stage 4).
 
@@ -371,8 +392,13 @@ class DbConnector:
         return {row["birth_year"]: row["age_category"] for row in resp.data}
 
     def find_or_create_tournament(
-        self, event_id: int, weapon: str, gender: str,
-        category: str, date: str, tournament_type: str,
+        self,
+        event_id: int,
+        weapon: str,
+        gender: str,
+        category: str,
+        date: str,
+        tournament_type: str,
         url_results: str | None = None,
     ) -> int:
         """Find or create tournament under event (ADR-025).
@@ -397,9 +423,7 @@ class DbConnector:
         ).execute()
         return resp.data
 
-    def find_tournament(
-        self, weapon: str, gender: str, category: str, date: str
-    ) -> dict | None:
+    def find_tournament(self, weapon: str, gender: str, category: str, date: str) -> dict | None:
         """Legacy: look up tournament by weapon+gender+category+date globally.
 
         Kept for backwards compatibility. Prefer find_event_by_date +
@@ -429,8 +453,9 @@ class DbConnector:
         )
         return len(resp.data) > 0
 
-    def ingest_results(self, tournament_id: int, results_json: list[dict],
-                        participant_count: int | None = None) -> dict:
+    def ingest_results(
+        self, tournament_id: int, results_json: list[dict], participant_count: int | None = None
+    ) -> dict:
         """Call fn_ingest_tournament_results RPC (ADR-022).
 
         Args:
@@ -446,11 +471,7 @@ class DbConnector:
 
     def insert_fencer(self, fencer_dict: dict) -> int:
         """Insert a new fencer and return the id_fencer."""
-        resp = (
-            self._sb.table("tbl_fencer")
-            .insert(fencer_dict)
-            .execute()
-        )
+        resp = self._sb.table("tbl_fencer").insert(fencer_dict).execute()
         return resp.data[0]["id_fencer"]
 
     def update_fencer_birth_year(
@@ -481,22 +502,16 @@ class DbConnector:
 
         Idempotent. No-op for non-PEW events. Calls fn_pew_recompute_event_code.
         """
-        resp = self._sb.rpc(
-            "fn_pew_recompute_event_code", {"p_id_event": id_event}
-        ).execute()
+        resp = self._sb.rpc("fn_pew_recompute_event_code", {"p_id_event": id_event}).execute()
         # RPC returns INT scalar
         return int(resp.data) if resp.data is not None else 0
 
     def event_results_for_parity(self, id_event: int) -> list[dict]:
         """Return POL fencer rows shaped for the parity gate's `local_results`."""
-        resp = self._sb.rpc(
-            "fn_event_results_for_parity", {"p_id_event": id_event}
-        ).execute()
+        resp = self._sb.rpc("fn_event_results_for_parity", {"p_id_event": id_event}).execute()
         return resp.data or []
 
-    def promote_evf_published(
-        self, id_event: int, evf_scores: list[dict]
-    ) -> dict:
+    def promote_evf_published(self, id_event: int, evf_scores: list[dict]) -> dict:
         """Atomic: overwrite num_final_score per fencer + flip status + audit."""
         resp = self._sb.rpc(
             "fn_promote_evf_published",
@@ -533,7 +548,7 @@ _PPW_TYPES = frozenset({"PPW", "MPW", "PSW"})
 _EVF_TYPES = frozenset({"PEW", "MEW", "MSW"})
 
 
-def get_min_participants(db: "DbConnector", id_season: int, tourn_type: str) -> int:
+def get_min_participants(db: DbConnector, id_season: int, tourn_type: str) -> int:
     """Return the per-season minimum-participants threshold for a
     tournament type.
 
@@ -551,11 +566,7 @@ def get_min_participants(db: "DbConnector", id_season: int, tourn_type: str) -> 
     else:
         return 1
     rows = (
-        db._sb.table("tbl_scoring_config")
-        .select(column)
-        .eq("id_season", id_season)
-        .execute()
-        .data
+        db._sb.table("tbl_scoring_config").select(column).eq("id_season", id_season).execute().data
     ) or []
     if not rows:
         return 1
@@ -563,7 +574,7 @@ def get_min_participants(db: "DbConnector", id_season: int, tourn_type: str) -> 
     return int(val) if val is not None else 1
 
 
-def derive_tourn_type_from_event_code(event_code: str) -> "str | None":
+def derive_tourn_type_from_event_code(event_code: str) -> str | None:
     """Map a `tbl_event.txt_code` to its tournament type for ADR-066 routing.
 
     Active season uses prefixes (per ADR-046 + spec):
@@ -597,7 +608,7 @@ def derive_tourn_type_from_event_code(event_code: str) -> "str | None":
                 head += ch
             else:
                 break
-        suffix = rest[len(head):]
+        suffix = rest[len(head) :]
         if head and (not suffix or all(c in "efs" for c in suffix.lower())):
             return "PEW"
     if prefix == "MEW" or prefix == "IMEW":
@@ -610,8 +621,11 @@ def derive_tourn_type_from_event_code(event_code: str) -> "str | None":
 
 
 def gate_below_min_participants(
-    db: "DbConnector", id_season: int, tourn_type: str, n_results: int,
-) -> "tuple[bool, str | None]":
+    db: DbConnector,
+    id_season: int,
+    tourn_type: str,
+    n_results: int,
+) -> tuple[bool, str | None]:
     """ADR-066 ingestion gate.
 
     Strict less-than: returns (True, reason) when `n_results < threshold`,

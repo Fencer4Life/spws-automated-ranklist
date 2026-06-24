@@ -31,13 +31,11 @@ import sys
 from dataclasses import dataclass
 
 import httpx
-
 from python.matcher.fuzzy_match import find_best_match
 from python.scrapers.evf_results import (
     CATEGORY_MAP,
     EvfApiClient,
 )
-
 
 CERT_REF = "sdomfjncmfydlkygzpgw"
 PROD_REF = "ywgymtgcyturldazcpmw"
@@ -52,8 +50,12 @@ EVF_DATE_TOLERANCE_DAYS = 3
 # Women's: 4=FOIL, 5=EPEE, 6=SABRE. Verified empirically from get_results
 # weapon_abbr (MF/ME/MS/WF/WE/WS).
 EVF_WEAPON_GENDER = {
-    1: ("FOIL", "M"), 2: ("EPEE", "M"), 3: ("SABRE", "M"),
-    4: ("FOIL", "F"), 5: ("EPEE", "F"), 6: ("SABRE", "F"),
+    1: ("FOIL", "M"),
+    2: ("EPEE", "M"),
+    3: ("SABRE", "M"),
+    4: ("FOIL", "F"),
+    5: ("EPEE", "F"),
+    6: ("SABRE", "F"),
 }
 
 
@@ -73,9 +75,20 @@ class LocalBackend(Backend):
 
     def query(self, sql: str) -> list:
         import subprocess
+
         cmd = [
-            "docker", "exec", "supabase_db_SPWSranklist",
-            "psql", "-U", "postgres", "-d", "postgres", "-At", "-F\x1f", "-c", sql,
+            "docker",
+            "exec",
+            "supabase_db_SPWSranklist",
+            "psql",
+            "-U",
+            "postgres",
+            "-d",
+            "postgres",
+            "-At",
+            "-F\x1f",
+            "-c",
+            sql,
         ]
         out = subprocess.check_output(cmd, text=True)
         rows = []
@@ -87,9 +100,19 @@ class LocalBackend(Backend):
 
     def execute(self, sql: str) -> None:
         import subprocess
+
         cmd = [
-            "docker", "exec", "-i", "supabase_db_SPWSranklist",
-            "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1",
+            "docker",
+            "exec",
+            "-i",
+            "supabase_db_SPWSranklist",
+            "psql",
+            "-U",
+            "postgres",
+            "-d",
+            "postgres",
+            "-v",
+            "ON_ERROR_STOP=1",
         ]
         subprocess.run(cmd, input=sql, text=True, check=True)
 
@@ -102,9 +125,7 @@ class ManagementBackend(Backend):
         self.token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
         if not self.token:
             raise RuntimeError("SUPABASE_ACCESS_TOKEN not set")
-        self.endpoint = (
-            f"https://api.supabase.com/v1/projects/{project_ref}/database/query"
-        )
+        self.endpoint = f"https://api.supabase.com/v1/projects/{project_ref}/database/query"
 
     def _post(self, sql: str) -> list:
         r = httpx.post(
@@ -176,14 +197,23 @@ def fetch_combined_groups(b: Backend) -> list[GroupRow]:
         return []
     out: list[GroupRow] = []
     for r in payload:
-        out.append(GroupRow(
-            url=r["url"], dt=r["dt"], weapon=r["w"], gender=r["g"],
-            tournaments=[
-                {"id": t["id"], "code": t["code"], "cat": t["cat"],
-                 "evf_comp": t.get("evf_comp")}
-                for t in r["tournaments"]
-            ],
-        ))
+        out.append(
+            GroupRow(
+                url=r["url"],
+                dt=r["dt"],
+                weapon=r["w"],
+                gender=r["g"],
+                tournaments=[
+                    {
+                        "id": t["id"],
+                        "code": t["code"],
+                        "cat": t["cat"],
+                        "evf_comp": t.get("evf_comp"),
+                    }
+                    for t in r["tournaments"]
+                ],
+            )
+        )
     return out
 
 
@@ -204,12 +234,14 @@ def fetch_fencer_db(b: Backend) -> list[dict]:
         ]
     out = []
     for r in rows:
-        out.append({
-            "id_fencer": int(r[0]) if r[0] else None,
-            "txt_surname": r[1],
-            "txt_first_name": r[2],
-            "int_birth_year": int(r[3]) if r[3] and r[3] != "" else None,
-        })
+        out.append(
+            {
+                "id_fencer": int(r[0]) if r[0] else None,
+                "txt_surname": r[1],
+                "txt_first_name": r[2],
+                "int_birth_year": int(r[3]) if r[3] and r[3] != "" else None,
+            }
+        )
     return out
 
 
@@ -255,20 +287,29 @@ class EvfCompCache:
                 starts = str(c.get("starts", ""))
                 if not starts or starts < EVF_SCAN_START or starts > EVF_SCAN_END:
                     continue
-                self._entries.append((
-                    starts, weapon, gender, cat,
-                    int(c["id"]), int(c.get("total") or 0),
-                ))
+                self._entries.append(
+                    (
+                        starts,
+                        weapon,
+                        gender,
+                        cat,
+                        int(c["id"]),
+                        int(c.get("total") or 0),
+                    )
+                )
         self._loaded = True
         print(f"  … cached {len(self._entries)} EVF competitions", file=sys.stderr)
 
-    def find_comp(self, date: str, weapon: str, gender: str, category: str) -> tuple[int, int] | None:
+    def find_comp(
+        self, date: str, weapon: str, gender: str, category: str
+    ) -> tuple[int, int] | None:
         """Return (comp_id, total) for the closest matching competition.
 
         Tolerance: |dt - starts| <= EVF_DATE_TOLERANCE_DAYS.
         """
         self._load()
         from datetime import date as date_cls
+
         try:
             target = date_cls.fromisoformat(date)
         except ValueError:
@@ -313,7 +354,10 @@ def resolve_via_evf(
         else:
             match = cache.find_comp(group.dt, group.weapon, group.gender, target_cat)
             if match is None:
-                print(f"    ! no EVF comp for T#{t['id']} {group.weapon}/{group.gender}/{target_cat} on {group.dt}", file=sys.stderr)
+                print(
+                    f"    ! no EVF comp for T#{t['id']} {group.weapon}/{group.gender}/{target_cat} on {group.dt}",
+                    file=sys.stderr,
+                )
                 continue
             comp_id, comp_total = match
 
@@ -339,11 +383,13 @@ def resolve_via_evf(
                 conf = m.confidence if m else "?"
                 print(f"    skip (no match): {name} conf={conf}", file=sys.stderr)
                 continue
-            placements.append({
-                "id_fencer": m.id_fencer,
-                "place": int(r.get("place") or 0),
-                "scraped_name": name,
-            })
+            placements.append(
+                {
+                    "id_fencer": m.id_fencer,
+                    "place": int(r.get("place") or 0),
+                    "scraped_name": name,
+                }
+            )
 
         out[target_cat] = {
             "entry": entry,
@@ -403,7 +449,9 @@ def main():
     print(f"[{args.env}] {len(groups)} EVF combined-pool group(s) found")
 
     if args.only:
-        keep = {int(x.lstrip("T#")) for x in args.only.split(",") if x.strip().lstrip("T#").isdigit()}
+        keep = {
+            int(x.lstrip("T#")) for x in args.only.split(",") if x.strip().lstrip("T#").isdigit()
+        }
         groups = [g for g in groups if any(t["id"] in keep for t in g.tournaments)]
         print(f"[{args.env}] limited to {len(groups)} group(s) via --only")
 
@@ -431,7 +479,9 @@ def main():
                 skipped += 1
                 continue
             for cat, bucket in sorted(by_cat.items()):
-                print(f"    {cat}: entry={bucket['entry']} placements={len(bucket['placements'])} (comp {bucket['comp_id']})")
+                print(
+                    f"    {cat}: entry={bucket['entry']} placements={len(bucket['placements'])} (comp {bucket['comp_id']})"
+                )
             sql = emit_sql(g, by_cat)
             if args.dry_run:
                 print("    --- SQL (dry-run) ---")

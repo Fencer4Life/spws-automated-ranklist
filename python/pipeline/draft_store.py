@@ -73,11 +73,7 @@ class DraftStore:
             .data
         ) or []
         results = (
-            self._sb.table("tbl_result_draft")
-            .select("*")
-            .eq("txt_run_id", run_id)
-            .execute()
-            .data
+            self._sb.table("tbl_result_draft").select("*").eq("txt_run_id", run_id).execute().data
         ) or []
         return tournaments, results
 
@@ -91,21 +87,21 @@ class DraftStore:
         Each entry: {run_id, tournament_count, result_count, first_seen}.
         """
         tour_rows = (
-            self._sb.table("tbl_tournament_draft")
-            .select("txt_run_id, ts_created")
-            .execute()
-            .data
+            self._sb.table("tbl_tournament_draft").select("txt_run_id, ts_created").execute().data
         ) or []
-        res_rows = (
-            self._sb.table("tbl_result_draft").select("txt_run_id").execute().data
-        ) or []
+        res_rows = (self._sb.table("tbl_result_draft").select("txt_run_id").execute().data) or []
 
         agg: dict[str, dict] = {}
         for r in tour_rows:
             rid = r["txt_run_id"]
             entry = agg.setdefault(
-                rid, {"run_id": rid, "tournament_count": 0, "result_count": 0,
-                      "first_seen": r["ts_created"]}
+                rid,
+                {
+                    "run_id": rid,
+                    "tournament_count": 0,
+                    "result_count": 0,
+                    "first_seen": r["ts_created"],
+                },
             )
             entry["tournament_count"] += 1
             if r["ts_created"] < entry["first_seen"]:
@@ -113,8 +109,7 @@ class DraftStore:
         for r in res_rows:
             rid = r["txt_run_id"]
             entry = agg.setdefault(
-                rid, {"run_id": rid, "tournament_count": 0, "result_count": 0,
-                      "first_seen": None}
+                rid, {"run_id": rid, "tournament_count": 0, "result_count": 0, "first_seen": None}
             )
             entry["result_count"] += 1
 

@@ -16,11 +16,11 @@ from pathlib import Path
 # Reuse inference logic
 sys.path.insert(0, str(Path(__file__).parent))
 from infer_birth_years import (
-    SEED_FENCER_PATH,
     DATA_DIR,
+    SEED_FENCER_PATH,
+    infer_birth_year_range,
     parse_fencers,
     scan_tournament_observations,
-    infer_birth_year_range,
 )
 
 
@@ -51,7 +51,10 @@ def main():
             midpoint = (min_yr + max_yr) // 2
             categories = set(cat for _, cat in obs)
             cat_str = "/".join(sorted(categories))
-            updates[f["line_num"]] = (midpoint, f"ESTIMATED from {cat_str} (range {min_yr}-{max_yr})")
+            updates[f["line_num"]] = (
+                midpoint,
+                f"ESTIMATED from {cat_str} (range {min_yr}-{max_yr})",
+            )
 
     if dry_run:
         print(f"=== DRY RUN: {len(updates)} birth years to update ===\n")

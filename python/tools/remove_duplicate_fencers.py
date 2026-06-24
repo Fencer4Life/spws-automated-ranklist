@@ -89,10 +89,12 @@ def remap_seed_data_files(data_dir: Path, remap: dict[int, int | None], dry_run:
                     if old_id in remap:
                         new_id = remap[old_id]
                         if new_id is None:
-                            print(f"  ERROR: {sql_file.name}:{i+1} references deleted fencer id={old_id}")
+                            print(
+                                f"  ERROR: {sql_file.name}:{i + 1} references deleted fencer id={old_id}"
+                            )
                         else:
                             if dry_run:
-                                print(f"  {sql_file.name}:{i+1}  id {old_id} → {new_id}")
+                                print(f"  {sql_file.name}:{i + 1}  id {old_id} → {new_id}")
                             new_lines.append(f"{indent}{new_id}{suffix}")
                             modified = True
                             total_replacements += 1
@@ -119,7 +121,7 @@ def remove_seed_lines(seed_path: Path, lines_to_remove: list[int], dry_run: bool
 
     for idx in sorted(remove_indices):
         line = lines[idx].rstrip("\n")
-        print(f"  Removing line {idx+1}: {line.strip()}")
+        print(f"  Removing line {idx + 1}: {line.strip()}")
 
     if dry_run:
         return

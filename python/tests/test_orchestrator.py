@@ -20,9 +20,7 @@ Plan test IDs 9.149–9.161:
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, call
-
-import pytest
+from unittest.mock import MagicMock
 
 FIXTURES = Path(__file__).parent / "fixtures" / "fencingtime_xml"
 
@@ -59,6 +57,7 @@ def _make_mock_db(
 def _make_silent_notifier():
     """Create a TelegramNotifier in silent mode (no-op)."""
     from python.pipeline.notifications import TelegramNotifier
+
     return TelegramNotifier(None, None)
 
 
@@ -76,7 +75,7 @@ class TestSingleCategoryRouting:
 
         db = _make_mock_db()
         notifier = _make_silent_notifier()
-        result = process_xml_file(
+        process_xml_file(
             file_bytes=_load_fixture("single_category.xml"),
             filename="RESULTS_V50ME.xml",
             db=db,
@@ -118,13 +117,13 @@ class TestPreliminarySkipping:
         notifier = _make_silent_notifier()
 
         # Build a minimal XML with Sexe="X"
-        xml = """<?xml version="1.0" encoding="utf-8"?>
+        xml = b"""<?xml version="1.0" encoding="utf-8"?>
         <CompetitionIndividuelle Arme="E" Sexe="X" AltName="SZPADA ELIMINACJE"
             Annee="2025/2026" Date="21.02.2026" TitreLong="Test" Federation="POL">
             <Tireurs>
                 <Tireur Nom="TEST" Prenom="One" Classement="1" Nation="POL"/>
             </Tireurs>
-        </CompetitionIndividuelle>""".encode("utf-8")
+        </CompetitionIndividuelle>"""
 
         result = process_xml_file(
             file_bytes=xml,
@@ -172,7 +171,7 @@ class TestCombinedCategorySplitting:
         }
         db = _make_mock_db(tournaments=tournaments)
         notifier = _make_silent_notifier()
-        result = process_xml_file(
+        process_xml_file(
             file_bytes=_load_fixture("combined_v0v1.xml"),
             filename="RESULTS_VETME_v0v1.xml",
             db=db,
@@ -181,7 +180,9 @@ class TestCombinedCategorySplitting:
         )
         # Each ingest call should have results with places starting at 1
         for ingest_call in db.ingest_results.call_args_list:
-            results_json = ingest_call[0][1] if len(ingest_call[0]) > 1 else ingest_call[1].get("results_json")
+            results_json = (
+                ingest_call[0][1] if len(ingest_call[0]) > 1 else ingest_call[1].get("results_json")
+            )
             if isinstance(results_json, list):
                 places = sorted(r["int_place"] for r in results_json)
                 assert places[0] == 1, "Re-ranking should start at 1"
@@ -259,8 +260,13 @@ class TestDomesticInternationalRules:
         from python.pipeline.orchestrator import process_xml_file
 
         fencer_db = [
-            {"id_fencer": 1, "txt_surname": "KOWALSKI", "txt_first_name": "Jan",
-             "int_birth_year": 1974, "json_name_aliases": None},
+            {
+                "id_fencer": 1,
+                "txt_surname": "KOWALSKI",
+                "txt_first_name": "Jan",
+                "int_birth_year": 1974,
+                "json_name_aliases": None,
+            },
         ]
         db = _make_mock_db(fencer_db=fencer_db)
         notifier = _make_silent_notifier()
@@ -272,38 +278,49 @@ class TestDomesticInternationalRules:
             season_end_year=2026,
             tournament_type="PEW",
         )
-        assert db.ingest_results.called, \
+        assert db.ingest_results.called, (
             "ingest_results must be called even when only 1 POL fencer matches"
+        )
         call = db.ingest_results.call_args
         # fixture single_category.xml has 5 fencers (4 POL + 1 GER)
         passed_count = call.kwargs.get("participant_count")
         if passed_count is None and len(call.args) >= 3:
             passed_count = call.args[2]
         assert passed_count == 5, (
-            f"participant_count must be 5 (raw field size) not "
-            f"{passed_count} (payload length)"
+            f"participant_count must be 5 (raw field size) not {passed_count} (payload length)"
         )
         # Regression guard: payload must be strictly smaller than field size
         # (some foreign fencers got filtered by ADR-038), so the bug would
         # surface as participant_count == payload length.
         payload = call.args[1] if len(call.args) > 1 else call.kwargs["results_json"]
-        assert len(payload) < 5, \
-            f"Payload ({len(payload)}) must be smaller than field (5); " \
+        assert len(payload) < 5, (
+            f"Payload ({len(payload)}) must be smaller than field (5); "
             "otherwise this test does not exercise the bug"
+        )
 
     def test_auto_matched_correct_payload(self):
         """9.157 Auto-matched fencers → correct JSONB payload for RPC."""
         from python.pipeline.orchestrator import process_xml_file
 
         fencer_db = [
-            {"id_fencer": 1, "txt_surname": "NOWAK", "txt_first_name": "Piotr",
-             "int_birth_year": 1970, "json_name_aliases": None},
-            {"id_fencer": 2, "txt_surname": "WIŚNIEWSKI", "txt_first_name": "Andrzej",
-             "int_birth_year": 1972, "json_name_aliases": None},
+            {
+                "id_fencer": 1,
+                "txt_surname": "NOWAK",
+                "txt_first_name": "Piotr",
+                "int_birth_year": 1970,
+                "json_name_aliases": None,
+            },
+            {
+                "id_fencer": 2,
+                "txt_surname": "WIŚNIEWSKI",
+                "txt_first_name": "Andrzej",
+                "int_birth_year": 1972,
+                "json_name_aliases": None,
+            },
         ]
         db = _make_mock_db(fencer_db=fencer_db)
         notifier = _make_silent_notifier()
-        result = process_xml_file(
+        process_xml_file(
             file_bytes=_load_fixture("single_category.xml"),
             filename="RESULTS_V50ME.xml",
             db=db,
@@ -314,7 +331,9 @@ class TestDomesticInternationalRules:
         # ingest_results should have been called with a list containing matched fencers
         assert db.ingest_results.called
         call_args = db.ingest_results.call_args
-        results_json = call_args[0][1] if len(call_args[0]) > 1 else call_args[1].get("results_json")
+        results_json = (
+            call_args[0][1] if len(call_args[0]) > 1 else call_args[1].get("results_json")
+        )
         assert isinstance(results_json, list)
         for r in results_json:
             assert "id_fencer" in r
@@ -367,10 +386,10 @@ class TestErrorHandling:
         """9.160 Empty XML (no Tireurs) → error."""
         from python.pipeline.orchestrator import process_xml_file
 
-        xml = """<?xml version="1.0" encoding="utf-8"?>
+        xml = b"""<?xml version="1.0" encoding="utf-8"?>
         <CompetitionIndividuelle Arme="E" Sexe="M" AltName="SZPADA MEZCZYZN v2"
             Annee="2025/2026" Date="21.02.2026" TitreLong="Test" Federation="POL">
-        </CompetitionIndividuelle>""".encode("utf-8")
+        </CompetitionIndividuelle>"""
 
         db = _make_mock_db()
         notifier = _make_silent_notifier()
@@ -390,8 +409,13 @@ class TestErrorHandling:
 
         # Provide fencers that will partially match (different first name → pending)
         fencer_db = [
-            {"id_fencer": 1, "txt_surname": "NOWAK", "txt_first_name": "Stanisław",
-             "int_birth_year": 1970, "json_name_aliases": None},
+            {
+                "id_fencer": 1,
+                "txt_surname": "NOWAK",
+                "txt_first_name": "Stanisław",
+                "int_birth_year": 1970,
+                "json_name_aliases": None,
+            },
         ]
         db = _make_mock_db(fencer_db=fencer_db)
         notifier = _make_mock_notifier()
@@ -483,13 +507,13 @@ class TestNotificationWiring:
         db = _make_mock_db()
         notifier = _make_mock_notifier()
 
-        xml = """<?xml version="1.0" encoding="utf-8"?>
+        xml = b"""<?xml version="1.0" encoding="utf-8"?>
         <CompetitionIndividuelle Arme="E" Sexe="X" AltName="SZPADA ELIMINACJE"
             Annee="2025/2026" Date="21.02.2026" TitreLong="Test" Federation="POL">
             <Tireurs>
                 <Tireur Nom="TEST" Prenom="One" Classement="1" Nation="POL"/>
             </Tireurs>
-        </CompetitionIndividuelle>""".encode("utf-8")
+        </CompetitionIndividuelle>"""
 
         result = process_xml_file(
             file_bytes=xml,
@@ -508,7 +532,7 @@ class TestNotificationWiring:
         db = _make_mock_db(fencer_db=[])
         db.has_existing_results.return_value = True
         notifier = _make_mock_notifier()
-        result = process_xml_file(
+        process_xml_file(
             file_bytes=_load_fixture("single_category.xml"),
             filename="RESULTS_V50ME.xml",
             db=db,

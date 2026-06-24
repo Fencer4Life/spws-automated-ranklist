@@ -77,20 +77,16 @@ class TestSplitOnFtlShapedRows:
         # tournament rows (V0 + V1). Pre-fix: every fencer placed in both
         # tournaments. Post-fix: splitter slices by BY.
         ftl_rows = [
-            {"fencer_name": "KOWAL Anna",     "place": 1, "country": "POL"},
-            {"fencer_name": "NOWAK Beata",    "place": 2, "country": "POL"},
+            {"fencer_name": "KOWAL Anna", "place": 1, "country": "POL"},
+            {"fencer_name": "NOWAK Beata", "place": 2, "country": "POL"},
             {"fencer_name": "KOWALSKA Cyryla", "place": 3, "country": "POL"},
-            {"fencer_name": "MAZUR Dorota",   "place": 4, "country": "POL"},
+            {"fencer_name": "MAZUR Dorota", "place": 4, "country": "POL"},
         ]
         fencer_db = [
-            {"txt_surname": "KOWAL", "txt_first_name": "Anna",
-             "int_birth_year": 1990},  # V0
-            {"txt_surname": "NOWAK", "txt_first_name": "Beata",
-             "int_birth_year": 1980},  # V1
-            {"txt_surname": "KOWALSKA", "txt_first_name": "Cyryla",
-             "int_birth_year": 1992},  # V0
-            {"txt_surname": "MAZUR", "txt_first_name": "Dorota",
-             "int_birth_year": 1978},  # V1
+            {"txt_surname": "KOWAL", "txt_first_name": "Anna", "int_birth_year": 1990},  # V0
+            {"txt_surname": "NOWAK", "txt_first_name": "Beata", "int_birth_year": 1980},  # V1
+            {"txt_surname": "KOWALSKA", "txt_first_name": "Cyryla", "int_birth_year": 1992},  # V0
+            {"txt_surname": "MAZUR", "txt_first_name": "Dorota", "int_birth_year": 1978},  # V1
         ]
 
         split = split_combined_results(
@@ -131,12 +127,19 @@ class TestSplitOnFtlShapedRows:
         # When the source provides DOB on the row (e.g. EVF API), use it
         # in preference to the DB lookup.
         ftl_rows = [
-            {"fencer_name": "KOWAL Anna", "place": 1, "country": "POL",
-             "birth_date": "1990-05-12"},  # V0
+            {
+                "fencer_name": "KOWAL Anna",
+                "place": 1,
+                "country": "POL",
+                "birth_date": "1990-05-12",
+            },  # V0
         ]
         fencer_db = [
-            {"txt_surname": "KOWAL", "txt_first_name": "Anna",
-             "int_birth_year": 1980},  # would be V1 — but DOB on row wins
+            {
+                "txt_surname": "KOWAL",
+                "txt_first_name": "Anna",
+                "int_birth_year": 1980,
+            },  # would be V1 — but DOB on row wins
         ]
         split = split_combined_results(
             ftl_rows,

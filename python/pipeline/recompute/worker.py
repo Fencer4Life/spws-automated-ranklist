@@ -9,10 +9,11 @@ recompute is idempotent, so the loop settles to a fixpoint.
 Invoked periodically (pg_cron → Edge Function, ADR-041). Pure enough to unit-test:
 the clock, the flow runner, and the DB are all injected.
 """
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Callable
+from collections.abc import Callable
+from datetime import UTC, datetime
 
 # Module-level so a scheduled `main()` run can build a live connector, and tests
 # can monkeypatch it. The heavy `supabase` import stays lazy inside the factory.
@@ -30,8 +31,10 @@ def _default_run_recompute(id_event: int, *, db, svc=None) -> None:
     svc = svc or Services(db=db, config={})
     cfg = dict(svc.config or {})
     cfg["id_event"] = id_event
-    run_flow(FlowParams(Flow.RECOMPUTE_DOMESTIC, id_event=id_event),
-             svc=Services(db=db, config=cfg, notifier=svc.notifier))
+    run_flow(
+        FlowParams(Flow.RECOMPUTE_DOMESTIC, id_event=id_event),
+        svc=Services(db=db, config=cfg, notifier=svc.notifier),
+    )
 
 
 def drain_recompute_queue(
@@ -47,7 +50,7 @@ def drain_recompute_queue(
     Returns the list of id_events recomputed (empty if still within the debounce
     window or the queue is empty — the quiescent state).
     """
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     watermark = db.recompute_watermark()
     if watermark is not None:
         if isinstance(watermark, str):
@@ -76,11 +79,17 @@ def main(argv: list[str] | None = None) -> int:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Drain the recompute queue once if the roster is quiescent.")
-    parser.add_argument("--drain", action="store_true",
-                        help="Drain the queue once (required — the only action).")
-    parser.add_argument("--debounce", type=int, default=DEBOUNCE_WINDOW_SECONDS,
-                        help="Seconds of roster quiet required before draining.")
+        description="Drain the recompute queue once if the roster is quiescent."
+    )
+    parser.add_argument(
+        "--drain", action="store_true", help="Drain the queue once (required — the only action)."
+    )
+    parser.add_argument(
+        "--debounce",
+        type=int,
+        default=DEBOUNCE_WINDOW_SECONDS,
+        help="Seconds of roster quiet required before draining.",
+    )
     args = parser.parse_args(argv)
     if not args.drain:
         parser.error("nothing to do; pass --drain")

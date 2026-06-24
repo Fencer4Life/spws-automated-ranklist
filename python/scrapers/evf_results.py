@@ -24,8 +24,14 @@ import httpx
 
 # EVF category/weapon mapping
 WEAPON_MAP = {1: "FOIL", 2: "EPEE", 3: "SABRE"}
-WEAPON_ABBR_MAP = {"MF": ("FOIL", "M"), "ME": ("EPEE", "M"), "MS": ("SABRE", "M"),
-                   "WF": ("FOIL", "F"), "WE": ("EPEE", "F"), "WS": ("SABRE", "F")}
+WEAPON_ABBR_MAP = {
+    "MF": ("FOIL", "M"),
+    "ME": ("EPEE", "M"),
+    "MS": ("SABRE", "M"),
+    "WF": ("FOIL", "F"),
+    "WE": ("EPEE", "F"),
+    "WS": ("SABRE", "F"),
+}
 CATEGORY_MAP = {1: "V1", 2: "V2", 3: "V3", 4: "V4"}
 
 EVF_PAGE_URL = "https://www.veteransfencing.eu/fencing/results/"
@@ -152,22 +158,24 @@ class EvfApiClient:
                     except (ValueError, TypeError):
                         continue
 
-            found.append({
-                "evf_id": eid,
-                "name": name,
-                "date": starts,
-                "location": location,
-                "country": country,
-                "weapons": weapons,
-                "categories": categories,
-                "competitions": len(comps),
-                "total_fencers": total,
-                "is_team": is_team,
-                "url": url,
-                "fee": fee,
-                "fee_currency": fee_currency,
-                "has_results": total > 0,
-            })
+            found.append(
+                {
+                    "evf_id": eid,
+                    "name": name,
+                    "date": starts,
+                    "location": location,
+                    "country": country,
+                    "weapons": weapons,
+                    "categories": categories,
+                    "competitions": len(comps),
+                    "total_fencers": total,
+                    "is_team": is_team,
+                    "url": url,
+                    "fee": fee,
+                    "fee_currency": fee_currency,
+                    "has_results": total > 0,
+                }
+            )
 
         return sorted(found, key=lambda e: e["date"])
 
@@ -302,17 +310,19 @@ def scrape_event_results(
                 first_name = r.get("fencer_firstname", "")
                 fencer_name = f"{surname} {first_name}".strip()
 
-                all_results.append({
-                    "fencer_name": fencer_name,
-                    "place": int(r.get("place", 0)),
-                    "country": country,
-                    "weapon": weapon,
-                    "gender": gender,
-                    "category": category,
-                    "dob": r.get("fencer_dob", ""),
-                    "evf_points": float(r.get("total_points", 0)),
-                    "competition_id": comp_id,
-                })
+                all_results.append(
+                    {
+                        "fencer_name": fencer_name,
+                        "place": int(r.get("place", 0)),
+                        "country": country,
+                        "weapon": weapon,
+                        "gender": gender,
+                        "category": category,
+                        "dob": r.get("fencer_dob", ""),
+                        "evf_points": float(r.get("total_points", 0)),
+                        "competition_id": comp_id,
+                    }
+                )
 
         return all_results
 
@@ -347,6 +357,7 @@ def find_event_by_date(events: list[dict], date: str) -> dict | None:
 # (weapon / gender / category / date) it learned from /events/competitions.
 # =============================================================================
 
+
 def parse_results(
     raw_results: list[dict],
     weapon: str | None = None,
@@ -372,7 +383,10 @@ def parse_results(
     from datetime import datetime as _dt
 
     from python.pipeline.ir import (
-        ParsedResult, ParsedTournament, SourceKind, make_synthetic_id,
+        ParsedResult,
+        ParsedTournament,
+        SourceKind,
+        make_synthetic_id,
     )
 
     parsed: list[ParsedResult] = []
@@ -394,19 +408,21 @@ def parse_results(
         else:
             birth_date, birth_year = None, None
 
-        parsed.append(ParsedResult(
-            source_row_id=make_synthetic_id(
-                SourceKind.EVF_API,
-                row_index=i,
+        parsed.append(
+            ParsedResult(
+                source_row_id=make_synthetic_id(
+                    SourceKind.EVF_API,
+                    row_index=i,
+                    place=place,
+                    name=fencer_name,
+                ),
+                fencer_name=fencer_name,
                 place=place,
-                name=fencer_name,
-            ),
-            fencer_name=fencer_name,
-            place=place,
-            fencer_country=country,
-            birth_date=birth_date,
-            birth_year=birth_year,
-        ))
+                fencer_country=country,
+                birth_date=birth_date,
+                birth_year=birth_year,
+            )
+        )
 
     return ParsedTournament(
         source_kind=SourceKind.EVF_API,

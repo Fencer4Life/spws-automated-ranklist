@@ -24,7 +24,7 @@ from rapidfuzz import fuzz
 
 # Add project python dir to path for imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from matcher.fuzzy_match import normalize_name, fold_diacritics
+from matcher.fuzzy_match import fold_diacritics, normalize_name
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 SEED_PATH = PROJECT_ROOT / "supabase" / "seed_tbl_fencer.sql"
@@ -38,8 +38,8 @@ EXCEL_ONLY_SEASONS = ["Sezon 2021", "Sezon 2022"]
 # Run 1 (already applied): KORONA-TRZEBSKI→KORONA, TK→KOŃCZYŁO
 # Run 2 (already applied): 6 duplicate pairs
 DUPLICATES = {
-    66: 65,    # FRAŚ Felix → FRAŚ Feliks
-    72: 71,    # FUHRMANN Urlike → FUHRMANN Ulrike
+    66: 65,  # FRAŚ Felix → FRAŚ Feliks
+    72: 71,  # FUHRMANN Urlike → FUHRMANN Ulrike
     170: 169,  # KRUJASKIS Gotfridas → KRUJALSKIS Gotfridas
     196: 195,  # MAZIK Alksander → MAZIK Aleksander
     216: 217,  # NIKALAICHUK Aleksander → NIKALAICHUK Aliaksandr
@@ -85,13 +85,9 @@ def scan_ppw_mpw_fencer_ids(data_dir: Path) -> set[int]:
                         if "txt_code" in lines[j]:
                             code_line = lines[j]
                             # PPW/MPW/GPW are domestic; PEW/MEW/PSW/MSW/IMEW/IMSW are international
-                            is_domestic = any(
-                                t in code_line
-                                for t in ["PPW", "MPW", "GPW"]
-                            )
+                            is_domestic = any(t in code_line for t in ["PPW", "MPW", "GPW"])
                             is_international = any(
-                                t in code_line
-                                for t in ["PEW", "MEW", "PSW", "MSW", "IMEW", "IMSW"]
+                                t in code_line for t in ["PEW", "MEW", "PSW", "MSW", "IMEW", "IMSW"]
                             )
                             if is_domestic and not is_international:
                                 ppw_mpw_ids.add(fid)
@@ -178,13 +174,11 @@ def parse_seed_entries(seed_path: Path) -> list[dict]:
 
     entries = []
     # Each data line: ('SURNAME', 'FirstName', YEAR_OR_NULL),  -- optional comment
-    pattern = re.compile(
-        r"\s*\('([^']*)',\s*'([^']*)',\s*(NULL|\d+)\s*\)\s*([,;])\s*(--\s*.*)?"
-    )
+    pattern = re.compile(r"\s*\('([^']*)',\s*'([^']*)',\s*(NULL|\d+)\s*\)\s*([,;])\s*(--\s*.*)?")
 
     # Auto-increment ID based on order of appearance (not line number)
     fencer_id = 0
-    for i, line in enumerate(lines):
+    for _i, line in enumerate(lines):
         m = pattern.match(line)
         if m:
             fencer_id += 1
@@ -192,14 +186,16 @@ def parse_seed_entries(seed_path: Path) -> list[dict]:
             # Strip NO PPW/MPW comment if present
             if comment and "NO PPW/MPW" in comment:
                 comment = None
-            entries.append({
-                "old_id": fencer_id,
-                "surname": surname,
-                "first_name": first_name,
-                "birth_year": None if year_str == "NULL" else int(year_str),
-                "comment": comment.strip() if comment else None,
-                "raw_line": line,
-            })
+            entries.append(
+                {
+                    "old_id": fencer_id,
+                    "surname": surname,
+                    "first_name": first_name,
+                    "birth_year": None if year_str == "NULL" else int(year_str),
+                    "comment": comment.strip() if comment else None,
+                    "raw_line": line,
+                }
+            )
 
     return entries
 
@@ -280,13 +276,13 @@ def remap_data_files(
                             lines_to_delete.add(j)
                         total_deleted += 1
                         if dry_run:
-                            print(f"  DELETE {sql_file.name}:{i+1}  id {old_id}")
+                            print(f"  DELETE {sql_file.name}:{i + 1}  id {old_id}")
                     elif old_id in id_map and id_map[old_id] != old_id:
                         new_id = id_map[old_id]
                         remap_changes[i] = f"{indent}{new_id}{suffix}"
                         total_remapped += 1
                         if dry_run:
-                            print(f"  REMAP  {sql_file.name}:{i+1}  id {old_id} → {new_id}")
+                            print(f"  REMAP  {sql_file.name}:{i + 1}  id {old_id} → {new_id}")
 
         if not lines_to_delete and not remap_changes:
             continue
@@ -333,15 +329,9 @@ INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year) VALUES
 
     for (surname, first_name), aliases in sorted(ALIASES.items()):
         alias_json = "[" + ", ".join(f'"{a}"' for a in aliases) + "]"
-        lines.append(
-            f"-- {surname} {first_name} also competed as: {', '.join(aliases)}"
-        )
-        lines.append(
-            f"UPDATE tbl_fencer SET json_name_aliases = '{alias_json}'"
-        )
-        lines.append(
-            f"WHERE txt_surname = '{surname}' AND txt_first_name = '{first_name}';"
-        )
+        lines.append(f"-- {surname} {first_name} also competed as: {', '.join(aliases)}")
+        lines.append(f"UPDATE tbl_fencer SET json_name_aliases = '{alias_json}'")
+        lines.append(f"WHERE txt_surname = '{surname}' AND txt_first_name = '{first_name}';")
 
     seed_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -381,12 +371,12 @@ def main():
         print("No duplicates to remove")
 
     # Step 3: Scan data files to find domestic (PPW/MPW) fencer IDs
-    print(f"\nScanning SQL data files for PPW/MPW participation...")
+    print("\nScanning SQL data files for PPW/MPW participation...")
     ppw_mpw_ids = scan_ppw_mpw_fencer_ids(DATA_DIR)
     print(f"  Found {len(ppw_mpw_ids)} fencers with PPW/MPW results in SQL")
 
     # Step 3b: Scan Excel-only seasons (2021, 2022) for domestic participants
-    print(f"Scanning Excel-only seasons for domestic participants...")
+    print("Scanning Excel-only seasons for domestic participants...")
     excel_names = scan_excel_domestic_names(EXCEL_DIR, EXCEL_ONLY_SEASONS)
     print(f"  Found {len(excel_names)} unique names in Excel files")
     excel_ids = match_excel_names_to_seed(excel_names, kept)
@@ -395,7 +385,7 @@ def main():
     domestic_ids = ppw_mpw_ids | excel_ids
 
     # Step 4: Remove non-domestic fencers (ADR-019)
-    before_count = len(kept)
+    len(kept)
     non_domestic = []
     domestic = []
     for e in kept:
@@ -446,7 +436,7 @@ def main():
     print(f"IDs to remove from data files: {len(removed_ids)}")
 
     # Step 7: Remap data files + delete removed result blocks
-    print(f"\nProcessing data files...")
+    print("\nProcessing data files...")
     remapped, deleted = remap_data_files(DATA_DIR, id_map, removed_ids, dry_run)
     print(f"  Remapped: {remapped}")
     print(f"  Deleted result blocks: {deleted}")
@@ -459,7 +449,7 @@ def main():
             entry["surname"],
             entry["first_name"],
         )
-    print(f"\nKey ID mappings for pgTAP test updates:")
+    print("\nKey ID mappings for pgTAP test updates:")
     # Print mappings for known test-referenced fencers
     test_ids = [9, 56, 105, 106, 117, 145, 228, 235, 317, 318, 331, 335, 355]
     for old_id in test_ids:
@@ -483,7 +473,7 @@ def main():
         for e in kept[-5:]:
             print(f"    {e['surname']} {e['first_name']} (was id={e['old_id']})")
 
-    print(f"\nDone!")
+    print("\nDone!")
     if dry_run:
         print("Re-run without --dry-run to apply.")
 

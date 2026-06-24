@@ -5,6 +5,7 @@ as export_seed.py (ADR-036). Replaces Management API with docker exec psql.
 Usage:
     python -m python.pipeline.export_seed_local
 """
+
 from __future__ import annotations
 
 import argparse
@@ -16,7 +17,7 @@ from datetime import date
 
 # Import the formatting helpers from the cloud exporter — they're pure.
 from python.pipeline import export_seed
-from python.pipeline.export_seed import export_monolithic, mgmt_query as _real_mgmt
+from python.pipeline.export_seed import export_monolithic
 
 
 def _pg_array_literal(items: list) -> str:
@@ -31,7 +32,7 @@ def _pg_array_literal(items: list) -> str:
     for it in items:
         s = str(it)
         if any(c in s for c in ', "{}\\'):
-            s = '"' + s.replace('\\', '\\\\').replace('"', '\\"') + '"'
+            s = '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
         quoted.append(s)
     return "{" + ",".join(quoted) + "}"
 
@@ -56,11 +57,22 @@ def docker_query(_ref, _token, sql: str) -> list[dict]:
     wrapped = f"SELECT COALESCE(json_agg(t), '[]'::json) FROM ({sql}) t"
     result = subprocess.run(
         [
-            "docker", "exec", "-i", "supabase_db_SPWSranklist",
-            "psql", "-U", "postgres", "-d", "postgres",
-            "-A", "-t", "-c", wrapped,
+            "docker",
+            "exec",
+            "-i",
+            "supabase_db_SPWSranklist",
+            "psql",
+            "-U",
+            "postgres",
+            "-d",
+            "postgres",
+            "-A",
+            "-t",
+            "-c",
+            wrapped,
         ],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     if result.returncode != 0:
         raise RuntimeError(f"psql error: {result.stderr[:300]}\nQUERY: {sql[:200]}")
@@ -79,11 +91,13 @@ def main() -> None:
     # FK to other tbl_event rows whose ids change after TRUNCATE RESTART
     # IDENTITY. We rely on fn_backfill_id_prior_event() post-seed.
     _real_discover = export_seed.discover_cols
+
     def _patched(ref, token, table):
         cols = _real_discover(ref, token, table)
         if table == "tbl_event":
             cols = [c for c in cols if c["name"] != "id_prior_event"]
         return cols
+
     export_seed.discover_cols = _patched
 
     stamp = date.today().isoformat()
@@ -96,7 +110,7 @@ def main() -> None:
     sql += "\n-- Restore id_prior_event FKs (rule-based; ADR-006)\nSELECT fn_backfill_id_prior_event();\n"
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(sql)
-    print(f"  Written: {out_path} ({len(sql)//1024} KB)", file=sys.stderr)
+    print(f"  Written: {out_path} ({len(sql) // 1024} KB)", file=sys.stderr)
 
 
 if __name__ == "__main__":

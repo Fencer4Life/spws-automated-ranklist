@@ -32,6 +32,7 @@ from python.pipeline.evf_parity import ParityResult, check_parity
 @dataclass
 class CommitLifecycleResult:
     """Aggregated outcome for the post-commit chain — used by callers/tests."""
+
     cascade_ran: bool = False
     cascade_renamed_to: str | None = None
     cascade_rows: int = 0
@@ -103,24 +104,22 @@ def run_post_commit_hooks(
                     e = evf_by_name.get(_fold(lr.get("fencer_name")))
                     if e is None:
                         continue
-                    payload.append({
-                        "id_fencer": lr.get("id_fencer"),
-                        "int_place": lr.get("int_place"),
-                        "num_final_score": float(e.get("points", 0) or 0),
-                    })
+                    payload.append(
+                        {
+                            "id_fencer": lr.get("id_fencer"),
+                            "int_place": lr.get("int_place"),
+                            "num_final_score": float(e.get("points", 0) or 0),
+                        }
+                    )
                 promoted = db.promote_evf_published(id_event, payload)
-                out.fencers_overwritten = int(
-                    promoted.get("fencers_overwritten", len(payload))
-                )
+                out.fencers_overwritten = int(promoted.get("fencers_overwritten", len(payload)))
                 if notifier is not None:
                     notifier.notify_evf_promoted(
                         out.cascade_renamed_to or event_code, out.fencers_overwritten
                     )
             else:
                 # Build parity_notes summary
-                fail_lines = [
-                    f"[{f.sub_check}] {f.fencer_name}" for f in parity.fail_details
-                ]
+                fail_lines = [f"[{f.sub_check}] {f.fencer_name}" for f in parity.fail_details]
                 notes = "; ".join(fail_lines[:10])
                 if len(fail_lines) > 10:
                     notes += f"; +{len(fail_lines) - 10} more"
@@ -151,6 +150,7 @@ def run_post_commit_hooks(
 # Local helpers (kept private to avoid name pollution)
 # ---------------------------------------------------------------------------
 
+
 def _organizer_code(event: dict) -> str:
     """Derive organizer code from event dict.
 
@@ -172,13 +172,30 @@ def _organizer_code(event: dict) -> str:
 
 
 # Cheap fold for cross-source name matching (mirrors evf_parity's _fold).
-import unicodedata as _ud
-_PL = str.maketrans({
-    "Ą": "A", "Ć": "C", "Ę": "E", "Ł": "L", "Ń": "N",
-    "Ó": "O", "Ś": "S", "Ź": "Z", "Ż": "Z",
-    "ą": "a", "ć": "c", "ę": "e", "ł": "l", "ń": "n",
-    "ó": "o", "ś": "s", "ź": "z", "ż": "z",
-})
+import unicodedata as _ud  # noqa: E402  (deliberate local import near use)
+
+_PL = str.maketrans(
+    {
+        "Ą": "A",
+        "Ć": "C",
+        "Ę": "E",
+        "Ł": "L",
+        "Ń": "N",
+        "Ó": "O",
+        "Ś": "S",
+        "Ź": "Z",
+        "Ż": "Z",
+        "ą": "a",
+        "ć": "c",
+        "ę": "e",
+        "ł": "l",
+        "ń": "n",
+        "ó": "o",
+        "ś": "s",
+        "ź": "z",
+        "ż": "z",
+    }
+)
 
 
 def _fold(s: str | None) -> str:

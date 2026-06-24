@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import zipfile
 from io import BytesIO
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 
 class TestStorageHandler:

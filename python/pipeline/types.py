@@ -21,16 +21,17 @@ read/write contract against a hand-built PipelineContext.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
-
 
 # ===========================================================================
 # Halt signal
 # ===========================================================================
 
-class HaltReason(str, Enum):
+
+class HaltReason(StrEnum):
     """Why a stage halted the pipeline. Reflected in ctx.halt_reason."""
+
     IR_INVALID = "IR_INVALID"
     EVENT_NOT_RESOLVED = "EVENT_NOT_RESOLVED"
     EVENT_AMBIGUOUS = "EVENT_AMBIGUOUS"
@@ -40,7 +41,9 @@ class HaltReason(str, Enum):
     URL_DATA_MISMATCH = "URL_DATA_MISMATCH"
     OVERRIDE_INVALID = "OVERRIDE_INVALID"
     POOL_ROUND_DETECTED = "POOL_ROUND_DETECTED"  # Phase 5: structural pool-round detection
-    PARTICIPANT_COUNT_MISMATCH = "PARTICIPANT_COUNT_MISMATCH"  # ADR-069: post-commit URL count check
+    PARTICIPANT_COUNT_MISMATCH = (
+        "PARTICIPANT_COUNT_MISMATCH"  # ADR-069: post-commit URL count check
+    )
 
 
 class HaltError(Exception):
@@ -50,6 +53,7 @@ class HaltError(Exception):
     Stages MUST raise this (not bare exceptions) for expected halts.
     Unexpected exceptions propagate as bugs.
     """
+
     def __init__(self, reason: HaltReason, detail: str) -> None:
         super().__init__(f"{reason.value}: {detail}")
         self.reason = reason
@@ -60,9 +64,11 @@ class HaltError(Exception):
 # Override surfaces — typed shape, see doc/overrides/<event_code>.yaml
 # ===========================================================================
 
+
 @dataclass(frozen=True)
 class IdentityOverride:
     """Single identity override entry. Either id_fencer (link) OR create_fencer."""
+
     scraped_name: str
     id_fencer: int | None = None
     create_fencer: dict[str, Any] | None = None  # {surname, first_name, birth_year, nationality}
@@ -71,13 +77,15 @@ class IdentityOverride:
 @dataclass(frozen=True)
 class SplitterOverrides:
     """Per-event splitter hints for combined-pool resolution."""
+
     birth_year_overrides: dict[str, int] = field(default_factory=dict)  # scraped_name → birth_year
-    vcat_overrides: dict[str, str] = field(default_factory=dict)        # scraped_name → V-cat
+    vcat_overrides: dict[str, str] = field(default_factory=dict)  # scraped_name → V-cat
 
 
 @dataclass(frozen=True)
 class UrlOverride:
     """Per-event URL override for validation."""
+
     validation_url: str
     override_reason: str = ""
 
@@ -85,6 +93,7 @@ class UrlOverride:
 @dataclass(frozen=True)
 class MatchMethodOverride:
     """Force a row's enum_match_method regardless of confidence score."""
+
     scraped_name: str
     force_method: str  # PENDING | AUTO_MATCHED | AUTO_CREATED | EXCLUDED
     note: str = ""
@@ -93,6 +102,7 @@ class MatchMethodOverride:
 @dataclass(frozen=True)
 class JointPoolOverride:
     """Force bool_joint_pool_split for a tournament + its siblings."""
+
     tournament_code: str
     siblings: list[str] = field(default_factory=list)
     note: str = ""
@@ -105,6 +115,7 @@ class Overrides:
     All sections default to empty so downstream code can read them without
     None checks. Construct empty via `Overrides()` if no override file exists.
     """
+
     identity: list[IdentityOverride] = field(default_factory=list)
     splitter: SplitterOverrides = field(default_factory=SplitterOverrides)
     url: UrlOverride | None = None
@@ -137,22 +148,24 @@ class Overrides:
 # PipelineContext — mutated by each stage S1-S7
 # ===========================================================================
 
+
 @dataclass
 class StageMatchResult:
     """One identity-resolution result for a single scraped row.
 
     Populated by S6. The 3-way diff and commit code consume this.
     """
+
     scraped_name: str
     place: int
-    id_fencer: int | None              # None if EXCLUDED
-    confidence: float                   # 0-100
-    method: str                         # AUTO_MATCHED | PENDING | AUTO_CREATED | EXCLUDED
+    id_fencer: int | None  # None if EXCLUDED
+    confidence: float  # 0-100
+    method: str  # AUTO_MATCHED | PENDING | AUTO_CREATED | EXCLUDED
     alternatives: list[dict] = field(default_factory=list)  # top-N candidates for ambiguous
-    notes: str = ""                     # operator-facing detail (override applied, V0 halt, etc.)
+    notes: str = ""  # operator-facing detail (override applied, V0 halt, etc.)
     governed_birth_year: int | None = None  # ADR-070: governed BY emitted by ResolveFencers
-                                            # (reconciled for exact/fuzzy links, midpoint for
-                                            # created). Consumed by DetectCombinedPool/SplitByAge.
+    # (reconciled for exact/fuzzy links, midpoint for
+    # created). Consumed by DetectCombinedPool/SplitByAge.
     # RECOMPUTE_DOMESTIC (ADR-072, Step C): the source tournament's weapon /
     # gender / date, carried per row so Commit can re-partition by
     # (weapon, gender, governed-V-cat) — an event spans many weapon/gender
@@ -176,14 +189,15 @@ class PipelineContext:
       - Mutated by S1 → ... → S7 in order.
       - Returned to caller; caller reads halted_at_stage + matches + splits.
     """
+
     # Inputs (set at construction; read by all stages)
-    parsed: Any                         # ParsedTournament from python/pipeline/ir.py
+    parsed: Any  # ParsedTournament from python/pipeline/ir.py
     overrides: Overrides
     season_end_year: int
-    event_code: str | None = None       # Phase 5: pre-known event code; S2 uses
-                                        # find_event_by_code instead of date-based
-                                        # active-season lookup. Avoids "active
-                                        # season" assumption for historical re-ingest.
+    event_code: str | None = None  # Phase 5: pre-known event code; S2 uses
+    # find_event_by_code instead of date-based
+    # active-season lookup. Avoids "active
+    # season" assumption for historical re-ingest.
 
     # Stage 0 (ADR-050/056/010/038) — roster reconciliation outputs.
     # Populated by s0_reconcile_roster before the matcher; consumed by the
@@ -194,20 +208,20 @@ class PipelineContext:
     reconcile_conflicts: list[dict] = field(default_factory=list)
 
     # Stage outputs (written by the stage that owns them)
-    event: dict | None = None           # S2 writes: {id_event, txt_code, organizer_hint, ...}
-    is_combined_pool: bool = False      # S3 writes
+    event: dict | None = None  # S2 writes: {id_event, txt_code, organizer_hint, ...}
+    is_combined_pool: bool = False  # S3 writes
     splits: dict[str, list] | None = None  # S4 writes: {V-cat: [ParsedResult, ...]}
     joint_pool_siblings: list[str] = field(default_factory=list)  # S5 writes (tournament_codes)
     matches: list[StageMatchResult] = field(default_factory=list)  # S6 writes
     count_validation: dict | None = None  # S7 writes: {expected, actual, ok}
-    url_validation: Any = None             # S7 writes: ValidationResult (Phase 4 ADR-052)
-    pew_cascade_pending: bool = False      # S7 sets True on PEW weapon-mismatch (ADR-046)
+    url_validation: Any = None  # S7 writes: ValidationResult (Phase 4 ADR-052)
+    pew_cascade_pending: bool = False  # S7 sets True on PEW weapon-mismatch (ADR-046)
 
     # ADR-056 (Phase 5) — V-cat split by post-match fencer birth year
     vcat_groups: dict = field(default_factory=dict)  # {V-cat: [StageMatchResult]}
-    is_joint_pool: bool = False            # True iff vcat_groups has ≥2 V-cats
+    is_joint_pool: bool = False  # True iff vcat_groups has ≥2 V-cats
     unassigned_matches: list = field(default_factory=list)  # PENDING/UNMATCHED/BY-NULL
-    is_pool_round: bool = False            # set true by s7_pool_round_check on mixed-gender brackets
+    is_pool_round: bool = False  # set true by s7_pool_round_check on mixed-gender brackets
 
     # Halt state (set by dispatcher when HaltError caught)
     halted_at_stage: str | None = None

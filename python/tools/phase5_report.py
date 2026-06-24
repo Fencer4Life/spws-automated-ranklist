@@ -55,34 +55,40 @@ def main(argv: list[str] | None = None) -> int:
         description="Re-render Phase 5 staging .md from DB only (no re-ingest)."
     )
     p.add_argument(
-        "--event-code", required=True,
+        "--event-code",
+        required=True,
         help="Event txt_code (e.g. GP1-2023-2024) — must already exist in tbl_event.",
     )
     p.add_argument(
-        "--run-id", default=None,
+        "--run-id",
+        default=None,
         help="Override which draft run_id to read. Defaults to the most "
-             "recent draft for the event.",
+        "recent draft for the event.",
     )
     p.add_argument(
-        "--staging-dir", default="doc/staging",
+        "--staging-dir",
+        default="doc/staging",
         help="Where to write the .md when --md-target=local|both (default: doc/staging).",
     )
     p.add_argument(
-        "--md-target", default="local",
+        "--md-target",
+        default="local",
         choices=["local", "storage", "both", "none"],
         help="Where to persist the .md (ADR-058+061). Default 'local' "
-             "preserves today's behaviour. CI workflows pass 'storage'.",
+        "preserves today's behaviour. CI workflows pass 'storage'.",
     )
     p.add_argument(
-        "--send-telegram", action="store_true",
+        "--send-telegram",
+        action="store_true",
         help="Telegram-deliver the regenerated full.md as a sendDocument "
-             "attachment (ADR-059). Defaults off; requires TELEGRAM_BOT_TOKEN "
-             "+ TELEGRAM_CHAT_ID env vars (null-safe per ADR-061).",
+        "attachment (ADR-059). Defaults off; requires TELEGRAM_BOT_TOKEN "
+        "+ TELEGRAM_CHAT_ID env vars (null-safe per ADR-061).",
     )
     p.add_argument(
-        "--telegram-reason", default="regen",
+        "--telegram-reason",
+        default="regen",
         help="Tag included in the Telegram caption so operator can sort scrollback "
-             "(e.g. 'regen', 'first-ingest'). Default 'regen'.",
+        "(e.g. 'regen', 'first-ingest'). Default 'regen'.",
     )
     args = p.parse_args(argv)
 
@@ -90,7 +96,8 @@ def main(argv: list[str] | None = None) -> int:
 
     # Defer the heavy import so --help is fast.
     from python.tools.phase5_runner import (
-        _fetch_event_meta, _multi_summary_md,
+        _fetch_event_meta,
+        _multi_summary_md,
     )
 
     event_meta = _fetch_event_meta(db, args.event_code)
@@ -105,8 +112,7 @@ def main(argv: list[str] | None = None) -> int:
     if run_id is None:
         # Still useful — produce a "live" report from committed tournaments.
         print(
-            f"⚠ no draft run_id for {args.event_code}; rendering "
-            "committed-only report",
+            f"⚠ no draft run_id for {args.event_code}; rendering committed-only report",
             file=sys.stderr,
         )
 
@@ -115,8 +121,12 @@ def main(argv: list[str] | None = None) -> int:
     # `derive_pending_from_run_id`, the tournaments section reads
     # tbl_tournament / tbl_tournament_draft directly.
     md = _multi_summary_md(
-        args.event_code, event_meta, ctxs=[], db=db,
-        pool_brackets=None, pool_warnings=None,
+        args.event_code,
+        event_meta,
+        ctxs=[],
+        db=db,
+        pool_brackets=None,
+        pool_warnings=None,
         run_id=run_id,
         url_check_results={},
     )
@@ -142,7 +152,9 @@ def main(argv: list[str] | None = None) -> int:
     # TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID env vars absent.
     if args.send_telegram:
         import os
+
         from python.pipeline.notifications import TelegramNotifier
+
         notifier = TelegramNotifier(
             bot_token=os.environ.get("TELEGRAM_BOT_TOKEN"),
             chat_id=os.environ.get("TELEGRAM_CHAT_ID"),

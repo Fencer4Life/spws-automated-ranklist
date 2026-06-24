@@ -28,7 +28,7 @@ from pathlib import Path
 
 from python.pipeline.db_connector import create_db_connector
 from python.pipeline.draft_store import DraftStore
-from python.pipeline.review_cli import Fetcher, ReviewSession, SourceChoice
+from python.pipeline.review_cli import Fetcher, ReviewSession
 
 
 def _summary_md(event_code: str, url: str, ctx, parsed) -> str:
@@ -87,14 +87,23 @@ def _summary_md(event_code: str, url: str, ctx, parsed) -> str:
         if confs:
             buckets = Counter()
             for c in confs:
-                if c >= 0.95: buckets["[0.95–1.00] high"] += 1
-                elif c >= 0.85: buckets["[0.85–0.95) good"] += 1
-                elif c >= 0.70: buckets["[0.70–0.85) borderline"] += 1
-                else: buckets["[<0.70] suspect"] += 1
+                if c >= 0.95:
+                    buckets["[0.95–1.00] high"] += 1
+                elif c >= 0.85:
+                    buckets["[0.85–0.95) good"] += 1
+                elif c >= 0.70:
+                    buckets["[0.70–0.85) borderline"] += 1
+                else:
+                    buckets["[<0.70] suspect"] += 1
             lines.append("")
             lines.append("| Confidence bucket | Count |")
             lines.append("|---|---:|")
-            for k in ["[0.95–1.00] high", "[0.85–0.95) good", "[0.70–0.85) borderline", "[<0.70] suspect"]:
+            for k in [
+                "[0.95–1.00] high",
+                "[0.85–0.95) good",
+                "[0.70–0.85) borderline",
+                "[<0.70] suspect",
+            ]:
                 lines.append(f"| {k} | {buckets.get(k, 0)} |")
 
     # Tricky parts surfaced
@@ -137,11 +146,17 @@ def _summary_md(event_code: str, url: str, ctx, parsed) -> str:
     lines.append("## Next step")
     lines.append("")
     if ctx.halted:
-        lines.append("- Halt at Stage 7 means the URL→data validation rejected this fetch. Edit override YAML or re-supply a different URL.")
+        lines.append(
+            "- Halt at Stage 7 means the URL→data validation rejected this fetch. Edit override YAML or re-supply a different URL."
+        )
     else:
         lines.append("- Operator reviews this summary.")
-        lines.append("- If OK → tell Claude to commit; commit_lifecycle fires Stage 8b cascade + parity gate as appropriate; promotion to CERT/PROD is the next step after that.")
-        lines.append("- If not OK → edit `doc/overrides/<event_code>.yaml` to fix identity/URL/splitter, then re-run.")
+        lines.append(
+            "- If OK → tell Claude to commit; commit_lifecycle fires Stage 8b cascade + parity gate as appropriate; promotion to CERT/PROD is the next step after that."
+        )
+        lines.append(
+            "- If not OK → edit `doc/overrides/<event_code>.yaml` to fix identity/URL/splitter, then re-run."
+        )
 
     lines.append("")
     return "\n".join(lines)
@@ -155,15 +170,18 @@ def _fetch_event_meta(db, event_code: str) -> dict:
     """
     sb = db._sb
     # Fetch every column on tbl_event so the summary can show full detail
-    resp = (
-        sb.table("tbl_event").select("*").eq("txt_code", event_code).execute()
-    )
+    resp = sb.table("tbl_event").select("*").eq("txt_code", event_code).execute()
     if not resp.data:
         raise ValueError(f"event {event_code!r} not found")
     row = resp.data[0]
     urls: list[tuple[int, str]] = []
-    for slot, key in [(1, "url_event"), (2, "url_event_2"), (3, "url_event_3"),
-                      (4, "url_event_4"), (5, "url_event_5")]:
+    for slot, key in [
+        (1, "url_event"),
+        (2, "url_event_2"),
+        (3, "url_event_3"),
+        (4, "url_event_4"),
+        (5, "url_event_5"),
+    ]:
         v = row.get(key)
         if v and v.strip():
             urls.append((slot, v.strip()))
@@ -173,9 +191,9 @@ def _fetch_event_meta(db, event_code: str) -> dict:
     if row.get("id_organizer"):
         org_resp = (
             sb.table("tbl_organizer")
-              .select("txt_code")
-              .eq("id_organizer", row["id_organizer"])
-              .execute()
+            .select("txt_code")
+            .eq("id_organizer", row["id_organizer"])
+            .execute()
         )
         if org_resp.data:
             org_code = org_resp.data[0]["txt_code"]
@@ -195,6 +213,7 @@ def _fetch_event_meta(db, event_code: str) -> dict:
 def _coerce_date(value):
     """Coerce ISO-string/date/datetime into a `date` object (Stage 1 expects this)."""
     from datetime import date, datetime
+
     if value is None:
         return None
     if isinstance(value, date) and not isinstance(value, datetime):
@@ -207,8 +226,9 @@ def _coerce_date(value):
         return None
 
 
-def _stamp_event_metadata(parsed, *, parsed_date, country_default: str | None,
-                           city_default: str | None):
+def _stamp_event_metadata(
+    parsed, *, parsed_date, country_default: str | None, city_default: str | None
+):
     """Stamp event-level metadata onto a ParsedTournament IR.
 
     Phase 5 defaults applied when the source doesn't emit a value:
@@ -217,6 +237,7 @@ def _stamp_event_metadata(parsed, *, parsed_date, country_default: str | None,
       - city        ← tbl_event.txt_location (URL is fallback for non-SPWS sources)
     """
     import dataclasses as _dc
+
     if _dc.is_dataclass(parsed):
         kwargs = {}
         if hasattr(parsed, "parsed_date") and not getattr(parsed, "parsed_date", None):
@@ -232,17 +253,17 @@ def _stamp_event_metadata(parsed, *, parsed_date, country_default: str | None,
                 pass
     if not getattr(parsed, "parsed_date", None):
         try:
-            setattr(parsed, "parsed_date", parsed_date)
+            parsed.parsed_date = parsed_date
         except Exception:
             pass
     if country_default and not getattr(parsed, "country", None):
         try:
-            setattr(parsed, "country", country_default)
+            parsed.country = country_default
         except Exception:
             pass
     if city_default and not getattr(parsed, "city", None):
         try:
-            setattr(parsed, "city", city_default)
+            parsed.city = city_default
         except Exception:
             pass
     return parsed
@@ -258,23 +279,25 @@ def main() -> int:
     parser.add_argument(
         "--commit-run-id",
         help="Commit a previously-staged draft run by id and exit. "
-             "User reviews the staging .md first; when satisfied, sign off "
-             "by running with this flag. No new ingestion happens in this mode.",
+        "User reviews the staging .md first; when satisfied, sign off "
+        "by running with this flag. No new ingestion happens in this mode.",
     )
     # Phase 5.5 (ADR-058+059+061) — verdict .md persistence + Telegram delivery.
     parser.add_argument(
-        "--md-target", default="local",
+        "--md-target",
+        default="local",
         choices=["local", "storage", "both", "none"],
         help="Where to persist the staging .md (ADR-058+061). Default 'local' "
-             "preserves today's behaviour (filesystem doc/staging/<X>.md). CI "
-             "workflows pass 'storage' to upload to staging-reports bucket.",
+        "preserves today's behaviour (filesystem doc/staging/<X>.md). CI "
+        "workflows pass 'storage' to upload to staging-reports bucket.",
     )
     parser.add_argument(
-        "--send-telegram", action="store_true",
+        "--send-telegram",
+        action="store_true",
         help="Telegram-deliver the staging full.md as a sendDocument attachment "
-             "after writing (ADR-059). Defaults off; requires TELEGRAM_BOT_TOKEN "
-             "+ TELEGRAM_CHAT_ID env vars (null-safe per ADR-061 — silently "
-             "skipped on LOCAL where these are not set).",
+        "after writing (ADR-059). Defaults off; requires TELEGRAM_BOT_TOKEN "
+        "+ TELEGRAM_CHAT_ID env vars (null-safe per ADR-061 — silently "
+        "skipped on LOCAL where these are not set).",
     )
     args = parser.parse_args()
 
@@ -296,13 +319,15 @@ def main() -> int:
         # ❌ pairs BLOCK sign-off; ✓ pairs flush; ❓ pairs are surfaced
         # but skipped (operator must edit fencer-alias UI to handle them).
         from python.pipeline.alias_writeback import (
-            derive_pending_from_run_id, has_blocking_pairs,
+            derive_pending_from_run_id,
             flush_pending_aliases,
+            has_blocking_pairs,
         )
+
         pending = derive_pending_from_run_id(db, args.commit_run_id)
         if has_blocking_pairs(pending):
             print(
-                f"⛔ sign-off BLOCKED — {sum(1 for p in pending if p.icon=='❌')} "
+                f"⛔ sign-off BLOCKED — {sum(1 for p in pending if p.icon == '❌')} "
                 "❌ pairs (suspected wrong matches) in this run. "
                 "Fix overrides / source data and re-stage before signing off.",
                 file=sys.stderr,
@@ -326,18 +351,16 @@ def main() -> int:
                 file=sys.stderr,
             )
             for fid, alias, msg in flush_result["errors"]:
-                print(f"    ⚠ alias write FAILED id_fencer={fid} "
-                      f"alias={alias!r}: {msg}", file=sys.stderr)
+                print(
+                    f"    ⚠ alias write FAILED id_fencer={fid} alias={alias!r}: {msg}",
+                    file=sys.stderr,
+                )
 
         try:
-            resp = db._sb.rpc("fn_commit_event_draft", {
-                "p_run_id": args.commit_run_id
-            }).execute()
-            print(f"✅ committed run {args.commit_run_id}: {resp.data}",
-                  file=sys.stderr)
+            resp = db._sb.rpc("fn_commit_event_draft", {"p_run_id": args.commit_run_id}).execute()
+            print(f"✅ committed run {args.commit_run_id}: {resp.data}", file=sys.stderr)
         except Exception as e:
-            print(f"❌ commit failed for {args.commit_run_id}: {e}",
-                  file=sys.stderr)
+            print(f"❌ commit failed for {args.commit_run_id}: {e}", file=sys.stderr)
             return 1
         # Resolve event_code from the commit's history rows (or argv override)
         event_code = args.event_code if args.event_code != "REQUIRED" else None
@@ -346,35 +369,39 @@ def main() -> int:
             # (best-effort — operator can pass --event-code explicitly too).
             hist = (
                 db._sb.table("tbl_tournament_ingest_history")
-                      .select("id_tournament")
-                      .eq("txt_run_id", args.commit_run_id)
-                      .limit(1)
-                      .execute()
+                .select("id_tournament")
+                .eq("txt_run_id", args.commit_run_id)
+                .limit(1)
+                .execute()
             ).data
             if hist:
                 t = (
                     db._sb.table("tbl_tournament")
-                          .select("id_event")
-                          .eq("id_tournament", hist[0]["id_tournament"])
-                          .execute()
+                    .select("id_event")
+                    .eq("id_tournament", hist[0]["id_tournament"])
+                    .execute()
                 ).data
                 if t:
                     e = (
                         db._sb.table("tbl_event")
-                              .select("txt_code")
-                              .eq("id_event", t[0]["id_event"])
-                              .execute()
+                        .select("txt_code")
+                        .eq("id_event", t[0]["id_event"])
+                        .execute()
                     ).data
                     if e:
                         event_code = e[0]["txt_code"]
         if not event_code:
-            print("⚠ no event_code resolved; seed file NOT updated. "
-                  "Re-run with --event-code <code> --commit-run-id <id>.",
-                  file=sys.stderr)
+            print(
+                "⚠ no event_code resolved; seed file NOT updated. "
+                "Re-run with --event-code <code> --commit-run-id <id>.",
+                file=sys.stderr,
+            )
             return 0
         n = _append_event_to_seed(db, event_code)
-        print(f"✅ appended {n} INSERT rows for {event_code} to "
-              f"supabase/seed_phase5_increments.sql", file=sys.stderr)
+        print(
+            f"✅ appended {n} INSERT rows for {event_code} to supabase/seed_phase5_increments.sql",
+            file=sys.stderr,
+        )
         return 0
 
     db = create_db_connector()
@@ -392,12 +419,15 @@ def main() -> int:
     event_meta = _fetch_event_meta(db, args.event_code)
     event_urls = event_meta["urls"]
     if not event_urls:
-        print(f"event {args.event_code!r} has no url_event* set — nothing to scrape",
-              file=sys.stderr)
+        print(
+            f"event {args.event_code!r} has no url_event* set — nothing to scrape", file=sys.stderr
+        )
         return 1
-    print(f"→ {args.event_code} (organizer={event_meta['organizer_code']}, "
-          f"dt_start={event_meta['dt_start']}): {len(event_urls)} url_event slot(s) populated",
-          file=sys.stderr)
+    print(
+        f"→ {args.event_code} (organizer={event_meta['organizer_code']}, "
+        f"dt_start={event_meta['dt_start']}): {len(event_urls)} url_event slot(s) populated",
+        file=sys.stderr,
+    )
 
     # Country default: SPWS-organized events always = 'PL' per
     # project_spws_country_default.md
@@ -409,6 +439,7 @@ def main() -> int:
         derive_tourn_type_from_event_code,
         gate_below_min_participants,
     )
+
     id_season = event_meta["_full_row"]["id_season"]
     tourn_type = derive_tourn_type_from_event_code(args.event_code)
 
@@ -421,6 +452,7 @@ def main() -> int:
             parsed_list, splitter_skips = fetcher.fetch_event_url_with_skips(ev_url)
         except Exception as e:
             import traceback as _tb
+
             tb = _tb.format_exc()
             print(f"   EXCEPTION fetching slot {slot}: {e}", file=sys.stderr)
             print(tb, file=sys.stderr)
@@ -428,15 +460,19 @@ def main() -> int:
             continue
         # Splitter-time skips (Mixed / DE / unparseable) — surface as pool brackets
         for sk in splitter_skips:
-            pool_brackets.append({
-                "weapon": sk.get("weapon"),
-                "name": sk.get("name", "?"),
-                "url": sk.get("url", ""),
-                "reason": sk.get("reason", "splitter skip"),
-            })
-        print(f"   → {len(parsed_list)} per-tournament IR(s) discovered, "
-              f"{len(splitter_skips)} skipped at splitter",
-              file=sys.stderr)
+            pool_brackets.append(
+                {
+                    "weapon": sk.get("weapon"),
+                    "name": sk.get("name", "?"),
+                    "url": sk.get("url", ""),
+                    "reason": sk.get("reason", "splitter skip"),
+                }
+            )
+        print(
+            f"   → {len(parsed_list)} per-tournament IR(s) discovered, "
+            f"{len(splitter_skips)} skipped at splitter",
+            file=sys.stderr,
+        )
 
         for i, parsed in enumerate(parsed_list, start=1):
             # Stamp event-level date + country defaults on the parsed IR
@@ -448,20 +484,28 @@ def main() -> int:
             )
             n_results = len(getattr(parsed, "results", []) or [])
             skip, gate_reason = gate_below_min_participants(
-                db, id_season, tourn_type, n_results,
+                db,
+                id_season,
+                tourn_type,
+                n_results,
             )
             if skip:
                 # ADR-066: bracket has fewer competitors than the season
                 # config requires; skip pipeline, nothing to ingest.
-                print(f"   [{i}/{len(parsed_list)}] {gate_reason}, skip — "
-                      f"{getattr(parsed, 'weapon', '?')}/{getattr(parsed, 'gender', '?')}/"
-                      f"{getattr(parsed, 'age_category', '?')}", file=sys.stderr)
+                print(
+                    f"   [{i}/{len(parsed_list)}] {gate_reason}, skip — "
+                    f"{getattr(parsed, 'weapon', '?')}/{getattr(parsed, 'gender', '?')}/"
+                    f"{getattr(parsed, 'age_category', '?')}",
+                    file=sys.stderr,
+                )
                 ctxs.append((slot, parsed, None, gate_reason))
                 continue
-            print(f"   [{i}/{len(parsed_list)}] Stages 1-7 "
-                  f"({getattr(parsed, 'weapon', '?')}/{getattr(parsed, 'gender', '?')}/"
-                  f"{getattr(parsed, 'age_category', '?')}, n={n_results})",
-                  file=sys.stderr)
+            print(
+                f"   [{i}/{len(parsed_list)}] Stages 1-7 "
+                f"({getattr(parsed, 'weapon', '?')}/{getattr(parsed, 'gender', '?')}/"
+                f"{getattr(parsed, 'age_category', '?')}, n={n_results})",
+                file=sys.stderr,
+            )
             try:
                 ctx, _diff_path = session.run_iteration(parsed, staging_dir=Path(args.staging_dir))
                 ctxs.append((slot, parsed, ctx, None))
@@ -473,12 +517,14 @@ def main() -> int:
                         or getattr(parsed, "tournament_name", None)
                         or "?"
                     )
-                    pool_brackets.append({
-                        "weapon": parsed.weapon or "?",
-                        "name": bracket_name,
-                        "url": getattr(parsed, "source_url", None),
-                        "reason": getattr(ctx, "halt_detail", "") or "",
-                    })
+                    pool_brackets.append(
+                        {
+                            "weapon": parsed.weapon or "?",
+                            "name": bracket_name,
+                            "url": getattr(parsed, "source_url", None),
+                            "reason": getattr(ctx, "halt_detail", "") or "",
+                        }
+                    )
             except Exception as e:
                 print(f"     EXCEPTION: {e}", file=sys.stderr)
                 ctxs.append((slot, parsed, None, str(e)))
@@ -509,8 +555,12 @@ def main() -> int:
     # `alias_existing` in the verdict table, and the operator would lose
     # visibility of the wrong matches the matcher just produced.
     md = _multi_summary_md(
-        args.event_code, event_meta, ctxs, db=db,
-        pool_brackets=pool_brackets, pool_warnings=pool_warnings,
+        args.event_code,
+        event_meta,
+        ctxs,
+        db=db,
+        pool_brackets=pool_brackets,
+        pool_warnings=pool_warnings,
         run_id=session.run_id,
         url_check_results=getattr(session, "url_check_results", {}),
     )
@@ -534,7 +584,9 @@ def main() -> int:
 
     if args.send_telegram:
         import os
+
         from python.pipeline.notifications import TelegramNotifier
+
         notifier = TelegramNotifier(
             bot_token=os.environ.get("TELEGRAM_BOT_TOKEN"),
             chat_id=os.environ.get("TELEGRAM_CHAT_ID"),
@@ -573,12 +625,14 @@ def main() -> int:
     # and the operator has no way to fix them.
     if session.run_id:
         from python.pipeline.alias_writeback import (
-            compute_pending_from_matches, flush_pending_aliases,
+            compute_pending_from_matches,
+            flush_pending_aliases,
         )
+
         try:
             all_matches = []
             all_ids = set()
-            for slot, parsed, ctx, err in ctxs:
+            for _slot, _parsed, ctx, _err in ctxs:
                 if ctx is None or not getattr(ctx, "matches", None):
                     continue
                 for m in ctx.matches:
@@ -587,12 +641,15 @@ def main() -> int:
                         all_ids.add(m.id_fencer)
             basics = (
                 db.fetch_fencer_basics_batch(sorted(all_ids))
-                if hasattr(db, "fetch_fencer_basics_batch") else {}
+                if hasattr(db, "fetch_fencer_basics_batch")
+                else {}
             )
             stage_pending = compute_pending_from_matches(all_matches, basics)
             if stage_pending:
                 stage_flush = flush_pending_aliases(
-                    db, stage_pending, include_all=True,
+                    db,
+                    stage_pending,
+                    include_all=True,
                 )
                 n_block = sum(1 for p in stage_pending if p.icon == "❌")
                 n_amb = sum(1 for p in stage_pending if p.icon == "❓")
@@ -625,9 +682,9 @@ def _consolidate_duplicate_codes(db, run_id: str) -> int:
     # Find all duplicate codes for this run
     rows = (
         sb.table("tbl_tournament_draft")
-          .select("id_tournament_draft,txt_code,bool_joint_pool_split")
-          .eq("txt_run_id", run_id)
-          .execute()
+        .select("id_tournament_draft,txt_code,bool_joint_pool_split")
+        .eq("txt_run_id", run_id)
+        .execute()
     ).data or []
     by_code: dict[str, list[dict]] = {}
     for r in rows:
@@ -639,9 +696,15 @@ def _consolidate_duplicate_codes(db, run_id: str) -> int:
         # Count result_drafts per tournament_draft id
         ids = [r["id_tournament_draft"] for r in group]
         counts = {
-            i: len((sb.table("tbl_result_draft")
-                      .select("id_result_draft")
-                      .eq("id_tournament_draft", i).execute()).data or [])
+            i: len(
+                (
+                    sb.table("tbl_result_draft")
+                    .select("id_result_draft")
+                    .eq("id_tournament_draft", i)
+                    .execute()
+                ).data
+                or []
+            )
             for i in ids
         }
         # Keep highest count; ties → lowest id (stable)
@@ -651,12 +714,13 @@ def _consolidate_duplicate_codes(db, run_id: str) -> int:
         for i in ids:
             if i == keeper_id:
                 continue
-            (sb.table("tbl_result_draft")
-               .update({"id_tournament_draft": keeper_id})
-               .eq("id_tournament_draft", i).execute())
-            (sb.table("tbl_tournament_draft")
-               .delete()
-               .eq("id_tournament_draft", i).execute())
+            (
+                sb.table("tbl_result_draft")
+                .update({"id_tournament_draft": keeper_id})
+                .eq("id_tournament_draft", i)
+                .execute()
+            )
+            (sb.table("tbl_tournament_draft").delete().eq("id_tournament_draft", i).execute())
             removed += 1
         # ADR-056 revision (2026-05-03): recompute int_participant_count to
         # match the merged result_draft count. Pre-revision this drifted
@@ -668,12 +732,17 @@ def _consolidate_duplicate_codes(db, run_id: str) -> int:
         keeper_update: dict = {"int_participant_count": merged_count}
         if any_joint:
             keeper_update["bool_joint_pool_split"] = True
-        (sb.table("tbl_tournament_draft")
-           .update(keeper_update)
-           .eq("id_tournament_draft", keeper_id).execute())
-        print(f"  ↻ merged {len(group)} duplicate {code} drafts → "
-              f"keeper id={keeper_id} ({merged_count} results consolidated)",
-              file=sys.stderr)
+        (
+            sb.table("tbl_tournament_draft")
+            .update(keeper_update)
+            .eq("id_tournament_draft", keeper_id)
+            .execute()
+        )
+        print(
+            f"  ↻ merged {len(group)} duplicate {code} drafts → "
+            f"keeper id={keeper_id} ({merged_count} results consolidated)",
+            file=sys.stderr,
+        )
     return removed
 
 
@@ -702,23 +771,25 @@ def _append_event_to_seed(db, event_code: str) -> int:
     from pathlib import Path
 
     sb = db._sb
-    ev = (
-        sb.table("tbl_event").select("id_event").eq("txt_code", event_code).execute()
-    ).data
+    ev = (sb.table("tbl_event").select("id_event").eq("txt_code", event_code).execute()).data
     if not ev:
         return 0
     id_event = ev[0]["id_event"]
 
     tournaments = (
         sb.table("tbl_tournament")
-          .select("id_tournament,txt_code,txt_name,enum_type,num_multiplier,"
-                  "dt_tournament,int_participant_count,enum_weapon,enum_gender,"
-                  "enum_age_category,url_results,enum_import_status,"
-                  "txt_import_status_reason,bool_joint_pool_split,"
-                  "enum_parser_kind,dt_last_scraped,txt_source_url_used")
-          .eq("id_event", id_event)
-          .order("enum_weapon").order("enum_gender").order("enum_age_category")
-          .execute()
+        .select(
+            "id_tournament,txt_code,txt_name,enum_type,num_multiplier,"
+            "dt_tournament,int_participant_count,enum_weapon,enum_gender,"
+            "enum_age_category,url_results,enum_import_status,"
+            "txt_import_status_reason,bool_joint_pool_split,"
+            "enum_parser_kind,dt_last_scraped,txt_source_url_used"
+        )
+        .eq("id_event", id_event)
+        .order("enum_weapon")
+        .order("enum_gender")
+        .order("enum_age_category")
+        .execute()
     ).data or []
 
     tournament_ids = [t["id_tournament"] for t in tournaments]
@@ -726,10 +797,12 @@ def _append_event_to_seed(db, event_code: str) -> int:
     if tournament_ids:
         results = (
             sb.table("tbl_result")
-              .select("id_fencer,id_tournament,int_place,num_final_score,"
-                      "num_match_confidence,enum_match_method,txt_scraped_name")
-              .in_("id_tournament", tournament_ids)
-              .execute()
+            .select(
+                "id_fencer,id_tournament,int_place,num_final_score,"
+                "num_match_confidence,enum_match_method,txt_scraped_name"
+            )
+            .in_("id_tournament", tournament_ids)
+            .execute()
         ).data or []
 
     # Build fencer-id → (surname, first_name, …) lookup for the result sub-selects
@@ -743,10 +816,11 @@ def _append_event_to_seed(db, event_code: str) -> int:
     if fencer_ids:
         rows = (
             sb.table("tbl_fencer")
-              .select("id_fencer,txt_surname,txt_first_name,int_birth_year,"
-                      "enum_gender,txt_nationality")
-              .in_("id_fencer", fencer_ids)
-              .execute()
+            .select(
+                "id_fencer,txt_surname,txt_first_name,int_birth_year,enum_gender,txt_nationality"
+            )
+            .in_("id_fencer", fencer_ids)
+            .execute()
         ).data or []
         fencer_map = {r["id_fencer"]: r for r in rows}
     tournament_code_map = {t["id_tournament"]: t["txt_code"] for t in tournaments}
@@ -801,14 +875,26 @@ def _append_event_to_seed(db, event_code: str) -> int:
 
     # Tournaments — straight INSERT by event txt_code
     for t in tournaments:
-        cols = ("id_event", "txt_code", "txt_name", "enum_type", "num_multiplier",
-                "dt_tournament", "int_participant_count", "enum_weapon",
-                "enum_gender", "enum_age_category", "url_results",
-                "enum_import_status", "txt_import_status_reason",
-                "bool_joint_pool_split", "enum_parser_kind", "dt_last_scraped",
-                "txt_source_url_used")
-        vals = ["(SELECT id_event FROM tbl_event WHERE txt_code = "
-                f"{_sql_quote(event_code)})"]
+        cols = (
+            "id_event",
+            "txt_code",
+            "txt_name",
+            "enum_type",
+            "num_multiplier",
+            "dt_tournament",
+            "int_participant_count",
+            "enum_weapon",
+            "enum_gender",
+            "enum_age_category",
+            "url_results",
+            "enum_import_status",
+            "txt_import_status_reason",
+            "bool_joint_pool_split",
+            "enum_parser_kind",
+            "dt_last_scraped",
+            "txt_source_url_used",
+        )
+        vals = [f"(SELECT id_event FROM tbl_event WHERE txt_code = {_sql_quote(event_code)})"]
         vals.extend(_sql_quote(t.get(c)) for c in cols[1:])
         lines.append(
             f"INSERT INTO tbl_tournament ({', '.join(cols)}) VALUES "
@@ -895,23 +981,25 @@ def _drop_empty_tournament_drafts(db, run_id: str) -> int:
     sb = db._sb
     rows = (
         sb.table("tbl_tournament_draft")
-          .select("id_tournament_draft,txt_code")
-          .eq("txt_run_id", run_id)
-          .execute()
+        .select("id_tournament_draft,txt_code")
+        .eq("txt_run_id", run_id)
+        .execute()
     ).data or []
     dropped = 0
     for r in rows:
         rd = (
             sb.table("tbl_result_draft")
-              .select("id_result_draft")
-              .eq("id_tournament_draft", r["id_tournament_draft"])
-              .execute()
+            .select("id_result_draft")
+            .eq("id_tournament_draft", r["id_tournament_draft"])
+            .execute()
         ).data or []
         if not rd:
-            (sb.table("tbl_tournament_draft")
-               .delete()
-               .eq("id_tournament_draft", r["id_tournament_draft"])
-               .execute())
+            (
+                sb.table("tbl_tournament_draft")
+                .delete()
+                .eq("id_tournament_draft", r["id_tournament_draft"])
+                .execute()
+            )
             print(f"  ⊘ dropped empty draft {r['txt_code']}", file=sys.stderr)
             dropped += 1
     return dropped
@@ -920,22 +1008,22 @@ def _drop_empty_tournament_drafts(db, run_id: str) -> int:
 def _live_tournament_rows(db, event_code: str) -> list[dict]:
     """Read post-commit live tournament rows for the event."""
     sb = db._sb
-    ev = (
-        sb.table("tbl_event").select("id_event").eq("txt_code", event_code).execute()
-    ).data
+    ev = (sb.table("tbl_event").select("id_event").eq("txt_code", event_code).execute()).data
     if not ev:
         return []
     id_event = ev[0]["id_event"]
     return (
         sb.table("tbl_tournament")
-          .select("id_tournament,txt_code,enum_age_category,enum_weapon,enum_gender,"
-                  "dt_tournament,url_results,txt_source_url_used,bool_joint_pool_split,"
-                  "int_participant_count")
-          .eq("id_event", id_event)
-          .order("enum_weapon")
-          .order("enum_gender")
-          .order("enum_age_category")
-          .execute()
+        .select(
+            "id_tournament,txt_code,enum_age_category,enum_weapon,enum_gender,"
+            "dt_tournament,url_results,txt_source_url_used,bool_joint_pool_split,"
+            "int_participant_count"
+        )
+        .eq("id_event", id_event)
+        .order("enum_weapon")
+        .order("enum_gender")
+        .order("enum_age_category")
+        .execute()
     ).data or []
 
 
@@ -944,20 +1032,37 @@ def _draft_tournament_rows(db, run_id: str) -> list[dict]:
     sb = db._sb
     return (
         sb.table("tbl_tournament_draft")
-          .select("*")
-          .eq("txt_run_id", run_id)
-          .order("enum_weapon")
-          .order("enum_gender")
-          .order("enum_age_category")
-          .execute()
+        .select("*")
+        .eq("txt_run_id", run_id)
+        .order("enum_weapon")
+        .order("enum_gender")
+        .order("enum_age_category")
+        .execute()
     ).data or []
 
 
-_PL_FOLD = str.maketrans({
-    "ą": "a", "Ą": "a", "ć": "c", "Ć": "c", "ę": "e", "Ę": "e",
-    "ł": "l", "Ł": "l", "ń": "n", "Ń": "n", "ó": "o", "Ó": "o",
-    "ś": "s", "Ś": "s", "ź": "z", "Ź": "z", "ż": "z", "Ż": "z",
-})
+_PL_FOLD = str.maketrans(
+    {
+        "ą": "a",
+        "Ą": "a",
+        "ć": "c",
+        "Ć": "c",
+        "ę": "e",
+        "Ę": "e",
+        "ł": "l",
+        "Ł": "l",
+        "ń": "n",
+        "Ń": "n",
+        "ó": "o",
+        "Ó": "o",
+        "ś": "s",
+        "Ś": "s",
+        "ź": "z",
+        "Ź": "z",
+        "ż": "z",
+        "Ż": "z",
+    }
+)
 
 
 def _name_fold(s: str) -> str:
@@ -979,11 +1084,13 @@ def _lev(a: str, b: str) -> int:
     for i, ca in enumerate(a, 1):
         cur = [i]
         for j, cb in enumerate(b, 1):
-            cur.append(min(
-                cur[j - 1] + 1,
-                prev[j] + 1,
-                prev[j - 1] + (0 if ca == cb else 1),
-            ))
+            cur.append(
+                min(
+                    cur[j - 1] + 1,
+                    prev[j] + 1,
+                    prev[j - 1] + (0 if ca == cb else 1),
+                )
+            )
         prev = cur
     return prev[-1]
 
@@ -1007,7 +1114,8 @@ def _split_polish_name(name: str) -> tuple[str, str]:
 
 
 def _estimate_birth_year_for_vcat(
-    vcat: str | None, season_end_year: int | None,
+    vcat: str | None,
+    season_end_year: int | None,
 ) -> tuple[int | None, str]:
     """Suggest a birth year + range for a fencer in V-cat `vcat`.
 
@@ -1027,11 +1135,11 @@ def _estimate_birth_year_for_vcat(
     if not season_end_year or not vcat:
         return None, "—"
     bands = {
-        "V0": (None, 39),    # under 40
+        "V0": (None, 39),  # under 40
         "V1": (40, 49),
         "V2": (50, 59),
         "V3": (60, 69),
-        "V4": (70, None),    # 70+
+        "V4": (70, None),  # 70+
     }
     band = bands.get(vcat)
     if band is None:
@@ -1043,6 +1151,7 @@ def _estimate_birth_year_for_vcat(
     # estimate_birth_year (the single source of truth) so the staging-.md
     # "calc BY" equals what Stage 0 actually wrote.
     from python.matcher.pipeline import estimate_birth_year
+
     suggested = estimate_birth_year(vcat, season_end_year)
     return suggested, f"{by_min}–{by_max}"
 
@@ -1071,9 +1180,7 @@ def _classify_alias_pair(scraped: str, canonical: str) -> tuple[str, str]:
     c_sur_h = c_sur_f.replace("-", "").replace(" ", "")
     surname_identical = s_sur_f == c_sur_f
     surname_contained = (
-        bool(s_sur_h) and bool(c_sur_h) and (
-            s_sur_h in c_sur_h or c_sur_h in s_sur_h
-        )
+        bool(s_sur_h) and bool(c_sur_h) and (s_sur_h in c_sur_h or c_sur_h in s_sur_h)
     )
     surname_dist = _lev(s_sur_h, c_sur_h) if s_sur_h and c_sur_h else 99
     surname_close = surname_dist <= 2
@@ -1133,7 +1240,7 @@ def _build_fencer_matching_summary(db, ctxs: list) -> dict:
 
     # Collect every match with id_fencer set + tournament-code context
     rows: list[dict] = []
-    for slot, parsed, ctx, err in ctxs:
+    for _slot, parsed, ctx, _err in ctxs:
         if ctx is None or not getattr(ctx, "matches", None):
             continue
         # event-level draft tournament code: derived from event + parsed v-cat etc.,
@@ -1152,34 +1259,37 @@ def _build_fencer_matching_summary(db, ctxs: list) -> dict:
             # a browser.
             src_url = getattr(parsed, "source_url", None) or ""
             human_url = src_url.replace("/events/results/data/", "/events/results/")
-            rows.append({
-                "scraped_name": m.scraped_name,
-                "id_fencer": m.id_fencer,
-                "place": m.place,
-                "method": m.method,
-                "confidence": m.confidence,
-                "ftl_bracket": getattr(parsed, "_ftl_source_name", None) or "—",
-                "weapon": getattr(parsed, "weapon", "?"),
-                "gender": getattr(parsed, "gender", "?"),
-                "category_hint": getattr(parsed, "category_hint", None),
-                "season_end_year": getattr(parsed, "season_end_year", None)
-                                   or getattr(ctx, "season_end_year", None),
-                "source_url": human_url or None,
-            })
+            rows.append(
+                {
+                    "scraped_name": m.scraped_name,
+                    "id_fencer": m.id_fencer,
+                    "place": m.place,
+                    "method": m.method,
+                    "confidence": m.confidence,
+                    "ftl_bracket": getattr(parsed, "_ftl_source_name", None) or "—",
+                    "weapon": getattr(parsed, "weapon", "?"),
+                    "gender": getattr(parsed, "gender", "?"),
+                    "category_hint": getattr(parsed, "category_hint", None),
+                    "season_end_year": getattr(parsed, "season_end_year", None)
+                    or getattr(ctx, "season_end_year", None),
+                    "source_url": human_url or None,
+                }
+            )
 
     if not rows:
         return {
-            "total": 0, "by_method": {}, "alias_existing": [],
-            "alias_new_needed": [], "birth_year_missing": [],
-            "birth_year_estimated": [], "by_canonical": 0,
+            "total": 0,
+            "by_method": {},
+            "alias_existing": [],
+            "alias_new_needed": [],
+            "birth_year_missing": [],
+            "birth_year_estimated": [],
+            "by_canonical": 0,
         }
 
     # Batch-fetch fencer basics
     ids = sorted({r["id_fencer"] for r in rows})
-    basics = (
-        db.fetch_fencer_basics_batch(ids)
-        if hasattr(db, "fetch_fencer_basics_batch") else {}
-    )
+    basics = db.fetch_fencer_basics_batch(ids) if hasattr(db, "fetch_fencer_basics_batch") else {}
 
     def _norm(s: str) -> str:
         """Casefold + collapse whitespace for canonical-name comparison."""
@@ -1197,8 +1307,8 @@ def _build_fencer_matching_summary(db, ctxs: list) -> dict:
         f = basics.get(r["id_fencer"])
         if not f:
             continue
-        canonical = f"{f.get('txt_surname','')} {f.get('txt_first_name','')}".strip()
-        canonical_alt = f"{f.get('txt_first_name','')} {f.get('txt_surname','')}".strip()
+        canonical = f"{f.get('txt_surname', '')} {f.get('txt_first_name', '')}".strip()
+        canonical_alt = f"{f.get('txt_first_name', '')} {f.get('txt_surname', '')}".strip()
         aliases = f.get("json_name_aliases") or []
         if not isinstance(aliases, list):
             aliases = []
@@ -1270,10 +1380,14 @@ def _format_fencer_matching_section(stats: dict) -> list[str]:
     lines.append("| Path | Count |")
     lines.append("|---|---:|")
     lines.append(f"| ✅ matched via canonical name (no alias) | {stats['by_canonical']} |")
-    lines.append(f"| 🔗 matched via existing alias on `tbl_fencer.json_name_aliases` | "
-                 f"{len(stats['alias_existing'])} |")
-    lines.append(f"| 🆕 alias would need to be added (scraped name not yet in aliases) | "
-                 f"{len(stats['alias_new_needed'])} |")
+    lines.append(
+        f"| 🔗 matched via existing alias on `tbl_fencer.json_name_aliases` | "
+        f"{len(stats['alias_existing'])} |"
+    )
+    lines.append(
+        f"| 🆕 alias would need to be added (scraped name not yet in aliases) | "
+        f"{len(stats['alias_new_needed'])} |"
+    )
     lines.append("")
 
     if stats["alias_new_needed"]:
@@ -1301,7 +1415,8 @@ def _format_fencer_matching_section(stats: dict) -> list[str]:
         lines.append("|---|---|---|---|---|")
         for icon, reason, d in verdicts:
             sugg, rng = _estimate_birth_year_for_vcat(
-                d.get("category_hint"), d.get("season_end_year"),
+                d.get("category_hint"),
+                d.get("season_end_year"),
             )
             by_cell = f"{sugg} ({rng})" if sugg else "—"
             url_cell = f"[link]({d['source_url']})" if d.get("source_url") else "—"
@@ -1312,14 +1427,19 @@ def _format_fencer_matching_section(stats: dict) -> list[str]:
         lines.append("")
         # Detail (id_fencer / existing aliases / bracket / place / V-cat / BY) for the
         # operator who needs to act on a flagged row
-        lines.append("<details><summary>Per-alias context (id_fencer, existing aliases, bracket, V-cat, place, BY)</summary>")
+        lines.append(
+            "<details><summary>Per-alias context (id_fencer, existing aliases, bracket, V-cat, place, BY)</summary>"
+        )
         lines.append("")
-        lines.append("| Scraped | Resolved (id_fencer) | Existing aliases | Bracket | V-cat | Place | Suggested BY | Source URL |")
+        lines.append(
+            "| Scraped | Resolved (id_fencer) | Existing aliases | Bracket | V-cat | Place | Suggested BY | Source URL |"
+        )
         lines.append("|---|---|---|---|---|---:|---|---|")
-        for icon, reason, d in verdicts:
+        for _icon, _reason, d in verdicts:
             existing = "; ".join(d["aliases"]) if d["aliases"] else "_(none)_"
             sugg, rng = _estimate_birth_year_for_vcat(
-                d.get("category_hint"), d.get("season_end_year"),
+                d.get("category_hint"),
+                d.get("season_end_year"),
             )
             by_cell = f"{sugg} ({rng})" if sugg else "—"
             url_cell = f"[link]({d['source_url']})" if d.get("source_url") else "—"
@@ -1337,8 +1457,9 @@ def _format_fencer_matching_section(stats: dict) -> list[str]:
         lines.append("")
         lines.append("| Scraped name | Resolved fencer (id_fencer) | Tournament bracket | Place |")
         lines.append("|---|---|---|---:|")
-        for d in sorted(stats["alias_existing"],
-                        key=lambda x: (x["weapon"], x["gender"], x["scraped_name"])):
+        for d in sorted(
+            stats["alias_existing"], key=lambda x: (x["weapon"], x["gender"], x["scraped_name"])
+        ):
             lines.append(
                 f"| `{d['scraped_name']}` | {d['canonical']} (#{d['id_fencer']}) | "
                 f"{d['ftl_bracket']} | {d['place']} |"
@@ -1349,12 +1470,18 @@ def _format_fencer_matching_section(stats: dict) -> list[str]:
     lines.append("")
     lines.append("| Path | Count |")
     lines.append("|---|---:|")
-    by_clean = stats["total"] - len(stats["birth_year_missing"]) - len(stats["birth_year_estimated"])
+    by_clean = (
+        stats["total"] - len(stats["birth_year_missing"]) - len(stats["birth_year_estimated"])
+    )
     lines.append(f"| ✅ matched fencer has known + confirmed birth year | {by_clean} |")
-    lines.append(f"| 🟡 birth year estimated (`bool_birth_year_estimated = true`) | "
-                 f"{len(stats['birth_year_estimated'])} |")
-    lines.append(f"| 🚨 birth year MISSING (`int_birth_year = NULL`) — V-cat undefined | "
-                 f"{len(stats['birth_year_missing'])} |")
+    lines.append(
+        f"| 🟡 birth year estimated (`bool_birth_year_estimated = true`) | "
+        f"{len(stats['birth_year_estimated'])} |"
+    )
+    lines.append(
+        f"| 🚨 birth year MISSING (`int_birth_year = NULL`) — V-cat undefined | "
+        f"{len(stats['birth_year_missing'])} |"
+    )
     lines.append("")
 
     if stats["birth_year_missing"]:
@@ -1388,10 +1515,10 @@ def _draft_results_for_tournament(db, id_tournament_draft: int) -> list[dict]:
     sb = db._sb
     return (
         sb.table("tbl_result_draft")
-          .select("*")
-          .eq("id_tournament_draft", id_tournament_draft)
-          .order("int_place")
-          .execute()
+        .select("*")
+        .eq("id_tournament_draft", id_tournament_draft)
+        .order("int_place")
+        .execute()
     ).data or []
 
 
@@ -1399,9 +1526,9 @@ def _draft_result_count(db, id_tournament_draft: int) -> int:
     sb = db._sb
     rows = (
         sb.table("tbl_result_draft")
-          .select("id_result_draft")
-          .eq("id_tournament_draft", id_tournament_draft)
-          .execute()
+        .select("id_result_draft")
+        .eq("id_tournament_draft", id_tournament_draft)
+        .execute()
     ).data or []
     return len(rows)
 
@@ -1409,10 +1536,7 @@ def _draft_result_count(db, id_tournament_draft: int) -> int:
 def _live_result_count(db, id_tournament: int) -> int:
     sb = db._sb
     rows = (
-        sb.table("tbl_result")
-          .select("id_result")
-          .eq("id_tournament", id_tournament)
-          .execute()
+        sb.table("tbl_result").select("id_result").eq("id_tournament", id_tournament).execute()
     ).data or []
     return len(rows)
 
@@ -1459,8 +1583,7 @@ def _format_pending_alias_writes_section(pending: list) -> list[str]:
     lines.append("|---|---:|---|---|---|")
     for p in pending:
         lines.append(
-            f"| {p.icon} | {p.id_fencer} | "
-            f"`{p.scraped_name}` | `{p.canonical}` | {p.reason} |"
+            f"| {p.icon} | {p.id_fencer} | `{p.scraped_name}` | `{p.canonical}` | {p.reason} |"
         )
     lines.append("")
     return lines
@@ -1507,12 +1630,14 @@ def _format_stage0_section(ctxs: list) -> list[str]:
     if created:
         lines.append("## 🆕 New fencers created this ingestion — CONFIRM BIRTH YEARS")
         lines.append("")
-        lines.append("Stage 0 created these participants by HIGH-PRECISION exact "
-                     "match (not fuzzy), so the matcher links results to them "
-                     "rather than gluing to a wrong existing name. Birth years are "
-                     "**estimated** band midpoints (or `—` when the V-cat was "
-                     "unmarked); confirm/edit them in the **Birth-year review** "
-                     "admin tab.")
+        lines.append(
+            "Stage 0 created these participants by HIGH-PRECISION exact "
+            "match (not fuzzy), so the matcher links results to them "
+            "rather than gluing to a wrong existing name. Birth years are "
+            "**estimated** band midpoints (or `—` when the V-cat was "
+            "unmarked); confirm/edit them in the **Birth-year review** "
+            "admin tab."
+        )
         lines.append("")
         lines.append("| Name | Nat | V-cat | calc BY | flag | source |")
         lines.append("|---|---|---|---|---|---|")
@@ -1530,18 +1655,23 @@ def _format_stage0_section(ctxs: list) -> list[str]:
     if reconciled:
         lines.append("## ✏️ Birth years adjusted this ingestion")
         lines.append("")
-        lines.append("Stage 0 corrected a stored birth year that conflicted with "
-                     "the V-cat of a bracket the fencer competed in (ranking "
-                     "category is BY-derived — ADR-010). A ⚠ marks a value that "
-                     "was **CONFIRMED** and has been overwritten **and downgraded "
-                     "to estimated** — verify the organizer didn't simply place "
-                     "the fencer in the wrong bracket.")
+        lines.append(
+            "Stage 0 corrected a stored birth year that conflicted with "
+            "the V-cat of a bracket the fencer competed in (ranking "
+            "category is BY-derived — ADR-010). A ⚠ marks a value that "
+            "was **CONFIRMED** and has been overwritten **and downgraded "
+            "to estimated** — verify the organizer didn't simply place "
+            "the fencer in the wrong bracket."
+        )
         lines.append("")
         lines.append("| Name | V-cat | old BY | new BY | note | source |")
         lines.append("|---|---|---|---|---|---|")
         for r in reconciled:
-            note = ("⚠ was CONFIRMED → downgraded" if r.get("was_confirmed")
-                    else "estimated → re-estimated")
+            note = (
+                "⚠ was CONFIRMED → downgraded"
+                if r.get("was_confirmed")
+                else "estimated → re-estimated"
+            )
             lines.append(
                 f"| {r.get('scraped_name', '?')} | {r.get('vcat') or '—'} "
                 f"| {r.get('old_birth_year')} | {r.get('new_birth_year')} "
@@ -1552,9 +1682,11 @@ def _format_stage0_section(ctxs: list) -> list[str]:
     if conflicts:
         lines.append("### ⚠ Cross-bracket birth-year conflicts (not auto-resolved)")
         lines.append("")
-        lines.append("A fencer appeared in two brackets with conflicting V-cats in "
-                     "one run; Stage 0 wrote once and flagged the rest. Resolve "
-                     "manually in the Birth-year review tab.")
+        lines.append(
+            "A fencer appeared in two brackets with conflicting V-cats in "
+            "one run; Stage 0 wrote once and flagged the rest. Resolve "
+            "manually in the Birth-year review tab."
+        )
         lines.append("")
         lines.append("| Name | first V-cat | conflicting V-cat | source |")
         lines.append("|---|---|---|---|")
@@ -1569,8 +1701,12 @@ def _format_stage0_section(ctxs: list) -> list[str]:
 
 
 def _multi_summary_md(
-    event_code: str, event_meta: dict, ctxs: list, db=None,
-    pool_brackets: list | None = None, pool_warnings: list | None = None,
+    event_code: str,
+    event_meta: dict,
+    ctxs: list,
+    db=None,
+    pool_brackets: list | None = None,
+    pool_warnings: list | None = None,
     run_id: str | None = None,
     url_check_results: dict | None = None,
 ) -> str:
@@ -1594,8 +1730,9 @@ def _multi_summary_md(
     # any other detail.
     if db is not None:
         stats = _build_fencer_matching_summary(db, ctxs)
-        lines.append("> **⭐ Most important section — review the matching "
-                     "below before signing off.**")
+        lines.append(
+            "> **⭐ Most important section — review the matching below before signing off.**"
+        )
         lines.append("")
         lines.extend(_format_fencer_matching_section(stats))
 
@@ -1605,8 +1742,10 @@ def _multi_summary_md(
         # tbl_fencer they keep showing up here for the operator to fix
         # via the FencerAliasManager UI. Sign-off blocks on any ❌.
         from python.pipeline.alias_writeback import (
-            derive_pending_from_run_id, has_blocking_pairs,
+            derive_pending_from_run_id,
+            has_blocking_pairs,
         )
+
         if run_id:
             pending = derive_pending_from_run_id(db, run_id)
         else:
@@ -1632,8 +1771,10 @@ def _multi_summary_md(
     lines.append("| Field | Value |")
     lines.append("|---|---|")
     lines.append(f"| **resolved organizer** | {event_meta.get('organizer_code', '?')} |")
-    lines.append(f"| **resolved season_end_year** (from event-date range) | "
-                 f"{event_meta.get('dt_end', '?')} |")
+    lines.append(
+        f"| **resolved season_end_year** (from event-date range) | "
+        f"{event_meta.get('dt_end', '?')} |"
+    )
     full_row = event_meta.get("_full_row") or {}
     for k in sorted(full_row.keys()):
         v = full_row[k]
@@ -1716,7 +1857,9 @@ def _multi_summary_md(
         live = _live_tournament_rows(db, event_code)
         if live:
             total_results = sum(_live_result_count(db, t["id_tournament"]) for t in live)
-            lines.append(f"## Committed tournaments ({len(live)} tournaments, {total_results} results)")
+            lines.append(
+                f"## Committed tournaments ({len(live)} tournaments, {total_results} results)"
+            )
             lines.append("")
             lines.append("| Code | V-cat | Wpn | Gen | Date | Joint | Results | Source URL |")
             lines.append("|---|---|---|---|---|---|---:|---|")
@@ -1737,18 +1880,24 @@ def _multi_summary_md(
                 # it to verify the bracket matches. Truncated URLs led to
                 # the false "defective URL" report 2026-05-02.
                 src_short = src
-                lines.append(f"| `{code}` | {vcat} | {wpn} | {gen} | {dt} | {joint} | {n} | {src_short} |")
+                lines.append(
+                    f"| `{code}` | {vcat} | {wpn} | {gen} | {dt} | {joint} | {n} | {src_short} |"
+                )
             lines.append("")
         elif run_id:
             drafts = _draft_tournament_rows(db, run_id)
             total_results = sum(_draft_result_count(db, t["id_tournament_draft"]) for t in drafts)
-            lines.append(f"## Draft tournaments — pending sign-off "
-                         f"({len(drafts)} tournaments, {total_results} results)")
+            lines.append(
+                f"## Draft tournaments — pending sign-off "
+                f"({len(drafts)} tournaments, {total_results} results)"
+            )
             lines.append("")
             # Overview table — at-a-glance scannable list
             lines.append("### Overview")
             lines.append("")
-            lines.append("| Code | V-cat | Wpn | Gen | Date | Joint | Results | URL ✓ | Source URL |")
+            lines.append(
+                "| Code | V-cat | Wpn | Gen | Date | Joint | Results | URL ✓ | Source URL |"
+            )
             lines.append("|---|---|---|---|---|---|---:|---|---|")
             for t in drafts:
                 code = t["txt_code"]
@@ -1769,8 +1918,10 @@ def _multi_summary_md(
                     url_ok = "✓"
                 else:
                     url_ok = f"❌ {getattr(verdict, 'reason', '?')}"
-                lines.append(f"| `{code}` | {vcat} | {wpn} | {gen} | {dt} | "
-                             f"{joint} | {n} | {url_ok} | {src} |")
+                lines.append(
+                    f"| `{code}` | {vcat} | {wpn} | {gen} | {dt} | "
+                    f"{joint} | {n} | {url_ok} | {src} |"
+                )
             lines.append("")
 
             # Full detail per tournament — every draft column + per-fencer results
@@ -1825,7 +1976,9 @@ def _multi_summary_md(
         lines.append("| Weapon | Bracket name | Reason | URL |")
         lines.append("|---|---|---|---|")
         # Sort by weapon then name for readability
-        for b in sorted(pool_brackets, key=lambda x: (str(x.get("weapon") or ""), x.get("name", ""))):
+        for b in sorted(
+            pool_brackets, key=lambda x: (str(x.get("weapon") or ""), x.get("name", ""))
+        ):
             wpn = b.get("weapon") or "?"
             nm = b.get("name", "?")
             rsn = b.get("reason", "?")
@@ -1833,6 +1986,7 @@ def _multi_summary_md(
             lines.append(f"| {wpn} | {nm} | {rsn} | {u} |")
         # Pool-rounds-per-weapon count summary
         from collections import Counter
+
         per_w = Counter(str(b.get("weapon") or "?") for b in pool_brackets)
         lines.append("")
         lines.append("**Per-weapon pool-round count** (SPWS rule: ≤ 2 per weapon):")
@@ -1843,7 +1997,9 @@ def _multi_summary_md(
             flag = " ⚠" if n > 2 else ""
             lines.append(f"| {w} | {n}{flag} |")
     else:
-        lines.append("_(none detected — splitter found no Mixed/DE/etc. brackets and no per-bracket gender-mix halts fired)_")
+        lines.append(
+            "_(none detected — splitter found no Mixed/DE/etc. brackets and no per-bracket gender-mix halts fired)_"
+        )
     lines.append("")
 
     if pool_warnings:
@@ -1880,13 +2036,17 @@ def _multi_summary_md(
     lines.append(f"- **Run ID:** `{run_id or '(no run id)'}`")
     lines.append(f"- **Event code:** `{event_code}`")
     lines.append("")
-    lines.append("**Review the tables above.** Verify pool rounds were correctly classified and no real tournament was skipped. When satisfied, sign off by committing:")
+    lines.append(
+        "**Review the tables above.** Verify pool rounds were correctly classified and no real tournament was skipped. When satisfied, sign off by committing:"
+    )
     lines.append("")
     lines.append("```")
     lines.append(f"python -m python.tools.phase5_runner --commit-run-id {run_id or '<run_id>'}")
     lines.append("```")
     lines.append("")
-    lines.append("If something is wrong, **do not commit** — discard via `fn_discard_event_draft('<run_id>')` and re-run.")
+    lines.append(
+        "If something is wrong, **do not commit** — discard via `fn_discard_event_draft('<run_id>')` and re-run."
+    )
     return "\n".join(lines)
 
 

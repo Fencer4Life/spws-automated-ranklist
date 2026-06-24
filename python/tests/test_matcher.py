@@ -37,7 +37,6 @@ from __future__ import annotations
 import pytest
 
 from python.matcher.fuzzy_match import (
-    MatchResult,
     birth_year_matches_category,
     find_best_match,
     fold_diacritics,
@@ -276,9 +275,7 @@ class TestAdminCreateNewFencer:
             "num_confidence": 70.0,
             "enum_status": "PENDING",
         }
-        result = create_new_fencer_from_match(
-            candidate, surname="SMITH", first_name="John"
-        )
+        result = create_new_fencer_from_match(candidate, surname="SMITH", first_name="John")
         assert result["enum_status"] == "NEW_FENCER"
 
 
@@ -319,10 +316,10 @@ class TestResolveResults:
     def test_resolve_multiple_results(self, fencer_db):
         """Batch-resolve a list of scraped names."""
         scraped_names = [
-            "KOWALSKI Jan",       # exact → AUTO_MATCHED
-            "TK",                 # alias → AUTO_MATCHED
-            "MÜLLER Hans",        # unknown → UNMATCHED
-            "KOWALSKY Jan",       # close → PENDING
+            "KOWALSKI Jan",  # exact → AUTO_MATCHED
+            "TK",  # alias → AUTO_MATCHED
+            "MÜLLER Hans",  # unknown → UNMATCHED
+            "KOWALSKY Jan",  # close → PENDING
         ]
         matches = resolve_results(scraped_names, fencer_db)
         assert len(matches) == 4
@@ -340,15 +337,14 @@ class TestResolveResults:
 # Tournament-type-based intake rules (new tests)
 # ===========================================================================
 
+
 # ---------------------------------------------------------------------------
 # 4.10–4.14  Domestic intake (PPW/MPW): all results always enter ranklist
 # ---------------------------------------------------------------------------
 class TestDomesticIntake:
     def test_ppw_exact_match_in_matched_list(self, fencer_db):
         """4.10 PPW exact match → AUTO_MATCHED, in matched list."""
-        resolved = resolve_tournament_results(
-            ["KOWALSKI Jan"], fencer_db, "PPW", "V2", 2025
-        )
+        resolved = resolve_tournament_results(["KOWALSKI Jan"], fencer_db, "PPW", "V2", 2025)
         assert len(resolved.matched) == 1
         assert resolved.matched[0].status == "AUTO_MATCHED"
         assert resolved.matched[0].id_fencer == 3
@@ -357,9 +353,7 @@ class TestDomesticIntake:
 
     def test_ppw_pending_provisionally_linked(self, fencer_db):
         """4.11 PPW PENDING → provisionally linked, in matched list."""
-        resolved = resolve_tournament_results(
-            ["KOWALSKY Jan"], fencer_db, "PPW", "V2", 2025
-        )
+        resolved = resolve_tournament_results(["KOWALSKY Jan"], fencer_db, "PPW", "V2", 2025)
         assert len(resolved.matched) == 1
         assert resolved.matched[0].status == "PENDING"
         assert resolved.matched[0].id_fencer == 3  # provisionally linked
@@ -368,40 +362,30 @@ class TestDomesticIntake:
 
     def test_ppw_unmatched_auto_creates_fencer(self, fencer_db):
         """4.12 PPW UNMATCHED → auto_created list has new fencer."""
-        resolved = resolve_tournament_results(
-            ["MÜLLER Hans"], fencer_db, "PPW", "V2", 2025
-        )
+        resolved = resolve_tournament_results(["MÜLLER Hans"], fencer_db, "PPW", "V2", 2025)
         assert len(resolved.auto_created) == 1
         assert resolved.auto_created[0]["txt_surname"] == "MÜLLER"
         assert resolved.auto_created[0]["txt_first_name"] == "Hans"
         # Also appears in matched list with NEW_FENCER status
-        new_fencer_matches = [
-            m for m in resolved.matched if m.status == "NEW_FENCER"
-        ]
+        new_fencer_matches = [m for m in resolved.matched if m.status == "NEW_FENCER"]
         assert len(new_fencer_matches) == 1
         assert len(resolved.skipped) == 0
 
     def test_ppw_auto_created_has_estimated_flag(self, fencer_db):
         """4.13 PPW auto-created fencer has bool_birth_year_estimated=True."""
-        resolved = resolve_tournament_results(
-            ["MÜLLER Hans"], fencer_db, "PPW", "V2", 2025
-        )
+        resolved = resolve_tournament_results(["MÜLLER Hans"], fencer_db, "PPW", "V2", 2025)
         assert resolved.auto_created[0]["bool_birth_year_estimated"] is True
 
     def test_ppw_auto_created_birth_year_midpoint(self, fencer_db):
         """4.14 PPW auto-created fencer birth_year uses the band midpoint
         (ADR-056 Stage-0 convention, 2026-06-13)."""
-        resolved = resolve_tournament_results(
-            ["MÜLLER Hans"], fencer_db, "PPW", "V2", 2025
-        )
+        resolved = resolve_tournament_results(["MÜLLER Hans"], fencer_db, "PPW", "V2", 2025)
         # V2 in season ending 2025: midpoint anchor 55 = 2025 - 55 = 1970
         assert resolved.auto_created[0]["int_birth_year"] == 1970
 
     def test_mpw_unmatched_also_auto_creates(self, fencer_db):
         """4.14b MPW follows same rules as PPW (domestic)."""
-        resolved = resolve_tournament_results(
-            ["MÜLLER Hans"], fencer_db, "MPW", "V2", 2025
-        )
+        resolved = resolve_tournament_results(["MÜLLER Hans"], fencer_db, "MPW", "V2", 2025)
         assert len(resolved.auto_created) == 1
         assert len(resolved.skipped) == 0
 
@@ -412,9 +396,7 @@ class TestDomesticIntake:
 class TestInternationalIntake:
     def test_pew_exact_match_imported(self, fencer_db):
         """4.15 PEW exact match → AUTO_MATCHED, in matched list."""
-        resolved = resolve_tournament_results(
-            ["KOWALSKI Jan"], fencer_db, "PEW", "V2", 2025
-        )
+        resolved = resolve_tournament_results(["KOWALSKI Jan"], fencer_db, "PEW", "V2", 2025)
         assert len(resolved.matched) == 1
         assert resolved.matched[0].status == "AUTO_MATCHED"
         assert len(resolved.auto_created) == 0
@@ -422,18 +404,14 @@ class TestInternationalIntake:
 
     def test_pew_pending_provisionally_linked(self, fencer_db):
         """4.16 PEW PENDING → provisionally linked, in matched list."""
-        resolved = resolve_tournament_results(
-            ["KOWALSKY Jan"], fencer_db, "PEW", "V2", 2025
-        )
+        resolved = resolve_tournament_results(["KOWALSKY Jan"], fencer_db, "PEW", "V2", 2025)
         assert len(resolved.matched) == 1
         assert resolved.matched[0].status == "PENDING"
         assert resolved.matched[0].id_fencer == 3
 
     def test_pew_unmatched_skipped(self, fencer_db):
         """4.17 PEW UNMATCHED → in skipped list, NOT in matched."""
-        resolved = resolve_tournament_results(
-            ["MÜLLER Hans"], fencer_db, "PEW", "V2", 2025
-        )
+        resolved = resolve_tournament_results(["MÜLLER Hans"], fencer_db, "PEW", "V2", 2025)
         assert len(resolved.skipped) == 1
         assert resolved.skipped[0] == "MÜLLER Hans"
         assert len(resolved.matched) == 0
@@ -441,9 +419,7 @@ class TestInternationalIntake:
 
     def test_mew_unmatched_skipped(self, fencer_db):
         """4.18 MEW UNMATCHED → skipped (same as PEW)."""
-        resolved = resolve_tournament_results(
-            ["MÜLLER Hans"], fencer_db, "MEW", "V2", 2025
-        )
+        resolved = resolve_tournament_results(["MÜLLER Hans"], fencer_db, "MEW", "V2", 2025)
         assert len(resolved.skipped) == 1
         assert len(resolved.matched) == 0
 
@@ -457,7 +433,11 @@ class TestAdr038PolOnlyGate:
     def test_pew_pol_auto_matched_passes(self, fencer_db):
         """4.61 PEW, country=POL, exact match → AUTO_MATCHED (not filtered)."""
         resolved = resolve_tournament_results(
-            ["KOWALSKI Jan"], fencer_db, "PEW", "V2", 2025,
+            ["KOWALSKI Jan"],
+            fencer_db,
+            "PEW",
+            "V2",
+            2025,
             scraped_countries=["POL"],
         )
         assert len(resolved.matched) == 1
@@ -467,7 +447,11 @@ class TestAdr038PolOnlyGate:
     def test_pew_non_pol_auto_matched_dismissed(self, fencer_db):
         """4.62 PEW, country=HUN, would-be exact match → filtered out."""
         resolved = resolve_tournament_results(
-            ["KOWALSKI Jan"], fencer_db, "PEW", "V2", 2025,
+            ["KOWALSKI Jan"],
+            fencer_db,
+            "PEW",
+            "V2",
+            2025,
             scraped_countries=["HUN"],
         )
         assert len(resolved.matched) == 0
@@ -477,7 +461,11 @@ class TestAdr038PolOnlyGate:
     def test_pew_non_pol_pending_dismissed(self, fencer_db):
         """4.63 PEW, country=AUT, would-be PENDING → filtered out (no queue entry)."""
         resolved = resolve_tournament_results(
-            ["KOWALSKY Jan"], fencer_db, "PEW", "V2", 2025,
+            ["KOWALSKY Jan"],
+            fencer_db,
+            "PEW",
+            "V2",
+            2025,
             scraped_countries=["AUT"],
         )
         assert len(resolved.matched) == 0
@@ -486,7 +474,11 @@ class TestAdr038PolOnlyGate:
     def test_pew_non_pol_unmatched_dismissed(self, fencer_db):
         """4.64 PEW, country=GER, UNMATCHED → filtered out (as before, but via country gate)."""
         resolved = resolve_tournament_results(
-            ["MÜLLER Hans"], fencer_db, "PEW", "V2", 2025,
+            ["MÜLLER Hans"],
+            fencer_db,
+            "PEW",
+            "V2",
+            2025,
             scraped_countries=["GER"],
         )
         assert len(resolved.matched) == 0
@@ -495,7 +487,11 @@ class TestAdr038PolOnlyGate:
     def test_mew_non_pol_dismissed(self, fencer_db):
         """4.65 MEW (team) also gated by country."""
         resolved = resolve_tournament_results(
-            ["KOWALSKI Jan"], fencer_db, "MEW", "V2", 2025,
+            ["KOWALSKI Jan"],
+            fencer_db,
+            "MEW",
+            "V2",
+            2025,
             scraped_countries=["HUN"],
         )
         assert len(resolved.matched) == 0
@@ -504,7 +500,11 @@ class TestAdr038PolOnlyGate:
     def test_ppw_non_pol_still_ingested(self, fencer_db):
         """4.66 PPW (domestic) — country filter does NOT apply; all rows go in."""
         resolved = resolve_tournament_results(
-            ["KOWALSKI Jan", "MÜLLER Hans"], fencer_db, "PPW", "V2", 2025,
+            ["KOWALSKI Jan", "MÜLLER Hans"],
+            fencer_db,
+            "PPW",
+            "V2",
+            2025,
             scraped_countries=["POL", "GER"],
         )
         # KOWALSKI Jan → AUTO_MATCHED, MÜLLER Hans → NEW_FENCER (auto-created)
@@ -515,7 +515,11 @@ class TestAdr038PolOnlyGate:
     def test_pew_missing_country_fails_closed(self, fencer_db):
         """4.67 PEW with scraped_countries list but None entry → row dismissed (fail-closed)."""
         resolved = resolve_tournament_results(
-            ["KOWALSKI Jan", "PARTICS Péter"], fencer_db, "PEW", "V2", 2025,
+            ["KOWALSKI Jan", "PARTICS Péter"],
+            fencer_db,
+            "PEW",
+            "V2",
+            2025,
             scraped_countries=["POL", None],
         )
         assert len(resolved.matched) == 1
@@ -525,7 +529,11 @@ class TestAdr038PolOnlyGate:
     def test_pew_no_countries_backward_compat(self, fencer_db):
         """4.68 PEW without scraped_countries → legacy behavior (PENDING still provisionally linked)."""
         resolved = resolve_tournament_results(
-            ["KOWALSKY Jan"], fencer_db, "PEW", "V2", 2025,
+            ["KOWALSKY Jan"],
+            fencer_db,
+            "PEW",
+            "V2",
+            2025,
         )
         # Without country info, fall back to pre-ADR-038 behavior (no filter)
         assert len(resolved.matched) == 1
@@ -593,6 +601,7 @@ class TestAutoCreateFencer:
 # ===========================================================================
 # Duplicate name disambiguation (age-category tiebreaker)
 # ===========================================================================
+
 
 @pytest.fixture
 def fencer_db_with_duplicates():
@@ -666,57 +675,43 @@ def fencer_db_with_duplicates():
 class TestDuplicateNameDisambiguation:
     def test_krawczyk_v4_picks_older(self, fencer_db_with_duplicates):
         """4.25 KRAWCZYK Paweł in V4 (season end 2025) → picks born 1954 (age 71)."""
-        result = find_best_match(
-            "KRAWCZYK Paweł", fencer_db_with_duplicates, "V4", 2025
-        )
+        result = find_best_match("KRAWCZYK Paweł", fencer_db_with_duplicates, "V4", 2025)
         assert result.id_fencer == 6  # born 1954
         assert result.status == "AUTO_MATCHED"
 
     def test_krawczyk_v0_picks_younger(self, fencer_db_with_duplicates):
         """4.26 KRAWCZYK Paweł in V0 (season end 2025) → picks born 1989 (age 36)."""
-        result = find_best_match(
-            "KRAWCZYK Paweł", fencer_db_with_duplicates, "V0", 2025
-        )
+        result = find_best_match("KRAWCZYK Paweł", fencer_db_with_duplicates, "V0", 2025)
         assert result.id_fencer == 7  # born 1989
         assert result.status == "AUTO_MATCHED"
 
     def test_mlynek_v1_picks_younger(self, fencer_db_with_duplicates):
         """4.27 MŁYNEK Janusz in V1 (season end 2025) → picks born 1984 (age 41)."""
-        result = find_best_match(
-            "MŁYNEK Janusz", fencer_db_with_duplicates, "V1", 2025
-        )
+        result = find_best_match("MŁYNEK Janusz", fencer_db_with_duplicates, "V1", 2025)
         assert result.id_fencer == 9  # born 1984
         assert result.status == "AUTO_MATCHED"
 
     def test_mlynek_v4_picks_older(self, fencer_db_with_duplicates):
         """4.28 MŁYNEK Janusz in V4 (season end 2025) → picks born 1951 (age 74)."""
-        result = find_best_match(
-            "MŁYNEK Janusz", fencer_db_with_duplicates, "V4", 2025
-        )
+        result = find_best_match("MŁYNEK Janusz", fencer_db_with_duplicates, "V4", 2025)
         assert result.id_fencer == 8  # born 1951
         assert result.status == "AUTO_MATCHED"
 
     def test_duplicate_no_category_forces_pending(self, fencer_db_with_duplicates):
         """4.29 Duplicate with no age_category → PENDING (ambiguous)."""
-        result = find_best_match(
-            "KRAWCZYK Paweł", fencer_db_with_duplicates
-        )
+        result = find_best_match("KRAWCZYK Paweł", fencer_db_with_duplicates)
         assert result.status == "PENDING"
         assert result.confidence >= 95  # name match is still 100%
 
     def test_duplicate_neither_fits_category_forces_pending(self, fencer_db_with_duplicates):
         """4.30 Duplicate where neither fits category → PENDING."""
         # V2 (50-59): 1954 → age 71 (V4), 1989 → age 36 (V0). Neither fits V2.
-        result = find_best_match(
-            "KRAWCZYK Paweł", fencer_db_with_duplicates, "V2", 2025
-        )
+        result = find_best_match("KRAWCZYK Paweł", fencer_db_with_duplicates, "V2", 2025)
         assert result.status == "PENDING"
 
     def test_duplicate_both_null_birth_year_forces_pending(self, fencer_db_with_duplicates):
         """4.31 Duplicate where both have NULL birth_year → PENDING."""
-        result = find_best_match(
-            "NOWAK Adam", fencer_db_with_duplicates, "V2", 2025
-        )
+        result = find_best_match("NOWAK Adam", fencer_db_with_duplicates, "V2", 2025)
         assert result.status == "PENDING"
 
 
@@ -767,6 +762,7 @@ class TestDuplicateInPipeline:
 # Staging spreadsheet matcher enhancements
 # ===========================================================================
 
+
 # ---------------------------------------------------------------------------
 # 4.38–4.41  Diacritic folding
 # ---------------------------------------------------------------------------
@@ -786,18 +782,14 @@ class TestDiacriticFolding:
 
     def test_diacritic_folding_match(self, fencer_db):
         """4.40 'BARANSKI Witold' matches 'BARAŃSKI Witold' with diacritic folding."""
-        result = find_best_match(
-            "BARANSKI Witold", fencer_db, use_diacritic_folding=True
-        )
+        result = find_best_match("BARANSKI Witold", fencer_db, use_diacritic_folding=True)
         assert result.id_fencer == 1
         assert result.confidence >= 95
         assert result.status == "AUTO_MATCHED"
 
     def test_diacritic_folding_off_lower_score(self, fencer_db):
         """4.41 Without folding, 'BARANSKI Witold' vs 'BARAŃSKI Witold' scores lower."""
-        result = find_best_match(
-            "BARANSKI Witold", fencer_db, use_diacritic_folding=False
-        )
+        result = find_best_match("BARANSKI Witold", fencer_db, use_diacritic_folding=False)
         # Without folding, the ń→n difference lowers the score
         assert result.confidence < 95 or result.status != "AUTO_MATCHED"
 
@@ -826,33 +818,25 @@ class TestTokenSetRatio:
 
     def test_token_set_matches_subset_name(self, fencer_db_compound):
         """4.42 'NEYMAN Maciej' matches 'SPŁAWA-NEYMAN Maciej' with token_set_ratio."""
-        result = find_best_match(
-            "NEYMAN Maciej", fencer_db_compound, use_token_set_ratio=True
-        )
+        result = find_best_match("NEYMAN Maciej", fencer_db_compound, use_token_set_ratio=True)
         assert result.id_fencer == 1
         assert result.confidence >= 75  # token_set catches subset (~78.8)
 
     def test_token_set_matches_partial_first_name(self, fencer_db_compound):
         """4.43 'CIUFFREDA Luigi' matches 'CIUFFREDA Luigi Salvatore' with token_set."""
-        result = find_best_match(
-            "CIUFFREDA Luigi", fencer_db_compound, use_token_set_ratio=True
-        )
+        result = find_best_match("CIUFFREDA Luigi", fencer_db_compound, use_token_set_ratio=True)
         assert result.id_fencer == 2
         assert result.confidence >= 85
 
     def test_token_set_off_lower_score_for_subset(self, fencer_db_compound):
         """4.44 Without token_set, 'NEYMAN Maciej' vs 'SPŁAWA-NEYMAN Maciej' scores lower."""
-        result = find_best_match(
-            "NEYMAN Maciej", fencer_db_compound, use_token_set_ratio=False
-        )
+        result = find_best_match("NEYMAN Maciej", fencer_db_compound, use_token_set_ratio=False)
         # token_sort_ratio only — partial surname match scores lower
         assert result.confidence < 85
 
     def test_token_set_does_not_false_positive(self, fencer_db):
         """4.45 token_set_ratio doesn't cause false positive for unrelated names."""
-        result = find_best_match(
-            "XYZ Unknown", fencer_db, use_token_set_ratio=True
-        )
+        result = find_best_match("XYZ Unknown", fencer_db, use_token_set_ratio=True)
         assert result.status == "UNMATCHED"
 
 
@@ -863,25 +847,19 @@ class TestConfigurableThresholds:
     def test_custom_auto_threshold_90(self, fencer_db):
         """4.46 With auto_match_threshold=90, a score of ~92 → AUTO_MATCHED."""
         # "KOWALSKI Jan" is exact (score 100), should AUTO_MATCH at 90
-        result = find_best_match(
-            "KOWALSKI Jan", fencer_db, auto_match_threshold=90
-        )
+        result = find_best_match("KOWALSKI Jan", fencer_db, auto_match_threshold=90)
         assert result.status == "AUTO_MATCHED"
 
     def test_custom_auto_threshold_98_makes_typo_pending(self, fencer_db):
         """4.47 With auto_match_threshold=98, a small typo → PENDING (not AUTO)."""
         # "KOWALSKY Jan" typically scores ~92 — below 98 threshold
-        result = find_best_match(
-            "KOWALSKY Jan", fencer_db, auto_match_threshold=98
-        )
+        result = find_best_match("KOWALSKY Jan", fencer_db, auto_match_threshold=98)
         assert result.status == "PENDING"
 
     def test_custom_pending_threshold_80(self, fencer_db):
         """4.48 With pending_threshold=80, a score of 60 → UNMATCHED (not PENDING)."""
         # "BARAŃSKI Tomasz" vs "BARAŃSKI Witold" — surname match but wrong first name
-        result = find_best_match(
-            "BARAŃSKI Tomasz", fencer_db, pending_threshold=80
-        )
+        result = find_best_match("BARAŃSKI Tomasz", fencer_db, pending_threshold=80)
         # Score should be around 70 — below 80 threshold → UNMATCHED
         assert result.status == "UNMATCHED" or result.confidence >= 80
 
@@ -901,6 +879,7 @@ class TestConfigurableThresholds:
 # ===========================================================================
 # Category marker stripping + component-level scoring
 # ===========================================================================
+
 
 # ---------------------------------------------------------------------------
 # 4.50–4.51  Category marker stripping in normalize_name
@@ -927,35 +906,70 @@ class TestCategoryMarkerStripping:
 class TestComponentScoring:
     def test_mazik_transposition(self):
         """4.52 MAZIK Alksander vs Aleksander — component boost → AUTO_MATCHED."""
-        db = [{"id_fencer": 1, "txt_surname": "MAZIK", "txt_first_name": "Aleksander", "json_name_aliases": None}]
+        db = [
+            {
+                "id_fencer": 1,
+                "txt_surname": "MAZIK",
+                "txt_first_name": "Aleksander",
+                "json_name_aliases": None,
+            }
+        ]
         result = find_best_match("MAZIK Alksander", db)
         assert result.confidence >= 95
         assert result.status == "AUTO_MATCHED"
 
     def test_krujaskis_missing_letter(self):
         """4.53 KRUJASKIS vs KRUJALSKIS — surname typo → AUTO_MATCHED."""
-        db = [{"id_fencer": 1, "txt_surname": "KRUJALSKIS", "txt_first_name": "Gotfridas", "json_name_aliases": None}]
+        db = [
+            {
+                "id_fencer": 1,
+                "txt_surname": "KRUJALSKIS",
+                "txt_first_name": "Gotfridas",
+                "json_name_aliases": None,
+            }
+        ]
         result = find_best_match("KRUJASKIS Gotfridas", db)
         assert result.confidence >= 95
         assert result.status == "AUTO_MATCHED"
 
     def test_nikalaichuk_transliteration(self):
         """4.54 NIKALAICHUK Aleksander vs Aliaksandr — transliteration → AUTO_MATCHED."""
-        db = [{"id_fencer": 1, "txt_surname": "NIKALAICHUK", "txt_first_name": "Aliaksandr", "json_name_aliases": None}]
+        db = [
+            {
+                "id_fencer": 1,
+                "txt_surname": "NIKALAICHUK",
+                "txt_first_name": "Aliaksandr",
+                "json_name_aliases": None,
+            }
+        ]
         result = find_best_match("NIKALAICHUK Aleksander", db)
         assert result.confidence >= 95
         assert result.status == "AUTO_MATCHED"
 
     def test_fras_felix_feliks(self):
         """4.55 FRAŚ Felix vs Feliks — first name variant → AUTO_MATCHED."""
-        db = [{"id_fencer": 1, "txt_surname": "FRAŚ", "txt_first_name": "Feliks", "json_name_aliases": None}]
+        db = [
+            {
+                "id_fencer": 1,
+                "txt_surname": "FRAŚ",
+                "txt_first_name": "Feliks",
+                "json_name_aliases": None,
+            }
+        ]
         result = find_best_match("FRAŚ Felix", db)
         assert result.confidence >= 95
         assert result.status == "AUTO_MATCHED"
 
     def test_fuhrmann_transposition(self):
         """4.56 FUHRMANN Urlike vs Ulrike — transposition → AUTO_MATCHED."""
-        db = [{"id_fencer": 1, "txt_surname": "FUHRMANN", "txt_first_name": "Ulrike", "json_name_aliases": None}]
+        db = [
+            {
+                "id_fencer": 1,
+                "txt_surname": "FUHRMANN",
+                "txt_first_name": "Ulrike",
+                "json_name_aliases": None,
+            }
+        ]
         result = find_best_match("FUHRMANN Urlike", db)
         assert result.confidence >= 95
         assert result.status == "AUTO_MATCHED"

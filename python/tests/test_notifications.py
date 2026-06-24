@@ -85,15 +85,19 @@ class TestCoreNotificationMethods:
         with patch("python.pipeline.notifications.send_telegram_alert") as mock_send:
             n = TelegramNotifier("fake-token", "fake-chat")
             # Simulate an IngestResult-like object
-            result = type("IngestResult", (), {
-                "tournament_ids": [1, 2, 3],
-                "matched": 25,
-                "pending": 3,
-                "auto_created": 2,
-                "skipped": 1,
-                "errors": [],
-                "skipped_files": ["RESULTS_GRVETXE.xml"],
-            })()
+            result = type(
+                "IngestResult",
+                (),
+                {
+                    "tournament_ids": [1, 2, 3],
+                    "matched": 25,
+                    "pending": 3,
+                    "auto_created": 2,
+                    "skipped": 1,
+                    "errors": [],
+                    "skipped_files": ["RESULTS_GRVETXE.xml"],
+                },
+            )()
             n.summary(result)
             mock_send.assert_called_once()
             msg = mock_send.call_args[1].get("message") or mock_send.call_args[0][2]
@@ -140,9 +144,7 @@ class TestRoutineNotifications:
 
         with patch("python.pipeline.notifications.send_telegram_alert") as mock_send:
             n = TelegramNotifier("fake-token", "fake-chat")
-            n.notify_batch_complete(
-                file_count=15, skip_count=2, tournament_count=13
-            )
+            n.notify_batch_complete(file_count=15, skip_count=2, tournament_count=13)
             mock_send.assert_called_once()
             msg = mock_send.call_args[1].get("message") or mock_send.call_args[0][2]
             assert "15" in msg
@@ -155,9 +157,7 @@ class TestRoutineNotifications:
 
         with patch("python.pipeline.notifications.send_telegram_alert") as mock_send:
             n = TelegramNotifier("fake-token", "fake-chat")
-            n.notify_files_received(
-                "Fw: wyniki Gdańsk", file_count=17
-            )
+            n.notify_files_received("Fw: wyniki Gdańsk", file_count=17)
             mock_send.assert_called_once()
             msg = mock_send.call_args[1].get("message") or mock_send.call_args[0][2]
             assert "Fw: wyniki Gdańsk" in msg
@@ -216,8 +216,11 @@ class TestAlertNotifications:
         with patch("python.pipeline.notifications.send_telegram_alert") as mock_send:
             n = TelegramNotifier("fake-token", "fake-chat")
             n.notify_tournament_not_found(
-                weapon="Epee", gender="M", category="V3",
-                date="2026-02-21", event_name="Gdańsk",
+                weapon="Epee",
+                gender="M",
+                category="V3",
+                date="2026-02-21",
+                event_name="Gdańsk",
             )
             mock_send.assert_called_once()
             msg = mock_send.call_args[1].get("message") or mock_send.call_args[0][2]
@@ -233,7 +236,9 @@ class TestAlertNotifications:
             n = TelegramNotifier("fake-token", "fake-chat")
             n.notify_event_missing_tournament(
                 event_name="PPW4 Gdańsk",
-                weapon="Foil", gender="F", category="V1",
+                weapon="Foil",
+                gender="F",
+                category="V1",
             )
             mock_send.assert_called_once()
             msg = mock_send.call_args[1].get("message") or mock_send.call_args[0][2]
@@ -351,6 +356,7 @@ class TestPhase4Notifications:
     def test_notify_evf_parity_fail_lists_all_fencers(self):
         """P4.NT.4 parity-fail enumerates every failing fencer (no truncation)."""
         from dataclasses import dataclass
+
         from python.pipeline.notifications import TelegramNotifier
 
         @dataclass
@@ -412,9 +418,7 @@ class TestPhase4Notifications:
 
         with patch("python.pipeline.notifications.send_telegram_alert") as mock_send:
             n = TelegramNotifier("t", "c")
-            n.notify_parity_sweep_summary(
-                n_checked=12, n_promoted=10, n_failed=1, n_empty=1
-            )
+            n.notify_parity_sweep_summary(n_checked=12, n_promoted=10, n_failed=1, n_empty=1)
             msg = self._last_msg(mock_send)
             assert "checked 12" in msg
             assert "promoted 10" in msg
@@ -427,8 +431,9 @@ class TestPhase4Notifications:
 
         with patch("python.pipeline.notifications.send_telegram_alert") as mock_send:
             n = TelegramNotifier(None, None)
-            n.notify_event_commit("X", {"matched": 0, "pending": 0,
-                                         "auto_created": 0, "skipped": 0})
+            n.notify_event_commit(
+                "X", {"matched": 0, "pending": 0, "auto_created": 0, "skipped": 0}
+            )
             n.notify_evf_promoted("X", 0)
             n.notify_parity_sweep_summary(0, 0, 0, 0)
             n.notify_pew_cascade("X", "Y", 0)

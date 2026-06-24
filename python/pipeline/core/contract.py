@@ -15,32 +15,36 @@ into and the rules the Orchestrator enforces:
 There is no `HaltError` here: the old halt-by-exception model (types.py) is
 replaced by `FaultKind` (recorded, non-blocking) + a narrow `Abort`.
 """
+
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Callable, Protocol, runtime_checkable
-
+from enum import StrEnum
+from typing import Any, Protocol, runtime_checkable
 
 # ===========================================================================
 # Plugin kinds + side-effects + faults
 # ===========================================================================
 
-class PluginKind(str, Enum):
+
+class PluginKind(StrEnum):
     """What a plugin is, which determines where it runs (design §4.1a)."""
-    SOURCE = "SOURCE"        # produces the initial Context
-    GATE = "GATE"            # pure check; records ctx.fault, never halts
+
+    SOURCE = "SOURCE"  # produces the initial Context
+    GATE = "GATE"  # pure check; records ctx.fault, never halts
     TRANSFORM = "TRANSFORM"  # pure; enriches Context
-    MUTATOR = "MUTATOR"      # persists state and emits a signal
-    REACTOR = "REACTOR"      # observes a signal -> emits a Flow (outside the plan)
+    MUTATOR = "MUTATOR"  # persists state and emits a signal
+    REACTOR = "REACTOR"  # observes a signal -> emits a Flow (outside the plan)
 
 
-class FaultKind(str, Enum):
+class FaultKind(StrEnum):
     """A recoverable domain problem (design §5.2, ADR-074). Never a halt.
 
     The REMEDIATIONBOOK (M2) maps each kind to an inline deterministic fix
     (drop_bracket / skip_bracket / accept_parsed / ...) + an escalation policy.
     """
+
     BELOW_MIN = "BELOW_MIN"
     COUNT_MISMATCH = "COUNT_MISMATCH"
     POOL_ROUND = "POOL_ROUND"
@@ -49,12 +53,13 @@ class FaultKind(str, Enum):
     URL_DATA_MISMATCH = "URL_DATA_MISMATCH"
 
 
-class Outcome(str, Enum):
+class Outcome(StrEnum):
     """Per-plugin trace outcome (design §4.1)."""
+
     RAN = "RAN"
-    SKIPPED = "SKIPPED"      # applies() returned False
-    FAULT = "FAULT"          # the plugin recorded a ctx.fault (run still continued)
-    ABORTED = "ABORTED"      # an Abort broke the run at this plugin
+    SKIPPED = "SKIPPED"  # applies() returned False
+    FAULT = "FAULT"  # the plugin recorded a ctx.fault (run still continued)
+    ABORTED = "ABORTED"  # an Abort broke the run at this plugin
 
 
 class Abort(Exception):
@@ -63,6 +68,7 @@ class Abort(Exception):
     It is retried by the dispatch layer, never gated by a human (ADR-074).
     A domain problem is a `ctx.fault`, NOT an Abort.
     """
+
     def __init__(self, plugin: str = "", detail: str = "") -> None:
         super().__init__(f"{plugin}: {detail}" if plugin else detail)
         self.plugin = plugin
@@ -80,6 +86,7 @@ class WriteDisciplineError(Exception):
 # ===========================================================================
 # Trace
 # ===========================================================================
+
 
 @dataclass(frozen=True)
 class Fault:
@@ -104,8 +111,9 @@ class ReportFragment:
     accumulated fragments into the per-event `.md` / `.diff.md` files. `kind` is
     recorded so the output is legible by plugin TYPE.
     """
+
     plugin: str
-    kind: "PluginKind | None"
+    kind: PluginKind | None
     section: str
     payload: dict[str, Any] = field(default_factory=dict)
 
@@ -113,6 +121,7 @@ class ReportFragment:
 @dataclass
 class Trace:
     """Ordered record of what the orchestrator did, plugin by plugin."""
+
     entries: list[TraceEntry] = field(default_factory=list)
 
     def record(self, plugin: str, outcome: Outcome) -> None:
@@ -133,9 +142,11 @@ class Trace:
 # Services (injected dependencies)
 # ===========================================================================
 
+
 @dataclass
 class Services:
     """Everything a plugin needs from the outside world, injected for testability."""
+
     db: Any = None
     config: Any = None
     matcher: Any = None
@@ -146,6 +157,7 @@ class Services:
 # ===========================================================================
 # Context (the forward payload)
 # ===========================================================================
+
 
 @dataclass
 class Context:
@@ -158,6 +170,7 @@ class Context:
     `set()` can enforce write-discipline and `fault()` can attribute the fault
     to the active plugin. Plugins themselves never touch the underscore fields.
     """
+
     data: dict[str, Any] = field(default_factory=dict)
     trace: Trace = field(default_factory=Trace)
     warnings: list[str] = field(default_factory=list)
@@ -166,7 +179,7 @@ class Context:
     params: dict[str, Any] = field(default_factory=dict)  # active Step.params (set by orchestrator)
 
     _active_plugin: str | None = field(default=None, repr=False)
-    _active_kind: "PluginKind | None" = field(default=None, repr=False)
+    _active_kind: PluginKind | None = field(default=None, repr=False)
     _active_writes: frozenset[str] | None = field(default=None, repr=False)
     _faulted_active: bool = field(default=False, repr=False)
 
@@ -206,7 +219,7 @@ class Context:
         section: str,
         *,
         plugin: str | None = None,
-        kind: "PluginKind | None" = None,
+        kind: PluginKind | None = None,
         **payload: Any,
     ) -> None:
         """Append a staging-report fragment (ADR-075). Like fault()/warn(): a
@@ -214,18 +227,20 @@ class Context:
         to EVERY plugin kind. `plugin`/`kind` default to the active plugin (set by
         the orchestrator's _begin); BasePlugin.report passes them explicitly so a
         plugin can serialize even outside orchestrator bracketing."""
-        self.report.append(ReportFragment(
-            plugin if plugin is not None else (self._active_plugin or "?"),
-            kind if kind is not None else self._active_kind,
-            section,
-            payload,
-        ))
+        self.report.append(
+            ReportFragment(
+                plugin if plugin is not None else (self._active_plugin or "?"),
+                kind if kind is not None else self._active_kind,
+                section,
+                payload,
+            )
+        )
 
     def faults_of(self, kind: FaultKind) -> list[Fault]:
         return [f for f in self.faults if f.kind == kind]
 
     # -- orchestrator bookkeeping (not for plugins) ------------------------
-    def _begin(self, plugin: "IngestPlugin") -> None:
+    def _begin(self, plugin: IngestPlugin) -> None:
         self._active_plugin = plugin.name
         self._active_kind = getattr(plugin, "kind", None)
         self._active_writes = frozenset(plugin.writes)
@@ -244,9 +259,11 @@ class Context:
 # The plugin protocol + middleware composition
 # ===========================================================================
 
+
 @runtime_checkable
 class IngestPlugin(Protocol):
     """One concern; all I/O via injected Services; forward-only; idempotent."""
+
     name: str
     kind: PluginKind
     reads: frozenset[str]
@@ -276,6 +293,7 @@ def compose(middlewares: list[Middleware], run: Runner) -> Runner:
         def make(mw: Middleware, nxt: Runner) -> Runner:
             def wrapped(ctx: Context, svc: Services) -> None:
                 mw(ctx, svc, nxt)
+
             return wrapped
 
         handler = make(mw, nxt)

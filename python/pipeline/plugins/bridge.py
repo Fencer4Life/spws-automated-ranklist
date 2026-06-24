@@ -11,6 +11,7 @@ same pattern as `orchestrator.run_pipeline`), so tests can monkeypatch them.
 This bridge is transitional: it exists so M2 reuses today's domain code verbatim
 and the parity gate holds. M3+ inlines the logic and retires the bridge.
 """
+
 from __future__ import annotations
 
 from python.pipeline import stages
@@ -59,12 +60,12 @@ def run_stage(ctx: Context, stage_name: str, db) -> None:
             raise Abort(
                 plugin=ctx._active_plugin or stage_name,
                 detail=f"{h.reason.value}: {h.detail}",
-            )
+            ) from h
         kind = HALT_TO_FAULT.get(h.reason)
         if kind is None:
             # An unmapped domestic halt should not happen; surface it loudly.
             raise Abort(
                 plugin=ctx._active_plugin or stage_name,
                 detail=f"unmapped halt {h.reason.value}: {h.detail}",
-            )
+            ) from h
         ctx.fault(kind, h.detail)

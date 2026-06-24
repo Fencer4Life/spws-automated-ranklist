@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-
 # ---------------------------------------------------------------------------
 # compute_pending_aliases — pure classification
 # ---------------------------------------------------------------------------
@@ -21,11 +20,13 @@ def test_compute_classifies_diacritic_variant_as_check():
     from python.pipeline.alias_writeback import compute_pending_aliases
 
     stats = {
-        "alias_new_needed": [{
-            "id_fencer": 61,
-            "scraped_name": "FRAS Felix",        # ASCII transliteration
-            "canonical": "FRAŚ Feliks",          # canonical with diacritic
-        }],
+        "alias_new_needed": [
+            {
+                "id_fencer": 61,
+                "scraped_name": "FRAS Felix",  # ASCII transliteration
+                "canonical": "FRAŚ Feliks",  # canonical with diacritic
+            }
+        ],
     }
     out = compute_pending_aliases(stats)
     assert len(out) == 1
@@ -39,11 +40,13 @@ def test_compute_classifies_different_surname_as_block():
     from python.pipeline.alias_writeback import compute_pending_aliases
 
     stats = {
-        "alias_new_needed": [{
-            "id_fencer": 100,
-            "scraped_name": "KOWALSKI Adam",
-            "canonical": "NOWAK Adam",
-        }],
+        "alias_new_needed": [
+            {
+                "id_fencer": 100,
+                "scraped_name": "KOWALSKI Adam",
+                "canonical": "NOWAK Adam",
+            }
+        ],
     }
     out = compute_pending_aliases(stats)
     assert len(out) == 1
@@ -56,12 +59,9 @@ def test_compute_dedupes_repeat_pairs():
 
     stats = {
         "alias_new_needed": [
-            {"id_fencer": 7, "scraped_name": "FRAS Felix",
-             "canonical": "FRAŚ Feliks"},
-            {"id_fencer": 7, "scraped_name": "FRAS Felix",
-             "canonical": "FRAŚ Feliks"},
-            {"id_fencer": 7, "scraped_name": "FRAS Felix",
-             "canonical": "FRAŚ Feliks"},
+            {"id_fencer": 7, "scraped_name": "FRAS Felix", "canonical": "FRAŚ Feliks"},
+            {"id_fencer": 7, "scraped_name": "FRAS Felix", "canonical": "FRAŚ Feliks"},
+            {"id_fencer": 7, "scraped_name": "FRAS Felix", "canonical": "FRAŚ Feliks"},
         ],
     }
     out = compute_pending_aliases(stats)
@@ -82,10 +82,8 @@ def test_compute_sort_order_blocks_first():
 
     stats = {
         "alias_new_needed": [
-            {"id_fencer": 1, "scraped_name": "FRAS Felix",
-             "canonical": "FRAŚ Feliks"},                # ✓
-            {"id_fencer": 2, "scraped_name": "KOWALSKI Adam",
-             "canonical": "NOWAK Adam"},                 # ❌
+            {"id_fencer": 1, "scraped_name": "FRAS Felix", "canonical": "FRAŚ Feliks"},  # ✓
+            {"id_fencer": 2, "scraped_name": "KOWALSKI Adam", "canonical": "NOWAK Adam"},  # ❌
         ],
     }
     out = compute_pending_aliases(stats)
@@ -95,29 +93,35 @@ def test_compute_sort_order_blocks_first():
 # 5.AW6 — has_blocking_pairs detects ❌
 def test_has_blocking_pairs_true_when_red_x_present():
     from python.pipeline.alias_writeback import (
-        compute_pending_aliases, has_blocking_pairs,
+        compute_pending_aliases,
+        has_blocking_pairs,
     )
-    out = compute_pending_aliases({
-        "alias_new_needed": [
-            # Different multi-char surnames → ❌
-            {"id_fencer": 2, "scraped_name": "KOWALSKI Adam",
-             "canonical": "NOWAK Adam"},
-        ],
-    })
+
+    out = compute_pending_aliases(
+        {
+            "alias_new_needed": [
+                # Different multi-char surnames → ❌
+                {"id_fencer": 2, "scraped_name": "KOWALSKI Adam", "canonical": "NOWAK Adam"},
+            ],
+        }
+    )
     assert has_blocking_pairs(out) is True
 
 
 def test_has_blocking_pairs_false_when_only_check_marks():
     from python.pipeline.alias_writeback import (
-        compute_pending_aliases, has_blocking_pairs,
+        compute_pending_aliases,
+        has_blocking_pairs,
     )
-    out = compute_pending_aliases({
-        "alias_new_needed": [
-            # Diacritic variant → ✓
-            {"id_fencer": 1, "scraped_name": "FRAS Felix",
-             "canonical": "FRAŚ Feliks"},
-        ],
-    })
+
+    out = compute_pending_aliases(
+        {
+            "alias_new_needed": [
+                # Diacritic variant → ✓
+                {"id_fencer": 1, "scraped_name": "FRAS Felix", "canonical": "FRAŚ Feliks"},
+            ],
+        }
+    )
     assert has_blocking_pairs(out) is False
 
 
@@ -129,15 +133,18 @@ def test_has_blocking_pairs_false_when_only_check_marks():
 # 5.AW7 — flush calls fn_update_fencer_aliases for every ✓ pair
 def test_flush_calls_rpc_for_check_marks():
     from python.pipeline.alias_writeback import (
-        flush_pending_aliases, PendingAlias,
+        PendingAlias,
+        flush_pending_aliases,
     )
 
     db = MagicMock()
     pairs = [
-        PendingAlias(id_fencer=1, scraped_name="DOE J",
-                     canonical="DOE John", icon="✓", reason="case only"),
-        PendingAlias(id_fencer=2, scraped_name="ROE Jan",
-                     canonical="ROE Janet", icon="✓", reason="typo"),
+        PendingAlias(
+            id_fencer=1, scraped_name="DOE J", canonical="DOE John", icon="✓", reason="case only"
+        ),
+        PendingAlias(
+            id_fencer=2, scraped_name="ROE Jan", canonical="ROE Janet", icon="✓", reason="typo"
+        ),
     ]
     result = flush_pending_aliases(db, pairs)
     assert result["written"] == 2
@@ -153,17 +160,15 @@ def test_flush_calls_rpc_for_check_marks():
 # 5.AW7b — flush(include_all=True) writes EVERY pair regardless of icon
 def test_flush_include_all_writes_every_pair():
     from python.pipeline.alias_writeback import (
-        flush_pending_aliases, PendingAlias,
+        PendingAlias,
+        flush_pending_aliases,
     )
 
     db = MagicMock()
     pairs = [
-        PendingAlias(id_fencer=1, scraped_name="A", canonical="B",
-                     icon="❌", reason="wrong"),
-        PendingAlias(id_fencer=2, scraped_name="C", canonical="D",
-                     icon="❓", reason="ambig"),
-        PendingAlias(id_fencer=3, scraped_name="E", canonical="F",
-                     icon="✓", reason="case only"),
+        PendingAlias(id_fencer=1, scraped_name="A", canonical="B", icon="❌", reason="wrong"),
+        PendingAlias(id_fencer=2, scraped_name="C", canonical="D", icon="❓", reason="ambig"),
+        PendingAlias(id_fencer=3, scraped_name="E", canonical="F", icon="✓", reason="case only"),
     ]
     result = flush_pending_aliases(db, pairs, include_all=True)
     assert result["written"] == 3
@@ -176,17 +181,15 @@ def test_flush_include_all_writes_every_pair():
 # 5.AW8 — flush SKIPS ❌ and ❓ pairs (does NOT write)
 def test_flush_skips_blocked_and_ambiguous():
     from python.pipeline.alias_writeback import (
-        flush_pending_aliases, PendingAlias,
+        PendingAlias,
+        flush_pending_aliases,
     )
 
     db = MagicMock()
     pairs = [
-        PendingAlias(id_fencer=1, scraped_name="X", canonical="Y",
-                     icon="❌", reason="wrong"),
-        PendingAlias(id_fencer=2, scraped_name="A", canonical="B",
-                     icon="❓", reason="ambig"),
-        PendingAlias(id_fencer=3, scraped_name="C", canonical="D",
-                     icon="✓", reason="case only"),
+        PendingAlias(id_fencer=1, scraped_name="X", canonical="Y", icon="❌", reason="wrong"),
+        PendingAlias(id_fencer=2, scraped_name="A", canonical="B", icon="❓", reason="ambig"),
+        PendingAlias(id_fencer=3, scraped_name="C", canonical="D", icon="✓", reason="case only"),
     ]
     result = flush_pending_aliases(db, pairs)
     assert result["written"] == 1
@@ -199,7 +202,8 @@ def test_flush_skips_blocked_and_ambiguous():
 # 5.AW9 — flush captures RPC errors without aborting subsequent writes
 def test_flush_captures_rpc_errors_and_continues():
     from python.pipeline.alias_writeback import (
-        flush_pending_aliases, PendingAlias,
+        PendingAlias,
+        flush_pending_aliases,
     )
 
     db = MagicMock()
@@ -215,12 +219,9 @@ def test_flush_captures_rpc_errors_and_continues():
     db._sb.rpc.side_effect = fake_rpc
 
     pairs = [
-        PendingAlias(id_fencer=1, scraped_name="A", canonical="B",
-                     icon="✓", reason="ok"),
-        PendingAlias(id_fencer=2, scraped_name="C", canonical="D",
-                     icon="✓", reason="ok"),
-        PendingAlias(id_fencer=3, scraped_name="E", canonical="F",
-                     icon="✓", reason="ok"),
+        PendingAlias(id_fencer=1, scraped_name="A", canonical="B", icon="✓", reason="ok"),
+        PendingAlias(id_fencer=2, scraped_name="C", canonical="D", icon="✓", reason="ok"),
+        PendingAlias(id_fencer=3, scraped_name="E", canonical="F", icon="✓", reason="ok"),
     ]
     result = flush_pending_aliases(db, pairs)
     assert result["written"] == 2  # call 1 + call 3 succeed
@@ -237,17 +238,32 @@ def test_derive_pending_from_run_id_filters_non_auto_methods():
     db = MagicMock()
     # Stub: 3 result_drafts. Only the AUTO_MATCH one is alias material; the
     # PENDING and EXCLUDED rows must be excluded entirely.
-    db._sb.table().select().eq().execute.return_value = MagicMock(data=[
-        {"id_fencer": 11, "txt_scraped_name": "DOE Janet",
-         "enum_match_method": "AUTO_MATCH", "id_tournament_draft": 1},
-        {"id_fencer": 12, "txt_scraped_name": "X Y",
-         "enum_match_method": "PENDING", "id_tournament_draft": 1},
-        {"id_fencer": 13, "txt_scraped_name": "P Q",
-         "enum_match_method": "EXCLUDED", "id_tournament_draft": 1},
-    ])
+    db._sb.table().select().eq().execute.return_value = MagicMock(
+        data=[
+            {
+                "id_fencer": 11,
+                "txt_scraped_name": "DOE Janet",
+                "enum_match_method": "AUTO_MATCH",
+                "id_tournament_draft": 1,
+            },
+            {
+                "id_fencer": 12,
+                "txt_scraped_name": "X Y",
+                "enum_match_method": "PENDING",
+                "id_tournament_draft": 1,
+            },
+            {
+                "id_fencer": 13,
+                "txt_scraped_name": "P Q",
+                "enum_match_method": "EXCLUDED",
+                "id_tournament_draft": 1,
+            },
+        ]
+    )
     db.fetch_fencer_basics_batch.return_value = {
         11: {
-            "txt_surname": "DOE", "txt_first_name": "John",
+            "txt_surname": "DOE",
+            "txt_first_name": "John",
             "json_name_aliases": [],
         },
     }
@@ -272,15 +288,26 @@ def test_derive_pending_treats_existing_alias_as_user_confirmed():
     #      (user clicked Keep — this is a real transliteration alias).
     #      Classifier would say ❌ on names alone, but user-confirmed wins.
     #   2. SOMETHING NEW Aliaksandr — NOT in aliases yet (fresh candidate).
-    db._sb.table().select().eq().execute.return_value = MagicMock(data=[
-        {"id_fencer": 197, "txt_scraped_name": "NIKOŁAJCZUK Aleksander",
-         "enum_match_method": "AUTO_MATCH", "id_tournament_draft": 1},
-        {"id_fencer": 197, "txt_scraped_name": "BRANDNEW Aliaksandr",
-         "enum_match_method": "AUTO_MATCH", "id_tournament_draft": 1},
-    ])
+    db._sb.table().select().eq().execute.return_value = MagicMock(
+        data=[
+            {
+                "id_fencer": 197,
+                "txt_scraped_name": "NIKOŁAJCZUK Aleksander",
+                "enum_match_method": "AUTO_MATCH",
+                "id_tournament_draft": 1,
+            },
+            {
+                "id_fencer": 197,
+                "txt_scraped_name": "BRANDNEW Aliaksandr",
+                "enum_match_method": "AUTO_MATCH",
+                "id_tournament_draft": 1,
+            },
+        ]
+    )
     db.fetch_fencer_basics_batch.return_value = {
         197: {
-            "txt_surname": "NIKALAICHUK", "txt_first_name": "Aliaksandr",
+            "txt_surname": "NIKALAICHUK",
+            "txt_first_name": "Aliaksandr",
             "json_name_aliases": ["NIKOŁAJCZUK Aleksander"],
             # User clicked Keep → entry persisted to user_confirmed list
             # via fn_confirm_fencer_alias (Phase 5 migration 10).
@@ -298,13 +325,20 @@ def test_derive_pending_skips_exact_canonical():
     from python.pipeline.alias_writeback import derive_pending_from_run_id
 
     db = MagicMock()
-    db._sb.table().select().eq().execute.return_value = MagicMock(data=[
-        {"id_fencer": 50, "txt_scraped_name": "DOE John",
-         "enum_match_method": "AUTO_MATCH", "id_tournament_draft": 1},
-    ])
+    db._sb.table().select().eq().execute.return_value = MagicMock(
+        data=[
+            {
+                "id_fencer": 50,
+                "txt_scraped_name": "DOE John",
+                "enum_match_method": "AUTO_MATCH",
+                "id_tournament_draft": 1,
+            },
+        ]
+    )
     db.fetch_fencer_basics_batch.return_value = {
         50: {
-            "txt_surname": "DOE", "txt_first_name": "John",
+            "txt_surname": "DOE",
+            "txt_first_name": "John",
             "json_name_aliases": [],
         },
     }
@@ -324,8 +358,7 @@ def test_compute_from_matches_accepts_stagematchresult_attrs():
 
     matches = [FakeMatch(61, "FRAS Felix")]
     basics = {
-        61: {"txt_surname": "FRAŚ", "txt_first_name": "Feliks",
-             "json_name_aliases": []},
+        61: {"txt_surname": "FRAŚ", "txt_first_name": "Feliks", "json_name_aliases": []},
     }
     out = compute_pending_from_matches(matches, basics)
     assert len(out) == 1

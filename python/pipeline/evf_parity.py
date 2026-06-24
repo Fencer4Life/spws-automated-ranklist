@@ -23,9 +23,9 @@ Tests: python/tests/test_evf_parity.py.
 from __future__ import annotations
 
 import unicodedata
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Literal
-
+from typing import Any, Literal
 
 SCORE_TOLERANCE = 0.5  # ADR-053: ±0.5 displayable half-point
 
@@ -41,10 +41,11 @@ SubCheck = Literal["count", "placement", "score"]
 @dataclass
 class ParityFailDetail:
     """One per-fencer (or per-event) failure."""
+
     fencer_name: str
     sub_check: SubCheck
     expected: Any  # EVF value
-    actual: Any    # local engine value
+    actual: Any  # local engine value
     message: str
 
 
@@ -56,6 +57,7 @@ class ParityResult:
     fail_details lists every fencer-level failure (ADR-053 verbosity rule:
     no truncation in Telegram message).
     """
+
     pol_count_pass: bool = True
     placements_pass: bool = True
     score_pass: bool = True
@@ -71,13 +73,29 @@ class ParityResult:
 # ---------------------------------------------------------------------------
 
 
-_POLISH_FOLD = str.maketrans({
-    # Stroke / cedilla characters that NFKD doesn't decompose
-    "Ą": "A", "Ć": "C", "Ę": "E", "Ł": "L", "Ń": "N",
-    "Ó": "O", "Ś": "S", "Ź": "Z", "Ż": "Z",
-    "ą": "a", "ć": "c", "ę": "e", "ł": "l", "ń": "n",
-    "ó": "o", "ś": "s", "ź": "z", "ż": "z",
-})
+_POLISH_FOLD = str.maketrans(
+    {
+        # Stroke / cedilla characters that NFKD doesn't decompose
+        "Ą": "A",
+        "Ć": "C",
+        "Ę": "E",
+        "Ł": "L",
+        "Ń": "N",
+        "Ó": "O",
+        "Ś": "S",
+        "Ź": "Z",
+        "Ż": "Z",
+        "ą": "a",
+        "ć": "c",
+        "ę": "e",
+        "ł": "l",
+        "ń": "n",
+        "ó": "o",
+        "ś": "s",
+        "ź": "z",
+        "ż": "z",
+    }
+)
 
 
 def _fold(s: str | None) -> str:
@@ -126,13 +144,15 @@ def check_parity(
     n_evf = len(evf_list)
     if n_local != n_evf:
         result.pol_count_pass = False
-        result.fail_details.append(ParityFailDetail(
-            fencer_name="<count>",
-            sub_check="count",
-            expected=n_evf,
-            actual=n_local,
-            message=f"POL count mismatch: local={n_local}, EVF={n_evf}",
-        ))
+        result.fail_details.append(
+            ParityFailDetail(
+                fencer_name="<count>",
+                sub_check="count",
+                expected=n_evf,
+                actual=n_local,
+                message=f"POL count mismatch: local={n_local}, EVF={n_evf}",
+            )
+        )
         # Continue with sub-checks 2 & 3 against the intersection so operator
         # gets full diagnostic.
 
@@ -148,13 +168,15 @@ def check_parity(
             # Local fencer absent from EVF — counts as count failure already;
             # also flag at the placement layer for operator visibility.
             result.placements_pass = False
-            result.fail_details.append(ParityFailDetail(
-                fencer_name=local_name,
-                sub_check="placement",
-                expected="<missing from EVF>",
-                actual=local.get("int_place"),
-                message=f"Fencer {local_name!r} present locally but not in EVF response",
-            ))
+            result.fail_details.append(
+                ParityFailDetail(
+                    fencer_name=local_name,
+                    sub_check="placement",
+                    expected="<missing from EVF>",
+                    actual=local.get("int_place"),
+                    message=f"Fencer {local_name!r} present locally but not in EVF response",
+                )
+            )
             continue
 
         # Placement
@@ -162,28 +184,32 @@ def check_parity(
         evf_pos = evf.get("pos")
         if local_place != evf_pos:
             result.placements_pass = False
-            result.fail_details.append(ParityFailDetail(
-                fencer_name=local_name,
-                sub_check="placement",
-                expected=evf_pos,
-                actual=local_place,
-                message=f"{local_name}: local place={local_place} vs EVF Pos={evf_pos}",
-            ))
+            result.fail_details.append(
+                ParityFailDetail(
+                    fencer_name=local_name,
+                    sub_check="placement",
+                    expected=evf_pos,
+                    actual=local_place,
+                    message=f"{local_name}: local place={local_place} vs EVF Pos={evf_pos}",
+                )
+            )
 
         # Score (±0.5 tolerance)
         local_score = float(local.get("num_final_score", 0) or 0)
         evf_points = float(evf.get("points", 0) or 0)
         if abs(local_score - evf_points) > SCORE_TOLERANCE:
             result.score_pass = False
-            result.fail_details.append(ParityFailDetail(
-                fencer_name=local_name,
-                sub_check="score",
-                expected=evf_points,
-                actual=local_score,
-                message=(
-                    f"{local_name}: engine={local_score:.3f} vs EVF={evf_points:.3f} "
-                    f"(Δ {local_score - evf_points:+.3f}; tolerance ±{SCORE_TOLERANCE})"
-                ),
-            ))
+            result.fail_details.append(
+                ParityFailDetail(
+                    fencer_name=local_name,
+                    sub_check="score",
+                    expected=evf_points,
+                    actual=local_score,
+                    message=(
+                        f"{local_name}: engine={local_score:.3f} vs EVF={evf_points:.3f} "
+                        f"(Δ {local_score - evf_points:+.3f}; tolerance ±{SCORE_TOLERANCE})"
+                    ),
+                )
+            )
 
     return result

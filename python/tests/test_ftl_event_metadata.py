@@ -39,8 +39,9 @@ def test_evf50_event_schedule_url_yields_date():
     """evf.50: an eventSchedule event URL is fetched as-is and its date parsed."""
     from python.scrapers.ftl import fetch_ftl_event_metadata
 
-    url = ("https://www.fencingtimelive.com/tournaments/eventSchedule/"
-           "E2A7B077F2824DD8A7F2E413B4211296")
+    url = (
+        "https://www.fencingtimelive.com/tournaments/eventSchedule/E2A7B077F2824DD8A7F2E413B4211296"
+    )
     client = _FakeClient(_SCHEDULE_HTML)
     meta = fetch_ftl_event_metadata(url, client)
 
@@ -55,8 +56,7 @@ def test_evf50_results_url_still_works():
     """evf.50 (regression): the original /events/results/ form still parses."""
     from python.scrapers.ftl import fetch_ftl_event_metadata
 
-    url = ("https://www.fencingtimelive.com/events/results/"
-           "220C587A8C854C6C85EB62D26D62F6C9")
+    url = "https://www.fencingtimelive.com/events/results/220C587A8C854C6C85EB62D26D62F6C9"
     client = _FakeClient(
         "<html><head><title>Men's Epee Category 4</title></head>"
         "<body>January 10, 2026</body></html>"

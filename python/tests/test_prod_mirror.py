@@ -16,10 +16,10 @@ import pytest
 # Skip entire module if no access token (CI environment)
 pytestmark = pytest.mark.skipif(
     not os.environ.get("SUPABASE_ACCESS_TOKEN"),
-    reason="SUPABASE_ACCESS_TOKEN not set (skipped in CI)"
+    reason="SUPABASE_ACCESS_TOKEN not set (skipped in CI)",
 )
 
-from python.tools.audit_results import query_db
+from python.tools.audit_results import query_db  # noqa: E402  (after pytestmark skip guard)
 
 PROD_REF = "ywgymtgcyturldazcpmw"
 
@@ -37,10 +37,21 @@ TABLES = [
 def _local_count(table: str) -> int:
     """Query local DB count via docker exec."""
     result = subprocess.run(
-        ["docker", "exec", "supabase_db_SPWSranklist",
-         "psql", "-U", "postgres", "-t", "-A", "-c",
-         f"SELECT COUNT(*) FROM {table}"],
-        capture_output=True, text=True, timeout=10,
+        [
+            "docker",
+            "exec",
+            "supabase_db_SPWSranklist",
+            "psql",
+            "-U",
+            "postgres",
+            "-t",
+            "-A",
+            "-c",
+            f"SELECT COUNT(*) FROM {table}",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
     )
     return int(result.stdout.strip())
 
@@ -67,6 +78,4 @@ def test_table_count_matches_prod(table: str, prod_counts: dict[str, int]):
     """Local DB row count must match PROD for {table}."""
     local = _local_count(table)
     prod = prod_counts[table]
-    assert local == prod, (
-        f"{table}: local={local}, PROD={prod} (diff={local - prod:+d})"
-    )
+    assert local == prod, f"{table}: local={local}, PROD={prod} (diff={local - prod:+d})"

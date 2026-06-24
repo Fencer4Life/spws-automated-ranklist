@@ -8,12 +8,8 @@ per-V-cat slice size (ADR-049 amended 2026-06-04: per-V-cat, not full pool).
 
 from __future__ import annotations
 
-import json
 import sys
-from unittest.mock import MagicMock, patch
-
-import pytest
-
+from unittest.mock import MagicMock
 
 # ===========================================================================
 # 26.1 - 26.3 - plan_joint_pool_actions() pure helper
@@ -120,20 +116,28 @@ class TestMainJointPoolIntegration:
         }
         siblings = [
             {**anchor},
-            {"id_tournament": 1241, "txt_code": "PPW4-V1-F-EPEE-2025-2026",
-             "enum_age_category": "V1", "enum_type": "PPW"},
-            {"id_tournament": 1242, "txt_code": "PPW4-V2-F-EPEE-2025-2026",
-             "enum_age_category": "V2", "enum_type": "PPW"},
+            {
+                "id_tournament": 1241,
+                "txt_code": "PPW4-V1-F-EPEE-2025-2026",
+                "enum_age_category": "V1",
+                "enum_type": "PPW",
+            },
+            {
+                "id_tournament": 1242,
+                "txt_code": "PPW4-V2-F-EPEE-2025-2026",
+                "enum_age_category": "V2",
+                "enum_type": "PPW",
+            },
         ]
         # 7 fencers in physical pool (will split 4/3/0 across V0/V1/V2)
         parsed_rows = [
-            {"fencer_name": f"FENCER{i}", "place": i, "country": "POL"}
-            for i in range(1, 8)
+            {"fencer_name": f"FENCER{i}", "place": i, "country": "POL"} for i in range(1, 8)
         ]
 
         # ----- Patch fetch_tournament_with_siblings -----
         monkeypatch.setattr(
-            st, "fetch_tournament_with_siblings",
+            st,
+            "fetch_tournament_with_siblings",
             lambda *a, **k: (anchor, siblings, 2026),
         )
 
@@ -142,7 +146,8 @@ class TestMainJointPoolIntegration:
 
         # ----- Patch existing_result_counts: nothing occupied -----
         monkeypatch.setattr(
-            st, "existing_result_counts",
+            st,
+            "existing_result_counts",
             lambda *a, **k: {tid: 0 for tid in [1240, 1241, 1242]},
         )
 
@@ -157,6 +162,7 @@ class TestMainJointPoolIntegration:
         # ----- Patch the splitter to a deterministic 4/3/0 partition -----
         def fake_split(rows, sib_cats, fencer_db, season_end_year):
             from python.pipeline.age_split import SplitResult
+
             return SplitResult(
                 buckets={
                     "V0": rows[0:4],
@@ -165,22 +171,19 @@ class TestMainJointPoolIntegration:
                 },
                 unresolved=[],
             )
-        monkeypatch.setattr(
-            "python.pipeline.age_split.split_combined_results", fake_split
-        )
+
+        monkeypatch.setattr("python.pipeline.age_split.split_combined_results", fake_split)
 
         # ----- Patch fuzzy match: every scraped row matches a fake fencer id -----
         def fake_resolve(scraped_names, *a, **kw):
             res = MagicMock()
             res.matched = [
-                MagicMock(scraped_name=n, id_fencer=900 + i,
-                          confidence=1.0, status="AUTO_MATCHED")
+                MagicMock(scraped_name=n, id_fencer=900 + i, confidence=1.0, status="AUTO_MATCHED")
                 for i, n in enumerate(scraped_names)
             ]
             return res
-        monkeypatch.setattr(
-            "python.matcher.pipeline.resolve_tournament_results", fake_resolve
-        )
+
+        monkeypatch.setattr("python.matcher.pipeline.resolve_tournament_results", fake_resolve)
 
         # ----- Capture every httpx call -----
         recorded = {"posts": [], "patches": [], "deletes": []}
@@ -205,17 +208,24 @@ class TestMainJointPoolIntegration:
 
         # ----- Patch sys.argv and run main() -----
         monkeypatch.setattr(
-            sys, "argv",
-            ["scrape_tournament", "--tournament-code", "PPW4-V0-F-EPEE-2025-2026",
-             "--supabase-url", "http://x", "--supabase-key", "k"],
+            sys,
+            "argv",
+            [
+                "scrape_tournament",
+                "--tournament-code",
+                "PPW4-V0-F-EPEE-2025-2026",
+                "--supabase-url",
+                "http://x",
+                "--supabase-key",
+                "k",
+            ],
         )
         st.main()
 
         # ----- Assert: empty sibling V2 deleted -----
         delete_urls = [d["url"] for d in recorded["deletes"]]
         assert any("id_tournament=eq.1242" in u for u in delete_urls), (
-            f"V2 sibling (id 1242) should have been DELETEd. "
-            f"Actual delete URLs: {delete_urls}"
+            f"V2 sibling (id 1242) should have been DELETEd. Actual delete URLs: {delete_urls}"
         )
         # And no other tournament rows deleted
         for d in recorded["deletes"]:
@@ -224,13 +234,13 @@ class TestMainJointPoolIntegration:
 
         # ----- Assert: PATCH set bool_joint_pool_split=TRUE on V0 and V1 -----
         flag_patches = [
-            p for p in recorded["patches"]
+            p
+            for p in recorded["patches"]
             if "tbl_tournament" in p["url"]
             and p.get("json", {}).get("bool_joint_pool_split") is True
         ]
         patched_ids = sorted(
-            int(p["url"].split("id_tournament=eq.")[1].split("&")[0])
-            for p in flag_patches
+            int(p["url"].split("id_tournament=eq.")[1].split("&")[0]) for p in flag_patches
         )
         assert patched_ids == [1240, 1241], (
             f"Expected PATCH bool_joint_pool_split=TRUE on V0(1240) and "
@@ -240,17 +250,14 @@ class TestMainJointPoolIntegration:
         # ----- Assert: POST p_participant_count = PER-V-CAT slice size on each
         # joint-pool sibling (ADR-049 amended 2026-06-04: per-V-cat, not full
         # pool). V0 bucket = 4 fencers, V1 bucket = 3. -----
-        ingest_posts = [
-            p for p in recorded["posts"]
-            if "fn_ingest_tournament_results" in p["url"]
-        ]
+        ingest_posts = [p for p in recorded["posts"] if "fn_ingest_tournament_results" in p["url"]]
         assert len(ingest_posts) == 2, (
-            f"Expected 2 ingest POSTs (one per non-empty sibling). "
-            f"Got {len(ingest_posts)}."
+            f"Expected 2 ingest POSTs (one per non-empty sibling). Got {len(ingest_posts)}."
         )
         counts_by_tid = {
-            post.get("json", {}).get("p_tournament_id"):
-                post.get("json", {}).get("p_participant_count")
+            post.get("json", {}).get("p_tournament_id"): post.get("json", {}).get(
+                "p_participant_count"
+            )
             for post in ingest_posts
         }
         assert counts_by_tid == {1240: 4, 1241: 3}, (

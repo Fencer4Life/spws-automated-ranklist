@@ -11,7 +11,7 @@ ADR-059 — Telegram document delivery. Null-safe per ADR-061 (LOCAL).
 
 from __future__ import annotations
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -29,7 +29,7 @@ def test_send_document_posts_multipart_form_data():
         mock_resp.raise_for_status = MagicMock()
         mock_httpx.post.return_value = mock_resp
 
-        result = notif.send_document(
+        notif.send_document(
             file_bytes=b"# foo\n",
             filename="EVENT-A-full.md",
             caption="📄 EVENT-A · full",
@@ -138,5 +138,8 @@ def test_send_staging_report_invalid_kind_raises():
     notif = TelegramNotifier(bot_token="ABC", chat_id="123")
     with pytest.raises(ValueError, match="kind"):
         notif.send_staging_report(
-            event_code="X", md_bytes=b"x", kind="bogus", extras={},
+            event_code="X",
+            md_bytes=b"x",
+            kind="bogus",
+            extras={},
         )

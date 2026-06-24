@@ -22,8 +22,13 @@ class TestDbConnector:
 
         mock_sb = MagicMock()
         mock_sb.table.return_value.select.return_value.execute.return_value.data = [
-            {"id_fencer": 1, "txt_surname": "NOWAK", "txt_first_name": "Piotr",
-             "int_birth_year": 1970, "json_name_aliases": None},
+            {
+                "id_fencer": 1,
+                "txt_surname": "NOWAK",
+                "txt_first_name": "Piotr",
+                "int_birth_year": 1970,
+                "json_name_aliases": None,
+            },
         ]
         db = DbConnector(mock_sb)
         result = db.fetch_fencer_db()
@@ -63,7 +68,7 @@ class TestDbConnector:
         mock_sb = MagicMock()
         mock_sb.rpc.return_value.execute.return_value.data = {"inserted": 3, "scored": True}
         db = DbConnector(mock_sb)
-        result = db.ingest_results(5, [{"id_fencer": 1, "int_place": 1}])
+        db.ingest_results(5, [{"id_fencer": 1, "int_place": 1}])
         mock_sb.rpc.assert_called_once()
         call_args = mock_sb.rpc.call_args
         assert "fn_ingest_tournament_results" in str(call_args)
@@ -77,13 +82,15 @@ class TestDbConnector:
             {"id_fencer": 42},
         ]
         db = DbConnector(mock_sb)
-        new_id = db.insert_fencer({
-            "txt_surname": "NOWY",
-            "txt_first_name": "Michał",
-            "int_birth_year": 1993,
-            "txt_nationality": "PL",
-            "bool_birth_year_estimated": True,
-        })
+        new_id = db.insert_fencer(
+            {
+                "txt_surname": "NOWY",
+                "txt_first_name": "Michał",
+                "int_birth_year": 1993,
+                "txt_nationality": "PL",
+                "bool_birth_year_estimated": True,
+            }
+        )
         assert new_id == 42
         mock_sb.table.return_value.insert.assert_called_once()
 

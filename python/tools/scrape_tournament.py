@@ -15,14 +15,12 @@ import os
 import sys
 
 import httpx
-
 from python.scrapers.base import detect_platform
-from python.scrapers.ftl import parse_ftl_json
-from python.scrapers.ftl_auth import get_authed_ftl_client
+from python.scrapers.dartagnan import parse_dartagnan_rankings_html
 from python.scrapers.engarde import parse_engarde_html
 from python.scrapers.fourfence import parse_fourfence_html
-from python.scrapers.dartagnan import parse_dartagnan_rankings_html
-
+from python.scrapers.ftl import parse_ftl_json
+from python.scrapers.ftl_auth import get_authed_ftl_client
 
 FTL_DATA_PREFIX = "https://www.fencingtimelive.com/events/results/data/"
 FTL_RESULTS_PREFIX = "https://www.fencingtimelive.com/events/results/"
@@ -41,8 +39,7 @@ def existing_result_counts(
     counts: dict[int, int] = {}
     for tid in tournament_ids:
         resp = httpx.get(
-            f"{supabase_url}/rest/v1/tbl_result"
-            f"?id_tournament=eq.{tid}&select=id_result",
+            f"{supabase_url}/rest/v1/tbl_result?id_tournament=eq.{tid}&select=id_result",
             headers={**headers, "Prefer": "count=exact", "Range-Unit": "items", "Range": "0-0"},
             timeout=10,
         )
@@ -53,9 +50,7 @@ def existing_result_counts(
     return counts
 
 
-def delete_existing_results(
-    supabase_url: str, headers: dict, tournament_ids: list[int]
-) -> int:
+def delete_existing_results(supabase_url: str, headers: dict, tournament_ids: list[int]) -> int:
     """DELETE every tbl_result row whose id_tournament is in the list.
 
     Runs only when --replace was passed. Returns the total number of rows
@@ -183,7 +178,8 @@ def fetch_tournament_with_siblings(supabase_url, headers, tournament_code):
         f"{supabase_url}/rest/v1/tbl_tournament"
         f"?txt_code=eq.{tournament_code}"
         f"&select=id_tournament,id_event,txt_code,url_results,enum_weapon,enum_gender,enum_age_category,enum_type",
-        headers=headers, timeout=10,
+        headers=headers,
+        timeout=10,
     )
     resp.raise_for_status()
     rows = resp.json()
@@ -204,7 +200,8 @@ def fetch_tournament_with_siblings(supabase_url, headers, tournament_code):
         f"&enum_gender=eq.{anchor['enum_gender']}"
         f"&url_results=eq.{anchor['url_results']}"
         f"&select=id_tournament,txt_code,enum_age_category,enum_type",
-        headers=headers, timeout=10,
+        headers=headers,
+        timeout=10,
     )
     sib_resp.raise_for_status()
     siblings = sib_resp.json()
@@ -214,7 +211,8 @@ def fetch_tournament_with_siblings(supabase_url, headers, tournament_code):
         f"{supabase_url}/rest/v1/tbl_event"
         f"?id_event=eq.{anchor['id_event']}"
         f"&select=id_season,tbl_season(dt_end)",
-        headers=headers, timeout=10,
+        headers=headers,
+        timeout=10,
     )
     sey_resp.raise_for_status()
     ev = sey_resp.json()[0]
@@ -226,7 +224,7 @@ def fetch_tournament_with_siblings(supabase_url, headers, tournament_code):
 def main():
     parser = argparse.ArgumentParser(
         description="Scrape tournament results from url_results and ingest, "
-                    "splitting combined-pool sources by birth-year-derived V-cat."
+        "splitting combined-pool sources by birth-year-derived V-cat."
     )
     parser.add_argument("--tournament-code", required=True)
     parser.add_argument("--supabase-url", default=None)
@@ -236,8 +234,8 @@ def main():
         "--replace",
         action="store_true",
         help="Delete existing tbl_result rows on every sibling tournament "
-             "before re-ingesting. REQUIRED when any target row already has "
-             "results — without it, re-ingest aborts to protect prior writes.",
+        "before re-ingesting. REQUIRED when any target row already has "
+        "results — without it, re-ingest aborts to protect prior writes.",
     )
     args = parser.parse_args()
 
@@ -288,18 +286,15 @@ def main():
         return
 
     if args.replace and occupied:
-        deleted = delete_existing_results(
-            supabase_url, headers, [tid for tid, _ in occupied]
-        )
+        deleted = delete_existing_results(supabase_url, headers, [tid for tid, _ in occupied])
         print(
-            f"  --replace: deleted {deleted} existing row(s) across "
-            f"{len(occupied)} tournament(s)",
+            f"  --replace: deleted {deleted} existing row(s) across {len(occupied)} tournament(s)",
             file=sys.stderr,
         )
 
     # 3. Fetch fencer DB and split parsed rows per V-cat using birth_year truth
-    from python.pipeline.db_connector import DbConnector
     from python.pipeline.age_split import split_combined_results
+    from python.pipeline.db_connector import DbConnector
 
     db = DbConnector(supabase_url, supabase_key)
     fencer_db = db.fetch_fencer_db()
@@ -310,8 +305,9 @@ def main():
     split = split_combined_results(parsed_rows, sib_cats, fencer_db, season_end_year)
 
     # 4. Per-V-cat: resolve identities, build payload, ingest into target row
-    from python.matcher.pipeline import resolve_tournament_results
     import json
+
+    from python.matcher.pipeline import resolve_tournament_results
 
     # ADR-049: classify the sibling set after the V-cat split. Empty siblings
     # of a joint pool are admin-registration mistakes and are deleted before
@@ -319,13 +315,12 @@ def main():
     plan = plan_joint_pool_actions(siblings, split.buckets)
     for s in plan["to_delete"]:
         del_resp = httpx.delete(
-            f"{supabase_url}/rest/v1/tbl_tournament"
-            f"?id_tournament=eq.{s['id_tournament']}",
-            headers=headers, timeout=10,
+            f"{supabase_url}/rest/v1/tbl_tournament?id_tournament=eq.{s['id_tournament']}",
+            headers=headers,
+            timeout=10,
         )
         del_resp.raise_for_status()
-        print(f"  deleted empty sibling {s['txt_code']} (0 fencers in source)",
-              file=sys.stderr)
+        print(f"  deleted empty sibling {s['txt_code']} (0 fencers in source)", file=sys.stderr)
         telegram_notify(
             f"<b>scrape_tournament: empty sibling deleted</b>\n"
             f"<pre>{s['txt_code']}</pre>\n"
@@ -344,7 +339,10 @@ def main():
             if not bucket_rows:
                 # Empty bucket whose row was just deleted; skip silently.
                 continue
-            print(f"  WARN: V-cat {cat} has {len(bucket_rows)} fencer(s) but no DB row for it", file=sys.stderr)
+            print(
+                f"  WARN: V-cat {cat} has {len(bucket_rows)} fencer(s) but no DB row for it",
+                file=sys.stderr,
+            )
             continue
         if not bucket_rows:
             print(f"  {cat}: 0 fencers in this V-cat, skipping", file=sys.stderr)
@@ -353,8 +351,11 @@ def main():
         scraped_names = [r["fencer_name"] for r in bucket_rows]
         scraped_countries = [r.get("country") for r in bucket_rows]
         resolved = resolve_tournament_results(
-            scraped_names, fencer_db, target["enum_type"],
-            cat, season_end_year,
+            scraped_names,
+            fencer_db,
+            target["enum_type"],
+            cat,
+            season_end_year,
             scraped_countries=scraped_countries,
         )
 
@@ -366,13 +367,15 @@ def main():
             )
             if m is None:
                 continue
-            payload.append({
-                "id_fencer": m.id_fencer,
-                "int_place": r["place"],
-                "txt_scraped_name": r["fencer_name"],
-                "num_confidence": float(m.confidence) if m.confidence else 0,
-                "enum_match_status": m.status,
-            })
+            payload.append(
+                {
+                    "id_fencer": m.id_fencer,
+                    "int_place": r["place"],
+                    "txt_scraped_name": r["fencer_name"],
+                    "num_confidence": float(m.confidence) if m.confidence else 0,
+                    "enum_match_status": m.status,
+                }
+            )
 
         # ADR-049 (amended 2026-06-04): every tournament — joint-pool sibling
         # or solo — carries its PER-V-CAT slice size as int_participant_count.
@@ -397,23 +400,31 @@ def main():
         # ADR-049: stamp the joint-pool flag on every non-empty sibling.
         if is_joint:
             flag_resp = httpx.patch(
-                f"{supabase_url}/rest/v1/tbl_tournament"
-                f"?id_tournament=eq.{target['id_tournament']}",
+                f"{supabase_url}/rest/v1/tbl_tournament?id_tournament=eq.{target['id_tournament']}",
                 json={"bool_joint_pool_split": True},
                 headers={**headers, "Content-Type": "application/json"},
                 timeout=10,
             )
             flag_resp.raise_for_status()
 
-        print(f"  {target['txt_code']}: ingested {len(payload)}/{len(bucket_rows)} placements", file=sys.stderr)
+        print(
+            f"  {target['txt_code']}: ingested {len(payload)}/{len(bucket_rows)} placements",
+            file=sys.stderr,
+        )
         total_ingested += len(payload)
 
     if split.unresolved:
-        print(f"  UNRESOLVED (no DOB, assigned to lowest cat): {len(split.unresolved)}", file=sys.stderr)
+        print(
+            f"  UNRESOLVED (no DOB, assigned to lowest cat): {len(split.unresolved)}",
+            file=sys.stderr,
+        )
         for u in split.unresolved:
             print(f"    - {u['fencer_name']} (place {u['place']})", file=sys.stderr)
 
-    print(f"Done. Total ingested: {total_ingested} placements across {len(split.buckets)} V-cat(s).", file=sys.stderr)
+    print(
+        f"Done. Total ingested: {total_ingested} placements across {len(split.buckets)} V-cat(s).",
+        file=sys.stderr,
+    )
 
     replace_note = " (--replace)" if args.replace and occupied else ""
     telegram_notify(

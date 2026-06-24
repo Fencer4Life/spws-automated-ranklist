@@ -9,8 +9,6 @@ from __future__ import annotations
 from datetime import date
 from unittest.mock import MagicMock
 
-import pytest
-
 from python.pipeline.evf_parity_sweep import run_sweep
 
 
@@ -19,21 +17,29 @@ def _make_db(events, local_results=None, promote_response=None):
     db.evf_events_pending_parity.return_value = events
     db.event_results_for_parity.return_value = local_results or []
     db.promote_evf_published.return_value = promote_response or {
-        "id_event": 1, "fencers_overwritten": 1
+        "id_event": 1,
+        "fencers_overwritten": 1,
     }
     return db
 
 
 def test_sweep_promotes_on_parity_pass():
     """P4.SW.1 sweep promotes EVF event when parity PASSes."""
-    events = [{
-        "id_event": 1, "txt_code": "PEW3-2025-2026",
-        "dt_end": date(2026, 4, 1),
-    }]
-    local = [{
-        "id_fencer": 10, "fencer_name": "Adam Kowalski",
-        "int_place": 1, "num_final_score": 50.0,
-    }]
+    events = [
+        {
+            "id_event": 1,
+            "txt_code": "PEW3-2025-2026",
+            "dt_end": date(2026, 4, 1),
+        }
+    ]
+    local = [
+        {
+            "id_fencer": 10,
+            "fencer_name": "Adam Kowalski",
+            "int_place": 1,
+            "num_final_score": 50.0,
+        }
+    ]
     db = _make_db(events, local_results=local)
     notifier = MagicMock()
 
@@ -41,8 +47,11 @@ def test_sweep_promotes_on_parity_pass():
         return [{"name": "Adam Kowalski", "pos": 1, "points": 50.0}]
 
     counters = run_sweep(
-        db=db, fetch_evf_api=fetch, notifier=notifier,
-        max_age_days=365, evf_empty_stop_days=30,
+        db=db,
+        fetch_evf_api=fetch,
+        notifier=notifier,
+        max_age_days=365,
+        evf_empty_stop_days=30,
         today=date(2026, 4, 15),
     )
 
@@ -55,22 +64,32 @@ def test_sweep_promotes_on_parity_pass():
 
 def test_sweep_annotates_on_parity_fail():
     """P4.SW.2 sweep annotates txt_parity_notes when parity FAILs."""
-    events = [{
-        "id_event": 1, "txt_code": "PEW3-2025-2026",
-        "dt_end": date(2026, 4, 1),
-    }]
-    local = [{
-        "id_fencer": 10, "fencer_name": "Adam Kowalski",
-        "int_place": 1, "num_final_score": 50.0,
-    }]
+    events = [
+        {
+            "id_event": 1,
+            "txt_code": "PEW3-2025-2026",
+            "dt_end": date(2026, 4, 1),
+        }
+    ]
+    local = [
+        {
+            "id_fencer": 10,
+            "fencer_name": "Adam Kowalski",
+            "int_place": 1,
+            "num_final_score": 50.0,
+        }
+    ]
     db = _make_db(events, local_results=local)
 
     def fetch(event):
         return [{"name": "Adam Kowalski", "pos": 1, "points": 60.0}]  # Δ=10 > 0.5
 
     counters = run_sweep(
-        db=db, fetch_evf_api=fetch, notifier=None,
-        max_age_days=365, today=date(2026, 4, 15),
+        db=db,
+        fetch_evf_api=fetch,
+        notifier=None,
+        max_age_days=365,
+        today=date(2026, 4, 15),
     )
 
     assert counters.failed == 1
@@ -81,15 +100,21 @@ def test_sweep_annotates_on_parity_fail():
 
 def test_sweep_empty_evf_within_window_no_op():
     """P4.SW.3 EVF empty + within retry window → counted as empty, no annotation."""
-    events = [{
-        "id_event": 1, "txt_code": "PEW3-2025-2026",
-        "dt_end": date(2026, 4, 1),
-    }]
+    events = [
+        {
+            "id_event": 1,
+            "txt_code": "PEW3-2025-2026",
+            "dt_end": date(2026, 4, 1),
+        }
+    ]
     db = _make_db(events)
 
     counters = run_sweep(
-        db=db, fetch_evf_api=lambda e: [], notifier=None,
-        max_age_days=365, evf_empty_stop_days=30,
+        db=db,
+        fetch_evf_api=lambda e: [],
+        notifier=None,
+        max_age_days=365,
+        evf_empty_stop_days=30,
         today=date(2026, 4, 15),  # 14 days past dt_end → within window
     )
 
@@ -100,16 +125,22 @@ def test_sweep_empty_evf_within_window_no_op():
 
 def test_sweep_empty_evf_after_30d_annotates():
     """P4.SW.4 EVF empty + past 30d window → annotate "EVF API empty after 30 days"."""
-    events = [{
-        "id_event": 1, "txt_code": "PEW3-2025-2026",
-        "dt_end": date(2026, 4, 1),
-    }]
+    events = [
+        {
+            "id_event": 1,
+            "txt_code": "PEW3-2025-2026",
+            "dt_end": date(2026, 4, 1),
+        }
+    ]
     db = _make_db(events)
     notifier = MagicMock()
 
     counters = run_sweep(
-        db=db, fetch_evf_api=lambda e: [], notifier=notifier,
-        max_age_days=365, evf_empty_stop_days=30,
+        db=db,
+        fetch_evf_api=lambda e: [],
+        notifier=notifier,
+        max_age_days=365,
+        evf_empty_stop_days=30,
         today=date(2026, 5, 5),  # 34 days past dt_end → past window
     )
 
@@ -128,10 +159,14 @@ def test_sweep_summary_reflects_buckets():
     ]
     db = MagicMock()
     db.evf_events_pending_parity.return_value = events
-    db.event_results_for_parity.return_value = [{
-        "id_fencer": 10, "fencer_name": "Adam Kowalski",
-        "int_place": 1, "num_final_score": 50.0,
-    }]
+    db.event_results_for_parity.return_value = [
+        {
+            "id_fencer": 10,
+            "fencer_name": "Adam Kowalski",
+            "int_place": 1,
+            "num_final_score": 50.0,
+        }
+    ]
     db.promote_evf_published.return_value = {"fencers_overwritten": 1}
 
     def fetch(event):
@@ -141,7 +176,9 @@ def test_sweep_summary_reflects_buckets():
 
     notifier = MagicMock()
     counters = run_sweep(
-        db=db, fetch_evf_api=fetch, notifier=notifier,
+        db=db,
+        fetch_evf_api=fetch,
+        notifier=notifier,
         today=date(2026, 4, 15),
     )
 

@@ -10,27 +10,29 @@ the tournament and call `fn_ingest_tournament_results` via
 The DB is mocked here (RPC-argument contract); the live LOCAL end-to-end write is
 exercised separately (Step A acceptance, live pgTAP/manual).
 """
+
 from __future__ import annotations
 
 from datetime import date
 from unittest.mock import MagicMock
-
-import pytest
 
 from python.pipeline.core.contract import Context, Services
 from python.pipeline.plugins.bridge import LEGACY
 from python.pipeline.plugins.ingest import Commit
 from python.pipeline.types import Overrides, PipelineContext, StageMatchResult
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 def _match(id_fencer, place, name, method="AUTO_MATCHED", conf=100.0):
     return StageMatchResult(
-        scraped_name=name, place=place, id_fencer=id_fencer,
-        confidence=conf, method=method,
+        scraped_name=name,
+        place=place,
+        id_fencer=id_fencer,
+        confidence=conf,
+        method=method,
     )
 
 
@@ -51,13 +53,20 @@ def _ctx(final_vcats, *, parsed=True, event=None, skip=False, dropped=None):
     parsed_obj = None
     if parsed:
         from python.pipeline.ir import ParsedTournament, SourceKind
+
         parsed_obj = ParsedTournament(
-            source_kind=SourceKind.FENCINGTIME_XML, results=[],
-            parsed_date=date(2026, 4, 1), weapon="EPEE", gender="M",
-            category_hint="V1", season_end_year=2026,
+            source_kind=SourceKind.FENCINGTIME_XML,
+            results=[],
+            parsed_date=date(2026, 4, 1),
+            weapon="EPEE",
+            gender="M",
+            category_hint="V1",
+            season_end_year=2026,
         )
     pctx = PipelineContext(
-        parsed=parsed_obj, overrides=Overrides(), season_end_year=2026,
+        parsed=parsed_obj,
+        overrides=Overrides(),
+        season_end_year=2026,
         event_code="PPW3-2025-2026",
     )
     pctx.event = ev
@@ -86,6 +95,7 @@ def _run(ctx, db):
 # Per-bracket persistence — the RPC contract
 # ---------------------------------------------------------------------------
 
+
 class TestPerBracketPersist:
     def test_one_tournament_per_vcat(self):
         """N7.1 a single-V-cat bracket -> find_or_create_tournament once with the
@@ -94,7 +104,8 @@ class TestPerBracketPersist:
         db = _db()
         _run(_ctx(fv), db)
         db.find_or_create_tournament.assert_called_once_with(
-            7, "EPEE", "M", "V1", "2026-04-01", "PPW", url_results=None)
+            7, "EPEE", "M", "V1", "2026-04-01", "PPW", url_results=None
+        )
 
     def test_ingest_rows_shape_and_count(self):
         """N7.2 ingest_results gets RPC-shaped rows + the bracket's OWN count as
@@ -106,10 +117,20 @@ class TestPerBracketPersist:
         assert tid == 201
         assert kwargs["participant_count"] == 2
         assert rows == [
-            {"id_fencer": 101, "int_place": 1, "txt_scraped_name": "KOWALSKI Jan",
-             "num_confidence": 100.0, "enum_match_status": "AUTO_MATCHED"},
-            {"id_fencer": 102, "int_place": 2, "txt_scraped_name": "NOWAK Adam",
-             "num_confidence": 100.0, "enum_match_status": "AUTO_MATCHED"},
+            {
+                "id_fencer": 101,
+                "int_place": 1,
+                "txt_scraped_name": "KOWALSKI Jan",
+                "num_confidence": 100.0,
+                "enum_match_status": "AUTO_MATCHED",
+            },
+            {
+                "id_fencer": 102,
+                "int_place": 2,
+                "txt_scraped_name": "NOWAK Adam",
+                "num_confidence": 100.0,
+                "enum_match_status": "AUTO_MATCHED",
+            },
         ]
 
     def test_method_maps_to_legacy_status(self):
@@ -123,8 +144,12 @@ class TestPerBracketPersist:
 
     def test_excluded_rows_not_persisted(self):
         """N7.4 EXCLUDED / unassigned (id_fencer is None) rows never reach the RPC."""
-        fv = {"V1": [_match(101, 1, "KOWALSKI Jan"),
-                     _match(None, 2, "FOREIGN Guest", method="EXCLUDED")]}
+        fv = {
+            "V1": [
+                _match(101, 1, "KOWALSKI Jan"),
+                _match(None, 2, "FOREIGN Guest", method="EXCLUDED"),
+            ]
+        }
         db = _db()
         _run(_ctx(fv), db)
         (_, rows), kwargs = db.ingest_results.call_args
@@ -142,17 +167,22 @@ class TestPerBracketPersist:
         _run(_ctx(fv), db)
         assert db.find_or_create_tournament.call_count == 2
         # map tournament_id (find_or_create return) -> V-cat (its 4th arg) ...
-        vcat_of = {ret: c.args[3] for c, ret in
-                   zip(db.find_or_create_tournament.call_args_list, [201, 202])}
+        vcat_of = {
+            ret: c.args[3]
+            for c, ret in zip(db.find_or_create_tournament.call_args_list, [201, 202], strict=True)
+        }
         # ... then tournament_id -> participant_count from the ingest calls.
-        counts = {vcat_of[c.args[0]]: c.kwargs["participant_count"]
-                  for c in db.ingest_results.call_args_list}
+        counts = {
+            vcat_of[c.args[0]]: c.kwargs["participant_count"]
+            for c in db.ingest_results.call_args_list
+        }
         assert counts == {"V1": 2, "V3": 1}
 
 
 # ---------------------------------------------------------------------------
 # committed payload + remediation short-circuit
 # ---------------------------------------------------------------------------
+
 
 class TestCommittedPayload:
     def test_reports_persisted_tournaments(self):
@@ -193,21 +223,24 @@ class TestCommittedPayload:
 # categories it was kept for; the rest are recorded as held (set-aside duplicate).
 # ---------------------------------------------------------------------------
 
+
 class TestCommitCatsAllowSet:
     def test_filters_to_commit_cats(self):
         """N13.2 with ctx.params['commit_cats'] present, Commit persists only those
         age-categories and records the rest as held (not written)."""
-        fv = {"V0": [_match(101, 1, "A A")],
-              "V1": [_match(102, 1, "B B")],
-              "V2": [_match(103, 1, "C C")]}
+        fv = {
+            "V0": [_match(101, 1, "A A")],
+            "V1": [_match(102, 1, "B B")],
+            "V2": [_match(103, 1, "C C")],
+        }
         db = _db()
         ctx = _ctx(fv)
         ctx.params = {"commit_cats": {"V0", "V2"}}
         _run(ctx, db)
-        assert db.find_or_create_tournament.call_count == 2          # V0, V2 only
+        assert db.find_or_create_tournament.call_count == 2  # V0, V2 only
         committed = ctx.get("committed")
         assert {t["vcat"] for t in committed["tournaments"]} == {"V0", "V2"}
-        assert committed["held"] == ["V1"]                           # set-aside, not written
+        assert committed["held"] == ["V1"]  # set-aside, not written
 
     def test_absent_commit_cats_writes_all(self):
         """N13.2 with no commit_cats (file/XML path), Commit writes every V-cat — unchanged."""

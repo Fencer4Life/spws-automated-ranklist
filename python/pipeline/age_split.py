@@ -24,7 +24,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-
 # Age category → (min_age, max_age) inclusive.
 # V0 minimum is 30 because veteran competitions don't accept under-30s in
 # practice; we keep the floor here as documentation, not enforcement.
@@ -126,7 +125,7 @@ def split_combined_results(
 
         buckets[assigned_cat].append(dict(result))
 
-    for cat, fencers in buckets.items():
+    for _cat, fencers in buckets.items():
         for i, fencer in enumerate(fencers, 1):
             fencer["place"] = i
 

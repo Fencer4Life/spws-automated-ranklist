@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from datetime import date
 
-import pytest
-
 from python.pipeline.ir import ParsedTournament, SourceKind
 from python.scrapers.cert_ref import parse
 
@@ -92,10 +90,12 @@ def test_parse_tournament_metadata_mapped():
 
 def test_parse_falls_back_to_len_when_participant_count_missing():
     """P4.CR.6: raw_pool_size falls back to len(results) if int_participant_count is None."""
-    pt = parse(_content(
-        rows=[_row(id_result=1), _row(id_result=2)],
-        int_participant_count=None,
-    ))
+    pt = parse(
+        _content(
+            rows=[_row(id_result=1), _row(id_result=2)],
+            int_participant_count=None,
+        )
+    )
     assert pt.raw_pool_size == 2
 
 
@@ -107,7 +107,9 @@ def test_parse_source_url_is_none():
 
 def test_parse_synthesizes_id_when_id_result_missing():
     """P4.CR.8: rows without id_result get a synthesized stable source_row_id (lowercased prefix)."""
-    pt = parse(_content(rows=[_row(id_result=None, int_place=2, txt_surname="ANON", txt_first_name="X")]))
+    pt = parse(
+        _content(rows=[_row(id_result=None, int_place=2, txt_surname="ANON", txt_first_name="X")])
+    )
     sid = pt.results[0].source_row_id
     # Synthetic format: cert_ref:row{idx}:place{place}:{slug}
     assert sid.startswith("cert_ref:row")

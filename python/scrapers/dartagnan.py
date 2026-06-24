@@ -26,13 +26,22 @@ from bs4 import BeautifulSoup
 DARTAGNAN_HOSTS = ("dartagnan.live", "www.dartagnan.live")
 
 WEAPON_LABELS = {
-    "degen": "EPEE",   "epee": "EPEE",
-    "florett": "FOIL", "foil": "FOIL",
-    "säbel": "SABRE",  "sabel": "SABRE", "sabre": "SABRE",
+    "degen": "EPEE",
+    "epee": "EPEE",
+    "florett": "FOIL",
+    "foil": "FOIL",
+    "säbel": "SABRE",
+    "sabel": "SABRE",
+    "sabre": "SABRE",
 }
 GENDER_LABELS = {
-    "herren": "M", "men": "M", "männlich": "M", "mannlich": "M",
-    "damen": "F",  "women": "F", "weiblich": "F",
+    "herren": "M",
+    "men": "M",
+    "männlich": "M",
+    "mannlich": "M",
+    "damen": "F",
+    "women": "F",
+    "weiblich": "F",
 }
 
 
@@ -107,13 +116,15 @@ def parse_dartagnan_event_index(html: str, base_url: str) -> list[dict]:
             continue
 
         rankings_url = urljoin(base_url, f"{comp_id}-rankings.html")
-        competitions.append({
-            "id": comp_id,
-            "weapon": weapon,
-            "gender": gender,
-            "category": category,
-            "rankings_url": rankings_url,
-        })
+        competitions.append(
+            {
+                "id": comp_id,
+                "weapon": weapon,
+                "gender": gender,
+                "category": category,
+                "rankings_url": rankings_url,
+            }
+        )
         seen_ids.add(comp_id)
 
     return competitions
@@ -171,11 +182,13 @@ def parse_dartagnan_rankings_html(html: str) -> list[dict]:
 
         country = _country_from_flag(cells[5])
 
-        results.append({
-            "fencer_name": fencer_name,
-            "place": place,
-            "country": country,
-        })
+        results.append(
+            {
+                "fencer_name": fencer_name,
+                "place": place,
+                "country": country,
+            }
+        )
 
     return results
 
@@ -229,6 +242,7 @@ def scrape_dartagnan_event(
 # from the index parse before draft writes.
 # =============================================================================
 
+
 def parse_rankings(
     html: str,
     source_url: str | None = None,
@@ -242,7 +256,10 @@ def parse_rankings(
     Synthetic source_row_id (no native row IDs in Dartagnan rankings).
     """
     from python.pipeline.ir import (
-        ParsedResult, ParsedTournament, SourceKind, make_synthetic_id,
+        ParsedResult,
+        ParsedTournament,
+        SourceKind,
+        make_synthetic_id,
     )
 
     soup = BeautifulSoup(html, "html.parser")
@@ -272,17 +289,19 @@ def parse_rankings(
             country = _country_from_flag(cells[5]) or None
 
             row_index += 1
-            parsed_results.append(ParsedResult(
-                source_row_id=make_synthetic_id(
-                    SourceKind.DARTAGNAN,
-                    row_index=row_index,
+            parsed_results.append(
+                ParsedResult(
+                    source_row_id=make_synthetic_id(
+                        SourceKind.DARTAGNAN,
+                        row_index=row_index,
+                        place=place,
+                        name=fencer_name,
+                    ),
+                    fencer_name=fencer_name,
                     place=place,
-                    name=fencer_name,
-                ),
-                fencer_name=fencer_name,
-                place=place,
-                fencer_country=country,
-            ))
+                    fencer_country=country,
+                )
+            )
 
     return ParsedTournament(
         source_kind=SourceKind.DARTAGNAN,

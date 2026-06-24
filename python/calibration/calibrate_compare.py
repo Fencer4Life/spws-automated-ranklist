@@ -63,13 +63,15 @@ def compare(excel_scores: dict, db_scores: dict, tolerance: float = 0.01) -> Non
             if db_val is None:
                 mismatches.append({"fencer": name, "tournament": key, "issue": "MISSING_SCORE"})
             elif excel_val is not None and abs(float(excel_val) - db_val) > tolerance:
-                mismatches.append({
-                    "fencer": name,
-                    "tournament": key,
-                    "excel": excel_val,
-                    "db": db_val,
-                    "diff": round(float(excel_val) - db_val, 4),
-                })
+                mismatches.append(
+                    {
+                        "fencer": name,
+                        "tournament": key,
+                        "excel": excel_val,
+                        "db": db_val,
+                        "diff": round(float(excel_val) - db_val, 4),
+                    }
+                )
 
     if not mismatches:
         print("All scores match within tolerance! 0 mismatches found.")

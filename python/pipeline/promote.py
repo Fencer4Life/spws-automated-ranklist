@@ -20,6 +20,7 @@ import argparse
 import json
 import os
 import sys
+from functools import partial
 
 import httpx
 
@@ -51,7 +52,7 @@ def read_cert_event(
     Returns dict with keys: event, tournaments, results (keyed by tournament_id).
     """
     if query_fn is None:
-        query_fn = lambda sql: _management_query(cert_ref, access_token, sql)
+        query_fn = partial(_management_query, cert_ref, access_token)
 
     # Find event
     rows = query_fn(
@@ -135,7 +136,7 @@ def write_prod_tournament(
 ) -> int:
     """Create or find tournament on PROD. Returns PROD tournament_id."""
     if query_fn is None:
-        query_fn = lambda sql: _management_query(prod_ref, access_token, sql)
+        query_fn = partial(_management_query, prod_ref, access_token)
 
     rows = query_fn(
         f"SELECT fn_find_or_create_tournament("
@@ -166,7 +167,7 @@ def write_prod_results(
     jsonb_array_length(payload) when NULL (pre-ADR-038 behavior).
     """
     if query_fn is None:
-        query_fn = lambda sql: _management_query(prod_ref, access_token, sql)
+        query_fn = partial(_management_query, prod_ref, access_token)
 
     results_json = json.dumps(results).replace("'", "''")
     if participant_count is not None:
@@ -175,10 +176,7 @@ def write_prod_results(
             f"{tournament_id}, '{results_json}'::JSONB, {int(participant_count)})"
         )
     else:
-        rpc_sql = (
-            f"SELECT fn_ingest_tournament_results("
-            f"{tournament_id}, '{results_json}'::JSONB)"
-        )
+        rpc_sql = f"SELECT fn_ingest_tournament_results({tournament_id}, '{results_json}'::JSONB)"
     rows = query_fn(rpc_sql)
     return rows[0]["fn_ingest_tournament_results"]
 
@@ -195,7 +193,7 @@ def promote_event(
     Returns summary with tournaments_promoted, total_results, errors.
     """
     if prod_query_fn is None:
-        prod_query_fn = lambda sql: _management_query(prod_ref, access_token, sql)
+        prod_query_fn = partial(_management_query, prod_ref, access_token)
 
     promoted = 0
     total_results = 0
@@ -228,7 +226,7 @@ def promote_event(
             # Ingest results — thread CERT's int_participant_count so PROD
             # records the actual field size, not the POL-filtered payload
             # length (ADR-038 deflation fix).
-            summary = write_prod_results(
+            write_prod_results(
                 tournament_id=prod_tid,
                 results=results,
                 query_fn=prod_query_fn,
@@ -366,9 +364,9 @@ def promote_calendar(
     "refreshed_codes": [...]}``.
     """
     if cert_query_fn is None:
-        cert_query_fn = lambda sql: _management_query(cert_ref, access_token, sql)
+        cert_query_fn = partial(_management_query, cert_ref, access_token)
     if prod_query_fn is None:
-        prod_query_fn = lambda sql: _management_query(prod_ref, access_token, sql)
+        prod_query_fn = partial(_management_query, prod_ref, access_token)
 
     # Active season must exist on both sides (PROD is the driver — what PROD
     # thinks is active dictates which window we care about).
@@ -413,8 +411,7 @@ def promote_calendar(
         payload = [_build_import_payload(e) for e in new_events]
         payload_json = json.dumps(payload).replace("'", "''")
         result = prod_query_fn(
-            f"SELECT fn_import_evf_events('{payload_json}'::JSONB, "
-            f"{prod_season['id_season']}) AS r"
+            f"SELECT fn_import_evf_events('{payload_json}'::JSONB, {prod_season['id_season']}) AS r"
         )
         rpc = (result[0].get("r") if result else {}) or {}
         if isinstance(rpc, str):
@@ -425,9 +422,7 @@ def promote_calendar(
     if refresh_events:
         payload = [_build_refresh_payload(pid, e) for pid, e in refresh_events]
         payload_json = json.dumps(payload).replace("'", "''")
-        result = prod_query_fn(
-            f"SELECT fn_refresh_evf_event_urls('{payload_json}'::JSONB) AS r"
-        )
+        result = prod_query_fn(f"SELECT fn_refresh_evf_event_urls('{payload_json}'::JSONB) AS r")
         rpc = (result[0].get("r") if result else {}) or {}
         if isinstance(rpc, str):
             rpc = json.loads(rpc)
@@ -438,19 +433,26 @@ def promote_calendar(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Promote CERT → PROD (ADR-026)")
-    parser.add_argument("--mode", choices=("event", "calendar"), default="event",
-                        help="event: single-event per-result promotion (default). "
-                             "calendar: EVF calendar + URL refresh (ADR-026 amendment).")
-    parser.add_argument("--event", default=None,
-                        help="Event code prefix (e.g. PPW4) — required when --mode event")
+    parser.add_argument(
+        "--mode",
+        choices=("event", "calendar"),
+        default="event",
+        help="event: single-event per-result promotion (default). "
+        "calendar: EVF calendar + URL refresh (ADR-026 amendment).",
+    )
+    parser.add_argument(
+        "--event", default=None, help="Event code prefix (e.g. PPW4) — required when --mode event"
+    )
     parser.add_argument("--dry-run", action="store_true", help="Read but don't write PROD")
     args = parser.parse_args()
 
     if args.mode == "event" and not args.event:
         parser.error("--event is required when --mode=event")
     if args.mode == "calendar" and args.event:
-        parser.error("--event is not accepted when --mode=calendar (calendar promotes "
-                     "all EVF events for the active season)")
+        parser.error(
+            "--event is not accepted when --mode=calendar (calendar promotes "
+            "all EVF events for the active season)"
+        )
 
     access_token = os.environ["SUPABASE_ACCESS_TOKEN"]
     cert_ref = os.environ["SUPABASE_CERT_REF"]
@@ -473,8 +475,10 @@ def main() -> None:
 
     # -------------------------- Calendar mode ---------------------------------
     if args.mode == "calendar":
-        print(f"EVF calendar promote CERT ({cert_ref}) → PROD ({prod_ref})"
-              + (" [DRY RUN]" if args.dry_run else ""))
+        print(
+            f"EVF calendar promote CERT ({cert_ref}) → PROD ({prod_ref})"
+            + (" [DRY RUN]" if args.dry_run else "")
+        )
         try:
             summary = promote_calendar(
                 cert_ref=cert_ref,
@@ -520,7 +524,7 @@ def main() -> None:
 
     # Find or create event on PROD
     print(f"Finding event on PROD ({prod_ref})...")
-    prod_query = lambda sql: _management_query(prod_ref, access_token, sql)
+    prod_query = partial(_management_query, prod_ref, access_token)
 
     prod_events = prod_query(
         f"SELECT id_event FROM tbl_event WHERE txt_code = '{event['txt_code']}'"

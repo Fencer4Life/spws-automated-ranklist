@@ -249,9 +249,7 @@ def find_best_match(
 
     # ADR-064: asymmetric F-bracket filter. Drop M candidates before scoring.
     if bracket_gender == "F":
-        fencer_db = [
-            f for f in fencer_db if f.get("enum_gender") != "M"
-        ]
+        fencer_db = [f for f in fencer_db if f.get("enum_gender") != "M"]
 
     if not fencer_db:
         return MatchResult(
@@ -265,7 +263,8 @@ def find_best_match(
     scored = []
     for fencer in fencer_db:
         score = _score_against_fencer(
-            scraped_name, fencer,
+            scraped_name,
+            fencer,
             use_diacritic_folding=use_diacritic_folding,
             use_token_set_ratio=use_token_set_ratio,
         )
@@ -284,10 +283,9 @@ def find_best_match(
     elif age_category is not None and season_end_year is not None:
         # Filter by age category compatibility
         matching = [
-            (s, f) for s, f in tied
-            if birth_year_matches_category(
-                f.get("int_birth_year"), age_category, season_end_year
-            )
+            (s, f)
+            for s, f in tied
+            if birth_year_matches_category(f.get("int_birth_year"), age_category, season_end_year)
         ]
         if len(matching) == 1:
             # Exactly one fits → disambiguated

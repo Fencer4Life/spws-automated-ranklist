@@ -15,7 +15,6 @@ import csv
 import io
 import re
 
-
 # Pattern matches a standalone digit (age category) between surname and first name
 # e.g., "ATANASSOW 2 Aleksander" → groups: ("ATANASSOW", "Aleksander")
 _CATEGORY_RE = re.compile(r"^(\S+)\s+\d+\s+(.+)$")
@@ -83,11 +82,13 @@ def parse_ftl_json(data: list[dict]) -> list[dict]:
                 place = 1
             else:
                 continue
-        results.append({
-            "fencer_name": _clean_name(entry["name"]),
-            "place": place,
-            "country": entry.get("country", ""),
-        })
+        results.append(
+            {
+                "fencer_name": _clean_name(entry["name"]),
+                "place": place,
+                "country": entry.get("country", ""),
+            }
+        )
     return results
 
 
@@ -122,12 +123,14 @@ def parse_ftl_with_marker(data: list[dict]) -> list[dict]:
         place = _parse_place(str(entry.get("place") or ""))
         if place is None and is_walkover:
             place = 1
-        results.append({
-            "fencer_name": cleaned,
-            "place": place,
-            "country": entry.get("country", ""),
-            "marker": marker,
-        })
+        results.append(
+            {
+                "fencer_name": cleaned,
+                "place": place,
+                "country": entry.get("country", ""),
+                "marker": marker,
+            }
+        )
     return results
 
 
@@ -142,8 +145,8 @@ _FTL_DATE_RE = re.compile(
 )
 _FTL_WEAPON_HINTS = {
     "SABRE": ("szabla", "sabre"),
-    "FOIL":  ("floret", "foil"),
-    "EPEE":  ("szpada", "epee", "épée", "epeé"),
+    "FOIL": ("floret", "foil"),
+    "EPEE": ("szpada", "epee", "épée", "epeé"),
 }
 
 
@@ -165,6 +168,7 @@ def fetch_ftl_event_metadata(url: str, http_client) -> dict | None:
     auth handshake — so the caller must pass an already-authed client.
     """
     import datetime
+
     uuid = extract_ftl_uuid(url)
     if not uuid:
         return None
@@ -190,9 +194,7 @@ def fetch_ftl_event_metadata(url: str, http_client) -> dict | None:
         return None
     month_name, day, year = date_m.groups()
     try:
-        d = datetime.datetime.strptime(
-            f"{month_name} {day} {year}", "%B %d %Y"
-        ).date()
+        d = datetime.datetime.strptime(f"{month_name} {day} {year}", "%B %d %Y").date()
     except ValueError:
         return None
 
@@ -218,11 +220,13 @@ def parse_ftl_csv(csv_text: str) -> list[dict]:
     results = []
     reader = csv.DictReader(io.StringIO(csv_text))
     for row in reader:
-        results.append({
-            "fencer_name": _clean_name(row["Name"]),
-            "place": _parse_place(row["Place"]),
-            "country": row.get("Country", ""),
-        })
+        results.append(
+            {
+                "fencer_name": _clean_name(row["Name"]),
+                "place": _parse_place(row["Place"]),
+                "country": row.get("Country", ""),
+            }
+        )
     return results
 
 
@@ -233,6 +237,7 @@ def parse_ftl_csv(csv_text: str) -> list[dict]:
 # functions above remain for existing callers (audit_results.py,
 # scrape_tournament.py) until Phase 6 collapses them.
 # =============================================================================
+
 
 def _detect_weapon_from_title(title: str | None) -> str | None:
     """Extract EPEE/FOIL/SABRE from the FTL page title, or None."""
@@ -302,15 +307,17 @@ def parse_json(
         country = entry.get("country") or None
         native_id = entry.get("id")
 
-        results.append(ParsedResult(
-            source_row_id=f"ftl:{native_id}" if native_id else _synthetic_for(
-                len(results) + 1, place, cleaned_name
-            ),
-            fencer_name=cleaned_name,
-            place=place,
-            fencer_country=country,
-            raw_age_marker=marker,
-        ))
+        results.append(
+            ParsedResult(
+                source_row_id=f"ftl:{native_id}"
+                if native_id
+                else _synthetic_for(len(results) + 1, place, cleaned_name),
+                fencer_name=cleaned_name,
+                place=place,
+                fencer_country=country,
+                raw_age_marker=marker,
+            )
+        )
 
     return ParsedTournament(
         source_kind=SourceKind.FTL,
@@ -332,7 +339,10 @@ def parse_csv(
     ``make_synthetic_id(SourceKind.FTL, row_index, place, name)``.
     """
     from python.pipeline.ir import (
-        ParsedResult, ParsedTournament, SourceKind, make_synthetic_id,
+        ParsedResult,
+        ParsedTournament,
+        SourceKind,
+        make_synthetic_id,
     )
 
     results: list[ParsedResult] = []
@@ -342,15 +352,20 @@ def parse_csv(
         place = _parse_place(row["Place"])
         country = row.get("Country") or None
 
-        results.append(ParsedResult(
-            source_row_id=make_synthetic_id(
-                SourceKind.FTL, row_index=i, place=place, name=cleaned_name,
-            ),
-            fencer_name=cleaned_name,
-            place=place,
-            fencer_country=country,
-            raw_age_marker=marker,
-        ))
+        results.append(
+            ParsedResult(
+                source_row_id=make_synthetic_id(
+                    SourceKind.FTL,
+                    row_index=i,
+                    place=place,
+                    name=cleaned_name,
+                ),
+                fencer_name=cleaned_name,
+                place=place,
+                fencer_country=country,
+                raw_age_marker=marker,
+            )
+        )
 
     return ParsedTournament(
         source_kind=SourceKind.FTL,
@@ -364,4 +379,5 @@ def parse_csv(
 def _synthetic_for(row_index: int, place: int, name: str) -> str:
     """Synthetic-ID fallback for FTL JSON entries that somehow lack an `id` field."""
     from python.pipeline.ir import SourceKind, make_synthetic_id
+
     return make_synthetic_id(SourceKind.FTL, row_index=row_index, place=place, name=name)

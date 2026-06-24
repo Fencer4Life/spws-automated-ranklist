@@ -23,7 +23,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Fixture helpers
 # ---------------------------------------------------------------------------
@@ -49,6 +48,7 @@ def _make_parsed(
     silently substituting a default.
     """
     from python.pipeline.ir import ParsedTournament, SourceKind
+
     return ParsedTournament(
         source_kind=SourceKind.FENCINGTIME_XML,
         results=results or [],
@@ -66,6 +66,7 @@ def _make_parsed(
 def _make_result(name, place, birth_year=None, raw_age_marker=None, fencer_country="POL"):
     """Build a ParsedResult."""
     from python.pipeline.ir import ParsedResult
+
     return ParsedResult(
         source_row_id=f"test:{name}:{place}",
         fencer_name=name,
@@ -79,6 +80,7 @@ def _make_result(name, place, birth_year=None, raw_age_marker=None, fencer_count
 def _make_ctx(parsed=None, overrides=None):
     """Build a PipelineContext for stage tests."""
     from python.pipeline.types import Overrides, PipelineContext
+
     return PipelineContext(
         parsed=parsed or _make_parsed(results=[_make_result("X", 1, birth_year=1970)]),
         overrides=overrides or Overrides(),
@@ -97,6 +99,7 @@ def _mock_db_with_event(event_dict):
 # Dispatcher tests (run_pipeline)
 # ===========================================================================
 
+
 class TestRunPipeline:
     def test_calls_seven_stages_in_order(self, monkeypatch):
         """P3.RP.1 run_pipeline invokes S1→S7 in declared order."""
@@ -105,13 +108,22 @@ class TestRunPipeline:
         from python.pipeline.types import Overrides
 
         call_log = []
-        for name in ["s1_validate_ir", "s2_resolve_event", "s3_detect_combined_pool",
-                     "s4_split_via_batch", "s5_detect_joint_pool",
-                     "s6_resolve_identity", "s7_validate"]:
+        for name in [
+            "s1_validate_ir",
+            "s2_resolve_event",
+            "s3_detect_combined_pool",
+            "s4_split_via_batch",
+            "s5_detect_joint_pool",
+            "s6_resolve_identity",
+            "s7_validate",
+        ]:
+
             def make(n):
                 def fn(ctx, db):
                     call_log.append(n)
+
                 return fn
+
             monkeypatch.setattr(stages, name, make(name))
 
         run_pipeline(
@@ -120,9 +132,15 @@ class TestRunPipeline:
             db=MagicMock(),
             season_end_year=2026,
         )
-        assert call_log == ["s1_validate_ir", "s2_resolve_event", "s3_detect_combined_pool",
-                            "s4_split_via_batch", "s5_detect_joint_pool",
-                            "s6_resolve_identity", "s7_validate"]
+        assert call_log == [
+            "s1_validate_ir",
+            "s2_resolve_event",
+            "s3_detect_combined_pool",
+            "s4_split_via_batch",
+            "s5_detect_joint_pool",
+            "s6_resolve_identity",
+            "s7_validate",
+        ]
 
     def test_halts_on_halterror(self, monkeypatch):
         """P3.RP.2 run_pipeline catches HaltError, populates halt fields, breaks loop."""
@@ -132,22 +150,29 @@ class TestRunPipeline:
 
         call_log = []
         for name in ["s1_validate_ir", "s2_resolve_event", "s3_detect_combined_pool"]:
+
             def make(n):
                 def fn(ctx, db):
                     call_log.append(n)
+
                 return fn
+
             monkeypatch.setattr(stages, name, make(name))
 
         def boom(ctx, db):
             call_log.append("s4_boom")
             raise HaltError(HaltReason.SPLITTER_UNRESOLVED, "test halt")
+
         monkeypatch.setattr(stages, "s4_split_via_batch", boom)
 
         for name in ["s5_detect_joint_pool", "s6_resolve_identity", "s7_validate"]:
+
             def make(n):
                 def fn(ctx, db):
                     call_log.append(n)
+
                 return fn
+
             monkeypatch.setattr(stages, name, make(name))
 
         ctx = run_pipeline(
@@ -157,8 +182,12 @@ class TestRunPipeline:
             season_end_year=2026,
         )
         # S5/S6/S7 not called after halt
-        assert call_log == ["s1_validate_ir", "s2_resolve_event", "s3_detect_combined_pool",
-                            "s4_boom"]
+        assert call_log == [
+            "s1_validate_ir",
+            "s2_resolve_event",
+            "s3_detect_combined_pool",
+            "s4_boom",
+        ]
         assert ctx.halted is True
         assert ctx.halted_at_stage == "s4_split_via_batch"
         assert ctx.halt_reason == HaltReason.SPLITTER_UNRESOLVED
@@ -172,6 +201,7 @@ class TestRunPipeline:
 
         def crash(ctx, db):
             raise RuntimeError("oops")
+
         monkeypatch.setattr(stages, "s1_validate_ir", crash)
 
         with pytest.raises(RuntimeError, match="oops"):
@@ -187,10 +217,12 @@ class TestRunPipeline:
 # S1 — IR validate
 # ===========================================================================
 
+
 class TestS1ValidateIR:
     def test_happy_path(self):
         """P3.S1.1 valid IR passes (no halt)."""
         from python.pipeline.stages import s1_validate_ir
+
         ctx = _make_ctx()
         s1_validate_ir(ctx, MagicMock())
         assert not ctx.halted
@@ -199,6 +231,7 @@ class TestS1ValidateIR:
         """P3.S1.2 empty results raises HaltError(IR_INVALID)."""
         from python.pipeline.stages import s1_validate_ir
         from python.pipeline.types import HaltError, HaltReason
+
         ctx = _make_ctx(parsed=_make_parsed(results=[]))
         with pytest.raises(HaltError) as exc:
             s1_validate_ir(ctx, MagicMock())
@@ -208,10 +241,13 @@ class TestS1ValidateIR:
         """P3.S1.3 missing parsed_date raises HaltError(IR_INVALID)."""
         from python.pipeline.stages import s1_validate_ir
         from python.pipeline.types import HaltError, HaltReason
-        ctx = _make_ctx(parsed=_make_parsed(
-            results=[_make_result("X", 1, birth_year=1970)],
-            parsed_date=None,
-        ))
+
+        ctx = _make_ctx(
+            parsed=_make_parsed(
+                results=[_make_result("X", 1, birth_year=1970)],
+                parsed_date=None,
+            )
+        )
         with pytest.raises(HaltError) as exc:
             s1_validate_ir(ctx, MagicMock())
         assert exc.value.reason == HaltReason.IR_INVALID
@@ -221,10 +257,13 @@ class TestS1ValidateIR:
         """P3.S1.4 missing weapon raises HaltError(IR_INVALID)."""
         from python.pipeline.stages import s1_validate_ir
         from python.pipeline.types import HaltError, HaltReason
-        ctx = _make_ctx(parsed=_make_parsed(
-            results=[_make_result("X", 1, birth_year=1970)],
-            weapon=None,
-        ))
+
+        ctx = _make_ctx(
+            parsed=_make_parsed(
+                results=[_make_result("X", 1, birth_year=1970)],
+                weapon=None,
+            )
+        )
         with pytest.raises(HaltError) as exc:
             s1_validate_ir(ctx, MagicMock())
         assert exc.value.reason == HaltReason.IR_INVALID
@@ -235,10 +274,12 @@ class TestS1ValidateIR:
 # S2 — Resolve event by date
 # ===========================================================================
 
+
 class TestS2ResolveEvent:
     def test_happy_path(self):
         """P3.S2.1 finds event for the parsed_date, populates ctx.event."""
         from python.pipeline.stages import s2_resolve_event
+
         ctx = _make_ctx()
         db = _mock_db_with_event({"id_event": 42, "txt_code": "PPW3-2025-2026", "txt_name": "..."})
         s2_resolve_event(ctx, db)
@@ -249,6 +290,7 @@ class TestS2ResolveEvent:
         """P3.S2.2 no event for date raises HaltError(EVENT_NOT_RESOLVED)."""
         from python.pipeline.stages import s2_resolve_event
         from python.pipeline.types import HaltError, HaltReason
+
         ctx = _make_ctx()
         db = _mock_db_with_event(None)
         with pytest.raises(HaltError) as exc:
@@ -260,31 +302,41 @@ class TestS2ResolveEvent:
 # S3 — Detect combined-pool
 # ===========================================================================
 
+
 class TestS3DetectCombinedPool:
     def test_combined_pool_detected_from_v0v1(self):
         """P3.S3.1 raw_age_marker 'v0v1' → ctx.is_combined_pool = True."""
         from python.pipeline.stages import s3_detect_combined_pool
-        ctx = _make_ctx(parsed=_make_parsed(
-            results=[_make_result("X", 1, birth_year=1970, raw_age_marker="v0v1")],
-        ))
+
+        ctx = _make_ctx(
+            parsed=_make_parsed(
+                results=[_make_result("X", 1, birth_year=1970, raw_age_marker="v0v1")],
+            )
+        )
         s3_detect_combined_pool(ctx, MagicMock())
         assert ctx.is_combined_pool is True
 
     def test_single_cat_marker_not_combined(self):
         """P3.S3.2 single-cat marker ('v1') → ctx.is_combined_pool = False."""
         from python.pipeline.stages import s3_detect_combined_pool
-        ctx = _make_ctx(parsed=_make_parsed(
-            results=[_make_result("X", 1, birth_year=1970, raw_age_marker="v1")],
-        ))
+
+        ctx = _make_ctx(
+            parsed=_make_parsed(
+                results=[_make_result("X", 1, birth_year=1970, raw_age_marker="v1")],
+            )
+        )
         s3_detect_combined_pool(ctx, MagicMock())
         assert ctx.is_combined_pool is False
 
     def test_no_markers_not_combined(self):
         """P3.S3.3 no raw_age_marker on any row → ctx.is_combined_pool = False."""
         from python.pipeline.stages import s3_detect_combined_pool
-        ctx = _make_ctx(parsed=_make_parsed(
-            results=[_make_result("X", 1, birth_year=1970)],  # no raw_age_marker
-        ))
+
+        ctx = _make_ctx(
+            parsed=_make_parsed(
+                results=[_make_result("X", 1, birth_year=1970)],  # no raw_age_marker
+            )
+        )
         s3_detect_combined_pool(ctx, MagicMock())
         assert ctx.is_combined_pool is False
 
@@ -293,10 +345,12 @@ class TestS3DetectCombinedPool:
 # S4 — Split via fn_age_categories_batch
 # ===========================================================================
 
+
 class TestS4SplitViaBatch:
     def test_no_op_when_not_combined(self):
         """P3.S4.1 single-cat (is_combined_pool=False) skips batch call."""
         from python.pipeline.stages import s4_split_via_batch
+
         ctx = _make_ctx()
         ctx.is_combined_pool = False
         db = MagicMock()
@@ -307,6 +361,7 @@ class TestS4SplitViaBatch:
     def test_batch_call_groups_by_vcat(self):
         """P3.S4.2 combined pool → ONE batch call → groups results by V-cat."""
         from python.pipeline.stages import s4_split_via_batch
+
         results = [
             _make_result("A", 1, birth_year=1965, raw_age_marker="v0v1"),
             _make_result("B", 2, birth_year=1985, raw_age_marker="v0v1"),
@@ -386,10 +441,12 @@ class TestS4SplitViaBatch:
 # S5 — Detect joint-pool siblings (override-driven for Phase 3)
 # ===========================================================================
 
+
 class TestS5DetectJointPool:
     def test_no_overrides_empty_siblings(self):
         """P3.S5.1 no joint_pool overrides → empty siblings list."""
         from python.pipeline.stages import s5_detect_joint_pool
+
         ctx = _make_ctx()
         s5_detect_joint_pool(ctx, MagicMock())
         assert ctx.joint_pool_siblings == []
@@ -399,9 +456,11 @@ class TestS5DetectJointPool:
         from python.pipeline.stages import s5_detect_joint_pool
         from python.pipeline.types import JointPoolOverride, Overrides
 
-        ovr = Overrides(joint_pool=[
-            JointPoolOverride(tournament_code="A-V0", siblings=["A-V1", "A-V2"]),
-        ])
+        ovr = Overrides(
+            joint_pool=[
+                JointPoolOverride(tournament_code="A-V0", siblings=["A-V1", "A-V2"]),
+            ]
+        )
         ctx = _make_ctx(overrides=ovr)
         s5_detect_joint_pool(ctx, MagicMock())
         assert sorted(ctx.joint_pool_siblings) == ["A-V0", "A-V1", "A-V2"]
@@ -410,6 +469,7 @@ class TestS5DetectJointPool:
 # ===========================================================================
 # S6 — Resolve identity + V0/EVF check
 # ===========================================================================
+
 
 class TestS6ResolveIdentity:
     def test_v0_in_evf_event_halts(self):
@@ -456,8 +516,13 @@ class TestS6ResolveIdentity:
         ctx.event = {"id_event": 1, "txt_code": "PPW3-2025-2026"}
         db = MagicMock()
         db.fetch_fencer_db.return_value = [
-            {"id_fencer": 42, "txt_surname": "KOWALSKI", "txt_first_name": "Jan",
-             "int_birth_year": 1970, "json_name_aliases": None},
+            {
+                "id_fencer": 42,
+                "txt_surname": "KOWALSKI",
+                "txt_first_name": "Jan",
+                "int_birth_year": 1970,
+                "json_name_aliases": None,
+            },
         ]
 
         s6_resolve_identity(ctx, db)
@@ -488,16 +553,24 @@ class TestS6ResolveIdentity:
         from python.pipeline.types import MatchMethodOverride, Overrides
 
         results = [_make_result("KOWALSKI Jan", 1, birth_year=1970)]
-        ovr = Overrides(match_method=[
-            MatchMethodOverride(scraped_name="KOWALSKI Jan", force_method="PENDING",
-                                note="manual review"),
-        ])
+        ovr = Overrides(
+            match_method=[
+                MatchMethodOverride(
+                    scraped_name="KOWALSKI Jan", force_method="PENDING", note="manual review"
+                ),
+            ]
+        )
         ctx = _make_ctx(parsed=_make_parsed(results=results), overrides=ovr)
         ctx.event = {"id_event": 1, "txt_code": "PPW3-2025-2026"}
         db = MagicMock()
         db.fetch_fencer_db.return_value = [
-            {"id_fencer": 42, "txt_surname": "KOWALSKI", "txt_first_name": "Jan",
-             "int_birth_year": 1970, "json_name_aliases": None},
+            {
+                "id_fencer": 42,
+                "txt_surname": "KOWALSKI",
+                "txt_first_name": "Jan",
+                "int_birth_year": 1970,
+                "json_name_aliases": None,
+            },
         ]
 
         s6_resolve_identity(ctx, db)
@@ -536,19 +609,23 @@ class TestS6ResolveIdentity:
 # S7 — Validate count + URL
 # ===========================================================================
 
+
 class TestS7Validate:
     def test_count_match_passes(self):
         """P3.S7.1 raw_pool_size matches actual matches count → ok."""
         from python.pipeline.stages import s7_validate
         from python.pipeline.types import StageMatchResult
 
-        ctx = _make_ctx(parsed=_make_parsed(
-            results=[_make_result("X", 1, birth_year=1970)],
-            raw_pool_size=1,
-        ))
+        ctx = _make_ctx(
+            parsed=_make_parsed(
+                results=[_make_result("X", 1, birth_year=1970)],
+                raw_pool_size=1,
+            )
+        )
         ctx.matches = [
-            StageMatchResult(scraped_name="X", place=1, id_fencer=1,
-                             confidence=99.0, method="AUTO_MATCHED"),
+            StageMatchResult(
+                scraped_name="X", place=1, id_fencer=1, confidence=99.0, method="AUTO_MATCHED"
+            ),
         ]
         s7_validate(ctx, MagicMock())
         assert ctx.count_validation["ok"] is True
@@ -558,13 +635,16 @@ class TestS7Validate:
         from python.pipeline.stages import s7_validate
         from python.pipeline.types import HaltError, HaltReason, StageMatchResult
 
-        ctx = _make_ctx(parsed=_make_parsed(
-            results=[_make_result("X", 1, birth_year=1970)],
-            raw_pool_size=10,  # claims 10
-        ))
+        ctx = _make_ctx(
+            parsed=_make_parsed(
+                results=[_make_result("X", 1, birth_year=1970)],
+                raw_pool_size=10,  # claims 10
+            )
+        )
         ctx.matches = [  # but only 1 actual
-            StageMatchResult(scraped_name="X", place=1, id_fencer=1,
-                             confidence=99.0, method="AUTO_MATCHED"),
+            StageMatchResult(
+                scraped_name="X", place=1, id_fencer=1, confidence=99.0, method="AUTO_MATCHED"
+            ),
         ]
         with pytest.raises(HaltError) as exc:
             s7_validate(ctx, MagicMock())
@@ -575,13 +655,16 @@ class TestS7Validate:
         from python.pipeline.stages import s7_validate
         from python.pipeline.types import StageMatchResult
 
-        ctx = _make_ctx(parsed=_make_parsed(
-            results=[_make_result("X", 1, birth_year=1970)],
-            raw_pool_size=2,  # claims 2
-        ))
+        ctx = _make_ctx(
+            parsed=_make_parsed(
+                results=[_make_result("X", 1, birth_year=1970)],
+                raw_pool_size=2,  # claims 2
+            )
+        )
         ctx.matches = [  # actual 1 (off by one)
-            StageMatchResult(scraped_name="X", place=1, id_fencer=1,
-                             confidence=99.0, method="AUTO_MATCHED"),
+            StageMatchResult(
+                scraped_name="X", place=1, id_fencer=1, confidence=99.0, method="AUTO_MATCHED"
+            ),
         ]
         s7_validate(ctx, MagicMock())
         assert ctx.count_validation["ok"] is True
@@ -592,10 +675,12 @@ class TestS7Validate:
         from python.pipeline.stages import s7_validate
         from python.pipeline.types import HaltError, HaltReason, StageMatchResult
 
-        ctx = _make_ctx(parsed=_make_parsed(
-            results=[_make_result("X", 1, birth_year=1970)],
-            parsed_date=date(2026, 6, 15),  # 2.5 months away from event window
-        ))
+        ctx = _make_ctx(
+            parsed=_make_parsed(
+                results=[_make_result("X", 1, birth_year=1970)],
+                parsed_date=date(2026, 6, 15),  # 2.5 months away from event window
+            )
+        )
         ctx.event = {
             "txt_code": "PPW1-2025-2026",
             "dt_start": date(2026, 4, 1),
@@ -605,8 +690,9 @@ class TestS7Validate:
             "enum_age_category": "V1",
         }
         ctx.matches = [
-            StageMatchResult(scraped_name="X", place=1, id_fencer=1,
-                             confidence=99.0, method="AUTO_MATCHED"),
+            StageMatchResult(
+                scraped_name="X", place=1, id_fencer=1, confidence=99.0, method="AUTO_MATCHED"
+            ),
         ]
         with pytest.raises(HaltError) as exc:
             s7_validate(ctx, MagicMock())
@@ -618,10 +704,12 @@ class TestS7Validate:
         from python.pipeline.stages import s7_validate
         from python.pipeline.types import StageMatchResult
 
-        ctx = _make_ctx(parsed=_make_parsed(
-            results=[_make_result("X", 1, birth_year=1970)],
-            weapon="SABRE",  # scraped SABRE
-        ))
+        ctx = _make_ctx(
+            parsed=_make_parsed(
+                results=[_make_result("X", 1, birth_year=1970)],
+                weapon="SABRE",  # scraped SABRE
+            )
+        )
         ctx.event = {
             "txt_code": "PEW3-2025-2026",
             "dt_start": date(2026, 4, 1),
@@ -631,8 +719,9 @@ class TestS7Validate:
             "enum_age_category": "V1",
         }
         ctx.matches = [
-            StageMatchResult(scraped_name="X", place=1, id_fencer=1,
-                             confidence=99.0, method="AUTO_MATCHED"),
+            StageMatchResult(
+                scraped_name="X", place=1, id_fencer=1, confidence=99.0, method="AUTO_MATCHED"
+            ),
         ]
         s7_validate(ctx, MagicMock())  # must not halt
         assert ctx.pew_cascade_pending is True
@@ -660,8 +749,9 @@ class TestS7Validate:
             "enum_age_category": "V1",
         }
         ctx.matches = [
-            StageMatchResult(scraped_name="X", place=1, id_fencer=1,
-                             confidence=99.0, method="AUTO_MATCHED"),
+            StageMatchResult(
+                scraped_name="X", place=1, id_fencer=1, confidence=99.0, method="AUTO_MATCHED"
+            ),
         ]
         s7_validate(ctx, MagicMock())  # must not halt
         assert ctx.url_validation is None

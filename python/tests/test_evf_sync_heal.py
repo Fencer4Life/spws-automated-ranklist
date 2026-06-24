@@ -24,10 +24,14 @@ class _DummyClient:
 
 def _violator(url_event=None):
     return {
-        "id_event": 82, "txt_code": "PEW63e-2025-2026",
-        "dt_start": "2026-10-01", "dt_end": "2026-10-01",
-        "enum_status": "COMPLETED", "txt_country": None,
-        "txt_location": None, "url_event": url_event,
+        "id_event": 82,
+        "txt_code": "PEW63e-2025-2026",
+        "dt_start": "2026-10-01",
+        "dt_end": "2026-10-01",
+        "enum_status": "COMPLETED",
+        "txt_country": None,
+        "txt_location": None,
+        "url_event": url_event,
     }
 
 
@@ -39,12 +43,20 @@ def _run_heal(existing, cal_events, fetch_meta_return):
         sql_log.append(sql)
         return []  # no FTL tournament rows; keeps branch (c) empty
 
-    with patch.object(evf_sync, "_management_query", side_effect=fake_query), \
-         patch.object(evf_sync, "get_authed_ftl_client", return_value=_DummyClient()), \
-         patch.object(evf_sync, "fetch_ftl_event_metadata", return_value=fetch_meta_return), \
-         patch.object(evf_sync, "_telegram"):
+    with (
+        patch.object(evf_sync, "_management_query", side_effect=fake_query),
+        patch.object(evf_sync, "get_authed_ftl_client", return_value=_DummyClient()),
+        patch.object(evf_sync, "fetch_ftl_event_metadata", return_value=fetch_meta_return),
+        patch.object(evf_sync, "_telegram"),
+    ):
         evf_sync._heal_future_completed(
-            "ref", "tok", existing, cal_events, "bot", "chat", dry_run=False,
+            "ref",
+            "tok",
+            existing,
+            cal_events,
+            "bot",
+            "chat",
+            dry_run=False,
         )
     return sql_log
 
@@ -53,21 +65,24 @@ class TestSelfHealOrchestration:
     def test_heals_date_from_event_url(self):
         """evf.47: a row carrying url_event is healed from the FTL eventSchedule
         page — dt UPDATE includes the date and populates url_event; no flip."""
-        url = ("https://www.fencingtimelive.com/tournaments/eventSchedule/"
-               "E2A7B077F2824DD8A7F2E413B4211296")
-        sql = _run_heal([_violator(url_event=url)], [],
-                        fetch_meta_return={"date": "2026-01-10"})
+        url = (
+            "https://www.fencingtimelive.com/tournaments/eventSchedule/"
+            "E2A7B077F2824DD8A7F2E413B4211296"
+        )
+        sql = _run_heal([_violator(url_event=url)], [], fetch_meta_return={"date": "2026-01-10"})
         updates = [s for s in sql if s.strip().startswith("UPDATE tbl_event")]
-        assert any("2026-01-10" in s and "url_event" in s and "id_event = 82" in s
-                   for s in updates), "dt + url_event populated on the event row"
+        assert any(
+            "2026-01-10" in s and "url_event" in s and "id_event = 82" in s for s in updates
+        ), "dt + url_event populated on the event row"
         assert not any("DISABLE TRIGGER" in s for s in sql), "no status flip when healed"
 
     def test_status_flip_when_no_date(self):
         """evf.48: no url_event, no calendar match, no FTL date → no dt UPDATE,
         a status demotion instead."""
         sql = _run_heal([_violator(url_event=None)], [], fetch_meta_return=None)
-        assert not any(s.strip().startswith("UPDATE tbl_event SET dt_start") for s in sql), \
+        assert not any(s.strip().startswith("UPDATE tbl_event SET dt_start") for s in sql), (
             "no date UPDATE when nothing recovered"
+        )
         assert any("enum_status = 'PLANNED'" in s for s in sql), "row demoted to PLANNED"
 
     def test_status_flip_bypasses_lifecycle_trigger(self):

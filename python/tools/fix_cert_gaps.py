@@ -16,15 +16,16 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 import time
 
-import httpx
-
 from python.tools.audit_results import (
-    ENVS, SUPABASE_ACCESS_TOKEN, MGMT_API,
-    query_db, fetch_tournaments_with_urls, scrape_url, normalize_name, names_match,
+    ENVS,
+    fetch_tournaments_with_urls,
+    names_match,
+    normalize_name,
+    query_db,
+    scrape_url,
 )
 
 
@@ -57,8 +58,13 @@ def fetch_db_results_detailed(ref: str | None, tournament_code: str) -> list[dic
     """
     rows = query_db(ref, sql)
     return [
-        {"id_result": int(r[0]), "id_fencer": int(r[1]), "name": r[2],
-         "place": int(r[3]), "score": float(r[4]) if r[4] else 0}
+        {
+            "id_result": int(r[0]),
+            "id_fencer": int(r[1]),
+            "name": r[2],
+            "place": int(r[3]),
+            "score": float(r[4]) if r[4] else 0,
+        }
         for r in rows
     ]
 
@@ -113,19 +119,17 @@ def fix_tournament(
                 break
         if not matched:
             fencer_id = match_fencer(sr["fencer_name"], fencer_db)
-            missing.append({
-                "fencer_name": sr["fencer_name"],
-                "place": sr["place"],
-                "country": sr.get("country", ""),
-                "id_fencer": fencer_id,
-            })
+            missing.append(
+                {
+                    "fencer_name": sr["fencer_name"],
+                    "place": sr["place"],
+                    "country": sr.get("country", ""),
+                    "id_fencer": fencer_id,
+                }
+            )
 
     if not missing:
         return {"code": code, "error": None, "inserted": 0, "skipped": 0}
-
-    # Fix participant count
-    full_scraped = scrape_url(url) if pol_only else scraped
-    actual_count = len(full_scraped) if not pol_only else None
 
     inserted = 0
     skipped = 0
@@ -136,22 +140,24 @@ def fix_tournament(
             continue
 
         if dry_run:
-            print(f"    DRY: INSERT #{m['place']} {m['fencer_name']} "
-                  f"(fencer_id={m['id_fencer']})", file=sys.stderr)
+            print(
+                f"    DRY: INSERT #{m['place']} {m['fencer_name']} (fencer_id={m['id_fencer']})",
+                file=sys.stderr,
+            )
             inserted += 1
             continue
 
         # Insert the missing result
         sql = f"""
         INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
-        SELECT {m['id_fencer']},
+        SELECT {m["id_fencer"]},
                (SELECT id_tournament FROM tbl_tournament WHERE txt_code = '{code}'),
-               {m['place']},
+               {m["place"]},
                NULL
         WHERE NOT EXISTS (
             SELECT 1 FROM tbl_result r
             JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
-            WHERE t.txt_code = '{code}' AND r.id_fencer = {m['id_fencer']}
+            WHERE t.txt_code = '{code}' AND r.id_fencer = {m["id_fencer"]}
         );
         """
         try:
@@ -201,19 +207,26 @@ def fix_tournament(
 def main():
     parser = argparse.ArgumentParser(description="Fix CERT/PROD data gaps")
     parser.add_argument("--env", required=True, choices=["cert", "prod", "local"])
-    parser.add_argument("--pol-only", action="store_true",
-                        help="For international tournaments, only fix POL fencers")
-    parser.add_argument("--tournament", default=None,
-                        help="Fix a single tournament (default: all with URLs)")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Show what would be fixed without making changes")
+    parser.add_argument(
+        "--pol-only",
+        action="store_true",
+        help="For international tournaments, only fix POL fencers",
+    )
+    parser.add_argument(
+        "--tournament", default=None, help="Fix a single tournament (default: all with URLs)"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Show what would be fixed without making changes"
+    )
     args = parser.parse_args()
 
     env = ENVS[args.env]
     ref = env["ref"]
 
-    print(f"=== Fix Gaps: {args.env.upper()} {'(DRY RUN)' if args.dry_run else ''} ===",
-          file=sys.stderr)
+    print(
+        f"=== Fix Gaps: {args.env.upper()} {'(DRY RUN)' if args.dry_run else ''} ===",
+        file=sys.stderr,
+    )
 
     # Fetch fencer database for matching
     print("Loading fencer database...", file=sys.stderr)
@@ -235,13 +248,19 @@ def main():
             print(f"Tournament {args.tournament} not found", file=sys.stderr)
             sys.exit(1)
         r = rows[0]
-        tournaments = [{
-            "txt_code": r[0], "url_results": r[1],
-            "int_participant_count": int(r[2]) if r[2] else 0,
-            "enum_type": r[3], "enum_weapon": r[4],
-            "enum_gender": r[5], "enum_age_category": r[6],
-            "event_code": r[7], "location": r[8],
-        }]
+        tournaments = [
+            {
+                "txt_code": r[0],
+                "url_results": r[1],
+                "int_participant_count": int(r[2]) if r[2] else 0,
+                "enum_type": r[3],
+                "enum_weapon": r[4],
+                "enum_gender": r[5],
+                "enum_age_category": r[6],
+                "event_code": r[7],
+                "location": r[8],
+            }
+        ]
     else:
         tournaments = fetch_tournaments_with_urls(ref)
 
@@ -265,21 +284,23 @@ def main():
         elif result["inserted"] > 0 or result["skipped"] > 0:
             total_inserted += result["inserted"]
             total_skipped += result["skipped"]
-            print(f" +{result['inserted']} inserted, {result['skipped']} unmatched "
-                  f"(of {result['missing_total']} missing)", file=sys.stderr)
+            print(
+                f" +{result['inserted']} inserted, {result['skipped']} unmatched "
+                f"(of {result['missing_total']} missing)",
+                file=sys.stderr,
+            )
         else:
-            print(f" OK", file=sys.stderr)
+            print(" OK", file=sys.stderr)
 
         time.sleep(0.5)  # Rate limit
 
-    print(f"\n{'='*60}", file=sys.stderr)
-    print(f"FIX SUMMARY ({args.env.upper()}) {'DRY RUN' if args.dry_run else ''}",
-          file=sys.stderr)
+    print(f"\n{'=' * 60}", file=sys.stderr)
+    print(f"FIX SUMMARY ({args.env.upper()}) {'DRY RUN' if args.dry_run else ''}", file=sys.stderr)
     print(f"  Tournaments processed: {len(tournaments)}", file=sys.stderr)
     print(f"  Results inserted:      {total_inserted}", file=sys.stderr)
     print(f"  Fencers unmatched:     {total_skipped}", file=sys.stderr)
     print(f"  Errors:                {total_errors}", file=sys.stderr)
-    print(f"{'='*60}", file=sys.stderr)
+    print(f"{'=' * 60}", file=sys.stderr)
 
 
 if __name__ == "__main__":

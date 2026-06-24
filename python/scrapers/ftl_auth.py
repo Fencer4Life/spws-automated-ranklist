@@ -33,11 +33,10 @@ from __future__ import annotations
 import datetime as dt
 import os
 import re
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 
 import httpx
-
 
 FTL_HOST = "www.fencingtimelive.com"
 FTL_APEX_HOST = "fencingtimelive.com"
@@ -118,7 +117,7 @@ def _raise_on_login_redirect(response: httpx.Response) -> None:
 def _connect_sid_expiry(client: httpx.Client) -> dt.datetime | None:
     for ck in client.cookies.jar:
         if ck.name == "connect.sid" and ck.expires:
-            return dt.datetime.fromtimestamp(ck.expires, dt.timezone.utc)
+            return dt.datetime.fromtimestamp(ck.expires, dt.UTC)
     return None
 
 
@@ -127,8 +126,7 @@ def _perform_login(client: httpx.Client, username: str, password: str) -> None:
     login_page = client.get(FTL_LOGIN_PAGE)
     if login_page.status_code != 200:
         raise FtlAuthError(
-            f"GET {FTL_LOGIN_PAGE} returned {login_page.status_code}: "
-            f"{login_page.text[:200]}"
+            f"GET {FTL_LOGIN_PAGE} returned {login_page.status_code}: {login_page.text[:200]}"
         )
     csrf = _extract_csrf_token(login_page.text)
 
@@ -141,8 +139,7 @@ def _perform_login(client: httpx.Client, username: str, password: str) -> None:
     )
     if login_resp.status_code != 200:
         raise FtlAuthError(
-            f"POST {FTL_LOGIN_POST} returned {login_resp.status_code}: "
-            f"{login_resp.text[:200]}"
+            f"POST {FTL_LOGIN_POST} returned {login_resp.status_code}: {login_resp.text[:200]}"
         )
     # A successful login redirects away from /account/login. If the final URL
     # after following redirects is /account/login, the credentials were rejected
@@ -191,7 +188,7 @@ def get_authed_ftl_client(
         },
     )
     try:
-        now = dt.datetime.now(dt.timezone.utc)
+        now = dt.datetime.now(dt.UTC)
         cache_valid = (
             not force_login
             and _cached_cookies is not None

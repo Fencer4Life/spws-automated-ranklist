@@ -8,18 +8,18 @@ The planner resolves a Flow into an ordered, DAG-validated ExecutionPlan
 the ResolveFencers-before-SplitByAge ordering enforced by data, plan-time
 `when` pruning, and DAG rejection of mis-ordered / unsatisfiable rules.
 """
+
 from __future__ import annotations
 
 import pytest
 
 from python.pipeline.core.contract import PluginKind
 from python.pipeline.engine.flows import Flow, FlowParams, Rule, Step
-from python.pipeline.engine.rulebook import PLUGINS, RULEBOOK, PluginSpec
 from python.pipeline.engine.rule_engine import (
-    ExecutionPlan,
     PlanValidationError,
     RuleEngine,
 )
+from python.pipeline.engine.rulebook import PLUGINS, RULEBOOK, PluginSpec
 
 
 def _engine(rulebook=None, plugins=None) -> RuleEngine:
@@ -29,6 +29,7 @@ def _engine(rulebook=None, plugins=None) -> RuleEngine:
 # ---------------------------------------------------------------------------
 # Resolved sequences (design §6.4)
 # ---------------------------------------------------------------------------
+
 
 class TestResolvedSequences:
     def test_ingest_domestic_exact_sequence(self):
@@ -81,6 +82,7 @@ class TestResolvedSequences:
 # Inspectability + plan-time pruning
 # ---------------------------------------------------------------------------
 
+
 class TestInspectability:
     def test_describe_is_pure(self):
         """N1.6 plan.describe() returns the ordered names without DB/Services."""
@@ -115,6 +117,7 @@ class TestInspectability:
 # ---------------------------------------------------------------------------
 # DAG validation (reads subset of earlier writes)
 # ---------------------------------------------------------------------------
+
 
 class TestDagValidation:
     @pytest.mark.parametrize("flow", list(Flow))

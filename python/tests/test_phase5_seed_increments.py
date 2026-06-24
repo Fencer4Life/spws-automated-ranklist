@@ -18,10 +18,7 @@ runtime DB row has it.
 
 from __future__ import annotations
 
-from pathlib import Path
 from unittest.mock import MagicMock
-
-import pytest
 
 
 def _make_mock_db(event_id, tournaments, results, fencers):
@@ -58,27 +55,47 @@ def test_seed_export_emits_fencer_inserts(tmp_path, monkeypatch):
 
     db = _make_mock_db(
         event_id=42,
-        tournaments=[{
-            "id_tournament": 100, "txt_code": "GPX-V2-EPEE-M-2023-2024",
-            "txt_name": "GPX V2 M EPEE", "enum_type": "PPW", "num_multiplier": 1.0,
-            "dt_tournament": "2023-11-18", "int_participant_count": 8,
-            "enum_weapon": "EPEE", "enum_gender": "M", "enum_age_category": "V2",
-            "url_results": "https://example.com/r/100",
-            "enum_import_status": "SCORED", "txt_import_status_reason": None,
-            "bool_joint_pool_split": False, "enum_parser_kind": "FTL",
-            "dt_last_scraped": "2026-05-03T10:00:00Z",
-            "txt_source_url_used": "https://example.com/r/100",
-        }],
+        tournaments=[
+            {
+                "id_tournament": 100,
+                "txt_code": "GPX-V2-EPEE-M-2023-2024",
+                "txt_name": "GPX V2 M EPEE",
+                "enum_type": "PPW",
+                "num_multiplier": 1.0,
+                "dt_tournament": "2023-11-18",
+                "int_participant_count": 8,
+                "enum_weapon": "EPEE",
+                "enum_gender": "M",
+                "enum_age_category": "V2",
+                "url_results": "https://example.com/r/100",
+                "enum_import_status": "SCORED",
+                "txt_import_status_reason": None,
+                "bool_joint_pool_split": False,
+                "enum_parser_kind": "FTL",
+                "dt_last_scraped": "2026-05-03T10:00:00Z",
+                "txt_source_url_used": "https://example.com/r/100",
+            }
+        ],
         results=[
-            {"id_fencer": 999, "id_tournament": 100, "int_place": 4,
-             "num_final_score": 12.3, "num_match_confidence": 1.0,
-             "enum_match_method": "AUTO_MATCH",
-             "txt_scraped_name": "BURLIKOWSKI Bartosz"},
+            {
+                "id_fencer": 999,
+                "id_tournament": 100,
+                "int_place": 4,
+                "num_final_score": 12.3,
+                "num_match_confidence": 1.0,
+                "enum_match_method": "AUTO_MATCH",
+                "txt_scraped_name": "BURLIKOWSKI Bartosz",
+            },
         ],
         fencers=[
-            {"id_fencer": 999, "txt_surname": "BURLIKOWSKI", "txt_first_name": "Bartosz",
-             "int_birth_year": 1974, "enum_gender": "M",
-             "txt_nationality": "PL"},
+            {
+                "id_fencer": 999,
+                "txt_surname": "BURLIKOWSKI",
+                "txt_first_name": "Bartosz",
+                "int_birth_year": 1974,
+                "enum_gender": "M",
+                "txt_nationality": "PL",
+            },
         ],
     )
 
@@ -106,26 +123,48 @@ def test_seed_export_strips_leading_trailing_whitespace(tmp_path, monkeypatch):
 
     db = _make_mock_db(
         event_id=42,
-        tournaments=[{
-            "id_tournament": 100, "txt_code": "GPX-V2-EPEE-M-2023-2024",
-            "txt_name": "x", "enum_type": "PPW", "num_multiplier": 1.0,
-            "dt_tournament": "2023-11-18", "int_participant_count": 1,
-            "enum_weapon": "EPEE", "enum_gender": "M", "enum_age_category": "V2",
-            "url_results": None, "enum_import_status": "SCORED",
-            "txt_import_status_reason": None, "bool_joint_pool_split": False,
-            "enum_parser_kind": "FTL", "dt_last_scraped": None,
-            "txt_source_url_used": None,
-        }],
+        tournaments=[
+            {
+                "id_tournament": 100,
+                "txt_code": "GPX-V2-EPEE-M-2023-2024",
+                "txt_name": "x",
+                "enum_type": "PPW",
+                "num_multiplier": 1.0,
+                "dt_tournament": "2023-11-18",
+                "int_participant_count": 1,
+                "enum_weapon": "EPEE",
+                "enum_gender": "M",
+                "enum_age_category": "V2",
+                "url_results": None,
+                "enum_import_status": "SCORED",
+                "txt_import_status_reason": None,
+                "bool_joint_pool_split": False,
+                "enum_parser_kind": "FTL",
+                "dt_last_scraped": None,
+                "txt_source_url_used": None,
+            }
+        ],
         results=[
-            {"id_fencer": 999, "id_tournament": 100, "int_place": 4,
-             "num_final_score": None, "num_match_confidence": 1.0,
-             "enum_match_method": "AUTO_MATCH", "txt_scraped_name": "BURLIKOWSKI Bartosz"},
+            {
+                "id_fencer": 999,
+                "id_tournament": 100,
+                "int_place": 4,
+                "num_final_score": None,
+                "num_match_confidence": 1.0,
+                "enum_match_method": "AUTO_MATCH",
+                "txt_scraped_name": "BURLIKOWSKI Bartosz",
+            },
         ],
         fencers=[
             # Corrupted row: leading space on first_name + trailing on surname
-            {"id_fencer": 999, "txt_surname": "BURLIKOWSKI ",
-             "txt_first_name": " Bartosz", "int_birth_year": 1974,
-             "enum_gender": "M", "txt_nationality": "PL"},
+            {
+                "id_fencer": 999,
+                "txt_surname": "BURLIKOWSKI ",
+                "txt_first_name": " Bartosz",
+                "int_birth_year": 1974,
+                "enum_gender": "M",
+                "txt_nationality": "PL",
+            },
         ],
     )
 
@@ -150,34 +189,74 @@ def test_seed_export_dedupes_repeat_fencers_within_event(tmp_path, monkeypatch):
     db = _make_mock_db(
         event_id=42,
         tournaments=[
-            {"id_tournament": 100, "txt_code": "GPX-V2-EPEE-M",
-             "txt_name": "x", "enum_type": "PPW", "num_multiplier": 1.0,
-             "dt_tournament": "2023-11-18", "int_participant_count": 1,
-             "enum_weapon": "EPEE", "enum_gender": "M", "enum_age_category": "V2",
-             "url_results": None, "enum_import_status": "SCORED",
-             "txt_import_status_reason": None, "bool_joint_pool_split": False,
-             "enum_parser_kind": "FTL", "dt_last_scraped": None,
-             "txt_source_url_used": None},
-            {"id_tournament": 101, "txt_code": "GPX-V2-FOIL-M",
-             "txt_name": "y", "enum_type": "PPW", "num_multiplier": 1.0,
-             "dt_tournament": "2023-11-18", "int_participant_count": 1,
-             "enum_weapon": "FOIL", "enum_gender": "M", "enum_age_category": "V2",
-             "url_results": None, "enum_import_status": "SCORED",
-             "txt_import_status_reason": None, "bool_joint_pool_split": False,
-             "enum_parser_kind": "FTL", "dt_last_scraped": None,
-             "txt_source_url_used": None},
+            {
+                "id_tournament": 100,
+                "txt_code": "GPX-V2-EPEE-M",
+                "txt_name": "x",
+                "enum_type": "PPW",
+                "num_multiplier": 1.0,
+                "dt_tournament": "2023-11-18",
+                "int_participant_count": 1,
+                "enum_weapon": "EPEE",
+                "enum_gender": "M",
+                "enum_age_category": "V2",
+                "url_results": None,
+                "enum_import_status": "SCORED",
+                "txt_import_status_reason": None,
+                "bool_joint_pool_split": False,
+                "enum_parser_kind": "FTL",
+                "dt_last_scraped": None,
+                "txt_source_url_used": None,
+            },
+            {
+                "id_tournament": 101,
+                "txt_code": "GPX-V2-FOIL-M",
+                "txt_name": "y",
+                "enum_type": "PPW",
+                "num_multiplier": 1.0,
+                "dt_tournament": "2023-11-18",
+                "int_participant_count": 1,
+                "enum_weapon": "FOIL",
+                "enum_gender": "M",
+                "enum_age_category": "V2",
+                "url_results": None,
+                "enum_import_status": "SCORED",
+                "txt_import_status_reason": None,
+                "bool_joint_pool_split": False,
+                "enum_parser_kind": "FTL",
+                "dt_last_scraped": None,
+                "txt_source_url_used": None,
+            },
         ],
         results=[
-            {"id_fencer": 999, "id_tournament": 100, "int_place": 4,
-             "num_final_score": None, "num_match_confidence": 1.0,
-             "enum_match_method": "AUTO_MATCH", "txt_scraped_name": "X Y"},
-            {"id_fencer": 999, "id_tournament": 101, "int_place": 6,
-             "num_final_score": None, "num_match_confidence": 1.0,
-             "enum_match_method": "AUTO_MATCH", "txt_scraped_name": "X Y"},
+            {
+                "id_fencer": 999,
+                "id_tournament": 100,
+                "int_place": 4,
+                "num_final_score": None,
+                "num_match_confidence": 1.0,
+                "enum_match_method": "AUTO_MATCH",
+                "txt_scraped_name": "X Y",
+            },
+            {
+                "id_fencer": 999,
+                "id_tournament": 101,
+                "int_place": 6,
+                "num_final_score": None,
+                "num_match_confidence": 1.0,
+                "enum_match_method": "AUTO_MATCH",
+                "txt_scraped_name": "X Y",
+            },
         ],
         fencers=[
-            {"id_fencer": 999, "txt_surname": "X", "txt_first_name": "Y",
-             "int_birth_year": 1974, "enum_gender": "M", "txt_nationality": "PL"},
+            {
+                "id_fencer": 999,
+                "txt_surname": "X",
+                "txt_first_name": "Y",
+                "int_birth_year": 1974,
+                "enum_gender": "M",
+                "txt_nationality": "PL",
+            },
         ],
     )
 
@@ -196,24 +275,47 @@ def test_seed_export_includes_birth_year_and_gender(tmp_path, monkeypatch):
 
     db = _make_mock_db(
         event_id=42,
-        tournaments=[{
-            "id_tournament": 100, "txt_code": "GPX-V2-EPEE-M",
-            "txt_name": "x", "enum_type": "PPW", "num_multiplier": 1.0,
-            "dt_tournament": "2023-11-18", "int_participant_count": 1,
-            "enum_weapon": "EPEE", "enum_gender": "M", "enum_age_category": "V2",
-            "url_results": None, "enum_import_status": "SCORED",
-            "txt_import_status_reason": None, "bool_joint_pool_split": False,
-            "enum_parser_kind": "FTL", "dt_last_scraped": None,
-            "txt_source_url_used": None,
-        }],
+        tournaments=[
+            {
+                "id_tournament": 100,
+                "txt_code": "GPX-V2-EPEE-M",
+                "txt_name": "x",
+                "enum_type": "PPW",
+                "num_multiplier": 1.0,
+                "dt_tournament": "2023-11-18",
+                "int_participant_count": 1,
+                "enum_weapon": "EPEE",
+                "enum_gender": "M",
+                "enum_age_category": "V2",
+                "url_results": None,
+                "enum_import_status": "SCORED",
+                "txt_import_status_reason": None,
+                "bool_joint_pool_split": False,
+                "enum_parser_kind": "FTL",
+                "dt_last_scraped": None,
+                "txt_source_url_used": None,
+            }
+        ],
         results=[
-            {"id_fencer": 999, "id_tournament": 100, "int_place": 4,
-             "num_final_score": None, "num_match_confidence": 1.0,
-             "enum_match_method": "AUTO_MATCH", "txt_scraped_name": "X Y"},
+            {
+                "id_fencer": 999,
+                "id_tournament": 100,
+                "int_place": 4,
+                "num_final_score": None,
+                "num_match_confidence": 1.0,
+                "enum_match_method": "AUTO_MATCH",
+                "txt_scraped_name": "X Y",
+            },
         ],
         fencers=[
-            {"id_fencer": 999, "txt_surname": "X", "txt_first_name": "Y",
-             "int_birth_year": 1974, "enum_gender": "F", "txt_nationality": None},
+            {
+                "id_fencer": 999,
+                "txt_surname": "X",
+                "txt_first_name": "Y",
+                "int_birth_year": 1974,
+                "enum_gender": "F",
+                "txt_nationality": None,
+            },
         ],
     )
 

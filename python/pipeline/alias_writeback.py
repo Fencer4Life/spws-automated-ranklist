@@ -25,8 +25,8 @@ and re-stage before sign-off.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from python.pipeline.name_classify import classify_alias_pair
 
@@ -43,6 +43,7 @@ class PendingAlias:
         icon: "✓" / "❓" / "❌" — verdict from `classify_alias_pair`.
         reason: short human-readable explanation.
     """
+
     id_fencer: int
     scraped_name: str
     canonical: str
@@ -70,13 +71,15 @@ def compute_pending_aliases(stats: dict) -> list[PendingAlias]:
             continue
         seen.add(key)
         icon, reason = classify_alias_pair(d["scraped_name"], d["canonical"])
-        out.append(PendingAlias(
-            id_fencer=d["id_fencer"],
-            scraped_name=d["scraped_name"],
-            canonical=d["canonical"],
-            icon=icon,
-            reason=reason,
-        ))
+        out.append(
+            PendingAlias(
+                id_fencer=d["id_fencer"],
+                scraped_name=d["scraped_name"],
+                canonical=d["canonical"],
+                icon=icon,
+                reason=reason,
+            )
+        )
     rank = {"❌": 0, "❓": 1, "✓": 2}
     out.sort(key=lambda p: (rank.get(p.icon, 9), p.canonical, p.scraped_name))
     return out
@@ -88,7 +91,10 @@ def has_blocking_pairs(pending: Iterable[PendingAlias]) -> bool:
 
 
 def flush_pending_aliases(
-    db, pending: Iterable[PendingAlias], *, include_all: bool = False,
+    db,
+    pending: Iterable[PendingAlias],
+    *,
+    include_all: bool = False,
 ) -> dict:
     """Call `fn_update_fencer_aliases` for pending pairs.
 
@@ -142,20 +148,20 @@ def flush_pending_aliases(
             # fn_update_fencer_aliases is hardened, but defence in depth:
             # surface every silent failure to stderr.
             import sys
+
             print(
                 f"  ⚠ alias-flush error for fencer #{p.id_fencer} "
                 f"alias={p.scraped_name!r} ({p.icon}): "
                 f"{type(exc).__name__}: {exc}",
                 file=sys.stderr,
             )
-            result["errors"].append(
-                (p.id_fencer, p.scraped_name, f"{type(exc).__name__}: {exc}")
-            )
+            result["errors"].append((p.id_fencer, p.scraped_name, f"{type(exc).__name__}: {exc}"))
     return result
 
 
 def compute_pending_from_matches(
-    matches: list, basics_by_id: dict,
+    matches: list,
+    basics_by_id: dict,
 ) -> list[PendingAlias]:
     """Classify EVERY matched draft row, regardless of existing aliases.
 
@@ -174,6 +180,7 @@ def compute_pending_from_matches(
     writes ALL pending pairs, so we cannot use "alias-already-there" as
     evidence the row is OK).
     """
+
     def _norm(s: str) -> str:
         return " ".join(str(s or "").split()).casefold()
 
@@ -196,12 +203,8 @@ def compute_pending_from_matches(
         f = basics_by_id.get(id_fencer)
         if not f:
             continue
-        canonical = (
-            f"{f.get('txt_surname','')} {f.get('txt_first_name','')}".strip()
-        )
-        canonical_alt = (
-            f"{f.get('txt_first_name','')} {f.get('txt_surname','')}".strip()
-        )
+        canonical = f"{f.get('txt_surname', '')} {f.get('txt_first_name', '')}".strip()
+        canonical_alt = f"{f.get('txt_first_name', '')} {f.get('txt_surname', '')}".strip()
         if _norm(scraped) == _norm(canonical) or _norm(scraped) == _norm(canonical_alt):
             continue  # truly canonical — no alias needed
 
@@ -210,17 +213,25 @@ def compute_pending_from_matches(
             continue
         seen.add(key)
         icon, reason = classify_alias_pair(scraped, canonical)
-        out.append(PendingAlias(
-            id_fencer=id_fencer, scraped_name=scraped,
-            canonical=canonical, icon=icon, reason=reason,
-        ))
+        out.append(
+            PendingAlias(
+                id_fencer=id_fencer,
+                scraped_name=scraped,
+                canonical=canonical,
+                icon=icon,
+                reason=reason,
+            )
+        )
     rank = {"❌": 0, "❓": 1, "✓": 2}
     out.sort(key=lambda p: (rank.get(p.icon, 9), p.canonical, p.scraped_name))
     return out
 
 
 def derive_pending_from_run_id(
-    db, run_id: str, *, ignore_existing_aliases: bool = False,
+    db,
+    run_id: str,
+    *,
+    ignore_existing_aliases: bool = False,
 ) -> list[PendingAlias]:
     """Re-derive pending aliases at sign-off time from the persisted drafts.
 
@@ -241,10 +252,7 @@ def derive_pending_from_run_id(
     """
     drafts = (
         db._sb.table("tbl_result_draft")
-        .select(
-            "id_fencer, txt_scraped_name, enum_match_method, "
-            "id_tournament_draft"
-        )
+        .select("id_fencer, txt_scraped_name, enum_match_method, id_tournament_draft")
         .eq("txt_run_id", run_id)
         .execute()
     ).data or []
@@ -252,7 +260,8 @@ def derive_pending_from_run_id(
     # Auto-method drafts only — PENDING / EXCLUDED never alias-write.
     auto_methods = {"AUTO_MATCH", "USER_CONFIRMED", "AUTO_CREATED"}
     rows = [
-        r for r in drafts
+        r
+        for r in drafts
         if r.get("id_fencer") is not None
         and r.get("enum_match_method") in auto_methods
         and r.get("txt_scraped_name")
@@ -261,10 +270,7 @@ def derive_pending_from_run_id(
         return []
 
     ids = sorted({r["id_fencer"] for r in rows})
-    basics = (
-        db.fetch_fencer_basics_batch(ids)
-        if hasattr(db, "fetch_fencer_basics_batch") else {}
-    )
+    basics = db.fetch_fencer_basics_batch(ids) if hasattr(db, "fetch_fencer_basics_batch") else {}
 
     # Phase 5 user-confirmed-alias filter (migration 20260502000010):
     # skip rows where the scraped name is in the matched fencer's

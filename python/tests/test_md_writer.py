@@ -12,7 +12,7 @@ ADR-058 — staging-reports bucket. ADR-061 — LOCAL preserves filesystem defau
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -90,7 +90,10 @@ def test_md_writer_invalid_target_raises():
 
     with pytest.raises(ValueError, match="invalid target"):
         write_for_event(
-            event_code="X", md_text="", target="bogus", staging_dir=Path("/tmp"),
+            event_code="X",
+            md_text="",
+            target="bogus",
+            staging_dir=Path("/tmp"),
         )
 
 
@@ -108,7 +111,9 @@ def test_md_writer_local_target_without_staging_dir_uses_default(tmp_path, monke
     from python.pipeline import md_writer
 
     monkeypatch.setattr(md_writer, "DEFAULT_STAGING_DIR", tmp_path)
-    out = md_writer.write_for_event(
-        event_code="EVENT-DEFAULT", md_text="# default\n", target="local",
+    md_writer.write_for_event(
+        event_code="EVENT-DEFAULT",
+        md_text="# default\n",
+        target="local",
     )
     assert (tmp_path / "EVENT-DEFAULT.md").exists()

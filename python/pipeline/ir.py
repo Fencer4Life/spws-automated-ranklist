@@ -40,10 +40,10 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from datetime import date
-from enum import Enum
+from enum import StrEnum
 
 
-class SourceKind(str, Enum):
+class SourceKind(StrEnum):
     """The 8 parser sources feeding the unified pipeline.
 
     Mirror of Postgres `enum_parser_kind`. See module docstring for sync rule.
@@ -126,12 +126,27 @@ class ParsedTournament:
 
 # Polish + common European folding. Extend if a parser surfaces a charset
 # the table doesn't already cover.
-_FOLD_MAP = str.maketrans({
-    "Ą": "A", "Ć": "C", "Ę": "E", "Ł": "L", "Ń": "N",
-    "Ó": "O", "Ś": "S", "Ź": "Z", "Ż": "Z",
-    "Á": "A", "É": "E", "Í": "I", "Ú": "U",
-    "Ñ": "N", "Ä": "A", "Ö": "O", "Ü": "U",
-})
+_FOLD_MAP = str.maketrans(
+    {
+        "Ą": "A",
+        "Ć": "C",
+        "Ę": "E",
+        "Ł": "L",
+        "Ń": "N",
+        "Ó": "O",
+        "Ś": "S",
+        "Ź": "Z",
+        "Ż": "Z",
+        "Á": "A",
+        "É": "E",
+        "Í": "I",
+        "Ú": "U",
+        "Ñ": "N",
+        "Ä": "A",
+        "Ö": "O",
+        "Ü": "U",
+    }
+)
 
 
 def _slug(name: str) -> str:

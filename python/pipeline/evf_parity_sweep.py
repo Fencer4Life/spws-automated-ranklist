@@ -25,9 +25,10 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime
-from typing import Any, Callable
+from typing import Any
 
 from python.pipeline.commit_lifecycle import _fold
 from python.pipeline.evf_parity import check_parity
@@ -123,11 +124,13 @@ def run_sweep(
                     e = evf_by_name.get(_fold(lr.get("fencer_name")))
                     if e is None:
                         continue
-                    payload.append({
-                        "id_fencer": lr.get("id_fencer"),
-                        "int_place": lr.get("int_place"),
-                        "num_final_score": float(e.get("points", 0) or 0),
-                    })
+                    payload.append(
+                        {
+                            "id_fencer": lr.get("id_fencer"),
+                            "int_place": lr.get("int_place"),
+                            "num_final_score": float(e.get("points", 0) or 0),
+                        }
+                    )
                 promoted = db.promote_evf_published(id_event, payload)
                 counters.promoted += 1
                 if notifier is not None:
@@ -136,9 +139,7 @@ def run_sweep(
                         int(promoted.get("fencers_overwritten", len(payload))),
                     )
             else:
-                fail_lines = [
-                    f"[{f.sub_check}] {f.fencer_name}" for f in parity.fail_details
-                ]
+                fail_lines = [f"[{f.sub_check}] {f.fencer_name}" for f in parity.fail_details]
                 notes = "; ".join(fail_lines[:10])
                 if len(fail_lines) > 10:
                     notes += f"; +{len(fail_lines) - 10} more"
@@ -178,6 +179,7 @@ def _default_fetch_evf_api(event: dict) -> list[dict]:
         return []
     try:
         import httpx
+
         from python.scrapers.evf_results import parse_results
     except ImportError:
         return []
@@ -192,11 +194,13 @@ def _default_fetch_evf_api(event: dict) -> list[dict]:
         pts = getattr(r, "points", None)
         if pts is None:
             continue
-        out.append({
-            "name": getattr(r, "fencer_name", ""),
-            "pos": getattr(r, "place", 0),
-            "points": float(pts),
-        })
+        out.append(
+            {
+                "name": getattr(r, "fencer_name", ""),
+                "pos": getattr(r, "place", 0),
+                "points": float(pts),
+            }
+        )
     return out
 
 
@@ -204,13 +208,12 @@ def _default_fetch_evf_api(event: dict) -> list[dict]:
 # CLI entry
 # ---------------------------------------------------------------------------
 
+
 def main() -> int:
     from python.pipeline.db_connector import create_db_connector
     from python.pipeline.notifications import TelegramNotifier
 
-    parser = argparse.ArgumentParser(
-        description="Phase 4 (ADR-053) daily EVF parity sweep"
-    )
+    parser = argparse.ArgumentParser(description="Phase 4 (ADR-053) daily EVF parity sweep")
     parser.add_argument("--max-age-days", type=int, default=60)
     parser.add_argument("--evf-empty-stop-days", type=int, default=30)
     args = parser.parse_args()

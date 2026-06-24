@@ -87,8 +87,7 @@ def format_diff(
         lines.append("| Method | Count |")
         lines.append("|--------|------:|")
         # Stable order: known methods first, then unknown
-        ordering = ["AUTO_MATCHED", "PENDING", "AUTO_CREATED", "EXCLUDED",
-                    "UNSPECIFIED"]
+        ordering = ["AUTO_MATCHED", "PENDING", "AUTO_CREATED", "EXCLUDED", "UNSPECIFIED"]
         seen: set[str] = set()
         for method in ordering:
             if method in method_counts:

@@ -24,7 +24,6 @@ from typing import Literal
 
 from python.pipeline.storage_md import StorageMdHandler
 
-
 # Default for LOCAL CLI invocations: repo's doc/staging/
 DEFAULT_STAGING_DIR: Path = Path("doc/staging")
 
@@ -79,9 +78,7 @@ def write_for_event(
 
     if target in ("storage", "both"):
         if supabase_client is None:
-            raise ValueError(
-                f"target={target!r} requires supabase_client; got None"
-            )
+            raise ValueError(f"target={target!r} requires supabase_client; got None")
         handler = StorageMdHandler(supabase_client)
         storage_path = handler.upload_full(event_code, md_text.encode("utf-8"))
 

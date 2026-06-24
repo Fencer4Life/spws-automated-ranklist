@@ -174,7 +174,10 @@ def resolve_tournament_results(
                 continue
 
         match = find_best_match(
-            name, fencer_db, age_category, season_end_year,
+            name,
+            fencer_db,
+            age_category,
+            season_end_year,
             bracket_gender=effective_bracket_gender,
         )
 
@@ -189,7 +192,9 @@ def resolve_tournament_results(
             if is_domestic:
                 # Auto-create new fencer for domestic tournaments
                 new_fencer = auto_create_fencer(
-                    name, age_category, season_end_year,
+                    name,
+                    age_category,
+                    season_end_year,
                     gender_default=effective_bracket_gender,
                 )
                 result.auto_created.append(new_fencer)
@@ -247,10 +252,7 @@ def approve_match(candidate: dict, fencer_id: int) -> dict:
         ValueError: If candidate is not in PENDING status
     """
     if candidate["enum_status"] != "PENDING":
-        raise ValueError(
-            f"Only PENDING candidates can be approved, "
-            f"got {candidate['enum_status']}"
-        )
+        raise ValueError(f"Only PENDING candidates can be approved, got {candidate['enum_status']}")
 
     return {
         **candidate,
@@ -308,8 +310,7 @@ def dismiss_match(candidate: dict, note: str | None = None) -> dict:
     """
     if candidate["enum_status"] not in ("PENDING", "UNMATCHED"):
         raise ValueError(
-            f"Only PENDING or UNMATCHED candidates can be dismissed, "
-            f"got {candidate['enum_status']}"
+            f"Only PENDING or UNMATCHED candidates can be dismissed, got {candidate['enum_status']}"
         )
 
     result = {

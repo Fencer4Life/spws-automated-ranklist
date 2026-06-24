@@ -14,9 +14,10 @@ Structure differences from 2024-2025 Excel:
   - URLs may appear as literal text in col C (not just hyperlinks)
 """
 
-import re, json, sys
-from pathlib import Path
+import json
+import re
 from datetime import date, datetime
+from pathlib import Path
 
 import openpyxl
 import psycopg2
@@ -26,18 +27,18 @@ from rapidfuzz import fuzz
 # Config
 # ---------------------------------------------------------------------------
 XLSX_PATH = Path("doc/assets/SZPADA-2-2025-2026.xlsx")
-OUT_PATH   = Path("supabase/data/season_2025_26.sql")
+OUT_PATH = Path("supabase/data/season_2025_26.sql")
 SEASON_CODE = "SPWS-2025-2026"
 DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 
 # Map sheet name → (tournament_type, code_prefix, human_name)
 SHEET_MAP = {
-    "PP1":  ("PPW", "PP1",  "I Puchar Polski Weteranów — Szpada M"),
-    "PP2":  ("PPW", "PP2",  "II Puchar Polski Weteranów — Szpada M"),
-    "PP3":  ("PPW", "PP3",  "III Puchar Polski Weteranów — Szpada M"),
-    "PP4":  ("PPW", "PP4",  "IV Puchar Polski Weteranów — Szpada M"),
-    "PP5":  ("PPW", "PP5",  "V Puchar Polski Weteranów — Szpada M"),
-    "MPW":  ("MPW", "MPW",  "Mistrzostwa Polski Weteranów — Szpada M"),
+    "PP1": ("PPW", "PP1", "I Puchar Polski Weteranów — Szpada M"),
+    "PP2": ("PPW", "PP2", "II Puchar Polski Weteranów — Szpada M"),
+    "PP3": ("PPW", "PP3", "III Puchar Polski Weteranów — Szpada M"),
+    "PP4": ("PPW", "PP4", "IV Puchar Polski Weteranów — Szpada M"),
+    "PP5": ("PPW", "PP5", "V Puchar Polski Weteranów — Szpada M"),
+    "MPW": ("MPW", "MPW", "Mistrzostwa Polski Weteranów — Szpada M"),
     "PEW1": ("PEW", "PEW1", "EVF Grand Prix 1 — Budapeszt"),
     "PEW2": ("PEW", "PEW2", "EVF Grand Prix 2 — Madryt"),
     "PEW3": ("PEW", "PEW3", "EVF Grand Prix 3 — Guildford"),
@@ -45,7 +46,7 @@ SHEET_MAP = {
     "PEW5": ("PEW", "PEW5", "EVF Grand Prix 5 — Sztokholm"),
     "PEW6": ("PEW", "PEW6", "EVF Grand Prix 6 — Warszawa"),
     "PEW7": ("PEW", "PEW7", "EVF Grand Prix 7 — Chania"),
-    "PS":   ("PEW", "PS",   "Puchar Świata Weteranów — Paryż"),
+    "PS": ("PEW", "PS", "Puchar Świata Weteranów — Paryż"),
     "IMEW": ("MEW", "IMEW", "Indywidualne Mistrzostwa Europy Weteranów — Płowdiw"),
     "IMSW": ("MSW", "IMSW", "Indywidualne Mistrzostwa Świata Weteranów"),
 }
@@ -53,14 +54,24 @@ SHEET_MAP = {
 MATCH_THRESHOLD = 80
 
 SPANISH_MONTHS = {
-    "enero": "01", "febrero": "02", "marzo": "03", "abril": "04",
-    "mayo": "05", "junio": "06", "julio": "07", "agosto": "08",
-    "septiembre": "09", "octubre": "10", "noviembre": "11", "diciembre": "12",
+    "enero": "01",
+    "febrero": "02",
+    "marzo": "03",
+    "abril": "04",
+    "mayo": "05",
+    "junio": "06",
+    "julio": "07",
+    "agosto": "08",
+    "septiembre": "09",
+    "octubre": "10",
+    "noviembre": "11",
+    "diciembre": "12",
 }
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def sq(s):
     if s is None:
@@ -106,9 +117,18 @@ def parse_date(raw) -> str | None:
     if m:
         month_name, d, y = m.groups()
         months = {
-            "January":"01","February":"02","March":"03","April":"04",
-            "May":"05","June":"06","July":"07","August":"08",
-            "September":"09","October":"10","November":"11","December":"12",
+            "January": "01",
+            "February": "02",
+            "March": "03",
+            "April": "04",
+            "May": "05",
+            "June": "06",
+            "July": "07",
+            "August": "08",
+            "September": "09",
+            "October": "10",
+            "November": "11",
+            "December": "12",
         }
         mo = months.get(month_name)
         if mo:
@@ -134,13 +154,13 @@ def fuzzy_match(name: str, fencers: list[tuple]) -> tuple | None:
                 return (fid, f"{surname} {first}", 100)
     best_score = 0
     best_fencer = None
-    for fid, surname, first, aliases in fencers:
+    for fid, surname, first, _aliases in fencers:
         full = f"{surname} {first}"
         score = fuzz.token_sort_ratio(norm, full.upper())
         if score > best_score:
             best_score = score
             best_fencer = (fid, f"{surname} {first}")
-    if best_score >= MATCH_THRESHOLD:
+    if best_fencer is not None and best_score >= MATCH_THRESHOLD:
         return (*best_fencer, best_score)
     return None
 
@@ -158,6 +178,7 @@ def load_fencers(conn) -> list[tuple]:
 # ---------------------------------------------------------------------------
 # Extract tournament metadata + results from one sheet
 # ---------------------------------------------------------------------------
+
 
 def extract_sheet(wb_data, wb_links, sheet_name: str) -> dict:
     ws_d = wb_data[sheet_name]
@@ -200,7 +221,7 @@ def extract_sheet(wb_data, wb_links, sheet_name: str) -> dict:
     # Data rows: row 6 onwards
     results = []
     for r in range(6, ws_d.max_row + 1):
-        name  = ws_d.cell(r, 3).value
+        name = ws_d.cell(r, 3).value
         place = ws_d.cell(r, 8).value
         if not name or str(name).strip().upper() in ("X", ""):
             continue
@@ -210,16 +231,17 @@ def extract_sheet(wb_data, wb_links, sheet_name: str) -> dict:
 
     return {
         "location": location,
-        "date":     parse_date(date_raw),
-        "n":        n,
-        "url":      url,
-        "results":  results,
+        "date": parse_date(date_raw),
+        "n": n,
+        "url": url,
+        "results": results,
     }
 
 
 # ---------------------------------------------------------------------------
 # Ranking tab: extract fencer names
 # ---------------------------------------------------------------------------
+
 
 def extract_ranking_names(wb_data) -> list[tuple[int, str]]:
     ws = wb_data["Ranking"]
@@ -239,9 +261,10 @@ def extract_ranking_names(wb_data) -> list[tuple[int, str]]:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     print(f"Reading {XLSX_PATH} ...")
-    wb_data  = openpyxl.load_workbook(XLSX_PATH, data_only=True)
+    wb_data = openpyxl.load_workbook(XLSX_PATH, data_only=True)
     wb_links = openpyxl.load_workbook(XLSX_PATH)
 
     print("Connecting to DB ...")
@@ -267,8 +290,10 @@ def main():
         for name in new_fencers:
             parts = name.split(None, 1)
             surname = parts[0] if parts else name
-            first   = parts[1] if len(parts) > 1 else ""
-            print(f"    INSERT INTO tbl_fencer (txt_surname, txt_first_name) VALUES ('{surname}', '{first}');")
+            first = parts[1] if len(parts) > 1 else ""
+            print(
+                f"    INSERT INTO tbl_fencer (txt_surname, txt_first_name) VALUES ('{surname}', '{first}');"
+            )
 
     # --- Generate SQL ---
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -298,10 +323,10 @@ def main():
             continue
 
         data = extract_sheet(wb_data, wb_links, sheet_name)
-        loc  = data["location"] or "?"
-        dt   = data["date"]
-        n    = data["n"]
-        url  = data["url"]
+        loc = data["location"] or "?"
+        dt = data["date"]
+        n = data["n"]
+        url = data["url"]
 
         if not n:
             print(f"  SKIP {sheet_name}: N={n} (no participants)")
@@ -315,28 +340,28 @@ def main():
 
         lines += [
             f"-- ---- {sheet_name}: {human_name} ({loc}) ----",
-            f"INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)",
-            f"VALUES (",
+            "INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)",
+            "VALUES (",
             f"    {sq(event_code)},",
             f"    {sq(human_name)},",
             f"    (SELECT id_season FROM tbl_season WHERE txt_code = {sq(SEASON_CODE)}),",
             f"    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = {sq(organizer_raw)}),",
-            f"    'COMPLETED'",
-            f");",
-            f"INSERT INTO tbl_tournament (",
-            f"    id_event, txt_code, txt_name, enum_type,",
-            f"    enum_weapon, enum_gender, enum_age_category,",
-            f"    dt_tournament, int_participant_count, url_results,",
-            f"    enum_import_status",
-            f") VALUES (",
+            "    'COMPLETED'",
+            ");",
+            "INSERT INTO tbl_tournament (",
+            "    id_event, txt_code, txt_name, enum_type,",
+            "    enum_weapon, enum_gender, enum_age_category,",
+            "    dt_tournament, int_participant_count, url_results,",
+            "    enum_import_status",
+            ") VALUES (",
             f"    (SELECT id_event FROM tbl_event WHERE txt_code = {sq(event_code)}),",
             f"    {sq(tourn_code)},",
             f"    {sq(human_name)},",
             f"    '{ttype}',",
-            f"    'EPEE', 'M', 'V2',",
+            "    'EPEE', 'M', 'V2',",
             f"    {sq(dt)}, {n if n else 'NULL'}, {sq(url)},",
-            f"    'SCORED'",
-            f");",
+            "    'SCORED'",
+            ");",
         ]
 
         matched = 0
@@ -347,8 +372,8 @@ def main():
                 fid, matched_name, score = match
                 matched += 1
                 lines += [
-                    f"INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)",
-                    f"VALUES (",
+                    "INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)",
+                    "VALUES (",
                     f"    {fid},",
                     f"    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = {sq(tourn_code)}),",
                     f"    {row['place']},",
@@ -357,17 +382,21 @@ def main():
                 ]
             else:
                 unmatched += 1
-                lines += [f"-- UNMATCHED (<{MATCH_THRESHOLD}): {sq(row['name'])} place={row['place']}"]
+                lines += [
+                    f"-- UNMATCHED (<{MATCH_THRESHOLD}): {sq(row['name'])} place={row['place']}"
+                ]
 
         total_matched += matched
         total_unmatched += unmatched
-        print(f"  {sheet_name}: N={n}, results={len(data['results'])}, matched={matched}, unmatched={unmatched}")
+        print(
+            f"  {sheet_name}: N={n}, results={len(data['results'])}, matched={matched}, unmatched={unmatched}"
+        )
 
         lines += [
             f"-- Compute scores for {tourn_code}",
-            f"SELECT fn_calc_tournament_scores(",
+            "SELECT fn_calc_tournament_scores(",
             f"    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = {sq(tourn_code)})",
-            f");",
+            ");",
             "",
         ]
 

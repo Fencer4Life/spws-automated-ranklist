@@ -12,8 +12,8 @@ from pathlib import Path
 import pytest
 
 from scrapers.file_import import parse_file
-from scrapers.xlsx_parser import parse_xlsx
 from scrapers.json_parser import parse_json
+from scrapers.xlsx_parser import parse_xlsx
 
 FIXTURES = Path(__file__).parent / "fixtures" / "file_import"
 

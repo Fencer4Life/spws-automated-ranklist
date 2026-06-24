@@ -28,10 +28,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-
 # ---------------------------------------------------------------------------
 # Row identity / equality
 # ---------------------------------------------------------------------------
+
 
 def _normalize_name(name: str | None) -> str:
     return (name or "").strip().lower()
@@ -55,6 +55,7 @@ def _rows_equal(a: dict | None, b: dict | None) -> bool:
 # Bucket classifier
 # ---------------------------------------------------------------------------
 
+
 def classify(source: dict | None, cert: dict | None, new_local: dict | None) -> str:
     """Return the 4-bucket label for a single (place) row across the three sources."""
     s_eq_c = _rows_equal(source, cert)
@@ -74,9 +75,11 @@ def classify(source: dict | None, cert: dict | None, new_local: dict | None) -> 
 # DiffRow + builder
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class DiffRow:
     """One row in the 3-way diff. place is the join key; sources are dicts or None."""
+
     place: int
     source: dict | None
     cert: dict | None
@@ -105,13 +108,15 @@ def build_diff(
         s = triple.get("source")
         c = triple.get("cert")
         n = triple.get("new_local")
-        out.append(DiffRow(
-            place=place,
-            source=s,
-            cert=c,
-            new_local=n,
-            bucket=classify(s, c, n),
-        ))
+        out.append(
+            DiffRow(
+                place=place,
+                source=s,
+                cert=c,
+                new_local=n,
+                bucket=classify(s, c, n),
+            )
+        )
     return out
 
 
@@ -234,6 +239,7 @@ def render_markdown(
 # ---------------------------------------------------------------------------
 # Output
 # ---------------------------------------------------------------------------
+
 
 def _project_root() -> Path:
     here = Path(__file__).resolve()

@@ -6,9 +6,10 @@ the Telegram summary and then escalates — `Escalate` is the "error plugin": it
 sends Telegram ONLY for faults whose policy is ALWAYS, or ON_LOSS when an inline
 fix actually dropped data. It is informational and never blocks.
 """
+
 from __future__ import annotations
 
-from python.pipeline.core.contract import Context, FaultKind, Fault, PluginKind, Services
+from python.pipeline.core.contract import Context, Fault, FaultKind, PluginKind, Services
 from python.pipeline.plugins.base import BasePlugin
 from python.pipeline.plugins.remediation import Escalation, escalation_for
 
@@ -34,6 +35,7 @@ def escalate_faults(ctx: Context, svc: Services) -> list[Fault]:
 
 class ParticipantCount(BasePlugin):
     """ADR-069 URL participant-count validator — now a fault, not a halt."""
+
     name = "ParticipantCount"
     kind = PluginKind.GATE
     reads = frozenset({"event"})
@@ -44,12 +46,12 @@ class ParticipantCount(BasePlugin):
         actual = cfg.get("committed_participant_count")
         if expected is not None and actual is not None and expected != actual:
             ctx.fault(FaultKind.COUNT_MISMATCH, f"URL {expected} != committed {actual}")
-        self.report(ctx, "VALIDATION", check="participant_count",
-                    expected=expected, actual=actual)
+        self.report(ctx, "VALIDATION", check="participant_count", expected=expected, actual=actual)
 
 
 class Notify(BasePlugin):
     """Telegram summary + last-resort escalation per REMEDIATIONBOOK policy."""
+
     name = "Notify"
     kind = PluginKind.MUTATOR
     reads = frozenset({"event"})
@@ -62,8 +64,7 @@ class Notify(BasePlugin):
             notifier.send(self._summary(ctx))
             sent = True
         escalated = escalate_faults(ctx, svc)
-        self.report(ctx, "REACTION", sent=sent,
-                    escalated=[f.kind.value for f in escalated])
+        self.report(ctx, "REACTION", sent=sent, escalated=[f.kind.value for f in escalated])
 
     @staticmethod
     def _summary(ctx: Context) -> str:

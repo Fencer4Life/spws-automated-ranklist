@@ -28,7 +28,6 @@ from collections import defaultdict
 
 import httpx
 
-
 CERT_REF = "sdomfjncmfydlkygzpgw"
 PROD_REF = "ywgymtgcyturldazcpmw"
 
@@ -57,8 +56,10 @@ def fetch_violations_management(ref: str, token: str) -> list[dict]:
             "Content-Type": "application/json",
             "User-Agent": "curl/8.7.1",
         },
-        json={"query": "SELECT * FROM vw_vcat_violation "
-                       "ORDER BY season_code DESC, event_code ASC, tournament_code ASC"},
+        json={
+            "query": "SELECT * FROM vw_vcat_violation "
+            "ORDER BY season_code DESC, event_code ASC, tournament_code ASC"
+        },
         timeout=60,
     )
     resp.raise_for_status()
@@ -82,24 +83,29 @@ def summarise_by_tournament(rows: list[dict]) -> list[dict]:
     groups: dict[str, dict] = {}
     for r in rows:
         key = r["tournament_code"]
-        g = groups.setdefault(key, {
-            "tournament_code": key,
-            "season_code": r["season_code"],
-            "event_code": r["event_code"],
-            "tournament_vcat": r["tournament_vcat"],
-            "expected_vcats": set(),
-            "count": 0,
-            "violators": [],
-        })
+        g = groups.setdefault(
+            key,
+            {
+                "tournament_code": key,
+                "season_code": r["season_code"],
+                "event_code": r["event_code"],
+                "tournament_vcat": r["tournament_vcat"],
+                "expected_vcats": set(),
+                "count": 0,
+                "violators": [],
+            },
+        )
         g["expected_vcats"].add(r["expected_vcat"])
         g["count"] += 1
-        g["violators"].append({
-            "id_result": r["id_result"],
-            "id_fencer": r["id_fencer"],
-            "fencer": f"{r['txt_surname']} {r['txt_first_name']}",
-            "birth_year": r["int_birth_year"],
-            "expected_vcat": r["expected_vcat"],
-        })
+        g["violators"].append(
+            {
+                "id_result": r["id_result"],
+                "id_fencer": r["id_fencer"],
+                "fencer": f"{r['txt_surname']} {r['txt_first_name']}",
+                "birth_year": r["int_birth_year"],
+                "expected_vcat": r["expected_vcat"],
+            }
+        )
     out = []
     for g in groups.values():
         g["expected_vcats"] = sorted(g["expected_vcats"])
@@ -137,11 +143,17 @@ def render_text(rows: list[dict], by_tournament: bool) -> str:
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--remote", choices=["local", "cert", "prod"], default="local")
-    p.add_argument("--json", action="store_true",
-                   help="Emit JSON instead of text. Combine with --by-tournament for "
-                        "the shape Layer 6 replay consumes.")
-    p.add_argument("--by-tournament", action="store_true",
-                   help="Group violators by tournament_code instead of listing them.")
+    p.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit JSON instead of text. Combine with --by-tournament for "
+        "the shape Layer 6 replay consumes.",
+    )
+    p.add_argument(
+        "--by-tournament",
+        action="store_true",
+        help="Group violators by tournament_code instead of listing them.",
+    )
     p.add_argument("--supabase-url", default=None)
     p.add_argument("--supabase-key", default=None)
     args = p.parse_args()
@@ -150,8 +162,7 @@ def main() -> int:
         url = args.supabase_url or os.environ.get("SUPABASE_URL", "http://127.0.0.1:54321")
         key = args.supabase_key or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
         if not key:
-            print("ERROR: SUPABASE_SERVICE_ROLE_KEY required for --remote local",
-                  file=sys.stderr)
+            print("ERROR: SUPABASE_SERVICE_ROLE_KEY required for --remote local", file=sys.stderr)
             return 1
         headers = {"apikey": key, "Authorization": f"Bearer {key}"}
         rows = fetch_violations_postgrest(url, headers)
@@ -164,8 +175,7 @@ def main() -> int:
                 with open(tf) as f:
                     token = f.read().strip()
         if not token:
-            print("ERROR: SUPABASE_ACCESS_TOKEN required for --remote cert|prod",
-                  file=sys.stderr)
+            print("ERROR: SUPABASE_ACCESS_TOKEN required for --remote cert|prod", file=sys.stderr)
             return 1
         rows = fetch_violations_management(ref, token)
 

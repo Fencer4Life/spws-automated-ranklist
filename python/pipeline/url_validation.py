@@ -25,7 +25,6 @@ from typing import Any, Literal
 
 import yaml
 
-
 # ---------------------------------------------------------------------------
 # Public types
 # ---------------------------------------------------------------------------
@@ -40,6 +39,7 @@ class ScrapedMetadata:
     means a vendor that doesn't expose city/country still gets validation
     on the fields it does expose.
     """
+
     parsed_date: date | None = None
     weapon: str | None = None
     gender: str | None = None
@@ -56,6 +56,7 @@ Severity = Literal["HALT", "WARN", "INFO"]
 @dataclass
 class ValidationFinding:
     """One field-level validation finding."""
+
     field: str
     expected: Any
     actual: Any
@@ -74,6 +75,7 @@ class ValidationResult:
     fires (weapon mismatch on a PEW event); Stage 8b reads this to trigger
     cascade rename via fn_pew_weapon_letters.
     """
+
     halts: list[ValidationFinding] = field(default_factory=list)
     warns: list[ValidationFinding] = field(default_factory=list)
     infos: list[ValidationFinding] = field(default_factory=list)
@@ -89,13 +91,29 @@ class ValidationResult:
 # ---------------------------------------------------------------------------
 
 
-_POLISH_FOLD = str.maketrans({
-    # Stroke / cedilla characters that NFKD doesn't decompose
-    "Ą": "A", "Ć": "C", "Ę": "E", "Ł": "L", "Ń": "N",
-    "Ó": "O", "Ś": "S", "Ź": "Z", "Ż": "Z",
-    "ą": "a", "ć": "c", "ę": "e", "ł": "l", "ń": "n",
-    "ó": "o", "ś": "s", "ź": "z", "ż": "z",
-})
+_POLISH_FOLD = str.maketrans(
+    {
+        # Stroke / cedilla characters that NFKD doesn't decompose
+        "Ą": "A",
+        "Ć": "C",
+        "Ę": "E",
+        "Ł": "L",
+        "Ń": "N",
+        "Ó": "O",
+        "Ś": "S",
+        "Ź": "Z",
+        "Ż": "Z",
+        "ą": "a",
+        "ć": "c",
+        "ę": "e",
+        "ł": "l",
+        "ń": "n",
+        "ó": "o",
+        "ś": "s",
+        "ź": "z",
+        "ż": "z",
+    }
+)
 
 
 def _ascii_fold(s: str) -> str:
@@ -109,25 +127,67 @@ def _ascii_fold(s: str) -> str:
 
 _COUNTRY_ISO3: dict[str, str] = {
     # Polish veterans-fencing scope: small canonical map. Add more as needed.
-    "POL": "POL", "PL": "POL", "POLAND": "POL", "POLSKA": "POL",
-    "HUN": "HUN", "HU": "HUN", "HUNGARY": "HUN",
-    "GER": "GER", "DE": "GER", "DEU": "GER", "GERMANY": "GER",
-    "FRA": "FRA", "FR": "FRA", "FRANCE": "FRA",
-    "ITA": "ITA", "IT": "ITA", "ITALY": "ITA",
-    "AUT": "AUT", "AT": "AUT", "AUSTRIA": "AUT",
-    "CZE": "CZE", "CZ": "CZE", "CZECH REPUBLIC": "CZE", "CZECHIA": "CZE",
-    "SVK": "SVK", "SK": "SVK", "SLOVAKIA": "SVK",
-    "FIN": "FIN", "FI": "FIN", "FINLAND": "FIN",
-    "GBR": "GBR", "UK": "GBR", "GB": "GBR", "UNITED KINGDOM": "GBR",
-    "ESP": "ESP", "ES": "ESP", "SPAIN": "ESP",
-    "SWE": "SWE", "SE": "SWE", "SWEDEN": "SWE",
-    "NOR": "NOR", "NO": "NOR", "NORWAY": "NOR",
-    "DEN": "DEN", "DK": "DEN", "DENMARK": "DEN",
-    "BEL": "BEL", "BE": "BEL", "BELGIUM": "BEL",
-    "NED": "NED", "NL": "NED", "NETHERLANDS": "NED",
-    "SUI": "SUI", "CH": "SUI", "SWITZERLAND": "SUI",
-    "RUS": "RUS", "RU": "RUS", "RUSSIA": "RUS",
-    "UKR": "UKR", "UA": "UKR", "UKRAINE": "UKR",
+    "POL": "POL",
+    "PL": "POL",
+    "POLAND": "POL",
+    "POLSKA": "POL",
+    "HUN": "HUN",
+    "HU": "HUN",
+    "HUNGARY": "HUN",
+    "GER": "GER",
+    "DE": "GER",
+    "DEU": "GER",
+    "GERMANY": "GER",
+    "FRA": "FRA",
+    "FR": "FRA",
+    "FRANCE": "FRA",
+    "ITA": "ITA",
+    "IT": "ITA",
+    "ITALY": "ITA",
+    "AUT": "AUT",
+    "AT": "AUT",
+    "AUSTRIA": "AUT",
+    "CZE": "CZE",
+    "CZ": "CZE",
+    "CZECH REPUBLIC": "CZE",
+    "CZECHIA": "CZE",
+    "SVK": "SVK",
+    "SK": "SVK",
+    "SLOVAKIA": "SVK",
+    "FIN": "FIN",
+    "FI": "FIN",
+    "FINLAND": "FIN",
+    "GBR": "GBR",
+    "UK": "GBR",
+    "GB": "GBR",
+    "UNITED KINGDOM": "GBR",
+    "ESP": "ESP",
+    "ES": "ESP",
+    "SPAIN": "ESP",
+    "SWE": "SWE",
+    "SE": "SWE",
+    "SWEDEN": "SWE",
+    "NOR": "NOR",
+    "NO": "NOR",
+    "NORWAY": "NOR",
+    "DEN": "DEN",
+    "DK": "DEN",
+    "DENMARK": "DEN",
+    "BEL": "BEL",
+    "BE": "BEL",
+    "BELGIUM": "BEL",
+    "NED": "NED",
+    "NL": "NED",
+    "NETHERLANDS": "NED",
+    "SUI": "SUI",
+    "CH": "SUI",
+    "SWITZERLAND": "SUI",
+    "RUS": "RUS",
+    "RU": "RUS",
+    "RUSSIA": "RUS",
+    "UKR": "UKR",
+    "UA": "UKR",
+    "UKRAINE": "UKR",
 }
 
 
@@ -161,7 +221,7 @@ def _load_city_aliases() -> dict[str, str]:
     for canonical, aliases in raw.items():
         canonical_folded = _ascii_fold(canonical)
         out[canonical_folded] = canonical_folded  # canonical is its own alias
-        for a in (aliases or []):
+        for a in aliases or []:
             out[_ascii_fold(a)] = canonical_folded
     _alias_to_canonical_cache = out
     return out
@@ -190,6 +250,7 @@ def _is_pew(event_row: dict) -> bool:
 def _coerce_date(v):
     """Accept ISO string / date / datetime / None; return date or None."""
     from datetime import datetime
+
     if v is None:
         return None
     if isinstance(v, date) and not isinstance(v, datetime):
@@ -206,9 +267,9 @@ def _check_date(event_row: dict, scraped: ScrapedMetadata, result: ValidationRes
     if scraped.parsed_date is None:
         return
     expected_start = _coerce_date(event_row.get("dt_start"))
-    expected_end = _coerce_date(event_row.get("dt_end")) or expected_start
     if expected_start is None:
         return  # event row has no date — can't compare
+    expected_end = _coerce_date(event_row.get("dt_end")) or expected_start
 
     # Tolerance: ±1 day from any day in [start, end]
     earliest = expected_start - timedelta(days=1)
@@ -216,15 +277,16 @@ def _check_date(event_row: dict, scraped: ScrapedMetadata, result: ValidationRes
     if earliest <= scraped.parsed_date <= latest:
         return
 
-    result.halts.append(ValidationFinding(
-        field="date",
-        expected=expected_start.isoformat() + (
-            f"..{expected_end.isoformat()}" if expected_end != expected_start else ""
-        ),
-        actual=scraped.parsed_date.isoformat(),
-        severity="HALT",
-        message=f"Date {scraped.parsed_date} outside ±1 day of event window",
-    ))
+    result.halts.append(
+        ValidationFinding(
+            field="date",
+            expected=expected_start.isoformat()
+            + (f"..{expected_end.isoformat()}" if expected_end != expected_start else ""),
+            actual=scraped.parsed_date.isoformat(),
+            severity="HALT",
+            message=f"Date {scraped.parsed_date} outside ±1 day of event window",
+        )
+    )
 
 
 def _check_weapon(event_row: dict, scraped: ScrapedMetadata, result: ValidationResult) -> None:
@@ -237,22 +299,26 @@ def _check_weapon(event_row: dict, scraped: ScrapedMetadata, result: ValidationR
     if _is_pew(event_row):
         # PEW exception (ADR-046): mismatch is a flag for cascade rename, not a halt.
         result.pew_cascade_pending = True
-        result.infos.append(ValidationFinding(
+        result.infos.append(
+            ValidationFinding(
+                field="weapon",
+                expected=expected,
+                actual=scraped.weapon,
+                severity="INFO",
+                message=f"PEW event weapon set will be cascade-renamed (Stage 8b) to include {scraped.weapon}",
+            )
+        )
+        return
+
+    result.halts.append(
+        ValidationFinding(
             field="weapon",
             expected=expected,
             actual=scraped.weapon,
-            severity="INFO",
-            message=f"PEW event weapon set will be cascade-renamed (Stage 8b) to include {scraped.weapon}",
-        ))
-        return
-
-    result.halts.append(ValidationFinding(
-        field="weapon",
-        expected=expected,
-        actual=scraped.weapon,
-        severity="HALT",
-        message=f"Weapon mismatch: event={expected} vs scraped={scraped.weapon}",
-    ))
+            severity="HALT",
+            message=f"Weapon mismatch: event={expected} vs scraped={scraped.weapon}",
+        )
+    )
 
 
 def _check_gender(event_row: dict, scraped: ScrapedMetadata, result: ValidationResult) -> None:
@@ -261,16 +327,20 @@ def _check_gender(event_row: dict, scraped: ScrapedMetadata, result: ValidationR
     expected = event_row.get("enum_gender")
     if expected is None or scraped.gender == expected:
         return
-    result.halts.append(ValidationFinding(
-        field="gender",
-        expected=expected,
-        actual=scraped.gender,
-        severity="HALT",
-        message=f"Gender mismatch: event={expected} vs scraped={scraped.gender}",
-    ))
+    result.halts.append(
+        ValidationFinding(
+            field="gender",
+            expected=expected,
+            actual=scraped.gender,
+            severity="HALT",
+            message=f"Gender mismatch: event={expected} vs scraped={scraped.gender}",
+        )
+    )
 
 
-def _check_age_category(event_row: dict, scraped: ScrapedMetadata, result: ValidationResult) -> None:
+def _check_age_category(
+    event_row: dict, scraped: ScrapedMetadata, result: ValidationResult
+) -> None:
     if scraped.is_combined_pool:
         return  # Skip — splitter at Stage 4 handles per-category resolution
     if scraped.age_category is None:
@@ -278,13 +348,15 @@ def _check_age_category(event_row: dict, scraped: ScrapedMetadata, result: Valid
     expected = event_row.get("enum_age_category")
     if expected is None or scraped.age_category == expected:
         return
-    result.halts.append(ValidationFinding(
-        field="age_category",
-        expected=expected,
-        actual=scraped.age_category,
-        severity="HALT",
-        message=f"Age category mismatch: event={expected} vs scraped={scraped.age_category}",
-    ))
+    result.halts.append(
+        ValidationFinding(
+            field="age_category",
+            expected=expected,
+            actual=scraped.age_category,
+            severity="HALT",
+            message=f"Age category mismatch: event={expected} vs scraped={scraped.age_category}",
+        )
+    )
 
 
 def _check_country(event_row: dict, scraped: ScrapedMetadata, result: ValidationResult) -> None:
@@ -296,23 +368,27 @@ def _check_country(event_row: dict, scraped: ScrapedMetadata, result: Validation
         return  # event row has no country — can't compare
     if actual_norm is None:
         # scraped country not in our ISO map; can't normalize → skip with info
-        result.infos.append(ValidationFinding(
-            field="country",
-            expected=expected_norm,
-            actual=scraped.country,
-            severity="INFO",
-            message=f"Scraped country {scraped.country!r} not in ISO normalize map; check skipped",
-        ))
+        result.infos.append(
+            ValidationFinding(
+                field="country",
+                expected=expected_norm,
+                actual=scraped.country,
+                severity="INFO",
+                message=f"Scraped country {scraped.country!r} not in ISO normalize map; check skipped",
+            )
+        )
         return
     if actual_norm == expected_norm:
         return
-    result.halts.append(ValidationFinding(
-        field="country",
-        expected=expected_norm,
-        actual=actual_norm,
-        severity="HALT",
-        message=f"Country mismatch: event={expected_norm} vs scraped={actual_norm}",
-    ))
+    result.halts.append(
+        ValidationFinding(
+            field="country",
+            expected=expected_norm,
+            actual=actual_norm,
+            severity="HALT",
+            message=f"Country mismatch: event={expected_norm} vs scraped={actual_norm}",
+        )
+    )
 
 
 def _check_city(event_row: dict, scraped: ScrapedMetadata, result: ValidationResult) -> None:
@@ -324,13 +400,15 @@ def _check_city(event_row: dict, scraped: ScrapedMetadata, result: ValidationRes
         return  # event row has no city
     if actual_canon == expected_canon:
         return
-    result.halts.append(ValidationFinding(
-        field="city",
-        expected=event_row.get("txt_city"),
-        actual=scraped.city,
-        severity="HALT",
-        message=f"City mismatch (after alias normalize): event={event_row.get('txt_city')!r} vs scraped={scraped.city!r}",
-    ))
+    result.halts.append(
+        ValidationFinding(
+            field="city",
+            expected=event_row.get("txt_city"),
+            actual=scraped.city,
+            severity="HALT",
+            message=f"City mismatch (after alias normalize): event={event_row.get('txt_city')!r} vs scraped={scraped.city!r}",
+        )
+    )
 
 
 def _check_name(event_row: dict, scraped: ScrapedMetadata, result: ValidationResult) -> None:
@@ -342,13 +420,15 @@ def _check_name(event_row: dict, scraped: ScrapedMetadata, result: ValidationRes
         return
     if _ascii_fold(expected) == _ascii_fold(actual):
         return
-    result.warns.append(ValidationFinding(
-        field="name",
-        expected=expected,
-        actual=actual,
-        severity="WARN",
-        message=f"Tournament name differs (warn-only): event={expected!r} vs scraped={actual!r}",
-    ))
+    result.warns.append(
+        ValidationFinding(
+            field="name",
+            expected=expected,
+            actual=actual,
+            severity="WARN",
+            message=f"Tournament name differs (warn-only): event={expected!r} vs scraped={actual!r}",
+        )
+    )
 
 
 # ---------------------------------------------------------------------------

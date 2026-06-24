@@ -96,6 +96,7 @@ def _skip_reason(name: str) -> str | None:
         return "junior / age-restricted (non-veteran)"
     return None
 
+
 # Plan test 5.21.x — guest-event bracket detection.
 # FTL event-schedule pages occasionally list brackets from a *different*
 # competition that happens to be hosted on the same day at the same venue
@@ -154,6 +155,7 @@ def _vet_age_to_vcat(age_str: str) -> str | None:
         return "V4"
     return None
 
+
 FTL_RESULTS_BASE = "https://www.fencingtimelive.com/events/results"
 
 
@@ -186,8 +188,9 @@ def parse_event_schedule(html: str, *, with_skips: bool = False):
         if not SPWS_BRACKET_FIRST_TOKEN.match(name):
             # 5.21 — guest event hosted on the same FTL schedule page;
             # see comment on SPWS_BRACKET_FIRST_TOKEN above.
-            skipped.append({"uuid": uuid, "name": name,
-                            "reason": "guest event (non-SPWS bracket name)"})
+            skipped.append(
+                {"uuid": uuid, "name": name, "reason": "guest event (non-SPWS bracket name)"}
+            )
             continue
         kept.append({"uuid": uuid, "name": name})
     if with_skips:
@@ -242,18 +245,14 @@ def parse_tournament_name(
         gender = "M"
 
     # Check for combined categories: "Category 3 and 4" or "1+2+3 + 4"
-    combined_match = re.search(
-        r"(?:Category|kat\.?)\s+(\d)\s+and\s+(\d)", name, re.IGNORECASE
-    )
+    combined_match = re.search(r"(?:Category|kat\.?)\s+(\d)\s+and\s+(\d)", name, re.IGNORECASE)
     if combined_match:
         cats = [f"V{combined_match.group(1)}", f"V{combined_match.group(2)}"]
         return [(weapon, gender, c) for c in cats]
 
     # Polish DE-with-range: `kat.0-2`, `kat. 3-4`, `kat 1-3`. Inclusive range.
     # Common SPWS form for Floret/Szabla DE that combines low-density V-cats.
-    range_match = re.search(
-        r"\bkat\.?\s*(\d)\s*-\s*(\d)", name, re.IGNORECASE
-    )
+    range_match = re.search(r"\bkat\.?\s*(\d)\s*-\s*(\d)", name, re.IGNORECASE)
     if range_match:
         a, b = int(range_match.group(1)), int(range_match.group(2))
         lo, hi = min(a, b), max(a, b)
@@ -354,11 +353,13 @@ def scrape_all() -> list[dict[str, str]]:
                 for weapon, gender, category in entries:
                     code = build_tournament_code(event_prefix, weapon, gender, category, SEASON)
                     result_url = build_result_url(t["uuid"])
-                    mappings.append({
-                        "tournament_code": code,
-                        "url_results": result_url,
-                        "ftl_name": t["name"],
-                    })
+                    mappings.append(
+                        {
+                            "tournament_code": code,
+                            "url_results": result_url,
+                            "ftl_name": t["name"],
+                        }
+                    )
                     print(f"  {code} → {t['uuid']}", file=sys.stderr)
 
     return mappings

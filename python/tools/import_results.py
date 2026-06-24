@@ -15,7 +15,6 @@ CLI:
 from __future__ import annotations
 
 import argparse
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -67,7 +66,7 @@ def read_tournaments_from_ods(
         season_filter: If set, only return rows matching this season_code.
     """
     from odf.opendocument import load
-    from odf.table import Table, TableRow, TableCell
+    from odf.table import Table, TableCell, TableRow
 
     doc = load(str(ods_path))
     tables = doc.getElementsByType(Table)
@@ -99,7 +98,7 @@ def read_tournaments_from_ods(
         if not cells:
             continue
 
-        def get(col_name: str) -> str:
+        def get(col_name: str, cells=cells) -> str:
             idx = col_map.get(col_name)
             if idx is None or idx >= len(cells):
                 return ""
@@ -117,24 +116,24 @@ def read_tournaments_from_ods(
         weapon = get("weapon")
         gender = get("gender")
         age_cat = get("age_cat")
-        tournament_code = (
-            f"{event_prefix}-{age_cat}-{gender}-{weapon}-{season}"
-        )
+        tournament_code = f"{event_prefix}-{age_cat}-{gender}-{weapon}-{season}"
         event_code = f"{event_prefix}-{season}"
 
-        specs.append(TournamentSpec(
-            tournament_code=tournament_code,
-            event_code=event_code,
-            event_prefix=event_prefix,
-            season_code=season,
-            weapon=weapon,
-            gender=gender,
-            age_cat=age_cat,
-            tournament_type=get("type"),
-            source_file=get("source_file"),
-            result_url=get("result_url"),
-            import_status=get("import_status"),
-        ))
+        specs.append(
+            TournamentSpec(
+                tournament_code=tournament_code,
+                event_code=event_code,
+                event_prefix=event_prefix,
+                season_code=season,
+                weapon=weapon,
+                gender=gender,
+                age_cat=age_cat,
+                tournament_type=get("type"),
+                source_file=get("source_file"),
+                result_url=get("result_url"),
+                import_status=get("import_status"),
+            )
+        )
 
     return specs
 
@@ -210,8 +209,7 @@ def generate_tournament_sql(
         tournament_code_esc = _sql_escape(spec.tournament_code)
 
         tourn_subquery = (
-            f"(SELECT id_tournament FROM tbl_tournament "
-            f"WHERE txt_code = '{tournament_code_esc}')"
+            f"(SELECT id_tournament FROM tbl_tournament WHERE txt_code = '{tournament_code_esc}')"
         )
 
         if first_name:
@@ -222,20 +220,14 @@ def generate_tournament_sql(
             )
         else:
             fencer_subquery = (
-                f"(SELECT id_fencer FROM tbl_fencer "
-                f"WHERE txt_surname = '{surname_esc}')"
+                f"(SELECT id_fencer FROM tbl_fencer WHERE txt_surname = '{surname_esc}')"
             )
 
-        value_lines.append(
-            f"  ({tourn_subquery},\n"
-            f"   {fencer_subquery}, {r['place']})"
-        )
+        value_lines.append(f"  ({tourn_subquery},\n   {fencer_subquery}, {r['place']})")
 
     lines.append(",\n".join(value_lines) + ";")
     lines.append("")
-    lines.append(
-        f"SELECT fn_calc_tournament_scores('{_sql_escape(spec.tournament_code)}');"
-    )
+    lines.append(f"SELECT fn_calc_tournament_scores('{_sql_escape(spec.tournament_code)}');")
 
     return "\n".join(lines)
 
@@ -280,19 +272,26 @@ def main() -> None:
         description="Import tournament results from staging spreadsheet.",
     )
     parser.add_argument(
-        "--ods", type=Path, required=True,
+        "--ods",
+        type=Path,
+        required=True,
         help="Path to staging spreadsheet (.ods)",
     )
     parser.add_argument(
-        "--season", type=str, default=None,
+        "--season",
+        type=str,
+        default=None,
         help="Filter to specific season (e.g., SPWS-2024-2025)",
     )
     parser.add_argument(
-        "--dry-run", action="store_true",
+        "--dry-run",
+        action="store_true",
         help="Print summary without writing files",
     )
     parser.add_argument(
-        "--output-dir", type=Path, default=Path("supabase/data"),
+        "--output-dir",
+        type=Path,
+        default=Path("supabase/data"),
         help="Output directory for SQL files (default: supabase/data)",
     )
     args = parser.parse_args()
@@ -305,7 +304,7 @@ def main() -> None:
             status = spec.import_status
             source = spec.source_file or spec.result_url or "(no source)"
             print(f"  {spec.tournament_code}  status={status}  source={source}")
-        print(f"\nDry run — no files written.")
+        print("\nDry run — no files written.")
         return
 
     # Extract results and write SQL
@@ -324,10 +323,7 @@ def main() -> None:
         for path in written:
             print(f"  Wrote {path}")
 
-    print(
-        f"\nDone: {len(specs_with_results)} imported, "
-        f"{skipped} skipped, {errors} errors"
-    )
+    print(f"\nDone: {len(specs_with_results)} imported, {skipped} skipped, {errors} errors")
 
 
 if __name__ == "__main__":
