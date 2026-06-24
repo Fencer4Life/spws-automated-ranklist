@@ -21,6 +21,7 @@ Reuses the existing helpers verbatim (`_find_exact_fencer`, `_row_authoritative_
 `db.update_fencer_birth_year`) — no new domain logic, only a new orchestration.
 effects: master_data — emits the change that drives self-healing recompute (ADR-072).
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -33,7 +34,6 @@ from python.pipeline.plugins.bridge import get_pctx
 from python.pipeline.stages import (
     _find_exact_fencer,
     _is_domestic,
-    _organizer_for_event,
     _row_authoritative_vcat,
     vcat_for_age,
 )
@@ -49,14 +49,14 @@ class ResolveFencers(BasePlugin):
 
     def run(self, ctx: Context, svc: Services) -> None:
         if ctx.params.get("scope") == "whole_roster":
-            self._sweep(ctx, svc)   # DEDUP_SWEEP (ADR-071) — same dedup logic, whole roster
+            self._sweep(ctx, svc)  # DEDUP_SWEEP (ADR-071) — same dedup logic, whole roster
             return
         pctx = get_pctx(ctx)
         db = svc.db
         domestic = _is_domestic(pctx.event)
         season_end = pctx.season_end_year
         parsed_gender = getattr(pctx.parsed, "gender", None)
-        bracket_gender = parsed_gender if domestic else None        # ADR-064
+        bracket_gender = parsed_gender if domestic else None  # ADR-064
         auto_thresh = (svc.config or {}).get("auto_link_threshold")  # optional recalibration knob
 
         fencer_db = db.fetch_fencer_db()
@@ -81,58 +81,95 @@ class ResolveFencers(BasePlugin):
                 r.fencer_name, getattr(r, "fencer_country", None), fencer_db
             )
             if exact_id is not None:
-                gby = self._reconcile_by(ctx, db, fencer_db, exact_id, vcat,
-                                         season_end, touched, r)
-                matches.append(StageMatchResult(
-                    scraped_name=r.fencer_name, place=r.place, id_fencer=exact_id,
-                    confidence=100.0, method="AUTO_MATCHED",
-                    governed_birth_year=gby, notes="exact",
-                ))
+                gby = self._reconcile_by(ctx, db, fencer_db, exact_id, vcat, season_end, touched, r)
+                matches.append(
+                    StageMatchResult(
+                        scraped_name=r.fencer_name,
+                        place=r.place,
+                        id_fencer=exact_id,
+                        confidence=100.0,
+                        method="AUTO_MATCHED",
+                        governed_birth_year=gby,
+                        notes="exact",
+                    )
+                )
             else:
                 remaining.append((vcat, r))
 
         # ---- PHASE B — fuzzy link-or-create ----
         for vcat, r in remaining:
             best = find_best_match(
-                r.fencer_name, fencer_db, age_category=vcat,
-                season_end_year=season_end, bracket_gender=bracket_gender,
+                r.fencer_name,
+                fencer_db,
+                age_category=vcat,
+                season_end_year=season_end,
+                bracket_gender=bracket_gender,
                 auto_match_threshold=auto_thresh,
             )
             mm = pctx.overrides.match_method_for(r.fencer_name)
             if mm is not None:
-                matches.append(StageMatchResult(
-                    scraped_name=r.fencer_name, place=r.place, id_fencer=best.id_fencer,
-                    confidence=best.confidence, method=mm.force_method,
-                    governed_birth_year=self._gby_of(fencer_db, best.id_fencer, vcat, season_end),
-                    notes=f"match_method override: {mm.note or 'forced'}",
-                ))
+                matches.append(
+                    StageMatchResult(
+                        scraped_name=r.fencer_name,
+                        place=r.place,
+                        id_fencer=best.id_fencer,
+                        confidence=best.confidence,
+                        method=mm.force_method,
+                        governed_birth_year=self._gby_of(
+                            fencer_db, best.id_fencer, vcat, season_end
+                        ),
+                        notes=f"match_method override: {mm.note or 'forced'}",
+                    )
+                )
                 continue
 
             if best.id_fencer is not None and self._should_link(best, auto_thresh):
                 self._alias_writeback(db, best.id_fencer, r.fencer_name)
-                alias_writebacks.append({
-                    "scraped": r.fencer_name, "id_fencer": best.id_fencer,
-                    "canonical": best.matched_name,
-                })
-                matches.append(StageMatchResult(
-                    scraped_name=r.fencer_name, place=r.place, id_fencer=best.id_fencer,
-                    confidence=best.confidence, method="AUTO_MATCHED",
-                    governed_birth_year=self._gby_of(fencer_db, best.id_fencer, vcat, season_end),
-                    notes="fuzzy-link",
-                ))
+                alias_writebacks.append(
+                    {
+                        "scraped": r.fencer_name,
+                        "id_fencer": best.id_fencer,
+                        "canonical": best.matched_name,
+                    }
+                )
+                matches.append(
+                    StageMatchResult(
+                        scraped_name=r.fencer_name,
+                        place=r.place,
+                        id_fencer=best.id_fencer,
+                        confidence=best.confidence,
+                        method="AUTO_MATCHED",
+                        governed_birth_year=self._gby_of(
+                            fencer_db, best.id_fencer, vcat, season_end
+                        ),
+                        notes="fuzzy-link",
+                    )
+                )
             elif domestic:
-                new_id, gby = self._create(db, fencer_db, r, vcat, season_end,
-                                           parsed_gender, ctx, best=best)
-                matches.append(StageMatchResult(
-                    scraped_name=r.fencer_name, place=r.place, id_fencer=new_id,
-                    confidence=best.confidence, method="AUTO_CREATED",
-                    governed_birth_year=gby, notes="created (create-over-uncertain-link)",
-                ))
+                new_id, gby = self._create(
+                    db, fencer_db, r, vcat, season_end, parsed_gender, ctx, best=best
+                )
+                matches.append(
+                    StageMatchResult(
+                        scraped_name=r.fencer_name,
+                        place=r.place,
+                        id_fencer=new_id,
+                        confidence=best.confidence,
+                        method="AUTO_CREATED",
+                        governed_birth_year=gby,
+                        notes="created (create-over-uncertain-link)",
+                    )
+                )
             else:  # international (deferred §12) — exclude
-                matches.append(StageMatchResult(
-                    scraped_name=r.fencer_name, place=r.place, id_fencer=None,
-                    confidence=best.confidence, method="EXCLUDED",
-                ))
+                matches.append(
+                    StageMatchResult(
+                        scraped_name=r.fencer_name,
+                        place=r.place,
+                        id_fencer=None,
+                        confidence=best.confidence,
+                        method="EXCLUDED",
+                    )
+                )
 
         pctx.matches = matches
         ctx.set("matches", matches)
@@ -140,13 +177,20 @@ class ResolveFencers(BasePlugin):
         # pctx still carries created/reconciled/conflicts (kept for the bridge), but
         # the report channel is the file's self-contained source of truth.
         self.report(
-            ctx, "IDENTITY",
-            matches=[{
-                "scraped_name": m.scraped_name, "id_fencer": m.id_fencer,
-                "place": m.place, "method": m.method, "confidence": m.confidence,
-                "governed_birth_year": m.governed_birth_year,
-                "notes": getattr(m, "notes", None),
-            } for m in matches],
+            ctx,
+            "IDENTITY",
+            matches=[
+                {
+                    "scraped_name": m.scraped_name,
+                    "id_fencer": m.id_fencer,
+                    "place": m.place,
+                    "method": m.method,
+                    "confidence": m.confidence,
+                    "governed_birth_year": m.governed_birth_year,
+                    "notes": getattr(m, "notes", None),
+                }
+                for m in matches
+            ],
             created=list(pctx.created_fencers),
             reconciled=list(pctx.reconciled_fencers),
             conflicts=list(pctx.reconcile_conflicts),
@@ -173,13 +217,13 @@ class ResolveFencers(BasePlugin):
         merged: list[tuple[int, int]] = []
         for ids in groups.values():
             if len(ids) > 1:
-                survivor = min(ids)                       # stable survivor choice
+                survivor = min(ids)  # stable survivor choice
                 for dup in sorted(ids):
                     if dup != survivor:
-                        db.merge_fencers(survivor, dup)   # re-point + fold + enqueue both
+                        db.merge_fencers(survivor, dup)  # re-point + fold + enqueue both
                         merged.append((survivor, dup))
-        ctx.data["_merged_pairs"] = merged                # for the Notify summary
-        ctx.set("matches", [])                            # whole-roster: no per-row matches
+        ctx.data["_merged_pairs"] = merged  # for the Notify summary
+        ctx.set("matches", [])  # whole-roster: no per-row matches
 
     # ------------------------------------------------------------------ #
     # policy
@@ -196,8 +240,9 @@ class ResolveFencers(BasePlugin):
     # ------------------------------------------------------------------ #
     # reuse of the Stage-0 reconcile / create primitives
     # ------------------------------------------------------------------ #
-    def _reconcile_by(self, ctx, db, fencer_db, existing_id, vcat, season_end,
-                      touched, r) -> int | None:
+    def _reconcile_by(
+        self, ctx, db, fencer_db, existing_id, vcat, season_end, touched, r
+    ) -> int | None:
         row = next((f for f in fencer_db if f["id_fencer"] == existing_id), None)
         stored_by = row.get("int_birth_year") if row else None
         if vcat is None or stored_by is None:
@@ -205,10 +250,14 @@ class ResolveFencers(BasePlugin):
         if vcat_for_age(season_end - stored_by) == vcat:
             return stored_by  # already consistent
         if existing_id in touched and touched[existing_id] != vcat:
-            ctx.get("_legacy").reconcile_conflicts.append({
-                "id_fencer": existing_id, "scraped_name": r.fencer_name,
-                "first_vcat": touched[existing_id], "second_vcat": vcat,
-            })
+            ctx.get("_legacy").reconcile_conflicts.append(
+                {
+                    "id_fencer": existing_id,
+                    "scraped_name": r.fencer_name,
+                    "first_vcat": touched[existing_id],
+                    "second_vcat": vcat,
+                }
+            )
             return stored_by
         new_by = estimate_birth_year(vcat, season_end)
         was_confirmed = not bool(row.get("bool_birth_year_estimated"))
@@ -217,42 +266,70 @@ class ResolveFencers(BasePlugin):
             row["int_birth_year"] = new_by
             row["bool_birth_year_estimated"] = True
         touched[existing_id] = vcat
-        ctx.get("_legacy").reconciled_fencers.append({
-            "id_fencer": existing_id, "scraped_name": r.fencer_name, "vcat": vcat,
-            "old_birth_year": stored_by, "new_birth_year": new_by,
-            "was_confirmed": was_confirmed,
-        })
+        ctx.get("_legacy").reconciled_fencers.append(
+            {
+                "id_fencer": existing_id,
+                "scraped_name": r.fencer_name,
+                "vcat": vcat,
+                "old_birth_year": stored_by,
+                "new_birth_year": new_by,
+                "was_confirmed": was_confirmed,
+            }
+        )
         return new_by
 
-    def _create(self, db, fencer_db, r, vcat, season_end, gender, ctx, best=None) -> tuple[int, int | None]:
+    def _create(
+        self, db, fencer_db, r, vcat, season_end, gender, ctx, best=None
+    ) -> tuple[int, int | None]:
         from python.matcher.fuzzy_match import parse_scraped_name
+
         surname, first_name = parse_scraped_name(r.fencer_name)
         nat = getattr(r, "fencer_country", None)
         by = estimate_birth_year(vcat, season_end) if vcat else None
         payload = {
-            "txt_surname": surname, "txt_first_name": first_name,
-            "int_birth_year": by, "bool_birth_year_estimated": by is not None,
+            "txt_surname": surname,
+            "txt_first_name": first_name,
+            "int_birth_year": by,
+            "bool_birth_year_estimated": by is not None,
             "txt_nationality": nat or "PL",
         }
         if gender:
             payload["enum_gender"] = gender
         new_id = db.insert_fencer(payload)
-        fencer_db.append({
-            "id_fencer": new_id, "txt_surname": surname, "txt_first_name": first_name,
-            "int_birth_year": by, "bool_birth_year_estimated": by is not None,
-            "txt_nationality": nat or "PL", "enum_gender": gender, "json_name_aliases": [],
-        })
+        fencer_db.append(
+            {
+                "id_fencer": new_id,
+                "txt_surname": surname,
+                "txt_first_name": first_name,
+                "int_birth_year": by,
+                "bool_birth_year_estimated": by is not None,
+                "txt_nationality": nat or "PL",
+                "enum_gender": gender,
+                "json_name_aliases": [],
+            }
+        )
         # G5 (ADR-075): record the fuzzy near-miss the matcher rejected, so the
         # staging report can flag a creation that may actually be a duplicate.
         near_miss = None
         if best is not None and getattr(best, "matched_name", None) is not None:
-            near_miss = {"id_fencer": best.id_fencer, "name": best.matched_name,
-                         "confidence": best.confidence}
-        ctx.get("_legacy").created_fencers.append({
-            "id_fencer": new_id, "scraped_name": r.fencer_name, "txt_surname": surname,
-            "txt_first_name": first_name, "nationality": nat or "PL", "vcat": vcat,
-            "birth_year": by, "estimated": by is not None, "near_miss": near_miss,
-        })
+            near_miss = {
+                "id_fencer": best.id_fencer,
+                "name": best.matched_name,
+                "confidence": best.confidence,
+            }
+        ctx.get("_legacy").created_fencers.append(
+            {
+                "id_fencer": new_id,
+                "scraped_name": r.fencer_name,
+                "txt_surname": surname,
+                "txt_first_name": first_name,
+                "nationality": nat or "PL",
+                "vcat": vcat,
+                "birth_year": by,
+                "estimated": by is not None,
+                "near_miss": near_miss,
+            }
+        )
         return new_id, by
 
     @staticmethod
@@ -265,14 +342,20 @@ class ResolveFencers(BasePlugin):
     def _from_override(self, r, ovr, fencer_db, season_end, vcat) -> StageMatchResult:
         if ovr.id_fencer is not None:
             return StageMatchResult(
-                scraped_name=r.fencer_name, place=r.place, id_fencer=ovr.id_fencer,
-                confidence=100.0, method="AUTO_MATCHED",
+                scraped_name=r.fencer_name,
+                place=r.place,
+                id_fencer=ovr.id_fencer,
+                confidence=100.0,
+                method="AUTO_MATCHED",
                 governed_birth_year=self._gby_of(fencer_db, ovr.id_fencer, vcat, season_end),
                 notes="identity override (link)",
             )
         return StageMatchResult(
-            scraped_name=r.fencer_name, place=r.place, id_fencer=None,
-            confidence=100.0, method="AUTO_CREATED",
+            scraped_name=r.fencer_name,
+            place=r.place,
+            id_fencer=None,
+            confidence=100.0,
+            method="AUTO_CREATED",
             notes=f"identity override (create_fencer): {ovr.create_fencer}",
         )
 

@@ -56,17 +56,19 @@ def parse(content: dict[str, Any]) -> ParsedTournament:
             else make_synthetic_id(SourceKind.CERT_REF, idx, place, fencer_name)
         )
 
-        results.append(ParsedResult(
-            source_row_id=source_row_id,
-            fencer_name=fencer_name,
-            place=place,
-            fencer_country=row.get("txt_nationality"),
-            birth_year=row.get("int_birth_year"),
-            birth_date=None,
-            raw_age_marker=None,
-            source_vcat_hint=row.get("enum_age_category"),
-            bool_excluded=False,
-        ))
+        results.append(
+            ParsedResult(
+                source_row_id=source_row_id,
+                fencer_name=fencer_name,
+                place=place,
+                fencer_country=row.get("txt_nationality"),
+                birth_year=row.get("int_birth_year"),
+                birth_date=None,
+                raw_age_marker=None,
+                source_vcat_hint=row.get("enum_age_category"),
+                bool_excluded=False,
+            )
+        )
 
     raw_pool_size = tournament.get("int_participant_count")
     if raw_pool_size is None:

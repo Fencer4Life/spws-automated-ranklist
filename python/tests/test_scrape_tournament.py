@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import os
 from contextlib import contextmanager
-
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -93,12 +93,13 @@ class TestScrapeTournament:
         """dart.7: Dartagnan URL detected as 'dartagnan' platform."""
         from python.scrapers.base import detect_platform
 
-        assert detect_platform(
-            "https://www.dartagnan.live/turniere/EuropeanVeteransCup_2026/de/6687-rankings.html"
-        ) == "dartagnan"
-        assert detect_platform(
-            "http://dartagnan.live/turniere/foo/de/index.html"
-        ) == "dartagnan"
+        assert (
+            detect_platform(
+                "https://www.dartagnan.live/turniere/EuropeanVeteransCup_2026/de/6687-rankings.html"
+            )
+            == "dartagnan"
+        )
+        assert detect_platform("http://dartagnan.live/turniere/foo/de/index.html") == "dartagnan"
 
 
 # ===========================================================================
@@ -162,6 +163,7 @@ def test_every_scraper_returns_full_field_size(platform, url, fixture, expected_
     mock_resp.status_code = 200
     if fixture.suffix == ".json":
         import json as _json
+
         mock_resp.json.return_value = _json.loads(content)
         mock_resp.text = content.decode() if isinstance(content, bytes) else content
     else:

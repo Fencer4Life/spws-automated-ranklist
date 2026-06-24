@@ -36,12 +36,18 @@ def _make_ctx(vcat_groups: dict):
 
     parsed = ParsedTournament(
         source_kind=SourceKind.FENCINGTIME_XML,
-        results=[], parsed_date=date(2024, 1, 14),
-        weapon="EPEE", gender="F", season_end_year=2024,
-        source_url="https://example.test/x", category_hint="V2",
+        results=[],
+        parsed_date=date(2024, 1, 14),
+        weapon="EPEE",
+        gender="F",
+        season_end_year=2024,
+        source_url="https://example.test/x",
+        category_hint="V2",
     )
     ctx = PipelineContext(
-        parsed=parsed, overrides=Overrides(), season_end_year=2024,
+        parsed=parsed,
+        overrides=Overrides(),
+        season_end_year=2024,
     )
     ctx.event = {"id_event": 5, "txt_code": "GP1-2023-2024"}
     ctx.vcat_groups = vcat_groups
@@ -50,12 +56,16 @@ def _make_ctx(vcat_groups: dict):
 
 
 def _make_session():
-    from python.pipeline.review_cli import ReviewSession
     from unittest.mock import MagicMock
+
+    from python.pipeline.review_cli import ReviewSession
+
     return ReviewSession(
         event_code="GP1-2023-2024",
-        db=MagicMock(), draft_store=MagicMock(),
-        prompt=lambda _msg: "q", fetcher=MagicMock(),
+        db=MagicMock(),
+        draft_store=MagicMock(),
+        prompt=lambda _msg: "q",
+        fetcher=MagicMock(),
         season_end_year=2024,
     )
 
@@ -65,15 +75,19 @@ def test_5_16_1_pending_match_with_id_fencer_is_included_in_drafts():
     enum_match_method=NULL. The matcher's best-guess id_fencer is preserved
     so the operator's split-from-alias cascade RPC has a target."""
     from python.pipeline.types import StageMatchResult
+
     pending = StageMatchResult(
-        scraped_name="POJMAŃSKA Katarzyna", place=3,
+        scraped_name="POJMAŃSKA Katarzyna",
+        place=3,
         id_fencer=278,  # matcher's wrong guess (SZMAJDZIŃSKA)
-        confidence=72.5, method="PENDING",
+        confidence=72.5,
+        method="PENDING",
     )
     ctx = _make_ctx(vcat_groups={"V0": [pending]})
     session = _make_session()
     rows = session._build_result_draft_rows(
-        ctx, vcat_to_tournament_id={"V0": 10},
+        ctx,
+        vcat_to_tournament_id={"V0": 10},
     )
     assert len(rows) == 1, "PENDING row must NOT be dropped"
     r = rows[0]
@@ -92,14 +106,19 @@ def test_5_16_2_excluded_remains_dropped():
     skipped — those rows are not part of SPWS scoring and should not appear
     in any draft."""
     from python.pipeline.types import StageMatchResult
+
     excluded = StageMatchResult(
-        scraped_name="SMITH John", place=5, id_fencer=None,
-        confidence=0.0, method="EXCLUDED",
+        scraped_name="SMITH John",
+        place=5,
+        id_fencer=None,
+        confidence=0.0,
+        method="EXCLUDED",
     )
     ctx = _make_ctx(vcat_groups={"V2": [excluded]})
     session = _make_session()
     rows = session._build_result_draft_rows(
-        ctx, vcat_to_tournament_id={"V2": 99},
+        ctx,
+        vcat_to_tournament_id={"V2": 99},
     )
     assert rows == [], "EXCLUDED must remain dropped (ADR-038)"
 
@@ -108,14 +127,19 @@ def test_5_16_3_auto_matched_still_serialises_to_proper_enum():
     """5.16.3 — regression check: AUTO_MATCHED still maps to AUTO_MATCH
     (the migration's enum value), not None or PENDING."""
     from python.pipeline.types import StageMatchResult
+
     matched = StageMatchResult(
-        scraped_name="GANSZCZYK Anna", place=1, id_fencer=70,
-        confidence=99.0, method="AUTO_MATCHED",
+        scraped_name="GANSZCZYK Anna",
+        place=1,
+        id_fencer=70,
+        confidence=99.0,
+        method="AUTO_MATCHED",
     )
     ctx = _make_ctx(vcat_groups={"V2": [matched]})
     session = _make_session()
     rows = session._build_result_draft_rows(
-        ctx, vcat_to_tournament_id={"V2": 10},
+        ctx,
+        vcat_to_tournament_id={"V2": 10},
     )
     assert len(rows) == 1
     assert rows[0]["enum_match_method"] == "AUTO_MATCH"
@@ -126,22 +150,33 @@ def test_5_16_4_mixed_methods_in_one_group_all_kept_except_excluded():
     AUTO_MATCHED + PENDING land in drafts (PENDING with method=NULL),
     EXCLUDED is dropped."""
     from python.pipeline.types import StageMatchResult
+
     matched = StageMatchResult(
-        scraped_name="A", place=1, id_fencer=1, confidence=99.0,
+        scraped_name="A",
+        place=1,
+        id_fencer=1,
+        confidence=99.0,
         method="AUTO_MATCHED",
     )
     pending = StageMatchResult(
-        scraped_name="B", place=2, id_fencer=2, confidence=70.0,
+        scraped_name="B",
+        place=2,
+        id_fencer=2,
+        confidence=70.0,
         method="PENDING",
     )
     excluded = StageMatchResult(
-        scraped_name="C", place=3, id_fencer=None, confidence=0.0,
+        scraped_name="C",
+        place=3,
+        id_fencer=None,
+        confidence=0.0,
         method="EXCLUDED",
     )
     ctx = _make_ctx(vcat_groups={"V2": [matched, pending, excluded]})
     session = _make_session()
     rows = session._build_result_draft_rows(
-        ctx, vcat_to_tournament_id={"V2": 10},
+        ctx,
+        vcat_to_tournament_id={"V2": 10},
     )
     assert len(rows) == 2, "AUTO_MATCHED + PENDING kept, EXCLUDED dropped"
     methods = {r["enum_match_method"] for r in rows}

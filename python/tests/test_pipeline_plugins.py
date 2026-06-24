@@ -6,50 +6,65 @@ Since M3 (ADR-070) the `ResolveFencers` plugin runs the REAL merged two-phase
 identity logic (see test_resolve_fencers.py), so these tests drive it against a
 proper fencer-db mock and stub only the still-wrapped stages (s1/s2/s5/s7/s7b/s7c).
 """
+
 from __future__ import annotations
 
 from datetime import date
 from unittest.mock import MagicMock
 
-import pytest
-
+from python.pipeline import run as run_module
 from python.pipeline.core.contract import Context, FaultKind, Outcome, Services
 from python.pipeline.engine.flows import Flow, FlowParams
-from python.pipeline import run as run_module
 from python.pipeline.types import HaltError, HaltReason, Overrides
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 def _make_parsed(results=None, category_hint="V1"):
     from python.pipeline.ir import ParsedResult, ParsedTournament, SourceKind
+
     return ParsedTournament(
         source_kind=SourceKind.CERT_REF,
-        results=results or [
-            ParsedResult(source_row_id="t:1", fencer_name="KOWALSKI Jan", place=1,
-                         fencer_country="POL"),
-            ParsedResult(source_row_id="t:2", fencer_name="NOWAK Adam", place=2,
-                         fencer_country="POL"),
+        results=results
+        or [
+            ParsedResult(
+                source_row_id="t:1", fencer_name="KOWALSKI Jan", place=1, fencer_country="POL"
+            ),
+            ParsedResult(
+                source_row_id="t:2", fencer_name="NOWAK Adam", place=2, fencer_country="POL"
+            ),
         ],
-        parsed_date=date(2026, 4, 1), weapon="EPEE", gender="M",
-        organizer_hint="SPWS", category_hint=category_hint, raw_pool_size=2,
+        parsed_date=date(2026, 4, 1),
+        weapon="EPEE",
+        gender="M",
+        organizer_hint="SPWS",
+        category_hint=category_hint,
+        raw_pool_size=2,
         season_end_year=2026,
     )
 
 
 def _fencer(id_, surname, first, by, gender="M"):
-    return {"id_fencer": id_, "txt_surname": surname, "txt_first_name": first,
-            "int_birth_year": by, "bool_birth_year_estimated": False,
-            "txt_nationality": "POL", "enum_gender": gender, "json_name_aliases": []}
+    return {
+        "id_fencer": id_,
+        "txt_surname": surname,
+        "txt_first_name": first,
+        "int_birth_year": by,
+        "bool_birth_year_estimated": False,
+        "txt_nationality": "POL",
+        "enum_gender": gender,
+        "json_name_aliases": [],
+    }
 
 
 def _make_db(fencer_db):
     db = MagicMock()
     db.fetch_fencer_db.return_value = fencer_db
-    db.fetch_birth_years_batch.return_value = {f["id_fencer"]: f["int_birth_year"]
-                                               for f in fencer_db}
+    db.fetch_birth_years_batch.return_value = {
+        f["id_fencer"]: f["int_birth_year"] for f in fencer_db
+    }
     db.ingest_results.return_value = {"inserted": len(fencer_db), "scored": True}
     return db
 
@@ -67,19 +82,33 @@ def _stub_wrapped_stages(monkeypatch):
                 pctx.count_validation = {"expected": 2, "actual": 2, "ok": True}
             elif name == "s7_split_by_vcat":
                 pctx.vcat_groups = {"V1": list(pctx.matches)}
+
         return fn
 
-    for name in ("s1_validate_ir", "s2_resolve_event", "s5_detect_joint_pool",
-                 "s7_validate", "s7_pool_round_check", "s7_split_by_vcat"):
+    for name in (
+        "s1_validate_ir",
+        "s2_resolve_event",
+        "s5_detect_joint_pool",
+        "s7_validate",
+        "s7_pool_round_check",
+        "s7_split_by_vcat",
+    ):
         monkeypatch.setattr(stages, name, stub(name))
 
 
 def _ingest(monkeypatch, *, fencer_db=None, parsed=None, config_extra=None, ctx=None):
     _stub_wrapped_stages(monkeypatch)
-    fencer_db = fencer_db if fencer_db is not None else [
-        _fencer(101, "KOWALSKI", "Jan", 1980), _fencer(102, "NOWAK", "Adam", 1982)]
-    cfg = {"parsed": parsed or _make_parsed(), "overrides": Overrides(),
-           "season_end_year": 2026, "event_code": "PPW3-2025-2026"}
+    fencer_db = (
+        fencer_db
+        if fencer_db is not None
+        else [_fencer(101, "KOWALSKI", "Jan", 1980), _fencer(102, "NOWAK", "Adam", 1982)]
+    )
+    cfg = {
+        "parsed": parsed or _make_parsed(),
+        "overrides": Overrides(),
+        "season_end_year": 2026,
+        "event_code": "PPW3-2025-2026",
+    }
     if config_extra:
         cfg.update(config_extra)
     svc = Services(db=_make_db(fencer_db), config=cfg)
@@ -89,6 +118,7 @@ def _ingest(monkeypatch, *, fencer_db=None, parsed=None, config_extra=None, ctx=
 # ---------------------------------------------------------------------------
 # Happy path through the real chain
 # ---------------------------------------------------------------------------
+
 
 class TestHappyPath:
     def test_all_exact_matched(self, monkeypatch):
@@ -118,6 +148,7 @@ class TestHappyPath:
 # No-halt: faults resolve inline, the flow still commits
 # ---------------------------------------------------------------------------
 
+
 class TestNoHalt:
     def test_count_mismatch_accepts_and_continues(self, monkeypatch):
         """N2.4 a former COUNT_MISMATCH halt -> fault(accept_parsed) -> Commit."""
@@ -126,18 +157,25 @@ class TestNoHalt:
 
         def boom(pctx, db):
             raise HaltError(HaltReason.COUNT_MISMATCH, "count off by 3")
+
         monkeypatch.setattr(stages, "s7_validate", boom)
 
-        db = _make_db([_fencer(101, "KOWALSKI", "Jan", 1980),
-                       _fencer(102, "NOWAK", "Adam", 1982)])
-        svc = Services(db=db, config={"parsed": _make_parsed(), "overrides": Overrides(),
-                                      "season_end_year": 2026, "event_code": "PPW3-2025-2026"})
+        db = _make_db([_fencer(101, "KOWALSKI", "Jan", 1980), _fencer(102, "NOWAK", "Adam", 1982)])
+        svc = Services(
+            db=db,
+            config={
+                "parsed": _make_parsed(),
+                "overrides": Overrides(),
+                "season_end_year": 2026,
+                "event_code": "PPW3-2025-2026",
+            },
+        )
         ctx = run_module.run_flow(FlowParams(Flow.INGEST_DOMESTIC), svc=svc)
 
         assert any(f.kind == FaultKind.COUNT_MISMATCH for f in ctx.faults)
         assert ctx.trace.outcome_of("ValidateCounts") == Outcome.FAULT
-        assert ctx.trace.outcome_of("Commit") == Outcome.RAN     # reaches Commit
-        assert ctx.get("committed")["skipped"] is False          # accept_parsed: no drop
+        assert ctx.trace.outcome_of("Commit") == Outcome.RAN  # reaches Commit
+        assert ctx.get("committed")["skipped"] is False  # accept_parsed: no drop
 
     def test_below_min_drops_bracket_then_commits(self, monkeypatch):
         """N2.5 below-min -> fault(BELOW_MIN) -> drop_bracket -> Commit skipped."""
@@ -156,11 +194,18 @@ class TestNoHalt:
 
         def boom(pctx, db):
             raise HaltError(HaltReason.EVENT_NOT_RESOLVED, "no such event")
+
         monkeypatch.setattr(stages, "s2_resolve_event", boom)
 
-        svc = Services(db=_make_db([]), config={"parsed": _make_parsed(),
-                       "overrides": Overrides(), "season_end_year": 2026,
-                       "event_code": "PPW3-2025-2026"})
+        svc = Services(
+            db=_make_db([]),
+            config={
+                "parsed": _make_parsed(),
+                "overrides": Overrides(),
+                "season_end_year": 2026,
+                "event_code": "PPW3-2025-2026",
+            },
+        )
         ctx = run_module.run_flow(FlowParams(Flow.INGEST_DOMESTIC), svc=svc)
         assert ctx.trace.outcome_of("ResolveEvent") == Outcome.ABORTED
         assert ctx.trace.outcome_of("Commit") is None  # never reached
@@ -169,6 +214,7 @@ class TestNoHalt:
 # ---------------------------------------------------------------------------
 # Escalation policy (Escalate = last-resort Telegram, never blocks)
 # ---------------------------------------------------------------------------
+
 
 class TestEscalationPolicy:
     def test_always_and_on_loss_with_loss(self):

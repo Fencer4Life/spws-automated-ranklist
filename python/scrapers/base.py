@@ -12,7 +12,6 @@ Shared utilities for all scraper modules.
 from __future__ import annotations
 
 import asyncio
-import re
 
 import httpx
 
@@ -35,9 +34,7 @@ def detect_platform(url: str) -> str:
     raise ValueError(f"Unsupported platform URL: {url}")
 
 
-def prepare_result_rows(
-    parsed: list[dict], tournament_id: int
-) -> list[dict]:
+def prepare_result_rows(parsed: list[dict], tournament_id: int) -> list[dict]:
     """Convert parsed scraper results into DB-ready rows.
 
     Each row has: id_tournament, int_place, fencer_name, country,
@@ -45,20 +42,20 @@ def prepare_result_rows(
     """
     rows = []
     for r in parsed:
-        rows.append({
-            "id_tournament": tournament_id,
-            "int_place": r["place"],
-            "place": r["place"],
-            "fencer_name": r["fencer_name"],
-            "country": r.get("country"),
-            "num_final_score": None,
-        })
+        rows.append(
+            {
+                "id_tournament": tournament_id,
+                "int_place": r["place"],
+                "place": r["place"],
+                "fencer_name": r["fencer_name"],
+                "country": r.get("country"),
+                "num_final_score": None,
+            }
+        )
     return rows
 
 
-def filter_existing_results(
-    parsed: list[dict], existing_names: set[str]
-) -> list[dict]:
+def filter_existing_results(parsed: list[dict], existing_names: set[str]) -> list[dict]:
     """Filter out results for fencers already imported (idempotency)."""
     return [r for r in parsed if r["fencer_name"] not in existing_names]
 
@@ -95,8 +92,7 @@ def validate_parse_results(results: list[dict], source_url: str) -> None:
     """Validate that parse results are complete. Raises ValueError if not."""
     if not results:
         raise ValueError(
-            f"No results found from {source_url}. "
-            "Import aborted — incomplete or empty data."
+            f"No results found from {source_url}. Import aborted — incomplete or empty data."
         )
     for i, r in enumerate(results):
         if "place" not in r:
@@ -129,7 +125,7 @@ async def fetch_with_retry(
         except (ConnectionError, httpx.ConnectError, httpx.TimeoutException) as e:
             last_error = e
             if attempt < max_retries:
-                delay = base_delay ** attempt
+                delay = base_delay**attempt
                 await asyncio.sleep(delay)
     raise last_error  # type: ignore[misc]
 

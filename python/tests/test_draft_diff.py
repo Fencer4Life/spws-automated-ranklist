@@ -33,8 +33,11 @@ class TestFormatDiff:
         md = format_diff(
             run_id="abc-123",
             payload={"tournaments": [], "results": []},
-            rpc_result={"tournaments_would_create": 0, "results_would_create": 0,
-                        "joint_pool_sibling_groups": 0},
+            rpc_result={
+                "tournaments_would_create": 0,
+                "results_would_create": 0,
+                "joint_pool_sibling_groups": 0,
+            },
             event_match=None,
         )
         assert "# Draft" in md
@@ -46,14 +49,22 @@ class TestFormatDiff:
 
         payload = {
             "tournaments": [
-                {"txt_code": "PEW3-V0-EPEE-M", "enum_weapon": "EPEE",
-                 "enum_gender": "M", "enum_age_category": "V0",
-                 "dt_tournament": "2025-11-15",
-                 "url_results": "https://ftl.example/foo"},
-                {"txt_code": "PEW3-V1-EPEE-M", "enum_weapon": "EPEE",
-                 "enum_gender": "M", "enum_age_category": "V1",
-                 "dt_tournament": "2025-11-15",
-                 "url_results": "https://ftl.example/foo"},
+                {
+                    "txt_code": "PEW3-V0-EPEE-M",
+                    "enum_weapon": "EPEE",
+                    "enum_gender": "M",
+                    "enum_age_category": "V0",
+                    "dt_tournament": "2025-11-15",
+                    "url_results": "https://ftl.example/foo",
+                },
+                {
+                    "txt_code": "PEW3-V1-EPEE-M",
+                    "enum_weapon": "EPEE",
+                    "enum_gender": "M",
+                    "enum_age_category": "V1",
+                    "dt_tournament": "2025-11-15",
+                    "url_results": "https://ftl.example/foo",
+                },
             ],
             "results": [
                 {"txt_code": "PEW3-V0-EPEE-M", "int_place": 1},
@@ -64,8 +75,11 @@ class TestFormatDiff:
         md = format_diff(
             run_id="r1",
             payload=payload,
-            rpc_result={"tournaments_would_create": 2, "results_would_create": 3,
-                        "joint_pool_sibling_groups": 1},
+            rpc_result={
+                "tournaments_would_create": 2,
+                "results_would_create": 3,
+                "joint_pool_sibling_groups": 1,
+            },
             event_match={"id_event": 42, "txt_code": "PEW3-2025-2026"},
         )
         # Both tournament codes appear, with their result counts
@@ -81,9 +95,14 @@ class TestFormatDiff:
 
         payload = {
             "tournaments": [
-                {"txt_code": "X", "enum_weapon": "EPEE", "enum_gender": "M",
-                 "enum_age_category": "V0", "dt_tournament": "2025-11-15",
-                 "url_results": "u"},
+                {
+                    "txt_code": "X",
+                    "enum_weapon": "EPEE",
+                    "enum_gender": "M",
+                    "enum_age_category": "V0",
+                    "dt_tournament": "2025-11-15",
+                    "url_results": "u",
+                },
             ],
             "results": [
                 {"txt_code": "X", "int_place": 1, "enum_match_method": "AUTO_MATCHED"},
@@ -95,8 +114,11 @@ class TestFormatDiff:
         md = format_diff(
             run_id="r2",
             payload=payload,
-            rpc_result={"tournaments_would_create": 1, "results_would_create": 4,
-                        "joint_pool_sibling_groups": 0},
+            rpc_result={
+                "tournaments_would_create": 1,
+                "results_would_create": 4,
+                "joint_pool_sibling_groups": 0,
+            },
             event_match=None,
         )
         # Aggregate line includes the three counter values
@@ -113,8 +135,11 @@ class TestFormatDiff:
         md = format_diff(
             run_id="empty-1",
             payload={"tournaments": [], "results": []},
-            rpc_result={"tournaments_would_create": 0, "results_would_create": 0,
-                        "joint_pool_sibling_groups": 0},
+            rpc_result={
+                "tournaments_would_create": 0,
+                "results_would_create": 0,
+                "joint_pool_sibling_groups": 0,
+            },
             event_match=None,
         )
         # Empty diff still renders the header but notes zero changes
@@ -127,8 +152,11 @@ class TestFormatDiff:
         md = format_diff(
             run_id="r3",
             payload={"tournaments": [], "results": []},
-            rpc_result={"tournaments_would_create": 0, "results_would_create": 0,
-                        "joint_pool_sibling_groups": 2},
+            rpc_result={
+                "tournaments_would_create": 0,
+                "results_would_create": 0,
+                "joint_pool_sibling_groups": 2,
+            },
             event_match=None,
         )
         # The sibling group count surfaces somewhere in the markdown

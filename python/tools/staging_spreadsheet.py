@@ -18,13 +18,12 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 from odf import config
 from odf.opendocument import OpenDocumentSpreadsheet
-from odf.style import Style, TableCellProperties, TableColumnProperties, TextProperties
-from odf.table import DatabaseRange, DatabaseRanges, Table, TableCell, TableColumn, TableRow
+from odf.style import Style, TableCellProperties, TextProperties
+from odf.table import DatabaseRange, DatabaseRanges, Table, TableCell, TableRow
 from odf.text import P
 
 # ---------------------------------------------------------------------------
@@ -32,9 +31,16 @@ from odf.text import P
 # ---------------------------------------------------------------------------
 
 SEASONS_COLUMNS = [
-    "season_code", "dt_start", "dt_end", "bool_active",
-    "ppw_best_count", "ppw_total_rounds", "mpw_multiplier",
-    "pew_best_count", "mew_multiplier", "msw_multiplier",
+    "season_code",
+    "dt_start",
+    "dt_end",
+    "bool_active",
+    "ppw_best_count",
+    "ppw_total_rounds",
+    "mpw_multiplier",
+    "pew_best_count",
+    "mew_multiplier",
+    "msw_multiplier",
     "import_log",
 ]
 
@@ -46,24 +52,51 @@ FENCERS_PARAMS = [
 ]
 
 FENCERS_COLUMNS = [
-    "id", "surname", "first_name", "birth_year",
-    "birth_year_source", "club", "nationality",
-    "match_status", "source_note",
+    "id",
+    "surname",
+    "first_name",
+    "birth_year",
+    "birth_year_source",
+    "club",
+    "nationality",
+    "match_status",
+    "source_note",
 ]
 
 EVENTS_COLUMNS = [
-    "event_code", "event_prefix", "name", "season_code",
-    "organizer", "location", "country",
-    "dt_start", "dt_end", "status",
-    "url_event", "url_invitation",
-    "entry_fee", "currency", "discrepancy_note",
+    "event_code",
+    "event_prefix",
+    "name",
+    "season_code",
+    "organizer",
+    "location",
+    "country",
+    "dt_start",
+    "dt_end",
+    "status",
+    "url_event",
+    "url_invitation",
+    "entry_fee",
+    "currency",
+    "discrepancy_note",
 ]
 
 TOURNAMENTS_COLUMNS = [
-    "tournament_code", "event_code", "event_prefix", "season_code",
-    "weapon", "gender", "age_cat", "type",
-    "dt_tournament", "participant_count", "result_url",
-    "source_file", "original_source", "import_status", "notes",
+    "tournament_code",
+    "event_code",
+    "event_prefix",
+    "season_code",
+    "weapon",
+    "gender",
+    "age_cat",
+    "type",
+    "dt_tournament",
+    "participant_count",
+    "result_url",
+    "source_file",
+    "original_source",
+    "import_status",
+    "notes",
 ]
 
 # Column indices that are gray (locked formulas)
@@ -78,9 +111,7 @@ WEAPONS = ["EPEE", "FOIL", "SABRE"]
 GENDERS = ["M", "F"]
 AGE_CATS = ["V0", "V1", "V2", "V3", "V4"]
 
-CATEGORY_COLUMNS = [
-    f"{w}_{g}_{a}" for w in WEAPONS for g in GENDERS for a in AGE_CATS
-]
+CATEGORY_COLUMNS = [f"{w}_{g}_{a}" for w in WEAPONS for g in GENDERS for a in AGE_CATS]
 
 # ---------------------------------------------------------------------------
 # Mock data
@@ -130,37 +161,57 @@ MOCK_SEASONS = [
 
 MOCK_FENCERS = [
     {
-        "id": "1", "surname": "KOWALSKI", "first_name": "Jan",
-        "birth_year": "1970", "birth_year_source": "EXACT",
-        "club": "WKS Wawel Kraków", "nationality": "PL",
+        "id": "1",
+        "surname": "KOWALSKI",
+        "first_name": "Jan",
+        "birth_year": "1970",
+        "birth_year_source": "EXACT",
+        "club": "WKS Wawel Kraków",
+        "nationality": "PL",
         "match_status": "CONFIRMED",
         "source_note": "seed_tbl_fencer.sql",
     },
     {
-        "id": "2", "surname": "NOWAKOWSKA-WIŚNIEWSKA", "first_name": "Anna",
-        "birth_year": "1975", "birth_year_source": "EXACT",
-        "club": "AZS AWF Warszawa", "nationality": "PL",
+        "id": "2",
+        "surname": "NOWAKOWSKA-WIŚNIEWSKA",
+        "first_name": "Anna",
+        "birth_year": "1975",
+        "birth_year_source": "EXACT",
+        "club": "AZS AWF Warszawa",
+        "nationality": "PL",
         "match_status": "CONFIRMED",
         "source_note": "seed_tbl_fencer.sql",
     },
     {
-        "id": "3", "surname": "BŁAŻEJEWSKI", "first_name": "Krzysztof",
-        "birth_year": "1968", "birth_year_source": "ESTIMATED",
-        "club": "KS Szpada Wrocław", "nationality": "PL",
+        "id": "3",
+        "surname": "BŁAŻEJEWSKI",
+        "first_name": "Krzysztof",
+        "birth_year": "1968",
+        "birth_year_source": "ESTIMATED",
+        "club": "KS Szpada Wrocław",
+        "nationality": "PL",
         "match_status": "FUZZY_85",
         "source_note": "SZPADA-2-2024-2025.xlsx PP3",
     },
     {
-        "id": "4", "surname": "DĄBROWSKI", "first_name": "Łukasz",
-        "birth_year": "1972", "birth_year_source": "ESTIMATED",
-        "club": "UKS Atena Gdańsk", "nationality": "PL",
+        "id": "4",
+        "surname": "DĄBROWSKI",
+        "first_name": "Łukasz",
+        "birth_year": "1972",
+        "birth_year_source": "ESTIMATED",
+        "club": "UKS Atena Gdańsk",
+        "nationality": "PL",
         "match_status": "NEW",
         "source_note": "PP4 XML auto-created",
     },
     {
-        "id": "5", "surname": "ZIĘBA", "first_name": "Małgorzata",
-        "birth_year": "1980", "birth_year_source": "EXACT",
-        "club": "RMKS Rybnik", "nationality": "PL",
+        "id": "5",
+        "surname": "ZIĘBA",
+        "first_name": "Małgorzata",
+        "birth_year": "1980",
+        "birth_year_source": "EXACT",
+        "club": "RMKS Rybnik",
+        "nationality": "PL",
         "match_status": "AMBIGUOUS",
         "source_note": "seed_tbl_fencer.sql",
     },
@@ -168,122 +219,242 @@ MOCK_FENCERS = [
 
 MOCK_EVENTS = [
     {
-        "event_prefix": "PP1", "name": "I Puchar Polski Weteranów",
-        "season_code": "SPWS-2024-2025", "organizer": "SPWS",
-        "location": "Kraków", "country": "PL",
-        "dt_start": "2024-10-12", "dt_end": "2024-10-13",
-        "status": "COMPLETED", "url_event": "", "url_invitation": "",
-        "entry_fee": "80", "currency": "PLN", "discrepancy_note": "",
+        "event_prefix": "PP1",
+        "name": "I Puchar Polski Weteranów",
+        "season_code": "SPWS-2024-2025",
+        "organizer": "SPWS",
+        "location": "Kraków",
+        "country": "PL",
+        "dt_start": "2024-10-12",
+        "dt_end": "2024-10-13",
+        "status": "COMPLETED",
+        "url_event": "",
+        "url_invitation": "",
+        "entry_fee": "80",
+        "currency": "PLN",
+        "discrepancy_note": "",
     },
     {
-        "event_prefix": "PP2", "name": "II Puchar Polski Weteranów",
-        "season_code": "SPWS-2024-2025", "organizer": "SPWS",
-        "location": "Wrocław", "country": "PL",
-        "dt_start": "2024-11-16", "dt_end": "2024-11-17",
-        "status": "COMPLETED", "url_event": "", "url_invitation": "",
-        "entry_fee": "80", "currency": "PLN", "discrepancy_note": "",
+        "event_prefix": "PP2",
+        "name": "II Puchar Polski Weteranów",
+        "season_code": "SPWS-2024-2025",
+        "organizer": "SPWS",
+        "location": "Wrocław",
+        "country": "PL",
+        "dt_start": "2024-11-16",
+        "dt_end": "2024-11-17",
+        "status": "COMPLETED",
+        "url_event": "",
+        "url_invitation": "",
+        "entry_fee": "80",
+        "currency": "PLN",
+        "discrepancy_note": "",
     },
     {
-        "event_prefix": "MPW", "name": "Mistrzostwa Polski Weteranów",
-        "season_code": "SPWS-2024-2025", "organizer": "SPWS",
-        "location": "Warszawa", "country": "PL",
-        "dt_start": "2025-05-10", "dt_end": "2025-05-11",
-        "status": "COMPLETED", "url_event": "", "url_invitation": "",
-        "entry_fee": "100", "currency": "PLN", "discrepancy_note": "",
+        "event_prefix": "MPW",
+        "name": "Mistrzostwa Polski Weteranów",
+        "season_code": "SPWS-2024-2025",
+        "organizer": "SPWS",
+        "location": "Warszawa",
+        "country": "PL",
+        "dt_start": "2025-05-10",
+        "dt_end": "2025-05-11",
+        "status": "COMPLETED",
+        "url_event": "",
+        "url_invitation": "",
+        "entry_fee": "100",
+        "currency": "PLN",
+        "discrepancy_note": "",
     },
     {
-        "event_prefix": "PEW1", "name": "EVF Grand Prix 1 — Budapeszt",
-        "season_code": "SPWS-2024-2025", "organizer": "EVF",
-        "location": "Budapest", "country": "HU",
-        "dt_start": "2024-09-28", "dt_end": "2024-09-29",
-        "status": "COMPLETED", "url_event": "", "url_invitation": "",
-        "entry_fee": "50", "currency": "EUR", "discrepancy_note": "",
+        "event_prefix": "PEW1",
+        "name": "EVF Grand Prix 1 — Budapeszt",
+        "season_code": "SPWS-2024-2025",
+        "organizer": "EVF",
+        "location": "Budapest",
+        "country": "HU",
+        "dt_start": "2024-09-28",
+        "dt_end": "2024-09-29",
+        "status": "COMPLETED",
+        "url_event": "",
+        "url_invitation": "",
+        "entry_fee": "50",
+        "currency": "EUR",
+        "discrepancy_note": "",
     },
     {
-        "event_prefix": "GP1", "name": "Grand Prix (runda 1)",
-        "season_code": "SPWS-2023-2024", "organizer": "SPWS",
-        "location": "Gdańsk", "country": "PL",
-        "dt_start": "2023-10-14", "dt_end": "2023-10-15",
-        "status": "COMPLETED", "url_event": "", "url_invitation": "",
-        "entry_fee": "70", "currency": "PLN", "discrepancy_note": "",
+        "event_prefix": "GP1",
+        "name": "Grand Prix (runda 1)",
+        "season_code": "SPWS-2023-2024",
+        "organizer": "SPWS",
+        "location": "Gdańsk",
+        "country": "PL",
+        "dt_start": "2023-10-14",
+        "dt_end": "2023-10-15",
+        "status": "COMPLETED",
+        "url_event": "",
+        "url_invitation": "",
+        "entry_fee": "70",
+        "currency": "PLN",
+        "discrepancy_note": "",
     },
     {
-        "event_prefix": "GP2", "name": "Grand Prix (runda 2)",
-        "season_code": "SPWS-2023-2024", "organizer": "SPWS",
-        "location": "Poznań", "country": "PL",
-        "dt_start": "2023-11-18", "dt_end": "2023-11-19",
-        "status": "COMPLETED", "url_event": "", "url_invitation": "",
-        "entry_fee": "70", "currency": "PLN", "discrepancy_note": "",
+        "event_prefix": "GP2",
+        "name": "Grand Prix (runda 2)",
+        "season_code": "SPWS-2023-2024",
+        "organizer": "SPWS",
+        "location": "Poznań",
+        "country": "PL",
+        "dt_start": "2023-11-18",
+        "dt_end": "2023-11-19",
+        "status": "COMPLETED",
+        "url_event": "",
+        "url_invitation": "",
+        "entry_fee": "70",
+        "currency": "PLN",
+        "discrepancy_note": "",
     },
     {
-        "event_prefix": "MPW", "name": "Mistrzostwa Polski Weteranów",
-        "season_code": "SPWS-2023-2024", "organizer": "SPWS",
-        "location": "Łódź", "country": "PL",
-        "dt_start": "2024-05-04", "dt_end": "2024-05-05",
-        "status": "COMPLETED", "url_event": "", "url_invitation": "",
-        "entry_fee": "100", "currency": "PLN", "discrepancy_note": "",
+        "event_prefix": "MPW",
+        "name": "Mistrzostwa Polski Weteranów",
+        "season_code": "SPWS-2023-2024",
+        "organizer": "SPWS",
+        "location": "Łódź",
+        "country": "PL",
+        "dt_start": "2024-05-04",
+        "dt_end": "2024-05-05",
+        "status": "COMPLETED",
+        "url_event": "",
+        "url_invitation": "",
+        "entry_fee": "100",
+        "currency": "PLN",
+        "discrepancy_note": "",
     },
     {
-        "event_prefix": "PP1", "name": "I Puchar Polski Weteranów",
-        "season_code": "SPWS-2025-2026", "organizer": "SPWS",
-        "location": "Katowice", "country": "PL",
-        "dt_start": "2025-10-11", "dt_end": "2025-10-12",
-        "status": "COMPLETED", "url_event": "", "url_invitation": "",
-        "entry_fee": "80", "currency": "PLN", "discrepancy_note": "",
+        "event_prefix": "PP1",
+        "name": "I Puchar Polski Weteranów",
+        "season_code": "SPWS-2025-2026",
+        "organizer": "SPWS",
+        "location": "Katowice",
+        "country": "PL",
+        "dt_start": "2025-10-11",
+        "dt_end": "2025-10-12",
+        "status": "COMPLETED",
+        "url_event": "",
+        "url_invitation": "",
+        "entry_fee": "80",
+        "currency": "PLN",
+        "discrepancy_note": "",
     },
     {
-        "event_prefix": "PP2", "name": "II Puchar Polski Weteranów",
-        "season_code": "SPWS-2025-2026", "organizer": "SPWS",
-        "location": "Gdańsk", "country": "PL",
-        "dt_start": "2025-11-08", "dt_end": "2025-11-09",
-        "status": "COMPLETED", "url_event": "", "url_invitation": "",
-        "entry_fee": "80", "currency": "PLN", "discrepancy_note": "",
+        "event_prefix": "PP2",
+        "name": "II Puchar Polski Weteranów",
+        "season_code": "SPWS-2025-2026",
+        "organizer": "SPWS",
+        "location": "Gdańsk",
+        "country": "PL",
+        "dt_start": "2025-11-08",
+        "dt_end": "2025-11-09",
+        "status": "COMPLETED",
+        "url_event": "",
+        "url_invitation": "",
+        "entry_fee": "80",
+        "currency": "PLN",
+        "discrepancy_note": "",
     },
     {
-        "event_prefix": "PEW1", "name": "EVF Grand Prix 1",
-        "season_code": "SPWS-2025-2026", "organizer": "EVF",
-        "location": "Roma", "country": "IT",
-        "dt_start": "2025-09-20", "dt_end": "2025-09-21",
-        "status": "COMPLETED", "url_event": "", "url_invitation": "",
-        "entry_fee": "50", "currency": "EUR", "discrepancy_note": "",
+        "event_prefix": "PEW1",
+        "name": "EVF Grand Prix 1",
+        "season_code": "SPWS-2025-2026",
+        "organizer": "EVF",
+        "location": "Roma",
+        "country": "IT",
+        "dt_start": "2025-09-20",
+        "dt_end": "2025-09-21",
+        "status": "COMPLETED",
+        "url_event": "",
+        "url_invitation": "",
+        "entry_fee": "50",
+        "currency": "EUR",
+        "discrepancy_note": "",
     },
 ]
 
 MOCK_TOURNAMENTS = [
     {
-        "event_prefix": "PP1", "season_code": "SPWS-2024-2025",
-        "weapon": "EPEE", "gender": "M", "age_cat": "V2", "type": "PPW",
-        "dt_tournament": "2024-10-12", "participant_count": "15",
-        "result_url": "", "source_file": "SZPADA-2-2024-2025.xlsx",
-        "original_source": "", "import_status": "SCORED", "notes": "",
+        "event_prefix": "PP1",
+        "season_code": "SPWS-2024-2025",
+        "weapon": "EPEE",
+        "gender": "M",
+        "age_cat": "V2",
+        "type": "PPW",
+        "dt_tournament": "2024-10-12",
+        "participant_count": "15",
+        "result_url": "",
+        "source_file": "SZPADA-2-2024-2025.xlsx",
+        "original_source": "",
+        "import_status": "SCORED",
+        "notes": "",
     },
     {
-        "event_prefix": "PP1", "season_code": "SPWS-2024-2025",
-        "weapon": "FOIL", "gender": "F", "age_cat": "V1", "type": "PPW",
-        "dt_tournament": "2024-10-12", "participant_count": "8",
-        "result_url": "", "source_file": "FLORET-K1-2024-2025.xlsx",
-        "original_source": "", "import_status": "SCORED", "notes": "",
+        "event_prefix": "PP1",
+        "season_code": "SPWS-2024-2025",
+        "weapon": "FOIL",
+        "gender": "F",
+        "age_cat": "V1",
+        "type": "PPW",
+        "dt_tournament": "2024-10-12",
+        "participant_count": "8",
+        "result_url": "",
+        "source_file": "FLORET-K1-2024-2025.xlsx",
+        "original_source": "",
+        "import_status": "SCORED",
+        "notes": "",
     },
     {
-        "event_prefix": "MPW", "season_code": "SPWS-2024-2025",
-        "weapon": "SABRE", "gender": "M", "age_cat": "V0", "type": "MPW",
-        "dt_tournament": "2025-05-10", "participant_count": "12",
-        "result_url": "", "source_file": "SZABLA-0-2024-2025.xlsx",
-        "original_source": "", "import_status": "SCORED", "notes": "",
+        "event_prefix": "MPW",
+        "season_code": "SPWS-2024-2025",
+        "weapon": "SABRE",
+        "gender": "M",
+        "age_cat": "V0",
+        "type": "MPW",
+        "dt_tournament": "2025-05-10",
+        "participant_count": "12",
+        "result_url": "",
+        "source_file": "SZABLA-0-2024-2025.xlsx",
+        "original_source": "",
+        "import_status": "SCORED",
+        "notes": "",
     },
     {
-        "event_prefix": "PEW1", "season_code": "SPWS-2024-2025",
-        "weapon": "EPEE", "gender": "M", "age_cat": "V3", "type": "PEW",
-        "dt_tournament": "2024-09-28", "participant_count": "22",
-        "result_url": "https://fencing-timing.com/example", "source_file": "",
-        "original_source": "", "import_status": "SCRAPED", "notes": "",
+        "event_prefix": "PEW1",
+        "season_code": "SPWS-2024-2025",
+        "weapon": "EPEE",
+        "gender": "M",
+        "age_cat": "V3",
+        "type": "PEW",
+        "dt_tournament": "2024-09-28",
+        "participant_count": "22",
+        "result_url": "https://fencing-timing.com/example",
+        "source_file": "",
+        "original_source": "",
+        "import_status": "SCRAPED",
+        "notes": "",
     },
     {
-        "event_prefix": "GP1", "season_code": "SPWS-2023-2024",
-        "weapon": "EPEE", "gender": "M", "age_cat": "V2", "type": "PPW",
-        "dt_tournament": "2023-10-14", "participant_count": "18",
-        "result_url": "", "source_file": "SZPADA-2-2023-2024.xlsx",
-        "original_source": "", "import_status": "SCORED", "notes": "",
+        "event_prefix": "GP1",
+        "season_code": "SPWS-2023-2024",
+        "weapon": "EPEE",
+        "gender": "M",
+        "age_cat": "V2",
+        "type": "PPW",
+        "dt_tournament": "2023-10-14",
+        "participant_count": "18",
+        "result_url": "",
+        "source_file": "SZPADA-2-2023-2024.xlsx",
+        "original_source": "",
+        "import_status": "SCORED",
+        "notes": "",
     },
 ]
 
@@ -291,6 +462,7 @@ MOCK_TOURNAMENTS = [
 # ---------------------------------------------------------------------------
 # Style helpers
 # ---------------------------------------------------------------------------
+
 
 def _create_styles(doc: OpenDocumentSpreadsheet) -> dict[str, Style]:
     """Create and register cell styles. Returns dict of style names.
@@ -382,6 +554,7 @@ def _add_header_row(table: Table, columns: list[str], style: Style) -> None:
 # Tab builders
 # ---------------------------------------------------------------------------
 
+
 def _build_seasons_tab(
     doc: OpenDocumentSpreadsheet,
     styles: dict[str, Style],
@@ -464,7 +637,7 @@ def _build_events_tab(
             if col_idx in EVENTS_GRAY_COLS:
                 # event_code: formula = CONCAT(event_prefix, "-", season_code)
                 # B = event_prefix (col 1), D = season_code (col 3)
-                formula = f"of:=CONCAT([.B{row_num}];\"-\";[.D{row_num}])"
+                formula = f'of:=CONCAT([.B{row_num}];"-";[.D{row_num}])'
                 computed = f"{event['event_prefix']}-{event['season_code']}"
                 _add_cell(row, computed, styles["gray"], formula=formula)
             else:
@@ -495,10 +668,10 @@ def _build_tournaments_tab(
                 # tournament_code: CONCAT(event_prefix, "-", age_cat, "-", gender, "-", weapon, "-", season_code)
                 # C=event_prefix(2), D=season_code(3), E=weapon(4), F=gender(5), G=age_cat(6)
                 formula = (
-                    f"of:=CONCAT([.C{row_num}];\"-\";"
-                    f"[.G{row_num}];\"-\";"
-                    f"[.F{row_num}];\"-\";"
-                    f"[.E{row_num}];\"-\";"
+                    f'of:=CONCAT([.C{row_num}];"-";'
+                    f'[.G{row_num}];"-";'
+                    f'[.F{row_num}];"-";'
+                    f'[.E{row_num}];"-";'
                     f"[.D{row_num}])"
                 )
                 computed = (
@@ -508,7 +681,7 @@ def _build_tournaments_tab(
                 _add_cell(row, computed, styles["gray"], formula=formula)
             elif col_idx == 1:
                 # event_code: CONCAT(event_prefix, "-", season_code)
-                formula = f"of:=CONCAT([.C{row_num}];\"-\";[.D{row_num}])"
+                formula = f'of:=CONCAT([.C{row_num}];"-";[.D{row_num}])'
                 computed = f"{tourn['event_prefix']}-{tourn['season_code']}"
                 _add_cell(row, computed, styles["gray"], formula=formula)
             else:
@@ -566,6 +739,7 @@ def _build_coverage_tab(
 # Freeze panes & autofilter helpers
 # ---------------------------------------------------------------------------
 
+
 def _add_freeze_panes(
     doc: OpenDocumentSpreadsheet,
     tab_freeze_rows: dict[str, int],
@@ -620,9 +794,7 @@ def _add_autofilter(
         safe_name = tab_name.replace(" ", "_")
         dr = DatabaseRange(
             name=f"__filter_{safe_name}_{i}",
-            targetrangeaddress=(
-                f"{tab_name}.A{header_row}:{tab_name}.{last_col}{last_row}"
-            ),
+            targetrangeaddress=(f"{tab_name}.A{header_row}:{tab_name}.{last_col}{last_row}"),
             displayfilterbuttons="true",
         )
         db_ranges.addElement(dr)
@@ -632,6 +804,7 @@ def _add_autofilter(
 # ---------------------------------------------------------------------------
 # Mode orchestrators
 # ---------------------------------------------------------------------------
+
 
 def mock_mode(output_path: Path) -> None:
     """Generate mock .ods spreadsheet for user review."""
@@ -645,30 +818,36 @@ def mock_mode(output_path: Path) -> None:
     _build_coverage_tab(doc, styles, MOCK_EVENTS, MOCK_TOURNAMENTS)
 
     # Freeze header rows
-    _add_freeze_panes(doc, {
-        "Seasons": 1,
-        "Fencers": 6,       # 4 params + 1 blank + 1 header
-        "Events": 1,
-        "Tournaments": 1,
-        "Coverage": 1,
-    })
+    _add_freeze_panes(
+        doc,
+        {
+            "Seasons": 1,
+            "Fencers": 6,  # 4 params + 1 blank + 1 header
+            "Events": 1,
+            "Tournaments": 1,
+            "Coverage": 1,
+        },
+    )
 
     # Autofilter on data tables
-    n_seasons = 1 + len(MOCK_SEASONS)         # header + data
-    n_fencers_hdr = 6                          # param area header row (1-based)
+    n_seasons = 1 + len(MOCK_SEASONS)  # header + data
+    n_fencers_hdr = 6  # param area header row (1-based)
     n_fencers_end = 6 + len(MOCK_FENCERS)
     n_events = 1 + len(MOCK_EVENTS)
     n_tournaments = 1 + len(MOCK_TOURNAMENTS)
     n_coverage = 1 + len(MOCK_EVENTS)
     last_cov_col = _col_letter(len(CATEGORY_COLUMNS))  # +1 for event col, 0-based
 
-    _add_autofilter(doc, [
-        ("Seasons", _col_letter(len(SEASONS_COLUMNS) - 1), 1, n_seasons),
-        ("Fencers", _col_letter(len(FENCERS_COLUMNS) - 1), n_fencers_hdr, n_fencers_end),
-        ("Events", _col_letter(len(EVENTS_COLUMNS) - 1), 1, n_events),
-        ("Tournaments", _col_letter(len(TOURNAMENTS_COLUMNS) - 1), 1, n_tournaments),
-        ("Coverage", last_cov_col, 1, n_coverage),
-    ])
+    _add_autofilter(
+        doc,
+        [
+            ("Seasons", _col_letter(len(SEASONS_COLUMNS) - 1), 1, n_seasons),
+            ("Fencers", _col_letter(len(FENCERS_COLUMNS) - 1), n_fencers_hdr, n_fencers_end),
+            ("Events", _col_letter(len(EVENTS_COLUMNS) - 1), 1, n_events),
+            ("Tournaments", _col_letter(len(TOURNAMENTS_COLUMNS) - 1), 1, n_tournaments),
+            ("Coverage", last_cov_col, 1, n_coverage),
+        ],
+    )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(output_path))
@@ -731,7 +910,9 @@ def _apply_event_overrides(events: list[dict], overrides_dir: Path) -> int:
             "event_prefix": prefix,
             "name": vals.get("name", prefix),
             "season_code": season_code,
-            "organizer": "SPWS" if prefix in ("GPW", "MPW") or prefix.startswith(("GP", "PPW")) else "EVF",
+            "organizer": "SPWS"
+            if prefix in ("GPW", "MPW") or prefix.startswith(("GP", "PPW"))
+            else "EVF",
             "location": "",
             "country": "",
             "dt_start": "",
@@ -760,10 +941,13 @@ def _apply_fencer_overrides(fencers: list[dict], overrides_dir: Path) -> int:
     ov: dict[tuple[str, str], dict] = {}
     with open(csv_path, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            key = (row.get("surname", "").strip().upper(),
-                   row.get("first_name", "").strip().upper())
-            vals = {k: v for k, v in row.items()
-                    if k not in ("surname", "first_name") and v.strip()}
+            key = (
+                row.get("surname", "").strip().upper(),
+                row.get("first_name", "").strip().upper(),
+            )
+            vals = {
+                k: v for k, v in row.items() if k not in ("surname", "first_name") and v.strip()
+            }
             if vals:
                 ov[key] = vals
 
@@ -784,8 +968,8 @@ def _apply_tournament_overrides(tournaments: list[dict], overrides_dir: Path) ->
     applied = 0
     for t in tournaments:
         code = (
-            f"{t.get('event_prefix','')}-{t.get('age_cat','')}-"
-            f"{t.get('gender','')}-{t.get('weapon','')}-{t.get('season_code','')}"
+            f"{t.get('event_prefix', '')}-{t.get('age_cat', '')}-"
+            f"{t.get('gender', '')}-{t.get('weapon', '')}-{t.get('season_code', '')}"
         )
         if code in ov:
             t.update(ov[code])
@@ -807,56 +991,62 @@ def populate_mode(input_dir: Path, output_path: Path) -> None:
     # Convert fencers to tab builder format
     fencers = []
     for i, f in enumerate(data["fencers"], 1):
-        fencers.append({
-            "id": str(i),
-            "surname": f.get("surname", ""),
-            "first_name": f.get("first_name", ""),
-            "birth_year": str(f["birth_year"]) if f.get("birth_year") else "",
-            "birth_year_source": "EXACT" if f.get("birth_year") else "",
-            "club": "",
-            "nationality": "",
-            "match_status": "NEW",
-            "source_note": f.get("source_note", ""),
-        })
+        fencers.append(
+            {
+                "id": str(i),
+                "surname": f.get("surname", ""),
+                "first_name": f.get("first_name", ""),
+                "birth_year": str(f["birth_year"]) if f.get("birth_year") else "",
+                "birth_year_source": "EXACT" if f.get("birth_year") else "",
+                "club": "",
+                "nationality": "",
+                "match_status": "NEW",
+                "source_note": f.get("source_note", ""),
+            }
+        )
 
     # Convert events to tab builder format
     events = []
     for e in data["events"]:
-        events.append({
-            "event_prefix": e.get("event_prefix", ""),
-            "name": e.get("name", ""),
-            "season_code": e.get("season_code", ""),
-            "organizer": e.get("organizer", ""),
-            "location": "",
-            "country": "",
-            "dt_start": e.get("dt_start", "") or "",
-            "dt_end": e.get("dt_end", "") or "",
-            "status": e.get("status", "COMPLETED"),
-            "url_event": "",
-            "url_invitation": "",
-            "entry_fee": "",
-            "currency": "",
-            "discrepancy_note": "",
-        })
+        events.append(
+            {
+                "event_prefix": e.get("event_prefix", ""),
+                "name": e.get("name", ""),
+                "season_code": e.get("season_code", ""),
+                "organizer": e.get("organizer", ""),
+                "location": "",
+                "country": "",
+                "dt_start": e.get("dt_start", "") or "",
+                "dt_end": e.get("dt_end", "") or "",
+                "status": e.get("status", "COMPLETED"),
+                "url_event": "",
+                "url_invitation": "",
+                "entry_fee": "",
+                "currency": "",
+                "discrepancy_note": "",
+            }
+        )
 
     # Convert tournaments — ensure participant_count is string
     tournaments = []
     for t in data["tournaments"]:
-        tournaments.append({
-            "event_prefix": t.get("event_prefix", ""),
-            "season_code": t.get("season_code", ""),
-            "weapon": t.get("weapon", ""),
-            "gender": t.get("gender", ""),
-            "age_cat": t.get("age_cat", ""),
-            "type": t.get("type", ""),
-            "dt_tournament": t.get("dt_tournament", "") or "",
-            "participant_count": str(t.get("participant_count", "")),
-            "result_url": t.get("result_url", "") or "",
-            "source_file": t.get("source_file", ""),
-            "original_source": t.get("original_source", "") or "",
-            "import_status": t.get("import_status", ""),
-            "notes": t.get("notes", "") or "",
-        })
+        tournaments.append(
+            {
+                "event_prefix": t.get("event_prefix", ""),
+                "season_code": t.get("season_code", ""),
+                "weapon": t.get("weapon", ""),
+                "gender": t.get("gender", ""),
+                "age_cat": t.get("age_cat", ""),
+                "type": t.get("type", ""),
+                "dt_tournament": t.get("dt_tournament", "") or "",
+                "participant_count": str(t.get("participant_count", "")),
+                "result_url": t.get("result_url", "") or "",
+                "source_file": t.get("source_file", ""),
+                "original_source": t.get("original_source", "") or "",
+                "import_status": t.get("import_status", ""),
+                "notes": t.get("notes", "") or "",
+            }
+        )
 
     # Apply CSV overrides (hand-entered data preserved across re-generates)
     overrides_dir = input_dir.parent / "staging_overrides"
@@ -877,13 +1067,16 @@ def populate_mode(input_dir: Path, output_path: Path) -> None:
     _build_coverage_tab(doc, styles, events, tournaments)
 
     # Freeze header rows
-    _add_freeze_panes(doc, {
-        "Seasons": 1,
-        "Fencers": 6,
-        "Events": 1,
-        "Tournaments": 1,
-        "Coverage": 1,
-    })
+    _add_freeze_panes(
+        doc,
+        {
+            "Seasons": 1,
+            "Fencers": 6,
+            "Events": 1,
+            "Tournaments": 1,
+            "Coverage": 1,
+        },
+    )
 
     # Autofilter
     n_seasons = 1 + len(seasons)
@@ -894,13 +1087,16 @@ def populate_mode(input_dir: Path, output_path: Path) -> None:
     n_coverage = 1 + len(events)
     last_cov_col = _col_letter(len(CATEGORY_COLUMNS))
 
-    _add_autofilter(doc, [
-        ("Seasons", _col_letter(len(SEASONS_COLUMNS) - 1), 1, n_seasons),
-        ("Fencers", _col_letter(len(FENCERS_COLUMNS) - 1), n_fencers_hdr, n_fencers_end),
-        ("Events", _col_letter(len(EVENTS_COLUMNS) - 1), 1, n_events),
-        ("Tournaments", _col_letter(len(TOURNAMENTS_COLUMNS) - 1), 1, n_tournaments),
-        ("Coverage", last_cov_col, 1, n_coverage),
-    ])
+    _add_autofilter(
+        doc,
+        [
+            ("Seasons", _col_letter(len(SEASONS_COLUMNS) - 1), 1, n_seasons),
+            ("Fencers", _col_letter(len(FENCERS_COLUMNS) - 1), n_fencers_hdr, n_fencers_end),
+            ("Events", _col_letter(len(EVENTS_COLUMNS) - 1), 1, n_events),
+            ("Tournaments", _col_letter(len(TOURNAMENTS_COLUMNS) - 1), 1, n_tournaments),
+            ("Coverage", last_cov_col, 1, n_coverage),
+        ],
+    )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(output_path))
@@ -951,9 +1147,7 @@ def _sq(s: str | None) -> str:
     return "'" + str(s).replace("'", "''") + "'"
 
 
-def _generate_events_metadata_sql(
-    events: list[dict], season_code: str
-) -> str:
+def _generate_events_metadata_sql(events: list[dict], season_code: str) -> str:
     """Generate zz_events_metadata.sql content for one season."""
     year_suffix = season_code.removeprefix("SPWS-")
     season_events = [e for e in events if e.get("season_code") == season_code]
@@ -977,8 +1171,8 @@ def _generate_events_metadata_sql(
         org = _organizer_code(e["event_prefix"])
         status = e.get("status", "COMPLETED")
         lines += [
-            f"INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)",
-            f"SELECT",
+            "INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)",
+            "SELECT",
             f"    {_sq(db_code)},",
             f"    {_sq(name)},",
             f"    (SELECT id_season FROM tbl_season WHERE txt_code = {_sq(season_code)}),",
@@ -1006,7 +1200,7 @@ def _generate_events_metadata_sql(
         fee_sql = str(entry_fee) if entry_fee else "NULL"
 
         lines += [
-            f"UPDATE tbl_event SET",
+            "UPDATE tbl_event SET",
             f"    txt_name = {_sq(name)},",
             f"    txt_location = {_sq(location)},",
             f"    txt_country = {_sq(country)},",
@@ -1023,9 +1217,7 @@ def _generate_events_metadata_sql(
     return "\n".join(lines)
 
 
-def _generate_fencer_sql(
-    fencers: list[dict], existing_path: Path
-) -> str:
+def _generate_fencer_sql(fencers: list[dict], existing_path: Path) -> str:
     """Generate seed_tbl_fencer.sql preserving existing fencer order.
 
     Reads the existing file to extract the first N fencers in order,
@@ -1038,9 +1230,7 @@ def _generate_fencer_sql(
     if existing_path.exists():
         content = existing_path.read_text(encoding="utf-8")
         # Match lines like:    ('SURNAME',   'FirstName',   1969),
-        pattern = re.compile(
-            r"\('([^']+)',\s+'([^']+)',\s+(NULL|\d+)\)"
-        )
+        pattern = re.compile(r"\('([^']+)',\s+'([^']+)',\s+(NULL|\d+)\)")
         for m in pattern.finditer(content):
             surname, first, birth = m.groups()
             birth_val = None if birth == "NULL" else birth
@@ -1083,9 +1273,9 @@ def _generate_fencer_sql(
         birth_sql = birth if birth else "NULL"
         sep = "," if i < len(all_fencers) - 1 else ";"
         lines.append(
-            f"    ('{surname.replace(chr(39), chr(39)*2)}',"
+            f"    ('{surname.replace(chr(39), chr(39) * 2)}',"
             f"{' ' * max(1, 24 - len(surname))}"
-            f"'{first.replace(chr(39), chr(39)*2)}',"
+            f"'{first.replace(chr(39), chr(39) * 2)}',"
             f"{' ' * max(1, 14 - len(first))}"
             f"{birth_sql}){sep}"
         )
@@ -1093,7 +1283,7 @@ def _generate_fencer_sql(
     lines += [
         "",
         "-- Name aliases for identity resolution (M4/M5)",
-        "-- KOŃCZYŁO Tomasz competed as \"TK\" in some tournament systems",
+        '-- KOŃCZYŁO Tomasz competed as "TK" in some tournament systems',
         "UPDATE tbl_fencer SET json_name_aliases = '[\"TK\"]'",
         "WHERE txt_surname = 'KOŃCZYŁO' AND txt_first_name = 'Tomasz';",
         "",
@@ -1111,33 +1301,37 @@ def export_mode(input_dir: Path) -> None:
     # Convert to staging format (same as populate_mode)
     fencers = []
     for i, f in enumerate(data["fencers"], 1):
-        fencers.append({
-            "id": str(i),
-            "surname": f.get("surname", ""),
-            "first_name": f.get("first_name", ""),
-            "birth_year": str(f["birth_year"]) if f.get("birth_year") else "",
-            "birth_year_source": "EXACT" if f.get("birth_year") else "",
-            "source_note": f.get("source_note", ""),
-        })
+        fencers.append(
+            {
+                "id": str(i),
+                "surname": f.get("surname", ""),
+                "first_name": f.get("first_name", ""),
+                "birth_year": str(f["birth_year"]) if f.get("birth_year") else "",
+                "birth_year_source": "EXACT" if f.get("birth_year") else "",
+                "source_note": f.get("source_note", ""),
+            }
+        )
 
     events = []
     for e in data["events"]:
-        events.append({
-            "event_prefix": e.get("event_prefix", ""),
-            "name": e.get("name", ""),
-            "season_code": e.get("season_code", ""),
-            "organizer": e.get("organizer", ""),
-            "location": "",
-            "country": "",
-            "dt_start": e.get("dt_start", "") or "",
-            "dt_end": e.get("dt_end", "") or "",
-            "status": e.get("status", "COMPLETED"),
-            "url_event": "",
-            "url_invitation": "",
-            "entry_fee": "",
-            "currency": "",
-            "discrepancy_note": "",
-        })
+        events.append(
+            {
+                "event_prefix": e.get("event_prefix", ""),
+                "name": e.get("name", ""),
+                "season_code": e.get("season_code", ""),
+                "organizer": e.get("organizer", ""),
+                "location": "",
+                "country": "",
+                "dt_start": e.get("dt_start", "") or "",
+                "dt_end": e.get("dt_end", "") or "",
+                "status": e.get("status", "COMPLETED"),
+                "url_event": "",
+                "url_invitation": "",
+                "entry_fee": "",
+                "currency": "",
+                "discrepancy_note": "",
+            }
+        )
 
     # Apply CSV overrides
     overrides_dir = input_dir.parent / "staging_overrides"
@@ -1159,9 +1353,7 @@ def export_mode(input_dir: Path) -> None:
 
         sql = _generate_events_metadata_sql(events, season_code)
         out_path.write_text(sql, encoding="utf-8")
-        season_event_count = sum(
-            1 for e in events if e.get("season_code") == season_code
-        )
+        season_event_count = sum(1 for e in events if e.get("season_code") == season_code)
         print(f"  Wrote {out_path} ({season_event_count} events)")
 
     # Regenerate fencer seed
@@ -1176,6 +1368,7 @@ def export_mode(input_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -1192,15 +1385,19 @@ def main() -> None:
     )
 
     populate_parser = subparsers.add_parser(
-        "populate", help="Populate .ods from real source data",
+        "populate",
+        help="Populate .ods from real source data",
     )
     populate_parser.add_argument("--input", type=Path, required=True)
     populate_parser.add_argument(
-        "--output", type=Path, default=Path("doc/assets/staging_data.ods"),
+        "--output",
+        type=Path,
+        default=Path("doc/assets/staging_data.ods"),
     )
 
     export_parser = subparsers.add_parser(
-        "export", help="Export staging data to SQL seed files",
+        "export",
+        help="Export staging data to SQL seed files",
     )
     export_parser.add_argument("--input", type=Path, required=True)
 

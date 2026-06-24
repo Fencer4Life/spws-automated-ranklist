@@ -16,6 +16,7 @@ The Context-key vocabulary below is the DAG contract. Its load-bearing facts:
     so `AssignFinalVcat` / `ValidateCounts` / `Commit` are reused unchanged across
     INGEST_DOMESTIC and RECOMPUTE_DOMESTIC.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -23,14 +24,15 @@ from dataclasses import dataclass, field
 from python.pipeline.core.contract import PluginKind
 from python.pipeline.engine.flows import Flow, Rule, Step
 
-
 # ===========================================================================
 # PLUGINS registry (metadata only in M1)
 # ===========================================================================
 
+
 @dataclass(frozen=True)
 class PluginSpec:
     """Contract metadata for one plugin. Runnable bodies attach in M2."""
+
     name: str
     kind: PluginKind
     reads: frozenset[str] = field(default_factory=frozenset)
@@ -68,10 +70,21 @@ def _build_plugins() -> dict[str, object]:
     from python.pipeline.plugins.staging_formatter import StagingFormatter
 
     instances = [
-        ParseSource(), ValidateIR(), ResolveEvent(), ResolveFencers(),
-        DetectCombinedPool(), SplitByAge(), DetectJointPool(), ValidateCounts(),
-        DetectPoolRound(), AssignFinalVcat(), Commit(),
-        LoadCommitted(), ParticipantCount(), Notify(), StagingFormatter(),
+        ParseSource(),
+        ValidateIR(),
+        ResolveEvent(),
+        ResolveFencers(),
+        DetectCombinedPool(),
+        SplitByAge(),
+        DetectJointPool(),
+        ValidateCounts(),
+        DetectPoolRound(),
+        AssignFinalVcat(),
+        Commit(),
+        LoadCommitted(),
+        ParticipantCount(),
+        Notify(),
+        StagingFormatter(),
     ]
     return {p.name: p for p in instances}
 
@@ -83,12 +96,12 @@ PLUGINS: dict[str, object] = _build_plugins()
 # RULEBOOK — the 4 domestic flows
 # ===========================================================================
 
+
 def _organizer_evf(p) -> bool:  # plan-time predicate placeholder for deferred §12
     return p.organizer_hint == "EVF"
 
 
 RULEBOOK: dict[Flow, Rule] = {
-
     # 1. Keep the active season current. Source produces `parsed`.
     Flow.INGEST_DOMESTIC: Rule(
         Flow.INGEST_DOMESTIC,
@@ -109,7 +122,6 @@ RULEBOOK: dict[Flow, Rule] = {
         ),
         seeds=frozenset(),
     ),
-
     # 2. Self-heal an event after a BY / identity correction. LoadCommitted
     #    re-produces `matches` + `event` from stored FK rows (no source, no re-match).
     Flow.RECOMPUTE_DOMESTIC: Rule(
@@ -125,7 +137,6 @@ RULEBOOK: dict[Flow, Rule] = {
         ),
         seeds=frozenset(),
     ),
-
     # 3. Whole-roster dedup + BY reconcile. In whole_roster scope ResolveFencers
     #    and Notify source from the db (Services), so their context keys are
     #    supplied at flow entry rather than produced by a Source plugin.
@@ -140,7 +151,6 @@ RULEBOOK: dict[Flow, Rule] = {
         ),
         seeds=frozenset({"parsed", "event"}),
     ),
-
     # 4. Validate + notify after every commit. The PostCommit reactor supplies the
     #    committed `event` from the live.committed signal.
     Flow.POST_COMMIT: Rule(

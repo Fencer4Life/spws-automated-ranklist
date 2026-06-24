@@ -9,13 +9,9 @@ The helper performs login-and-return-client so callers can run authed GETs.
 
 from __future__ import annotations
 
-import os
-from unittest.mock import patch
-
 import httpx
 import pytest
 import respx
-
 
 _LOGIN_HTML = """<!doctype html>
 <html><head>
@@ -66,13 +62,15 @@ def test_post_body_contains_username_password(ftl_creds):
 
     respx.get("https://www.fencingtimelive.com/account/login").mock(
         return_value=httpx.Response(
-            200, html=_LOGIN_HTML,
+            200,
+            html=_LOGIN_HTML,
             headers={"set-cookie": "connect.sid=anon-sid; Path=/"},
         )
     )
     login_route = respx.post("https://www.fencingtimelive.com/login").mock(
         return_value=httpx.Response(
-            200, text="/",
+            200,
+            text="/",
             headers={"set-cookie": "connect.sid=AUTHED-SID; Path=/"},
         )
     )
@@ -119,13 +117,15 @@ def test_returns_client_with_authed_cookies(ftl_creds):
 
     respx.get("https://www.fencingtimelive.com/account/login").mock(
         return_value=httpx.Response(
-            200, html=_LOGIN_HTML,
+            200,
+            html=_LOGIN_HTML,
             headers=[("set-cookie", "connect.sid=anon-sid; Path=/; HttpOnly")],
         )
     )
     respx.post("https://www.fencingtimelive.com/login").mock(
         return_value=httpx.Response(
-            200, text="/",
+            200,
+            text="/",
             headers=[("set-cookie", "connect.sid=AUTHED-SID; Path=/; HttpOnly")],
         )
     )

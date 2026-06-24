@@ -17,17 +17,16 @@ Bucket semantics (locked 2026-05-02 per project_cert_prod_not_baseline.md
 
 from __future__ import annotations
 
-import pytest
-
-
 # ---------------------------------------------------------------------------
 # classify() — 4-bucket classifier
 # ---------------------------------------------------------------------------
+
 
 class TestClassify:
     def test_all_three_agree(self):
         """P3.D1 same fencer at same place across all three → all-three-agree."""
         from python.pipeline.three_way_diff import classify
+
         s = {"fencer_name": "KOWALSKI Jan", "place": 1, "id_fencer": 42}
         c = {"fencer_name": "KOWALSKI Jan", "place": 1, "id_fencer": 42}
         n = {"fencer_name": "KOWALSKI Jan", "place": 1, "id_fencer": 42}
@@ -36,9 +35,10 @@ class TestClassify:
     def test_new_corrects_cert(self):
         """P3.D2 Source = New LOCAL ≠ CERT → new-corrects-cert."""
         from python.pipeline.three_way_diff import classify
+
         s = {"fencer_name": "KOWALSKI Jan", "place": 1, "id_fencer": 42}
-        c = {"fencer_name": "WRONG NAME", "place": 1, "id_fencer": 99}      # CERT had a bug
-        n = {"fencer_name": "KOWALSKI Jan", "place": 1, "id_fencer": 42}    # new pipeline fixed it
+        c = {"fencer_name": "WRONG NAME", "place": 1, "id_fencer": 99}  # CERT had a bug
+        n = {"fencer_name": "KOWALSKI Jan", "place": 1, "id_fencer": 42}  # new pipeline fixed it
         assert classify(s, c, n) == "new-corrects-cert"
 
     def test_source_changed_only(self):
@@ -51,6 +51,7 @@ class TestClassify:
         so both 'fencer at this place' values must differ.
         """
         from python.pipeline.three_way_diff import classify
+
         s = {"fencer_name": "Person A", "place": 1, "id_fencer": 100}  # upstream changed
         c = {"fencer_name": "Person B", "place": 1, "id_fencer": 200}  # CERT (old)
         n = {"fencer_name": "Person B", "place": 1, "id_fencer": 200}  # new (also old)
@@ -59,6 +60,7 @@ class TestClassify:
     def test_three_way_disagreement(self):
         """P3.D4 all three differ → three-way-disagreement (red alert)."""
         from python.pipeline.three_way_diff import classify
+
         s = {"fencer_name": "Person A", "place": 1, "id_fencer": 1}
         c = {"fencer_name": "Person B", "place": 1, "id_fencer": 2}
         n = {"fencer_name": "Person C", "place": 1, "id_fencer": 3}
@@ -67,15 +69,17 @@ class TestClassify:
     def test_classify_uses_id_fencer_when_present(self):
         """P3.D5 id_fencer takes precedence over fencer_name for equality."""
         from python.pipeline.three_way_diff import classify
+
         # Same id_fencer, different name spelling → still equal
         s = {"fencer_name": "KOWALSKI Jan", "place": 1, "id_fencer": 42}
         c = {"fencer_name": "kowalski jan", "place": 1, "id_fencer": 42}
-        n = {"fencer_name": "KOWALSKI J.",   "place": 1, "id_fencer": 42}
+        n = {"fencer_name": "KOWALSKI J.", "place": 1, "id_fencer": 42}
         assert classify(s, c, n) == "all-three-agree"
 
     def test_classify_falls_back_to_name_when_no_id(self):
         """P3.D6 falls back to case-insensitive fencer_name when id_fencer missing."""
         from python.pipeline.three_way_diff import classify
+
         s = {"fencer_name": "KOWALSKI Jan", "place": 1}  # no id_fencer
         c = {"fencer_name": "kowalski jan", "place": 1}
         n = {"fencer_name": "KOWALSKI JAN", "place": 1}
@@ -86,14 +90,15 @@ class TestClassify:
 # build_diff() — assembles per-place rows from the three sources
 # ---------------------------------------------------------------------------
 
+
 class TestBuildDiff:
     def test_one_row_each_source(self):
         """P3.D7 with one row in each source at place 1 → one DiffRow."""
         from python.pipeline.three_way_diff import build_diff
 
         source_rows = [{"fencer_name": "X", "place": 1, "id_fencer": 1}]
-        cert_rows   = [{"fencer_name": "X", "place": 1, "id_fencer": 1}]
-        draft_rows  = [{"fencer_name": "X", "place": 1, "id_fencer": 1}]
+        cert_rows = [{"fencer_name": "X", "place": 1, "id_fencer": 1}]
+        draft_rows = [{"fencer_name": "X", "place": 1, "id_fencer": 1}]
 
         diff = build_diff(source_rows, cert_rows, draft_rows)
         assert len(diff) == 1
@@ -105,8 +110,8 @@ class TestBuildDiff:
         from python.pipeline.three_way_diff import build_diff
 
         source_rows = [{"fencer_name": "X", "place": 5, "id_fencer": 1}]
-        cert_rows   = []                                                       # CERT missed it
-        draft_rows  = [{"fencer_name": "X", "place": 5, "id_fencer": 1}]
+        cert_rows = []  # CERT missed it
+        draft_rows = [{"fencer_name": "X", "place": 5, "id_fencer": 1}]
 
         diff = build_diff(source_rows, cert_rows, draft_rows)
         assert len(diff) == 1
@@ -117,6 +122,7 @@ class TestBuildDiff:
 # confidence_histogram() — matcher tuning aid
 # ---------------------------------------------------------------------------
 
+
 class TestConfidenceHistogram:
     def test_distributes_into_seven_bins(self):
         """P3.D9 confidence values bucketed into 7 ranges."""
@@ -124,16 +130,21 @@ class TestConfidenceHistogram:
         from python.pipeline.types import StageMatchResult
 
         matches = [
-            StageMatchResult(scraped_name="a", place=1, id_fencer=1,
-                             confidence=49.0, method="EXCLUDED"),
-            StageMatchResult(scraped_name="b", place=2, id_fencer=2,
-                             confidence=55.0, method="PENDING"),
-            StageMatchResult(scraped_name="c", place=3, id_fencer=3,
-                             confidence=72.0, method="PENDING"),
-            StageMatchResult(scraped_name="d", place=4, id_fencer=4,
-                             confidence=92.0, method="PENDING"),
-            StageMatchResult(scraped_name="e", place=5, id_fencer=5,
-                             confidence=99.0, method="AUTO_MATCHED"),
+            StageMatchResult(
+                scraped_name="a", place=1, id_fencer=1, confidence=49.0, method="EXCLUDED"
+            ),
+            StageMatchResult(
+                scraped_name="b", place=2, id_fencer=2, confidence=55.0, method="PENDING"
+            ),
+            StageMatchResult(
+                scraped_name="c", place=3, id_fencer=3, confidence=72.0, method="PENDING"
+            ),
+            StageMatchResult(
+                scraped_name="d", place=4, id_fencer=4, confidence=92.0, method="PENDING"
+            ),
+            StageMatchResult(
+                scraped_name="e", place=5, id_fencer=5, confidence=99.0, method="AUTO_MATCHED"
+            ),
         ]
         h = confidence_histogram(matches)
         assert h["0-50"] == 1
@@ -150,11 +161,14 @@ class TestConfidenceHistogram:
 # render_markdown()
 # ---------------------------------------------------------------------------
 
+
 class TestRenderMarkdown:
     def test_renders_event_code_and_buckets(self):
         """P3.D10 markdown contains event_code header + bucket summary table."""
         from python.pipeline.three_way_diff import (
-            DiffRow, confidence_histogram, render_markdown,
+            DiffRow,
+            confidence_histogram,
+            render_markdown,
         )
 
         rows = [
@@ -174,19 +188,30 @@ class TestRenderMarkdown:
     def test_renders_per_bucket_detail_sections(self):
         """P3.D11 each non-empty bucket rendered as its own section."""
         from python.pipeline.three_way_diff import (
-            DiffRow, confidence_histogram, render_markdown,
+            DiffRow,
+            confidence_histogram,
+            render_markdown,
         )
 
         rows = [
-            DiffRow(place=1, source={"fencer_name": "S1"},
-                    cert={"fencer_name": "C1"}, new_local={"fencer_name": "S1"},
-                    bucket="new-corrects-cert"),
-            DiffRow(place=2, source={"fencer_name": "X"},
-                    cert={"fencer_name": "Y"}, new_local={"fencer_name": "Z"},
-                    bucket="three-way-disagreement"),
+            DiffRow(
+                place=1,
+                source={"fencer_name": "S1"},
+                cert={"fencer_name": "C1"},
+                new_local={"fencer_name": "S1"},
+                bucket="new-corrects-cert",
+            ),
+            DiffRow(
+                place=2,
+                source={"fencer_name": "X"},
+                cert={"fencer_name": "Y"},
+                new_local={"fencer_name": "Z"},
+                bucket="three-way-disagreement",
+            ),
         ]
         md = render_markdown(
-            event_code="EVT", diff_rows=rows,
+            event_code="EVT",
+            diff_rows=rows,
             histogram=confidence_histogram([]),
         )
         # Both bucket detail sections present
@@ -197,6 +222,7 @@ class TestRenderMarkdown:
 # ---------------------------------------------------------------------------
 # write_diff() — file output
 # ---------------------------------------------------------------------------
+
 
 class TestWriteDiff:
     def test_writes_to_staging_dir(self, tmp_path):

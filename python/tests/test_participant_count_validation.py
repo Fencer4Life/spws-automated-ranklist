@@ -12,27 +12,32 @@ This is the layer that catches contamination the pgTAP invariant cannot see
 
 Plan IDs C2.1–C2.6.
 """
+
 from __future__ import annotations
 
-import pytest
-
-from python.pipeline.ir import ParsedTournament, ParsedResult, SourceKind
+from python.pipeline.ir import ParsedResult, ParsedTournament, SourceKind
 
 SEASON_END = 2026  # 2025-2026 season → V0 age<40 (BY>1986), V1 40-49 (BY 1977-1986)
 
 
 def _res(name, place, birth_year):
-    return ParsedResult(source_row_id=f"r:{name}", fencer_name=name, place=place,
-                        birth_year=birth_year)
+    return ParsedResult(
+        source_row_id=f"r:{name}", fencer_name=name, place=place, birth_year=birth_year
+    )
 
 
 def _parsed(results, url):
-    return ParsedTournament(source_kind=SourceKind.FENCINGTIME_XML, results=results,
-                            source_url=url, season_end_year=SEASON_END)
+    return ParsedTournament(
+        source_kind=SourceKind.FENCINGTIME_XML,
+        results=results,
+        source_url=url,
+        season_end_year=SEASON_END,
+    )
 
 
 class _FakeFetcher:
     """fetch_url(url) -> ParsedTournament. Raises for urls in `errors`."""
+
     def __init__(self, by_url, errors=()):
         self._by_url = by_url
         self._errors = set(errors)
@@ -46,16 +51,23 @@ class _FakeFetcher:
 
 
 def _tourn(code, vcat, url, stored):
-    return {"txt_code": code, "enum_age_category": vcat,
-            "url_results": url, "int_participant_count": stored}
+    return {
+        "txt_code": code,
+        "enum_age_category": vcat,
+        "url_results": url,
+        "int_participant_count": stored,
+    }
 
 
 def _validate(tournaments, fetcher):
     from python.pipeline.participant_count_validation import (
         validate_event_participant_counts,
     )
+
     return validate_event_participant_counts(
-        tournaments, fetcher, season_end_year=SEASON_END,
+        tournaments,
+        fetcher,
+        season_end_year=SEASON_END,
     )
 
 
@@ -73,10 +85,13 @@ def test_c2_2_sum_inflation_halts():
     url = "https://ftl/joint"
     bracket = _parsed([_res("A", 1, 2000), _res("B", 2, 1999), _res("C", 3, 1980)], url)
     fetcher = _FakeFetcher({url: bracket})
-    findings = _validate([
-        _tourn("T-V0-M-FOIL", "V0", url, 3),   # true V0 = 2
-        _tourn("T-V1-M-FOIL", "V1", url, 3),   # true V1 = 1
-    ], fetcher)
+    findings = _validate(
+        [
+            _tourn("T-V0-M-FOIL", "V0", url, 3),  # true V0 = 2
+            _tourn("T-V1-M-FOIL", "V1", url, 3),  # true V1 = 1
+        ],
+        fetcher,
+    )
     halts = {f.txt_code: f for f in findings if f.severity == "halt"}
     assert set(halts) == {"T-V0-M-FOIL", "T-V1-M-FOIL"}
     assert halts["T-V0-M-FOIL"].ftl_true == 2 and halts["T-V0-M-FOIL"].stored == 3
@@ -90,10 +105,13 @@ def test_c2_2b_per_vcat_correct_passes():
     url = "https://ftl/joint"
     bracket = _parsed([_res("A", 1, 2000), _res("B", 2, 1999), _res("C", 3, 1980)], url)
     fetcher = _FakeFetcher({url: bracket})
-    findings = _validate([
-        _tourn("T-V0-M-FOIL", "V0", url, 2),
-        _tourn("T-V1-M-FOIL", "V1", url, 1),
-    ], fetcher)
+    findings = _validate(
+        [
+            _tourn("T-V0-M-FOIL", "V0", url, 2),
+            _tourn("T-V1-M-FOIL", "V1", url, 1),
+        ],
+        fetcher,
+    )
     assert [f for f in findings if f.severity == "halt"] == []
 
 
@@ -129,6 +147,7 @@ def test_c2_5_fetch_error_warns():
 # --- C2.6 — has_halt helper convenience ----------------------------------------
 def test_c2_6_has_halt_helper():
     from python.pipeline.participant_count_validation import has_halt
+
     url = "https://ftl/joint"
     bracket = _parsed([_res("A", 1, 2000), _res("B", 2, 1999), _res("C", 3, 1980)], url)
     fetcher = _FakeFetcher({url: bracket})

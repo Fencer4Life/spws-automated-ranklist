@@ -26,6 +26,7 @@ from uuid import uuid4
 def _mk_db_with_supabase():
     """Build a DbConnector wrapped around a fully-mocked supabase client."""
     from python.pipeline.db_connector import DbConnector
+
     sb = MagicMock()
     return DbConnector(sb), sb
 
@@ -47,12 +48,24 @@ class TestDraftStore:
         store = DraftStore(db)
         ids = store.write_tournament_drafts(
             tournaments=[
-                {"id_event": 10, "txt_code": "TEST-V0", "enum_type": "PPW",
-                 "enum_weapon": "EPEE", "enum_gender": "M", "enum_age_category": "V0",
-                 "enum_parser_kind": "FENCINGTIME_XML"},
-                {"id_event": 10, "txt_code": "TEST-V1", "enum_type": "PPW",
-                 "enum_weapon": "EPEE", "enum_gender": "M", "enum_age_category": "V1",
-                 "enum_parser_kind": "FENCINGTIME_XML"},
+                {
+                    "id_event": 10,
+                    "txt_code": "TEST-V0",
+                    "enum_type": "PPW",
+                    "enum_weapon": "EPEE",
+                    "enum_gender": "M",
+                    "enum_age_category": "V0",
+                    "enum_parser_kind": "FENCINGTIME_XML",
+                },
+                {
+                    "id_event": 10,
+                    "txt_code": "TEST-V1",
+                    "enum_type": "PPW",
+                    "enum_weapon": "EPEE",
+                    "enum_gender": "M",
+                    "enum_age_category": "V1",
+                    "enum_parser_kind": "FENCINGTIME_XML",
+                },
             ],
             run_id=run_id,
         )
@@ -97,10 +110,20 @@ class TestDraftStore:
         ]
         res_select = MagicMock()
         res_select.select.return_value.eq.return_value.execute.return_value.data = [
-            {"id_result_draft": 1, "id_fencer": 100, "id_tournament_draft": 1,
-             "int_place": 1, "txt_run_id": run_id},
-            {"id_result_draft": 2, "id_fencer": 101, "id_tournament_draft": 1,
-             "int_place": 2, "txt_run_id": run_id},
+            {
+                "id_result_draft": 1,
+                "id_fencer": 100,
+                "id_tournament_draft": 1,
+                "int_place": 1,
+                "txt_run_id": run_id,
+            },
+            {
+                "id_result_draft": 2,
+                "id_fencer": 101,
+                "id_tournament_draft": 1,
+                "int_place": 2,
+                "txt_run_id": run_id,
+            },
         ]
         sb.table.side_effect = lambda name: (
             tour_select if name == "tbl_tournament_draft" else res_select

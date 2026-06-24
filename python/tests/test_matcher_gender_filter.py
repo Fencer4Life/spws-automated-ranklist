@@ -42,12 +42,12 @@ from python.matcher.pipeline import (
     resolve_tournament_results,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fencer fixtures with enum_gender for asymmetric-filter tests.
 # Mirrors tbl_fencer columns: id_fencer, txt_surname, txt_first_name,
 # json_name_aliases, int_birth_year, enum_gender.
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def fencer_db_with_genders():
@@ -115,8 +115,10 @@ def test_4_61_f_bracket_only_m_candidate_unmatched(fencer_db_only_male):
     through to NEW_FENCER instead of locking onto a wrong-gender row.
     """
     result = find_best_match(
-        "NOWAK Maria", fencer_db_only_male,
-        age_category="V1", season_end_year=2026,
+        "NOWAK Maria",
+        fencer_db_only_male,
+        age_category="V1",
+        season_end_year=2026,
         bracket_gender="F",
     )
     assert result.status == "UNMATCHED"
@@ -129,8 +131,10 @@ def test_4_61_f_bracket_only_m_candidate_unmatched(fencer_db_only_male):
 def test_4_62_f_bracket_matches_f_candidate(fencer_db_with_genders):
     """F bracket with both M and F candidates: filter drops M, F wins."""
     result = find_best_match(
-        "KOWALSKA Anna", fencer_db_with_genders,
-        age_category="V1", season_end_year=2026,
+        "KOWALSKA Anna",
+        fencer_db_with_genders,
+        age_category="V1",
+        season_end_year=2026,
         bracket_gender="F",
     )
     assert result.status == "AUTO_MATCHED"
@@ -146,8 +150,10 @@ def test_4_63_f_bracket_filters_m_when_mixed(fencer_db_with_genders):
     # Scrape "KOWALSKI Anna" — surname matches M row exactly, first name
     # matches F row. Without the filter, the M row could win on surname.
     result = find_best_match(
-        "KOWALSKI Anna", fencer_db_with_genders,
-        age_category="V1", season_end_year=2026,
+        "KOWALSKI Anna",
+        fencer_db_with_genders,
+        age_category="V1",
+        season_end_year=2026,
         bracket_gender="F",
     )
     # Expected: matches the F row (101), NOT the M row (100).
@@ -161,8 +167,10 @@ def test_4_64_f_bracket_null_gender_eligible(fencer_db_null_gender):
     """Legacy fencer rows with enum_gender=NULL must remain eligible — the
     filter only rejects rows explicitly marked enum_gender='M'."""
     result = find_best_match(
-        "STACHNIAK Dominika", fencer_db_null_gender,
-        age_category="V1", season_end_year=2026,
+        "STACHNIAK Dominika",
+        fencer_db_null_gender,
+        age_category="V1",
+        season_end_year=2026,
         bracket_gender="F",
     )
     assert result.status == "AUTO_MATCHED"
@@ -179,8 +187,10 @@ def test_4_65_m_bracket_no_filter_allows_f(fencer_db_with_genders):
     # Only an F candidate exists for this name; bracket is M.
     db = [fencer_db_with_genders[1]]  # KOWALSKA Anna (F) only
     result = find_best_match(
-        "KOWALSKA Anna", db,
-        age_category="V1", season_end_year=2026,
+        "KOWALSKA Anna",
+        db,
+        age_category="V1",
+        season_end_year=2026,
         bracket_gender="M",
     )
     assert result.status == "AUTO_MATCHED"
@@ -193,8 +203,10 @@ def test_4_65_m_bracket_no_filter_allows_f(fencer_db_with_genders):
 def test_4_66_m_bracket_no_filter_picks_best_name(fencer_db_with_genders):
     """M bracket: no filter applied, highest name-similarity wins."""
     result = find_best_match(
-        "KOWALSKI Jan", fencer_db_with_genders,
-        age_category="V1", season_end_year=2026,
+        "KOWALSKI Jan",
+        fencer_db_with_genders,
+        age_category="V1",
+        season_end_year=2026,
         bracket_gender="M",
     )
     assert result.id_fencer == 100  # M fencer wins on exact name
@@ -217,10 +229,10 @@ def _assert_filter_bypassed(tournament_type: str, fencer_db: list[dict]):
     with_filter = resolve_tournament_results(**common, bracket_gender="F")
     without_filter = resolve_tournament_results(**common, bracket_gender=None)
     # Same matched id_fencer set + same status.
-    assert [m.id_fencer for m in with_filter.matched] == \
-           [m.id_fencer for m in without_filter.matched]
-    assert [m.status for m in with_filter.matched] == \
-           [m.status for m in without_filter.matched]
+    assert [m.id_fencer for m in with_filter.matched] == [
+        m.id_fencer for m in without_filter.matched
+    ]
+    assert [m.status for m in with_filter.matched] == [m.status for m in without_filter.matched]
     assert with_filter.skipped == without_filter.skipped
     assert len(with_filter.auto_created) == len(without_filter.auto_created)
 
@@ -260,8 +272,10 @@ def test_4_70_no_bracket_gender_no_filter(fencer_db_with_genders):
     """Compound brackets (V0V1V2 etc.) come through pre-V-cat-split with
     bracket_gender=None. Must default to current behavior (no filter)."""
     result = find_best_match(
-        "KOWALSKI Jan", fencer_db_with_genders,
-        age_category="V1", season_end_year=2026,
+        "KOWALSKI Jan",
+        fencer_db_with_genders,
+        age_category="V1",
+        season_end_year=2026,
         bracket_gender=None,
     )
     # No filter → M row wins on exact name.
@@ -301,7 +315,9 @@ def test_4_72_auto_create_fencer_gender_default():
     enum_gender into the new-fencer dict for fn_commit_event_draft to consume.
     """
     new_fencer = auto_create_fencer(
-        "RIVERA CASTRO Tatiana", "V1", 2026,
+        "RIVERA CASTRO Tatiana",
+        "V1",
+        2026,
         gender_default="F",
     )
     assert new_fencer.get("enum_gender") == "F"

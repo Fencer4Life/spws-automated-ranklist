@@ -29,7 +29,6 @@ import re
 
 from bs4 import BeautifulSoup
 
-
 # Place cell text: "1.", "2.", "T3." (tied 3rd). Strip leading "T" + trailing ".".
 _PLACE_RE = re.compile(r"^T?(\d+)\.?$")
 
@@ -109,15 +108,17 @@ def parse_results(
             if not athlete_id or not fencer_name:
                 continue
 
-            parsed.append(ParsedResult(
-                source_row_id=f"ophardt:athlete{athlete_id}",
-                fencer_name=fencer_name,
-                place=place,
-                fencer_country=country,
-                # Ophardt does not expose birth year / DOB (PII).
-                birth_year=None,
-                birth_date=None,
-            ))
+            parsed.append(
+                ParsedResult(
+                    source_row_id=f"ophardt:athlete{athlete_id}",
+                    fencer_name=fencer_name,
+                    place=place,
+                    fencer_country=country,
+                    # Ophardt does not expose birth year / DOB (PII).
+                    birth_year=None,
+                    birth_date=None,
+                )
+            )
 
     return ParsedTournament(
         source_kind=SourceKind.OPHARDT_HTML,

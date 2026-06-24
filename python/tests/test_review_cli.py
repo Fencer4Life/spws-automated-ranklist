@@ -23,10 +23,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Fixture helpers
 # ---------------------------------------------------------------------------
+
 
 def _scripted_prompt(answers: list[str]):
     """Build a prompt callable that returns each answer in sequence.
@@ -40,12 +40,12 @@ def _scripted_prompt(answers: list[str]):
         try:
             return next(iterator)
         except StopIteration:
-            raise AssertionError(f"unexpected extra prompt: {message!r}")
+            raise AssertionError(f"unexpected extra prompt: {message!r}") from None
+
     return _prompt
 
 
-def _make_session(prompt_answers, db=None, store=None, fetcher=None,
-                  output_lines=None):
+def _make_session(prompt_answers, db=None, store=None, fetcher=None, output_lines=None):
     """Build a ReviewSession with mocks ready to use in tests."""
     from python.pipeline.review_cli import ReviewSession
 
@@ -73,14 +73,17 @@ def _make_session(prompt_answers, db=None, store=None, fetcher=None,
 # Source-of-truth choice dispatch
 # ---------------------------------------------------------------------------
 
+
 class TestSourceChoice:
     def test_choice_1_uses_recorded_url(self):
         """P3.RC1 choice '1' returns SourceChoice(kind='recorded')."""
-        from python.pipeline.review_cli import ReviewSession, SourceChoice
+        from python.pipeline.review_cli import SourceChoice
+
         session, db, *_ = _make_session(prompt_answers=["1"])
         # Event has recorded url_results
         db.find_event_by_code.return_value = {
-            "id_event": 1, "txt_code": "TEST-EVT-1",
+            "id_event": 1,
+            "txt_code": "TEST-EVT-1",
             "url_results": "https://recorded.example/foo",
         }
         choice = session.prompt_source_choice()
@@ -90,7 +93,6 @@ class TestSourceChoice:
 
     def test_choice_2_prompts_for_url(self):
         """P3.RC2 choice '2' issues a follow-up prompt for URL."""
-        from python.pipeline.review_cli import SourceChoice
         session, *_ = _make_session(prompt_answers=["2", "https://different.example/x"])
         choice = session.prompt_source_choice()
         assert choice.kind == "url"
@@ -124,7 +126,8 @@ class TestSourceChoice:
         """P3.RC5 invalid choice re-prompts until valid."""
         session, *_ = _make_session(prompt_answers=["foo", "9", "1"])
         session.db.find_event_by_code.return_value = {
-            "id_event": 1, "txt_code": "TEST-EVT-1",
+            "id_event": 1,
+            "txt_code": "TEST-EVT-1",
             "url_results": "https://recorded.example/x",
         }
         choice = session.prompt_source_choice()
@@ -135,35 +138,40 @@ class TestSourceChoice:
 # Fetch dispatch
 # ---------------------------------------------------------------------------
 
+
 class TestFetcher:
     def test_fetch_recorded_uses_event_url(self):
         """P3.RC6 fetch('recorded') invokes fetcher.fetch_url with event URL."""
-        from python.pipeline.review_cli import SourceChoice
         from python.pipeline.ir import ParsedTournament, SourceKind
+        from python.pipeline.review_cli import SourceChoice
 
         fetcher = MagicMock()
         fetcher.fetch_url.return_value = ParsedTournament(
-            source_kind=SourceKind.FENCINGTIME_XML, results=[],
+            source_kind=SourceKind.FENCINGTIME_XML,
+            results=[],
         )
         session, db, *_ = _make_session(prompt_answers=[], fetcher=fetcher)
         db.find_event_by_code.return_value = {
-            "id_event": 1, "txt_code": "TEST-EVT-1",
+            "id_event": 1,
+            "txt_code": "TEST-EVT-1",
             "url_results": "https://recorded.example/x",
         }
 
-        parsed = session.fetch_source(SourceChoice(kind="recorded",
-                                                    value="https://recorded.example/x"))
+        parsed = session.fetch_source(
+            SourceChoice(kind="recorded", value="https://recorded.example/x")
+        )
         fetcher.fetch_url.assert_called_once_with("https://recorded.example/x")
         assert parsed.source_kind == SourceKind.FENCINGTIME_XML
 
     def test_fetch_path_uses_local_file(self):
         """P3.RC7 fetch('path') invokes fetcher.fetch_path."""
-        from python.pipeline.review_cli import SourceChoice
         from python.pipeline.ir import ParsedTournament, SourceKind
+        from python.pipeline.review_cli import SourceChoice
 
         fetcher = MagicMock()
         fetcher.fetch_path.return_value = ParsedTournament(
-            source_kind=SourceKind.FILE_IMPORT, results=[],
+            source_kind=SourceKind.FILE_IMPORT,
+            results=[],
         )
         session, *_ = _make_session(prompt_answers=[], fetcher=fetcher)
         parsed = session.fetch_source(SourceChoice(kind="path", value="/tmp/x.csv"))
@@ -176,20 +184,24 @@ class TestFetcher:
         EVF events are predominant; this is the high-value source path
         (per project_evf_predominance.md).
         """
-        from python.pipeline.review_cli import SourceChoice
         from python.pipeline.ir import ParsedTournament, SourceKind
+        from python.pipeline.review_cli import SourceChoice
 
         fetcher = MagicMock()
         fetcher.fetch_evf_api.return_value = ParsedTournament(
-            source_kind=SourceKind.EVF_API, results=[],
+            source_kind=SourceKind.EVF_API,
+            results=[],
         )
         session, db, *_ = _make_session(prompt_answers=[], fetcher=fetcher)
-        event = {"id_event": 99, "txt_code": "PEW3-2025-2026",
-                 "dt_start": "2026-04-01", "dt_end": "2026-04-01"}
+        event = {
+            "id_event": 99,
+            "txt_code": "PEW3-2025-2026",
+            "dt_start": "2026-04-01",
+            "dt_end": "2026-04-01",
+        }
         db.find_event_by_code.return_value = event
 
-        parsed = session.fetch_source(SourceChoice(kind="evf_api",
-                                                    value="PEW3-2025-2026"))
+        parsed = session.fetch_source(SourceChoice(kind="evf_api", value="PEW3-2025-2026"))
         fetcher.fetch_evf_api.assert_called_once_with(event)
         assert parsed.source_kind == SourceKind.EVF_API
 
@@ -210,6 +222,7 @@ class TestFetcher:
 # Iteration loop
 # ---------------------------------------------------------------------------
 
+
 class TestRunIteration:
     def test_iteration_runs_pipeline_writes_drafts_and_diff(self, tmp_path, monkeypatch):
         """P3.RC8 iteration: pipeline → drafts → 3-way diff written to staging dir."""
@@ -220,18 +233,22 @@ class TestRunIteration:
         # Stub run_pipeline to return a synthetic context with one match
         def fake_run_pipeline(parsed, overrides, db, season_end_year, event_code=None):
             from python.pipeline.types import Overrides, PipelineContext
-            ctx = PipelineContext(parsed=parsed, overrides=overrides or Overrides(),
-                                  season_end_year=season_end_year)
+
+            ctx = PipelineContext(
+                parsed=parsed, overrides=overrides or Overrides(), season_end_year=season_end_year
+            )
             ctx.event = {"id_event": 1, "txt_code": "TEST-EVT-1"}
             ctx.matches = [
-                StageMatchResult(scraped_name="X", place=1, id_fencer=42,
-                                 confidence=99.0, method="AUTO_MATCHED"),
+                StageMatchResult(
+                    scraped_name="X", place=1, id_fencer=42, confidence=99.0, method="AUTO_MATCHED"
+                ),
             ]
             # ADR-056: run_iteration now writes via vcat_groups; populate
             # synthetically so the test's draft-write assertions still hold.
             ctx.vcat_groups = {"V1": list(ctx.matches)}
             ctx.is_joint_pool = False
             return ctx
+
         monkeypatch.setattr(review_cli, "run_pipeline", fake_run_pipeline)
 
         # Stub cert_ref query (Phase 3 reads but for now we mock)
@@ -246,7 +263,9 @@ class TestRunIteration:
             source_kind=SourceKind.FENCINGTIME_XML,
             results=[ParsedResult(source_row_id="r1", fencer_name="X", place=1)],
             parsed_date=date(2026, 4, 1),
-            weapon="EPEE", gender="M", season_end_year=2026,
+            weapon="EPEE",
+            gender="M",
+            season_end_year=2026,
         )
 
         ctx, diff_path = session.run_iteration(parsed, staging_dir=tmp_path)
@@ -263,6 +282,7 @@ class TestRunIteration:
 # ---------------------------------------------------------------------------
 # Action prompt: commit / discard / iterate
 # ---------------------------------------------------------------------------
+
 
 class TestPromptAction:
     def test_commit_returns_commit(self):
@@ -289,6 +309,7 @@ class TestPromptAction:
 # Joint flag semantics + url_results transform (Phase 5 follow-up)
 # ---------------------------------------------------------------------------
 
+
 class TestJointFlagAndUrlTransform:
     """Phase 5 follow-up: bool_joint_pool_split must flag only the
     OUTLIER V-cat children, not the dominant V-cat child whose V-cat
@@ -297,8 +318,13 @@ class TestJointFlagAndUrlTransform:
     /events/results/data/<UUID> we actually fetched.
     """
 
-    def _make_ctx(self, *, category_hint: str | None, vcat_groups: dict,
-                  source_url: str = "https://example.test/x"):
+    def _make_ctx(
+        self,
+        *,
+        category_hint: str | None,
+        vcat_groups: dict,
+        source_url: str = "https://example.test/x",
+    ):
         from python.pipeline.ir import ParsedTournament, SourceKind
         from python.pipeline.types import Overrides, PipelineContext
 
@@ -321,8 +347,10 @@ class TestJointFlagAndUrlTransform:
     # 5.J1 single V-cat group → joint=FALSE
     def test_single_group_joint_false(self):
         from python.pipeline.types import StageMatchResult
-        m = StageMatchResult(scraped_name="X", place=1, id_fencer=1,
-                             confidence=99.0, method="AUTO_MATCHED")
+
+        m = StageMatchResult(
+            scraped_name="X", place=1, id_fencer=1, confidence=99.0, method="AUTO_MATCHED"
+        )
         session, *_ = _make_session(prompt_answers=[])
         ctx = self._make_ctx(category_hint="V2", vcat_groups={"V2": [m]})
         rows = session._build_tournament_draft_rows(ctx)
@@ -333,12 +361,16 @@ class TestJointFlagAndUrlTransform:
     # 5.J2 single-V-cat-named bracket with outlier → dominant FALSE, outlier TRUE
     def test_named_bracket_with_outlier_only_outlier_flagged(self):
         from python.pipeline.types import StageMatchResult
-        dom1 = StageMatchResult(scraped_name="A", place=1, id_fencer=1,
-                                confidence=99.0, method="AUTO_MATCHED")
-        dom2 = StageMatchResult(scraped_name="B", place=2, id_fencer=2,
-                                confidence=99.0, method="AUTO_MATCHED")
-        outlier = StageMatchResult(scraped_name="C", place=3, id_fencer=3,
-                                   confidence=99.0, method="AUTO_MATCHED")
+
+        dom1 = StageMatchResult(
+            scraped_name="A", place=1, id_fencer=1, confidence=99.0, method="AUTO_MATCHED"
+        )
+        dom2 = StageMatchResult(
+            scraped_name="B", place=2, id_fencer=2, confidence=99.0, method="AUTO_MATCHED"
+        )
+        outlier = StageMatchResult(
+            scraped_name="C", place=3, id_fencer=3, confidence=99.0, method="AUTO_MATCHED"
+        )
         session, *_ = _make_session(prompt_answers=[])
         ctx = self._make_ctx(
             category_hint="V2",
@@ -352,12 +384,16 @@ class TestJointFlagAndUrlTransform:
     # 5.J3 combined-pool bracket (no nominal V-cat) → all groups TRUE
     def test_combined_pool_all_groups_flagged(self):
         from python.pipeline.types import StageMatchResult
-        a = StageMatchResult(scraped_name="A", place=1, id_fencer=1,
-                             confidence=99.0, method="AUTO_MATCHED")
-        b = StageMatchResult(scraped_name="B", place=2, id_fencer=2,
-                             confidence=99.0, method="AUTO_MATCHED")
-        c = StageMatchResult(scraped_name="C", place=3, id_fencer=3,
-                             confidence=99.0, method="AUTO_MATCHED")
+
+        a = StageMatchResult(
+            scraped_name="A", place=1, id_fencer=1, confidence=99.0, method="AUTO_MATCHED"
+        )
+        b = StageMatchResult(
+            scraped_name="B", place=2, id_fencer=2, confidence=99.0, method="AUTO_MATCHED"
+        )
+        c = StageMatchResult(
+            scraped_name="C", place=3, id_fencer=3, confidence=99.0, method="AUTO_MATCHED"
+        )
         session, *_ = _make_session(prompt_answers=[])
         ctx = self._make_ctx(
             category_hint=None,
@@ -370,27 +406,39 @@ class TestJointFlagAndUrlTransform:
     # 5.J4 url_results transforms FTL data endpoint → human URL
     def test_url_results_transformed_for_ftl(self):
         from python.pipeline.types import StageMatchResult
-        m = StageMatchResult(scraped_name="X", place=1, id_fencer=1,
-                             confidence=99.0, method="AUTO_MATCHED")
+
+        m = StageMatchResult(
+            scraped_name="X", place=1, id_fencer=1, confidence=99.0, method="AUTO_MATCHED"
+        )
         session, *_ = _make_session(prompt_answers=[])
         ctx = self._make_ctx(
-            category_hint="V2", vcat_groups={"V2": [m]},
+            category_hint="V2",
+            vcat_groups={"V2": [m]},
             source_url="https://www.fencingtimelive.com/events/results/data/22488366AC2E4DA9A7A7828054EB230C",
         )
         rows = session._build_tournament_draft_rows(ctx)
         r = rows[0]
-        assert r["url_results"] == "https://www.fencingtimelive.com/events/results/22488366AC2E4DA9A7A7828054EB230C"
+        assert (
+            r["url_results"]
+            == "https://www.fencingtimelive.com/events/results/22488366AC2E4DA9A7A7828054EB230C"
+        )
         # txt_source_url_used keeps the actual fetched endpoint (audit trail)
-        assert r["txt_source_url_used"] == "https://www.fencingtimelive.com/events/results/data/22488366AC2E4DA9A7A7828054EB230C"
+        assert (
+            r["txt_source_url_used"]
+            == "https://www.fencingtimelive.com/events/results/data/22488366AC2E4DA9A7A7828054EB230C"
+        )
 
     # 5.J5 non-FTL URLs are passed through unchanged
     def test_non_ftl_url_unchanged(self):
         from python.pipeline.types import StageMatchResult
-        m = StageMatchResult(scraped_name="X", place=1, id_fencer=1,
-                             confidence=99.0, method="AUTO_MATCHED")
+
+        m = StageMatchResult(
+            scraped_name="X", place=1, id_fencer=1, confidence=99.0, method="AUTO_MATCHED"
+        )
         session, *_ = _make_session(prompt_answers=[])
         ctx = self._make_ctx(
-            category_hint="V2", vcat_groups={"V2": [m]},
+            category_hint="V2",
+            vcat_groups={"V2": [m]},
             source_url="https://engarde-service.com/some/path",
         )
         rows = session._build_tournament_draft_rows(ctx)
@@ -402,7 +450,9 @@ class TestRun:
         """P3.RC12 source-of-truth='q' (skip) returns without touching draft store."""
         session, db, store, *_ = _make_session(prompt_answers=["q"])
         db.find_event_by_code.return_value = {
-            "id_event": 1, "txt_code": "TEST-EVT-1", "url_results": "https://x",
+            "id_event": 1,
+            "txt_code": "TEST-EVT-1",
+            "url_results": "https://x",
         }
         result = session.run()
         assert result == "skipped"

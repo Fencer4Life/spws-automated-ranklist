@@ -24,7 +24,6 @@ from unittest.mock import MagicMock
 import httpx
 import pytest
 
-
 FIXTURES = Path(__file__).parent / "fixtures"
 FIXTURE_PATH = FIXTURES / "evf_calendar.html"
 
@@ -54,7 +53,7 @@ class TestEvfCalendarScraper:
 
     def test_filters_by_season_date_range(self):
         """evf.3: Events outside season range are excluded."""
-        from python.scrapers.evf_calendar import parse_evf_calendar_html, filter_by_season
+        from python.scrapers.evf_calendar import filter_by_season, parse_evf_calendar_html
 
         html = FIXTURE_PATH.read_text(encoding="utf-8")
         all_events = parse_evf_calendar_html(html)
@@ -112,20 +111,18 @@ class TestEvfDedup:
         from python.scrapers.evf_calendar import deduplicate_events
 
         scraped = [
-            {"name": "EVF Circuit – Naples (ITA)", "dt_start": "2026-03-07",
-             "country": "Italy"},
-            {"name": "EVF Circuit – Jablonna (POL)", "dt_start": "2026-03-28",
-             "country": "Poland"},
-            {"name": "EVF Circuit – Chania, Crete (GRE)", "dt_start": "2026-05-02",
-             "country": "Greece"},
+            {"name": "EVF Circuit – Naples (ITA)", "dt_start": "2026-03-07", "country": "Italy"},
+            {"name": "EVF Circuit – Jablonna (POL)", "dt_start": "2026-03-28", "country": "Poland"},
+            {
+                "name": "EVF Circuit – Chania, Crete (GRE)",
+                "dt_start": "2026-05-02",
+                "country": "Greece",
+            },
         ]
         existing = [
-            {"txt_name": "EVF Circuit Napoli", "dt_start": "2026-03-07",
-             "txt_country": "Italy"},
-            {"txt_name": "EVF Circuit Jabłonna", "dt_start": "2026-03-28",
-             "txt_country": "Polska"},
-            {"txt_name": "EVF Circuit Chania", "dt_start": "2026-05-02",
-             "txt_country": "Greece"},
+            {"txt_name": "EVF Circuit Napoli", "dt_start": "2026-03-07", "txt_country": "Italy"},
+            {"txt_name": "EVF Circuit Jabłonna", "dt_start": "2026-03-28", "txt_country": "Polska"},
+            {"txt_name": "EVF Circuit Chania", "dt_start": "2026-05-02", "txt_country": "Greece"},
         ]
         new, already = deduplicate_events(scraped, existing)
         assert len(new) == 0, (
@@ -140,20 +137,14 @@ class TestEvfDedup:
         from python.scrapers.evf_calendar import deduplicate_events
 
         scraped = [
-            {"name": "EVF Circuit Warsaw", "dt_start": "2026-06-15",
-             "country": "Poland"},
-            {"name": "EVF Circuit Rome", "dt_start": "2026-07-10",
-             "country": "Italy"},
-            {"name": "EVF Circuit Berlin", "dt_start": "2026-08-20",
-             "country": "Germany"},
+            {"name": "EVF Circuit Warsaw", "dt_start": "2026-06-15", "country": "Poland"},
+            {"name": "EVF Circuit Rome", "dt_start": "2026-07-10", "country": "Italy"},
+            {"name": "EVF Circuit Berlin", "dt_start": "2026-08-20", "country": "Germany"},
         ]
         existing = [
-            {"txt_name": "EVF Event X", "dt_start": "2026-06-15",
-             "txt_country": "Polska"},
-            {"txt_name": "EVF Event Y", "dt_start": "2026-07-10",
-             "txt_country": "Italia"},
-            {"txt_name": "EVF Event Z", "dt_start": "2026-08-20",
-             "txt_country": "Deutschland"},
+            {"txt_name": "EVF Event X", "dt_start": "2026-06-15", "txt_country": "Polska"},
+            {"txt_name": "EVF Event Y", "dt_start": "2026-07-10", "txt_country": "Italia"},
+            {"txt_name": "EVF Event Z", "dt_start": "2026-08-20", "txt_country": "Deutschland"},
         ]
         new, already = deduplicate_events(scraped, existing)
         assert len(new) == 0
@@ -167,12 +158,14 @@ class TestEvfDedup:
         from python.scrapers.evf_calendar import deduplicate_events
 
         scraped = [
-            {"name": "EVF Circuit – Liège (BEL)", "dt_start": "2026-04-11",
-             "country": "Belgium"},
+            {"name": "EVF Circuit – Liège (BEL)", "dt_start": "2026-04-11", "country": "Belgium"},
         ]
         existing = [
-            {"txt_name": "V Puchar Polski Weteranów", "dt_start": "2026-04-11",
-             "txt_country": "Polska"},
+            {
+                "txt_name": "V Puchar Polski Weteranów",
+                "dt_start": "2026-04-11",
+                "txt_country": "Polska",
+            },
         ]
         new, already = deduplicate_events(scraped, existing)
         assert len(new) == 1, "Same day, different country → separate events"
@@ -187,12 +180,14 @@ class TestEvfDedup:
         from python.scrapers.evf_calendar import deduplicate_events
 
         scraped = [
-            {"name": "EVF Circuit Jablonna", "dt_start": "2026-03-28",
-             "location": "Jablonna"},
+            {"name": "EVF Circuit Jablonna", "dt_start": "2026-03-28", "location": "Jablonna"},
         ]
         existing = [
-            {"txt_name": "EVF Circuit Jabłonna", "dt_start": "2026-03-28",
-             "txt_location": "Jabłonna"},
+            {
+                "txt_name": "EVF Circuit Jabłonna",
+                "dt_start": "2026-03-28",
+                "txt_location": "Jabłonna",
+            },
         ]
         new, already = deduplicate_events(scraped, existing)
         assert len(already) == 1
@@ -206,12 +201,20 @@ class TestEvfDedup:
         from python.scrapers.evf_calendar import match_scraped_to_existing
 
         scraped = [
-            {"name": "EVF Circuit – Naples (ITA)", "dt_start": "2026-03-07",
-             "country": "Italy", "url": "https://evf/naples"},
+            {
+                "name": "EVF Circuit – Naples (ITA)",
+                "dt_start": "2026-03-07",
+                "country": "Italy",
+                "url": "https://evf/naples",
+            },
         ]
         existing = [
-            {"id_event": 42, "txt_name": "EVF Circuit Napoli",
-             "dt_start": "2026-03-07", "txt_country": "Italy"},
+            {
+                "id_event": 42,
+                "txt_name": "EVF Circuit Napoli",
+                "dt_start": "2026-03-07",
+                "txt_country": "Italy",
+            },
         ]
         pairs = match_scraped_to_existing(scraped, existing)
         assert len(pairs) == 1
@@ -233,8 +236,12 @@ class TestDedupAlgorithmRev2:
         from python.scrapers.evf_calendar import deduplicate_events
 
         scraped = [
-            {"name": "EVF Circuit – Naples (ITA)", "dt_start": "2026-03-07",
-             "country": "Italy", "location": "Palavesuvio"},
+            {
+                "name": "EVF Circuit – Naples (ITA)",
+                "dt_start": "2026-03-07",
+                "country": "Italy",
+                "location": "Palavesuvio",
+            },
         ]
         existing = [
             # Country and location both missing — only name is similar.
@@ -251,13 +258,19 @@ class TestDedupAlgorithmRev2:
         from python.scrapers.evf_calendar import deduplicate_events
 
         scraped = [
-            {"name": "EVF Circuit Stockholm", "dt_start": "2026-03-14",
-             "location": "Stockholm, Sweden"},
+            {
+                "name": "EVF Circuit Stockholm",
+                "dt_start": "2026-03-14",
+                "location": "Stockholm, Sweden",
+            },
         ]
         existing = [
             # No txt_country, but txt_location overlaps.
-            {"txt_name": "Stockholm International", "dt_start": "2026-03-14",
-             "txt_location": "Stockholm"},
+            {
+                "txt_name": "Stockholm International",
+                "dt_start": "2026-03-14",
+                "txt_location": "Stockholm",
+            },
         ]
         new, already = deduplicate_events(scraped, existing)
         assert len(already) == 1
@@ -272,24 +285,20 @@ class TestDedupAlgorithmRev2:
 
         # 7-day drift: still matches via country
         scraped_7 = [
-            {"name": "EVF Circuit Madrid", "dt_start": "2026-04-08",
-             "country": "Spain"},
+            {"name": "EVF Circuit Madrid", "dt_start": "2026-04-08", "country": "Spain"},
         ]
         existing_7 = [
-            {"txt_name": "Madrid Open", "dt_start": "2026-04-01",
-             "txt_country": "Spain"},
+            {"txt_name": "Madrid Open", "dt_start": "2026-04-01", "txt_country": "Spain"},
         ]
         new7, already7 = deduplicate_events(scraped_7, existing_7)
         assert len(already7) == 1, "7-day drift with same country must match"
 
         # 8-day drift: no match — outside window even with same country
         scraped_8 = [
-            {"name": "EVF Circuit Madrid", "dt_start": "2026-04-09",
-             "country": "Spain"},
+            {"name": "EVF Circuit Madrid", "dt_start": "2026-04-09", "country": "Spain"},
         ]
         existing_8 = [
-            {"txt_name": "Madrid Open", "dt_start": "2026-04-01",
-             "txt_country": "Spain"},
+            {"txt_name": "Madrid Open", "dt_start": "2026-04-01", "txt_country": "Spain"},
         ]
         new8, already8 = deduplicate_events(scraped_8, existing_8)
         assert len(new8) == 1, "8-day drift must NOT match"
@@ -308,6 +317,7 @@ class TestStaleEventGate:
         - Future event AND status != COMPLETED               → in-scope
         """
         from datetime import date
+
         from python.scrapers.evf_calendar import is_in_scope
 
         today = date(2026, 4, 25)
@@ -333,23 +343,33 @@ class TestStaleEventGate:
         how sync_calendar / sync_results in evf_sync.py invoke the matcher.
         """
         from datetime import date
+
         from python.scrapers.evf_calendar import deduplicate_events, is_in_scope
 
         today = date(2026, 4, 25)
 
         scraped = [
-            {"name": "EVF Circuit Stockholm", "dt_start": "2026-03-14",
-             "country": "Sweden"},
+            {"name": "EVF Circuit Stockholm", "dt_start": "2026-03-14", "country": "Sweden"},
         ]
         existing = [
             # Stockholm Mar 14 — would match by date+country, but COMPLETED.
-            {"id_event": 51, "txt_name": "EVF Circuit Stockholm",
-             "dt_start": "2026-03-14", "txt_country": "Sweden",
-             "dt_end": "2026-03-14", "enum_status": "COMPLETED"},
+            {
+                "id_event": 51,
+                "txt_name": "EVF Circuit Stockholm",
+                "dt_start": "2026-03-14",
+                "txt_country": "Sweden",
+                "dt_end": "2026-03-14",
+                "enum_status": "COMPLETED",
+            },
             # A future PLANNED Stockholm — different date, won't match.
-            {"id_event": 99, "txt_name": "Future Stockholm",
-             "dt_start": "2030-03-14", "txt_country": "Sweden",
-             "dt_end": "2030-03-14", "enum_status": "PLANNED"},
+            {
+                "id_event": 99,
+                "txt_name": "Future Stockholm",
+                "dt_start": "2030-03-14",
+                "txt_country": "Sweden",
+                "dt_end": "2030-03-14",
+                "enum_status": "PLANNED",
+            },
         ]
         in_scope = [e for e in existing if is_in_scope(e, today=today)]
         assert {e["id_event"] for e in in_scope} == {99}, (
@@ -369,25 +389,24 @@ class TestLogicalIntegrityGuard:
         sync aborts and Telegram alerts the admin.
         """
         from datetime import date
+
         from python.scrapers.evf_calendar import (
-            assert_no_future_completed, LogicalIntegrityError,
+            LogicalIntegrityError,
+            assert_no_future_completed,
         )
 
         today = date(2026, 4, 25)
 
         # No violation — this should pass silently.
         clean = [
-            {"txt_code": "PEW8-2025-2026", "dt_start": "2026-05-02",
-             "enum_status": "PLANNED"},
-            {"txt_code": "PEW4-2025-2026", "dt_start": "2026-03-07",
-             "enum_status": "COMPLETED"},
+            {"txt_code": "PEW8-2025-2026", "dt_start": "2026-05-02", "enum_status": "PLANNED"},
+            {"txt_code": "PEW4-2025-2026", "dt_start": "2026-03-07", "enum_status": "COMPLETED"},
         ]
         assert_no_future_completed(clean, today=today)
 
         # Violation: future date AND COMPLETED.
         corrupt = clean + [
-            {"txt_code": "PEW9-2025-2026", "dt_start": "2026-05-30",
-             "enum_status": "COMPLETED"},
+            {"txt_code": "PEW9-2025-2026", "dt_start": "2026-05-30", "enum_status": "COMPLETED"},
         ]
         with pytest.raises(LogicalIntegrityError) as exc_info:
             assert_no_future_completed(corrupt, today=today)
@@ -409,14 +428,23 @@ class TestFutureCompletedHealing:
         rewritten — earliest date → dt_start, latest → dt_end — and produces no
         status flip."""
         from datetime import date
+
         from python.scrapers.evf_calendar import compute_future_completed_corrections
 
         today = date(2026, 6, 13)
         violators = [
-            {"txt_code": "PEW63e-2025-2026", "id_event": 80,
-             "dt_start": "2026-10-01", "enum_status": "COMPLETED"},
-            {"txt_code": "PEW64s-2025-2026", "id_event": 81,
-             "dt_start": "2026-11-11", "enum_status": "COMPLETED"},
+            {
+                "txt_code": "PEW63e-2025-2026",
+                "id_event": 80,
+                "dt_start": "2026-10-01",
+                "enum_status": "COMPLETED",
+            },
+            {
+                "txt_code": "PEW64s-2025-2026",
+                "id_event": 81,
+                "dt_start": "2026-11-11",
+                "enum_status": "COMPLETED",
+            },
         ]
         # The real BVF 6-Weapon International ran 2026-01-10 (epee) / 01-11 (sabre).
         recovered = {
@@ -443,12 +471,17 @@ class TestFutureCompletedHealing:
         """evf.45: if no date can be recovered (event URL NULL, login wall, 404),
         the violator becomes a status_flip — the caller demotes its status."""
         from datetime import date
+
         from python.scrapers.evf_calendar import compute_future_completed_corrections
 
         today = date(2026, 6, 13)
         violators = [
-            {"txt_code": "PEW64s-2025-2026", "id_event": 81,
-             "dt_start": "2026-11-11", "enum_status": "COMPLETED"},
+            {
+                "txt_code": "PEW64s-2025-2026",
+                "id_event": 81,
+                "dt_start": "2026-11-11",
+                "enum_status": "COMPLETED",
+            },
         ]
         corrections, status_flips = compute_future_completed_corrections(
             violators, lambda ev: [], today=today
@@ -461,12 +494,17 @@ class TestFutureCompletedHealing:
         the invariant, so the row becomes a status_flip rather than swapping one
         bad date for another."""
         from datetime import date
+
         from python.scrapers.evf_calendar import compute_future_completed_corrections
 
         today = date(2026, 6, 13)
         violators = [
-            {"txt_code": "PEW63e-2025-2026", "id_event": 80,
-             "dt_start": "2026-10-01", "enum_status": "COMPLETED"},
+            {
+                "txt_code": "PEW63e-2025-2026",
+                "id_event": 80,
+                "dt_start": "2026-10-01",
+                "enum_status": "COMPLETED",
+            },
         ]
         corrections, status_flips = compute_future_completed_corrections(
             violators, lambda ev: ["2026-12-25"], today=today
@@ -503,9 +541,20 @@ class TestEvfApiCalendar:
 
         assert len(events) == 3, "expected 3 events from fixture"
         required_keys = {
-            "name", "dt_start", "dt_end", "location", "address", "country",
-            "weapons", "is_team", "url", "fee", "fee_currency",
-            "url_invitation", "url_registration", "dt_registration_deadline",
+            "name",
+            "dt_start",
+            "dt_end",
+            "location",
+            "address",
+            "country",
+            "weapons",
+            "is_team",
+            "url",
+            "fee",
+            "fee_currency",
+            "url_invitation",
+            "url_registration",
+            "dt_registration_deadline",
         }
         for e in events:
             missing = required_keys - set(e.keys())
@@ -546,7 +595,9 @@ class TestEvfEventDetailParser:
         assert out["url_invitation"], "invitation should also be detected"
         assert out["url_invitation"].endswith(".pdf")
 
-    @pytest.mark.skip(reason="ADR-028: deadline harvesting disabled pending real-world pattern data (HARVEST_DEADLINE=False)")
+    @pytest.mark.skip(
+        reason="ADR-028: deadline harvesting disabled pending real-world pattern data (HARVEST_DEADLINE=False)"
+    )
     def test_parses_engarde_registration_deadline(self):
         """evf.8b: deadline '15 May 2026' normalised to ISO — DISABLED."""
         from python.scrapers.evf_calendar import parse_event_detail_html
@@ -564,7 +615,9 @@ class TestEvfEventDetailParser:
         assert out["url_registration"], "Polish 'Zgłoszenia' link should be found"
         assert "engarde-escrime.com" in out["url_registration"]
 
-    @pytest.mark.skip(reason="ADR-028: deadline harvesting disabled pending real-world pattern data (HARVEST_DEADLINE=False)")
+    @pytest.mark.skip(
+        reason="ADR-028: deadline harvesting disabled pending real-world pattern data (HARVEST_DEADLINE=False)"
+    )
     def test_parses_polish_deadline(self):
         """evf.9b: Polish ISO deadline '2026-03-10' — DISABLED."""
         from python.scrapers.evf_calendar import parse_event_detail_html
@@ -583,18 +636,36 @@ class TestEvfEnrichment:
 
         events = [
             {
-                "name": "Good Event", "url": "https://example.org/good",
-                "dt_start": "2026-04-18", "dt_end": "2026-04-19",
-                "location": "Salzburg", "address": "", "country": "AUT",
-                "weapons": ["EPEE"], "is_team": False, "fee": None, "fee_currency": "",
-                "url_invitation": None, "url_registration": None, "dt_registration_deadline": None,
+                "name": "Good Event",
+                "url": "https://example.org/good",
+                "dt_start": "2026-04-18",
+                "dt_end": "2026-04-19",
+                "location": "Salzburg",
+                "address": "",
+                "country": "AUT",
+                "weapons": ["EPEE"],
+                "is_team": False,
+                "fee": None,
+                "fee_currency": "",
+                "url_invitation": None,
+                "url_registration": None,
+                "dt_registration_deadline": None,
             },
             {
-                "name": "Broken Event", "url": "https://example.org/broken",
-                "dt_start": "2026-05-30", "dt_end": "2026-05-31",
-                "location": "Dublin", "address": "", "country": "IRL",
-                "weapons": ["EPEE"], "is_team": False, "fee": None, "fee_currency": "",
-                "url_invitation": None, "url_registration": None, "dt_registration_deadline": None,
+                "name": "Broken Event",
+                "url": "https://example.org/broken",
+                "dt_start": "2026-05-30",
+                "dt_end": "2026-05-31",
+                "location": "Dublin",
+                "address": "",
+                "country": "IRL",
+                "weapons": ["EPEE"],
+                "is_team": False,
+                "fee": None,
+                "fee_currency": "",
+                "url_invitation": None,
+                "url_registration": None,
+                "dt_registration_deadline": None,
             },
         ]
 
@@ -663,20 +734,33 @@ class TestEvfMatchExisting:
         from python.scrapers.evf_calendar import match_scraped_to_existing
 
         scraped = [
-            {"name": "EVF Circuit Salzburg", "dt_start": "2026-04-18",
-             "country": "Austria"},
-            {"name": "EVF Circuit Dublin", "dt_start": "2026-05-30",
-             "country": "Ireland"},
-            {"name": "EVF Circuit Zurich", "dt_start": "2026-06-01",
-             "country": "Switzerland"},   # no match (no Swiss row in existing)
+            {"name": "EVF Circuit Salzburg", "dt_start": "2026-04-18", "country": "Austria"},
+            {"name": "EVF Circuit Dublin", "dt_start": "2026-05-30", "country": "Ireland"},
+            {
+                "name": "EVF Circuit Zurich",
+                "dt_start": "2026-06-01",
+                "country": "Switzerland",
+            },  # no match (no Swiss row in existing)
         ]
         existing = [
-            {"id_event": 101, "txt_name": "PEW7 Salzburg",    "dt_start": "2026-04-19",
-             "txt_country": "Austria"},
-            {"id_event": 102, "txt_name": "PEW9 Dublin",      "dt_start": "2026-05-30",
-             "txt_country": "Ireland"},
-            {"id_event": 103, "txt_name": "PPW5 Gdansk",      "dt_start": "2026-04-11",
-             "txt_country": "Polska"},
+            {
+                "id_event": 101,
+                "txt_name": "PEW7 Salzburg",
+                "dt_start": "2026-04-19",
+                "txt_country": "Austria",
+            },
+            {
+                "id_event": 102,
+                "txt_name": "PEW9 Dublin",
+                "dt_start": "2026-05-30",
+                "txt_country": "Ireland",
+            },
+            {
+                "id_event": 103,
+                "txt_name": "PPW5 Gdansk",
+                "dt_start": "2026-04-11",
+                "txt_country": "Polska",
+            },
         ]
         pairs = match_scraped_to_existing(scraped, existing, date_tolerance=7)
         names = sorted((s["name"], e["id_event"]) for s, e in pairs)
@@ -733,12 +817,14 @@ class TestEvfPhase2Allocator:
             sql_calls.append(sql)
             sl = sql.lower()
             if "from tbl_season where bool_active" in sl:
-                return [{
-                    "txt_code": "SPWS-2025-2026",
-                    "dt_start": "2025-09-01",
-                    "dt_end": "2026-08-31",
-                    "id_season": 7,
-                }]
+                return [
+                    {
+                        "txt_code": "SPWS-2025-2026",
+                        "dt_start": "2025-09-01",
+                        "dt_end": "2026-08-31",
+                        "id_season": 7,
+                    }
+                ]
             if "fn_import_evf_events_v2" in sl:
                 return [{"r": json.dumps(rpc_returns)}]
             if "from tbl_event" in sl:
@@ -761,15 +847,24 @@ class TestEvfPhase2Allocator:
         """evf.40: One Telegram message per NEXT_FREE_ALLOC alert, with city + new code."""
         from python.scrapers import evf_sync
 
-        scraped = [{
-            "name": "EVF Circuit – Madrid (ESP)",
-            "dt_start": "2026-06-01", "dt_end": "2026-06-02",
-            "location": "Madrid", "country": "Spain",
-            "weapons": ["EPEE"], "is_team": False,
-            "url": "", "fee": None, "fee_currency": "",
-        }]
+        scraped = [
+            {
+                "name": "EVF Circuit – Madrid (ESP)",
+                "dt_start": "2026-06-01",
+                "dt_end": "2026-06-02",
+                "location": "Madrid",
+                "country": "Spain",
+                "weapons": ["EPEE"],
+                "is_team": False,
+                "url": "",
+                "fee": None,
+                "fee_currency": "",
+            }
+        ]
         rpc_returns = {
-            "created": 1, "slot_reused": 0, "prior_matched": 0,
+            "created": 1,
+            "slot_reused": 0,
+            "prior_matched": 0,
             "alerts": [
                 {"code": "PEW9-2025-2026", "location": "Madrid", "country": "Spain"},
             ],
@@ -797,17 +892,35 @@ class TestEvfPhase2Allocator:
         d1 = date.today() + timedelta(days=14)
         d2 = date.today() + timedelta(days=44)
         scraped = [
-            {"name": "EVF Circuit – Salzburg (AUT)", "dt_start": d1.isoformat(),
-             "dt_end": (d1 + timedelta(days=1)).isoformat(), "location": "Salzburg",
-             "country": "Austria", "weapons": ["EPEE"], "is_team": False, "url": "",
-             "fee": None, "fee_currency": ""},
-            {"name": "EVF Circuit – Krakow (POL)", "dt_start": d2.isoformat(),
-             "dt_end": (d2 + timedelta(days=1)).isoformat(), "location": "Krakow",
-             "country": "Poland", "weapons": ["EPEE"], "is_team": False, "url": "",
-             "fee": None, "fee_currency": ""},
+            {
+                "name": "EVF Circuit – Salzburg (AUT)",
+                "dt_start": d1.isoformat(),
+                "dt_end": (d1 + timedelta(days=1)).isoformat(),
+                "location": "Salzburg",
+                "country": "Austria",
+                "weapons": ["EPEE"],
+                "is_team": False,
+                "url": "",
+                "fee": None,
+                "fee_currency": "",
+            },
+            {
+                "name": "EVF Circuit – Krakow (POL)",
+                "dt_start": d2.isoformat(),
+                "dt_end": (d2 + timedelta(days=1)).isoformat(),
+                "location": "Krakow",
+                "country": "Poland",
+                "weapons": ["EPEE"],
+                "is_team": False,
+                "url": "",
+                "fee": None,
+                "fee_currency": "",
+            },
         ]
         rpc_returns = {
-            "created": 0, "slot_reused": 1, "prior_matched": 1,
+            "created": 0,
+            "slot_reused": 1,
+            "prior_matched": 1,
             "alerts": [],  # no NEXT_FREE_ALLOC
         }
         _, sent = self._patch_sync(monkeypatch, scraped, rpc_returns)
@@ -820,23 +933,38 @@ class TestEvfPhase2Allocator:
             f"slot-reuse / prior-match must NOT fire per-row telegrams; got {per_row}"
         )
         # Summary message should still be sent (and reference reuse/match counts)
-        summary = [m for m in sent if "slot_reused" in m.lower() or "pre-allocated" in m.lower()
-                   or "prior_matched" in m.lower() or "carried" in m.lower()]
+        summary = [
+            m
+            for m in sent
+            if "slot_reused" in m.lower()
+            or "pre-allocated" in m.lower()
+            or "prior_matched" in m.lower()
+            or "carried" in m.lower()
+        ]
         assert summary, f"expected a summary message; got {sent}"
 
     def test_payload_omits_code_includes_classifier_inputs(self, monkeypatch):
         """evf.42: Payload to RPC has `name` + `is_team` but NOT `code`."""
         from python.scrapers import evf_sync
 
-        scraped = [{
-            "name": "EVF Circuit – Berlin (GER)",
-            "dt_start": "2026-07-01", "dt_end": "2026-07-02",
-            "location": "Berlin", "country": "Germany",
-            "weapons": ["EPEE"], "is_team": False,
-            "url": "", "fee": None, "fee_currency": "",
-        }]
+        scraped = [
+            {
+                "name": "EVF Circuit – Berlin (GER)",
+                "dt_start": "2026-07-01",
+                "dt_end": "2026-07-02",
+                "location": "Berlin",
+                "country": "Germany",
+                "weapons": ["EPEE"],
+                "is_team": False,
+                "url": "",
+                "fee": None,
+                "fee_currency": "",
+            }
+        ]
         rpc_returns = {
-            "created": 1, "slot_reused": 0, "prior_matched": 0,
+            "created": 1,
+            "slot_reused": 0,
+            "prior_matched": 0,
             "alerts": [{"code": "PEW8-2025-2026", "location": "Berlin", "country": "Germany"}],
         }
         sql_calls, _ = self._patch_sync(monkeypatch, scraped, rpc_returns)
@@ -851,7 +979,7 @@ class TestEvfPhase2Allocator:
         json_start = sql.find("'[")
         json_end = sql.find("]'", json_start)
         assert json_start != -1 and json_end != -1, f"no JSONB array literal in: {sql}"
-        payload_str = sql[json_start + 1: json_end + 1].replace("''", "'")
+        payload_str = sql[json_start + 1 : json_end + 1].replace("''", "'")
         payload = json.loads(payload_str)
 
         assert isinstance(payload, list) and len(payload) == 1
@@ -877,30 +1005,64 @@ class TestFilterStale:
 
         # Two events: 2026-03-28 already scored; 2026-04-15 fresh.
         evf_events = [
-            {"evf_id": 87, "name": "Already Scored", "date": "2026-03-28",
-             "location": "X", "country": "Poland", "weapons": ["SABRE"],
-             "categories": ["V2"], "competitions": 1, "total_fencers": 16,
-             "is_team": False, "url": "", "fee": None, "fee_currency": "",
-             "has_results": True},
-            {"evf_id": 99, "name": "Fresh Event", "date": "2026-04-15",
-             "location": "Y", "country": "Italy", "weapons": ["EPEE"],
-             "categories": ["V1"], "competitions": 1, "total_fencers": 8,
-             "is_team": False, "url": "", "fee": None, "fee_currency": "",
-             "has_results": True},
+            {
+                "evf_id": 87,
+                "name": "Already Scored",
+                "date": "2026-03-28",
+                "location": "X",
+                "country": "Poland",
+                "weapons": ["SABRE"],
+                "categories": ["V2"],
+                "competitions": 1,
+                "total_fencers": 16,
+                "is_team": False,
+                "url": "",
+                "fee": None,
+                "fee_currency": "",
+                "has_results": True,
+            },
+            {
+                "evf_id": 99,
+                "name": "Fresh Event",
+                "date": "2026-04-15",
+                "location": "Y",
+                "country": "Italy",
+                "weapons": ["EPEE"],
+                "categories": ["V1"],
+                "competitions": 1,
+                "total_fencers": 8,
+                "is_team": False,
+                "url": "",
+                "fee": None,
+                "fee_currency": "",
+                "has_results": True,
+            },
         ]
 
         class FakeClient:
-            def __init__(self, *a, **kw): pass
-            def connect(self): pass
-            def close(self): pass
+            def __init__(self, *a, **kw):
+                pass
+
+            def connect(self):
+                pass
+
+            def close(self):
+                pass
+
             def discover_season_events(self, *a, **kw):
                 return evf_events
 
         def fake_mgmt(ref, token, sql):
             sl = sql.lower()
             if "from tbl_season where bool_active" in sl:
-                return [{"id_season": 7, "dt_start": "2025-09-01",
-                         "dt_end": "2026-08-31", "txt_code": "SPWS-2025-2026"}]
+                return [
+                    {
+                        "id_season": 7,
+                        "dt_start": "2025-09-01",
+                        "dt_end": "2026-08-31",
+                        "txt_code": "SPWS-2025-2026",
+                    }
+                ]
             if "from tbl_event where id_season" in sl:
                 # cert_events list — empty so the matcher's existing-row branch
                 # short-circuits past _compare_and_ingest's heavy logic.
@@ -922,8 +1084,13 @@ class TestFilterStale:
         monkeypatch.setattr(evf_sync, "_match_against_spws", lambda *a, **kw: [])
 
         evf_sync.sync_results(
-            ref="ref", token="token", bot_token="bot", chat_id="chat",
-            cal_events=None, event_code="", dry_run=False,
+            ref="ref",
+            token="token",
+            bot_token="bot",
+            chat_id="chat",
+            cal_events=None,
+            event_code="",
+            dry_run=False,
             filter_stale=True,
         )
 
@@ -939,29 +1106,64 @@ class TestFilterStale:
         scrape_calls: list[int] = []
 
         evf_events = [
-            {"evf_id": 87, "name": "A", "date": "2026-03-28",
-             "location": "X", "country": "Poland", "weapons": ["SABRE"],
-             "categories": ["V2"], "competitions": 1, "total_fencers": 16,
-             "is_team": False, "url": "", "fee": None, "fee_currency": "",
-             "has_results": True},
-            {"evf_id": 99, "name": "B", "date": "2026-04-15",
-             "location": "Y", "country": "Italy", "weapons": ["EPEE"],
-             "categories": ["V1"], "competitions": 1, "total_fencers": 8,
-             "is_team": False, "url": "", "fee": None, "fee_currency": "",
-             "has_results": True},
+            {
+                "evf_id": 87,
+                "name": "A",
+                "date": "2026-03-28",
+                "location": "X",
+                "country": "Poland",
+                "weapons": ["SABRE"],
+                "categories": ["V2"],
+                "competitions": 1,
+                "total_fencers": 16,
+                "is_team": False,
+                "url": "",
+                "fee": None,
+                "fee_currency": "",
+                "has_results": True,
+            },
+            {
+                "evf_id": 99,
+                "name": "B",
+                "date": "2026-04-15",
+                "location": "Y",
+                "country": "Italy",
+                "weapons": ["EPEE"],
+                "categories": ["V1"],
+                "competitions": 1,
+                "total_fencers": 8,
+                "is_team": False,
+                "url": "",
+                "fee": None,
+                "fee_currency": "",
+                "has_results": True,
+            },
         ]
 
         class FakeClient:
-            def __init__(self, *a, **kw): pass
-            def connect(self): pass
-            def close(self):   pass
-            def discover_season_events(self, *a, **kw): return evf_events
+            def __init__(self, *a, **kw):
+                pass
+
+            def connect(self):
+                pass
+
+            def close(self):
+                pass
+
+            def discover_season_events(self, *a, **kw):
+                return evf_events
 
         def fake_mgmt(ref, token, sql):
             sl = sql.lower()
             if "from tbl_season where bool_active" in sl:
-                return [{"id_season": 7, "dt_start": "2025-09-01",
-                         "dt_end": "2026-08-31", "txt_code": "SPWS-2025-2026"}]
+                return [
+                    {
+                        "id_season": 7,
+                        "dt_start": "2025-09-01",
+                        "dt_end": "2026-08-31",
+                        "txt_code": "SPWS-2025-2026",
+                    }
+                ]
             return []
 
         def fake_scrape_event_results(eid, client=None):
@@ -975,8 +1177,13 @@ class TestFilterStale:
         monkeypatch.setattr(evf_sync, "_match_against_spws", lambda *a, **kw: [])
 
         evf_sync.sync_results(
-            ref="ref", token="token", bot_token="bot", chat_id="chat",
-            cal_events=None, event_code="", dry_run=False,
+            ref="ref",
+            token="token",
+            bot_token="bot",
+            chat_id="chat",
+            cal_events=None,
+            event_code="",
+            dry_run=False,
             filter_stale=False,
         )
 

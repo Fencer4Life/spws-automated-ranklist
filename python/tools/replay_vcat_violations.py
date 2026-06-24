@@ -29,7 +29,6 @@ import sys
 
 import httpx
 
-
 CERT_REF = "sdomfjncmfydlkygzpgw"
 PROD_REF = "ywgymtgcyturldazcpmw"
 
@@ -217,7 +216,9 @@ def render_orphans_for_admin(rows: list[dict]) -> str:
         return ""
     lines = [f"\nWARN: {len(rows)} violators have NO sibling tournament at the expected V-cat:"]
     for r in rows[:25]:
-        lines.append(f"  src={r['src_code']} (id_result={r['id_result']}, id_fencer={r['id_fencer']})")
+        lines.append(
+            f"  src={r['src_code']} (id_result={r['id_result']}, id_fencer={r['id_fencer']})"
+        )
     if len(rows) > 25:
         lines.append(f"  ... and {len(rows) - 25} more")
     lines.append("Admin must create the sibling tournament(s) first, then re-run the replay.")
@@ -226,10 +227,17 @@ def render_orphans_for_admin(rows: list[dict]) -> str:
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--dry-run", action="store_true", default=True,
-                   help="Print plan + counts; don't apply (default).")
-    p.add_argument("--execute", action="store_true",
-                   help="Apply the plan in a single transaction. Mutually exclusive with --dry-run.")
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=True,
+        help="Print plan + counts; don't apply (default).",
+    )
+    p.add_argument(
+        "--execute",
+        action="store_true",
+        help="Apply the plan in a single transaction. Mutually exclusive with --dry-run.",
+    )
     p.add_argument("--remote", choices=["local", "cert", "prod"], default="local")
     args = p.parse_args()
 
@@ -257,13 +265,25 @@ def main() -> int:
 
     # LOCAL: pipe through docker exec.
     import subprocess
+
     sql = build_replay_sql(execute=args.execute)
     cmd = [
-        "docker", "exec", "-i", "supabase_db_SPWSranklist",
-        "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1",
+        "docker",
+        "exec",
+        "-i",
+        "supabase_db_SPWSranklist",
+        "psql",
+        "-U",
+        "postgres",
+        "-d",
+        "postgres",
+        "-v",
+        "ON_ERROR_STOP=1",
     ]
-    print(f"Running replay {'(EXECUTE)' if args.execute else '(DRY-RUN)'} on LOCAL...",
-          file=sys.stderr)
+    print(
+        f"Running replay {'(EXECUTE)' if args.execute else '(DRY-RUN)'} on LOCAL...",
+        file=sys.stderr,
+    )
     res = subprocess.run(cmd, input=sql, capture_output=True, text=True)
     if res.returncode != 0:
         print(res.stderr, file=sys.stderr)

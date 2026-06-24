@@ -5,6 +5,7 @@ attributes and implements `applies`/`run`. Defaults: `applies` → True. Most M2
 plugins delegate to `bridge.run_stage` and mirror one pctx field into their
 declared public Context key.
 """
+
 from __future__ import annotations
 
 from python.pipeline.core.contract import Context, PluginKind, Services

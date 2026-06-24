@@ -96,8 +96,7 @@ class TelegramNotifier:
 
     def notify_identity_review(self, count: int, event_name: str) -> None:
         self.warning(
-            f"{count} fencers need identity review from {event_name}. "
-            f"Review in Identity Manager."
+            f"{count} fencers need identity review from {event_name}. Review in Identity Manager."
         )
 
     def notify_missing_dob(self, count: int, filename: str) -> None:
@@ -113,8 +112,7 @@ class TelegramNotifier:
 
     def notify_non_xml_skipped(self, skip_count: int, xml_count: int) -> None:
         self.info(
-            f"Skipped {skip_count} non-XML files from archive. "
-            f"Processed {xml_count} XML files."
+            f"Skipped {skip_count} non-XML files from archive. Processed {xml_count} XML files."
         )
 
     # --- Alert notifications ---
@@ -150,19 +148,19 @@ class TelegramNotifier:
 
     def notify_overdue_domestic(self, event_name: str, days: int) -> None:
         self.warning(
-            f"{event_name} results not received ({days} days overdue). "
-            f"Check email or provide URL."
+            f"{event_name} results not received ({days} days overdue). Check email or provide URL."
         )
 
     def notify_overdue_international(self, event_name: str, days: int) -> None:
-        self.warning(
-            f"{event_name} results not found ({days} days overdue). Provide URL?"
-        )
+        self.warning(f"{event_name} results not found ({days} days overdue). Provide URL?")
 
     # --- Phase 4 (ADR-052, ADR-053) — commit / parity / cascade lifecycle ---
 
     def notify_event_commit(
-        self, event_code: str, summary: dict, *,
+        self,
+        event_code: str,
+        summary: dict,
+        *,
         cascade_renamed_to: str | None = None,
         parity_passed: bool | None = None,
     ) -> None:
@@ -209,18 +207,11 @@ class TelegramNotifier:
             f"{fencers_overwritten} fencers' scores overwritten with EVF API values."
         )
 
-    def notify_stage_halt(
-        self, event_code: str, stage: str, reason: str, detail: str
-    ) -> None:
-        self.error(
-            f"Pipeline halted on {event_code} at {stage}: {reason}\n  {detail}"
-        )
+    def notify_stage_halt(self, event_code: str, stage: str, reason: str, detail: str) -> None:
+        self.error(f"Pipeline halted on {event_code} at {stage}: {reason}\n  {detail}")
 
     def notify_evf_api_empty(self, event_code: str, days: int) -> None:
-        self.info(
-            f"{event_code}: EVF API empty after {days} days. "
-            f"Annotated and stopped probing."
-        )
+        self.info(f"{event_code}: EVF API empty after {days} days. Annotated and stopped probing.")
 
     def notify_parity_sweep_summary(
         self, n_checked: int, n_promoted: int, n_failed: int, n_empty: int
@@ -231,9 +222,7 @@ class TelegramNotifier:
         )
 
     def notify_pew_cascade(self, event_code: str, new_code: str, rows_renamed: int) -> None:
-        self.info(
-            f"PEW cascade: {event_code} → {new_code} ({rows_renamed} rows renamed)."
-        )
+        self.info(f"PEW cascade: {event_code} → {new_code} ({rows_renamed} rows renamed).")
 
     # --- Phase 5.5 (ADR-059) — verdict .md document delivery ---
 

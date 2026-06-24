@@ -7,9 +7,6 @@ These tests verify the Python calibration CLI tools:
 """
 
 import json
-from pathlib import Path
-
-import pytest
 
 
 # ---------------------------------------------------------------------------
@@ -150,6 +147,7 @@ def test_config_export_writes_json(tmp_path, monkeypatch):
             return MockRPC()
 
     import python.calibration.calibrate_config as mod
+
     monkeypatch.setattr(mod, "sb", MockClient())
 
     export_config(season_id=1, output_path=output_file)
@@ -183,6 +181,7 @@ def test_config_import_calls_rpc(tmp_path, monkeypatch):
             return MockRPC()
 
     import python.calibration.calibrate_config as mod
+
     monkeypatch.setattr(mod, "sb", MockClient())
 
     import_config(input_path=input_file)

@@ -16,14 +16,9 @@ event stays ENGINE_COMPUTED with txt_parity_notes populated.
 
 from __future__ import annotations
 
-import pytest
-
 from pipeline.evf_parity import (
-    ParityFailDetail,
-    ParityResult,
     check_parity,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers — minimal row shapes
@@ -102,7 +97,7 @@ def test_placement_mismatch_fails():
 def test_placement_match_with_foreigner_gaps():
     """P4.PG.5: BORKOWSKA at place 3 (HUN at 1, 2) — placement still matches."""
     local = [_local("BORKOWSKA Halina", 3, 5.327)]  # foreigners not stored
-    evf = [_evf("BORKOWSKA Halina", 3, 5.327)]      # EVF reports absolute pos
+    evf = [_evf("BORKOWSKA Halina", 3, 5.327)]  # EVF reports absolute pos
     r = check_parity(local, evf)
     assert r.placements_pass
 

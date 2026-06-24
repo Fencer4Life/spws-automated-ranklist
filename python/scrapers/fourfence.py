@@ -63,12 +63,14 @@ def parse_fourfence_html(html: str) -> list[dict]:
         # Club in cell[7]
         club = _clean_text(cells[7].get_text(strip=True))
 
-        results.append({
-            "fencer_name": fencer_name,
-            "place": place,
-            "country": "",  # 4Fence doesn't reliably provide country codes
-            "club": club,
-        })
+        results.append(
+            {
+                "fencer_name": fencer_name,
+                "place": place,
+                "country": "",  # 4Fence doesn't reliably provide country codes
+                "club": club,
+            }
+        )
 
     return results
 
@@ -80,6 +82,7 @@ def parse_fourfence_html(html: str) -> list[dict]:
 # reliable country — IR uses synthetic IDs and fencer_country=None.
 # =============================================================================
 
+
 def parse_html(
     html: str,
     source_url: str | None = None,
@@ -90,7 +93,10 @@ def parse_html(
     to None (4Fence's HTML doesn't surface it reliably).
     """
     from python.pipeline.ir import (
-        ParsedResult, ParsedTournament, SourceKind, make_synthetic_id,
+        ParsedResult,
+        ParsedTournament,
+        SourceKind,
+        make_synthetic_id,
     )
 
     soup = BeautifulSoup(html, "html.parser")
@@ -116,17 +122,19 @@ def parse_html(
         fencer_name = f"{surname} {name.title()}".strip() if name else surname
 
         row_index += 1
-        parsed_results.append(ParsedResult(
-            source_row_id=make_synthetic_id(
-                SourceKind.FOURFENCE,
-                row_index=row_index,
+        parsed_results.append(
+            ParsedResult(
+                source_row_id=make_synthetic_id(
+                    SourceKind.FOURFENCE,
+                    row_index=row_index,
+                    place=place,
+                    name=fencer_name,
+                ),
+                fencer_name=fencer_name,
                 place=place,
-                name=fencer_name,
-            ),
-            fencer_name=fencer_name,
-            place=place,
-            fencer_country=None,
-        ))
+                fencer_country=None,
+            )
+        )
 
     return ParsedTournament(
         source_kind=SourceKind.FOURFENCE,

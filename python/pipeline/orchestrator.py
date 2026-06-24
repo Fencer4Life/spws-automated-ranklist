@@ -20,21 +20,18 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
+from python.matcher.pipeline import (
+    auto_create_fencer,
+    resolve_tournament_results,
+)
+from python.pipeline import stages
+from python.pipeline.types import HaltError, Overrides, PipelineContext
 from python.scrapers.fencingtime_xml import (
     detect_categories_from_altname,
     parse_fencingtime_xml_enriched,
     parse_xml_metadata,
     split_combined_results,
 )
-from python.matcher.fuzzy_match import find_best_match
-from python.matcher.pipeline import (
-    DOMESTIC_TYPES,
-    auto_create_fencer,
-    resolve_tournament_results,
-)
-from python.pipeline import stages
-from python.pipeline.types import HaltError, Overrides, PipelineContext
-
 
 # ---------------------------------------------------------------------------
 # Phase 3 (ADR-050) — stage-based pipeline dispatcher
@@ -46,7 +43,7 @@ from python.pipeline.types import HaltError, Overrides, PipelineContext
 # is honoured) rather than capturing function references at import time.
 _STAGE_NAMES = (
     "s0_reconcile_roster",  # ADR-050/056/010/038: create new participants +
-                            # reconcile conflicting birth years BEFORE matching
+    # reconcile conflicting birth years BEFORE matching
     "s1_validate_ir",
     "s2_resolve_event",
     "s3_detect_combined_pool",
@@ -55,7 +52,7 @@ _STAGE_NAMES = (
     "s6_resolve_identity",
     "s7_validate",
     "s7_pool_round_check",  # Phase 5: structural pool-round detection (post-match gender mix)
-    "s7_split_by_vcat",     # ADR-056: post-match V-cat assignment from birth_year
+    "s7_split_by_vcat",  # ADR-056: post-match V-cat assignment from birth_year
 )
 
 
@@ -149,6 +146,7 @@ def process_xml_file(
         IngestResult with counts and any errors.
     """
     import warnings
+
     warnings.warn(
         "process_xml_file is deprecated; use "
         "python.pipeline.ingest_cli.ingest_xml_unified instead. "
@@ -173,15 +171,14 @@ def process_xml_file(
     # ranklist. Detection is structural, never name-based (Sexe / AltName /
     # filename are unreliable across organizers).
     import xml.etree.ElementTree as _ET
+
     try:
         _root = _ET.fromstring(file_bytes)
         _has_pool = bool(_root.findall(".//Poule"))
-        _has_tab  = bool(_root.findall(".//Tableau"))
+        _has_tab = bool(_root.findall(".//Tableau"))
         if _has_pool and not _has_tab:
             result.skipped_files.append(filename)
-            notifier.info(
-                f"Skipped pool-only qualifier (has pool, no DE/tableau): {filename}"
-            )
+            notifier.info(f"Skipped pool-only qualifier (has pool, no DE/tableau): {filename}")
             return result
     except _ET.ParseError:
         # If we can't even parse the XML for structural check, leave
@@ -222,14 +219,30 @@ def process_xml_file(
             )
         for cat, cat_results in split_result.buckets.items():
             _process_category(
-                cat_results, metadata, cat, fencer_db, db, notifier,
-                season_end_year, tournament_type, dry_run, result,
+                cat_results,
+                metadata,
+                cat,
+                fencer_db,
+                db,
+                notifier,
+                season_end_year,
+                tournament_type,
+                dry_run,
+                result,
             )
     else:
         category = categories[0] if categories else "V2"
         _process_category(
-            enriched, metadata, category, fencer_db, db, notifier,
-            season_end_year, tournament_type, dry_run, result,
+            enriched,
+            metadata,
+            category,
+            fencer_db,
+            db,
+            notifier,
+            season_end_year,
+            tournament_type,
+            dry_run,
+            result,
         )
 
     return result
@@ -283,7 +296,7 @@ def _process_category(
     t_type = tournament_type
 
     # Check for duplicate import (warn but proceed — ADR-014 handles idempotent reimport)
-    if hasattr(db, 'has_existing_results') and db.has_existing_results(tournament_id):
+    if hasattr(db, "has_existing_results") and db.has_existing_results(tournament_id):
         tourn_info = f"{weapon} {gender} {category}"
         notifier.notify_duplicate_import(tourn_info)
 
@@ -295,14 +308,17 @@ def _process_category(
     scraped_names = [r["fencer_name"] for r in enriched_results]
     scraped_countries = [r.get("country") for r in enriched_results]
     resolved = resolve_tournament_results(
-        scraped_names, fencer_db, t_type, category, season_end_year,
+        scraped_names,
+        fencer_db,
+        t_type,
+        category,
+        season_end_year,
         scraped_countries=scraped_countries,
         bracket_gender=gender,
     )
 
     # Build JSONB payload for RPC
     results_json = []
-    place_idx = 0
 
     for r in enriched_results:
         name = r["fencer_name"]
@@ -321,31 +337,31 @@ def _process_category(
                 result.skipped += 1
                 continue
             # Check auto-created
-            is_auto = any(
-                ac["txt_surname"].upper() in name.upper()
-                for ac in resolved.auto_created
-            )
+            is_auto = any(ac["txt_surname"].upper() in name.upper() for ac in resolved.auto_created)
             if is_auto:
                 # Insert fencer first
                 ac_data = next(
-                    ac for ac in resolved.auto_created
-                    if ac["txt_surname"].upper() in name.upper()
+                    ac for ac in resolved.auto_created if ac["txt_surname"].upper() in name.upper()
                 )
                 if not dry_run:
-                    new_id = db.insert_fencer({
-                        **ac_data,
-                        "txt_nationality": r.get("country", "PL"),
-                    })
+                    new_id = db.insert_fencer(
+                        {
+                            **ac_data,
+                            "txt_nationality": r.get("country", "PL"),
+                        }
+                    )
                 else:
                     new_id = -1
                 result.auto_created += 1
-                results_json.append({
-                    "id_fencer": new_id,
-                    "int_place": place,
-                    "txt_scraped_name": name,
-                    "num_confidence": 0,
-                    "enum_match_status": "NEW_FENCER",
-                })
+                results_json.append(
+                    {
+                        "id_fencer": new_id,
+                        "int_place": place,
+                        "txt_scraped_name": name,
+                        "num_confidence": 0,
+                        "enum_match_status": "NEW_FENCER",
+                    }
+                )
                 continue
             # Shouldn't reach here, but skip gracefully
             result.skipped += 1
@@ -354,58 +370,74 @@ def _process_category(
         # Matched or pending
         if match.status == "AUTO_MATCHED":
             result.matched += 1
-            results_json.append({
-                "id_fencer": match.id_fencer,
-                "int_place": place,
-                "txt_scraped_name": name,
-                "num_confidence": match.confidence,
-                "enum_match_status": "AUTO_MATCHED",
-            })
+            results_json.append(
+                {
+                    "id_fencer": match.id_fencer,
+                    "int_place": place,
+                    "txt_scraped_name": name,
+                    "num_confidence": match.confidence,
+                    "enum_match_status": "AUTO_MATCHED",
+                }
+            )
         elif match.status == "PENDING":
             result.pending += 1
-            results_json.append({
-                "id_fencer": match.id_fencer,
-                "int_place": place,
-                "txt_scraped_name": name,
-                "num_confidence": match.confidence,
-                "enum_match_status": "PENDING",
-            })
+            results_json.append(
+                {
+                    "id_fencer": match.id_fencer,
+                    "int_place": place,
+                    "txt_scraped_name": name,
+                    "num_confidence": match.confidence,
+                    "enum_match_status": "PENDING",
+                }
+            )
         elif match.status == "NEW_FENCER":
             # Domestic auto-create
             ac_data = auto_create_fencer(name, category, season_end_year)
             if not dry_run:
-                new_id = db.insert_fencer({
-                    **ac_data,
-                    "txt_nationality": r.get("country", "PL"),
-                })
+                new_id = db.insert_fencer(
+                    {
+                        **ac_data,
+                        "txt_nationality": r.get("country", "PL"),
+                    }
+                )
             else:
                 new_id = -1
             result.auto_created += 1
-            results_json.append({
-                "id_fencer": new_id,
-                "int_place": place,
-                "txt_scraped_name": name,
-                "num_confidence": 0,
-                "enum_match_status": "NEW_FENCER",
-            })
+            results_json.append(
+                {
+                    "id_fencer": new_id,
+                    "int_place": place,
+                    "txt_scraped_name": name,
+                    "num_confidence": 0,
+                    "enum_match_status": "NEW_FENCER",
+                }
+            )
 
     # Ingest to DB — pass raw field size so int_participant_count reflects
     # actual tournament size, not POL-filtered payload length (ADR-038 fix).
+    # tourn_label must be bound before the dry-run-guarded block below, else the
+    # `tourn_label if results_json else ""` use further down raises NameError when
+    # dry_run=True and results_json is non-empty.
+    tourn_label = str(tournament_id)
     if results_json and not dry_run:
         db.ingest_results(
-            tournament_id, results_json,
+            tournament_id,
+            results_json,
             participant_count=len(enriched_results),
         )
         result.tournament_ids.append(tournament_id)
-        tourn_label = str(tournament_id)
         if event is not None:
             tourn_label = f"{event.get('txt_code', '')}-{category}-{gender}-{weapon}"
         elif tournament is not None:
             tourn_label = tournament.get("txt_code", str(tournament_id))
         notifier.notify_import_success(
             tourn_label,
-            {"matched": result.matched, "pending": result.pending,
-             "auto_created": result.auto_created, "skipped": result.skipped},
+            {
+                "matched": result.matched,
+                "pending": result.pending,
+                "auto_created": result.auto_created,
+                "skipped": result.skipped,
+            },
         )
     elif results_json:
         result.tournament_ids.append(tournament_id)

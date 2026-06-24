@@ -62,9 +62,7 @@ class StorageMdHandler:
         """Upload {event_code}/deltas/{timestamp}.md (append-only). Returns the path."""
         self._validate_event_code(event_code)
         if not re.match(r"^\d{8}_\d{6}$", timestamp):
-            raise ValueError(
-                f"invalid timestamp {timestamp!r}: expected yyyyMMdd_HHmmss"
-            )
+            raise ValueError(f"invalid timestamp {timestamp!r}: expected yyyyMMdd_HHmmss")
         path = f"{event_code}/deltas/{timestamp}.md"
         self._bucket().upload(
             path,

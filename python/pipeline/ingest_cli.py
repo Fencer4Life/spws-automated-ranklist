@@ -29,10 +29,6 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-import uuid
-import zipfile
-from dataclasses import dataclass, field
-from io import BytesIO
 from pathlib import Path
 
 from python.pipeline.db_connector import create_db_connector
@@ -151,8 +147,8 @@ def ingest_xml_unified(
         ValueError: event_code not found, or no url_event populated.
     """
     # Defer imports so test patches on these symbols are honoured.
-    from python.scrapers import fencingtime_xml as _ft_xml
     from python.pipeline.review_cli import ReviewSession
+    from python.scrapers import fencingtime_xml as _ft_xml
 
     if db is None:
         db = create_db_connector()
@@ -165,15 +161,10 @@ def ingest_xml_unified(
     event = db.find_event_by_code(event_code)
     if event is None:
         raise ValueError(
-            f"Event {event_code!r} not found in tbl_event. "
-            f"Populate it first or check the spelling."
+            f"Event {event_code!r} not found in tbl_event. Populate it first or check the spelling."
         )
 
-    url_event = (
-        url_event_override
-        or event.get("url_event")
-        or event.get("url_results")
-    )
+    url_event = url_event_override or event.get("url_event") or event.get("url_results")
     if not url_event:
         raise ValueError(
             f"Event {event_code!r} has no url_event populated. "
@@ -226,6 +217,7 @@ def ingest_xml_unified(
             # Run S1-S7 but skip draft writes — useful for diagnostics.
             from python.pipeline.orchestrator import run_pipeline
             from python.pipeline.overrides import load_for_event
+
             ctx = run_pipeline(
                 parsed=parsed,
                 overrides=load_for_event(event_code),
@@ -245,15 +237,12 @@ def ingest_xml_unified(
         # halt on these anyway via s1_validate_ir, but pre-checking lets
         # us avoid noisy halt-state output for an expected-skip.
         if getattr(parsed, "is_pool_only_qualifier", False):
-            print(
-                f"  {p_str}: SKIPPED (pool-only qualifier — no DE bracket)"
-            )
+            print(f"  {p_str}: SKIPPED (pool-only qualifier — no DE bracket)")
             continue
 
         ctx, _ = session.run_iteration(parsed)
         print(
-            f"  {p_str}: matches={len(ctx.matches)}, halted={ctx.halted}, "
-            f"run_id={session.run_id}"
+            f"  {p_str}: matches={len(ctx.matches)}, halted={ctx.halted}, run_id={session.run_id}"
         )
 
     return session.run_id if not dry_run else None
@@ -286,11 +275,8 @@ def ingest_via_flow(
     """
     # Deferred imports so test patches on these symbols are honoured and the
     # heavy engine modules only load when this path is taken.
-    from python.scrapers import fencingtime_xml as _ft_xml
-    from python.pipeline.core.contract import Services
-    from python.pipeline.engine.flows import Flow, FlowParams
     from python.pipeline.overrides import load_for_event
-    from python.pipeline.run import run_flow
+    from python.scrapers import fencingtime_xml as _ft_xml
 
     if db is None:
         db = create_db_connector()
@@ -303,15 +289,10 @@ def ingest_via_flow(
     event = db.find_event_by_code(event_code)
     if event is None:
         raise ValueError(
-            f"Event {event_code!r} not found in tbl_event. "
-            f"Populate it first or check the spelling."
+            f"Event {event_code!r} not found in tbl_event. Populate it first or check the spelling."
         )
 
-    url_event = (
-        url_event_override
-        or event.get("url_event")
-        or event.get("url_results")
-    )
+    url_event = url_event_override or event.get("url_event") or event.get("url_results")
     url_event_base = (url_event or "").split("#", 1)[0]
     overrides = load_for_event(event_code)
     paths = [path] if isinstance(path, (str, Path)) else list(path)
@@ -320,23 +301,24 @@ def ingest_via_flow(
     for p in paths:
         p_str = str(p)
         file_bytes = Path(p_str).read_bytes()
-        per_file_url = (
-            f"{url_event_base}#{Path(p_str).name}" if url_event_base else None
-        )
+        per_file_url = f"{url_event_base}#{Path(p_str).name}" if url_event_base else None
         parsed = _ft_xml.parse(file_bytes, source_url=per_file_url)
 
         if getattr(parsed, "is_pool_only_qualifier", False):
             print(f"  {p_str}: SKIPPED (pool-only qualifier — no DE bracket)")
             continue
 
-        ctx = _run_parsed_through_flow(parsed, event_code, season_end_year, overrides, db, label=p_str)
+        ctx = _run_parsed_through_flow(
+            parsed, event_code, season_end_year, overrides, db, label=p_str
+        )
         contexts.append(ctx)
     _fire_staging_report(event, contexts, db, notifier=notifier)  # ADR-075
     return contexts
 
 
-def _run_parsed_through_flow(parsed, event_code, season_end_year, overrides, db,
-                             *, label="", commit_cats=None):
+def _run_parsed_through_flow(
+    parsed, event_code, season_end_year, overrides, db, *, label="", commit_cats=None
+):
     """Route one already-parsed IR bracket through `run_flow(INGEST_DOMESTIC)` and
     print a one-line commit summary. Shared by the file path (`ingest_via_flow`)
     and the URL path (`ingest_event_from_url`). `commit_cats` (the keep-rule's owned
@@ -345,13 +327,16 @@ def _run_parsed_through_flow(parsed, event_code, season_end_year, overrides, db,
     from python.pipeline.engine.flows import Flow, FlowParams
     from python.pipeline.run import run_flow
 
-    svc = Services(db=db, config={
-        "parsed": parsed,
-        "overrides": overrides,
-        "season_end_year": season_end_year,
-        "event_code": event_code,
-        "commit_cats": commit_cats,
-    })
+    svc = Services(
+        db=db,
+        config={
+            "parsed": parsed,
+            "overrides": overrides,
+            "season_end_year": season_end_year,
+            "event_code": event_code,
+            "commit_cats": commit_cats,
+        },
+    )
     ctx = run_flow(FlowParams(Flow.INGEST_DOMESTIC), svc=svc)
     committed = ctx.get("committed") or {}
     faults = [f.kind.value for f in ctx.faults]
@@ -375,23 +360,35 @@ def _send_staging_via_telegram(notifier, event_code, post_ctx, *, n_tournaments=
     diff = post_ctx.get("_rendered_diff")
     try:
         if md:
-            extras = {"reason": "cert-reingest",
-                      "promote_hint": f"reply `promote {event_code.split('-')[0]}` to push to PROD"}
+            extras = {
+                "reason": "cert-reingest",
+                "promote_hint": f"reply `promote {event_code.split('-')[0]}` to push to PROD",
+            }
             if n_tournaments is not None:
                 extras["tournament_count"] = n_tournaments
             notifier.send_staging_report(
-                event_code=event_code, md_bytes=md.encode("utf-8"),
-                kind="full", extras=extras)
+                event_code=event_code, md_bytes=md.encode("utf-8"), kind="full", extras=extras
+            )
         if diff:
             notifier.send_document(
-                diff.encode("utf-8"), f"{event_code}-diff.md",
-                f"🔀 <b>{event_code}</b> · 3-way diff")
-    except Exception as e:                       # never fail a committed ingest on delivery
+                diff.encode("utf-8"),
+                f"{event_code}-diff.md",
+                f"🔀 <b>{event_code}</b> · 3-way diff",
+            )
+    except Exception as e:  # never fail a committed ingest on delivery
         print(f"  (Telegram staging send skipped: {e})")
 
 
-def _fire_staging_report(event, contexts, db, *, schedule_skips=None, notifier=None,
-                         source_decisions=None, md_target="local"):
+def _fire_staging_report(
+    event,
+    contexts,
+    db,
+    *,
+    schedule_skips=None,
+    notifier=None,
+    source_decisions=None,
+    md_target="local",
+):
     """Event-scoped POST_COMMIT fire (ADR-075) — render the per-event review files.
 
     The per-bracket runs each accumulated a `report` (the fifth Context channel);
@@ -414,12 +411,16 @@ def _fire_staging_report(event, contexts, db, *, schedule_skips=None, notifier=N
         ctx.data["_schedule_skips"] = schedule_skips
     if source_decisions:
         ctx.data["_source_decisions"] = source_decisions
-    svc = Services(db=db,
-                   config={"event_code": event.get("txt_code"), "md_target": md_target},
-                   notifier=notifier)
+    svc = Services(
+        db=db,
+        config={"event_code": event.get("txt_code"), "md_target": md_target},
+        notifier=notifier,
+    )
     return run_flow(
         FlowParams(Flow.POST_COMMIT, id_event=event.get("id_event")),
-        ctx=ctx, svc=svc, react=False,
+        ctx=ctx,
+        svc=svc,
+        react=False,
     )
 
 
@@ -427,10 +428,26 @@ def _wipe_event_live(db, id_event: int) -> tuple[int, int]:
     """Delete an event's committed results + tournaments (for a clean re-ingest).
     Returns (results_deleted, tournaments_deleted). Keeps the event row."""
     sb = db._sb
-    tids = [t["id_tournament"] for t in
-            sb.table("tbl_tournament").select("id_tournament").eq("id_event", id_event).execute().data or []]
-    rids = [r["id_result"] for r in
-            (sb.table("tbl_result").select("id_result").in_("id_tournament", tids).execute().data or [])] if tids else []
+    tids = [
+        t["id_tournament"]
+        for t in sb.table("tbl_tournament")
+        .select("id_tournament")
+        .eq("id_event", id_event)
+        .execute()
+        .data
+        or []
+    ]
+    rids = (
+        [
+            r["id_result"]
+            for r in (
+                sb.table("tbl_result").select("id_result").in_("id_tournament", tids).execute().data
+                or []
+            )
+        ]
+        if tids
+        else []
+    )
     if rids:
         sb.table("tbl_match_candidate").delete().in_("id_result", rids).execute()
         sb.table("tbl_result").delete().in_("id_tournament", tids).execute()
@@ -451,6 +468,7 @@ def _ftl_has_direct_elimination(client, uuid: str) -> bool:
     never be scored — this is the from-URL analog of the XML `<Poule>`-no-`<Tableau>`
     check (which only the fencingtime_xml parser had)."""
     import re
+
     resp = client.get(f"{_FTL_RESULTS}{uuid}")
     resp.raise_for_status()
     return bool(re.search(r"(?i)tableau", resp.text))
@@ -477,9 +495,17 @@ def _resolve_sources(rounds, overrides=None):
     skip_urls = set(overrides.get("skip") or [])
     process_urls = set(overrides.get("process") or [])
 
-    rec = {r["uuid"]: {**r, "single": len(r["cats"]) == 1, "status": None,
-                       "commit_cats": [], "reason": "", "duplicate_of": []}
-           for r in rounds}
+    rec = {
+        r["uuid"]: {
+            **r,
+            "single": len(r["cats"]) == 1,
+            "status": None,
+            "commit_cats": [],
+            "reason": "",
+            "duplicate_of": [],
+        }
+        for r in rounds
+    }
 
     alive = []
     for r in rounds:
@@ -505,14 +531,13 @@ def _resolve_sources(rounds, overrides=None):
         elif len(singles) == 1:
             owner[cat] = singles[0]
         elif len(singles) > 1:
-            owner[cat] = None                      # anomaly: two dedicated singles
+            owner[cat] = None  # anomaly: two dedicated singles
         else:
-            owner[cat] = min(cs, key=lambda r: r["count"])   # smaller BRACKET wins
+            owner[cat] = min(cs, key=lambda r: r["count"])  # smaller BRACKET wins
 
     for r in alive:
         d = rec[r["uuid"]]
-        owned = [v for v in r["cats"]
-                 if owner.get((r["weapon"], r["gender"], v)) is r]
+        owned = [v for v in r["cats"] if owner.get((r["weapon"], r["gender"], v)) is r]
         d["commit_cats"] = owned
         if owned:
             d["status"] = "committed"
@@ -551,12 +576,13 @@ def ingest_event_from_url(
     """
     from datetime import date as _date
 
-    from python.scrapers import ftl
-    from python.scrapers.ftl_auth import get_authed_ftl_client, normalize_ftl_url
     from python.pipeline.ir import ParsedTournament, SourceKind
     from python.pipeline.overrides import load_for_event
+    from python.scrapers import ftl
+    from python.scrapers.ftl_auth import get_authed_ftl_client, normalize_ftl_url
     from python.tools.scrape_ftl_event_urls import (
-        parse_event_schedule, parse_tournament_name,
+        parse_event_schedule,
+        parse_tournament_name,
     )
 
     if db is None:
@@ -576,8 +602,10 @@ def ingest_event_from_url(
     if not url_event:
         raise ValueError(f"Event {event_code!r} has no url_event populated.")
 
-    overrides = load_for_event(event_code)                      # identity/alias overrides
-    src_overrides = event.get("json_source_overrides")          # admin skip/process (N13.4 col; None until set)
+    overrides = load_for_event(event_code)  # identity/alias overrides
+    src_overrides = event.get(
+        "json_source_overrides"
+    )  # admin skip/process (N13.4 col; None until set)
     dt = str(event.get("dt_start") or "")[:10]
     parsed_date = _date.fromisoformat(dt) if dt else None
     contexts = []
@@ -605,13 +633,23 @@ def ingest_event_from_url(
             weapon, gender = (pn[0][0], pn[0][1]) if combined else (pn[0], pn[1])
             cats = [t[2] for t in pn] if combined else [pn[2]]
             url = f"{_FTL_RESULTS}{b['uuid']}"
-            has_de = _ftl_has_direct_elimination(client, b["uuid"])   # Rule 1 (pools-only drop)
+            has_de = _ftl_has_direct_elimination(client, b["uuid"])  # Rule 1 (pools-only drop)
             resp = client.get(f"{_FTL_DATA}{b['uuid']}")
             resp.raise_for_status()
             base = ftl.parse_json(resp.json(), source_url=url)
-            round_recs.append(dict(
-                name=b["name"], uuid=b["uuid"], url=url, weapon=weapon, gender=gender,
-                cats=cats, count=len(base.results), has_de=has_de, _base=base))
+            round_recs.append(
+                dict(
+                    name=b["name"],
+                    uuid=b["uuid"],
+                    url=url,
+                    weapon=weapon,
+                    gender=gender,
+                    cats=cats,
+                    count=len(base.results),
+                    has_de=has_de,
+                    _base=base,
+                )
+            )
 
         # 2) keep-rule: one source per category (Rule 2), honouring admin overrides
         decisions = _resolve_sources(round_recs, overrides=src_overrides)
@@ -625,15 +663,30 @@ def ingest_event_from_url(
                 continue
             combined = len(r["cats"]) != 1
             parsed = ParsedTournament(
-                source_kind=SourceKind.FTL, results=r["_base"].results,
-                raw_pool_size=len(r["_base"].results), weapon=r["weapon"], gender=r["gender"],
-                category_hint=None if combined else r["cats"][0], parsed_date=parsed_date,
-                season_end_year=season_end_year, source_url=r["url"],
-                organizer_hint="SPWS", tournament_name=r["name"])
+                source_kind=SourceKind.FTL,
+                results=r["_base"].results,
+                raw_pool_size=len(r["_base"].results),
+                weapon=r["weapon"],
+                gender=r["gender"],
+                category_hint=None if combined else r["cats"][0],
+                parsed_date=parsed_date,
+                season_end_year=season_end_year,
+                source_url=r["url"],
+                organizer_hint="SPWS",
+                tournament_name=r["name"],
+            )
             label = f"{r['name']} [{r['weapon']}/{r['gender']}, owns {d['commit_cats']}]"
-            contexts.append(_run_parsed_through_flow(
-                parsed, event_code, season_end_year, overrides, db,
-                label=label, commit_cats=set(d["commit_cats"])))
+            contexts.append(
+                _run_parsed_through_flow(
+                    parsed,
+                    event_code,
+                    season_end_year,
+                    overrides,
+                    db,
+                    label=label,
+                    commit_cats=set(d["commit_cats"]),
+                )
+            )
 
     # 4) persist the discovered rounds + status for the event accordion (N13.4)
     sources = _ingest_source_records(decisions, skipped)
@@ -643,9 +696,15 @@ def ingest_event_from_url(
         except Exception as e:  # never fail an ingest on the display-data write
             print(f"  (ingest-sources persist skipped: {e})")
 
-    post = _fire_staging_report(event, contexts, db, schedule_skips=skipped,
-                                source_decisions=sources, notifier=notifier,
-                                md_target=md_target)  # ADR-075
+    post = _fire_staging_report(
+        event,
+        contexts,
+        db,
+        schedule_skips=skipped,
+        source_decisions=sources,
+        notifier=notifier,
+        md_target=md_target,
+    )  # ADR-075
     if send_telegram:
         _send_staging_via_telegram(notifier, event_code, post, n_tournaments=len(contexts))
     return contexts
@@ -656,22 +715,34 @@ def _ingest_source_records(decisions, schedule_skips):
     on `tbl_event.json_ingest_sources` and shown in the accordion (N13.4)."""
     out = []
     for d in decisions:
-        out.append({
-            "name": d["name"], "url": d["url"],
-            "weapon": d.get("weapon"), "gender": d.get("gender"),
-            "categories": d.get("cats", []), "count": d.get("count"),
-            "status": d["status"], "reason": d.get("reason", ""),
-            "committed_categories": d.get("commit_cats", []),
-            "duplicate_of": d.get("duplicate_of", []),
-        })
-    for s in (schedule_skips or []):
+        out.append(
+            {
+                "name": d["name"],
+                "url": d["url"],
+                "weapon": d.get("weapon"),
+                "gender": d.get("gender"),
+                "categories": d.get("cats", []),
+                "count": d.get("count"),
+                "status": d["status"],
+                "reason": d.get("reason", ""),
+                "committed_categories": d.get("commit_cats", []),
+                "duplicate_of": d.get("duplicate_of", []),
+            }
+        )
+    for s in schedule_skips or []:
         # Build the FTL results URL from the skip's uuid so the operator can click
         # and validate a name-skipped round (e.g. ELIMINACJE) really is a pools round.
         uuid = s.get("uuid")
-        out.append({"name": s["name"],
-                    "url": f"{_FTL_RESULTS}{uuid}" if uuid else None,
-                    "status": "dropped", "reason": s["reason"],
-                    "categories": [], "count": None})
+        out.append(
+            {
+                "name": s["name"],
+                "url": f"{_FTL_RESULTS}{uuid}" if uuid else None,
+                "status": "dropped",
+                "reason": s["reason"],
+                "categories": [],
+                "count": None,
+            }
+        )
     return out
 
 
@@ -721,8 +792,7 @@ def _handle_draft_commands(args, notifier) -> bool:
         n_r = result.get("results_discarded", 0)
         if n_t == 0 and n_r == 0:
             notifier.warning(
-                f"Discard target {args.discard_draft} not found "
-                f"(0 tournaments, 0 results)."
+                f"Discard target {args.discard_draft} not found (0 tournaments, 0 results)."
             )
             print(f"⚠ No draft found for run_id {args.discard_draft}")
             sys.exit(1)
@@ -758,6 +828,7 @@ def _handle_draft_commands(args, notifier) -> bool:
 def _count_joint_groups(tournaments: list[dict]) -> int:
     """Count distinct (weapon, gender, url_results) groups with ≥2 tournaments."""
     from collections import Counter
+
     keys = Counter(
         (t.get("enum_weapon"), t.get("enum_gender"), t.get("url_results"))
         for t in tournaments
@@ -768,63 +839,92 @@ def _count_joint_groups(tournaments: list[dict]) -> int:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Ingest FencingTime XML results")
-    parser.add_argument("path", nargs="*",
-                        help="Path(s) to .xml or .zip file(s). With "
-                             "--event-code, multiple XMLs land in a single "
-                             "draft batch (one run_id).")
+    parser.add_argument(
+        "path",
+        nargs="*",
+        help="Path(s) to .xml or .zip file(s). With "
+        "--event-code, multiple XMLs land in a single "
+        "draft batch (one run_id).",
+    )
     parser.add_argument("--season-end-year", type=int)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--tournament-type", default="PPW")
-    parser.add_argument("--from-storage", action="store_true",
-                        help="Process files from Supabase Storage staging/ "
-                             "(legacy direct-write path; deprecated).")
-    parser.add_argument("--event-code", default=None,
-                        help="Route XML through the unified pipeline for "
-                             "this event_code (recommended). Joint-pool + "
-                             "url_results are handled at commit via "
-                             "fn_commit_event_draft (ADR-049).")
-    parser.add_argument("--url-event", default=None,
-                        help="Override tbl_event.url_event for this run "
-                             "(used only with --event-code / --flow).")
-    parser.add_argument("--flow", choices=["ingest_domestic"], default=None,
-                        help="Route through the NEW rule-driven pipeline "
-                             "(run_flow). Requires --event-code. Commit writes "
-                             "live atomically per V-cat bracket — no draft gate "
-                             "(ADR-074).")
-    parser.add_argument("--from-url", action="store_true",
-                        help="With --flow: ingest the whole event from its "
-                             "tbl_event.url_event (FTL eventSchedule), reusing the "
-                             "FTL scrapers. No XML paths needed.")
-    parser.add_argument("--replace", action="store_true",
-                        help="With --flow --from-url: wipe the event's existing "
-                             "results+tournaments before re-ingesting.")
-    parser.add_argument("--send-telegram", action="store_true",
-                        help="With --flow --from-url: send the staging report(s) "
-                             "(full + diff) to Telegram (ADR-059 reuse).")
-    parser.add_argument("--md-target", choices=["local", "storage", "both"],
-                        default="local",
-                        help="Where the staging .md lands: local FS (default), the "
-                             "Supabase Storage bucket, or both.")
+    parser.add_argument(
+        "--from-storage",
+        action="store_true",
+        help="Process files from Supabase Storage staging/ (legacy direct-write path; deprecated).",
+    )
+    parser.add_argument(
+        "--event-code",
+        default=None,
+        help="Route XML through the unified pipeline for "
+        "this event_code (recommended). Joint-pool + "
+        "url_results are handled at commit via "
+        "fn_commit_event_draft (ADR-049).",
+    )
+    parser.add_argument(
+        "--url-event",
+        default=None,
+        help="Override tbl_event.url_event for this run (used only with --event-code / --flow).",
+    )
+    parser.add_argument(
+        "--flow",
+        choices=["ingest_domestic"],
+        default=None,
+        help="Route through the NEW rule-driven pipeline "
+        "(run_flow). Requires --event-code. Commit writes "
+        "live atomically per V-cat bracket — no draft gate "
+        "(ADR-074).",
+    )
+    parser.add_argument(
+        "--from-url",
+        action="store_true",
+        help="With --flow: ingest the whole event from its "
+        "tbl_event.url_event (FTL eventSchedule), reusing the "
+        "FTL scrapers. No XML paths needed.",
+    )
+    parser.add_argument(
+        "--replace",
+        action="store_true",
+        help="With --flow --from-url: wipe the event's existing "
+        "results+tournaments before re-ingesting.",
+    )
+    parser.add_argument(
+        "--send-telegram",
+        action="store_true",
+        help="With --flow --from-url: send the staging report(s) "
+        "(full + diff) to Telegram (ADR-059 reuse).",
+    )
+    parser.add_argument(
+        "--md-target",
+        choices=["local", "storage", "both"],
+        default="local",
+        help="Where the staging .md lands: local FS (default), the "
+        "Supabase Storage bucket, or both.",
+    )
     # Phase 2 (ADR-050) draft-management commands. Mutually exclusive with
     # each other; do not require --season-end-year.
     draft_group = parser.add_mutually_exclusive_group()
-    draft_group.add_argument("--commit-draft", metavar="UUID",
-                             help="Commit a materialized draft to live tables")
-    draft_group.add_argument("--discard-draft", metavar="UUID",
-                             help="Discard a materialized draft")
-    draft_group.add_argument("--list-drafts", action="store_true",
-                             help="List outstanding drafts (run_id, counts, age)")
-    draft_group.add_argument("--resume-run-id", metavar="UUID",
-                             help="Re-render the markdown diff for an existing draft")
+    draft_group.add_argument(
+        "--commit-draft", metavar="UUID", help="Commit a materialized draft to live tables"
+    )
+    draft_group.add_argument("--discard-draft", metavar="UUID", help="Discard a materialized draft")
+    draft_group.add_argument(
+        "--list-drafts", action="store_true", help="List outstanding drafts (run_id, counts, age)"
+    )
+    draft_group.add_argument(
+        "--resume-run-id", metavar="UUID", help="Re-render the markdown diff for an existing draft"
+    )
     args = parser.parse_args()
 
     # Draft commands take precedence and don't need --season-end-year.
     is_draft_cmd = bool(
-        args.list_drafts or args.commit_draft or args.discard_draft
-        or args.resume_run_id
+        args.list_drafts or args.commit_draft or args.discard_draft or args.resume_run_id
     )
     if not is_draft_cmd and args.season_end_year is None:
-        parser.error("--season-end-year is required unless using a --*-draft / --list-drafts / --resume-run-id flag")
+        parser.error(
+            "--season-end-year is required unless using a --*-draft / --list-drafts / --resume-run-id flag"
+        )
 
     if is_draft_cmd:
         notifier = TelegramNotifier(
@@ -876,8 +976,10 @@ def main() -> None:
 
     if args.from_storage:
         from python.pipeline.storage_handler import StorageHandler
+
         db = create_db_connector()
         from supabase import create_client
+
         sb = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
         storage = StorageHandler(sb)
         notifier = TelegramNotifier(
@@ -887,7 +989,6 @@ def main() -> None:
 
         try:
             staging_files = storage.list_staging_files()
-            season = f"SPWS-{args.season_end_year - 1}-{args.season_end_year}"
             for fpath in staging_files:
                 file_bytes = storage.download_file(fpath)
                 fname = Path(fpath).name
@@ -934,8 +1035,7 @@ def main() -> None:
             )
             if run_id:
                 print(f"Draft batch run_id: {run_id}")
-                print(f"Commit with: python -m python.pipeline.ingest_cli "
-                      f"--commit-draft {run_id}")
+                print(f"Commit with: python -m python.pipeline.ingest_cli --commit-draft {run_id}")
         except Exception as e:
             notifier.notify_pipeline_failure(str(e))
             raise
@@ -953,8 +1053,10 @@ def main() -> None:
                 dry_run=args.dry_run,
                 tournament_type=args.tournament_type,
             )
-            print(f"Matched: {result.matched}, Pending: {result.pending}, "
-                  f"Auto-created: {result.auto_created}, Skipped: {result.skipped}")
+            print(
+                f"Matched: {result.matched}, Pending: {result.pending}, "
+                f"Auto-created: {result.auto_created}, Skipped: {result.skipped}"
+            )
             if result.errors:
                 print(f"Errors: {result.errors}")
         except Exception as e:

@@ -32,7 +32,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-
 FIXTURES = Path(__file__).parent / "fixtures" / "fencingtime_xml"
 LIVE_XML = Path("/Users/aleks/coding/SPWSranklist/doc/external_files/Sezon_2025-2026")
 
@@ -98,6 +97,7 @@ DE_BRACKET_SEXE_X_XML = b"""<?xml version="1.0" encoding="utf-8"?>
 # Parser-level structural detection
 # =============================================================================
 
+
 class TestParsedTournamentPoolOnlyFlag:
     """The IR ParsedTournament must expose an is_pool_only_qualifier flag
     that the parser sets based on structure, not name."""
@@ -105,12 +105,14 @@ class TestParsedTournamentPoolOnlyFlag:
     def test_pool_only_file_flagged_true(self):
         """ELIMINACJE-shape file: <Poule> present, no <Tableau> → flag True."""
         from python.scrapers.fencingtime_xml import parse
+
         parsed = parse(POOL_ONLY_XML, source_url="https://example.test/pool")
         assert parsed.is_pool_only_qualifier is True
 
     def test_de_bracket_file_flagged_false(self):
         """Normal DE bracket: <Tableau> present → flag False (ingest)."""
         from python.scrapers.fencingtime_xml import parse
+
         parsed = parse(DE_BRACKET_XML, source_url="https://example.test/de")
         assert parsed.is_pool_only_qualifier is False
 
@@ -119,6 +121,7 @@ class TestParsedTournamentPoolOnlyFlag:
         bracket and must NOT be flagged for skip. Regression test for the
         old name-based skip rule that wrongly dropped these."""
         from python.scrapers.fencingtime_xml import parse
+
         parsed = parse(DE_BRACKET_SEXE_X_XML, source_url="https://example.test/x")
         assert parsed.is_pool_only_qualifier is False
 
@@ -127,6 +130,7 @@ class TestParsedTournamentPoolOnlyFlag:
 # Pipeline-level halt
 # =============================================================================
 
+
 class TestPipelineHaltsOnPoolOnly:
     """The S1 (or new) stage must halt the pipeline when the parsed IR
     is flagged is_pool_only_qualifier=True. Other stages do not run."""
@@ -134,9 +138,9 @@ class TestPipelineHaltsOnPoolOnly:
     def test_run_pipeline_halts_on_pool_only(self):
         """A pool-only IR halts at the validation stage with
         HaltReason.POOL_ROUND_DETECTED."""
-        from python.scrapers.fencingtime_xml import parse
         from python.pipeline.orchestrator import run_pipeline
-        from python.pipeline.types import Overrides, HaltReason
+        from python.pipeline.types import HaltReason, Overrides
+        from python.scrapers.fencingtime_xml import parse
 
         parsed = parse(POOL_ONLY_XML, source_url="https://example.test/pool")
         # No real DB needed because we expect to halt before S2.
@@ -156,6 +160,7 @@ class TestPipelineHaltsOnPoolOnly:
 # Legacy process_xml_file path — same rule must apply
 # =============================================================================
 
+
 class TestLegacyProcessXmlPoolOnlySkip:
     """The deprecated `orchestrator.process_xml_file` path must also
     apply the structural skip — otherwise any remaining caller keeps
@@ -165,8 +170,9 @@ class TestLegacyProcessXmlPoolOnlySkip:
         """Pool-only XML: process_xml_file appends to result.skipped_files
         and never calls db.ingest_results."""
         import warnings
-        from python.pipeline.orchestrator import process_xml_file
+
         from python.pipeline.notifications import TelegramNotifier
+        from python.pipeline.orchestrator import process_xml_file
 
         db = MagicMock()
         db.find_event_by_date.return_value = None
@@ -191,8 +197,9 @@ class TestLegacyProcessXmlPoolOnlySkip:
         """Conversely: Sexe='X' alone is not a skip signal. A bracket
         with <Tableau> present but Sexe='X' must reach the ingest call."""
         import warnings
-        from python.pipeline.orchestrator import process_xml_file
+
         from python.pipeline.notifications import TelegramNotifier
+        from python.pipeline.orchestrator import process_xml_file
 
         db = MagicMock()
         # Mock a found event + tournament so the call chain reaches ingest.
@@ -221,6 +228,7 @@ class TestLegacyProcessXmlPoolOnlySkip:
 # Live-file sanity checks (skipped if files moved)
 # =============================================================================
 
+
 @pytest.mark.skipif(
     not (LIVE_XML / "PPW5-GDANSK" / "RESULTS_GRVETXE_2026-0.xml").exists(),
     reason="live fixture files not present",
@@ -230,12 +238,14 @@ class TestLiveFiles:
 
     def test_ppw5_eliminacje_flagged_pool_only(self):
         from python.scrapers.fencingtime_xml import parse
+
         f = LIVE_XML / "PPW5-GDANSK" / "RESULTS_GRVETXE_2026-0.xml"
         parsed = parse(f.read_bytes(), source_url=f"file://{f}")
         assert parsed.is_pool_only_qualifier is True
 
     def test_ppw5_v1_de_not_flagged(self):
         from python.scrapers.fencingtime_xml import parse
+
         f = LIVE_XML / "PPW5-GDANSK" / "RESULTS_ME_2026-8.xml"
         parsed = parse(f.read_bytes(), source_url=f"file://{f}")
         assert parsed.is_pool_only_qualifier is False

@@ -44,23 +44,23 @@ DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 # Covers all naming conventions across 2021-2025 seasons
 SHEET_MAP = {
     # Domestic Grand Prix — older naming (2021-2024)
-    "GP1":  ("PPW", "GP1",  "Grand Prix (runda 1)"),
-    "GP2":  ("PPW", "GP2",  "Grand Prix (runda 2)"),
-    "GP3":  ("PPW", "GP3",  "Grand Prix (runda 3)"),
-    "GP4":  ("PPW", "GP4",  "Grand Prix (runda 4)"),
-    "GP5":  ("PPW", "GP5",  "Grand Prix (runda 5)"),
-    "GP6":  ("PPW", "GP6",  "Grand Prix (runda 6)"),
-    "GP7":  ("PPW", "GP7",  "Grand Prix (runda 7)"),
-    "GP8":  ("PPW", "GP8",  "Grand Prix (runda 8)"),
+    "GP1": ("PPW", "GP1", "Grand Prix (runda 1)"),
+    "GP2": ("PPW", "GP2", "Grand Prix (runda 2)"),
+    "GP3": ("PPW", "GP3", "Grand Prix (runda 3)"),
+    "GP4": ("PPW", "GP4", "Grand Prix (runda 4)"),
+    "GP5": ("PPW", "GP5", "Grand Prix (runda 5)"),
+    "GP6": ("PPW", "GP6", "Grand Prix (runda 6)"),
+    "GP7": ("PPW", "GP7", "Grand Prix (runda 7)"),
+    "GP8": ("PPW", "GP8", "Grand Prix (runda 8)"),
     # Domestic Grand Prix — newer naming (2024-2025)
-    "PP1":  ("PPW", "PPW1",  "I Puchar Polski Weteranów"),
-    "PP2":  ("PPW", "PPW2",  "II Puchar Polski Weteranów"),
-    "PP3":  ("PPW", "PPW3",  "III Puchar Polski Weteranów"),
-    "PP4":  ("PPW", "PPW4",  "IV Puchar Polski Weteranów"),
-    "PP5":  ("PPW", "PPW5",  "V Puchar Polski Weteranów"),
+    "PP1": ("PPW", "PPW1", "I Puchar Polski Weteranów"),
+    "PP2": ("PPW", "PPW2", "II Puchar Polski Weteranów"),
+    "PP3": ("PPW", "PPW3", "III Puchar Polski Weteranów"),
+    "PP4": ("PPW", "PPW4", "IV Puchar Polski Weteranów"),
+    "PP5": ("PPW", "PPW5", "V Puchar Polski Weteranów"),
     # Polish Championships
-    "MP":   ("MPW", "MPW",  "Mistrzostwa Polski Weteranów"),  # 2021 naming
-    "MPW":  ("MPW", "MPW",  "Mistrzostwa Polski Weteranów"),
+    "MP": ("MPW", "MPW", "Mistrzostwa Polski Weteranów"),  # 2021 naming
+    "MPW": ("MPW", "MPW", "Mistrzostwa Polski Weteranów"),
     # International EVF Grand Prix — older naming (2022)
     "EVF1": ("PEW", "PEW1", "EVF Grand Prix 1"),
     "EVF2": ("PEW", "PEW2", "EVF Grand Prix 2"),
@@ -79,14 +79,14 @@ SHEET_MAP = {
     "PEW7": ("PEW", "PEW7", "EVF Grand Prix 7"),
     "PEW8": ("PEW", "PEW8", "EVF Grand Prix 8"),
     "PEW9": ("PEW", "PEW9", "EVF Grand Prix 9"),
-    "PEW10":("PEW", "PEW10","EVF Grand Prix 10"),
-    "PEW11":("PEW", "PEW11","EVF Grand Prix 11"),
-    "PEW12":("PEW", "PEW12","EVF Grand Prix 12"),
+    "PEW10": ("PEW", "PEW10", "EVF Grand Prix 10"),
+    "PEW11": ("PEW", "PEW11", "EVF Grand Prix 11"),
+    "PEW12": ("PEW", "PEW12", "EVF Grand Prix 12"),
     # European/World Championships
     "IMEW": ("MEW", "IMEW", "Indywidualne Mistrzostwa Europy Weteranów"),
     "IMSW": ("MSW", "IMSW", "Indywidualne Mistrzostwa Świata Weteranów"),
-    "VFC":  ("MSW", "VFC",  "Veterans Fencing Circuit"),
-    "PS":   ("PSW", "PS",   "Puchar Świata"),
+    "VFC": ("MSW", "VFC", "Veterans Fencing Circuit"),
+    "PS": ("PSW", "PS", "Puchar Świata"),
 }
 
 # Sheets to skip (not events)
@@ -97,15 +97,25 @@ SKIP_FILE_PATTERNS = {"SuperFive", "czlonkowie", "Backup", "~$"}
 
 # Polish month names for date parsing
 POLISH_MONTHS = {
-    "stycznia": 1, "lutego": 2, "marca": 3, "kwietnia": 4,
-    "maja": 5, "czerwca": 6, "lipca": 7, "sierpnia": 8,
-    "września": 9, "października": 10, "listopada": 11, "grudnia": 12,
+    "stycznia": 1,
+    "lutego": 2,
+    "marca": 3,
+    "kwietnia": 4,
+    "maja": 5,
+    "czerwca": 6,
+    "lipca": 7,
+    "sierpnia": 8,
+    "września": 9,
+    "października": 10,
+    "listopada": 11,
+    "grudnia": 12,
 }
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def parse_date(raw) -> str | None:
     """Return ISO date string from various date formats in the Excel."""
@@ -332,18 +342,21 @@ def extract_sheet_2021(wb_data, wb_links, sheet_name: str) -> dict:
 # Season matching
 # ---------------------------------------------------------------------------
 
+
 def load_seasons(conn) -> list[dict]:
     """Load all seasons with date ranges from DB."""
     cur = conn.cursor()
     cur.execute("SELECT id_season, txt_code, dt_start, dt_end FROM tbl_season ORDER BY dt_start")
     seasons = []
     for row in cur.fetchall():
-        seasons.append({
-            "id_season": row[0],
-            "txt_code": row[1],
-            "dt_start": row[2],
-            "dt_end": row[3],
-        })
+        seasons.append(
+            {
+                "id_season": row[0],
+                "txt_code": row[1],
+                "dt_start": row[2],
+                "dt_end": row[3],
+            }
+        )
     return seasons
 
 
@@ -381,6 +394,7 @@ def season_year_suffix(season_code: str) -> str:
 # Event extraction
 # ---------------------------------------------------------------------------
 
+
 def extract_events_from_workbook(xlsx_path: Path) -> list[dict]:
     """Extract raw event data from an Excel workbook (no season assignment yet).
 
@@ -410,7 +424,11 @@ def extract_events_from_workbook(xlsx_path: Path) -> list[dict]:
 
         organizer = "EVF" if ttype in ("PEW", "MEW", "MSW", "PSW") else "SPWS"
         location = data["location"]
-        display_name = f"{human_name} — {location}" if location and ttype in ("PEW", "MEW", "MSW", "PSW") else human_name
+        display_name = (
+            f"{human_name} — {location}"
+            if location and ttype in ("PEW", "MEW", "MSW", "PSW")
+            else human_name
+        )
 
         if code_prefix not in events:
             events[code_prefix] = {
@@ -455,7 +473,7 @@ def pick_representative_files(xlsx_files: list[Path]) -> list[Path]:
         by_dir.setdefault(key, []).append(f)
 
     picked = []
-    for dir_path, files in sorted(by_dir.items()):
+    for _dir_path, files in sorted(by_dir.items()):
         # Prefer SZPADA-2, then SZPADA-0, then first alphabetically
         best = None
         for f in files:
@@ -476,8 +494,10 @@ def pick_representative_files(xlsx_files: list[Path]) -> list[Path]:
 # DB operations
 # ---------------------------------------------------------------------------
 
-def upsert_events(conn, events_by_season: dict[str, list[dict]], seasons: list[dict],
-                  dry_run: bool = False):
+
+def upsert_events(
+    conn, events_by_season: dict[str, list[dict]], seasons: list[dict], dry_run: bool = False
+):
     """Insert or update events grouped by season."""
     cur = conn.cursor()
 
@@ -496,13 +516,15 @@ def upsert_events(conn, events_by_season: dict[str, list[dict]], seasons: list[d
         events = events_by_season[season_code]
         season_id = season_id_map.get(season_code)
         if not season_id:
-            print(f"\n  ERROR: Season '{season_code}' not found in DB, skipping {len(events)} events")
+            print(
+                f"\n  ERROR: Season '{season_code}' not found in DB, skipping {len(events)} events"
+            )
             continue
 
         year_suffix = season_year_suffix(season_code)
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Season: {season_code} (suffix: {year_suffix}) — {len(events)} event(s)")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         created = 0
         updated = 0
@@ -517,8 +539,10 @@ def upsert_events(conn, events_by_season: dict[str, list[dict]], seasons: list[d
                 continue
 
             # Check if event already exists
-            cur.execute("SELECT id_event, dt_start, dt_end, url_event FROM tbl_event WHERE txt_code = %s",
-                        (event_code,))
+            cur.execute(
+                "SELECT id_event, dt_start, dt_end, url_event FROM tbl_event WHERE txt_code = %s",
+                (event_code,),
+            )
             existing = cur.fetchone()
 
             if existing:
@@ -554,7 +578,9 @@ def upsert_events(conn, events_by_season: dict[str, list[dict]], seasons: list[d
                     skipped += 1
             else:
                 if dry_run:
-                    print(f"  INSERT {event_code}: {evt['event_name'][:50]} | {evt['location'] or '?'} | {evt['dt_start']} → {evt['dt_end']}")
+                    print(
+                        f"  INSERT {event_code}: {evt['event_name'][:50]} | {evt['location'] or '?'} | {evt['dt_start']} → {evt['dt_end']}"
+                    )
                 else:
                     cur.execute(
                         """INSERT INTO tbl_event
@@ -574,7 +600,9 @@ def upsert_events(conn, events_by_season: dict[str, list[dict]], seasons: list[d
                         ),
                     )
                     eid = cur.fetchone()[0]
-                    print(f"  INSERT {event_code}: id={eid} | {evt['event_name'][:50]} | {evt['location'] or '?'}")
+                    print(
+                        f"  INSERT {event_code}: id={eid} | {evt['event_name'][:50]} | {evt['location'] or '?'}"
+                    )
                 created += 1
 
         print(f"  → {created} created, {updated} updated, {skipped} skipped")
@@ -585,7 +613,7 @@ def upsert_events(conn, events_by_season: dict[str, list[dict]], seasons: list[d
     if not dry_run:
         conn.commit()
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"TOTAL: {total_created} created, {total_updated} updated, {total_skipped} skipped")
     return {"created": total_created, "updated": total_updated, "skipped": total_skipped}
 
@@ -594,16 +622,20 @@ def upsert_events(conn, events_by_season: dict[str, list[dict]], seasons: list[d
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Import events from Excel workbooks into the database."
     )
-    parser.add_argument("--folder", required=True,
-                        help="Root folder to scan recursively for .xlsx files")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Preview changes without modifying the database")
-    parser.add_argument("--json", action="store_true",
-                        help="Output results as JSON (for programmatic use)")
+    parser.add_argument(
+        "--folder", required=True, help="Root folder to scan recursively for .xlsx files"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Preview changes without modifying the database"
+    )
+    parser.add_argument(
+        "--json", action="store_true", help="Output results as JSON (for programmatic use)"
+    )
     args = parser.parse_args()
 
     folder = Path(args.folder)
@@ -679,7 +711,9 @@ def main():
                     if new_end > cur_end and (new_end - cur_end).days <= 7:
                         existing["dt_end"] = end_str
                     elif new_d < cur_start and (cur_start - new_d).days > 7:
-                        print(f"  WARN: {evt['code_prefix']} date {evt['dt_start']} differs by >{(cur_start - new_d).days}d from existing {existing['dt_start']}, skipping")
+                        print(
+                            f"  WARN: {evt['code_prefix']} date {evt['dt_start']} differs by >{(cur_start - new_d).days}d from existing {existing['dt_start']}, skipping"
+                        )
                 except ValueError:
                     pass
             elif evt["dt_start"] and existing["dt_start"] is None:
@@ -698,8 +732,8 @@ def main():
         events_by_season.setdefault(season_code, []).append(evt)
 
     # Print summary before upsert
-    print(f"\n{'='*60}")
-    print(f"Events by season:")
+    print(f"\n{'=' * 60}")
+    print("Events by season:")
     for sc in sorted(events_by_season.keys()):
         evts = events_by_season[sc]
         suffix = season_year_suffix(sc)

@@ -47,8 +47,16 @@ def mgmt_query(ref: str, token: str, sql: str) -> list[dict]:
 # Helpers
 # ---------------------------------------------------------------------------
 SKIP_COLS = {"ts_created", "ts_updated"}
-AUTO_ID_COLS = {"id_fencer", "id_season", "id_organizer", "id_event", "id_tournament",
-                "id_result", "id_scoring_config", "id_match_candidate"}
+AUTO_ID_COLS = {
+    "id_fencer",
+    "id_season",
+    "id_organizer",
+    "id_event",
+    "id_tournament",
+    "id_result",
+    "id_scoring_config",
+    "id_match_candidate",
+}
 
 
 def esc(s: str | None) -> str:
@@ -76,12 +84,16 @@ def sql_val(val, dtype: str) -> str:
 
 def discover_cols(ref: str, token: str, table: str) -> list[dict]:
     """Get all data columns (excluding auto-generated)."""
-    rows = mgmt_query(ref, token, f"""
+    rows = mgmt_query(
+        ref,
+        token,
+        f"""
     SELECT column_name, data_type, column_default
     FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = '{table}'
     ORDER BY ordinal_position
-    """)
+    """,
+    )
     cols = []
     for r in rows:
         name = r["column_name"]
@@ -112,14 +124,17 @@ def select_expr(cols: list[dict]) -> str:
 # ---------------------------------------------------------------------------
 def export_monolithic(ref: str, token: str) -> str:
     """Generate complete monolithic SQL dump from remote DB."""
-    q = lambda sql: mgmt_query(ref, token, sql)
+
+    def q(sql):
+        return mgmt_query(ref, token, sql)
+
     lines: list[str] = []
 
-    lines.append(f"-- =============================================================================")
+    lines.append("-- =============================================================================")
     lines.append(f"-- PROD Data Dump — {date.today().isoformat()}")
     lines.append(f"-- Source: {ref}")
-    lines.append(f"-- Schema-driven export (ADR-036) — columns discovered at runtime")
-    lines.append(f"-- =============================================================================")
+    lines.append("-- Schema-driven export (ADR-036) — columns discovered at runtime")
+    lines.append("-- =============================================================================")
     lines.append("")
 
     # --- tbl_season ---
@@ -192,10 +207,14 @@ def export_monolithic(ref: str, token: str) -> str:
     ev_cols_no_fk = [c for c in ev_cols if c["name"] not in ("id_season", "id_organizer")]
     ev_col_names = [c["name"] for c in ev_cols_no_fk]
 
-    seasons = q("SELECT id_season, txt_code FROM tbl_season ORDER BY dt_start")
+    q("SELECT id_season, txt_code FROM tbl_season ORDER BY dt_start")
 
+    ev_select = ", ".join(
+        f"e.{c['name']}::TEXT" if c["type"] in ("date", "USER-DEFINED") else f"e.{c['name']}"
+        for c in ev_cols_no_fk
+    )
     all_events = q(f"""
-    SELECT e.id_event, e.id_season, {', '.join(f'e.{c["name"]}::TEXT' if c['type'] in ('date','USER-DEFINED') else f'e.{c["name"]}' for c in ev_cols_no_fk)},
+    SELECT e.id_event, e.id_season, {ev_select},
            s.txt_code AS season_code,
            o.txt_code AS org_code
     FROM tbl_event e
@@ -210,7 +229,9 @@ def export_monolithic(ref: str, token: str) -> str:
         for c in ev_cols_no_fk:
             vals.append(sql_val(ev.get(c["name"]), c["type"]))
         insert_cols = ["id_season", "id_organizer"] + ev_col_names
-        lines.append(f"INSERT INTO tbl_event ({', '.join(insert_cols)}) VALUES ({', '.join(vals)});")
+        lines.append(
+            f"INSERT INTO tbl_event ({', '.join(insert_cols)}) VALUES ({', '.join(vals)});"
+        )
     lines.append("")
 
     # --- tbl_tournament + tbl_result (bulk queries) ---
@@ -244,14 +265,18 @@ def export_monolithic(ref: str, token: str) -> str:
     # output columns that get recomputed by fn_calc_tournament_scores on
     # post-seed run (avoid drift between exported and recomputed values).
     _R_SKIP = {
-        "id_result", "id_fencer", "id_tournament",
-        "num_place_pts", "num_de_bonus", "num_podium_bonus",
-        "num_final_score", "ts_points_calc",
+        "id_result",
+        "id_fencer",
+        "id_tournament",
+        "num_place_pts",
+        "num_de_bonus",
+        "num_podium_bonus",
+        "num_final_score",
+        "ts_points_calc",
     }
     r_cols_data = [c for c in r_cols if c["name"] not in _R_SKIP]
     r_data_select = ", ".join(
-        f"r.{c['name']}::TEXT" if c["type"] in ("date", "USER-DEFINED")
-        else f"r.{c['name']}"
+        f"r.{c['name']}::TEXT" if c["type"] in ("date", "USER-DEFINED") else f"r.{c['name']}"
         for c in r_cols_data
     )
     all_results = q(f"""
@@ -302,9 +327,7 @@ def export_monolithic(ref: str, token: str) -> str:
         # Results for this tournament
         # Build INSERT column list: 2 FK sub-SELECTs + every discovered
         # data column (incl. enum_source_age_category for ADR-056 trigger).
-        r_insert_cols = (
-            ["id_fencer", "id_tournament"] + [c["name"] for c in r_cols_data]
-        )
+        r_insert_cols = ["id_fencer", "id_tournament"] + [c["name"] for c in r_cols_data]
         for r in results_by_tourn.get(t_code, []):
             surname = esc(r["txt_surname"])
             first_name = esc(r["txt_first_name"])
@@ -315,9 +338,7 @@ def export_monolithic(ref: str, token: str) -> str:
             tournament_sub = (
                 f"(SELECT id_tournament FROM tbl_tournament WHERE txt_code = '{esc(t_code)}')"
             )
-            data_vals = [
-                sql_val(r.get(c["name"]), c["type"]) for c in r_cols_data
-            ]
+            data_vals = [sql_val(r.get(c["name"]), c["type"]) for c in r_cols_data]
             select_cols = ", ".join([fencer_sub, tournament_sub] + data_vals)
             lines.append(
                 f"INSERT INTO tbl_result ({', '.join(r_insert_cols)}) "
@@ -361,7 +382,7 @@ def main() -> None:
 
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(sql)
-    print(f"  Written: {out_path} ({len(sql)//1024} KB)", file=sys.stderr)
+    print(f"  Written: {out_path} ({len(sql) // 1024} KB)", file=sys.stderr)
 
     # Update latest symlink
     latest = os.path.join("supabase", "seed_prod_latest.sql")

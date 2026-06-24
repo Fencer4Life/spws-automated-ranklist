@@ -24,9 +24,19 @@ def _local_supabase_reachable() -> bool:
     """True if the local Supabase container is up + reachable from this process."""
     try:
         result = subprocess.run(
-            ["docker", "exec", "supabase_db_SPWSranklist",
-             "psql", "-U", "postgres", "-c", "SELECT 1"],
-            capture_output=True, text=True, timeout=5,
+            [
+                "docker",
+                "exec",
+                "supabase_db_SPWSranklist",
+                "psql",
+                "-U",
+                "postgres",
+                "-c",
+                "SELECT 1",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         return result.returncode == 0
     except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -35,7 +45,7 @@ def _local_supabase_reachable() -> bool:
 
 pytestmark = pytest.mark.skipif(
     not _local_supabase_reachable(),
-    reason="Local Supabase container not reachable (expected in CI's test-python job)."
+    reason="Local Supabase container not reachable (expected in CI's test-python job).",
 )
 
 
@@ -45,6 +55,7 @@ def db():
     if not os.environ.get("SUPABASE_URL") or not os.environ.get("SUPABASE_KEY"):
         pytest.skip("SUPABASE_URL / SUPABASE_KEY not set; cannot connect.")
     from python.pipeline.db_connector import create_db_connector
+
     return create_db_connector()
 
 
@@ -57,15 +68,31 @@ def fresh_run_id():
 def _parsed_for_active_event(active_event_date, weapon="EPEE", gender="M"):
     """Build a synthetic ParsedTournament for a known active-season event date."""
     from python.pipeline.ir import ParsedResult, ParsedTournament, SourceKind
+
     return ParsedTournament(
         source_kind=SourceKind.FENCINGTIME_XML,
         results=[
-            ParsedResult(source_row_id="int:1", fencer_name="KOWALSKI Jan",
-                         place=1, birth_year=1970, fencer_country="POL"),
-            ParsedResult(source_row_id="int:2", fencer_name="NOWAK Adam",
-                         place=2, birth_year=1968, fencer_country="POL"),
-            ParsedResult(source_row_id="int:3", fencer_name="WISNIEWSKI Pawel",
-                         place=3, birth_year=1975, fencer_country="POL"),
+            ParsedResult(
+                source_row_id="int:1",
+                fencer_name="KOWALSKI Jan",
+                place=1,
+                birth_year=1970,
+                fencer_country="POL",
+            ),
+            ParsedResult(
+                source_row_id="int:2",
+                fencer_name="NOWAK Adam",
+                place=2,
+                birth_year=1968,
+                fencer_country="POL",
+            ),
+            ParsedResult(
+                source_row_id="int:3",
+                fencer_name="WISNIEWSKI Pawel",
+                place=3,
+                birth_year=1975,
+                fencer_country="POL",
+            ),
         ],
         parsed_date=active_event_date,
         weapon=weapon,
@@ -81,6 +108,7 @@ def _parsed_for_active_event(active_event_date, weapon="EPEE", gender="M"):
 # Tests
 # ---------------------------------------------------------------------------
 
+
 class TestEndToEnd:
     def test_run_pipeline_resolves_event_for_active_season_date(self, db):
         """P3.INT.1 run_pipeline against real DB resolves the event for a known date."""
@@ -90,8 +118,7 @@ class TestEndToEnd:
         # PPW1-2025-2026 is at 2025-09-27 (active-season fixture); see seed.
         parsed = _parsed_for_active_event(date(2025, 9, 27))
 
-        ctx = run_pipeline(parsed=parsed, overrides=Overrides(),
-                           db=db, season_end_year=2026)
+        ctx = run_pipeline(parsed=parsed, overrides=Overrides(), db=db, season_end_year=2026)
 
         # Stage S1 passed (results non-empty, all required fields).
         # Stage S2 resolved an event for 2025-09-27.
@@ -107,8 +134,7 @@ class TestEndToEnd:
         from python.pipeline.types import Overrides
 
         parsed = _parsed_for_active_event(date(2025, 9, 27))
-        ctx = run_pipeline(parsed=parsed, overrides=Overrides(),
-                           db=db, season_end_year=2026)
+        ctx = run_pipeline(parsed=parsed, overrides=Overrides(), db=db, season_end_year=2026)
 
         assert not ctx.halted, (
             f"Expected full S1-S7 completion; halted at "
@@ -131,26 +157,30 @@ class TestEndToEnd:
         assert event is not None, "test fixture assumes PPW1-2025-2026 in active season"
 
         store.write_tournament_drafts(
-            tournaments=[{
-                "id_event": event["id_event"],
-                "txt_code": f"INT-{fresh_run_id[:8]}-V1-EPEE-M",
-                "enum_type": "PPW",
-                "enum_weapon": "EPEE",
-                "enum_gender": "M",
-                "enum_age_category": "V1",
-                "dt_tournament": "2025-09-27",
-                "url_results": "https://integration.test/x",
-                "enum_parser_kind": "FENCINGTIME_XML",
-            }],
+            tournaments=[
+                {
+                    "id_event": event["id_event"],
+                    "txt_code": f"INT-{fresh_run_id[:8]}-V1-EPEE-M",
+                    "enum_type": "PPW",
+                    "enum_weapon": "EPEE",
+                    "enum_gender": "M",
+                    "enum_age_category": "V1",
+                    "dt_tournament": "2025-09-27",
+                    "url_results": "https://integration.test/x",
+                    "enum_parser_kind": "FENCINGTIME_XML",
+                }
+            ],
             run_id=fresh_run_id,
         )
         store.write_result_drafts(
-            results=[{
-                "id_fencer": None,
-                "id_tournament_draft": 0,  # placeholder; commit-path fills it
-                "int_place": 1,
-                "txt_scraped_name": "INTEGRATION TEST",
-            }],
+            results=[
+                {
+                    "id_fencer": None,
+                    "id_tournament_draft": 0,  # placeholder; commit-path fills it
+                    "int_place": 1,
+                    "txt_scraped_name": "INTEGRATION TEST",
+                }
+            ],
             run_id=fresh_run_id,
         )
 
@@ -174,13 +204,15 @@ class TestEndToEnd:
         """P3.INT.4 3-way diff renders markdown from a real PipelineContext."""
         from python.pipeline.orchestrator import run_pipeline
         from python.pipeline.three_way_diff import (
-            build_diff, confidence_histogram, render_markdown, write_diff,
+            build_diff,
+            confidence_histogram,
+            render_markdown,
+            write_diff,
         )
         from python.pipeline.types import Overrides
 
         parsed = _parsed_for_active_event(date(2025, 9, 27))
-        ctx = run_pipeline(parsed=parsed, overrides=Overrides(),
-                           db=db, season_end_year=2026)
+        ctx = run_pipeline(parsed=parsed, overrides=Overrides(), db=db, season_end_year=2026)
 
         assert not ctx.halted, f"setup halt: {ctx.halt_detail}"
 

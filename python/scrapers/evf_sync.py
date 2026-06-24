@@ -20,27 +20,25 @@ import time
 import httpx
 
 from python.scrapers.evf_calendar import (
-    scrape_full_season_calendar,
-    deduplicate_events,
-    match_scraped_to_existing,
-    is_in_scope,
-    assert_no_future_completed,
-    find_future_completed,
-    compute_future_completed_corrections,
-    LogicalIntegrityError,
     STALE_WINDOW_DAYS,
-)
-from python.scrapers.ftl import fetch_ftl_event_metadata
-from python.scrapers.ftl_auth import (
-    get_authed_ftl_client,
-    normalize_ftl_url,
-    FtlAuthError,
+    LogicalIntegrityError,
+    assert_no_future_completed,
+    compute_future_completed_corrections,
+    deduplicate_events,
+    find_future_completed,
+    is_in_scope,
+    match_scraped_to_existing,
+    scrape_full_season_calendar,
 )
 from python.scrapers.evf_results import (
     EvfApiClient,
     scrape_event_results,
-    CATEGORY_MAP,
-    WEAPON_MAP,
+)
+from python.scrapers.ftl import fetch_ftl_event_metadata
+from python.scrapers.ftl_auth import (
+    FtlAuthError,
+    get_authed_ftl_client,
+    normalize_ftl_url,
 )
 
 
@@ -79,9 +77,11 @@ def _telegram(bot_token: str, chat_id: str, msg: str) -> None:
 
 def _get_active_season(ref: str, token: str) -> dict | None:
     """Get active season from CERT."""
-    rows = _management_query(ref, token,
+    rows = _management_query(
+        ref,
+        token,
         "SELECT txt_code, dt_start::TEXT, dt_end::TEXT, id_season "
-        "FROM tbl_season WHERE bool_active = TRUE"
+        "FROM tbl_season WHERE bool_active = TRUE",
     )
     return rows[0] if rows else None
 
@@ -97,7 +97,7 @@ def _scraped_event_url(violator: dict, cal_events: list[dict]) -> str | None:
     """
     if not cal_events:
         return None
-    pairs = match_scraped_to_existing(cal_events, [violator], date_tolerance=10 ** 6)
+    pairs = match_scraped_to_existing(cal_events, [violator], date_tolerance=10**6)
     for scraped, _existing_row in pairs:
         url = scraped.get("url") or scraped.get("url_event")
         if url:
@@ -105,8 +105,9 @@ def _scraped_event_url(violator: dict, cal_events: list[dict]) -> str | None:
     return None
 
 
-def _resolve_event_date(ref: str, token: str, violator: dict,
-                        cal_events: list[dict], ftl_client) -> tuple[list[str], str | None]:
+def _resolve_event_date(
+    ref: str, token: str, violator: dict, cal_events: list[dict], ftl_client
+) -> tuple[list[str], str | None]:
     """Recover a future-COMPLETED event's real date(s) and event URL (ADR-039 rev 2).
 
     Priority: (a) the row's own `url_event`; (b) the matched EVF calendar event's
@@ -116,7 +117,7 @@ def _resolve_event_date(ref: str, token: str, violator: dict,
     """
     code = violator.get("txt_code", "?")
     url_event = violator.get("url_event")  # (a) stored event URL
-    if not url_event:                       # (b) EVF calendar match
+    if not url_event:  # (b) EVF calendar match
         url_event = _scraped_event_url(violator, cal_events)
         if url_event:
             print(f"    {code}: matched EVF calendar → {url_event[:70]}")
@@ -129,10 +130,12 @@ def _resolve_event_date(ref: str, token: str, violator: dict,
         print(f"    {code}: event URL gave no date ({url_event[:70]})")
 
     # (c) FTL fallback — tournament results URLs on this event.
-    rows = _management_query(ref, token,
+    rows = _management_query(
+        ref,
+        token,
         f"SELECT url_results FROM tbl_tournament "
         f"WHERE id_event = {int(violator['id_event'])} "
-        f"AND url_results ILIKE '%fencingtimelive%'"
+        f"AND url_results ILIKE '%fencingtimelive%'",
     )
     dates: list[str] = []
     for row in rows:
@@ -161,9 +164,15 @@ _STATUS_FLIP_SQL = (
 )
 
 
-def _heal_future_completed(ref: str, token: str, existing: list[dict],
-                           cal_events: list[dict], bot_token: str, chat_id: str,
-                           dry_run: bool = False) -> None:
+def _heal_future_completed(
+    ref: str,
+    token: str,
+    existing: list[dict],
+    cal_events: list[dict],
+    bot_token: str,
+    chat_id: str,
+    dry_run: bool = False,
+) -> None:
     """Self-heal future-COMPLETED rows (ADR-039 rev 2 — Step 0).
 
     For each violator: recover the real date from the event URL (calendar /
@@ -177,20 +186,22 @@ def _heal_future_completed(ref: str, token: str, existing: list[dict],
     if not violators:
         return
 
-    print(f"  Self-heal: {len(violators)} future-COMPLETED row(s) detected; "
-          f"resolving via event URL...")
+    print(
+        f"  Self-heal: {len(violators)} future-COMPLETED row(s) detected; "
+        f"resolving via event URL..."
+    )
     resolved_urls: dict[int, str] = {}
 
     try:
         with get_authed_ftl_client() as ftl_client:
+
             def date_lookup(ev):
                 dates, url = _resolve_event_date(ref, token, ev, cal_events, ftl_client)
                 if url:
                     resolved_urls[ev["id_event"]] = url
                 return dates
-            corrections, status_flips = compute_future_completed_corrections(
-                violators, date_lookup
-            )
+
+            corrections, status_flips = compute_future_completed_corrections(violators, date_lookup)
     except FtlAuthError as exc:
         # No authed session → can't read any date, but we can still demote every
         # violator so the pipeline survives (URL/date filled in later).
@@ -205,40 +216,47 @@ def _heal_future_completed(ref: str, token: str, existing: list[dict],
             continue
         url = resolved_urls.get(c["id_event"])
         set_url = f", url_event = '{url}'" if url else ""
-        _management_query(ref, token,
+        _management_query(
+            ref,
+            token,
             f"UPDATE tbl_event SET dt_start = '{c['dt_start']}', "
-            f"dt_end = '{c['dt_end']}'{set_url} WHERE id_event = {int(c['id_event'])}"
+            f"dt_end = '{c['dt_end']}'{set_url} WHERE id_event = {int(c['id_event'])}",
         )
-        _management_query(ref, token,
+        _management_query(
+            ref,
+            token,
             f"UPDATE tbl_tournament SET dt_tournament = '{c['dt_start']}' "
             f"WHERE id_event = {int(c['id_event'])} "
-            f"AND url_results ILIKE '%fencingtimelive%'"
+            f"AND url_results ILIKE '%fencingtimelive%'",
         )
 
     # Status flips — demote COMPLETED → PLANNED (trigger bypassed).
     for ev in status_flips:
-        print(f"    {ev.get('txt_code', '?')}: enum_status COMPLETED → PLANNED "
-              f"[no date recoverable]")
+        print(
+            f"    {ev.get('txt_code', '?')}: enum_status COMPLETED → PLANNED [no date recoverable]"
+        )
         if dry_run:
             continue
-        _management_query(ref, token,
-            _STATUS_FLIP_SQL.format(id_event=int(ev["id_event"]))
-        )
+        _management_query(ref, token, _STATUS_FLIP_SQL.format(id_event=int(ev["id_event"])))
 
     if not dry_run and (corrections or status_flips):
         parts = []
         if corrections:
             parts.append("healed dates: " + ", ".join(c["txt_code"] for c in corrections))
         if status_flips:
-            parts.append("demoted→PLANNED: "
-                         + ", ".join(e.get("txt_code", "?") for e in status_flips))
-        _telegram(bot_token, chat_id,
-            "<b>EVF Sync self-heal (Step 0)</b>\n<pre>"
-            + " | ".join(parts)[:380] + "</pre>"
+            parts.append(
+                "demoted→PLANNED: " + ", ".join(e.get("txt_code", "?") for e in status_flips)
+            )
+        _telegram(
+            bot_token,
+            chat_id,
+            "<b>EVF Sync self-heal (Step 0)</b>\n<pre>" + " | ".join(parts)[:380] + "</pre>",
         )
 
 
-def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: bool = False) -> list[dict]:
+def sync_calendar(
+    ref: str, token: str, bot_token: str, chat_id: str, dry_run: bool = False
+) -> list[dict]:
     """Scrape EVF calendar (past+future) and sync to CERT.
 
     Returns the full list of season calendar events (for use by sync_results).
@@ -254,9 +272,7 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
     try:
         cal_events = scrape_full_season_calendar(season["dt_start"], season["dt_end"])
     except RuntimeError as exc:
-        _telegram(bot_token, chat_id,
-            f"<b>EVF Calendar FAILED</b>\n<pre>{str(exc)[:500]}</pre>"
-        )
+        _telegram(bot_token, chat_id, f"<b>EVF Calendar FAILED</b>\n<pre>{str(exc)[:500]}</pre>")
         raise
     print(f"  Found {len(cal_events)} circuit/championship events")
 
@@ -266,7 +282,7 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
     print(f"  URL enrichment: inv={inv} reg={reg} deadline={dln}")
 
     for e in cal_events:
-        fee_str = f" {e['fee_currency']}{e['fee']}" if e.get('fee') else ""
+        fee_str = f" {e['fee_currency']}{e['fee']}" if e.get("fee") else ""
         team_str = " [TEAM]" if e.get("is_team") else ""
         weapons = ",".join(e.get("weapons", []))
         print(f"  {e['dt_start']}  {e['name']:<45} {weapons:<15}{fee_str}{team_str}")
@@ -307,8 +323,10 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
     new_in_scope = [e for e in new if is_in_scope(e)]
     skipped_stale_new = len(new) - len(new_in_scope)
     if skipped_stale_new:
-        print(f"  Stale-gate: not auto-creating {skipped_stale_new} stale scraped event(s) "
-              f"(>{STALE_WINDOW_DAYS} days past)")
+        print(
+            f"  Stale-gate: not auto-creating {skipped_stale_new} stale scraped event(s) "
+            f"(>{STALE_WINDOW_DAYS} days past)"
+        )
     new = new_in_scope
 
     if not dry_run:
@@ -318,51 +336,59 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
             # Phase 2 (ADR-043): allocator owns the code; payload omits `code`.
             payload: list[dict] = []
             for evt in new:
-                payload.append({
-                    "name": evt.get("name", ""),
-                    "dt_start": evt.get("dt_start", ""),
-                    "dt_end": evt.get("dt_end") or evt.get("dt_start", ""),
-                    "location": evt.get("location", ""),
-                    "country": evt.get("country", ""),
-                    "weapons": evt.get("weapons", []),
-                    "is_team": bool(evt.get("is_team", False)),
-                    "url_event": evt.get("url", "") or "",
-                    "url_invitation": evt.get("url_invitation") or "",
-                    "url_registration": evt.get("url_registration") or "",
-                    "dt_registration_deadline": evt.get("dt_registration_deadline") or "",
-                    "address": evt.get("address", ""),
-                    "fee": "" if evt.get("fee") is None else str(evt["fee"]),
-                    "fee_currency": evt.get("fee_currency", ""),
-                })
+                payload.append(
+                    {
+                        "name": evt.get("name", ""),
+                        "dt_start": evt.get("dt_start", ""),
+                        "dt_end": evt.get("dt_end") or evt.get("dt_start", ""),
+                        "location": evt.get("location", ""),
+                        "country": evt.get("country", ""),
+                        "weapons": evt.get("weapons", []),
+                        "is_team": bool(evt.get("is_team", False)),
+                        "url_event": evt.get("url", "") or "",
+                        "url_invitation": evt.get("url_invitation") or "",
+                        "url_registration": evt.get("url_registration") or "",
+                        "dt_registration_deadline": evt.get("dt_registration_deadline") or "",
+                        "address": evt.get("address", ""),
+                        "fee": "" if evt.get("fee") is None else str(evt["fee"]),
+                        "fee_currency": evt.get("fee_currency", ""),
+                    }
+                )
 
             events_json = json.dumps(payload).replace("'", "''")
-            result = _management_query(ref, token,
+            result = _management_query(
+                ref,
+                token,
                 f"SELECT fn_import_evf_events_v2('{events_json}'::JSONB, "
-                f"{season['id_season']}) AS r"
+                f"{season['id_season']}) AS r",
             )
             r = result[0].get("r") if result else {}
             if isinstance(r, str):
                 r = json.loads(r)
             r = r or {}
-            created      = int(r.get("created", 0))
-            slot_reused  = int(r.get("slot_reused", 0))
-            prior_match  = int(r.get("prior_matched", 0))
-            alerts       = r.get("alerts") or []
+            created = int(r.get("created", 0))
+            slot_reused = int(r.get("slot_reused", 0))
+            prior_match = int(r.get("prior_matched", 0))
+            alerts = r.get("alerts") or []
 
             # One Telegram message per NEXT_FREE_ALLOC alert (admin must
             # confirm the new city). Reuse / prior-match are summary-only.
             for a in alerts:
-                _telegram(bot_token, chat_id,
+                _telegram(
+                    bot_token,
+                    chat_id,
                     f"🆕 <b>{a.get('code')}</b> — new city "
                     f"<b>{a.get('location') or '?'}</b> "
-                    f"({a.get('country') or '?'}) — please confirm in admin"
+                    f"({a.get('country') or '?'}) — please confirm in admin",
                 )
 
-            _telegram(bot_token, chat_id,
+            _telegram(
+                bot_token,
+                chat_id,
                 f"<b>EVF Calendar</b>\n"
                 f"created={created}, slot_reused={slot_reused}, "
                 f"prior_matched={prior_match}, alerts={len(alerts)}\n"
-                f"URL fields: inv={inv} reg={reg} deadline={dln}"
+                f"URL fields: inv={inv} reg={reg} deadline={dln}",
             )
 
         # Refresh URL/enrichment fields on already-imported events (ADR-028
@@ -372,22 +398,24 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
         matched_pairs = match_scraped_to_existing(cal_events, in_scope_existing)
         refresh_payload: list[dict] = []
         for scraped, existing_row in matched_pairs:
-            refresh_payload.append({
-                "id_event": existing_row["id_event"],
-                "url_event": scraped.get("url", "") or "",
-                "url_invitation": scraped.get("url_invitation") or "",
-                "url_registration": scraped.get("url_registration") or "",
-                "dt_registration_deadline": scraped.get("dt_registration_deadline") or "",
-                "address": scraped.get("address", ""),
-                "fee": "" if scraped.get("fee") is None else str(scraped["fee"]),
-                "fee_currency": scraped.get("fee_currency", ""),
-                "weapons": scraped.get("weapons", []),
-            })
+            refresh_payload.append(
+                {
+                    "id_event": existing_row["id_event"],
+                    "url_event": scraped.get("url", "") or "",
+                    "url_invitation": scraped.get("url_invitation") or "",
+                    "url_registration": scraped.get("url_registration") or "",
+                    "dt_registration_deadline": scraped.get("dt_registration_deadline") or "",
+                    "address": scraped.get("address", ""),
+                    "fee": "" if scraped.get("fee") is None else str(scraped["fee"]),
+                    "fee_currency": scraped.get("fee_currency", ""),
+                    "weapons": scraped.get("weapons", []),
+                }
+            )
 
         if refresh_payload:
             refresh_json = json.dumps(refresh_payload).replace("'", "''")
-            result = _management_query(ref, token,
-                f"SELECT fn_refresh_evf_event_urls('{refresh_json}'::JSONB) AS r"
+            result = _management_query(
+                ref, token, f"SELECT fn_refresh_evf_event_urls('{refresh_json}'::JSONB) AS r"
             )
             r = result[0].get("r") if result else {}
             if isinstance(r, str):
@@ -395,8 +423,10 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
             touched = (r or {}).get("touched", 0)
             refreshed = (r or {}).get("refreshed", 0)
             print(f"  URL refresh: touched={touched} refreshed={refreshed}")
-            _telegram(bot_token, chat_id,
-                f"<b>EVF URL refresh</b>\nTouched: {touched}, refreshed: {refreshed}"
+            _telegram(
+                bot_token,
+                chat_id,
+                f"<b>EVF URL refresh</b>\nTouched: {touched}, refreshed: {refreshed}",
             )
     else:
         print(f"\n  [DRY RUN] {len(new)} new, {len(already)} already in CERT")
@@ -407,7 +437,10 @@ def sync_calendar(ref: str, token: str, bot_token: str, chat_id: str, dry_run: b
 
 
 def sync_results(
-    ref: str, token: str, bot_token: str, chat_id: str,
+    ref: str,
+    token: str,
+    bot_token: str,
+    chat_id: str,
     cal_events: list[dict] | None = None,
     event_code: str = "",
     dry_run: bool = False,
@@ -422,20 +455,23 @@ def sync_results(
 
     # Fetch active-season CERT events ONCE — used for invariant guard,
     # scope filter, and per-event dedup via the shared matcher.
-    cert_events = _management_query(ref, token,
+    cert_events = _management_query(
+        ref,
+        token,
         f"SELECT id_event, txt_code, txt_name, "
         f"dt_start::TEXT, dt_end::TEXT, "
         f"txt_country, txt_location, enum_status::TEXT "
-        f"FROM tbl_event WHERE id_season = {season['id_season']}"
+        f"FROM tbl_event WHERE id_season = {season['id_season']}",
     )
 
     # Step 0 — logical-integrity guard.
     try:
         assert_no_future_completed(cert_events)
     except LogicalIntegrityError as exc:
-        _telegram(bot_token, chat_id,
-            f"<b>EVF Sync HALT</b>\n<pre>{str(exc)[:400]}</pre>\n"
-            f"Manual fix required."
+        _telegram(
+            bot_token,
+            chat_id,
+            f"<b>EVF Sync HALT</b>\n<pre>{str(exc)[:400]}</pre>\nManual fix required.",
         )
         raise
 
@@ -452,7 +488,8 @@ def sync_results(
         # Discover all season events from API
         print("Discovering season events (scanning API IDs)...")
         evf_events = client.discover_season_events(
-            season["dt_start"], season["dt_end"],
+            season["dt_start"],
+            season["dt_end"],
             calendar_events=cal_events,
         )
         print(f"  Found {len(evf_events)} events in EVF API")
@@ -465,21 +502,24 @@ def sync_results(
             # any child tournament (status SCORED/COMPLETED) so the daily cron
             # doesn't re-scrape what's already ingested. Keep only events whose
             # date is past dt_start AND their CERT row is empty (no results).
-            scored_dates = _management_query(ref, token,
+            scored_dates = _management_query(
+                ref,
+                token,
                 f"SELECT DISTINCT e.dt_start::TEXT AS dt FROM tbl_event e "
                 f"JOIN tbl_tournament t ON t.id_event = e.id_event "
                 f"JOIN tbl_result r ON r.id_tournament = t.id_tournament "
-                f"WHERE e.id_season = {season['id_season']}"
+                f"WHERE e.id_season = {season['id_season']}",
             )
             already_scored = {r["dt"] for r in scored_dates}
             before = len(events_with_results)
             events_with_results = [
-                e for e in events_with_results
-                if e["date"] not in already_scored
+                e for e in events_with_results if e["date"] not in already_scored
             ]
             skipped = before - len(events_with_results)
-            print(f"  filter-stale: {skipped} skipped (already scored), "
-                  f"{len(events_with_results)} eligible")
+            print(
+                f"  filter-stale: {skipped} skipped (already scored), "
+                f"{len(events_with_results)} eligible"
+            )
 
         for e in evf_events:
             tag = "RESULTS" if e["has_results"] else "NO DATA"
@@ -489,15 +529,16 @@ def sync_results(
 
         if event_code:
             # Filter to specific event
-            spws_event = _management_query(ref, token,
-                f"SELECT dt_start::TEXT FROM tbl_event WHERE txt_code = '{event_code}'"
+            spws_event = _management_query(
+                ref, token, f"SELECT dt_start::TEXT FROM tbl_event WHERE txt_code = '{event_code}'"
             )
             if not spws_event:
                 print(f"  Event {event_code} not found in CERT")
                 return
             target_date = spws_event[0]["dt_start"]
             events_with_results = [
-                e for e in events_with_results
+                e
+                for e in events_with_results
                 if abs((_parse_date(e["date"]) - _parse_date(target_date)).days) <= 3
             ]
             if not events_with_results:
@@ -507,9 +548,9 @@ def sync_results(
         # Scrape results for each event (the per-event scope check is done
         # inside _compare_and_ingest after we know which CERT row matches).
         for evf_evt in events_with_results:
-            print(f"\n{'='*60}")
+            print(f"\n{'=' * 60}")
             print(f"Scraping: {evf_evt['name']} (EVF ID {evf_evt['evf_id']})")
-            print(f"{'='*60}")
+            print(f"{'=' * 60}")
 
             all_results = scrape_event_results(evf_evt["evf_id"], client=client)
             print(f"  Total: {len(all_results)} fencers")
@@ -519,17 +560,27 @@ def sync_results(
             print(f"  SPWS matches: {len(spws_results)}")
 
             # Compare with CERT data and optionally ingest (pass all_results for participant count)
-            _compare_and_ingest(ref, token, evf_evt, spws_results, dry_run,
-                                bot_token, chat_id, all_results=all_results,
-                                cert_events_pool=cert_events,
-                                season_end_year=season_end_year)
+            _compare_and_ingest(
+                ref,
+                token,
+                evf_evt,
+                spws_results,
+                dry_run,
+                bot_token,
+                chat_id,
+                all_results=all_results,
+                cert_events_pool=cert_events,
+                season_end_year=season_end_year,
+            )
 
     finally:
         client.close()
 
 
 def _match_against_spws(
-    ref: str, token: str, evf_results: list[dict],
+    ref: str,
+    token: str,
+    evf_results: list[dict],
 ) -> list[dict]:
     """Match EVF results against SPWS fencer DB using fuzzy matcher with diacritic folding.
 
@@ -539,8 +590,8 @@ def _match_against_spws(
     """
     from python.matcher.fuzzy_match import find_best_match
 
-    fencer_db = _management_query(ref, token,
-        "SELECT id_fencer, txt_surname, txt_first_name, int_birth_year FROM tbl_fencer"
+    fencer_db = _management_query(
+        ref, token, "SELECT id_fencer, txt_surname, txt_first_name, int_birth_year FROM tbl_fencer"
     )
     by_lookup = {f["id_fencer"]: f.get("int_birth_year") for f in fencer_db}
 
@@ -548,21 +599,29 @@ def _match_against_spws(
     for r in evf_results:
         m = find_best_match(r["fencer_name"], fencer_db, use_diacritic_folding=True)
         if m and m.id_fencer and m.confidence >= 85:
-            matched.append({
-                **r,
-                "spws_surname": m.matched_name.split()[0] if m.matched_name else r["fencer_name"].split()[0],
-                "spws_id": m.id_fencer,
-                "spws_birth_year": by_lookup.get(m.id_fencer),
-                "match_confidence": m.confidence,
-            })
+            matched.append(
+                {
+                    **r,
+                    "spws_surname": m.matched_name.split()[0]
+                    if m.matched_name
+                    else r["fencer_name"].split()[0],
+                    "spws_id": m.id_fencer,
+                    "spws_birth_year": by_lookup.get(m.id_fencer),
+                    "match_confidence": m.confidence,
+                }
+            )
 
     return matched
 
 
 def _compare_and_ingest(
-    ref: str, token: str,
-    evf_evt: dict, spws_results: list[dict],
-    dry_run: bool, bot_token: str, chat_id: str,
+    ref: str,
+    token: str,
+    evf_evt: dict,
+    spws_results: list[dict],
+    dry_run: bool,
+    bot_token: str,
+    chat_id: str,
     all_results: list[dict] | None = None,
     cert_events_pool: list[dict] | None = None,
     season_end_year: int | None = None,
@@ -584,13 +643,16 @@ def _compare_and_ingest(
     # trigger be the FATAL guard.
     if season_end_year is not None:
         from python.pipeline.age_split import birth_year_to_vcat
+
         for r in spws_results:
             by = r.get("spws_birth_year")
             spws_vcat = birth_year_to_vcat(by, season_end_year)
             if spws_vcat and spws_vcat != r.get("category"):
-                print(f"  WARN [Layer 1E] {r.get('spws_surname','?')} "
-                      f"BY={by} → SPWS {spws_vcat}, but EVF places in "
-                      f"{r.get('category','?')} (competition {r.get('competition_id','?')})")
+                print(
+                    f"  WARN [Layer 1E] {r.get('spws_surname', '?')} "
+                    f"BY={by} → SPWS {spws_vcat}, but EVF places in "
+                    f"{r.get('category', '?')} (competition {r.get('competition_id', '?')})"
+                )
 
     cert_events: list[dict] = []
     if cert_events_pool is not None:
@@ -602,23 +664,28 @@ def _compare_and_ingest(
             "location": evf_evt.get("location", ""),
         }
         from python.scrapers.evf_calendar import _find_existing_match
+
         match = _find_existing_match(scraped_shape, cert_events_pool)
         if match is not None:
             # Post-match scope gate: if matched row is COMPLETED or stale,
             # skip silently — admin owns it; do NOT auto-create a duplicate.
             if not is_in_scope(match):
-                print(f"  Matched CERT event {match.get('txt_code')} is "
-                      f"COMPLETED or stale — skipping (admin territory).")
+                print(
+                    f"  Matched CERT event {match.get('txt_code')} is "
+                    f"COMPLETED or stale — skipping (admin territory)."
+                )
                 return
             cert_events = [match]
     else:
         # Legacy fallback: ad-hoc per-event query.
-        cert_events = _management_query(ref, token,
+        cert_events = _management_query(
+            ref,
+            token,
             f"SELECT e.id_event, e.txt_code, e.txt_name, e.dt_start::TEXT "
             f"FROM tbl_event e "
             f"WHERE e.id_season = (SELECT id_season FROM tbl_season WHERE bool_active = TRUE) "
             f"AND e.dt_start BETWEEN '{evf_date}'::DATE - INTERVAL '3 days' "
-            f"AND '{evf_date}'::DATE + INTERVAL '3 days'"
+            f"AND '{evf_date}'::DATE + INTERVAL '3 days'",
         )
 
     if not cert_events:
@@ -626,34 +693,43 @@ def _compare_and_ingest(
         if dry_run:
             print(f"  [DRY RUN] Would create event + ingest {len(spws_results)} results")
             for r in spws_results:
-                print(f"    {r['place']:>3} {r['spws_surname']:<20} {r['category']} {r['gender']} {r['weapon']}  ({r['country']})")
+                print(
+                    f"    {r['place']:>3} {r['spws_surname']:<20} {r['category']} {r['gender']} {r['weapon']}  ({r['country']})"
+                )
             return
 
         # Auto-create only when the EVF event itself is in scope (Step 1).
         scraped_shape = {
-            "dt_end": evf_date, "dt_start": evf_date,
+            "dt_end": evf_date,
+            "dt_start": evf_date,
         }
         if not is_in_scope(scraped_shape):
-            print(f"  Stale-gate: not auto-creating CERT event for {evf_date} "
-                  f"(>30 days past). Admin must create manually.")
+            print(
+                f"  Stale-gate: not auto-creating CERT event for {evf_date} "
+                f"(>30 days past). Admin must create manually."
+            )
             return
 
         # Create the event
         cert_event_id = _create_cert_event(ref, token, evf_evt)
         if not cert_event_id:
-            print(f"  ERROR: Failed to create event")
+            print("  ERROR: Failed to create event")
             return
-        cert_code = _management_query(ref, token,
-            f"SELECT txt_code FROM tbl_event WHERE id_event = {cert_event_id}"
+        cert_code = _management_query(
+            ref, token, f"SELECT txt_code FROM tbl_event WHERE id_event = {cert_event_id}"
         )[0]["txt_code"]
         print(f"  Created event: {cert_code} (id={cert_event_id})")
 
         # Ingest all SPWS results (pass all_results for correct participant count)
-        _ingest_evf_results(ref, token, cert_event_id, spws_results, evf_date, all_results=all_results)
-        _telegram(bot_token, chat_id,
+        _ingest_evf_results(
+            ref, token, cert_event_id, spws_results, evf_date, all_results=all_results
+        )
+        _telegram(
+            bot_token,
+            chat_id,
             f"<b>EVF Import</b>\n<pre>{cert_code}</pre>\n"
             f"{evf_evt['name']}\n"
-            f"Created event + <b>{len(spws_results)}</b> results ingested"
+            f"Created event + <b>{len(spws_results)}</b> results ingested",
         )
         return
 
@@ -661,14 +737,16 @@ def _compare_and_ingest(
     print(f"  CERT match: {cert_code} ({cert_events[0]['txt_name']})")
 
     # Get CERT results (by fencer ID for precise matching)
-    cert_results = _management_query(ref, token,
+    cert_results = _management_query(
+        ref,
+        token,
         f"SELECT r.id_fencer, f.txt_surname, f.txt_first_name, r.int_place, "
         f"t.enum_weapon::TEXT, t.enum_gender::TEXT, t.enum_age_category::TEXT "
         f"FROM tbl_result r "
         f"JOIN tbl_tournament t ON r.id_tournament = t.id_tournament "
         f"JOIN tbl_event e ON t.id_event = e.id_event "
         f"JOIN tbl_fencer f ON r.id_fencer = f.id_fencer "
-        f"WHERE e.txt_code = '{cert_code}'"
+        f"WHERE e.txt_code = '{cert_code}'",
     )
 
     # Build comparable sets using fencer ID (stable across diacritics)
@@ -682,7 +760,13 @@ def _compare_and_ingest(
     cert_set = set()
     cert_details: dict[tuple, dict] = {}
     for r in cert_results:
-        key = (r["id_fencer"], r["int_place"], r["enum_age_category"], r["enum_gender"], r["enum_weapon"])
+        key = (
+            r["id_fencer"],
+            r["int_place"],
+            r["enum_age_category"],
+            r["enum_gender"],
+            r["enum_weapon"],
+        )
         cert_set.add(key)
         cert_details[key] = r
 
@@ -694,22 +778,29 @@ def _compare_and_ingest(
     print(f"  Match: {len(both)}, EVF-only: {len(evf_only)}, CERT-only: {len(cert_only)}")
 
     if evf_only:
-        print(f"\n  --- EVF only (missing from CERT) ---")
+        print("\n  --- EVF only (missing from CERT) ---")
         for key in sorted(evf_only, key=lambda k: (k[4], k[3], k[2], k[1])):
             r = evf_details[key]
-            print(f"    {r['place']:>3} {r['spws_surname']:<20} {r['category']} {r['gender']} {r['weapon']}  ({r['country']}, {r['match_confidence']:.0f}%)")
+            print(
+                f"    {r['place']:>3} {r['spws_surname']:<20} {r['category']} {r['gender']} {r['weapon']}  ({r['country']}, {r['match_confidence']:.0f}%)"
+            )
 
     if cert_only:
-        print(f"\n  --- CERT only (not in EVF) ---")
+        print("\n  --- CERT only (not in EVF) ---")
         for key in sorted(cert_only, key=lambda k: (k[4], k[3], k[2], k[1])):
             r = cert_details[key]
-            print(f"    {r['int_place']:>3} {r['txt_surname']:<20} {r['enum_age_category']} {r['enum_gender']} {r['enum_weapon']}")
+            print(
+                f"    {r['int_place']:>3} {r['txt_surname']:<20} {r['enum_age_category']} {r['enum_gender']} {r['enum_weapon']}"
+            )
 
     # Ingest EVF-only results
+    ingested = 0
     if evf_only and not dry_run:
         cert_event_id = cert_events[0]["id_event"]
         evf_only_results = [evf_details[k] for k in evf_only]
-        ingested = _ingest_evf_results(ref, token, cert_event_id, evf_only_results, evf_date, all_results=all_results)
+        ingested = _ingest_evf_results(
+            ref, token, cert_event_id, evf_only_results, evf_date, all_results=all_results
+        )
         print(f"\n  Ingested {ingested} EVF-only results to CERT")
 
     summary = (
@@ -734,24 +825,26 @@ def _create_cert_event(ref: str, token: str, evf_evt: dict) -> int | None:
     calendar path uses. Returns the new id_event (or existing one if a row
     with the same allocated code already existed).
     """
-    season = _management_query(ref, token,
-        "SELECT id_season FROM tbl_season WHERE bool_active = TRUE"
+    season = _management_query(
+        ref, token, "SELECT id_season FROM tbl_season WHERE bool_active = TRUE"
     )
     if not season:
         return None
 
-    name     = (evf_evt.get("name") or "").replace("'", "''")
+    name = (evf_evt.get("name") or "").replace("'", "''")
     dt_start = evf_evt["date"]
     location = (evf_evt.get("location") or "").replace("'", "''")
-    country  = (evf_evt.get("country")  or "").replace("'", "''")
-    is_team  = "true" if evf_evt.get("is_team") else "false"
-    evf_id   = evf_evt.get("evf_id")
+    country = (evf_evt.get("country") or "").replace("'", "''")
+    is_team = "true" if evf_evt.get("is_team") else "false"
+    evf_id = evf_evt.get("evf_id")
     evf_id_sql = f"{int(evf_id)}" if evf_id else "NULL"
 
-    result = _management_query(ref, token,
+    result = _management_query(
+        ref,
+        token,
         f"SELECT id_event, txt_code FROM fn_create_evf_event_from_results("
         f"{season[0]['id_season']}, '{name}', '{dt_start}'::DATE, "
-        f"'{location}', '{country}', {is_team}::BOOLEAN, {evf_id_sql})"
+        f"'{location}', '{country}', {is_team}::BOOLEAN, {evf_id_sql})",
     )
     if result:
         return result[0]["id_event"]
@@ -759,8 +852,11 @@ def _create_cert_event(ref: str, token: str, evf_evt: dict) -> int | None:
 
 
 def _ingest_evf_results(
-    ref: str, token: str,
-    event_id: int, results: list[dict], event_date: str,
+    ref: str,
+    token: str,
+    event_id: int,
+    results: list[dict],
+    event_date: str,
     all_results: list[dict] | None = None,
 ) -> int:
     """Ingest EVF results into CERT via fn_find_or_create_tournament + fn_ingest_tournament_results.
@@ -793,10 +889,12 @@ def _ingest_evf_results(
         # the FK is set/backfilled at ingest time.
         comp_id = comp_ids.get((weapon, gender, category))
         comp_id_sql = f"{int(comp_id)}" if comp_id else "NULL"
-        tourn_result = _management_query(ref, token,
+        tourn_result = _management_query(
+            ref,
+            token,
             f"SELECT fn_find_or_create_tournament("
             f"{event_id}, '{weapon}', '{gender}', '{category}', "
-            f"'{event_date}'::DATE, 'PEW', {comp_id_sql})"
+            f"'{event_date}'::DATE, 'PEW', {comp_id_sql})",
         )
         if not tourn_result:
             print(f"    ERROR: Could not create tournament {weapon} {gender} {category}")
@@ -807,13 +905,15 @@ def _ingest_evf_results(
         # Build results JSON for fn_ingest_tournament_results
         results_json = []
         for r in group_results:
-            results_json.append({
-                "id_fencer": r["spws_id"],
-                "int_place": r["place"],
-                "txt_scraped_name": r["fencer_name"],
-                "num_confidence": r["match_confidence"],
-                "enum_match_status": "AUTO_MATCHED",
-            })
+            results_json.append(
+                {
+                    "id_fencer": r["spws_id"],
+                    "int_place": r["place"],
+                    "txt_scraped_name": r["fencer_name"],
+                    "num_confidence": r["match_confidence"],
+                    "enum_match_status": "AUTO_MATCHED",
+                }
+            )
 
         json_str = json.dumps(results_json).replace("'", "''")
 
@@ -822,12 +922,16 @@ def _ingest_evf_results(
         count_param = f", {total_count}" if total_count else ""
 
         try:
-            _management_query(ref, token,
-                f"SELECT fn_ingest_tournament_results({tourn_id}, '{json_str}'::JSONB{count_param})"
+            _management_query(
+                ref,
+                token,
+                f"SELECT fn_ingest_tournament_results({tourn_id}, '{json_str}'::JSONB{count_param})",
             )
             ingested += len(group_results)
             count_info = f" (N={total_count})" if total_count else ""
-            print(f"    {weapon} {gender} {category}: {len(group_results)} results ingested{count_info}")
+            print(
+                f"    {weapon} {gender} {category}: {len(group_results)} results ingested{count_info}"
+            )
         except Exception as e:
             print(f"    ERROR {weapon} {gender} {category}: {e}")
 
@@ -836,6 +940,7 @@ def _ingest_evf_results(
 
 def _parse_date(s: str):
     from datetime import datetime
+
     return datetime.strptime(s[:10], "%Y-%m-%d")
 
 
@@ -844,8 +949,11 @@ def main() -> None:
     parser.add_argument("--mode", choices=["calendar", "results", "both"], default="both")
     parser.add_argument("--event-code", default="", help="SPWS event code for single event results")
     parser.add_argument("--dry-run", action="store_true", help="Compare only, don't ingest")
-    parser.add_argument("--filter-stale", action="store_true",
-                        help="Results mode: skip events that already have results in CERT.")
+    parser.add_argument(
+        "--filter-stale",
+        action="store_true",
+        help="Results mode: skip events that already have results in CERT.",
+    )
     args = parser.parse_args()
 
     ref = os.environ.get("SUPABASE_CERT_REF", "")
@@ -863,8 +971,16 @@ def main() -> None:
         cal_events = sync_calendar(ref, token, bot_token, chat_id, args.dry_run)
 
     if args.mode in ("results", "both"):
-        sync_results(ref, token, bot_token, chat_id, cal_events, args.event_code,
-                     args.dry_run, args.filter_stale)
+        sync_results(
+            ref,
+            token,
+            bot_token,
+            chat_id,
+            cal_events,
+            args.event_code,
+            args.dry_run,
+            args.filter_stale,
+        )
 
 
 if __name__ == "__main__":

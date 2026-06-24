@@ -21,8 +21,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 FIXTURES = Path(__file__).parent / "fixtures" / "fencingtime_xml"
 
 
@@ -79,15 +77,11 @@ class TestEnrichedResults:
         """9.120 Enriched results include birth_date when available."""
         from scrapers.fencingtime_xml import parse_fencingtime_xml_enriched
 
-        results = parse_fencingtime_xml_enriched(
-            _load_fixture("single_category.xml")
-        )
+        results = parse_fencingtime_xml_enriched(_load_fixture("single_category.xml"))
         # All 5 fencers in single_category.xml have DOB
         for r in results:
             assert "birth_date" in r
-            assert r["birth_date"] is not None, (
-                f"Expected birth_date for {r['fencer_name']}"
-            )
+            assert r["birth_date"] is not None, f"Expected birth_date for {r['fencer_name']}"
         # Check specific date parsing (NOWAK Piotr: 22.07.1970)
         nowak = next(r for r in results if r["fencer_name"] == "NOWAK Piotr")
         assert nowak["birth_date"] == "1970-07-22"
@@ -148,9 +142,7 @@ class TestCategorySplitting:
             split_combined_results,
         )
 
-        results = parse_fencingtime_xml_enriched(
-            _load_fixture("combined_v0v1.xml")
-        )
+        results = parse_fencingtime_xml_enriched(_load_fixture("combined_v0v1.xml"))
         # Fencer DB with birth years for the one missing DOB (NOWY Michał)
         fencer_db = [
             {
@@ -186,9 +178,7 @@ class TestCategorySplitting:
             split_combined_results,
         )
 
-        results = parse_fencingtime_xml_enriched(
-            _load_fixture("combined_v0v1.xml")
-        )
+        results = parse_fencingtime_xml_enriched(_load_fixture("combined_v0v1.xml"))
         # Empty fencer_db — NOWY Michał (no DOB) can't be resolved
         split_result = split_combined_results(
             results,
@@ -210,9 +200,7 @@ class TestCategorySplitting:
             split_combined_results,
         )
 
-        results = parse_fencingtime_xml_enriched(
-            _load_fixture("combined_v0v1.xml")
-        )
+        results = parse_fencingtime_xml_enriched(_load_fixture("combined_v0v1.xml"))
         split_result = split_combined_results(
             results,
             categories=["V0", "V1"],

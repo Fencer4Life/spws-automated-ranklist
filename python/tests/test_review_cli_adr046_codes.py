@@ -22,8 +22,9 @@ from datetime import date
 
 
 def _session_with_event(event_code: str):
-    from python.pipeline.review_cli import ReviewSession
     from unittest.mock import MagicMock
+
+    from python.pipeline.review_cli import ReviewSession
 
     return ReviewSession(
         event_code=event_code,
@@ -50,7 +51,9 @@ def _ctx(event_id: int, weapon: str, gender: str):
         category_hint=None,
     )
     ctx = PipelineContext(
-        parsed=parsed, overrides=Overrides(), season_end_year=2026,
+        parsed=parsed,
+        overrides=Overrides(),
+        season_end_year=2026,
     )
     ctx.event = {"id_event": event_id, "txt_code": "ignored"}
     return ctx

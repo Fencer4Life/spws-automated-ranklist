@@ -14,9 +14,6 @@ url_results value never reaches tbl_tournament. Failure modes covered:
 
 from __future__ import annotations
 
-import pytest
-
-
 VALID_FTL_RESULTS_HTML = """
 <!doctype html><html><head>
 <meta property="og:url" content="https://www.fencingtimelive.com/events/results/AAAA1111BBBB2222CCCC3333DDDD4444" />
@@ -133,9 +130,9 @@ def test_ftl_url_no_results_indicator():
     from python.pipeline.url_reachability import check_results_url
 
     bare = (
-        '<!doctype html><html><head>'
+        "<!doctype html><html><head>"
         '<meta property="og:url" content="https://www.fencingtimelive.com/events/results/X" />'
-        '</head><body>nothing here</body></html>'
+        "</head><body>nothing here</body></html>"
     )
     r = check_results_url(
         "https://www.fencingtimelive.com/events/results/AAAA1111BBBB2222CCCC3333DDDD4444",

@@ -15,23 +15,24 @@ run does NOT stop. Resolution is governed by this explicit, declarative policy
 `FaultKind`s; the reasons in `ABORT_REASONS` instead become a genuine `Abort`
 (you cannot ingest into a nonexistent / ambiguous event).
 """
+
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from enum import Enum
-from typing import Callable
+from enum import StrEnum
 
 from python.pipeline.core.contract import Context, Fault, FaultKind
 from python.pipeline.types import HaltReason
-
 
 # ===========================================================================
 # Escalation policy
 # ===========================================================================
 
-class Escalation(str, Enum):
+
+class Escalation(StrEnum):
     NEVER = "NEVER"
-    ON_LOSS = "ON_LOSS"   # only if the inline fix actually dropped data
+    ON_LOSS = "ON_LOSS"  # only if the inline fix actually dropped data
     ALWAYS = "ALWAYS"
 
 
@@ -41,6 +42,7 @@ class Escalation(str, Enum):
 # Private Context keys the fixes use (underscore => off the DAG contract):
 #   _skip_commit     : bool   — Commit writes nothing (whole artifact unrankable)
 #   _dropped_brackets: list   — record of dropped data (drives ON_LOSS escalation)
+
 
 def _record_drop(ctx: Context, detail: str) -> None:
     dropped = ctx.data.setdefault("_dropped_brackets", [])
@@ -90,6 +92,7 @@ def keep_combined(ctx: Context, fault: Fault) -> None:
 # admits V0; V0-exclusion is international, design §12)
 # ===========================================================================
 
+
 @dataclass(frozen=True)
 class Remediation:
     auto: Callable[[Context, Fault], None]
@@ -97,12 +100,12 @@ class Remediation:
 
 
 REMEDIATIONBOOK: dict[FaultKind, Remediation] = {
-    FaultKind.BELOW_MIN:           Remediation(drop_bracket,  Escalation.ON_LOSS),
-    FaultKind.POOL_ROUND:          Remediation(skip_bracket,  Escalation.ON_LOSS),
-    FaultKind.COUNT_MISMATCH:      Remediation(accept_parsed, Escalation.ALWAYS),
-    FaultKind.URL_DATA_MISMATCH:   Remediation(accept_parsed, Escalation.ALWAYS),
+    FaultKind.BELOW_MIN: Remediation(drop_bracket, Escalation.ON_LOSS),
+    FaultKind.POOL_ROUND: Remediation(skip_bracket, Escalation.ON_LOSS),
+    FaultKind.COUNT_MISMATCH: Remediation(accept_parsed, Escalation.ALWAYS),
+    FaultKind.URL_DATA_MISMATCH: Remediation(accept_parsed, Escalation.ALWAYS),
     FaultKind.SPLITTER_UNRESOLVED: Remediation(keep_combined, Escalation.ALWAYS),
-    FaultKind.IR_INVALID:          Remediation(skip_artifact, Escalation.ALWAYS),
+    FaultKind.IR_INVALID: Remediation(skip_artifact, Escalation.ALWAYS),
 }
 
 
@@ -112,19 +115,21 @@ REMEDIATIONBOOK: dict[FaultKind, Remediation] = {
 
 # Reasons that are NOT recoverable inline: you cannot ingest into an event that
 # does not resolve. These become a genuine Abort (retried, never gated).
-ABORT_REASONS: frozenset[HaltReason] = frozenset({
-    HaltReason.EVENT_NOT_RESOLVED,
-    HaltReason.EVENT_AMBIGUOUS,
-    HaltReason.OVERRIDE_INVALID,
-})
+ABORT_REASONS: frozenset[HaltReason] = frozenset(
+    {
+        HaltReason.EVENT_NOT_RESOLVED,
+        HaltReason.EVENT_AMBIGUOUS,
+        HaltReason.OVERRIDE_INVALID,
+    }
+)
 
 HALT_TO_FAULT: dict[HaltReason, FaultKind] = {
-    HaltReason.IR_INVALID:                  FaultKind.IR_INVALID,
-    HaltReason.POOL_ROUND_DETECTED:         FaultKind.POOL_ROUND,
-    HaltReason.SPLITTER_UNRESOLVED:         FaultKind.SPLITTER_UNRESOLVED,
-    HaltReason.COUNT_MISMATCH:              FaultKind.COUNT_MISMATCH,
-    HaltReason.URL_DATA_MISMATCH:           FaultKind.URL_DATA_MISMATCH,
-    HaltReason.PARTICIPANT_COUNT_MISMATCH:  FaultKind.COUNT_MISMATCH,
+    HaltReason.IR_INVALID: FaultKind.IR_INVALID,
+    HaltReason.POOL_ROUND_DETECTED: FaultKind.POOL_ROUND,
+    HaltReason.SPLITTER_UNRESOLVED: FaultKind.SPLITTER_UNRESOLVED,
+    HaltReason.COUNT_MISMATCH: FaultKind.COUNT_MISMATCH,
+    HaltReason.URL_DATA_MISMATCH: FaultKind.URL_DATA_MISMATCH,
+    HaltReason.PARTICIPANT_COUNT_MISMATCH: FaultKind.COUNT_MISMATCH,
     # V0_PROHIBITED_ON_INTERNATIONAL is international (deferred §12) — not mapped here.
 }
 

@@ -29,16 +29,19 @@ from datetime import date as date_cls
 from python.scrapers.evf_results import CATEGORY_MAP, EvfApiClient
 from python.tools._backends import make_backend
 
-
 EVF_SCAN_START = "2022-09-01"
-EVF_SCAN_END   = "2026-09-01"
+EVF_SCAN_END = "2026-09-01"
 EVF_SCAN_RANGE = (1, 160)
 EVF_DATE_TOLERANCE_DAYS = 3
 
 # weaponId → (weapon, gender). 1-3 men's, 4-6 women's.
 EVF_WEAPON_GENDER = {
-    1: ("FOIL", "M"), 2: ("EPEE", "M"), 3: ("SABRE", "M"),
-    4: ("FOIL", "F"), 5: ("EPEE", "F"), 6: ("SABRE", "F"),
+    1: ("FOIL", "M"),
+    2: ("EPEE", "M"),
+    3: ("SABRE", "M"),
+    4: ("FOIL", "F"),
+    5: ("EPEE", "F"),
+    6: ("SABRE", "F"),
 }
 
 
@@ -76,10 +79,16 @@ def scan_evf(client: EvfApiClient) -> list[CompEntry]:
             starts = str(c.get("starts", ""))
             if not starts or starts < EVF_SCAN_START or starts > EVF_SCAN_END:
                 continue
-            entries.append(CompEntry(
-                starts=starts, weapon=wg[0], gender=wg[1], category=cat,
-                comp_id=int(c["id"]), event_id=eid,
-            ))
+            entries.append(
+                CompEntry(
+                    starts=starts,
+                    weapon=wg[0],
+                    gender=wg[1],
+                    category=cat,
+                    comp_id=int(c["id"]),
+                    event_id=eid,
+                )
+            )
     print(f"  cached {len(entries)} EVF competitions", file=sys.stderr)
     return entries
 
@@ -152,8 +161,14 @@ def find_event_for_date(entries: list[CompEntry], target: str) -> int | None:
     return best_eid
 
 
-def find_comp(entries: list[CompEntry], target_dt: str, weapon: str,
-              gender: str, category: str, evf_event: int | None) -> int | None:
+def find_comp(
+    entries: list[CompEntry],
+    target_dt: str,
+    weapon: str,
+    gender: str,
+    category: str,
+    evf_event: int | None,
+) -> int | None:
     """Match a competition. Prefer same evf_event; fall back to date-only."""
     try:
         target_d = date_cls.fromisoformat(target_dt)
@@ -203,12 +218,10 @@ def main():
         eid_evf = find_event_for_date(entries, ev["dt_start"])
         if eid_evf is None:
             event_skips += 1
-            print(f"  ! no EVF event near {ev['dt_start']} for {ev['txt_code']}",
-                  file=sys.stderr)
+            print(f"  ! no EVF event near {ev['dt_start']} for {ev['txt_code']}", file=sys.stderr)
             continue
         sql_chunks.append(
-            f"UPDATE tbl_event SET id_evf_event = {eid_evf} "
-            f"WHERE id_event = {ev['id_event']};"
+            f"UPDATE tbl_event SET id_evf_event = {eid_evf} WHERE id_event = {ev['id_event']};"
         )
         event_updates += 1
 
@@ -225,8 +238,7 @@ def main():
     if not args.dry_run and event_updates > 0:
         # Build a quick lookup id_event → id_evf_event by reading once more.
         rows = b.query(
-            "SELECT id_event, id_evf_event FROM tbl_event "
-            "WHERE id_evf_event IS NOT NULL"
+            "SELECT id_event, id_evf_event FROM tbl_event WHERE id_evf_event IS NOT NULL"
         )
         ev_to_evf: dict[int, int] = {}
         if rows and isinstance(rows[0], dict):
@@ -243,8 +255,7 @@ def main():
     sql_chunks2: list[str] = []
     for t in pending_tournaments:
         evf_evt = t.get("id_evf_event") or ev_to_evf.get(int(t["id_event"]))
-        comp_id = find_comp(entries, t["dt"], t["weapon"], t["gender"],
-                            t["category"], evf_evt)
+        comp_id = find_comp(entries, t["dt"], t["weapon"], t["gender"], t["category"], evf_evt)
         if comp_id is None:
             tour_skips += 1
             continue
@@ -257,7 +268,7 @@ def main():
     if sql_chunks2 and not args.dry_run:
         # Apply in batches of 200 to keep SQL chunk sizes reasonable.
         for i in range(0, len(sql_chunks2), 200):
-            chunk = sql_chunks2[i:i+200]
+            chunk = sql_chunks2[i : i + 200]
             b.execute("BEGIN;\n" + "\n".join(chunk) + "\nCOMMIT;")
 
     print(f"[{args.env}] tournaments: {tour_updates} updated, {tour_skips} skipped")

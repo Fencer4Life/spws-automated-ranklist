@@ -10,6 +10,7 @@ therefore fails *before a single row is touched*.
 is metadata-only `PluginSpec`s for planning; the orchestrator consumes the same
 shape once the registry holds runnable plugins (M2).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -24,6 +25,7 @@ class PlanValidationError(Exception):
 @dataclass(frozen=True)
 class ExecutionPlan:
     """Immutable, inspectable, DAG-validated ordered plan."""
+
     params: FlowParams
     flow: Flow
     steps: tuple[Step, ...]
@@ -68,8 +70,6 @@ class RuleEngine:
     def plan(self, params: FlowParams) -> ExecutionPlan:
         rule = self.rulebook[params.flow]
         steps = tuple(s for s in rule.steps if s.when(params))  # plan-time pruning
-        plan = ExecutionPlan(
-            params, rule.flow, steps, self.plugins, frozenset(rule.seeds)
-        )
+        plan = ExecutionPlan(params, rule.flow, steps, self.plugins, frozenset(rule.seeds))
         plan.validate_dag()  # reads ⊆ seeds ∪ earlier writes; fail fast
         return plan

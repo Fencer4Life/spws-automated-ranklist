@@ -5,6 +5,7 @@ int_participant_count on merge.
 
 Plan test IDs: 5.19.3
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -56,10 +57,16 @@ def test_consolidator_recomputes_participant_count_5_19_3():
                     res = MagicMock()
                     if name == "tbl_tournament_draft" and col == "txt_run_id":
                         res.data = [
-                            {"id_tournament_draft": 10, "txt_code": "TEST-V2",
-                             "bool_joint_pool_split": False},
-                            {"id_tournament_draft": 11, "txt_code": "TEST-V2",
-                             "bool_joint_pool_split": False},
+                            {
+                                "id_tournament_draft": 10,
+                                "txt_code": "TEST-V2",
+                                "bool_joint_pool_split": False,
+                            },
+                            {
+                                "id_tournament_draft": 11,
+                                "txt_code": "TEST-V2",
+                                "bool_joint_pool_split": False,
+                            },
                         ]
                     elif name == "tbl_result_draft" and col == "id_tournament_draft":
                         res.data = (
@@ -124,21 +131,23 @@ def test_consolidator_recomputes_participant_count_5_19_3():
     # Verify the keeper's tournament_draft got an update with
     # int_participant_count = 10 (8 + 2 merged)
     keeper_updates = [
-        c for c in call_log
-        if c[0] == "tbl_tournament_draft" and c[1] == "update"
-        and c[3] == "id_tournament_draft" and c[4] == 10
+        c
+        for c in call_log
+        if c[0] == "tbl_tournament_draft"
+        and c[1] == "update"
+        and c[3] == "id_tournament_draft"
+        and c[4] == 10
     ]
-    assert keeper_updates, \
-        f"expected an update on keeper td_id=10, got call_log={call_log}"
+    assert keeper_updates, f"expected an update on keeper td_id=10, got call_log={call_log}"
 
     # The participant-count update should be present in (at least) one update payload
     # to the keeper. Could be combined with the joint flag in one call, or separate.
-    payloads_with_count = [
-        c[2] for c in keeper_updates if "int_participant_count" in c[2]
-    ]
-    assert payloads_with_count, \
-        ("expected keeper to receive an update setting int_participant_count "
-         f"after merge; got payloads={[c[2] for c in keeper_updates]}")
+    payloads_with_count = [c[2] for c in keeper_updates if "int_participant_count" in c[2]]
+    assert payloads_with_count, (
+        "expected keeper to receive an update setting int_participant_count "
+        f"after merge; got payloads={[c[2] for c in keeper_updates]}"
+    )
     actual_count = payloads_with_count[0]["int_participant_count"]
-    assert actual_count == 10, \
+    assert actual_count == 10, (
         f"expected int_participant_count=10 after merging 8+2 results, got {actual_count}"
+    )

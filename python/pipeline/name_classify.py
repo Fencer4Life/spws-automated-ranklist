@@ -13,15 +13,31 @@ All helpers are pure (no I/O) and Polish-aware.
 
 from __future__ import annotations
 
-
 # Polish diacritic → ASCII fold. Used so "Stanisław" and "Stanislaw" compare
 # equal in alias decisions; we must not treat the diacritic difference as
 # evidence of a different person.
-_PL_FOLD = str.maketrans({
-    "ą": "a", "Ą": "a", "ć": "c", "Ć": "c", "ę": "e", "Ę": "e",
-    "ł": "l", "Ł": "l", "ń": "n", "Ń": "n", "ó": "o", "Ó": "o",
-    "ś": "s", "Ś": "s", "ź": "z", "Ź": "z", "ż": "z", "Ż": "z",
-})
+_PL_FOLD = str.maketrans(
+    {
+        "ą": "a",
+        "Ą": "a",
+        "ć": "c",
+        "Ć": "c",
+        "ę": "e",
+        "Ę": "e",
+        "ł": "l",
+        "Ł": "l",
+        "ń": "n",
+        "Ń": "n",
+        "ó": "o",
+        "Ó": "o",
+        "ś": "s",
+        "Ś": "s",
+        "ź": "z",
+        "Ź": "z",
+        "ż": "z",
+        "Ż": "z",
+    }
+)
 
 
 def name_fold(s: str) -> str:
@@ -43,11 +59,13 @@ def levenshtein(a: str, b: str) -> int:
     for i, ca in enumerate(a, 1):
         cur = [i]
         for j, cb in enumerate(b, 1):
-            cur.append(min(
-                cur[j - 1] + 1,
-                prev[j] + 1,
-                prev[j - 1] + (0 if ca == cb else 1),
-            ))
+            cur.append(
+                min(
+                    cur[j - 1] + 1,
+                    prev[j] + 1,
+                    prev[j - 1] + (0 if ca == cb else 1),
+                )
+            )
         prev = cur
     return prev[-1]
 
@@ -63,10 +81,7 @@ def split_polish_name(name: str) -> tuple[str, str]:
     parts = (name or "").split()
     if not parts:
         return "", ""
-    surname_parts = [
-        p for p in parts
-        if p == p.upper() and any(c.isalpha() for c in p)
-    ]
+    surname_parts = [p for p in parts if p == p.upper() and any(c.isalpha() for c in p)]
     if not surname_parts:
         # No all-caps tokens → assume "Surname Firstname" or a lone token.
         return parts[0], " ".join(parts[1:]) if len(parts) > 1 else ""
@@ -106,8 +121,7 @@ def classify_alias_pair(scraped: str, canonical: str) -> tuple[str, str]:
     c_sur_h = c_sur_f.replace("-", "").replace(" ", "")
     surname_identical = s_sur_f == c_sur_f
     surname_contained = (
-        bool(s_sur_h) and bool(c_sur_h)
-        and (s_sur_h in c_sur_h or c_sur_h in s_sur_h)
+        bool(s_sur_h) and bool(c_sur_h) and (s_sur_h in c_sur_h or c_sur_h in s_sur_h)
     )
     surname_dist = levenshtein(s_sur_h, c_sur_h) if s_sur_h and c_sur_h else 99
     surname_close = surname_dist <= 2

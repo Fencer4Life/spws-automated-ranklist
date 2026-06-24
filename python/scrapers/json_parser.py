@@ -14,10 +14,19 @@ import json
 
 # Key normalization: common JSON export key names -> standard keys
 _KEY_MAP = {
-    "place": "place", "rank": "place", "miejsce": "place", "position": "place",
-    "fencer_name": "fencer_name", "name": "fencer_name", "nazwisko": "fencer_name",
-    "fencer": "fencer_name", "athlete": "fencer_name",
-    "country": "country", "nat": "country", "nationality": "country", "kraj": "country",
+    "place": "place",
+    "rank": "place",
+    "miejsce": "place",
+    "position": "place",
+    "fencer_name": "fencer_name",
+    "name": "fencer_name",
+    "nazwisko": "fencer_name",
+    "fencer": "fencer_name",
+    "athlete": "fencer_name",
+    "country": "country",
+    "nat": "country",
+    "nationality": "country",
+    "kraj": "country",
 }
 
 
@@ -42,9 +51,7 @@ def parse_json(file_bytes: bytes) -> list[dict]:
                 data = data[key]
                 break
         else:
-            raise ValueError(
-                "JSON object must contain a 'results' or 'data' array"
-            )
+            raise ValueError("JSON object must contain a 'results' or 'data' array")
 
     if not isinstance(data, list):
         raise ValueError("JSON must be an array or object with results array")
@@ -60,10 +67,12 @@ def parse_json(file_bytes: bytes) -> list[dict]:
         if "place" not in row or "fencer_name" not in row:
             continue
 
-        results.append({
-            "fencer_name": str(row["fencer_name"]).strip(),
-            "place": int(row["place"]),
-            "country": str(row.get("country", "")).strip(),
-        })
+        results.append(
+            {
+                "fencer_name": str(row["fencer_name"]).strip(),
+                "place": int(row["place"]),
+                "country": str(row.get("country", "")).strip(),
+            }
+        )
 
     return results

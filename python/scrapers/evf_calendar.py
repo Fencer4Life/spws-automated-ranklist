@@ -25,10 +25,10 @@ from __future__ import annotations
 
 import logging
 import re
+import unicodedata
 from datetime import date, datetime
 
 import httpx
-import unicodedata
 from bs4 import BeautifulSoup
 
 try:
@@ -59,24 +59,24 @@ class LogicalIntegrityError(RuntimeError):
 # matches any of its aliases after diacritic-folding + case-folding.
 # ADR-028 dedup key depends on these.
 _COUNTRY_ALIASES = {
-    "poland":     {"polska"},
-    "germany":    {"deutschland"},
-    "italy":      {"italia"},
-    "austria":    {"osterreich"},  # diacritic-folded from Österreich
-    "spain":      {"espana"},       # diacritic-folded from España
-    "belgium":    {"belgique", "belgie"},  # fr + nl
-    "greece":     {"hellas", "ellada"},
+    "poland": {"polska"},
+    "germany": {"deutschland"},
+    "italy": {"italia"},
+    "austria": {"osterreich"},  # diacritic-folded from Österreich
+    "spain": {"espana"},  # diacritic-folded from España
+    "belgium": {"belgique", "belgie"},  # fr + nl
+    "greece": {"hellas", "ellada"},
     "netherlands": {"holland", "nederland"},
-    "france":     {},
-    "hungary":    {"magyarorszag"},
-    "czechia":    {"czech republic", "ceska republika"},
-    "sweden":     {"sverige"},
-    "norway":     {"norge"},
-    "finland":    {"suomi"},
-    "denmark":    {"danmark"},
+    "france": {},
+    "hungary": {"magyarorszag"},
+    "czechia": {"czech republic", "ceska republika"},
+    "sweden": {"sverige"},
+    "norway": {"norge"},
+    "finland": {"suomi"},
+    "denmark": {"danmark"},
     "switzerland": {"schweiz", "suisse", "svizzera"},
     "great britain": {"united kingdom", "uk", "england", "britain"},
-    "ireland":    {"eire"},
+    "ireland": {"eire"},
 }
 
 # Reverse index: any variant → canonical. Canonicals also map to themselves.
@@ -99,6 +99,7 @@ def _normalize_country(name: str | None) -> str:
     s = "".join(c for c in s if not unicodedata.combining(c))
     return _COUNTRY_CANONICAL.get(s, s)
 
+
 # TODO(ADR-028): disabled 2026-04-20 — live hit rate was 0/13 against EVF detail
 # pages. Re-enable once real-world deadline phrasings have been observed and the
 # `_DEADLINE_PATTERNS` regex list is tuned against them.
@@ -110,14 +111,27 @@ EVF_CALENDAR_PAST = "https://www.veteransfencing.eu/calendar/list/?eventDisplay=
 WEAPON_MAP = {1: "FOIL", 2: "EPEE", 3: "SABRE"}
 
 _PUBLIC_EVENT_KEYS = (
-    "name", "dt_start", "dt_end", "location", "address", "country",
-    "weapons", "is_team", "url", "fee", "fee_currency",
-    "url_invitation", "url_registration", "dt_registration_deadline",
+    "name",
+    "dt_start",
+    "dt_end",
+    "location",
+    "address",
+    "country",
+    "weapons",
+    "is_team",
+    "url",
+    "fee",
+    "fee_currency",
+    "url_invitation",
+    "url_registration",
+    "dt_registration_deadline",
 )
 
 _REGISTRATION_HOSTS = (
-    "engarde-escrime.com", "engarde-service.com",
-    "fencingtimelive.com", "ophardt.online",
+    "engarde-escrime.com",
+    "engarde-service.com",
+    "fencingtimelive.com",
+    "ophardt.online",
 )
 _REGISTRATION_KEYWORDS = re.compile(
     r"register|registration|entry|entries|zgłoszenia|zgloszenia",
@@ -128,9 +142,14 @@ _INVITATION_KEYWORDS = re.compile(
     re.IGNORECASE,
 )
 _DEADLINE_PATTERNS = [
-    re.compile(r"registration\s+(?:closes|deadline|ends)[:\s]+(\d{1,2}[./-]\d{1,2}[./-]\d{2,4})", re.IGNORECASE),
+    re.compile(
+        r"registration\s+(?:closes|deadline|ends)[:\s]+(\d{1,2}[./-]\d{1,2}[./-]\d{2,4})",
+        re.IGNORECASE,
+    ),
     re.compile(r"registration\s+(?:closes|deadline|ends)[:\s]+(\d{4}-\d{2}-\d{2})", re.IGNORECASE),
-    re.compile(r"entries?\s+close[s]?(?:\s+on)?[:\s]+(\d{1,2}[./-]\d{1,2}[./-]\d{2,4})", re.IGNORECASE),
+    re.compile(
+        r"entries?\s+close[s]?(?:\s+on)?[:\s]+(\d{1,2}[./-]\d{1,2}[./-]\d{2,4})", re.IGNORECASE
+    ),
     re.compile(r"entries?\s+close[s]?(?:\s+on)?[:\s]+(\d{4}-\d{2}-\d{2})", re.IGNORECASE),
     re.compile(r"(?:deadline|closes|termin)[:\s]+(\d{4}-\d{2}-\d{2})", re.IGNORECASE),
     re.compile(r"(?:deadline|closes|termin)[:\s]+(\d{1,2}[./-]\d{1,2}[./-]\d{2,4})", re.IGNORECASE),
@@ -142,11 +161,19 @@ _DEADLINE_PATTERNS = [
 def _blank_event() -> dict:
     """Return an event dict with all public keys initialised to neutral defaults."""
     return {
-        "name": "", "dt_start": "", "dt_end": "",
-        "location": "", "address": "", "country": "",
-        "weapons": [], "is_team": False,
-        "url": "", "fee": None, "fee_currency": "",
-        "url_invitation": None, "url_registration": None,
+        "name": "",
+        "dt_start": "",
+        "dt_end": "",
+        "location": "",
+        "address": "",
+        "country": "",
+        "weapons": [],
+        "is_team": False,
+        "url": "",
+        "fee": None,
+        "fee_currency": "",
+        "url_invitation": None,
+        "url_registration": None,
         "dt_registration_deadline": None,
     }
 
@@ -219,19 +246,21 @@ def parse_evf_calendar_html(html: str) -> list[dict]:
                     fee_currency = "USD"
 
         evt = _blank_event()
-        evt.update({
-            "name": name,
-            "dt_start": dt_start[:10],
-            "dt_end": dt_end[:10] if dt_end else dt_start[:10],
-            "location": venue,
-            "address": address,
-            "country": country,
-            "weapons": weapons,
-            "is_team": is_team,
-            "url": url,
-            "fee": fee,
-            "fee_currency": fee_currency,
-        })
+        evt.update(
+            {
+                "name": name,
+                "dt_start": dt_start[:10],
+                "dt_end": dt_end[:10] if dt_end else dt_start[:10],
+                "location": venue,
+                "address": address,
+                "country": country,
+                "weapons": weapons,
+                "is_team": is_team,
+                "url": url,
+                "fee": fee,
+                "fee_currency": fee_currency,
+            }
+        )
         events.append(evt)
 
     return events
@@ -327,15 +356,17 @@ def fetch_calendar_from_api(client, season_start: str, season_end: str) -> list[
                         is_team = True
 
             evt = _blank_event()
-            evt.update({
-                "name": api_evt.get("name") or "",
-                "dt_start": opens,
-                "dt_end": dt_end,
-                "location": api_evt.get("location") or "",
-                "country": api_evt.get("country_abbr") or api_evt.get("country") or "",
-                "weapons": sorted(weapons_set),
-                "is_team": is_team,
-            })
+            evt.update(
+                {
+                    "name": api_evt.get("name") or "",
+                    "dt_start": opens,
+                    "dt_end": dt_end,
+                    "location": api_evt.get("location") or "",
+                    "country": api_evt.get("country_abbr") or api_evt.get("country") or "",
+                    "weapons": sorted(weapons_set),
+                    "is_team": is_team,
+                }
+            )
             out.append(evt)
         except Exception as exc:
             logger.warning("Skipping malformed API event %r: %s", api_evt, exc)
@@ -389,9 +420,17 @@ def _merge_html_into_api(api_events: list[dict], html_events: list[dict]) -> lis
 def _normalise_date(raw: str) -> str | None:
     """Try multiple formats, return ISO yyyy-mm-dd or None."""
     raw = raw.strip()
-    for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%d-%m-%Y",
-                "%d.%m.%y", "%d/%m/%y", "%d-%m-%y",
-                "%d %B %Y", "%d %b %Y"):
+    for fmt in (
+        "%Y-%m-%d",
+        "%d.%m.%Y",
+        "%d/%m/%Y",
+        "%d-%m-%Y",
+        "%d.%m.%y",
+        "%d/%m/%y",
+        "%d-%m-%y",
+        "%d %B %Y",
+        "%d %b %Y",
+    ):
         try:
             return datetime.strptime(raw, fmt).strftime("%Y-%m-%d")
         except ValueError:
@@ -500,8 +539,13 @@ def enrich_event_details(events: list[dict], delay: float = 0.5) -> list[dict]:
             evt["dt_registration_deadline"] = extracted["dt_registration_deadline"]
             dl_hits += 1
 
-    logger.info("Detail-page enrichment: inv=%d reg=%d deadline=%d (over %d events)",
-                inv_hits, reg_hits, dl_hits, len(events))
+    logger.info(
+        "Detail-page enrichment: inv=%d reg=%d deadline=%d (over %d events)",
+        inv_hits,
+        reg_hits,
+        dl_hits,
+        len(events),
+    )
     return events
 
 
@@ -552,13 +596,16 @@ def scrape_full_season_calendar(
     try:
         if client is None:
             from python.scrapers.evf_results import EvfApiClient
+
             client = EvfApiClient()
             client.connect()
             own_client = True
         api_events = fetch_calendar_from_api(client, season_start, season_end)
         logger.info(
             "EVF API returned %d events in [%s, %s]",
-            len(api_events), season_start, season_end,
+            len(api_events),
+            season_start,
+            season_end,
         )
     except Exception as exc:
         errors.append(f"API: {type(exc).__name__}: {exc}")
@@ -577,30 +624,28 @@ def scrape_full_season_calendar(
     have_api = bool(api_events)
 
     if html_errored and api_errored:
-        raise RuntimeError(
-            "EVF calendar scrape failed on all sources: " + " | ".join(errors)
-        )
+        raise RuntimeError("EVF calendar scrape failed on all sources: " + " | ".join(errors))
 
     if have_html:
         merged = html_events  # type: ignore[assignment]
         if have_api:
             _merge_html_into_api(api_events, html_events)  # type: ignore[arg-type]
     elif have_api:
-        logger.warning(
-            "Falling back to API-only calendar (HTML returned no events)"
-        )
+        logger.warning("Falling back to API-only calendar (HTML returned no events)")
         merged = api_events  # type: ignore[assignment]
     else:
         # Both sources succeeded but returned empty lists — nothing in window
         logger.warning(
             "EVF calendar: no events returned from any source in [%s, %s]",
-            season_start, season_end,
+            season_start,
+            season_end,
         )
         return []
 
     filtered = filter_by_season(merged, season_start, season_end)
     relevant = [
-        e for e in filtered
+        e
+        for e in filtered
         if (
             "circuit" in e["name"].lower()
             or "championship" in e["name"].lower()
@@ -621,9 +666,9 @@ def scrape_full_season_calendar(
 def filter_by_season(events: list[dict], season_start: str, season_end: str) -> list[dict]:
     """Filter events to those within the season date range (inclusive)."""
     return [
-        e for e in events
-        if e.get("dt_start", "") >= season_start
-        and e.get("dt_start", "") <= season_end
+        e
+        for e in events
+        if e.get("dt_start", "") >= season_start and e.get("dt_start", "") <= season_end
     ]
 
 
@@ -767,8 +812,7 @@ def assert_no_future_completed(events: list[dict], today: date | None = None) ->
                 f"status={v.get('enum_status', '?')}"
             )
         raise LogicalIntegrityError(
-            "Future-COMPLETED event(s) detected — manual fix required: "
-            + "; ".join(msg_parts)
+            "Future-COMPLETED event(s) detected — manual fix required: " + "; ".join(msg_parts)
         )
 
 
@@ -812,12 +856,14 @@ def compute_future_completed_corrections(
         if not valid:
             status_flips.append(ev)
             continue
-        corrections.append({
-            "txt_code": ev.get("txt_code"),
-            "id_event": ev.get("id_event"),
-            "dt_start": min(valid).isoformat(),
-            "dt_end": max(valid).isoformat(),
-        })
+        corrections.append(
+            {
+                "txt_code": ev.get("txt_code"),
+                "id_event": ev.get("id_event"),
+                "dt_start": min(valid).isoformat(),
+                "dt_end": max(valid).isoformat(),
+            }
+        )
     return corrections, status_flips
 
 

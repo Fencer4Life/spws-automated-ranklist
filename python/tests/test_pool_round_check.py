@@ -11,6 +11,7 @@ import pytest
 
 def _stub_match(method, id_fencer, place=1, scraped_name="X"):
     from python.pipeline.types import StageMatchResult
+
     return StageMatchResult(
         scraped_name=scraped_name,
         place=place,
@@ -22,8 +23,9 @@ def _stub_match(method, id_fencer, place=1, scraped_name="X"):
 
 def _make_ctx(matches):
     from datetime import date
-    from python.pipeline.types import PipelineContext, Overrides
+
     from python.pipeline.ir import ParsedTournament, SourceKind
+    from python.pipeline.types import Overrides, PipelineContext
 
     parsed = ParsedTournament(
         source_kind=SourceKind.FTL,
@@ -44,8 +46,10 @@ def _make_ctx(matches):
 
 class _FakeGenderDb:
     """Returns dict {id_fencer: enum_gender ('M' | 'F')} for the batch."""
+
     def __init__(self, mapping):
         self.mapping = mapping
+
     def fetch_genders_batch(self, ids):
         return {i: self.mapping.get(i) for i in ids}
 
@@ -59,12 +63,14 @@ def test_pool_check_all_male_passes():
     """5.8: An all-M bracket is a real tournament — pipeline continues."""
     from python.pipeline.stages import s7_pool_round_check
 
-    ctx = _make_ctx([
-        _stub_match("AUTO_MATCHED", id_fencer=1),
-        _stub_match("AUTO_MATCHED", id_fencer=2),
-        _stub_match("AUTO_MATCHED", id_fencer=3),
-        _stub_match("AUTO_MATCHED", id_fencer=4),
-    ])
+    ctx = _make_ctx(
+        [
+            _stub_match("AUTO_MATCHED", id_fencer=1),
+            _stub_match("AUTO_MATCHED", id_fencer=2),
+            _stub_match("AUTO_MATCHED", id_fencer=3),
+            _stub_match("AUTO_MATCHED", id_fencer=4),
+        ]
+    )
     db = _FakeGenderDb({1: "M", 2: "M", 3: "M", 4: "M"})
 
     s7_pool_round_check(ctx, db)  # should not raise

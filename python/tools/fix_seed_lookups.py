@@ -38,8 +38,7 @@ def parse_old_fencer_seed(sql_text: str) -> dict[int, tuple[str, str]]:
 def get_old_file(filepath: str) -> str:
     """Get file contents from old git commit."""
     result = subprocess.run(
-        ["git", "show", f"{OLD_COMMIT}:{filepath}"],
-        capture_output=True, text=True, cwd=REPO_ROOT
+        ["git", "show", f"{OLD_COMMIT}:{filepath}"], capture_output=True, text=True, cwd=REPO_ROOT
     )
     if result.returncode != 0:
         raise RuntimeError(f"git show failed for {filepath}: {result.stderr}")
@@ -56,10 +55,11 @@ def convert_file(sql_text: str, id_map: dict[int, tuple[str, str]]) -> tuple[str
         r"(INSERT INTO tbl_result \(id_fencer, id_tournament, int_place.*?\)\nVALUES \(\n)"
         r"    (\d+),\n"
         r"(    \(SELECT id_tournament)",
-        re.DOTALL
+        re.DOTALL,
     )
 
     count = 0
+
     def replacer(m):
         nonlocal count
         fencer_id = int(m.group(2))

@@ -14,7 +14,9 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-XML_DIR = PROJECT_ROOT / "doc" / "external_files" / "Sezon_2025-2026" / "Attachments-Fw_ wyniki Gdańsk"
+XML_DIR = (
+    PROJECT_ROOT / "doc" / "external_files" / "Sezon_2025-2026" / "Attachments-Fw_ wyniki Gdańsk"
+)
 SEED_DIR = PROJECT_ROOT / "supabase" / "data" / "2025_26"
 FENCER_SQL = PROJECT_ROOT / "supabase" / "seed_tbl_fencer.sql"
 
@@ -58,6 +60,7 @@ GENDER_NAME = {"M": "M", "F": "K"}
 def _normalize(s):
     """Strip diacritics-insensitive: ż→z, ł→l, etc. for fuzzy matching."""
     import unicodedata
+
     nfkd = unicodedata.normalize("NFKD", s)
     return "".join(c for c in nfkd if not unicodedata.combining(c)).upper()
 
@@ -65,11 +68,11 @@ def _normalize(s):
 def _clean_first_name(name):
     """Strip prefixes like '(0) ', '(1) ', '- BOŁDYS ' from malformed first names."""
     # Strip leading "(N) " prefix
-    name = re.sub(r'^\(\d+\)\s*', '', name)
+    name = re.sub(r"^\(\d+\)\s*", "", name)
     # Strip leading "- SUFFIX " (e.g. "- BOŁDYS Katarzyna" → "Katarzyna")
-    name = re.sub(r'^-\s*\S+\s+', '', name)
+    name = re.sub(r"^-\s*\S+\s+", "", name)
     # Strip trailing " (kat N)" suffix
-    name = re.sub(r'\s*\(kat\s*\d+\)', '', name)
+    name = re.sub(r"\s*\(kat\s*\d+\)", "", name)
     return name.strip()
 
 
@@ -117,7 +120,9 @@ def load_fencer_index():
             all_entries.append((surname, first_name, clean_fn, fencer_id, has_birth, birth_year))
 
     # Insert entries without birth year first, then with — so "with" wins
-    for surname, first_name, clean_fn, fencer_id, has_birth, birth_year in sorted(all_entries, key=lambda e: e[4]):
+    for surname, first_name, clean_fn, fencer_id, _has_birth, birth_year in sorted(
+        all_entries, key=lambda e: e[4]
+    ):
         key = (surname.upper(), first_name.upper())
         fencers[key] = (fencer_id, surname, first_name)
         # Also index by cleaned first name
@@ -179,8 +184,8 @@ def scan_seed_categories():
         # Format: "INSERT INTO tbl_result ...\nVALUES (\n    51,\n"
         lines = sql_file.read_text().splitlines()
         for i, line in enumerate(lines):
-            if 'tbl_result' in line and i + 2 < len(lines):
-                m = re.match(r'\s*(\d+)\s*,', lines[i + 2])
+            if "tbl_result" in line and i + 2 < len(lines):
+                m = re.match(r"\s*(\d+)\s*,", lines[i + 2])
                 if m:
                     fid = int(m.group(1))
                     if fid not in fencer_categories:
@@ -235,12 +240,14 @@ def parse_xml(xml_path):
             rank = int(t.get("RangFinal"))
             if ref in tireurs:
                 info = tireurs[ref]
-                results.append({
-                    "surname": info["surname"],
-                    "first_name": info["first_name"],
-                    "birth_year": info["birth_year"],
-                    "place": rank,
-                })
+                results.append(
+                    {
+                        "surname": info["surname"],
+                        "first_name": info["first_name"],
+                        "birth_year": info["birth_year"],
+                        "place": rank,
+                    }
+                )
 
     results.sort(key=lambda r: r["place"])
     return results
@@ -264,7 +271,7 @@ def match_fencer(result, fencer_index, fencer_index_norm):
         return fid, f"{s} {f}"
 
     # Handle "SURNAME - SUFFIX" → "SURNAME-SUFFIX" (spaces around hyphen)
-    clean_surname = re.sub(r'\s*-\s*', '-', surname)
+    clean_surname = re.sub(r"\s*-\s*", "-", surname)
     key2 = (clean_surname, first_name)
     if key2 in fencer_index:
         fid, s, f = fencer_index[key2]
@@ -277,7 +284,7 @@ def match_fencer(result, fencer_index, fencer_index_norm):
         return fid, f"{s} {f}"
 
     # For compound surnames "A - B" or "A-B", try matching just the first part
-    parts = re.split(r'\s*-\s*', surname)
+    parts = re.split(r"\s*-\s*", surname)
     if len(parts) > 1:
         first_part = parts[0]
         key3 = (first_part, first_name)
@@ -296,7 +303,12 @@ def match_fencer(result, fencer_index, fencer_index_norm):
     # Partial match with normalized surname
     norm_surname = _normalize(result["surname"])
     for (s, f), (fid, sn, fn) in fencer_index_norm.items():
-        if s == norm_surname and len(first_name) >= 3 and len(f) >= 3 and f[:3] == _normalize(result["first_name"])[:3]:
+        if (
+            s == norm_surname
+            and len(first_name) >= 3
+            and len(f) >= 3
+            and f[:3] == _normalize(result["first_name"])[:3]
+        ):
             return fid, f"{sn} {fn}"
 
     return None, f"{result['surname']} {result['first_name']}"
@@ -327,8 +339,9 @@ def _edit_distance(a, b):
     return prev[len(b)]
 
 
-def resolve_birth_year(fid, result, birth_years, norm_birth, surname_birth,
-                       category_estimates, unmatched_categories):
+def resolve_birth_year(
+    fid, result, birth_years, norm_birth, surname_birth, category_estimates, unmatched_categories
+):
     """Resolve birth year from multiple sources, in priority order.
 
     1. XML birth year (most authoritative)
@@ -354,7 +367,7 @@ def resolve_birth_year(fid, result, birth_years, norm_birth, surname_birth,
     # 4. Fuzzy first-name match within same surname group
     norm_surname = _normalize(result["surname"])
     # Also try with hyphen cleanup for compound surnames
-    clean_surname = re.sub(r'\s*-\s*', '-', result["surname"])
+    clean_surname = re.sub(r"\s*-\s*", "-", result["surname"])
     for ns in {norm_surname, _normalize(clean_surname)}:
         if ns in surname_birth:
             norm_fn = _normalize(result["first_name"])
@@ -375,9 +388,17 @@ def resolve_birth_year(fid, result, birth_years, norm_birth, surname_birth,
     return None, None
 
 
-def split_combined_results(results, categories, fencer_index, fencer_index_norm,
-                           birth_years, norm_birth, surname_birth,
-                           category_estimates, unmatched_categories):
+def split_combined_results(
+    results,
+    categories,
+    fencer_index,
+    fencer_index_norm,
+    birth_years,
+    norm_birth,
+    surname_birth,
+    category_estimates,
+    unmatched_categories,
+):
     """Split combined tournament results into per-category groups."""
     category_results = {cat: [] for cat in categories}
     unmatched = []
@@ -387,8 +408,7 @@ def split_combined_results(results, categories, fencer_index, fencer_index_norm,
 
         # Resolve birth year from all available sources
         birth_year, source = resolve_birth_year(
-            fid, r, birth_years, norm_birth, surname_birth,
-            category_estimates, unmatched_categories
+            fid, r, birth_years, norm_birth, surname_birth, category_estimates, unmatched_categories
         )
 
         cat = categorize_fencer(birth_year)
@@ -396,19 +416,23 @@ def split_combined_results(results, categories, fencer_index, fencer_index_norm,
         if cat and cat in category_results:
             if source and source != "xml":
                 print(f"    {name}: birth year {birth_year} (from {source}) → {cat}")
-            category_results[cat].append({
-                "id_fencer": fid,
-                "name": name,
-                "place": r["place"],
-                "birth_year": birth_year,
-            })
+            category_results[cat].append(
+                {
+                    "id_fencer": fid,
+                    "name": name,
+                    "place": r["place"],
+                    "birth_year": birth_year,
+                }
+            )
         elif cat is None:
-            unmatched.append({
-                "id_fencer": fid,
-                "name": name,
-                "place": r["place"],
-                "birth_year": birth_year,
-            })
+            unmatched.append(
+                {
+                    "id_fencer": fid,
+                    "name": name,
+                    "place": r["place"],
+                    "birth_year": birth_year,
+                }
+            )
         else:
             # Category exists but not in this tournament's expected categories
             print(f"  WARNING: {name} (born {birth_year}) → {cat} not in {categories}")
@@ -435,37 +459,41 @@ def generate_tournament_sql(weapon, gender, category, entries, participant_count
     gender_pl = GENDER_NAME[gender]
 
     lines = []
-    lines.append(f"INSERT INTO tbl_tournament (")
-    lines.append(f"    id_event, txt_code, txt_name, enum_type,")
-    lines.append(f"    enum_weapon, enum_gender, enum_age_category,")
-    lines.append(f"    dt_tournament, int_participant_count, url_results,")
-    lines.append(f"    enum_import_status")
-    lines.append(f") VALUES (")
-    lines.append(f"    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2025-2026'),")
+    lines.append("INSERT INTO tbl_tournament (")
+    lines.append("    id_event, txt_code, txt_name, enum_type,")
+    lines.append("    enum_weapon, enum_gender, enum_age_category,")
+    lines.append("    dt_tournament, int_participant_count, url_results,")
+    lines.append("    enum_import_status")
+    lines.append(") VALUES (")
+    lines.append("    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2025-2026'),")
     lines.append(f"    '{tc}',")
     lines.append(f"    'IV Puchar Polski Weteranów — {weapon_pl} {gender_pl}',")
-    lines.append(f"    'PPW',")
+    lines.append("    'PPW',")
     lines.append(f"    '{weapon}', '{gender}', '{category}',")
     lines.append(f"    '2026-02-21', {participant_count}, NULL,")
-    lines.append(f"    'SCORED'")
-    lines.append(f");")
+    lines.append("    'SCORED'")
+    lines.append(");")
 
     for e in entries:
         place = e.get("category_place", e["place"])
         if e["id_fencer"] is None:
-            lines.append(f"-- UNMATCHED: {e['name']} place={place} (born {e.get('birth_year', '?')})")
+            lines.append(
+                f"-- UNMATCHED: {e['name']} place={place} (born {e.get('birth_year', '?')})"
+            )
             continue
-        lines.append(f"INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)")
-        lines.append(f"VALUES (")
+        lines.append(
+            "INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)"
+        )
+        lines.append("VALUES (")
         lines.append(f"    {e['id_fencer']},")
         lines.append(f"    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = '{tc}'),")
         lines.append(f"    {place},")
         lines.append(f"    '{e['name']}'")
-        lines.append(f");")
+        lines.append(");")
 
-    lines.append(f"SELECT fn_calc_tournament_scores(")
+    lines.append("SELECT fn_calc_tournament_scores(")
     lines.append(f"    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = '{tc}')")
-    lines.append(f");")
+    lines.append(");")
 
     return "\n".join(lines)
 
@@ -511,7 +539,9 @@ def main():
 
     print("Scanning 2024-25 seed files for category-based birth year estimates...")
     category_estimates, unmatched_categories = scan_seed_categories()
-    print(f"  Found category data for {len(category_estimates)} fencers, {len(unmatched_categories)} unmatched hints")
+    print(
+        f"  Found category data for {len(category_estimates)} fencers, {len(unmatched_categories)} unmatched hints"
+    )
 
     all_unmatched = []
     files_written = []
@@ -532,13 +562,15 @@ def main():
             entries = []
             for r in results:
                 fid, name = match_fencer(r, fencer_index, fencer_index_norm)
-                entries.append({
-                    "id_fencer": fid,
-                    "name": name,
-                    "place": r["place"],
-                    "category_place": r["place"],
-                    "birth_year": r["birth_year"],
-                })
+                entries.append(
+                    {
+                        "id_fencer": fid,
+                        "name": name,
+                        "place": r["place"],
+                        "category_place": r["place"],
+                        "birth_year": r["birth_year"],
+                    }
+                )
                 if fid is None:
                     all_unmatched.append((xml_name, name, r.get("birth_year")))
 
@@ -557,9 +589,15 @@ def main():
         else:
             # Combined categories — split by birth year
             cat_results, unmatched = split_combined_results(
-                results, categories, fencer_index, fencer_index_norm,
-                birth_years, norm_birth, surname_birth,
-                category_estimates, unmatched_categories
+                results,
+                categories,
+                fencer_index,
+                fencer_index_norm,
+                birth_years,
+                norm_birth,
+                surname_birth,
+                category_estimates,
+                unmatched_categories,
             )
 
             for um in unmatched:
@@ -586,7 +624,7 @@ def main():
                 files_written.append(filepath.name)
                 print(f"  Wrote {filepath.name} ({len(entries)} results, {cat})")
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Files written: {len(files_written)}")
     for f in sorted(files_written):
         print(f"  {f}")

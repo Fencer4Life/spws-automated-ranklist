@@ -21,13 +21,13 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 # Splitter symbols moved to python.pipeline.age_split (2026-04-29) so every
-# ingestion path can use the same logic. Re-exported below for backward
+# ingestion path can use the same logic. Re-exported here for backward
 # compatibility with existing imports (`from python.scrapers.fencingtime_xml
 # import split_combined_results`, …).
-from python.pipeline.age_split import (
+from python.pipeline.age_split import (  # noqa: F401  (backward-compat re-export)
     _CATEGORY_AGE_RANGE,
-    _birth_year_from_dob,
     SplitResult,
+    _birth_year_from_dob,
     split_combined_results,
 )
 
@@ -82,11 +82,13 @@ def parse_fencingtime_xml(file_bytes: bytes) -> list[dict]:
         name = f"{nom} {prenom}".strip() if prenom else nom
         place = int(tireur.attrib.get("Classement", "0"))
         country = tireur.attrib.get("Nation", "")
-        results.append({
-            "fencer_name": name,
-            "place": place,
-            "country": country,
-        })
+        results.append(
+            {
+                "fencer_name": name,
+                "place": place,
+                "country": country,
+            }
+        )
 
     return results
 
@@ -113,14 +115,16 @@ def parse_fencingtime_xml_enriched(file_bytes: bytes) -> list[dict]:
         dob = _parse_dob(tireur.attrib.get("DateNaissance"))
         club = tireur.attrib.get("Club", "")
         xml_id = tireur.attrib.get("ID", "")
-        results.append({
-            "fencer_name": name,
-            "place": place,
-            "country": country,
-            "birth_date": dob,
-            "club": club,
-            "fencer_id_xml": xml_id,
-        })
+        results.append(
+            {
+                "fencer_name": name,
+                "place": place,
+                "country": country,
+                "birth_date": dob,
+                "club": club,
+                "fencer_id_xml": xml_id,
+            }
+        )
 
     return results
 
@@ -192,6 +196,7 @@ def detect_categories_from_altname(alt_name: str) -> list[str]:
 # Metadata (weapon, gender, date, category_hint) extracted from root attrs.
 # =============================================================================
 
+
 def _parse_date_dmy(s: str | None):
     """Parse 'DD.MM.YYYY' → datetime.date, or None if missing/invalid."""
     if not s or not s.strip():
@@ -258,10 +263,14 @@ def parse(
     DateNaissance (DD.MM.YYYY). Tournament metadata pulled from the root
     element's attributes.
     """
-    from python.pipeline.ir import (
-        ParsedResult, ParsedTournament, SourceKind, make_synthetic_id,
-    )
     from datetime import date  # noqa: F401  (used in birth_date typing)
+
+    from python.pipeline.ir import (
+        ParsedResult,
+        ParsedTournament,
+        SourceKind,
+        make_synthetic_id,
+    )
 
     root = _parse_root(file_bytes)
     tireurs = root.find("Tireurs")
@@ -292,26 +301,28 @@ def parse(
             country = tireur.attrib.get("Nation") or None
             xml_id = tireur.attrib.get("ID", "").strip()
             dob_str = _parse_dob(tireur.attrib.get("DateNaissance"))
-            birth_date = (
-                datetime.strptime(dob_str, "%Y-%m-%d").date()
-                if dob_str else None
-            )
+            birth_date = datetime.strptime(dob_str, "%Y-%m-%d").date() if dob_str else None
 
             sid = (
-                f"ft_xml:{xml_id}" if xml_id
+                f"ft_xml:{xml_id}"
+                if xml_id
                 else make_synthetic_id(
                     SourceKind.FENCINGTIME_XML,
-                    row_index=i, place=place, name=name,
+                    row_index=i,
+                    place=place,
+                    name=name,
                 )
             )
-            parsed_results.append(ParsedResult(
-                source_row_id=sid,
-                fencer_name=name,
-                place=place,
-                fencer_country=country,
-                birth_date=birth_date,
-                birth_year=birth_date.year if birth_date else None,
-            ))
+            parsed_results.append(
+                ParsedResult(
+                    source_row_id=sid,
+                    fencer_name=name,
+                    place=place,
+                    fencer_country=country,
+                    birth_date=birth_date,
+                    birth_year=birth_date.year if birth_date else None,
+                )
+            )
 
     # Structural pool-only detection (user instruction 2026-05-27): an XML
     # is a qualifier round when it has-pool-no-tableau — i.e. `<Poule>`

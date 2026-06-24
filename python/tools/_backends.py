@@ -25,7 +25,6 @@ import subprocess
 
 import httpx
 
-
 CERT_REF = "sdomfjncmfydlkygzpgw"
 PROD_REF = "ywgymtgcyturldazcpmw"
 
@@ -43,9 +42,18 @@ class LocalBackend(Backend):
 
     def query(self, sql: str) -> list:
         cmd = [
-            "docker", "exec", "supabase_db_SPWSranklist",
-            "psql", "-U", "postgres", "-d", "postgres",
-            "-At", "-F\x1f", "-c", sql,
+            "docker",
+            "exec",
+            "supabase_db_SPWSranklist",
+            "psql",
+            "-U",
+            "postgres",
+            "-d",
+            "postgres",
+            "-At",
+            "-F\x1f",
+            "-c",
+            sql,
         ]
         out = subprocess.check_output(cmd, text=True)
         rows = []
@@ -57,9 +65,17 @@ class LocalBackend(Backend):
 
     def execute(self, sql: str) -> None:
         cmd = [
-            "docker", "exec", "-i", "supabase_db_SPWSranklist",
-            "psql", "-U", "postgres", "-d", "postgres",
-            "-v", "ON_ERROR_STOP=1",
+            "docker",
+            "exec",
+            "-i",
+            "supabase_db_SPWSranklist",
+            "psql",
+            "-U",
+            "postgres",
+            "-d",
+            "postgres",
+            "-v",
+            "ON_ERROR_STOP=1",
         ]
         subprocess.run(cmd, input=sql, text=True, check=True)
 
@@ -72,9 +88,7 @@ class ManagementBackend(Backend):
         self.token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
         if not self.token:
             raise RuntimeError("SUPABASE_ACCESS_TOKEN not set")
-        self.endpoint = (
-            f"https://api.supabase.com/v1/projects/{project_ref}/database/query"
-        )
+        self.endpoint = f"https://api.supabase.com/v1/projects/{project_ref}/database/query"
 
     def _post(self, sql: str) -> list:
         r = httpx.post(

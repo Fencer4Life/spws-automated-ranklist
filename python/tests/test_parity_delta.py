@@ -9,8 +9,6 @@ ADR-060 — EVF parity emits delta-only .md (no full.md overwrite).
 
 from __future__ import annotations
 
-import pytest
-
 
 def test_parity_delta_empty_returns_none():
     # 5.8.1 — empty change list → None (no .md emitted)
@@ -22,7 +20,7 @@ def test_parity_delta_empty_returns_none():
 
 def test_parity_delta_single_by_correction():
     # 5.8.2 — one fencer BY correction renders one row
-    from python.pipeline.parity_delta import render, ParityChange
+    from python.pipeline.parity_delta import ParityChange, render
 
     out = render(
         event_code="EVENT-A-2024-2025",
@@ -50,18 +48,26 @@ def test_parity_delta_single_by_correction():
 
 def test_parity_delta_mixed_sections():
     # 5.8.3 — mixed kinds → both sections present
-    from python.pipeline.parity_delta import render, ParityChange
+    from python.pipeline.parity_delta import ParityChange, render
 
     out = render(
         event_code="EVENT-B",
         changes=[
             ParityChange(
-                kind="fencer", target_id=1042, target_label="STARK Tony",
-                field="int_birth_year", before="1974", after="1975",
+                kind="fencer",
+                target_id=1042,
+                target_label="STARK Tony",
+                field="int_birth_year",
+                before="1974",
+                after="1975",
             ),
             ParityChange(
-                kind="result", target_id=412, target_label="t#412 / V2 / EPEE / M",
-                field="int_place", before="7", after="5",
+                kind="result",
+                target_id=412,
+                target_label="t#412 / V2 / EPEE / M",
+                field="int_place",
+                before="7",
+                after="5",
                 fencer_label="#88 KOWAL Jan",
             ),
         ],
@@ -76,17 +82,20 @@ def test_parity_delta_mixed_sections():
 
 def test_parity_delta_includes_summary_count():
     # 5.8.4 — summary line includes count of changes
-    from python.pipeline.parity_delta import render, ParityChange
+    from python.pipeline.parity_delta import ParityChange, render
 
     out = render(
         event_code="X",
         changes=[
-            ParityChange(kind="fencer", target_id=1, target_label="A",
-                          field="f", before="x", after="y"),
-            ParityChange(kind="fencer", target_id=2, target_label="B",
-                          field="f", before="x", after="y"),
-            ParityChange(kind="fencer", target_id=3, target_label="C",
-                          field="f", before="x", after="y"),
+            ParityChange(
+                kind="fencer", target_id=1, target_label="A", field="f", before="x", after="y"
+            ),
+            ParityChange(
+                kind="fencer", target_id=2, target_label="B", field="f", before="x", after="y"
+            ),
+            ParityChange(
+                kind="fencer", target_id=3, target_label="C", field="f", before="x", after="y"
+            ),
         ],
     )
     md = out.decode("utf-8")

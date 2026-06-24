@@ -27,17 +27,16 @@ from python.scrapers.fourfence import parse_html as _fourfence_parse_html
 from python.scrapers.ftl import parse_json as _ftl_parse_json
 from python.scrapers.ophardt import parse_results as _ophardt_parse_results
 
-
 PARSERS = {
     SourceKind.FENCINGTIME_XML: _ft_xml_parse,
-    SourceKind.FTL:             _ftl_parse_json,
-    SourceKind.ENGARDE:         _engarde_parse_html,
-    SourceKind.FOURFENCE:       _fourfence_parse_html,
-    SourceKind.DARTAGNAN:       _dartagnan_parse_rankings,
-    SourceKind.EVF_API:         _evf_parse_results,
-    SourceKind.FILE_IMPORT:     _file_import_parse,
-    SourceKind.OPHARDT_HTML:    _ophardt_parse_results,
-    SourceKind.CERT_REF:        _cert_ref_parse,
+    SourceKind.FTL: _ftl_parse_json,
+    SourceKind.ENGARDE: _engarde_parse_html,
+    SourceKind.FOURFENCE: _fourfence_parse_html,
+    SourceKind.DARTAGNAN: _dartagnan_parse_rankings,
+    SourceKind.EVF_API: _evf_parse_results,
+    SourceKind.FILE_IMPORT: _file_import_parse,
+    SourceKind.OPHARDT_HTML: _ophardt_parse_results,
+    SourceKind.CERT_REF: _cert_ref_parse,
 }
 
 

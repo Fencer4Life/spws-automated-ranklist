@@ -14,8 +14,8 @@ Plan-test-ID 5.8.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Literal
 
 
@@ -49,7 +49,7 @@ def render(
     if not changes:
         return None
 
-    ts = timestamp_iso or datetime.now(timezone.utc).isoformat(timespec="seconds")
+    ts = timestamp_iso or datetime.now(UTC).isoformat(timespec="seconds")
 
     lines: list[str] = []
     lines.append(f"# EVF parity delta — {event_code}")
@@ -75,9 +75,7 @@ def render(
         lines.append("|---|---|---|---|---|")
         for c in result_changes:
             fencer = c.fencer_label or "?"
-            lines.append(
-                f"| {c.target_label} | {fencer} | {c.field} | {c.before} | {c.after} |"
-            )
+            lines.append(f"| {c.target_label} | {fencer} | {c.field} | {c.before} | {c.after} |")
         lines.append("")
 
     lines.append(

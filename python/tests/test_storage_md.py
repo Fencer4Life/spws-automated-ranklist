@@ -88,9 +88,7 @@ def test_storage_md_signed_url_returns_url_string():
     handler = StorageMdHandler(sb)
     url = handler.signed_url_full("X", ttl_seconds=3600)
     assert "staging-reports/X/full.md" in url
-    sb.storage.from_().create_signed_url.assert_called_with(
-        "X/full.md", 3600
-    )
+    sb.storage.from_().create_signed_url.assert_called_with("X/full.md", 3600)
 
 
 def test_storage_md_event_code_validation_rejects_path_traversal():

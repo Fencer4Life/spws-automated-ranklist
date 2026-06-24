@@ -79,9 +79,7 @@ def load_for_event(event_code: str, overrides_dir: Path | None = None) -> Overri
     try:
         raw = yaml.safe_load(path.read_text())
     except yaml.YAMLError as e:
-        raise OverrideValidationError(
-            f"Malformed YAML in override file {path.name}: {e}"
-        ) from e
+        raise OverrideValidationError(f"Malformed YAML in override file {path.name}: {e}") from e
 
     if raw is None or raw == {}:
         return Overrides()
@@ -108,6 +106,7 @@ def load_for_event(event_code: str, overrides_dir: Path | None = None) -> Overri
 # Section parsers
 # ---------------------------------------------------------------------------
 
+
 def _parse_identity(section: Any, path: Path) -> list[IdentityOverride]:
     if section is None:
         return []
@@ -119,9 +118,7 @@ def _parse_identity(section: Any, path: Path) -> list[IdentityOverride]:
     result: list[IdentityOverride] = []
     for i, entry in enumerate(section):
         if not isinstance(entry, dict):
-            raise OverrideValidationError(
-                f"{path.name}: identity[{i}] must be a mapping"
-            )
+            raise OverrideValidationError(f"{path.name}: identity[{i}] must be a mapping")
         scraped_name = entry.get("scraped_name")
         if not scraped_name:
             raise OverrideValidationError(
@@ -142,11 +139,13 @@ def _parse_identity(section: Any, path: Path) -> list[IdentityOverride]:
         if create_fencer is not None:
             _validate_create_fencer(create_fencer, scraped_name, i, path)
 
-        result.append(IdentityOverride(
-            scraped_name=str(scraped_name),
-            id_fencer=int(id_fencer) if id_fencer is not None else None,
-            create_fencer=create_fencer,
-        ))
+        result.append(
+            IdentityOverride(
+                scraped_name=str(scraped_name),
+                id_fencer=int(id_fencer) if id_fencer is not None else None,
+                create_fencer=create_fencer,
+            )
+        )
     return result
 
 
@@ -180,9 +179,7 @@ def _parse_splitter(section: Any, path: Path) -> SplitterOverrides:
             f"{path.name}: splitter.birth_year_overrides must be a mapping"
         )
     if not isinstance(vcat_overrides, dict):
-        raise OverrideValidationError(
-            f"{path.name}: splitter.vcat_overrides must be a mapping"
-        )
+        raise OverrideValidationError(f"{path.name}: splitter.vcat_overrides must be a mapping")
 
     # Coerce values: birth_year → int, vcat → str
     return SplitterOverrides(
@@ -220,25 +217,23 @@ def _parse_match_method(section: Any, path: Path) -> list[MatchMethodOverride]:
     result: list[MatchMethodOverride] = []
     for i, entry in enumerate(section):
         if not isinstance(entry, dict):
-            raise OverrideValidationError(
-                f"{path.name}: match_method[{i}] must be a mapping"
-            )
+            raise OverrideValidationError(f"{path.name}: match_method[{i}] must be a mapping")
         scraped_name = entry.get("scraped_name")
         force_method = entry.get("force_method")
         if not scraped_name:
-            raise OverrideValidationError(
-                f"{path.name}: match_method[{i}] missing 'scraped_name'"
-            )
+            raise OverrideValidationError(f"{path.name}: match_method[{i}] missing 'scraped_name'")
         if force_method not in VALID_FORCE_METHODS:
             raise OverrideValidationError(
                 f"{path.name}: match_method[{i}] ({scraped_name!r}) has invalid "
                 f"force_method={force_method!r}; expected one of {sorted(VALID_FORCE_METHODS)}"
             )
-        result.append(MatchMethodOverride(
-            scraped_name=str(scraped_name),
-            force_method=str(force_method),
-            note=str(entry.get("note", "")),
-        ))
+        result.append(
+            MatchMethodOverride(
+                scraped_name=str(scraped_name),
+                force_method=str(force_method),
+                note=str(entry.get("note", "")),
+            )
+        )
     return result
 
 
@@ -252,9 +247,7 @@ def _parse_joint_pool(section: Any, path: Path) -> list[JointPoolOverride]:
 
     force_flag = section.get("force_flag", []) or []
     if not isinstance(force_flag, list):
-        raise OverrideValidationError(
-            f"{path.name}: joint_pool.force_flag must be a list"
-        )
+        raise OverrideValidationError(f"{path.name}: joint_pool.force_flag must be a list")
 
     result: list[JointPoolOverride] = []
     for i, entry in enumerate(force_flag):
@@ -272,9 +265,11 @@ def _parse_joint_pool(section: Any, path: Path) -> list[JointPoolOverride]:
             raise OverrideValidationError(
                 f"{path.name}: joint_pool.force_flag[{i}] 'siblings' must be a list"
             )
-        result.append(JointPoolOverride(
-            tournament_code=str(tournament_code),
-            siblings=[str(s) for s in siblings],
-            note=str(entry.get("note", "")),
-        ))
+        result.append(
+            JointPoolOverride(
+                tournament_code=str(tournament_code),
+                siblings=[str(s) for s in siblings],
+                note=str(entry.get("note", "")),
+            )
+        )
     return result

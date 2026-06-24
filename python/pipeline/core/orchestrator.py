@@ -13,6 +13,7 @@ A plugin never calls another plugin or the orchestrator (Mediator pattern).
 Faults never halt — they are recorded on the Context and resolved inline by the
 REMEDIATIONBOOK in M2, so the flow always reaches Commit (ADR-074).
 """
+
 from __future__ import annotations
 
 from python.pipeline.core.contract import (

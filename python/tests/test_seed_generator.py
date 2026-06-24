@@ -16,11 +16,9 @@ SCRIPT = Path(__file__).parent.parent / "tools" / "generate_season_seed.py"
 
 # Import seed generator functions for unit tests (9.142–9.148)
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from python.tools.generate_season_seed import (
-    fuzzy_match,
-    normalize_name,
-    sq,
+from python.tools.generate_season_seed import (  # noqa: E402  (after sys.path.insert)
     MATCH_THRESHOLD,
+    fuzzy_match,
 )
 
 EPEE_M_V1_XLSX = (
@@ -54,11 +52,16 @@ def test_generator_exits_zero():
             [
                 sys.executable,
                 str(SCRIPT),
-                "--xlsx", str(EPEE_M_V1_XLSX),
-                "--season", "SPWS-2024-2025",
-                "--weapon", "EPEE",
-                "--gender", "M",
-                "--age-cat", "V1",
+                "--xlsx",
+                str(EPEE_M_V1_XLSX),
+                "--season",
+                "SPWS-2024-2025",
+                "--weapon",
+                "EPEE",
+                "--gender",
+                "M",
+                "--age-cat",
+                "V1",
             ],
             capture_output=True,
             text=True,
@@ -76,11 +79,16 @@ def test_generator_produces_valid_sql():
             [
                 sys.executable,
                 str(SCRIPT),
-                "--xlsx", str(EPEE_M_V1_XLSX),
-                "--season", "SPWS-2024-2025",
-                "--weapon", "EPEE",
-                "--gender", "M",
-                "--age-cat", "V1",
+                "--xlsx",
+                str(EPEE_M_V1_XLSX),
+                "--season",
+                "SPWS-2024-2025",
+                "--weapon",
+                "EPEE",
+                "--gender",
+                "M",
+                "--age-cat",
+                "V1",
             ],
             capture_output=True,
             text=True,
@@ -111,8 +119,8 @@ def test_generator_produces_valid_sql():
 # Fake fencer list for unit tests (matches seed_tbl_fencer format)
 _FENCERS = [
     (183, "ODOLAK", "Jarosław", []),
-    (6,   "ATANASSOW", "Aleksander", []),
-    (46,  "DUDEK", "Mariusz", []),
+    (6, "ATANASSOW", "Aleksander", []),
+    (46, "DUDEK", "Mariusz", []),
 ]
 
 
@@ -130,6 +138,7 @@ def test_fuzzy_match_odolak_matches():
 def test_parse_season_end_year():
     """9.143: parse_season_end_year extracts end year from season code."""
     from python.tools.generate_season_seed import parse_season_end_year
+
     assert parse_season_end_year("SPWS-2025-2026") == 2026
     assert parse_season_end_year("SPWS-2024-2025") == 2025
 
@@ -137,15 +146,17 @@ def test_parse_season_end_year():
 # 9.144 — Domestic PPW unmatched → auto-create SQL (fencer INSERT + result INSERT)
 def test_domestic_unmatched_generates_auto_create_sql():
     """9.144: Domestic PPW unmatched fencer produces INSERT INTO tbl_fencer + tbl_result."""
-    from python.tools.generate_season_seed import generate_auto_create_sql, build_result_sql_for_unmatched
+    from python.tools.generate_season_seed import (
+        build_result_sql_for_unmatched,
+        generate_auto_create_sql,
+    )
+
     fencer_sql = generate_auto_create_sql("LEAHEY John", "V2", 2026)
     assert "INSERT INTO tbl_fencer" in fencer_sql
     assert "'LEAHEY'" in fencer_sql
     assert "'John'" in fencer_sql
 
-    result_sql = build_result_sql_for_unmatched(
-        "LEAHEY John", 4, "PPW", "PPW3-V2-M-EPEE-2025-2026"
-    )
+    result_sql = build_result_sql_for_unmatched("LEAHEY John", 4, "PPW", "PPW3-V2-M-EPEE-2025-2026")
     assert "INSERT INTO tbl_result" in result_sql
     assert "SELECT id_fencer FROM tbl_fencer" in result_sql
 
@@ -154,6 +165,7 @@ def test_domestic_unmatched_generates_auto_create_sql():
 def test_international_unmatched_generates_skip_comment():
     """9.145: International PEW unmatched fencer produces SKIPPED comment, not INSERT."""
     from python.tools.generate_season_seed import build_result_sql_for_unmatched
+
     result_sql = build_result_sql_for_unmatched(
         "SCHMIDT Hans", 7, "PEW", "PEW1-V2-M-EPEE-2025-2026"
     )
@@ -166,6 +178,7 @@ def test_international_unmatched_generates_skip_comment():
 def test_auto_create_sql_is_idempotent():
     """9.146: Auto-create fencer INSERT uses WHERE NOT EXISTS to prevent duplicates."""
     from python.tools.generate_season_seed import generate_auto_create_sql
+
     sql = generate_auto_create_sql("GOLD Oleg", "V2", 2026)
     assert "WHERE NOT EXISTS" in sql
 
@@ -174,6 +187,7 @@ def test_auto_create_sql_is_idempotent():
 def test_auto_create_deduplication():
     """9.147: Same fencer appearing in multiple domestic tournaments gets only 1 fencer INSERT."""
     from python.tools.generate_season_seed import generate_auto_create_sql
+
     auto_created = set()
     sql1 = generate_auto_create_sql("LEAHEY John", "V2", 2026, auto_created)
     sql2 = generate_auto_create_sql("LEAHEY John", "V2", 2026, auto_created)
@@ -186,6 +200,7 @@ def test_auto_create_deduplication():
 def test_auto_create_has_estimated_birth_year():
     """9.148: Auto-created fencer SQL includes estimated birth year and bool_birth_year_estimated = TRUE."""
     from python.tools.generate_season_seed import generate_auto_create_sql
+
     sql = generate_auto_create_sql("MCQUEEN Andy", "V2", 2026)
     # V2 in season ending 2026 → estimated birth year = 2026 - 50 = 1976
     assert "1976" in sql

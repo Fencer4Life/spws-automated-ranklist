@@ -14,18 +14,16 @@ from __future__ import annotations
 
 from datetime import date
 
-import pytest
-
 from pipeline.url_validation import (
     ScrapedMetadata,
     ValidationResult,
     validate_metadata,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _evt(**overrides):
     """Default event row (SPWS organizer); overrides applied on top."""
@@ -217,8 +215,9 @@ def test_city_mismatch_after_normalize_halts():
 
 def test_name_mismatch_warn_only():
     """P4.UV.18: tournament name mismatch produces warn, not halt."""
-    r = validate_metadata(_evt(txt_name="Polish Veterans Cup 1"),
-                          _scr(tournament_name="Pol. Vets. Cup #1"))
+    r = validate_metadata(
+        _evt(txt_name="Polish Veterans Cup 1"), _scr(tournament_name="Pol. Vets. Cup #1")
+    )
     assert not r.has_halt
     assert any(f.field == "name" for f in r.warns)
 
@@ -241,10 +240,7 @@ def test_missing_scraped_field_skipped():
 
 def test_multiple_mismatches_all_reported():
     """P4.UV.20: multiple field mismatches produce multiple halts."""
-    r = validate_metadata(
-        _evt(),
-        _scr(weapon="FOIL", gender="F", country="HUN")
-    )
+    r = validate_metadata(_evt(), _scr(weapon="FOIL", gender="F", country="HUN"))
     assert r.has_halt
     halt_fields = {f.field for f in r.halts}
     assert {"weapon", "gender", "country"}.issubset(halt_fields)

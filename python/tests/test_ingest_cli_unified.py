@@ -29,13 +29,12 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 FIXTURES = Path(__file__).parent / "fixtures" / "fencingtime_xml"
 
 
 def _silent_notifier():
     from python.pipeline.notifications import TelegramNotifier
+
     return TelegramNotifier(None, None)
 
 
@@ -72,25 +71,32 @@ class TestUnifiedXmlIngest:
             # Return a minimal ParsedTournament-shaped object so run_pipeline
             # can be exercised by the patched run_pipeline below.
             from python.pipeline.ir import ParsedTournament, SourceKind
+
             return ParsedTournament(
                 source_kind=SourceKind.FENCINGTIME_XML,
                 results=[],
                 source_url=source_url,
             )
 
-        with patch("python.pipeline.ingest_cli.create_db_connector"), \
-             patch("python.scrapers.fencingtime_xml.parse", side_effect=fake_parse) as mock_parse, \
-             patch("python.pipeline.orchestrator.run_pipeline") as mock_run, \
-             patch("python.pipeline.ingest_cli.DraftStore"):
+        with (
+            patch("python.pipeline.ingest_cli.create_db_connector"),
+            patch("python.scrapers.fencingtime_xml.parse", side_effect=fake_parse),
+            patch("python.pipeline.orchestrator.run_pipeline") as mock_run,
+            patch("python.pipeline.ingest_cli.DraftStore"),
+        ):
             mock_run.return_value = MagicMock(
-                halted=False, halted_at_stage=None,
-                vcat_groups={}, matches=[], event={"id_event": 1},
+                halted=False,
+                halted_at_stage=None,
+                vcat_groups={},
+                matches=[],
+                event={"id_event": 1},
             )
             # url_event_override is the explicit-injection path; the default
             # path reads tbl_event.url_event off the event row in DB.
             mock_db = MagicMock()
             mock_db.find_event_by_code.return_value = {
-                "id_event": 1, "txt_code": "PPW4-SPWS-2025-2026",
+                "id_event": 1,
+                "txt_code": "PPW4-SPWS-2025-2026",
                 "url_event": None,  # force the override path
             }
             ingest_cli.ingest_xml_unified(
@@ -132,11 +138,13 @@ class TestUnifiedXmlIngest:
         class _CaptureDraftStore:
             def __init__(self, db):
                 self.db = db
+
             def write_tournament_drafts(self, tournaments, run_id):
                 captured["tournament_drafts_calls"] += 1
                 captured["last_tournaments"] = tournaments
                 captured["last_run_id"] = run_id
                 return list(range(1, len(tournaments) + 1))
+
             def write_result_drafts(self, results, run_id):
                 captured["result_drafts_calls"] += 1
                 return len(results)
@@ -144,9 +152,9 @@ class TestUnifiedXmlIngest:
         # Short-circuit run_pipeline so the test doesn't depend on real
         # matcher / DB state. The unit under test is the orchestration in
         # ingest_xml_unified, not the pipeline itself (covered elsewhere).
-        from python.pipeline.types import PipelineContext
         fake_event = {
-            "id_event": 99, "txt_code": "PPW4-SPWS-2025-2026",
+            "id_event": 99,
+            "txt_code": "PPW4-SPWS-2025-2026",
             "url_event": "https://fencingtimelive.com/events/results/TESTUUID",
         }
         mock_db = MagicMock()
@@ -156,24 +164,29 @@ class TestUnifiedXmlIngest:
             # Simulate the well-tested ReviewSession path writing drafts.
             if self.run_id is None:
                 import uuid as _uuid
+
                 self.run_id = str(_uuid.uuid4())
             self.draft_store.write_tournament_drafts(
-                tournaments=[{
-                    "id_event": 99,
-                    "txt_code": "PPW4-V1-M-EPEE-2025-2026",
-                    "url_results": parsed.source_url,
-                    "enum_age_category": "V1",
-                }],
+                tournaments=[
+                    {
+                        "id_event": 99,
+                        "txt_code": "PPW4-V1-M-EPEE-2025-2026",
+                        "url_results": parsed.source_url,
+                        "enum_age_category": "V1",
+                    }
+                ],
                 run_id=self.run_id,
             )
             return MagicMock(halted=False, matches=[]), None
 
-        with patch("python.pipeline.ingest_cli.create_db_connector", return_value=mock_db), \
-             patch("python.pipeline.ingest_cli.DraftStore", _CaptureDraftStore), \
-             patch(
-                 "python.pipeline.review_cli.ReviewSession.run_iteration",
-                 fake_run_iteration,
-             ):
+        with (
+            patch("python.pipeline.ingest_cli.create_db_connector", return_value=mock_db),
+            patch("python.pipeline.ingest_cli.DraftStore", _CaptureDraftStore),
+            patch(
+                "python.pipeline.review_cli.ReviewSession.run_iteration",
+                fake_run_iteration,
+            ),
+        ):
             ingest_cli.ingest_xml_unified(
                 path=str(FIXTURES / "combined_v0v1.xml"),
                 event_code="PPW4-SPWS-2025-2026",
@@ -201,6 +214,7 @@ class TestUnifiedXmlIngest:
         ingest_xml_unified.
         """
         import warnings
+
         from python.pipeline.orchestrator import process_xml_file
 
         with warnings.catch_warnings(record=True) as caught:
@@ -216,8 +230,7 @@ class TestUnifiedXmlIngest:
             except Exception:
                 pass  # we only care about the warning, not the outcome
         assert any(
-            issubclass(w.category, DeprecationWarning)
-            and "ingest_xml_unified" in str(w.message)
+            issubclass(w.category, DeprecationWarning) and "ingest_xml_unified" in str(w.message)
             for w in caught
         ), (
             "process_xml_file must emit a DeprecationWarning pointing to "

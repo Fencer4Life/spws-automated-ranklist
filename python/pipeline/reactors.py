@@ -12,6 +12,7 @@ ON_LOSS) sees the same context the commit produced.
 The loop converges with no back-edge: `POST_COMMIT` has no `Commit`, so it emits no
 `live.committed` and never re-fires (`should_react_post_commit` returns False for it).
 """
+
 from __future__ import annotations
 
 from python.pipeline.core.contract import Context

@@ -12,9 +12,6 @@ Plan test IDs evf.6–evf.10:
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
-
-
 FIXTURE_PDF = Path(__file__).parent / "fixtures" / "evf_result_ehv2.pdf"
 
 
@@ -26,22 +23,37 @@ def _mock_client():
     ]
     client.get_results.return_value = [
         {
-            "id": 62571, "competition_id": "1216", "place": "1",
-            "fencer_surname": "LESNE", "fencer_firstname": "Ludovic",
-            "fencer_dob": "1970-03-10", "country_abbr": "FRA",
-            "weapon_abbr": "ME", "total_points": "158.618",
+            "id": 62571,
+            "competition_id": "1216",
+            "place": "1",
+            "fencer_surname": "LESNE",
+            "fencer_firstname": "Ludovic",
+            "fencer_dob": "1970-03-10",
+            "country_abbr": "FRA",
+            "weapon_abbr": "ME",
+            "total_points": "158.618",
         },
         {
-            "id": 62575, "competition_id": "1216", "place": "5",
-            "fencer_surname": "KORONA", "fencer_firstname": "Przemyslaw",
-            "fencer_dob": "1976-04-15", "country_abbr": "POL",
-            "weapon_abbr": "ME", "total_points": "29.254",
+            "id": 62575,
+            "competition_id": "1216",
+            "place": "5",
+            "fencer_surname": "KORONA",
+            "fencer_firstname": "Przemyslaw",
+            "fencer_dob": "1976-04-15",
+            "country_abbr": "POL",
+            "weapon_abbr": "ME",
+            "total_points": "29.254",
         },
         {
-            "id": 62599, "competition_id": "1216", "place": "58",
-            "fencer_surname": "PARDUS", "fencer_firstname": "Borys",
-            "fencer_dob": "1970-01-01", "country_abbr": "POL",
-            "weapon_abbr": "ME", "total_points": "1.5",
+            "id": 62599,
+            "competition_id": "1216",
+            "place": "58",
+            "fencer_surname": "PARDUS",
+            "fencer_firstname": "Borys",
+            "fencer_dob": "1970-01-01",
+            "country_abbr": "POL",
+            "weapon_abbr": "ME",
+            "total_points": "1.5",
         },
     ]
     return client

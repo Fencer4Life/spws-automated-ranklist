@@ -11,6 +11,7 @@ It writes the same `matches`/`event` Context keys the ingest source produces, so
 INGEST_DOMESTIC and RECOMPUTE_DOMESTIC. The per-row governed BY comes from
 `db.fetch_event_results` (which reads the current, corrected `tbl_fencer.BY`).
 """
+
 from __future__ import annotations
 
 from python.pipeline.core.contract import Abort, Context, PluginKind, Services
@@ -65,7 +66,8 @@ class LoadCommitted(BasePlugin):
         # AssignFinalVcat takes its BY-derivation path and ValidateCounts skips
         # the source/URL checks (see ingest.ValidateCounts).
         pctx = ensure_pctx(
-            ctx, parsed=None,
+            ctx,
+            parsed=None,
             season_end_year=season_end_year,
             event_code=event.get("txt_code"),
         )

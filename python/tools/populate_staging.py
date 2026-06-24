@@ -30,9 +30,7 @@ XML_SEASON_DIR = "Sezon_2025-2026"
 XML_SEASON_CODE = "SPWS-2025-2026"
 
 # Filename pattern: {WEAPON}-{K?}{N}-{SEASON}.xlsx
-_EXCEL_FILENAME_RE = re.compile(
-    r"^(SZPADA|FLORET|SZABLA)-(K?)(\d)-(\d{4}-\d{4})\.xlsx$"
-)
+_EXCEL_FILENAME_RE = re.compile(r"^(SZPADA|FLORET|SZABLA)-(K?)(\d)-(\d{4}-\d{4})\.xlsx$")
 
 
 def parse_excel_filename(filename: str) -> dict | None:
@@ -64,7 +62,7 @@ def discover_excel_files(input_dir: Path) -> list[dict]:
         list[dict] with keys: path, weapon, gender, age_cat, season_code.
     """
     results = []
-    for season_code, dir_name in SEASON_DIRS.items():
+    for _season_code, dir_name in SEASON_DIRS.items():
         season_dir = input_dir / dir_name
         if not season_dir.exists():
             continue
@@ -84,7 +82,7 @@ def discover_xml_files(input_dir: Path) -> list[dict]:
         list[dict] with keys: path, weapon, gender, categories, alt_name,
         title, date, season_code.
     """
-    from scrapers.fencingtime_xml import parse_xml_metadata, detect_categories_from_altname
+    from scrapers.fencingtime_xml import detect_categories_from_altname, parse_xml_metadata
 
     xml_dir = input_dir / XML_SEASON_DIR
     if not xml_dir.exists():
@@ -100,16 +98,18 @@ def discover_xml_files(input_dir: Path) -> list[dict]:
             continue
 
         categories = detect_categories_from_altname(meta["alt_name"])
-        results.append({
-            "path": xml_path,
-            "weapon": meta["weapon"],
-            "gender": meta["gender"],
-            "categories": categories,
-            "alt_name": meta["alt_name"],
-            "title": meta.get("title", ""),
-            "date": meta.get("date", ""),
-            "season_code": XML_SEASON_CODE,
-        })
+        results.append(
+            {
+                "path": xml_path,
+                "weapon": meta["weapon"],
+                "gender": meta["gender"],
+                "categories": categories,
+                "alt_name": meta["alt_name"],
+                "title": meta.get("title", ""),
+                "date": meta.get("date", ""),
+                "season_code": XML_SEASON_CODE,
+            }
+        )
 
     return results
 
@@ -129,9 +129,14 @@ def extract_excel_tournaments(file_info: dict) -> list[dict]:
         import_status, result_url, original_source, notes.
     """
     import openpyxl
+
     from tools.import_events_from_excel import (
-        SHEET_MAP, SKIP_SHEETS, detect_layout,
-        extract_sheet_2022, extract_sheet_2021, derive_event_url,
+        SHEET_MAP,
+        SKIP_SHEETS,
+        derive_event_url,
+        detect_layout,
+        extract_sheet_2021,
+        extract_sheet_2022,
     )
 
     xlsx_path = file_info["path"]
@@ -156,21 +161,23 @@ def extract_excel_tournaments(file_info: dict) -> list[dict]:
         else:
             status = "EMPTY"
 
-        tournaments.append({
-            "event_prefix": code_prefix,
-            "season_code": file_info["season_code"],
-            "weapon": file_info["weapon"],
-            "gender": file_info["gender"],
-            "age_cat": file_info["age_cat"],
-            "type": ttype,
-            "dt_tournament": data["date_start"],
-            "participant_count": data["participant_count"],
-            "source_file": str(xlsx_path),
-            "import_status": status,
-            "result_url": derive_event_url(data["url"]),
-            "original_source": data["url"],
-            "notes": None,
-        })
+        tournaments.append(
+            {
+                "event_prefix": code_prefix,
+                "season_code": file_info["season_code"],
+                "weapon": file_info["weapon"],
+                "gender": file_info["gender"],
+                "age_cat": file_info["age_cat"],
+                "type": ttype,
+                "dt_tournament": data["date_start"],
+                "participant_count": data["participant_count"],
+                "source_file": str(xlsx_path),
+                "import_status": status,
+                "result_url": derive_event_url(data["url"]),
+                "original_source": data["url"],
+                "notes": None,
+            }
+        )
 
     wb_data.close()
     wb_links.close()
@@ -211,21 +218,23 @@ def extract_xml_tournaments(file_info: dict) -> list[dict]:
 
     tournaments = []
     for cat in categories:
-        tournaments.append({
-            "event_prefix": event_prefix,
-            "season_code": file_info["season_code"],
-            "weapon": file_info["weapon"],
-            "gender": file_info["gender"],
-            "age_cat": cat,
-            "type": "PPW",
-            "dt_tournament": dt_tournament,
-            "participant_count": participant_count,
-            "source_file": str(xml_path),
-            "import_status": status,
-            "result_url": None,
-            "original_source": None,
-            "notes": combined_note,
-        })
+        tournaments.append(
+            {
+                "event_prefix": event_prefix,
+                "season_code": file_info["season_code"],
+                "weapon": file_info["weapon"],
+                "gender": file_info["gender"],
+                "age_cat": cat,
+                "type": "PPW",
+                "dt_tournament": dt_tournament,
+                "participant_count": participant_count,
+                "source_file": str(xml_path),
+                "import_status": status,
+                "result_url": None,
+                "original_source": None,
+                "notes": combined_note,
+            }
+        )
 
     return tournaments
 
@@ -365,8 +374,11 @@ _excel_fencer_cache: set[str] = set()
 def _extract_fencers_from_excel(xlsx_path: Path, seen: dict) -> None:
     """Extract fencer names from PPW/GPW/MPW sheets in an Excel workbook."""
     import openpyxl
+
     from tools.import_events_from_excel import (
-        SHEET_MAP, SKIP_SHEETS, detect_layout,
+        SHEET_MAP,
+        SKIP_SHEETS,
+        detect_layout,
     )
 
     _SPWS_TYPES = {"PPW", "GPW", "MPW"}
@@ -469,30 +481,42 @@ def collect_populate_data(input_dir: Path) -> dict:
     seasons = [
         {
             "season_code": "SPWS-2023-2024",
-            "dt_start": "2023-09-01", "dt_end": "2024-08-31",
+            "dt_start": "2023-09-01",
+            "dt_end": "2024-08-31",
             "bool_active": False,
-            "ppw_best_count": 4, "ppw_total_rounds": 8,
+            "ppw_best_count": 4,
+            "ppw_total_rounds": 8,
             "mpw_multiplier": 1.5,
-            "pew_best_count": 4, "mew_multiplier": 2.0,
-            "msw_multiplier": 2.0, "import_log": "",
+            "pew_best_count": 4,
+            "mew_multiplier": 2.0,
+            "msw_multiplier": 2.0,
+            "import_log": "",
         },
         {
             "season_code": "SPWS-2024-2025",
-            "dt_start": "2024-09-01", "dt_end": "2025-08-31",
+            "dt_start": "2024-09-01",
+            "dt_end": "2025-08-31",
             "bool_active": False,
-            "ppw_best_count": 4, "ppw_total_rounds": 5,
+            "ppw_best_count": 4,
+            "ppw_total_rounds": 5,
             "mpw_multiplier": 1.5,
-            "pew_best_count": 4, "mew_multiplier": 2.0,
-            "msw_multiplier": 2.0, "import_log": "",
+            "pew_best_count": 4,
+            "mew_multiplier": 2.0,
+            "msw_multiplier": 2.0,
+            "import_log": "",
         },
         {
             "season_code": "SPWS-2025-2026",
-            "dt_start": "2025-09-01", "dt_end": "2026-08-31",
+            "dt_start": "2025-09-01",
+            "dt_end": "2026-08-31",
             "bool_active": True,
-            "ppw_best_count": 4, "ppw_total_rounds": 5,
+            "ppw_best_count": 4,
+            "ppw_total_rounds": 5,
             "mpw_multiplier": 1.5,
-            "pew_best_count": 4, "mew_multiplier": 2.0,
-            "msw_multiplier": 2.0, "import_log": "",
+            "pew_best_count": 4,
+            "mew_multiplier": 2.0,
+            "msw_multiplier": 2.0,
+            "import_log": "",
         },
     ]
 

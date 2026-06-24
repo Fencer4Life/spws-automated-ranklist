@@ -79,11 +79,13 @@ def parse_engarde_html(html: str) -> list[dict]:
         if not fencer_name:
             continue
 
-        results.append({
-            "fencer_name": fencer_name,
-            "place": place,
-            "country": country,
-        })
+        results.append(
+            {
+                "fencer_name": fencer_name,
+                "place": place,
+                "country": country,
+            }
+        )
 
     return results
 
@@ -94,6 +96,7 @@ def parse_engarde_html(html: str) -> list[dict]:
 # parse_html emits ParsedTournament. The legacy parse_engarde_html stays
 # until Phase 6 collapses callers.
 # =============================================================================
+
 
 def parse_html(
     html: str,
@@ -106,7 +109,10 @@ def parse_html(
     IDs available; uses synthetic IDs via ``make_synthetic_id``.
     """
     from python.pipeline.ir import (
-        ParsedResult, ParsedTournament, SourceKind, make_synthetic_id,
+        ParsedResult,
+        ParsedTournament,
+        SourceKind,
+        make_synthetic_id,
     )
 
     soup = BeautifulSoup(html, "html.parser")
@@ -144,17 +150,19 @@ def parse_html(
             continue
 
         row_index += 1
-        parsed_results.append(ParsedResult(
-            source_row_id=make_synthetic_id(
-                SourceKind.ENGARDE,
-                row_index=row_index,
+        parsed_results.append(
+            ParsedResult(
+                source_row_id=make_synthetic_id(
+                    SourceKind.ENGARDE,
+                    row_index=row_index,
+                    place=place,
+                    name=fencer_name,
+                ),
+                fencer_name=fencer_name,
                 place=place,
-                name=fencer_name,
-            ),
-            fencer_name=fencer_name,
-            place=place,
-            fencer_country=country or None,
-        ))
+                fencer_country=country or None,
+            )
+        )
 
     return ParsedTournament(
         source_kind=SourceKind.ENGARDE,

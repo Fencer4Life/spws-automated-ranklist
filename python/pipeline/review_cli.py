@@ -33,9 +33,13 @@ import argparse
 import os
 import sys
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from python.pipeline.ir import ParsedTournament
 
 from python.pipeline.commit_lifecycle import run_post_commit_hooks
 from python.pipeline.db_connector import create_db_connector
@@ -50,10 +54,10 @@ from python.pipeline.three_way_diff import (
     write_diff,
 )
 
-
 # ===========================================================================
 # Parity-payload extractor for the EVF API path
 # ===========================================================================
+
 
 def _extract_parity_payload(parsed) -> list[dict] | None:
     """Best-effort extract of EVF parity payload from a ParsedTournament.
@@ -68,6 +72,7 @@ def _extract_parity_payload(parsed) -> list[dict] | None:
     callers fall back to "no parity check this run" gracefully.
     """
     from python.pipeline.ir import SourceKind
+
     if parsed is None:
         return None
     if getattr(parsed, "source_kind", None) != SourceKind.EVF_API:
@@ -78,11 +83,13 @@ def _extract_parity_payload(parsed) -> list[dict] | None:
         pts = getattr(r, "points", None)
         if pts is None:
             continue
-        payload.append({
-            "name": getattr(r, "fencer_name", ""),
-            "pos": getattr(r, "place", 0),
-            "points": float(pts),
-        })
+        payload.append(
+            {
+                "name": getattr(r, "fencer_name", ""),
+                "pos": getattr(r, "place", 0),
+                "points": float(pts),
+            }
+        )
     return payload or None
 
 
@@ -90,10 +97,12 @@ def _extract_parity_payload(parsed) -> list[dict] | None:
 # Source-of-truth choice + fetcher contract
 # ===========================================================================
 
+
 @dataclass(frozen=True)
 class SourceChoice:
     """Operator's source-of-truth decision for one event."""
-    kind: str          # "recorded" | "url" | "path" | "skip"
+
+    kind: str  # "recorded" | "url" | "path" | "skip"
     value: str | None  # URL or path; None for skip
 
 
@@ -141,6 +150,7 @@ class Fetcher:
         if http_client is None:
             try:
                 import httpx
+
                 http_client = httpx.Client(timeout=30.0, follow_redirects=True)
             except ImportError:  # pragma: no cover
                 http_client = None
@@ -160,44 +170,56 @@ class Fetcher:
         if kind == "FTL":
             # FTL JSON API: results endpoint typically returns JSON list
             import json as _json
+
             from python.scrapers.ftl import parse_json
+
             text = self._get(url)
             try:
                 data = _json.loads(text)
             except _json.JSONDecodeError:
                 # Some FTL pages serve HTML instead of JSON; fall back
                 from python.scrapers.fencingtime_xml import parse as _ft_xml_parse
+
                 return _ft_xml_parse(text.encode("utf-8"), source_url=url)
             return parse_json(data, source_url=url)
         if kind == "ENGARDE":
             from python.scrapers.engarde import parse_html
+
             return parse_html(self._get(url), source_url=url)
         if kind == "FOURFENCE":
             from python.scrapers.fourfence import parse_html
+
             return parse_html(self._get(url), source_url=url)
         if kind == "OPHARDT_HTML":
             from python.scrapers.ophardt import parse_results
+
             return parse_results(self._get(url), source_url=url)
         if kind == "DARTAGNAN":
             from python.scrapers.dartagnan import parse_rankings
+
             return parse_rankings(self._get(url), source_url=url)
         if kind == "EVF_API":
             from python.scrapers.evf_results import parse_results
+
             return parse_results(self._get(url), source_url=url)
         if kind == "FENCINGTIME_XML":
             from python.scrapers.fencingtime_xml import parse as ft_xml_parse
+
             return ft_xml_parse(self._get(url).encode("utf-8"), source_url=url)
         raise ValueError(f"Fetcher.fetch_url: no parser for URL {url!r} (detected kind={kind})")
 
     def fetch_path(self, path: str):
         """Read a local file and dispatch to file_import / ft_xml by extension."""
         from pathlib import Path
+
         p = Path(path)
         data = p.read_bytes()
         if p.suffix.lower() == ".xml":
             from python.scrapers.fencingtime_xml import parse as ft_xml_parse
+
             return ft_xml_parse(data, source_url=f"file://{p}")
         from python.scrapers.file_import import parse as file_import_parse
+
         return file_import_parse(data, source_url=f"file://{p}", filename=p.name)
 
     def fetch_evf_api(self, event: dict):
@@ -216,13 +238,12 @@ class Fetcher:
         """
         url = (event or {}).get("url_results")
         if not url:
-            raise ValueError(
-                "Fetcher.fetch_evf_api: event has no url_results to fetch from"
-            )
+            raise ValueError("Fetcher.fetch_evf_api: event has no url_results to fetch from")
         from python.scrapers.evf_results import parse_results
+
         return parse_results(self._get(url), source_url=url)
 
-    def fetch_cert_ref(self, event_code: str, db) -> "ParsedTournament":
+    def fetch_cert_ref(self, event_code: str, db) -> ParsedTournament:
         """Fetch cert_ref placements for an event and parse to IR.
 
         Phase 4 (ADR-050): operator picks `[5] cert_ref placements` when
@@ -230,10 +251,16 @@ class Fetcher:
         hands to python.scrapers.cert_ref.parse.
         """
         from python.scrapers.cert_ref import parse as cert_ref_parse
-        rows = db.fetch_cert_rows_for_event(event_code) if hasattr(db, "fetch_cert_rows_for_event") else []
+
+        rows = (
+            db.fetch_cert_rows_for_event(event_code)
+            if hasattr(db, "fetch_cert_rows_for_event")
+            else []
+        )
         tournament = (
             db.fetch_cert_tournament_for_event(event_code)
-            if hasattr(db, "fetch_cert_tournament_for_event") else None
+            if hasattr(db, "fetch_cert_tournament_for_event")
+            else None
         )
         return cert_ref_parse({"tournament": tournament or {}, "results": rows})
 
@@ -241,9 +268,7 @@ class Fetcher:
     # Phase 5 — event-level fetch (multi-tournament expansion)
     # ------------------------------------------------------------------
 
-    def fetch_event_url_with_skips(
-        self, event_url: str
-    ) -> "tuple[list, list[dict]]":
+    def fetch_event_url_with_skips(self, event_url: str) -> tuple[list, list[dict]]:
         """Phase 5 (ADR-057): same as fetch_event_url but ALSO returns the
         list of brackets the splitter skipped at parse time, so the runner
         can surface them in the per-event summary for operator verification.
@@ -257,9 +282,8 @@ class Fetcher:
             from python.tools.scrape_ftl_event_urls import (
                 parse_event_schedule,
                 parse_tournament_name,
-                MIKST_PATTERN,
-                SKIP_PATTERNS,
             )
+
             FTL_DATA_PREFIX = "https://www.fencingtimelive.com/events/results/data/"
             results: list = []
             event_url = _normalize_ftl_url(event_url)
@@ -269,28 +293,40 @@ class Fetcher:
                 # parse_event_schedule(with_skips=True) returns BOTH the
                 # kept brackets and the splitter-rejected ones (Mixed / DE /
                 # etc.) so we can surface them in the per-event summary.
-                raw_entries, name_skips = parse_event_schedule(
-                    resp.text, with_skips=True
-                )
+                raw_entries, name_skips = parse_event_schedule(resp.text, with_skips=True)
 
                 # Splitter-time name-pattern skips → record with weapon probe
                 for sk in name_skips:
                     name_s = sk["name"]
                     upper = name_s.upper()
                     wpn = None
-                    for k in ("EPEE", "FOIL", "SABRE", "SABER", "FLORET",
-                              "SZABLA", "SZPADA", "ÉPÉE"):
+                    for k in (
+                        "EPEE",
+                        "FOIL",
+                        "SABRE",
+                        "SABER",
+                        "FLORET",
+                        "SZABLA",
+                        "SZPADA",
+                        "ÉPÉE",
+                    ):
                         if k in upper:
-                            wpn = {"FLORET": "FOIL", "SZABLA": "SABRE",
-                                   "SZPADA": "EPEE", "ÉPÉE": "EPEE",
-                                   "SABER": "SABRE"}.get(k, k)
+                            wpn = {
+                                "FLORET": "FOIL",
+                                "SZABLA": "SABRE",
+                                "SZPADA": "EPEE",
+                                "ÉPÉE": "EPEE",
+                                "SABER": "SABRE",
+                            }.get(k, k)
                             break
-                    skipped.append({
-                        "weapon": wpn,
-                        "name": name_s,
-                        "url": f"{FTL_DATA_PREFIX}{sk['uuid']}",
-                        "reason": sk.get("reason", "splitter skip"),
-                    })
+                    skipped.append(
+                        {
+                            "weapon": wpn,
+                            "name": name_s,
+                            "url": f"{FTL_DATA_PREFIX}{sk['uuid']}",
+                            "reason": sk.get("reason", "splitter skip"),
+                        }
+                    )
 
                 for raw in raw_entries:
                     name = raw["name"]
@@ -300,10 +336,14 @@ class Fetcher:
                     # parse_tournament_name found the name unparseable.
                     parsed_name = parse_tournament_name(name)
                     if parsed_name is None:
-                        skipped.append({
-                            "weapon": None, "name": name, "url": per_url,
-                            "reason": "unparseable bracket name",
-                        })
+                        skipped.append(
+                            {
+                                "weapon": None,
+                                "name": name,
+                                "url": per_url,
+                                "reason": "unparseable bracket name",
+                            }
+                        )
                         continue
                     is_combined = isinstance(parsed_name, list)
                     if is_combined:
@@ -324,11 +364,10 @@ class Fetcher:
                     # single-V-cat bracket), downgrade to joint-pool so
                     # ADR-056's BY-derivation path routes each fencer to
                     # her actual V-cat.
-                    has_conflict, marker_summary = _bracket_marker_conflict(
-                        per_parsed, category
-                    )
+                    has_conflict, marker_summary = _bracket_marker_conflict(per_parsed, category)
                     if has_conflict:
                         import sys as _sys
+
                         print(
                             f"   ⚠ bracket {name!r} mislabeled as {category}: "
                             f"per-fencer markers {marker_summary} "
@@ -338,7 +377,8 @@ class Fetcher:
                         category = None
                     annotated = _annotate_parsed(
                         per_parsed,
-                        weapon=weapon, gender=gender,
+                        weapon=weapon,
+                        gender=gender,
                         age_category=category,
                         ftl_source_name=name,
                     )
@@ -346,7 +386,7 @@ class Fetcher:
             return results, skipped
         return [self.fetch_url(event_url)], skipped
 
-    def fetch_event_url(self, event_url: str) -> "list[ParsedTournament]":
+    def fetch_event_url(self, event_url: str) -> list[ParsedTournament]:
         """Expand an event-level URL into per-tournament ParsedTournament IRs.
 
         Phase 5 entry point. Always start from the event URL; first step is
@@ -369,6 +409,7 @@ class Fetcher:
                 parse_event_schedule,
                 parse_tournament_name,
             )
+
             FTL_DATA_PREFIX = "https://www.fencingtimelive.com/events/results/data/"
             event_url = _normalize_ftl_url(event_url)
             with get_authed_ftl_client() as authed:
@@ -471,7 +512,7 @@ def _to_human_results_url(url: str | None) -> str | None:
     )
 
 
-import re as _re
+import re as _re  # noqa: E402  (deliberate local import near use)
 
 # ---------------------------------------------------------------------------
 # Polish FTL per-fencer V-cat markers
@@ -562,21 +603,22 @@ def _annotate_parsed(parsed, *, weapon, gender, age_category, ftl_source_name):
     """
     try:
         import dataclasses as _dc
+
         if _dc.is_dataclass(parsed):
-            return _dc.replace(parsed, weapon=weapon, gender=gender,
-                                category_hint=age_category)
+            return _dc.replace(parsed, weapon=weapon, gender=gender, category_hint=age_category)
     except Exception:
         pass
-    setattr(parsed, "weapon", weapon)
-    setattr(parsed, "gender", gender)
-    setattr(parsed, "category_hint", age_category)
-    setattr(parsed, "_ftl_source_name", ftl_source_name)
+    parsed.weapon = weapon
+    parsed.gender = gender
+    parsed.category_hint = age_category
+    parsed._ftl_source_name = ftl_source_name
     return parsed
 
 
 # ===========================================================================
 # ReviewSession — the per-event interactive lifecycle
 # ===========================================================================
+
 
 class ReviewSession:
     """Encapsulates one event's review iteration loop.
@@ -713,8 +755,10 @@ class ReviewSession:
         auto_created = sum(1 for m in ctx.matches if m.method == "AUTO_CREATED")
         skipped = sum(1 for m in ctx.matches if m.method == "EXCLUDED")
         return {
-            "matched": matched, "pending": pending,
-            "auto_created": auto_created, "skipped": skipped,
+            "matched": matched,
+            "pending": pending,
+            "auto_created": auto_created,
+            "skipped": skipped,
         }
 
     def run_iteration(self, parsed, staging_dir: Path | None = None):
@@ -780,7 +824,7 @@ class ReviewSession:
         )
         # Map vcat → id_tournament_draft for the result-row linkage
         vcats_in_order = [r["enum_age_category"] for r in tournament_rows]
-        vcat_to_tournament_id = dict(zip(vcats_in_order, tournament_ids))
+        vcat_to_tournament_id = dict(zip(vcats_in_order, tournament_ids, strict=True))
 
         result_rows = self._build_result_draft_rows(ctx, vcat_to_tournament_id)
         if result_rows:
@@ -820,7 +864,7 @@ class ReviewSession:
                 if nominal_vcat is None:
                     row["bool_joint_pool_split"] = ctx.is_joint_pool
                 else:
-                    row["bool_joint_pool_split"] = (vcat != nominal_vcat)
+                    row["bool_joint_pool_split"] = vcat != nominal_vcat
                 # Phase 5 — int_participant_count = how many matched
                 # fencers in this V-cat group. Required for
                 # fn_calc_tournament_scores at commit. Joint-pool
@@ -832,9 +876,7 @@ class ReviewSession:
             for vcat in sorted(ctx.splits.keys()):
                 rows.append(self._draft_row_skeleton(ctx, event_id, vcat))
         else:
-            rows.append(self._draft_row_skeleton(
-                ctx, event_id, ctx.parsed.category_hint or "V1"
-            ))
+            rows.append(self._draft_row_skeleton(ctx, event_id, ctx.parsed.category_hint or "V1"))
         return rows
 
     def _validate_draft_urls(self, tournament_rows: list[dict]) -> None:
@@ -878,6 +920,7 @@ class ReviewSession:
         # (e.g. FTL JSON `/events/results/data/<UUID>`) for the audit trail.
         # ADR-046: child code is `{parent_kind}-V{cat}-{gender}-{weapon}-{season}`.
         import re as _re
+
         m = _re.match(r"^(.*)-(\d{4}-\d{4})$", self.event_code)
         if m:
             parent_kind, season = m.group(1), m.group(2)
@@ -905,7 +948,9 @@ class ReviewSession:
         }
 
     def _build_result_draft_rows(
-        self, ctx, vcat_to_tournament_id: dict[str, int] | None = None,
+        self,
+        ctx,
+        vcat_to_tournament_id: dict[str, int] | None = None,
     ) -> list[dict]:
         """Translate vcat_groups → tbl_result_draft rows with proper linkage.
 
@@ -946,32 +991,35 @@ class ReviewSession:
             for m in matches:
                 if m.method == "EXCLUDED":
                     continue  # ADR-038 — international non-POL row, intentional drop
-                rows.append({
-                    "id_fencer": m.id_fencer,
-                    "id_tournament_draft": tournament_id,
-                    "int_place": m.place,
-                    "txt_scraped_name": m.scraped_name,
-                    "num_match_confidence": m.confidence,
-                    "enum_match_method": method_map.get(m.method),  # None for PENDING
-                    "enum_source_age_category": source_vcat,
-                })
+                rows.append(
+                    {
+                        "id_fencer": m.id_fencer,
+                        "id_tournament_draft": tournament_id,
+                        "int_place": m.place,
+                        "txt_scraped_name": m.scraped_name,
+                        "num_match_confidence": m.confidence,
+                        "enum_match_method": method_map.get(m.method),  # None for PENDING
+                        "enum_source_age_category": source_vcat,
+                    }
+                )
         return rows
 
     def _write_diff(self, ctx, staging_dir: Path | None, *, halted: bool) -> Path:
         """Build + write the 3-way diff markdown for this iteration."""
         # Source rows from the parsed IR
         source_rows = [
-            {"fencer_name": r.fencer_name, "place": r.place,
-             "id_fencer": None}
+            {"fencer_name": r.fencer_name, "place": r.place, "id_fencer": None}
             for r in ctx.parsed.results
         ]
         # CERT rows from cert_ref (stub returns [] in Phase 3)
-        cert_rows = self.db.fetch_cert_rows_for_event(self.event_code) \
-            if hasattr(self.db, "fetch_cert_rows_for_event") else []
+        cert_rows = (
+            self.db.fetch_cert_rows_for_event(self.event_code)
+            if hasattr(self.db, "fetch_cert_rows_for_event")
+            else []
+        )
         # New LOCAL rows from ctx.matches
         new_rows = [
-            {"fencer_name": m.scraped_name, "place": m.place,
-             "id_fencer": m.id_fencer}
+            {"fencer_name": m.scraped_name, "place": m.place, "id_fencer": m.id_fencer}
             for m in ctx.matches
         ]
 
@@ -979,9 +1027,7 @@ class ReviewSession:
         hist = confidence_histogram(ctx.matches)
         notes = []
         if halted:
-            notes.append(
-                f"⚠ Pipeline HALTED at {ctx.halted_at_stage} — diff is incomplete."
-            )
+            notes.append(f"⚠ Pipeline HALTED at {ctx.halted_at_stage} — diff is incomplete.")
         md = render_markdown(self.event_code, diff_rows, hist, notes=notes)
         return write_diff(self.event_code, md, staging_dir=staging_dir)
 
@@ -990,9 +1036,7 @@ class ReviewSession:
     def prompt_action(self) -> str:
         """Loop until operator picks c/d/i. Returns 'commit'|'discard'|'iterate'."""
         while True:
-            choice = self._prompt(
-                "Action: [c]ommit / [d]iscard / [i]terate > "
-            ).strip().lower()
+            choice = self._prompt("Action: [c]ommit / [d]iscard / [i]terate > ").strip().lower()
             if choice in ("c", "commit"):
                 return "commit"
             if choice in ("d", "discard"):
@@ -1094,10 +1138,9 @@ class ReviewSession:
 # CLI entry point
 # ===========================================================================
 
+
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Phase 3 (ADR-050) interactive event review CLI"
-    )
+    parser = argparse.ArgumentParser(description="Phase 3 (ADR-050) interactive event review CLI")
     parser.add_argument("event_code", help="Event txt_code (e.g., PEW3-2025-2026)")
     parser.add_argument("--season-end-year", type=int, default=2026)
     args = parser.parse_args()

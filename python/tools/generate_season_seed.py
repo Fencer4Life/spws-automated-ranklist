@@ -21,10 +21,8 @@ The file is auto-loaded by `supabase db reset` via config.toml sql_paths glob.
 
 import argparse
 import re
-import sys
-import math
-from pathlib import Path
 from datetime import date, datetime
+from pathlib import Path
 
 import openpyxl
 import psycopg2
@@ -37,20 +35,20 @@ DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 
 # Map sheet name → (tournament_type, event_code_prefix, human_name)
 SHEET_MAP = {
-    "PP1":  ("PPW", "PPW1",  "I Puchar Polski Weteranów"),
-    "PP2":  ("PPW", "PPW2",  "II Puchar Polski Weteranów"),
-    "PP3":  ("PPW", "PPW3",  "III Puchar Polski Weteranów"),
-    "PP4":  ("PPW", "PPW4",  "IV Puchar Polski Weteranów"),
-    "PP5":  ("PPW", "PPW5",  "V Puchar Polski Weteranów"),
-    "GP1":  ("PPW", "GP1",  "Grand Prix (runda 1)"),
-    "GP2":  ("PPW", "GP2",  "Grand Prix (runda 2)"),
-    "GP3":  ("PPW", "GP3",  "Grand Prix (runda 3)"),
-    "GP4":  ("PPW", "GP4",  "Grand Prix (runda 4)"),
-    "GP5":  ("PPW", "GP5",  "Grand Prix (runda 5)"),
-    "GP6":  ("PPW", "GP6",  "Grand Prix (runda 6)"),
-    "GP7":  ("PPW", "GP7",  "Grand Prix (runda 7)"),
-    "GP8":  ("PPW", "GP8",  "Grand Prix (runda 8)"),
-    "MPW":  ("MPW", "MPW",  "Mistrzostwa Polski Weteranów"),
+    "PP1": ("PPW", "PPW1", "I Puchar Polski Weteranów"),
+    "PP2": ("PPW", "PPW2", "II Puchar Polski Weteranów"),
+    "PP3": ("PPW", "PPW3", "III Puchar Polski Weteranów"),
+    "PP4": ("PPW", "PPW4", "IV Puchar Polski Weteranów"),
+    "PP5": ("PPW", "PPW5", "V Puchar Polski Weteranów"),
+    "GP1": ("PPW", "GP1", "Grand Prix (runda 1)"),
+    "GP2": ("PPW", "GP2", "Grand Prix (runda 2)"),
+    "GP3": ("PPW", "GP3", "Grand Prix (runda 3)"),
+    "GP4": ("PPW", "GP4", "Grand Prix (runda 4)"),
+    "GP5": ("PPW", "GP5", "Grand Prix (runda 5)"),
+    "GP6": ("PPW", "GP6", "Grand Prix (runda 6)"),
+    "GP7": ("PPW", "GP7", "Grand Prix (runda 7)"),
+    "GP8": ("PPW", "GP8", "Grand Prix (runda 8)"),
+    "MPW": ("MPW", "MPW", "Mistrzostwa Polski Weteranów"),
     "PEW1": ("PEW", "PEW1", "EVF Grand Prix 1 — Budapeszt"),
     "PEW2": ("PEW", "PEW2", "EVF Grand Prix 2 — Madryt"),
     "PEW3": ("PEW", "PEW3", "EVF Grand Prix 3"),
@@ -60,10 +58,10 @@ SHEET_MAP = {
     "PEW7": ("PEW", "PEW7", "EVF Grand Prix 7 — Terni"),
     "PEW8": ("PEW", "PEW8", "EVF Grand Prix 8 — Guildford"),
     "PEW9": ("PEW", "PEW9", "EVF Grand Prix 9 — Sztokholm"),
-    "PEW10":("PEW", "PEW10","EVF Grand Prix 10 — Graz"),
-    "PEW11":("PEW", "PEW11","EVF Grand Prix 11 — Gdańsk"),
-    "PEW12":("PEW", "PEW12","EVF Grand Prix 12 — Ateny"),
-    "PS":   ("PSW", "PS",   "Puchar Świata"),
+    "PEW10": ("PEW", "PEW10", "EVF Grand Prix 10 — Graz"),
+    "PEW11": ("PEW", "PEW11", "EVF Grand Prix 11 — Gdańsk"),
+    "PEW12": ("PEW", "PEW12", "EVF Grand Prix 12 — Ateny"),
+    "PS": ("PSW", "PS", "Puchar Świata"),
     "IMEW": ("MEW", "IMEW", "Indywidualne Mistrzostwa Europy Weteranów"),
 }
 
@@ -84,6 +82,7 @@ _CATEGORY_MIN_AGE = {
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def sq(s):
     """Escape single quotes for SQL."""
@@ -118,7 +117,7 @@ def parse_date(raw) -> str | None:
 
 def strip_category_markers(name: str) -> str:
     """Remove FTL category markers like '(kat 1)', '(kat 0)', '(0)', '(1)', '(V1)' from names."""
-    return re.sub(r'\s*\((?:kat\s*)?V?\d+\)\s*', ' ', name).strip()
+    return re.sub(r"\s*\((?:kat\s*)?V?\d+\)\s*", " ", name).strip()
 
 
 def normalize_name(name: str) -> str:
@@ -141,7 +140,7 @@ def fuzzy_match(name: str, fencers: list[tuple]) -> tuple | None:
     # 2. Fuzzy match on full name + component-level scoring
     best_score = 0
     best_fencer = None
-    for fid, surname, first, aliases in fencers:
+    for fid, surname, first, _aliases in fencers:
         full = f"{surname} {first}"
         score = fuzz.token_sort_ratio(norm, full.upper())
         # Component-level check: if surname or first name is very different, cap score
@@ -166,7 +165,7 @@ def fuzzy_match(name: str, fencers: list[tuple]) -> tuple | None:
         if score > best_score:
             best_score = score
             best_fencer = (fid, f"{surname} {first}")
-    if best_score >= MATCH_THRESHOLD:
+    if best_fencer is not None and best_score >= MATCH_THRESHOLD:
         return (*best_fencer, best_score)
     return None
 
@@ -270,6 +269,7 @@ def load_fencers(conn) -> list[tuple]:
     rows = []
     for fid, surname, first, aliases_json in cur.fetchall():
         import json
+
         aliases = json.loads(aliases_json)
         rows.append((fid, surname, first, aliases))
     return rows
@@ -279,23 +279,24 @@ def load_fencers(conn) -> list[tuple]:
 # Extract tournament data from one Excel sheet
 # ---------------------------------------------------------------------------
 
+
 def extract_sheet(wb_data, wb_links, sheet_name: str) -> dict:
     """Return dict with tournament metadata and result rows."""
     ws_d = wb_data[sheet_name]
     ws_l = wb_links[sheet_name]
 
     location = ws_d.cell(2, 3).value
-    date_raw  = ws_d.cell(3, 3).value
-    n         = ws_d.cell(2, 8).value   # participant count
+    date_raw = ws_d.cell(3, 3).value
+    n = ws_d.cell(2, 8).value  # participant count
 
     url = None
-    hl  = ws_l.cell(2, 3).hyperlink
+    hl = ws_l.cell(2, 3).hyperlink
     if hl:
         url = hl.target
 
     results = []
     for r in range(6, ws_d.max_row + 1):
-        name  = ws_d.cell(r, 3).value
+        name = ws_d.cell(r, 3).value
         place = ws_d.cell(r, 8).value
         if not name or name in ("x", "X", ""):
             continue
@@ -305,16 +306,17 @@ def extract_sheet(wb_data, wb_links, sheet_name: str) -> dict:
 
     return {
         "location": location,
-        "date":     parse_date(date_raw),
-        "n":        n if isinstance(n, int) else None,
-        "url":      url,
-        "results":  results,
+        "date": parse_date(date_raw),
+        "n": n if isinstance(n, int) else None,
+        "url": url,
+        "results": results,
     }
 
 
 # ---------------------------------------------------------------------------
 # Derive output path and SQL identifiers from CLI args
 # ---------------------------------------------------------------------------
+
 
 def derive_paths(season: str, weapon: str, gender: str, age_cat: str) -> tuple[Path, str, str]:
     """
@@ -339,32 +341,33 @@ def derive_paths(season: str, weapon: str, gender: str, age_cat: str) -> tuple[P
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Generate per-category season seed SQL from an SPWS Excel workbook."
     )
-    parser.add_argument("--xlsx",    required=True, help="Path to the Excel workbook")
-    parser.add_argument("--season",  required=True, help="Season code, e.g. SPWS-2024-2025")
-    parser.add_argument("--weapon",  required=True, choices=["EPEE", "FOIL", "SABRE"])
-    parser.add_argument("--gender",  required=True, choices=["M", "F"])
-    parser.add_argument("--age-cat", required=True, choices=["V0", "V1", "V2", "V3", "V4"],
-                        dest="age_cat")
+    parser.add_argument("--xlsx", required=True, help="Path to the Excel workbook")
+    parser.add_argument("--season", required=True, help="Season code, e.g. SPWS-2024-2025")
+    parser.add_argument("--weapon", required=True, choices=["EPEE", "FOIL", "SABRE"])
+    parser.add_argument("--gender", required=True, choices=["M", "F"])
+    parser.add_argument(
+        "--age-cat", required=True, choices=["V0", "V1", "V2", "V3", "V4"], dest="age_cat"
+    )
     args = parser.parse_args()
 
     xlsx_path = Path(args.xlsx)
-    season    = args.season
-    weapon    = args.weapon
-    gender    = args.gender
-    age_cat   = args.age_cat
+    season = args.season
+    weapon = args.weapon
+    gender = args.gender
+    age_cat = args.age_cat
 
     out_path, season_folder, year_suffix = derive_paths(season, weapon, gender, age_cat)
-    category_slug = f"{age_cat}_{gender}_{weapon}".lower()
 
     print(f"Reading {xlsx_path} ...")
-    wb_data  = openpyxl.load_workbook(xlsx_path, data_only=True)
+    wb_data = openpyxl.load_workbook(xlsx_path, data_only=True)
     wb_links = openpyxl.load_workbook(xlsx_path)  # for hyperlinks
 
-    print(f"Connecting to DB ...")
+    print("Connecting to DB ...")
     conn = psycopg2.connect(DB_URL)
     fencers = load_fencers(conn)
     print(f"  Loaded {len(fencers)} fencers from DB")
@@ -383,12 +386,12 @@ def main():
         "",
     ]
 
-    total_matched   = 0
+    total_matched = 0
     total_unmatched = 0
     total_auto_created = 0
     tournament_codes = []
-    auto_created: set[tuple[str, str]] = set()   # (SURNAME, FIRST_NAME) dedup
-    auto_create_lines: list[str] = []             # fencer INSERT statements
+    auto_created: set[tuple[str, str]] = set()  # (SURNAME, FIRST_NAME) dedup
+    auto_create_lines: list[str] = []  # fencer INSERT statements
 
     season_end_year = parse_season_end_year(season)
 
@@ -398,10 +401,10 @@ def main():
             continue
 
         data = extract_sheet(wb_data, wb_links, sheet_name)
-        loc  = data["location"] or "?"
-        dt   = data["date"]
-        n    = data["n"] or 0
-        url  = data["url"]
+        loc = data["location"] or "?"
+        dt = data["date"]
+        n = data["n"] or 0
+        url = data["url"]
 
         # Skip tournaments with N=0 (e.g. PEW10 Graz — no participants)
         if n == 0:
@@ -416,39 +419,39 @@ def main():
         tourn_code = f"{code}-{age_cat}-{gender}-{weapon}-{year_suffix}"
         tournament_codes.append(tourn_code)
 
-        dt_sql   = sq(dt)
-        url_sql  = sq(url)
-        loc_raw  = data["location"]
-        loc_sql  = sq(loc_raw) if loc_raw else "NULL"
+        dt_sql = sq(dt)
+        url_sql = sq(url)
+        loc_raw = data["location"]
+        loc_sql = sq(loc_raw) if loc_raw else "NULL"
 
         organizer_raw = "EVF" if ttype in ("PEW", "MEW") else "SPWS"
         loc_comment = f" ({loc})" if loc and loc != "?" else ""
 
         header_lines = [
             f"-- ---- {sheet_name}: {human_name}{loc_comment} ----",
-            f"INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)",
-            f"SELECT",
+            "INSERT INTO tbl_event (txt_code, txt_name, txt_location, id_season, id_organizer, enum_status)",
+            "SELECT",
             f"    {sq(event_code)},",
             f"    {sq(human_name)},",
             f"    {loc_sql},",
             f"    (SELECT id_season FROM tbl_season WHERE txt_code = {sq(season)}),",
             f"    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = {sq(organizer_raw)}),",
-            f"    'COMPLETED'",
+            "    'COMPLETED'",
             f"WHERE NOT EXISTS (SELECT 1 FROM tbl_event WHERE txt_code = {sq(event_code)});",
-            f"INSERT INTO tbl_tournament (",
-            f"    id_event, txt_code, txt_name, enum_type,",
-            f"    enum_weapon, enum_gender, enum_age_category,",
-            f"    dt_tournament, int_participant_count, url_results,",
-            f"    enum_import_status",
-            f") VALUES (",
+            "INSERT INTO tbl_tournament (",
+            "    id_event, txt_code, txt_name, enum_type,",
+            "    enum_weapon, enum_gender, enum_age_category,",
+            "    dt_tournament, int_participant_count, url_results,",
+            "    enum_import_status",
+            ") VALUES (",
             f"    (SELECT id_event FROM tbl_event WHERE txt_code = {sq(event_code)}),",
             f"    {sq(tourn_code)},",
             f"    {sq(human_name)},",
             f"    '{ttype}',",
             f"    '{weapon}', '{gender}', '{age_cat}',",
             f"    {dt_sql}, {n}, {url_sql},",
-            f"    'SCORED'",
-            f");",
+            "    'SCORED'",
+            ");",
         ]
 
         matched_in_tournament = 0
@@ -456,7 +459,7 @@ def main():
         result_lines = []
 
         for row in data["results"]:
-            name  = row["name"]
+            name = row["name"]
             place = row["place"]
             match = fuzzy_match(name, fencers)
 
@@ -464,8 +467,8 @@ def main():
                 fid, matched_name, score = match
                 matched_in_tournament += 1
                 result_lines += [
-                    f"INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)",
-                    f"VALUES (",
+                    "INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)",
+                    "VALUES (",
                     f"    {fid},",
                     f"    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = {sq(tourn_code)}),",
                     f"    {place},",
@@ -476,7 +479,9 @@ def main():
                 unmatched_in_tournament += 1
                 # ADR-020: domestic auto-create vs international skip
                 if ttype in DOMESTIC_TYPES:
-                    fencer_sql = generate_auto_create_sql(name, age_cat, season_end_year, auto_created)
+                    fencer_sql = generate_auto_create_sql(
+                        name, age_cat, season_end_year, auto_created
+                    )
                     if fencer_sql:
                         auto_create_lines.append(fencer_sql)
                         total_auto_created += 1
@@ -487,9 +492,11 @@ def main():
                         build_result_sql_for_unmatched(name, place, ttype, tourn_code),
                     ]
 
-        total_matched   += matched_in_tournament
+        total_matched += matched_in_tournament
         total_unmatched += unmatched_in_tournament
-        print(f"  {sheet_name}: N={n}, results={len(data['results'])}, matched={matched_in_tournament}, unmatched={unmatched_in_tournament}")
+        print(
+            f"  {sheet_name}: N={n}, results={len(data['results'])}, matched={matched_in_tournament}, unmatched={unmatched_in_tournament}"
+        )
 
         if matched_in_tournament == 0:
             lines += [
@@ -501,22 +508,26 @@ def main():
             lines += result_lines
             lines += [
                 f"-- Compute scores for {tourn_code}",
-                f"SELECT fn_calc_tournament_scores(",
+                "SELECT fn_calc_tournament_scores(",
                 f"    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = {sq(tourn_code)})",
-                f");",
+                ");",
                 "",
             ]
 
     # Splice auto-created fencer INSERTs after header, before tournament blocks
     if auto_create_lines:
-        fencer_block = [
-            "-- =========================================================================",
-            "-- Auto-created fencers (domestic unmatched — ADR-020)",
-            "-- =========================================================================",
-        ] + auto_create_lines + [""]
+        fencer_block = (
+            [
+                "-- =========================================================================",
+                "-- Auto-created fencers (domestic unmatched — ADR-020)",
+                "-- =========================================================================",
+            ]
+            + auto_create_lines
+            + [""]
+        )
         # Insert after the file header (first blank line, index 5)
-        insert_pos = next((i for i, l in enumerate(lines) if l == ""), len(lines))
-        lines = lines[:insert_pos + 1] + fencer_block + lines[insert_pos + 1:]
+        insert_pos = next((i for i, line in enumerate(lines) if line == ""), len(lines))
+        lines = lines[: insert_pos + 1] + fencer_block + lines[insert_pos + 1 :]
         print(f"  Auto-created {total_auto_created} fencer(s)")
 
     lines += [

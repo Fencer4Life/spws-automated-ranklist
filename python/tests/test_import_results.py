@@ -56,9 +56,7 @@ class TestReadTournaments:
         """9.130 Season filter returns only matching rows."""
         from tools.import_results import read_tournaments_from_ods
 
-        specs = read_tournaments_from_ods(
-            mock_ods_path, season_filter="SPWS-2024-2025"
-        )
+        specs = read_tournaments_from_ods(mock_ods_path, season_filter="SPWS-2024-2025")
         assert len(specs) == 4  # 4 of 5 mock tournaments are 2024-2025
         assert all(s.season_code == "SPWS-2024-2025" for s in specs)
 
@@ -107,10 +105,10 @@ class TestExtractResults:
 
     def test_extract_results_from_xlsx(self, tmp_path):
         """9.133 Excel source → correct result list."""
-        from tools.import_results import TournamentSpec, extract_results
-
         # Create a minimal XLSX fixture
         import openpyxl
+
+        from tools.import_results import TournamentSpec, extract_results
 
         wb = openpyxl.Workbook()
         ws = wb.active
@@ -289,10 +287,13 @@ class TestCLI:
         output_dir = tmp_path / "sql_output"
         result = subprocess.run(
             [
-                sys.executable, str(SCRIPT),
-                "--ods", str(mock_ods_path),
+                sys.executable,
+                str(SCRIPT),
+                "--ods",
+                str(mock_ods_path),
                 "--dry-run",
-                "--output-dir", str(output_dir),
+                "--output-dir",
+                str(output_dir),
             ],
             capture_output=True,
             text=True,
@@ -305,10 +306,13 @@ class TestCLI:
         """9.141 CLI exits 0 on success with --dry-run."""
         result = subprocess.run(
             [
-                sys.executable, str(SCRIPT),
-                "--ods", str(mock_ods_path),
+                sys.executable,
+                str(SCRIPT),
+                "--ods",
+                str(mock_ods_path),
                 "--dry-run",
-                "--output-dir", str(tmp_path / "out"),
+                "--output-dir",
+                str(tmp_path / "out"),
             ],
             capture_output=True,
             text=True,

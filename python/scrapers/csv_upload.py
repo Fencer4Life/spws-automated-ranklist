@@ -26,9 +26,11 @@ def parse_csv_upload(csv_text: str) -> list[dict]:
     results = []
     reader = csv.DictReader(io.StringIO(csv_text))
     for row in reader:
-        results.append({
-            "fencer_name": row.get("Name", "").strip(),
-            "place": _parse_place(row.get("Place", "0")),
-            "country": row.get("Country", "").strip(),
-        })
+        results.append(
+            {
+                "fencer_name": row.get("Name", "").strip(),
+                "place": _parse_place(row.get("Place", "0")),
+                "country": row.get("Country", "").strip(),
+            }
+        )
     return results

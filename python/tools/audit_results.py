@@ -25,12 +25,10 @@ import sys
 import time
 
 import httpx
-
 from python.scrapers.base import detect_platform
-from python.scrapers.ftl import parse_ftl_json
 from python.scrapers.engarde import parse_engarde_html
 from python.scrapers.fourfence import parse_fourfence_html
-
+from python.scrapers.ftl import parse_ftl_json
 
 # ---------------------------------------------------------------------------
 # Environment configs
@@ -65,10 +63,25 @@ def query_db(ref: str | None, sql: str) -> list[list]:
     if ref is None:
         # Local: use docker exec
         import subprocess
+
         result = subprocess.run(
-            ["docker", "exec", "supabase_db_SPWSranklist",
-             "psql", "-U", "postgres", "-t", "-A", "-F", "\t", "-c", sql],
-            capture_output=True, text=True, timeout=30,
+            [
+                "docker",
+                "exec",
+                "supabase_db_SPWSranklist",
+                "psql",
+                "-U",
+                "postgres",
+                "-t",
+                "-A",
+                "-F",
+                "\t",
+                "-c",
+                sql,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         if result.returncode != 0:
             raise RuntimeError(f"Local query failed: {result.stderr}")
@@ -115,11 +128,15 @@ def fetch_tournaments_with_urls(ref: str | None) -> list[dict]:
     rows = query_db(ref, sql)
     return [
         {
-            "txt_code": r[0], "url_results": r[1],
+            "txt_code": r[0],
+            "url_results": r[1],
             "int_participant_count": int(r[2]) if r[2] else 0,
-            "enum_type": r[3], "enum_weapon": r[4],
-            "enum_gender": r[5], "enum_age_category": r[6],
-            "event_code": r[7], "location": r[8],
+            "enum_type": r[3],
+            "enum_weapon": r[4],
+            "enum_gender": r[5],
+            "enum_age_category": r[6],
+            "event_code": r[7],
+            "location": r[8],
         }
         for r in rows
     ]
@@ -137,10 +154,7 @@ def fetch_db_results(ref: str | None, tournament_code: str) -> list[dict]:
     ORDER BY r.int_place;
     """
     rows = query_db(ref, sql)
-    return [
-        {"name": r[0], "place": int(r[1]), "score": float(r[2]) if r[2] else 0}
-        for r in rows
-    ]
+    return [{"name": r[0], "place": int(r[1]), "score": float(r[2]) if r[2] else 0} for r in rows]
 
 
 # ---------------------------------------------------------------------------
@@ -172,9 +186,8 @@ def scrape_url(url: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Name normalization for comparison
 # ---------------------------------------------------------------------------
-import re
-import unicodedata
-
+import re  # noqa: E402  (deliberate local import in normalization section)
+import unicodedata  # noqa: E402
 
 # Polish characters that don't decompose via NFKD
 _POLISH_MAP = str.maketrans("łŁ", "lL")
@@ -286,29 +299,35 @@ def audit_tournament(ref: str | None, tournament: dict, pol_only: bool = False) 
                 scraped_matched.add(sn)
                 db_matched.add(dn)
                 if sr["place"] != dr["place"]:
-                    issues.append({
-                        "type": "PLACE_MISMATCH",
-                        "fencer": sr["fencer_name"],
-                        "scraped_place": sr["place"],
-                        "db_place": dr["place"],
-                    })
+                    issues.append(
+                        {
+                            "type": "PLACE_MISMATCH",
+                            "fencer": sr["fencer_name"],
+                            "scraped_place": sr["place"],
+                            "db_place": dr["place"],
+                        }
+                    )
                 break
         if not matched:
-            issues.append({
-                "type": "MISSING_IN_DB",
-                "fencer": sr["fencer_name"],
-                "scraped_place": sr["place"],
-                "country": sr.get("country", ""),
-            })
+            issues.append(
+                {
+                    "type": "MISSING_IN_DB",
+                    "fencer": sr["fencer_name"],
+                    "scraped_place": sr["place"],
+                    "country": sr.get("country", ""),
+                }
+            )
 
     # Check for DB results not in scraped data
     for dn, dr in db_by_name.items():
         if dn not in db_matched:
-            issues.append({
-                "type": "EXTRA_IN_DB",
-                "fencer": dr["name"],
-                "db_place": dr["place"],
-            })
+            issues.append(
+                {
+                    "type": "EXTRA_IN_DB",
+                    "fencer": dr["name"],
+                    "db_place": dr["place"],
+                }
+            )
 
     return {
         "code": code,
@@ -329,10 +348,14 @@ def audit_tournament(ref: str | None, tournament: dict, pol_only: bool = False) 
 def main():
     parser = argparse.ArgumentParser(description="Audit ingested results against source URLs")
     parser.add_argument("--env", required=True, choices=["cert", "prod", "local"])
-    parser.add_argument("--pol-only", action="store_true",
-                        help="For international tournaments, only check POL fencers")
-    parser.add_argument("--tournament", default=None,
-                        help="Audit a single tournament code (default: all)")
+    parser.add_argument(
+        "--pol-only",
+        action="store_true",
+        help="For international tournaments, only check POL fencers",
+    )
+    parser.add_argument(
+        "--tournament", default=None, help="Audit a single tournament code (default: all)"
+    )
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     args = parser.parse_args()
 
@@ -356,13 +379,19 @@ def main():
             print(f"Tournament {args.tournament} not found", file=sys.stderr)
             sys.exit(1)
         r = rows[0]
-        tournaments = [{
-            "txt_code": r[0], "url_results": r[1],
-            "int_participant_count": int(r[2]) if r[2] else 0,
-            "enum_type": r[3], "enum_weapon": r[4],
-            "enum_gender": r[5], "enum_age_category": r[6],
-            "event_code": r[7], "location": r[8],
-        }]
+        tournaments = [
+            {
+                "txt_code": r[0],
+                "url_results": r[1],
+                "int_participant_count": int(r[2]) if r[2] else 0,
+                "enum_type": r[3],
+                "enum_weapon": r[4],
+                "enum_gender": r[5],
+                "enum_age_category": r[6],
+                "event_code": r[7],
+                "location": r[8],
+            }
+        ]
     else:
         tournaments = fetch_tournaments_with_urls(ref)
 
@@ -395,9 +424,11 @@ def main():
             total_mismatch += mismatch
 
             if result["issues"]:
-                print(f" {missing} missing, {extra} extra, {mismatch} mismatches "
-                      f"(scraped={result['scraped_count']}, db={result['db_count']})",
-                      file=sys.stderr)
+                print(
+                    f" {missing} missing, {extra} extra, {mismatch} mismatches "
+                    f"(scraped={result['scraped_count']}, db={result['db_count']})",
+                    file=sys.stderr,
+                )
             else:
                 print(f" OK ({result['db_count']} results)", file=sys.stderr)
 
@@ -405,7 +436,7 @@ def main():
         time.sleep(0.5)
 
     # Summary
-    print(f"\n{'='*60}", file=sys.stderr)
+    print(f"\n{'=' * 60}", file=sys.stderr)
     print(f"AUDIT SUMMARY ({args.env.upper()})", file=sys.stderr)
     print(f"  Tournaments audited: {len(tournaments)}", file=sys.stderr)
     print(f"  Scrape errors:       {total_errors}", file=sys.stderr)
@@ -413,10 +444,10 @@ def main():
     print(f"  EXTRA_IN_DB:         {total_extra}", file=sys.stderr)
     print(f"  PLACE_MISMATCH:      {total_mismatch}", file=sys.stderr)
     if total_missing == 0 and total_extra == 0 and total_mismatch == 0 and total_errors == 0:
-        print(f"  RESULT: ALL CLEAR ✓", file=sys.stderr)
+        print("  RESULT: ALL CLEAR ✓", file=sys.stderr)
     else:
-        print(f"  RESULT: ISSUES FOUND", file=sys.stderr)
-    print(f"{'='*60}", file=sys.stderr)
+        print("  RESULT: ISSUES FOUND", file=sys.stderr)
+    print(f"{'=' * 60}", file=sys.stderr)
 
     # Detailed output
     if args.json:
@@ -426,18 +457,24 @@ def main():
             if r["issues"]:
                 print(f"\n--- {r['code']} ({r['location']}) ---")
                 print(f"    URL: {r['url']}")
-                print(f"    Scraped: {r['scraped_count']}  DB: {r['db_count']}  "
-                      f"Declared: {r['participant_count']}")
+                print(
+                    f"    Scraped: {r['scraped_count']}  DB: {r['db_count']}  "
+                    f"Declared: {r['participant_count']}"
+                )
                 for issue in r["issues"]:
                     if issue["type"] == "MISSING_IN_DB":
-                        print(f"    MISSING: #{issue['scraped_place']} "
-                              f"{issue['fencer']} ({issue['country']})")
+                        print(
+                            f"    MISSING: #{issue['scraped_place']} "
+                            f"{issue['fencer']} ({issue['country']})"
+                        )
                     elif issue["type"] == "EXTRA_IN_DB":
                         print(f"    EXTRA:   #{issue['db_place']} {issue['fencer']}")
                     elif issue["type"] == "PLACE_MISMATCH":
-                        print(f"    PLACE:   {issue['fencer']} "
-                              f"scraped=#{issue['scraped_place']} "
-                              f"db=#{issue['db_place']}")
+                        print(
+                            f"    PLACE:   {issue['fencer']} "
+                            f"scraped=#{issue['scraped_place']} "
+                            f"db=#{issue['db_place']}"
+                        )
 
 
 if __name__ == "__main__":

@@ -20,6 +20,7 @@ The validator is pure given (tournaments, fetcher): the caller fetches the
 committed rows from the DB and decides what a halt does (the recreate flow
 fails the run and re-wipes; nothing is promoted until clean).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -30,13 +31,14 @@ from python.pipeline.stages import vcat_for_age
 @dataclass
 class CountFinding:
     """One participant-count finding for a single tournament."""
+
     txt_code: str
     vcat: str | None
     url: str | None
     stored: int | None
     ftl_true: int | None
-    severity: str            # "halt" | "warn"
-    reason: str              # "mismatch" | "no_url" | "fetch_error"
+    severity: str  # "halt" | "warn"
+    reason: str  # "mismatch" | "no_url" | "fetch_error"
     message: str = ""
 
 
@@ -80,9 +82,7 @@ def validate_event_participant_counts(
     # Fetch each distinct URL once; record fetch errors.
     cache: dict[str, dict[str, int]] = {}
     errored: set[str] = set()
-    distinct_urls = {
-        t.get("url_results") for t in tournaments if t.get("url_results")
-    }
+    distinct_urls = {t.get("url_results") for t in tournaments if t.get("url_results")}
     for url in distinct_urls:
         try:
             parsed = fetcher.fetch_url(url)
@@ -90,11 +90,18 @@ def validate_event_participant_counts(
         except Exception as e:  # noqa: BLE001 — any fetch/parse failure → warn
             errored.add(url)
             cache[url] = {}
-            findings.append(CountFinding(
-                txt_code="(url)", vcat=None, url=url, stored=None, ftl_true=None,
-                severity="warn", reason="fetch_error",
-                message=f"could not fetch/parse {url}: {e}",
-            ))
+            findings.append(
+                CountFinding(
+                    txt_code="(url)",
+                    vcat=None,
+                    url=url,
+                    stored=None,
+                    ftl_true=None,
+                    severity="warn",
+                    reason="fetch_error",
+                    message=f"could not fetch/parse {url}: {e}",
+                )
+            )
 
     for t in tournaments:
         code = t.get("txt_code", "?")
@@ -103,27 +110,50 @@ def validate_event_participant_counts(
         stored = t.get("int_participant_count")
 
         if not url:
-            findings.append(CountFinding(
-                txt_code=code, vcat=vcat, url=None, stored=stored, ftl_true=None,
-                severity="warn", reason="no_url",
-                message="no url_results to validate against",
-            ))
+            findings.append(
+                CountFinding(
+                    txt_code=code,
+                    vcat=vcat,
+                    url=None,
+                    stored=stored,
+                    ftl_true=None,
+                    severity="warn",
+                    reason="no_url",
+                    message="no url_results to validate against",
+                )
+            )
             continue
         if url in errored:
-            findings.append(CountFinding(
-                txt_code=code, vcat=vcat, url=url, stored=stored, ftl_true=None,
-                severity="warn", reason="fetch_error",
-                message="bracket URL could not be fetched (see (url) finding)",
-            ))
+            findings.append(
+                CountFinding(
+                    txt_code=code,
+                    vcat=vcat,
+                    url=url,
+                    stored=stored,
+                    ftl_true=None,
+                    severity="warn",
+                    reason="fetch_error",
+                    message="bracket URL could not be fetched (see (url) finding)",
+                )
+            )
             continue
 
         ftl_true = cache.get(url, {}).get(vcat, 0)
         if stored != ftl_true:
-            findings.append(CountFinding(
-                txt_code=code, vcat=vcat, url=url, stored=stored, ftl_true=ftl_true,
-                severity="halt", reason="mismatch",
-                message=(f"int_participant_count={stored} but FTL bracket holds "
-                         f"{ftl_true} {vcat} fencer(s)"),
-            ))
+            findings.append(
+                CountFinding(
+                    txt_code=code,
+                    vcat=vcat,
+                    url=url,
+                    stored=stored,
+                    ftl_true=ftl_true,
+                    severity="halt",
+                    reason="mismatch",
+                    message=(
+                        f"int_participant_count={stored} but FTL bracket holds "
+                        f"{ftl_true} {vcat} fencer(s)"
+                    ),
+                )
+            )
 
     return findings

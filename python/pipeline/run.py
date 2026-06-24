@@ -7,6 +7,7 @@ pg_cron, the PostCommit reactor) funnels through here: pick the Flow, resolve a
 plan, run it one direction. The rulebook / plugins / middleware are injectable so
 tests can supply runnable doubles before the real plugins land (M2).
 """
+
 from __future__ import annotations
 
 from python.pipeline.core.contract import Context, Middleware, Services
@@ -51,13 +52,17 @@ def run_flow(
             build_post_commit_context,
             should_react_post_commit,
         )
+
         if should_react_post_commit(params.flow, result, rulebook):
             child = build_post_commit_context(result)
             id_event = (result.get("event") or {}).get("id_event")
             result.data["_post_commit"] = run_flow(
                 FlowParams(Flow.POST_COMMIT, id_event=id_event),
-                ctx=child, svc=svc,
-                rulebook=rulebook, plugins=plugins, middleware=middleware,
+                ctx=child,
+                svc=svc,
+                rulebook=rulebook,
+                plugins=plugins,
+                middleware=middleware,
                 react=False,
             )
     return result

@@ -13,10 +13,15 @@ import openpyxl
 
 # Header detection: maps normalized column names to standard keys
 _HEADER_MAP = {
-    "place": "place", "miejsce": "place",
-    "name": "fencer_name", "nazwisko": "fencer_name",
-    "fencer": "fencer_name", "fencer_name": "fencer_name",
-    "country": "country", "kraj": "country", "nat": "country",
+    "place": "place",
+    "miejsce": "place",
+    "name": "fencer_name",
+    "nazwisko": "fencer_name",
+    "fencer": "fencer_name",
+    "fencer_name": "fencer_name",
+    "country": "country",
+    "kraj": "country",
+    "nat": "country",
 }
 
 
@@ -76,11 +81,11 @@ def _rows_to_results(rows: list) -> list[dict]:
             header_idx = i
             break
 
-    if col_map is None:
+    if col_map is None or header_idx is None:
         raise ValueError("Could not detect header row (need Place + Name columns)")
 
     results = []
-    for row in rows[header_idx + 1:]:
+    for row in rows[header_idx + 1 :]:
         place_val = row[col_map["place"]]
         name_val = row[col_map["fencer_name"]]
         if place_val is None or name_val is None:
@@ -88,9 +93,11 @@ def _rows_to_results(rows: list) -> list[dict]:
         country = ""
         if "country" in col_map and col_map["country"] < len(row):
             country = str(row[col_map["country"]] or "").strip()
-        results.append({
-            "fencer_name": str(name_val).strip(),
-            "place": int(float(str(place_val))),
-            "country": country,
-        })
+        results.append(
+            {
+                "fencer_name": str(name_val).strip(),
+                "place": int(float(str(place_val))),
+                "country": country,
+            }
+        )
     return results

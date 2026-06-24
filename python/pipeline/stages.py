@@ -32,7 +32,6 @@ from python.pipeline.types import (
     StageMatchResult,
 )
 
-
 # Combined-pool detector: looks for ≥2 V-cat tokens in a single raw_age_marker
 _VCAT_TOKEN = re.compile(r"v[0-4]", re.IGNORECASE)
 
@@ -40,6 +39,7 @@ _VCAT_TOKEN = re.compile(r"v[0-4]", re.IGNORECASE)
 # ===========================================================================
 # Helpers
 # ===========================================================================
+
 
 def _organizer_for_event(event: dict | None) -> str:
     """Derive organizer (SPWS/EVF/FIE) from event txt_code prefix.
@@ -113,7 +113,9 @@ def _row_authoritative_vcat(ctx: PipelineContext, r: Any) -> str | None:
 
 
 def _find_exact_fencer(
-    scraped_name: str, nationality: str | None, fencer_db: list[dict],
+    scraped_name: str,
+    nationality: str | None,
+    fencer_db: list[dict],
 ) -> int | None:
     """HIGH-PRECISION existence check — exact, NOT fuzzy.
 
@@ -135,9 +137,7 @@ def _find_exact_fencer(
 
     for f in fencer_db:
         f_nat = _norm_nat(f.get("txt_nationality"))
-        nat_conflict = (
-            scraped_nat is not None and f_nat is not None and scraped_nat != f_nat
-        )
+        nat_conflict = scraped_nat is not None and f_nat is not None and scraped_nat != f_nat
         # Exact (surname, first_name) match.
         f_sur_n = normalize_name(f.get("txt_surname") or "", use_diacritic_folding=True)
         f_fst_n = normalize_name(f.get("txt_first_name") or "", use_diacritic_folding=True)
@@ -145,7 +145,7 @@ def _find_exact_fencer(
             return f["id_fencer"]
         # Exact alias match (aliases are confirmed equivalences → nationality
         # is not re-litigated here).
-        for alias in (f.get("json_name_aliases") or []):
+        for alias in f.get("json_name_aliases") or []:
             if normalize_name(alias, use_diacritic_folding=True) == s_full_n:
                 return f["id_fencer"]
     return None
@@ -214,27 +214,31 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
             new_id = db.insert_fencer(payload)
             # Make subsequent rows in this same bracket see the new fencer
             # (within-run idempotence + dedup).
-            fencer_db.append({
-                "id_fencer": new_id,
-                "txt_surname": surname,
-                "txt_first_name": first_name,
-                "int_birth_year": by,
-                "bool_birth_year_estimated": by is not None,
-                "txt_nationality": nat or "PL",
-                "enum_gender": bracket_gender,
-                "json_name_aliases": [],
-            })
-            ctx.created_fencers.append({
-                "id_fencer": new_id,
-                "scraped_name": r.fencer_name,
-                "txt_surname": surname,
-                "txt_first_name": first_name,
-                "nationality": nat or "PL",
-                "vcat": vcat,
-                "birth_year": by,
-                "estimated": by is not None,
-                "source": source,
-            })
+            fencer_db.append(
+                {
+                    "id_fencer": new_id,
+                    "txt_surname": surname,
+                    "txt_first_name": first_name,
+                    "int_birth_year": by,
+                    "bool_birth_year_estimated": by is not None,
+                    "txt_nationality": nat or "PL",
+                    "enum_gender": bracket_gender,
+                    "json_name_aliases": [],
+                }
+            )
+            ctx.created_fencers.append(
+                {
+                    "id_fencer": new_id,
+                    "scraped_name": r.fencer_name,
+                    "txt_surname": surname,
+                    "txt_first_name": first_name,
+                    "nationality": nat or "PL",
+                    "vcat": vcat,
+                    "birth_year": by,
+                    "estimated": by is not None,
+                    "source": source,
+                }
+            )
             continue
 
         # ---- Job 2: reconcile a matched fencer's birth year ----
@@ -252,13 +256,15 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
 
         # Conflict. Guard against cross-bracket thrash within one run.
         if existing_id in touched and touched[existing_id] != vcat:
-            ctx.reconcile_conflicts.append({
-                "id_fencer": existing_id,
-                "scraped_name": r.fencer_name,
-                "first_vcat": touched[existing_id],
-                "second_vcat": vcat,
-                "source": source,
-            })
+            ctx.reconcile_conflicts.append(
+                {
+                    "id_fencer": existing_id,
+                    "scraped_name": r.fencer_name,
+                    "first_vcat": touched[existing_id],
+                    "second_vcat": vcat,
+                    "source": source,
+                }
+            )
             continue
 
         new_by = estimate_birth_year(vcat, season_end)
@@ -268,20 +274,23 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
             row["int_birth_year"] = new_by
             row["bool_birth_year_estimated"] = True
         touched[existing_id] = vcat
-        ctx.reconciled_fencers.append({
-            "id_fencer": existing_id,
-            "scraped_name": r.fencer_name,
-            "vcat": vcat,
-            "old_birth_year": stored_by,
-            "new_birth_year": new_by,
-            "was_confirmed": was_confirmed,
-            "source": source,
-        })
+        ctx.reconciled_fencers.append(
+            {
+                "id_fencer": existing_id,
+                "scraped_name": r.fencer_name,
+                "vcat": vcat,
+                "old_birth_year": stored_by,
+                "new_birth_year": new_by,
+                "was_confirmed": was_confirmed,
+                "source": source,
+            }
+        )
 
 
 # ===========================================================================
 # S1 — IR validate
 # ===========================================================================
+
 
 def s1_validate_ir(ctx: PipelineContext, db: Any) -> None:
     """Validate the ParsedTournament IR has all required fields.
@@ -303,7 +312,7 @@ def s1_validate_ir(ctx: PipelineContext, db: Any) -> None:
             HaltReason.POOL_ROUND_DETECTED,
             "source has pool data but no DE/tableau — qualifier round, "
             "does not contribute to ranklist (skipping per ADR-067 / "
-            "structural pool-only rule)"
+            "structural pool-only rule)",
         )
     if not p.results:
         raise HaltError(HaltReason.IR_INVALID, "ParsedTournament has no results")
@@ -324,6 +333,7 @@ def s1_validate_ir(ctx: PipelineContext, db: Any) -> None:
 # S2 — Resolve event by date
 # ===========================================================================
 
+
 def s2_resolve_event(ctx: PipelineContext, db: Any) -> None:
     """Resolve the event for this parse.
 
@@ -341,8 +351,7 @@ def s2_resolve_event(ctx: PipelineContext, db: Any) -> None:
         event = db.find_event_by_code(ctx.event_code)
         if event is None:
             raise HaltError(
-                HaltReason.EVENT_NOT_RESOLVED,
-                f"No event found for txt_code={ctx.event_code!r}"
+                HaltReason.EVENT_NOT_RESOLVED, f"No event found for txt_code={ctx.event_code!r}"
             )
 
         # Phase 5: resolve the season by event dates, not by the FK on the
@@ -360,7 +369,7 @@ def s2_resolve_event(ctx: PipelineContext, db: Any) -> None:
                     raise HaltError(
                         HaltReason.EVENT_NOT_RESOLVED,
                         f"No season contains event dates "
-                        f"{ev_start_s} – {ev_end_s} (event {ctx.event_code!r})"
+                        f"{ev_start_s} – {ev_end_s} (event {ctx.event_code!r})",
                     )
                 if len(seasons) > 1:
                     codes = ", ".join(s.get("txt_code", "?") for s in seasons)
@@ -368,10 +377,11 @@ def s2_resolve_event(ctx: PipelineContext, db: Any) -> None:
                         HaltReason.EVENT_NOT_RESOLVED,
                         f"Multiple seasons contain event dates "
                         f"{ev_start_s} – {ev_end_s}: {codes} (showstopper — "
-                        f"season ranges overlap)"
+                        f"season ranges overlap)",
                     )
                 season = seasons[0]
                 from datetime import date as _date
+
                 dt_end = season["dt_end"]
                 if isinstance(dt_end, str):
                     try:
@@ -389,7 +399,7 @@ def s2_resolve_event(ctx: PipelineContext, db: Any) -> None:
         if event is None:
             raise HaltError(
                 HaltReason.EVENT_NOT_RESOLVED,
-                f"No event scheduled for date {date_str} in active season"
+                f"No event scheduled for date {date_str} in active season",
             )
     ctx.event = event
 
@@ -397,6 +407,7 @@ def s2_resolve_event(ctx: PipelineContext, db: Any) -> None:
 # ===========================================================================
 # S3 — Detect combined-pool from raw_age_marker
 # ===========================================================================
+
 
 def s3_detect_combined_pool(ctx: PipelineContext, db: Any) -> None:
     """Set ctx.is_combined_pool=True if any row has ≥2 V-cat tokens in
@@ -415,6 +426,7 @@ def s3_detect_combined_pool(ctx: PipelineContext, db: Any) -> None:
 # S4 — Split via fn_age_categories_batch
 # ===========================================================================
 
+
 def s4_split_via_batch(ctx: PipelineContext, db: Any) -> None:
     """For combined pools, resolve each fencer's V-cat in ONE batch RPC.
 
@@ -430,7 +442,7 @@ def s4_split_via_batch(ctx: PipelineContext, db: Any) -> None:
 
     so = ctx.overrides.splitter
     splits: dict[str, list] = defaultdict(list)
-    pending: list[tuple[Any, int]] = []   # (ParsedResult, effective_birth_year)
+    pending: list[tuple[Any, int]] = []  # (ParsedResult, effective_birth_year)
     unresolved: list[str] = []
 
     for r in ctx.parsed.results:
@@ -452,7 +464,7 @@ def s4_split_via_batch(ctx: PipelineContext, db: Any) -> None:
     if unresolved:
         raise HaltError(
             HaltReason.SPLITTER_UNRESOLVED,
-            f"Combined-pool fencers without birth_year (and no override): {unresolved}"
+            f"Combined-pool fencers without birth_year (and no override): {unresolved}",
         )
 
     if pending:
@@ -468,8 +480,7 @@ def s4_split_via_batch(ctx: PipelineContext, db: Any) -> None:
 
         if unresolved:
             raise HaltError(
-                HaltReason.SPLITTER_UNRESOLVED,
-                f"Combined-pool fencers under 30: {unresolved}"
+                HaltReason.SPLITTER_UNRESOLVED, f"Combined-pool fencers under 30: {unresolved}"
             )
 
     ctx.splits = dict(splits)
@@ -478,6 +489,7 @@ def s4_split_via_batch(ctx: PipelineContext, db: Any) -> None:
 # ===========================================================================
 # S5 — Detect joint-pool siblings (override-driven)
 # ===========================================================================
+
 
 def s5_detect_joint_pool(ctx: PipelineContext, db: Any) -> None:
     """Populate ctx.joint_pool_siblings from the joint_pool override section.
@@ -497,6 +509,7 @@ def s5_detect_joint_pool(ctx: PipelineContext, db: Any) -> None:
 # ===========================================================================
 # S6 — Resolve identity + alias writeback + V0/EVF check
 # ===========================================================================
+
 
 def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
     """Run identity resolution per row.
@@ -529,7 +542,7 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
                 raise HaltError(
                     HaltReason.V0_PROHIBITED_ON_INTERNATIONAL,
                     f"V0 result in {organizer} event ({ctx.event.get('txt_code')!r}): "
-                    f"{r.fencer_name} (R005b — fix upstream data, no override path)"
+                    f"{r.fencer_name} (R005b — fix upstream data, no override path)",
                 )
 
     # Fetch fencer DB once (no per-row queries).
@@ -551,54 +564,74 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
         ovr = ctx.overrides.identity_for(r.fencer_name)
         if ovr is not None:
             if ovr.id_fencer is not None:
-                matches.append(StageMatchResult(
-                    scraped_name=r.fencer_name, place=r.place,
-                    id_fencer=ovr.id_fencer, confidence=100.0,
-                    method="AUTO_MATCHED",
-                    notes="identity override (link)",
-                ))
+                matches.append(
+                    StageMatchResult(
+                        scraped_name=r.fencer_name,
+                        place=r.place,
+                        id_fencer=ovr.id_fencer,
+                        confidence=100.0,
+                        method="AUTO_MATCHED",
+                        notes="identity override (link)",
+                    )
+                )
             else:
                 # create_fencer: id_fencer left None — caller (commit RPC or
                 # admin) must materialize the new fencer before insert.
-                matches.append(StageMatchResult(
-                    scraped_name=r.fencer_name, place=r.place,
-                    id_fencer=None, confidence=100.0,
-                    method="AUTO_CREATED",
-                    notes=f"identity override (create_fencer): {ovr.create_fencer}",
-                ))
+                matches.append(
+                    StageMatchResult(
+                        scraped_name=r.fencer_name,
+                        place=r.place,
+                        id_fencer=None,
+                        confidence=100.0,
+                        method="AUTO_CREATED",
+                        notes=f"identity override (create_fencer): {ovr.create_fencer}",
+                    )
+                )
             continue
 
         # Path 2: match-method override (still runs matcher to capture id_fencer)
         mm = ctx.overrides.match_method_for(r.fencer_name)
         if mm is not None:
             best = find_best_match(
-                r.fencer_name, fencer_db,
-                age_category=cat, season_end_year=ctx.season_end_year,
+                r.fencer_name,
+                fencer_db,
+                age_category=cat,
+                season_end_year=ctx.season_end_year,
                 bracket_gender=matcher_bracket_gender,
             )
-            matches.append(StageMatchResult(
-                scraped_name=r.fencer_name, place=r.place,
-                id_fencer=best.id_fencer, confidence=best.confidence,
-                method=mm.force_method,
-                notes=f"match_method override: {mm.note or 'forced'}",
-            ))
+            matches.append(
+                StageMatchResult(
+                    scraped_name=r.fencer_name,
+                    place=r.place,
+                    id_fencer=best.id_fencer,
+                    confidence=best.confidence,
+                    method=mm.force_method,
+                    notes=f"match_method override: {mm.note or 'forced'}",
+                )
+            )
             continue
 
         # Path 3: standard matcher
         best = find_best_match(
-            r.fencer_name, fencer_db,
-            age_category=cat, season_end_year=ctx.season_end_year,
+            r.fencer_name,
+            fencer_db,
+            age_category=cat,
+            season_end_year=ctx.season_end_year,
             bracket_gender=matcher_bracket_gender,
         )
         method = best.status  # AUTO_MATCHED | PENDING | UNMATCHED
         if method == "UNMATCHED":
             method = "AUTO_CREATED" if domestic else "EXCLUDED"
 
-        matches.append(StageMatchResult(
-            scraped_name=r.fencer_name, place=r.place,
-            id_fencer=best.id_fencer, confidence=best.confidence,
-            method=method,
-        ))
+        matches.append(
+            StageMatchResult(
+                scraped_name=r.fencer_name,
+                place=r.place,
+                id_fencer=best.id_fencer,
+                confidence=best.confidence,
+                method=method,
+            )
+        )
 
     ctx.matches = matches
 
@@ -606,6 +639,7 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
 # ===========================================================================
 # S7 — Validate count + URL→data
 # ===========================================================================
+
 
 def s7_validate(ctx: PipelineContext, db: Any) -> None:
     """Validate result count + URL→data per-field comparison (Phase 4 ADR-052).
@@ -639,7 +673,7 @@ def s7_validate(ctx: PipelineContext, db: Any) -> None:
             raise HaltError(
                 HaltReason.COUNT_MISMATCH,
                 f"Result count {actual} differs from raw_pool_size {expected} "
-                f"by {diff:+d} — outside off-by-one tolerance"
+                f"by {diff:+d} — outside off-by-one tolerance",
             )
         if diff != 0:
             ctx.warnings.append(
@@ -682,6 +716,7 @@ def s7_validate(ctx: PipelineContext, db: Any) -> None:
 # ===========================================================================
 # ADR-056 — V-cat split by post-match fencer birth year (Phase 5)
 # ===========================================================================
+
 
 def vcat_for_age(age: int | None) -> str | None:
     """Map an age (years on the event year) to a V-cat enum value.
@@ -745,8 +780,7 @@ def s7_split_by_vcat(ctx: PipelineContext, db: Any) -> None:
         # Reference year is season_end_year — V-cat = age at end of season.
         reference_year = ctx.season_end_year
         matched_ids = [
-            m.id_fencer for m in ctx.matches
-            if getattr(m, "id_fencer", None) is not None
+            m.id_fencer for m in ctx.matches if getattr(m, "id_fencer", None) is not None
         ]
         by_map: dict[int, int | None] = (
             db.fetch_birth_years_batch(matched_ids)
@@ -784,8 +818,8 @@ _POOL_CHECK_MIN_FENCERS = 4
 # Threshold combines absolute count + ratio so we don't flag ADR-034
 # singletons-in-tiny-brackets nor a couple of cross-gender entries in a
 # medium bracket.
-_POOL_CHECK_MIN_MINORITY_COUNT = 3      # ≥3 cross-gender fencers (more than ADR-034 noise)
-_POOL_CHECK_MIN_MINORITY_RATIO = 0.20   # ≥20% minority share (genuine mix)
+_POOL_CHECK_MIN_MINORITY_COUNT = 3  # ≥3 cross-gender fencers (more than ADR-034 noise)
+_POOL_CHECK_MIN_MINORITY_RATIO = 0.20  # ≥20% minority share (genuine mix)
 
 
 def s7_pool_round_check(ctx: PipelineContext, db: Any) -> None:
@@ -809,10 +843,7 @@ def s7_pool_round_check(ctx: PipelineContext, db: Any) -> None:
       - No matched fencers carry id_fencer (all PENDING/UNMATCHED).
       - DB doesn't expose fetch_genders_batch (defensive — keeps tests green).
     """
-    matched_ids = [
-        m.id_fencer for m in ctx.matches
-        if getattr(m, "id_fencer", None) is not None
-    ]
+    matched_ids = [m.id_fencer for m in ctx.matches if getattr(m, "id_fencer", None) is not None]
     if len(matched_ids) < _POOL_CHECK_MIN_FENCERS:
         return  # insufficient signal
     if not hasattr(db, "fetch_genders_batch"):
@@ -834,13 +865,16 @@ def s7_pool_round_check(ctx: PipelineContext, db: Any) -> None:
     # (both must apply — ADR-034 allows up to ~2 cross-gender fencers in a
     # legit per-gender tournament; and 1-2 outliers in a tiny bracket can hit
     # 15-30% ratio without indicating a real pool round).
-    if minority >= _POOL_CHECK_MIN_MINORITY_COUNT and minority_ratio >= _POOL_CHECK_MIN_MINORITY_RATIO:
+    if (
+        minority >= _POOL_CHECK_MIN_MINORITY_COUNT
+        and minority_ratio >= _POOL_CHECK_MIN_MINORITY_RATIO
+    ):
         ctx.is_pool_round = True
         raise HaltError(
             HaltReason.POOL_ROUND_DETECTED,
             f"bracket has {n_m}M/{n_f}F (minority {minority_ratio:.0%}, "
             f"count {minority}) — looks like a pool round, not a per-gender "
-            f"tournament; above ADR-034 cross-gender tolerance"
+            f"tournament; above ADR-034 cross-gender tolerance",
         )
 
     # Wrong-name bracket: parsed gender disagrees with majority
@@ -851,5 +885,5 @@ def s7_pool_round_check(ctx: PipelineContext, db: Any) -> None:
         raise HaltError(
             HaltReason.POOL_ROUND_DETECTED,
             f"bracket parsed as gender={parsed_gender!r} but matched-fencer "
-            f"majority is {majority_gender!r} ({n_m}M/{n_f}F) — name/data mismatch"
+            f"majority is {majority_gender!r} ({n_m}M/{n_f}F) — name/data mismatch",
         )

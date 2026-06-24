@@ -37,6 +37,20 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev]"
 
+      # Ruff baseline is clean (lint + format) — these steps now ENFORCE (block CI).
+      - name: Ruff lint
+        run: ruff check python/
+
+      - name: Ruff format check
+        run: ruff format --check python/
+
+      # basedpyright baseline (~281 type findings) not yet cleaned — stays a
+      # non-blocking report until the type debt is paid. Remove continue-on-error
+      # to enforce once clean.
+      - name: basedpyright type-check
+        continue-on-error: true
+        run: basedpyright python/
+
       - name: Run pytest
         run: pytest
 

@@ -31,15 +31,24 @@ def _local_pg_enum_values(enum_name: str) -> list[str]:
     try:
         result = subprocess.run(
             [
-                "docker", "exec", "supabase_db_SPWSranklist",
-                "psql", "-U", "postgres", "-t", "-A", "-c",
+                "docker",
+                "exec",
+                "supabase_db_SPWSranklist",
+                "psql",
+                "-U",
+                "postgres",
+                "-t",
+                "-A",
+                "-c",
                 (
                     "SELECT enumlabel FROM pg_enum "
                     f"WHERE enumtypid = '{enum_name}'::regtype "
                     "ORDER BY enumsortorder"
                 ),
             ],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return []
@@ -51,6 +60,7 @@ def _local_pg_enum_values(enum_name: str) -> list[str]:
 def test_source_kind_has_nine_values():
     """ir.1: SourceKind enum has 9 declared source kinds (8 + CERT_REF added Phase 4)."""
     from python.pipeline.ir import SourceKind
+
     assert len(list(SourceKind)) == 9
 
 
@@ -67,6 +77,7 @@ def test_source_kind_matches_postgres_enum():
     locally) + db-side existence in pgTAP.
     """
     from python.pipeline.ir import SourceKind
+
     db_values = _local_pg_enum_values("enum_parser_kind")
     if not db_values:
         pytest.skip("Local Supabase container not reachable (expected in CI test-python job).")
@@ -77,6 +88,7 @@ def test_source_kind_matches_postgres_enum():
 def test_parsed_tournament_fields():
     """ir.3: ParsedTournament has the contract fields with correct names."""
     from python.pipeline.ir import ParsedTournament
+
     actual = {f.name for f in fields(ParsedTournament)}
     expected = {
         # Parser-required:
@@ -107,6 +119,7 @@ def test_parsed_tournament_fields():
 def test_parsed_result_fields():
     """ir.4: ParsedResult has the contract fields with correct names."""
     from python.pipeline.ir import ParsedResult
+
     actual = {f.name for f in fields(ParsedResult)}
     expected = {
         # Required:
@@ -127,6 +140,7 @@ def test_parsed_result_fields():
 def test_parsed_tournament_constructible_minimal():
     """ir.5: ParsedTournament constructs with only source_kind (results defaults to [])."""
     from python.pipeline.ir import ParsedTournament, SourceKind
+
     pt = ParsedTournament(source_kind=SourceKind.FTL)
     assert pt.results == []
     assert pt.parsed_date is None
@@ -138,7 +152,8 @@ def test_parsed_tournament_constructible_minimal():
 
 def test_synthetic_row_id_deterministic():
     """ir.6: make_synthetic_id with same inputs returns the same output."""
-    from python.pipeline.ir import make_synthetic_id, SourceKind
+    from python.pipeline.ir import SourceKind, make_synthetic_id
+
     a = make_synthetic_id(SourceKind.FTL, row_index=1, place=3, name="ATANASSOW Aleksander")
     b = make_synthetic_id(SourceKind.FTL, row_index=1, place=3, name="ATANASSOW Aleksander")
     assert a == b, "deterministic: same inputs must yield same ID"
@@ -149,7 +164,7 @@ def test_synthetic_row_id_deterministic():
 
 def test_synthetic_row_id_handles_edge_cases():
     """ir.7: make_synthetic_id distinguishes ties and folds non-ASCII names to ASCII."""
-    from python.pipeline.ir import make_synthetic_id, SourceKind
+    from python.pipeline.ir import SourceKind, make_synthetic_id
 
     # Two fencers tied at place 3 — different row_index → different IDs.
     tie_a = make_synthetic_id(SourceKind.ENGARDE, row_index=3, place=3, name="HAYAT Konstantin")

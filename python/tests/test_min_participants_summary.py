@@ -11,15 +11,14 @@ verify the threshold setting before sign-off.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
 class _FakeParsed:
     weapon: str = "FOIL"
     gender: str = "F"
-    age_category: Optional[str] = "V0"
-    category_hint: Optional[str] = "V0"
+    age_category: str | None = "V0"
+    category_hint: str | None = "V0"
     source_url: str = "https://www.fencingtimelive.com/events/results/AAA"
     _ftl_source_name: str = "FLORET WETERANI kobiety 0"
     results: list = None
@@ -67,6 +66,7 @@ def test_5_M7_1_below_min_section_rendered_when_brackets_skipped():
 def test_5_M7_2_section_omitted_when_no_brackets_skipped():
     """5.M7.2 — clean run produces no skipped-section header."""
     from python.tools.phase5_runner import _multi_summary_md
+
     md = _multi_summary_md(
         event_code="PPW2-2025-2026",
         event_meta=_minimal_event_meta(),
@@ -80,6 +80,7 @@ def test_5_M7_3_below_min_count_included_in_empty_tally():
     """5.M7.3 — Bracket parse status `⊘ empty` count includes BELOW_MIN
     skips (back-compat — they're still 'no fencers landed in the DB')."""
     from python.tools.phase5_runner import _multi_summary_md
+
     parsed = _FakeParsed()
     ctxs = [
         (1, parsed, None, "BELOW_MIN_PARTICIPANTS (n=0, min=1)"),
