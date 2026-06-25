@@ -965,6 +965,41 @@ ADR-038/066/067/069 (halts → faults), reversed halt-by-exception in ADR-050/05
 
 ---
 
+### CI seed-load fix + collision-resilient PEW splitter (ADR-046 amendment) — 2026-06-25
+
+The `auto-export seed from PROD after promote PPW3` commit (63a2401, `[skip ci]`) bumped
+`seed_prod_latest.sql` 06-13 → 06-19. The 06-19 export carried `PEW3s-2025-2026` (Munich, Dec 6) and
+`PEW5s-2025-2026` (Stockholm, Feb 7) — **real EVF sabre legs** — but with empty EPEE/FOIL placeholder
+child slots. `fn_split_pew_by_weapon()` (run in `seed_post_backfill.sql`) derived `efs` from those empty
+slots and tried to rename onto the existing `PEW3efs` / `PEW5ef` → `idx_event_code` duplicate-key →
+**the whole seed load aborted**, half-populating the DB and failing 14 pgTAP scoring assertions on CI
+(`03`, `09`, `14`) plus LOCAL `reset-dev.sh`.
+
+The fix preserves the real events and **never discards a result** (an earlier drop-the-events approach
+was rejected — it destroyed real calendar data). Migration
+`20260625000001_phase4_pew_split_collision_guard.sql` makes `fn_split_pew_by_weapon` self-healing:
+
+- **Step 1.5 prune** — drop child tournaments with no results whose weapon is absent from the event's
+  explicit `[efs]+` code suffix (spurious empty placeholder slots; trust the admin-set code).
+- **Step 2 collision resolution by provenance** — when the weapon-derived code collides, an empty
+  (0-result) duplicate is merged away so the result-bearing event takes the code (`NOTICE`); a
+  result-bearing-vs-result-bearing collision is skipped with a `WARNING` for operator review.
+
+Outcome: `PEW3s`/`PEW5s` survive as their real sabre events, the duplicate empty/result twins merge,
+result-row count is conserved (2673 in = 2673 after), and the ph4.8 "child weapon ∈ parent suffix"
+invariant holds. pgTAP `47_pew_split_collision.sql` (C.1–C.6, TDD RED→GREEN).
+
+- **Recalibration:** the clean 06-19 load exposed that the PPW3 promotion corrected 5 domestic EPEE
+  participant counts; `09_rolling_score.sql` R.4/R.6/R.7/R.8/R.9/R.10/R.11/R.12/R.13/R.14 magic numbers
+  re-derived to the new engine output (largest: PARDUS 39.07→22.56, TRACZ 48.87→36.42 — V3/best-K
+  sensitive). Tests 03/14 needed no change once the seed loaded cleanly.
+- **Python:** `calibrate_compare.py` `load_db_scores` type errors cleared (`sb is None` guard +
+  `cast(dict[str, Any], row)`) — basedpyright 0.
+
+**Tests.** pgTAP 599 → 605 (+6 test 47); pytest unchanged (932 passed). ADR-046 amended.
+
+---
+
 ## Archived Documents
 
 The following documents contain the original detailed plans. They are superseded by this history and the Project Specification:
