@@ -24,7 +24,15 @@ jobs:
     outputs:
       schema_fingerprint: ${{ steps.fingerprint.outputs.fingerprint }}
     steps:
+      # Pin to latest main — the SAME commit deploy-cert/deploy-prod apply via
+      # `git pull origin main`. Without this, build checks out the triggering CI
+      # commit (github.sha); if a migration-bearing commit lands on main while an
+      # earlier release run is mid-flight, deploy applies the new migration but
+      # build's fingerprint is from the old commit → false fingerprint mismatch
+      # at the deploy gate (the 2026-06-25 PROD-deploy failure).
       - uses: actions/checkout@v5
+        with:
+          ref: main
 
       # --- Schema fingerprint from LOCAL Docker Supabase ---
       - uses: supabase/setup-cli@v1
