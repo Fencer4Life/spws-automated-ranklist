@@ -17,3 +17,4 @@ SPWS Automated Ranklist System — automated ranking for the Polish Veterans Fen
 - [doc/claude/planning.md](doc/claude/planning.md) — planning gate, verify-before-claim, scenario walk-throughs, LOCAL parity rule, TDD strict order, ADR draft sign-off, doc completeness, CI/CD + Telegram operational hooks, per-event sign-off, plan file readability for future sessions.
 - [doc/claude/conventions.md](doc/claude/conventions.md) — data-integrity hard rules, working style.
 - [doc/claude/key-references.md](doc/claude/key-references.md) — index of spec, ADRs, scripts, MCP/PAT.
+- [doc/claude/graph-analysis.md](doc/claude/graph-analysis.md) — graphify knowledge graph: consult it first for codebase analysis (`graphify query/explain/affected/path`), and run `scripts/refresh-graph.sh` before every commit.
