@@ -90,19 +90,19 @@ SELECT is(
 -- =========================================================================
 
 -- R.4 — p_rolling=FALSE regression: same as current non-rolling result
--- Recalibrated 2026-06-03 after PPW4/PPW5 participant-count correction
--- (joint-pool over-count removed → lower place points). KORONA EPEE V2 M:
--- PPW1=27.33, PPW2=98.00, PPW3=70.17, PPW4=110.02 (was 139.44), PPW5=79.18
--- (was 110.33) → best-4 = 110.02+98.00+79.18+70.17 = 357.37
--- (PPW1=27.33 dropped from best-4 — lowest score).
+-- Recalibrated 2026-06-25 after the 2026-06-19 PROD export (PPW3 promotion)
+-- corrected domestic EPEE participant counts (PPW3-V2-M-EPEE-2024-2025 10→11,
+-- PPW3-V2-M-EPEE-2025-2026 20→19, PPW1-V2-M-EPEE-2024-2025 10→11) → slightly
+-- lower place points. KORONA EPEE V2 M best-4 total 357.37 → 356.92.
+-- (Prior 2026-06-03 calibration removed the PPW4/PPW5 joint-pool over-count.)
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := FALSE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  357.37::NUMERIC,
-  'R.4: p_rolling=FALSE regression — KORONA 357.37'
+  356.92::NUMERIC,
+  'R.4: p_rolling=FALSE regression — KORONA 356.92'
 );
 
 -- R.5 — p_rolling=TRUE, no previous season → same as non-rolling
@@ -133,8 +133,8 @@ SELECT is(
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  357.37::NUMERIC,
-  'R.6: p_rolling=TRUE, all completed — KORONA unchanged at 357.37'
+  356.92::NUMERIC,
+  'R.6: p_rolling=TRUE, all completed — KORONA unchanged at 356.92'
 );
 
 -- Restore for subsequent tests
@@ -143,48 +143,52 @@ WHERE txt_code IN ('PPW5-2025-2026', 'MPW-2025-2026');
 ALTER TABLE tbl_event ENABLE TRIGGER trg_event_transition;
 
 -- R.7 — p_rolling=TRUE, partial: carry-over from 2024-25
--- ZIELIŃSKI total rolling, re-derived against seed 2026-05-10: 257.30.
+-- ZIELIŃSKI total rolling. Recalibrated 2026-06-25 after the 06-19 PPW3-promote
+-- participant-count corrections: 257.30 → 256.84.
 -- (Active-season PPW5 + MPW status set to SCHEDULED at R.5 setup; ZIELIŃSKI
--- current PPW1=98.00 + PPW3=43.68 + carried positions = 257.30.)
+-- current PPW1 + PPW3 + carried positions.)
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz')),
-  257.30::NUMERIC,
-  'R.7: p_rolling=TRUE partial — ZIELIŃSKI 257.30 (current + carried MPW)'
+  256.84::NUMERIC,
+  'R.7: p_rolling=TRUE partial — ZIELIŃSKI 256.84 (current + carried MPW)'
 );
 
 -- R.8 — p_rolling=TRUE, best-K operates on merged pool.
--- PARDUS total rolling, recalibrated 2026-06-03 after PPW4/PPW5
--- participant-count correction: 39.07 (was 74.64).
+-- PARDUS total rolling. Recalibrated 2026-06-25 after the 06-19 PPW3-promote
+-- participant-count corrections: 39.07 → 22.56. Larger swing than the KORONA
+-- cases because PARDUS has few qualifying V2 events, so a ±1 count change is a
+-- big fraction and shifts which events make the best-K cut.
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PARDUS' AND txt_first_name = 'Borys')),
-  39.07::NUMERIC,
-  'R.8: p_rolling=TRUE best-K on merged pool — PARDUS 39.07'
+  22.56::NUMERIC,
+  'R.8: p_rolling=TRUE best-K on merged pool — PARDUS 22.56'
 );
 
 -- R.9 — p_rolling=TRUE, category crossing V2→V3.
--- TRACZ born 1966: V2 in 2024-25, V3 in 2025-26.
--- Re-derived against seed 2026-05-10: 48.87.
+-- TRACZ born 1966: V2 in 2024-25, V3 in 2025-26. Recalibrated 2026-06-25 after
+-- the 06-19 PPW3-promote participant-count corrections (incl. V3 counts
+-- PPW3-V3-M-EPEE-2025-2026 9→8, PPW4-V3-M-EPEE-2024-2025 9→10): 48.87 → 36.42.
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
     'EPEE', 'M', 'V3',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TRACZ' AND txt_first_name = 'Jerzy')),
-  48.87::NUMERIC,
-  'R.9: p_rolling=TRUE category crossing — TRACZ V2→V3 total 48.87'
+  36.42::NUMERIC,
+  'R.9: p_rolling=TRUE category crossing — TRACZ V2→V3 total 36.42'
 );
 
 -- R.10 — p_rolling=TRUE.
--- DROBIŃSKI total rolling, recalibrated 2026-06-03 after PPW4/PPW5
--- participant-count correction: 197.41 (was 315.53).
+-- DROBIŃSKI total rolling. Recalibrated 2026-06-25 after the 06-19 PPW3-promote
+-- participant-count corrections: 197.41 → 196.78.
 -- (PPW5 has results in new seed even with status=SCHEDULED; engine picks
 -- them up so the carry-over-from-prior-PPW5 path doesn't fire here.)
 SELECT is(
@@ -193,13 +197,13 @@ SELECT is(
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DROBIŃSKI' AND txt_first_name = 'Leszek')),
-  197.41::NUMERIC,
-  'R.10: p_rolling=TRUE — DROBIŃSKI 197.41'
+  196.78::NUMERIC,
+  'R.10: p_rolling=TRUE — DROBIŃSKI 196.78'
 );
 
 -- R.11 — p_rolling=TRUE, event deletion: PPW5 removed from current season.
--- Recalibrated 2026-06-03 after PPW4/PPW5 participant-count correction:
--- ATANASSOW total 269.28 after PPW5 wipe (was 329.54).
+-- Recalibrated 2026-06-25 after the 06-19 PPW3-promote participant-count
+-- corrections: ATANASSOW total after PPW5 wipe 269.28 → 268.87.
 DELETE FROM tbl_match_candidate WHERE id_result IN (SELECT id_result FROM tbl_result WHERE id_tournament IN (SELECT id_tournament FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2025-2026')));
 DELETE FROM tbl_result WHERE id_tournament IN (SELECT id_tournament FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2025-2026'));
 DELETE FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2025-2026');
@@ -211,8 +215,8 @@ SELECT is(
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ATANASSOW' AND txt_first_name = 'Aleksander')),
-  269.28::NUMERIC,
-  'R.11: p_rolling=TRUE event deleted — ATANASSOW 269.28 (no PPW5-prev to carry)'
+  268.87::NUMERIC,
+  'R.11: p_rolling=TRUE event deleted — ATANASSOW 268.87 (no PPW5-prev to carry)'
 );
 
 -- Restore PPW5 for next test
@@ -226,7 +230,8 @@ VALUES (
 
 -- R.12 — p_rolling=TRUE, event deleted → position carry-over resumes (ADR-021).
 -- Delete PPW4-2025-2026 → PPW4 position no longer completed → PPW4-prev carries.
--- Re-derived against seed 2026-05-10: ATANASSOW total 288.10 after PPW4 wipe.
+-- Recalibrated 2026-06-25 after the 06-19 PPW3-promote participant-count
+-- corrections: ATANASSOW total after PPW4 wipe 288.10 → 287.69.
 DELETE FROM tbl_match_candidate WHERE id_result IN (SELECT id_result FROM tbl_result WHERE id_tournament IN (SELECT id_tournament FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2025-2026')));
 DELETE FROM tbl_result WHERE id_tournament IN (SELECT id_tournament FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2025-2026'));
 DELETE FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2025-2026');
@@ -238,8 +243,8 @@ SELECT is(
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ATANASSOW' AND txt_first_name = 'Aleksander')),
-  288.10::NUMERIC,
-  'R.12: p_rolling=TRUE event deleted — PPW4-prev carries (ADR-021), ATANASSOW 288.10'
+  287.69::NUMERIC,
+  'R.12: p_rolling=TRUE event deleted — PPW4-prev carries (ADR-021), ATANASSOW 287.69'
 );
 
 -- Restore PPW4 event + tournament + results for subsequent tests
@@ -286,30 +291,31 @@ SELECT fn_calc_tournament_scores(
 -- =========================================================================
 
 -- R.13 — p_rolling=TRUE, domestic + international carry-over (ADR-021).
--- Re-derived against seed 2026-05-10 AT THIS TEST'S MID-TRANSACTION STATE:
--- R.11/R.12 have deleted-and-partially-restored PPW4 (one M-EPEE tournament
--- with 4 fencers) and PPW5 (event-only placeholder, no tournaments).
--- Engine-derived value with that state: 739.46.
+-- Re-derived AT THIS TEST'S MID-TRANSACTION STATE: R.11/R.12 have
+-- deleted-and-partially-restored PPW4 (one M-EPEE tournament with 4 fencers)
+-- and PPW5 (event-only placeholder, no tournaments). Recalibrated 2026-06-25
+-- after the 06-19 PPW3-promote participant-count corrections: 739.46 → 739.01.
 SELECT is(
   (SELECT total_score FROM fn_ranking_kadra(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  739.46::NUMERIC,
-  'R.13: kadra p_rolling=TRUE — KORONA 739.46 (domestic + international + IMEW carry-over)'
+  739.01::NUMERIC,
+  'R.13: kadra p_rolling=TRUE — KORONA 739.01 (domestic + international + IMEW carry-over)'
 );
 
 -- R.14 — p_rolling=FALSE regression — no carry-over, no IMEW in current season.
--- Re-derived against the same mid-transaction state: 686.51.
+-- Re-derived against the same mid-transaction state. Recalibrated 2026-06-25
+-- after the 06-19 PPW3-promote participant-count corrections: 686.51 → 686.06.
 SELECT is(
   (SELECT total_score FROM fn_ranking_kadra(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := FALSE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  686.51::NUMERIC,
-  'R.14: kadra p_rolling=FALSE regression — KORONA 686.51'
+  686.06::NUMERIC,
+  'R.14: kadra p_rolling=FALSE regression — KORONA 686.06'
 );
 
 -- =========================================================================

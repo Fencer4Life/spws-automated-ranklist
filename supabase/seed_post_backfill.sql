@@ -101,6 +101,16 @@ BEGIN
 END;
 $drop_sporthalle$;
 
+-- NOTE (2026-06-25): PEW3s-2025-2026 (Munich) / PEW5s-2025-2026 (Stockholm) are
+-- REAL EVF sabre legs that arrived from the 06-19 PROD export with spurious empty
+-- EPEE/FOIL placeholder child slots, making the splitter derive 'efs' and collide
+-- onto the existing PEW{N}efs/ef codes. They are NOT dropped (that would destroy
+-- real calendar data). The permanent, self-healing fix lives in
+-- fn_split_pew_by_weapon (migration 20260625000001_phase4_pew_split_collision_guard.sql):
+-- it PRUNES the empty mismatched slots and RESOLVES code collisions by provenance
+-- (empty duplicate merged away, result-bearing event keeps its results). No
+-- seed-time DROP is needed and no result is lost.
+
 -- PEW3-2024-2025 (Guildford / Orléans multi-slot): correct corrupted dt_start
 -- (was 2024-01-04 — year/month typo) and the txt_location typo (was 'Guilford').
 -- The earliest child tournament is 2024-12-07 (Guildford UK leg). dt_end stays

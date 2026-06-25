@@ -1,7 +1,7 @@
 # ADR-046: PEW event codes carry weapon-letter suffix; one event = one physical weekend
 
-**Status:** Accepted (Phase 4 implemented 2026-04-27)
-**Date:** 2026-04-27
+**Status:** Accepted (Phase 4 implemented 2026-04-27; amended 2026-06-25 — collision guard)
+**Date:** 2026-04-27 (amended 2026-06-25)
 **Relates to:** ADR-043 (EVF event allocator — amended by this ADR), ADR-044 (Phase 3 wizard — adapts skeleton iteration)
 
 ## Context
@@ -72,3 +72,19 @@ Existing tests (`09_rolling_score.sql` R.15/R.18, `19_phase3_wizard.sql` ph3.1/p
 - **PPW (domestic) restructuring.** Polish domestic events run all weapons at one venue per round; the bundling problem doesn't manifest there.
 - **Championship code changes.** MEW/IMEW/DMEW/MSW/MPW are single-event-per-season; weapon distinction lives at the tournament level only.
 - **Renumbering existing PEW events into strict chronological order.** Splitter assigns next-free `N` for split-out clusters; chronological cleanup remains a manual admin task via the EventManager rename UI.
+
+## Amendment (2026-06-25): collision-resilient splitter
+
+The Step-2 rename assumed the weapon-derived target code (`PEW{N}{letters}-{season}`) was always free. A malformed EVF placeholder export can violate that: the 2026-06-19 PROD export carried `PEW3s-2025-2026` (Munich, Dec 6) and `PEW5s-2025-2026` (Stockholm, Feb 7) — **real EVF sabre weekends** — but with empty EPEE/FOIL placeholder child slots. The splitter derived `efs` and tried to rename them onto the existing `PEW3efs` / `PEW5ef` → `idx_event_code` duplicate-key, which **aborted the entire seed load** (run from `seed_post_backfill.sql`), half-populating the DB and cascading into 14 pgTAP scoring failures.
+
+A first instinct — dropping the offending events — is wrong: it destroys real calendar data (URLs, invitations, venues) for events whose results simply hadn't all been ingested at export time. The correct fix preserves the events and never discards a result.
+
+**Decision:** make the splitter self-healing with two additions, neither of which deletes a result row:
+
+1. **Step 1.5 — prune spurious empty slots.** Before computing suffixes, drop child tournaments that have **no results** AND whose weapon letter is absent from the event's **explicit** `[efs]+` code suffix. This trusts the admin-set code (a sabre-coded `PEW{N}s` keeps only its sabre children; the empty EPEE/FOIL slots are spurious). Legacy `PEW{N}-` codes without a letter suffix are untouched and fall through to the derive-from-children behaviour.
+
+2. **Step 2 — resolve collisions by provenance.** If the weapon-derived target code already belongs to a *different* event:
+   - **empty (0-result) holder** → a spurious duplicate of this event (same circuit number + weapon set + season); delete it so this (result-bearing) event takes the clean code (`NOTICE`).
+   - **result-bearing holder** → a genuine conflict; skip this rename with a `WARNING` for operator review (no silent data change).
+
+Genuinely distinct events are untouched — they derive different codes and never collide (e.g. `PEW3s` Munich vs `PEW3efs` Guildford both survive). The splitter stays idempotent and a malformed export can no longer break a seed load. Migration `20260625000001_phase4_pew_split_collision_guard.sql`; pgTAP `47_pew_split_collision.sql` (C.1–C.6, TDD). Result-row count is conserved across the seed load (verified: 2673 in = 2673 after).

@@ -9,6 +9,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+from typing import Any, cast
 
 import openpyxl
 from supabase import create_client
@@ -40,9 +41,12 @@ def load_excel_scores(excel_path: Path, sheet_name: str = "Ranking") -> dict:
 
 def load_db_scores(season_id: int) -> dict:
     """Fetch scored results from DB via vw_score."""
+    if sb is None:
+        raise RuntimeError("Supabase client not configured — set SUPABASE_URL and SUPABASE_KEY")
     result = sb.table("vw_score").select("*").eq("id_season", season_id).execute()
     scores = {}
-    for row in result.data:
+    for raw in result.data:
+        row = cast(dict[str, Any], raw)
         name = f"{row['txt_surname']} {row['txt_first_name']}"
         if name not in scores:
             scores[name] = {}
