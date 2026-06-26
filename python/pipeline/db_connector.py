@@ -8,6 +8,11 @@ the operations needed by the orchestrator.
 from __future__ import annotations
 
 import os
+from datetime import UTC, datetime, timedelta
+
+# A recompute row left CLAIMED longer than this is from a worker that died
+# mid-drain; the next claim recovers it (ADR-072 self-heal must not strand work).
+STALE_CLAIM_SECONDS = 600  # 10 min — comfortably beyond a normal drain
 
 
 class DbConnector:
@@ -290,19 +295,32 @@ class DbConnector:
         return rows[0]["ts_last_master_change"] if rows else None
 
     def claim_recompute_batch(self) -> list[int]:
-        """Claim the PENDING recompute events: flip them to CLAIMED and return the
-        distinct id_events (the queue already dedups PENDING per event)."""
-        pend = (
+        """Claim recompute events (-> CLAIMED) and return their distinct id_events.
+
+        Claims PENDING rows AND any row a previous worker left CLAIMED beyond
+        STALE_CLAIM_SECONDS (killed mid-drain). Both are flipped to CLAIMED in one
+        step — never back to PENDING — so a freshly-enqueued PENDING row coexisting
+        with a stale CLAIMED row for the same event can't violate the
+        one-PENDING-per-event unique index. The queue dedups PENDING per event.
+        """
+        cutoff = (datetime.now(UTC) - timedelta(seconds=STALE_CLAIM_SECONDS)).replace(
+            microsecond=0, tzinfo=None
+        ).isoformat()
+        # PENDING, or a stale CLAIMED row from a dead worker run.
+        claimable = (
+            f"enum_status.eq.PENDING,and(enum_status.eq.CLAIMED,ts_claimed.lt.{cutoff})"
+        )
+        rows = (
             self._sb.table("tbl_recompute_queue")
             .select("id_event")
-            .eq("enum_status", "PENDING")
+            .or_(claimable)
             .execute()
         )
-        ids = sorted({r["id_event"] for r in (pend.data or [])})
+        ids = sorted({r["id_event"] for r in (rows.data or [])})
         if ids:
             self._sb.table("tbl_recompute_queue").update(
                 {"enum_status": "CLAIMED", "ts_claimed": "now()"}
-            ).eq("enum_status", "PENDING").in_("id_event", ids).execute()
+            ).or_(claimable).in_("id_event", ids).execute()
         return ids
 
     def mark_recompute_done(self, id_events: list[int]) -> None:

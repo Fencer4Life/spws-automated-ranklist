@@ -8,7 +8,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(11);
+SELECT plan(12);
 
 -- ===== fixtures: 1 season, 2 events/tournaments (V1), 3 V1 fencers ==========
 DO $setup$
@@ -22,6 +22,7 @@ DECLARE
   v_fa     INT;  -- survivor
   v_fb     INT;  -- duplicate
   v_fc     INT;  -- trigger subject
+  v_rb     INT;  -- duplicate's result (for the match-candidate FK case)
 BEGIN
   UPDATE tbl_season SET bool_active = FALSE;
   v_season := fn_create_season('CDC44', '2099-09-01', '2100-06-30');  -- end year 2100 (free range)
@@ -63,7 +64,14 @@ BEGIN
 
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES (v_fa, v_t1, 1);
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES (v_fc, v_t1, 2);
-  INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES (v_fb, v_t2, 1);
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES (v_fb, v_t2, 1)
+    RETURNING id_result INTO v_rb;
+
+  -- A match-candidate row references the duplicate via id_fencer (legacy table,
+  -- still FK-live). The merge must re-point this or the dup delete FK-fails.
+  INSERT INTO tbl_match_candidate (id_result, txt_scraped_name, id_fencer,
+                                   num_confidence, enum_status)
+       VALUES (v_rb, 'MERGE Adamus', v_fb, 100.0, 'AUTO_MATCHED');
 END;
 $setup$;
 
@@ -141,6 +149,14 @@ SELECT is(
   (SELECT count(*)::int FROM tbl_fencer
    WHERE txt_surname='MERGE' AND txt_first_name='Adamus'),
   0, '44.11: merge deletes the duplicate fencer');
+
+-- ---- 44.12 merge re-points the duplicate's match-candidate rows -------------
+-- (without this, the FK tbl_match_candidate.id_fencer -> tbl_fencer blocks the
+--  dup delete; the merge above would have aborted, failing 44.9-44.11 too.)
+SELECT is(
+  (SELECT id_fencer FROM tbl_match_candidate WHERE txt_scraped_name = 'MERGE Adamus'),
+  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname='MERGE' AND txt_first_name='Adam'),
+  '44.12: merge re-points the duplicate''s match-candidate rows to the survivor');
 
 SELECT * FROM finish();
 ROLLBACK;
