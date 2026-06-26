@@ -51,3 +51,16 @@ seeded with known duplicates + wrong BYs.
 
 merge re-points results + folds aliases; BY reconcile to midpoint; sweep enqueues exactly the affected
 events for recompute; idempotent (a second sweep no-ops).
+
+## Amendment (2026-06-26) — `fn_merge_fencers` clears the match_candidate FK
+
+The original `fn_merge_fencers` re-pointed `tbl_result` to the survivor but **not**
+`tbl_match_candidate.id_fencer`, which *also* FK-references `tbl_fencer`. A duplicate
+carrying any non-colliding match-candidate row therefore aborted the merge on
+`tbl_match_candidate_id_fencer_fkey` at the `DELETE FROM tbl_fencer` — hit live during the
+SAMECKA-NACZYŃSKA dedup (the duplicate held AUTO_MATCHED / NEW_FENCER candidate rows).
+
+**Fix:** the merge now re-points the duplicate's remaining match-candidate rows to the
+survivor before deleting the dup (the audit follows the re-pointed result). Migration
+`supabase/migrations/20260626000001_fn_merge_fencers_repoint_match_candidate.sql`; pgTAP
+`44.12` reproduced the FK abort (RED) and passes after the fix.

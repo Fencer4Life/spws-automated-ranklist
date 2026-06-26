@@ -1000,6 +1000,38 @@ invariant holds. pgTAP `47_pew_split_collision.sql` (C.1–C.6, TDD RED→GREEN)
 
 ---
 
+### Duplicate-fencer fix + deterministic recompute recovery (ADR-056/065/071/072 amendments) — 2026-06-26
+
+**Incident.** On CERT and PROD the ingestion pipeline had created a **duplicate** fencer
+(`#330`) for SAMECKA-NACZYŃSKA Martyna, so she appeared in **both V0 and V1**. Root cause
+(traced + reproduced): FTL emits `"SAMECKA -NACZYŃSKA (1) Martyna"` — a space before the
+hyphen plus a per-fencer V-cat marker. `parse_scraped_name` split on the first space →
+surname `"SAMECKA"` → Phase-A exact miss **and** Phase-B fuzzy drop to PENDING (68.8) → the
+domestic branch auto-created a new fencer instead of linking. Her true confirmed BY (1985,
+a real V0/V1 boundary) had also been overwritten to an estimated band-midpoint.
+
+**Code (committed to main).**
+- `52346b5` — `canonicalize_scraped_name` (collapse whitespace → strip parenthesized +
+  bare-digit markers → normalize hyphen spacing) at the top of `parse_scraped_name`, so
+  exact/fuzzy/create all see the clean form (ADR-065 amend). Promotion now reconciles a
+  conflicting BY to the band **youngest edge**, not the midpoint — cross-season stable
+  (`reconciled_birth_year`; ADR-056 amend). The reconcile op is one shared
+  `reconcile_fencer_birth_year` both ingestion pipelines delegate to (not forked).
+- `ed6568e` — `fn_merge_fencers` re-points `tbl_match_candidate.id_fencer` before the dup
+  delete (FK abort fix; migration `20260626000001`, pgTAP 44.12; ADR-071 amend).
+- `46a5d92` — deterministic recompute-queue recovery: `claim_recompute_batch` claims every
+  not-DONE row (PENDING + CLAIMED) under the single-writer serialization guarantee, replacing
+  a rejected 10-min stale-claim timeout (ADR-072 amend).
+
+**Data repair (CERT + PROD).** `fn_merge_fencers(247, 330)` after restoring `#247` BY to
+1985 confirmed (and re-pointing the dup's match-candidate rows) — `#330` gone, results
+re-pointed, dirty spelling folded as an alias, 0 artefact rows on either env. CERT recompute
+queue drained to all-DONE.
+
+**Tests.** pgTAP 605 → 606 (+1 test 44.12); pytest 957 → 958. CI green.
+
+---
+
 ## Archived Documents
 
 The following documents contain the original detailed plans. They are superseded by this history and the Project Specification:
