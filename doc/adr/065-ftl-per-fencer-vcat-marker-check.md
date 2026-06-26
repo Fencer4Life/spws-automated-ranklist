@@ -89,3 +89,26 @@ Files modified:
 - `python/tests/test_vcat_marker.py` — new file, 11 unit tests.
 
 No migration required. No schema change. Rolls forward only.
+
+## Amendment (2026-06-26) — canonicalize the scraped name before the surname/first split
+
+The marker check above operates at the *splitter* (V-cat routing). The **matcher** had a
+parallel gap: per-fencer markers were stripped at compare time (`strip_category_markers`)
+but **not before `parse_scraped_name` split surname from first name**, and a
+space-before-hyphen (`"SAMECKA -NACZYŃSKA (1) Martyna"`) made the split read the surname
+as just `"SAMECKA"`. That failed the Phase-A exact check *and* dropped the Phase-B fuzzy
+score to PENDING (68.8) — so the domestic branch **auto-created a duplicate fencer**
+instead of linking to the existing one. Live impact: a duplicate `#330` for
+SAMECKA-NACZYŃSKA Martyna on CERT and PROD, splitting her across V0/V1.
+
+**Decision:** `canonicalize_scraped_name` (in `python/matcher/fuzzy_match.py`) runs at the
+**top of `parse_scraped_name`**, before the split — (1) collapse whitespace, (2) strip
+V-cat markers (parenthesized `(0)` *and* bare-digit `" 1 "`, ADR-065 convention),
+(3) normalize hyphen spacing (`SAMECKA -NACZYŃSKA` → `SAMECKA-NACZYŃSKA`), (4) final
+collapse. This fixes exact-match, fuzzy-match, and the stored `txt_surname`/`txt_first_name`
+of any genuinely-new fencer in one place. The marker is **not lost for routing** — that
+still reads `raw_age_marker` / `category_hint`, independent of the name string.
+
+Tests: `python/tests/test_matcher.py` (canonicalization; the 5 dirty FTL variants all
+AUTO_MATCH the existing fencer; over-merge regression for distinct hyphenated surnames
+like `GIERS-ROMEK`). Rolls forward only; no migration.

@@ -257,3 +257,31 @@ dedup is in Python). Reconciliation uses the existing
   old-value preservation, NULL-BY + midpoint-BY plain inserts.
 - vitest 5.1 + 9.111b — midpoint estimate; inconsistency flag now fires for
   estimated (downgraded) BYs.
+
+## Amendment (2026-06-26) — reconcile correction target: promotion → band youngest edge
+
+The Stage-0 reconcile (2026-06-13) corrected a conflicting stored BY to the band
+**midpoint**. That is *ranking-neutral within a season* but **not across seasons**: a
+fencer freshly promoted into an older band, anchored to the band centre, is over-aged
+and gets prematurely re-promoted a category the following season (V0→V1 @2026: midpoint
+1981 → V2 by 2031; youngest-edge 1986 → stays V1).
+
+**Decision:** the reconcile correction *target* now depends on direction. A **promotion**
+(bracket V-cat older than the BY-derived V-cat) anchors to the new band's **youngest age**
+(`_CATEGORY_MIN_AGE`) — "she just crossed the boundary", the minimal correction.
+**Demotion / other** keeps the midpoint (rare, usually an organizer marker error — the
+band centre is the safe fallback). `estimate_birth_year` (band midpoint) is **unchanged
+for new-fencer creation**, which has no prior age signal (frontend mirror
+`birthYearEstimate.ts` stays in lockstep). Confirmed→Estimated downgrade + loud staging
+surfacing are unchanged.
+
+New helper `reconciled_birth_year(target_vcat, season_end, current_vcat)` in
+`python/matcher/pipeline.py` is the single source of truth for the target. The whole
+reconcile operation is now one shared `reconcile_fencer_birth_year` (in
+`python/pipeline/stages.py`) that **both** `s0_reconcile_roster` (legacy) and
+`ResolveFencers._reconcile_by` (current plugin) delegate to — the policy can no longer
+fork between the two ingestion pipelines.
+
+Tests: `python/tests/test_resolve_fencers.py` (promotion→youngest-edge, demotion→midpoint,
+cross-season stability, Confirmed→Estimated flag) and `python/tests/test_s0_reconcile_roster.py`
+(10.4.1/10.4.2 promotion edge, 10.4.2b demotion midpoint).

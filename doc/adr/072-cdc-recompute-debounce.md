@@ -71,3 +71,28 @@ affected event(s) **from stored, FK-linked results — no source fetch, no re-ma
 trigger fires only on real change + enqueues the correct events (pgTAP); debounce / claim / coalesce;
 recompute-twice == once (idempotence); a boundary-crossing BY change re-partitions to the correct bracket;
 recompute-to-quiescence.
+
+## Amendment (2026-06-26) — deterministic CLAIMED recovery (no time heuristic)
+
+The `PENDING → CLAIMED → DONE` lifecycle had no recovery for a worker killed **mid-drain**:
+`claim_recompute_batch` only looked at PENDING, so rows already flipped to CLAIMED were
+stranded forever (invisible to the next run and the cron). This bit live — a drain killed
+during the SAMECKA-NACZYŃSKA repair left 39 rows stuck CLAIMED.
+
+A first fix added a 10-minute `STALE_CLAIM_SECONDS` timeout; it was rejected as a fragile
+heuristic (a legitimate recompute running longer would be double-claimed) and an unwanted
+permanent "guess whether the worker died" mechanism.
+
+**Decision (deterministic):** CERT drains are **serialized** — the `recompute-drain`
+workflow's `cert-recompute` concurrency group (`cancel-in-progress: false`) plus the
+worker's 120s debounce mean **one drain at a time**. Under that single-writer model, any
+row still CLAIMED when a new drain *starts* is provably an orphan from a worker that died
+mid-run — no live worker owns it. So `claim_recompute_batch` now claims **every not-DONE
+row (PENDING AND CLAIMED)** in one CLAIMED flip — deterministic crash recovery, no clock.
+Claiming straight to CLAIMED (never resetting to PENDING) keeps the one-PENDING-per-event
+partial unique index safe even when a fresh PENDING coexists with an orphaned CLAIMED for
+the same event; recompute is idempotent, so the queue converges to DONE.
+
+Verified live: re-draining CERT reclaimed the 39 stranded rows (20 distinct events
+recomputed) → queue all DONE. Test: `python/tests/test_db_connector.py`
+(`test_claim_recompute_batch_reclaims_orphaned_claimed`).
