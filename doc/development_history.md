@@ -1032,6 +1032,35 @@ queue drained to all-DONE.
 
 ---
 
+## Results-based carry-stop — never both seasons of one event (2026-06-26)
+
+**Symptom.** In the ranklist drill-down a fencer could see **both** this-season's and last-season's
+MPW (and any other event type) at once. Reported as "this is a mistake no matter how you look at it."
+
+**Root cause.** The active `EVENT_CODE_MATCHING` engine splits scores into a `current_scores` CTE
+(ungated — shown whenever a current result exists) and a `carried_scores` CTE (dropped only when the
+position is in `completed_positions`). `completed_positions` was keyed on event **status**
+`IN ('COMPLETED','IN_PROGRESS')` (patched by `20260406000006`). An ingested event sitting at a status
+outside that set — e.g. `SCHEDULED` (ingest's auto-bump is gated on `PLANNED` only) — showed the
+current result *and* still carried last year's → both visible / double-counted in the best-K pool.
+
+**Fix (ADR-018/021 amendment, migration `20260626120000`, supersedes `20260406000006`).** Redefine
+`completed_positions` from status-based to **"positions the current season already has a scored
+result for"**, scoped to the queried **weapon+gender**, in all three active-engine functions
+(`fn_fencer_scores_rolling_event_code_matching`, `fn_ranking_ppw_event_code_matching`,
+`fn_ranking_kadra_event_code_matching`). Strict per-(position, weapon, gender) **either/or**: a
+current result supersedes the carried prior-season equivalent the instant it exists, regardless of
+lifecycle status. Status-independent — no dependence on `SCHEDULED→IN_PROGRESS→COMPLETED` hygiene.
+The inactive `EVENT_FK_MATCHING` engine (ADR-042) keys carry-stop on `SCORED` and is left unchanged
+(known boundary divergence if ever activated).
+
+**Tests.** pgTAP 606 → 609: +3 new (R.22–R.24 — never-both with a current result in a `SCHEDULED`
+event); R.6/R.18 reworked from status-driven to results-driven; R.10 recalibrated 196.78 → 135.88
+(DROBIŃSKI's PPW5-prev was double-counting because PPW5-2025-2026 is `SCHEDULED` but has results).
+pytest 958, vitest 375 unchanged. CI green.
+
+---
+
 ## Archived Documents
 
 The following documents contain the original detailed plans. They are superseded by this history and the Project Specification:

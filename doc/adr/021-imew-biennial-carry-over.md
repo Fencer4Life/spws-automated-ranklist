@@ -1,7 +1,11 @@
 # ADR-021: IMEW Biennial Carry-Over
 
-**Status:** Accepted; **amended 2026-04-26 by ADR-042** (mechanism updated to FK-based when EVENT_FK_MATCHING engine is active)
+**Status:** Accepted; **amended 2026-04-26 by ADR-042** (mechanism updated to FK-based when EVENT_FK_MATCHING engine is active); **amended 2026-06-26** (results-based carry-stop)
 **Date:** 2026-04-04 (M10)
+
+## Amendment (2026-06-26 — results-based carry-stop)
+
+`completed_positions` is redefined from status-based to **current-result-existence** (see ADR-018 amendment, migration `20260626120000`, supersedes `20260406000006`). The `rules_types` gate is unchanged; the carry-stop clause `fn_event_position(...) NOT IN (SELECT pos FROM completed_positions)` keeps its form, but `completed_positions` now means "positions with a current-season scored result (weapon+gender scoped)". The concrete-effect table's row "PPW5 not yet played (SCHEDULED event) → carried over" now holds **only while PPW5 has no current result**; once PPW5 has results it is replaced, not carried (strict either/or — never both). Tests R.22–R.24.
 
 ## Amendment (2026-04-26 — ADR-042 Phase 1B)
 
