@@ -114,7 +114,8 @@
       "20260618000001_ingest_source_overrides.sql",
       "20260619000001_tournament_url_results_on_ingest.sql",
       "20260625000001_phase4_pew_split_collision_guard.sql",
-      "20260626000001_fn_merge_fencers_repoint_match_candidate.sql"
+      "20260626000001_fn_merge_fencers_repoint_match_candidate.sql",
+      "20260626120000_carry_stop_on_current_result.sql"
     ],
     "schema_fingerprint": "93d3bf01d28ada49df100c07de902f27"
   },
