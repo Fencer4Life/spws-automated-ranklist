@@ -12,7 +12,7 @@ BEGIN;
 -- guard. Targeted (not session_replication_role) so audit + status-
 -- transition triggers stay live.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
-SELECT plan(21);
+SELECT plan(24);
 
 -- =========================================================================
 -- Self-contained carry-over fixture (test-only; reverted by ROLLBACK).
@@ -121,8 +121,11 @@ SELECT is(
   'R.5: p_rolling=TRUE with no previous season — identical to FALSE'
 );
 
--- R.6 — p_rolling=TRUE, all current completed → no carry-over
--- Disable transition trigger to allow direct status change in test
+-- R.6 — carry-stop is RESULTS-based, not status-based (ADR-018/021 amend,
+-- supersedes 20260406000006). Forcing PPW5+MPW to COMPLETED is a no-op now:
+-- MPW-2025-2026 has no current result, so KORONA's MPW-prev STILL carries
+-- regardless of status. Value 389.45 = 356.92 (non-rolling) + carried MPW.
+-- This guards the status-independence of the rule.
 ALTER TABLE tbl_event DISABLE TRIGGER trg_event_transition;
 UPDATE tbl_event SET enum_status = 'COMPLETED'
 WHERE txt_code IN ('PPW5-2025-2026', 'MPW-2025-2026');
@@ -133,8 +136,8 @@ SELECT is(
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  356.92::NUMERIC,
-  'R.6: p_rolling=TRUE, all completed — KORONA unchanged at 356.92'
+  389.45::NUMERIC,
+  'R.6: COMPLETED status is a no-op — KORONA 389.45 (MPW-prev still carries, no current MPW result)'
 );
 
 -- Restore for subsequent tests
@@ -187,18 +190,18 @@ SELECT is(
 );
 
 -- R.10 — p_rolling=TRUE.
--- DROBIŃSKI total rolling. Recalibrated 2026-06-25 after the 06-19 PPW3-promote
--- participant-count corrections: 197.41 → 196.78.
--- (PPW5 has results in new seed even with status=SCHEDULED; engine picks
--- them up so the carry-over-from-prior-PPW5 path doesn't fire here.)
+-- DROBIŃSKI total rolling. Recalibrated 2026-06-26 (ADR-018/021 amend): PPW5-2025-2026
+-- is SCHEDULED but HAS current results, so under the new results-based carry-stop the
+-- prior-season PPW5 no longer carries (it did under the old status-based rule, which
+-- double-counted current PPW5 + carried PPW5-prev in the best-K pool). 196.78 → 135.88.
 SELECT is(
   (SELECT total_score FROM fn_ranking_ppw(
     'EPEE', 'M', 'V2',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     p_rolling := TRUE
   ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DROBIŃSKI' AND txt_first_name = 'Leszek')),
-  196.78::NUMERIC,
-  'R.10: p_rolling=TRUE — DROBIŃSKI 196.78'
+  135.88::NUMERIC,
+  'R.10: p_rolling=TRUE — DROBIŃSKI 135.88 (PPW5-prev no longer carries; PPW5 has current results)'
 );
 
 -- R.11 — p_rolling=TRUE, event deletion: PPW5 removed from current season.
@@ -362,17 +365,34 @@ SELECT is(
   'R.17: fn_fencer_scores_rolling — PPW1-prev excluded (position completed in current)'
 );
 
--- R.18 — COMPLETED event blocks carry-over for that position (ADR-021)
--- Add a COMPLETED IMEW event → IMEW position becomes completed → IMEW-prev stops carrying
+-- R.18 — a current-season RESULT (not status) blocks carry-over for that position
+-- (ADR-018/021 amend). Add an IMEW-2025-2026 event left at SCHEDULED but WITH an
+-- EPEE-M result → IMEW position now has a current result → IMEW-prev stops carrying.
+-- Proves the carry-stop is results-based and status-independent.
 ALTER TABLE tbl_event DISABLE TRIGGER trg_event_transition;
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country)
 VALUES (
     'IMEW-2025-2026', 'IMEW (test placeholder)',
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
-    'COMPLETED', '2026-06-01', 'Test', 'Test'
+    'SCHEDULED', '2026-06-01', 'Test', 'Test'
 );
 ALTER TABLE tbl_event ENABLE TRIGGER trg_event_transition;
+INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count, url_results, enum_import_status)
+VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'IMEW-2025-2026'),
+    'IMEW-V2-M-EPEE-2025-2026', 'IMEW — Epee M', 'MEW',
+    'EPEE', 'M', 'V2', '2026-06-01', 8, NULL, 'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V2-M-EPEE-2025-2026'),
+    8, 'ZIELIŃSKI Dariusz'
+);
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V2-M-EPEE-2025-2026')
+);
 
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
@@ -381,10 +401,13 @@ SELECT is(
     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
   ) WHERE bool_carried_over = TRUE),
   2,
-  'R.18: COMPLETED IMEW blocks carry — MPW + PEW14e remain (post-Phase4: epee PEW14 position not completed in current season)'
+  'R.18: current IMEW result (SCHEDULED event) blocks carry — MPW + PEW14e remain, IMEW-prev dropped'
 );
 
--- Clean up: remove test IMEW event
+-- Clean up: remove test IMEW current result/tournament/event so R.19–R.21 see
+-- the original state (IMEW-prev carrying again).
+DELETE FROM tbl_result WHERE id_tournament IN (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V2-M-EPEE-2025-2026');
+DELETE FROM tbl_tournament WHERE txt_code = 'IMEW-V2-M-EPEE-2025-2026';
 DELETE FROM tbl_event WHERE txt_code = 'IMEW-2025-2026';
 
 -- =========================================================================
@@ -441,6 +464,73 @@ UPDATE tbl_scoring_config SET json_ranking_rules = jsonb_set(
   '{international,2,types}',
   '["PEW", "MEW", "MSW"]'::JSONB
 ) WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026');
+
+-- =========================================================================
+-- R.22–R.24: never-both invariant — current-season result supersedes the
+-- carried prior-season equivalent REGARDLESS of event status (ADR-018/021
+-- amendment, supersedes 20260406000006). Carry-stop is now keyed on the
+-- existence of a current-season result for the position, not enum_status.
+--
+-- Scenario: MPW-2025-2026 is SCHEDULED (not COMPLETED/IN_PROGRESS) yet we
+-- give ZIELIŃSKI a current MPW result there. He also has a carried MPW from
+-- 2024-25. Under the OLD status-based rule both rows appeared ("I see this
+-- year's AND last year's MPW"); under the new rule the carried MPW drops.
+-- =========================================================================
+
+INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count, url_results, enum_import_status)
+VALUES (
+    (SELECT id_event FROM tbl_event WHERE txt_code = 'MPW-2025-2026'),
+    'MPW-V2-M-EPEE-2025-2026', 'Mistrzostwa Polski Weteranów — Szpada M', 'MPW',
+    'EPEE', 'M', 'V2', '2026-06-20', 8, NULL, 'SCORED'
+);
+INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+VALUES (
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-M-EPEE-2025-2026'),
+    8, 'ZIELIŃSKI Dariusz'
+);
+SELECT fn_calc_tournament_scores(
+    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-M-EPEE-2025-2026')
+);
+
+-- R.22 — never both: exactly one MPW row for ZIELIŃSKI (was 2 under old rule)
+SELECT is(
+  (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
+    'EPEE', 'M', 'V2',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
+  ) WHERE enum_type = 'MPW'),
+  1,
+  'R.22: never both — exactly one MPW row when current MPW has a result (SCHEDULED event)'
+);
+
+-- R.23 — the prior-season MPW carry is dropped the moment this year has a result
+SELECT is(
+  (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
+    'EPEE', 'M', 'V2',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
+  ) WHERE enum_type = 'MPW' AND bool_carried_over = TRUE),
+  0,
+  'R.23: carried MPW dropped once current-season MPW result exists (status-independent)'
+);
+
+-- R.24 — ranking agrees with drilldown: mpw_score is THIS year's score, not the
+-- carried (higher) prior-season one. Under the old rule the best-MPW bucket
+-- still saw the carried row and could return it; now only the current counts.
+SELECT is(
+  (SELECT mpw_score FROM fn_ranking_ppw(
+    'EPEE', 'M', 'V2',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
+    p_rolling := TRUE
+  ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz')),
+  (SELECT num_final_score FROM fn_fencer_scores_rolling(
+    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
+    'EPEE', 'M', 'V2',
+    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
+  ) WHERE enum_type = 'MPW' AND bool_carried_over = FALSE),
+  'R.24: ranking mpw_score = current-season MPW (carried no longer double-counts)'
+);
 
 SELECT * FROM finish();
 ROLLBACK;

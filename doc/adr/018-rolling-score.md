@@ -1,7 +1,19 @@
 # ADR-018: Rolling Score for Active Season
 
-**Status:** Accepted
+**Status:** Accepted; **amended 2026-06-26** (results-based carry-stop)
 **Date:** 2026-03-29 (M10)
+
+## Amendment (2026-06-26 — results-based carry-stop)
+
+The carry-stop trigger for the **EVENT_CODE_MATCHING** engine changes from event *status* to the *existence of a current-season scored result* for the position. `completed_positions` is redefined from "active-season events at status `COMPLETED`" (later `COMPLETED`/`IN_PROGRESS` via `20260406000006`) to **"positions for which the active season already has a scored result"**, scoped to the queried **weapon+gender**. This makes the rule a strict per-(position, weapon, gender) **either/or** — a current result supersedes the carried prior-season equivalent the moment it exists, regardless of lifecycle status — removing the dependence on `SCHEDULED→IN_PROGRESS→COMPLETED` hygiene (an ingested `SCHEDULED` event with results previously showed **both** seasons). **Supersedes `20260406000006`.** Migration `20260626120000`; tests R.22–R.24 (R.6/R.18 reworked status→results, R.10 recalibrated 196.78→135.88). The inactive **EVENT_FK_MATCHING** engine (ADR-042) keys carry-stop on `SCORED` and is unchanged — a known boundary divergence if ever activated.
+
+The "Three-State Position Logic" table below is superseded by:
+
+| Active-season position N (this weapon+gender) | Previous-season result at position N | Effect |
+|---|---|---|
+| No current-season scored result | Exists | **Carried over** — previous result used |
+| Has a current-season scored result | Exists | **Replaced** — current result used (carry dropped) |
+| No current-season scored result | Does not exist | **Empty slot** — nothing to carry |
 
 ## Context
 
