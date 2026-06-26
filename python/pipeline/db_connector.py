@@ -303,19 +303,14 @@ class DbConnector:
         with a stale CLAIMED row for the same event can't violate the
         one-PENDING-per-event unique index. The queue dedups PENDING per event.
         """
-        cutoff = (datetime.now(UTC) - timedelta(seconds=STALE_CLAIM_SECONDS)).replace(
-            microsecond=0, tzinfo=None
-        ).isoformat()
+        cutoff = (
+            (datetime.now(UTC) - timedelta(seconds=STALE_CLAIM_SECONDS))
+            .replace(microsecond=0, tzinfo=None)
+            .isoformat()
+        )
         # PENDING, or a stale CLAIMED row from a dead worker run.
-        claimable = (
-            f"enum_status.eq.PENDING,and(enum_status.eq.CLAIMED,ts_claimed.lt.{cutoff})"
-        )
-        rows = (
-            self._sb.table("tbl_recompute_queue")
-            .select("id_event")
-            .or_(claimable)
-            .execute()
-        )
+        claimable = f"enum_status.eq.PENDING,and(enum_status.eq.CLAIMED,ts_claimed.lt.{cutoff})"
+        rows = self._sb.table("tbl_recompute_queue").select("id_event").or_(claimable).execute()
         ids = sorted({r["id_event"] for r in (rows.data or [])})
         if ids:
             self._sb.table("tbl_recompute_queue").update(
