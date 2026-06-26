@@ -70,8 +70,44 @@ def fold_diacritics(text: str) -> str:
 
 
 def strip_category_markers(name: str) -> str:
-    """Remove FTL category markers like (0), (1), (kat 1), (V1) from names."""
-    return re.sub(r"\s*\((?:kat\s*)?V?\d+\)\s*", " ", name).strip()
+    """Remove FTL per-fencer V-cat markers from a name.
+
+    Two conventions are emitted by the FTL eventSchedule source (ADR-065):
+      - parenthesized: ``(0)``, ``(1)``, ``(kat 1)``, ``(V1)``
+      - bare digit 0-4 bounded by whitespace: ``"KAMIŃSKA   1 Gabriela"``
+
+    The bare-digit form is bounded to 0-4 surrounded by whitespace so legitimate
+    name tokens (and digits ≥5) are never touched.
+    """
+    result = re.sub(r"\s*\((?:kat\s*)?V?\d+\)\s*", " ", name)
+    result = re.sub(r"\s+[0-4]\s+", " ", result)
+    return result.strip()
+
+
+def canonicalize_scraped_name(name: str) -> str:
+    """Canonicalize a raw scraped name BEFORE the surname/first split.
+
+    The FTL source emits names like ``"SAMECKA -NACZYŃSKA (0) Martyna"`` — a space
+    before the hyphen plus a per-fencer V-cat marker. Left untouched, the space
+    makes ``parse_scraped_name`` read the surname as just ``"SAMECKA"`` (splitting
+    on the first whitespace), which breaks both the exact and fuzzy identity match
+    and spawns a duplicate fencer. Canonicalizing here fixes exact-match,
+    fuzzy-match, and new-fencer creation in one place.
+
+    Strict order (each step depends on the previous):
+      1. collapse runs of whitespace so markers/hyphens are in a predictable form,
+      2. strip V-cat markers (parenthesized + bare-digit, via strip_category_markers),
+      3. normalize hyphen spacing: ``SAMECKA - NACZYŃSKA`` → ``SAMECKA-NACZYŃSKA``,
+      4. final whitespace collapse (marker removal can leave a double space).
+
+    The V-cat marker is NOT lost for routing — that is read from the row's
+    ``raw_age_marker`` / ``category_hint`` independently of the name string.
+    """
+    result = re.sub(r"\s+", " ", name).strip()
+    result = strip_category_markers(result)
+    result = re.sub(r"\s*-\s*", "-", result)
+    result = re.sub(r"\s+", " ", result).strip()
+    return result
 
 
 def normalize_name(name: str, use_diacritic_folding: bool = False) -> str:
@@ -91,10 +127,16 @@ def normalize_name(name: str, use_diacritic_folding: bool = False) -> str:
 def parse_scraped_name(name: str) -> tuple[str, str]:
     """Parse 'SURNAME FirstName' into (surname, first_name).
 
+    The raw name is canonicalized first (hyphen spacing + V-cat markers) so dirty
+    FTL strings like ``"SAMECKA -NACZYŃSKA (0) Martyna"`` parse to the correct
+    compound surname instead of being split on the stray space.
+
     Single-word names (aliases like 'TK') return (word, '').
     Compound surnames with hyphens are preserved.
     """
-    parts = name.strip().split(None, 1)
+    parts = canonicalize_scraped_name(name).split(None, 1)
+    if not parts:
+        return "", ""
     if len(parts) == 1:
         return parts[0], ""
     return parts[0], parts[1]

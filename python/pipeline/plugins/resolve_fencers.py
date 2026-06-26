@@ -35,7 +35,7 @@ from python.pipeline.stages import (
     _find_exact_fencer,
     _is_domestic,
     _row_authoritative_vcat,
-    vcat_for_age,
+    reconcile_fencer_birth_year,
 )
 from python.pipeline.types import StageMatchResult
 
@@ -243,40 +243,17 @@ class ResolveFencers(BasePlugin):
     def _reconcile_by(
         self, ctx, db, fencer_db, existing_id, vcat, season_end, touched, r
     ) -> int | None:
-        row = next((f for f in fencer_db if f["id_fencer"] == existing_id), None)
-        stored_by = row.get("int_birth_year") if row else None
-        if vcat is None or stored_by is None:
-            return stored_by
-        if vcat_for_age(season_end - stored_by) == vcat:
-            return stored_by  # already consistent
-        if existing_id in touched and touched[existing_id] != vcat:
-            ctx.get("_legacy").reconcile_conflicts.append(
-                {
-                    "id_fencer": existing_id,
-                    "scraped_name": r.fencer_name,
-                    "first_vcat": touched[existing_id],
-                    "second_vcat": vcat,
-                }
-            )
-            return stored_by
-        new_by = estimate_birth_year(vcat, season_end)
-        was_confirmed = not bool(row.get("bool_birth_year_estimated"))
-        db.update_fencer_birth_year(existing_id, new_by, estimated=True)
-        if row is not None:
-            row["int_birth_year"] = new_by
-            row["bool_birth_year_estimated"] = True
-        touched[existing_id] = vcat
-        ctx.get("_legacy").reconciled_fencers.append(
-            {
-                "id_fencer": existing_id,
-                "scraped_name": r.fencer_name,
-                "vcat": vcat,
-                "old_birth_year": stored_by,
-                "new_birth_year": new_by,
-                "was_confirmed": was_confirmed,
-            }
+        # Delegates to the single shared reconcile policy (not forked from s0).
+        return reconcile_fencer_birth_year(
+            ctx.get("_legacy"),
+            db,
+            fencer_db,
+            existing_id,
+            vcat,
+            season_end,
+            touched,
+            r.fencer_name,
         )
-        return new_by
 
     def _create(
         self, db, fencer_db, r, vcat, season_end, gender, ctx, best=None

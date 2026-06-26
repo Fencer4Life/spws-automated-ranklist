@@ -14,7 +14,7 @@ from datetime import date
 from unittest.mock import MagicMock
 
 from python.matcher.fuzzy_match import MatchResult
-from python.matcher.pipeline import estimate_birth_year
+from python.matcher.pipeline import estimate_birth_year, reconciled_birth_year
 from python.pipeline.core.contract import Context, Services
 from python.pipeline.plugins import resolve_fencers as rf
 from python.pipeline.plugins.bridge import ensure_pctx
@@ -23,6 +23,7 @@ from python.pipeline.types import Overrides, StageMatchResult
 
 V1_MID = estimate_birth_year("V1", 2026)
 V3_MID = estimate_birth_year("V3", 2026)
+V1_EDGE = 2026 - 40  # youngest age in V1 band
 
 
 # ---------------------------------------------------------------------------
@@ -111,10 +112,10 @@ class TestExactAndReconcile:
         assert (m.id_fencer, m.method) == (101, "AUTO_MATCHED")
         assert m.governed_birth_year == 1980
 
-    def test_reconcile_by_to_band_midpoint(self):
-        """N3.2 exact match whose stored BY conflicts with the bracket V-cat ->
-        reconcile to band midpoint; governed BY is the reconciled value."""
-        fdb = [_fencer(101, "KOWALSKI", "Jan", 1970)]  # age 56 -> V2, conflicts V1 bracket
+    def test_reconcile_demotion_to_band_midpoint(self):
+        """N3.2 exact match whose stored BY puts her OLDER than the bracket V-cat
+        (demotion V2->V1) -> reconcile to band midpoint (the safe fallback)."""
+        fdb = [_fencer(101, "KOWALSKI", "Jan", 1970)]  # age 56 -> V2, demoted to V1 bracket
         db = _db(fdb)
         ctx, pctx = _resolve(_parsed([_result("KOWALSKI Jan")]), fdb, db=db)
         (m,) = ctx.get("matches")
@@ -122,6 +123,49 @@ class TestExactAndReconcile:
         assert m.governed_birth_year == V1_MID
         db.update_fencer_birth_year.assert_called_once_with(101, V1_MID, estimated=True)
         assert pctx.reconciled_fencers and pctx.reconciled_fencers[0]["new_birth_year"] == V1_MID
+
+    def test_reconcile_promotion_to_youngest_edge(self):
+        """Promotion (BY-derived V0, bracket V1) corrects to the V1 YOUNGEST edge
+        (age 40), not the midpoint — she just crossed the boundary, so the band
+        centre would over-age her and prematurely re-promote her next season."""
+        fdb = [_fencer(101, "KOWALSKI", "Jan", 1990)]  # age 36 @2026 -> V0, promoted to V1
+        db = _db(fdb)
+        ctx, pctx = _resolve(_parsed([_result("KOWALSKI Jan")], category_hint="V1"), fdb, db=db)
+        (m,) = ctx.get("matches")
+        assert m.id_fencer == 101 and m.method == "AUTO_MATCHED"
+        assert m.governed_birth_year == V1_EDGE
+        db.update_fencer_birth_year.assert_called_once_with(101, V1_EDGE, estimated=True)
+        rec = pctx.reconciled_fencers[0]
+        assert rec["new_birth_year"] == V1_EDGE
+        assert rec["was_confirmed"] is True  # confirmed BY downgraded to estimated, surfaced
+
+    def test_promotion_correction_is_cross_season_stable(self):
+        """The youngest-edge correction keeps a freshly-promoted fencer in the new
+        band the following season (the midpoint would push her up a category)."""
+        from python.pipeline.stages import vcat_for_age
+
+        assert vcat_for_age(2026 - V1_EDGE) == "V1"
+        assert vcat_for_age(2031 - V1_EDGE) == "V1"  # still V1 five seasons on
+        assert vcat_for_age(2031 - V1_MID) == "V2"  # midpoint would have promoted her
+
+
+class TestReconciledBirthYearHelper:
+    """reconciled_birth_year — the shared correction-target rule (both reconcile sites)."""
+
+    def test_promotion_returns_youngest_edge(self):
+        # V0 -> V1 promotion: youngest age in V1 is 40.
+        assert reconciled_birth_year("V1", 2026, current_vcat="V0") == 2026 - 40
+
+    def test_demotion_returns_midpoint(self):
+        # V2 -> V1 demotion: keep midpoint fallback.
+        assert reconciled_birth_year("V1", 2026, current_vcat="V2") == V1_MID
+
+    def test_unknown_current_returns_midpoint(self):
+        assert reconciled_birth_year("V1", 2026, current_vcat=None) == V1_MID
+
+    def test_multi_band_promotion_youngest_edge(self):
+        # V0 -> V3 (e.g. organizer marker far older): still youngest edge of target.
+        assert reconciled_birth_year("V3", 2026, current_vcat="V0") == 2026 - 60
 
 
 # ---------------------------------------------------------------------------

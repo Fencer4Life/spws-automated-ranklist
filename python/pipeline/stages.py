@@ -24,7 +24,7 @@ from collections import defaultdict
 from typing import Any
 
 from python.matcher.fuzzy_match import find_best_match, normalize_name, parse_scraped_name
-from python.matcher.pipeline import estimate_birth_year
+from python.matcher.pipeline import estimate_birth_year, reconciled_birth_year
 from python.pipeline.types import (
     HaltError,
     HaltReason,
@@ -151,6 +151,79 @@ def _find_exact_fencer(
     return None
 
 
+def reconcile_fencer_birth_year(
+    pctx: PipelineContext,
+    db: Any,
+    fencer_db: list[dict],
+    existing_id: int,
+    target_vcat: str | None,
+    season_end: int,
+    touched: dict[int, str],
+    scraped_name: str,
+    source: str | None = None,
+) -> int | None:
+    """Reconcile ONE matched fencer's stored birth year against a bracket V-cat.
+
+    SINGLE source of truth shared by both ingestion pipelines — the legacy
+    `s0_reconcile_roster` (Stage-0) and the current `ResolveFencers._reconcile_by`
+    plugin both delegate here so the reconcile policy can never fork between them.
+
+    Returns the governed birth year (the reconciled value on a correction, or the
+    unchanged stored BY when consistent / not reconcilable). Mutates `pctx`
+    (`reconciled_fencers` / `reconcile_conflicts`), the in-memory `fencer_db` row,
+    and `touched`, and writes the corrected BY through `db.update_fencer_birth_year`.
+
+    Policy (ADR-056): the bracket V-cat is authoritative; a conflicting stored BY is
+    corrected — Confirmed BYs are downgraded to Estimated and surfaced loudly. The
+    correction *target* follows `reconciled_birth_year`: a promotion anchors to the
+    new band's youngest edge (minimal correction, cross-season stable), demotion /
+    other keeps the band midpoint.
+    """
+    row = next((f for f in fencer_db if f["id_fencer"] == existing_id), None)
+    stored_by = row.get("int_birth_year") if row else None
+    if target_vcat is None or stored_by is None:
+        return stored_by  # no authoritative V-cat or no BY → nothing to reconcile
+
+    current_vcat = vcat_for_age(season_end - stored_by)
+    if current_vcat == target_vcat:
+        return stored_by  # already consistent
+
+    # Conflict. Guard against cross-bracket thrash within one run.
+    if existing_id in touched and touched[existing_id] != target_vcat:
+        pctx.reconcile_conflicts.append(
+            {
+                "id_fencer": existing_id,
+                "scraped_name": scraped_name,
+                "first_vcat": touched[existing_id],
+                "second_vcat": target_vcat,
+                "source": source,
+            }
+        )
+        return stored_by
+
+    new_by = reconciled_birth_year(target_vcat, season_end, current_vcat=current_vcat)
+    promoted = new_by != estimate_birth_year(target_vcat, season_end)
+    was_confirmed = not bool(row.get("bool_birth_year_estimated"))
+    db.update_fencer_birth_year(existing_id, new_by, estimated=True)
+    if row is not None:
+        row["int_birth_year"] = new_by
+        row["bool_birth_year_estimated"] = True
+    touched[existing_id] = target_vcat
+    pctx.reconciled_fencers.append(
+        {
+            "id_fencer": existing_id,
+            "scraped_name": scraped_name,
+            "vcat": target_vcat,
+            "old_birth_year": stored_by,
+            "new_birth_year": new_by,
+            "was_confirmed": was_confirmed,
+            "anchor": "lower edge" if promoted else "band midpoint",
+            "source": source,
+        }
+    )
+    return new_by
+
+
 def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
     """Stage 0 — reconcile the master roster against this bracket's rows.
 
@@ -241,49 +314,9 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
             )
             continue
 
-        # ---- Job 2: reconcile a matched fencer's birth year ----
-        if vcat is None:
-            continue  # no authoritative V-cat → nothing to reconcile against
-
-        row = next((f for f in fencer_db if f["id_fencer"] == existing_id), None)
-        stored_by = row.get("int_birth_year") if row else None
-        if stored_by is None:
-            continue  # missing BY is an admin task, not a conflict to correct
-
-        current_vcat = vcat_for_age(season_end - stored_by)
-        if current_vcat == vcat:
-            continue  # already consistent
-
-        # Conflict. Guard against cross-bracket thrash within one run.
-        if existing_id in touched and touched[existing_id] != vcat:
-            ctx.reconcile_conflicts.append(
-                {
-                    "id_fencer": existing_id,
-                    "scraped_name": r.fencer_name,
-                    "first_vcat": touched[existing_id],
-                    "second_vcat": vcat,
-                    "source": source,
-                }
-            )
-            continue
-
-        new_by = estimate_birth_year(vcat, season_end)
-        was_confirmed = not bool(row.get("bool_birth_year_estimated"))
-        db.update_fencer_birth_year(existing_id, new_by, estimated=True)
-        if row is not None:
-            row["int_birth_year"] = new_by
-            row["bool_birth_year_estimated"] = True
-        touched[existing_id] = vcat
-        ctx.reconciled_fencers.append(
-            {
-                "id_fencer": existing_id,
-                "scraped_name": r.fencer_name,
-                "vcat": vcat,
-                "old_birth_year": stored_by,
-                "new_birth_year": new_by,
-                "was_confirmed": was_confirmed,
-                "source": source,
-            }
+        # ---- Job 2: reconcile a matched fencer's birth year (shared helper) ----
+        reconcile_fencer_birth_year(
+            ctx, db, fencer_db, existing_id, vcat, season_end, touched, r.fencer_name, source
         )
 
 

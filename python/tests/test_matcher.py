@@ -38,10 +38,12 @@ import pytest
 
 from python.matcher.fuzzy_match import (
     birth_year_matches_category,
+    canonicalize_scraped_name,
     find_best_match,
     fold_diacritics,
     normalize_name,
     parse_scraped_name,
+    strip_category_markers,
 )
 from python.matcher.pipeline import (
     approve_match,
@@ -211,6 +213,136 @@ class TestNameParsing:
         assert result is not None
         assert result.id_fencer == 5
         assert result.confidence >= 95
+        assert result.status == "AUTO_MATCHED"
+
+
+# ---------------------------------------------------------------------------
+# Scraped-name canonicalization (hyphen spacing + V-cat markers) — guards the
+# duplicate-fencer defect where FTL emits "SAMECKA -NACZYŃSKA (0) Martyna".
+# Canonicalization runs BEFORE the surname/first split so exact-match,
+# fuzzy-match, and new-fencer creation all see the clean form.
+# Strict order: collapse whitespace → strip markers → normalize hyphen spacing.
+# ---------------------------------------------------------------------------
+class TestCanonicalizeScrapedName:
+    def test_clean_name_is_unchanged(self):
+        assert canonicalize_scraped_name("KOWALSKI Jan") == "KOWALSKI Jan"
+
+    def test_collapses_runs_of_whitespace(self):
+        assert canonicalize_scraped_name("KOWALSKI    Jan") == "KOWALSKI Jan"
+        assert canonicalize_scraped_name("  KOWALSKI \t Jan  ") == "KOWALSKI Jan"
+
+    def test_normalizes_space_before_hyphen(self):
+        assert (
+            canonicalize_scraped_name("SAMECKA -NACZYŃSKA Martyna")
+            == "SAMECKA-NACZYŃSKA Martyna"
+        )
+
+    def test_normalizes_space_around_hyphen(self):
+        assert (
+            canonicalize_scraped_name("SAMECKA - NACZYŃSKA Martyna")
+            == "SAMECKA-NACZYŃSKA Martyna"
+        )
+
+    def test_strips_parenthesized_vcat_marker(self):
+        assert (
+            canonicalize_scraped_name("SAMECKA-NACZYŃSKA (0) Martyna")
+            == "SAMECKA-NACZYŃSKA Martyna"
+        )
+
+    def test_strips_bare_digit_vcat_marker(self):
+        # ADR-065 convention: "KAMIŃSKA   1 Gabriela" — bare digit 0-4 between spaces.
+        assert canonicalize_scraped_name("KAMIŃSKA   1 Gabriela") == "KAMIŃSKA Gabriela"
+
+    def test_strips_all_artefacts_combined(self):
+        # The real FTL string: space-hyphen + parenthesized marker + runs of space.
+        assert (
+            canonicalize_scraped_name("SAMECKA  -NACZYŃSKA  (1)  Martyna")
+            == "SAMECKA-NACZYŃSKA Martyna"
+        )
+
+    def test_is_idempotent(self):
+        once = canonicalize_scraped_name("SAMECKA -NACZYŃSKA (0) Martyna")
+        assert canonicalize_scraped_name(once) == once
+
+    def test_does_not_strip_legitimate_digits_outside_marker_range(self):
+        # A bare digit ≥5 is not a V-cat marker — leave it (defensive).
+        assert canonicalize_scraped_name("FOO 9 Bar") == "FOO 9 Bar"
+
+    def test_strip_category_markers_handles_bare_digit(self):
+        # strip_category_markers gains the bare-digit form too.
+        assert strip_category_markers("KAMIŃSKA 1 Gabriela") == "KAMIŃSKA Gabriela"
+        assert strip_category_markers("WASILCZUK (2) Beata") == "WASILCZUK Beata"
+
+
+# ---------------------------------------------------------------------------
+# parse_scraped_name canonicalizes first — the SAMECKA-NACZYŃSKA regression.
+# ---------------------------------------------------------------------------
+class TestParseCanonicalises:
+    def test_space_hyphen_marker_parses_to_clean_surname(self):
+        surname, first = parse_scraped_name("SAMECKA -NACZYŃSKA (0) Martyna")
+        assert surname == "SAMECKA-NACZYŃSKA"
+        assert first == "Martyna"
+
+    def test_bare_digit_marker_dropped_from_first_name(self):
+        surname, first = parse_scraped_name("KAMIŃSKA 1 Gabriela")
+        assert surname == "KAMIŃSKA"
+        assert first == "Gabriela"
+
+
+# ---------------------------------------------------------------------------
+# End-to-end: the dirty FTL variants must resolve to the SAME existing fencer
+# (exact-match in Phase A, AUTO_MATCHED in the fuzzy fall-through) — never a
+# new duplicate. #247 SAMECKA-NACZYŃSKA Martyna, plus a genuinely-distinct
+# hyphenated surname (GIERS-ROMEK) as an over-merge regression guard.
+# ---------------------------------------------------------------------------
+@pytest.fixture
+def hyphen_fencer_db():
+    return [
+        {
+            "id_fencer": 247,
+            "txt_surname": "SAMECKA-NACZYŃSKA",
+            "txt_first_name": "Martyna",
+            "int_birth_year": 1985,
+            "bool_birth_year_estimated": False,
+            "txt_nationality": "PL",
+            "enum_gender": "F",
+            "json_name_aliases": None,
+        },
+        {
+            "id_fencer": 300,
+            "txt_surname": "GIERS-ROMEK",
+            "txt_first_name": "Monika",
+            "int_birth_year": 1984,
+            "bool_birth_year_estimated": False,
+            "txt_nationality": "PL",
+            "enum_gender": "F",
+            "json_name_aliases": None,
+        },
+    ]
+
+
+class TestDirtyFtlNameResolvesToExisting:
+    @pytest.mark.parametrize(
+        "variant",
+        [
+            "SAMECKA-NACZYŃSKA Martyna",
+            "SAMECKA-NACZYŃSKA (0) Martyna",
+            "SAMECKA -NACZYŃSKA Martyna",
+            "SAMECKA -NACZYŃSKA (0) Martyna",
+            "SAMECKA -NACZYŃSKA (1) Martyna",
+        ],
+    )
+    def test_all_variants_auto_match_247(self, hyphen_fencer_db, variant):
+        result = find_best_match(variant, hyphen_fencer_db, season_end_year=2026)
+        assert result.id_fencer == 247, f"{variant!r} did not resolve to #247"
+        assert result.status == "AUTO_MATCHED", f"{variant!r} was {result.status}"
+
+    def test_distinct_hyphenated_surname_not_over_merged(self, hyphen_fencer_db):
+        # GIERS-ROMEK must NOT collapse onto SAMECKA-NACZYŃSKA.
+        result = find_best_match(
+            "GIERS-ROMEK Monika", hyphen_fencer_db, season_end_year=2026
+        )
+        assert result.id_fencer == 300
         assert result.status == "AUTO_MATCHED"
 
 
