@@ -8,11 +8,6 @@ the operations needed by the orchestrator.
 from __future__ import annotations
 
 import os
-from datetime import UTC, datetime, timedelta
-
-# A recompute row left CLAIMED longer than this is from a worker that died
-# mid-drain; the next claim recovers it (ADR-072 self-heal must not strand work).
-STALE_CLAIM_SECONDS = 600  # 10 min — comfortably beyond a normal drain
 
 
 class DbConnector:
@@ -297,25 +292,31 @@ class DbConnector:
     def claim_recompute_batch(self) -> list[int]:
         """Claim recompute events (-> CLAIMED) and return their distinct id_events.
 
-        Claims PENDING rows AND any row a previous worker left CLAIMED beyond
-        STALE_CLAIM_SECONDS (killed mid-drain). Both are flipped to CLAIMED in one
-        step — never back to PENDING — so a freshly-enqueued PENDING row coexisting
-        with a stale CLAIMED row for the same event can't violate the
-        one-PENDING-per-event unique index. The queue dedups PENDING per event.
+        Claims every row that is not yet DONE — both PENDING (newly enqueued) and
+        CLAIMED. A row can only still be CLAIMED at the *start* of a drain if a
+        previous worker died mid-run: CERT drains are serialised (the
+        `recompute-drain` workflow's `cert-recompute` concurrency group runs one at
+        a time, and the worker debounces 120s), so no live worker owns a CLAIMED
+        row when a new drain begins. Reclaiming it is therefore deterministic crash
+        recovery — no time-based heuristic.
+
+        Both states are flipped to CLAIMED in one step (never back to PENDING), so a
+        freshly-enqueued PENDING row coexisting with an orphaned CLAIMED row for the
+        same event can't violate the one-PENDING-per-event partial unique index.
+        Recompute is idempotent, so the queue converges to DONE.
         """
-        cutoff = (
-            (datetime.now(UTC) - timedelta(seconds=STALE_CLAIM_SECONDS))
-            .replace(microsecond=0, tzinfo=None)
-            .isoformat()
+        not_done = ["PENDING", "CLAIMED"]
+        rows = (
+            self._sb.table("tbl_recompute_queue")
+            .select("id_event")
+            .in_("enum_status", not_done)
+            .execute()
         )
-        # PENDING, or a stale CLAIMED row from a dead worker run.
-        claimable = f"enum_status.eq.PENDING,and(enum_status.eq.CLAIMED,ts_claimed.lt.{cutoff})"
-        rows = self._sb.table("tbl_recompute_queue").select("id_event").or_(claimable).execute()
         ids = sorted({r["id_event"] for r in (rows.data or [])})
         if ids:
             self._sb.table("tbl_recompute_queue").update(
                 {"enum_status": "CLAIMED", "ts_claimed": "now()"}
-            ).or_(claimable).in_("id_event", ids).execute()
+            ).in_("enum_status", not_done).in_("id_event", ids).execute()
         return ids
 
     def mark_recompute_done(self, id_events: list[int]) -> None:

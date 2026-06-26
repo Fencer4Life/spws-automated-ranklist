@@ -94,14 +94,16 @@ class TestDbConnector:
         assert new_id == 42
         mock_sb.table.return_value.insert.assert_called_once()
 
-    def test_claim_recompute_batch_includes_stale_claimed(self):
-        """claim_recompute_batch claims PENDING and recovers stale CLAIMED rows
-        (a worker killed mid-drain must not strand events) in one CLAIMED flip —
-        never re-creating PENDING (keeps the one-PENDING-per-event index safe)."""
+    def test_claim_recompute_batch_reclaims_orphaned_claimed(self):
+        """claim_recompute_batch claims every not-DONE row — PENDING AND orphaned
+        CLAIMED. CERT drains are serialised, so a leftover CLAIMED is always an
+        orphan from a dead worker; reclaiming it is deterministic (no time
+        heuristic). Both flip straight to CLAIMED — never back to PENDING — keeping
+        the one-PENDING-per-event index safe."""
         from python.pipeline.db_connector import DbConnector
 
         mock_sb = MagicMock()
-        mock_sb.table.return_value.select.return_value.or_.return_value.execute.return_value.data = [
+        mock_sb.table.return_value.select.return_value.in_.return_value.execute.return_value.data = [
             {"id_event": 5},
             {"id_event": 7},
             {"id_event": 5},  # duplicate id collapses
@@ -109,15 +111,14 @@ class TestDbConnector:
         db = DbConnector(mock_sb)
         ids = db.claim_recompute_batch()
         assert ids == [5, 7]
-        # The claimable predicate covers PENDING and stale CLAIMED (by ts_claimed).
-        predicate = mock_sb.table.return_value.select.return_value.or_.call_args.args[0]
-        assert "enum_status.eq.PENDING" in predicate
-        assert "enum_status.eq.CLAIMED" in predicate
-        assert "ts_claimed.lt." in predicate
+        # Status filter is a deterministic membership test, no ts_claimed / time value.
+        status_filter = mock_sb.table.return_value.select.return_value.in_.call_args
+        assert status_filter.args[0] == "enum_status"
+        assert set(status_filter.args[1]) == {"PENDING", "CLAIMED"}
         # And the claim flips those ids to CLAIMED (never to PENDING).
         update_arg = mock_sb.table.return_value.update.call_args.args[0]
         assert update_arg["enum_status"] == "CLAIMED"
-        mock_sb.table.return_value.update.return_value.or_.return_value.in_.return_value.execute.assert_called_once()
+        mock_sb.table.return_value.update.return_value.in_.return_value.in_.return_value.execute.assert_called_once()
 
     def test_has_existing_results(self):
         """9.200 has_existing_results returns True when results exist, False when not."""
