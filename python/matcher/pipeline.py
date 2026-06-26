@@ -88,6 +88,41 @@ def estimate_birth_year(category: str, season_end_year: int) -> int:
     return season_end_year - anchor_age
 
 
+# V-cat order, youngest → oldest, for promotion/demotion comparison.
+_VCAT_ORDER = ["V0", "V1", "V2", "V3", "V4"]
+
+
+def reconciled_birth_year(
+    target_vcat: str,
+    season_end_year: int,
+    current_vcat: str | None = None,
+) -> int:
+    """BY-correction target when a matched fencer's stored BY conflicts with the
+    bracket V-cat (ADR-056 Stage-0 reconcile).
+
+    Unlike `estimate_birth_year` (used for brand-new fencers with no prior age
+    signal → band MIDPOINT, the least-biased guess), reconcile already has a prior
+    BY and should move the fencer MINIMALLY into the bracket's band:
+
+      - **Promotion** (`target_vcat` older than `current_vcat`): the fencer aged up,
+        so anchor to the YOUNGEST age of the new band — she just crossed the
+        boundary. The midpoint would over-age her and prematurely re-promote her a
+        category next season (e.g. V0→V1 @2026: midpoint=1981 → V2 by 2031, vs
+        youngest-edge=1986 → stays V1).
+      - **Demotion / unknown current**: keep the midpoint (rare; usually an
+        organizer marker error — the band centre is the safe fallback).
+    """
+    if (
+        current_vcat is not None
+        and target_vcat in _VCAT_ORDER
+        and current_vcat in _VCAT_ORDER
+        and _VCAT_ORDER.index(target_vcat) > _VCAT_ORDER.index(current_vcat)
+    ):
+        min_age = _CATEGORY_MIN_AGE[target_vcat]
+        return season_end_year - min_age
+    return estimate_birth_year(target_vcat, season_end_year)
+
+
 def auto_create_fencer(
     scraped_name: str,
     category: str,

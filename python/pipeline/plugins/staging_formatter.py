@@ -241,9 +241,13 @@ def _render_reconciled(m) -> str:
     if rec:
         lines += ["| Fencer | BY | BY status | status reason |", "|---|---:|---|---|"]
         for r in rec:
+            anchor = r.get("anchor", "band midpoint")
             reason = (
                 f"conflicted with V-cat {r.get('vcat')} (old BY {r.get('old_birth_year')}) "
-                f"→ reconciled to band midpoint"
+                f"→ reconciled to {r.get('vcat')} {anchor}"
+                if anchor == "lower edge"
+                else f"conflicted with V-cat {r.get('vcat')} (old BY {r.get('old_birth_year')}) "
+                f"→ reconciled to {anchor}"
             )
             if r.get("was_confirmed"):
                 reason += "; ⚠ was CONFIRMED → downgraded to estimated"
