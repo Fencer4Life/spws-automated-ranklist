@@ -233,14 +233,12 @@ class TestCanonicalizeScrapedName:
 
     def test_normalizes_space_before_hyphen(self):
         assert (
-            canonicalize_scraped_name("SAMECKA -NACZYŃSKA Martyna")
-            == "SAMECKA-NACZYŃSKA Martyna"
+            canonicalize_scraped_name("SAMECKA -NACZYŃSKA Martyna") == "SAMECKA-NACZYŃSKA Martyna"
         )
 
     def test_normalizes_space_around_hyphen(self):
         assert (
-            canonicalize_scraped_name("SAMECKA - NACZYŃSKA Martyna")
-            == "SAMECKA-NACZYŃSKA Martyna"
+            canonicalize_scraped_name("SAMECKA - NACZYŃSKA Martyna") == "SAMECKA-NACZYŃSKA Martyna"
         )
 
     def test_strips_parenthesized_vcat_marker(self):
@@ -339,9 +337,7 @@ class TestDirtyFtlNameResolvesToExisting:
 
     def test_distinct_hyphenated_surname_not_over_merged(self, hyphen_fencer_db):
         # GIERS-ROMEK must NOT collapse onto SAMECKA-NACZYŃSKA.
-        result = find_best_match(
-            "GIERS-ROMEK Monika", hyphen_fencer_db, season_end_year=2026
-        )
+        result = find_best_match("GIERS-ROMEK Monika", hyphen_fencer_db, season_end_year=2026)
         assert result.id_fencer == 300
         assert result.status == "AUTO_MATCHED"
 
