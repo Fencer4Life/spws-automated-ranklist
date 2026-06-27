@@ -121,8 +121,8 @@
     "schema_fingerprint": "f3bf41d7c20f78b63ae297740ff3cbd1"
   },
   "prod": {
-    "last_updated": "2026-06-27T07:07:24Z",
-    "last_sha": "42b972ed261ad84f32747631659ddea21985c65a",
+    "last_updated": "2026-06-27T14:48:25Z",
+    "last_sha": "c2960a526c4b07c1fa206b05e9a81e49c9c0ac9b",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -236,8 +236,9 @@
       "20260619000001_tournament_url_results_on_ingest.sql",
       "20260625000001_phase4_pew_split_collision_guard.sql",
       "20260626000001_fn_merge_fencers_repoint_match_candidate.sql",
-      "20260626120000_carry_stop_on_current_result.sql"
+      "20260626120000_carry_stop_on_current_result.sql",
+      "20260627000001_vw_calendar_prior_event.sql"
     ],
-    "schema_fingerprint": "71604bea5c1bc4829f2ded529d928ae2"
+    "schema_fingerprint": "f3bf41d7c20f78b63ae297740ff3cbd1"
   }
 }
