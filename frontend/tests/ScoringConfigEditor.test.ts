@@ -84,6 +84,12 @@ describe('ScoringConfigEditor (T8.8)', () => {
     expect(pswMult?.value).toBe('2')
   })
 
+  // Part 3 — expected-rounds label clarifies "DE rounds" (PL default locale)
+  it('labels expected rounds as DE rounds (rund pucharowych)', () => {
+    const { getByText } = render(ScoringConfigEditor, { props: defaultProps })
+    expect(getByText('Oczekiwana liczba rund pucharowych')).not.toBeNull()
+  })
+
   // 8.67 — Displays intake rules (min participants, total rounds)
   it('displays intake rules', () => {
     const { container } = render(ScoringConfigEditor, { props: defaultProps })

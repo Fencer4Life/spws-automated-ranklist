@@ -17,7 +17,7 @@ BEGIN;
 -- guard. Targeted (not session_replication_role) so audit + status-
 -- transition triggers stay live.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
-SELECT plan(23);
+SELECT plan(24);
 
 -- =========================================================================
 -- Schema-level checks (no setup required, no missing-function risk)
@@ -130,11 +130,18 @@ SELECT is(
   'ph3.5: every skeleton has id_prior_event set (typical season)'
 );
 
--- ph3.6 — REMOVED: skeleton events should be childless. Tournaments are
--- created at ingestion, not by fn_init_season. The original assertion
--- (skeletons × 6 child tournaments) tested a behavior that no longer fits
--- the data model. _fn_create_skeleton_children is itself the wrong shape
--- and is slated for removal alongside this test's rewrite.
+-- ph3.6 v2 — skeleton events are CHILDLESS. Tournaments are ingested per event
+-- after the season is created; the empty events serve a calendar purpose only
+-- (user requirement 2026-06-27). fn_init_season no longer creates child
+-- tournaments (the `_fn_create_skeleton_children` helper is retained only as a
+-- fixture builder for cascade-rename tests).
+SELECT is(
+  (SELECT COUNT(*)::INT FROM tbl_tournament t
+     JOIN tbl_event e ON e.id_event = t.id_event
+    WHERE e.id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027')),
+  0,
+  'ph3.6 v2: fn_init_season creates childless skeleton events (zero tournaments)'
+);
 
 -- ph3.7 — IMEW skeleton present when enum_european_event_type='IMEW'
 SELECT is(
@@ -343,6 +350,14 @@ SAVEPOINT s_update;
 INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_european_event_type)
   VALUES ('SPWS-2026-2027', '2026-09-01', '2027-07-31', 'IMEW');
 SELECT fn_init_season((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
+
+-- fn_init_season now creates CHILDLESS skeletons (ph3.6 v2), so build the 6 V2
+-- children fixture explicitly to exercise fn_update_event's cascade rename.
+SELECT _fn_create_skeleton_children(
+  (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1efs-2026-2027'),
+  'PEW1efs-2026-2027',
+  'PEW'
+);
 
 SELECT fn_update_event(
   (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1efs-2026-2027'),

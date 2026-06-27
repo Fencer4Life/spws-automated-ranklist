@@ -246,7 +246,13 @@ export interface ScoringConfig {
   psw_multiplier: number
   min_participants_evf: number
   min_participants_ppw: number
+  // Ranklist +EVF/Kadra toggle (default FALSE — SPWS lost the national-team
+  // appointment privilege). Independent of the Calendar flag below.
   show_evf_toggle: boolean
+  // Calendar +EVF toggle (default TRUE — the richer EVF + FIE calendar view).
+  // ADR-044 amend: split from show_evf_toggle so the two surfaces are
+  // independently configurable. Optional for legacy configs (COALESCE TRUE).
+  show_evf_toggle_calendar?: boolean
   ranking_rules: RankingRules | null
   // Phase 3 — selected carry-over engine for the season. Lives on
   // tbl_season.enum_carryover_engine but is exposed alongside the scoring

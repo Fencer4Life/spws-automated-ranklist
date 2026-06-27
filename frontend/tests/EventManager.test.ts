@@ -237,7 +237,10 @@ describe('EventManager (T9.3)', () => {
     expect(select).not.toBeNull()
     const options = Array.from(select.options).map(o => o.value).filter(v => v !== '')
     expect(options).toContain('PLANNED') // current status as default option
-    expect(options.length).toBe(6) // current + 5 alternatives
+    // CREATED is offerable so an admin can revert a skeleton back to CREATED
+    // (e.g. after promoting it by mistake) — it hides the event from the calendar again.
+    expect(options).toContain('CREATED')
+    expect(options.length).toBe(7) // current + 6 alternatives (incl. CREATED)
   })
 
   // 9.89 — Future CANCELLED event edit form shows status dropdown
@@ -256,7 +259,8 @@ describe('EventManager (T9.3)', () => {
     expect(select).not.toBeNull()
     const options = Array.from(select.options).map(o => o.value).filter(v => v !== '')
     expect(options).toContain('CANCELLED') // current status as default option
-    expect(options.length).toBe(6)
+    expect(options).toContain('CREATED')
+    expect(options.length).toBe(7) // current + 6 alternatives (incl. CREATED)
   })
 
   // Admin guard — renders nothing when isAdmin=false

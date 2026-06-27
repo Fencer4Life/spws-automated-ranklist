@@ -15,12 +15,12 @@
         <button
           class="scope-filter-btn"
           class:active={scopeFilter === 'ppw'}
-          onclick={() => { scopeFilter = 'ppw' }}
+          onclick={() => { scopeFilter = 'ppw'; scopeUserOverride = true }}
         >PPW</button>
         <button
           class="scope-filter-btn"
           class:active={scopeFilter === 'all'}
-          onclick={() => { scopeFilter = 'all' }}
+          onclick={() => { scopeFilter = 'all'; scopeUserOverride = true }}
         >+EVF</button>
       </div>
     {/if}
@@ -166,7 +166,15 @@
   } = $props()
 
   let timeFilter: 'all' | 'past' | 'future' = $state('all')
-  let scopeFilter: 'all' | 'ppw' = $state('ppw')
+  // Part 1 (ADR-044 amend): when the Calendar +EVF flag (showEvfToggle) is ON,
+  // default the scope to 'all' so EVF (PEW/MEW) + FIE (MSW/IMSW/PSW) events show
+  // by default (the richer calendar). The flag loads async, so re-sync the
+  // default via an effect until the user explicitly picks a scope.
+  let scopeFilter: 'all' | 'ppw' = $state(showEvfToggle ? 'all' : 'ppw')
+  let scopeUserOverride = $state(false)
+  $effect(() => {
+    if (!scopeUserOverride) scopeFilter = showEvfToggle ? 'all' : 'ppw'
+  })
 
   const INTL_PREFIXES = /^(PEW|MEW|MSW|PSW|IMEW|IMSW)/
 
@@ -189,12 +197,17 @@
 
   const today = new Date().toISOString().slice(0, 10)
 
+  // CREATED-state events are planning skeletons (created date-less by
+  // fn_init_season, scheduled later in EventManager). Hide them from the public
+  // calendar — both the timeline and the rolling-progress bar (user req 2026-06-27).
+  let calendarEvents = $derived(events.filter((e) => e.enum_status !== 'CREATED'))
+
   // Rolling progress: derive position slots respecting scope + time filters
   let positionSlots = $derived.by(() => {
     if (!isActiveSeason) return []
     let inScope = scopeFilter === 'all'
-      ? events
-      : events.filter(e => !isInternationalEvent(e))
+      ? calendarEvents
+      : calendarEvents.filter(e => !isInternationalEvent(e))
     if (timeFilter === 'past') {
       inScope = inScope.filter(e => e.dt_start != null && e.dt_start < today)
     } else if (timeFilter === 'future') {
@@ -212,7 +225,7 @@
   })
 
   let filteredEvents = $derived.by(() => {
-    let result = events
+    let result = calendarEvents
     if (!showEvfToggle || scopeFilter === 'ppw') {
       result = result.filter((e) => !isInternationalEvent(e))
     }

@@ -33,22 +33,6 @@
             </div>
 
             <div class="annotate-new">
-              <label class="wizard-label">
-                {t('wizard_field_carryover_days').toUpperCase()}
-                <input
-                  data-field="wizard-carryover-days"
-                  type="number"
-                  min="1"
-                  max="9999"
-                  bind:value={draftCarryoverDays}
-                />
-              </label>
-              <div class="field-hint">
-                {t('wizard_field_carryover_days_hint').replace('{n}', String(draftCarryoverDays || 366))}
-              </div>
-            </div>
-
-            <div class="annotate-new" style="margin-top: 12px;">
               <label class="wizard-label">{t('wizard_field_european').toUpperCase()}</label>
               <div class="segmented" data-field="wizard-european-segmented">
                 <button
@@ -120,6 +104,7 @@
             <ScoringConfigEditor
               config={effectiveScoringConfig}
               seasonCode={draftCode}
+              onchange={(updated) => { capturedScoring = updated }}
               onsave={(updated) => { capturedScoring = updated; advanceToStep3() }}
               oncancel={handleCancel}
             />
@@ -132,6 +117,9 @@
               </button>
               <button class="back-btn" data-field="wizard-back-btn" onclick={() => { currentStep = 1 }}>
                 {t('wizard_back')}
+              </button>
+              <button class="next-btn" data-field="wizard-next-step2-btn" onclick={advanceToStep3}>
+                {t('wizard_next')}
               </button>
             </div>
           </div>
@@ -150,7 +138,6 @@
               <p class="wizard-lead">
                 {t('wizard_lead_step3_with_prior')
                   .replace('{count}', String(previewTotal))
-                  .replace('{child_count}', String(previewTotal * 6))
                   .replace('{prior_code}', priorSeasonCode ?? '')}
               </p>
               <div class="checklist" data-field="wizard-skel-breakdown">
@@ -277,12 +264,39 @@
     engine: 'EVENT_FK_MATCHING',
   }
 
+  // Part 4 (ADR-044): suggest the next season from the latest existing one, so
+  // the wizard opens pre-filled and "Dalej" is active immediately. Without this
+  // the form opened blank → Dalej permanently disabled → "Dodaj Sezon not working".
+  // Returns null for the first-ever season (nothing to derive from) or an
+  // unparseable code, in which case the admin fills the fields by hand.
+  function suggestNextSeason(ss: Season[]): { code: string, start: string, end: string } | null {
+    if (ss.length === 0) return null
+    const latest = ss.reduce((a, b) => (a.dt_end >= b.dt_end ? a : b))
+    const m = latest.txt_code.match(/^(.*?)(\d{4})-(\d{4})$/)
+    if (!m) return null
+    const bumpYear = (d: string) => String(Number(d.slice(0, 4)) + 1) + d.slice(4)
+    return {
+      code: `${m[1]}${Number(m[2]) + 1}-${Number(m[3]) + 1}`,
+      start: bumpYear(latest.dt_start),
+      end: bumpYear(latest.dt_end),
+    }
+  }
+
+  const _suggested = suggestNextSeason(seasons)
   let currentStep = $state<1 | 2 | 3>(1)
-  let draftCode = $state('')
-  let draftStart = $state('')
-  let draftEnd = $state('')
-  let draftCarryoverDays = $state(366)
+  let draftCode = $state(_suggested?.code ?? '')
+  let draftStart = $state(_suggested?.start ?? '')
+  let draftEnd = $state(_suggested?.end ?? '')
   let draftEuropean = $state<EuropeanEventType>(null)
+
+  // Re-suggest when the wizard (re)opens with empty fields — covers the case
+  // where `seasons` arrived async after mount, and re-opens after a cancel/reset.
+  $effect(() => {
+    if (open && !draftCode && !draftStart && !draftEnd) {
+      const s = suggestNextSeason(seasons)
+      if (s) { draftCode = s.code; draftStart = s.start; draftEnd = s.end }
+    }
+  })
   let priorScoringConfig = $state<ScoringConfig | null>(null)
   let priorSeasonCode = $state<string | null>(null)
   let priorBreakdown = $state<Required<SkeletonByKind> | null>(null)
@@ -307,7 +321,6 @@
 
   function isStep1Valid(): boolean {
     if (!draftCode.trim() || !draftStart || !draftEnd) return false
-    if (draftCarryoverDays < 1) return false
     return true
   }
 
@@ -316,7 +329,6 @@
     draftCode = ''
     draftStart = ''
     draftEnd = ''
-    draftCarryoverDays = 366
     draftEuropean = null
     priorScoringConfig = null
     priorSeasonCode = null
@@ -374,7 +386,9 @@
         code: draftCode,
         dt_start: draftStart,
         dt_end: draftEnd,
-        carryover_days: draftCarryoverDays,
+        // Part 2 (ADR-044 amend): carryover-days removed from the wizard UI;
+        // the inactive EVENT_FK_MATCHING engine keeps the column's default.
+        carryover_days: 366,
         european_type: draftEuropean,
         carryover_engine: engine,
         scoring_config: config,

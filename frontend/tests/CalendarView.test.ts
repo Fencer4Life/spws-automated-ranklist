@@ -156,9 +156,10 @@ describe('CalendarView (T8.5)', () => {
   it('filters events by past/future/all toggle', async () => {
     const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
 
-    // Default: PPW scope — international event filtered out
+    // Part 1 (ADR-044 amend): calendar flag ON → default scope 'all', so all 4
+    // events (incl. the international PEW1) show before any time filter.
     let items = container.querySelectorAll('.timeline-event')
-    expect(items.length).toBe(3)
+    expect(items.length).toBe(4)
 
     // Select "future" filter
     const select = container.querySelector('.time-filter-select') as HTMLSelectElement
@@ -174,6 +175,10 @@ describe('CalendarView (T8.5)', () => {
   // 8.45 — PPW shows domestic only; +EVF shows all events
   it('PPW mode hides international events; +EVF shows all', async () => {
     const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+
+    // Default is now 'all' (4 shown); clicking PPW narrows to domestic.
+    let allItems = container.querySelectorAll('.timeline-event')
+    expect(allItems.length).toBe(4)
 
     // Click PPW filter
     const modeBtns = container.querySelectorAll('.scope-filter-btn')
@@ -260,14 +265,47 @@ describe('CalendarView (T8.5)', () => {
     expect(scopeBtns.length).toBe(2)
   })
 
+  // Part 1 (ADR-044 amend) — calendar flag ON shows international by default;
+  // flag OFF shows domestic only. The +EVF scope button defaults active when ON.
+  it('calendar flag ON defaults to the richer EVF+FIE view', () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    // international PEW1 visible by default
+    expect(container.querySelectorAll('.timeline-event').length).toBe(4)
+    const evfBtn = Array.from(container.querySelectorAll('.scope-filter-btn'))
+      .find((b) => b.textContent?.trim() === '+EVF')
+    expect(evfBtn!.classList.contains('active')).toBe(true)
+  })
+
+  // CREATED-state events are planning skeletons (no dates yet) — hidden from the
+  // public calendar entirely, even if a date is set. Admin schedules them in
+  // EventManager; they reappear once promoted past CREATED. (user req 2026-06-27)
+  it('hides CREATED-state events from the calendar timeline', () => {
+    const events = [
+      makeEvent({ id_event: 1, txt_code: 'PPW1-2026-2027', txt_name: 'Skeleton PPW1', enum_status: 'CREATED', dt_start: '2026-09-15', bool_has_international: false }),
+      makeEvent({ id_event: 2, txt_code: 'PPW2-2026-2027', txt_name: 'Scheduled PPW2', enum_status: 'SCHEDULED', dt_start: '2026-10-15', bool_has_international: false }),
+    ]
+    const { container } = render(CalendarView, { props: { events, showEvfToggle: true } })
+    const tiles = container.querySelectorAll('.timeline-event')
+    expect(tiles.length).toBe(1)
+    expect(container.textContent).toContain('Scheduled PPW2')
+    expect(container.textContent).not.toContain('Skeleton PPW1')
+  })
+
+  it('calendar flag OFF shows domestic events only', () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: false } })
+    // 3 domestic, PEW1 hidden; no scope buttons
+    expect(container.querySelectorAll('.timeline-event').length).toBe(3)
+    expect(container.querySelectorAll('.scope-filter-btn').length).toBe(0)
+  })
+
   // 8.47 — Season filter changes displayed events (tested via events prop)
   it('updates when events prop changes', () => {
     const { container, rerender } = render(CalendarView, {
       props: { events: EVENTS, showEvfToggle: true },
     })
-    // Default PPW scope — international event filtered out
+    // Part 1 (ADR-044 amend): default scope 'all' → all 4 events shown.
     let items = container.querySelectorAll('.timeline-event')
-    expect(items.length).toBe(3)
+    expect(items.length).toBe(4)
 
     // Simulate season change: pass only 1 event
     rerender({ events: [EVENTS[0]] })

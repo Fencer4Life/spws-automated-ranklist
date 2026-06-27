@@ -42,6 +42,15 @@ describe('fetchSeasons', () => {
     expect(mockFrom).toHaveBeenCalledWith('tbl_season')
     expect(result).toEqual(seasons)
   })
+
+  // Part 2 (ADR-044) — read-path round-trip: the carry-over "European event"
+  // choice only sticks on reopen if fetchSeasons SELECTs enum_european_event_type.
+  it('selects enum_european_event_type so the carry-over choice round-trips', async () => {
+    const select = vi.fn().mockReturnValue({ order: vi.fn().mockResolvedValue({ data: [], error: null }) })
+    mockFrom.mockReturnValue({ select })
+    await fetchSeasons()
+    expect(select).toHaveBeenCalledWith(expect.stringContaining('enum_european_event_type'))
+  })
 })
 
 // 6.1, 6.3 — PPW ranking data

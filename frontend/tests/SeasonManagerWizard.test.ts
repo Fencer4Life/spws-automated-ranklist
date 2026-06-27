@@ -95,11 +95,31 @@ describe('SeasonManagerWizard (Phase 3b)', () => {
     expect(container.querySelector('[data-field="wizard-step1"]')).not.toBeNull()
   })
 
-  // ph3.24 — Dalej disabled until all required fields filled
-  it('ph3.24: Dalej is disabled when required fields are empty', () => {
-    const { container } = render(SeasonManagerWizard, { props: defaultProps() })
+  // ph3.24 — Dalej disabled when required fields are empty. Part 4 (ADR-044):
+  // the wizard now pre-fills the suggested next season from existing seasons, so
+  // the "empty" case only occurs for the first-ever season (no prior to suggest).
+  it('ph3.24: Dalej is disabled for the first-ever season (nothing to pre-fill)', () => {
+    const { container } = render(SeasonManagerWizard, { props: defaultProps({ seasons: [] }) })
+    const code = container.querySelector('[data-field="wizard-code"]') as HTMLInputElement
+    expect(code.value).toBe('')
     const nextBtn = container.querySelector('[data-field="wizard-next-btn"]') as HTMLButtonElement
     expect(nextBtn.disabled).toBe(true)
+  })
+
+  // Part 4 (ADR-044) — root cause of "Dodaj Sezon not working": the wizard opened
+  // blank, so Dalej was permanently disabled. It now pre-fills the suggested next
+  // season (code + dates incremented from the latest season) → Dalej active on open.
+  it('pre-fills the suggested next season so Dalej is active on open', () => {
+    const { container } = render(SeasonManagerWizard, { props: defaultProps() })
+    const code = container.querySelector('[data-field="wizard-code"]') as HTMLInputElement
+    const start = container.querySelector('[data-field="wizard-dt-start"]') as HTMLInputElement
+    const end = container.querySelector('[data-field="wizard-dt-end"]') as HTMLInputElement
+    // latest season is SPWS-2025-2026 (2025-09-01 … 2026-06-30) → next year's span
+    expect(code.value).toBe('SPWS-2026-2027')
+    expect(start.value).toBe('2026-09-01')
+    expect(end.value).toBe('2027-06-30')
+    const nextBtn = container.querySelector('[data-field="wizard-next-btn"]') as HTMLButtonElement
+    expect(nextBtn.disabled).toBe(false)
   })
 
   it('ph3.24: Dalej enables after all fields are filled', async () => {
@@ -107,6 +127,13 @@ describe('SeasonManagerWizard (Phase 3b)', () => {
     await fillStep1(container)
     const nextBtn = container.querySelector('[data-field="wizard-next-btn"]') as HTMLButtonElement
     expect(nextBtn.disabled).toBe(false)
+  })
+
+  // Part 2 (ADR-044 amend) — carry-over-days control removed from the wizard;
+  // commit still defaults carryover_days to 366 (asserted in ph3.28).
+  it('does not render the carry-over days control on step 1', () => {
+    const { container } = render(SeasonManagerWizard, { props: defaultProps() })
+    expect(container.querySelector('[data-field="wizard-carryover-days"]')).toBeNull()
   })
 
   // ph3.25 — step 2 advances after Dalej; onloadpriorconfig was called
@@ -232,6 +259,38 @@ describe('SeasonManagerWizard (Phase 3b)', () => {
     expect(oncommit).not.toHaveBeenCalled()
   })
 
+  // Part 4 (ADR-044) — step 2 must have its own "Dalej" Next button. Previously
+  // the only way to reach step 3 was the ScoringConfigEditor's internal "Zapisz"
+  // button, so users saw only Cancel/Back and were stuck. The Next button
+  // advances to step 3 capturing the editor's current config.
+  it('step 2 has a Dalej button that advances to step 3', async () => {
+    const { container } = render(SeasonManagerWizard, { props: defaultProps() })
+    await fillStep1(container)
+    await fireEvent.click(container.querySelector('[data-field="wizard-next-btn"]')!)
+    await vi.waitFor(() => container.querySelector('[data-field="wizard-step2"]'))
+    const next2 = container.querySelector('[data-field="wizard-next-step2-btn"]') as HTMLButtonElement
+    expect(next2).not.toBeNull()
+    await fireEvent.click(next2)
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-field="wizard-step3"]')).not.toBeNull()
+    })
+  })
+
+  // Part 4 — committing after advancing via the step-2 Next button carries the
+  // scoring config through (captured live via onchange, not only on Zapisz).
+  it('commit after step-2 Next sends a scoring_config payload', async () => {
+    const oncommit = vi.fn().mockResolvedValue(null)
+    const { container } = render(SeasonManagerWizard, { props: defaultProps({ oncommit }) })
+    await fillStep1(container)
+    await fireEvent.click(container.querySelector('[data-field="wizard-next-btn"]')!)
+    await vi.waitFor(() => container.querySelector('[data-field="wizard-step2"]'))
+    await fireEvent.click(container.querySelector('[data-field="wizard-next-step2-btn"]') as HTMLButtonElement)
+    await vi.waitFor(() => container.querySelector('[data-field="wizard-step3"]'))
+    await fireEvent.click(container.querySelector('[data-field="wizard-commit-btn"]')!)
+    await vi.waitFor(() => expect(oncommit).toHaveBeenCalled())
+    expect(oncommit.mock.calls[0][0].scoring_config).toBeDefined()
+  })
+
   // ph3.32 — ← Wstecz from step 2 returns to step 1 with code preserved
   it('ph3.32: ← Wstecz preserves entered values', async () => {
     const { container } = render(SeasonManagerWizard, { props: defaultProps() })
@@ -304,5 +363,28 @@ describe('SeasonManagerWizard (Phase 3b)', () => {
     await fireEvent.click(container.querySelector('[data-field="wizard-commit-btn"]')!)
     await vi.waitFor(() => expect(oncommit).toHaveBeenCalled())
     expect(oncommit.mock.calls[0][0].european_type).toBe('DMEW')
+  })
+
+  // Part 4 (ADR-044) — surfaced-error path: when commit fails, the wizard shows
+  // the friendly error on step 3 and stays open (does NOT close or reset), so
+  // the admin can read it ([[feedback_ui_debug_no_console]]).
+  it('surfaces a commit error on step 3 without closing the wizard', async () => {
+    const onclose = vi.fn()
+    const oncommit = vi.fn().mockResolvedValue('Sezon SPWS-2026-2027 już istnieje')
+    const { container } = render(SeasonManagerWizard, { props: defaultProps({ oncommit, onclose }) })
+    await fillStep1(container)
+    await fireEvent.click(container.querySelector('[data-field="wizard-next-btn"]')!)
+    await vi.waitFor(() => container.querySelector('[data-field="wizard-step2"]'))
+    await fireEvent.click(container.querySelector('.config-save-btn') as HTMLButtonElement)
+    await vi.waitFor(() => container.querySelector('[data-field="wizard-step3"]'))
+    await fireEvent.click(container.querySelector('[data-field="wizard-commit-btn"]')!)
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-field="wizard-commit-error"]')).not.toBeNull()
+    })
+    expect(container.querySelector('[data-field="wizard-commit-error"]')!.textContent)
+      .toContain('już istnieje')
+    // wizard stays on step 3, not closed
+    expect(container.querySelector('[data-field="wizard-step3"]')).not.toBeNull()
+    expect(onclose).not.toHaveBeenCalled()
   })
 })

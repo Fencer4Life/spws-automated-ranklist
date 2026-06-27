@@ -518,7 +518,10 @@
     )
   }
 
-  const ALL_STATUSES: string[] = ['PLANNED', 'SCHEDULED', 'CHANGED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
+  // CREATED is offerable so an admin can revert a skeleton back to CREATED (which
+  // re-hides it from the public calendar). getAvailableStatuses excludes the
+  // event's current status, so it only appears when the event is past CREATED.
+  const ALL_STATUSES: string[] = ['CREATED', 'PLANNED', 'SCHEDULED', 'CHANGED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
 
   function getAvailableStatuses(event: CalendarEvent): string[] {
     const today = new Date().toISOString().slice(0, 10)

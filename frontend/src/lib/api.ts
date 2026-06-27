@@ -50,7 +50,7 @@ export async function refreshActiveSeason(): Promise<void> {
 export async function fetchSeasons(): Promise<Season[]> {
   const { data, error } = await getClient()
     .from('tbl_season')
-    .select('id_season, txt_code, dt_start, dt_end, bool_active')
+    .select('id_season, txt_code, dt_start, dt_end, bool_active, enum_european_event_type')
     .order('dt_start', { ascending: false })
   if (error) throw error
   return data ?? []
@@ -257,15 +257,16 @@ export async function updateSeasonCarryoverEngine(seasonId: number, engine: stri
 // Phase 3 (ADR-044): patch tbl_season's carry-over fields directly. Same
 // rationale as updateSeasonCarryoverEngine — fn_update_season is a 4-arg RPC
 // we don't want to widen for these admin-form additions.
+// Part 2 (ADR-044 amend): carryover-days dropped from the UI — it fed only the
+// inactive EVENT_FK_MATCHING engine. The int_carryover_days column stays on disk
+// (default 366); only enum_european_event_type is now writable here.
 export async function updateSeasonCarryoverFields(
   seasonId: number,
-  carryoverDays: number,
   europeanType: EuropeanEventType,
 ): Promise<void> {
   const { error } = await getClient()
     .from('tbl_season')
     .update({
-      int_carryover_days: carryoverDays,
       enum_european_event_type: europeanType,
     })
     .eq('id_season', seasonId)
