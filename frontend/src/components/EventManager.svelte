@@ -802,7 +802,7 @@
   function openEditForm(event: CalendarEvent) {
     editingId = event.id_event
     draftCode = event.txt_code
-    draftPriorEventId = (event as CalendarEvent & { id_prior_event?: number | null }).id_prior_event ?? null
+    draftPriorEventId = event.id_prior_event ?? null
     draftName = event.txt_name
     draftLocation = event.txt_location ?? ''
     draftDtStart = event.dt_start ?? ''
@@ -871,12 +871,15 @@
       urlEvent4: compact[3],
       urlEvent5: compact[4],
       // Phase 3 (ADR-044): only send `code` when it changed (so update v2's
-      // cascade doesn't fire on no-op saves). priorEventId always sent (NULL
-      // = no change is fine for fresh edits, an explicit value flips the FK).
+      // cascade doesn't fire on no-op saves). The picker is authoritative for
+      // the carry-over FK: a chosen event sets the link, "— none —" sends the
+      // -1 sentinel so fn_update_event clears it (a bare NULL would mean "leave
+      // unchanged", which can't express an explicit unlink — migration
+      // 20260627000001).
       code: editingId != null && draftCode && filteredEvents.find((e) => e.id_event === editingId)?.txt_code !== draftCode
         ? draftCode
         : undefined,
-      priorEventId: draftPriorEventId,
+      priorEventId: draftPriorEventId ?? -1,
     }
     if (editingId != null) {
       onupdate(editingId, params)

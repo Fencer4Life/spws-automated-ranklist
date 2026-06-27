@@ -97,6 +97,40 @@ A naive `replace(child_code, old_code, new_code)` does not work for PPW/PEW beca
 - Plan: `~/.claude/plans/eager-knitting-fog.md`
 - Mocks: [`doc/mockups/m13_event_manager_phase3.html`](../mockups/m13_event_manager_phase3.html), [`doc/mockups/m13_season_manager_phase3.html`](../mockups/m13_season_manager_phase3.html)
 
+## Amendment (2026-06-27) — carry-over picker round-trip + explicit unlink
+
+The Phase-3c `id_prior_event` picker (link an EVENT to its previous-season
+counterpart — the FK that drives the rolling/carry-over engine, ADR-018/021/042)
+**saved but appeared not to**: editing an event, choosing a counterpart, and
+clicking Save left the dropdown back at "— none —" on reopen.
+
+**Root cause** — read path, not write path. `fn_update_event` persisted the FK to
+`tbl_event` correctly (verified by ph3.16). But `vw_calendar`, which the admin form
+refetches through (`fetchCalendarEvents`), never SELECTed `id_prior_event`, so
+`openEditForm` read `event.id_prior_event` as `undefined` and reset the picker. This
+is exactly the "new `tbl_event` column → rebuild `vw_calendar` or the round-trip
+silently breaks" discipline — the column was added in `20260425000005` for the FK
+engine but never surfaced on the view.
+
+**Fix** — migration `20260627000001_vw_calendar_prior_event.sql`:
+1. Rebuild `vw_calendar` from its `20260618000001` definition with `e.id_prior_event`
+   added (functionally dependent on the grouped PK — no `GROUP BY` change). Re-issue
+   grants (a recreated view loses them).
+2. While here, make the picker's "— none —" option actually **unlink**. The original
+   write used `COALESCE(p_id_prior_event, id_prior_event)`, so a NULL meant "leave
+   unchanged" and an existing link could never be cleared from the UI. `fn_update_event`
+   now reads three intents on `p_id_prior_event`: `NULL` → leave unchanged (legacy
+   19-arg callers unaffected), `-1` → explicit clear, `>0` → set. The signature is
+   unchanged, so the existing REVOKE/GRANT still holds.
+
+**Frontend** — `CalendarEvent.id_prior_event` added to the type (the inline cast in
+`openEditForm` is dropped); the picker is now authoritative, sending `-1` for "none"
+so the save reflects the dropdown state exactly.
+
+**Tests** — pgTAP `05_calendar_view.sql` 8.21 (set + `vw_calendar` round-trip) and
+8.22 (`-1` unlink, NULL leaves unchanged); vitest `EventManager.test.ts` ph3c.7
+(reopen pre-fills the picker from the saved FK; "none" sends `-1`). Total 609→611.
+
 ## Future work
 
 - **Phase 3b**: SeasonManager 3-step wizard component + skeleton inventory rendering (calendar-style purple boxes per locked mock). 22 vitest assertions ph3.23–ph3.37g.
