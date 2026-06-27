@@ -36,6 +36,22 @@ def _match(id_fencer, place, name, method="AUTO_MATCHED", conf=100.0):
     )
 
 
+def _rmatch(id_fencer, place, name, by, weapon="EPEE", gender="W"):
+    """A RECOMPUTE-path match: carries governed BY + weapon/gender/date so
+    _commit_recompute can re-partition by (weapon, gender, governed-V-cat)."""
+    return StageMatchResult(
+        scraped_name=name,
+        place=place,
+        id_fencer=id_fencer,
+        confidence=100.0,
+        method="AUTO_MATCHED",
+        governed_birth_year=by,
+        weapon=weapon,
+        gender=gender,
+        tournament_date=date(2026, 4, 1),
+    )
+
+
 def _db():
     db = MagicMock()
     # find_or_create_tournament returns a distinct id per V-cat so tests can
@@ -222,6 +238,91 @@ class TestCommittedPayload:
 # N13.2 — commit_cats allow-set (overlap-clobber fix): a listing writes only the
 # categories it was kept for; the rest are recorded as held (set-aside duplicate).
 # ---------------------------------------------------------------------------
+
+
+class TestPerVcatPlaceRerank:
+    """N7.9–N7.12 — int_place is BRACKET-relative (ADR-049 amend / ADR-014/022).
+
+    A combined pool carries each fencer's WHOLE-POOL finishing place. When the pool
+    is split into per-V-cat brackets, the field-size denominator is already per-V-cat
+    (ADR-049 amend), so the place numerator MUST be reranked 1..N within the slice or
+    we ship nonsensical fractions (4/3, 7/3) AND the scoring engine zeroes any fencer
+    whose stored place exceeds the smaller field size (`int_place > v_n -> 0`).
+    """
+
+    def _places_for(self, db, vcat_ret):
+        """Pull the int_place list the bracket ingested, keyed by find_or_create return."""
+        for c in db.ingest_results.call_args_list:
+            if c.args[0] == vcat_ret:
+                return [r["int_place"] for r in c.args[1]]
+        raise AssertionError(f"no ingest for tournament {vcat_ret}")
+
+    def test_ingest_reranks_place_within_vcat(self):
+        """N7.9 V1 fencers placed 1st/4th/7th in the 7-person physical pool are
+        renumbered 1,2,3 in their OWN V1 bracket (was 1,4,7 → 4/3, 7/3)."""
+        fv = {
+            "V1": [_match(101, 1, "Gabriela"), _match(102, 4, "Martyna"), _match(103, 7, "Emilia")],
+            "V0": [
+                _match(201, 2, "V0 a"),
+                _match(202, 3, "V0 b"),
+                _match(203, 5, "V0 c"),
+                _match(204, 6, "V0 d"),
+            ],
+        }
+        db = _db()
+        _run(_ctx(fv), db)
+        # find_or_create side_effect 201,202 -> first call V0 (sorted), second V1.
+        vcat_ret = {
+            c.args[3]: ret
+            for c, ret in zip(db.find_or_create_tournament.call_args_list, [201, 202], strict=True)
+        }
+        assert self._places_for(db, vcat_ret["V1"]) == [1, 2, 3]
+        assert self._places_for(db, vcat_ret["V0"]) == [1, 2, 3, 4]
+
+    def test_rerank_preserves_ties(self):
+        """N7.10 a genuine shared place inside a slice stays tied (dense rank: no
+        distinct ordinals, no gaps). Overall {1,4,4,7} -> bracket {1,2,2,3}."""
+        fv = {
+            "V1": [
+                _match(101, 1, "a"),
+                _match(102, 4, "b"),
+                _match(103, 4, "c"),
+                _match(104, 7, "d"),
+            ]
+        }
+        db = _db()
+        _run(_ctx(fv), db)
+        assert self._places_for(db, 201) == [1, 2, 2, 3]
+
+    def test_rerank_skips_excluded_then_numbers_persisted(self):
+        """N7.11 an EXCLUDED (id_fencer None) row is dropped BEFORE numbering, so the
+        persisted slice is still a contiguous 1..N over the kept fencers."""
+        fv = {
+            "V1": [
+                _match(101, 1, "kept a"),
+                _match(None, 4, "foreign", method="EXCLUDED"),
+                _match(102, 7, "kept b"),
+            ]
+        }
+        db = _db()
+        _run(_ctx(fv), db)
+        (_, rows), kwargs = db.ingest_results.call_args
+        assert [r["int_place"] for r in rows] == [1, 2]
+        assert kwargs["participant_count"] == 2
+
+    def test_recompute_path_also_reranks(self):
+        """N7.12 the RECOMPUTE write-back (parsed=None) reranks per (weapon,gender,
+        V-cat) bracket too — re-running the pipeline must SELF-HEAL stored places."""
+        ms = [
+            _rmatch(101, 2, "Gabriela", by=1980),
+            _rmatch(102, 5, "Martyna", by=1980),
+            _rmatch(103, 8, "Emilia", by=1980),
+        ]
+        ctx = _ctx({"V1": ms}, parsed=False)
+        db = _db()
+        _run(ctx, db)
+        (_, rows), _ = db.ingest_results.call_args
+        assert sorted(r["int_place"] for r in rows) == [1, 2, 3]
 
 
 class TestCommitCatsAllowSet:

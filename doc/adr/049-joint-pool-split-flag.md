@@ -119,3 +119,54 @@ or by re-running `fn_backfill_joint_pool_split` (count only).
 `fn_commit_event_draft` writes per-V-cat counts on joint siblings; 26.4 (pytest)
 asserts the ingester posts per-V-cat slice sizes. The pgTAP invariant
 `int_participant_count == own result count` for joint rows is the durable guard.
+
+## Amendment 2026-06-27 — place is bracket-relative (the numerator twin of the count fix)
+
+**Status:** Accepted.
+**Relates to:** ADR-014/022 (delete-reimport / single-RPC commit), ADR-073 (plugin
+pipeline — the `Commit` mutator).
+
+The 2026-06-04 amendment made `int_participant_count` (the field-size
+**denominator**) per-V-cat. Its twin — the **place numerator** — was left
+unfixed: when a combined pool is split per V-cat, each fencer's **whole-pool
+finishing place** was stored in the slice's `tbl_result.int_place` while the
+count was the slice size. Result: nonsensical drilldown fractions (`4/3`, `7/3`)
+**and** silent point loss — the scoring engine zeroes any
+`int_place > int_participant_count` (`02_scoring_engine.sql` 2.1c/2.3), so every
+fencer in a slice whose whole-pool place exceeded the slice size scored **0**
+(e.g. PPW4-V1-F-EPEE: places `{1,3,5,6}` with N=4 → the 5th/6th-placed fencers
+zeroed; first place survives only because `1 ≤ N` always holds).
+
+**Root cause:** the legacy splitter (`python/pipeline/age_split.py`) reranked each
+slice to `1..N`; the NEW plugin pipeline's `Commit` mutator (ADR-073) dropped that
+step when it replaced the splitter, and the 2026-06-04 count amendment then made
+the mismatch actively wrong (smaller N below the whole-pool places). `int_place`
+in `tbl_result` is **bracket-relative** by contract — each V-cat slice is its own
+`tbl_tournament` — so the slice must be renumbered.
+
+**Decision:** the `Commit` mutator reranks each V-cat slice to bracket-relative
+places `1..N` before persisting — **dense rank** by original place, so a genuine
+shared place inside a slice stays tied with no gaps (`{1,4,4,7}→{1,2,2,3}`).
+Applied in both the ingest loop and the `RECOMPUTE_DOMESTIC` self-heal loop, so
+re-running an event repairs stored places. Helper `_rerank_places` +
+`Commit._row(..., place=)` override in `python/pipeline/plugins/ingest.py`.
+
+**Scope:** domestic only — `Commit` runs in the `INGEST_DOMESTIC` /
+`RECOMPUTE_DOMESTIC` flows only; international (PEW/MEW/MSW, deferred §12) never
+reaches it and keeps genuine international placings, where `place > N → 0` is
+intended (the SPWS fencers placed beyond the ingested count). No gating needed —
+the flow routing isolates the two `int_place` semantics.
+
+**Data repair:** `PPW4-2025-2026` + `PPW5-2025-2026` self-healed via
+`RECOMPUTE_DOMESTIC` (LOCAL) — 0 rows remain with `place > N`, the previously
+zeroed fencers restored (PPW4-V1-F-EPEE now `1,2,3,4` with last place = 1.00
+floor). The 22 other domestic `place > N` brackets are **not** this bug
+(`bool_joint_pool_split = FALSE`): participant-count errors with already-contiguous
+places, or genuine ties — left for separate investigation (see the tracked
+PPW3/4/5 DATA-fix item).
+
+**Tests:** pytest `test_commit_persist.py` N7.9–N7.12 — ingest reranks to `1..N`,
+ties preserved, EXCLUDED rows skipped before numbering, RECOMPUTE self-heals. **No
+pgTAP change** — the scoring contract (`02_scoring_engine.sql` 2.1c last-place =
+1pt / 2.3 place > N → 0) already pins the behaviour; this fix feeds it correct
+places. pytest 958→962.
