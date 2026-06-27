@@ -285,3 +285,43 @@ fork between the two ingestion pipelines.
 Tests: `python/tests/test_resolve_fencers.py` (promotion→youngest-edge, demotion→midpoint,
 cross-season stability, Confirmed→Estimated flag) and `python/tests/test_s0_reconcile_roster.py`
 (10.4.1/10.4.2 promotion edge, 10.4.2b demotion midpoint).
+
+## Amendment (2026-06-27) — monotonic + mixed-gender-safe reconcile; mixed brackets split by BY
+
+Symptom: a V1 woman competing as a **cross-gender guest** in a V0 men's sabre bracket
+(PPW5 "Szabla kat. 0") had her stored BY **demoted to the V0 midpoint (1991)** on every
+reingest (the 2026-06-26 demotion-to-midpoint path), and — once the BY was correctly held
+at V1 — the single-cat V0 bracket could no longer commit her (`fn_assert_result_vcat`
+rejects a V1 fencer in a V0 tournament). Two failure layers: BY corruption, then result misfiling.
+
+**Decisions:**
+
+1. **Guard 1 — CONFIRMED BY is promote-only.** A demotion conflict against a CONFIRMED
+   stored BY is a logged no-op (admin-only); age is monotonic, a fencer cannot get younger.
+   An **Estimated** BY may still demote (to the band midpoint — the bracket is then the only
+   age signal, so the least-biased new-fencer estimate).
+2. **Guard 2 — mixed-gender brackets never calibrate BY.** A bracket whose resolved fencers
+   carry **>1 distinct gender** is excluded from BY reconciliation entirely (its V-cat label
+   is routinely wrong at low-turnout cross-gender events). New helper
+   `_bracket_mixed_gender` in `stages.py`; both reconcile sites pass the flag.
+3. **Split by BY for mixed-gender brackets.** `s7_split_by_vcat` now routes to the
+   BY-derivation path when `category_hint is None` **OR** the bracket is mixed-gender
+   (`db.fetch_genders_batch`, >1 gender) — treating a mixed-gender bracket as a combined /
+   mixed-age pool. Single-GENDER label brackets keep label-wins (reconcile already aligned
+   their BY; the GP1 regression `5.19.x` depends on it). Gender itself is resolved at query
+   time (ADR-034 `fn_effective_gender`); `fn_assert_result_vcat` is gender-agnostic, so the
+   only storage invariant is V-cat == BY, which the split guarantees. This makes reingest an
+   order-independent fixpoint for mixed-age **and** mixed-age+mixed-gender brackets.
+4. **Commit gender default.** A fully-mixed (`Sexe="X"`) bracket parses `gender=None`; `Commit`
+   defaults it to `'M'` (enum_gender is NOT NULL), women reassigned at query (ADR-034).
+
+Known follow-up (not in this change): the from-URL keep-rule (`_resolve_sources`, ADR-076)
+computes per-listing `commit_cats` from parsed bracket names, so a cross-gender guest's
+split-out slice (e.g. SAMECKA → SABRE/V1 committed under the bracket gender M) can be *held*
+and dropped. Fully retaining guest results needs per-fencer-gender commit — tracked separately.
+
+Tests: `python/tests/test_resolve_fencers.py` (confirmed-demotion no-op, estimated-demotion
+allowed, mixed-gender skip, order-independence), `python/tests/test_s0_reconcile_roster.py`
+(10.4.2b confirmed no-op, 10.4.2c estimated midpoint), `python/tests/test_vcat_from_birthyear.py`
+(5.20.1 mixed-gender→BY split, 5.20.2 mixed-age+gender, 5.20.3 single-gender label preserved),
+`python/tests/test_pipeline_plugins.py` (N2.10 commit gender None→'M').

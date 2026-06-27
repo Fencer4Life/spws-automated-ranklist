@@ -283,11 +283,25 @@ class TestReconcile:
         assert ctx.reconciled_fencers[0]["was_confirmed"] is True
         assert ctx.reconciled_fencers[0]["anchor"] == "lower edge"
 
-    def test_demotion_conflict_uses_midpoint(self):
-        """10.4.2b — stored BY OLDER than the bracket band (demotion, rare /
-        usually organizer error) → keep the band midpoint as the safe fallback."""
+    def test_demotion_confirmed_is_noop(self):
+        """10.4.2b (ADR-056 amend) — CONFIRMED BY OLDER than the bracket band
+        (demotion) → never auto-demote; logged conflict, BY untouched (admin-only)."""
         # Stored 1966 → age 60 → V3. Bracket V1 → demotion V3→V1.
         db = FakeDB([_fencer(1, "STARY", "Jan", by=1966, estimated=False, nationality="PL")])
+        ctx = _ctx([_result("STARY Jan", country="POL")], category_hint="V1")
+        stages.s0_reconcile_roster(ctx, db)
+        assert db.updated == []
+        assert ctx.reconciled_fencers == []
+        assert (
+            ctx.reconcile_conflicts
+            and ctx.reconcile_conflicts[0]["reason"] == "confirmed_no_demote"
+        )
+
+    def test_demotion_estimated_uses_midpoint(self):
+        """10.4.2c — ESTIMATED BY OLDER than the bracket band may still demote to the
+        band midpoint (the bracket is now the only age signal)."""
+        # Stored 1966 → age 60 → V3. Bracket V1 → demotion V3→V1.
+        db = FakeDB([_fencer(1, "STARY", "Jan", by=1966, estimated=True, nationality="PL")])
         ctx = _ctx([_result("STARY Jan", country="POL")], category_hint="V1")
         stages.s0_reconcile_roster(ctx, db)
         assert db.updated[0]["int_birth_year"] == 1981  # V1 midpoint (age 45)
