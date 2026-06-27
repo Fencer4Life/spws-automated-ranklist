@@ -155,6 +155,17 @@ class _FakeBirthYearDb:
         return {i: self.mapping.get(i) for i in ids}
 
 
+class _FakeBirthYearGenderDb(_FakeBirthYearDb):
+    """Adds fetch_genders_batch so s7_split_by_vcat can detect mixed-gender brackets."""
+
+    def __init__(self, mapping, genders):
+        super().__init__(mapping)
+        self.genders = genders
+
+    def fetch_genders_batch(self, ids):
+        return {i: self.genders.get(i) for i in ids}
+
+
 def test_s7_split_single_vcat():
     """5.4: All matched fencers in one V-cat → single group, joint=False."""
     from python.pipeline.stages import s7_split_by_vcat
@@ -439,3 +450,84 @@ def test_gp1_v2_sabre_m_regression_5_19_6():
     assert set(ctx_v2.vcat_groups.keys()) == {"V2"}
     assert len(ctx_v2.vcat_groups["V2"]) == 8
     assert ctx_v2.is_joint_pool is False
+
+
+# ─────────────────────────────────────────────────────────────────────
+# 5.20 — ADR-056 amend (2026-06-27): mixed-gender bracket ⇒ BY-derivation
+# A mixed-gender bracket's label is untrustworthy (Guard 2 also skips its BY
+# calibration), so the split must derive each fencer's V-cat from BY, exactly
+# like a combined/mixed-age pool. Gender is resolved at query time (ADR-034).
+# ─────────────────────────────────────────────────────────────────────
+
+
+def test_s7_split_mixed_gender_uses_by_derivation_5_20_1():
+    """5.20.1: SAMECKA case — a V0 men's sabre bracket containing a V1 woman guest
+    splits by BY: the men (V0) stay V0, the woman (V1) files under V1. The single
+    'V0' label is NOT forced (that would violate fn_assert_result_vcat for her)."""
+    from python.pipeline.stages import s7_split_by_vcat
+
+    matches = [
+        _stub_match("AUTO_MATCHED", id_fencer=10, scraped_name="STANISLAWSKI"),
+        _stub_match("AUTO_MATCHED", id_fencer=11, scraped_name="POROWSKI"),
+        _stub_match("AUTO_MATCHED", id_fencer=12, scraped_name="ZUCHOWSKI"),
+        _stub_match("AUTO_MATCHED", id_fencer=247, scraped_name="SAMECKA"),
+    ]
+    ctx = _make_ctx_with_category_hint(matches, category_hint="V0", season_end_year=2026)
+    db = _FakeBirthYearGenderDb(
+        {10: 1991, 11: 1991, 12: 1991, 247: 1985},  # men V0, SAMECKA V1
+        {10: "M", 11: "M", 12: "M", 247: "F"},  # >1 gender ⇒ mixed
+    )
+
+    s7_split_by_vcat(ctx, db)
+
+    assert set(ctx.vcat_groups.keys()) == {"V0", "V1"}
+    assert len(ctx.vcat_groups["V0"]) == 3
+    assert [m.id_fencer for m in ctx.vcat_groups["V1"]] == [247]
+    assert ctx.is_joint_pool is True
+
+
+def test_s7_split_mixed_age_and_gender_5_20_2():
+    """5.20.2: mixed-age AND mixed-gender in one labelled bracket → each fencer
+    files under their own BY V-cat; gender handled at query (ADR-034)."""
+    from python.pipeline.stages import s7_split_by_vcat
+
+    matches = [
+        _stub_match("AUTO_MATCHED", id_fencer=1, scraped_name="M_V1"),
+        _stub_match("AUTO_MATCHED", id_fencer=2, scraped_name="M_V2"),
+        _stub_match("AUTO_MATCHED", id_fencer=3, scraped_name="F_V1"),
+        _stub_match("AUTO_MATCHED", id_fencer=4, scraped_name="F_V2"),
+    ]
+    ctx = _make_ctx_with_category_hint(matches, category_hint="V1", season_end_year=2026)
+    db = _FakeBirthYearGenderDb(
+        {1: 1982, 2: 1972, 3: 1983, 4: 1971},  # V1, V2, V1, V2
+        {1: "M", 2: "M", 3: "F", 4: "F"},  # mixed gender
+    )
+
+    s7_split_by_vcat(ctx, db)
+
+    assert set(ctx.vcat_groups.keys()) == {"V1", "V2"}
+    assert {m.id_fencer for m in ctx.vcat_groups["V1"]} == {1, 3}
+    assert {m.id_fencer for m in ctx.vcat_groups["V2"]} == {2, 4}
+    assert ctx.is_joint_pool is True
+
+
+def test_s7_split_single_gender_label_still_wins_5_20_3():
+    """5.20.3: a single-gender labelled bracket with a BY-divergent fencer KEEPS the
+    label (GP1 fix). fetch_genders_batch present but all one gender ⇒ not mixed."""
+    from python.pipeline.stages import s7_split_by_vcat
+
+    matches = [
+        _stub_match("AUTO_MATCHED", id_fencer=322, scraped_name="ZAWROTNIAK"),
+        _stub_match("AUTO_MATCHED", id_fencer=152, scraped_name="KROCHMALSKI"),
+    ]
+    ctx = _make_ctx_with_category_hint(matches, category_hint="V1", season_end_year=2024)
+    db = _FakeBirthYearGenderDb(
+        {322: 1974, 152: 1980},  # 322 canonical V2 but in V1 bracket
+        {322: "M", 152: "M"},  # single gender
+    )
+
+    s7_split_by_vcat(ctx, db)
+
+    assert set(ctx.vcat_groups.keys()) == {"V1"}
+    assert len(ctx.vcat_groups["V1"]) == 2
+    assert ctx.is_joint_pool is False

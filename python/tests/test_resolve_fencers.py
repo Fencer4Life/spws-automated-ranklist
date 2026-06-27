@@ -43,28 +43,28 @@ def _result(name, place=1, country="POL", raw_age_marker=None):
     )
 
 
-def _parsed(results, category_hint="V1"):
+def _parsed(results, category_hint="V1", gender="M", weapon="EPEE"):
     from python.pipeline.ir import ParsedTournament, SourceKind
 
     return ParsedTournament(
         source_kind=SourceKind.CERT_REF,
         results=results,
         parsed_date=date(2026, 4, 1),
-        weapon="EPEE",
-        gender="M",
+        weapon=weapon,
+        gender=gender,
         organizer_hint="SPWS",
         category_hint=category_hint,
         season_end_year=2026,
     )
 
 
-def _fencer(id_, surname, first, by, gender="M"):
+def _fencer(id_, surname, first, by, gender="M", estimated=False):
     return {
         "id_fencer": id_,
         "txt_surname": surname,
         "txt_first_name": first,
         "int_birth_year": by,
-        "bool_birth_year_estimated": False,
+        "bool_birth_year_estimated": estimated,
         "txt_nationality": "POL",
         "enum_gender": gender,
         "json_name_aliases": [],
@@ -112,17 +112,80 @@ class TestExactAndReconcile:
         assert (m.id_fencer, m.method) == (101, "AUTO_MATCHED")
         assert m.governed_birth_year == 1980
 
-    def test_reconcile_demotion_to_band_midpoint(self):
-        """N3.2 exact match whose stored BY puts her OLDER than the bracket V-cat
-        (demotion V2->V1) -> reconcile to band midpoint (the safe fallback)."""
-        fdb = [_fencer(101, "KOWALSKI", "Jan", 1970)]  # age 56 -> V2, demoted to V1 bracket
+    def test_reconcile_demotion_confirmed_is_noop(self):
+        """N3.2 (ADR-056 amend) CONFIRMED BY is promote-only: a bracket V-cat YOUNGER
+        than the stored age (demotion V2->V1) must NOT move a confirmed BY — it is
+        logged as a conflict and left untouched (admin-only). Age is monotonic."""
+        fdb = [_fencer(101, "KOWALSKI", "Jan", 1970, estimated=False)]  # confirmed, V2
         db = _db(fdb)
         ctx, pctx = _resolve(_parsed([_result("KOWALSKI Jan")]), fdb, db=db)
         (m,) = ctx.get("matches")
         assert m.id_fencer == 101 and m.method == "AUTO_MATCHED"
+        assert m.governed_birth_year == 1970  # unchanged
+        db.update_fencer_birth_year.assert_not_called()
+        assert not pctx.reconciled_fencers
+        assert pctx.reconcile_conflicts and pctx.reconcile_conflicts[0]["id_fencer"] == 101
+
+    def test_reconcile_demotion_estimated_allowed(self):
+        """N3.2b ESTIMATED BY may move both ways: a demotion (V2->V1) of an estimate
+        in a single-gender bracket still corrects to the band midpoint (the bracket
+        is now the only age signal -> the least-biased new-fencer estimate)."""
+        fdb = [_fencer(101, "KOWALSKI", "Jan", 1970, estimated=True)]  # estimated, V2
+        db = _db(fdb)
+        ctx, pctx = _resolve(_parsed([_result("KOWALSKI Jan")]), fdb, db=db)
+        (m,) = ctx.get("matches")
         assert m.governed_birth_year == V1_MID
         db.update_fencer_birth_year.assert_called_once_with(101, V1_MID, estimated=True)
         assert pctx.reconciled_fencers and pctx.reconciled_fencers[0]["new_birth_year"] == V1_MID
+
+    def test_mixed_gender_bracket_skips_reconcile(self):
+        """N3.2c (ADR-056 amend) a MIXED-gender bracket (>1 fencer gender present)
+        never calibrates BY — its V-cat label is untrustworthy. A would-be promotion
+        of the cross-gender guest is skipped; her BY is unchanged + logged."""
+        # Men's V0 bracket that also contains a woman (cross-gender guest). The woman
+        # is estimated V0 (1991) and the bracket label is V0 — but a V1 woman entered
+        # as a guest must not be re-stamped V0 from this mislabel-prone bracket.
+        woman = _fencer(247, "SAMECKA", "Martyna", 1986, gender="F", estimated=True)  # V1
+        man = _fencer(101, "KOWALSKI", "Jan", 1991, gender="M", estimated=True)  # V0
+        fdb = [woman, man]
+        db = _db(fdb)
+        parsed = _parsed(
+            [_result("SAMECKA Martyna"), _result("KOWALSKI Jan", place=2)],
+            category_hint="V0",
+            gender="M",
+            weapon="SABRE",
+        )
+        ctx, pctx = _resolve(parsed, fdb, db=db)
+        db.update_fencer_birth_year.assert_not_called()
+        assert woman["int_birth_year"] == 1986 and man["int_birth_year"] == 1991
+        assert pctx.reconcile_conflicts  # surfaced for the operator
+
+    def test_reconcile_order_independent_across_brackets(self):
+        """N3.2d Fixpoint: a woman who is V1 in her own-gender épée bracket and a
+        cross-gender guest in a mixed men's sabre V0 bracket settles at V1 (1986)
+        regardless of which bracket is ingested first — no oscillation."""
+        epee = lambda: _parsed(  # noqa: E731 — women's V1 épée (single-gender)
+            [_result("SAMECKA Martyna", place=2)], category_hint="V1", gender="F", weapon="EPEE"
+        )
+        sabre = lambda: _parsed(  # noqa: E731 — mixed men's sabre V0 (cross-gender guest)
+            [_result("SAMECKA Martyna", place=4), _result("KOWALSKI Jan", place=1)],
+            category_hint="V0",
+            gender="M",
+            weapon="SABRE",
+        )
+
+        def run(order):
+            fdb = [
+                _fencer(247, "SAMECKA", "Martyna", 1991, gender="F", estimated=True),  # V0 → promote
+                _fencer(101, "KOWALSKI", "Jan", 1991, gender="M", estimated=True),
+            ]
+            db = _db(fdb)
+            for make in order:
+                _resolve(make(), fdb, db=db)
+            return next(f for f in fdb if f["id_fencer"] == 247)["int_birth_year"]
+
+        assert run([epee, sabre]) == V1_EDGE  # 1986
+        assert run([sabre, epee]) == V1_EDGE  # 1986 — order-independent
 
     def test_reconcile_promotion_to_youngest_edge(self):
         """Promotion (BY-derived V0, bracket V1) corrects to the V1 YOUNGEST edge
@@ -201,7 +264,9 @@ class TestFuzzyLinkOrCreate:
 
     def test_two_phase_by_settles_before_fuzzy(self, monkeypatch):
         """N3.5 Phase A reconciles the roster BY before Phase B fuzzy reads it."""
-        fdb = [_fencer(101, "KOWALSKI", "Jan", 1970)]  # wrong BY (V2), bracket is V1
+        # estimated so the V2->V1 demotion still corrects (Guard 1 only blocks
+        # CONFIRMED demotions); the point here is the Phase-A-before-Phase-B ordering.
+        fdb = [_fencer(101, "KOWALSKI", "Jan", 1970, estimated=True)]  # wrong BY (V2), bracket V1
         # row1 exact-matches + reconciles to V1 midpoint; row2 fuzzy-links to 101
         monkeypatch.setattr(
             rf,

@@ -24,7 +24,7 @@ from collections import defaultdict
 from typing import Any
 
 from python.matcher.fuzzy_match import find_best_match, normalize_name, parse_scraped_name
-from python.matcher.pipeline import estimate_birth_year, reconciled_birth_year
+from python.matcher.pipeline import _VCAT_ORDER, estimate_birth_year, reconciled_birth_year
 from python.pipeline.types import (
     HaltError,
     HaltReason,
@@ -151,6 +151,25 @@ def _find_exact_fencer(
     return None
 
 
+def _bracket_mixed_gender(
+    matched_ids: list[int], fencer_db: list[dict], bracket_gender: str | None
+) -> bool:
+    """A bracket is mixed-gender iff its fencers carry >1 distinct gender (ADR-056
+    amend, 2026-06-27). Resolved fencers contribute their stored gender; unmatched
+    rows are created/linked at the bracket's declared gender, so that is included
+    when known. Mixed brackets are excluded from BY calibration (their V-cat label
+    is routinely wrong at low-turnout cross-gender events)."""
+    genders: set[str] = set()
+    if bracket_gender in ("M", "F"):
+        genders.add(bracket_gender)
+    by_id = {f["id_fencer"]: f for f in fencer_db}
+    for fid in matched_ids:
+        g = (by_id.get(fid) or {}).get("enum_gender")
+        if g in ("M", "F"):
+            genders.add(g)
+    return len(genders) > 1
+
+
 def reconcile_fencer_birth_year(
     pctx: PipelineContext,
     db: Any,
@@ -161,6 +180,7 @@ def reconcile_fencer_birth_year(
     touched: dict[int, str],
     scraped_name: str,
     source: str | None = None,
+    bracket_is_mixed_gender: bool = False,
 ) -> int | None:
     """Reconcile ONE matched fencer's stored birth year against a bracket V-cat.
 
@@ -173,11 +193,19 @@ def reconcile_fencer_birth_year(
     (`reconciled_fencers` / `reconcile_conflicts`), the in-memory `fencer_db` row,
     and `touched`, and writes the corrected BY through `db.update_fencer_birth_year`.
 
-    Policy (ADR-056): the bracket V-cat is authoritative; a conflicting stored BY is
-    corrected — Confirmed BYs are downgraded to Estimated and surfaced loudly. The
-    correction *target* follows `reconciled_birth_year`: a promotion anchors to the
-    new band's youngest edge (minimal correction, cross-season stable), demotion /
-    other keeps the band midpoint.
+    Policy (ADR-056 + 2026-06-27 amendment): the bracket V-cat is authoritative for a
+    PROMOTION only; reconciliation is monotonic-upward and order-independent:
+
+      - **Promotion** (bracket V-cat older than current): always anchors to the new
+        band's youngest edge (minimal, cross-season-stable correction).
+      - **Demotion** (bracket V-cat younger than current):
+          · stored BY **Confirmed** → never auto-demote (Guard 1): logged conflict,
+            BY untouched (admin-only — age is monotonic, a fencer can't get younger).
+          · stored BY **Estimated** → corrects to the band midpoint (the bracket is
+            now the only age signal → least-biased new-fencer estimate).
+      - **Mixed-gender bracket** (Guard 2, `bracket_is_mixed_gender=True`): NEVER
+        calibrates BY in either direction — low-turnout cross-gender brackets are
+        routinely mislabelled, so they must not move anyone's BY.
     """
     row = next((f for f in fencer_db if f["id_fencer"] == existing_id), None)
     stored_by = row.get("int_birth_year") if row else None
@@ -197,6 +225,39 @@ def reconcile_fencer_birth_year(
                 "first_vcat": touched[existing_id],
                 "second_vcat": target_vcat,
                 "source": source,
+            }
+        )
+        return stored_by
+
+    # Guard 2 — mixed-gender brackets never calibrate BY (label untrustworthy).
+    if bracket_is_mixed_gender:
+        pctx.reconcile_conflicts.append(
+            {
+                "id_fencer": existing_id,
+                "scraped_name": scraped_name,
+                "first_vcat": current_vcat,
+                "second_vcat": target_vcat,
+                "source": source,
+                "reason": "mixed_gender_bracket",
+            }
+        )
+        return stored_by
+
+    # Guard 1 — a CONFIRMED birth year is promote-only; never auto-demote.
+    is_demotion = (
+        target_vcat in _VCAT_ORDER
+        and current_vcat in _VCAT_ORDER
+        and _VCAT_ORDER.index(target_vcat) < _VCAT_ORDER.index(current_vcat)
+    )
+    if is_demotion and not bool(row.get("bool_birth_year_estimated")):
+        pctx.reconcile_conflicts.append(
+            {
+                "id_fencer": existing_id,
+                "scraped_name": scraped_name,
+                "first_vcat": current_vcat,
+                "second_vcat": target_vcat,
+                "source": source,
+                "reason": "confirmed_no_demote",
             }
         )
         return stored_by
@@ -263,6 +324,17 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
     # within one run is flagged once, not thrashed back and forth.
     touched: dict[int, str] = {}
 
+    # Pre-pass: detect a mixed-gender bracket from the exact-matched fencers so the
+    # reconcile below can skip BY calibration entirely (ADR-056 amend, Guard 2).
+    pre_ids = [
+        eid
+        for r in ctx.parsed.results
+        if not getattr(r, "bool_excluded", False)
+        and (eid := _find_exact_fencer(r.fencer_name, getattr(r, "fencer_country", None), fencer_db))
+        is not None
+    ]
+    bracket_mixed = _bracket_mixed_gender(pre_ids, fencer_db, bracket_gender)
+
     for r in ctx.parsed.results:
         if getattr(r, "bool_excluded", False):
             continue
@@ -316,7 +388,16 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
 
         # ---- Job 2: reconcile a matched fencer's birth year (shared helper) ----
         reconcile_fencer_birth_year(
-            ctx, db, fencer_db, existing_id, vcat, season_end, touched, r.fencer_name, source
+            ctx,
+            db,
+            fencer_db,
+            existing_id,
+            vcat,
+            season_end,
+            touched,
+            r.fencer_name,
+            source,
+            bracket_is_mixed_gender=bracket_mixed,
         )
 
 
@@ -786,6 +867,16 @@ def s7_split_by_vcat(ctx: PipelineContext, db: Any) -> None:
     keep the BY-derivation path: each fencer's V-cat comes from
     `BY + ctx.season_end_year`. ADR-049's `bool_joint_pool_split` flags these.
 
+    ADR-056 amend (2026-06-27): a **mixed-gender** bracket (>1 distinct
+    matched-fencer gender) ALSO takes the BY-derivation path even when it carries
+    a single category_hint. Its label is untrustworthy (low-turnout cross-gender
+    event) and Guard 2 deliberately leaves such guests' BYs un-aligned to the
+    label, so forcing the label here would file a guest under a V-cat that
+    contradicts her BY (fn_assert_result_vcat would reject it). Single-GENDER
+    label brackets keep label-wins — reconcile already aligned their BY and the
+    GP1 regression depends on it. Gender itself is resolved at query time
+    (ADR-034 fn_effective_gender), so no per-gender split is needed here.
+
     Inputs:  ctx.matches with id_fencer set on AUTO_MATCHED / AUTO_CREATED rows.
              ctx.parsed.category_hint — single V-cat str (bracket label) or None.
     Outputs: ctx.vcat_groups: {V-cat: [StageMatchResult]}
@@ -799,7 +890,13 @@ def s7_split_by_vcat(ctx: PipelineContext, db: Any) -> None:
     groups: dict[str, list] = {}
     unassigned: list = []
 
-    if isinstance(bracket_vcat, str) and bracket_vcat:
+    matched_ids = [m.id_fencer for m in ctx.matches if getattr(m, "id_fencer", None) is not None]
+    mixed_gender = False
+    if matched_ids and hasattr(db, "fetch_genders_batch"):
+        gmap = db.fetch_genders_batch(matched_ids) or {}
+        mixed_gender = len({g for g in gmap.values() if g in ("M", "F")}) > 1
+
+    if isinstance(bracket_vcat, str) and bracket_vcat and not mixed_gender:
         # Single-V-cat bracket: every matched fencer goes to the bracket V-cat.
         # BY-unknown matched fencers are still placed in the bracket (organizer
         # already accepted them) — admin reviews BY mismatches via staging .md.
