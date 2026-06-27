@@ -1061,6 +1061,40 @@ pytest 958, vitest 375 unchanged. CI green.
 
 ---
 
+## Joint-pool split — place numerator reranked per V-cat (ADR-049 amendment) — 2026-06-27
+
+**Problem.** In the drilldown for a mixed-age domestic pool (e.g. V1 Épée Women MPW, V0+V1
+running as one 7-fencer pool ranked per V-cat), the V1 fencers showed nonsensical place
+fractions — `1/3`, `4/3`, `7/3` — and two of the three V1 fencers were silently awarded **0**
+points. Root-caused (graphify + Explore traced to `python/pipeline/plugins/ingest.py`): the
+per-V-cat split stored each fencer's **whole-pool finishing place** (`1,4,7`) in the slice's
+`tbl_result.int_place`, while `int_participant_count` was correctly the per-V-cat slice size (`3`,
+from the 2026-06-04 count amendment). The scoring engine zeroes any `int_place > int_participant_count`
+(`02_scoring_engine.sql` 2.1c/2.3), so every fencer whose whole-pool place exceeded the slice size
+scored 0 — the field-size denominator had been fixed in isolation while its place-numerator twin was
+left wrong.
+
+**Regression.** The legacy splitter `python/pipeline/age_split.py` reranked each slice to `1..N`; the
+NEW plugin pipeline (ADR-073) `Commit` mutator dropped that step when it replaced the splitter, and the
+2026-06-04 count amendment then made the mismatch actively wrong (N below the whole-pool places).
+
+**Fix.** `_rerank_places` (dense rank by original place — ties preserved, no gaps: `{1,4,4,7}→{1,2,2,3}`)
+in `ingest.py`, applied in both `Commit.run` (INGEST_DOMESTIC) and `_commit_recompute`
+(RECOMPUTE_DOMESTIC, so re-running self-heals). Domestic-only by flow routing — `Commit` never runs in
+the deferred international flows (§12), which keep genuine world placings (`place > N → 0` intended).
+No SQL change: the scoring contract was already correct; it was fed bad places.
+
+**Data repair.** `PPW4-2025-2026` + `PPW5-2025-2026` self-healed via `RECOMPUTE_DOMESTIC` on LOCAL →
+0 rows remain with `place > N`; previously-zeroed fencers restored (PPW4-V1-F-EPEE: `{1,3,5,6}` →
+`1,2,3,4`, last place = 1.00 floor). The 22 other domestic `place > N` brackets are a **different**
+issue (`bool_joint_pool_split = FALSE`: participant-count errors / genuine ties) — left for separate
+work (tracked PPW3/4/5 DATA fix).
+
+**Tests.** pytest `test_commit_persist.py` N7.9–N7.12 (RED→GREEN): 958 → 962. pgTAP unchanged at 609
+(scoring contract already pinned). vitest 375 unchanged (display heals once data is correct).
+
+---
+
 ## Archived Documents
 
 The following documents contain the original detailed plans. They are superseded by this history and the Project Specification:

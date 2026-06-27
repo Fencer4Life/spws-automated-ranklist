@@ -386,11 +386,13 @@ class Commit(BasePlugin):
         written: list[dict] = []
         held: list[str] = []
         for vcat in sorted(final_vcats.keys()):
-            rows = [
-                self._row(m) for m in final_vcats[vcat] if getattr(m, "id_fencer", None) is not None
-            ]
-            if not rows:
+            kept = [m for m in final_vcats[vcat] if getattr(m, "id_fencer", None) is not None]
+            if not kept:
                 continue
+            # Renumber to bracket-relative places 1..N (ADR-049 amend / ADR-014/022):
+            # the whole-pool place a combined pool carries is not this slice's place.
+            places = _rerank_places(kept)
+            rows = [self._row(m, place=p) for m, p in zip(kept, places, strict=True)]
             if commit_cats is not None and vcat not in commit_cats:
                 held.append(vcat)  # set aside — owned by another listing
                 continue
@@ -451,7 +453,10 @@ class Commit(BasePlugin):
         written: list[dict] = []
         written_ids: set = set()
         for (weapon, gender, vcat), rows_m in groups.items():
-            rows = [self._row(m) for m in rows_m]
+            # Re-running the pipeline must SELF-HEAL stored places: renumber each
+            # (weapon,gender,V-cat) bracket to 1..N (ADR-049 amend / ADR-014/022).
+            places = _rerank_places(rows_m)
+            rows = [self._row(m, place=p) for m, p in zip(rows_m, places, strict=True)]
             date = _iso_date(rows_m[0].tournament_date)
             tournament_id = db.find_or_create_tournament(
                 event_id, weapon, gender, vcat, date, ttype
@@ -500,10 +505,16 @@ class Commit(BasePlugin):
         res = fn(event_id)
         return res if isinstance(res, list) else []
 
-    def _row(self, m) -> dict:
+    def _row(self, m, place=None) -> dict:
+        # `place` overrides m.place with the BRACKET-relative rank (1..N) computed
+        # by _rerank_places. A combined pool carries each fencer's WHOLE-POOL place;
+        # once split per V-cat, the stored int_place must be renumbered within the
+        # slice or the drilldown shows nonsensical fractions (4/3, 7/3) AND the
+        # scoring engine zeroes any fencer whose place exceeds the smaller field
+        # size (`int_place > v_n -> 0`). See ADR-049 amend / ADR-014/022.
         return {
             "id_fencer": m.id_fencer,
-            "int_place": m.place,
+            "int_place": m.place if place is None else place,
             "txt_scraped_name": m.scraped_name,
             "num_confidence": m.confidence,
             "enum_match_status": self._METHOD_TO_STATUS.get(m.method, m.method),
@@ -515,6 +526,30 @@ class Commit(BasePlugin):
 
         code = (pctx.event_code if pctx else None) or (event or {}).get("txt_code")
         return derive_tourn_type_from_event_code(code) or (event or {}).get("enum_type")
+
+
+def _rerank_places(matches: list) -> list[int]:
+    """Dense-rank a bracket's fencers by their original place, returned aligned to
+    the input order. Each V-cat slice of a combined pool is its OWN tournament, so
+    `int_place` is bracket-relative (1..N): the whole-pool place a combined pool
+    carries must be renumbered within the slice (ADR-049 amend / ADR-014/022).
+
+    Dense rank (not a plain ordinal) so a genuine shared place inside the slice
+    stays tied with no gaps — overall {1,4,4,7} -> bracket {1,2,2,3}. Caller passes
+    only the rows it will persist (id_fencer not None), so the result is contiguous
+    over the kept fencers.
+    """
+    order = sorted(range(len(matches)), key=lambda i: (matches[i].place is None, matches[i].place))
+    out = [0] * len(matches)
+    rank = 0
+    prev = None
+    for pos, i in enumerate(order):
+        p = matches[i].place
+        if pos == 0 or p != prev:
+            rank += 1
+            prev = p
+        out[i] = rank
+    return out
 
 
 def _iso_date(d) -> str | None:
