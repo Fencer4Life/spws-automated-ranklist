@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-06-27T11:15:27Z",
-    "last_sha": "c2960a526c4b07c1fa206b05e9a81e49c9c0ac9b",
+    "last_updated": "2026-06-27T22:01:44Z",
+    "last_sha": "0a1decb2423e2a740e99fd075783853fcd2e9ee5",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -116,9 +116,11 @@
       "20260625000001_phase4_pew_split_collision_guard.sql",
       "20260626000001_fn_merge_fencers_repoint_match_candidate.sql",
       "20260626120000_carry_stop_on_current_result.sql",
-      "20260627000001_vw_calendar_prior_event.sql"
+      "20260627000001_vw_calendar_prior_event.sql",
+      "20260627000002_show_evf_calendar.sql",
+      "20260627000003_init_season_childless.sql"
     ],
-    "schema_fingerprint": "f3bf41d7c20f78b63ae297740ff3cbd1"
+    "schema_fingerprint": "1bcd6ddc5d16b62a385537ef533ee4de"
   },
   "prod": {
     "last_updated": "2026-06-27T14:48:25Z",
