@@ -6,7 +6,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(10);
+SELECT plan(12);
 
 -- ===== SETUP: Create test data for calendar view =====
 DO $setup$
@@ -163,6 +163,78 @@ BEGIN
 END;
 $t820$;
 SELECT pass('8.20: fn_create_event and fn_update_event accept registration params and persist them');
+
+-- 8.21 — id_prior_event (carry-over picker, ADR-044) round-trips through vw_calendar.
+-- Regression for the round-trip bug: fn_update_event persisted the FK to tbl_event,
+-- but vw_calendar omitted the column so the admin form read it back as NULL and the
+-- dropdown reset to "none" on reopen ("Save doesn't save"). See ADR-044 amendment.
+DO $t821$
+DECLARE
+  v_season INT;
+  v_org    INT;
+  v_eid    INT;
+  v_prior  INT;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025';
+  SELECT id_organizer INTO v_org FROM tbl_organizer LIMIT 1;
+  SELECT id_event INTO v_prior FROM tbl_event WHERE txt_code = 'CAL-TEST-1';
+
+  v_eid := fn_create_event(
+    'CAL-PRIOR-TEST', 'Prior Link Test Event', v_season, v_org,
+    'Łódź', '2025-04-01'::DATE, '2025-04-02'::DATE, NULL,
+    'POL', NULL, NULL, NULL::NUMERIC, NULL, NULL::enum_weapon_type[],
+    NULL, NULL::DATE
+  );
+
+  -- Link to a prior event via the picker's trailing p_id_prior_event arg (21-arg v2).
+  PERFORM fn_update_event(
+    v_eid, 'Prior Link Test Event', 'Łódź', '2025-04-01'::DATE, '2025-04-02'::DATE,
+    NULL, 'POL', NULL, NULL, NULL::NUMERIC, NULL, NULL, NULL::enum_weapon_type[],
+    NULL, NULL::DATE, NULL, NULL, NULL, NULL, NULL, v_prior
+  );
+
+  IF NOT (SELECT id_prior_event = v_prior FROM tbl_event WHERE id_event = v_eid) THEN
+    RAISE EXCEPTION 'fn_update_event did not persist id_prior_event';
+  END IF;
+
+  -- The actual fix: the value must round-trip through vw_calendar.
+  IF NOT (SELECT id_prior_event = v_prior FROM vw_calendar WHERE txt_code = 'CAL-PRIOR-TEST') THEN
+    RAISE EXCEPTION 'vw_calendar does not return id_prior_event';
+  END IF;
+END;
+$t821$;
+SELECT pass('8.21: id_prior_event persists and round-trips through vw_calendar (carry-over picker)');
+
+-- 8.22 — picker "none" unlinks: sentinel -1 clears id_prior_event, real NULL leaves it.
+-- (COALESCE alone could never clear a link; the sentinel keeps legacy callers safe.)
+DO $t822$
+DECLARE
+  v_eid INT;
+BEGIN
+  SELECT id_event INTO v_eid FROM tbl_event WHERE txt_code = 'CAL-PRIOR-TEST';
+
+  -- NULL = leave unchanged: the link set in 8.21 must survive.
+  PERFORM fn_update_event(
+    v_eid, 'Prior Link Test Event', 'Łódź', '2025-04-01'::DATE, '2025-04-02'::DATE,
+    NULL, 'POL', NULL, NULL, NULL::NUMERIC, NULL, NULL, NULL::enum_weapon_type[],
+    NULL, NULL::DATE, NULL, NULL, NULL, NULL, NULL, NULL
+  );
+  IF (SELECT id_prior_event FROM tbl_event WHERE id_event = v_eid) IS NULL THEN
+    RAISE EXCEPTION 'NULL p_id_prior_event must leave the existing link unchanged';
+  END IF;
+
+  -- Sentinel -1 = explicit "none": clears the link.
+  PERFORM fn_update_event(
+    v_eid, 'Prior Link Test Event', 'Łódź', '2025-04-01'::DATE, '2025-04-02'::DATE,
+    NULL, 'POL', NULL, NULL, NULL::NUMERIC, NULL, NULL, NULL::enum_weapon_type[],
+    NULL, NULL::DATE, NULL, NULL, NULL, NULL, NULL, -1
+  );
+  IF (SELECT id_prior_event FROM tbl_event WHERE id_event = v_eid) IS NOT NULL THEN
+    RAISE EXCEPTION 'sentinel -1 must clear id_prior_event (picker "none")';
+  END IF;
+END;
+$t822$;
+SELECT pass('8.22: fn_update_event sentinel -1 unlinks id_prior_event; NULL leaves it unchanged');
 
 SELECT * FROM finish();
 ROLLBACK;

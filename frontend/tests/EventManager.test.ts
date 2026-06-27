@@ -1136,15 +1136,17 @@ describe('EventManager Phase 3c', () => {
     expect(params.code).toBe('PEW1B-2025-2026')
   })
 
-  // ph3c.7 — handleSave always carries `priorEventId` (NULL ok)
-  it('ph3c.7: handleSave threads priorEventId (defaults null when no edit)', async () => {
+  // ph3c.7 — the picker is authoritative for the carry-over FK. With no prior
+  // link selected ("— none —"), handleSave sends the -1 unlink sentinel (migration
+  // 20260627000001) so the backend clears the FK rather than leaving it unchanged.
+  it('ph3c.7: handleSave sends -1 sentinel when the picker is "none"', async () => {
     const onupdate = vi.fn()
     const { container } = render(EventManager, { props: phase3Props({ onupdate }) })
     await fireEvent.click(container.querySelectorAll('[data-field="edit-btn"]')[0]!)
     await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
     const params = onupdate.mock.calls[0][1]
     expect(params).toHaveProperty('priorEventId')
-    expect(params.priorEventId).toBeNull()
+    expect(params.priorEventId).toBe(-1)
   })
 
   it('ph3c.7: handleSave threads selected priorEventId from picker', async () => {
@@ -1156,6 +1158,19 @@ describe('EventManager Phase 3c', () => {
     await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
     const params = onupdate.mock.calls[0][1]
     expect(params.priorEventId).toBe(100)
+  })
+
+  // ph3c.7 — round-trip: an event carrying a saved id_prior_event (now exposed by
+  // vw_calendar, migration 20260627000001) pre-selects that option on reopen. This
+  // is the user-reported symptom: the link no longer resets to "none" on reopen.
+  it('ph3c.7: opening an event pre-fills the picker from its saved id_prior_event', async () => {
+    const linked: CalendarEvent = { ...SKELETON, id_prior_event: 100 }
+    const { container } = render(EventManager, {
+      props: phase3Props({ events: [PRIOR_EVENT, linked, PLANNED_EVENT] }),
+    })
+    await fireEvent.click(container.querySelectorAll('[data-field="edit-btn"]')[0]!)
+    const select = container.querySelector('[data-field="form-prior-event"]') as HTMLSelectElement
+    expect(select.value).toBe('100')
   })
 
   // ph3c.8 — Skeletons panel renders collapsed by default; count = 1 (SKELETON)

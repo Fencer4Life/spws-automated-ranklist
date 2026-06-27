@@ -205,6 +205,10 @@ export interface CalendarEvent {
   url_event_3: string | null
   url_event_4: string | null
   url_event_5: string | null
+  // Phase 3 (ADR-044) — carry-over picker FK: this event's previous-season
+  // counterpart. Exposed by vw_calendar (migration 20260627000001) so the admin
+  // form round-trips the saved link.
+  id_prior_event?: number | null
   json_ingest_sources?: IngestSource[] | null
   json_source_overrides?: { skip?: string[]; process?: string[] } | null
 }

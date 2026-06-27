@@ -1095,6 +1095,37 @@ work (tracked PPW3/4/5 DATA fix).
 
 ---
 
+## Carry-over picker round-trip + explicit unlink (ADR-044 amendment) — 2026-06-27
+
+**Problem.** In the EventManager admin form, the `id_prior_event` dropdown (links an EVENT to
+its previous-season counterpart — the FK behind the rolling/carry-over score engine) appeared
+not to save: pick a counterpart, click Save, reopen the event, and the dropdown was back at
+"— none —".
+
+**Root cause — read path, not write path.** Traced end-to-end (graphify + grep): the save chain
+was sound — `EventManager.handleSave` → `updateEvent` → `fn_update_event` persisted the FK to
+`tbl_event` (already verified by pgTAP ph3.16). But the UI refetches through `vw_calendar`
+(`fetchCalendarEvents`), and that view never SELECTed `id_prior_event`, so `openEditForm` read
+`event.id_prior_event` as `undefined` and reset the picker. Classic "new `tbl_event` column →
+rebuild `vw_calendar` or the round-trip silently breaks": the column was added in
+`20260425000005` for the FK engine but never surfaced on the view.
+
+**Fix.** Migration `20260627000001_vw_calendar_prior_event.sql` — (1) rebuild `vw_calendar` from
+its `20260618000001` definition with `e.id_prior_event` added (functionally dependent on the
+grouped PK, no `GROUP BY` change; grants re-issued); (2) make the picker's "— none —" actually
+unlink — `fn_update_event` now reads `NULL` = leave unchanged (legacy 19-arg callers unaffected),
+`-1` = explicit clear, `>0` = set (signature unchanged → grants hold). Frontend:
+`CalendarEvent.id_prior_event` added to the type (inline cast dropped); picker is authoritative,
+sending `-1` for "none".
+
+**Tests.** pgTAP `05_calendar_view.sql` 8.21 (set + `vw_calendar` round-trip) + 8.22 (`-1` unlink;
+NULL leaves unchanged) — RED (column absent) → GREEN; full suite 611 on fresh seed (the earlier
+09/14 "failures" were the documented stale-seed artifact, cleared by `reset-dev.sh`). vitest
+`EventManager.test.ts` ph3c.7 reworked (reopen pre-fills picker from saved FK; "none" sends `-1`)
++ round-trip case — 374 → 376. Build clean. pgTAP total 609 → 611.
+
+---
+
 ## Archived Documents
 
 The following documents contain the original detailed plans. They are superseded by this history and the Project Specification:
