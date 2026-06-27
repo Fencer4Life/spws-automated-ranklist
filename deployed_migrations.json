@@ -120,8 +120,8 @@
     "schema_fingerprint": "93d3bf01d28ada49df100c07de902f27"
   },
   "prod": {
-    "last_updated": "2026-06-26T17:22:15Z",
-    "last_sha": "49d2ea2b3b587a7d08052c21b3c3eac97e2ef2a7",
+    "last_updated": "2026-06-27T07:07:24Z",
+    "last_sha": "42b972ed261ad84f32747631659ddea21985c65a",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -234,8 +234,9 @@
       "20260618000001_ingest_source_overrides.sql",
       "20260619000001_tournament_url_results_on_ingest.sql",
       "20260625000001_phase4_pew_split_collision_guard.sql",
-      "20260626000001_fn_merge_fencers_repoint_match_candidate.sql"
+      "20260626000001_fn_merge_fencers_repoint_match_candidate.sql",
+      "20260626120000_carry_stop_on_current_result.sql"
     ],
-    "schema_fingerprint": "93d3bf01d28ada49df100c07de902f27"
+    "schema_fingerprint": "71604bea5c1bc4829f2ded529d928ae2"
   }
 }
