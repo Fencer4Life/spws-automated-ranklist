@@ -32,6 +32,7 @@ from python.pipeline.core.contract import Context, PluginKind, Services
 from python.pipeline.plugins.base import BasePlugin
 from python.pipeline.plugins.bridge import get_pctx
 from python.pipeline.stages import (
+    _bracket_mixed_gender,
     _find_exact_fencer,
     _is_domestic,
     _row_authoritative_vcat,
@@ -71,30 +72,51 @@ class ResolveFencers(BasePlugin):
         remaining: list[tuple[str | None, Any]] = []
         alias_writebacks: list[dict] = []  # G4: scraped→canonical pairs recorded as aliases
 
-        # ---- PHASE A — exact match + BY reconcile ----
-        for vcat, r in rows:
+        # ---- PHASE A — exact match, then BY reconcile ----
+        # Resolve exact/override identities FIRST (deferring reconcile), so the
+        # bracket's gender mix is known before any BY calibration: a mixed-gender
+        # bracket must not move anyone's BY (ADR-056 amend, Guard 2).
+        override_at: dict[int, Any] = {}
+        exact_at: dict[int, int] = {}
+        matched_ids: list[int] = []
+        for idx, (vcat, r) in enumerate(rows):
             ovr = pctx.overrides.identity_for(r.fencer_name)
             if ovr is not None:
-                matches.append(self._from_override(r, ovr, fencer_db, season_end, vcat))
+                override_at[idx] = ovr
+                if ovr.id_fencer is not None:
+                    matched_ids.append(ovr.id_fencer)
                 continue
             exact_id = _find_exact_fencer(
                 r.fencer_name, getattr(r, "fencer_country", None), fencer_db
             )
             if exact_id is not None:
-                gby = self._reconcile_by(ctx, db, fencer_db, exact_id, vcat, season_end, touched, r)
+                exact_at[idx] = exact_id
+                matched_ids.append(exact_id)
+            else:
+                remaining.append((vcat, r))
+
+        bracket_mixed = _bracket_mixed_gender(matched_ids, fencer_db, parsed_gender)
+
+        for idx, (vcat, r) in enumerate(rows):
+            if idx in override_at:
+                matches.append(
+                    self._from_override(r, override_at[idx], fencer_db, season_end, vcat)
+                )
+            elif idx in exact_at:
+                gby = self._reconcile_by(
+                    ctx, db, fencer_db, exact_at[idx], vcat, season_end, touched, r, bracket_mixed
+                )
                 matches.append(
                     StageMatchResult(
                         scraped_name=r.fencer_name,
                         place=r.place,
-                        id_fencer=exact_id,
+                        id_fencer=exact_at[idx],
                         confidence=100.0,
                         method="AUTO_MATCHED",
                         governed_birth_year=gby,
                         notes="exact",
                     )
                 )
-            else:
-                remaining.append((vcat, r))
 
         # ---- PHASE B — fuzzy link-or-create ----
         for vcat, r in remaining:
@@ -241,7 +263,7 @@ class ResolveFencers(BasePlugin):
     # reuse of the Stage-0 reconcile / create primitives
     # ------------------------------------------------------------------ #
     def _reconcile_by(
-        self, ctx, db, fencer_db, existing_id, vcat, season_end, touched, r
+        self, ctx, db, fencer_db, existing_id, vcat, season_end, touched, r, bracket_mixed=False
     ) -> int | None:
         # Delegates to the single shared reconcile policy (not forked from s0).
         return reconcile_fencer_birth_year(
@@ -253,6 +275,7 @@ class ResolveFencers(BasePlugin):
             season_end,
             touched,
             r.fencer_name,
+            bracket_is_mixed_gender=bracket_mixed,
         )
 
     def _create(

@@ -211,6 +211,46 @@ class TestNoHalt:
         assert ctx.trace.outcome_of("Commit") is None  # never reached
 
 
+class TestCommitGenderDefault:
+    def test_commit_defaults_none_gender_to_m(self):
+        """N2.10 (ADR-056 amend) a fully-mixed Sexe='X' bracket parses gender=None;
+        Commit must default it to 'M' (enum_gender NOT NULL). Women's results are
+        reassigned to the women's ranklist at query time (ADR-034)."""
+        from python.pipeline.core.contract import Context, Services
+        from python.pipeline.plugins.bridge import ensure_pctx
+        from python.pipeline.plugins.ingest import Commit
+        from python.pipeline.types import Overrides, StageMatchResult
+
+        parsed = _make_parsed()
+        parsed.gender = None  # fully-mixed bracket
+        ctx = Context()
+        pctx = ensure_pctx(
+            ctx,
+            parsed=parsed,
+            overrides=Overrides(),
+            season_end_year=2026,
+            event_code="PPW3-2025-2026",
+        )
+        pctx.event = {"id_event": 7, "txt_code": "PPW3-2025-2026", "enum_type": "PPW"}
+        ctx.set("event", pctx.event)
+        m = StageMatchResult(
+            scraped_name="KOWALSKI Jan", place=1, id_fencer=101, method="AUTO_MATCHED", confidence=100.0
+        )
+        ctx.set("final_vcats", {"V1": [m]})
+        db = MagicMock()
+        db.find_or_create_tournament.return_value = 999
+
+        plugin = Commit()
+        ctx._begin(plugin)
+        try:
+            plugin.run(ctx, Services(db=db, config={}))
+        finally:
+            ctx._end()
+
+        gender_arg = db.find_or_create_tournament.call_args.args[2]
+        assert gender_arg == "M"
+
+
 # ---------------------------------------------------------------------------
 # Escalation policy (Escalate = last-resort Telegram, never blocks)
 # ---------------------------------------------------------------------------

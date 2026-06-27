@@ -1126,6 +1126,42 @@ NULL leaves unchanged) — RED (column absent) → GREEN; full suite 611 on fres
 
 ---
 
+## Cross-gender-guest reconcile fixpoint (ADR-056 amendment) — 2026-06-27
+
+**Problem.** SAMECKA-NACZyŃSKA (V1 woman) competes as a cross-gender guest in PPW5's V0 men's
+sabre bracket ("Szabla kat. 0"). Every reingest **demoted her stored BY to the V0 midpoint
+(1991)** — the 2026-06-26 demotion-to-midpoint path firing off the wrong (V0) bracket label.
+Once the BY was hand-held at V1, the single-cat V0 bracket then **aborted on commit**
+(`fn_assert_result_vcat` rejects a V1 fencer in a V0 tournament). Order-dependent / non-fixpoint.
+
+**Root cause.** The bracket label is untrustworthy for a cross-gender guest, yet reconcile
+trusted it (demoting her) and the splitter trusted it (forcing her into V0). The 2026-06-26
+amendment fixed the *correction target* but not *whether to correct at all*.
+
+**Fix (ADR-056 amend, Python-only — no migration).** (1) **Guard 1** — a CONFIRMED BY is
+promote-only; a demotion conflict is a logged no-op (age is monotonic); Estimated may still
+demote to midpoint. (2) **Guard 2** — a mixed-gender bracket (`_bracket_mixed_gender`, >1 distinct
+fencer gender) never calibrates BY. (3) `s7_split_by_vcat` routes to BY-derivation when
+`category_hint is None` OR mixed-gender (`fetch_genders_batch`) — mixed-gender treated as a
+combined/mixed-age pool; single-gender label brackets keep label-wins (GP1 5.19.x). (4) `Commit`
+defaults `gender None→'M'` (`Sexe="X"` brackets); women reassigned at query (ADR-034). Shared
+`reconcile_fencer_birth_year` so both pipelines stay in lockstep.
+
+**Result.** LOCAL repaired: BY 1985 (V1) stable across repeated PPW5/MPW reingests (was flipping
+to 1991); MPW-2025-2026 épée files her in V1; PPW5 sabre V0 commits the 3 men cleanly (no abort).
+
+**Known follow-up.** The ADR-076 from-URL keep-rule (`_resolve_sources`) computes `commit_cats`
+from parsed bracket names, so a cross-gender guest's split-out slice (SAMECKA → SABRE/V1 under
+bracket gender M) can be *held* and dropped — fully retaining guest results needs per-fencer-gender
+commit. Tracked separately.
+
+**Tests.** pytest 962 → 970 — `test_resolve_fencers.py` (confirmed-demotion no-op, estimated
+demote, mixed-gender skip, order-independence), `test_s0_reconcile_roster.py` (10.4.2b/10.4.2c),
+`test_vcat_from_birthyear.py` (5.20.1–5.20.3 mixed-gender/mixed-age split), `test_pipeline_plugins.py`
+(N2.10 commit gender None→'M'). vitest 376, ruff 0. pgTAP unaffected (no SQL).
+
+---
+
 ## Archived Documents
 
 The following documents contain the original detailed plans. They are superseded by this history and the Project Specification:

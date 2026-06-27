@@ -363,7 +363,11 @@ class Commit(BasePlugin):
 
         event_id = event["id_event"]
         weapon = parsed.weapon
-        gender = parsed.gender
+        # Fully-mixed (Sexe="X") brackets parse to gender=None; enum_gender is NOT
+        # NULL, so default to 'M' here (mirrors the legacy draft writer). Women's
+        # results are reassigned to the women's ranklist at query time via ADR-034
+        # fn_effective_gender, so the stored gender is not the source of truth.
+        gender = parsed.gender or "M"
         date = _iso_date(parsed.parsed_date)
         ttype = self._tournament_type(pctx, event)
 
