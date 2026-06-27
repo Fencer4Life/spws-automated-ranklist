@@ -39,7 +39,11 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install supabase
+        # The recompute worker imports the full pipeline (run_flow → rulebook →
+        # plugins → stages → matcher/fuzzy_match), so it needs the same runtime
+        # deps as the other pipeline-runner workflows — not just supabase.
+        # Missing rapidfuzz here crashed every scheduled drain on import.
+        run: pip install supabase httpx rapidfuzz beautifulsoup4 pyyaml
 
       - name: Drain the recompute queue
         run: |
