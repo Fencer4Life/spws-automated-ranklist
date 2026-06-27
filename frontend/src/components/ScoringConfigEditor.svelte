@@ -286,12 +286,16 @@
     readonly = false,
     onsave = (_c: ScoringConfig) => {},
     oncancel = () => {},
+    onchange = (_c: ScoringConfig) => {},
   }: {
     config: ScoringConfig
     seasonCode: string
     readonly?: boolean
     onsave?: (config: ScoringConfig) => void
     oncancel?: () => void
+    // Part 4 (ADR-044): fires on every draft edit so a parent wizard can capture
+    // the live config without waiting for the internal Save button.
+    onchange?: (config: ScoringConfig) => void
   } = $props()
 
   // Default engine for new seasons (no incoming config.engine) is the FK
@@ -313,6 +317,14 @@
       ? JSON.parse(JSON.stringify(config.ranking_rules))
       : { domestic: [], international: [] },
   )
+
+  // Part 4 (ADR-044): emit the live config on every edit so a parent wizard can
+  // advance with the current values via its own Next button (the internal Save
+  // button still works for the standalone edit-config flow). Reads draft +
+  // draftRules so the effect re-runs on any change; onchange defaults to a no-op.
+  $effect(() => {
+    onchange({ ...draft, ranking_rules: draftRules, engine: draft.engine })
+  })
 
   let collapsedSections: Record<string, boolean> = $state({
     base: false,

@@ -18,7 +18,7 @@ describe('SeasonManager (T9.2)', () => {
     oncreate: vi.fn(),
     onupdate: vi.fn(),
     ondelete: vi.fn(),
-    onfetchevf: vi.fn().mockResolvedValue(false),
+    onfetchevf: vi.fn().mockResolvedValue({ ranklist: false, calendar: true }),
   }
 
   // 9.37 — Renders season list with txt_code, dt_start, dt_end
@@ -48,19 +48,21 @@ describe('SeasonManager (T9.2)', () => {
     expect(container.querySelector('[data-field="wizard-overlay"]')).not.toBeNull()
   })
 
-  // 9.39 — Wizard renders step 1 with empty inputs (smoke; full state-machine
-  // coverage lives in tests/SeasonManagerWizard.test.ts).
-  it('wizard step 1 renders with empty code input', async () => {
+  // 9.39 — Wizard renders step 1 (smoke; full state-machine coverage lives in
+  // tests/SeasonManagerWizard.test.ts). Part 4 (ADR-044): the wizard now pre-fills
+  // the suggested next season, so the code input opens populated (latest of
+  // MOCK_SEASONS is SPWS-2024-2025 → SPWS-2025-2026), not blank.
+  it('wizard step 1 renders with the suggested next-season code', async () => {
     const { container } = render(SeasonManager, { props: defaultProps })
     await fireEvent.click(container.querySelector('[data-field="add-season-btn"]')!)
     const codeInput = container.querySelector('[data-field="wizard-code"]') as HTMLInputElement
     expect(codeInput).not.toBeNull()
-    expect(codeInput.value).toBe('')
+    expect(codeInput.value).toBe('SPWS-2025-2026')
   })
 
   // 9.40 — Edit button opens form with pre-filled values
   it('opens form pre-filled with season values on edit', async () => {
-    const onfetchevf = vi.fn().mockResolvedValue(false)
+    const onfetchevf = vi.fn().mockResolvedValue({ ranklist: false, calendar: true })
     const { container } = render(SeasonManager, { props: { ...defaultProps, onfetchevf } })
     const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
     expect(editBtns.length).toBe(2)
@@ -103,7 +105,7 @@ describe('SeasonManager (T9.2)', () => {
   // 8.81 — EVF checkbox renders in EDIT form (the wizard handles create with
   // its own EVF toggle; this test now scopes to the edit-flow checkbox).
   it('shows EVF checkbox in edit form', async () => {
-    const onfetchevf = vi.fn().mockResolvedValue(false)
+    const onfetchevf = vi.fn().mockResolvedValue({ ranklist: false, calendar: true })
     const { container } = render(SeasonManager, { props: { ...defaultProps, onfetchevf } })
 
     // Open EDIT form — checkbox appears
@@ -117,9 +119,24 @@ describe('SeasonManager (T9.2)', () => {
     expect(checkbox.checked).toBe(false)
   })
 
+  // Part 1 (ADR-044 amend) — the EDIT form renders a SECOND, independent
+  // Calendar +EVF checkbox; it reflects the fetched calendar flag (default ON).
+  it('shows an independent Calendar EVF checkbox in the edit form', async () => {
+    const onfetchevf = vi.fn().mockResolvedValue({ ranklist: false, calendar: true })
+    const { container } = render(SeasonManager, { props: { ...defaultProps, onfetchevf } })
+    await fireEvent.click(container.querySelectorAll('[data-field="edit-btn"]')[0])
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-field="form-evf-toggle-calendar"]')).not.toBeNull()
+    })
+    const ranklist = container.querySelector('[data-field="form-evf-toggle"]') as HTMLInputElement
+    const calendar = container.querySelector('[data-field="form-evf-toggle-calendar"]') as HTMLInputElement
+    expect(ranklist.checked).toBe(false)
+    expect(calendar.checked).toBe(true)
+  })
+
   // 8.82 — EVF checkbox reflects true when onfetchevf returns true
   it('EVF checkbox checked when onfetchevf returns true', async () => {
-    const onfetchevf = vi.fn().mockResolvedValue(true)
+    const onfetchevf = vi.fn().mockResolvedValue({ ranklist: true, calendar: true })
     const { container } = render(SeasonManager, { props: { ...defaultProps, onfetchevf } })
 
     const editBtns = container.querySelectorAll('[data-field="edit-btn"]')
@@ -134,7 +151,7 @@ describe('SeasonManager (T9.2)', () => {
 
   // 9.43 — Edit form renders inline above the edited season row
   it('edit form appears directly above the edited season row', async () => {
-    const onfetchevf = vi.fn().mockResolvedValue(false)
+    const onfetchevf = vi.fn().mockResolvedValue({ ranklist: false, calendar: true })
     const { container } = render(SeasonManager, { props: { ...defaultProps, onfetchevf } })
 
     // Click edit on the SECOND season
@@ -153,7 +170,7 @@ describe('SeasonManager (T9.2)', () => {
 
   // 8.83 — Saving edit form calls onupdate with showEvf param
   it('calls onupdate with showEvf=true after toggling checkbox', async () => {
-    const onfetchevf = vi.fn().mockResolvedValue(false)
+    const onfetchevf = vi.fn().mockResolvedValue({ ranklist: false, calendar: true })
     const onupdate = vi.fn()
     const { container } = render(SeasonManager, { props: { ...defaultProps, onfetchevf, onupdate } })
 
@@ -170,10 +187,72 @@ describe('SeasonManager (T9.2)', () => {
 
     // Save
     await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
-    // Phase 3 (ADR-044): onupdate signature now takes 7 args — the trailing
-    // (carryoverDays, europeanType) come from the new EDIT form fields and
-    // default to (366, null) when the season has no Phase-3 data yet.
-    expect(onupdate).toHaveBeenCalledWith(1, 'SPWS-2024-2025', '2024-09-01', '2025-06-30', true, 366, null)
+    // Part 1 (ADR-044 amend): onupdate now carries BOTH evf flags — ranklist
+    // (just toggled on) and calendar (fetched TRUE) — before europeanType.
+    expect(onupdate).toHaveBeenCalledWith(1, 'SPWS-2024-2025', '2024-09-01', '2025-06-30', true, true, null)
+  })
+
+  // Part 1 (ADR-044 amend) — the two EVF checkboxes are independent: toggling
+  // the Calendar flag off while leaving Ranklist on threads (false_ranklist…,
+  // true_ranklist, false_calendar) into onupdate.
+  it('threads both evf flags independently into onupdate', async () => {
+    const onfetchevf = vi.fn().mockResolvedValue({ ranklist: false, calendar: true })
+    const onupdate = vi.fn()
+    const { container } = render(SeasonManager, { props: { ...defaultProps, onfetchevf, onupdate } })
+    await fireEvent.click(container.querySelectorAll('[data-field="edit-btn"]')[0])
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-field="form-evf-toggle-calendar"]')).not.toBeNull()
+    })
+    // Turn Ranklist ON, turn Calendar OFF
+    await fireEvent.click(container.querySelector('[data-field="form-evf-toggle"]') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('[data-field="form-evf-toggle-calendar"]') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+    expect(onupdate).toHaveBeenCalledWith(1, 'SPWS-2024-2025', '2024-09-01', '2025-06-30', true, false, null)
+  })
+
+  // ========================================================================
+  // Part 2 (ADR-044 amend) — carry-over section cleanup
+  // ========================================================================
+
+  // Carry-over section header is a locale key ("Punktacja ciągła"), not the
+  // old hardcoded "🔁 Carry-over" literal.
+  it('renders the carry-over section header from a locale key', async () => {
+    const onfetchevf = vi.fn().mockResolvedValue({ ranklist: false, calendar: true })
+    const { container } = render(SeasonManager, { props: { ...defaultProps, onfetchevf } })
+    await fireEvent.click(container.querySelectorAll('[data-field="edit-btn"]')[0])
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-field="carryover-section-header"]')).not.toBeNull()
+    })
+    const header = container.querySelector('[data-field="carryover-section-header"]')!
+    expect(header.textContent).toContain('Punktacja ciągła')
+  })
+
+  // The carry-over-days control is gone (feeds only the inactive engine).
+  it('does not render the carry-over days control in the edit form', async () => {
+    const onfetchevf = vi.fn().mockResolvedValue({ ranklist: false, calendar: true })
+    const { container } = render(SeasonManager, { props: { ...defaultProps, onfetchevf } })
+    await fireEvent.click(container.querySelectorAll('[data-field="edit-btn"]')[0])
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-field="season-form"]')).not.toBeNull()
+    })
+    expect(container.querySelector('[data-field="form-carryover-days"]')).toBeNull()
+    expect(container.querySelector('[data-field="carryover-days-label"]')).toBeNull()
+  })
+
+  // European-event choice round-trips: a season carrying enum_european_event_type
+  // pre-selects the matching segment on edit (read-path fix verified at api layer).
+  it('pre-selects the European segment from the season value', async () => {
+    const onfetchevf = vi.fn().mockResolvedValue({ ranklist: false, calendar: true })
+    const seasonWithEuropean: Season = { ...MOCK_SEASONS[0], enum_european_event_type: 'IMEW' }
+    const { container } = render(SeasonManager, {
+      props: { ...defaultProps, seasons: [seasonWithEuropean], onfetchevf },
+    })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-field="form-european-imew"]')).not.toBeNull()
+    })
+    expect(container.querySelector('[data-field="form-european-imew"]')!.classList.contains('active')).toBe(true)
+    expect(container.querySelector('[data-field="form-european-none"]')!.classList.contains('active')).toBe(false)
   })
 
   // ========================================================================
@@ -193,7 +272,7 @@ describe('SeasonManager (T9.2)', () => {
       dt_end: yesterday,
       bool_active: false,
     }
-    const onfetchevf = vi.fn().mockResolvedValue(false)
+    const onfetchevf = vi.fn().mockResolvedValue({ ranklist: false, calendar: true })
     const { container } = render(SeasonManager, {
       props: { ...defaultProps, seasons: [pastSeason], onfetchevf },
     })
@@ -219,7 +298,7 @@ describe('SeasonManager (T9.2)', () => {
       dt_end: future,
       bool_active: false,
     }
-    const onfetchevf = vi.fn().mockResolvedValue(false)
+    const onfetchevf = vi.fn().mockResolvedValue({ ranklist: false, calendar: true })
     const { container } = render(SeasonManager, {
       props: { ...defaultProps, seasons: [futureSeason], onfetchevf },
     })

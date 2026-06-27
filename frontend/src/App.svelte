@@ -26,7 +26,7 @@
       gender={filters.gender}
       category={filters.category}
       mode={filters.mode}
-      {showEvfToggle}
+      showEvfToggle={showEvfToggleRanklist}
       {seasons}
       bind:selectedSeasonId
       onseasonchange={handleSeasonChange}
@@ -60,7 +60,7 @@
       scores={modalScores}
       mode={filters.mode}
       kadraDisabled={filters.category === 'V0'}
-      {showEvfToggle}
+      showEvfToggle={showEvfToggleRanklist}
       loading={modalLoading}
       context={modalContext}
       rankingRules={rankingRules}
@@ -78,7 +78,7 @@
       </div>
     {/if}
   {:else if currentView === 'calendar'}
-    <CalendarView events={calendarEvents} {showEvfToggle} {isActiveSeason} {seasons} bind:selectedSeasonId {dualEnv} bind:activeEnv onseasonchange={handleSeasonChange} />
+    <CalendarView events={calendarEvents} showEvfToggle={showEvfToggleCalendar} {isActiveSeason} {seasons} bind:selectedSeasonId {dualEnv} bind:activeEnv onseasonchange={handleSeasonChange} />
   {:else if currentView === 'admin_seasons'}
     <SeasonManager
       {seasons}
@@ -397,7 +397,10 @@
   let organizers: Organizer[] = $state([])
   let scoringConfig: ScoringConfig | null = $state(null)
   let editingScoringSeasonId: number | null = $state(null)
-  let showEvfToggle = $state(false)
+  // Part 1 (ADR-044 amend): two independent +EVF flags. Ranklist defaults OFF
+  // (SPWS lost the national-team appointment); Calendar defaults ON (richer view).
+  let showEvfToggleRanklist = $state(false)
+  let showEvfToggleCalendar = $state(true)
   let matchCandidates: MatchCandidate[] = $state([])
   let allFencers: FencerListItem[] = $state([])
   let identityError: string | null = $state(null)
@@ -470,14 +473,17 @@
 
   async function refreshEvfToggle() {
     if (demo || selectedSeasonId == null) {
-      showEvfToggle = false
+      showEvfToggleRanklist = false
+      showEvfToggleCalendar = true
       return
     }
     try {
       scoringConfig = await fetchScoringConfig(selectedSeasonId)
-      showEvfToggle = scoringConfig?.show_evf_toggle ?? false
+      showEvfToggleRanklist = scoringConfig?.show_evf_toggle ?? false
+      showEvfToggleCalendar = scoringConfig?.show_evf_toggle_calendar ?? true
     } catch {
-      showEvfToggle = false
+      showEvfToggleRanklist = false
+      showEvfToggleCalendar = true
     }
     if (filters.mode === 'KADRA') {
       filters = { ...filters, mode: 'PPW' }
@@ -1005,20 +1011,25 @@
     code: string,
     start: string,
     end: string,
-    showEvf: boolean,
-    carryoverDays: number = 366,
+    showEvfRanklist: boolean,
+    showEvfCalendar: boolean = true,
     europeanType: EuropeanEventType = null,
   ): Promise<string | null> {
     try {
       await updateSeason(id, code, start, end)
       const cfg = await fetchScoringConfig(id)
-      if (cfg && cfg.show_evf_toggle !== showEvf) {
-        await saveScoringConfig({ ...cfg, show_evf_toggle: showEvf } as unknown as Record<string, unknown>)
+      if (cfg && (cfg.show_evf_toggle !== showEvfRanklist || cfg.show_evf_toggle_calendar !== showEvfCalendar)) {
+        await saveScoringConfig({
+          ...cfg,
+          show_evf_toggle: showEvfRanklist,
+          show_evf_toggle_calendar: showEvfCalendar,
+        } as unknown as Record<string, unknown>)
       }
-      // Phase 3 (ADR-044): patch tbl_season's carry-over fields directly.
+      // Phase 3 (ADR-044): patch tbl_season's carry-over field directly.
       // Done via the api.ts helper since fn_update_season's signature does
-      // not include them and we don't want to widen it for one column-pair.
-      await updateSeasonCarryoverFields(id, carryoverDays, europeanType)
+      // not include it and we don't want to widen it for one column.
+      // Part 2 (ADR-044 amend): carryover-days removed from the UI.
+      await updateSeasonCarryoverFields(id, europeanType)
       seasons = await fetchSeasons()
       if (id === selectedSeasonId) await refreshEvfToggle()
       return null
@@ -1094,12 +1105,15 @@
     }
   }
 
-  async function handleFetchEvfToggle(seasonId: number): Promise<boolean> {
+  async function handleFetchEvfToggle(seasonId: number): Promise<{ ranklist: boolean, calendar: boolean }> {
     try {
       const cfg = await fetchScoringConfig(seasonId)
-      return cfg?.show_evf_toggle ?? false
+      return {
+        ranklist: cfg?.show_evf_toggle ?? false,
+        calendar: cfg?.show_evf_toggle_calendar ?? true,
+      }
     } catch {
-      return false
+      return { ranklist: false, calendar: true }
     }
   }
 

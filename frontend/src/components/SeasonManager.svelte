@@ -46,22 +46,16 @@
                 <input data-field="form-end" type="date" bind:value={draftEnd} />
               </label>
               <label class="checkbox-label">
-                <input data-field="form-evf-toggle" type="checkbox" bind:checked={draftShowEvf} />
+                <input data-field="form-evf-toggle" type="checkbox" bind:checked={draftShowEvfRanklist} />
                 {t('sc_show_evf_toggle')}
               </label>
-
-              <!-- Phase 3 — carry-over fields (ADR-044) -->
-              <div class="form-section-header" data-field="carryover-section-header">🔁 Carry-over</div>
-              <label data-field="carryover-days-label">
-                {t('season_field_carryover_days')}
-                <input
-                  data-field="form-carryover-days"
-                  type="number"
-                  min="1"
-                  max="9999"
-                  bind:value={draftCarryoverDays}
-                />
+              <label class="checkbox-label">
+                <input data-field="form-evf-toggle-calendar" type="checkbox" bind:checked={draftShowEvfCalendar} />
+                {t('sc_show_evf_toggle_calendar')}
               </label>
+
+              <!-- Phase 3 — carry-over fields (ADR-044; carryover-days UI removed Part 2) -->
+              <div class="form-section-header" data-field="carryover-section-header">🔁 {t('season_carryover_section')}</div>
               <label data-field="european-label">
                 {t('season_field_european')}
                 <div class="segmented" data-field="form-european-segmented">
@@ -199,9 +193,9 @@
   let {
     seasons = [] as Season[],
     isAdmin = false,
-    onupdate = (_id: number, _code: string, _start: string, _end: string, _showEvf: boolean, _carryoverDays: number, _europeanType: EuropeanEventType): Promise<string | null> => Promise.resolve(null),
+    onupdate = (_id: number, _code: string, _start: string, _end: string, _showEvfRanklist: boolean, _showEvfCalendar: boolean, _europeanType: EuropeanEventType): Promise<string | null> => Promise.resolve(null),
     ondelete = (_id: number) => {},
-    onfetchevf = (_id: number): Promise<boolean> => Promise.resolve(false),
+    onfetchevf = (_id: number): Promise<{ ranklist: boolean, calendar: boolean }> => Promise.resolve({ ranklist: false, calendar: true }),
     onscoringconfig = (_id: number) => {},
     scoringConfig = null as ScoringConfig | null,
     scoringSeasonId = null as number | null,
@@ -214,9 +208,9 @@
   }: {
     seasons?: Season[]
     isAdmin?: boolean
-    onupdate?: (id: number, code: string, start: string, end: string, showEvf: boolean, carryoverDays: number, europeanType: EuropeanEventType) => Promise<string | null>
+    onupdate?: (id: number, code: string, start: string, end: string, showEvfRanklist: boolean, showEvfCalendar: boolean, europeanType: EuropeanEventType) => Promise<string | null>
     ondelete?: (id: number) => void
-    onfetchevf?: (id: number) => Promise<boolean>
+    onfetchevf?: (id: number) => Promise<{ ranklist: boolean, calendar: boolean }>
     onscoringconfig?: (id: number) => void
     scoringConfig?: ScoringConfig | null
     scoringSeasonId?: number | null
@@ -236,8 +230,8 @@
   let draftCode = $state('')
   let draftStart = $state('')
   let draftEnd = $state('')
-  let draftShowEvf = $state(false)
-  let draftCarryoverDays = $state(366)
+  let draftShowEvfRanklist = $state(false)
+  let draftShowEvfCalendar = $state(true)
   let draftEuropean = $state<EuropeanEventType>(null)
   let formError: string | null = $state(null)
   let revertError: string | null = $state(null)
@@ -253,8 +247,9 @@
     draftCode = season.txt_code
     draftStart = season.dt_start
     draftEnd = season.dt_end
-    draftShowEvf = await onfetchevf(season.id_season)
-    draftCarryoverDays = season.int_carryover_days ?? 366
+    const evf = await onfetchevf(season.id_season)
+    draftShowEvfRanklist = evf.ranklist
+    draftShowEvfCalendar = evf.calendar
     draftEuropean = (season.enum_european_event_type ?? null) as EuropeanEventType
     formError = null
     revertError = null
@@ -282,8 +277,8 @@
       draftCode,
       draftStart,
       draftEnd,
-      draftShowEvf,
-      draftCarryoverDays,
+      draftShowEvfRanklist,
+      draftShowEvfCalendar,
       draftEuropean,
     )
     if (err) {
