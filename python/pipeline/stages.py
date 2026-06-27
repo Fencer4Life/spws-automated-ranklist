@@ -330,7 +330,9 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
         eid
         for r in ctx.parsed.results
         if not getattr(r, "bool_excluded", False)
-        and (eid := _find_exact_fencer(r.fencer_name, getattr(r, "fencer_country", None), fencer_db))
+        and (
+            eid := _find_exact_fencer(r.fencer_name, getattr(r, "fencer_country", None), fencer_db)
+        )
         is not None
     ]
     bracket_mixed = _bracket_mixed_gender(pre_ids, fencer_db, bracket_gender)

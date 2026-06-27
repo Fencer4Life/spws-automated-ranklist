@@ -292,7 +292,10 @@ class TestReconcile:
         stages.s0_reconcile_roster(ctx, db)
         assert db.updated == []
         assert ctx.reconciled_fencers == []
-        assert ctx.reconcile_conflicts and ctx.reconcile_conflicts[0]["reason"] == "confirmed_no_demote"
+        assert (
+            ctx.reconcile_conflicts
+            and ctx.reconcile_conflicts[0]["reason"] == "confirmed_no_demote"
+        )
 
     def test_demotion_estimated_uses_midpoint(self):
         """10.4.2c — ESTIMATED BY OLDER than the bracket band may still demote to the

@@ -234,7 +234,11 @@ class TestCommitGenderDefault:
         pctx.event = {"id_event": 7, "txt_code": "PPW3-2025-2026", "enum_type": "PPW"}
         ctx.set("event", pctx.event)
         m = StageMatchResult(
-            scraped_name="KOWALSKI Jan", place=1, id_fencer=101, method="AUTO_MATCHED", confidence=100.0
+            scraped_name="KOWALSKI Jan",
+            place=1,
+            id_fencer=101,
+            method="AUTO_MATCHED",
+            confidence=100.0,
         )
         ctx.set("final_vcats", {"V1": [m]})
         db = MagicMock()

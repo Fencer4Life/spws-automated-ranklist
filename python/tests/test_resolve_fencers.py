@@ -176,7 +176,9 @@ class TestExactAndReconcile:
 
         def run(order):
             fdb = [
-                _fencer(247, "SAMECKA", "Martyna", 1991, gender="F", estimated=True),  # V0 → promote
+                _fencer(
+                    247, "SAMECKA", "Martyna", 1991, gender="F", estimated=True
+                ),  # V0 → promote
                 _fencer(101, "KOWALSKI", "Jan", 1991, gender="M", estimated=True),
             ]
             db = _db(fdb)
