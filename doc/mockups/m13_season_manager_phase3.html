@@ -42,6 +42,12 @@
   .icon-btn { background: none; border: 1px solid #1a4a8a; color: #7fbadc; width: 26px; height: 26px; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
   .icon-btn:hover { color: #00d4ff; border-color: #00d4ff; }
   .icon-btn.delete:hover { color: #ff6b6b; border-color: #ff6b6b; }
+  /* ADR-077 §7: CERT→PROD season-skeleton promotion (dualEnv only, state-derived) */
+  .icon-btn.promote { width: auto; padding: 0 8px; color: #b794f6; border-color: #6b4a9a; }
+  .icon-btn.promote:hover { color: #d4b4ff; border-color: #b794f6; }
+  .icon-btn.promote:disabled { color: #555; border-color: #333; cursor: not-allowed; }
+  .prod-badge { color: #2a7a3a; font-size: 0.78em; padding: 0 6px; }
+  .promote-hint { color: #888; font-size: 0.72em; font-style: italic; margin-left: 4px; }
 
   /* Edit form */
   .edit-form { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; background: #0f1d36; border-bottom: 1px solid #1a4a8a; }
@@ -231,7 +237,11 @@
       <span class="season-cell">2025-08-31</span>
       <span class="season-cell"><span class="active-badge">aktywny</span></span>
       <span class="season-cell" style="font-style: italic; color: #888; font-size: 0.78em;">60 wydarzeń</span>
-      <span class="season-cell actions"><button class="icon-btn">✎</button><button class="icon-btn delete">🗑</button></span>
+      <!-- ADR-077 §7 promote control (dualEnv only, state-derived):
+           • childless + not on PROD → <button class="icon-btn promote">⬆ PROD</button>
+           • already on PROD        → <span class="prod-badge">✓ PROD</span> + <button class="icon-btn delete">Usuń z PROD</button>
+           • has tournament children → disabled (shown below) + hint -->
+      <span class="season-cell actions"><button class="icon-btn">✎</button><button class="icon-btn delete">🗑</button><button class="icon-btn promote" disabled title="Szkielet z wynikami — promuj wyniki per zawody">⬆ PROD</button></span>
     </div>
   </div>
 
