@@ -298,6 +298,7 @@
     MOCK_DRILLDOWN,
   } from './lib/mock-data'
   import { exportRankingPpw, exportRankingKadra } from './lib/export'
+  import { shouldUseRolling } from './lib/rolling'
   import { t } from './lib/locale.svelte'
   import Sidebar from './components/Sidebar.svelte'
   import CalendarView from './components/CalendarView.svelte'
@@ -396,6 +397,11 @@
   function clearStatus() { error = null; errorLink = null }
 
   let isActiveSeason = $derived(seasons.find(s => s.id_season === selectedSeasonId)?.bool_active ?? false)
+  // ADR-077: rolling carry-over applies to the active season AND future seasons
+  // (a not-yet-started season's ranklist is the carry-over preview); past seasons
+  // show their own finals. Was gated to isActiveSeason only, so a promoted future
+  // season rendered empty.
+  let useRolling = $derived(shouldUseRolling(seasons.find(s => s.id_season === selectedSeasonId)))
   let rankingRules: RankingRules | null = $state(null)
 
   let calendarEvents: CalendarEvent[] = $state([])
@@ -528,7 +534,7 @@
           filters.gender,
           filters.category,
           selectedSeasonId,
-          isActiveSeason,
+          useRolling,
         )
         kadraRows = []
         if (selectedSeasonId != null) {
@@ -540,7 +546,7 @@
           filters.gender,
           filters.category,
           selectedSeasonId,
-          isActiveSeason,
+          useRolling,
         )
         ppwRows = []
         if (selectedSeasonId != null) {
@@ -566,7 +572,7 @@
         modalScores = MOCK_SCORES[fencerId] ?? []
         modalContext = MOCK_DRILLDOWN[fencerId] ?? null
       } else if (selectedSeasonId != null) {
-        modalScores = isActiveSeason
+        modalScores = useRolling
           ? await fetchFencerScoresRolling(
               fencerId,
               filters.weapon,
