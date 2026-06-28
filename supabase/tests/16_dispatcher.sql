@@ -22,12 +22,18 @@ SELECT bag_eq(
 );
 
 -- =========================================================================
--- D.2: tbl_season.enum_carryover_engine exists, defaults applied to all rows
+-- D.2: tbl_season.enum_carryover_engine exists, migration default applied to the
+-- pre-existing (migration-era) seed seasons. Scoped to the three historical
+-- seasons: seasons created AFTER the Phase-3 default flip (e.g. the promoted
+-- SPWS-2026-2027, ADR-077) are intentionally EVENT_FK_MATCHING and must not fail
+-- this migration-default regression check.
 -- =========================================================================
 SELECT is(
-  (SELECT COUNT(*)::INT FROM tbl_season WHERE enum_carryover_engine != 'EVENT_CODE_MATCHING'),
+  (SELECT COUNT(*)::INT FROM tbl_season
+     WHERE enum_carryover_engine != 'EVENT_CODE_MATCHING'
+       AND txt_code IN ('SPWS-2023-2024', 'SPWS-2024-2025', 'SPWS-2025-2026')),
   0,
-  'D.2: every existing tbl_season row defaults to EVENT_CODE_MATCHING'
+  'D.2: pre-existing seed seasons default to EVENT_CODE_MATCHING'
 );
 
 -- =========================================================================

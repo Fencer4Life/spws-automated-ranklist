@@ -78,6 +78,11 @@ SAVEPOINT s_imew;
 -- SPWS-2025-2026 (id=3, dt_end=2026-07-15). Trigger trg_season_auto_config will
 -- insert default scoring config; we don't overwrite here (fn_init_season
 -- doesn't depend on scoring config values).
+-- ADR-077 Phase C: SPWS-2026-2027 now exists in the seed (promoted skeleton).
+-- Remove it within this savepoint so the fixture recreates it; ROLLBACK restores it.
+DELETE FROM tbl_event          WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
+DELETE FROM tbl_scoring_config WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
+DELETE FROM tbl_season         WHERE txt_code = 'SPWS-2026-2027';
 INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_european_event_type)
   VALUES ('SPWS-2026-2027', '2026-09-01', '2027-07-31', 'IMEW');
 
@@ -238,6 +243,10 @@ ROLLBACK TO SAVEPOINT s_first;
 SAVEPOINT s_parity;
 
 -- Insert SPWS-2026-2027 (FK-matching engine via DEFAULT after Phase 3 migration)
+-- ADR-077 Phase C: clear the seeded SPWS-2026-2027 first (savepoint-local; restored on ROLLBACK).
+DELETE FROM tbl_event          WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
+DELETE FROM tbl_scoring_config WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
+DELETE FROM tbl_season         WHERE txt_code = 'SPWS-2026-2027';
 INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_european_event_type)
   VALUES ('SPWS-2026-2027', '2026-09-01', '2027-07-31', 'IMEW');
 
@@ -347,6 +356,10 @@ SAVEPOINT s_update;
 -- children). Real seed events have mixed-V children which would make the
 -- assertion brittle; using a skeleton is the realistic Phase 3 use case
 -- anyway (admin renames a CREATED skeleton during planning).
+-- ADR-077 Phase C: clear the seeded SPWS-2026-2027 first (savepoint-local; restored on ROLLBACK).
+DELETE FROM tbl_event          WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
+DELETE FROM tbl_scoring_config WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
+DELETE FROM tbl_season         WHERE txt_code = 'SPWS-2026-2027';
 INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_european_event_type)
   VALUES ('SPWS-2026-2027', '2026-09-01', '2027-07-31', 'IMEW');
 SELECT fn_init_season((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
