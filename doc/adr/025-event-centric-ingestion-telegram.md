@@ -2,7 +2,10 @@
 
 **Status:** Accepted  
 **Date:** 2026-04-05  
-**Relates to:** ADR-022 (Ingestion DB Transaction), ADR-023 (Email Ingestion via GAS), ADR-024 (Combined Category Splitting)
+**Supersession narrowed (ADR-077, 2026-06-28):** ADR-050 supersedes this ADR only on the *ingestion
+mechanism*. The **event-status lifecycle** and the **Telegram admin surface** described here remain
+authoritative and are carried forward (and extended to 8 states) by **ADR-077**.
+**Relates to:** ADR-022 (Ingestion DB Transaction), ADR-023 (Email Ingestion via GAS), ADR-024 (Combined Category Splitting), ADR-077 (lifecycle + Telegram doctrine carried forward)
 
 ## Context
 

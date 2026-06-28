@@ -82,4 +82,20 @@ describe('getEventDisplayStatus (ADR-037)', () => {
     const out = getEventDisplayStatus('COMPLETED', null)
     expect(out.labelKey).toBe('status_completed')
   })
+
+  // ES.12 — CREATED renders as its own badge, NOT a silent "Planned" fallback (ADR-077 §6)
+  it('CREATED → status_created (not a Planned fallback)', () => {
+    const out = getEventDisplayStatus('CREATED', null, null, TODAY)
+    expect(out.labelKey).toBe('status_created')
+    expect(out.cssClass).toBe('status-created')
+    expect(out.labelKey).not.toBe('status_planned')
+  })
+
+  // ES.13 — SCORED renders as its own badge, NOT a silent "Planned" fallback (ADR-077 §6)
+  it('SCORED → status_scored (not a Planned fallback)', () => {
+    const out = getEventDisplayStatus('SCORED', YESTERDAY, null, TODAY)
+    expect(out.labelKey).toBe('status_scored')
+    expect(out.cssClass).toBe('status-scored')
+    expect(out.labelKey).not.toBe('status_planned')
+  })
 })

@@ -518,15 +518,28 @@
     )
   }
 
-  // CREATED is offerable so an admin can revert a skeleton back to CREATED (which
-  // re-hides it from the public calendar). getAvailableStatuses excludes the
-  // event's current status, so it only appears when the event is past CREATED.
-  const ALL_STATUSES: string[] = ['CREATED', 'PLANNED', 'SCHEDULED', 'CHANGED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
+  // Validator-aware transition map (ADR-077 §1/§6). Mirrors fn_validate_event_transition
+  // (migrations 20250301000003 + 20260425000005) EXACTLY: the dropdown must offer only
+  // transitions the DB trigger accepts, otherwise saving an offered-but-invalid status
+  // throws "Invalid event status transition: X → Y" at the trigger. Every list is the set
+  // of NEW states permitted FROM that OLD state; the universal `* → CREATED` rollback
+  // (reset-to-skeleton) is included in each. Keep in sync with the validator if it changes.
+  const STATUS_TRANSITIONS: Record<string, string[]> = {
+    CREATED:     ['PLANNED', 'CANCELLED'],
+    PLANNED:     ['SCHEDULED', 'IN_PROGRESS', 'CANCELLED', 'CREATED'],
+    SCHEDULED:   ['CHANGED', 'IN_PROGRESS', 'CANCELLED', 'CREATED'],
+    CHANGED:     ['SCHEDULED', 'IN_PROGRESS', 'CANCELLED', 'CREATED'],
+    IN_PROGRESS: ['SCORED', 'COMPLETED', 'PLANNED', 'CANCELLED', 'CREATED'],
+    SCORED:      ['COMPLETED', 'IN_PROGRESS', 'CREATED'],
+    COMPLETED:   ['SCORED', 'IN_PROGRESS', 'PLANNED', 'CREATED'],
+    CANCELLED:   ['CREATED'],
+  }
 
   function getAvailableStatuses(event: CalendarEvent): string[] {
     const today = new Date().toISOString().slice(0, 10)
+    // Date gate (unchanged, 9.49): a past event's status isn't editable via this dropdown.
     if (event.dt_start != null && event.dt_start < today) return []
-    return ALL_STATUSES.filter(s => s !== event.enum_status)
+    return (STATUS_TRANSITIONS[event.enum_status] ?? []).filter(s => s !== event.enum_status)
   }
 
   let {
@@ -1228,6 +1241,8 @@
   .status-inprogress { background: #fff3cd; color: #856404; }
   .status-changed { background: #ffe0cc; color: #8a4500; }
   .status-awaiting { background: #fef3c7; color: #92400e; }
+  .status-created { background: #ede0ff; color: #5b21b6; }
+  .status-scored { background: #d3efe9; color: #00564a; }
   .event-url-link {
     text-decoration: none;
     font-size: 14px;

@@ -17,7 +17,7 @@ BEGIN;
 -- guard. Targeted (not session_replication_role) so audit + status-
 -- transition triggers stay live.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
-SELECT plan(24);
+SELECT plan(25);
 
 -- =========================================================================
 -- Schema-level checks (no setup required, no missing-function risk)
@@ -463,28 +463,56 @@ SELECT is(
 
 ROLLBACK TO SAVEPOINT s_revert;
 
--- ph3.19 — refuses when any skeleton has advanced past CREATED
-SAVEPOINT s_refuse;
+-- ph3.19 — ADR-077 §6: a CHILDLESS season is revertible even after its skeletons
+-- advance past CREATED (e.g. an admin dates one to PLANNED). The widened guard is
+-- on childlessness, not status — a childless PLANNED season carries no results.
+SAVEPOINT s_revert_planned;
 
 INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_european_event_type)
   VALUES ('SPWS-2031-2032', '2031-09-01', '2032-07-31', 'IMEW');
 
 SELECT fn_init_season((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2031-2032'));
 
--- Promote one skeleton to PLANNED to simulate admin progress
+-- Promote one skeleton to PLANNED to simulate admin progress (still childless).
 UPDATE tbl_event
    SET enum_status = 'PLANNED'
  WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2031-2032')
    AND txt_code LIKE 'PPW1-%';
 
-SELECT throws_ok(
-  $$SELECT fn_revert_season_init((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2031-2032'))$$,
-  NULL,
-  NULL,
-  'ph3.19: fn_revert_season_init refuses when a skeleton has advanced past CREATED'
+SELECT fn_revert_season_init((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2031-2032'));
+
+SELECT is(
+  (SELECT COUNT(*)::INT FROM tbl_season WHERE txt_code = 'SPWS-2031-2032'),
+  0,
+  'ph3.19: fn_revert_season_init reverts a childless season even when a skeleton advanced to PLANNED'
 );
 
-ROLLBACK TO SAVEPOINT s_refuse;
+ROLLBACK TO SAVEPOINT s_revert_planned;
+
+-- ph3.19b — refuses once any event has a tbl_tournament child (results may exist).
+SAVEPOINT s_refuse_children;
+
+INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_european_event_type)
+  VALUES ('SPWS-2032-2033', '2032-09-01', '2033-07-31', 'DMEW');
+
+SELECT fn_init_season((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2032-2033'));
+
+-- Ingest a tournament child under one skeleton event → no longer childless.
+INSERT INTO tbl_tournament (id_event, txt_code, enum_type, enum_weapon, enum_gender, enum_age_category)
+SELECT id_event, 'PPW1-V0-M-EPEE-2032-2033', 'PPW', 'EPEE', 'M', 'V0'
+  FROM tbl_event
+ WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2032-2033')
+   AND txt_code LIKE 'PPW1-%'
+ LIMIT 1;
+
+SELECT throws_ok(
+  $$SELECT fn_revert_season_init((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2032-2033'))$$,
+  NULL,
+  NULL,
+  'ph3.19b: fn_revert_season_init refuses when an event has a tournament child'
+);
+
+ROLLBACK TO SAVEPOINT s_refuse_children;
 
 SELECT * FROM finish();
 ROLLBACK;

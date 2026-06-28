@@ -4,7 +4,7 @@
 
 **Date:** 2026-05-01
 
-**Supersedes:** ADR-024 (Combined Category Splitting), ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-039 (EVF Scraper Dedup + Stale-Event Gate), ADR-049 (Joint-Pool Split Flag).
+**Supersedes:** ADR-024 (Combined Category Splitting), ADR-025 (Event-Centric Ingestion + Telegram Admin — **narrowed by ADR-077 (2026-06-28) to the *ingestion mechanism* only; ADR-025's event-status lifecycle + Telegram admin surface live on, carried forward by ADR-077**), ADR-039 (EVF Scraper Dedup + Stale-Event Gate), ADR-049 (Joint-Pool Split Flag).
 **Amended by:** ADR-052 (URL→data validation), ADR-053 (EVF backup-source + parity gate + EVF_PUBLISHED promotion), ADR-054 (Carry-over FK + 366-day cap), ADR-055 (Ingest traceability — parser-kind enum + cap-6 history tables).
 **Superseded concepts:** Frozen-snapshot status was retired 2026-05-02 — cert_ref fallback became just-another-parser through the standard pipeline; no special status needed. ADR-051 was reserved for that policy and is now empty.
 
