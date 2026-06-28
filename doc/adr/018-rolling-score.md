@@ -168,3 +168,15 @@ fn_fencer_scores_rolling(p_fencer, p_weapon, p_gender, p_category, p_season)
 | R.23 | vitest | CalendarView: progress slots render for active season |
 | R.24 | vitest | CalendarView: progress hidden for non-active season |
 | R.25 | vitest | CalendarView: correct slot states (completed/carried/missing) |
+
+## Test maintenance note (2026-06-28)
+
+The pgTAP carry-stop suite (`supabase/tests/09_rolling_score.sql`, and the cross-gender
+`14_cross_gender_scoring.sql` for ADR-034) is now **fixture-self-contained**: each subtest builds
+its own synthetic two-season world (`TST-PREV`/`TST-CURR`, plus `TST-ROOT` for the no-previous
+branch) with a cloned scoring config and synthetic fencers on isolated `(weapon, gender)` lanes,
+then `ROLLBACK`s. Expected values are engine-derived or structural — no named production fencers,
+no seed-state assumptions, no production magic-number scores. This removes the recalibration
+treadmill (the tests previously broke on every reingest/season rollover). Carry-stop behaviour
+itself (ADR-018/021, results-based amendment `20260626120000`) is unchanged. See the 2026-06-28
+entry in `doc/development_history.md`.

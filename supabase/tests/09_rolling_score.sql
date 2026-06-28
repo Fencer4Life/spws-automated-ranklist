@@ -1,536 +1,415 @@
 -- =============================================================================
--- M10: Rolling Score Tests
+-- M10: Rolling Score Tests  (self-contained synthetic fixture)
 -- =============================================================================
--- Tests R.1–R.12 from doc/archive/MVP_development_plan.md §M10.
--- R.1-R.3:  fn_event_position helper
--- R.4-R.12: fn_ranking_ppw with p_rolling parameter
+-- Tests R.1–R.24 covering the rolling carry-over engine (ADR-018 / ADR-021,
+-- amended by 20260626120000 to be RESULTS-based / status-independent).
+--
+-- DESIGN (2026-06-28 robustness rewrite): every score/logic test builds its own
+-- throwaway world in this transaction and ROLLBACKs. No named production fencers,
+-- no "seed state" assumptions, no production magic-number scores. Expected values
+-- are either ENGINE-DERIVED (read back the synthetic tournaments' own
+-- num_final_score and assert the rolling/best-K/carry composition of THOSE) or
+-- purely STRUCTURAL (carried-over counts, never-both, source season, rules toggle).
+-- This makes the file immune to live-DB mutation and season rollover — it passes
+-- against the current LOCAL DB with no reset, and stays green after any reingest.
+--
+-- Two synthetic, non-active seasons drive carry-over (prev resolved by DATE):
+--   TST-PREV  2090-09-01 → 2091-08-31  (end year 2091)  — the carry SOURCE
+--   TST-CURR  2091-09-01 → 2092-08-31  (end year 2092)  — the queried season
+--   TST-ROOT  1850-09-01 → 1851-08-31  (end year 1851)  — earliest of all, so it
+--                                                          has NO predecessor (R.5)
+-- Scenarios are isolated on independent (weapon, gender) lanes because the
+-- carry-stop key `completed_positions` is scoped to weapon+gender (not category).
 -- =============================================================================
 
 BEGIN;
--- Layer 6 (2026-04-30): targeted bypass of trg_assert_result_vcat for
--- legacy test fixtures whose dummy V-cats predate the FATAL invariant
--- guard. Targeted (not session_replication_role) so audit + status-
--- transition triggers stay live.
-ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
 SELECT plan(24);
 
 -- =========================================================================
--- Self-contained carry-over fixture (test-only; reverted by ROLLBACK).
---
--- The carried IMEW tournaments that R.13 (KORONA kadra) and R.20 (ZIELIŃSKI
--- exact IMEW score) depend on are CALIBRATED against the full 2024-25 IMEW
--- field, but seed_prod_latest.sql ships an incomplete snapshot of them
--- (only a few result rows, with int_participant_count truncated to that
--- handful: V2=3, V1=4). With a truncated count, fn_calc_tournament_scores
--- sees int_place > int_participant_count and yields 0 — so on a fresh seed
--- (CI) the carried IMEW score is 0 and R.13 lands at 733.50, R.20 at 0.00.
---
--- fn_ranking_ppw/_kadra recompute current-season scores on the fly, but the
--- carry-over path (R.13) and the direct num_final_score read (R.20) consume
--- the STORED column. So we (1) restore the real participant_count for the two
--- carried IMEW tournaments, then (2) recompute every SCORED tournament, making
--- both assertions deterministic regardless of the seed's snapshot.
--- Verified: counts 110/68 → R.13=739.46, R.20=85.59; counts 3/4 → 733.50/0.00.
-UPDATE tbl_tournament SET int_participant_count = 110 WHERE txt_code = 'IMEW-V2-M-EPEE-2024-2025';
-UPDATE tbl_tournament SET int_participant_count = 68  WHERE txt_code = 'IMEW-V1-M-EPEE-2024-2025';
+-- R.1–R.3: fn_event_position (pure string helper — already self-contained)
+-- =========================================================================
 
-DO $recompute_scores$
-DECLARE t RECORD;
+SELECT is(fn_event_position('PPW1-2024-2025'), 'PPW1',
+  'R.1: fn_event_position extracts PPW1 from PPW1-2024-2025');
+
+SELECT is(fn_event_position('MPW-2024-2025'), 'MPW',
+  'R.2: fn_event_position extracts MPW from MPW-2024-2025');
+
+SELECT is(fn_event_position('PEW1-2025-2026'), 'PEW1',
+  'R.3: fn_event_position extracts PEW1 from PEW1-2025-2026');
+
+-- =========================================================================
+-- Synthetic fixture
+-- =========================================================================
+
+-- Organizer (one is enough — domestic vs international is decided by the
+-- tournament enum_type, not the organizer).
+INSERT INTO tbl_organizer (txt_code, txt_name) VALUES ('TST-ORG', 'Test Organizer');
+
+-- Seasons. enum_carryover_engine is set explicitly to EVENT_CODE_MATCHING (the
+-- active results-based engine the dispatcher routes to) — the table default has
+-- since moved to EVENT_FK_MATCHING, which is a different, inactive engine.
+-- trg_season_auto_config auto-creates a default (NULL-rules) scoring_config row
+-- for each.
+INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active, enum_carryover_engine) VALUES
+  ('TST-PREV', '2090-09-01', '2091-08-31', FALSE, 'EVENT_CODE_MATCHING'),
+  ('TST-CURR', '2091-09-01', '2092-08-31', FALSE, 'EVENT_CODE_MATCHING'),
+  ('TST-ROOT', '1850-09-01', '1851-08-31', FALSE, 'EVENT_CODE_MATCHING');
+
+-- Clone a real season's full scoring config (real place-point formula + real
+-- json_ranking_rules with domestic PPW/MPW + international PEW/MEW) into each
+-- synthetic season → engine-real scores, our inputs.
+UPDATE tbl_scoring_config dst SET
+  int_mp_value             = src.int_mp_value,
+  int_podium_gold          = src.int_podium_gold,
+  int_podium_silver        = src.int_podium_silver,
+  int_podium_bronze        = src.int_podium_bronze,
+  num_ppw_multiplier       = src.num_ppw_multiplier,
+  int_ppw_best_count       = src.int_ppw_best_count,
+  int_ppw_total_rounds     = src.int_ppw_total_rounds,
+  num_mpw_multiplier       = src.num_mpw_multiplier,
+  bool_mpw_droppable       = src.bool_mpw_droppable,
+  num_pew_multiplier       = src.num_pew_multiplier,
+  int_pew_best_count       = src.int_pew_best_count,
+  num_mew_multiplier       = src.num_mew_multiplier,
+  bool_mew_droppable       = src.bool_mew_droppable,
+  num_msw_multiplier       = src.num_msw_multiplier,
+  num_psw_multiplier       = src.num_psw_multiplier,
+  int_min_participants_evf = src.int_min_participants_evf,
+  int_min_participants_ppw = src.int_min_participants_ppw,
+  json_ranking_rules       = src.json_ranking_rules
+FROM tbl_scoring_config src
+WHERE src.id_season = (
+        SELECT id_season FROM tbl_scoring_config
+         WHERE json_ranking_rules ? 'domestic' AND json_ranking_rules ? 'international'
+         ORDER BY id_season DESC LIMIT 1)
+  AND dst.id_season IN (SELECT id_season FROM tbl_season
+                         WHERE txt_code IN ('TST-PREV', 'TST-CURR', 'TST-ROOT'));
+
+-- Helper lookups (session-scoped; created in pg_temp).
+CREATE FUNCTION pg_temp.sid(p_code text) RETURNS int
+  LANGUAGE sql STABLE AS $$ SELECT id_season FROM tbl_season WHERE txt_code = p_code $$;
+CREATE FUNCTION pg_temp.fid(p_surname text) RETURNS int
+  LANGUAGE sql STABLE AS $$ SELECT id_fencer FROM tbl_fencer WHERE txt_surname = p_surname LIMIT 1 $$;
+CREATE FUNCTION pg_temp.sc(p_tcode text) RETURNS numeric
+  LANGUAGE sql STABLE AS $$
+    SELECT r.num_final_score FROM tbl_result r
+      JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
+     WHERE t.txt_code = p_tcode LIMIT 1 $$;
+
+-- Create one synthetic tournament with a single placed fencer and score it.
+-- Creates the parent event on first use of an event code (idempotent), so
+-- lanes may share an event code while staying isolated by weapon+gender.
+CREATE FUNCTION pg_temp.mk(
+  p_evcode text, p_season int, p_status enum_event_status,
+  p_tcode text, p_type enum_tournament_type,
+  p_weapon enum_weapon_type, p_gender enum_gender_type, p_vcat enum_age_category,
+  p_fencer int, p_place int, p_count int
+) RETURNS int LANGUAGE plpgsql AS $$
+DECLARE v_eid int; v_tid int; v_start date;
 BEGIN
-  FOR t IN SELECT id_tournament FROM tbl_tournament WHERE enum_import_status = 'SCORED' LOOP
-    PERFORM fn_calc_tournament_scores(t.id_tournament);
-  END LOOP;
-END;
-$recompute_scores$;
+  SELECT dt_start INTO v_start FROM tbl_season WHERE id_season = p_season;
+  SELECT id_event INTO v_eid FROM tbl_event WHERE txt_code = p_evcode;
+  IF v_eid IS NULL THEN
+    INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start)
+    VALUES (p_evcode, p_evcode, p_season,
+            (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'TST-ORG'),
+            p_status, v_start)
+    RETURNING id_event INTO v_eid;
+  END IF;
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon,
+                              enum_gender, enum_age_category, dt_tournament,
+                              int_participant_count, enum_import_status)
+  VALUES (v_eid, p_tcode, p_tcode, p_type, p_weapon, p_gender, p_vcat,
+          v_start, p_count, 'IMPORTED')
+  RETURNING id_tournament INTO v_tid;
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
+  VALUES (p_fencer, v_tid, p_place, 'synthetic');
+  PERFORM fn_calc_tournament_scores(v_tid);
+  RETURN v_tid;
+END; $$;
+
+-- Synthetic fencers (one per lane; BYs chosen so each tournament's V-cat matches
+-- fn_age_category(BY, season_end_year) — satisfies the FATAL trg_assert_result_vcat
+-- without any trigger-disable hack).
+INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, enum_gender) VALUES
+  ('TSTMAIN',  'Main',  2037, 'M'),   -- EPEE/M  V2 (both seasons)
+  ('TSTFOIL',  'Foil',  2037, 'M'),   -- FOIL/M  V2 (best-K)
+  ('TSTSABRE', 'Sabre', 2032, 'M'),   -- SABRE/M V2→V3 (category crossing)
+  ('TSTR10',   'Ten',   2037, 'F'),   -- EPEE/F  V2 (results-based carry-stop)
+  ('TSTDEL',   'Del',   2037, 'F'),   -- EPEE/F  V2 (event deletion → carry resume)
+  ('TSTROOT',  'Root',  1796, 'M');   -- EPEE/M  V2 in TST-ROOT (no predecessor)
+
+-- ---- EPEE/M lane (TSTMAIN): the rich rolling scenario -------------------
+-- PREV results. Positions PPW1+PPW3 will be "completed" in CURR (so their prev
+-- is suppressed); PPW2, PPW4, MPW, IMEW have no current result (so they carry).
+SELECT pg_temp.mk('PPW1-TST-PREV', pg_temp.sid('TST-PREV'), 'COMPLETED', 'PPW1-V2-M-EPEE-TST-PREV', 'PPW', 'EPEE', 'M', 'V2', pg_temp.fid('TSTMAIN'), 3, 20);
+SELECT pg_temp.mk('PPW2-TST-PREV', pg_temp.sid('TST-PREV'), 'COMPLETED', 'PPW2-V2-M-EPEE-TST-PREV', 'PPW', 'EPEE', 'M', 'V2', pg_temp.fid('TSTMAIN'), 2, 18);
+SELECT pg_temp.mk('PPW4-TST-PREV', pg_temp.sid('TST-PREV'), 'COMPLETED', 'PPW4-V2-M-EPEE-TST-PREV', 'PPW', 'EPEE', 'M', 'V2', pg_temp.fid('TSTMAIN'), 4, 16);
+SELECT pg_temp.mk('MPW-TST-PREV',  pg_temp.sid('TST-PREV'), 'COMPLETED', 'MPW-V2-M-EPEE-TST-PREV',  'MPW', 'EPEE', 'M', 'V2', pg_temp.fid('TSTMAIN'), 2, 22);
+SELECT pg_temp.mk('IMEW-TST-PREV', pg_temp.sid('TST-PREV'), 'COMPLETED', 'IMEW-V2-M-EPEE-TST-PREV', 'MEW', 'EPEE', 'M', 'V2', pg_temp.fid('TSTMAIN'), 5, 30);
+-- CURR results (complete positions PPW1 + PPW3).
+SELECT pg_temp.mk('PPW1-TST-CURR', pg_temp.sid('TST-CURR'), 'COMPLETED', 'PPW1-V2-M-EPEE-TST-CURR', 'PPW', 'EPEE', 'M', 'V2', pg_temp.fid('TSTMAIN'), 1, 24);
+SELECT pg_temp.mk('PPW3-TST-CURR', pg_temp.sid('TST-CURR'), 'COMPLETED', 'PPW3-V2-M-EPEE-TST-CURR', 'PPW', 'EPEE', 'M', 'V2', pg_temp.fid('TSTMAIN'), 2, 19);
+-- CURR MPW EVENT exists at COMPLETED status but carries NO result yet (R.6 proof
+-- that status is a no-op; R.22 later gives it a result to flip the carry-stop).
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start)
+VALUES ('MPW-TST-CURR', 'MPW-TST-CURR', pg_temp.sid('TST-CURR'),
+        (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'TST-ORG'),
+        'COMPLETED', '2091-09-01');
+
+-- ---- EPEE/F lane (TSTR10): results-based carry-stop, status-independent --
+-- PREV PPW5 (would carry) + PREV PPW2 (carries — never completed in CURR).
+SELECT pg_temp.mk('PPW5-TST-PREV', pg_temp.sid('TST-PREV'), 'COMPLETED', 'PPW5-V2-F-EPEE-TST-PREV', 'PPW', 'EPEE', 'F', 'V2', pg_temp.fid('TSTR10'), 3, 15);
+SELECT pg_temp.mk('PPW2-TST-PREV', pg_temp.sid('TST-PREV'), 'COMPLETED', 'PPW2-V2-F-EPEE-TST-PREV', 'PPW', 'EPEE', 'F', 'V2', pg_temp.fid('TSTR10'), 2, 14);
+-- CURR PPW5 with a result but at SCHEDULED status → completes PPW5 by RESULT,
+-- regardless of status (the whole point of the 20260626120000 amendment).
+SELECT pg_temp.mk('PPW5-TST-CURR', pg_temp.sid('TST-CURR'), 'SCHEDULED', 'PPW5-V2-F-EPEE-TST-CURR', 'PPW', 'EPEE', 'F', 'V2', pg_temp.fid('TSTR10'), 1, 20);
+
+-- ---- EPEE/F lane (TSTDEL): event deletion → carry-over resumes ----------
+SELECT pg_temp.mk('PPW1-TST-PREV', pg_temp.sid('TST-PREV'), 'COMPLETED', 'PPW1-V2-F-EPEE-TST-PREV', 'PPW', 'EPEE', 'F', 'V2', pg_temp.fid('TSTDEL'), 2, 12);
+SELECT pg_temp.mk('PPW1-TST-CURR', pg_temp.sid('TST-CURR'), 'SCHEDULED', 'PPW1-V2-F-EPEE-TST-CURR', 'PPW', 'EPEE', 'F', 'V2', pg_temp.fid('TSTDEL'), 1, 13);
+SELECT pg_temp.mk('PPW3-TST-CURR', pg_temp.sid('TST-CURR'), 'SCHEDULED', 'PPW3-V2-F-EPEE-TST-CURR', 'PPW', 'EPEE', 'F', 'V2', pg_temp.fid('TSTDEL'), 1, 11);
+
+-- ---- FOIL/M lane (TSTFOIL): best-K on the MERGED current+carried pool ----
+SELECT pg_temp.mk('PPW1-TST-CURR', pg_temp.sid('TST-CURR'), 'COMPLETED', 'PPW1-V2-M-FOIL-TST-CURR', 'PPW', 'FOIL', 'M', 'V2', pg_temp.fid('TSTFOIL'), 1, 30);
+SELECT pg_temp.mk('PPW2-TST-CURR', pg_temp.sid('TST-CURR'), 'COMPLETED', 'PPW2-V2-M-FOIL-TST-CURR', 'PPW', 'FOIL', 'M', 'V2', pg_temp.fid('TSTFOIL'), 1, 25);
+SELECT pg_temp.mk('PPW3-TST-CURR', pg_temp.sid('TST-CURR'), 'COMPLETED', 'PPW3-V2-M-FOIL-TST-CURR', 'PPW', 'FOIL', 'M', 'V2', pg_temp.fid('TSTFOIL'), 1, 20);
+SELECT pg_temp.mk('PPW4-TST-PREV', pg_temp.sid('TST-PREV'), 'COMPLETED', 'PPW4-V2-M-FOIL-TST-PREV', 'PPW', 'FOIL', 'M', 'V2', pg_temp.fid('TSTFOIL'), 5, 10);
+SELECT pg_temp.mk('PPW5-TST-PREV', pg_temp.sid('TST-PREV'), 'COMPLETED', 'PPW5-V2-M-FOIL-TST-PREV', 'PPW', 'FOIL', 'M', 'V2', pg_temp.fid('TSTFOIL'), 6, 8);
+
+-- ---- SABRE/M lane (TSTSABRE): category crossing V2 (prev) → V3 (curr) ----
+SELECT pg_temp.mk('PPW1-TST-PREV', pg_temp.sid('TST-PREV'), 'COMPLETED', 'PPW1-V2-M-SABRE-TST-PREV', 'PPW', 'SABRE', 'M', 'V2', pg_temp.fid('TSTSABRE'), 1, 16);
+
+-- ---- ROOT lane (TSTROOT): earliest season, no predecessor ---------------
+SELECT pg_temp.mk('PPW1-TST-ROOT', pg_temp.sid('TST-ROOT'), 'COMPLETED', 'PPW1-V2-M-EPEE-TST-ROOT', 'PPW', 'EPEE', 'M', 'V2', pg_temp.fid('TSTROOT'), 1, 20);
 
 -- =========================================================================
--- Helper: temp table for dynamic fencer ID lookups (immune to ID shifts)
--- =========================================================================
-CREATE TEMP TABLE _fencer_ids AS
-SELECT id_fencer, txt_surname FROM tbl_fencer WHERE txt_surname IN (
-  'ATANASSOW','DROBIŃSKI','DUDEK','HAŚKO','HEŁKA','JENDRYŚ',
-  'KORONA','PARDUS','PILUTKIEWICZ','TOMCZAK','TRACZ','WASIOŁKA',
-  'WIERZBICKI','ZIELIŃSKI'
-) AND txt_first_name IN (
-  'Aleksander','Leszek','Mariusz','Sergiusz','Jacek','Marek',
-  'Przemysław','Borys','Igor','Ireneusz','Jerzy','Sebastian',
-  'Jacek','Dariusz'
-);
-
--- =========================================================================
--- R.1–R.3: fn_event_position
+-- R.4–R.14: fn_ranking_ppw / fn_ranking_kadra
 -- =========================================================================
 
--- R.1 — fn_event_position extracts PPW1 from PPW1-2024-2025
+-- R.4 — p_rolling=FALSE: current season only (no carry). Best-4 PPW keeps both
+-- current PPW; no current MPW result → MPW bucket contributes 0.
 SELECT is(
-  fn_event_position('PPW1-2024-2025'),
-  'PPW1',
-  'R.1: fn_event_position extracts PPW1 from PPW1-2024-2025'
-);
+  (SELECT total_score FROM fn_ranking_ppw('EPEE','M','V2', pg_temp.sid('TST-CURR'), p_rolling := FALSE)
+    WHERE id_fencer = pg_temp.fid('TSTMAIN')),
+  pg_temp.sc('PPW1-V2-M-EPEE-TST-CURR') + pg_temp.sc('PPW3-V2-M-EPEE-TST-CURR'),
+  'R.4: p_rolling=FALSE — total = current PPW1 + PPW3 only (engine-derived)');
 
--- R.2 — fn_event_position extracts MPW from MPW-2024-2025
+-- R.5 — p_rolling=TRUE with NO previous season (TST-ROOT is the earliest of all
+-- seasons by date) → identical to FALSE.
 SELECT is(
-  fn_event_position('MPW-2024-2025'),
-  'MPW',
-  'R.2: fn_event_position extracts MPW from MPW-2024-2025'
-);
+  (SELECT total_score FROM fn_ranking_ppw('EPEE','M','V2', pg_temp.sid('TST-ROOT'), p_rolling := TRUE)
+    WHERE id_fencer = pg_temp.fid('TSTROOT')),
+  (SELECT total_score FROM fn_ranking_ppw('EPEE','M','V2', pg_temp.sid('TST-ROOT'), p_rolling := FALSE)
+    WHERE id_fencer = pg_temp.fid('TSTROOT')),
+  'R.5: p_rolling=TRUE with no previous season — identical to FALSE');
 
--- R.3 — fn_event_position extracts PEW1 from PEW1-2025-2026
-SELECT is(
-  fn_event_position('PEW1-2025-2026'),
-  'PEW1',
-  'R.3: fn_event_position extracts PEW1 from PEW1-2025-2026'
-);
-
--- =========================================================================
--- R.4–R.12: fn_ranking_ppw with p_rolling
--- =========================================================================
--- Seed state: 2025-26 has PPW1-PPW4 COMPLETED, PPW5+MPW SCHEDULED.
--- 2024-25 has PPW1-PPW5+MPW all COMPLETED with results.
--- =========================================================================
-
--- R.4 — p_rolling=FALSE regression: same as current non-rolling result
--- Recalibrated 2026-06-25 after the 2026-06-19 PROD export (PPW3 promotion)
--- corrected domestic EPEE participant counts (PPW3-V2-M-EPEE-2024-2025 10→11,
--- PPW3-V2-M-EPEE-2025-2026 20→19, PPW1-V2-M-EPEE-2024-2025 10→11) → slightly
--- lower place points. KORONA EPEE V2 M best-4 total 357.37 → 356.92.
--- (Prior 2026-06-03 calibration removed the PPW4/PPW5 joint-pool over-count.)
-SELECT is(
-  (SELECT total_score FROM fn_ranking_ppw(
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    p_rolling := FALSE
-  ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  356.92::NUMERIC,
-  'R.4: p_rolling=FALSE regression — KORONA 356.92'
-);
-
--- R.5 — p_rolling=TRUE, no previous season → same as non-rolling
--- 2023-2024 (id=1) is the earliest season — no predecessor to carry from
-SELECT is(
-  (SELECT total_score FROM fn_ranking_ppw(
-    'EPEE', 'M', 'V2',
-    1,
-    p_rolling := TRUE
-  ) WHERE rank = 1),
-  (SELECT total_score FROM fn_ranking_ppw(
-    'EPEE', 'M', 'V2',
-    1,
-    p_rolling := FALSE
-  ) WHERE rank = 1),
-  'R.5: p_rolling=TRUE with no previous season — identical to FALSE'
-);
-
--- R.6 — carry-stop is RESULTS-based, not status-based (ADR-018/021 amend,
--- supersedes 20260406000006). Forcing PPW5+MPW to COMPLETED is a no-op now:
--- MPW-2025-2026 has no current result, so KORONA's MPW-prev STILL carries
--- regardless of status. Value 389.45 = 356.92 (non-rolling) + carried MPW.
--- This guards the status-independence of the rule.
-ALTER TABLE tbl_event DISABLE TRIGGER trg_event_transition;
-UPDATE tbl_event SET enum_status = 'COMPLETED'
-WHERE txt_code IN ('PPW5-2025-2026', 'MPW-2025-2026');
-
-SELECT is(
-  (SELECT total_score FROM fn_ranking_ppw(
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    p_rolling := TRUE
-  ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  389.45::NUMERIC,
-  'R.6: COMPLETED status is a no-op — KORONA 389.45 (MPW-prev still carries, no current MPW result)'
-);
-
--- Restore for subsequent tests
-UPDATE tbl_event SET enum_status = 'SCHEDULED'
-WHERE txt_code IN ('PPW5-2025-2026', 'MPW-2025-2026');
-ALTER TABLE tbl_event ENABLE TRIGGER trg_event_transition;
-
--- R.7 — p_rolling=TRUE, partial: carry-over from 2024-25
--- ZIELIŃSKI total rolling. Recalibrated 2026-06-25 after the 06-19 PPW3-promote
--- participant-count corrections: 257.30 → 256.84.
--- (Active-season PPW5 + MPW status set to SCHEDULED at R.5 setup; ZIELIŃSKI
--- current PPW1 + PPW3 + carried positions.)
-SELECT is(
-  (SELECT total_score FROM fn_ranking_ppw(
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    p_rolling := TRUE
-  ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz')),
-  256.84::NUMERIC,
-  'R.7: p_rolling=TRUE partial — ZIELIŃSKI 256.84 (current + carried MPW)'
-);
-
--- R.8 — p_rolling=TRUE, best-K operates on merged pool.
--- PARDUS total rolling. Recalibrated 2026-06-25 after the 06-19 PPW3-promote
--- participant-count corrections: 39.07 → 22.56. Larger swing than the KORONA
--- cases because PARDUS has few qualifying V2 events, so a ±1 count change is a
--- big fraction and shifts which events make the best-K cut.
-SELECT is(
-  (SELECT total_score FROM fn_ranking_ppw(
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    p_rolling := TRUE
-  ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PARDUS' AND txt_first_name = 'Borys')),
-  22.56::NUMERIC,
-  'R.8: p_rolling=TRUE best-K on merged pool — PARDUS 22.56'
-);
-
--- R.9 — p_rolling=TRUE, category crossing V2→V3.
--- TRACZ born 1966: V2 in 2024-25, V3 in 2025-26. Recalibrated 2026-06-25 after
--- the 06-19 PPW3-promote participant-count corrections (incl. V3 counts
--- PPW3-V3-M-EPEE-2025-2026 9→8, PPW4-V3-M-EPEE-2024-2025 9→10): 48.87 → 36.42.
-SELECT is(
-  (SELECT total_score FROM fn_ranking_ppw(
-    'EPEE', 'M', 'V3',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    p_rolling := TRUE
-  ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TRACZ' AND txt_first_name = 'Jerzy')),
-  36.42::NUMERIC,
-  'R.9: p_rolling=TRUE category crossing — TRACZ V2→V3 total 36.42'
-);
-
--- R.10 — p_rolling=TRUE.
--- DROBIŃSKI total rolling. Recalibrated 2026-06-26 (ADR-018/021 amend): PPW5-2025-2026
--- is SCHEDULED but HAS current results, so under the new results-based carry-stop the
--- prior-season PPW5 no longer carries (it did under the old status-based rule, which
--- double-counted current PPW5 + carried PPW5-prev in the best-K pool). 196.78 → 135.88.
-SELECT is(
-  (SELECT total_score FROM fn_ranking_ppw(
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    p_rolling := TRUE
-  ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DROBIŃSKI' AND txt_first_name = 'Leszek')),
-  135.88::NUMERIC,
-  'R.10: p_rolling=TRUE — DROBIŃSKI 135.88 (PPW5-prev no longer carries; PPW5 has current results)'
-);
-
--- R.11 — p_rolling=TRUE, event deletion: PPW5 removed from current season.
--- Recalibrated 2026-06-25 after the 06-19 PPW3-promote participant-count
--- corrections: ATANASSOW total after PPW5 wipe 269.28 → 268.87.
-DELETE FROM tbl_match_candidate WHERE id_result IN (SELECT id_result FROM tbl_result WHERE id_tournament IN (SELECT id_tournament FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2025-2026')));
-DELETE FROM tbl_result WHERE id_tournament IN (SELECT id_tournament FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2025-2026'));
-DELETE FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW5-2025-2026');
-DELETE FROM tbl_event WHERE txt_code = 'PPW5-2025-2026';
-
-SELECT is(
-  (SELECT total_score FROM fn_ranking_ppw(
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    p_rolling := TRUE
-  ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ATANASSOW' AND txt_first_name = 'Aleksander')),
-  268.87::NUMERIC,
-  'R.11: p_rolling=TRUE event deleted — ATANASSOW 268.87 (no PPW5-prev to carry)'
-);
-
--- Restore PPW5 for next test
-INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country)
-VALUES (
-    'PPW5-2025-2026', 'V Puchar Polski Weteranów',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
-    'SCHEDULED', '2026-05-10', 'Warszawa', 'Polska'
-);
-
--- R.12 — p_rolling=TRUE, event deleted → position carry-over resumes (ADR-021).
--- Delete PPW4-2025-2026 → PPW4 position no longer completed → PPW4-prev carries.
--- Recalibrated 2026-06-25 after the 06-19 PPW3-promote participant-count
--- corrections: ATANASSOW total after PPW4 wipe 288.10 → 287.69.
-DELETE FROM tbl_match_candidate WHERE id_result IN (SELECT id_result FROM tbl_result WHERE id_tournament IN (SELECT id_tournament FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2025-2026')));
-DELETE FROM tbl_result WHERE id_tournament IN (SELECT id_tournament FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2025-2026'));
-DELETE FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2025-2026');
-DELETE FROM tbl_event WHERE txt_code = 'PPW4-2025-2026';
-
-SELECT is(
-  (SELECT total_score FROM fn_ranking_ppw(
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    p_rolling := TRUE
-  ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ATANASSOW' AND txt_first_name = 'Aleksander')),
-  287.69::NUMERIC,
-  'R.12: p_rolling=TRUE event deleted — PPW4-prev carries (ADR-021), ATANASSOW 287.69'
-);
-
--- Restore PPW4 event + tournament + results for subsequent tests
-INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country)
-VALUES (
-    'PPW4-2025-2026', 'IV Puchar Polski Weteranów',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'),
-    'COMPLETED', '2026-02-21', 'Gdańsk', 'Polska'
-);
-INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count, url_results, enum_import_status)
-VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'PPW4-2025-2026'),
-    'PPW4-V2-M-EPEE-2025-2026', 'IV Puchar Polski Weteranów — Szpada M', 'PPW',
-    'EPEE', 'M', 'V2', '2026-02-21', 11, NULL, 'SCORED'
-);
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
-SELECT v.id_fencer, (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026'), v.place, v.name
-FROM (VALUES
-    ((SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław'), 1, 'KORONA Przemysław'),
-    ((SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ATANASSOW' AND txt_first_name = 'Aleksander'), 2, 'ATANASSOW Aleksander'),
-    ((SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'JENDRYŚ' AND txt_first_name = 'Marek'), 3, 'JENDRYŚ Marek'),
-    ((SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DUDEK' AND txt_first_name = 'Mariusz'), 4, 'DUDEK Mariusz'),
-    ((SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WASIOŁKA' AND txt_first_name = 'Sebastian'), 5, 'WASIOŁKA Sebastian'),
-    ((SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'DROBIŃSKI' AND txt_first_name = 'Leszek'), 6, 'DROBIŃSKI Leszek'),
-    ((SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'HAŚKO' AND txt_first_name = 'Sergiusz'), 7, 'HAŚKO Sergiusz'),
-    ((SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WIERZBICKI' AND txt_first_name = 'Jacek'), 8, 'WIERZBICKI Jacek'),
-    ((SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'TOMCZAK' AND txt_first_name = 'Ireneusz'), 9, 'TOMCZAK Ireneusz'),
-    ((SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PILUTKIEWICZ' AND txt_first_name = 'Igor'), 10, 'PILUTKIEWICZ Igor'),
-    ((SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'HEŁKA' AND txt_first_name = 'Jacek'), 11, 'HEŁKA Jacek')
-) AS v(id_fencer, place, name);
-SELECT fn_calc_tournament_scores(
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW4-V2-M-EPEE-2025-2026')
-);
-
--- =========================================================================
--- R.13–R.14: fn_ranking_kadra with p_rolling
--- =========================================================================
--- Kadra combines domestic (PPW/MPW) + international (PEW/MEW/MSW) buckets.
--- Rolling: carry-over from 2024-25 for types in ranking rules whose
--- positions are NOT completed (ADR-021). IMEW (MEW) carries because
--- MEW is in international rules and no IMEW event exists in 2025-26
--- (biennial). PPW4 is COMPLETED — no carry.
--- =========================================================================
-
--- R.13 — p_rolling=TRUE, domestic + international carry-over (ADR-021).
--- Re-derived AT THIS TEST'S MID-TRANSACTION STATE: R.11/R.12 have
--- deleted-and-partially-restored PPW4 (one M-EPEE tournament with 4 fencers)
--- and PPW5 (event-only placeholder, no tournaments). Recalibrated 2026-06-25
--- after the 06-19 PPW3-promote participant-count corrections: 739.46 → 739.01.
-SELECT is(
-  (SELECT total_score FROM fn_ranking_kadra(
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    p_rolling := TRUE
-  ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  739.01::NUMERIC,
-  'R.13: kadra p_rolling=TRUE — KORONA 739.01 (domestic + international + IMEW carry-over)'
-);
-
--- R.14 — p_rolling=FALSE regression — no carry-over, no IMEW in current season.
--- Re-derived against the same mid-transaction state. Recalibrated 2026-06-25
--- after the 06-19 PPW3-promote participant-count corrections: 686.51 → 686.06.
-SELECT is(
-  (SELECT total_score FROM fn_ranking_kadra(
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    p_rolling := FALSE
-  ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KORONA' AND txt_first_name = 'Przemysław')),
-  686.06::NUMERIC,
-  'R.14: kadra p_rolling=FALSE regression — KORONA 686.06'
-);
-
--- =========================================================================
--- R.15–R.18: fn_fencer_scores_rolling
--- =========================================================================
--- Returns vw_score-like rows + bool_carried_over + txt_source_season_code.
--- ZIELIŃSKI: 2 current (PPW1, PPW3) + 2 carried (MPW, IMEW from 2024-25).
--- IMEW carries because MEW is in ranking rules (ADR-021), no IMEW event
--- in 2025-26 (biennial — happened in 2024-25, not this year).
--- PPW4 is COMPLETED in current season — no carry for PPW4.
--- =========================================================================
-
--- R.15 — carried-over rows have bool_carried_over = TRUE
--- ZIELIŃSKI: carried MPW + IMEW from 2024-25 (ADR-021 rules-based carry-over)
+-- R.6 — carry-stop is RESULTS-based, not status-based (ADR-018/021 amend). A
+-- COMPLETED current-season MPW event with NO result is a no-op: the prior-season
+-- MPW STILL carries. Guards status-independence of the rule.
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
-  ) WHERE bool_carried_over = TRUE),
-  3,
-  'R.15: fn_fencer_scores_rolling — ZIELIŃSKI has 3 carried-over rows (MPW + IMEW + PEW14e; epee circuit position not completed in current per ADR-046 per-weapon split)'
-);
+      pg_temp.fid('TSTMAIN'), 'EPEE','M','V2', pg_temp.sid('TST-CURR'))
+    WHERE enum_type = 'MPW' AND bool_carried_over = TRUE),
+  1,
+  'R.6: COMPLETED-but-empty current MPW event is a no-op — MPW-prev still carries');
 
--- R.16 — current rows have bool_carried_over = FALSE
+-- R.7 — p_rolling=TRUE: merged best-4 PPW (2 current + 2 carried) + carried MPW.
+SELECT is(
+  (SELECT total_score FROM fn_ranking_ppw('EPEE','M','V2', pg_temp.sid('TST-CURR'), p_rolling := TRUE)
+    WHERE id_fencer = pg_temp.fid('TSTMAIN')),
+    pg_temp.sc('PPW1-V2-M-EPEE-TST-CURR') + pg_temp.sc('PPW3-V2-M-EPEE-TST-CURR')
+  + pg_temp.sc('PPW2-V2-M-EPEE-TST-PREV') + pg_temp.sc('PPW4-V2-M-EPEE-TST-PREV')
+  + pg_temp.sc('MPW-V2-M-EPEE-TST-PREV'),
+  'R.7: p_rolling=TRUE — current PPW1+PPW3 + carried PPW2+PPW4 + carried MPW');
+
+-- R.8 — best-K operates on the MERGED current+carried pool. TSTFOIL has 5 PPW
+-- (3 current + 2 carried); best:4 keeps the top 4 across both sources.
+SELECT is(
+  (SELECT total_score FROM fn_ranking_ppw('FOIL','M','V2', pg_temp.sid('TST-CURR'), p_rolling := TRUE)
+    WHERE id_fencer = pg_temp.fid('TSTFOIL')),
+  (SELECT SUM(s) FROM (
+     SELECT unnest(ARRAY[
+       pg_temp.sc('PPW1-V2-M-FOIL-TST-CURR'), pg_temp.sc('PPW2-V2-M-FOIL-TST-CURR'),
+       pg_temp.sc('PPW3-V2-M-FOIL-TST-CURR'), pg_temp.sc('PPW4-V2-M-FOIL-TST-PREV'),
+       pg_temp.sc('PPW5-V2-M-FOIL-TST-PREV')]) AS s
+     ORDER BY s DESC LIMIT 4) top4),
+  'R.8: best-K on merged pool — top 4 of (3 current + 2 carried) PPW');
+
+-- R.9 — category crossing. TSTSABRE is V2 in TST-PREV, V3 in TST-CURR; his PREV
+-- V2 result carries into the V3 ranking (fn_age_category against CURR end year).
+SELECT is(
+  (SELECT total_score FROM fn_ranking_ppw('SABRE','M','V3', pg_temp.sid('TST-CURR'), p_rolling := TRUE)
+    WHERE id_fencer = pg_temp.fid('TSTSABRE')),
+  pg_temp.sc('PPW1-V2-M-SABRE-TST-PREV'),
+  'R.9: category crossing V2→V3 — PREV V2 result carries into V3 ranking');
+
+-- R.10 — results-based carry-stop, status-independent (ADR-018/021 amend).
+-- TSTR10 has a current PPW5 result on a SCHEDULED event → PPW5-prev no longer
+-- carries; PPW2-prev (no current result) still does.
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
-  ) WHERE bool_carried_over = FALSE),
-  2,
-  'R.16: fn_fencer_scores_rolling — ZIELIŃSKI has 2 current rows (PPW1 + PPW3)'
-);
-
--- R.17 — position match: PPW1-prev NOT in results (PPW1 COMPLETED in current season)
-SELECT is(
-  (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
-  ) WHERE txt_tournament_code = 'PPW1-V2-M-EPEE-2024-2025'),
+      pg_temp.fid('TSTR10'), 'EPEE','F','V2', pg_temp.sid('TST-CURR'))
+    WHERE bool_carried_over = TRUE AND txt_tournament_code LIKE 'PPW5-%'),
   0,
-  'R.17: fn_fencer_scores_rolling — PPW1-prev excluded (position completed in current)'
-);
+  'R.10: PPW5-prev stops carrying once current PPW5 has a result (SCHEDULED event)');
 
--- R.18 — a current-season RESULT (not status) blocks carry-over for that position
--- (ADR-018/021 amend). Add an IMEW-2025-2026 event left at SCHEDULED but WITH an
--- EPEE-M result → IMEW position now has a current result → IMEW-prev stops carrying.
--- Proves the carry-stop is results-based and status-independent.
-ALTER TABLE tbl_event DISABLE TRIGGER trg_event_transition;
-INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, txt_location, txt_country)
-VALUES (
-    'IMEW-2025-2026', 'IMEW (test placeholder)',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
-    'SCHEDULED', '2026-06-01', 'Test', 'Test'
-);
-ALTER TABLE tbl_event ENABLE TRIGGER trg_event_transition;
-INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count, url_results, enum_import_status)
-VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'IMEW-2025-2026'),
-    'IMEW-V2-M-EPEE-2025-2026', 'IMEW — Epee M', 'MEW',
-    'EPEE', 'M', 'V2', '2026-06-01', 8, NULL, 'SCORED'
-);
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V2-M-EPEE-2025-2026'),
-    8, 'ZIELIŃSKI Dariusz'
-);
-SELECT fn_calc_tournament_scores(
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V2-M-EPEE-2025-2026')
-);
-
+-- R.11 — event deletion when the prior season has nothing to carry. Deleting
+-- TSTDEL''s current PPW3 (no PPW3-prev) leaves the position with no row at all.
+DELETE FROM tbl_result WHERE id_tournament = (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-TST-CURR');
+DELETE FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-TST-CURR';
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
-  ) WHERE bool_carried_over = TRUE),
+      pg_temp.fid('TSTDEL'), 'EPEE','F','V2', pg_temp.sid('TST-CURR'))
+    WHERE txt_tournament_code LIKE 'PPW3-%'),
+  0,
+  'R.11: current event deleted, no prior to carry — position disappears');
+
+-- R.12 — event deletion → position carry-over RESUMES (ADR-021). Deleting
+-- TSTDEL''s current PPW1 un-completes the position, so PPW1-prev now carries.
+DELETE FROM tbl_result WHERE id_tournament = (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-EPEE-TST-CURR');
+DELETE FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-EPEE-TST-CURR';
+SELECT is(
+  (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
+      pg_temp.fid('TSTDEL'), 'EPEE','F','V2', pg_temp.sid('TST-CURR'))
+    WHERE bool_carried_over = TRUE AND txt_tournament_code LIKE 'PPW1-%'),
+  1,
+  'R.12: current event deleted → PPW1-prev carry-over resumes (ADR-021)');
+
+-- R.13 — kadra p_rolling=TRUE: domestic (PPW best-4 + MPW) + international
+-- (carried IMEW/MEW). total = R.7 domestic total + carried IMEW.
+SELECT is(
+  (SELECT total_score FROM fn_ranking_kadra('EPEE','M','V2', pg_temp.sid('TST-CURR'), p_rolling := TRUE)
+    WHERE id_fencer = pg_temp.fid('TSTMAIN')),
+    pg_temp.sc('PPW1-V2-M-EPEE-TST-CURR') + pg_temp.sc('PPW3-V2-M-EPEE-TST-CURR')
+  + pg_temp.sc('PPW2-V2-M-EPEE-TST-PREV') + pg_temp.sc('PPW4-V2-M-EPEE-TST-PREV')
+  + pg_temp.sc('MPW-V2-M-EPEE-TST-PREV')  + pg_temp.sc('IMEW-V2-M-EPEE-TST-PREV'),
+  'R.13: kadra p_rolling=TRUE — domestic + international + carried IMEW');
+
+-- R.14 — kadra p_rolling=FALSE: no carry, no current international → domestic
+-- current only.
+SELECT is(
+  (SELECT total_score FROM fn_ranking_kadra('EPEE','M','V2', pg_temp.sid('TST-CURR'), p_rolling := FALSE)
+    WHERE id_fencer = pg_temp.fid('TSTMAIN')),
+  pg_temp.sc('PPW1-V2-M-EPEE-TST-CURR') + pg_temp.sc('PPW3-V2-M-EPEE-TST-CURR'),
+  'R.14: kadra p_rolling=FALSE — current domestic only');
+
+-- =========================================================================
+-- R.15–R.18: fn_fencer_scores_rolling drilldown (TSTMAIN EPEE/M/V2)
+-- =========================================================================
+-- Current rows: PPW1, PPW3 (2). Carried rows: PPW2, PPW4, MPW, IMEW (4).
+-- PPW1-prev / PPW3-prev are suppressed (their positions completed in CURR).
+
+-- R.15 — carried-over rows are flagged bool_carried_over = TRUE.
+SELECT is(
+  (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
+      pg_temp.fid('TSTMAIN'), 'EPEE','M','V2', pg_temp.sid('TST-CURR'))
+    WHERE bool_carried_over = TRUE),
+  4,
+  'R.15: drilldown — 4 carried-over rows (PPW2 + PPW4 + MPW + IMEW)');
+
+-- R.16 — current rows are flagged bool_carried_over = FALSE.
+SELECT is(
+  (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
+      pg_temp.fid('TSTMAIN'), 'EPEE','M','V2', pg_temp.sid('TST-CURR'))
+    WHERE bool_carried_over = FALSE),
   2,
-  'R.18: current IMEW result (SCHEDULED event) blocks carry — MPW + PEW14e remain, IMEW-prev dropped'
-);
+  'R.16: drilldown — 2 current rows (PPW1 + PPW3)');
 
--- Clean up: remove test IMEW current result/tournament/event so R.19–R.21 see
--- the original state (IMEW-prev carrying again).
-DELETE FROM tbl_result WHERE id_tournament IN (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V2-M-EPEE-2025-2026');
-DELETE FROM tbl_tournament WHERE txt_code = 'IMEW-V2-M-EPEE-2025-2026';
-DELETE FROM tbl_event WHERE txt_code = 'IMEW-2025-2026';
+-- R.17 — PPW1-prev excluded because position PPW1 is completed in current season.
+SELECT is(
+  (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
+      pg_temp.fid('TSTMAIN'), 'EPEE','M','V2', pg_temp.sid('TST-CURR'))
+    WHERE txt_tournament_code = 'PPW1-V2-M-EPEE-TST-PREV'),
+  0,
+  'R.17: PPW1-prev excluded (position completed in current)');
+
+-- R.18 — a current-season RESULT (not status) blocks carry-over for that
+-- position. Add a current IMEW result on a SCHEDULED event → IMEW-prev stops.
+SELECT pg_temp.mk('IMEW-TST-CURR', pg_temp.sid('TST-CURR'), 'SCHEDULED', 'IMEW-V2-M-EPEE-TST-CURR', 'MEW', 'EPEE', 'M', 'V2', pg_temp.fid('TSTMAIN'), 4, 12);
+SELECT is(
+  (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
+      pg_temp.fid('TSTMAIN'), 'EPEE','M','V2', pg_temp.sid('TST-CURR'))
+    WHERE bool_carried_over = TRUE),
+  3,
+  'R.18: current IMEW result (SCHEDULED event) blocks carry — IMEW-prev dropped');
+
+-- Remove the test IMEW current result so R.19–R.21 see IMEW-prev carrying again.
+DELETE FROM tbl_result WHERE id_tournament = (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V2-M-EPEE-TST-CURR');
+DELETE FROM tbl_tournament WHERE txt_code = 'IMEW-V2-M-EPEE-TST-CURR';
+DELETE FROM tbl_event WHERE txt_code = 'IMEW-TST-CURR';
 
 -- =========================================================================
--- R.19–R.21: IMEW biennial carry-over (ADR-021, FR-68)
+-- R.19–R.21: biennial IMEW carry-over (ADR-021, FR-68)
 -- =========================================================================
--- IMEW is biennial: happened in 2024-25, NOT in 2025-26 (DMEW/team instead).
--- Rules-based carry-over: MEW is in json_ranking_rules->international,
--- so IMEW from 2024-25 automatically carries without needing an event.
--- =========================================================================
+-- IMEW happened in TST-PREV, not TST-CURR. Rules-based carry-over: MEW is in
+-- json_ranking_rules->international, so IMEW carries with no current event.
 
--- R.19 — IMEW from 2024-25 carries with correct source season
+-- R.19 — carried IMEW reports the SOURCE season code (TST-PREV).
 SELECT is(
   (SELECT txt_source_season_code FROM fn_fencer_scores_rolling(
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
-  ) WHERE bool_carried_over = TRUE AND enum_type = 'MEW'),
-  'SPWS-2024-2025',
-  'R.19: IMEW carried from 2024-25 — source season is SPWS-2024-2025 (biennial)'
-);
+      pg_temp.fid('TSTMAIN'), 'EPEE','M','V2', pg_temp.sid('TST-CURR'))
+    WHERE bool_carried_over = TRUE AND enum_type = 'MEW'),
+  'TST-PREV',
+  'R.19: carried IMEW source season is TST-PREV (biennial)');
 
--- R.20 — IMEW carried score matches exact 2024-25 value
+-- R.20 — carried IMEW score equals the synthetic tournament''s engine score.
 SELECT is(
   (SELECT num_final_score FROM fn_fencer_scores_rolling(
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
-  ) WHERE bool_carried_over = TRUE AND enum_type = 'MEW'),
-  85.59::NUMERIC,
-  'R.20: IMEW carried score = 85.59 (exact 2024-25 value for ZIELIŃSKI V2 M EPEE)'
-);
+      pg_temp.fid('TSTMAIN'), 'EPEE','M','V2', pg_temp.sid('TST-CURR'))
+    WHERE bool_carried_over = TRUE AND enum_type = 'MEW'),
+  pg_temp.sc('IMEW-V2-M-EPEE-TST-PREV'),
+  'R.20: carried IMEW score = the source tournament''s num_final_score');
 
--- R.21 — removing MEW from ranking rules stops IMEW carry-over
--- Temporarily update json_ranking_rules to exclude MEW from international bucket
+-- R.21 — removing MEW from ranking rules stops the IMEW carry-over.
 UPDATE tbl_scoring_config SET json_ranking_rules = jsonb_set(
-  json_ranking_rules,
-  '{international,2,types}',
-  '["PEW", "MSW"]'::JSONB
-) WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026');
-
+  json_ranking_rules, '{international,2,types}', '["PEW", "MSW"]'::JSONB)
+ WHERE id_season = pg_temp.sid('TST-CURR');
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
-  ) WHERE bool_carried_over = TRUE AND enum_type = 'MEW'),
+      pg_temp.fid('TSTMAIN'), 'EPEE','M','V2', pg_temp.sid('TST-CURR'))
+    WHERE bool_carried_over = TRUE AND enum_type = 'MEW'),
   0,
-  'R.21: MEW removed from rules — IMEW no longer carries (ADR-021 rules-based)'
-);
-
--- Restore original rules (ROLLBACK handles this, but be explicit)
+  'R.21: MEW removed from rules — IMEW no longer carries (ADR-021 rules-based)');
+-- Restore rules (ROLLBACK would also handle this).
 UPDATE tbl_scoring_config SET json_ranking_rules = jsonb_set(
-  json_ranking_rules,
-  '{international,2,types}',
-  '["PEW", "MEW", "MSW"]'::JSONB
-) WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026');
+  json_ranking_rules, '{international,2,types}', '["PEW", "MEW", "MSW"]'::JSONB)
+ WHERE id_season = pg_temp.sid('TST-CURR');
 
 -- =========================================================================
--- R.22–R.24: never-both invariant — current-season result supersedes the
--- carried prior-season equivalent REGARDLESS of event status (ADR-018/021
--- amendment, supersedes 20260406000006). Carry-stop is now keyed on the
--- existence of a current-season result for the position, not enum_status.
---
--- Scenario: MPW-2025-2026 is SCHEDULED (not COMPLETED/IN_PROGRESS) yet we
--- give ZIELIŃSKI a current MPW result there. He also has a carried MPW from
--- 2024-25. Under the OLD status-based rule both rows appeared ("I see this
--- year's AND last year's MPW"); under the new rule the carried MPW drops.
+-- R.22–R.24: never-both — a current-season result supersedes the carried
+-- prior-season equivalent REGARDLESS of event status (ADR-018/021 amend).
+-- The MPW-TST-CURR event is SCHEDULED-equivalent (created COMPLETED, but the
+-- carry-stop ignores status); give it a result and the carried MPW drops.
 -- =========================================================================
+SELECT pg_temp.mk('MPW-TST-CURR', pg_temp.sid('TST-CURR'), 'COMPLETED', 'MPW-V2-M-EPEE-TST-CURR', 'MPW', 'EPEE', 'M', 'V2', pg_temp.fid('TSTMAIN'), 1, 26);
 
-INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count, url_results, enum_import_status)
-VALUES (
-    (SELECT id_event FROM tbl_event WHERE txt_code = 'MPW-2025-2026'),
-    'MPW-V2-M-EPEE-2025-2026', 'Mistrzostwa Polski Weteranów — Szpada M', 'MPW',
-    'EPEE', 'M', 'V2', '2026-06-20', 8, NULL, 'SCORED'
-);
-INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
-VALUES (
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-M-EPEE-2025-2026'),
-    8, 'ZIELIŃSKI Dariusz'
-);
-SELECT fn_calc_tournament_scores(
-    (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'MPW-V2-M-EPEE-2025-2026')
-);
-
--- R.22 — never both: exactly one MPW row for ZIELIŃSKI (was 2 under old rule)
+-- R.22 — exactly one MPW row for TSTMAIN (was 2 under the old status-based rule).
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
-  ) WHERE enum_type = 'MPW'),
+      pg_temp.fid('TSTMAIN'), 'EPEE','M','V2', pg_temp.sid('TST-CURR'))
+    WHERE enum_type = 'MPW'),
   1,
-  'R.22: never both — exactly one MPW row when current MPW has a result (SCHEDULED event)'
-);
+  'R.22: never both — exactly one MPW row when current MPW has a result');
 
--- R.23 — the prior-season MPW carry is dropped the moment this year has a result
+-- R.23 — the prior-season MPW carry is dropped once the current result exists.
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
-  ) WHERE enum_type = 'MPW' AND bool_carried_over = TRUE),
+      pg_temp.fid('TSTMAIN'), 'EPEE','M','V2', pg_temp.sid('TST-CURR'))
+    WHERE enum_type = 'MPW' AND bool_carried_over = TRUE),
   0,
-  'R.23: carried MPW dropped once current-season MPW result exists (status-independent)'
-);
+  'R.23: carried MPW dropped once current-season MPW result exists');
 
--- R.24 — ranking agrees with drilldown: mpw_score is THIS year's score, not the
--- carried (higher) prior-season one. Under the old rule the best-MPW bucket
--- still saw the carried row and could return it; now only the current counts.
+-- R.24 — ranking mpw_score = THIS year''s MPW (the drilldown current MPW row),
+-- not the carried prior-season one.
 SELECT is(
-  (SELECT mpw_score FROM fn_ranking_ppw(
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'),
-    p_rolling := TRUE
-  ) WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz')),
+  (SELECT mpw_score FROM fn_ranking_ppw('EPEE','M','V2', pg_temp.sid('TST-CURR'), p_rolling := TRUE)
+    WHERE id_fencer = pg_temp.fid('TSTMAIN')),
   (SELECT num_final_score FROM fn_fencer_scores_rolling(
-    (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'ZIELIŃSKI' AND txt_first_name = 'Dariusz'),
-    'EPEE', 'M', 'V2',
-    (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
-  ) WHERE enum_type = 'MPW' AND bool_carried_over = FALSE),
-  'R.24: ranking mpw_score = current-season MPW (carried no longer double-counts)'
-);
+      pg_temp.fid('TSTMAIN'), 'EPEE','M','V2', pg_temp.sid('TST-CURR'))
+    WHERE enum_type = 'MPW' AND bool_carried_over = FALSE),
+  'R.24: ranking mpw_score = current-season MPW (carried no longer double-counts)');
 
 SELECT * FROM finish();
 ROLLBACK;
