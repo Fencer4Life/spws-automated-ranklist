@@ -1341,3 +1341,43 @@ Test totals at Phase 5.5 (in progress, second push): pgTAP 508 → **543** (+35)
     - **SuperFive Ranking:** DEPRICATED. No longer planned to Upgrade scrapers to pull V/M (victories/matches), TS (touches scored), and Ind (indicator) metrics from PPW pool rounds. Implement `tbl_pool_result` (see spec §9.8) and a separate `vw_ranking_superfive` view. SuperFive relates only to PPW pool-round data, not DE results.
 
     - **Kadra Tier Classification:** DEPRICATED. No longer planned to Add `vw_kadra_tiers` view that classifies fencers into Kadra A, B, C, or D based on configurable thresholds (start counts and point thresholds stored in `tbl_scoring_config.json_extra`). This is used only for National Team nomination discussions and is kept as a separate view from `vw_ranking_kadra`.
+
+---
+
+### Self-contained carry-stop / cross-gender pgTAP fixtures (2026-06-28)
+
+**Test-robustness pass — no production SQL changed.** `supabase/tests/09_rolling_score.sql`
+(24 subtests) and `14_cross_gender_scoring.sql` (9) previously asserted against live/seed DB
+content: named production fencers (KORONA, ZIELIŃSKI, SAMECKA, TECŁAW…), a hard-coded
+"PPW5+MPW SCHEDULED" seed-state assumption, and ~10 exact production magic-number scores
+(356.92, 389.45, 135.88, 739.01, 85.59…). They had been recalibrated ≥3× (2026-06-03/-25/-26)
+and broke again the moment MPW-2025-2026 was ingested; an empty active season at rollover would
+break them all. This was a structural test-design defect — editing them every season was the
+treadmill to kill.
+
+Both files now build their **own throwaway synthetic world** in-transaction and `ROLLBACK`:
+
+- Two non-active synthetic seasons set on the active results-based engine — `TST-PREV`
+  (2090-09-01→2091-08-31) and `TST-CURR` (2091-09-01→2092-08-31); the DATE order makes PREV the
+  carry source (plus `TST-ROOT` 1850, the earliest of all seasons, to exercise the
+  no-previous-season branch for R.5). `enum_carryover_engine` is set explicitly to
+  `EVENT_CODE_MATCHING` (the table default has since moved to the inactive `EVENT_FK_MATCHING`).
+- Each season's scoring config is a clone (`UPDATE … FROM`) of the latest real season's full
+  config + `json_ranking_rules` → engine-real place-point formula, but our inputs.
+- Synthetic fencers with BYs chosen so each tournament's V-cat equals
+  `fn_age_category(BY, season_end_year)` — satisfies the FATAL `trg_assert_result_vcat` with **no**
+  trigger-disable hack. Scenarios are isolated on independent `(weapon, gender)` lanes because the
+  carry-stop key `completed_positions` is scoped to weapon+gender (not category).
+- Expected values are **engine-derived** (read back the synthetic tournaments' own
+  `num_final_score` and assert the rolling/best-K/carry composition of *those* — exact equality
+  because both sides sum the same stored scores) or **structural** (carried-over counts, never-both
+  one-row-per-position, source-season code, rules-based MEW carry on/off). Every ADR mapping is
+  preserved: R.6 status-independence, R.10/R.22–R.24 results-based never-both, R.9 category
+  crossing, R.11/R.12 event-deletion carry-resume, R.13/R.14 kadra domestic+international,
+  R.15–R.20 carried-over flags, R.19–R.21 biennial rules-based IMEW carry; CG.4/CG.5 sibling
+  reassign/drop, CG.6–CG.8 ranking + drilldown, CG.9 NULL-gender backward compat.
+
+`plan(24)` / `plan(9)` preserved → assertion total unchanged (no Gate-3 doc churn). The files now
+pass against the current mutated LOCAL DB with **no `reset-dev.sh`**, and stay green after any
+future reingest or season rollover. Carry-stop ADR-018/021 and cross-gender ADR-034 behaviour is
+unchanged; only the tests' coupling to production data was removed.
