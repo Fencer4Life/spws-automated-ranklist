@@ -468,6 +468,8 @@
   .status-inprogress { background: #fff4e6; color: #b35c00; }
   .status-awaiting { background: #fef3c7; color: #92400e; }
   .status-changed { background: #ffe0cc; color: #8a4500; }
+  .status-created { background: #f3e8ff; color: #6b21a8; }
+  .status-scored { background: #e0f2f1; color: #00695c; }
   .timeline-links {
     display: flex;
     flex-direction: column;

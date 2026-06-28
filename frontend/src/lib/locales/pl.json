@@ -73,6 +73,8 @@
   "filter_all": "Wszystkie",
   "filter_past": "Minione",
   "filter_future": "Przyszłe",
+  "status_created": "Utworzone",
+  "status_scored": "Ocenione",
   "status_completed": "Zakończone",
   "status_scheduled": "Potwierdzone",
   "status_planned": "Zaplanowane",

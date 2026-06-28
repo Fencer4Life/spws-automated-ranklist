@@ -73,6 +73,8 @@
   "filter_all": "All",
   "filter_past": "Past",
   "filter_future": "Future",
+  "status_created": "Created",
+  "status_scored": "Scored",
   "status_completed": "Completed",
   "status_scheduled": "Scheduled",
   "status_planned": "Planned",

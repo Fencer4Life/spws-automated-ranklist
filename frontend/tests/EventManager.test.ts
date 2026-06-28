@@ -198,8 +198,10 @@ describe('EventManager (T9.3)', () => {
     expect(container.querySelector('[data-field="event-status-select"]')).toBeNull()
   })
 
-  // 9.87 — Future COMPLETED event edit form shows status dropdown with rollback options
-  it('future COMPLETED event edit form shows status dropdown with rollback options', async () => {
+  // 9.87 — Future COMPLETED edit form offers ONLY validator-permitted transitions
+  // (ADR-077 §6 validator-aware dropdown): COMPLETED → {CREATED, PLANNED, IN_PROGRESS, SCORED}.
+  // SCHEDULED/CHANGED/CANCELLED are REJECTED by fn_validate_event_transition and must NOT appear.
+  it('future COMPLETED event dropdown offers only validator-permitted transitions', async () => {
     const futureCompleted: CalendarEvent = {
       ...MOCK_EVENTS[0],
       id_event: 99,
@@ -213,16 +215,19 @@ describe('EventManager (T9.3)', () => {
     const select = container.querySelector('[data-field="event-status-select"]') as HTMLSelectElement
     expect(select).not.toBeNull()
     const options = Array.from(select.options).map(o => o.value).filter(v => v !== '')
-    expect(options).toContain('PLANNED')
-    expect(options).toContain('SCHEDULED')
-    expect(options).toContain('CHANGED')
-    expect(options).toContain('IN_PROGRESS')
-    expect(options).toContain('CANCELLED')
     expect(options).toContain('COMPLETED') // current status is the default option
+    expect(options).toContain('CREATED')
+    expect(options).toContain('PLANNED')
+    expect(options).toContain('IN_PROGRESS')
+    expect(options).toContain('SCORED')
+    expect(options).not.toContain('SCHEDULED')
+    expect(options).not.toContain('CHANGED')
+    expect(options).not.toContain('CANCELLED')
+    expect(options.length).toBe(5) // current + 4 validator-permitted
   })
 
-  // 9.88 — Event with null dt_start edit form shows status dropdown
-  it('event with null dt_start edit form shows status dropdown', async () => {
+  // 9.88 — null dt_start PLANNED edit form: PLANNED → {SCHEDULED, IN_PROGRESS, CANCELLED, CREATED}
+  it('event with null dt_start dropdown offers only PLANNED-permitted transitions', async () => {
     const nullDate: CalendarEvent = {
       ...MOCK_EVENTS[1],
       id_event: 98,
@@ -237,14 +242,19 @@ describe('EventManager (T9.3)', () => {
     expect(select).not.toBeNull()
     const options = Array.from(select.options).map(o => o.value).filter(v => v !== '')
     expect(options).toContain('PLANNED') // current status as default option
-    // CREATED is offerable so an admin can revert a skeleton back to CREATED
-    // (e.g. after promoting it by mistake) — it hides the event from the calendar again.
+    // CREATED is validator-permitted (universal rollback to skeleton) — re-hides the event.
     expect(options).toContain('CREATED')
-    expect(options.length).toBe(7) // current + 6 alternatives (incl. CREATED)
+    expect(options).toContain('SCHEDULED')
+    expect(options).toContain('IN_PROGRESS')
+    expect(options).toContain('CANCELLED')
+    expect(options).not.toContain('COMPLETED')
+    expect(options).not.toContain('SCORED')
+    expect(options).not.toContain('CHANGED')
+    expect(options.length).toBe(5) // current + 4 validator-permitted
   })
 
-  // 9.89 — Future CANCELLED event edit form shows status dropdown
-  it('future CANCELLED event edit form shows status dropdown', async () => {
+  // 9.89 — Future CANCELLED edit form: CANCELLED → {CREATED} only (universal reset)
+  it('future CANCELLED event dropdown offers only reset-to-CREATED', async () => {
     const futureCancelled: CalendarEvent = {
       ...MOCK_EVENTS[0],
       id_event: 97,
@@ -260,7 +270,7 @@ describe('EventManager (T9.3)', () => {
     const options = Array.from(select.options).map(o => o.value).filter(v => v !== '')
     expect(options).toContain('CANCELLED') // current status as default option
     expect(options).toContain('CREATED')
-    expect(options.length).toBe(7) // current + 6 alternatives (incl. CREATED)
+    expect(options.length).toBe(2) // current + CREATED only
   })
 
   // Admin guard — renders nothing when isAdmin=false
