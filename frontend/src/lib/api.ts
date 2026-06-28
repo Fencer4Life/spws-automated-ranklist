@@ -56,6 +56,30 @@ export async function fetchSeasons(): Promise<Season[]> {
   return data ?? []
 }
 
+// ADR-077 §7 — per-season child state for the SeasonManager promote button.
+// A season is "childless" (promotable) iff none of its events has a tournament.
+// Nested embed via the current (CERT) client; one round-trip.
+export async function fetchSeasonChildState(): Promise<Record<string, boolean>> {
+  const { data, error } = await getClient()
+    .from('tbl_season')
+    .select('txt_code, tbl_event(id_event, tbl_tournament(id_tournament))')
+  if (error) throw error
+  const out: Record<string, boolean> = {}
+  for (const s of (data ?? []) as Array<{ txt_code: string; tbl_event?: Array<{ tbl_tournament?: unknown[] }> }>) {
+    out[s.txt_code] = (s.tbl_event ?? []).some((e) => (e.tbl_tournament ?? []).length > 0)
+  }
+  return out
+}
+
+// ADR-077 §7 — season codes present on PROD, read with a transient PROD client
+// (cross-env presence check for the promote/remove button state). Read-only.
+export async function fetchProdSeasonCodes(prodUrl: string, prodKey: string): Promise<string[]> {
+  const c = createClient(prodUrl, prodKey)
+  const { data, error } = await c.from('tbl_season').select('txt_code')
+  if (error) throw error
+  return ((data ?? []) as Array<{ txt_code: string }>).map((r) => r.txt_code)
+}
+
 export async function fetchRankingPpw(
   weapon: WeaponType,
   gender: GenderType,

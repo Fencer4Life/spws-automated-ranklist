@@ -30,6 +30,9 @@ const ALLOWED_WORKFLOWS = new Set([
   // N13.6: NEW-pipeline from-URL re-ingest (keep-rule + source overrides) — the
   // "Re-ingest event" button in the event accordion dispatches this.
   "ingest-event.yml",
+  // ADR-077: SeasonManager "⬆ Promote to PROD" / "Remove from PROD" — promote a
+  // childless season skeleton CERT→PROD (or delete it), server-side, no PROD PAT.
+  "promote-season.yml",
 ])
 
 Deno.serve(async (req) => {

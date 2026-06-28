@@ -312,4 +312,63 @@ describe('SeasonManager (T9.2)', () => {
     // Button must be in the DOM
     expect(container.querySelector('[data-field="scoring-btn"]')).not.toBeNull()
   })
+
+  // ===========================================================================
+  // ADR-077 §7 — CERT→PROD season-skeleton promotion button (state-derived)
+  // ===========================================================================
+
+  // B3.1 — single-env: no promote control at all
+  it('B3.1: no promote control when not dualEnv', () => {
+    const { container } = render(SeasonManager, {
+      props: { ...defaultProps, dualEnv: false, promotionByCode: { 'SPWS-2024-2025': 'promotable' } },
+    })
+    expect(container.querySelector('[data-field="promote-season-btn"]')).toBeNull()
+    expect(container.querySelector('[data-field="remove-from-prod-btn"]')).toBeNull()
+  })
+
+  // B3.2 — promotable (not on PROD, childless): active ⬆ button → onpromote(code)
+  it('B3.2: promotable season shows active Promote button and fires onpromote', async () => {
+    const onpromote = vi.fn()
+    const { container } = render(SeasonManager, {
+      props: {
+        ...defaultProps, dualEnv: true, onpromote,
+        promotionByCode: { 'SPWS-2024-2025': 'promotable', 'SPWS-2023-2024': 'promotable' },
+      },
+    })
+    const btn = container.querySelector('[data-field="promote-season-btn"]') as HTMLButtonElement
+    expect(btn).not.toBeNull()
+    expect(btn.disabled).toBe(false)
+    await fireEvent.click(btn)
+    expect(onpromote).toHaveBeenCalledWith('SPWS-2024-2025')
+  })
+
+  // B3.3 — on PROD: ✓ badge + Remove button → onremovefromprod(code)
+  it('B3.3: on-PROD season shows badge + Remove button and fires onremovefromprod', async () => {
+    const onremovefromprod = vi.fn()
+    const { container } = render(SeasonManager, {
+      props: {
+        ...defaultProps, dualEnv: true, onremovefromprod,
+        promotionByCode: { 'SPWS-2024-2025': 'on_prod', 'SPWS-2023-2024': 'on_prod' },
+      },
+    })
+    expect(container.querySelector('[data-field="on-prod-badge"]')).not.toBeNull()
+    const rm = container.querySelector('[data-field="remove-from-prod-btn"]') as HTMLButtonElement
+    expect(rm).not.toBeNull()
+    await fireEvent.click(rm)
+    expect(onremovefromprod).toHaveBeenCalledWith('SPWS-2024-2025')
+  })
+
+  // B3.4 — has children: disabled button + hint, never promotable
+  it('B3.4: season with tournament children shows a disabled button + hint', () => {
+    const { container } = render(SeasonManager, {
+      props: {
+        ...defaultProps, dualEnv: true,
+        promotionByCode: { 'SPWS-2024-2025': 'has_children', 'SPWS-2023-2024': 'has_children' },
+      },
+    })
+    const btn = container.querySelector('[data-field="promote-season-btn"]') as HTMLButtonElement
+    expect(btn).not.toBeNull()
+    expect(btn.disabled).toBe(true)
+    expect(container.querySelector('[data-field="promote-disabled-hint"]')).not.toBeNull()
+  })
 })

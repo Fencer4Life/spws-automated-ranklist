@@ -1,6 +1,6 @@
 // Locale parity guard — pl.json and en.json must always have identical key sets.
 // Regression scaffold for the admin-UI label sweep (calm-tinkering-popcorn plan).
-// Baseline: 327 = 327 keys (ADR-077 added status_created + status_scored).
+// Baseline: 331 = 331 keys (ADR-077: status_created/scored + promote_* season keys).
 
 import { describe, it, expect } from 'vitest'
 import pl from '../src/lib/locales/pl.json'
