@@ -95,6 +95,10 @@
       onwizardcommit={handleWizardCommit}
       onfetchskeletons={handleFetchSkeletons}
       onrevertinit={handleRevertSeasonInit}
+      {dualEnv}
+      {promotionByCode}
+      onpromote={handlePromoteSeason}
+      onremovefromprod={handleRemoveFromProd}
     />
   {:else if currentView === 'admin_events'}
     <EventManager
@@ -282,6 +286,9 @@
     regenStagingReport,  // Phase 5.5 (ADR-058+059+061)
     discardFencerAliasAndResults,
     confirmFencerAlias,
+    requestDispatch,                 // ADR-077 season-skeleton promotion
+    fetchSeasonChildState,           // ADR-077
+    fetchProdSeasonCodes,            // ADR-077
   } from './lib/api'
   import {
     MOCK_SEASONS,
@@ -1122,6 +1129,83 @@
       await deleteSeason(id)
       seasons = await fetchSeasons()
     } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  // ADR-077 §7 — CERT→PROD season-skeleton promotion. State is DERIVED (never a
+  // click-latch): per season, on_prod (present on PROD) > has_children (any event
+  // has a tournament — not a skeleton) > promotable. Best-effort: on any read
+  // error the map stays empty and seasons default to "promotable" (the actions
+  // are still guarded server-side by the RPC/Python, so this is safe).
+  let promotionByCode = $state<Record<string, 'promotable' | 'on_prod' | 'has_children'>>({})
+
+  async function refreshPromotionState() {
+    if (!dualEnv) { promotionByCode = {}; return }
+    try {
+      const [childState, prodCodes] = await Promise.all([
+        fetchSeasonChildState(),
+        fetchProdSeasonCodes(prodUrl, prodKey),
+      ])
+      const onProd = new Set(prodCodes)
+      const next: Record<string, 'promotable' | 'on_prod' | 'has_children'> = {}
+      for (const s of seasons) {
+        next[s.txt_code] = onProd.has(s.txt_code)
+          ? 'on_prod'
+          : (childState[s.txt_code] ? 'has_children' : 'promotable')
+      }
+      promotionByCode = next
+    } catch (e: unknown) {
+      // Surface in-UI (never console); leave the map empty (safe default).
+      error = `Promotion state unavailable: ${e instanceof Error ? e.message : String(e)}`
+      errorType = 'error'
+      promotionByCode = {}
+    }
+  }
+
+  // Recompute when the Seasons admin view is open in dual-env and the season set changes.
+  $effect(() => {
+    if (currentView === 'admin_seasons' && dualEnv && seasons.length > 0) {
+      void refreshPromotionState()
+    }
+  })
+
+  async function handlePromoteSeason(code: string) {
+    errorType = 'progress'
+    error = `⏳ Promoting ${code} CERT→PROD…`
+    errorLink = null
+    try {
+      const result = await requestDispatch('promote-season.yml', { season_code: code, action: 'promote' })
+      if (result.ok) {
+        errorType = 'success'
+        error = `✓ Promotion of ${code} dispatched. PROD updates in ~30–60s.`
+        errorLink = result.runs_url
+      } else {
+        errorType = 'error'
+        error = `Promotion failed: ${result.message}`
+      }
+    } catch (e: unknown) {
+      errorType = 'error'
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function handleRemoveFromProd(code: string) {
+    errorType = 'progress'
+    error = `⏳ Removing ${code} from PROD…`
+    errorLink = null
+    try {
+      const result = await requestDispatch('promote-season.yml', { season_code: code, action: 'delete', target: 'PROD' })
+      if (result.ok) {
+        errorType = 'success'
+        error = `✓ Removal of ${code} from PROD dispatched.`
+        errorLink = result.runs_url
+      } else {
+        errorType = 'error'
+        error = `Removal failed: ${result.message}`
+      }
+    } catch (e: unknown) {
+      errorType = 'error'
       error = e instanceof Error ? e.message : String(e)
     }
   }

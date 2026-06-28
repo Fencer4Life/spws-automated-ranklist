@@ -1,0 +1,82 @@
+name: Promote Season Skeleton to PROD
+
+# ADR-077 §5/§7 — promote a CHILDLESS season skeleton (calendar only) CERT → PROD,
+# then export the PROD seed (ADR-036). Dispatched from SeasonManager via the
+# dispatch-workflow Edge Function (ADR-041) — no PROD creds in the browser.
+
+on:
+  workflow_dispatch:
+    inputs:
+      season_code:
+        description: 'Season code (e.g. SPWS-2026-2027)'
+        required: true
+      action:
+        description: 'promote (CERT→PROD) or delete (remove from target)'
+        required: false
+        default: 'promote'
+      target:
+        description: 'delete target env: PROD or CERT'
+        required: false
+        default: 'PROD'
+
+permissions:
+  contents: write
+
+# Serialise PROD writes with promote.yml + the evf-sync calendar-promote job.
+concurrency:
+  group: prod-write
+  cancel-in-progress: false
+
+jobs:
+  promote-season:
+    name: Season skeleton CERT → PROD
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install httpx
+
+      - name: Promote / delete season skeleton
+        # Inputs are passed via env (never interpolated into the shell) to avoid
+        # command injection; promote_season.py validates the season code shape.
+        run: |
+          python -m python.pipeline.promote_season \
+            --season "$SEASON_CODE" \
+            --action "$SEASON_ACTION" \
+            --target "$SEASON_TARGET"
+        env:
+          SEASON_CODE: ${{ github.event.inputs.season_code }}
+          SEASON_ACTION: ${{ github.event.inputs.action || 'promote' }}
+          SEASON_TARGET: ${{ github.event.inputs.target || 'PROD' }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_CERT_REF: ${{ secrets.SUPABASE_CERT_REF }}
+          SUPABASE_PROD_REF: ${{ secrets.SUPABASE_PROD_REF }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      - name: Export PROD seed (ADR-036)
+        if: success()
+        run: python -m python.pipeline.export_seed --ref "${{ secrets.SUPABASE_PROD_REF }}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Commit seed file
+        if: success()
+        env:
+          SEASON_CODE: ${{ github.event.inputs.season_code }}
+          SEASON_ACTION: ${{ github.event.inputs.action || 'promote' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add supabase/seed_prod_*.sql supabase/seed_prod_latest.sql
+          if git diff --cached --quiet; then
+            echo "No seed changes to commit"
+          else
+            git commit -m "chore: auto-export seed from PROD after season $SEASON_ACTION $SEASON_CODE [skip ci]"
+            git push
+          fi

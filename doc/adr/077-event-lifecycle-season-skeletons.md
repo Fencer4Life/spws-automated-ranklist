@@ -186,6 +186,19 @@ This **refines ADR-036**: ADR-036's "data flows PROD→down only / LOCAL→PROD 
 **results**; **empty-calendar provisioning flows CERT→PROD** as the single sanctioned upward hop, and
 the **childless guard is the regime boundary** between the two.
 
+> **Amendment (2026-06-28) — legacy id divergence vs forward id-identity.** The one-time CERT→PROD→LOCAL
+> baseline was executed with the **natural-key** monolithic dump (`export_seed.py` / `seed-remote.sh`),
+> which reassigns serial ids in dump order. Result: **`tbl_season` ids match across all three envs, but
+> legacy `tbl_event` ids (1–84) DIVERGE** between CERT and PROD (same code → different id). The
+> "identical ids across all three" invariant therefore holds for **seasons** and for **newly-promoted**
+> rows (explicit-id copy keeps them aligned going forward, both sequences at the same max), but **not**
+> for the legacy event backlog. This is harmless because **code-identity** is preserved and every
+> self-referential FK is re-resolved by `txt_code`, not raw id: `export_seed.py` emits `id_prior_event`
+> as a `txt_code` subquery (fixed 2026-06-28), and `promote_season.py` re-resolves both `id_prior_event`
+> and `id_organizer` to the **target** id by code before sending the payload. Consequence for promotion:
+> **never copy a self/cross FK as a raw source id** — always resolve by natural key. A future full
+> re-alignment of legacy ids would require an explicit-id re-dump; not needed for correctness.
+
 ### 6 · Coherence fixes this ADR mandates
 
 - **Display map:** add `CREATED` (`status-created`) + `SCORED` (`status-scored`) to

@@ -164,6 +164,21 @@
             <span class="season-cell actions">
               <button data-field="edit-btn" class="icon-btn" onclick={() => { openEditForm(season) }}>&#9998;</button>
               <button data-field="delete-btn" class="icon-btn delete" onclick={() => { ondelete(season.id_season) }}>&#128465;</button>
+              <!-- ADR-077 §7: CERT→PROD season-skeleton promotion. State-derived
+                   (never a click-latch): computed from PROD presence + childless
+                   state in promotionByCode. dualEnv-only — hidden on single env. -->
+              {#if dualEnv}
+                {@const pstate = promotionByCode[season.txt_code] ?? 'promotable'}
+                {#if pstate === 'on_prod'}
+                  <span data-field="on-prod-badge" class="prod-badge" title={t('promote_on_prod')}>&#10003; PROD</span>
+                  <button data-field="remove-from-prod-btn" class="icon-btn delete" onclick={() => { onremovefromprod(season.txt_code) }}>{t('promote_remove')}</button>
+                {:else if pstate === 'has_children'}
+                  <button data-field="promote-season-btn" class="icon-btn" disabled title={t('promote_has_children_hint')}>&#11014; PROD</button>
+                  <span data-field="promote-disabled-hint" class="promote-hint">{t('promote_has_children_hint')}</span>
+                {:else}
+                  <button data-field="promote-season-btn" class="icon-btn promote" onclick={() => { onpromote(season.txt_code) }} title={t('promote_to_prod')}>&#11014; PROD</button>
+                {/if}
+              {/if}
             </span>
           </div>
         </div>
@@ -205,6 +220,10 @@
     onwizardcommit = (_p: WizardCommitPayload): Promise<string | null> => Promise.resolve(null),
     onfetchskeletons = (_id: number): Promise<CalendarEvent[]> => Promise.resolve([]),
     onrevertinit = (_id: number): Promise<string | null> => Promise.resolve(null),
+    dualEnv = false,
+    promotionByCode = {} as Record<string, 'promotable' | 'on_prod' | 'has_children'>,
+    onpromote = (_code: string) => {},
+    onremovefromprod = (_code: string) => {},
   }: {
     seasons?: Season[]
     isAdmin?: boolean
@@ -220,6 +239,10 @@
     onwizardcommit?: (payload: WizardCommitPayload) => Promise<string | null>
     onfetchskeletons?: (id: number) => Promise<CalendarEvent[]>
     onrevertinit?: (id: number) => Promise<string | null>
+    dualEnv?: boolean
+    promotionByCode?: Record<string, 'promotable' | 'on_prod' | 'has_children'>
+    onpromote?: (code: string) => void
+    onremovefromprod?: (code: string) => void
   } = $props()
 
   let wizardOpen = $state(false)
