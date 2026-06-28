@@ -71,7 +71,9 @@ DO $t918$
 DECLARE
   v_sid INT;
 BEGIN
-  v_sid := fn_create_season('NEW-CRUD-S', '2026-09-01', '2027-06-30');
+  -- Far-future synthetic dates so this fixture never overlaps a real season
+  -- (excl_season_date_overlap) — e.g. the promoted SPWS-2026-2027 (ADR-077).
+  v_sid := fn_create_season('NEW-CRUD-S', '2090-09-01', '2091-06-30');
 END;
 $t918$;
 SELECT is(
@@ -82,7 +84,7 @@ SELECT is(
 
 -- 9.19 — fn_create_season duplicate txt_code raises error
 SELECT throws_ok(
-  $$SELECT fn_create_season('NEW-CRUD-S', '2026-09-01', '2027-06-30')$$,
+  $$SELECT fn_create_season('NEW-CRUD-S', '2090-09-01', '2091-06-30')$$,
   '23505',
   NULL,
   '9.19: fn_create_season duplicate txt_code raises unique violation'
@@ -94,11 +96,11 @@ DECLARE
   v_sid INT;
 BEGIN
   SELECT id_season INTO v_sid FROM tbl_season WHERE txt_code = 'NEW-CRUD-S';
-  PERFORM fn_update_season(v_sid, 'RENAMED-S', '2026-10-01', '2027-07-31');
+  PERFORM fn_update_season(v_sid, 'RENAMED-S', '2092-10-01', '2093-07-31');
 END;
 $t920$;
 SELECT ok(
-  EXISTS(SELECT 1 FROM tbl_season WHERE txt_code = 'RENAMED-S' AND dt_start = '2026-10-01' AND dt_end = '2027-07-31'),
+  EXISTS(SELECT 1 FROM tbl_season WHERE txt_code = 'RENAMED-S' AND dt_start = '2092-10-01' AND dt_end = '2093-07-31'),
   '9.20: fn_update_season updates txt_code, dt_start, dt_end'
 );
 
