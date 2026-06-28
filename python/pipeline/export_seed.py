@@ -204,7 +204,13 @@ def export_monolithic(ref: str, token: str) -> str:
     # --- tbl_event (per season) ---
     print("  tbl_event...", file=sys.stderr)
     ev_cols = discover_cols(ref, token, "tbl_event")
-    ev_cols_no_fk = [c for c in ev_cols if c["name"] not in ("id_season", "id_organizer")]
+    # id_prior_event is a self-referential FK (carry-over link, migration
+    # 20260627000001). It MUST be re-resolved by the prior event's txt_code —
+    # emitting the raw integer id corrupts the link on reload, where serial ids
+    # are reassigned (the prior event's id differs from the source env's).
+    ev_cols_no_fk = [
+        c for c in ev_cols if c["name"] not in ("id_season", "id_organizer", "id_prior_event")
+    ]
     ev_col_names = [c["name"] for c in ev_cols_no_fk]
 
     q("SELECT id_season, txt_code FROM tbl_season ORDER BY dt_start")
@@ -216,10 +222,12 @@ def export_monolithic(ref: str, token: str) -> str:
     all_events = q(f"""
     SELECT e.id_event, e.id_season, {ev_select},
            s.txt_code AS season_code,
-           o.txt_code AS org_code
+           o.txt_code AS org_code,
+           pe.txt_code AS prior_code
     FROM tbl_event e
     JOIN tbl_season s ON s.id_season = e.id_season
     JOIN tbl_organizer o ON o.id_organizer = e.id_organizer
+    LEFT JOIN tbl_event pe ON pe.id_event = e.id_prior_event
     ORDER BY s.dt_start, e.dt_start, e.txt_code
     """)
     lines.append(f"-- tbl_event ({len(all_events)} rows)")
@@ -228,7 +236,17 @@ def export_monolithic(ref: str, token: str) -> str:
         vals.append(f"(SELECT id_organizer FROM tbl_organizer WHERE txt_code = '{ev['org_code']}')")
         for c in ev_cols_no_fk:
             vals.append(sql_val(ev.get(c["name"]), c["type"]))
-        insert_cols = ["id_season", "id_organizer"] + ev_col_names
+        # id_prior_event resolved by the prior event's natural key (txt_code),
+        # NULL when the event has no carry-over predecessor. Prior events live
+        # in an earlier season so they are always INSERTed before this row.
+        prior_code = ev.get("prior_code")
+        if prior_code:
+            vals.append(
+                f"(SELECT id_event FROM tbl_event WHERE txt_code = '{esc(prior_code)}')"
+            )
+        else:
+            vals.append("NULL")
+        insert_cols = ["id_season", "id_organizer"] + ev_col_names + ["id_prior_event"]
         lines.append(
             f"INSERT INTO tbl_event ({', '.join(insert_cols)}) VALUES ({', '.join(vals)});"
         )
