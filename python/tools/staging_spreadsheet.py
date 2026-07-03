@@ -17,6 +17,14 @@ Usage:
 
 from __future__ import annotations
 
+# odfpy ships no type stubs (no py.typed) and constructs its element classes
+# (Style, Table, TableRow, TableCell, OpenDocumentSpreadsheet, ...) dynamically,
+# so basedpyright infers them as factory functions rather than classes. Every
+# type annotation using an odf.* class as a type (not just as a call) then
+# trips reportGeneralTypeIssues ("Expected class but received a function") —
+# a stub-quality false positive, not a bug in this file. Scoped to this file
+# only, since it's the only one that touches odfpy.
+# pyright: reportGeneralTypeIssues=false
 import argparse
 from pathlib import Path
 

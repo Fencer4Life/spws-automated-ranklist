@@ -37,6 +37,9 @@ def ensure_pctx(
     """Get the bridged PipelineContext, constructing it once if absent."""
     pctx = ctx.get(LEGACY)
     if pctx is None:
+        assert season_end_year is not None, (
+            "ensure_pctx: season_end_year is required to construct a new PipelineContext"
+        )
         pctx = PipelineContext(
             parsed=parsed,
             overrides=overrides if overrides is not None else Overrides(),

@@ -33,8 +33,8 @@
             </div>
 
             <div class="annotate-new">
-              <label class="wizard-label">{t('wizard_field_european').toUpperCase()}</label>
-              <div class="segmented" data-field="wizard-european-segmented">
+              <span class="wizard-label" id="wizard-european-label">{t('wizard_field_european').toUpperCase()}</span>
+              <div class="segmented" data-field="wizard-european-segmented" role="group" aria-labelledby="wizard-european-label">
                 <button
                   type="button"
                   class="seg"
@@ -282,6 +282,10 @@
     }
   }
 
+  // One-time best-effort seed for cases where `seasons` is already available
+  // synchronously at first render (avoids an initial flash of empty fields).
+  // The $effect below is the authoritative re-sync for the async-load case.
+  // svelte-ignore state_referenced_locally
   const _suggested = suggestNextSeason(seasons)
   let currentStep = $state<1 | 2 | 3>(1)
   let draftCode = $state(_suggested?.code ?? '')

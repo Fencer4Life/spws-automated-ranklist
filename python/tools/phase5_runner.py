@@ -236,6 +236,10 @@ def _stamp_event_metadata(
       - country     ← 'PL' for SPWS-organized events (per project_spws_country_default.md)
       - city        ← tbl_event.txt_location (URL is fallback for non-SPWS sources)
     """
+    # `parsed` is genuinely polymorphic across multiple Parsed* IR dataclass
+    # shapes here, checked and mutated via runtime reflection — pyright can't
+    # verify field names statically against a Protocol this dynamic. Same
+    # pattern as review_cli._annotate_parsed.
     import dataclasses as _dc
 
     if _dc.is_dataclass(parsed):
@@ -248,22 +252,22 @@ def _stamp_event_metadata(
             kwargs["city"] = city_default
         if kwargs:
             try:
-                return _dc.replace(parsed, **kwargs)
+                return _dc.replace(parsed, **kwargs)  # pyright: ignore[reportArgumentType]
             except TypeError:
                 pass
     if not getattr(parsed, "parsed_date", None):
         try:
-            parsed.parsed_date = parsed_date
+            parsed.parsed_date = parsed_date  # pyright: ignore[reportAttributeAccessIssue]
         except Exception:
             pass
     if country_default and not getattr(parsed, "country", None):
         try:
-            parsed.country = country_default
+            parsed.country = country_default  # pyright: ignore[reportAttributeAccessIssue]
         except Exception:
             pass
     if city_default and not getattr(parsed, "city", None):
         try:
-            parsed.city = city_default
+            parsed.city = city_default  # pyright: ignore[reportAttributeAccessIssue]
         except Exception:
             pass
     return parsed
@@ -519,7 +523,7 @@ def main() -> int:
                     )
                     pool_brackets.append(
                         {
-                            "weapon": parsed.weapon or "?",
+                            "weapon": getattr(parsed, "weapon", None) or "?",
                             "name": bracket_name,
                             "url": getattr(parsed, "source_url", None),
                             "reason": getattr(ctx, "halt_detail", "") or "",
@@ -570,7 +574,7 @@ def main() -> int:
 
     sb_client = None
     if args.md_target in ("storage", "both"):
-        sb_client = db.client  # supabase-py service-role client
+        sb_client = db._sb  # supabase-py service-role client
 
     out = write_for_event(
         event_code=args.event_code,

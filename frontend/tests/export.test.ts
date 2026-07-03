@@ -65,6 +65,7 @@ describe('exportDrilldown', () => {
     id_result: 1,
     id_fencer: 1,
     fencer_name: 'DOE Jane',
+    int_birth_year: 1985,
     id_tournament: 10,
     txt_tournament_code: 'PPW-01',
     txt_tournament_name: 'Test PPW',
@@ -83,6 +84,8 @@ describe('exportDrilldown', () => {
     ts_points_calc: '2024-10-16T00:00:00Z',
     id_season: 1,
     txt_season_code: '2024/25',
+    url_results: null,
+    txt_location: null,
   }
 
   const pewScore: ScoreRow = {

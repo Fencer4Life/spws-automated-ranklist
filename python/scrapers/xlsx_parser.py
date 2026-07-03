@@ -43,6 +43,7 @@ def parse_xlsx(file_bytes: bytes, ext: str = ".xlsx") -> list[dict]:
 def _parse_xlsx(file_bytes: bytes) -> list[dict]:
     wb = openpyxl.load_workbook(io.BytesIO(file_bytes), read_only=True, data_only=True)
     ws = wb.active
+    assert ws is not None  # a freshly loaded workbook always has an active sheet
     rows = list(ws.iter_rows(values_only=True))
     wb.close()
     return _rows_to_results(rows)

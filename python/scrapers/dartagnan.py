@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import re
 import time
+from collections.abc import Callable
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
@@ -95,7 +96,7 @@ def parse_dartagnan_event_index(html: str, base_url: str) -> list[dict]:
             continue
 
         title = h3.get_text(strip=True)
-        href = anchor["href"]
+        href = str(anchor["href"])  # bs4 attr values are str in practice; stub says str | list
         m = re.search(r"(\d+)-[a-z]+\.html", href)
         if not m:
             continue
@@ -195,7 +196,7 @@ def parse_dartagnan_rankings_html(html: str) -> list[dict]:
 
 def scrape_dartagnan_event(
     index_url: str,
-    http_get=None,
+    http_get: Callable[[str], str] | None = None,
     request_delay: float = 0.3,
 ) -> dict:
     """Fetch Dartagnan index, then each rankings page; return combined dict.
@@ -214,10 +215,12 @@ def scrape_dartagnan_event(
     if http_get is None:
         import httpx
 
-        def http_get(url: str) -> str:
+        def _default_http_get(url: str) -> str:
             resp = httpx.get(url, follow_redirects=True, timeout=30)
             resp.raise_for_status()
             return resp.text
+
+        http_get = _default_http_get
 
     index_html = http_get(index_url)
     competitions = parse_dartagnan_event_index(index_html, index_url)

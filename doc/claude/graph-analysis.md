@@ -22,6 +22,17 @@ Also read `graphify-out/GRAPH_REPORT.md` for god nodes (core abstractions),
 community map, and surprising cross-module connections. The graph can lag the
 working tree — if it looks stale, refresh it (Rule 2) before trusting it.
 
+**Pair with the Python LSP.** The graph gives structure and relationships;
+for the exact Python symbols in scope, also use the `LSP` tool
+(`findReferences`, `goToDefinition`, `hover`, `workspaceSymbol`,
+`incomingCalls`/`outgoingCalls`) for compiler-verified facts the graph doesn't
+carry — real call sites (not name collisions), exact types, actual
+implementations. This pairing is enforced automatically by the
+`.claude/skills/pre-analysis-check/SKILL.md` project skill, which triggers on
+analysis and planning requests. If `LSP` errors with an executable-not-found
+message, the environment needs repair — see the `python-lsp-setup` memory —
+don't silently fall back to grep.
+
 ## Rule 2 — Refresh the graph before every commit
 
 After finishing **and documenting** new work, and **always before committing**,

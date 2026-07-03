@@ -606,7 +606,7 @@ def ingest_event(event_code: str, *, db, do_commit: bool) -> tuple[str | None, b
                 if getattr(ctx, "is_pool_round", False):
                     pool_brackets.append(
                         {
-                            "weapon": parsed.weapon or "?",
+                            "weapon": getattr(parsed, "weapon", None) or "?",
                             "name": label,
                             "url": getattr(parsed, "source_url", None),
                             "reason": getattr(ctx, "halt_detail", "") or "",

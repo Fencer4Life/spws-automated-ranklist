@@ -341,6 +341,7 @@ class TestEventScopedFire:
         def fake_run_flow(params, ctx=None, svc=None, **kw):
             seen["flow"] = params.flow
             seen["react"] = kw.get("react")
+            assert ctx is not None
             seen["bracket_reports"] = ctx.get("_bracket_reports")
             return ctx
 

@@ -1,6 +1,6 @@
 {#if open}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <div class="admin-modal-overlay" role="dialog" onkeydown={handleKeydown}>
+  <div class="admin-modal-overlay" role="dialog" aria-modal="true" tabindex="-1" onkeydown={handleKeydown}>
     <div class="admin-modal mfa-enroll-modal">
       <button class="admin-modal-close" onclick={cancel} aria-label="Zamknij">&times;</button>
       <h3 class="admin-modal-title">Konfiguracja MFA</h3>

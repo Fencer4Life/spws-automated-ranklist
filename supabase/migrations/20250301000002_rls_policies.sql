@@ -3,6 +3,7 @@
 -- =============================================================================
 
 -- Enable RLS on all tables
+SET LOCAL lock_timeout = '2s';
 ALTER TABLE tbl_season ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tbl_scoring_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tbl_fencer ENABLE ROW LEVEL SECURITY;

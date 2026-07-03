@@ -1,6 +1,6 @@
 {#if open}
-  <div class="modal-overlay" onclick={() => { onclose() }}>
-    <div data-field="fencer-search-modal" class="modal-box" onclick={(e) => e.stopPropagation()}>
+  <div class="modal-overlay" role="presentation" onclick={() => { onclose() }}>
+    <div data-field="fencer-search-modal" class="modal-box" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
       <div class="modal-header">
         <h3>{t('identity_assign')}</h3>
         <button class="close-btn" onclick={() => { onclose() }}>&times;</button>

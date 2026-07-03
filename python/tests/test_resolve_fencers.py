@@ -43,7 +43,7 @@ def _result(name, place=1, country="POL", raw_age_marker=None):
     )
 
 
-def _parsed(results, category_hint="V1", gender="M", weapon="EPEE"):
+def _parsed(results, category_hint: str | None = "V1", gender="M", weapon="EPEE"):
     from python.pipeline.ir import ParsedTournament, SourceKind
 
     return ParsedTournament(

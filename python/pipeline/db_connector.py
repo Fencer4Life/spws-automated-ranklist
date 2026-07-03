@@ -562,7 +562,7 @@ _PPW_TYPES = frozenset({"PPW", "MPW", "PSW"})
 _EVF_TYPES = frozenset({"PEW", "MEW", "MSW"})
 
 
-def get_min_participants(db: DbConnector, id_season: int, tourn_type: str) -> int:
+def get_min_participants(db: DbConnector, id_season: int, tourn_type: str | None) -> int:
     """Return the per-season minimum-participants threshold for a
     tournament type.
 
@@ -637,7 +637,7 @@ def derive_tourn_type_from_event_code(event_code: str) -> str | None:
 def gate_below_min_participants(
     db: DbConnector,
     id_season: int,
-    tourn_type: str,
+    tourn_type: str | None,
     n_results: int,
 ) -> tuple[bool, str | None]:
     """ADR-066 ingestion gate.

@@ -15,8 +15,8 @@
 -->
 
 {#if open}
-  <div class="modal-overlay" onclick={() => { onclose() }}>
-    <div data-field="create-fencer-from-alias-modal" class="modal-box" onclick={(e) => e.stopPropagation()}>
+  <div class="modal-overlay" role="presentation" onclick={() => { onclose() }}>
+    <div data-field="create-fencer-from-alias-modal" class="modal-box" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
       <div class="modal-header">
         <h3>+ Create new fencer from alias</h3>
         <button class="close-btn" onclick={() => { onclose() }}>&times;</button>
@@ -141,7 +141,7 @@
   let surname = $state('')
   let firstName = $state('')
   let gender: GenderType = $state('M')
-  let birthYearInput: number | undefined = $state(undefined)
+  let birthYearInput: number | undefined = $state(undefined as number | undefined)
 
   // Computed BY suggestion based on alias staging context (source-preferred).
   const estimate = $derived(estimateBirthYear(effectiveCategoryHint, seasonEndYear))

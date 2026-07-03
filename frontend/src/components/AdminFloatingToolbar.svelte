@@ -18,6 +18,9 @@
     timeoutMs?: number
   } = $props()
 
+  // Intentional one-time snapshot: `remainingMs` is a countdown that ticks
+  // down independently via setInterval below, seeded once from `timeoutMs`.
+  // svelte-ignore state_referenced_locally
   let remainingMs = $state(timeoutMs)
   let timerId: ReturnType<typeof setInterval> | null = null
   let timeoutId: ReturnType<typeof setTimeout> | null = null

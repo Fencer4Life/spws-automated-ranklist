@@ -76,6 +76,8 @@ function makeScore(overrides: Partial<ScoreRow>): ScoreRow {
     ts_points_calc: null,
     id_season: 2,
     txt_season_code: '2024/25',
+    url_results: null,
+    txt_location: null,
     ...overrides,
   }
 }

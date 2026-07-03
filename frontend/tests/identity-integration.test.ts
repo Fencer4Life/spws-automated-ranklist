@@ -36,12 +36,14 @@ const MOCK_CANDIDATES = [
     id_fencer: 42, txt_fencer_name: 'KOWALSKI Jan', num_confidence: 95,
     enum_status: 'PENDING' as const, txt_admin_note: null,
     txt_tournament_code: 'PPW4-V2-M-EPEE-2025-2026', enum_type: 'PPW' as const,
+    enum_tournament_gender: 'M' as const, enum_fencer_gender: 'M' as const,
   },
   {
     id_match: 11, id_result: 101, txt_scraped_name: 'NOWAK Anna',
     id_fencer: null, txt_fencer_name: null, num_confidence: null,
     enum_status: 'UNMATCHED' as const, txt_admin_note: null,
     txt_tournament_code: 'PPW4-V1-F-EPEE-2025-2026', enum_type: 'PPW' as const,
+    enum_tournament_gender: 'F' as const, enum_fencer_gender: null,
   },
 ]
 
@@ -53,7 +55,7 @@ describe('Identity Resolution Integration (9.78–9.82)', () => {
 
   async function renderAndNavigateToIdentities() {
     const { container } = render(App, {
-      props: { 'supabase-cert-url': CERT_URL, 'supabase-cert-key': CERT_KEY, 'admin-password': 'admin' },
+      props: { 'supabase-cert-url': CERT_URL, 'supabase-cert-key': CERT_KEY },
     })
     await vi.waitFor(() => {
       expect(container.querySelector('.season-select')).not.toBeNull()

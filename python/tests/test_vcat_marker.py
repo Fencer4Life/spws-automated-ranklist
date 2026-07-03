@@ -51,7 +51,7 @@ def test_extract_vcat_marker_edge_cases():
     from python.pipeline.review_cli import _extract_vcat_marker
 
     assert _extract_vcat_marker("") is None
-    assert _extract_vcat_marker(None) is None
+    assert _extract_vcat_marker(None) is None  # pyright: ignore[reportArgumentType] — intentionally invalid, proves None-handling
     # 5+ are not valid V-cats; regex matches only 0-4
     assert _extract_vcat_marker("FOOBAR 5 Smith") is None
     assert _extract_vcat_marker("BAZQUX 9 Jones") is None

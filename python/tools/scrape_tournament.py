@@ -295,8 +295,9 @@ def main():
     # 3. Fetch fencer DB and split parsed rows per V-cat using birth_year truth
     from python.pipeline.age_split import split_combined_results
     from python.pipeline.db_connector import DbConnector
+    from supabase import create_client
 
-    db = DbConnector(supabase_url, supabase_key)
+    db = DbConnector(create_client(supabase_url, supabase_key))
     fencer_db = db.fetch_fencer_db()
 
     # split_combined_results uses each fencer's birth_year (from fencer_db) to

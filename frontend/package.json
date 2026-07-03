@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "build:ce": "vite build --config vite.config.ce.ts"
+    "build:ce": "vite build --config vite.config.ce.ts",
+    "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {
     "@playwright/test": "^1.44",
@@ -18,6 +19,7 @@
     "@testing-library/svelte": "^5.1",
     "jsdom": "^24.1",
     "svelte": "^5.0",
+    "svelte-check": "4.7.1",
     "vite": "^5.3",
     "vitest": "^1.6"
   },

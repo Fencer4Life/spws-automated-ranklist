@@ -179,6 +179,9 @@ def test_every_scraper_returns_full_field_size(platform, url, fixture, expected_
         ctx = httpx_patch
     with ctx as patched:
         if platform != "ftl":
+            # non-ftl branch always patches httpx (a MagicMock), never the FTL
+            # @contextmanager factory — assert narrows the ctx-dependent union.
+            assert isinstance(patched, MagicMock)
             patched.get.return_value = mock_resp
         results = scrape_and_parse(url)
 

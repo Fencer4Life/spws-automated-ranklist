@@ -73,6 +73,7 @@ def test_parity_delta_mixed_sections():
         ],
         timestamp_iso="2026-06-04T03:30:00+00:00",
     )
+    assert out is not None
     md = out.decode("utf-8")
     assert "Fencer corrections" in md
     assert "Result corrections" in md
@@ -98,5 +99,6 @@ def test_parity_delta_includes_summary_count():
             ),
         ],
     )
+    assert out is not None
     md = out.decode("utf-8")
     assert "3 changes" in md

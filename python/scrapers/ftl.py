@@ -345,11 +345,21 @@ def parse_csv(
         make_synthetic_id,
     )
 
+    rows = list(csv.DictReader(io.StringIO(csv_text)))
+    is_walkover = len(rows) == 1
     results: list[ParsedResult] = []
-    reader = csv.DictReader(io.StringIO(csv_text))
-    for i, row in enumerate(reader, start=1):
-        cleaned_name, marker = _split_name_and_marker(row["Name"])
+    for i, row in enumerate(rows, start=1):
+        # FTL emits empty/"DNS"/"DNF" `place` for fencers who didn't finish —
+        # skip them; they don't contribute to scoring. Single-competitor
+        # walkover is the one exception (see parse_json / ADR-066).
         place = _parse_place(row["Place"])
+        if place is None:
+            if is_walkover:
+                place = 1
+            else:
+                continue
+
+        cleaned_name, marker = _split_name_and_marker(row["Name"])
         country = row.get("Country") or None
 
         results.append(

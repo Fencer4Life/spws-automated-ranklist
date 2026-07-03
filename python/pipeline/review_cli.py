@@ -199,9 +199,11 @@ class Fetcher:
 
             return parse_rankings(self._get(url), source_url=url)
         if kind == "EVF_API":
+            import json as _json
+
             from python.scrapers.evf_results import parse_results
 
-            return parse_results(self._get(url), source_url=url)
+            return parse_results(_json.loads(self._get(url)), source_url=url)
         if kind == "FENCINGTIME_XML":
             from python.scrapers.fencingtime_xml import parse as ft_xml_parse
 
@@ -239,9 +241,11 @@ class Fetcher:
         url = (event or {}).get("url_results")
         if not url:
             raise ValueError("Fetcher.fetch_evf_api: event has no url_results to fetch from")
+        import json as _json
+
         from python.scrapers.evf_results import parse_results
 
-        return parse_results(self._get(url), source_url=url)
+        return parse_results(_json.loads(self._get(url)), source_url=url)
 
     def fetch_cert_ref(self, event_code: str, db) -> ParsedTournament:
         """Fetch cert_ref placements for an event and parse to IR.
@@ -286,7 +290,10 @@ class Fetcher:
 
             FTL_DATA_PREFIX = "https://www.fencingtimelive.com/events/results/data/"
             results: list = []
-            event_url = _normalize_ftl_url(event_url)
+            # _normalize_ftl_url is str | None -> str | None for callers that may
+            # pass None; this caller's own signature guarantees a str, so the
+            # `or` fallback here is unreachable in practice, not a real null case.
+            event_url = _normalize_ftl_url(event_url) or event_url
             with get_authed_ftl_client() as authed:
                 resp = authed.get(event_url)
                 resp.raise_for_status()
@@ -411,7 +418,8 @@ class Fetcher:
             )
 
             FTL_DATA_PREFIX = "https://www.fencingtimelive.com/events/results/data/"
-            event_url = _normalize_ftl_url(event_url)
+            # See comment on the identical pattern in fetch_event_url_with_skips.
+            event_url = _normalize_ftl_url(event_url) or event_url
             with get_authed_ftl_client() as authed:
                 # 1. Discover per-tournament UUIDs from the eventSchedule page
                 resp = authed.get(event_url)
@@ -601,17 +609,22 @@ def _annotate_parsed(parsed, *, weapon, gender, age_category, ftl_source_name):
     Mutates a shallow copy via dataclasses.replace when possible; falls
     back to attribute set when the IR isn't a dataclass.
     """
+    # `parsed` is genuinely polymorphic across multiple Parsed* IR dataclass
+    # shapes here, checked and mutated via runtime reflection — pyright can't
+    # verify field names statically against a Protocol this dynamic.
     try:
         import dataclasses as _dc
 
         if _dc.is_dataclass(parsed):
-            return _dc.replace(parsed, weapon=weapon, gender=gender, category_hint=age_category)
+            return _dc.replace(
+                parsed, weapon=weapon, gender=gender, category_hint=age_category  # pyright: ignore[reportArgumentType]
+            )
     except Exception:
         pass
-    parsed.weapon = weapon
-    parsed.gender = gender
-    parsed.category_hint = age_category
-    parsed._ftl_source_name = ftl_source_name
+    parsed.weapon = weapon  # pyright: ignore[reportAttributeAccessIssue]
+    parsed.gender = gender  # pyright: ignore[reportAttributeAccessIssue]
+    parsed.category_hint = age_category  # pyright: ignore[reportAttributeAccessIssue]
+    parsed._ftl_source_name = ftl_source_name  # pyright: ignore[reportAttributeAccessIssue]
     return parsed
 
 
@@ -652,6 +665,9 @@ class ReviewSession:
         self._evf_parity_payload: list[dict] | None = None
         self._last_ctx: Any = None
         self._last_summary: dict = {}
+        # Set by callers (e.g. ingest_cli.py, tests) to bypass live URL
+        # reachability checking — see the URL validation gate below.
+        self.skip_url_validation: bool = False
 
     # ---- Output helpers ----
 
@@ -727,6 +743,7 @@ class ReviewSession:
         parity gate. Other paths leave _evf_parity_payload = None.
         """
         if choice.kind in ("recorded", "url"):
+            assert choice.value is not None, f"SourceChoice(kind={choice.kind!r}) must carry a value"
             parsed = self.fetcher.fetch_url(choice.value)
             # If the operator's URL happens to be the EVF API, the parsed IR
             # already came from python.scrapers.evf_results — extract a payload
@@ -734,6 +751,7 @@ class ReviewSession:
             self._evf_parity_payload = _extract_parity_payload(parsed)
             return parsed
         if choice.kind == "path":
+            assert choice.value is not None, f"SourceChoice(kind={choice.kind!r}) must carry a value"
             return self.fetcher.fetch_path(choice.value)
         if choice.kind == "evf_api":
             event = self.db.find_event_by_code(self.event_code)
@@ -815,7 +833,7 @@ class ReviewSession:
         # the operator decides at sign-off whether to commit. (The check
         # is skipped when the caller passes self.skip_url_validation,
         # set by tests / offline mode.)
-        if not getattr(self, "skip_url_validation", False):
+        if not self.skip_url_validation:
             self._validate_draft_urls(tournament_rows)
 
         tournament_ids = self.draft_store.write_tournament_drafts(
@@ -889,11 +907,11 @@ class ReviewSession:
         columns on insert). Caching by URL avoids re-fetching when an
         outlier-V-cat draft shares a URL with its dominant-V-cat sibling.
         """
-        from python.pipeline.url_reachability import check_results_url
+        from python.pipeline.url_reachability import URLCheckResult, check_results_url
 
         if not hasattr(self, "url_check_results"):
-            self.url_check_results: dict[str, object] = {}
-        cache: dict[str, object] = {}
+            self.url_check_results: dict[str, URLCheckResult] = {}
+        cache: dict[str, URLCheckResult] = {}
         for row in tournament_rows:
             url = row.get("url_results")
             code = row.get("txt_code", "?")

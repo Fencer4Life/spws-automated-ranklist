@@ -37,8 +37,10 @@ class TestOverrides:
         from python.pipeline.types import IdentityOverride, Overrides
 
         o = Overrides(identity=[IdentityOverride(scraped_name="J SMITH", id_fencer=42)])
-        assert o.identity_for("j smith").id_fencer == 42
-        assert o.identity_for("J Smith").id_fencer == 42
+        match1 = o.identity_for("j smith")
+        match2 = o.identity_for("J Smith")
+        assert match1 is not None and match1.id_fencer == 42
+        assert match2 is not None and match2.id_fencer == 42
         assert o.identity_for("UNKNOWN") is None
 
     def test_match_method_for_lookup(self):
@@ -50,7 +52,8 @@ class TestOverrides:
                 MatchMethodOverride(scraped_name="X", force_method="PENDING"),
             ]
         )
-        assert o.match_method_for("x").force_method == "PENDING"
+        match = o.match_method_for("x")
+        assert match is not None and match.force_method == "PENDING"
         assert o.match_method_for("y") is None
 
     def test_joint_pool_for_lookup(self):
@@ -62,7 +65,8 @@ class TestOverrides:
                 JointPoolOverride(tournament_code="A-V0", siblings=["A-V1"]),
             ]
         )
-        assert o.joint_pool_for("A-V0").siblings == ["A-V1"]
+        pool = o.joint_pool_for("A-V0")
+        assert pool is not None and pool.siblings == ["A-V1"]
         assert o.joint_pool_for("B-V0") is None
 
 

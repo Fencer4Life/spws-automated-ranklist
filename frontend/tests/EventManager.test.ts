@@ -38,12 +38,15 @@ const MOCK_EVENTS: CalendarEvent[] = [
     txt_season_code: 'SPWS-2024-2025',
     txt_location: 'Wrocław',
     txt_country: 'PL',
+    id_organizer: null,
+    txt_organizer_name: null,
     txt_venue_address: 'ul. Pułaskiego 15',
     url_invitation: 'https://example.com/invite',
     num_entry_fee: 80,
     txt_entry_fee_currency: 'PLN',
     dt_start: '2025-01-15',
     dt_end: '2025-01-15',
+    arr_weapons: [],
     url_event: 'https://example.com/event',
     enum_status: 'SCHEDULED',
     num_tournaments: 3,
@@ -63,12 +66,15 @@ const MOCK_EVENTS: CalendarEvent[] = [
     txt_season_code: 'SPWS-2024-2025',
     txt_location: 'Kraków',
     txt_country: 'PL',
+    id_organizer: null,
+    txt_organizer_name: null,
     txt_venue_address: null,
     url_invitation: null,
     num_entry_fee: null,
     txt_entry_fee_currency: null,
     dt_start: '2025-02-20',
     dt_end: '2025-02-20',
+    arr_weapons: [],
     url_event: null,
     enum_status: 'PLANNED',
     num_tournaments: 2,
@@ -690,6 +696,8 @@ describe('EventManager Accordion (Phase 6)', () => {
     mockRequestDispatch.mockReset()
     mockRequestDispatch.mockResolvedValue({
       ok: true,
+      workflow: 'populate-urls.yml',
+      inputs: {},
       runs_url: 'https://github.com/Fencer4Life/spws-automated-ranklist/actions/workflows/populate-urls.yml',
     })
     const { container } = render(EventManager, { props: propsWithTournaments })
@@ -720,6 +728,8 @@ describe('EventManager Accordion (Phase 6)', () => {
     mockRequestDispatch.mockReset()
     mockRequestDispatch.mockResolvedValue({
       ok: true,
+      workflow: 'populate-urls.yml',
+      inputs: {},
       runs_url: 'https://github.com/Fencer4Life/spws-automated-ranklist/actions/workflows/populate-urls.yml',
     })
     const { container } = render(EventManager, { props: propsWithTournaments })
@@ -763,6 +773,8 @@ describe('EventManager Accordion (Phase 6)', () => {
     mockRequestDispatch.mockReset()
     mockRequestDispatch.mockResolvedValue({
       ok: true,
+      workflow: 'populate-urls.yml',
+      inputs: {},
       runs_url: 'https://github.com/x/y/actions/workflows/populate-urls.yml',
     })
     const eventsBoth: CalendarEvent[] = [
@@ -788,6 +800,8 @@ describe('EventManager Accordion (Phase 6)', () => {
     mockRequestDispatch.mockReset()
     mockRequestDispatch.mockResolvedValue({
       ok: true,
+      workflow: 'populate-urls.yml',
+      inputs: {},
       runs_url: 'https://github.com/x/y/actions/workflows/populate-urls.yml',
     })
     const onrefresh = vi.fn().mockResolvedValue(undefined)
@@ -810,6 +824,8 @@ describe('EventManager Accordion (Phase 6)', () => {
     mockRequestDispatch.mockReset()
     mockRequestDispatch.mockResolvedValue({
       ok: true,
+      workflow: 'populate-urls.yml',
+      inputs: {},
       runs_url: 'https://github.com/x/y/actions/workflows/populate-urls.yml',
     })
     const onrefresh = vi.fn().mockResolvedValue(undefined)
@@ -874,6 +890,8 @@ describe('EventManager Accordion (Phase 6)', () => {
     mockRequestDispatch.mockReset()
     mockRequestDispatch.mockResolvedValue({
       ok: true,
+      workflow: 'populate-urls.yml',
+      inputs: {},
       runs_url: 'https://github.com/x/y/actions/workflows/populate-urls.yml',
     })
     let resolveRefresh: () => void = () => {}
@@ -923,6 +941,8 @@ describe('EventManager Accordion (Phase 6)', () => {
     mockRequestDispatch.mockReset()
     mockRequestDispatch.mockResolvedValue({
       ok: true,
+      workflow: 'populate-urls.yml',
+      inputs: {},
       runs_url: 'https://github.com/x/y/actions/workflows/populate-urls.yml',
     })
     const onrefresh = vi.fn().mockResolvedValue(undefined)
@@ -946,7 +966,7 @@ describe('EventManager Accordion (Phase 6)', () => {
   // 9.45p — Dispatch passes target='cert' when activeEnv='CERT'
   it('9.45p: dispatch passes target=cert when activeEnv=CERT', async () => {
     mockRequestDispatch.mockReset()
-    mockRequestDispatch.mockResolvedValue({ ok: true, runs_url: 'x' })
+    mockRequestDispatch.mockResolvedValue({ ok: true, workflow: 'populate-urls.yml', inputs: {}, runs_url: 'x' })
     const { container } = render(EventManager, {
       props: { ...propsWithTournaments, activeEnv: 'CERT' as const },
     })
@@ -960,7 +980,7 @@ describe('EventManager Accordion (Phase 6)', () => {
   // 9.45q — Dispatch passes target='prod' when activeEnv='PROD'
   it('9.45q: dispatch passes target=prod when activeEnv=PROD', async () => {
     mockRequestDispatch.mockReset()
-    mockRequestDispatch.mockResolvedValue({ ok: true, runs_url: 'x' })
+    mockRequestDispatch.mockResolvedValue({ ok: true, workflow: 'populate-urls.yml', inputs: {}, runs_url: 'x' })
     const { container } = render(EventManager, {
       props: { ...propsWithTournaments, activeEnv: 'PROD' as const },
     })
@@ -1009,12 +1029,15 @@ describe('EventManager Phase 3c', () => {
     txt_season_code: 'SPWS-2024-2025',
     txt_location: 'Madrid',
     txt_country: 'ES',
+    id_organizer: null,
+    txt_organizer_name: null,
     txt_venue_address: null,
     url_invitation: null,
     num_entry_fee: null,
     txt_entry_fee_currency: null,
     dt_start: '2024-11-15',
     dt_end: '2024-11-15',
+    arr_weapons: [],
     url_event: null,
     enum_status: 'COMPLETED',
     num_tournaments: 6,
@@ -1032,12 +1055,15 @@ describe('EventManager Phase 3c', () => {
     txt_season_code: 'SPWS-2025-2026',
     txt_location: 'Madrid',
     txt_country: 'ES',
+    id_organizer: null,
+    txt_organizer_name: null,
     txt_venue_address: null,
     url_invitation: null,
     num_entry_fee: null,
     txt_entry_fee_currency: null,
     dt_start: null,
     dt_end: null,
+    arr_weapons: [],
     url_event: null,
     enum_status: 'CREATED',
     num_tournaments: 6,

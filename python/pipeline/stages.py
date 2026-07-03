@@ -211,6 +211,7 @@ def reconcile_fencer_birth_year(
     stored_by = row.get("int_birth_year") if row else None
     if target_vcat is None or stored_by is None:
         return stored_by  # no authoritative V-cat or no BY → nothing to reconcile
+    assert row is not None  # stored_by is only non-None when row was truthy above
 
     current_vcat = vcat_for_age(season_end - stored_by)
     if current_vcat == target_vcat:
@@ -653,6 +654,9 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
 
     # V0/EVF check FIRST — halt before fetching fencer DB.
     if organizer in ("EVF", "FIE"):
+        # organizer is only EVF/FIE when ctx.event is set (_organizer_for_event
+        # returns "UNKNOWN" for a None event).
+        assert ctx.event is not None
         for cat, r in rows:
             if cat == "V0":
                 raise HaltError(
@@ -920,7 +924,7 @@ def s7_split_by_vcat(ctx: PipelineContext, db: Any) -> None:
             else {}
         )
         for m in ctx.matches:
-            if getattr(m, "id_fencer", None) is None:
+            if m.id_fencer is None:
                 unassigned.append(m)
                 continue
             by = by_map.get(m.id_fencer)

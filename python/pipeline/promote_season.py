@@ -94,12 +94,14 @@ def _read_cert_events(cert_query_fn, id_season: int) -> list[dict]:
     return out
 
 
-def _prod_code_to_id(prod_query_fn, table: str, id_col: str, codes: set[str]) -> dict[str, int]:
+def _prod_code_to_id(
+    prod_query_fn, table: str, id_col: str, codes: set[str | None]
+) -> dict[str, int]:
     """Map txt_code → target id_* for the given table (codes are FK-resolved on PROD)."""
-    codes = {c for c in codes if c}
-    if not codes:
+    clean_codes: set[str] = {c for c in codes if c}
+    if not clean_codes:
         return {}
-    in_list = ", ".join("'" + c.replace("'", "''") + "'" for c in sorted(codes))
+    in_list = ", ".join("'" + c.replace("'", "''") + "'" for c in sorted(clean_codes))
     rows = prod_query_fn(
         f"SELECT txt_code, {id_col} AS id FROM {table} WHERE txt_code IN ({in_list})"
     )
@@ -118,8 +120,14 @@ def promote_season(
     """Promote a childless season skeleton CERT → PROD. Returns a summary dict."""
     _validate_season_code(season_code)
     if cert_query_fn is None:
+        assert cert_ref is not None and access_token is not None, (
+            "promote_season: cert_ref and access_token are required when cert_query_fn is not supplied"
+        )
         cert_query_fn = partial(_management_query, cert_ref, access_token)
     if prod_query_fn is None:
+        assert prod_ref is not None and access_token is not None, (
+            "promote_season: prod_ref and access_token are required when prod_query_fn is not supplied"
+        )
         prod_query_fn = partial(_management_query, prod_ref, access_token)
 
     season = _read_cert_season(cert_query_fn, season_code)
@@ -189,6 +197,9 @@ def delete_season(
     """Delete a childless, non-active season skeleton on the target env (CERT or PROD)."""
     _validate_season_code(season_code)
     if target_query_fn is None:
+        assert target_ref is not None and access_token is not None, (
+            "delete_season: target_ref and access_token are required when target_query_fn is not supplied"
+        )
         target_query_fn = partial(_management_query, target_ref, access_token)
     rows = target_query_fn(
         f"SELECT id_season FROM tbl_season WHERE txt_code = '{season_code}'"

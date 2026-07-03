@@ -45,9 +45,9 @@ const MOCK_CANDIDATES: MatchCandidate[] = [
 ]
 
 const MOCK_FENCERS: FencerListItem[] = [
-  { id_fencer: 100, txt_surname: 'KOWALSKI', txt_first_name: 'Jan', int_birth_year: 1970, txt_club: 'WKS', enum_gender: 'M' },
-  { id_fencer: 101, txt_surname: 'NOWAK', txt_first_name: 'Adam', int_birth_year: 1975, txt_club: null, enum_gender: 'M' },
-  { id_fencer: 102, txt_surname: 'ZIELINSKI', txt_first_name: 'Marek', int_birth_year: 1980, txt_club: null, enum_gender: 'F' },
+  { id_fencer: 100, txt_surname: 'KOWALSKI', txt_first_name: 'Jan', int_birth_year: 1970, txt_club: 'WKS', enum_gender: 'M', bool_birth_year_estimated: false, txt_nationality: 'PL' },
+  { id_fencer: 101, txt_surname: 'NOWAK', txt_first_name: 'Adam', int_birth_year: 1975, txt_club: null, enum_gender: 'M', bool_birth_year_estimated: false, txt_nationality: 'PL' },
+  { id_fencer: 102, txt_surname: 'ZIELINSKI', txt_first_name: 'Marek', int_birth_year: 1980, txt_club: null, enum_gender: 'F', bool_birth_year_estimated: false, txt_nationality: 'PL' },
 ]
 
 describe('IdentityManager (T9.7)', () => {

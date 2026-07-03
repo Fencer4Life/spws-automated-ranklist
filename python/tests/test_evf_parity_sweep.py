@@ -9,6 +9,9 @@ from __future__ import annotations
 from datetime import date
 from unittest.mock import MagicMock
 
+import httpx
+import respx
+
 from python.pipeline.evf_parity_sweep import run_sweep
 
 
@@ -188,3 +191,39 @@ def test_sweep_summary_reflects_buckets():
     notifier.notify_parity_sweep_summary.assert_called_once_with(
         n_checked=2, n_promoted=1, n_failed=0, n_empty=1
     )
+
+
+@respx.mock
+def test_default_fetch_evf_api_decodes_json_before_parsing():
+    """P4.SW.6 (regression): _default_fetch_evf_api's real (unmocked) impl must
+    JSON-decode the httpx response before handing it to evf_results.parse_results,
+    which expects list[dict] — not raw text. Same bug class as
+    Fetcher.fetch_evf_api (test_review_cli.py) — the broad
+    `except Exception: return []` around parse_results was silently
+    swallowing the AttributeError from iterating a raw JSON string, making
+    every real EVF fetch through this path return empty results.
+    """
+    from python.pipeline.evf_parity_sweep import _default_fetch_evf_api
+
+    url = "https://veteransfencing.eu/api/results/456"
+    respx.get(url).mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                {
+                    "fencer_surname": "KOWALSKI",
+                    "fencer_firstname": "Jan",
+                    "country_abbr": "POL",
+                    "place": 1,
+                    "fencer_dob": "1970-05-01",
+                    "total_points": 100,
+                }
+            ],
+        )
+    )
+
+    rows = _default_fetch_evf_api({"id_event": 1, "url_event": url})
+
+    assert len(rows) == 1
+    assert rows[0]["name"] == "KOWALSKI Jan"
+    assert rows[0]["points"] == 100

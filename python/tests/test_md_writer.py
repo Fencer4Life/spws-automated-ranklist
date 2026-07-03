@@ -64,6 +64,7 @@ def test_md_writer_target_both_writes_both(tmp_path):
     assert (tmp_path / "X.md").exists()
     sb.storage.from_().upload.assert_called_once()
     # Returns local path when both targets succeed
+    assert out is not None
     assert "X.md" in out
 
 
@@ -92,7 +93,7 @@ def test_md_writer_invalid_target_raises():
         write_for_event(
             event_code="X",
             md_text="",
-            target="bogus",
+            target="bogus",  # pyright: ignore[reportArgumentType] — intentionally invalid, proves rejection
             staging_dir=Path("/tmp"),
         )
 

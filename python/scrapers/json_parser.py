@@ -70,7 +70,9 @@ def parse_json(file_bytes: bytes) -> list[dict]:
         results.append(
             {
                 "fencer_name": str(row["fencer_name"]).strip(),
-                "place": int(row["place"]),
+                # row is dict[str, object] (heterogeneous JSON values); "place"
+                # is always a JSON int/numeral-string in practice.
+                "place": int(row["place"]),  # pyright: ignore[reportArgumentType]
                 "country": str(row.get("country", "")).strip(),
             }
         )

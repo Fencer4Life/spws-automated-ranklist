@@ -38,8 +38,14 @@
       {#each filteredFencers as fencer (fencer.id_fencer)}
         {@const expanded = expandedFencerId === fencer.id_fencer}
         <div data-field="fencer-row" class="fencer-card" class:expanded>
-          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-          <div class="card-header" onclick={() => { toggleExpand(fencer.id_fencer) }}>
+          <div
+            class="card-header"
+            role="button"
+            tabindex="0"
+            aria-expanded={expanded}
+            onclick={() => { toggleExpand(fencer.id_fencer) }}
+            onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(fencer.id_fencer) } }}
+          >
             <div class="header-left">
               <span class="fencer-name">{fencer.txt_surname} {fencer.txt_first_name}</span>
               {#if fencer.txt_club}

@@ -52,6 +52,9 @@ def read_cert_event(
     Returns dict with keys: event, tournaments, results (keyed by tournament_id).
     """
     if query_fn is None:
+        assert cert_ref is not None and access_token is not None, (
+            "read_cert_event: cert_ref and access_token are required when query_fn is not supplied"
+        )
         query_fn = partial(_management_query, cert_ref, access_token)
 
     # Find event
@@ -136,6 +139,9 @@ def write_prod_tournament(
 ) -> int:
     """Create or find tournament on PROD. Returns PROD tournament_id."""
     if query_fn is None:
+        assert prod_ref is not None and access_token is not None, (
+            "write_prod_tournament: prod_ref and access_token are required when query_fn is not supplied"
+        )
         query_fn = partial(_management_query, prod_ref, access_token)
 
     rows = query_fn(
@@ -167,6 +173,9 @@ def write_prod_results(
     jsonb_array_length(payload) when NULL (pre-ADR-038 behavior).
     """
     if query_fn is None:
+        assert prod_ref is not None and access_token is not None, (
+            "write_prod_results: prod_ref and access_token are required when query_fn is not supplied"
+        )
         query_fn = partial(_management_query, prod_ref, access_token)
 
     results_json = json.dumps(results).replace("'", "''")
@@ -193,6 +202,9 @@ def promote_event(
     Returns summary with tournaments_promoted, total_results, errors.
     """
     if prod_query_fn is None:
+        assert prod_ref is not None and access_token is not None, (
+            "promote_event: prod_ref and access_token are required when prod_query_fn is not supplied"
+        )
         prod_query_fn = partial(_management_query, prod_ref, access_token)
 
     promoted = 0
@@ -364,8 +376,14 @@ def promote_calendar(
     "refreshed_codes": [...]}``.
     """
     if cert_query_fn is None:
+        assert cert_ref is not None and access_token is not None, (
+            "promote_calendar: cert_ref and access_token are required when cert_query_fn is not supplied"
+        )
         cert_query_fn = partial(_management_query, cert_ref, access_token)
     if prod_query_fn is None:
+        assert prod_ref is not None and access_token is not None, (
+            "promote_calendar: prod_ref and access_token are required when prod_query_fn is not supplied"
+        )
         prod_query_fn = partial(_management_query, prod_ref, access_token)
 
     # Active season must exist on both sides (PROD is the driver — what PROD

@@ -21,7 +21,7 @@ class _FakeClient:
 
     def __init__(self, html):
         self._html = html
-        self.requested_url = None
+        self.requested_url: str | None = None
 
     def get(self, url):
         self.requested_url = url
@@ -49,6 +49,7 @@ def test_evf50_event_schedule_url_yields_date():
     assert meta["date"] == "2026-01-10", "earliest date on the page"
     # The function must fetch the eventSchedule path, NOT rewrite it to
     # /events/results/ (which would 302 to the login wall for this UUID).
+    assert client.requested_url is not None
     assert "/tournaments/eventSchedule/" in client.requested_url
 
 
@@ -64,4 +65,5 @@ def test_evf50_results_url_still_works():
     meta = fetch_ftl_event_metadata(url, client)
     assert meta is not None
     assert meta["date"] == "2026-01-10"
+    assert client.requested_url is not None
     assert "/events/results/" in client.requested_url

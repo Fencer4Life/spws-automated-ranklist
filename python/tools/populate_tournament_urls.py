@@ -310,7 +310,7 @@ def discover_tournament_urls_for_event(event: dict) -> list[dict]:
         event.get("url_event_4"),
         event.get("url_event_5"),
     ]
-    seen: set[tuple[str, str, str]] = set()
+    seen: set[tuple[str | None, str | None, str | None]] = set()
     merged: list[dict] = []
     for slot_url in slots:
         if slot_url is None:

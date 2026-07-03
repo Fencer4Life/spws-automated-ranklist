@@ -178,6 +178,8 @@ def _default_fetch_evf_api(event: dict) -> list[dict]:
     if not url:
         return []
     try:
+        import json as _json
+
         import httpx
 
         from python.scrapers.evf_results import parse_results
@@ -186,12 +188,16 @@ def _default_fetch_evf_api(event: dict) -> list[dict]:
     try:
         resp = httpx.get(url, timeout=30.0, follow_redirects=True)
         resp.raise_for_status()
-        parsed = parse_results(resp.text, source_url=url)
+        raw_results = _json.loads(resp.text)
+        parsed = parse_results(raw_results, source_url=url)
     except Exception:
         return []
+    # ParsedResult (the parse_results() IR) carries no points/score field —
+    # total_points only exists on the raw API rows. parse_results() preserves
+    # row order 1:1 (enumerate(raw_results, start=1)), so zip by index.
     out: list[dict] = []
-    for r in getattr(parsed, "results", []) or []:
-        pts = getattr(r, "points", None)
+    for r, raw in zip(getattr(parsed, "results", []) or [], raw_results, strict=False):
+        pts = raw.get("total_points") if isinstance(raw, dict) else None
         if pts is None:
             continue
         out.append(

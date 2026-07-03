@@ -53,6 +53,10 @@ class ResolveFencers(BasePlugin):
             self._sweep(ctx, svc)  # DEDUP_SWEEP (ADR-071) — same dedup logic, whole roster
             return
         pctx = get_pctx(ctx)
+        assert pctx is not None, (
+            "ResolveFencers.run: PipelineContext bridge not set up — "
+            "ResolveFencers must run after ParseSource (ingest.py) calls ensure_pctx()"
+        )
         db = svc.db
         domestic = _is_domestic(pctx.event)
         season_end = pctx.season_end_year

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import re
 import sys
+from typing import Literal, overload
 
 from bs4 import BeautifulSoup
 
@@ -162,6 +163,14 @@ FTL_RESULTS_BASE = "https://www.fencingtimelive.com/events/results"
 # ── Parsing functions ──────────────────────────────────────────────────────
 
 
+@overload
+def parse_event_schedule(
+    html: str, *, with_skips: Literal[False] = False
+) -> list[dict[str, str]]: ...
+@overload
+def parse_event_schedule(
+    html: str, *, with_skips: Literal[True]
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]: ...
 def parse_event_schedule(html: str, *, with_skips: bool = False):
     """Extract tournament links from an FTL event schedule page.
 
@@ -174,13 +183,13 @@ def parse_event_schedule(html: str, *, with_skips: bool = False):
     operator can verify pool-round detection in the staging summary.
     """
     soup = BeautifulSoup(html, "html.parser")
-    links = soup.find_all("a", href=lambda h: h and "/events/view/" in h)
+    links = soup.find_all("a", href=lambda h: bool(h) and "/events/view/" in h)
 
     kept: list[dict[str, str]] = []
     skipped: list[dict[str, str]] = []
     for link in links:
         name = link.get_text(strip=True)
-        uuid = link["href"].split("/events/view/")[-1]
+        uuid = str(link["href"]).split("/events/view/")[-1]
         reason = _skip_reason(name)
         if reason:
             skipped.append({"uuid": uuid, "name": name, "reason": reason})

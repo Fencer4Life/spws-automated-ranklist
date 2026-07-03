@@ -452,7 +452,10 @@ def _enrich_birth_years_from_members(fencers: list[dict], input_dir: Path) -> in
         first_name = parts[1] if len(parts) > 1 else ""
         birth_year = ws.cell(r, 4).value
         if birth_year:
-            member_years[(surname.upper(), first_name.upper())] = int(birth_year)
+            # openpyxl's cell.value stub is a broad union (incl. ArrayFormula,
+            # DataTableFormula) that never actually appears in a birth-year
+            # column; real values are always int/float/numeric str.
+            member_years[(surname.upper(), first_name.upper())] = int(birth_year)  # pyright: ignore[reportArgumentType]
 
     wb.close()
 

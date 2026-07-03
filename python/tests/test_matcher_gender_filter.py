@@ -226,8 +226,11 @@ def _assert_filter_bypassed(tournament_type: str, fencer_db: list[dict]):
         season_end_year=2026,
         scraped_countries=["POL"],
     )
-    with_filter = resolve_tournament_results(**common, bracket_gender="F")
-    without_filter = resolve_tournament_results(**common, bracket_gender=None)
+    # `common`'s inferred type collapses to a union of all its values' types once
+    # spread via **common — pyright can't verify per-key types through a plain
+    # dict() splat without a TypedDict, which would be overkill for a test helper.
+    with_filter = resolve_tournament_results(**common, bracket_gender="F")  # pyright: ignore[reportArgumentType]
+    without_filter = resolve_tournament_results(**common, bracket_gender=None)  # pyright: ignore[reportArgumentType]
     # Same matched id_fencer set + same status.
     assert [m.id_fencer for m in with_filter.matched] == [
         m.id_fencer for m in without_filter.matched
