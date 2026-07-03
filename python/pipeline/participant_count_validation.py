@@ -82,9 +82,7 @@ def validate_event_participant_counts(
     # Fetch each distinct URL once; record fetch errors.
     cache: dict[str, dict[str, int]] = {}
     errored: set[str] = set()
-    distinct_urls: set[str] = {
-        url for t in tournaments if (url := t.get("url_results"))
-    }
+    distinct_urls: set[str] = {url for t in tournaments if (url := t.get("url_results"))}
     for url in distinct_urls:
         try:
             parsed = fetcher.fetch_url(url)

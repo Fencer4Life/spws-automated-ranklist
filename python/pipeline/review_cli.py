@@ -617,7 +617,10 @@ def _annotate_parsed(parsed, *, weapon, gender, age_category, ftl_source_name):
 
         if _dc.is_dataclass(parsed):
             return _dc.replace(
-                parsed, weapon=weapon, gender=gender, category_hint=age_category  # pyright: ignore[reportArgumentType]
+                parsed,  # pyright: ignore[reportArgumentType]
+                weapon=weapon,
+                gender=gender,
+                category_hint=age_category,
             )
     except Exception:
         pass
@@ -743,7 +746,9 @@ class ReviewSession:
         parity gate. Other paths leave _evf_parity_payload = None.
         """
         if choice.kind in ("recorded", "url"):
-            assert choice.value is not None, f"SourceChoice(kind={choice.kind!r}) must carry a value"
+            assert choice.value is not None, (
+                f"SourceChoice(kind={choice.kind!r}) must carry a value"
+            )
             parsed = self.fetcher.fetch_url(choice.value)
             # If the operator's URL happens to be the EVF API, the parsed IR
             # already came from python.scrapers.evf_results — extract a payload
@@ -751,7 +756,9 @@ class ReviewSession:
             self._evf_parity_payload = _extract_parity_payload(parsed)
             return parsed
         if choice.kind == "path":
-            assert choice.value is not None, f"SourceChoice(kind={choice.kind!r}) must carry a value"
+            assert choice.value is not None, (
+                f"SourceChoice(kind={choice.kind!r}) must carry a value"
+            )
             return self.fetcher.fetch_path(choice.value)
         if choice.kind == "evf_api":
             event = self.db.find_event_by_code(self.event_code)
