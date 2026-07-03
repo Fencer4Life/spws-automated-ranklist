@@ -845,13 +845,20 @@ class TestEvfPhase2Allocator:
 
     def test_next_free_alloc_emits_telegram_per_alert(self, monkeypatch):
         """evf.40: One Telegram message per NEXT_FREE_ALLOC alert, with city + new code."""
+        from datetime import date, timedelta
+
         from python.scrapers import evf_sync
 
+        # Must stay within the STALE_WINDOW_DAYS scope gate (evf_calendar.is_in_scope),
+        # so a fixed literal here would eventually go stale as real time passes —
+        # anchor it to "today" instead.
+        start = date.today() + timedelta(days=5)
+        end = start + timedelta(days=1)
         scraped = [
             {
                 "name": "EVF Circuit – Madrid (ESP)",
-                "dt_start": "2026-06-01",
-                "dt_end": "2026-06-02",
+                "dt_start": start.isoformat(),
+                "dt_end": end.isoformat(),
                 "location": "Madrid",
                 "country": "Spain",
                 "weapons": ["EPEE"],
