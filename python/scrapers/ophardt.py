@@ -98,7 +98,7 @@ def parse_results(
             athlete_id = None
             fencer_name = None
             for a_tag in cells[2].find_all("a"):
-                href = a_tag.get("href", "")
+                href = str(a_tag.get("href", ""))
                 id_match = _ATHLETE_ID_RE.search(href)
                 if id_match:
                     athlete_id = id_match.group(1)

@@ -374,7 +374,7 @@
 
   let adminTimerText = $derived(formatAdminTimer(adminRemainingMs))
 
-  let activeEnv: Environment = $state('CERT')
+  let activeEnv: Environment = $state('CERT' as Environment)
   let dualEnv = $derived(!!(certUrl && certKey && prodUrl && prodKey))
   let supabaseUrl = $derived(activeEnv === 'PROD' && prodUrl ? prodUrl : certUrl)
   let supabaseKey = $derived(activeEnv === 'PROD' && prodKey ? prodKey : certKey)

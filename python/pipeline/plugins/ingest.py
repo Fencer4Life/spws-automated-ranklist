@@ -361,6 +361,9 @@ class Commit(BasePlugin):
             self._commit_recompute(ctx, svc, pctx, event)
             return
 
+        assert event is not None, (
+            "Commit.run: no event on ctx or pctx — must run after ResolveEvent"
+        )
         event_id = event["id_event"]
         weapon = parsed.weapon
         # Fully-mixed (Sexe="X") brackets parse to gender=None; enum_gender is NOT
@@ -529,7 +532,8 @@ class Commit(BasePlugin):
         from python.pipeline.db_connector import derive_tourn_type_from_event_code
 
         code = (pctx.event_code if pctx else None) or (event or {}).get("txt_code")
-        return derive_tourn_type_from_event_code(code) or (event or {}).get("enum_type")
+        derived = derive_tourn_type_from_event_code(code) if code else None
+        return derived or (event or {}).get("enum_type")
 
 
 def _rerank_places(matches: list) -> list[int]:

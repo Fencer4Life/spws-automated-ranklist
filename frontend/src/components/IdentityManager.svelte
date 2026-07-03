@@ -31,8 +31,13 @@
       {#each filteredCandidates as candidate (candidate.id_match)}
         {@const editing = editingMatchId === candidate.id_match}
         <div data-field="candidate-row" class="candidate-card" class:editing>
-          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-          <div class="card-header" onclick={() => { if (!isReadOnly(candidate)) toggleEdit(candidate) }}>
+          <div
+            class="card-header"
+            role="button"
+            tabindex="0"
+            onclick={() => { if (!isReadOnly(candidate)) toggleEdit(candidate) }}
+            onkeydown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isReadOnly(candidate)) { e.preventDefault(); toggleEdit(candidate) } }}
+          >
             <div class="header-left">
               <span class="scraped-name">{candidate.txt_scraped_name}</span>
               {#if candidate.txt_tournament_code}

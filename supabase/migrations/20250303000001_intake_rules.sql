@@ -9,6 +9,7 @@
 -- This migration adds a flag to distinguish real vs estimated birth years.
 -- =============================================================================
 
+SET LOCAL lock_timeout = '2s';
 ALTER TABLE tbl_fencer
   ADD COLUMN bool_birth_year_estimated BOOLEAN NOT NULL DEFAULT FALSE;
 

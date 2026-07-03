@@ -49,12 +49,15 @@ def _make_parsed(
     """
     from python.pipeline.ir import ParsedTournament, SourceKind
 
+    # _DEFAULT sentinel means "unset" is a third state distinct from None;
+    # pyright can't narrow the ternary result past `object` without an
+    # overload per param, which would be overkill for a test fixture helper.
     return ParsedTournament(
         source_kind=SourceKind.FENCINGTIME_XML,
         results=results or [],
-        parsed_date=date(2026, 4, 1) if parsed_date is _DEFAULT else parsed_date,
-        weapon="EPEE" if weapon is _DEFAULT else weapon,
-        gender="M" if gender is _DEFAULT else gender,
+        parsed_date=date(2026, 4, 1) if parsed_date is _DEFAULT else parsed_date,  # pyright: ignore[reportArgumentType]
+        weapon="EPEE" if weapon is _DEFAULT else weapon,  # pyright: ignore[reportArgumentType]
+        gender="M" if gender is _DEFAULT else gender,  # pyright: ignore[reportArgumentType]
         organizer_hint=organizer_hint,
         raw_pool_size=raw_pool_size,
         source_url=source_url,
@@ -283,6 +286,7 @@ class TestS2ResolveEvent:
         ctx = _make_ctx()
         db = _mock_db_with_event({"id_event": 42, "txt_code": "PPW3-2025-2026", "txt_name": "..."})
         s2_resolve_event(ctx, db)
+        assert ctx.event is not None
         assert ctx.event["id_event"] == 42
         db.find_event_by_date.assert_called_once_with("2026-04-01")
 
@@ -376,6 +380,7 @@ class TestS4SplitViaBatch:
         s4_split_via_batch(ctx, db)
 
         db.call_age_categories_batch.assert_called_once()
+        assert ctx.splits is not None
         assert sorted(ctx.splits.keys()) == ["V1", "V3"]
         assert len(ctx.splits["V3"]) == 2  # A and C
         assert len(ctx.splits["V1"]) == 1  # B
@@ -400,6 +405,7 @@ class TestS4SplitViaBatch:
         # Batch call only includes REGULAR's birth_year, not OVERRIDDEN's
         called_with = db.call_age_categories_batch.call_args[0][0]
         assert called_with == [1965]
+        assert ctx.splits is not None
         assert ctx.splits["V0"][0].fencer_name == "OVERRIDDEN"
         assert ctx.splits["V3"][0].fencer_name == "REGULAR"
 
@@ -628,6 +634,7 @@ class TestS7Validate:
             ),
         ]
         s7_validate(ctx, MagicMock())
+        assert ctx.count_validation is not None
         assert ctx.count_validation["ok"] is True
 
     def test_count_mismatch_halts(self):
@@ -667,6 +674,7 @@ class TestS7Validate:
             ),
         ]
         s7_validate(ctx, MagicMock())
+        assert ctx.count_validation is not None
         assert ctx.count_validation["ok"] is True
         assert any("Count diff" in w for w in ctx.warnings)
 

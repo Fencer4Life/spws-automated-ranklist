@@ -84,8 +84,10 @@ class TestIdentitySection:
         """),
         )
         result = load_for_event("EVT-2", overrides_dir=tmp_path / "doc" / "overrides")
-        assert result.identity[0].create_fencer["surname"] == "MÜLLER"
-        assert result.identity[0].create_fencer["birth_year"] == 1968
+        create_fencer = result.identity[0].create_fencer
+        assert create_fencer is not None
+        assert create_fencer["surname"] == "MÜLLER"
+        assert create_fencer["birth_year"] == 1968
 
     def test_identity_with_neither_id_nor_create_raises(self, tmp_override, tmp_path):
         """P3.OV11: identity entry missing both id_fencer and create_fencer raises."""
@@ -159,6 +161,7 @@ class TestUrlSection:
         """),
         )
         result = load_for_event("EVT-6", overrides_dir=tmp_path / "doc" / "overrides")
+        assert result.url is not None
         assert result.url.validation_url == "https://ftl.example.com/PEW3-foo/results"
         assert result.url.override_reason == "Recorded URL 404s"
 
@@ -246,6 +249,7 @@ class TestFullFile:
         result = load_for_event("EVT-FULL", overrides_dir=tmp_path / "doc" / "overrides")
         assert len(result.identity) == 1
         assert result.splitter.birth_year_overrides == {"Y": 1970}
+        assert result.url is not None
         assert result.url.validation_url == "https://example.com"
         assert len(result.match_method) == 1
         assert len(result.joint_pool) == 1

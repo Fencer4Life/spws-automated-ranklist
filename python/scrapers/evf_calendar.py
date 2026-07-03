@@ -219,7 +219,7 @@ def parse_evf_calendar_html(html: str) -> list[dict]:
             if parts:
                 country = parts[-1]
 
-        classes = article.get("class", []) or []
+        classes = article.get("class") or []
         weapons: list[str] = []
         if "cat_epee" in classes:
             weapons.append("EPEE")
@@ -454,7 +454,7 @@ def parse_event_detail_html(html: str) -> dict:
 
     # Pass 1: explicit keyword matches on anchor text
     for a in body.select("a[href]"):
-        href = (a.get("href") or "").strip()
+        href = str(a.get("href") or "").strip()
         text = a.get_text(" ", strip=True)
         if not href:
             continue
@@ -470,7 +470,7 @@ def parse_event_detail_html(html: str) -> dict:
     # Pass 2: fallback — any PDF inside the body
     if url_invitation is None:
         for a in body.select("a[href]"):
-            href = (a.get("href") or "").strip()
+            href = str(a.get("href") or "").strip()
             if href.lower().endswith(".pdf"):
                 url_invitation = href
                 break

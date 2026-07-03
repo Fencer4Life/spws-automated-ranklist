@@ -29,7 +29,7 @@ DATA_DIR = PROJECT_ROOT / "supabase" / "data"
 LINES_TO_REMOVE = [295, 356, 363, 365, 367, 372, 379]
 
 
-def compute_id_remap(lines_to_remove: list[int], first_data_line: int = 9) -> dict[int, int]:
+def compute_id_remap(lines_to_remove: list[int], first_data_line: int = 9) -> dict[int, int | None]:
     """Compute old_id → new_id mapping after removing specified lines.
 
     first_data_line: line number of the first VALUES entry (id=1).

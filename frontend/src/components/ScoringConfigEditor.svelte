@@ -9,7 +9,7 @@
 
   <!-- Section 1: Base params -->
   <div class="config-section">
-    <div class="config-section-header" onclick={() => toggleSection('base')}>
+    <div class="config-section-header" role="button" tabindex="0" onclick={() => toggleSection('base')} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSection('base') } }}>
       <span class="section-icon">&#9881;</span>
       {t('sc_base_params')}
       <span class="chevron" class:collapsed={collapsedSections.base}>&#9660;</span>
@@ -17,13 +17,13 @@
     {#if !collapsedSections.base}
       <div class="config-section-body">
         <div class="field-row">
-          <label>{t('sc_mp_value')}</label>
-          <input type="number" data-field="mp_value" bind:value={draft.mp_value} />
+          <label for="mp_value">{t('sc_mp_value')}</label>
+          <input id="mp_value" type="number" data-field="mp_value" bind:value={draft.mp_value} />
           <span class="hint">{t('sc_mp_hint')}</span>
         </div>
         <div class="field-row">
-          <label>{t('sc_expected_rounds')}</label>
-          <input type="number" data-field="ppw_total_rounds" bind:value={draft.ppw_total_rounds} />
+          <label for="ppw_total_rounds">{t('sc_expected_rounds')}</label>
+          <input id="ppw_total_rounds" type="number" data-field="ppw_total_rounds" bind:value={draft.ppw_total_rounds} />
           <span class="hint">{t('sc_rounds_hint')}</span>
         </div>
       </div>
@@ -32,7 +32,7 @@
 
   <!-- Section 2: Podium bonuses -->
   <div class="config-section">
-    <div class="config-section-header" onclick={() => toggleSection('podium')}>
+    <div class="config-section-header" role="button" tabindex="0" onclick={() => toggleSection('podium')} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSection('podium') } }}>
       <span class="section-icon">&#127942;</span>
       {t('sc_podium')}
       <span class="chevron" class:collapsed={collapsedSections.podium}>&#9660;</span>
@@ -40,17 +40,17 @@
     {#if !collapsedSections.podium}
       <div class="config-section-body">
         <div class="field-row">
-          <label>&#129351; {t('sc_gold')}</label>
-          <input type="number" data-field="podium_gold" bind:value={draft.podium_gold} />
+          <label for="podium_gold">&#129351; {t('sc_gold')}</label>
+          <input id="podium_gold" type="number" data-field="podium_gold" bind:value={draft.podium_gold} />
           <span class="hint">{t('sc_gold_hint')}</span>
         </div>
         <div class="field-row">
-          <label>&#129352; {t('sc_silver')}</label>
-          <input type="number" data-field="podium_silver" bind:value={draft.podium_silver} />
+          <label for="podium_silver">&#129352; {t('sc_silver')}</label>
+          <input id="podium_silver" type="number" data-field="podium_silver" bind:value={draft.podium_silver} />
         </div>
         <div class="field-row">
-          <label>&#129353; {t('sc_bronze')}</label>
-          <input type="number" data-field="podium_bronze" bind:value={draft.podium_bronze} />
+          <label for="podium_bronze">&#129353; {t('sc_bronze')}</label>
+          <input id="podium_bronze" type="number" data-field="podium_bronze" bind:value={draft.podium_bronze} />
         </div>
       </div>
     {/if}
@@ -58,7 +58,7 @@
 
   <!-- Section 3: Tournament multipliers -->
   <div class="config-section">
-    <div class="config-section-header" onclick={() => toggleSection('mult')}>
+    <div class="config-section-header" role="button" tabindex="0" onclick={() => toggleSection('mult')} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSection('mult') } }}>
       <span class="section-icon">&#128202;</span>
       {t('sc_multipliers')}
       <span class="chevron" class:collapsed={collapsedSections.mult}>&#9660;</span>
@@ -103,7 +103,7 @@
 
   <!-- Section 4: Intake rules -->
   <div class="config-section">
-    <div class="config-section-header" onclick={() => toggleSection('intake')}>
+    <div class="config-section-header" role="button" tabindex="0" onclick={() => toggleSection('intake')} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSection('intake') } }}>
       <span class="section-icon">&#128678;</span>
       {t('sc_intake')}
       <span class="chevron" class:collapsed={collapsedSections.intake}>&#9660;</span>
@@ -111,12 +111,12 @@
     {#if !collapsedSections.intake}
       <div class="config-section-body">
         <div class="field-row">
-          <label>{t('sc_min_ppw')}</label>
-          <input type="number" data-field="min_participants_ppw" bind:value={draft.min_participants_ppw} />
+          <label for="min_participants_ppw">{t('sc_min_ppw')}</label>
+          <input id="min_participants_ppw" type="number" data-field="min_participants_ppw" bind:value={draft.min_participants_ppw} />
         </div>
         <div class="field-row">
-          <label>{t('sc_min_evf')}</label>
-          <input type="number" data-field="min_participants_evf" bind:value={draft.min_participants_evf} />
+          <label for="min_participants_evf">{t('sc_min_evf')}</label>
+          <input id="min_participants_evf" type="number" data-field="min_participants_evf" bind:value={draft.min_participants_evf} />
           <span class="hint">{t('sc_min_evf_hint')}</span>
         </div>
       </div>
@@ -125,7 +125,7 @@
 
   <!-- Section 4b: Carry-over engine selector (Phase 3, ADR-045) -->
   <div class="config-section engine-section" data-field="engine-section">
-    <div class="config-section-header" onclick={() => toggleSection('engine')}>
+    <div class="config-section-header" role="button" tabindex="0" onclick={() => toggleSection('engine')} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSection('engine') } }}>
       <span class="section-icon">&#128256;</span>
       {t('sc_section_engine')}
       <span class="chevron" class:collapsed={collapsedSections.engine}>&#9660;</span>
@@ -133,8 +133,9 @@
     {#if !collapsedSections.engine}
       <div class="config-section-body">
         <div class="field-row">
-          <label>{t('sc_engine_label')}</label>
+          <label for="engine-select">{t('sc_engine_label')}</label>
           <select
+            id="engine-select"
             data-field="engine-select"
             bind:value={draft.engine}
             disabled={readonly}
@@ -163,7 +164,7 @@
 
   <!-- Section 5: Ranking rules (buckets) -->
   <div class="config-section">
-    <div class="config-section-header" onclick={() => toggleSection('rules')}>
+    <div class="config-section-header" role="button" tabindex="0" onclick={() => toggleSection('rules')} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSection('rules') } }}>
       <span class="section-icon">&#129926;</span>
       {t('sc_rules')}
       <span class="chevron" class:collapsed={collapsedSections.rules}>&#9660;</span>
@@ -301,6 +302,11 @@
   // Default engine for new seasons (no incoming config.engine) is the FK
   // engine — see ADR-045. Existing configs preserve whatever the season
   // currently has on tbl_season.enum_carryover_engine.
+  // Intentional one-time snapshot, not a live derivation: `draft` is an
+  // editable working copy seeded from the incoming `config` prop. It must
+  // NOT track `config` reactively — that would clobber in-progress edits
+  // every time the parent re-renders.
+  // svelte-ignore state_referenced_locally
   let draft: ScoringConfig = $state({
     ...JSON.parse(JSON.stringify(config)),
     engine: config.engine ?? 'EVENT_FK_MATCHING',
@@ -312,6 +318,8 @@
     return engine
   }
 
+  // Same one-time-snapshot rationale as `draft` above.
+  // svelte-ignore state_referenced_locally
   let draftRules: RankingRules = $state(
     config.ranking_rules
       ? JSON.parse(JSON.stringify(config.ranking_rules))

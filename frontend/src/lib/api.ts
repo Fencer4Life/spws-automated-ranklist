@@ -23,6 +23,7 @@ import type {
   EuropeanEventType,
   CreateSeasonWithSkeletonsResult,
   FencerWithAliases,
+  MatchCandidate,
 } from './types'
 
 let client: SupabaseClient | null = null

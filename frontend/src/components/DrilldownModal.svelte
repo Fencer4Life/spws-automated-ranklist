@@ -1,8 +1,6 @@
 {#if open}
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
-  <div class="modal-overlay" onclick={onClose} role="dialog" aria-modal="true" aria-label="Fencer details" tabindex="-1">
-    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions a11y_no_noninteractive_element_interactions -->
-    <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+  <div class="modal-overlay" role="presentation" onclick={onClose}>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-label="Fencer details" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
       <div class="modal-header">
         <h2>{fencerName}</h2>
         <div class="modal-actions">
@@ -279,8 +277,6 @@
       .sort((a, b) => (b.num_final_score ?? 0) - (a.num_final_score ?? 0))
   )
 
-  let intlPoolBestIds = $derived(new Set(intlPoolSorted.slice(0, bestJ).map((s) => s.id_result)))
-
   // Best-K PPW scores
   let ppwScoresSorted = $derived(
     scores
@@ -307,6 +303,8 @@
     }
     return context?.pewBestCount ?? 3
   })
+
+  let intlPoolBestIds = $derived(new Set(intlPoolSorted.slice(0, bestJ).map((s) => s.id_result)))
 
   let ppwBestIds = $derived(new Set(ppwScoresSorted.slice(0, bestK).map((s) => s.id_result)))
   let ppwSum = $derived(

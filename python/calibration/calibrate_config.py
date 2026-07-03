@@ -21,6 +21,8 @@ sb = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY 
 
 def export_config(season_id: int, output_path: Path) -> None:
     """Export scoring config for a season to a local JSON file."""
+    if sb is None:
+        raise RuntimeError("SUPABASE_URL/SUPABASE_KEY env vars must be set")
     result = sb.rpc("fn_export_scoring_config", {"p_id_season": season_id}).execute()
     config = result.data
     output_path.write_text(json.dumps(config, indent=2, ensure_ascii=False))
@@ -29,6 +31,8 @@ def export_config(season_id: int, output_path: Path) -> None:
 
 def import_config(input_path: Path) -> None:
     """Import a local JSON config file into the database."""
+    if sb is None:
+        raise RuntimeError("SUPABASE_URL/SUPABASE_KEY env vars must be set")
     config = json.loads(input_path.read_text())
     sb.rpc("fn_import_scoring_config", {"p_config": config}).execute()
     print(f"Imported config from {input_path} → season {config['id_season']}")

@@ -136,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
 
     sb_client = None
     if args.md_target in ("storage", "both"):
-        sb_client = db.client  # supabase-py client with service-role auth
+        sb_client = db._sb  # supabase-py client with service-role auth
 
     out = write_for_event(
         event_code=args.event_code,

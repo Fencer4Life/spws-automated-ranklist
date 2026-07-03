@@ -1,6 +1,6 @@
 {#if open && tournament}
-  <div class="modal-overlay" onclick={() => { onclose() }}>
-    <div data-field="import-modal" class="modal-box" onclick={(e) => e.stopPropagation()}>
+  <div class="modal-overlay" role="presentation" onclick={() => { onclose() }}>
+    <div data-field="import-modal" class="modal-box" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
       <div class="modal-header">
         <h3>{t('import_title')} — {tournament.txt_code}</h3>
         <button class="close-btn" onclick={() => { onclose() }}>&times;</button>
@@ -24,9 +24,12 @@
         data-field="file-drop-zone"
         class="file-drop-zone"
         class:has-file={selectedFile != null}
+        role="button"
+        tabindex="0"
         ondragover={(e) => { e.preventDefault() }}
         ondrop={(e) => { handleDrop(e) }}
         onclick={() => { fileInputEl?.click() }}
+        onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputEl?.click() } }}
       >
         {#if selectedFile}
           <span data-field="selected-file-name" class="selected-file">{selectedFile.name}</span>

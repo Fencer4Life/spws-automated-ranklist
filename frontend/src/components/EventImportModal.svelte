@@ -1,6 +1,6 @@
 {#if open && event}
-  <div class="modal-overlay" onclick={() => { onclose() }}>
-    <div data-field="event-import-modal" class="modal-box" onclick={(e) => e.stopPropagation()}>
+  <div class="modal-overlay" role="presentation" onclick={() => { onclose() }}>
+    <div data-field="event-import-modal" class="modal-box" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
       <div class="modal-header">
         <h3>{t('import_event_title')} — {event.txt_name}</h3>
         <button class="close-btn" onclick={() => { onclose() }}>&times;</button>
@@ -16,9 +16,12 @@
         data-field="file-drop-zone"
         class="file-drop-zone"
         class:has-file={selectedFile != null}
+        role="button"
+        tabindex="0"
         ondragover={(e) => { e.preventDefault() }}
         ondrop={(e) => { handleDrop(e) }}
         onclick={() => { fileInputEl?.click() }}
+        onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputEl?.click() } }}
       >
         {#if selectedFile}
           <span class="selected-file">{selectedFile.name}</span>
@@ -110,6 +113,11 @@
 
   let selectedFile: File | null = $state(null)
   let fileInputEl: HTMLInputElement | undefined = $state(undefined)
+  // Intentional one-time snapshot: `selectedIds` is mutable local selection
+  // state (user toggles individual/all checkboxes below), seeded once from
+  // the incoming `tournaments` prop — must not track it reactively, or every
+  // re-render would reset the user's selection back to "all".
+  // svelte-ignore state_referenced_locally
   let selectedIds: Set<number> = $state(new Set(tournaments.map(t => t.id_tournament)))
 
   let reimportIds = $derived(

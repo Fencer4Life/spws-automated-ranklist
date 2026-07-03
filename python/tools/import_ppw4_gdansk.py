@@ -237,7 +237,11 @@ def parse_xml(xml_path):
     for phase in root.findall(".//PhaseDeTableaux"):
         for t in phase.findall("Tireur[@RangFinal]"):
             ref = t.get("REF")
-            rank = int(t.get("RangFinal"))
+            # findall("Tireur[@RangFinal]") already filters to elements that
+            # carry the attribute, so it's always present here.
+            rang_final = t.get("RangFinal")
+            assert rang_final is not None
+            rank = int(rang_final)
             if ref in tireurs:
                 info = tireurs[ref]
                 results.append(

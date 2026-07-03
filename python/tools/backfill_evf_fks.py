@@ -72,8 +72,9 @@ def scan_evf(client: EvfApiClient) -> list[CompEntry]:
             continue
         for c in comps:
             wid = c.get("weaponId")
-            cat = CATEGORY_MAP.get(c.get("categoryId"))
-            wg = EVF_WEAPON_GENDER.get(wid)
+            cat_id = c.get("categoryId")
+            cat = CATEGORY_MAP.get(cat_id) if cat_id is not None else None
+            wg = EVF_WEAPON_GENDER.get(wid) if wid is not None else None
             if not wg or not cat:
                 continue
             starts = str(c.get("starts", ""))

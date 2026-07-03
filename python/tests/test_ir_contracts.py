@@ -115,6 +115,33 @@ class TestFTLIRContract:
         # Polish folding + name preservation in slug
         assert first.fencer_name  # non-empty
 
+    def test_parse_csv_skips_dns_dnf_rows(self):
+        """ftl_ir.8 (ADR-066): CSV rows with place=DNS/DNF/empty are skipped —
+        they don't contribute to scoring — mirroring parse_json's handling.
+        Single-competitor walkover is the one exception (place defaults to 1).
+        """
+        from python.scrapers.ftl import parse_csv
+
+        csv_text = "Place,Name,Country\n1,ALPHA,POL\nDNS,BETA,POL\n3,GAMMA,POL\n"
+        pt = parse_csv(csv_text)
+
+        names = [r.fencer_name for r in pt.results]
+        assert "BETA" not in names
+        assert names == ["ALPHA", "GAMMA"]
+
+    def test_parse_csv_single_dns_row_is_walkover(self):
+        """ftl_ir.9 (ADR-066): a single DNS/DNF row with no other competitors
+        is a walkover — place defaults to 1, not skipped.
+        """
+        from python.scrapers.ftl import parse_csv
+
+        csv_text = "Place,Name,Country\nDNS,SOLO,POL\n"
+        pt = parse_csv(csv_text)
+
+        assert len(pt.results) == 1
+        assert pt.results[0].fencer_name == "SOLO"
+        assert pt.results[0].place == 1
+
     def test_parse_json_weapon_from_title(self):
         """ftl_ir.7: parser extracts weapon hint from page title when supplied."""
         from python.scrapers.ftl import parse_json

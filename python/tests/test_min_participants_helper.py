@@ -155,6 +155,7 @@ def test_5_M5_1_n_below_threshold_returns_skip_true():
         n_results=0,
     )
     assert skip is True
+    assert reason is not None
     assert "BELOW_MIN_PARTICIPANTS" in reason
     assert "n=0" in reason and "min=1" in reason
 
@@ -222,6 +223,7 @@ def test_5_M5_4_threshold_2_skips_n_1_brackets():
         n_results=1,
     )
     assert skip is True
+    assert reason is not None
     assert "n=1" in reason and "min=2" in reason
 
 
@@ -244,6 +246,7 @@ def test_5_M5_5_pew_uses_evf_column():
         n_results=4,
     )
     assert skip is True
+    assert reason is not None
     assert "min=5" in reason
 
 

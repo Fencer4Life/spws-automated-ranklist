@@ -3,25 +3,23 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock @supabase/supabase-js
-vi.mock('@supabase/supabase-js', () => {
-  const mockRpc = vi.fn()
-  const mockFrom = vi.fn()
-  return {
-    createClient: vi.fn(() => ({
-      rpc: mockRpc,
-      from: mockFrom,
-    })),
-    __mockRpc: mockRpc,
-    __mockFrom: mockFrom,
-  }
-})
+// Mock @supabase/supabase-js. vi.hoisted() lets the mock fns be created before
+// vi.mock()'s factory runs (hoisted to the top of the module) while staying local
+// to this file — no need to smuggle them out through the mocked module's exports,
+// which would leak untyped members onto the real @supabase/supabase-js type surface.
+const { mockRpc, mockFrom } = vi.hoisted(() => ({
+  mockRpc: vi.fn(),
+  mockFrom: vi.fn(),
+}))
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: vi.fn(() => ({
+    rpc: mockRpc,
+    from: mockFrom,
+  })),
+}))
 
 import { initClient, fetchSeasons, fetchRankingPpw, fetchRankingKadra, fetchFencerScores, fetchCalendarEvents, approveMatch, dismissMatch, createFencerFromMatch, listFencerAliases, transferFencerAlias, splitFencerFromAlias, discardFencerAliasAndResults } from '../src/lib/api'
-import { __mockRpc, __mockFrom } from '@supabase/supabase-js'
-
-const mockRpc = __mockRpc as ReturnType<typeof vi.fn>
-const mockFrom = __mockFrom as ReturnType<typeof vi.fn>
 
 beforeEach(() => {
   vi.clearAllMocks()

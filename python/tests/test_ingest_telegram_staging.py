@@ -95,7 +95,7 @@ class TestUrlEventOverride:
         fetched = []
         client = _Client()
         orig_get = client.get
-        client.get = lambda u: (fetched.append(u), orig_get(u))[1]
+        client.get = lambda url: (fetched.append(url), orig_get(url))[1]
 
         seen = []
         ps = _patches(seen)

@@ -124,9 +124,11 @@ class EvfApiClient:
                 continue
 
             total = sum(c.get("total", 0) for c in comps)
-            weapons_ids = set(c.get("weaponId") for c in comps)
+            # weaponId/categoryId can be missing on a malformed competition row;
+            # drop None before sorting rather than crash the whole event summary.
+            weapons_ids = {w for c in comps if (w := c.get("weaponId")) is not None}
             weapons = [WEAPON_MAP.get(w, "?") for w in sorted(weapons_ids) if w in WEAPON_MAP]
-            cats = set(c.get("categoryId") for c in comps)
+            cats = {cat for c in comps if (cat := c.get("categoryId")) is not None}
             categories = [CATEGORY_MAP.get(c, "?") for c in sorted(cats) if c in CATEGORY_MAP]
 
             # Cross-reference with calendar by date (+-3 days)
@@ -289,8 +291,10 @@ def scrape_event_results(
 
         for comp in competitions:
             comp_id = comp["id"]
-            weapon = WEAPON_MAP.get(comp.get("weaponId"), "?")
-            category = CATEGORY_MAP.get(comp.get("categoryId"), "?")
+            weapon_id = comp.get("weaponId")
+            category_id = comp.get("categoryId")
+            weapon = WEAPON_MAP.get(weapon_id, "?") if weapon_id is not None else "?"
+            category = CATEGORY_MAP.get(category_id, "?") if category_id is not None else "?"
 
             results = client.get_results(comp_id)
 

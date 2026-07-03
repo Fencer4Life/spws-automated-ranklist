@@ -25,6 +25,7 @@ def _make_pp1_xlsx(rows_after_header):
 
     wb = openpyxl.Workbook()
     # Replace default sheet with PP1
+    assert wb.active is not None  # a freshly created Workbook() always has an active sheet
     wb.remove(wb.active)
     ws = wb.create_sheet("PP1")
     ws.append(["Miejsce\nPlace", "Nazwisko Imię\nName", "Państwo\nCountry"])

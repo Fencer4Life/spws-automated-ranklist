@@ -7,6 +7,7 @@
 -- =============================================================================
 
 -- Allow NULL id_fencer on tbl_result (unmatched results)
+SET LOCAL lock_timeout = '2s';
 ALTER TABLE tbl_result ALTER COLUMN id_fencer DROP NOT NULL;
 
 -- Store the original scraped name so the matcher can work on it

@@ -217,6 +217,41 @@ class TestFetcher:
             session.fetch_source(SourceChoice(kind="evf_api", value="TEST-EVT-1"))
         fetcher.fetch_evf_api.assert_not_called()
 
+    def test_fetch_evf_api_real_impl_decodes_json_before_parsing(self):
+        """P3.RC7d Fetcher.fetch_evf_api's real (unmocked) implementation must
+        JSON-decode the HTTP response before handing it to
+        evf_results.parse_results, which expects list[dict] — not raw text.
+
+        Regression test: the FTL branch in Fetcher.fetch_url always
+        json.loads()s its response before parsing; fetch_evf_api silently
+        passed the raw response string straight through instead, which
+        crashes at runtime the first time raw_results is iterated
+        (str.get() doesn't exist) rather than at the API boundary.
+        """
+        from python.pipeline.review_cli import Fetcher
+
+        http_client = MagicMock()
+        response = MagicMock()
+        response.text = (
+            '[{"fencer_surname": "KOWALSKI", "fencer_firstname": "Jan", '
+            '"country_abbr": "POL", "place": 1, "fencer_dob": "1970-05-01", '
+            '"total_points": 100}]'
+        )
+        response.raise_for_status.return_value = None
+        http_client.get.return_value = response
+
+        fetcher = Fetcher(http_client=http_client)
+        event = {
+            "id_event": 1,
+            "txt_code": "PEW3-2025-2026",
+            "url_results": "https://veteransfencing.eu/api/results/123",
+        }
+
+        parsed = fetcher.fetch_evf_api(event)
+
+        assert len(parsed.results) == 1
+        assert parsed.results[0].fencer_name == "KOWALSKI Jan"
+
 
 # ---------------------------------------------------------------------------
 # Iteration loop

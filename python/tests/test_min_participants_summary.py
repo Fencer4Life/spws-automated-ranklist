@@ -21,7 +21,7 @@ class _FakeParsed:
     category_hint: str | None = "V0"
     source_url: str = "https://www.fencingtimelive.com/events/results/AAA"
     _ftl_source_name: str = "FLORET WETERANI kobiety 0"
-    results: list = None
+    results: list | None = None
     tournament_name: str = ""
 
     def __post_init__(self):

@@ -112,6 +112,7 @@ class TestExtractResults:
 
         wb = openpyxl.Workbook()
         ws = wb.active
+        assert ws is not None  # a freshly created Workbook() always has an active sheet
         ws.append(["Place", "Name", "Country"])
         ws.append([1, "NOWAK Piotr", "POL"])
         ws.append([2, "KOWALSKI Jan", "POL"])

@@ -170,7 +170,10 @@
   // default the scope to 'all' so EVF (PEW/MEW) + FIE (MSW/IMSW/PSW) events show
   // by default (the richer calendar). The flag loads async, so re-sync the
   // default via an effect until the user explicitly picks a scope.
-  let scopeFilter: 'all' | 'ppw' = $state(showEvfToggle ? 'all' : 'ppw')
+  // Starting value doesn't matter — the effect below re-syncs from the live
+  // `showEvfToggle` on mount (it loads async) and on every change until the
+  // user picks a scope explicitly.
+  let scopeFilter: 'all' | 'ppw' = $state('ppw')
   let scopeUserOverride = $state(false)
   $effect(() => {
     if (!scopeUserOverride) scopeFilter = showEvfToggle ? 'all' : 'ppw'

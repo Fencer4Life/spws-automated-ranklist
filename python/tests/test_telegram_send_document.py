@@ -140,6 +140,6 @@ def test_send_staging_report_invalid_kind_raises():
         notif.send_staging_report(
             event_code="X",
             md_bytes=b"x",
-            kind="bogus",
+            kind="bogus",  # pyright: ignore[reportArgumentType] — intentionally invalid, proves rejection
             extras={},
         )
