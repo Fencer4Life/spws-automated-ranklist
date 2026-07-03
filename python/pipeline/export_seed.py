@@ -241,9 +241,7 @@ def export_monolithic(ref: str, token: str) -> str:
         # in an earlier season so they are always INSERTed before this row.
         prior_code = ev.get("prior_code")
         if prior_code:
-            vals.append(
-                f"(SELECT id_event FROM tbl_event WHERE txt_code = '{esc(prior_code)}')"
-            )
+            vals.append(f"(SELECT id_event FROM tbl_event WHERE txt_code = '{esc(prior_code)}')")
         else:
             vals.append("NULL")
         insert_cols = ["id_season", "id_organizer"] + ev_col_names + ["id_prior_event"]

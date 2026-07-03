@@ -43,8 +43,7 @@ def _validate_season_code(season_code: str) -> str:
 
 def _read_cert_season(cert_query_fn, season_code: str) -> dict:
     rows = cert_query_fn(
-        "SELECT to_jsonb(s) AS j FROM tbl_season s "
-        f"WHERE s.txt_code = '{season_code}'"
+        f"SELECT to_jsonb(s) AS j FROM tbl_season s WHERE s.txt_code = '{season_code}'"
     )
     if not rows:
         raise RuntimeError(f"promote_season: season {season_code} not found on CERT")
@@ -136,9 +135,7 @@ def promote_season(
     _assert_childless(cert_query_fn, id_season, season_code)
 
     # Idempotency: refuse if the season already exists on PROD.
-    existing = prod_query_fn(
-        f"SELECT 1 AS x FROM tbl_season WHERE txt_code = '{season_code}'"
-    )
+    existing = prod_query_fn(f"SELECT 1 AS x FROM tbl_season WHERE txt_code = '{season_code}'")
     if existing:
         raise RuntimeError(
             f"promote_season: season {season_code} already exists on PROD — refusing "
@@ -201,9 +198,7 @@ def delete_season(
             "delete_season: target_ref and access_token are required when target_query_fn is not supplied"
         )
         target_query_fn = partial(_management_query, target_ref, access_token)
-    rows = target_query_fn(
-        f"SELECT id_season FROM tbl_season WHERE txt_code = '{season_code}'"
-    )
+    rows = target_query_fn(f"SELECT id_season FROM tbl_season WHERE txt_code = '{season_code}'")
     if not rows:
         raise RuntimeError(f"delete_season: season {season_code} not found on target")
     id_season = int(rows[0]["id_season"])
@@ -213,14 +208,20 @@ def delete_season(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Promote/delete a season skeleton CERT→PROD (ADR-077)")
+    parser = argparse.ArgumentParser(
+        description="Promote/delete a season skeleton CERT→PROD (ADR-077)"
+    )
     parser.add_argument("--season", required=True, help="Season code, e.g. SPWS-2026-2027")
     parser.add_argument(
-        "--action", choices=("promote", "delete"), default="promote",
+        "--action",
+        choices=("promote", "delete"),
+        default="promote",
         help="promote: CERT→PROD copy (default). delete: remove from --target.",
     )
     parser.add_argument(
-        "--target", choices=("PROD", "CERT"), default="PROD",
+        "--target",
+        choices=("PROD", "CERT"),
+        default="PROD",
         help="delete target env (default PROD).",
     )
     parser.add_argument("--dry-run", action="store_true", help="Read but don't write")
@@ -246,12 +247,17 @@ def main() -> None:
 
     if args.action == "promote":
         result = promote_season(
-            args.season, cert_ref=cert_ref, prod_ref=prod_ref,
-            access_token=access_token, dry_run=args.dry_run,
+            args.season,
+            cert_ref=cert_ref,
+            prod_ref=prod_ref,
+            access_token=access_token,
+            dry_run=args.dry_run,
         )
         print(json.dumps(result, indent=2))
         if not args.dry_run:
-            notify(f"✅ Promoted season skeleton <b>{args.season}</b> CERT→PROD: {result.get('rpc')}")
+            notify(
+                f"✅ Promoted season skeleton <b>{args.season}</b> CERT→PROD: {result.get('rpc')}"
+            )
     else:
         ref = prod_ref if args.target == "PROD" else cert_ref
         result = delete_season(args.season, target_ref=ref, access_token=access_token)
