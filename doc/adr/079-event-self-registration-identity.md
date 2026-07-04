@@ -37,9 +37,9 @@ IdentityManager flow), which does the authoritative write and marks the BY
 declared BY instead of a guess.
 
 **Security consequence (by construction):** a malicious registration can at most
-create a junk, ephemeral, payment-gated, deletable `tbl_registration` row — it
-cannot mutate an identity or a ranking, because that code path does not exist in
-the registration flow.
+create a junk, ephemeral, deletable `tbl_registration` row — it cannot mutate an
+identity or a ranking, because that code path does not exist in the registration
+flow.
 
 ### 2. Identity model — Model B (email as one-time verification, not an account)
 
@@ -79,14 +79,20 @@ hard case — disambiguated only by email, club, or optional full DOB.
 ### 4. Impersonation hardening
 
 Email verification does **not** stop a foul player entering a victim's name. The
-real defences: (a) the read-only invariant + confirmed-BY-sacrosanct rule → no
-data corruption; (b) **payment gate** — only *paid* registrations enter the
-authoritative seed/entry list, so an unpaid impersonation entry never reaches the
-operator and is dropped; (c) the ranking is **results-based**, so a fake entry that
-never fences has zero ranking effect, and the victim can spot it via
-"Sprawdź zgłoszenie" for admin removal; (d) the salted-hash abuse log + rate limit.
-This is the same residual exposure every open amateur registration carries
-(competit.pl included) — minimised, detectable, reversible, not eliminated.
+system does **not** track payment completion digitally — it only displays
+bank-transfer instructions so the fencer can pay correctly; there is no
+"paid" gate on the seed or entry list (corrected 2026-07-04 — an earlier draft
+of this ADR proposed one, which wrongly assumed digital payment tracking this
+system does not do). The real defences: (a) the read-only invariant +
+confirmed-BY-sacrosanct rule → no data corruption; (b) **venue-level check** —
+the organizer verifies payment (and can challenge an unfamiliar face) in person
+at check-in, before the competition starts — a physical control, not enforced
+in software; (c) the ranking is **results-based**, so a fake entry that never
+fences has zero ranking effect, and the victim can spot the bogus entry via
+"Sprawdź zgłoszenie" for admin removal; (d) the salted-hash abuse log + rate
+limit. This is the same residual exposure every open amateur registration
+carries (competit.pl included) — minimised, detectable, reversible, not
+eliminated.
 
 ### 5. Schema (Phase 1)
 
@@ -94,8 +100,9 @@ This is the same residual exposure every open amateur registration carries
   concurrent writes need ACID; a file has no locking, no host with Supabase Storage
   disabled, no access control, and is a GDPR hazard if committed): `id_event`,
   `id_fencer` (nullable match), declared surname/first/gender/BY, weapons,
-  `txt_ftl_name`, `enum_payment_status`, `txt_payment_ref`, `ts_consent`,
-  `txt_consent_version`, salted email hash, `ts_created`. Optional own `reg` schema.
+  `txt_ftl_name`, `ts_consent`, `txt_consent_version`, salted email hash,
+  `ts_created`. **No payment-status column** — payment completion is not
+  tracked digitally (corrected 2026-07-04; see §4). Optional own `reg` schema.
 - `tbl_event` additions: `url_entry_list`, `txt_organizer_email`, `ts_ftl_sent`,
   `num_entry_fee_2w`, `num_entry_fee_3w`, `bool_use_spws_registration`
   (`url_registration` + `dt_registration_deadline` already exist, ADR-030).
