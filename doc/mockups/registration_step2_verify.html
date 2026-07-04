@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registration Mockup — Step 2: Model B Email Verification</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#1a1a2e; color:#e0e0e0; padding:24px; line-height:1.5; }
+  h1 { text-align:center; color:#00d4ff; font-size:1.5em; margin-bottom:6px; }
+  .subtitle { text-align:center; color:#888; font-size:0.9em; max-width:640px; margin:0 auto 24px; }
+  .card { max-width:640px; margin:0 auto; background:#16213e; border:1px solid #0f3460; border-radius:12px; padding:22px; }
+  .top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:18px; }
+  .evt { font-weight:600; color:#fff; font-size:1.05em; }
+  .stepline { color:#7fbadc; font-size:0.82em; margin-top:3px; }
+  .lang { display:flex; gap:6px; }
+  .lang button { background:#0d1b2a; border:1px solid #1a4a8a; color:#e0e0e0; border-radius:8px; padding:4px 10px; cursor:pointer; font-size:0.9em; }
+  .lang button.on { background:#00d4ff; color:#0d1b2a; border-color:#00d4ff; font-weight:600; }
+  .lbl { font-size:0.8em; color:#7fbadc; }
+  input { background:#0d1b2a; border:1px solid #1a4a8a; color:#e0e0e0; padding:8px 10px; border-radius:8px; font-size:0.92em; font-family:inherit; width:100%; }
+  input:focus { outline:1px solid #00d4ff; border-color:#00d4ff; }
+  .btn { background:#00d4ff; color:#0d1b2a; border:none; border-radius:8px; padding:9px 18px; font-weight:600; cursor:pointer; font-size:0.92em; }
+  .notice { border-radius:8px; padding:12px 14px; font-size:0.9em; line-height:1.55; display:flex; gap:10px; background:rgba(240,159,39,0.12); color:#f0b967; margin-bottom:18px; }
+  .steps { border-top:1px solid #1a4a8a; padding-top:14px; }
+  .strow { display:flex; gap:10px; align-items:flex-start; padding:7px 0; font-size:0.9em; }
+  .num { flex:none; width:22px; height:22px; border-radius:50%; background:rgba(0,212,255,0.15); color:#7fd8ff; font-size:0.78em; display:flex; align-items:center; justify-content:center; }
+  .end { display:flex; justify-content:flex-end; margin-bottom:16px; }
+</style>
+</head>
+<body>
+<h1>Rejestracja — weryfikacja tożsamości</h1>
+<p class="subtitle">Krok pojawia się tylko, gdy dane nie pasują dokładnie (nowy zawodnik lub inny rok urodzenia). Jednorazowy link e-mail — bez zakładania konta (Model B).</p>
+<div class="card">
+  <div class="top">
+    <div>
+      <div class="evt" data-pl="Weryfikacja tożsamości" data-en="Identity verification">Weryfikacja tożsamości</div>
+      <div class="stepline" data-pl="Krok 2 z 3 · tylko gdy dane nie pasują dokładnie" data-en="Step 2 of 3 · only when details don't exactly match">Krok 2 z 3 · tylko gdy dane nie pasują dokładnie</div>
+    </div>
+    <div class="lang">
+      <button id="bpl" class="on">🇵🇱 PL</button>
+      <button id="ben">🇬🇧 EN</button>
+    </div>
+  </div>
+
+  <div class="notice">
+    <span>⚠</span>
+    <span data-pl="Nie możemy jednoznacznie dopasować Cię do istniejącego zawodnika. Potwierdź zgłoszenie jednorazowym linkiem e-mail — to nie zmienia żadnych istniejących danych." data-en="We can't uniquely match you to an existing fencer. Confirm your entry with a one-time email link — this does not change any existing data.">Nie możemy jednoznacznie dopasować Cię do istniejącego zawodnika. Potwierdź zgłoszenie jednorazowym linkiem e-mail — to nie zmienia żadnych istniejących danych.</span>
+  </div>
+
+  <label style="display:flex;flex-direction:column;gap:5px;margin-bottom:12px;"><span class="lbl" data-pl="Adres e-mail" data-en="Email address">Adres e-mail</span><input type="email" placeholder="jan.kowalski@example.com"></label>
+  <div class="end"><button class="btn" data-pl="Wyślij link" data-en="Send link">Wyślij link</button></div>
+
+  <div class="steps">
+    <p class="lbl" style="margin-bottom:6px" data-pl="Co dzieje się dalej" data-en="What happens next">Co dzieje się dalej</p>
+    <div class="strow"><span class="num">1</span><span data-pl="Klikasz link i potwierdzasz zgłoszenie — bez zakładania konta." data-en="You click the link and confirm your entry — no account created.">Klikasz link i potwierdzasz zgłoszenie — bez zakładania konta.</span></div>
+    <div class="strow"><span class="num">2</span><span data-pl="Zgłoszenie trafia na listę. Dane istniejących zawodników pozostają bez zmian." data-en="Your entry goes on the list. Existing fencers' data stays unchanged.">Zgłoszenie trafia na listę. Dane istniejących zawodników pozostają bez zmian.</span></div>
+    <div class="strow"><span class="num">3</span><span data-pl="Ostateczne dopasowanie tożsamości następuje przy wczytywaniu wyników przez organizatora." data-en="Final identity matching happens when the organizer ingests the results.">Ostateczne dopasowanie tożsamości następuje przy wczytywaniu wyników przez organizatora.</span></div>
+  </div>
+
+  <p style="font-size:12px;color:#8894a8;display:flex;gap:6px;margin-top:14px;border-top:1px solid #1a2c4a;padding-top:12px"><span>ℹ</span><span data-pl="Weryfikacja e-mail potwierdza zgłoszenie — nie jest dowodem tożsamości." data-en="Email verification confirms the entry — it is not proof of identity.">Weryfikacja e-mail potwierdza zgłoszenie — nie jest dowodem tożsamości.</span></p>
+</div>
+<script>
+var lang='pl';
+function applyLang(){
+  document.querySelectorAll('[data-pl]').forEach(function(el){
+    var v=el.getAttribute('data-'+lang); if(v==null) return;
+    if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){ el.placeholder=v; } else { el.textContent=v; }
+  });
+  document.getElementById('bpl').classList.toggle('on',lang==='pl');
+  document.getElementById('ben').classList.toggle('on',lang==='en');
+}
+document.getElementById('bpl').onclick=function(){lang='pl';applyLang();};
+document.getElementById('ben').onclick=function(){lang='en';applyLang();};
+applyLang();
+</script>
+</body>
+</html>

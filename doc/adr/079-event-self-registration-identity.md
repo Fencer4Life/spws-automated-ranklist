@@ -1,0 +1,127 @@
+# ADR-079: Event Self-Registration & Identity Resolution
+
+**Status:** Proposed (draft — pending implementation)
+**Date:** 2026-07-04
+**Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
+
+## Context
+
+Automation is stuck near 90 % because birth-year (BY) data in `tbl_fencer` is
+unreliable — worst case, two different people share an identical name with
+different BY. BY today flows *backwards* (scrape → fuzzy match → BY **estimated**
+from the tournament's age band, `bool_birth_year_estimated=TRUE`; ADR-056). If
+fencers **self-declare** identity + BY *before* the event, that BY becomes an
+authoritative signal and discrepancies drop toward zero for registered fencers.
+
+The challenge: prevent duplicate/conflicting entries and corruption of the fencer
+table by mistaken or malicious registrations, while keeping the flow usable for
+elderly veterans (who forget emails) and minimising stored personal data
+(ADR-078).
+
+## Decision
+
+### 1. Core invariant — registration is READ-ONLY on `tbl_fencer`
+
+The registration subsystem **reads** `tbl_fencer` (to match, derive category,
+route the flow) and **writes only** `tbl_registration` (ephemeral) + generates the
+FTL seed. It **never** writes `tbl_fencer`, results, or the ranking. Those are
+mutated only by (a) the event-ingestion pipeline and (b) explicit admin actions
+(merges, manual edits, GDPR erasure) — unchanged from today.
+
+Declared BY/identity rides on the registration record as a **high-quality signal**;
+ingestion name-matches the seeded exact name → pulls the declared BY → feeds the
+**existing** reconciliation machinery (`stages.py`, `fuzzy_match.py`, the PENDING /
+IdentityManager flow), which does the authoritative write and marks the BY
+*confirmed*. New fencers are **not** created at sign-up — a fencer enters
+`tbl_fencer` only when results ingest (today's behaviour), now enriched with a
+declared BY instead of a guess.
+
+**Security consequence (by construction):** a malicious registration can at most
+create a junk, ephemeral, payment-gated, deletable `tbl_registration` row — it
+cannot mutate an identity or a ranking, because that code path does not exist in
+the registration flow.
+
+### 2. Identity model — Model B (email as one-time verification, not an account)
+
+The form collects **Surname, Name, Gender, BY**, normalises (case/diacritics/
+spacing), and matches via `find_best_match`. One gate rule: **skip email only on an
+exact `(Surname, Name, BY)` triple match; every other path takes one magic-link
+click.** Email proves **inbox control, not identity** — it is friction +
+accountability, never load-bearing for integrity. There is **no persistent
+account**: a veteran who lost an old email just verifies whatever inbox they have
+now; admin intervention shrinks to true edge cases (formal erasure, disputes).
+
+| Path | Match result | Email? | Outcome |
+|---|---|---|---|
+| A | exact name **and** BY equal | No | anonymous fast-path → weapon → category → RODO → payment |
+| B | strong name (≥95), BY differs | Yes | verify → reconciliation (below), record on registration |
+| C | weak name (50–94) | Yes | verify → "is this you?" + admin review |
+| D | no match | Yes | verify → new registration (declared BY carried to ingestion) |
+
+Dedup on the anonymous path is enforced by `UNIQUE(id_event, id_fencer)` upsert. A
+fencer correcting our BY types a different year → the triple no longer matches →
+auto-routed into the verified path.
+
+### 3. BY reconciliation matrix (runs at INGESTION, not the form)
+
+The declared BY is reconciled against the stored BY by the ingestion pipeline. A
+**confirmed** BY is **sacrosanct** — self-service never overwrites it:
+
+| Stored BY | Declared − stored | Interpretation | Action |
+|---|---|---|---|
+| Estimated | any | our guess; declaration wins | overwrite ← declared, mark confirmed |
+| Confirmed | any discrepancy | may be a namesake / bad edit | **quarantine → admin review; real row untouched** |
+| — (multiple same-name) | — | self-declared BY selects the twin | link closest; none in band → new |
+
+Two genuinely different people with the **same name + same BY** is the residual
+hard case — disambiguated only by email, club, or optional full DOB.
+
+### 4. Impersonation hardening
+
+Email verification does **not** stop a foul player entering a victim's name. The
+real defences: (a) the read-only invariant + confirmed-BY-sacrosanct rule → no
+data corruption; (b) **payment gate** — only *paid* registrations enter the
+authoritative seed/entry list, so an unpaid impersonation entry never reaches the
+operator and is dropped; (c) the ranking is **results-based**, so a fake entry that
+never fences has zero ranking effect, and the victim can spot it via
+"Sprawdź zgłoszenie" for admin removal; (d) the salted-hash abuse log + rate limit.
+This is the same residual exposure every open amateur registration carries
+(competit.pl included) — minimised, detectable, reversible, not eliminated.
+
+### 5. Schema (Phase 1)
+
+- New `tbl_registration` (EPHEMERAL, RLS-gated — **rows, not a JSON file**: public
+  concurrent writes need ACID; a file has no locking, no host with Supabase Storage
+  disabled, no access control, and is a GDPR hazard if committed): `id_event`,
+  `id_fencer` (nullable match), declared surname/first/gender/BY, weapons,
+  `txt_ftl_name`, `enum_payment_status`, `txt_payment_ref`, `ts_consent`,
+  `txt_consent_version`, salted email hash, `ts_created`. Optional own `reg` schema.
+- `tbl_event` additions: `url_entry_list`, `txt_organizer_email`, `ts_ftl_sent`,
+  `num_entry_fee_2w`, `num_entry_fee_3w`, `bool_use_spws_registration`
+  (`url_registration` + `dt_registration_deadline` already exist, ADR-030).
+- RLS: registration insert only via a controlled RPC; a public read-only entry-list
+  view (name · gender · category · weapons — **no BY, no club**); writes REVOKEd
+  from `anon`.
+
+### 6. UI
+
+Public Svelte route + custom element `<spws-registration event="…">` (mirrors
+`<spws-ranklist>`/`<spws-calendar>`), reachable from the calendar's
+`url_registration`, plus a public `url_entry_list` "Lista zgłoszonych". Bilingual
+PL/EN. Mockups: `doc/mockups/registration_step{1,2,3}_*.html`,
+`registration_rodo_consent.html`, `registration_entry_list.html`.
+
+## Consequences
+
+- No new form-side write path to `tbl_fencer`; reconciliation reuses existing
+  ingestion code (declared BY replaces estimation).
+- Elderly-friendly: most veterans use the frictionless anonymous path; email only
+  on non-exact match, never a recoverable account.
+- Birth year exposed in the ranking drilldown remains lawful (ADR-078 §3, Art. 13
+  transparency + legitimate interest — purpose: category verification).
+
+## References
+
+- ADR-078 (GDPR), ADR-080 (seeding), ADR-056 (BY reconciliation), ADR-016 (admin
+  auth), ADR-030 (registration URL + deadline), ADR-034/064 (gender at matcher),
+  ADR-050/070–074 (ingestion pipeline).

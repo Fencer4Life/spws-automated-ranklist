@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registration Mockup — Step 1: Identity + Participation</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#1a1a2e; color:#e0e0e0; padding:24px; line-height:1.5; }
+  h1 { text-align:center; color:#00d4ff; font-size:1.5em; margin-bottom:6px; }
+  .subtitle { text-align:center; color:#888; font-size:0.9em; max-width:640px; margin:0 auto 24px; }
+  .card { max-width:640px; margin:0 auto; background:#16213e; border:1px solid #0f3460; border-radius:12px; padding:22px; }
+  .top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:18px; }
+  .evt { font-weight:600; color:#fff; font-size:1.05em; }
+  .stepline { color:#7fbadc; font-size:0.82em; margin-top:3px; }
+  .lang { display:flex; gap:6px; }
+  .lang button { background:#0d1b2a; border:1px solid #1a4a8a; color:#e0e0e0; border-radius:8px; padding:4px 10px; cursor:pointer; font-size:0.9em; }
+  .lang button.on { background:#00d4ff; color:#0d1b2a; border-color:#00d4ff; font-weight:600; }
+  label.fld { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
+  .lbl { font-size:0.8em; color:#7fbadc; }
+  input, select { background:#0d1b2a; border:1px solid #1a4a8a; color:#e0e0e0; padding:8px 10px; border-radius:8px; font-size:0.92em; font-family:inherit; width:100%; }
+  input:focus, select:focus { outline:1px solid #00d4ff; border-color:#00d4ff; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; font-size:0.82em; padding:3px 10px; border-radius:999px; background:rgba(0,212,255,0.12); color:#7fd8ff; }
+  .btn { background:#00d4ff; color:#0d1b2a; border:none; border-radius:8px; padding:9px 18px; font-weight:600; cursor:pointer; font-size:0.92em; }
+  .wrow { display:flex; align-items:center; gap:8px; padding:9px 11px; border:1px solid #1a4a8a; border-radius:8px; cursor:pointer; }
+  .wrow input { width:auto; }
+  .wcat { color:#7fd8ff; font-size:0.8em; }
+  .feebar { display:flex; justify-content:space-between; align-items:center; background:#0d1b2a; border:1px solid #1a4a8a; border-radius:8px; padding:11px 13px; margin-bottom:12px; }
+  .feeval { font-size:1.35em; font-weight:600; color:#fff; }
+  .muted { color:#8894a8; font-size:0.78em; line-height:1.5; }
+  .end { display:flex; justify-content:flex-end; }
+</style>
+</head>
+<body>
+<h1>Rejestracja zawodnika — krok 1</h1>
+<p class="subtitle">Dane zawodnika + wybór broni. Kategoria wyliczana automatycznie z roku urodzenia; opłata zależna od liczby broni.</p>
+<div class="card">
+  <div class="top">
+    <div>
+      <div class="evt" data-pl="IV Puchar Polski Weteranów — Gdańsk 2026" data-en="IV Polish Veterans Cup — Gdańsk 2026">IV Puchar Polski Weteranów — Gdańsk 2026</div>
+      <div class="stepline" data-pl="Krok 1 z 3 · Dane zawodnika" data-en="Step 1 of 3 · Fencer details">Krok 1 z 3 · Dane zawodnika</div>
+    </div>
+    <div class="lang">
+      <button id="bpl" class="on">🇵🇱 PL</button>
+      <button id="ben">🇬🇧 EN</button>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <label class="fld"><span class="lbl" data-pl="Nazwisko" data-en="Surname">Nazwisko</span><input id="sur" value="KOWALSKI" style="text-transform:uppercase"></label>
+    <label class="fld"><span class="lbl" data-pl="Imię" data-en="First name">Imię</span><input id="fn" value="Jan"></label>
+    <label class="fld"><span class="lbl" data-pl="Płeć" data-en="Gender">Płeć</span>
+      <select id="gen">
+        <option value="M" data-pl="Mężczyzna (M)" data-en="Man (M)">Mężczyzna (M)</option>
+        <option value="K" data-pl="Kobieta (K)" data-en="Woman (K)">Kobieta (K)</option>
+      </select>
+    </label>
+    <label class="fld"><span class="lbl" data-pl="Rok urodzenia" data-en="Year of birth">Rok urodzenia</span><input id="by" type="number" value="1969" min="1930" max="1996"></label>
+  </div>
+
+  <p class="lbl" style="margin:6px 0 8px" data-pl="Broń (wybierz 1–3)" data-en="Weapon (choose 1–3)">Broń (wybierz 1–3)</p>
+  <div class="grid3">
+    <label class="wrow"><input type="checkbox" class="wpn" value="E" checked><span><span data-pl="Szpada" data-en="Épée">Szpada</span> <span class="wcat" data-w="E"></span></span></label>
+    <label class="wrow"><input type="checkbox" class="wpn" value="F"><span><span data-pl="Floret" data-en="Foil">Floret</span> <span class="wcat" data-w="F"></span></span></label>
+    <label class="wrow"><input type="checkbox" class="wpn" value="S" checked><span><span data-pl="Szabla" data-en="Sabre">Szabla</span> <span class="wcat" data-w="S"></span></span></label>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+    <span class="lbl" data-pl="Kategoria (wyliczona):" data-en="Category (auto):">Kategoria (wyliczona):</span>
+    <span class="chip"><span id="catval">V2</span></span>
+  </div>
+
+  <label class="fld"><span class="lbl" data-pl="Klub (opcjonalnie — nie zapisujemy)" data-en="Club (optional — not stored)">Klub (opcjonalnie — nie zapisujemy)</span><input id="club" data-pl="np. AZS AWFiS Gdańsk" data-en="e.g. AZS AWFiS Gdańsk" placeholder="np. AZS AWFiS Gdańsk"></label>
+
+  <div class="feebar">
+    <div><span class="lbl" data-pl="Opłata startowa" data-en="Entry fee">Opłata startowa</span><br><span class="muted" id="feecalc"></span></div>
+    <div class="feeval" id="feeval">260 zł</div>
+  </div>
+
+  <p class="muted" style="margin-bottom:16px" data-pl="Twój rok urodzenia jest widoczny w szczegółach rankingu, aby umożliwić weryfikację prawidłowej kategorii wiekowej." data-en="Your year of birth is shown in the ranking details so competitors can verify correct age-category placement.">Twój rok urodzenia jest widoczny w szczegółach rankingu, aby umożliwić weryfikację prawidłowej kategorii wiekowej.</p>
+
+  <div class="end"><button class="btn" data-pl="Dalej →" data-en="Continue →">Dalej →</button></div>
+</div>
+<script>
+var lang='pl';
+function applyLang(){
+  document.querySelectorAll('[data-pl]').forEach(function(el){
+    var v=el.getAttribute('data-'+lang); if(v==null) return;
+    if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){ el.placeholder=v; } else { el.textContent=v; }
+  });
+  document.getElementById('bpl').classList.toggle('on',lang==='pl');
+  document.getElementById('ben').classList.toggle('on',lang==='en');
+  recalc();
+}
+function vcat(by){var age=2026-by;if(age>=70)return'V4';if(age>=60)return'V3';if(age>=50)return'V2';if(age>=40)return'V1';if(age>=30)return'V0';return'—';}
+var FEES={0:0,1:120,2:200,3:260};
+function recalc(){
+  var by=parseInt(document.getElementById('by').value,10)||0; var c=vcat(by);
+  document.getElementById('catval').textContent=c;
+  var checked=[].slice.call(document.querySelectorAll('.wpn')).filter(function(x){return x.checked;});
+  document.querySelectorAll('.wcat').forEach(function(s){s.textContent='';});
+  checked.forEach(function(x){var s=document.querySelector('.wcat[data-w="'+x.value+'"]');if(s)s.textContent='· '+c;});
+  var n=checked.length;
+  document.getElementById('feeval').textContent=FEES[n]?FEES[n]+' zł':'—';
+  document.getElementById('feecalc').textContent=(lang==='pl'?('Liczba broni: '+n):(n+' weapon'+(n===1?'':'s')));
+}
+document.getElementById('bpl').onclick=function(){lang='pl';applyLang();};
+document.getElementById('ben').onclick=function(){lang='en';applyLang();};
+document.getElementById('by').oninput=recalc;
+document.getElementById('sur').oninput=function(){var p=this.selectionStart;this.value=this.value.toUpperCase();try{this.setSelectionRange(p,p);}catch(e){}};
+document.querySelectorAll('.wpn').forEach(function(x){x.onchange=recalc;});
+applyLang();
+</script>
+</body>
+</html>

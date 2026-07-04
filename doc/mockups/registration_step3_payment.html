@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registration Mockup — Step 3: Payment with One-Click Copy</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#1a1a2e; color:#e0e0e0; padding:24px; line-height:1.5; }
+  h1 { text-align:center; color:#00d4ff; font-size:1.5em; margin-bottom:6px; }
+  .subtitle { text-align:center; color:#888; font-size:0.9em; max-width:640px; margin:0 auto 24px; }
+  .card { max-width:640px; margin:0 auto; background:#16213e; border:1px solid #0f3460; border-radius:12px; padding:22px; }
+  .top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:16px; }
+  .evt { font-weight:600; color:#fff; font-size:1.05em; }
+  .ok { color:#4ade80; font-size:0.82em; margin-top:3px; }
+  .lang { display:flex; gap:6px; }
+  .lang button { background:#0d1b2a; border:1px solid #1a4a8a; color:#e0e0e0; border-radius:8px; padding:4px 10px; cursor:pointer; font-size:0.9em; }
+  .lang button.on { background:#00d4ff; color:#0d1b2a; border-color:#00d4ff; font-weight:600; }
+  .chip { display:inline-flex; align-items:center; gap:6px; font-size:0.82em; padding:3px 10px; border-radius:999px; background:rgba(0,212,255,0.12); color:#7fd8ff; }
+  .panel { background:#0d1b2a; border:1px solid #1a4a8a; border-radius:10px; padding:6px 14px 14px; }
+  .phead { display:flex; justify-content:space-between; align-items:center; padding:10px 0 4px; }
+  .prow { display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid #1a2c4a; }
+  .pk { flex:none; width:100px; color:#7fbadc; font-size:0.8em; }
+  .pv { flex:1; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:0.85em; word-break:break-all; color:#e6edf5; }
+  .cp { flex:none; display:inline-flex; align-items:center; gap:5px; font-size:0.78em; padding:5px 10px; border:1px solid #1a4a8a; border-radius:8px; background:#16213e; color:#9fc4dc; cursor:pointer; }
+  .cp:hover { border-color:#00d4ff; color:#00d4ff; }
+  .cp.done { color:#4ade80; border-color:#2f7d4f; }
+  .muted { color:#8894a8; font-size:0.78em; display:flex; gap:6px; margin-top:12px; }
+</style>
+</head>
+<body>
+<h1>Rejestracja — płatność</h1>
+<p class="subtitle">Krok końcowy po akceptacji RODO. Jedno kliknięcie kopiuje numer konta i każde pole przelewu; „Kopiuj wszystko” kopiuje cały blok.</p>
+<div class="card">
+  <div class="top">
+    <div>
+      <div class="evt" data-pl="Płatność" data-en="Payment">Płatność</div>
+      <div class="ok"><span data-pl="✓ Zgłoszenie potwierdzone" data-en="✓ Registration confirmed">✓ Zgłoszenie potwierdzone</span></div>
+    </div>
+    <div class="lang">
+      <button id="bpl" class="on">🇵🇱 PL</button>
+      <button id="ben">🇬🇧 EN</button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+    <span class="chip" data-pl="Szpada · V2" data-en="Épée · V2">Szpada · V2</span>
+    <span class="chip" data-pl="Szabla · V2" data-en="Sabre · V2">Szabla · V2</span>
+  </div>
+
+  <div class="panel">
+    <div class="phead">
+      <span style="font-weight:600;font-size:0.92em;color:#fff" data-pl="Dane do przelewu" data-en="Transfer details">Dane do przelewu</span>
+      <button class="cp" data-copy="SPWS&#10;PL00 0000 0000 0000 0000 0000 0000&#10;PPW4-2026 KOWALSKI JAN&#10;200 PLN"><span class="ic">⧉</span> <span class="lab" data-pl="Kopiuj wszystko" data-en="Copy all">Kopiuj wszystko</span></button>
+    </div>
+    <div class="prow"><span class="pk" data-pl="Odbiorca" data-en="Recipient">Odbiorca</span><span class="pv">SPWS</span><button class="cp" data-copy="SPWS" aria-label="Copy"><span class="ic">⧉</span></button></div>
+    <div class="prow"><span class="pk">IBAN</span><span class="pv">PL00 0000 0000 0000 0000 0000 0000</span><button class="cp" data-copy="PL00 0000 0000 0000 0000 0000 0000" aria-label="Copy"><span class="ic">⧉</span></button></div>
+    <div class="prow"><span class="pk" data-pl="Tytuł" data-en="Title">Tytuł</span><span class="pv">PPW4-2026 KOWALSKI JAN</span><button class="cp" data-copy="PPW4-2026 KOWALSKI JAN" aria-label="Copy"><span class="ic">⧉</span></button></div>
+    <div class="prow"><span class="pk" data-pl="Kwota" data-en="Amount">Kwota</span><span class="pv" style="font-weight:600;color:#fff">200 PLN</span><button class="cp" data-copy="200 PLN" aria-label="Copy"><span class="ic">⧉</span></button></div>
+  </div>
+
+  <p class="muted"><span>🕓</span><span data-pl="Opłać do 12 godzin przed startem zawodów." data-en="Pay no later than 12 hours before the event starts.">Opłać do 12 godzin przed startem zawodów.</span></p>
+</div>
+<script>
+var lang='pl';
+function applyLang(){
+  document.querySelectorAll('[data-pl]').forEach(function(el){
+    var v=el.getAttribute('data-'+lang); if(v==null) return;
+    if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){ el.placeholder=v; } else { el.textContent=v; }
+  });
+  document.getElementById('bpl').classList.toggle('on',lang==='pl');
+  document.getElementById('ben').classList.toggle('on',lang==='en');
+}
+function fallback(t){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);}
+function copyText(t){try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t)['catch'](function(){fallback(t);});return;}}catch(e){}fallback(t);}
+document.querySelectorAll('.cp').forEach(function(b){
+  var origIc=b.querySelector('.ic'), lab=b.querySelector('.lab');
+  b.onclick=function(){
+    copyText((b.getAttribute('data-copy')||'').replace(/&#10;/g,'\n'));
+    b.classList.add('done');
+    if(origIc) origIc.textContent='✓';
+    if(lab) lab.textContent=(lang==='pl'?'Skopiowano':'Copied');
+    setTimeout(function(){ b.classList.remove('done'); if(origIc) origIc.textContent='⧉'; applyLang(); },1300);
+  };
+});
+document.getElementById('bpl').onclick=function(){lang='pl';applyLang();};
+document.getElementById('ben').onclick=function(){lang='en';applyLang();};
+applyLang();
+</script>
+</body>
+</html>
