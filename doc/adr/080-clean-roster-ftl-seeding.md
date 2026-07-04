@@ -27,7 +27,8 @@ category marker and synthetic birthdate survive import → pools → DE → expo
 
 ## Decision
 
-Generate **FIE XML seed files** from **paid** registrations and deliver them to the
+Generate **FIE XML seed files** from all **declared** registrations (this system does
+not track payment completion digitally — see ADR-079 §4) and deliver them to the
 organizer on demand.
 
 ### 1. Seed format
@@ -128,14 +129,14 @@ ADR-024), so a wrong prediction is self-correcting.
 
 `tbl_event.txt_organizer_email` holds the address (from the invitation letter,
 admin-entered). A single action **`send_seed_to_organizer(event)`** — generate-at-
-send from **paid** registrations → email the zip → stamp `ts_ftl_sent` — is fired by
-three triggers (DRY, one implementation):
+send from all **declared** registrations (no payment gate — see ADR-079 §4) → email
+the zip → stamp `ts_ftl_sent` — is fired by three triggers (DRY, one implementation):
 
 | Trigger | Actor | Notes |
 |---|---|---|
 | Manual button in `EventManager.svelte` ("Organizator" section) | Admin only (GoTrue+MFA; fn REVOKEd from `anon`) | re-sendable any time |
 | Cron when `dt_registration_deadline` passes | System | closing roster; reuses daily-cron infra |
-| Telegram `/seed <EVENT_CODE>` | Allowlisted user (≈ admin) | phone-friendly day-of trigger |
+| Telegram `send <EVENT_CODE> participants` (doc/gas/Code.gs) | Allowlisted user (≈ admin) | phone-friendly day-of trigger; renamed from an earlier `/seed` draft to avoid colliding with the existing DB-backup `export-seed` command |
 
 **Generate-at-send** (never a pre-stored attachment) keeps every send fresh despite
 late/day-of entries. Requires a new email/SMTP capability (current outbound is
@@ -157,7 +158,11 @@ directly; the mix-all pool is pools-only and not ranked.
 
 ## Consequences
 
-- Reuses `python/pipeline/export_seed.py` machinery and `age_split.py` splitting.
+- The seed exporter is a **new** `python/pipeline` module — `export_seed.py` is the
+  unrelated ADR-036 whole-database backup exporter (confirmed 2026-07-04; also owns the
+  `export-seed` Telegram command, hence the FTL-seed Telegram trigger is named
+  `send <code> participants` instead). Reuses `age_split.py` splitting (`split_combined_results`,
+  `birth_year_to_vcat`) and `fuzzy_match.py`'s `canonicalize_scraped_name`.
 - Standardised naming removes the free-text bracket-parsing failure class; clean
   round-trip removes BY estimation for registered fencers.
 - Roll out **pilot-first** (one upcoming PPW, validate register→seed→FTL→scrape→
