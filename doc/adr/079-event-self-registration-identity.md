@@ -219,6 +219,31 @@ null-date fix, same day); vitest 449→463 (`RegistrationModal.test.ts` new,
 `CalendarView`/`RegistrationForm`/`EntryList`/`EventManager` tests extended);
 `svelte-check` 0 errors throughout.
 
+**d) The same unstyled-render bug also hit LOCAL `npm run dev` (found after
+push, user report).** (c) fixed the deployed/production path — CERT and PROD
+both verified rendering correctly — but the *local dev server* is a separate
+code path: `npm run dev` runs plain `vite`, which reads **`vite.config.ts`**
+(the main config), not `vite.config.ce.ts`. `vite.config.ts` never set
+`compilerOptions.customElement: true`, so visiting `register.html` directly
+on the dev server (e.g. `http://localhost:5173/register.html?event=...` — the
+exact URL an admin copies out of the calendar link to paste into Facebook/a
+share) hit the identical shadow-DOM-styling gap as (c), just on a different
+build path that (c) never touched. The in-app modal never showed this because
+it renders `RegistrationForm`/`EntryList` as ordinary imported components
+(normal Vite dev CSS injection), never through the `<spws-registration>`
+custom-element boundary — so a working calendar modal gave no signal that the
+standalone URL was broken. Fix: add `compilerOptions.customElement: true` to
+`vite.config.ts` too. Verified safe — `App.svelte`/`main.ts` (the main app)
+never declare `<svelte:options customElement>`, so only the four `ce/*.svelte`
+wrapper files (which already declare it) are affected; the flag has no effect
+on components that don't opt in. Confirmed empirically: `register.html` on
+the plain `npm run dev` server now renders identically to the in-app modal;
+the main ranklist/calendar app is unaffected (screenshots, console clean
+apart from a pre-existing unrelated stale-auth-token log). vitest still
+463/463, `svelte-check` 0 errors, main `vite build` unaffected (still emits
+only `dist/index.html` — the CE-bundle-merge path in `release.yml` from (c)
+is untouched, since that path was already verified working on CERT/PROD).
+
 ## Consequences
 
 - No new form-side write path to `tbl_fencer`; reconciliation reuses existing

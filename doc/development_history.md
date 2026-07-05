@@ -1505,3 +1505,36 @@ correction in one place.
 `release.yml` run (register.html now ships in the merged build); existing PROD events with the
 flag on but empty URLs need an admin re-save (toggle off/on) to populate
 `url_registration`/`url_entry_list`.
+
+---
+
+### 2026-07-05 — ADR-079 §7(d): fix register.html unstyled on `npm run dev` (post-deploy user report)
+
+Pushed to `main` (commit `15b858e`), CI green, CERT + PROD both auto-deployed (this repo's
+`release.yml` cascades LOCAL-verified changes straight through both environments, no manual
+gate). Live-verified `register.html` reachable on CERT via GH Pages. User then reported the
+copy-pasted link (`http://localhost:5173/register.html?event=PPW1-2026-2027`, meant for sharing
+e.g. on Facebook) rendered as bare, unstyled HTML, while the same link clicked *inside* the
+calendar (opening the in-app `RegistrationModal`) looked correct.
+
+**Root cause:** `npm run dev` runs plain `vite`, which loads `vite.config.ts` (the main config) —
+a code path `d`'s `(c)` production fix never touched, because that fix only changed
+`vite.config.ce.ts` + `release.yml`. `vite.config.ts` never set
+`compilerOptions.customElement: true`, so Svelte compiled the `ce/*.svelte` wrapper files as plain
+components on the dev server — the identical "styles land in `<head>`, invisible inside the
+shadow DOM" bug as (c), on a path (c) didn't cover. The in-app modal gave no warning signal
+because it never crosses the custom-element boundary at all (it imports `RegistrationForm`/
+`EntryList` directly as ordinary components).
+
+**Fix:** add `compilerOptions.customElement: true` to `vite.config.ts` (one line). Verified safe —
+only the four `ce/*.svelte` wrapper files declare `<svelte:options customElement>`; `App.svelte`/
+`main.ts` (the main admin app) don't use it, so the flag is a no-op for everything else in that
+config. Reproduced the bug and confirmed the fix live via the LOCAL dev server (`frontend-dev`,
+port 5199): before the fix, `register.html` showed raw unstyled form fields on a dark page-shell
+background; after, it renders pixel-identical to the in-app modal. Confirmed no regression to the
+main ranklist/calendar app (Ranking table, Kalendarz tab, admin sign-in modal all screenshot-
+verified unaffected) and to the existing `release.yml` CE-bundle-merge path (left untouched,
+already verified working on CERT/PROD before this fix).
+
+**Verified (LOCAL):** vitest 463/463 unchanged, `svelte-check` 0 errors, main `vite build` still
+emits only `dist/index.html` (no change to what `release.yml` builds/merges). ADR-079 gains §7(d).
