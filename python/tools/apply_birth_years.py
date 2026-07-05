@@ -5,17 +5,14 @@ Reads infer_birth_years.py logic and updates NULL birth years in-place.
 Adds source comments: -- CONFIRMED or -- ESTIMATED.
 
 Usage:
-    python python/tools/apply_birth_years.py --dry-run   # preview changes
-    python python/tools/apply_birth_years.py             # apply changes
+    python -m python.tools.apply_birth_years --dry-run   # preview changes
+    python -m python.tools.apply_birth_years             # apply changes
 """
 
 import re
 import sys
-from pathlib import Path
 
-# Reuse inference logic
-sys.path.insert(0, str(Path(__file__).parent))
-from infer_birth_years import (
+from python.tools.infer_birth_years import (
     DATA_DIR,
     SEED_FENCER_PATH,
     infer_birth_year_range,
@@ -45,7 +42,7 @@ def main():
         if source == "conflict":
             continue
 
-        if source == "crossing" and min_yr == max_yr:
+        if source == "crossing" and min_yr is not None and min_yr == max_yr:
             updates[f["line_num"]] = (min_yr, "CONFIRMED from category crossing")
         elif min_yr is not None and max_yr is not None:
             midpoint = (min_yr + max_yr) // 2
