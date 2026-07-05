@@ -142,7 +142,9 @@ def test_predict_combined_brackets_all_empty_returns_no_brackets():
 # File naming (ADR-080 §4)
 # ---------------------------------------------------------------------------
 def test_seed_filename_mixall():
-    assert seed_filename("SPWS-2025-2026", "PPW5", "E", "mixall") == "SPWS-2025-2026_PPW5_E_mixall.xml"
+    assert (
+        seed_filename("SPWS-2025-2026", "PPW5", "E", "mixall") == "SPWS-2025-2026_PPW5_E_mixall.xml"
+    )
 
 
 def test_seed_filename_single_de_bracket():
@@ -150,7 +152,9 @@ def test_seed_filename_single_de_bracket():
 
 
 def test_seed_filename_combined_de_bracket():
-    assert seed_filename("SPWS-2025-2026", "PPW5", "E", "M-V0V1") == "SPWS-2025-2026_PPW5_E_M-V0V1.xml"
+    assert (
+        seed_filename("SPWS-2025-2026", "PPW5", "E", "M-V0V1") == "SPWS-2025-2026_PPW5_E_M-V0V1.xml"
+    )
 
 
 def test_combined_bracket_scope_single_category():
