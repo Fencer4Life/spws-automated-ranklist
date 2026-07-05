@@ -15,9 +15,9 @@ import type { RegistrationEntry } from '../src/lib/types'
 const mockFetchEntryList = vi.mocked(fetchEntryList)
 
 const ROWS: RegistrationEntry[] = [
-  { id_registration: 1, id_event: 3, txt_surname: 'KOWALSKI', txt_first_name: 'Jan', enum_gender: 'M', arr_weapons: ['EPEE', 'SABRE'] },
-  { id_registration: 2, id_event: 3, txt_surname: 'NOWAK', txt_first_name: 'Piotr', enum_gender: 'M', arr_weapons: ['EPEE'] },
-  { id_registration: 3, id_event: 3, txt_surname: 'WISNIEWSKA', txt_first_name: 'Anna', enum_gender: 'F', arr_weapons: ['FOIL'] },
+  { id_registration: 1, id_event: 3, txt_surname: 'KOWALSKI', txt_first_name: 'Jan', enum_gender: 'M', arr_weapons: ['EPEE', 'SABRE'], enum_age_category: 'V2' },
+  { id_registration: 2, id_event: 3, txt_surname: 'NOWAK', txt_first_name: 'Piotr', enum_gender: 'M', arr_weapons: ['EPEE'], enum_age_category: 'V1' },
+  { id_registration: 3, id_event: 3, txt_surname: 'WISNIEWSKA', txt_first_name: 'Anna', enum_gender: 'F', arr_weapons: ['FOIL'], enum_age_category: 'V2' },
 ]
 
 beforeEach(() => {
@@ -79,6 +79,40 @@ describe('EntryList', () => {
     const search = container.querySelector('input[name="search"]') as HTMLInputElement
     await fireEvent.input(search, { target: { value: 'zzz-no-such-name' } })
     await findByText(/Brak wyników/)
+  })
+
+  // FR-123 mockup parity (2026-07-05) — doc/mockups/registration_entry_list.html
+  // shows a "Kat." column + category filter that this component never had.
+  it('renders the category badge in a "Kat." column for each row', async () => {
+    mockFetchEntryList.mockResolvedValue(ROWS)
+    const { container, findByText } = render(EntryList, { props: { eventId: 3 } })
+    await findByText('KOWALSKI Jan')
+    const badges = container.querySelectorAll('.el-cat')
+    expect(badges.length).toBe(3)
+    expect(badges[0].textContent).toBe('V2')
+    expect(badges[1].textContent).toBe('V1')
+  })
+
+  it('filters by category', async () => {
+    mockFetchEntryList.mockResolvedValue(ROWS)
+    const { container, findByText, queryByText } = render(EntryList, { props: { eventId: 3 } })
+    await findByText('KOWALSKI Jan')
+    const categorySelect = container.querySelector('select[name="categoryFilter"]') as HTMLSelectElement
+    await fireEvent.change(categorySelect, { target: { value: 'V1' } })
+    await waitFor(() => expect(queryByText('NOWAK Piotr')).not.toBeNull())
+    expect(queryByText('KOWALSKI Jan')).toBeNull()
+    expect(queryByText('WISNIEWSKA Anna')).toBeNull()
+  })
+
+  it('renders category filter options matching the FilterBar V0–V4 convention', async () => {
+    mockFetchEntryList.mockResolvedValue(ROWS)
+    const { container, findByText } = render(EntryList, { props: { eventId: 3 } })
+    await findByText('KOWALSKI Jan')
+    const categorySelect = container.querySelector('select[name="categoryFilter"]') as HTMLSelectElement
+    const optionTexts = Array.from(categorySelect.options).map((o) => o.textContent)
+    expect(optionTexts).toEqual([
+      'Kategoria: wszystkie', 'V0 (30+)', 'V1 (40+)', 'V2 (50+)', 'V3 (60+)', 'V4 (70+)',
+    ])
   })
 })
 
