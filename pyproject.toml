@@ -42,8 +42,6 @@ markers = [
 [tool.basedpyright]
 include = ["python"]
 exclude = ["**/__pycache__", "**/node_modules", "frontend"]
-venvPath = "."
-venv = ".venv"
 pythonVersion = "3.14"
 typeCheckingMode = "standard"   # start non-strict to avoid a wall of findings on legacy code
 
