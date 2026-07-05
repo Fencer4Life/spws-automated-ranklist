@@ -1582,3 +1582,63 @@ aside from the pre-existing pgTAP polymorphic-function static-analysis false pos
 baseline, not a real issue). No ADR touch for either item — both are additive (a DB view column +
 a frontend display line) closing already-documented, already-approved-scope gaps, not new
 architectural tradeoffs.
+
+---
+
+### 2026-07-05 — Mobile GDPR checkbox + entry-list layout fixes (same-day follow-up)
+
+Two more on-device regressions the user hit testing the two fixes above on an actual phone,
+frontend-only (no DB/migration changes).
+
+**1. RODO consent checkbox laid out off-screen on mobile.** `RegistrationForm.svelte`'s global
+`input, select { width: 100% }` rule (meant for the identity-step text fields) was also stretching
+the RODO step's `<input type="checkbox">` to fill its flex row (`.reg-ack { display: flex }`),
+pushing the consent label off to the side/off-screen on narrow viewports — violating FR-130's own
+D8 mobile-first invariant ("no horizontal scroll") on the one step it hadn't been checked against.
+Fix: `.reg-rodo-checkbox` now overrides to a fixed, custom-painted 20×20px box (`appearance: none`
+with its own checked-state fill/tick, since the native browser checkbox ignores most styling once
+`width` is constrained back down).
+
+**2. No feedback when accepting without ticking consent.** The accept button previously just
+`disabled`'d until the checkbox was checked — clicking it while unchecked was a silent no-op with
+no visible cue. Per the user's explicit ask, the button is no longer hard-`disabled`; `acceptRodo()`
+now checks `consentChecked` itself and, if unset, sets a new `consentInvalid` state that fills the
+checkbox background light red (`rgba(255,92,92,.45)`) until the box is ticked (auto-clears on
+change). vitest: replaced the old single "disabled until ticked" test with two — accept-without-
+consent doesn't submit + flags invalid, and ticking clears the flag then submits normally
+(`RegistrationForm.test.ts` 17→18: +2 new, −1 old disabled-attribute assertion removed).
+
+**3. Entry-list mobile layout was an unreadable 5-line-per-fencer stack.** The existing
+`@media (max-width: 480px) { table, thead, tbody, th, td, tr { display: block } }` rule (pre-dating
+this session, never mockup-specified) collapsed every `<td>` to its own block line with the header
+hidden — already marginal at 4 columns, actively broken once the age-category column made it 5:
+`1 / ATANASSOW Aleksander / M / V2 / E` stacked vertically per fencer. Redesigned as a single
+non-wrapping flex row per fencer: name on the left (`flex: 1 1 auto`, ellipsis-truncated so a long
+name can't push badges off-screen), category + weapon badges packed tight on the right. Also
+dropped the `Lp` (row number) and `Gender` display columns entirely per explicit request — surname
++ first name already make both redundant (gender stays filterable, just not shown as its own
+column/badge). The three filter dropdns (weapon/category/gender) moved from folded-in "Weapon:
+all"-style option text into a 3-column grid, each under its own `<label>` (`Broń`/`Kategoria`/
+`Płeć`) with a plain `--` placeholder option — clearer at a glance and matches how the user asked
+for the calendar's own filters to read. Select font bumped 0.9em→16px (both more legible and the
+standard fix to stop iOS auto-zooming the page on focus). `reg_col_lp`, `reg_col_gender`,
+`reg_filter_weapon_all`, `reg_filter_category_all`, `reg_filter_gender_all` i18n keys removed
+(dead after the above — nothing else referenced them). vitest `EntryList.test.ts` 11→12 (label/
+placeholder-convention test, superseding the old folded-option-text assertion).
+
+**Native `<select>` popup position/style (deferred, no code change):** the user also flagged the
+native option-list popup opening above the trigger with small text on macOS — that's OS/browser
+chrome rendered outside the page's DOM, not stylable via page CSS at all; font-size 16px on the
+`<select>` itself does carry through to the popup (fixed above), but position/skin cannot be
+forced short of replacing the native `<select>` with a fully custom dropdown widget. Offered that
+as a follow-up; user deferred pending on-device testing of the fixes above — **OPEN** if requested.
+
+**Verified (LOCAL):** `npm test` 470/470, `svelte-check` 0 errors, `supabase test db` 657/657 (one
+transient local-only failure diagnosed mid-session as pollution from manual `docker exec` test
+registrations created for earlier fee-tier verification — not a regression; `./scripts/reset-
+dev.sh` restored a clean 657/657 before commit). No ADR touch (UI/CSS bug fixes, no architectural
+tradeoff). Pushed directly to `main` (`026a284`→`2ab852a` after rebasing past two auto-generated
+CERT/PROD tracking commits); CI green; Release cascade needed two manual re-runs for transient
+infra faults unrelated to this change — GitHub Pages' `Deployment failed, try again later.` and
+`supabase/setup-cli@v1`'s GitHub API rate limit resolving the latest CLI release — both succeeded
+on retry, full `build`→`deploy-pages`→`deploy-cert`→`deploy-prod` cascade green.
