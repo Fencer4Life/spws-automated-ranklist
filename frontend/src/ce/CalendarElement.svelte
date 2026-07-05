@@ -1,6 +1,6 @@
 <svelte:options customElement="spws-calendar" />
 
-<CalendarView events={calendarEvents} />
+<CalendarView events={calendarEvents} {registrationBase} />
 
 <script lang="ts">
   import CalendarView from '../components/CalendarView.svelte'
@@ -8,8 +8,10 @@
 
   let {
     demo = false,
+    'registration-base': registrationBase = '',
   }: {
     demo?: boolean
+    'registration-base'?: string
   } = $props()
 
   const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [

@@ -6,7 +6,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(12);
+SELECT plan(13);
 
 -- ===== SETUP: Create test data for calendar view =====
 DO $setup$
@@ -235,6 +235,67 @@ BEGIN
 END;
 $t822$;
 SELECT pass('8.22: fn_update_event sentinel -1 unlinks id_prior_event; NULL leaves it unchanged');
+
+-- 8.23 — P2.8 (ADR-079/080 §5): fn_update_event writes bool_use_spws_registration
+-- + the 2/3-weapon fee tiers (EventManager "Rejestracja SPWS" section). NULL
+-- args leave the existing value unchanged, matching id_organizer/arr_weapons.
+DO $t823$
+DECLARE
+  v_season INT;
+  v_org    INT;
+  v_eid    INT;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025';
+  SELECT id_organizer INTO v_org FROM tbl_organizer LIMIT 1;
+
+  v_eid := fn_create_event(
+    'CAL-REGFLAG-TEST', 'Registration Flag Test Event', v_season, v_org,
+    'Gdańsk', '2025-05-01'::DATE, '2025-05-02'::DATE, NULL,
+    'POL', NULL, NULL, NULL::NUMERIC, NULL, NULL::enum_weapon_type[],
+    NULL, NULL::DATE
+  );
+
+  IF (SELECT bool_use_spws_registration FROM tbl_event WHERE id_event = v_eid) IS DISTINCT FROM FALSE THEN
+    RAISE EXCEPTION 'bool_use_spws_registration should default FALSE';
+  END IF;
+
+  -- Set the flag + fee tiers.
+  PERFORM fn_update_event(
+    v_eid, 'Registration Flag Test Event', 'Gdańsk', '2025-05-01'::DATE, '2025-05-02'::DATE,
+    NULL, 'POL', NULL, NULL, 120::NUMERIC, NULL, NULL, NULL::enum_weapon_type[],
+    NULL, NULL::DATE, NULL, NULL, NULL, NULL, NULL, NULL,
+    TRUE, 200::NUMERIC, 260::NUMERIC
+  );
+
+  IF NOT (SELECT bool_use_spws_registration = TRUE
+            AND num_entry_fee_2w = 200 AND num_entry_fee_3w = 260
+          FROM tbl_event WHERE id_event = v_eid) THEN
+    RAISE EXCEPTION 'fn_update_event did not persist registration flag / fee tiers';
+  END IF;
+
+  -- NULL leaves them unchanged (a caller not touching the section shouldn't reset it).
+  PERFORM fn_update_event(
+    v_eid, 'Registration Flag Test Event', 'Gdańsk', '2025-05-01'::DATE, '2025-05-02'::DATE,
+    NULL, 'POL', NULL, NULL, 120::NUMERIC, NULL, NULL, NULL::enum_weapon_type[],
+    NULL, NULL::DATE, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL
+  );
+
+  IF NOT (SELECT bool_use_spws_registration = TRUE
+            AND num_entry_fee_2w = 200 AND num_entry_fee_3w = 260
+          FROM tbl_event WHERE id_event = v_eid) THEN
+    RAISE EXCEPTION 'NULL registration-flag/fee-tier args must leave existing values unchanged';
+  END IF;
+
+  -- vw_calendar returns the fields (already exposed since migration 20260704000001).
+  IF NOT (SELECT bool_use_spws_registration = TRUE
+            AND num_entry_fee_2w = 200 AND num_entry_fee_3w = 260
+          FROM vw_calendar WHERE txt_code = 'CAL-REGFLAG-TEST') THEN
+    RAISE EXCEPTION 'vw_calendar does not return the registration flag / fee tiers';
+  END IF;
+END;
+$t823$;
+SELECT pass('8.23: fn_update_event writes bool_use_spws_registration + fee tiers (NULL = unchanged)');
 
 SELECT * FROM finish();
 ROLLBACK;

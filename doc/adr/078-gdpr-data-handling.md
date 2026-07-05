@@ -1,6 +1,6 @@
 # ADR-078: GDPR Data Handling & Data-Subject Rights
 
-**Status:** Proposed (draft — pending implementation)
+**Status:** Proposed (consent capture — `ts_consent`/`txt_consent_version` stamped by `fn_create_registration` — and the RODO consent-gate step **implemented** 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending)
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-079, ADR-080
 

@@ -1,6 +1,6 @@
 # ADR-079: Event Self-Registration & Identity Resolution
 
-**Status:** Proposed (draft — pending implementation)
+**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (email delivery) not started, blocked on Resend/eu.org)
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
 

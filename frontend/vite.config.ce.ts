@@ -15,7 +15,7 @@ export default defineConfig({
   build: {
     outDir: 'dist-ce',
     rollupOptions: {
-      input: 'index.ce.html',
+      input: ['index.ce.html', 'register.html'],
     },
   },
 })
