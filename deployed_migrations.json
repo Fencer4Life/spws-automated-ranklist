@@ -128,8 +128,8 @@
     "schema_fingerprint": "ef885620537a9b1e39801d682b753b5a"
   },
   "prod": {
-    "last_updated": "2026-06-27T22:04:13Z",
-    "last_sha": "0a1decb2423e2a740e99fd075783853fcd2e9ee5",
+    "last_updated": "2026-07-05T11:14:17Z",
+    "last_sha": "b74c9d3dc460001df881897bf89c74709a79086e",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -246,8 +246,11 @@
       "20260626120000_carry_stop_on_current_result.sql",
       "20260627000001_vw_calendar_prior_event.sql",
       "20260627000002_show_evf_calendar.sql",
-      "20260627000003_init_season_childless.sql"
+      "20260627000003_init_season_childless.sql",
+      "20260628000001_fn_revert_guard_childless.sql",
+      "20260628000002_season_skeleton_promotion.sql",
+      "20260704000001_event_registration_schema.sql"
     ],
-    "schema_fingerprint": "1bcd6ddc5d16b62a385537ef533ee4de"
+    "schema_fingerprint": "32379627105a69a08c5d9e6e4df49f05"
   }
 }
