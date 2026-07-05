@@ -130,8 +130,8 @@
     "schema_fingerprint": "c8ffb7e5bd5a98bcbf81a28aef5a64c6"
   },
   "prod": {
-    "last_updated": "2026-07-05T11:18:26Z",
-    "last_sha": "094b566f2afd836e667f11c63bb08c32b6cc0ca1",
+    "last_updated": "2026-07-05T15:31:30Z",
+    "last_sha": "15b858ee8b5d01fae8a8f9dab175e3be14aff100",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -253,8 +253,10 @@
       "20260628000002_season_skeleton_promotion.sql",
       "20260704000001_event_registration_schema.sql",
       "20260705000001_registration_consent.sql",
-      "20260705000002_fn_update_event_registration_fields.sql"
+      "20260705000002_fn_update_event_registration_fields.sql",
+      "20260705000003_fn_import_evf_events_null_dates.sql",
+      "20260705000004_fn_update_event_url_entry_list.sql"
     ],
-    "schema_fingerprint": "ef885620537a9b1e39801d682b753b5a"
+    "schema_fingerprint": "c8ffb7e5bd5a98bcbf81a28aef5a64c6"
   }
 }
