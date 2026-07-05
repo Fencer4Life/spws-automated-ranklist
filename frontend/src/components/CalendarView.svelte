@@ -52,12 +52,9 @@
     {#each group.events as event}
       {@const regCutoff = event.dt_registration_deadline ?? event.dt_start ?? ''}
       {@const showRegDeadline = event.dt_registration_deadline != null && today <= event.dt_registration_deadline}
-      {@const useSpwsReg = event.bool_use_spws_registration === true && registrationBase !== ''}
-      {@const spwsFormLink = useSpwsReg ? `${registrationBase}?event=${encodeURIComponent(event.txt_code)}` : null}
-      {@const spwsListLink = useSpwsReg ? `${registrationBase}?event=${encodeURIComponent(event.txt_code)}&view=list` : null}
-      {@const showRegLink = useSpwsReg
-        ? (regCutoff !== '' && today <= regCutoff)
-        : (event.url_registration != null && regCutoff !== '' && today <= regCutoff)}
+      {@const regOpen = regCutoff !== '' && today <= regCutoff}
+      {@const showRegLink = event.url_registration != null && event.url_registration !== '' && regOpen}
+      {@const showEntryListLink = !!event.url_entry_list && regOpen}
       {@const regUrgent = regCutoff !== '' && (new Date(regCutoff).getTime() - new Date(today).getTime()) < 7 * 86400000}
       {@const displayStatus = getEventDisplayStatus(event.enum_status, event.dt_end, event.dt_start)}
       <div
@@ -97,18 +94,20 @@
               {/if}
             </div>
           {/if}
-          {#if showRegDeadline || showRegLink}
+          {#if showRegDeadline || showRegLink || showEntryListLink}
             <div class="timeline-registration" class:reg-urgent={regUrgent}>
               {#if showRegDeadline}
                 <span class="registration-deadline">{t('event_registration_deadline_label')}: {formatDate(event.dt_registration_deadline)}</span>
               {/if}
               {#if showRegLink}
-                <a class="registration-link" href={useSpwsReg ? spwsFormLink : event.url_registration} target="_blank" rel="noopener">
+                <a class="registration-link" href={event.url_registration} target="_blank" rel="noopener"
+                  onclick={event.bool_use_spws_registration ? (e) => { e.preventDefault(); openRegistrationModal(event) } : undefined}>
                   {t('event_registration')} &rarr;
                 </a>
               {/if}
-              {#if useSpwsReg}
-                <a class="entry-list-link" href={spwsListLink} target="_blank" rel="noopener">
+              {#if showEntryListLink}
+                <a class="entry-list-link" href={event.url_entry_list} target="_blank" rel="noopener"
+                  onclick={(e) => { e.preventDefault(); openEntryListModal(event) }}>
                   {t('reg_entry_list_link')} &rarr;
                 </a>
               {/if}
@@ -138,10 +137,42 @@
   {/if}
 </div>
 
+<RegistrationModal
+  open={regModalOpen}
+  eventCode={regModalEventCode}
+  eventId={regModalEventId}
+  view={regModalView}
+  onviewlist={() => { regModalView = 'list' }}
+  onclose={() => { regModalOpen = false }}
+/>
+
 <script lang="ts">
   import type { CalendarEvent, WeaponType, Season, Environment } from '../lib/types'
   import { t } from '../lib/locale.svelte'
   import { getEventDisplayStatus } from '../lib/eventStatus'
+  import RegistrationModal from './RegistrationModal.svelte'
+
+  // ADR-079 amend — the SPWS-hosted registration/entry-list links open this
+  // in-app modal (DrilldownModal-style overlay) instead of navigating to the
+  // standalone register.html page; closing it returns to the calendar.
+  let regModalOpen = $state(false)
+  let regModalView = $state<'form' | 'list'>('form')
+  let regModalEventCode = $state('')
+  let regModalEventId = $state<number | null>(null)
+
+  function openRegistrationModal(ev: CalendarEvent) {
+    regModalEventCode = ev.txt_code
+    regModalEventId = ev.id_event
+    regModalView = 'form'
+    regModalOpen = true
+  }
+
+  function openEntryListModal(ev: CalendarEvent) {
+    regModalEventCode = ev.txt_code
+    regModalEventId = ev.id_event
+    regModalView = 'list'
+    regModalOpen = true
+  }
 
   function weaponLabel(w: WeaponType): string {
     switch (w) {
@@ -164,7 +195,6 @@
     dualEnv = false,
     activeEnv = $bindable('CERT' as Environment),
     onseasonchange,
-    registrationBase = '',
   }: {
     events?: CalendarEvent[]
     showEvfToggle?: boolean
@@ -174,11 +204,6 @@
     dualEnv?: boolean
     activeEnv?: Environment
     onseasonchange?: () => void
-    // P2.8 (D3/D7) — base URL of the standalone registration page
-    // (register.html). When an event has bool_use_spws_registration=true,
-    // the calendar generates `${registrationBase}?event=<txt_code>` (form)
-    // and `...&view=list` (roster) instead of the raw url_registration link.
-    registrationBase?: string
   } = $props()
 
   let timeFilter: 'all' | 'past' | 'future' = $state('all')

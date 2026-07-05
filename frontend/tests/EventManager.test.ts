@@ -582,6 +582,39 @@ describe('EventManager Accordion (Phase 6)', () => {
     }))
   })
 
+  // ADR-079 amend — ticking the SPWS-registration toggle auto-derives absolute
+  // register.html URLs (form + entry list) from window.location + the event
+  // code; unticking clears both. The fields render read-only while on.
+  it('ADR-079 amend: SPWS-registration toggle auto-fills url_registration + url_entry_list; untick clears', async () => {
+    const onupdate = vi.fn()
+    const { container } = render(EventManager, { props: { ...propsWithTournaments, onupdate } })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+
+    const toggle = container.querySelector('[data-field="form-use-spws-registration"]') as HTMLInputElement
+    const regUrl = container.querySelector('[data-field="form-registration"]') as HTMLInputElement
+    const listUrl = container.querySelector('[data-field="form-entry-list-url"]') as HTMLInputElement
+    const base = new URL('register.html', window.location.href).href
+
+    // Fixture event 10 starts with the flag on → untick clears both URLs.
+    expect(toggle.checked).toBe(true)
+    await fireEvent.click(toggle)
+    expect(regUrl.value).toBe('')
+    expect(listUrl.value).toBe('')
+
+    // Tick back on → both derived from origin + event code; fields read-only.
+    await fireEvent.click(toggle)
+    expect(regUrl.value).toBe(`${base}?event=PPW-WRO-2025-01`)
+    expect(listUrl.value).toBe(`${base}?event=PPW-WRO-2025-01&view=list`)
+    expect(regUrl.readOnly).toBe(true)
+
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+    expect(onupdate).toHaveBeenCalledWith(10, expect.objectContaining({
+      useSpwsRegistration: true,
+      registration: `${base}?event=PPW-WRO-2025-01`,
+      urlEntryList: `${base}?event=PPW-WRO-2025-01&view=list`,
+    }))
+  })
+
   // 9.85 — Tournament edit save calls onedittournament with params
   it('9.85: tournament edit save calls onedittournament with id and params', async () => {
     const onedittournament = vi.fn()

@@ -1,7 +1,12 @@
 <div class="el-card">
   <div class="el-top">
     <span class="el-title">{t('reg_entry_list_title')}</span>
-    <LangToggle />
+    <div class="el-top-actions">
+      <LangToggle />
+      {#if onclose}
+        <button class="el-close" onclick={onclose} aria-label="Close">&times;</button>
+      {/if}
+    </div>
   </div>
 
   <div class="el-metrics">
@@ -64,7 +69,16 @@
   import { fetchEntryList } from '../lib/api'
   import type { RegistrationEntry, WeaponType, GenderType } from '../lib/types'
 
-  let { eventId }: { eventId: number } = $props()
+  let {
+    eventId,
+    onclose,
+  }: {
+    eventId: number
+    // Modal-embed (RegistrationModal, opened from CalendarView) — when
+    // provided, renders a close (×) affordance. Undefined on the standalone
+    // register.html page (nothing to close to).
+    onclose?: () => void
+  } = $props()
 
   let rows = $state<RegistrationEntry[]>([])
   let search = $state('')
@@ -115,6 +129,23 @@
     align-items: flex-start;
     gap: 12px;
     margin-bottom: 16px;
+  }
+  .el-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .el-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: #7fbadc;
+    padding: 0 2px;
+  }
+  .el-close:hover {
+    color: #fff;
   }
   .el-title {
     font-weight: 600;

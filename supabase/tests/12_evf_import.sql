@@ -5,7 +5,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(13);
+SELECT plan(14);
 
 -- ===== SETUP =====
 DO $setup$
@@ -212,6 +212,33 @@ SELECT is(
   )),
   jsonb_build_object('touched', 1, 'refreshed', 0),
   '12.13: fn_refresh_evf_event_urls is a no-op on unknown id_event'
+);
+
+
+-- =========================================================================
+-- 12.14 — empty-string dt_start (promote.py's NULL sentinel) does not error
+-- =========================================================================
+-- The CERT→PROD calendar promoter (python/pipeline/promote.py) always emits
+-- "" rather than JSON null for missing date fields (payload-shape stability).
+-- fn_import_evf_events must accept "" for dt_start/dt_end the same way it
+-- already does for dt_registration_deadline, and store NULL, not error.
+DO $t1214$
+DECLARE
+  v_season INT;
+  v_result JSONB;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'EVF-TEST';
+  v_result := fn_import_evf_events(
+    '[{"code": "PEW-NODATE-2030-2031", "name": "EVF Circuit No Date", "dt_start": "", "dt_end": "", "location": "No Date City", "country": "Germany", "weapons": ["EPEE"], "is_team": false}]'::JSONB,
+    v_season
+  );
+END;
+$t1214$;
+
+SELECT is(
+  (SELECT dt_start FROM tbl_event WHERE txt_code = 'PEW-NODATE-2030-2031'),
+  NULL::DATE,
+  '12.14: fn_import_evf_events accepts empty-string dt_start/dt_end as NULL, no error'
 );
 
 

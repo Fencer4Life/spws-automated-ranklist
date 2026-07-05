@@ -74,10 +74,29 @@ jobs:
           sed -i 's|supabase-cert-key="[^"]*"|supabase-cert-key="${{ secrets.SUPABASE_CERT_ANON_KEY }}"|' index.html
           sed -i 's|supabase-prod-url="[^"]*"|supabase-prod-url="${{ secrets.SUPABASE_PROD_URL }}"|' index.html
           sed -i 's|supabase-prod-key="[^"]*"|supabase-prod-key="${{ secrets.SUPABASE_PROD_ANON_KEY }}"|' index.html
+          # ADR-079 amend — register.html (standalone registration page) is built
+          # by the CE bundle (vite.config.ce.ts), not the main one: Svelte only
+          # bundles a nested (non-customElement) child component's <style> into a
+          # shadow root when the WHOLE compile graph runs with customElement:true,
+          # so RegistrationForm/EntryList render unstyled under the main build's
+          # plain config. Inject creds into the same shared source file here;
+          # both builds below read it.
+          sed -i 's|supabase-cert-url="[^"]*"|supabase-cert-url="${{ secrets.SUPABASE_CERT_URL }}"|' register.html
+          sed -i 's|supabase-cert-key="[^"]*"|supabase-cert-key="${{ secrets.SUPABASE_CERT_ANON_KEY }}"|' register.html
+          sed -i 's|supabase-prod-url="[^"]*"|supabase-prod-url="${{ secrets.SUPABASE_PROD_URL }}"|' register.html
+          sed -i 's|supabase-prod-key="[^"]*"|supabase-prod-key="${{ secrets.SUPABASE_PROD_ANON_KEY }}"|' register.html
 
       - name: Build frontend
         working-directory: frontend
         run: npx vite build --base ./
+
+      - name: Build + merge register.html (CE bundle)
+        working-directory: frontend
+        run: |
+          npx vite build --config vite.config.ce.ts --base ./
+          cp dist-ce/register.html dist/register.html
+          mkdir -p dist/assets
+          cp -r dist-ce/assets/. dist/assets/
 
       - name: Verify no secrets or localhost in build
         run: |

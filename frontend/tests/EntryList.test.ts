@@ -81,3 +81,23 @@ describe('EntryList', () => {
     await findByText(/Brak wyników/)
   })
 })
+
+describe('EntryList — modal-embed close affordance', () => {
+  it('renders no close button by default (standalone page has nowhere to close to)', async () => {
+    mockFetchEntryList.mockResolvedValue(ROWS)
+    const { container, findByText } = render(EntryList, { props: { eventId: 3 } })
+    await findByText('KOWALSKI Jan')
+    expect(container.querySelector('button.el-close')).toBeNull()
+  })
+
+  it('renders a close button and calls onclose when provided (modal-embed)', async () => {
+    mockFetchEntryList.mockResolvedValue(ROWS)
+    const onclose = vi.fn()
+    const { container, findByText } = render(EntryList, { props: { eventId: 3, onclose } })
+    await findByText('KOWALSKI Jan')
+    const closeBtn = container.querySelector('button.el-close') as HTMLButtonElement
+    expect(closeBtn).not.toBeNull()
+    await fireEvent.click(closeBtn)
+    expect(onclose).toHaveBeenCalled()
+  })
+})

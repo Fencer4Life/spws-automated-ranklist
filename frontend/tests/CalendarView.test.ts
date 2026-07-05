@@ -1,10 +1,27 @@
 // Plan tests: 8.38, 8.39, 8.40, 8.41, 8.42, 8.43, 8.44, 8.45, 8.46, 8.47, 8.76, 8.77
 // See doc/archive/m8_implementation_plan.md §T8.5.
 
-import { describe, it, expect, vi } from 'vitest'
-import { render, fireEvent } from '@testing-library/svelte'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, fireEvent, waitFor } from '@testing-library/svelte'
 import CalendarView from '../src/components/CalendarView.svelte'
 import type { CalendarEvent } from '../src/lib/types'
+
+// ADR-079 amend — the SPWS-hosted registration/entry-list links open an
+// in-app RegistrationModal (which fetches via api.ts) instead of navigating.
+vi.mock('../src/lib/api', () => ({
+  fetchEventForRegistration: vi.fn(),
+  matchRegistrationFencer: vi.fn(),
+  createRegistration: vi.fn(),
+  fetchEntryList: vi.fn(),
+}))
+import { fetchEventForRegistration, fetchEntryList } from '../src/lib/api'
+
+const mockFetchEvent = vi.mocked(fetchEventForRegistration)
+const mockFetchEntryList = vi.mocked(fetchEntryList)
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 const makeEvent = (overrides: Partial<CalendarEvent> = {}): CalendarEvent => ({
   id_event: 1,
@@ -500,46 +517,105 @@ describe('CalendarView (T8.5)', () => {
     expect(deadline).not.toBeNull()
   })
 
-  // P2.8 (D3/D7) — bool_use_spws_registration=true + a registrationBase prop
-  // generates form + entry-list links instead of the raw url_registration.
-  it('P2.8: generates form + list links when bool_use_spws_registration is true', () => {
+  // ADR-079 amend (D7) — the form link renders from the stored (absolute)
+  // url_registration and the entry-list link from the stored url_entry_list.
+  // Both are auto-derived by EventManager when the SPWS toggle is on; the
+  // calendar simply renders whatever URLs are stored (self-contained for
+  // cross-origin embeds — no registrationBase prop / deployment attribute).
+  it('ADR-079 amend: renders form + entry-list links from stored url_registration + url_entry_list', () => {
     const futureDate = new Date()
     futureDate.setMonth(futureDate.getMonth() + 2)
     const futureStr = futureDate.toISOString().slice(0, 10)
     const events = [makeEvent({
       id_event: 99, txt_code: 'PPW4-2025-2026', dt_start: futureStr, enum_status: 'SCHEDULED',
-      url_registration: 'https://example.com/ignored-when-spws-on',
+      url_registration: 'https://host/register.html?event=PPW4-2025-2026',
+      url_entry_list: 'https://host/register.html?event=PPW4-2025-2026&view=list',
       dt_registration_deadline: futureStr,
       bool_use_spws_registration: true,
     })]
-    const { container } = render(CalendarView, {
-      props: { events, registrationBase: 'https://spwsranklist.example.org/register.html' },
-    })
+    const { container } = render(CalendarView, { props: { events } })
     const regLink = container.querySelector('.registration-link') as HTMLAnchorElement
     expect(regLink).not.toBeNull()
-    expect(regLink.getAttribute('href')).toBe('https://spwsranklist.example.org/register.html?event=PPW4-2025-2026')
+    expect(regLink.getAttribute('href')).toBe('https://host/register.html?event=PPW4-2025-2026')
     const listLink = container.querySelector('.entry-list-link') as HTMLAnchorElement
     expect(listLink).not.toBeNull()
-    expect(listLink.getAttribute('href')).toBe('https://spwsranklist.example.org/register.html?event=PPW4-2025-2026&view=list')
+    expect(listLink.getAttribute('href')).toBe('https://host/register.html?event=PPW4-2025-2026&view=list')
   })
 
-  // P2.8 — flag off keeps the existing external url_registration link unchanged
-  it('P2.8: keeps the external url_registration link when bool_use_spws_registration is false', () => {
+  // ADR-079 amend — no url_entry_list (external / hand-entered registration) →
+  // the form link still shows from url_registration, but no entry-list link.
+  it('ADR-079 amend: no entry-list link when url_entry_list is absent', () => {
     const futureDate = new Date()
     futureDate.setMonth(futureDate.getMonth() + 2)
     const futureStr = futureDate.toISOString().slice(0, 10)
     const events = [makeEvent({
       id_event: 99, dt_start: futureStr, enum_status: 'SCHEDULED',
       url_registration: 'https://example.com/register',
+      url_entry_list: null,
       dt_registration_deadline: futureStr,
       bool_use_spws_registration: false,
     })]
-    const { container } = render(CalendarView, {
-      props: { events, registrationBase: 'https://spwsranklist.example.org/register.html' },
-    })
+    const { container } = render(CalendarView, { props: { events } })
     const regLink = container.querySelector('.registration-link') as HTMLAnchorElement
     expect(regLink.getAttribute('href')).toBe('https://example.com/register')
     expect(container.querySelector('.entry-list-link')).toBeNull()
+  })
+
+  // ADR-079 amend #2 — clicking the SPWS-hosted registration/entry-list links
+  // opens an in-app modal (identical overlay/close pattern to DrilldownModal)
+  // instead of navigating away; closing it returns to the calendar. The href
+  // is kept (right-click "copy link" / open-in-new-tab still work) — only the
+  // default left-click is intercepted.
+  function spwsEvent(overrides: Partial<CalendarEvent> = {}) {
+    const futureDate = new Date()
+    futureDate.setMonth(futureDate.getMonth() + 2)
+    const futureStr = futureDate.toISOString().slice(0, 10)
+    return makeEvent({
+      id_event: 99, txt_code: 'PPW4-2025-2026', dt_start: futureStr, enum_status: 'SCHEDULED',
+      url_registration: 'https://host/register.html?event=PPW4-2025-2026',
+      url_entry_list: 'https://host/register.html?event=PPW4-2025-2026&view=list',
+      dt_registration_deadline: futureStr,
+      bool_use_spws_registration: true,
+      ...overrides,
+    })
+  }
+
+  it('ADR-079 amend: clicking the SPWS-hosted registration link opens an in-app modal instead of navigating', async () => {
+    mockFetchEvent.mockResolvedValue(null)
+    const { container, findByText } = render(CalendarView, { props: { events: [spwsEvent()] } })
+    const regLink = container.querySelector('.registration-link') as HTMLAnchorElement
+    await fireEvent.click(regLink)
+    await findByText(/Nie znaleziono wydarzenia/)
+    expect(container.querySelector('.modal-overlay')).not.toBeNull()
+    expect(mockFetchEvent).toHaveBeenCalledWith('PPW4-2025-2026')
+  })
+
+  it('ADR-079 amend: clicking the entry-list link opens the modal in list view', async () => {
+    mockFetchEntryList.mockResolvedValue([])
+    const { container } = render(CalendarView, { props: { events: [spwsEvent()] } })
+    const listLink = container.querySelector('.entry-list-link') as HTMLAnchorElement
+    await fireEvent.click(listLink)
+    await waitFor(() => expect(container.querySelector('.el-card')).not.toBeNull())
+    expect(mockFetchEntryList).toHaveBeenCalledWith(99)
+  })
+
+  it('ADR-079 amend: closing the modal returns to the calendar (no navigation)', async () => {
+    mockFetchEvent.mockResolvedValue(null)
+    const { container, findByText } = render(CalendarView, { props: { events: [spwsEvent()] } })
+    await fireEvent.click(container.querySelector('.registration-link') as HTMLAnchorElement)
+    await findByText(/Nie znaleziono wydarzenia/)
+    await fireEvent.click(container.querySelector('.modal-overlay') as HTMLElement)
+    expect(container.querySelector('.modal-overlay')).toBeNull()
+    expect(container.querySelector('.timeline-event')).not.toBeNull()
+  })
+
+  it('ADR-079 amend: an external (non-SPWS) registration link still navigates normally (no modal)', () => {
+    const { container } = render(CalendarView, {
+      props: { events: [spwsEvent({ url_registration: 'https://example.com/register', url_entry_list: null, bool_use_spws_registration: false })] },
+    })
+    const regLink = container.querySelector('.registration-link') as HTMLAnchorElement
+    expect(regLink.getAttribute('href')).toBe('https://example.com/register')
+    expect(mockFetchEvent).not.toHaveBeenCalled()
   })
 
   // 8.24 — Nothing shown when both null
