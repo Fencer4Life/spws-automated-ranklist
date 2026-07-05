@@ -24,6 +24,8 @@ import type {
   CreateSeasonWithSkeletonsResult,
   FencerWithAliases,
   MatchCandidate,
+  CreateRegistrationParams,
+  RegistrationEntry,
 } from './types'
 
 let client: SupabaseClient | null = null
@@ -375,6 +377,59 @@ export async function revertSeasonInit(seasonId: number): Promise<void> {
     p_id_season: seasonId,
   })
   if (error) throw error
+}
+
+// ===========================================================================
+// Phase 2 (ADR-079) — event self-registration public client
+// ===========================================================================
+
+// Exact-tuple identity match — the COMPLETE form-side router (ADR-079 §2 impl
+// note). An exact (surname, first, BY) hit returns the fencer id → Path A
+// (skip email); any miss returns null → the caller routes to the email-verify
+// path. The form does NO fuzzy matching: Paths B/C/D are reconciled at
+// ingestion by the existing Python find_best_match, never from the browser.
+export async function matchRegistrationFencer(
+  surname: string,
+  firstName: string,
+  birthYear: number,
+): Promise<number | null> {
+  const { data, error } = await getClient().rpc('fn_match_registration_fencer', {
+    p_surname: surname,
+    p_first_name: firstName,
+    p_birth_year: birthYear,
+  })
+  if (error) throw error
+  return (data as number | null) ?? null
+}
+
+// The sole public write path (FR-122). anon has no INSERT policy on
+// tbl_registration; this SECURITY DEFINER RPC upserts on (id_event, id_fencer)
+// and returns the new/updated registration id.
+export async function createRegistration(params: CreateRegistrationParams): Promise<number> {
+  const { data, error } = await getClient().rpc('fn_create_registration', {
+    p_event: params.eventId,
+    p_surname: params.surname,
+    p_first_name: params.firstName,
+    p_gender: params.gender,
+    p_birth_year: params.birthYear,
+    p_weapons: params.weapons,
+    p_id_fencer: params.fencerId ?? null,
+    p_email_hash: params.emailHash ?? null,
+  })
+  if (error) throw error
+  return data as number
+}
+
+// Public roster (FR-123) — every declared registration for the event, no
+// payment gate, no birth year / club (the view enforces that projection).
+export async function fetchEntryList(eventId: number): Promise<RegistrationEntry[]> {
+  const { data, error } = await getClient()
+    .from('vw_registration_entry_list')
+    .select('*')
+    .eq('id_event', eventId)
+    .order('id_registration', { ascending: true })
+  if (error) throw error
+  return (data ?? []) as RegistrationEntry[]
 }
 
 export async function fetchOrganizers(): Promise<Organizer[]> {
