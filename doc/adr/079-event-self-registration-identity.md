@@ -62,6 +62,37 @@ Dedup on the anonymous path is enforced by `UNIQUE(id_event, id_fencer)` upsert.
 fencer correcting our BY types a different year → the triple no longer matches →
 auto-routed into the verified path.
 
+#### Implementation note — form-side routing is exact-only; no Python bridge (2026-07-05)
+
+The four-path table above is a **conceptual** identity model. In implementation it
+resolves to a **binary** form-side decision, because the step-2 mockup (the build
+SSOT) deliberately collapses Paths B/C/D into a **single** "we couldn't match you
+exactly — confirm by one-time email link" screen that shows **no** fuzzy candidate
+and explicitly states *"final identity matching happens when the organizer loads
+results."*
+
+Consequently:
+
+- The **public form** performs **only** the exact `(surname, first, BY)` triple
+  lookup — `fn_match_registration_fencer` (SQL RPC, `anon`-callable). Exact hit →
+  Path A (skip email); **any** miss (unknown, near-miss typo, or right-name/wrong-BY)
+  → the email-verify path. It does **no** fuzzy matching. (Pinned by pgTAP 49.22.)
+- The **fuzzy** distinctions among B/C/D (`find_best_match`, RapidFuzz) are an
+  **ingestion-time reconciliation** concern (§3), realised by the **existing**
+  Python matcher that already runs when results are scraped — never invoked
+  synchronously from the browser.
+
+This **closes the "invocation gap"** flagged during Phase 1 (there is no mechanism
+for the public frontend to call Python's `find_best_match`) **by construction**:
+there is nothing the frontend needs to invoke in Python. A synchronous
+Python-from-browser bridge (a hosted Python request/response service, or a SQL
+`pg_trgm` re-implementation of the matcher) was considered and **rejected** — it
+would add always-on infrastructure (violating the serverless, zero-dollar
+architecture) or a second divergent matcher, to serve a UX flow that intentionally
+does not use a form-side fuzzy result. Path A — the only integrity-sensitive,
+no-email fast path — is exact equality, so no fuzzy logic is security-load-bearing
+at the form regardless.
+
 ### 3. BY reconciliation matrix (runs at INGESTION, not the form)
 
 The declared BY is reconciled against the stored BY by the ingestion pipeline. A

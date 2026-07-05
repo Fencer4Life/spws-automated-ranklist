@@ -188,11 +188,16 @@ BEGIN
 END;
 $$;
 
--- 7. fn_match_registration_fencer — exact-tuple match, ADR-079 Path A only
---    (FR-124). Read-only; no SECURITY DEFINER needed since tbl_fencer already
---    has a "Public read fencers" RLS policy (anon can already SELECT it
---    directly). Fuzzy paths B/C/D (find_best_match) are Python-only and NOT
---    reimplemented here — see FR-124's OPEN note on the Phase 2 invocation gap.
+-- 7. fn_match_registration_fencer — the COMPLETE form-side identity router
+--    (FR-124, ADR-079 §2). Read-only; no SECURITY DEFINER needed since
+--    tbl_fencer already has a "Public read fencers" RLS policy (anon can
+--    already SELECT it directly). Exact triple → Path A (skip email); ANY miss
+--    → email-verify path. The form does NO fuzzy matching: ADR-079's Paths
+--    B/C/D are an ingestion-time reconciliation model realised by the existing
+--    Python find_best_match (never called from the browser), so no
+--    Python-from-frontend bridge is needed — the "invocation gap" closes by
+--    construction (resolved 2026-07-05; see ADR-079 §2 implementation note +
+--    pgTAP 49.22).
 CREATE OR REPLACE FUNCTION fn_match_registration_fencer(
   p_surname    TEXT,
   p_first_name TEXT,

@@ -96,6 +96,21 @@ Worked example — EPEE, season 2025-2026, real LOCAL data, first seeds:
 Validated end-to-end on LOCAL: the EPEE mix-all resolves to **119 fencers, 0 NULL
 birth years, FV3 (empty) correctly skipped**.
 
+#### Implementation note — population vs ordering (2026-07-05)
+
+The 119-fencer validation above used the **full season ranking** as the population
+(a pre-registration proof: registration data did not yet exist). In production the
+**population is the event's declared registrations** (`tbl_registration`, every row,
+no payment gate — ADR-079 §4 / user 2026-07-04: *"the correct list of names which
+declared intent to participate"*); the ranking supplies only the **ordering** inside
+each sub-ranking. So a registrant who is matched + ranked seeds in `fn_ranking_ppw`
+rank order; an unranked registrant (a brand-new fencer, or matched-but-never-scored)
+appends after the ranked ones, ordered by registration timestamp (`ts_created`) for
+a deterministic result. The `(N)` marker is derived from the registration's
+**declared** birth year (read-only invariant), not `tbl_fencer`'s. Built as
+`ftl_seed_export.assemble_mixall_subrankings` + `build_event_mixall_files` (pure) and
+`ftl_seed_export_db.FtlSeedExporter` (Supabase glue).
+
 **Reference artefacts — DO NOT LOSE.** The validated, ready-to-import example files
 live in the repo at:
 - `doc/external_files/FTL_SRC/SPWS_ppw_epee_mixall.xml` — with `Categorie="V"`;

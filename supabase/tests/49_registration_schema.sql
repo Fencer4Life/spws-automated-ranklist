@@ -9,7 +9,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(23);
+SELECT plan(24);
 
 -- 49.1 — tbl_registration exists
 SELECT has_table('tbl_registration', '49.1 tbl_registration exists');
@@ -121,6 +121,23 @@ SELECT is(
   fn_match_registration_fencer('KOWALSKI'::TEXT, 'Jan'::TEXT, 1999::SMALLINT),
   NULL,
   '49.19 fn_match_registration_fencer returns NULL when no exact tuple matches'
+);
+
+-- 49.22 — exact-only routing contract (ADR-079 §2, invocation-gap resolution
+-- 2026-07-05): a STRONG-name near-miss (surname typo 'KOWALSK', exact first +
+-- BY) returns NULL from the form-side matcher, exactly like a total miss. This
+-- pins the decision that the public form does NO fuzzy matching: fn_match_
+-- registration_fencer is the COMPLETE form-side router (exact triple → Path A
+-- skip-email; anything else → email-verify). ADR-079's Paths B/C/D are an
+-- INGESTION-time reconciliation model realised by the existing Python
+-- find_best_match — never invoked synchronously from the browser. So there is
+-- nothing for the public frontend to invoke in Python (the "invocation gap"
+-- closes by construction); the step-2 mockup collapses B/C/D into one
+-- email-verify screen that explicitly defers "final matching" to ingestion.
+SELECT is(
+  fn_match_registration_fencer('KOWALSK'::TEXT, 'Jan'::TEXT, 1970::SMALLINT),
+  NULL,
+  '49.22 strong-name near-miss returns NULL — form does no fuzzy match, routes to email (Path B/C/D resolved at ingestion)'
 );
 
 -- 49.20 — UNIQUE(id_event, id_fencer) upsert: re-registering the SAME matched
