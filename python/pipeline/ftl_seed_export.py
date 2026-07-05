@@ -22,23 +22,40 @@ canonical casing rule itself.
 
 from __future__ import annotations
 
+import io
+import re
 import xml.etree.ElementTree as ET
+import zipfile
 from dataclasses import dataclass
+
+from python.pipeline.age_split import birth_year_to_vcat
 
 # Fixed round-robin order for the mix-all pool interleave (ADR-080 Section 2).
 MIXALL_SUBRANKING_ORDER = (
-    "FV0", "FV1", "FV2", "FV3", "FV4",
-    "MV0", "MV1", "MV2", "MV3", "MV4",
+    "FV0",
+    "FV1",
+    "FV2",
+    "FV3",
+    "FV4",
+    "MV0",
+    "MV1",
+    "MV2",
+    "MV3",
+    "MV4",
 )
 
 # Age categories in ascending order, for combined-DE-bracket accumulation
 # (ADR-080 Section 3).
 VCAT_ORDER = ("V0", "V1", "V2", "V3", "V4")
 
+# arr_weapons enum values → FIE Arme code (filename + XML) and Polish name (title).
+WEAPON_FIE_CODE = {"EPEE": "E", "FOIL": "F", "SABRE": "S"}
+WEAPON_PL_NAME = {"EPEE": "Szpada", "FOIL": "Floret", "SABRE": "Szabla"}
+
 
 @dataclass
 class FencerEntry:
-    id_fencer: int
+    id_fencer: int | None
     surname: str
     first_name: str
 
@@ -167,3 +184,164 @@ def build_fie_xml(
 
     body = ET.tostring(root, encoding="unicode")
     return f'<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE BaseCompetitionIndividuelle>\n{body}'
+
+
+# ===========================================================================
+# DB-querying orchestration layer (ADR-080 §2; invocation/population resolved
+# 2026-07-05). PURE functions — the population is the declared registrations,
+# the ordering comes from the season ranking. The thin Supabase glue that
+# actually fetches these lives in ftl_seed_export_db.py so this module stays
+# dependency-free and fully unit-testable.
+# ===========================================================================
+
+
+def registration_subranking_key(gender: str, birth_year: int, season_end_year: int) -> str | None:
+    """Map a registration's DECLARED (gender, birth year) to its mix-all
+    sub-ranking key ("FV0".."MV4"), or None if the declared BY falls outside
+    the veteran range (age < 30).
+
+    The V-cat comes from the DECLARED birth year (ADR-079 read-only invariant —
+    never tbl_fencer's), via the single-source-of-truth age_split.birth_year_to_vcat.
+    """
+    vcat = birth_year_to_vcat(birth_year, season_end_year)
+    if vcat is None:
+        return None
+    return f"{gender}{vcat}"
+
+
+def assemble_mixall_subrankings(
+    registrations: list[dict],
+    weapon: str,
+    rankings: dict[str, list[int]],
+    season_end_year: int,
+) -> dict[str, list[FencerEntry]]:
+    """Group one weapon's declared registrants into the 10 mix-all sub-rankings,
+    ordered as the interleave expects (ADR-080 §2).
+
+    POPULATION: every registration that declared `weapon` (no payment gate).
+    ORDERING within a sub-ranking: matched+ranked registrants first, in the
+    order of the season ranking `rankings[key]` (a list of id_fencer from
+    fn_ranking_ppw); unranked registrants (id_fencer NULL, or matched but absent
+    from the ranking) appended after, by registration timestamp (ts_created).
+
+    `registrations` rows carry: id_fencer, txt_surname, txt_first_name,
+    enum_gender ('M'/'F'), int_birth_year, arr_weapons (list of enum values),
+    ts_created. Names are canonicalised on the way in (ADR-080 §1).
+    """
+    buckets: dict[str, list[dict]] = {}
+    for reg in registrations:
+        if weapon not in (reg.get("arr_weapons") or []):
+            continue
+        key = registration_subranking_key(
+            reg["enum_gender"], reg["int_birth_year"], season_end_year
+        )
+        if key is None:
+            continue
+        buckets.setdefault(key, []).append(reg)
+
+    out: dict[str, list[FencerEntry]] = {}
+    for key, regs in buckets.items():
+        rank_order = rankings.get(key, [])
+
+        def _sort_key(reg: dict, _rank_order: list[int] = rank_order) -> tuple[int, int, str]:
+            idf = reg.get("id_fencer")
+            if idf is not None and idf in _rank_order:
+                return (0, _rank_order.index(idf), "")
+            return (1, 0, reg.get("ts_created") or "")
+
+        ordered = sorted(regs, key=_sort_key)
+        out[key] = [
+            FencerEntry(
+                reg.get("id_fencer"), *to_canonical_name(reg["txt_surname"], reg["txt_first_name"])
+            )
+            for reg in ordered
+        ]
+    return out
+
+
+def mixall_tireurs(
+    seed_order: list[tuple[FencerEntry, str]],
+) -> list[dict]:
+    """Turn an interleave_mixall result into FIE <Tireur> dicts (ADR-080 §1/§2).
+
+    Seed position (1..N) is both the Tireur `ID` and `Classement` (matches the
+    validated reference file, which uses a running id == seed). `Sexe` is the
+    sub-ranking key's F/M prefix; the `(N)` marker is its trailing V-cat digit —
+    both already encoded in the key that interleave_mixall pairs with each entry.
+    """
+    tireurs: list[dict] = []
+    for seed, (entry, key) in enumerate(seed_order, start=1):
+        tireurs.append(
+            {
+                "id": seed,
+                "nom": entry.surname,
+                "prenom": format_prenom_with_marker(entry.first_name, key[-1]),
+                "sexe": key[0],
+                "classement": seed,
+            }
+        )
+    return tireurs
+
+
+def season_pretty(season_code: str) -> str:
+    """'SPWS-2025-2026' → '2025/2026' (the human season label in the FTL title)."""
+    years = re.findall(r"\d{4}", season_code)
+    if len(years) >= 2:
+        return f"{years[-2]}/{years[-1]}"
+    return season_code
+
+
+def mixall_title(weapon: str, season_code: str) -> str:
+    """FTL TitreLong for a weapon's mix-all pool, e.g.
+    'SPWS Szpada ELIMINACJE (mix-all) 2025/2026' (matches the reference file)."""
+    return f"SPWS {WEAPON_PL_NAME[weapon]} ELIMINACJE (mix-all) {season_pretty(season_code)}"
+
+
+def build_event_mixall_files(
+    registrations: list[dict],
+    weapons: list[str],
+    rankings_by_weapon: dict[str, dict[str, list[int]]],
+    season_code: str,
+    event_code_stem: str,
+    season_end_year: int,
+    date_fichier_xml: str = "",
+) -> dict[str, str]:
+    """Build the mix-all seed XML for every weapon that has registrants
+    (ADR-080 §1/§2/§4). Returns {filename: xml_text}. A weapon with zero
+    declared registrants is omitted (no empty file).
+
+    `weapons` are the event's weapon enum values (e.g. ['EPEE','FOIL','SABRE']);
+    `rankings_by_weapon[weapon][subkey]` is the season ranking's id_fencer order
+    for that weapon×gender×category (fn_ranking_ppw), used only for ordering.
+    """
+    files: dict[str, str] = {}
+    for weapon in weapons:
+        weapon_code = WEAPON_FIE_CODE[weapon]
+        sub_rankings = assemble_mixall_subrankings(
+            registrations, weapon, rankings_by_weapon.get(weapon, {}), season_end_year
+        )
+        seed_order = interleave_mixall(sub_rankings)
+        if not seed_order:
+            continue
+        tireurs = mixall_tireurs(seed_order)
+        filename = seed_filename(season_code, event_code_stem, weapon_code, "mixall")
+        root_id = filename[:-4]  # ADR-080 §4: root ID = filename stem
+        files[filename] = build_fie_xml(
+            root_id=root_id,
+            weapon_code=weapon_code,
+            gender_code="M",  # nominal root Sexe; per-Tireur Sexe carries the real gender
+            title=mixall_title(weapon, season_code),
+            tireurs=tireurs,
+            date_fichier_xml=date_fichier_xml,
+        )
+    return files
+
+
+def bundle_seed_zip(files: dict[str, str]) -> bytes:
+    """Bundle {filename: xml_text} into a single .zip (bytes) for delivery to
+    the organizer (ADR-080 §5, Phase 4 send_seed_to_organizer)."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for name, content in files.items():
+            zf.writestr(name, content)
+    return buf.getvalue()
