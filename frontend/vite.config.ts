@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [
     svelte({
       compilerOptions: {
+        customElement: true,
         compatibility: {
           componentApi: 4,
         },
