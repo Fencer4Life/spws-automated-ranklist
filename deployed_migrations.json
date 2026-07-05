@@ -128,8 +128,8 @@
     "schema_fingerprint": "ef885620537a9b1e39801d682b753b5a"
   },
   "prod": {
-    "last_updated": "2026-07-05T11:14:17Z",
-    "last_sha": "b74c9d3dc460001df881897bf89c74709a79086e",
+    "last_updated": "2026-07-05T11:18:26Z",
+    "last_sha": "094b566f2afd836e667f11c63bb08c32b6cc0ca1",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -249,8 +249,10 @@
       "20260627000003_init_season_childless.sql",
       "20260628000001_fn_revert_guard_childless.sql",
       "20260628000002_season_skeleton_promotion.sql",
-      "20260704000001_event_registration_schema.sql"
+      "20260704000001_event_registration_schema.sql",
+      "20260705000001_registration_consent.sql",
+      "20260705000002_fn_update_event_registration_fields.sql"
     ],
-    "schema_fingerprint": "32379627105a69a08c5d9e6e4df49f05"
+    "schema_fingerprint": "ef885620537a9b1e39801d682b753b5a"
   }
 }
