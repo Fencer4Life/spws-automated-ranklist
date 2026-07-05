@@ -24,6 +24,14 @@
       <option value="FOIL">{t('reg_weapon_foil')}</option>
       <option value="SABRE">{t('reg_weapon_sabre')}</option>
     </select>
+    <select name="categoryFilter" bind:value={categoryFilter}>
+      <option value="">{t('reg_filter_category_all')}</option>
+      <option value="V0">V0 (30+)</option>
+      <option value="V1">V1 (40+)</option>
+      <option value="V2">V2 (50+)</option>
+      <option value="V3">V3 (60+)</option>
+      <option value="V4">V4 (70+)</option>
+    </select>
     <select name="genderFilter" bind:value={genderFilter}>
       <option value="">{t('reg_filter_gender_all')}</option>
       <option value="F">{t('reg_filter_women')}</option>
@@ -38,6 +46,7 @@
           <th class="el-lp">{t('reg_col_lp')}</th>
           <th>{t('reg_col_name')}</th>
           <th class="el-narrow">{t('reg_col_gender')}</th>
+          <th class="el-narrow">{t('reg_col_category')}</th>
           <th>{t('reg_col_weapon')}</th>
         </tr>
       </thead>
@@ -47,6 +56,9 @@
             <td>{i + 1}</td>
             <td>{row.txt_surname} {row.txt_first_name}</td>
             <td>{row.enum_gender}</td>
+            <td>
+              {#if row.enum_age_category}<span class="el-cat">{row.enum_age_category}</span>{/if}
+            </td>
             <td>
               {#each row.arr_weapons as w}
                 <span class="el-wpn el-w-{weaponCode(w)}">{weaponCode(w)}</span>
@@ -67,7 +79,7 @@
   import { t } from '../lib/locale.svelte'
   import LangToggle from './LangToggle.svelte'
   import { fetchEntryList } from '../lib/api'
-  import type { RegistrationEntry, WeaponType, GenderType } from '../lib/types'
+  import type { RegistrationEntry, WeaponType, GenderType, AgeCategory } from '../lib/types'
 
   let {
     eventId,
@@ -83,6 +95,7 @@
   let rows = $state<RegistrationEntry[]>([])
   let search = $state('')
   let weaponFilter = $state<WeaponType | ''>('')
+  let categoryFilter = $state<AgeCategory | ''>('')
   let genderFilter = $state<GenderType | ''>('')
 
   $effect(() => {
@@ -96,6 +109,7 @@
     return rows.filter((r) => {
       if (q && !`${r.txt_surname} ${r.txt_first_name}`.toLowerCase().includes(q)) return false
       if (weaponFilter && !r.arr_weapons.includes(weaponFilter)) return false
+      if (categoryFilter && r.enum_age_category !== categoryFilter) return false
       if (genderFilter && r.enum_gender !== genderFilter) return false
       return true
     })
@@ -217,6 +231,13 @@
   }
   .el-lp, .el-narrow {
     width: 40px;
+  }
+  .el-cat {
+    font-size: 0.78em;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: rgba(0, 212, 255, 0.12);
+    color: #7fd8ff;
   }
   .el-wpn {
     display: inline-block;

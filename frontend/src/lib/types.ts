@@ -413,7 +413,9 @@ export interface RegistrationEventInfo {
 }
 
 // A row of the public roster view (vw_registration_entry_list) — deliberately
-// excludes birth year and club (GDPR minimisation, ADR-078).
+// excludes birth year and club (GDPR minimisation, ADR-078). enum_age_category
+// is DERIVED server-side via fn_age_category; null when the fencer is <30
+// (not a veteran) since fn_age_category has no under-30 band.
 export interface RegistrationEntry {
   id_registration: number
   id_event: number
@@ -421,6 +423,7 @@ export interface RegistrationEntry {
   txt_first_name: string
   enum_gender: GenderType
   arr_weapons: WeaponType[]
+  enum_age_category: AgeCategory | null
 }
 
 export interface MatchCandidate {

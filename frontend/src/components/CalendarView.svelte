@@ -116,6 +116,12 @@
           {#if event.num_entry_fee != null}
             <div class="timeline-fee">{t('entry_fee')}: {event.num_entry_fee} {event.txt_entry_fee_currency ?? 'PLN'}</div>
           {/if}
+          {#if event.num_entry_fee_2w != null}
+            <div class="timeline-fee">{t('event_entry_fee_2w_label')}: {event.num_entry_fee_2w} {event.txt_entry_fee_currency ?? 'PLN'}</div>
+          {/if}
+          {#if event.num_entry_fee_3w != null}
+            <div class="timeline-fee">{t('event_entry_fee_3w_label')}: {event.num_entry_fee_3w} {event.txt_entry_fee_currency ?? 'PLN'}</div>
+          {/if}
         </div>
       </div>
     {/each}

@@ -730,4 +730,26 @@ describe('CalendarView (T8.5)', () => {
     expect(seasonSelect).not.toBeNull()
     expect(seasonSelect!.textContent).toContain('SPWS-2025-2026')
   })
+
+  // User report (2026-07-05) — the calendar only ever showed the base
+  // num_entry_fee line, even when an event has num_entry_fee_2w/3w filled in
+  // (both already fetched/typed, just never rendered).
+  it('renders a fee line for every filled fee tier (1/2/3 weapons)', () => {
+    const events = [makeEvent({
+      id_event: 99, num_entry_fee: 250, num_entry_fee_2w: 350, num_entry_fee_3w: 400,
+      txt_entry_fee_currency: 'PLN',
+    })]
+    const { container } = render(CalendarView, { props: { events } })
+    const feeLines = container.querySelectorAll('.timeline-fee')
+    expect(feeLines.length).toBe(3)
+    expect(feeLines[0].textContent).toContain('250')
+    expect(feeLines[1].textContent).toContain('350')
+    expect(feeLines[2].textContent).toContain('400')
+  })
+
+  it('renders exactly one fee line when only the base fee is set (no regression)', () => {
+    const events = [makeEvent({ id_event: 3, num_entry_fee: 50, txt_entry_fee_currency: 'EUR' })]
+    const { container } = render(CalendarView, { props: { events } })
+    expect(container.querySelectorAll('.timeline-fee').length).toBe(1)
+  })
 })

@@ -1538,3 +1538,47 @@ already verified working on CERT/PROD before this fix).
 
 **Verified (LOCAL):** vitest 463/463 unchanged, `svelte-check` 0 errors, main `vite build` still
 emits only `dist/index.html` (no change to what `release.yml` builds/merges). ADR-079 gains §7(d).
+
+---
+
+### 2026-07-05 — FR-123 entry-list age category + calendar multi-weapon fee display
+
+Two more gaps reported directly by the user while testing the registration work above.
+
+**1. Entry-list age category (mockup parity).** `doc/mockups/registration_entry_list.html` shows
+a "Kat." column (a per-row V0–V4 badge) and a "Kategoria" filter dropdown, but `EntryList.svelte`
+never had either — `vw_registration_entry_list` (migration `20260704000001`) only ever selected
+surname/first_name/gender/weapons. This was a previously-documented deferral, not a new request;
+RTM FR-123 already (incorrectly) claimed the view "matches the public roster mockup."
+
+Fix: `vw_registration_entry_list` (migration `20260705000005`) now computes `enum_age_category`
+via the existing `fn_age_category(int_birth_year, season_end_year)` (joining `tbl_event`/
+`tbl_season` for the season end year, the same pattern `vw_vcat_violation` uses) —
+`int_birth_year` itself stays excluded from the SELECT list (GDPR minimisation, ADR-078
+unchanged, pinned by pgTAP 49.15/49.27). `EntryList.svelte` gained a 5th filter (category
+dropdown, same V0 (30+)…V4 (70+) option convention as `FilterBar.svelte`) and a "Kat." column
+rendering a pill badge (`.el-cat`, matching the mockup's `.cat` class). The two i18n keys this
+needed (`reg_filter_category_all`, `reg_col_category`) already existed unused in both locale
+files — no new i18n keys added. pgTAP 654→657 (49.25–49.27: column type, computed-value
+correctness against the existing NOWAK/1975 fixture in a season ending 2099 → V4, and an explicit
+int_birth_year-still-excluded regression guard). vitest 463→466 (badge render, category filter,
+filter option labels).
+
+**2. Calendar entries never showed the 2-weapon/3-weapon fee tiers.** `tbl_event` already has
+`num_entry_fee_2w`/`num_entry_fee_3w` (edited via `EventManager.svelte`, used by
+`RegistrationForm.svelte` to compute a fencer's own fee) and `CalendarView.svelte` already
+fetched both columns — but its render only ever printed the base `num_entry_fee`. PPW1-2026-2027
+has all three tiers filled (250/350/400 PLN) and only 250 ever showed. Pure display-only fix, no
+DB/API change: `CalendarView.svelte` now renders an additional `.timeline-fee` line for each
+filled tier, reusing the existing `event_entry_fee_2w_label`/`event_entry_fee_3w_label` i18n keys
+(already used by `EventManager.svelte`'s edit form, never before by the calendar). vitest 466→468
+(all three tiers render; the single-fee case still renders exactly one line, no regression).
+
+**Verified (LOCAL):** `supabase test db` 657/657 (all green — the reset that applied migration
+`20260705000005` also happened to clear the previously-known 3 `03_views_api.sql` stale-seed
+failures, since `supabase db reset` regenerates the seed cleanly). `svelte-check` 0 errors.
+`npm test` 468/468. `postgrestools check` on the new migration + the modified pgTAP file — clean
+aside from the pre-existing pgTAP polymorphic-function static-analysis false positives (documented
+baseline, not a real issue). No ADR touch for either item — both are additive (a DB view column +
+a frontend display line) closing already-documented, already-approved-scope gaps, not new
+architectural tradeoffs.

@@ -9,7 +9,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(26);
+SELECT plan(29);
 
 -- 49.1 — tbl_registration exists
 SELECT has_table('tbl_registration', '49.1 tbl_registration exists');
@@ -86,6 +86,29 @@ SELECT hasnt_column('vw_registration_entry_list', 'int_birth_year',
                     '49.15 vw_registration_entry_list excludes int_birth_year');
 SELECT hasnt_column('vw_registration_entry_list', 'txt_club',
                     '49.16 vw_registration_entry_list excludes txt_club');
+
+-- 49.25 — public entry-list view now exposes computed age category (FR-123
+-- mockup parity: doc/mockups/registration_entry_list.html shows a "Kat."
+-- column + filter; the view never carried it before). int_birth_year itself
+-- stays excluded (49.15/49.27) — only the DERIVED category is exposed.
+SELECT col_type_is('vw_registration_entry_list', 'enum_age_category', 'enum_age_category',
+                    '49.25 vw_registration_entry_list.enum_age_category is enum_age_category');
+
+-- 49.26 — computed value is correct for the 49.14 fixture: NOWAK/Anna born
+-- 1975, season REG49 ends 2099-06-30 (end year 2099) => age 124 => V4
+-- (fn_age_category has no upper bound on the V4 band).
+SELECT is(
+  (SELECT enum_age_category::TEXT FROM vw_registration_entry_list
+   WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'REG49EVT')
+     AND txt_surname = 'NOWAK'),
+  'V4',
+  '49.26 vw_registration_entry_list computes V4 for NOWAK/1975 in season ending 2099'
+);
+
+-- 49.27 — regression guard: adding enum_age_category must not reopen the
+-- int_birth_year GDPR exclusion under a different name/alias.
+SELECT hasnt_column('vw_registration_entry_list', 'int_birth_year',
+                    '49.27 vw_registration_entry_list still excludes int_birth_year after adding age category');
 
 -- 49.17 — anon can read the entry-list view (view owner bypasses the table's
 -- restrictive RLS, matching the standard vw_* pattern already used repo-wide)
