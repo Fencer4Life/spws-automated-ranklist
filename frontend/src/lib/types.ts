@@ -357,6 +357,31 @@ export interface UpdateEventParams {
 
 export type MatchStatus = 'PENDING' | 'AUTO_MATCHED' | 'UNMATCHED' | 'APPROVED' | 'NEW_FENCER' | 'DISMISSED'
 
+// Phase 2 (ADR-079) — event self-registration.
+export interface CreateRegistrationParams {
+  eventId: number
+  surname: string
+  firstName: string
+  gender: GenderType
+  birthYear: number
+  weapons: WeaponType[]
+  // Optional: an exact-tuple match (Path A) links the fencer; email hash is the
+  // salted abuse-log token for the verified path. Both default null.
+  fencerId?: number | null
+  emailHash?: string | null
+}
+
+// A row of the public roster view (vw_registration_entry_list) — deliberately
+// excludes birth year and club (GDPR minimisation, ADR-078).
+export interface RegistrationEntry {
+  id_registration: number
+  id_event: number
+  txt_surname: string
+  txt_first_name: string
+  enum_gender: GenderType
+  arr_weapons: WeaponType[]
+}
+
 export interface MatchCandidate {
   id_match: number
   id_result: number
