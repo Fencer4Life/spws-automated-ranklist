@@ -1,6 +1,6 @@
 # ADR-079: Event Self-Registration & Identity Resolution
 
-**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (email delivery) not started, blocked on Resend/eu.org)
+**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (email delivery) not started, blocked on Resend/eu.org). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation.
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
 
@@ -149,6 +149,76 @@ Public Svelte route + custom element `<spws-registration event="…">` (mirrors
 PL/EN. Mockups: `doc/mockups/registration_step{1,2,3}_*.html`,
 `registration_rodo_consent.html`, `registration_entry_list.html`.
 
+### 7. Amendment (2026-07-05) — registration URL auto-fill + in-app modal presentation
+
+Two follow-on gaps surfaced once §6's UI was live: the calendar never actually
+rendered a registration link (nothing fed it a base URL), and the flow that
+was reached always navigated the fencer away from the calendar. Both are fixed
+here; neither changes §1–§5 (read-only invariant, Model B, BY matrix,
+impersonation defence, schema are all unchanged).
+
+**a) Self-contained URLs, admin-triggered (a deliberate, scoped exception to
+[[feedback_urls_admin_managed]]).** `CalendarView.svelte` gated the SPWS links
+on `bool_use_spws_registration && registrationBase !== ''`, but no entry point
+(`App.svelte`, `index.ce.html`) ever supplied `registrationBase` — so the
+generated link never rendered, and PPW1-2026-2027 (flag on, no
+`url_registration`) showed nothing. Rather than thread a deployment-time
+`registration-base` attribute through every embed (LOCAL, GH Pages, a future
+WordPress iframe), **`url_registration` and `url_entry_list` are computed
+client-side and persisted** the moment the admin ticks
+`bool_use_spws_registration` in `EventManager.svelte`:
+`new URL('register.html', window.location.href).href` + `?event=<txt_code>`
+(+`&view=list`). Unticking clears both. This makes a calendar embedded on a
+foreign origin self-sufficient — the stored URL, not the embedding page,
+determines where registration lives. `fn_update_event` gains
+`p_url_entry_list TEXT` (migration `20260705000004`, DIRECT assignment — value
+sets, `NULL` clears — matching how `p_registration` already treats
+`url_registration`, **not** the "NULL = unchanged" convention the function's
+other trailing params use, since the two registration URLs are always sent
+together by the form). `CalendarView` now renders both links straight from the
+stored columns; the old `registrationBase`/`useSpwsReg` prop plumbing is
+removed entirely (dead once the URLs are self-contained).
+
+**b) In-app modal instead of navigation.** Once the links worked, clicking one
+still took the fencer off the calendar to the standalone `register.html` page
+— jarring, and it lost the calendar's context. `RegistrationForm.svelte` and
+`EntryList.svelte` gain optional `onclose`/`onviewlist` callback props
+(undefined on the standalone page — nothing to close to there); a new
+`RegistrationModal.svelte` wraps them in the same backdrop-click-to-close
+overlay pattern already used by `DrilldownModal`, full-bleed on ≤600px
+viewports. `CalendarView` opens this modal on left-click for
+`bool_use_spws_registration=true` events (`e.preventDefault()`); the `href` is
+left on the anchor unchanged, so right-click "copy link" / open-in-new-tab
+still resolve to the real standalone URL. Links to a plain hand-entered
+`url_registration` (flag off) are untouched — plain `<a>` navigation, no modal,
+by construction (only SPWS-hosted events get an `onclick` handler at all).
+
+**c) `register.html` stays a CE-bundle artefact (a correction, not a
+sequel).** The reachable-fix for (a)+(b) first tried moving `register.html`
+into the **main** Vite build (`vite.config.ts`) so a single `dist/` covered
+everything `release.yml` deploys. That produced completely unstyled
+("bare-HTML") `<spws-registration>`/`<spws-entry-list>` output: Svelte only
+inlines a nested (non-custom-element) child component's `<style>` into a
+shadow root when the **whole** compile graph runs under
+`customElement: true`; under the main build's plain config those styles land
+in the document `<head>` instead, invisible inside the CE's shadow DOM. Fix:
+`register.html` reverts to being an input of `vite.config.ce.ts` (as it always
+was) alongside `index.ce.html`, and `release.yml` gains a second build step —
+`vite build --config vite.config.ce.ts` — whose `dist-ce/register.html` +
+`dist-ce/assets/` are copied into the already-built `dist/` so Pages still
+ships one merged output (closing the original "never deployed" gap without
+re-splitting the artefact). Credential `sed` now targets `register.html`
+directly (shared source, injected once, read by both build configs).
+`register.html` also gained an inline page-shell `<style>` (dark background +
+padding matching `doc/mockups/registration_*.html`) — without it the
+CE-shadow-scoped card floated on the surrounding page's default white
+background.
+
+pgTAP 652→654 (8.24 `fn_update_event` URL auto-fill + prior 12.14 EVF
+null-date fix, same day); vitest 449→463 (`RegistrationModal.test.ts` new,
+`CalendarView`/`RegistrationForm`/`EntryList`/`EventManager` tests extended);
+`svelte-check` 0 errors throughout.
+
 ## Consequences
 
 - No new form-side write path to `tbl_fencer`; reconciliation reuses existing
@@ -157,6 +227,10 @@ PL/EN. Mockups: `doc/mockups/registration_step{1,2,3}_*.html`,
   on non-exact match, never a recoverable account.
 - Birth year exposed in the ranking drilldown remains lawful (ADR-078 §3, Art. 13
   transparency + legitimate interest — purpose: category verification).
+- (§7) `url_registration`/`url_entry_list` are the one admin-managed-URL
+  exception in the codebase: auto-derived, not hand-typed, whenever
+  `bool_use_spws_registration` is on. Every other event URL keeps the
+  hand-entered convention.
 
 ## References
 

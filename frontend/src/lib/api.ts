@@ -513,6 +513,10 @@ export async function updateEvent(id: number, params: UpdateEventParams): Promis
     p_use_spws_registration: params.useSpwsRegistration ?? null,
     p_entry_fee_2w: params.entryFee2w ?? null,
     p_entry_fee_3w: params.entryFee3w ?? null,
+    // ADR-079 amend — entry-list URL. `|| null` collapses '' → NULL (untick /
+    // no SPWS registration) so the column is cleared, not stored as an empty
+    // string that CalendarView would render as a link with an empty href.
+    p_url_entry_list: params.urlEntryList || null,
   })
   if (error) throw error
 }

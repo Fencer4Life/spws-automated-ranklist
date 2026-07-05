@@ -209,4 +209,42 @@ describe('RegistrationForm — RODO gate + payment (P2.5/P2.6)', () => {
     const link = container.querySelector('a.reg-entry-list-link') as HTMLAnchorElement
     expect(link.getAttribute('href')).toBe('?event=PPW4-2025-2026&view=list')
   })
+
+  // Modal-embed (calendar in-app modal) — the payment screen's entry-list
+  // affordance becomes a button calling onviewlist instead of navigating,
+  // when the form is hosted inside RegistrationModal rather than the
+  // standalone register.html page.
+  it('the entry-list affordance calls onviewlist instead of navigating when provided', async () => {
+    const onviewlist = vi.fn()
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026', onviewlist } })
+    await toRodo(container, findByText)
+    await fireEvent.click(container.querySelector('input[type="checkbox"].reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await findByText('PPW4-2025-2026 KOWALSKI JAN')
+    expect(container.querySelector('a.reg-entry-list-link')).toBeNull()
+    const btn = container.querySelector('button.reg-entry-list-link') as HTMLButtonElement
+    expect(btn).not.toBeNull()
+    await fireEvent.click(btn)
+    expect(onviewlist).toHaveBeenCalled()
+  })
+})
+
+describe('RegistrationForm — modal-embed close affordance', () => {
+  it('renders no close button by default (standalone page has nowhere to close to)', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    expect(container.querySelector('button.reg-close')).toBeNull()
+  })
+
+  it('renders a close button and calls onclose when provided (modal-embed)', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    const onclose = vi.fn()
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026', onclose } })
+    await findByText('IV Puchar Polski Weteranów')
+    const closeBtn = container.querySelector('button.reg-close') as HTMLButtonElement
+    expect(closeBtn).not.toBeNull()
+    await fireEvent.click(closeBtn)
+    expect(onclose).toHaveBeenCalled()
+  })
 })

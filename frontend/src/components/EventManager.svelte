@@ -83,7 +83,7 @@
               </div>
               <label>{t('event_invitation_label')} <input data-field="form-invitation" type="text" bind:value={draftInvitation} /></label>
               <label>{t('event_registration_deadline_label')} <input data-field="form-registration-deadline" type="date" bind:value={draftRegistrationDeadline} /></label>
-              <label>{t('event_registration_label')} <input data-field="form-registration" type="text" bind:value={draftRegistration} /></label>
+              <label>{t('event_registration_label')} <input data-field="form-registration" type="text" bind:value={draftRegistration} readonly={draftUseSpwsRegistration} /></label>
               <label>{t('event_entry_fee_label')}
                 <div class="fee-row">
                   <input data-field="form-entry-fee" type="number" bind:value={draftEntryFee} />
@@ -97,7 +97,9 @@
               <div class="spws-registration-section" data-field="spws-registration-section">
                 <div class="spws-registration-title">{t('event_spws_registration_section_title')}</div>
                 <label class="toggle-label">
-                  <input data-field="form-use-spws-registration" type="checkbox" bind:checked={draftUseSpwsRegistration} />
+                  <input data-field="form-use-spws-registration" type="checkbox"
+                    checked={draftUseSpwsRegistration}
+                    onchange={(e) => { draftUseSpwsRegistration = e.currentTarget.checked; onToggleSpwsRegistration() }} />
                   {t('event_use_spws_registration_label')}
                 </label>
                 <label>{t('event_entry_fee_2w_label')}
@@ -105,6 +107,11 @@
                 </label>
                 <label>{t('event_entry_fee_3w_label')}
                   <input data-field="form-entry-fee-3w" type="number" bind:value={draftEntryFee3w} />
+                </label>
+                <!-- ADR-079 amend — entry-list URL, derived (read-only) from the
+                     toggle; shown so the admin can copy the shareable link. -->
+                <label>{t('event_entry_list_url_label')}
+                  <input data-field="form-entry-list-url" type="text" bind:value={draftUrlEntryList} readonly />
                 </label>
               </div>
               <label>{t('event_organizer_label')}
@@ -622,6 +629,28 @@
   let draftUseSpwsRegistration = $state(false)
   let draftEntryFee2w: number | null = $state(null)
   let draftEntryFee3w: number | null = $state(null)
+  // ADR-079 amend — entry-list URL, derived alongside draftRegistration when the
+  // SPWS-registration toggle is on (see onToggleSpwsRegistration).
+  let draftUrlEntryList = $state('')
+
+  // ADR-079 amend — ticking the toggle derives self-contained absolute
+  // register.html URLs (form + entry list) from the admin app's own origin +
+  // the event code, so a calendar embedded cross-origin (e.g. WordPress) is
+  // self-sufficient; unticking clears both. Deliberate exception to the
+  // "URLs are always hand-entered" rule. Called on the checkbox's `onchange`
+  // (user action only) — NOT a reactive $effect, which would clobber a
+  // toggle-OFF event's hand-entered url_registration when the form opens.
+  function onToggleSpwsRegistration() {
+    if (draftUseSpwsRegistration) {
+      const base = new URL('register.html', window.location.href).href
+      const q = `?event=${encodeURIComponent(draftCode)}`
+      draftRegistration = `${base}${q}`
+      draftUrlEntryList = `${base}${q}&view=list`
+    } else {
+      draftRegistration = ''
+      draftUrlEntryList = ''
+    }
+  }
   let draftUrlEvent = $state('')
   let draftUrlEvent2 = $state('')
   let draftUrlEvent3 = $state('')
@@ -820,6 +849,7 @@
     draftVenue = ''
     draftInvitation = ''
     draftRegistration = ''
+    draftUrlEntryList = ''
     draftRegistrationDeadline = ''
     draftEntryFee = null
     draftCurrency = 'PLN'
@@ -849,6 +879,7 @@
     draftVenue = event.txt_venue_address ?? ''
     draftInvitation = event.url_invitation ?? ''
     draftRegistration = event.url_registration ?? ''
+    draftUrlEntryList = event.url_entry_list ?? ''
     draftRegistrationDeadline = event.dt_registration_deadline ?? ''
     draftEntryFee = event.num_entry_fee
     draftCurrency = event.txt_entry_fee_currency ?? 'PLN'
@@ -911,6 +942,9 @@
       useSpwsRegistration: draftUseSpwsRegistration,
       entryFee2w: draftEntryFee2w ?? undefined,
       entryFee3w: draftEntryFee3w ?? undefined,
+      // ADR-079 amend — entry-list URL, always sent with the form (like
+      // `registration`); '' when the toggle is off so the RPC clears it.
+      urlEntryList: draftUrlEntryList || undefined,
       organizerId: draftOrganizerId || undefined,
       weapons: [...draftWeapons],
       urlEvent2: compact[1],

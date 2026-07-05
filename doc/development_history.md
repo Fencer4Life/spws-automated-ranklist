@@ -1426,3 +1426,82 @@ new FR-130 added; spec §5.2 flipped from "(planned)" to "Phases 1–2 done, Pha
 Phases 4–5 not started (blocked on Resend/eu.org email infra)". Phase 3 (FTL seed export, done
 2026-07-04) is unaffected by this build; Phases 4 (organizer-email delivery) and 5 (Telegram
 `send <code> participants`) remain future work.
+
+---
+
+### 2026-07-05 — ADR-079 amend: SPWS-registration URL auto-fill (calendar link fix)
+
+**Reported:** the active-season PPW1-2026-2027 event showed a registration deadline + fee on the
+calendar but **no clickable registration link**, despite `bool_use_spws_registration=TRUE`. Root
+cause: `CalendarView` gated the generated links on a `registrationBase` prop that **neither** entry
+point (internal app `App.svelte` / CE `index.ce.html`) ever supplied → `useSpwsReg` always false;
+and the event's `url_registration` was empty so the fallback link was also skipped. P2.8's link
+*rendering* shipped; the *wiring that feeds it* did not.
+
+**Decision (user):** store self-contained ABSOLUTE `register.html` URLs in the DB rather than thread
+a deployment attribute, so a calendar embedded cross-origin (e.g. WordPress) is self-sufficient —
+a deliberate exception to the "URLs are always hand-entered" rule (see memory
+`feedback_urls_admin_managed`). Ticking `bool_use_spws_registration` on the EventManager form
+auto-fills **both** `url_registration` (`?event=<code>`) and `url_entry_list` (`&view=list`) from
+`new URL('register.html', window.location.href).href` + the event `txt_code`; untick clears both.
+The fields render read-only while the toggle is on.
+
+**Changes:** migration `20260705000004_fn_update_event_url_entry_list.sql` (adds `p_url_entry_list`,
+direct-assign like `url_registration`); `api.ts updateEvent` passes `p_url_entry_list`
+(`urlEntryList` on `UpdateEventParams`); `EventManager.svelte` toggle handler + read-only URL fields
++ `event_entry_list_url_label` i18n (PL/EN); `CalendarView.svelte` now renders the form link from
+`url_registration` and a new entry-list link from `url_entry_list`, and the dead
+`registrationBase`/`useSpwsReg`/`spwsFormLink`/`spwsListLink` plumbing + the `registration-base` CE
+attr were removed. **`register.html` folded into the MAIN vite build** (`vite.config.ts` input; was
+CE-only in `dist-ce`, which `release.yml` never deployed) + release.yml sed-injects its cloud creds.
+
+**Verified (LOCAL):** vitest 448→449, `svelte-check` 0 errors, `ruff` 0, pgTAP 653→654 (8.24; the
+3 `03_views_api` ranking-count failures are the known stale-seed harness drift, unrelated); built
+`dist/register.html` works under `vite preview`; and the calendar E2E — PPW1-2026-2027 now shows
+**Rejestracja →** + **Lista zgłoszonych →** links resolving to the working register.html flow.
+EN/PL toggle intact. RTM FR-125 (registration link surfacing) note; spec Appendix D total bumped.
+
+**Correction (see next entry):** the "`register.html` folded into the MAIN vite build" decision
+above was reverted the same day — it broke shadow-DOM CSS. See below.
+
+---
+
+### 2026-07-05 — ADR-079 §7 amend: in-app registration modal + register.html build correction
+
+Continuation of the same-day fix above (plan `~/.claude/plans/typed-weaving-crab.md`, tasks
+M1-M7): the calendar links now worked, but clicking one still **navigated away** from the
+calendar to the standalone `register.html` page.
+
+**Changes:** `RegistrationForm.svelte`/`EntryList.svelte` gain optional `onclose`/`onviewlist`
+props (undefined on the standalone page — nothing to close to there; renders a `×` close button
+and routes the entry-list link through a callback instead of an `<a href>` when provided). New
+`RegistrationModal.svelte` — a backdrop-overlay wrapper matching the existing `DrilldownModal`
+interaction pattern (backdrop click / `onclose` closes; full-bleed on ≤600px). `CalendarView`
+intercepts left-click on the SPWS-hosted registration/entry-list links (`preventDefault` +
+open the modal) **only when** `bool_use_spws_registration` is true; the `href` is left in place
+so right-click "copy link" / open-in-new-tab still resolve correctly, and a hand-entered external
+`url_registration` (flag off) is untouched — plain navigation, no `onclick` at all.
+
+**Build correction:** the earlier decision to move `register.html` into the **main** Vite build
+is reverted. Svelte only inlines a nested (non-custom-element) child component's `<style>` into a
+shadow root when the **whole** compile graph runs with `customElement: true` — under the main
+build's plain config, `RegistrationForm`/`EntryList` styles land in the document `<head>` instead,
+invisible inside `<spws-registration>`'s shadow DOM, so the page rendered completely unstyled.
+`register.html` reverts to a `vite.config.ce.ts` input (as it always was); `release.yml` instead
+gains a second build step (`vite build --config vite.config.ce.ts`) whose `dist-ce/register.html`
++ `dist-ce/assets/` are copied into the already-built `dist/`, so Pages still ships one merged
+output — the original "never deployed" gap stays closed without re-splitting the artefact.
+`register.html` also gained an inline page-shell `<style>` (dark background/padding matching
+`doc/mockups/registration_*.html`) — without it the shadow-scoped card floated on a bare white page.
+
+**Verified (LOCAL):** vitest 449→463 (`RegistrationModal.test.ts` new, 5 tests; `CalendarView`/
+`RegistrationForm`/`EntryList`/`EventManager` tests extended), `svelte-check` 0 errors, pgTAP 654
+unchanged (no new migration this round; full `supabase test db` green modulo the pre-existing 3
+`03_views_api.sql` failures, confirmed present on `main` before this branch too). ADR-079 gains a
+new §7 "Amendment (2026-07-05)" documenting both the URL auto-fill and this modal/build
+correction in one place.
+
+**OPEN:** ADR-079 §7 awaiting user sign-off before commit; CERT/PROD reached via the next
+`release.yml` run (register.html now ships in the merged build); existing PROD events with the
+flag on but empty URLs need an admin re-save (toggle off/on) to populate
+`url_registration`/`url_entry_list`.

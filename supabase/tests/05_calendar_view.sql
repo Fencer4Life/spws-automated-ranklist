@@ -6,7 +6,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(13);
+SELECT plan(14);
 
 -- ===== SETUP: Create test data for calendar view =====
 DO $setup$
@@ -296,6 +296,72 @@ BEGIN
 END;
 $t823$;
 SELECT pass('8.23: fn_update_event writes bool_use_spws_registration + fee tiers (NULL = unchanged)');
+
+-- 8.24 — SPWS-registration URL auto-fill (ADR-079 amend): when the toggle is on,
+-- the EventManager derives absolute register.html URLs and persists BOTH
+-- url_registration (form) and url_entry_list (entry list). fn_update_event gains
+-- p_url_entry_list, written by direct assignment exactly like url_registration
+-- (p_registration) — a passed value sets it, NULL clears it.
+DO $t824$
+DECLARE
+  v_season INT;
+  v_org    INT;
+  v_eid    INT;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025';
+  SELECT id_organizer INTO v_org FROM tbl_organizer LIMIT 1;
+
+  v_eid := fn_create_event(
+    'CAL-REGURL-TEST', 'Registration URL Autofill Test', v_season, v_org,
+    'Gdańsk', '2025-05-01'::DATE, '2025-05-02'::DATE, NULL,
+    'POL', NULL, NULL, NULL::NUMERIC, NULL, NULL::enum_weapon_type[],
+    NULL, NULL::DATE
+  );
+
+  -- Toggle on → both URLs written (form via p_registration, list via p_url_entry_list).
+  PERFORM fn_update_event(
+    v_eid, 'Registration URL Autofill Test', 'Gdańsk', '2025-05-01'::DATE, '2025-05-02'::DATE,
+    NULL, 'POL', NULL, NULL, NULL::NUMERIC, NULL, NULL, NULL::enum_weapon_type[],
+    'https://host/register.html?event=CAL-REGURL-TEST',       -- p_registration (form URL)
+    NULL::DATE, NULL, NULL, NULL, NULL, NULL, NULL,
+    TRUE, NULL, NULL,
+    'https://host/register.html?event=CAL-REGURL-TEST&view=list'  -- p_url_entry_list
+  );
+
+  IF NOT (SELECT url_registration = 'https://host/register.html?event=CAL-REGURL-TEST'
+            AND url_entry_list = 'https://host/register.html?event=CAL-REGURL-TEST&view=list'
+          FROM tbl_event WHERE id_event = v_eid) THEN
+    RAISE EXCEPTION 'fn_update_event did not persist url_registration + url_entry_list';
+  END IF;
+
+  -- Toggle off → NULL clears url_entry_list (direct assignment, like url_registration).
+  PERFORM fn_update_event(
+    v_eid, 'Registration URL Autofill Test', 'Gdańsk', '2025-05-01'::DATE, '2025-05-02'::DATE,
+    NULL, 'POL', NULL, NULL, NULL::NUMERIC, NULL, NULL, NULL::enum_weapon_type[],
+    NULL, NULL::DATE, NULL, NULL, NULL, NULL, NULL, NULL,
+    FALSE, NULL, NULL,
+    NULL   -- p_url_entry_list cleared
+  );
+
+  IF (SELECT url_entry_list FROM tbl_event WHERE id_event = v_eid) IS NOT NULL THEN
+    RAISE EXCEPTION 'NULL p_url_entry_list must clear url_entry_list';
+  END IF;
+
+  -- vw_calendar exposes url_entry_list for the calendar round-trip.
+  PERFORM fn_update_event(
+    v_eid, 'Registration URL Autofill Test', 'Gdańsk', '2025-05-01'::DATE, '2025-05-02'::DATE,
+    NULL, 'POL', NULL, NULL, NULL::NUMERIC, NULL, NULL, NULL::enum_weapon_type[],
+    NULL, NULL::DATE, NULL, NULL, NULL, NULL, NULL, NULL,
+    TRUE, NULL, NULL,
+    'https://host/register.html?event=CAL-REGURL-TEST&view=list'
+  );
+  IF NOT (SELECT url_entry_list = 'https://host/register.html?event=CAL-REGURL-TEST&view=list'
+          FROM vw_calendar WHERE txt_code = 'CAL-REGURL-TEST') THEN
+    RAISE EXCEPTION 'vw_calendar does not return url_entry_list';
+  END IF;
+END;
+$t824$;
+SELECT pass('8.24: fn_update_event persists url_entry_list (set + clear); vw_calendar exposes it');
 
 SELECT * FROM finish();
 ROLLBACK;

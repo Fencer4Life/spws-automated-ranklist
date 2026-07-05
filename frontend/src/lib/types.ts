@@ -366,6 +366,10 @@ export interface UpdateEventParams {
   useSpwsRegistration?: boolean
   entryFee2w?: number
   entryFee3w?: number
+  // ADR-079 amend — entry-list URL, auto-derived alongside `registration`
+  // (url_registration) when the SPWS-registration toggle is on. Direct-assign
+  // in fn_update_event (value sets, null clears) — always sent with the form.
+  urlEntryList?: string | null
 }
 
 export type MatchStatus = 'PENDING' | 'AUTO_MATCHED' | 'UNMATCHED' | 'APPROVED' | 'NEW_FENCER' | 'DISMISSED'

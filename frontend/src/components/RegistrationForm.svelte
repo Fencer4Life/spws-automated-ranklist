@@ -3,7 +3,12 @@
     <div class="reg-title-block">
       {#if event}<div class="reg-evt-name">{event.txt_name}</div>{/if}
     </div>
-    <LangToggle />
+    <div class="reg-top-actions">
+      <LangToggle />
+      {#if onclose}
+        <button class="reg-close" onclick={onclose} aria-label="Close">&times;</button>
+      {/if}
+    </div>
   </div>
 
   {#if step === 'loading'}
@@ -20,7 +25,11 @@
   {:else if step === 'closed'}
     <p class="reg-muted">{t('reg_status_closed')}</p>
     <p class="reg-muted">{t('reg_status_closed_note')}</p>
-    <a class="reg-btn" href={entryListHref}>{t('reg_entry_list_link')} &rarr;</a>
+    {#if onviewlist}
+      <button class="reg-btn" onclick={onviewlist}>{t('reg_entry_list_link')} &rarr;</button>
+    {:else}
+      <a class="reg-btn" href={entryListHref}>{t('reg_entry_list_link')} &rarr;</a>
+    {/if}
   {:else if step === 'identity'}
     <p class="reg-stepline">{t('reg_step1_title')}</p>
 
@@ -123,7 +132,11 @@
       <div class="reg-prow"><span class="reg-pk">{t('reg_amount_label')}</span><span class="reg-pv">{fee != null ? `${fee} PLN` : '—'}</span><button class="reg-cp" onclick={() => copy('amount', `${fee} PLN`)}>{copiedField === 'amount' ? t('reg_copied') : '⧉'}</button></div>
     </div>
     <p class="reg-muted">{t('reg_payment_deadline_note')}</p>
-    <a class="reg-entry-list-link" href={entryListHref}>{t('reg_entry_list_link')} &rarr;</a>
+    {#if onviewlist}
+      <button class="reg-entry-list-link" onclick={onviewlist}>{t('reg_entry_list_link')} &rarr;</button>
+    {:else}
+      <a class="reg-entry-list-link" href={entryListHref}>{t('reg_entry_list_link')} &rarr;</a>
+    {/if}
   {/if}
 </div>
 
@@ -140,10 +153,18 @@
     eventCode = '',
     payee = 'SPWS',
     iban = '',
+    onclose,
+    onviewlist,
   }: {
     eventCode?: string
     payee?: string
     iban?: string
+    // Modal-embed (RegistrationModal, opened from CalendarView) — when
+    // provided, renders a close (×) affordance and routes the entry-list
+    // link through a view-switch callback instead of a page navigation.
+    // Undefined on the standalone register.html page (nothing to close to).
+    onclose?: () => void
+    onviewlist?: () => void
   } = $props()
 
   type Step = 'loading' | 'not_found' | 'external' | 'expired' | 'closed' | 'identity' | 'verify' | 'rodo' | 'payment'
@@ -283,6 +304,23 @@
     align-items: flex-start;
     gap: 12px;
     margin-bottom: 18px;
+  }
+  .reg-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .reg-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: #7fbadc;
+    padding: 0 2px;
+  }
+  .reg-close:hover {
+    color: #fff;
   }
   .reg-evt-name {
     font-weight: 600;
@@ -511,5 +549,12 @@
     color: #00d4ff;
     text-decoration: none;
     font-size: 0.9em;
+    /* button-variant reset (onviewlist/modal-embed) — visually identical to
+       the anchor used on the standalone page */
+    background: none;
+    border: none;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 0;
   }
 </style>

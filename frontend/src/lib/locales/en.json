@@ -125,6 +125,7 @@
   "event_use_spws_registration_label": "Enable SPWS registration for this event",
   "event_entry_fee_2w_label": "Fee (2 weapons)",
   "event_entry_fee_3w_label": "Fee (3 weapons)",
+  "event_entry_list_url_label": "Entry-list URL (auto)",
   "event_weapons_label": "Weapons",
   "event_organizer_label": "Organizer",
   "event_status_label": "Status",
