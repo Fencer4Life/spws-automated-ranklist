@@ -8,6 +8,29 @@
       "port": 5199,
       "cwd": "frontend",
       "autoPort": false
+    },
+    {
+      "name": "mockups",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8099"],
+      "port": 8099,
+      "autoPort": false
+    },
+    {
+      "name": "frontend-ce-dev",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--config", "vite.config.ce.ts", "--port", "5299", "--strictPort"],
+      "port": 5299,
+      "cwd": "frontend",
+      "autoPort": false
+    },
+    {
+      "name": "frontend-ce-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "preview", "--config", "vite.config.ce.ts", "--port", "5298", "--strictPort"],
+      "port": 5298,
+      "cwd": "frontend",
+      "autoPort": false
     }
   ]
 }

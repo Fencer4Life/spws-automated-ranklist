@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SPWS — Rejestracja na zawody</title>
+</head>
+<body>
+  <!-- local: cert points to local Supabase, prod empty (mirrors index.html).
+       cloud: GH Actions sed fills both cert+prod with cloud credentials —
+       RegistrationElement/EntryListElement pick cert first, else prod (no
+       runtime env toggle is exposed on this public page, ADR-079 §6). -->
+  <div id="reg-root"
+    supabase-cert-url="http://127.0.0.1:54321"
+    supabase-cert-key="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEwMzkzNTAsImV4cCI6MTk4MzgxMjk5Nn0.eUIt7N8XfsWOivaR0Rvg4mDOR_GMtJ8d3bOL9e8_8A0"
+    supabase-prod-url=""
+    supabase-prod-key=""
+    payee="SPWS"
+    iban=""
+  ></div>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var eventCode = params.get('event') || '';
+      var view = params.get('view') || '';
+      var root = document.getElementById('reg-root');
+      var tag = view === 'list' ? 'spws-entry-list' : 'spws-registration';
+      var el = document.createElement(tag);
+      el.setAttribute('event', eventCode);
+      el.setAttribute('supabase-cert-url', root.getAttribute('supabase-cert-url') || '');
+      el.setAttribute('supabase-cert-key', root.getAttribute('supabase-cert-key') || '');
+      el.setAttribute('supabase-prod-url', root.getAttribute('supabase-prod-url') || '');
+      el.setAttribute('supabase-prod-key', root.getAttribute('supabase-prod-key') || '');
+      if (tag === 'spws-registration') {
+        el.setAttribute('payee', root.getAttribute('payee') || 'SPWS');
+        el.setAttribute('iban', root.getAttribute('iban') || '');
+      }
+      root.replaceWith(el);
+    })();
+  </script>
+  <script type="module" src="/src/main.ce.ts"></script>
+</body>
+</html>

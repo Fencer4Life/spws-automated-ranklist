@@ -211,6 +211,13 @@ export interface CalendarEvent {
   id_prior_event?: number | null
   json_ingest_sources?: IngestSource[] | null
   json_source_overrides?: { skip?: string[]; process?: string[] } | null
+  // P2.8 (ADR-079/080) — event self-registration admin toggle + fee tiers,
+  // exposed by vw_calendar since migration 20260704000001. Optional: older
+  // seed exports / view rows may predate them.
+  bool_use_spws_registration?: boolean
+  num_entry_fee_2w?: number | null
+  num_entry_fee_3w?: number | null
+  url_entry_list?: string | null
 }
 
 // N13.4 — a discovered FTL round + the keep-rule's verdict, shown in the event accordion.
@@ -353,6 +360,12 @@ export interface UpdateEventParams {
   // and preserves backward-compat for callers still on the 19-arg shape.
   code?: string
   priorEventId?: number | null
+  // P2.8 (ADR-079/080) — EventManager "Rejestracja SPWS" section. Undefined
+  // means "leave unchanged" (fn_update_event's p_use_spws_registration/
+  // p_entry_fee_2w/_3w default to NULL).
+  useSpwsRegistration?: boolean
+  entryFee2w?: number
+  entryFee3w?: number
 }
 
 export type MatchStatus = 'PENDING' | 'AUTO_MATCHED' | 'UNMATCHED' | 'APPROVED' | 'NEW_FENCER' | 'DISMISSED'
@@ -369,6 +382,30 @@ export interface CreateRegistrationParams {
   // salted abuse-log token for the verified path. Both default null.
   fencerId?: number | null
   emailHash?: string | null
+  // RODO-accept version stamp (D5) — the write happens at RODO-accept, so this
+  // is always passed by the real flow; optional here for legacy callers.
+  consentVersion?: string | null
+}
+
+// The subset of vw_calendar the standalone registration page needs to
+// resolve `?event=<txt_code>` (P2.2, D7). Deliberately its own type rather
+// than widening CalendarEvent here — the admin-facing bool_use_spws_
+// registration/url_entry_list additions to CalendarEvent are P2.8 scope
+// (Calendar integration), shipped alongside the admin toggle that writes them.
+export interface RegistrationEventInfo {
+  id_event: number
+  txt_code: string
+  txt_name: string
+  txt_season_code: string
+  dt_start: string | null
+  dt_end: string | null
+  dt_registration_deadline: string | null
+  arr_weapons: WeaponType[]
+  num_entry_fee: number | null
+  num_entry_fee_2w: number | null
+  num_entry_fee_3w: number | null
+  bool_use_spws_registration: boolean
+  url_registration: string | null
 }
 
 // A row of the public roster view (vw_registration_entry_list) — deliberately

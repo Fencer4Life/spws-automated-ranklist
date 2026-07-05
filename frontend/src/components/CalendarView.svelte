@@ -52,7 +52,12 @@
     {#each group.events as event}
       {@const regCutoff = event.dt_registration_deadline ?? event.dt_start ?? ''}
       {@const showRegDeadline = event.dt_registration_deadline != null && today <= event.dt_registration_deadline}
-      {@const showRegLink = event.url_registration != null && regCutoff !== '' && today <= regCutoff}
+      {@const useSpwsReg = event.bool_use_spws_registration === true && registrationBase !== ''}
+      {@const spwsFormLink = useSpwsReg ? `${registrationBase}?event=${encodeURIComponent(event.txt_code)}` : null}
+      {@const spwsListLink = useSpwsReg ? `${registrationBase}?event=${encodeURIComponent(event.txt_code)}&view=list` : null}
+      {@const showRegLink = useSpwsReg
+        ? (regCutoff !== '' && today <= regCutoff)
+        : (event.url_registration != null && regCutoff !== '' && today <= regCutoff)}
       {@const regUrgent = regCutoff !== '' && (new Date(regCutoff).getTime() - new Date(today).getTime()) < 7 * 86400000}
       {@const displayStatus = getEventDisplayStatus(event.enum_status, event.dt_end, event.dt_start)}
       <div
@@ -98,8 +103,13 @@
                 <span class="registration-deadline">{t('event_registration_deadline_label')}: {formatDate(event.dt_registration_deadline)}</span>
               {/if}
               {#if showRegLink}
-                <a class="registration-link" href={event.url_registration} target="_blank" rel="noopener">
+                <a class="registration-link" href={useSpwsReg ? spwsFormLink : event.url_registration} target="_blank" rel="noopener">
                   {t('event_registration')} &rarr;
+                </a>
+              {/if}
+              {#if useSpwsReg}
+                <a class="entry-list-link" href={spwsListLink} target="_blank" rel="noopener">
+                  {t('reg_entry_list_link')} &rarr;
                 </a>
               {/if}
             </div>
@@ -154,6 +164,7 @@
     dualEnv = false,
     activeEnv = $bindable('CERT' as Environment),
     onseasonchange,
+    registrationBase = '',
   }: {
     events?: CalendarEvent[]
     showEvfToggle?: boolean
@@ -163,6 +174,11 @@
     dualEnv?: boolean
     activeEnv?: Environment
     onseasonchange?: () => void
+    // P2.8 (D3/D7) — base URL of the standalone registration page
+    // (register.html). When an event has bool_use_spws_registration=true,
+    // the calendar generates `${registrationBase}?event=<txt_code>` (form)
+    // and `...&view=list` (roster) instead of the raw url_registration link.
+    registrationBase?: string
   } = $props()
 
   let timeFilter: 'all' | 'past' | 'future' = $state('all')
@@ -516,6 +532,16 @@
     font-weight: 600;
   }
   .registration-link:hover {
+    text-decoration: underline;
+  }
+  .entry-list-link {
+    font-size: 11px;
+    color: #2c5f8a;
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+  .entry-list-link:hover {
     text-decoration: underline;
   }
   .reg-urgent .registration-deadline,

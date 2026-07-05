@@ -6,7 +6,7 @@
 // Bands: V0 <40, V1 40-49, V2 50-59, V3 60-69, V4 ≥70 (measured at season end).
 
 import { describe, it, expect } from 'vitest'
-import { estimateBirthYear } from '../src/lib/birthYearEstimate'
+import { estimateBirthYear, birthYearToVcat } from '../src/lib/birthYearEstimate'
 
 describe('estimateBirthYear', () => {
   // 5.1.1 — V2 + 2024 → suggested 1969 (midpoint), range (1965, 1974)
@@ -69,5 +69,38 @@ describe('estimateBirthYear', () => {
     const out = estimateBirthYear('V2', 2025)
     expect(out!.suggested).toBe(1970)
     expect(out!.range).toEqual([1966, 1975])
+  })
+})
+
+// Phase 2 (P2.2, ADR-079 §6 UI) — birthYearToVcat(by, seasonEndYear), the
+// reverse of estimateBirthYear. Mirrors python/pipeline/age_split.py::
+// birth_year_to_vcat exactly: age = seasonEndYear - birthYear;
+// V0 30-39, V1 40-49, V2 50-59, V3 60-69, V4 70+; age<30 → null (no V0 floor).
+describe('birthYearToVcat', () => {
+  it('age 35 (2026-1991) → V0', () => {
+    expect(birthYearToVcat(1991, 2026)).toBe('V0')
+  })
+  it('age 45 (2026-1981) → V1', () => {
+    expect(birthYearToVcat(1981, 2026)).toBe('V1')
+  })
+  it('age 55 (2026-1971) → V2', () => {
+    expect(birthYearToVcat(1971, 2026)).toBe('V2')
+  })
+  it('age 65 (2026-1961) → V3', () => {
+    expect(birthYearToVcat(1961, 2026)).toBe('V3')
+  })
+  it('age 70+ (2026-1950) → V4', () => {
+    expect(birthYearToVcat(1950, 2026)).toBe('V4')
+  })
+  it('age 29 (below V0 floor) → null', () => {
+    expect(birthYearToVcat(1997, 2026)).toBeNull()
+  })
+  it('band edges: age 39 → V0, age 40 → V1', () => {
+    expect(birthYearToVcat(1987, 2026)).toBe('V0')
+    expect(birthYearToVcat(1986, 2026)).toBe('V1')
+  })
+  it('null birthYear or seasonEndYear → null', () => {
+    expect(birthYearToVcat(null, 2026)).toBeNull()
+    expect(birthYearToVcat(1991, null)).toBeNull()
   })
 })

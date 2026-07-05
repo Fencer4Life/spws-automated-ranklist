@@ -57,6 +57,9 @@ const MOCK_EVENTS: CalendarEvent[] = [
     url_event_3: null,
     url_event_4: null,
     url_event_5: null,
+    bool_use_spws_registration: true,
+    num_entry_fee_2w: 130,
+    num_entry_fee_3w: 180,
   },
   {
     id_event: 11,
@@ -531,6 +534,51 @@ describe('EventManager Accordion (Phase 6)', () => {
     expect(onupdate).toHaveBeenCalledWith(10, expect.objectContaining({
       registration: 'https://new-reg.com',
       registrationDeadline: '2025-01-10',
+    }))
+  })
+
+  // P2.8 — edit form populates the "Rejestracja SPWS" toggle + 2/3-weapon fee tiers
+  it('P2.8: edit form populates registration toggle and fee tiers from event data', async () => {
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    const editBtn = container.querySelector('[data-field="edit-btn"]')!
+    await fireEvent.click(editBtn)
+
+    const toggle = container.querySelector('[data-field="form-use-spws-registration"]') as HTMLInputElement
+    expect(toggle.checked).toBe(true)
+    const fee2w = container.querySelector('[data-field="form-entry-fee-2w"]') as HTMLInputElement
+    expect(fee2w.value).toBe('130')
+    const fee3w = container.querySelector('[data-field="form-entry-fee-3w"]') as HTMLInputElement
+    expect(fee3w.value).toBe('180')
+  })
+
+  // P2.8 — the section is Edit-form only (ADR-080 §5: "added to the existing
+  // EventManager.svelte (the Event Edit Form)") — the create form has no
+  // event yet to toggle registration for, so it's absent there.
+  it('P2.8: registration section is absent from the create form (edit-only)', async () => {
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    const addBtn = container.querySelector('[data-field="add-event-btn"]')!
+    await fireEvent.click(addBtn)
+
+    expect(container.querySelector('[data-field="form-use-spws-registration"]')).toBeNull()
+  })
+
+  // P2.8 — save includes useSpwsRegistration + entryFee2w/3w in params
+  it('P2.8: save includes useSpwsRegistration and fee tiers in params', async () => {
+    const onupdate = vi.fn()
+    const { container } = render(EventManager, { props: { ...propsWithTournaments, onupdate } })
+    const editBtn = container.querySelector('[data-field="edit-btn"]')!
+    await fireEvent.click(editBtn)
+
+    const fee3w = container.querySelector('[data-field="form-entry-fee-3w"]') as HTMLInputElement
+    await fireEvent.input(fee3w, { target: { value: '200' } })
+
+    const saveBtn = container.querySelector('[data-field="form-save-btn"]')!
+    await fireEvent.click(saveBtn)
+
+    expect(onupdate).toHaveBeenCalledWith(10, expect.objectContaining({
+      useSpwsRegistration: true,
+      entryFee2w: 130,
+      entryFee3w: 200,
     }))
   })
 

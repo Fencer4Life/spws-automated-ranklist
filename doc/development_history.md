@@ -1381,3 +1381,48 @@ Both files now build their **own throwaway synthetic world** in-transaction and 
 pass against the current mutated LOCAL DB with **no `reset-dev.sh`**, and stay green after any
 future reingest or season rollover. Carry-stop ADR-018/021 and cross-gender ADR-034 behaviour is
 unchanged; only the tests' coupling to production data was removed.
+
+---
+
+### Event self-registration — Phase 2 public registration UI (2026-07-05)
+
+Built the standalone, mobile-first public registration page (`frontend/register.html`,
+custom elements `<spws-registration>`/`<spws-entry-list>`) on top of the Phase 1 DB schema
+(ADR-078/079/080; `tbl_registration` + `fn_create_registration`/`fn_match_registration_fencer`,
+2026-07-04). Build order P2.0–P2.8, strict TDD throughout:
+
+- **P2.0** `fn_create_registration` gains `p_consent_version` (stamps `ts_consent`/
+  `txt_consent_version`, D5) and a D10 registration-window guard (rejects the write once
+  `COALESCE(dt_registration_deadline, dt_start)` is past; NULL-date events stay open) — migration
+  `20260705000001_registration_consent.sql`, pgTAP 649→651 (49.23–49.24).
+- **P2.1–P2.7** `RegistrationForm.svelte` (step state machine: `loading → identity → (exact-match
+  skip / email-verify) → rodo → payment`, plus `not_found`/`external`/`expired`/`closed` D10
+  states) + `EntryList.svelte` (on-demand roster, no payment gate, no category filter — the
+  shipped `vw_registration_entry_list` doesn't expose category and extending it was out of scope
+  for this build) + CE wrappers (`RegistrationElement.svelte`/`EntryListElement.svelte`) +
+  `register.html` static page reading `?event=`/`?view=list`.
+- **P2.8** Calendar integration: `CalendarView.svelte` generates SPWS-hosted register/entry-list
+  links (`registrationBase + ?event=<code>[&view=list]`) when `bool_use_spws_registration` is set,
+  falling back to the existing external `url_registration` link otherwise; `EventManager.svelte`
+  gets a new "Rejestracja SPWS" section (**edit form only**, per ADR-080 §5 scope) toggling
+  `bool_use_spws_registration`/`num_entry_fee_2w`/`num_entry_fee_3w` via `fn_update_event`
+  (migration `20260705000002_fn_update_event_registration_fields.sql` — explicit `DROP FUNCTION`
+  before the widened `CREATE OR REPLACE`, since Postgres treats a longer parameter list as a new
+  overload rather than a replacement; this had silently broken two unrelated pre-existing pgTAP
+  files, `15_event_multi_url.sql`/`19_phase3_wizard.sql`, on the first attempt). pgTAP 651→652
+  (8.23 in `05_calendar_view.sql`).
+- **Svelte 5 gotcha hit during E2E debug:** a child component's `$effect` can run *before* its
+  parent's — `RegistrationElement`/`EntryListElement` were calling `initClient` (the shared
+  Supabase client singleton) inside `$effect`, so on a cold page load the child form's own effect
+  sometimes fired first, called the API against an uninitialized client, and the rejection was
+  silently swallowed. Fixed by making `initClient` run synchronously at component-script top level
+  (guaranteed before any child mounts) in both CE wrappers, plus a defensive `.catch()` on the
+  form's fetch effect.
+
+vitest 412→448, all green; `svelte-check` 0 errors; pgTAP 649→652; full manual E2E on LOCAL
+(real fencer ADAMCZEWSKI Wojciech, id_fencer=1) through identity → RODO → payment → entry-list,
+all D10 states, EN/PL toggle, mobile viewport — fixtures cleaned up after. RTM FR-122 amended,
+new FR-130 added; spec §5.2 flipped from "(planned)" to "Phases 1–2 done, Phase 3 partial,
+Phases 4–5 not started (blocked on Resend/eu.org email infra)". Phase 3 (FTL seed export, done
+2026-07-04) is unaffected by this build; Phases 4 (organizer-email delivery) and 5 (Telegram
+`send <code> participants`) remain future work.

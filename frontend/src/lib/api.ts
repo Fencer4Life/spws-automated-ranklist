@@ -26,6 +26,7 @@ import type {
   MatchCandidate,
   CreateRegistrationParams,
   RegistrationEntry,
+  RegistrationEventInfo,
 } from './types'
 
 let client: SupabaseClient | null = null
@@ -415,6 +416,7 @@ export async function createRegistration(params: CreateRegistrationParams): Prom
     p_weapons: params.weapons,
     p_id_fencer: params.fencerId ?? null,
     p_email_hash: params.emailHash ?? null,
+    p_consent_version: params.consentVersion ?? null,
   })
   if (error) throw error
   return data as number
@@ -430,6 +432,20 @@ export async function fetchEntryList(eventId: number): Promise<RegistrationEntry
     .order('id_registration', { ascending: true })
   if (error) throw error
   return (data ?? []) as RegistrationEntry[]
+}
+
+// P2.2 (D7) — the standalone registration page resolves its event by
+// txt_code (from the ?event= URL param), not by id. anon-readable (vw_calendar
+// already grants anon SELECT). Returns null on no-match/error so the caller
+// can render a "wydarzenie nie znalezione" state instead of throwing.
+export async function fetchEventForRegistration(code: string): Promise<RegistrationEventInfo | null> {
+  const { data, error } = await getClient()
+    .from('vw_calendar')
+    .select('id_event, txt_code, txt_name, txt_season_code, dt_start, dt_end, dt_registration_deadline, arr_weapons, num_entry_fee, num_entry_fee_2w, num_entry_fee_3w, bool_use_spws_registration, url_registration')
+    .eq('txt_code', code)
+    .single()
+  if (error) return null
+  return (data as RegistrationEventInfo) ?? null
 }
 
 export async function fetchOrganizers(): Promise<Organizer[]> {
@@ -493,6 +509,10 @@ export async function updateEvent(id: number, params: UpdateEventParams): Promis
     // "leave unchanged" so legacy callers still see no change in behavior.
     p_code: params.code ?? null,
     p_id_prior_event: params.priorEventId ?? null,
+    // P2.8 (ADR-079/080) — EventManager "Rejestracja SPWS" section.
+    p_use_spws_registration: params.useSpwsRegistration ?? null,
+    p_entry_fee_2w: params.entryFee2w ?? null,
+    p_entry_fee_3w: params.entryFee3w ?? null,
   })
   if (error) throw error
 }

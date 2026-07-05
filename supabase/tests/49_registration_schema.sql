@@ -9,7 +9,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(24);
+SELECT plan(26);
 
 -- 49.1 — tbl_registration exists
 SELECT has_table('tbl_registration', '49.1 tbl_registration exists');
@@ -183,6 +183,59 @@ SELECT is(
        AND id_fencer IS NULL),
   3,
   '49.21 two unmatched (NULL id_fencer) registrations + the 49.14 fixture row = 3, never collided'
+);
+
+-- ----- P2.0 fixtures: a second event with a PAST registration window -----
+DO $setup_past$
+DECLARE
+  v_season INT;
+  v_org    INT;
+BEGIN
+  v_season := fn_create_season('REG49P', '2020-01-01', '2020-12-31');
+  INSERT INTO tbl_organizer (txt_code, txt_name)
+    VALUES ('REGORG49P', 'Reg org 49 past') RETURNING id_organizer INTO v_org;
+  PERFORM fn_create_event(
+    'REG49PAST', 'Reg 49 past', v_season, v_org,
+    p_dt_start := '2020-06-01'::DATE
+  );
+END $setup_past$;
+
+-- 49.23 — consent recorded (D5): passing p_consent_version stamps ts_consent
+-- + txt_consent_version on the write.
+DO $consent$
+DECLARE
+  v_event INT := (SELECT id_event FROM tbl_event WHERE txt_code = 'REG49EVT');
+BEGIN
+  PERFORM fn_create_registration(
+    v_event, 'PIOTROWSKI'::TEXT, 'Ewa'::TEXT, 'F'::enum_gender_type, 1972::SMALLINT,
+    ARRAY['FOIL']::enum_weapon_type[], NULL::INT, NULL::TEXT, 'v1.0'::TEXT
+  );
+END $consent$;
+
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM tbl_registration
+    WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'REG49EVT')
+      AND txt_surname = 'PIOTROWSKI'
+      AND ts_consent IS NOT NULL
+      AND txt_consent_version = 'v1.0'
+  ),
+  '49.23 fn_create_registration stamps ts_consent + txt_consent_version when p_consent_version is given'
+);
+
+-- 49.24 — expiry guard (D10): a write against an event whose registration
+-- window (COALESCE(dt_registration_deadline, dt_start)) is already in the
+-- past is rejected. REG49EVT (NULL dates, 49.13/.14 etc.) stays unaffected —
+-- proving NULL-date events remain open.
+SELECT throws_ok(
+  $$SELECT fn_create_registration(
+      (SELECT id_event FROM tbl_event WHERE txt_code = 'REG49PAST'),
+      'SPÓŹNIONY'::TEXT, 'Adam'::TEXT, 'M'::enum_gender_type, 1975::SMALLINT,
+      ARRAY['SABRE']::enum_weapon_type[], NULL::INT, NULL::TEXT, NULL::TEXT
+    )$$,
+  'P0001',
+  NULL,
+  '49.24 fn_create_registration rejects a write past the registration window (D10)'
 );
 
 SELECT * FROM finish();

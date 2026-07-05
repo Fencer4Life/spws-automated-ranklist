@@ -44,3 +44,28 @@ export function estimateBirthYear(
   // Suggest the band midpoint anchor; range still spans the full band.
   return { suggested: seasonEndYear - anchor, range: [byMin, byMax] }
 }
+
+// Phase 2 (P2.2, ADR-079 §6) — the reverse direction: BY known (self-declared
+// at registration) → V-cat. Mirrors python/pipeline/age_split.py::
+// birth_year_to_vcat exactly (single source of truth on the Python side);
+// age<30 has no category (V0's floor is 30, not open-ended like the BANDS
+// table above, which serves BY *estimation* from an already-known category).
+const _CATEGORY_AGE_RANGE: Record<string, [number, number]> = {
+  V0: [30, 39],
+  V1: [40, 49],
+  V2: [50, 59],
+  V3: [60, 69],
+  V4: [70, 999],
+}
+
+export function birthYearToVcat(
+  birthYear: number | null | undefined,
+  seasonEndYear: number | null | undefined,
+): string | null {
+  if (birthYear == null || !seasonEndYear || !Number.isFinite(seasonEndYear)) return null
+  const age = seasonEndYear - birthYear
+  for (const [cat, [lo, hi]] of Object.entries(_CATEGORY_AGE_RANGE)) {
+    if (age >= lo && age <= hi) return cat
+  }
+  return null
+}

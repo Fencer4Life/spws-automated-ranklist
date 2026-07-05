@@ -92,6 +92,21 @@
                   </select>
                 </div>
               </label>
+              <!-- P2.8 (ADR-079/080 §5): isolated new "Rejestracja SPWS" section —
+                   add-only, does not alter any existing field/binding/RPC above. -->
+              <div class="spws-registration-section" data-field="spws-registration-section">
+                <div class="spws-registration-title">{t('event_spws_registration_section_title')}</div>
+                <label class="toggle-label">
+                  <input data-field="form-use-spws-registration" type="checkbox" bind:checked={draftUseSpwsRegistration} />
+                  {t('event_use_spws_registration_label')}
+                </label>
+                <label>{t('event_entry_fee_2w_label')}
+                  <input data-field="form-entry-fee-2w" type="number" bind:value={draftEntryFee2w} />
+                </label>
+                <label>{t('event_entry_fee_3w_label')}
+                  <input data-field="form-entry-fee-3w" type="number" bind:value={draftEntryFee3w} />
+                </label>
+              </div>
               <label>{t('event_organizer_label')}
                 <select data-field="form-organizer" bind:value={draftOrganizerId}>
                   <option value={0}>--</option>
@@ -603,6 +618,10 @@
   let draftRegistrationDeadline = $state('')
   let draftEntryFee: number | null = $state(null)
   let draftCurrency = $state('PLN')
+  // P2.8 (ADR-079/080) — EventManager "Rejestracja SPWS" section.
+  let draftUseSpwsRegistration = $state(false)
+  let draftEntryFee2w: number | null = $state(null)
+  let draftEntryFee3w: number | null = $state(null)
   let draftUrlEvent = $state('')
   let draftUrlEvent2 = $state('')
   let draftUrlEvent3 = $state('')
@@ -804,6 +823,9 @@
     draftRegistrationDeadline = ''
     draftEntryFee = null
     draftCurrency = 'PLN'
+    draftUseSpwsRegistration = false
+    draftEntryFee2w = null
+    draftEntryFee3w = null
     draftUrlEvent = ''
     draftUrlEvent2 = ''
     draftUrlEvent3 = ''
@@ -830,6 +852,9 @@
     draftRegistrationDeadline = event.dt_registration_deadline ?? ''
     draftEntryFee = event.num_entry_fee
     draftCurrency = event.txt_entry_fee_currency ?? 'PLN'
+    draftUseSpwsRegistration = event.bool_use_spws_registration ?? false
+    draftEntryFee2w = event.num_entry_fee_2w ?? null
+    draftEntryFee3w = event.num_entry_fee_3w ?? null
     draftUrlEvent = event.url_event ?? ''
     draftUrlEvent2 = event.url_event_2 ?? ''
     draftUrlEvent3 = event.url_event_3 ?? ''
@@ -880,6 +905,12 @@
       registrationDeadline: draftRegistrationDeadline || undefined,
       entryFee: draftEntryFee ?? undefined,
       entryFeeCurrency: draftCurrency || undefined,
+      // P2.8 (ADR-079/080) — "Rejestracja SPWS" section. The toggle is always
+      // sent (never "leave unchanged") since it's an explicit checkbox on this
+      // form; fee tiers follow entryFee's undefined-when-empty convention.
+      useSpwsRegistration: draftUseSpwsRegistration,
+      entryFee2w: draftEntryFee2w ?? undefined,
+      entryFee3w: draftEntryFee3w ?? undefined,
       organizerId: draftOrganizerId || undefined,
       weapons: [...draftWeapons],
       urlEvent2: compact[1],
@@ -948,6 +979,26 @@
     padding: 4px 8px;
     background: rgba(251, 191, 36, 0.10);
     border-radius: 4px;
+  }
+  /* P2.8 (ADR-079/080) — "Rejestracja SPWS" section. */
+  .spws-registration-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-left: 3px solid #4a90d9;
+    padding: 8px 10px;
+    background: rgba(74, 144, 217, 0.05);
+    border-radius: 4px;
+  }
+  .spws-registration-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: #2c5f8a;
+  }
+  .spws-registration-section .toggle-label {
+    flex-direction: row !important;
+    align-items: center;
+    gap: 6px !important;
   }
   /* Phase 3 — Skeletons collapsible panel at bottom. */
   .skel-panel {

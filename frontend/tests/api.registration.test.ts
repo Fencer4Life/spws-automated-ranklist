@@ -20,6 +20,7 @@ import {
   matchRegistrationFencer,
   createRegistration,
   fetchEntryList,
+  fetchEventForRegistration,
 } from '../src/lib/api'
 
 beforeEach(() => {
@@ -70,6 +71,7 @@ describe('createRegistration (FR-122, sole public write path)', () => {
       p_weapons: ['EPEE', 'SABRE'],
       p_id_fencer: null,
       p_email_hash: null,
+      p_consent_version: null,
     })
     expect(id).toBe(7)
   })
@@ -89,6 +91,24 @@ describe('createRegistration (FR-122, sole public write path)', () => {
     expect(mockRpc).toHaveBeenCalledWith(
       'fn_create_registration',
       expect.objectContaining({ p_id_fencer: 42, p_email_hash: 'abc123' }),
+    )
+  })
+
+  it('forwards consentVersion (D5 — RODO-accept write timing) as p_consent_version', async () => {
+    mockRpc.mockResolvedValue({ data: 9, error: null })
+    await createRegistration({
+      eventId: 3,
+      surname: 'KOWALSKI',
+      firstName: 'Jan',
+      gender: 'M',
+      birthYear: 1970,
+      weapons: ['EPEE'],
+      fencerId: 42,
+      consentVersion: 'v1.0',
+    })
+    expect(mockRpc).toHaveBeenCalledWith(
+      'fn_create_registration',
+      expect.objectContaining({ p_consent_version: 'v1.0' }),
     )
   })
 
@@ -120,5 +140,40 @@ describe('fetchEntryList (FR-123, public roster)', () => {
     const order = vi.fn().mockResolvedValue({ data: null, error: { message: 'nope' } })
     mockFrom.mockReturnValue({ select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ order }) }) })
     await expect(fetchEntryList(3)).rejects.toThrow()
+  })
+})
+
+describe('fetchEventForRegistration (P2.2, D7 — standalone page resolves the event by code)', () => {
+  it('queries vw_calendar by txt_code and returns the single row', async () => {
+    const row = {
+      id_event: 3,
+      txt_code: 'PPW4-2025-2026',
+      txt_name: 'IV Puchar Polski Weteranów',
+      txt_season_code: 'SPWS-2025-2026',
+      dt_start: '2026-06-01',
+      dt_end: '2026-06-02',
+      dt_registration_deadline: '2026-05-25',
+      arr_weapons: ['EPEE', 'SABRE'],
+      num_entry_fee: 120,
+      num_entry_fee_2w: 200,
+      num_entry_fee_3w: 260,
+      bool_use_spws_registration: true,
+      url_registration: null,
+    }
+    const single = vi.fn().mockResolvedValue({ data: row, error: null })
+    const eq = vi.fn().mockReturnValue({ single })
+    const select = vi.fn().mockReturnValue({ eq })
+    mockFrom.mockReturnValue({ select })
+
+    const result = await fetchEventForRegistration('PPW4-2025-2026')
+    expect(mockFrom).toHaveBeenCalledWith('vw_calendar')
+    expect(eq).toHaveBeenCalledWith('txt_code', 'PPW4-2025-2026')
+    expect(result).toEqual(row)
+  })
+
+  it('returns null when the code does not resolve', async () => {
+    const single = vi.fn().mockResolvedValue({ data: null, error: { message: 'not found' } })
+    mockFrom.mockReturnValue({ select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ single }) }) })
+    expect(await fetchEventForRegistration('NOPE')).toBeNull()
   })
 })

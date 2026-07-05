@@ -500,6 +500,48 @@ describe('CalendarView (T8.5)', () => {
     expect(deadline).not.toBeNull()
   })
 
+  // P2.8 (D3/D7) — bool_use_spws_registration=true + a registrationBase prop
+  // generates form + entry-list links instead of the raw url_registration.
+  it('P2.8: generates form + list links when bool_use_spws_registration is true', () => {
+    const futureDate = new Date()
+    futureDate.setMonth(futureDate.getMonth() + 2)
+    const futureStr = futureDate.toISOString().slice(0, 10)
+    const events = [makeEvent({
+      id_event: 99, txt_code: 'PPW4-2025-2026', dt_start: futureStr, enum_status: 'SCHEDULED',
+      url_registration: 'https://example.com/ignored-when-spws-on',
+      dt_registration_deadline: futureStr,
+      bool_use_spws_registration: true,
+    })]
+    const { container } = render(CalendarView, {
+      props: { events, registrationBase: 'https://spwsranklist.example.org/register.html' },
+    })
+    const regLink = container.querySelector('.registration-link') as HTMLAnchorElement
+    expect(regLink).not.toBeNull()
+    expect(regLink.getAttribute('href')).toBe('https://spwsranklist.example.org/register.html?event=PPW4-2025-2026')
+    const listLink = container.querySelector('.entry-list-link') as HTMLAnchorElement
+    expect(listLink).not.toBeNull()
+    expect(listLink.getAttribute('href')).toBe('https://spwsranklist.example.org/register.html?event=PPW4-2025-2026&view=list')
+  })
+
+  // P2.8 — flag off keeps the existing external url_registration link unchanged
+  it('P2.8: keeps the external url_registration link when bool_use_spws_registration is false', () => {
+    const futureDate = new Date()
+    futureDate.setMonth(futureDate.getMonth() + 2)
+    const futureStr = futureDate.toISOString().slice(0, 10)
+    const events = [makeEvent({
+      id_event: 99, dt_start: futureStr, enum_status: 'SCHEDULED',
+      url_registration: 'https://example.com/register',
+      dt_registration_deadline: futureStr,
+      bool_use_spws_registration: false,
+    })]
+    const { container } = render(CalendarView, {
+      props: { events, registrationBase: 'https://spwsranklist.example.org/register.html' },
+    })
+    const regLink = container.querySelector('.registration-link') as HTMLAnchorElement
+    expect(regLink.getAttribute('href')).toBe('https://example.com/register')
+    expect(container.querySelector('.entry-list-link')).toBeNull()
+  })
+
   // 8.24 — Nothing shown when both null
   it('8.24: shows no registration block when both fields are null', () => {
     const events = [makeEvent({
