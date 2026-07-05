@@ -18,44 +18,51 @@
 
   <div class="el-filters">
     <input name="search" class="el-search" placeholder={t('reg_search_surname')} bind:value={search} />
-    <select name="weaponFilter" bind:value={weaponFilter}>
-      <option value="">{t('reg_filter_weapon_all')}</option>
-      <option value="EPEE">{t('reg_weapon_epee')}</option>
-      <option value="FOIL">{t('reg_weapon_foil')}</option>
-      <option value="SABRE">{t('reg_weapon_sabre')}</option>
-    </select>
-    <select name="categoryFilter" bind:value={categoryFilter}>
-      <option value="">{t('reg_filter_category_all')}</option>
-      <option value="V0">V0 (30+)</option>
-      <option value="V1">V1 (40+)</option>
-      <option value="V2">V2 (50+)</option>
-      <option value="V3">V3 (60+)</option>
-      <option value="V4">V4 (70+)</option>
-    </select>
-    <select name="genderFilter" bind:value={genderFilter}>
-      <option value="">{t('reg_filter_gender_all')}</option>
-      <option value="F">{t('reg_filter_women')}</option>
-      <option value="M">{t('reg_filter_men')}</option>
-    </select>
+    <div class="el-fgroup">
+      <label class="el-flabel">
+        <span>{t('weapon')}</span>
+        <select name="weaponFilter" bind:value={weaponFilter}>
+          <option value="">--</option>
+          <option value="EPEE">{t('reg_weapon_epee')}</option>
+          <option value="FOIL">{t('reg_weapon_foil')}</option>
+          <option value="SABRE">{t('reg_weapon_sabre')}</option>
+        </select>
+      </label>
+      <label class="el-flabel">
+        <span>{t('category')}</span>
+        <select name="categoryFilter" bind:value={categoryFilter}>
+          <option value="">--</option>
+          <option value="V0">V0 (30+)</option>
+          <option value="V1">V1 (40+)</option>
+          <option value="V2">V2 (50+)</option>
+          <option value="V3">V3 (60+)</option>
+          <option value="V4">V4 (70+)</option>
+        </select>
+      </label>
+      <label class="el-flabel">
+        <span>{t('gender')}</span>
+        <select name="genderFilter" bind:value={genderFilter}>
+          <option value="">--</option>
+          <option value="F">{t('reg_filter_women')}</option>
+          <option value="M">{t('reg_filter_men')}</option>
+        </select>
+      </label>
+    </div>
   </div>
 
   {#if filteredRows.length > 0}
     <table>
       <thead>
         <tr>
-          <th class="el-lp">{t('reg_col_lp')}</th>
           <th>{t('reg_col_name')}</th>
-          <th class="el-narrow">{t('reg_col_gender')}</th>
           <th class="el-narrow">{t('reg_col_category')}</th>
           <th>{t('reg_col_weapon')}</th>
         </tr>
       </thead>
       <tbody>
-        {#each filteredRows as row, i (row.id_registration)}
+        {#each filteredRows as row (row.id_registration)}
           <tr>
-            <td>{i + 1}</td>
-            <td>{row.txt_surname} {row.txt_first_name}</td>
-            <td>{row.enum_gender}</td>
+            <td class="el-name">{row.txt_surname} {row.txt_first_name}</td>
             <td>
               {#if row.enum_age_category}<span class="el-cat">{row.enum_age_category}</span>{/if}
             </td>
@@ -193,8 +200,8 @@
   }
   .el-filters {
     display: flex;
+    flex-direction: column;
     gap: 8px;
-    flex-wrap: wrap;
     margin-bottom: 14px;
   }
   .el-filters input, .el-filters select {
@@ -203,13 +210,31 @@
     color: #e0e0e0;
     padding: 8px 10px;
     border-radius: 8px;
-    font-size: 0.9em;
+    font-size: 16px;
     font-family: inherit;
-    min-height: 40px;
+    min-height: 44px;
+    width: 100%;
+    box-sizing: border-box;
   }
   .el-search {
-    flex: 1;
-    min-width: 150px;
+    width: 100%;
+  }
+  .el-fgroup {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .el-flabel {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .el-flabel span {
+    font-size: 0.72em;
+    color: #7fbadc;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
   }
   table {
     width: 100%;
@@ -229,7 +254,7 @@
     font-size: 0.88em;
     border-bottom: 1px solid #16273f;
   }
-  .el-lp, .el-narrow {
+  .el-narrow {
     width: 40px;
   }
   .el-cat {
@@ -274,19 +299,37 @@
   }
 
   @media (max-width: 480px) {
-    table, thead, tbody, th, td, tr {
+    table, tbody {
       display: block;
+      width: 100%;
     }
-    thead tr {
+    thead {
       display: none;
     }
     tr {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 6px;
       border-bottom: 1px solid #1a2c4a;
-      padding: 6px 0;
+      padding: 8px 0;
     }
     td {
+      display: inline-flex;
+      align-items: center;
+      flex: none;
       border-bottom: none;
-      padding: 3px 0;
+      padding: 0;
+      width: auto;
+    }
+    .el-name {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-weight: 600;
+      color: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 </style>

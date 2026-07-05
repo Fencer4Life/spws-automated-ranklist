@@ -169,14 +169,26 @@ describe('RegistrationForm — RODO gate + payment (P2.5/P2.6)', () => {
     await findByText(/RODO/)
   }
 
-  it('accept is disabled until the checkbox is ticked, then writes with consentVersion v1.0', async () => {
+  it('accept without ticking the checkbox does not submit and flags the checkbox invalid', async () => {
     const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
     await toRodo(container, findByText)
     const acceptBtn = container.querySelector('button.reg-rodo-accept') as HTMLButtonElement
-    expect(acceptBtn.disabled).toBe(true)
     const checkbox = container.querySelector('input[type="checkbox"].reg-rodo-checkbox') as HTMLInputElement
+    expect(checkbox.classList.contains('reg-invalid')).toBe(false)
+    await fireEvent.click(acceptBtn)
+    expect(mockCreate).not.toHaveBeenCalled()
+    expect(checkbox.classList.contains('reg-invalid')).toBe(true)
+  })
+
+  it('ticking the checkbox clears the invalid flag, then accept writes with consentVersion v1.0', async () => {
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toRodo(container, findByText)
+    const acceptBtn = container.querySelector('button.reg-rodo-accept') as HTMLButtonElement
+    const checkbox = container.querySelector('input[type="checkbox"].reg-rodo-checkbox') as HTMLInputElement
+    await fireEvent.click(acceptBtn)
+    expect(checkbox.classList.contains('reg-invalid')).toBe(true)
     await fireEvent.click(checkbox)
-    expect(acceptBtn.disabled).toBe(false)
+    expect(checkbox.classList.contains('reg-invalid')).toBe(false)
     await fireEvent.click(acceptBtn)
     await waitFor(() => expect(mockCreate).toHaveBeenCalled())
     expect(mockCreate).toHaveBeenCalledWith(

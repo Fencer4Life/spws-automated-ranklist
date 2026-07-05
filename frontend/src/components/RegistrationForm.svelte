@@ -112,12 +112,20 @@
       <span class="reg-rchip">{t('reg_rodo_right_object')}</span>
     </div>
     <label class="reg-ack">
-      <input type="checkbox" class="reg-rodo-checkbox" bind:checked={consentChecked} />
+      <input
+        type="checkbox"
+        class="reg-rodo-checkbox"
+        class:reg-invalid={consentInvalid}
+        bind:checked={consentChecked}
+        onchange={() => {
+          if (consentChecked) consentInvalid = false
+        }}
+      />
       <span>{t('reg_rodo_accept_label')}</span>
     </label>
     <p class="reg-muted">{t('reg_rodo_legitimate_note')}</p>
     <div class="reg-end">
-      <button class="reg-btn reg-rodo-accept" disabled={!consentChecked} onclick={acceptRodo}>{t('reg_rodo_accept_button')}</button>
+      <button class="reg-btn reg-rodo-accept" class:reg-btn-inactive={!consentChecked} onclick={acceptRodo}>{t('reg_rodo_accept_button')}</button>
     </div>
   {:else if step === 'payment'}
     <p class="reg-ok">{t('reg_payment_confirmed')}</p>
@@ -179,6 +187,7 @@
   let club = $state('')
   let fencerId = $state<number | null>(null)
   let consentChecked = $state(false)
+  let consentInvalid = $state(false)
   let copiedField = $state<string | null>(null)
 
   const seasonEndYear = $derived.by(() => {
@@ -256,7 +265,11 @@
   }
 
   async function acceptRodo() {
-    if (!event || !consentChecked) return
+    if (!consentChecked) {
+      consentInvalid = true
+      return
+    }
+    if (!event) return
     await createRegistration({
       eventId: event.id_event,
       surname,
@@ -498,6 +511,45 @@
     align-items: flex-start;
     margin-bottom: 8px;
     cursor: pointer;
+  }
+  .reg-ack span {
+    min-width: 0;
+    flex: 1;
+  }
+  .reg-rodo-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    flex: none;
+    margin: 1px 0 0;
+    border: 2px solid #1a4a8a;
+    border-radius: 5px;
+    background: #0d1b2a;
+    cursor: pointer;
+    position: relative;
+  }
+  .reg-rodo-checkbox:checked {
+    background: #00d4ff;
+    border-color: #00d4ff;
+  }
+  .reg-rodo-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid #0d1b2a;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .reg-rodo-checkbox.reg-invalid {
+    background: rgba(255, 92, 92, 0.45);
+    border-color: #ff5c5c;
+  }
+  .reg-btn-inactive {
+    opacity: 0.5;
   }
   .reg-ok {
     color: #4ade80;

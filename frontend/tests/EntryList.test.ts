@@ -104,15 +104,27 @@ describe('EntryList', () => {
     expect(queryByText('WISNIEWSKA Anna')).toBeNull()
   })
 
-  it('renders category filter options matching the FilterBar V0–V4 convention', async () => {
+  it('renders category filter options matching the FilterBar V0–V4 convention, with a "--" placeholder under its own label', async () => {
     mockFetchEntryList.mockResolvedValue(ROWS)
     const { container, findByText } = render(EntryList, { props: { eventId: 3 } })
     await findByText('KOWALSKI Jan')
     const categorySelect = container.querySelector('select[name="categoryFilter"]') as HTMLSelectElement
     const optionTexts = Array.from(categorySelect.options).map((o) => o.textContent)
     expect(optionTexts).toEqual([
-      'Kategoria: wszystkie', 'V0 (30+)', 'V1 (40+)', 'V2 (50+)', 'V3 (60+)', 'V4 (70+)',
+      '--', 'V0 (30+)', 'V1 (40+)', 'V2 (50+)', 'V3 (60+)', 'V4 (70+)',
     ])
+  })
+
+  it('renders a label next to each filter dropdown instead of folding the name into the "all" option', async () => {
+    mockFetchEntryList.mockResolvedValue(ROWS)
+    const { container, findByText } = render(EntryList, { props: { eventId: 3 } })
+    await findByText('KOWALSKI Jan')
+    const weaponSelect = container.querySelector('select[name="weaponFilter"]') as HTMLSelectElement
+    const genderSelect = container.querySelector('select[name="genderFilter"]') as HTMLSelectElement
+    expect(weaponSelect.options[0].textContent).toBe('--')
+    expect(genderSelect.options[0].textContent).toBe('--')
+    const labels = Array.from(container.querySelectorAll('.el-flabel span')).map((s) => s.textContent)
+    expect(labels).toEqual(['Broń', 'Kategoria', 'Płeć'])
   })
 })
 
