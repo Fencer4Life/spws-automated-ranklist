@@ -1268,7 +1268,16 @@ class TestEvfPhase2Allocator:
         payload = json.loads(sync_sql[json_start + 1 : json_end + 1].replace("''", "'"))
         assert len(payload) == 1
         evt = payload[0]
-        for key in ("id_event", "name", "dt_start", "dt_end", "location", "country", "evf_id", "evf_slug"):
+        for key in (
+            "id_event",
+            "name",
+            "dt_start",
+            "dt_end",
+            "location",
+            "country",
+            "evf_id",
+            "evf_slug",
+        ):
             assert key in evt, f"identity-sync payload missing `{key}`: {evt}"
         assert evt["id_event"] == 111
 
