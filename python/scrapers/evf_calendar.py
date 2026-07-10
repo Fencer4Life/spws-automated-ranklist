@@ -2,8 +2,27 @@
 EVF Calendar Scraper — veteransfencing.eu + api.veteransfencing.eu (ADR-028)
 
 Primary source: HTML calendar list at veteransfencing.eu (authoritative for
-current/upcoming events — the EVF JSON API `/events` endpoint only returns
-historical events with finalised results).
+current/upcoming events).
+
+JSON API reality (live-verified 2026-07-10 — the previous "historical events
+with finalised results" claim here was wrong and has been replaced):
+  * `EvfApiClient.get_events()` (`/events`) is effectively abandoned, not
+    merely "historical" — a live call returned 20 events, the newest opening
+    2020-05-21. Nothing from the current or any recent season is in it. The
+    "HTML fails → fall through to API" failure-mode path below is therefore
+    theoretical only: if HTML scraping ever breaks, this fallback will
+    silently yield ~0 current-season events, not actually recover them.
+  * `EvfApiClient.get_competitions(id)` (`/events/competitions`, scanned by
+    raw integer id — this integer IS the real EVF event id, stored as
+    `tbl_event.id_evf_event`) does cover the current season, but an id only
+    exists once EVF has built out that event's competitions in their own
+    backend, which lags behind the public calendar listing. Live scan
+    2026-07-10: ids exist up to 91 (Dublin, opens 2026-05-31); ids 92-199 are
+    all empty, even though events later than that (e.g. "EVF Circuit –
+    Samorin (SVK)", 2026-09-12) are already published on the public HTML
+    calendar with a confirmed date. A future/TBD-venue calendar event
+    therefore has NO EVF id available at scrape time — the calendar-path
+    dedup key cannot rely on `id_evf_event` alone.
 
 Enrichment layers:
   * Per-event detail pages → url_invitation, url_registration,
@@ -16,6 +35,8 @@ Failure semantics:
   * HTML ok, API fails                       → use HTML, log warning
   * HTML empty+valid, API returns events     → fall through to API (edge case)
   * HTML fails, API ok with events           → fall through to API, log warning
+    (see JSON API reality above: in practice this recovers ~nothing for the
+    active season since `get_events()` is frozen at 2020)
   * Both fail / both empty and errored       → raise RuntimeError
     (workflow `if: failure()` step then fires Telegram alert)
   * Detail-page fetch fails per event        → log warning, keep other events
@@ -100,6 +121,23 @@ def _normalize_country(name: str | None) -> str:
     return _COUNTRY_CANONICAL.get(s, s)
 
 
+def _extract_evf_slug(url: str | None) -> str:
+    """Extract the last path segment of an EVF calendar detail-page URL.
+
+    'https://www.veteransfencing.eu/event/evf-circuit-samorin-svk/' -> 'evf-circuit-samorin-svk'.
+    Returns "" for blank/unparseable input, same convention as _normalize_country.
+    Mirrors the SQL backfill's regexp_replace(TRIM(TRAILING '/' FROM url), '^.*/', '')
+    exactly, so a slug computed at scrape time and one backfilled from historical
+    url_event values always agree.
+    """
+    if not url:
+        return ""
+    path = url.split("?", 1)[0].split("#", 1)[0].rstrip("/")
+    if "/" not in path:
+        return ""
+    return path.rsplit("/", 1)[-1].strip()
+
+
 # TODO(ADR-028): disabled 2026-04-20 — live hit rate was 0/13 against EVF detail
 # pages. Re-enable once real-world deadline phrasings have been observed and the
 # `_DEADLINE_PATTERNS` regex list is tuned against them.
@@ -125,6 +163,7 @@ _PUBLIC_EVENT_KEYS = (
     "url_invitation",
     "url_registration",
     "dt_registration_deadline",
+    "evf_slug",
 )
 
 _REGISTRATION_HOSTS = (
@@ -175,6 +214,7 @@ def _blank_event() -> dict:
         "url_invitation": None,
         "url_registration": None,
         "dt_registration_deadline": None,
+        "evf_slug": "",
     }
 
 
@@ -259,6 +299,7 @@ def parse_evf_calendar_html(html: str) -> list[dict]:
                 "url": url,
                 "fee": fee,
                 "fee_currency": fee_currency,
+                "evf_slug": _extract_evf_slug(str(url) if url else ""),
             }
         )
         events.append(evt)
@@ -680,25 +721,63 @@ def _find_existing_match(
 ) -> dict | None:
     """Find the best existing-row match for a scraped event (ADR-039 dedup key).
 
-    Algorithm (ADR-039 rev 2):
-      Step 2 — date gate: |dt_start − dt_start| ≤ date_tolerance days.
-      Step 3 — STRONG: same canonical country → match.
-      Step 4 — MEDIUM: country missing on either side, location token-set-
-               ratio (diacritic-folded) ≥ LOCATION_MATCH_THRESHOLD → match.
-      Step 5 — no match → return None.
+    Algorithm (ADR-039 rev 3):
+      Step 1 — PRIMARY: EVF numeric id (`evf_id` / `id_evf_event`) — no date
+               gate (a reschedule must still match). Live-verified
+               2026-07-10: structurally absent from calendar-path HTML
+               scrapes (EVF assigns ids to an event in their own backend
+               later than the public listing) — present when called from
+               the results path (`EvfApiClient.discover_season_events`).
+      Step 2 — FALLBACK: EVF slug (`evf_slug` / `txt_evf_slug`), the last
+               path segment of the calendar detail-page URL — also no date
+               gate. Always available at calendar-scrape time, even for a
+               future event with no venue/id yet. This is what fixes the
+               "EVF Circuit – Samorin (SVK)" duplicate-row bug: country and
+               location were blank on both the scrape and the CERT row, so
+               neither Step 3 nor Step 4 below could ever match, and a
+               fresh duplicate was created on every cron run.
+      Step 3 — date gate: |dt_start − dt_start| ≤ date_tolerance days.
+      Step 4 — BACKUP/STRONG: same canonical country → match.
+      Step 5 — BACKUP/MEDIUM: country missing on either side, location
+               token-set-ratio (diacritic-folded) ≥ LOCATION_MATCH_THRESHOLD
+               → match.
+      Step 6 — no match → return None.
 
-    Steps 0 (logical-integrity guard) and 1 (stale-event gate) are caller
-    concerns — they are applied to `existing` BEFORE this function is
+    Steps 1 and 2 are deliberately NOT nested inside the date-gated loop —
+    an id/slug match must win even when the scraped date has drifted beyond
+    `date_tolerance` (a reschedule), which is exactly the case the caller's
+    diff-and-sync step (`fn_sync_evf_event_fields`) is meant to catch.
+
+    Steps 0 (logical-integrity guard) and pre-Step-3 (stale-event gate) are
+    caller concerns — they are applied to `existing` BEFORE this function is
     called. See `assert_no_future_completed` and `is_in_scope`.
 
-    Name comparison was REMOVED in rev 2: EVF actively renames events
-    mid-season (Napoli → Naples (ITA)) and name fuzz produced the
-    PEW-PALAVESUVI-class duplicates. Date + country + location are
-    physical properties that can't be renamed away.
+    Name comparison was REMOVED in rev 2 and stays removed in rev 3: EVF
+    actively renames events mid-season (Napoli → Naples (ITA)) and name
+    fuzz produced the PEW-PALAVESUVI-class duplicates. Date + country +
+    location remain the backup ladder's physical properties that can't be
+    renamed away; id/slug are the actual event identity and now rank ahead
+    of them.
 
     The `name_threshold` parameter is kept for backwards-compatible call
     sites but is never read.
     """
+    # Step 1 — PRIMARY: EVF numeric id.
+    s_evf_id = s_evt.get("evf_id")
+    if s_evf_id:
+        for ex in existing:
+            if ex.get("id_evf_event") == s_evf_id:
+                return ex
+
+    # Step 2 — FALLBACK: EVF slug.
+    s_slug = s_evt.get("evf_slug", "")
+    if s_slug:
+        for ex in existing:
+            ex_slug = ex.get("txt_evf_slug")
+            if ex_slug and ex_slug == s_slug:
+                return ex
+
+    # Step 3 (backup ladder start) — date gate.
     s_date = s_evt.get("dt_start", "")
     s_country = _normalize_country(s_evt.get("country", ""))
 
@@ -710,7 +789,7 @@ def _find_existing_match(
     s_location_folded = _diacritic_fold(s_evt.get("location", "")).strip()
 
     for ex in existing:
-        # Step 2 — date gate.
+        # Step 3 — date gate.
         ex_date = str(ex.get("dt_start", ""))
         try:
             ed = datetime.strptime(ex_date, "%Y-%m-%d").date()
@@ -719,12 +798,12 @@ def _find_existing_match(
         if abs((sd - ed).days) > date_tolerance:
             continue
 
-        # Step 3 — country STRONG match.
+        # Step 4 — country STRONG match.
         ex_country = _normalize_country(ex.get("txt_country", ""))
         if s_country and ex_country and s_country == ex_country:
             return ex
 
-        # Step 4 — location MEDIUM match (only when country missing on either side).
+        # Step 5 — location MEDIUM match (only when country missing on either side).
         if not (s_country and ex_country):
             ex_location_folded = _diacritic_fold(ex.get("txt_location", "")).strip()
             if s_location_folded and ex_location_folded:

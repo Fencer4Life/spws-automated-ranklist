@@ -7,7 +7,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(4);
+SELECT plan(5);
 
 -- ===== SETUP =====
 DO $setup$
@@ -152,6 +152,39 @@ SELECT is(
       AND t.enum_gender = 'M' AND t.enum_age_category = 'V2'),
   98765,
   '22.4: fn_find_or_create_tournament backfills id_evf_competition on idempotent re-call'
+);
+
+
+-- =========================================================================
+-- 22.5 — fn_import_evf_events_v2 with evf_slug key sets tbl_event.txt_evf_slug
+-- (ADR-039 rev 3 / mirrors 22.1's structure for evf_id/id_evf_event)
+-- =========================================================================
+DO $t225$
+DECLARE
+  v_season  INT;
+  v_payload JSONB;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'EVFFK-INGEST';
+  v_payload := jsonb_build_array(jsonb_build_object(
+    'name',     'EVF FK Test Event 22.5',
+    'dt_start', '2033-07-15',
+    'dt_end',   '2033-07-16',
+    'location', 'TestCity225',
+    'country',  'Slovakia',
+    'weapons',  jsonb_build_array('EPEE'),
+    'is_team',  false,
+    'evf_slug', 'evf-fk-test-event-225'
+  ));
+  PERFORM fn_import_evf_events_v2(v_payload, v_season);
+END;
+$t225$;
+
+SELECT is(
+  (SELECT txt_evf_slug FROM tbl_event
+    WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'EVFFK-INGEST')
+      AND dt_start = '2033-07-15'),
+  'evf-fk-test-event-225',
+  '22.5: fn_import_evf_events_v2 writes evf_slug from JSONB into tbl_event.txt_evf_slug'
 );
 
 

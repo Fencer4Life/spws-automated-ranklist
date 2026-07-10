@@ -305,6 +305,147 @@ class TestDedupAlgorithmRev2:
         assert len(already8) == 0
 
 
+class TestEvfSlugExtraction:
+    """Tests evf.47–evf.48: _extract_evf_slug helper (ADR-039 rev 3)."""
+
+    def test_extract_evf_slug_from_trailing_slash_url(self):
+        """evf.47: last path segment of an EVF calendar detail-page URL."""
+        from python.scrapers.evf_calendar import _extract_evf_slug
+
+        assert (
+            _extract_evf_slug("https://www.veteransfencing.eu/event/evf-circuit-samorin-svk/")
+            == "evf-circuit-samorin-svk"
+        )
+
+    def test_extract_evf_slug_blank_input(self):
+        """evf.48: blank/None input returns "" (same convention as _normalize_country)."""
+        from python.scrapers.evf_calendar import _extract_evf_slug
+
+        assert _extract_evf_slug("") == ""
+        assert _extract_evf_slug(None) == ""
+
+
+class TestDedupIdSlugPriority:
+    """Tests evf.49–evf.53: id_evf_event / txt_evf_slug dedup priority (ADR-039 rev 3).
+
+    Root-cause regression coverage for the Samorin duplicate bug: 7 rows
+    created for the same event because country+location were blank on both
+    sides, so the date+country+location ladder never matched. id/slug now
+    rank ahead of that ladder and are not gated by date_tolerance (a
+    reschedule must still match).
+    """
+
+    def test_id_match_wins_over_slug_and_location_on_different_row(self):
+        """evf.49: id is authoritative — a conflicting slug/location match on
+        a DIFFERENT row must never be considered once an id match exists.
+        """
+        from python.scrapers.evf_calendar import _find_existing_match
+
+        scraped = {
+            "name": "EVF Circuit – Samorin (SVK)",
+            "dt_start": "2026-09-12",
+            "evf_id": 555,
+            "evf_slug": "evf-circuit-samorin-svk",
+            "location": "Samorin",
+            "country": "Slovakia",
+        }
+        row_a = {"id_event": 1, "dt_start": "2026-09-12", "id_evf_event": 555}
+        row_b = {
+            "id_event": 2,
+            "dt_start": "2026-09-12",
+            "txt_evf_slug": "evf-circuit-samorin-svk",
+            "txt_location": "Samorin",
+            "txt_country": "Slovakia",
+        }
+        match = _find_existing_match(scraped, [row_b, row_a])
+        assert match is row_a, "id_evf_event match must win, row B never considered"
+
+    def test_slug_match_when_id_absent_both_sides(self):
+        """evf.50: THE SAMORIN REPRO. Neither side has an EVF id (EVF hasn't
+        assigned one yet — live-verified 2026-07-10). country/location blank
+        on both sides. Must match via slug — today (pre-fix) this returns
+        None and a duplicate is created.
+        """
+        from python.scrapers.evf_calendar import _find_existing_match
+
+        scraped = {
+            "name": "EVF Circuit – Samorin (SVK)",
+            "dt_start": "2026-09-12",
+            "evf_slug": "evf-circuit-samorin-svk",
+        }
+        existing_row = {
+            "id_event": 111,
+            "txt_code": "PEW68-2026-2027",
+            "dt_start": "2026-09-12",
+            "txt_evf_slug": "evf-circuit-samorin-svk",
+        }
+        match = _find_existing_match(scraped, [existing_row])
+        assert match is existing_row, "Samorin must match by slug when country+location are blank"
+
+    def test_slug_mismatch_different_urls_not_a_match(self):
+        """evf.51: same date, blank country/location both sides, but slugs
+        differ (different real-world events) — must NOT match.
+        """
+        from python.scrapers.evf_calendar import _find_existing_match
+
+        scraped = {
+            "name": "EVF Circuit – Dublin",
+            "dt_start": "2026-09-12",
+            "evf_slug": "evf-circuit-dublin",
+        }
+        existing_row = {
+            "id_event": 111,
+            "dt_start": "2026-09-12",
+            "txt_evf_slug": "evf-circuit-samorin-svk",
+        }
+        match = _find_existing_match(scraped, [existing_row])
+        assert match is None
+
+    def test_id_or_slug_match_ignores_date_tolerance(self):
+        """evf.52: a matching slug wins even when dt_start has drifted well
+        beyond date_tolerance (7 days) — proves Steps 1/2 are separate
+        top-level passes, not nested inside the date-gated ladder. This is
+        the reschedule case the diff-and-sync step is meant to catch.
+        """
+        from python.scrapers.evf_calendar import _find_existing_match
+
+        scraped = {
+            "name": "EVF Circuit – Samorin (SVK)",
+            "dt_start": "2026-10-12",  # 30 days after the existing row's date
+            "evf_slug": "evf-circuit-samorin-svk",
+        }
+        existing_row = {
+            "id_event": 111,
+            "dt_start": "2026-09-12",
+            "txt_evf_slug": "evf-circuit-samorin-svk",
+        }
+        match = _find_existing_match(scraped, [existing_row], date_tolerance=7)
+        assert match is existing_row, "slug match must win despite date drift beyond tolerance"
+
+    def test_naples_napoli_non_regression_unmodified(self):
+        """evf.53: locked ADR-039 rev2 invariant must survive unmodified.
+        Neither side carries evf_id/evf_slug in this fixture, so the new
+        Steps 1/2 must both no-op and fall through to the existing ladder,
+        which correctly refuses to match on name-only similarity.
+        """
+        from python.scrapers.evf_calendar import deduplicate_events
+
+        scraped = [
+            {
+                "name": "EVF Circuit – Naples (ITA)",
+                "dt_start": "2026-03-07",
+                "country": "Italy",
+                "location": "Palavesuvio",
+            },
+        ]
+        existing = [
+            {"txt_name": "EVF Circuit Napoli", "dt_start": "2026-03-07"},
+        ]
+        new, already = deduplicate_events(scraped, existing)
+        assert len(new) == 1, "Name-only similarity must still NOT trigger a match"
+        assert len(already) == 0
+
+
 class TestStaleEventGate:
     """Tests evf.22, evf.24: 30-day window + status-COMPLETED gate (ADR-039)."""
 
@@ -994,6 +1135,142 @@ class TestEvfPhase2Allocator:
         assert "code" not in evt, f"payload must not include `code`; got keys: {list(evt.keys())}"
         assert "name" in evt and evt["name"]
         assert "is_team" in evt
+
+    def test_new_event_payload_includes_evf_slug(self, monkeypatch):
+        """evf.54: fn_import_evf_events_v2 payload carries an `evf_slug` key
+        derived from the scraped event's `url`, so freshly-created
+        calendar-path rows get their slug stamped at creation time.
+        """
+        from python.scrapers import evf_sync
+
+        scraped = [
+            {
+                "name": "EVF Circuit – Samorin (SVK)",
+                "dt_start": "2026-09-12",
+                "dt_end": "2026-09-12",
+                "location": "",
+                "country": "",
+                "weapons": ["EPEE"],
+                "is_team": False,
+                "url": "https://www.veteransfencing.eu/event/evf-circuit-samorin-svk/",
+                "evf_slug": "evf-circuit-samorin-svk",
+                "fee": None,
+                "fee_currency": "",
+            }
+        ]
+        rpc_returns = {
+            "created": 1,
+            "slot_reused": 0,
+            "prior_matched": 0,
+            "alerts": [],
+        }
+        sql_calls, _ = self._patch_sync(monkeypatch, scraped, rpc_returns)
+
+        evf_sync.sync_calendar("ref", "token", "bot", "chat", dry_run=False)
+
+        rpc_calls = [s for s in sql_calls if "fn_import_evf_events_v2" in s.lower()]
+        assert rpc_calls, f"expected fn_import_evf_events_v2 to be invoked; got {sql_calls}"
+        sql = rpc_calls[0]
+        json_start = sql.find("'[")
+        json_end = sql.find("]'", json_start)
+        payload_str = sql[json_start + 1 : json_end + 1].replace("''", "'")
+        payload = json.loads(payload_str)
+
+        assert isinstance(payload, list) and len(payload) == 1
+        evt = payload[0]
+        assert evt.get("evf_slug") == "evf-circuit-samorin-svk", (
+            f"expected evf_slug in payload; got keys: {list(evt.keys())}"
+        )
+
+    def test_already_imported_calls_fn_sync_evf_event_fields_before_refresh(self, monkeypatch):
+        """evf.55: the "already imported" branch calls fn_sync_evf_event_fields
+        (identity-sync: name/dates/location/country/evf_id/evf_slug) for a
+        matched pair, dispatched before the existing fn_refresh_evf_event_urls
+        fill-blank-only call.
+        """
+        from python.scrapers import evf_sync
+
+        scraped = [
+            {
+                "name": "EVF Circuit – Samorin (SVK)",
+                "dt_start": "2026-09-12",
+                "dt_end": "2026-09-12",
+                "location": "Samorin",
+                "country": "Slovakia",
+                "weapons": ["EPEE"],
+                "is_team": False,
+                "url": "https://www.veteransfencing.eu/event/evf-circuit-samorin-svk/",
+                "evf_slug": "evf-circuit-samorin-svk",
+                "fee": None,
+                "fee_currency": "",
+            }
+        ]
+
+        sql_calls: list[str] = []
+
+        def fake_mgmt(ref, token, sql):
+            sql_calls.append(sql)
+            sl = sql.lower()
+            if "from tbl_season where bool_active" in sl:
+                return [
+                    {
+                        "txt_code": "SPWS-2025-2026",
+                        "dt_start": "2025-09-01",
+                        "dt_end": "2026-08-31",
+                        "id_season": 7,
+                    }
+                ]
+            if "fn_sync_evf_event_fields" in sl:
+                return [{"r": json.dumps({"touched": 1, "changed": 1})}]
+            if "fn_refresh_evf_event_urls" in sl:
+                return [{"r": json.dumps({"touched": 1, "refreshed": 0})}]
+            if "from tbl_event" in sl:
+                return [
+                    {
+                        "id_event": 111,
+                        "txt_code": "PEW68-2026-2027",
+                        "txt_name": "EVF Circuit – Samorin (SVK)",
+                        "dt_start": "2026-09-12",
+                        "dt_end": "2026-09-12",
+                        "txt_country": None,
+                        "txt_location": None,
+                        "enum_status": "PLANNED",
+                        "url_event": "https://www.veteransfencing.eu/event/evf-circuit-samorin-svk/",
+                        "id_evf_event": None,
+                        "txt_evf_slug": "evf-circuit-samorin-svk",
+                    }
+                ]
+            return []
+
+        def fake_telegram(bot_token, chat_id, msg):
+            pass
+
+        def fake_scrape(start, end):
+            return scraped
+
+        monkeypatch.setattr(evf_sync, "_management_query", fake_mgmt)
+        monkeypatch.setattr(evf_sync, "_telegram", fake_telegram)
+        monkeypatch.setattr(evf_sync, "scrape_full_season_calendar", fake_scrape)
+
+        evf_sync.sync_calendar("ref", "token", "bot", "chat", dry_run=False)
+
+        sync_calls = [s for s in sql_calls if "fn_sync_evf_event_fields" in s.lower()]
+        refresh_calls = [s for s in sql_calls if "fn_refresh_evf_event_urls" in s.lower()]
+        assert sync_calls, f"expected fn_sync_evf_event_fields to be invoked; got {sql_calls}"
+        assert refresh_calls, "fn_refresh_evf_event_urls must still run (unchanged)"
+        assert sql_calls.index(sync_calls[0]) < sql_calls.index(refresh_calls[0]), (
+            "fn_sync_evf_event_fields must be dispatched before fn_refresh_evf_event_urls"
+        )
+
+        sync_sql = sync_calls[0]
+        json_start = sync_sql.find("'[")
+        json_end = sync_sql.find("]'", json_start)
+        payload = json.loads(sync_sql[json_start + 1 : json_end + 1].replace("''", "'"))
+        assert len(payload) == 1
+        evt = payload[0]
+        for key in ("id_event", "name", "dt_start", "dt_end", "location", "country", "evf_id", "evf_slug"):
+            assert key in evt, f"identity-sync payload missing `{key}`: {evt}"
+        assert evt["id_event"] == 111
 
 
 # =============================================================================

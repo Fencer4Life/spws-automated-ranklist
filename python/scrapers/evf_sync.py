@@ -294,7 +294,8 @@ def sync_calendar(
     roster_sql = (
         f"SELECT id_event, txt_code, txt_name, "
         f"dt_start::TEXT, dt_end::TEXT, "
-        f"txt_country, txt_location, enum_status::TEXT, url_event "
+        f"txt_country, txt_location, enum_status::TEXT, url_event, "
+        f"id_evf_event, txt_evf_slug "
         f"FROM tbl_event WHERE id_season = {season['id_season']}"
     )
     existing = _management_query(ref, token, roster_sql)
@@ -352,6 +353,7 @@ def sync_calendar(
                         "address": evt.get("address", ""),
                         "fee": "" if evt.get("fee") is None else str(evt["fee"]),
                         "fee_currency": evt.get("fee_currency", ""),
+                        "evf_slug": evt.get("evf_slug", ""),
                     }
                 )
 
@@ -396,6 +398,46 @@ def sync_calendar(
         # Skip refresh on COMPLETED/stale rows — those are admin territory.
         in_scope_existing = [e for e in existing if is_in_scope(e)]
         matched_pairs = match_scraped_to_existing(cal_events, in_scope_existing)
+
+        # Identity sync (ADR-039 rev 3): diff-and-sync source-owned identity/
+        # schedule fields (name/dates/location/country/evf_id/evf_slug) for
+        # every matched pair — unlike the fill-blank-only refresh below, this
+        # actively propagates EVF-side changes (a reschedule, a venue
+        # becoming known) onto the existing row. Runs BEFORE the URL refresh,
+        # not instead of it — fn_sync_evf_event_fields and
+        # fn_refresh_evf_event_urls own disjoint field sets.
+        identity_payload: list[dict] = [
+            {
+                "id_event": existing_row["id_event"],
+                "name": scraped.get("name", ""),
+                "dt_start": scraped.get("dt_start", ""),
+                "dt_end": scraped.get("dt_end") or scraped.get("dt_start", ""),
+                "location": scraped.get("location", ""),
+                "country": scraped.get("country", ""),
+                "evf_id": scraped.get("evf_id") or "",
+                "evf_slug": scraped.get("evf_slug", ""),
+            }
+            for scraped, existing_row in matched_pairs
+        ]
+
+        if identity_payload:
+            identity_json = json.dumps(identity_payload).replace("'", "''")
+            result = _management_query(
+                ref, token, f"SELECT fn_sync_evf_event_fields('{identity_json}'::JSONB) AS r"
+            )
+            r = result[0].get("r") if result else {}
+            if isinstance(r, str):
+                r = json.loads(r)
+            touched = (r or {}).get("touched", 0)
+            changed = (r or {}).get("changed", 0)
+            print(f"  Identity sync: touched={touched} changed={changed}")
+            if changed:
+                _telegram(
+                    bot_token,
+                    chat_id,
+                    f"<b>EVF identity sync</b>\n{changed} event(s) updated (name/date/venue).",
+                )
+
         refresh_payload: list[dict] = []
         for scraped, existing_row in matched_pairs:
             refresh_payload.append(
@@ -460,7 +502,8 @@ def sync_results(
         token,
         f"SELECT id_event, txt_code, txt_name, "
         f"dt_start::TEXT, dt_end::TEXT, "
-        f"txt_country, txt_location, enum_status::TEXT "
+        f"txt_country, txt_location, enum_status::TEXT, "
+        f"id_evf_event, txt_evf_slug "
         f"FROM tbl_event WHERE id_season = {season['id_season']}",
     )
 
@@ -657,11 +700,16 @@ def _compare_and_ingest(
     cert_events: list[dict] = []
     if cert_events_pool is not None:
         # Map the EVF API event onto the calendar-shape dict the matcher expects.
+        # evf_id comes free from EvfApiClient.discover_season_events() (the raw
+        # EVF-assigned event id) — gives the results path Step-1 ID matching
+        # with no extra API calls. No evf_slug here (results path has none;
+        # _find_existing_match's .get("evf_slug", "") handles the absence).
         scraped_shape = {
             "name": evf_evt.get("name", ""),
             "dt_start": evf_date,
             "country": evf_evt.get("country", ""),
             "location": evf_evt.get("location", ""),
+            "evf_id": evf_evt.get("evf_id"),
         }
         from python.scrapers.evf_calendar import _find_existing_match
 
