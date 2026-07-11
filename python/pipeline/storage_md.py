@@ -71,6 +71,24 @@ class StorageMdHandler:
         )
         return path
 
+    def upload_reconcile(self, season: str, md_bytes: bytes, timestamp: str) -> str:
+        """Upload reconcile/{season}/{timestamp}.md (append-only run log).
+
+        The subject is a CERT→PROD reconcile RUN scoped to a season (not a
+        single event), so it lives under a dedicated `reconcile/` prefix to
+        keep run logs from mingling with the per-event scrape reports.
+        """
+        self._validate_event_code(season)  # season codes match [A-Z0-9_-]+
+        if not re.match(r"^\d{8}-\d{6}Z$", timestamp):
+            raise ValueError(f"invalid timestamp {timestamp!r}: expected yyyyMMdd-HHmmssZ")
+        path = f"reconcile/{season}/{timestamp}.md"
+        self._bucket().upload(
+            path,
+            md_bytes,
+            file_options={"content-type": "text/markdown", "upsert": "false"},
+        )
+        return path
+
     # --- download -----------------------------------------------------------
 
     def download_full(self, event_code: str) -> bytes | None:

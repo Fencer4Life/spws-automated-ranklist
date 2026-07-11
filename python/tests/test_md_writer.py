@@ -118,3 +118,37 @@ def test_md_writer_local_target_without_staging_dir_uses_default(tmp_path, monke
         target="local",
     )
     assert (tmp_path / "EVENT-DEFAULT.md").exists()
+
+
+def test_write_reconcile_local_uses_reconcile_subfolder(tmp_path):
+    # recon-rep.9 — target='local' writes doc/staging/reconcile/{season}.{ts}.md
+    from python.pipeline.md_writer import write_reconcile
+
+    out = write_reconcile(
+        season="SPWS-2025-2026",
+        md_text="# reconcile\n",
+        target="local",
+        timestamp="20260711-145203Z",
+        staging_dir=tmp_path,
+    )
+    expected = tmp_path / "SPWS-2025-2026.20260711-145203Z.md"
+    assert expected.exists()
+    assert out == str(expected)
+
+
+def test_write_reconcile_storage_uses_reconcile_prefix():
+    # recon-rep.10 — target='storage' → reconcile/{season}/{ts}.md
+    from unittest.mock import MagicMock
+
+    from python.pipeline.md_writer import write_reconcile
+
+    sb = MagicMock()
+    path = write_reconcile(
+        season="SPWS-2025-2026",
+        md_text="# reconcile\n",
+        target="storage",
+        timestamp="20260711-145203Z",
+        supabase_client=sb,
+    )
+    assert path == "reconcile/SPWS-2025-2026/20260711-145203Z.md"
+    sb.storage.from_.assert_called_with("staging-reports")

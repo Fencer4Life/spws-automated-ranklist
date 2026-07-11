@@ -20,12 +20,17 @@ group is bypassed (e.g. local runs).
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import os
 import sys
 from functools import partial
 
 import httpx
+
+from python.pipeline import md_writer
+from python.pipeline.md_writer import Target
+from python.pipeline.reconcile_report import compute_changes, render_report
 
 
 def _management_query(ref: str, access_token: str, sql: str) -> list[dict]:
@@ -403,6 +408,34 @@ def _build_update_payload(prod_id_event: int, evt: dict, id_organizer: int | Non
     }
 
 
+def _read_full_events(query_fn, id_season: int) -> dict[str, dict]:
+    """Snapshot every event in a season as a comparable projection keyed by txt_code.
+
+    Column-agnostic: ``to_jsonb(row)`` minus env-local noise (raw ids,
+    timestamps), with ``id_organizer``/``id_prior_event`` resolved to codes — so
+    the reconcile-report diff picks up ANY field, including columns a future
+    migration adds, with no change here.
+    """
+    rows = query_fn(
+        "SELECT e.txt_code, "
+        "  to_jsonb(e) "
+        "    - 'id_event' - 'id_season' - 'id_organizer' - 'id_prior_event' "
+        "    - 'ts_created' - 'ts_updated' "
+        "  || jsonb_build_object("
+        "       'organizer_code', o.txt_code, "
+        "       'prior_code', (SELECT pe.txt_code FROM tbl_event pe "
+        "                        WHERE pe.id_event = e.id_prior_event)"
+        "     ) AS j "
+        "FROM tbl_event e JOIN tbl_organizer o ON o.id_organizer = e.id_organizer "
+        f"WHERE e.id_season = {id_season}"
+    )
+    out: dict[str, dict] = {}
+    for r in rows:
+        j = r["j"]
+        out[r["txt_code"]] = json.loads(j) if isinstance(j, str) else dict(j)
+    return out
+
+
 def promote_calendar(
     cert_query_fn=None,
     prod_query_fn=None,
@@ -410,6 +443,11 @@ def promote_calendar(
     prod_ref: str | None = None,
     access_token: str | None = None,
     dry_run: bool = False,
+    report_target: Target = "none",
+    supabase_client=None,
+    staging_dir=None,
+    timestamp: str | None = None,
+    trigger: str = "manual",
 ) -> dict:
     """Reconcile PROD's active-season event set to CERT's — the source of truth.
 
@@ -505,6 +543,11 @@ def promote_calendar(
     if dry_run:
         return summary
 
+    # Snapshot PROD BEFORE (full projections) for the run report — only when a
+    # report is actually wanted, to avoid the extra read otherwise.
+    want_report = report_target != "none"
+    prod_before = _read_full_events(prod_query_fn, prod_season["id_season"]) if want_report else {}
+
     creates_json = json.dumps(creates).replace("'", "''")
     updates_json = json.dumps(updates).replace("'", "''")
     deletes_json = json.dumps(deletes).replace("'", "''")
@@ -521,6 +564,43 @@ def promote_calendar(
     summary["updated"] = int(rpc.get("updated", 0))
     summary["deleted"] = int(rpc.get("deleted", 0))
     summary["delete_skipped"] = rpc.get("delete_skipped", [])
+
+    if want_report:
+        # PROD after + CERT snapshots → applied changes (before→after) and
+        # divergences-not-synced (CERT vs PROD-after). Column-agnostic diffs.
+        prod_after = _read_full_events(prod_query_fn, prod_season["id_season"])
+        cert_full = _read_full_events(cert_query_fn, cert_season["id_season"])
+        applied = compute_changes(prod_before, prod_after)
+        divergences = compute_changes(prod_after, cert_full)
+        deleted_evidence = {
+            code: f"{prod_before[code].get('enum_status', '?')}, 0 results"
+            for code in applied["deleted"]
+        }
+        created_rows = {code: prod_after[code] for code in applied["created"]}
+        ts = timestamp or datetime.datetime.now(datetime.UTC).strftime("%Y%m%d-%H%M%SZ")
+        md = render_report(
+            season=prod_season["txt_code"],
+            timestamp=ts,
+            cert_ref=cert_ref or "cert",
+            prod_ref=prod_ref or "prod",
+            trigger=trigger,
+            season_guard_ok=True,
+            applied=applied,
+            deleted_evidence=deleted_evidence,
+            divergences=divergences,
+            rpc=rpc,
+            prod_count=len(prod_after),
+            cert_count=len(cert_full),
+            created_rows=created_rows,
+        )
+        summary["report_path"] = md_writer.write_reconcile(
+            season=prod_season["txt_code"],
+            md_text=md,
+            target=report_target,
+            timestamp=ts,
+            staging_dir=staging_dir,
+            supabase_client=supabase_client,
+        )
 
     return summary
 
@@ -573,16 +653,36 @@ def main() -> None:
             f"Calendar reconcile CERT ({cert_ref}) → PROD ({prod_ref})"
             + (" [DRY RUN]" if args.dry_run else "")
         )
+        # Build a CERT Supabase client for the run-report bucket upload (best
+        # effort — the local repo report is always written; the bucket upload
+        # is a bonus if supabase-py + the service-role key are available).
+        sb_cert = None
+        cert_key = os.environ.get("SUPABASE_CERT_SERVICE_ROLE_KEY")
+        if cert_key and not args.dry_run:
+            try:
+                from supabase import create_client
+
+                sb_cert = create_client(f"https://{cert_ref}.supabase.co", cert_key)
+            except Exception:  # noqa: BLE001 — report is best-effort, never fails the promote
+                sb_cert = None
+        report_target: Target = "none" if args.dry_run else ("both" if sb_cert else "local")
+        trigger = os.environ.get("GITHUB_EVENT_NAME", "manual")
+
         try:
             summary = promote_calendar(
                 cert_ref=cert_ref,
                 prod_ref=prod_ref,
                 access_token=access_token,
                 dry_run=args.dry_run,
+                report_target=report_target,
+                supabase_client=sb_cert,
+                trigger=trigger,
             )
         except Exception as exc:
             notify(f"<b>Calendar reconcile → PROD FAILED</b>\n<pre>{str(exc)[:500]}</pre>")
             raise
+        if summary.get("report_path"):
+            print(f"  Report: {summary['report_path']}")
         print(f"  Created: {summary['created']} new event(s)")
         print(f"  Updated: {summary['updated']} existing event(s)")
         print(f"  Deleted: {summary['deleted']} orphaned event(s)")
