@@ -361,7 +361,7 @@ def sync_calendar(
             result = _management_query(
                 ref,
                 token,
-                f"SELECT fn_import_evf_events_v2('{events_json}'::JSONB, "
+                f"SELECT fn_ingest_evf_calendar('{events_json}'::JSONB, "
                 f"{season['id_season']}) AS r",
             )
             r = result[0].get("r") if result else {}

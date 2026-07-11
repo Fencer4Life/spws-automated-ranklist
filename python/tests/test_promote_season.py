@@ -1,8 +1,13 @@
-"""ADR-077 — CERT → PROD season-skeleton promotion orchestrator.
+"""ADR-077 — CERT → PROD season-skeleton promotion orchestrator (slimmed,
+reconciler amendment pending sign-off).
 
-Plan test IDs S77.1–S77.5:
-  S77.1  promote_season reads CERT season + events and calls the PROD RPC
-  S77.2  id_prior_event is re-resolved to the TARGET (PROD) id by txt_code
+Plan test IDs S77.1, S77.3–S77.5:
+  S77.1  promote_season reads CERT season + scoring_config ONLY (no events —
+         event C/U/D moved to promote.py's promote_calendar reconciler) and
+         calls the PROD RPC
+  S77.2  RETIRED — id_prior_event target-resolution during event-copy is no
+         longer this module's responsibility; coverage migrated to
+         supabase/tests/51_prod_event_reconcile.sql (51.1c)
   S77.3  childless guard — refuse when CERT season has tournament children
   S77.4  idempotency — refuse when the season already exists on PROD
   S77.5  dry_run reads but never writes PROD
@@ -37,36 +42,6 @@ def _cert_query(*, childless: bool = True):
             return [{"n": 0 if childless else 3}]
         if "FROM tbl_scoring_config sc" in sql:
             return [{"j": {"id_config": 99, "id_season": 4, "int_ppw_best_count": 4}}]
-        if "FROM tbl_event e" in sql:
-            # Two events; MPW carries a prior link to the previous season.
-            return [
-                {
-                    "j": {
-                        "id_event": 85,
-                        "id_season": 4,
-                        "id_organizer": 3,
-                        "txt_code": "PPW1-2026-2027",
-                        "txt_name": "PPW1",
-                        "enum_status": "CREATED",
-                        "id_prior_event": 61,
-                    },
-                    "prior_code": "PPW1-2025-2026",
-                    "org_code": "SPWS",
-                },
-                {
-                    "j": {
-                        "id_event": 90,
-                        "id_season": 4,
-                        "id_organizer": 3,
-                        "txt_code": "MPW-2026-2027",
-                        "txt_name": "MPW",
-                        "enum_status": "CREATED",
-                        "id_prior_event": 81,
-                    },
-                    "prior_code": "MPW-2025-2026",
-                    "org_code": "SPWS",
-                },
-            ]
         raise AssertionError(f"unexpected CERT query: {sql}")
 
     return q
@@ -78,47 +53,31 @@ def _prod_query(captured: dict, *, season_present: bool = False):
     def q(sql: str):
         if "FROM tbl_season WHERE txt_code" in sql:
             return [{"x": 1}] if season_present else []
-        if "FROM tbl_event WHERE txt_code IN" in sql:
-            # PROD ids DIVERGE from CERT: PPW1-2025-2026=61 here too, MPW-2025-2026=84 (CERT had 81).
-            return [
-                {"txt_code": "PPW1-2025-2026", "id": 61},
-                {"txt_code": "MPW-2025-2026", "id": 84},
-            ]
-        if "FROM tbl_organizer WHERE txt_code IN" in sql:
-            return [{"txt_code": "SPWS", "id": 3}]
         if "fn_promote_season_skeleton" in sql:
             # Extract the JSONB payload literal for assertions.
             start = sql.index("'") + 1
             end = sql.rindex("'::JSONB")
             captured["payload"] = json.loads(sql[start:end].replace("''", "'"))
-            return [{"r": {"season_code": "SPWS-2026-2027", "id_season": 4, "events_created": 2}}]
+            return [{"r": {"season_code": "SPWS-2026-2027", "id_season": 4}}]
         raise AssertionError(f"unexpected PROD query: {sql}")
 
     return q
 
 
 def test_promote_reads_cert_and_calls_prod_rpc():
-    """S77.1"""
+    """S77.1: promote_season reads season + scoring_config only — events are
+    NOT read from CERT nor sent in the payload (owned by the reconciler)."""
     captured: dict = {}
     out = promote_season(
         "SPWS-2026-2027", cert_query_fn=_cert_query(), prod_query_fn=_prod_query(captured)
     )
-    assert out["events"] == 2
-    assert out["rpc"]["events_created"] == 2
+    assert out["season_code"] == "SPWS-2026-2027"
+    assert out["id_season"] == 4
+    assert out["rpc"]["season_code"] == "SPWS-2026-2027"
     assert captured["payload"]["source_childless"] is True
     assert captured["payload"]["season"]["txt_code"] == "SPWS-2026-2027"
-    assert len(captured["payload"]["events"]) == 2
-
-
-def test_id_prior_event_resolved_to_target_id():
-    """S77.2 — the MPW event's prior link must point at PROD's id (84), not CERT's raw 81."""
-    captured: dict = {}
-    promote_season(
-        "SPWS-2026-2027", cert_query_fn=_cert_query(), prod_query_fn=_prod_query(captured)
-    )
-    events = {e["txt_code"]: e for e in captured["payload"]["events"]}
-    assert events["MPW-2026-2027"]["id_prior_event"] == 84  # PROD id, NOT 81
-    assert events["PPW1-2026-2027"]["id_prior_event"] == 61
+    assert captured["payload"]["scoring_config"]["int_ppw_best_count"] == 4
+    assert "events" not in captured["payload"]
 
 
 def test_childless_guard_refuses():

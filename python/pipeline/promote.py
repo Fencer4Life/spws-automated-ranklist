@@ -1,17 +1,20 @@
 """
-CERT → PROD promotion (ADR-026 + 2026-04-20 amendment).
+CERT → PROD promotion (ADR-026 + reconciler amendment, pending sign-off).
 
 Two modes:
 
 * ``--mode event --event PPW4``  (default — original contract, per-event,
   promotes tournaments + results).
-* ``--mode calendar``            (ADR-026 amendment — propagates EVF calendar:
-  new events + URL enrichment via the idempotent RPCs ``fn_import_evf_events``
-  and ``fn_refresh_evf_event_urls``. Does NOT touch tournaments or results).
+* ``--mode calendar``            (reconciler — converges PROD's active-season
+  event set to CERT's via full Create/Update/Delete, keyed on txt_code, through
+  the single RPC ``fn_mirror_events_to_prod``. No code-prefix filter: this is
+  ALL active-season events, not just EVF-coded ones. Does NOT touch tournaments
+  or results — those stay owned by ``promote_event``/``--mode event``).
 
 Calendar mode shares the ``prod-write`` GitHub Actions concurrency group with
-event-promote so the two never overlap. The RPCs' idempotency is the backstop
-if the group is bypassed (e.g. local runs).
+event-promote so the two never overlap. The RPC's own guards (organizer must
+resolve, delete only a PLANNED zero-result event) are the backstop if the
+group is bypassed (e.g. local runs).
 """
 
 from __future__ import annotations
@@ -39,6 +42,25 @@ def _management_query(ref: str, access_token: str, sql: str) -> list[dict]:
     if resp.status_code >= 400:
         raise RuntimeError(f"Management API error ({resp.status_code}): {resp.text}")
     return resp.json()
+
+
+def _prod_code_to_id(
+    prod_query_fn, table: str, id_col: str, codes: set[str | None]
+) -> dict[str, int]:
+    """Map txt_code → target id_* for the given table (codes are FK-resolved on PROD).
+
+    Shared with promote_season.py — ids diverge between CERT and PROD (the
+    one-time natural-key baseline left legacy ids misaligned), so every
+    cross-env FK is resolved by code against the TARGET, never copied raw.
+    """
+    clean_codes: set[str] = {c for c in codes if c}
+    if not clean_codes:
+        return {}
+    in_list = ", ".join("'" + c.replace("'", "''") + "'" for c in sorted(clean_codes))
+    rows = prod_query_fn(
+        f"SELECT txt_code, {id_col} AS id FROM {table} WHERE txt_code IN ({in_list})"
+    )
+    return {r["txt_code"]: int(r["id"]) for r in rows}
 
 
 def read_cert_event(
@@ -290,10 +312,15 @@ def _get_active_season(query_fn) -> dict | None:
     return rows[0] if rows else None
 
 
-def _read_cert_evf_events(query_fn, id_season: int) -> list[dict]:
-    """Fetch EVF events in the active season from CERT with all URL / enrichment fields."""
+def _read_cert_promotable_events(query_fn, id_season: int) -> list[dict]:
+    """Fetch ALL events in the active season from CERT — no code-prefix filter.
+
+    Joins tbl_organizer to carry the REAL organizer as a code (never a raw
+    id — ids diverge between CERT and PROD), and resolves id_prior_event to
+    its code too, so the caller can FK-resolve both against PROD by code.
+    """
     return query_fn(
-        "SELECT e.txt_code, e.txt_name, "
+        "SELECT e.txt_code, e.txt_name, e.enum_status::TEXT AS enum_status, "
         "e.dt_start::TEXT AS dt_start, e.dt_end::TEXT AS dt_end, "
         "COALESCE(e.txt_location,'') AS txt_location, "
         "COALESCE(e.txt_country,'') AS txt_country, "
@@ -305,44 +332,30 @@ def _read_cert_evf_events(query_fn, id_season: int) -> list[dict]:
         "COALESCE(e.txt_entry_fee_currency,'') AS txt_entry_fee_currency, "
         "(SELECT COALESCE(ARRAY_AGG(w::TEXT), ARRAY[]::TEXT[]) "
         "   FROM UNNEST(e.arr_weapons) w) AS weapons, "
-        "EXISTS(SELECT 1 FROM tbl_tournament t WHERE t.id_event = e.id_event "
-        "  AND t.enum_type IN ('MEW','MSW','PSW')) AS is_team "
-        f"FROM tbl_event e WHERE e.id_season = {id_season} "
-        "AND (e.txt_code LIKE 'PEW%' OR e.txt_code LIKE 'MEW%') "
+        "e.id_evf_event, e.txt_evf_slug, "
+        "o.txt_code AS organizer_code, "
+        "(SELECT pe.txt_code FROM tbl_event pe WHERE pe.id_event = e.id_prior_event) AS prior_code "
+        "FROM tbl_event e JOIN tbl_organizer o ON o.id_organizer = e.id_organizer "
+        f"WHERE e.id_season = {id_season} "
         "ORDER BY e.dt_start"
     )
 
 
-def _build_import_payload(evt: dict) -> dict:
-    """Shape a CERT EVF event row into the JSONB payload fn_import_evf_events expects."""
+def _build_create_payload(
+    evt: dict, id_season: int, id_organizer: int | None, id_prior_event: int | None
+) -> dict:
+    """Shape a CERT event row + PROD-resolved FKs into fn_mirror_events_to_prod's CREATE shape."""
     return {
-        "code": evt["txt_code"],
-        "name": evt.get("txt_name") or "",
+        "txt_code": evt["txt_code"],
+        "txt_name": evt.get("txt_name") or "",
+        "id_season": id_season,
+        "id_organizer": id_organizer,
         "dt_start": evt.get("dt_start") or "",
         "dt_end": evt.get("dt_end") or evt.get("dt_start") or "",
-        "location": evt.get("txt_location") or "",
-        "country": evt.get("txt_country") or "",
-        "address": evt.get("txt_venue_address") or "",
-        "weapons": evt.get("weapons") or [],
-        "is_team": bool(evt.get("is_team", False)),
-        "url_event": evt.get("url_event") or "",
-        "url_invitation": evt.get("url_invitation") or "",
-        "url_registration": evt.get("url_registration") or "",
-        "dt_registration_deadline": evt.get("dt_registration_deadline") or "",
-        "fee": "" if evt.get("num_entry_fee") is None else str(evt["num_entry_fee"]),
-        "fee_currency": evt.get("txt_entry_fee_currency") or "",
-    }
-
-
-def _build_refresh_payload(prod_id_event: int, evt: dict) -> dict:
-    """Shape a refresh payload targeting an existing PROD event by id_event.
-
-    ADR-040: includes url_event_2..5 slots; the receiving RPC applies per-slot
-    NULL-only invariant and re-compacts. Keys are always present (empty string
-    when source is NULL/empty) so payload shape is stable.
-    """
-    return {
-        "id_event": prod_id_event,
+        "txt_location": evt.get("txt_location") or "",
+        "txt_country": evt.get("txt_country") or "",
+        "enum_status": evt.get("enum_status") or "PLANNED",
+        "txt_venue_address": evt.get("txt_venue_address") or "",
         "url_event": evt.get("url_event") or "",
         "url_event_2": evt.get("url_event_2") or "",
         "url_event_3": evt.get("url_event_3") or "",
@@ -351,10 +364,42 @@ def _build_refresh_payload(prod_id_event: int, evt: dict) -> dict:
         "url_invitation": evt.get("url_invitation") or "",
         "url_registration": evt.get("url_registration") or "",
         "dt_registration_deadline": evt.get("dt_registration_deadline") or "",
-        "address": evt.get("txt_venue_address") or "",
-        "fee": "" if evt.get("num_entry_fee") is None else str(evt["num_entry_fee"]),
-        "fee_currency": evt.get("txt_entry_fee_currency") or "",
-        "weapons": evt.get("weapons") or [],
+        "num_entry_fee": "" if evt.get("num_entry_fee") is None else str(evt["num_entry_fee"]),
+        "txt_entry_fee_currency": evt.get("txt_entry_fee_currency") or "",
+        "arr_weapons": evt.get("weapons") or [],
+        "id_prior_event": id_prior_event,
+        "id_evf_event": evt.get("id_evf_event"),
+        "txt_evf_slug": evt.get("txt_evf_slug") or "",
+    }
+
+
+def _build_update_payload(prod_id_event: int, evt: dict, id_organizer: int | None) -> dict:
+    """Shape the UPDATE branch's payload: identity fields overwrite, URL fields
+    fill-blank-only on the SQL side (see fn_mirror_events_to_prod). Keys are
+    always present (empty string when source is NULL/empty) so payload shape
+    is stable regardless of which fields a given event actually has.
+    """
+    return {
+        "id_event": prod_id_event,
+        "txt_name": evt.get("txt_name") or "",
+        "dt_start": evt.get("dt_start") or "",
+        "dt_end": evt.get("dt_end") or evt.get("dt_start") or "",
+        "txt_location": evt.get("txt_location") or "",
+        "txt_country": evt.get("txt_country") or "",
+        "id_organizer": id_organizer,
+        "arr_weapons": evt.get("weapons") or [],
+        "id_evf_event": evt.get("id_evf_event"),
+        "txt_evf_slug": evt.get("txt_evf_slug") or "",
+        "url_event": evt.get("url_event") or "",
+        "url_event_2": evt.get("url_event_2") or "",
+        "url_event_3": evt.get("url_event_3") or "",
+        "url_event_4": evt.get("url_event_4") or "",
+        "url_event_5": evt.get("url_event_5") or "",
+        "url_invitation": evt.get("url_invitation") or "",
+        "url_registration": evt.get("url_registration") or "",
+        "dt_registration_deadline": evt.get("dt_registration_deadline") or "",
+        "num_entry_fee": "" if evt.get("num_entry_fee") is None else str(evt["num_entry_fee"]),
+        "txt_entry_fee_currency": evt.get("txt_entry_fee_currency") or "",
     }
 
 
@@ -366,14 +411,19 @@ def promote_calendar(
     access_token: str | None = None,
     dry_run: bool = False,
 ) -> dict:
-    """Propagate EVF calendar (new events + URL enrichment) from CERT to PROD.
+    """Reconcile PROD's active-season event set to CERT's — the source of truth.
 
-    Reuses the idempotent RPCs ``fn_import_evf_events`` (insert by code, skip
-    existing) and ``fn_refresh_evf_event_urls`` (fill NULLs only, never
-    overwrites admin edits).
+    Full Create/Update/Delete, keyed on txt_code, through the single RPC
+    ``fn_mirror_events_to_prod``. Every event in the active season is in
+    scope (no code-prefix filter): CERT-only events are created, events on
+    both sides have their identity fields overwritten from CERT (URLs stay
+    fill-blank-only), and PROD-only events are deleted — guarded server-side
+    to a PLANNED event with zero results. Tournaments/results are never
+    touched here (owned by ``promote_event``).
 
-    Returns ``{"imported": int, "refreshed": int, "new_codes": [...],
-    "refreshed_codes": [...]}``.
+    Returns ``{"created": int, "updated": int, "deleted": int,
+    "delete_skipped": [...], "new_codes": [...], "updated_codes": [...],
+    "deleted_codes": [...]}``.
     """
     if cert_query_fn is None:
         assert cert_ref is not None and access_token is not None, (
@@ -386,65 +436,91 @@ def promote_calendar(
         )
         prod_query_fn = partial(_management_query, prod_ref, access_token)
 
-    # Active season must exist on both sides (PROD is the driver — what PROD
-    # thinks is active dictates which window we care about).
+    # Active season must exist on both sides AND be the SAME season. The
+    # reconciler converges one season's event set — if CERT has already
+    # rolled to a new season that PROD hasn't been bootstrapped onto yet
+    # (via promote_season.py), comparing CERT's new-season events against
+    # PROD's old-season events would misfile creates under the wrong
+    # id_season and propose deleting PROD's entire outgoing season. Fail
+    # loud instead of guessing which window applies.
     prod_season = _get_active_season(prod_query_fn)
     if not prod_season:
         raise RuntimeError("No active season on PROD — cannot promote calendar")
     cert_season = _get_active_season(cert_query_fn)
     if not cert_season:
         raise RuntimeError("No active season on CERT — cannot promote calendar")
+    if cert_season["txt_code"] != prod_season["txt_code"]:
+        raise RuntimeError(
+            f"promote_calendar: active season mismatch — CERT is on "
+            f"{cert_season['txt_code']!r}, PROD is on {prod_season['txt_code']!r}. "
+            "Bootstrap the new season on PROD via promote_season.py first."
+        )
 
-    # Read EVF events on both sides for the active season.
-    cert_events = _read_cert_evf_events(cert_query_fn, cert_season["id_season"])
+    # Read the full promotable event set on both sides for the active season.
+    cert_events = _read_cert_promotable_events(cert_query_fn, cert_season["id_season"])
     prod_existing = prod_query_fn(
-        f"SELECT id_event, txt_code FROM tbl_event "
-        f"WHERE id_season = {prod_season['id_season']} "
-        f"AND (txt_code LIKE 'PEW%' OR txt_code LIKE 'MEW%')"
+        f"SELECT id_event, txt_code FROM tbl_event WHERE id_season = {prod_season['id_season']}"
     )
     prod_by_code = {row["txt_code"]: row["id_event"] for row in prod_existing}
+    cert_codes = {evt["txt_code"] for evt in cert_events}
 
-    # Diff.
-    new_events: list[dict] = []
-    refresh_events: list[tuple[int, dict]] = []
+    # Resolve organizer + prior-event codes to PROD ids in bulk (by code,
+    # never a raw cross-env id — reuses the same helper promote_season.py
+    # uses for the identical hazard).
+    org_codes: set[str | None] = {evt.get("organizer_code") for evt in cert_events}
+    prior_codes: set[str | None] = {evt.get("prior_code") for evt in cert_events}
+    org_map = _prod_code_to_id(prod_query_fn, "tbl_organizer", "id_organizer", org_codes)
+    prior_map = _prod_code_to_id(prod_query_fn, "tbl_event", "id_event", prior_codes)
+
+    # Diff by txt_code.
+    creates: list[dict] = []
+    updates: list[dict] = []
     for evt in cert_events:
         code = evt["txt_code"]
+        org_code: str | None = evt.get("organizer_code")
+        prior_code: str | None = evt.get("prior_code")
+        id_organizer = org_map.get(org_code) if org_code else None
+        id_prior_event = prior_map.get(prior_code) if prior_code else None
         if code in prod_by_code:
-            refresh_events.append((prod_by_code[code], evt))
+            updates.append(_build_update_payload(prod_by_code[code], evt, id_organizer))
         else:
-            new_events.append(evt)
+            creates.append(
+                _build_create_payload(evt, prod_season["id_season"], id_organizer, id_prior_event)
+            )
+
+    deletes: list[int] = [
+        prod_id for code, prod_id in prod_by_code.items() if code not in cert_codes
+    ]
 
     summary = {
-        "imported": 0,
-        "refreshed": 0,
-        "new_codes": [e["txt_code"] for e in new_events],
-        "refreshed_codes": [e["txt_code"] for _, e in refresh_events],
+        "created": 0,
+        "updated": 0,
+        "deleted": 0,
+        "delete_skipped": [],
+        "new_codes": [e["txt_code"] for e in creates],
+        "updated_codes": [u_evt["id_event"] for u_evt in updates],
+        "deleted_codes": [code for code, pid in prod_by_code.items() if pid in deletes],
     }
 
     if dry_run:
         return summary
 
-    # Import new events via fn_import_evf_events on PROD.
-    if new_events:
-        payload = [_build_import_payload(e) for e in new_events]
-        payload_json = json.dumps(payload).replace("'", "''")
-        result = prod_query_fn(
-            f"SELECT fn_import_evf_events('{payload_json}'::JSONB, {prod_season['id_season']}) AS r"
-        )
-        rpc = (result[0].get("r") if result else {}) or {}
-        if isinstance(rpc, str):
-            rpc = json.loads(rpc)
-        summary["imported"] = int(rpc.get("created", len(new_events)))
+    creates_json = json.dumps(creates).replace("'", "''")
+    updates_json = json.dumps(updates).replace("'", "''")
+    deletes_json = json.dumps(deletes).replace("'", "''")
+    result = prod_query_fn(
+        "SELECT fn_mirror_events_to_prod("
+        f"'{creates_json}'::JSONB, '{updates_json}'::JSONB, '{deletes_json}'::JSONB"
+        ") AS r"
+    )
+    rpc = (result[0].get("r") if result else {}) or {}
+    if isinstance(rpc, str):
+        rpc = json.loads(rpc)
 
-    # Refresh URL fields on already-present events.
-    if refresh_events:
-        payload = [_build_refresh_payload(pid, e) for pid, e in refresh_events]
-        payload_json = json.dumps(payload).replace("'", "''")
-        result = prod_query_fn(f"SELECT fn_refresh_evf_event_urls('{payload_json}'::JSONB) AS r")
-        rpc = (result[0].get("r") if result else {}) or {}
-        if isinstance(rpc, str):
-            rpc = json.loads(rpc)
-        summary["refreshed"] = int(rpc.get("refreshed", 0))
+    summary["created"] = int(rpc.get("created", 0))
+    summary["updated"] = int(rpc.get("updated", 0))
+    summary["deleted"] = int(rpc.get("deleted", 0))
+    summary["delete_skipped"] = rpc.get("delete_skipped", [])
 
     return summary
 
@@ -491,10 +567,10 @@ def main() -> None:
             except Exception:
                 pass
 
-    # -------------------------- Calendar mode ---------------------------------
+    # -------------------------- Calendar mode (reconciler) --------------------
     if args.mode == "calendar":
         print(
-            f"EVF calendar promote CERT ({cert_ref}) → PROD ({prod_ref})"
+            f"Calendar reconcile CERT ({cert_ref}) → PROD ({prod_ref})"
             + (" [DRY RUN]" if args.dry_run else "")
         )
         try:
@@ -505,19 +581,31 @@ def main() -> None:
                 dry_run=args.dry_run,
             )
         except Exception as exc:
-            notify(f"<b>EVF Calendar → PROD FAILED</b>\n<pre>{str(exc)[:500]}</pre>")
+            notify(f"<b>Calendar reconcile → PROD FAILED</b>\n<pre>{str(exc)[:500]}</pre>")
             raise
-        print(f"  Imported: {summary['imported']} new event(s)")
-        print(f"  Refreshed: {summary['refreshed']} existing event(s)")
+        print(f"  Created: {summary['created']} new event(s)")
+        print(f"  Updated: {summary['updated']} existing event(s)")
+        print(f"  Deleted: {summary['deleted']} orphaned event(s)")
         if summary["new_codes"]:
             print("  New: " + ", ".join(summary["new_codes"]))
-        if summary["refreshed_codes"]:
-            print("  Refreshed: " + ", ".join(summary["refreshed_codes"]))
+        if summary["deleted_codes"]:
+            print("  Deleted: " + ", ".join(summary["deleted_codes"]))
+        if summary["delete_skipped"]:
+            print(
+                "  Delete SKIPPED (results-bearing, needs investigation): "
+                + ", ".join(str(x) for x in summary["delete_skipped"])
+            )
         if not args.dry_run:
             notify(
-                f"<b>EVF Calendar → PROD</b>\n"
-                f"Imported: <b>{summary['imported']}</b> new event(s)\n"
-                f"Refreshed: <b>{summary['refreshed']}</b> existing event(s)"
+                f"<b>Calendar reconcile → PROD</b>\n"
+                f"Created: <b>{summary['created']}</b>  "
+                f"Updated: <b>{summary['updated']}</b>  "
+                f"Deleted: <b>{summary['deleted']}</b>"
+                + (
+                    f"\n⚠️ delete_skipped: {summary['delete_skipped']}"
+                    if summary["delete_skipped"]
+                    else ""
+                )
             )
         return
 

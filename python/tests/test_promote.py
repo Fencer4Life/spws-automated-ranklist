@@ -345,103 +345,128 @@ class TestPromoteEvent:
 
 
 # =============================================================================
-# prom.5–prom.7 — Calendar-mode CERT→PROD promotion (ADR-026 amendment)
+# prom.5–prom.7 — Calendar-mode CERT→PROD reconciliation (reconciler amendment,
+# pending ADR sign-off; supersedes the calendar-delta half of ADR-026)
 # =============================================================================
 
 
-class TestPromoteCalendar:
-    """Plan test IDs prom.5–prom.7 — see doc/archive/evf_calendar_promote_plan.md."""
+def _active_season_row(id_season: int) -> dict:
+    return {
+        "txt_code": "SPWS-2025-2026",
+        "dt_start": "2025-08-01",
+        "dt_end": "2026-07-15",
+        "id_season": id_season,
+    }
 
-    def test_calendar_mode_imports_new_events_on_prod(self):
-        """prom.5: calendar mode calls fn_import_evf_events on PROD for CERT-only events."""
+
+class TestPromoteCalendar:
+    """Plan test IDs prom.5–prom.7 — see doc/archive/evf_calendar_promote_plan.md
+    (superseded by the reconciler design; test names kept stable)."""
+
+    def test_refuses_when_cert_and_prod_active_seasons_differ(self):
+        """New (found via live CERT/PROD dry-run 2026-07-11): if CERT has
+        rolled to a new season that PROD hasn't been bootstrapped onto yet,
+        the reconciler must refuse rather than misfile CERT's new-season
+        events under PROD's old id_season and propose deleting PROD's whole
+        outgoing season."""
         from python.pipeline.promote import promote_calendar
 
-        cert_query_calls: list[str] = []
+        def cert_query(sql: str):
+            assert "bool_active = TRUE" in sql, f"unexpected CERT query before season check: {sql}"
+            return [
+                {
+                    "txt_code": "SPWS-2026-2027",
+                    "dt_start": "2026-08-01",
+                    "dt_end": "2027-07-15",
+                    "id_season": 4,
+                }
+            ]
+
+        def prod_query(sql: str):
+            assert "bool_active = TRUE" in sql, f"unexpected PROD query before season check: {sql}"
+            return [_active_season_row(3)]
+
+        with pytest.raises(RuntimeError, match="active season mismatch"):
+            promote_calendar(cert_query_fn=cert_query, prod_query_fn=prod_query, dry_run=True)
+
+    def test_calendar_mode_creates_new_events_on_prod(self):
+        """prom.5: reconciler CREATEs, via fn_mirror_events_to_prod, for CERT-only
+        events — no code-prefix filter, organizer resolved by code (not hardcoded)."""
+        from python.pipeline.promote import promote_calendar
+
         prod_query_calls: list[str] = []
 
         def cert_query(sql: str):
-            cert_query_calls.append(sql)
             if "bool_active = TRUE" in sql:
-                return [
-                    {
-                        "txt_code": "SPWS-2025-2026",
-                        "dt_start": "2025-08-01",
-                        "dt_end": "2026-07-15",
-                        "id_season": 3,
-                    }
-                ]
-            # EVF events on CERT
+                return [_active_season_row(3)]
+            # _read_cert_promotable_events — no code-prefix filter
             return [
                 {
-                    "txt_code": "PEW-NEWCITY-2025-2026",
-                    "txt_name": "EVF Circuit New City",
+                    "txt_code": "PPW-NEWCITY-2025-2026",
+                    "txt_name": "Domestic Circuit New City",
+                    "enum_status": "PLANNED",
                     "dt_start": "2026-06-15",
                     "dt_end": "2026-06-15",
                     "txt_location": "New City",
-                    "txt_country": "AUT",
+                    "txt_country": "POL",
                     "txt_venue_address": "Street 1",
-                    "url_event": "https://evf/new",
-                    "url_invitation": "https://evf/inv.pdf",
+                    "url_event": "https://spws/new",
+                    "url_invitation": None,
                     "url_registration": None,
                     "dt_registration_deadline": None,
                     "num_entry_fee": 50.0,
-                    "txt_entry_fee_currency": "EUR",
+                    "txt_entry_fee_currency": "PLN",
                     "weapons": ["EPEE", "FOIL"],
-                    "is_team": False,
+                    "id_evf_event": None,
+                    "txt_evf_slug": None,
+                    "organizer_code": "SPWS",
+                    "prior_code": None,
                 },
             ]
 
         def prod_query(sql: str):
             prod_query_calls.append(sql)
             if "bool_active = TRUE" in sql:
-                return [
-                    {
-                        "txt_code": "SPWS-2025-2026",
-                        "dt_start": "2025-08-01",
-                        "dt_end": "2026-07-15",
-                        "id_season": 5,
-                    }
-                ]
+                return [_active_season_row(5)]
             if "SELECT id_event, txt_code FROM tbl_event" in sql:
                 # PROD has nothing matching yet
                 return []
+            if "FROM tbl_organizer WHERE txt_code IN" in sql:
+                return [{"txt_code": "SPWS", "id": 42}]
+            if "FROM tbl_event WHERE txt_code IN" in sql:
+                return []
             # RPC call return (SQL uses `AS r` alias)
-            return [{"r": {"created": 1, "skipped": 0}}]
+            return [{"r": {"created": 1, "updated": 0, "deleted": 0, "delete_skipped": []}}]
 
         summary = promote_calendar(
             cert_query_fn=cert_query,
             prod_query_fn=prod_query,
             dry_run=False,
         )
-        # Expect fn_import_evf_events called on PROD, NOT fn_refresh (no matches)
-        import_calls = [s for s in prod_query_calls if "fn_import_evf_events" in s]
-        refresh_calls = [s for s in prod_query_calls if "fn_refresh_evf_event_urls" in s]
-        assert len(import_calls) == 1, f"expected 1 import call, got {len(import_calls)}"
-        assert len(refresh_calls) == 0, "no refresh expected (no existing events)"
-        assert "PEW-NEWCITY-2025-2026" in import_calls[0]
-        assert summary["imported"] == 1
-        assert summary["refreshed"] == 0
+        rpc_calls = [s for s in prod_query_calls if "fn_mirror_events_to_prod" in s]
+        assert len(rpc_calls) == 1, f"expected 1 reconcile call, got {len(rpc_calls)}"
+        assert "PPW-NEWCITY-2025-2026" in rpc_calls[0]
+        # Organizer must be the RESOLVED PROD id (42), not a hardcoded literal
+        assert '"id_organizer": 42' in rpc_calls[0]
+        assert summary["created"] == 1
+        assert summary["updated"] == 0
+        assert summary["new_codes"] == ["PPW-NEWCITY-2025-2026"]
 
-    def test_calendar_mode_refreshes_existing_events_on_prod(self):
-        """prom.6: calendar mode calls fn_refresh_evf_event_urls for events present on both sides."""
+    def test_calendar_mode_updates_existing_events_on_prod(self):
+        """prom.6: reconciler UPDATEs, via fn_mirror_events_to_prod, for events
+        present on both sides — identity fields (incl. organizer) overwritten."""
         from python.pipeline.promote import promote_calendar
 
         prod_query_calls: list[str] = []
 
         def cert_query(sql: str):
             if "bool_active = TRUE" in sql:
-                return [
-                    {
-                        "txt_code": "SPWS-2025-2026",
-                        "dt_start": "2025-08-01",
-                        "dt_end": "2026-07-15",
-                        "id_season": 3,
-                    }
-                ]
+                return [_active_season_row(3)]
             return [
                 {
                     "txt_code": "PEW1-2025-2026",
                     "txt_name": "EVF Circuit Budapest",
+                    "enum_status": "PLANNED",
                     "dt_start": "2025-09-20",
                     "dt_end": "2025-09-20",
                     "txt_location": "Budapest",
@@ -454,38 +479,103 @@ class TestPromoteCalendar:
                     "num_entry_fee": 45.0,
                     "txt_entry_fee_currency": "EUR",
                     "weapons": ["EPEE", "FOIL", "SABRE"],
-                    "is_team": False,
+                    "id_evf_event": None,
+                    "txt_evf_slug": None,
+                    "organizer_code": "EVF",
+                    "prior_code": None,
                 },
             ]
 
         def prod_query(sql: str):
             prod_query_calls.append(sql)
             if "bool_active = TRUE" in sql:
-                return [
-                    {
-                        "txt_code": "SPWS-2025-2026",
-                        "dt_start": "2025-08-01",
-                        "dt_end": "2026-07-15",
-                        "id_season": 5,
-                    }
-                ]
+                return [_active_season_row(5)]
             if "SELECT id_event, txt_code FROM tbl_event" in sql:
                 return [{"id_event": 99, "txt_code": "PEW1-2025-2026"}]
-            return [{"r": {"touched": 1, "refreshed": 1}}]
+            if "FROM tbl_organizer WHERE txt_code IN" in sql:
+                return [{"txt_code": "EVF", "id": 7}]
+            if "FROM tbl_event WHERE txt_code IN" in sql:
+                return []
+            return [{"r": {"created": 0, "updated": 1, "deleted": 0, "delete_skipped": []}}]
 
         summary = promote_calendar(
             cert_query_fn=cert_query,
             prod_query_fn=prod_query,
             dry_run=False,
         )
-        import_calls = [s for s in prod_query_calls if "fn_import_evf_events" in s]
-        refresh_calls = [s for s in prod_query_calls if "fn_refresh_evf_event_urls" in s]
-        assert len(refresh_calls) == 1, f"expected 1 refresh call, got {len(refresh_calls)}"
-        assert len(import_calls) == 0, "no import expected (event already on PROD)"
-        # Refresh payload must reference PROD id_event (99), NOT CERT id
-        assert '"id_event": 99' in refresh_calls[0] or "99" in refresh_calls[0]
-        assert summary["imported"] == 0
-        assert summary["refreshed"] == 1
+        rpc_calls = [s for s in prod_query_calls if "fn_mirror_events_to_prod" in s]
+        assert len(rpc_calls) == 1, f"expected 1 reconcile call, got {len(rpc_calls)}"
+        # UPDATE payload must reference PROD id_event (99), NOT CERT id, and the
+        # RESOLVED organizer id (7) — the mis-tag repair, no hardcoded literal
+        assert '"id_event": 99' in rpc_calls[0]
+        assert '"id_organizer": 7' in rpc_calls[0]
+        assert summary["created"] == 0
+        assert summary["updated"] == 1
+
+    def test_calendar_mode_deletes_orphaned_prod_events(self):
+        """New: reconciler DELETEs (guarded server-side) events present on PROD
+        but absent from CERT — the missing operation the old insert-or-refresh
+        path never had, which stranded the 6 dead Samorin duplicates."""
+        from python.pipeline.promote import promote_calendar
+
+        prod_query_calls: list[str] = []
+
+        def cert_query(sql: str):
+            if "bool_active = TRUE" in sql:
+                return [_active_season_row(3)]
+            return []  # CERT has nothing this season — everything on PROD is orphaned
+
+        def prod_query(sql: str):
+            prod_query_calls.append(sql)
+            if "bool_active = TRUE" in sql:
+                return [_active_season_row(5)]
+            if "SELECT id_event, txt_code FROM tbl_event" in sql:
+                return [{"id_event": 114, "txt_code": "PEW69-2026-2027"}]
+            if "FROM tbl_organizer WHERE txt_code IN" in sql:
+                return []
+            if "FROM tbl_event WHERE txt_code IN" in sql:
+                return []
+            return [{"r": {"created": 0, "updated": 0, "deleted": 1, "delete_skipped": []}}]
+
+        summary = promote_calendar(
+            cert_query_fn=cert_query,
+            prod_query_fn=prod_query,
+            dry_run=False,
+        )
+        rpc_calls = [s for s in prod_query_calls if "fn_mirror_events_to_prod" in s]
+        assert len(rpc_calls) == 1
+        assert "114" in rpc_calls[0]
+        assert summary["deleted"] == 1
+        assert summary["deleted_codes"] == ["PEW69-2026-2027"]
+
+    def test_calendar_mode_surfaces_delete_skipped(self):
+        """New: a results-bearing event the RPC refused to delete (guard) is
+        surfaced in the summary for investigation, never silently dropped."""
+        from python.pipeline.promote import promote_calendar
+
+        def cert_query(sql: str):
+            if "bool_active = TRUE" in sql:
+                return [_active_season_row(3)]
+            return []
+
+        def prod_query(sql: str):
+            if "bool_active = TRUE" in sql:
+                return [_active_season_row(5)]
+            if "SELECT id_event, txt_code FROM tbl_event" in sql:
+                return [{"id_event": 200, "txt_code": "PPW-COMPLETED-2025-2026"}]
+            if "FROM tbl_organizer WHERE txt_code IN" in sql:
+                return []
+            if "FROM tbl_event WHERE txt_code IN" in sql:
+                return []
+            return [{"r": {"created": 0, "updated": 0, "deleted": 0, "delete_skipped": [200]}}]
+
+        summary = promote_calendar(
+            cert_query_fn=cert_query,
+            prod_query_fn=prod_query,
+            dry_run=False,
+        )
+        assert summary["deleted"] == 0
+        assert summary["delete_skipped"] == [200]
 
     def test_calendar_mode_cli_rejects_event_arg(self, monkeypatch):
         """prom.7: `promote --mode calendar --event PEW1` exits non-zero with a clear error."""
@@ -512,29 +602,24 @@ class TestPromoteCalendar:
 
 
 class TestPromoteCalendarMultiUrl:
-    """Plan test prom.8 — calendar promote ships url_event_2..5 from CERT to PROD
-    via the fn_refresh_evf_event_urls payload (NULL-only invariant per slot)."""
+    """Plan test prom.8 — calendar reconcile ships url_event_2..5 from CERT to
+    PROD via the fn_mirror_events_to_prod UPDATE payload (fill-blank-only per
+    slot, enforced server-side)."""
 
     def test_calendar_mode_propagates_url_event_2_through_5(self):
-        """prom.8: refresh payload carries url_event_2..5 keys when CERT row has them."""
+        """prom.8: UPDATE payload carries url_event_2..5 keys when CERT row has them."""
         from python.pipeline.promote import promote_calendar
 
         prod_query_calls: list[str] = []
 
         def cert_query(sql: str):
             if "bool_active = TRUE" in sql:
-                return [
-                    {
-                        "txt_code": "SPWS-2025-2026",
-                        "dt_start": "2025-08-01",
-                        "dt_end": "2026-07-15",
-                        "id_season": 3,
-                    }
-                ]
+                return [_active_season_row(3)]
             return [
                 {
                     "txt_code": "PEW1-2025-2026",
                     "txt_name": "EVF Circuit Budapest",
+                    "enum_status": "PLANNED",
                     "dt_start": "2025-09-20",
                     "dt_end": "2025-09-21",
                     "txt_location": "Budapest",
@@ -551,36 +636,36 @@ class TestPromoteCalendarMultiUrl:
                     "num_entry_fee": 45.0,
                     "txt_entry_fee_currency": "EUR",
                     "weapons": ["EPEE", "FOIL", "SABRE"],
-                    "is_team": False,
+                    "id_evf_event": None,
+                    "txt_evf_slug": None,
+                    "organizer_code": "EVF",
+                    "prior_code": None,
                 }
             ]
 
         def prod_query(sql: str):
             prod_query_calls.append(sql)
             if "bool_active = TRUE" in sql:
-                return [
-                    {
-                        "txt_code": "SPWS-2025-2026",
-                        "dt_start": "2025-08-01",
-                        "dt_end": "2026-07-15",
-                        "id_season": 5,
-                    }
-                ]
+                return [_active_season_row(5)]
             if "SELECT id_event, txt_code FROM tbl_event" in sql:
                 return [{"id_event": 99, "txt_code": "PEW1-2025-2026"}]
-            return [{"r": {"touched": 1, "refreshed": 1}}]
+            if "FROM tbl_organizer WHERE txt_code IN" in sql:
+                return [{"txt_code": "EVF", "id": 7}]
+            if "FROM tbl_event WHERE txt_code IN" in sql:
+                return []
+            return [{"r": {"created": 0, "updated": 1, "deleted": 0, "delete_skipped": []}}]
 
         summary = promote_calendar(
             cert_query_fn=cert_query,
             prod_query_fn=prod_query,
             dry_run=False,
         )
-        refresh_calls = [s for s in prod_query_calls if "fn_refresh_evf_event_urls" in s]
-        assert len(refresh_calls) == 1
-        body = refresh_calls[0]
+        rpc_calls = [s for s in prod_query_calls if "fn_mirror_events_to_prod" in s]
+        assert len(rpc_calls) == 1
+        body = rpc_calls[0]
         # All five URL slots present in the JSONB payload
         assert "url_event_2" in body and "https://e/p2" in body
         assert "url_event_3" in body and "https://e/p3" in body
         assert "url_event_4" in body  # key present even when value null/empty
         assert "url_event_5" in body
-        assert summary["refreshed"] == 1
+        assert summary["updated"] == 1
