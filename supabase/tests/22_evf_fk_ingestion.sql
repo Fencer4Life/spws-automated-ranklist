@@ -26,7 +26,7 @@ $setup$;
 
 
 -- =========================================================================
--- 22.1 — fn_import_evf_events_v2 with evf_id key sets tbl_event.id_evf_event
+-- 22.1 — fn_ingest_evf_calendar with evf_id key sets tbl_event.id_evf_event
 -- =========================================================================
 DO $t221$
 DECLARE
@@ -44,7 +44,7 @@ BEGIN
     'is_team',  false,
     'evf_id',   1234567
   ));
-  PERFORM fn_import_evf_events_v2(v_payload, v_season);
+  PERFORM fn_ingest_evf_calendar(v_payload, v_season);
 END;
 $t221$;
 
@@ -53,12 +53,12 @@ SELECT is(
     WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'EVFFK-INGEST')
       AND dt_start = '2033-03-15'),
   1234567,
-  '22.1: fn_import_evf_events_v2 writes evf_id from JSONB into tbl_event.id_evf_event'
+  '22.1: fn_ingest_evf_calendar writes evf_id from JSONB into tbl_event.id_evf_event'
 );
 
 
 -- =========================================================================
--- 22.2 — fn_import_evf_events_v2 without evf_id leaves the column NULL
+-- 22.2 — fn_ingest_evf_calendar without evf_id leaves the column NULL
 -- =========================================================================
 DO $t222$
 DECLARE
@@ -75,7 +75,7 @@ BEGIN
     'weapons',  jsonb_build_array('SABRE'),
     'is_team',  false
   ));
-  PERFORM fn_import_evf_events_v2(v_payload, v_season);
+  PERFORM fn_ingest_evf_calendar(v_payload, v_season);
 END;
 $t222$;
 
@@ -84,7 +84,7 @@ SELECT is(
     WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'EVFFK-INGEST')
       AND dt_start = '2033-04-15'),
   NULL::INT,
-  '22.2: fn_import_evf_events_v2 leaves id_evf_event NULL when JSONB has no evf_id'
+  '22.2: fn_ingest_evf_calendar leaves id_evf_event NULL when JSONB has no evf_id'
 );
 
 
@@ -156,7 +156,7 @@ SELECT is(
 
 
 -- =========================================================================
--- 22.5 — fn_import_evf_events_v2 with evf_slug key sets tbl_event.txt_evf_slug
+-- 22.5 — fn_ingest_evf_calendar with evf_slug key sets tbl_event.txt_evf_slug
 -- (ADR-039 rev 3 / mirrors 22.1's structure for evf_id/id_evf_event)
 -- =========================================================================
 DO $t225$
@@ -175,7 +175,7 @@ BEGIN
     'is_team',  false,
     'evf_slug', 'evf-fk-test-event-225'
   ));
-  PERFORM fn_import_evf_events_v2(v_payload, v_season);
+  PERFORM fn_ingest_evf_calendar(v_payload, v_season);
 END;
 $t225$;
 
@@ -184,7 +184,7 @@ SELECT is(
     WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'EVFFK-INGEST')
       AND dt_start = '2033-07-15'),
   'evf-fk-test-event-225',
-  '22.5: fn_import_evf_events_v2 writes evf_slug from JSONB into tbl_event.txt_evf_slug'
+  '22.5: fn_ingest_evf_calendar writes evf_slug from JSONB into tbl_event.txt_evf_slug'
 );
 
 

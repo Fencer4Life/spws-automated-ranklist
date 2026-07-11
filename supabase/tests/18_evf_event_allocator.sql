@@ -5,12 +5,15 @@
 -- evf.25–evf.26: fn_normalize_city_key (NFKD fold + country alias)
 -- evf.27–evf.29: fn_classify_evf_event (PEW / IMEW / DMEW dispatch)
 -- evf.30–evf.36: fn_allocate_evf_event_code (3-step ladder + singletons + raises)
--- evf.37–evf.38: fn_import_evf_events_v2 (CREATED slot UPDATE + EVF organizer)
+-- evf.37–evf.38: fn_ingest_evf_calendar (CREATED slot UPDATE + EVF organizer)
+--                (renamed from fn_import_evf_events_v2 — reconciler plan)
 -- evf.39:        Data-migration 20260427000003 fixed MEW-COMPLEXESP slug row
+-- evf.56:        fn_ingest_evf_calendar identity pre-check closes the
+--                blank-location allocator blind spot (reconciler plan)
 -- =============================================================================
 
 BEGIN;
-SELECT plan(15);
+SELECT plan(16);
 
 -- ===== SETUP =====
 DO $setup$
@@ -253,7 +256,7 @@ END $cleanup$;
 
 
 -- =========================================================================
--- evf.37: fn_import_evf_events_v2 UPDATEs CREATED slot in place
+-- evf.37: fn_ingest_evf_calendar UPDATEs CREATED slot in place
 -- =========================================================================
 -- Salzburg again (matches PEW7-EVFP2-CURR which is CREATED).
 -- After import: row should be PLANNED, name + dates filled, child tournaments exist.
@@ -272,7 +275,7 @@ BEGIN
     'weapons',  jsonb_build_array('EPEE'),
     'is_team',  FALSE
   ));
-  PERFORM fn_import_evf_events_v2(v_payload, v_season);
+  PERFORM fn_ingest_evf_calendar(v_payload, v_season);
 END $t37$;
 
 SELECT row_eq(
@@ -286,7 +289,7 @@ SELECT row_eq(
 
 
 -- =========================================================================
--- evf.38: fn_import_evf_events_v2 INSERTs new row with EVF organizer (not SPWS)
+-- evf.38: fn_ingest_evf_calendar INSERTs new row with EVF organizer (not SPWS)
 -- =========================================================================
 -- Madrid (no current slot, no prior match) → new PEW{N+1} with EVF organizer.
 DO $t38$
@@ -304,7 +307,7 @@ BEGIN
     'weapons',  jsonb_build_array('EPEE'),
     'is_team',  FALSE
   ));
-  PERFORM fn_import_evf_events_v2(v_payload, v_season);
+  PERFORM fn_ingest_evf_calendar(v_payload, v_season);
 END $t38$;
 
 SELECT is(
@@ -327,6 +330,49 @@ SELECT cmp_ok(
   + (SELECT COUNT(*)::INT FROM tbl_tournament WHERE txt_code LIKE 'MEW-COMPLEXESP-%'),
   '=', 0,
   'evf.39: MEW-COMPLEXESP-* event and tournaments no longer exist after migration'
+);
+
+
+-- =========================================================================
+-- evf.56: fn_ingest_evf_calendar identity pre-check closes the
+-- blank-location allocator blind spot. fn_allocate_evf_event_code's Steps
+-- A/B are both gated `IF v_loc_key <> ''`, so a venue-less future event
+-- (blank location/country — Samorin, pre-fix) skipped both and Step C
+-- minted a fresh code on EVERY call. The fix: before calling the
+-- allocator, check for a current-season row already carrying this
+-- evf_slug and reuse it (CURRENT_SLOT_REUSE) — the same identity-first
+-- ladder the Python scraper already uses. Two calls with the SAME blank-
+-- location scrape (same evf_slug) must yield ONE row, not two.
+-- =========================================================================
+DO $t56$
+DECLARE
+  v_season  INT;
+  v_payload JSONB;
+BEGIN
+  v_season := (SELECT id_season FROM tbl_season WHERE txt_code = 'EVFP2-CURR');
+  v_payload := jsonb_build_array(jsonb_build_object(
+    'name',      'EVF Circuit – Samorin (SVK)',
+    'dt_start',  '2032-09-12',
+    'location',  '',
+    'country',   '',
+    'weapons',   jsonb_build_array('EPEE'),
+    'is_team',   FALSE,
+    'evf_slug',  'evf-circuit-samorin-svk-evfp2'
+  ));
+  -- First call: no identity match yet, no location to match on either —
+  -- Step C mints a fresh code.
+  PERFORM fn_ingest_evf_calendar(v_payload, v_season);
+  -- Second call: identical blank-location scrape, same evf_slug. Pre-fix
+  -- this would mint ANOTHER fresh code (the duplicate-event bug's engine).
+  PERFORM fn_ingest_evf_calendar(v_payload, v_season);
+END $t56$;
+
+SELECT is(
+  (SELECT COUNT(*)::INT FROM tbl_event
+     WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'EVFP2-CURR')
+       AND txt_evf_slug = 'evf-circuit-samorin-svk-evfp2'),
+  1,
+  'evf.56: two blank-location scrapes with the same evf_slug reconcile to ONE row'
 );
 
 

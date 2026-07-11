@@ -2,11 +2,16 @@
 -- ADR-077 §5/§7 — CERT→PROD season-skeleton promotion RPCs
 -- =============================================================================
 -- fn_promote_season_skeleton(JSONB) / fn_delete_season_skeleton(INT)
--- Migration 20260628000002. Guards: childless, not-active, idempotency.
+-- Migration 20260628000002, slimmed by 20260711000001 (reconciler ADR
+-- pending sign-off): event promotion moved to fn_mirror_events_to_prod
+-- (see 51_prod_event_reconcile.sql). This RPC now promotes season row +
+-- scoring_config ONLY — 48.2/48.4 (event-copy + id_prior_event resolution)
+-- retired; id_prior_event-by-code resolution coverage migrated to
+-- 51_prod_event_reconcile.sql. Guards: not-active, idempotency.
 -- =============================================================================
 
 BEGIN;
-SELECT plan(9);
+SELECT plan(8);
 
 -- Build a realistic promotion payload for a far-future season SPWS-2099-2100
 -- with explicit ids beyond the current max, a real scoring_config (re-keyed),
@@ -56,11 +61,14 @@ SELECT is(
   '48.1: fn_promote_season_skeleton inserts the season with its explicit id'
 );
 
--- 48.2 — both events inserted with explicit ids
+-- 48.2 — the payload's events array is ignored: no tbl_event rows are
+-- created by the season-skeleton RPC (event C/U/D is now owned entirely
+-- by fn_mirror_events_to_prod — regression guard against re-introducing
+-- event promotion here)
 SELECT is(
   (SELECT COUNT(*)::INT FROM tbl_event WHERE id_event IN (99001, 99002) AND id_season = 9990),
-  2,
-  '48.2: events inserted with explicit ids under the promoted season'
+  0,
+  '48.2: fn_promote_season_skeleton ignores the events array — no event rows created'
 );
 
 -- 48.3 — scoring_config replaced with the promoted values (not the trigger default)
@@ -68,13 +76,6 @@ SELECT is(
   (SELECT int_ppw_best_count FROM tbl_scoring_config WHERE id_season = 9990),
   (SELECT int_ppw_best_count FROM tbl_scoring_config WHERE id_season = 3),
   '48.3: scoring_config carries the promoted values'
-);
-
--- 48.4 — id_prior_event is TARGET-resolved (points to the live MPW event, not a raw source id)
-SELECT is(
-  (SELECT id_prior_event FROM tbl_event WHERE txt_code = 'MPW-2099-2100'),
-  (SELECT id_event FROM tbl_event WHERE txt_code = 'MPW-2025-2026'),
-  '48.4: id_prior_event resolves to the target prior event (carry link preserved)'
 );
 
 -- 48.5 — idempotency: re-promoting the same season is refused

@@ -932,7 +932,7 @@ class TestEvfLiveSmoke:
 
 # =============================================================================
 # evf.40–evf.42: Phase 2 — scraper drops `code` field, allocator RPC drives
-# alerting per alloc_path returned by fn_import_evf_events_v2
+# alerting per alloc_path returned by fn_ingest_evf_calendar
 # =============================================================================
 class TestEvfPhase2Allocator:
     """Phase 2 — scraper sends classifier inputs (name, is_team) instead of
@@ -945,7 +945,7 @@ class TestEvfPhase2Allocator:
 
         - scrape_full_season_calendar → returns scraped_events
         - _management_query is recorded; for SELECT id_season... returns a
-          fake active season; for fn_import_evf_events_v2 returns rpc_returns
+          fake active season; for fn_ingest_evf_calendar returns rpc_returns
           (one wrapped row); other queries return [].
         - _telegram is recorded into sent_msgs.
         """
@@ -966,7 +966,7 @@ class TestEvfPhase2Allocator:
                         "id_season": 7,
                     }
                 ]
-            if "fn_import_evf_events_v2" in sl:
+            if "fn_ingest_evf_calendar" in sl:
                 return [{"r": json.dumps(rpc_returns)}]
             if "from tbl_event" in sl:
                 return []  # no existing events
@@ -1119,8 +1119,8 @@ class TestEvfPhase2Allocator:
 
         evf_sync.sync_calendar("ref", "token", "bot", "chat", dry_run=False)
 
-        rpc_calls = [s for s in sql_calls if "fn_import_evf_events_v2" in s.lower()]
-        assert rpc_calls, f"expected fn_import_evf_events_v2 to be invoked; got {sql_calls}"
+        rpc_calls = [s for s in sql_calls if "fn_ingest_evf_calendar" in s.lower()]
+        assert rpc_calls, f"expected fn_ingest_evf_calendar to be invoked; got {sql_calls}"
 
         # Find the JSON literal in the SQL string
         sql = rpc_calls[0]
@@ -1137,7 +1137,7 @@ class TestEvfPhase2Allocator:
         assert "is_team" in evt
 
     def test_new_event_payload_includes_evf_slug(self, monkeypatch):
-        """evf.54: fn_import_evf_events_v2 payload carries an `evf_slug` key
+        """evf.54: fn_ingest_evf_calendar payload carries an `evf_slug` key
         derived from the scraped event's `url`, so freshly-created
         calendar-path rows get their slug stamped at creation time.
         """
@@ -1168,8 +1168,8 @@ class TestEvfPhase2Allocator:
 
         evf_sync.sync_calendar("ref", "token", "bot", "chat", dry_run=False)
 
-        rpc_calls = [s for s in sql_calls if "fn_import_evf_events_v2" in s.lower()]
-        assert rpc_calls, f"expected fn_import_evf_events_v2 to be invoked; got {sql_calls}"
+        rpc_calls = [s for s in sql_calls if "fn_ingest_evf_calendar" in s.lower()]
+        assert rpc_calls, f"expected fn_ingest_evf_calendar to be invoked; got {sql_calls}"
         sql = rpc_calls[0]
         json_start = sql.find("'[")
         json_end = sql.find("]'", json_start)

@@ -1,11 +1,16 @@
 -- =============================================================================
--- EVF Import Tests (ADR-028)
+-- CERT->PROD event mirror tests (ADR-028; reconciler ADR pending sign-off)
 -- =============================================================================
--- Tests 12.1–12.4: fn_import_evf_events
+-- Tests 12.1, 12.4-12.9, 12.14: fn_mirror_events_to_prod CREATE branch
+-- (ported from the retired fn_import_evf_events — see 51_prod_event_reconcile.sql
+-- for the full C/U/D reconciler test suite; this file keeps the CREATE-payload
+-- field-by-field coverage that predates the reconciler rewrite).
+-- Tests 12.10-12.13: fn_refresh_evf_event_urls (untouched, reused as-is by
+-- the reconciler's UPDATE branch for admin-owned URL fields).
 -- =============================================================================
 
 BEGIN;
-SELECT plan(14);
+SELECT plan(12);
 
 -- ===== SETUP =====
 DO $setup$
@@ -20,17 +25,26 @@ $setup$;
 
 
 -- =========================================================================
--- 12.1 — fn_import_evf_events creates event with PLANNED status
+-- 12.1 — fn_mirror_events_to_prod CREATE inserts event with PLANNED status
 -- =========================================================================
 DO $t121$
 DECLARE
-  v_season INT;
-  v_result JSONB;
+  v_season  INT;
+  v_org     INT;
+  v_result  JSONB;
 BEGIN
   SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'EVF-TEST';
-  v_result := fn_import_evf_events(
-    '[{"code": "PEW-TESTCITY-2030-2031", "name": "EVF Circuit Test City", "dt_start": "2031-03-15", "dt_end": "2031-03-16", "location": "Test City", "country": "Germany", "weapons": ["EPEE", "FOIL"], "is_team": false}]'::JSONB,
-    v_season
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'EVF';
+  v_result := fn_mirror_events_to_prod(
+    jsonb_build_array(jsonb_build_object(
+      'txt_code', 'PEW-TESTCITY-2030-2031', 'txt_name', 'EVF Circuit Test City',
+      'id_season', v_season, 'id_organizer', v_org,
+      'dt_start', '2031-03-15', 'dt_end', '2031-03-16',
+      'txt_location', 'Test City', 'txt_country', 'Germany',
+      'enum_status', 'PLANNED',
+      'arr_weapons', jsonb_build_array('EPEE', 'FOIL')
+    )),
+    '[]'::JSONB, '[]'::JSONB
   );
 END;
 $t121$;
@@ -38,42 +52,28 @@ $t121$;
 SELECT is(
   (SELECT enum_status::TEXT FROM tbl_event WHERE txt_code = 'PEW-TESTCITY-2030-2031'),
   'PLANNED',
-  '12.1: fn_import_evf_events creates event with PLANNED status'
+  '12.1: fn_mirror_events_to_prod CREATE inserts event with PLANNED status'
 );
 
 
 -- =========================================================================
--- 12.2 — fn_import_evf_events creates child tournaments per weapon
--- =========================================================================
-SELECT is(
-  (SELECT COUNT(*)::INT FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW-TESTCITY-2030-2031')),
-  4,
-  '12.2: fn_import_evf_events creates 4 tournaments (2 weapons × 2 genders)'
-);
-
-
--- =========================================================================
--- 12.3 — fn_import_evf_events sets tournament type to PEW
--- =========================================================================
-SELECT is(
-  (SELECT DISTINCT enum_type::TEXT FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW-TESTCITY-2030-2031')),
-  'PEW',
-  '12.3: All tournaments have type PEW'
-);
-
-
--- =========================================================================
--- 12.4 — Duplicate import is idempotent
+-- 12.4 — Re-CREATE with the same txt_code is idempotent (no duplicate row)
 -- =========================================================================
 DO $t124$
 DECLARE
-  v_season INT;
-  v_result JSONB;
+  v_season  INT;
+  v_org     INT;
+  v_result  JSONB;
 BEGIN
   SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'EVF-TEST';
-  v_result := fn_import_evf_events(
-    '[{"code": "PEW-TESTCITY-2030-2031", "name": "EVF Circuit Test City", "dt_start": "2031-03-15", "weapons": ["EPEE", "FOIL"], "is_team": false}]'::JSONB,
-    v_season
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'EVF';
+  v_result := fn_mirror_events_to_prod(
+    jsonb_build_array(jsonb_build_object(
+      'txt_code', 'PEW-TESTCITY-2030-2031', 'txt_name', 'EVF Circuit Test City',
+      'id_season', v_season, 'id_organizer', v_org,
+      'dt_start', '2031-03-15', 'enum_status', 'PLANNED'
+    )),
+    '[]'::JSONB, '[]'::JSONB
   );
 END;
 $t124$;
@@ -81,38 +81,37 @@ $t124$;
 SELECT is(
   (SELECT COUNT(*)::INT FROM tbl_event WHERE txt_code = 'PEW-TESTCITY-2030-2031'),
   1,
-  '12.4: Duplicate import is idempotent — still 1 event'
+  '12.4: re-CREATE with an existing txt_code is idempotent — still 1 event'
 );
 
 
 -- =========================================================================
--- 12.5–12.9 — fn_import_evf_events writes URL + enrichment fields
+-- 12.5–12.9 — fn_mirror_events_to_prod CREATE writes URL + enrichment fields
 -- =========================================================================
 DO $t125$
 DECLARE
-  v_season INT;
-  v_result JSONB;
+  v_season  INT;
+  v_org     INT;
+  v_result  JSONB;
 BEGIN
   SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'EVF-TEST';
-  v_result := fn_import_evf_events(
-    '[{
-       "code": "PEW-URLTEST-2030-2031",
-       "name": "EVF Circuit URL Test",
-       "dt_start": "2031-04-10",
-       "dt_end": "2031-04-11",
-       "location": "URL City",
-       "country": "Germany",
-       "weapons": ["EPEE"],
-       "is_team": false,
-       "url_event": "https://www.veteransfencing.eu/event/url-test/",
-       "url_invitation": "https://www.veteransfencing.eu/wp-content/uploads/urltest-invitation.pdf",
-       "url_registration": "https://engarde-service.com/register/urltest",
-       "dt_registration_deadline": "2031-04-01",
-       "address": "Main Street 1, URL City",
-       "fee": 85.0,
-       "fee_currency": "EUR"
-    }]'::JSONB,
-    v_season
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'EVF';
+  v_result := fn_mirror_events_to_prod(
+    jsonb_build_array(jsonb_build_object(
+      'txt_code', 'PEW-URLTEST-2030-2031', 'txt_name', 'EVF Circuit URL Test',
+      'id_season', v_season, 'id_organizer', v_org,
+      'dt_start', '2031-04-10', 'dt_end', '2031-04-11',
+      'txt_location', 'URL City', 'txt_country', 'Germany',
+      'enum_status', 'PLANNED',
+      'url_event', 'https://www.veteransfencing.eu/event/url-test/',
+      'url_invitation', 'https://www.veteransfencing.eu/wp-content/uploads/urltest-invitation.pdf',
+      'url_registration', 'https://engarde-service.com/register/urltest',
+      'dt_registration_deadline', '2031-04-01',
+      'txt_venue_address', 'Main Street 1, URL City',
+      'num_entry_fee', 85.0,
+      'txt_entry_fee_currency', 'EUR'
+    )),
+    '[]'::JSONB, '[]'::JSONB
   );
 END;
 $t125$;
@@ -120,41 +119,39 @@ $t125$;
 SELECT is(
   (SELECT url_event FROM tbl_event WHERE txt_code = 'PEW-URLTEST-2030-2031'),
   'https://www.veteransfencing.eu/event/url-test/',
-  '12.5: fn_import_evf_events writes url_event'
+  '12.5: fn_mirror_events_to_prod CREATE writes url_event'
 );
 
 SELECT is(
   (SELECT url_invitation FROM tbl_event WHERE txt_code = 'PEW-URLTEST-2030-2031'),
   'https://www.veteransfencing.eu/wp-content/uploads/urltest-invitation.pdf',
-  '12.6: fn_import_evf_events writes url_invitation'
+  '12.6: fn_mirror_events_to_prod CREATE writes url_invitation'
 );
 
 SELECT is(
   (SELECT url_registration FROM tbl_event WHERE txt_code = 'PEW-URLTEST-2030-2031'),
   'https://engarde-service.com/register/urltest',
-  '12.7: fn_import_evf_events writes url_registration'
+  '12.7: fn_mirror_events_to_prod CREATE writes url_registration'
 );
 
 SELECT is(
   (SELECT dt_registration_deadline FROM tbl_event WHERE txt_code = 'PEW-URLTEST-2030-2031'),
   '2031-04-01'::DATE,
-  '12.8: fn_import_evf_events writes dt_registration_deadline'
+  '12.8: fn_mirror_events_to_prod CREATE writes dt_registration_deadline'
 );
 
 SELECT is(
   (SELECT txt_venue_address || '|' || COALESCE(num_entry_fee::TEXT,'') || '|' || COALESCE(txt_entry_fee_currency,'')
    FROM tbl_event WHERE txt_code = 'PEW-URLTEST-2030-2031'),
   'Main Street 1, URL City|85.0|EUR',
-  '12.9: fn_import_evf_events writes address + fee + currency'
+  '12.9: fn_mirror_events_to_prod CREATE writes address + fee + currency'
 );
 
 
 -- =========================================================================
 -- 12.10–12.13 — fn_refresh_evf_event_urls: fill NULLs, preserve admin edits
+-- (untouched — reused as-is by the reconciler's UPDATE branch)
 -- =========================================================================
--- Setup: create a seed event with admin-edited url_registration + txt_name,
--- but a NULL url_invitation. The refresh must fill the NULL while preserving
--- the admin-curated fields.
 DO $t1210$
 DECLARE
   v_season INT;
@@ -218,19 +215,28 @@ SELECT is(
 -- =========================================================================
 -- 12.14 — empty-string dt_start (promote.py's NULL sentinel) does not error
 -- =========================================================================
--- The CERT→PROD calendar promoter (python/pipeline/promote.py) always emits
+-- The CERT->PROD event mirror (python/pipeline/promote.py) always emits
 -- "" rather than JSON null for missing date fields (payload-shape stability).
--- fn_import_evf_events must accept "" for dt_start/dt_end the same way it
--- already does for dt_registration_deadline, and store NULL, not error.
+-- fn_mirror_events_to_prod must accept "" for dt_start/dt_end the same way
+-- fn_refresh_evf_event_urls already does for dt_registration_deadline, and
+-- store NULL, not error.
 DO $t1214$
 DECLARE
-  v_season INT;
-  v_result JSONB;
+  v_season  INT;
+  v_org     INT;
+  v_result  JSONB;
 BEGIN
   SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'EVF-TEST';
-  v_result := fn_import_evf_events(
-    '[{"code": "PEW-NODATE-2030-2031", "name": "EVF Circuit No Date", "dt_start": "", "dt_end": "", "location": "No Date City", "country": "Germany", "weapons": ["EPEE"], "is_team": false}]'::JSONB,
-    v_season
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'EVF';
+  v_result := fn_mirror_events_to_prod(
+    jsonb_build_array(jsonb_build_object(
+      'txt_code', 'PEW-NODATE-2030-2031', 'txt_name', 'EVF Circuit No Date',
+      'id_season', v_season, 'id_organizer', v_org,
+      'dt_start', '', 'dt_end', '',
+      'txt_location', 'No Date City', 'txt_country', 'Germany',
+      'enum_status', 'PLANNED'
+    )),
+    '[]'::JSONB, '[]'::JSONB
   );
 END;
 $t1214$;
@@ -238,7 +244,7 @@ $t1214$;
 SELECT is(
   (SELECT dt_start FROM tbl_event WHERE txt_code = 'PEW-NODATE-2030-2031'),
   NULL::DATE,
-  '12.14: fn_import_evf_events accepts empty-string dt_start/dt_end as NULL, no error'
+  '12.14: fn_mirror_events_to_prod CREATE accepts empty-string dt_start/dt_end as NULL, no error'
 );
 
 
