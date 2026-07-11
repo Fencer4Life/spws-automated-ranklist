@@ -10,7 +10,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(13);
+SELECT plan(14);
 
 -- ===== SETUP =====
 -- A prior-season event to link via id_prior_event (migrated from
@@ -336,6 +336,59 @@ SELECT is(
      WHERE e.txt_code = 'PEW68-2034-2035'),
   'EVF',
   '51.7b: orphan-cleanup regression — the surviving row is EVF-tagged, not SPWS'
+);
+
+
+-- =========================================================================
+-- 51.8 — UPDATE must not collide on the txt_evf_slug unique index when it
+-- touches multiple slugless events in one batch. The CERT→PROD payload
+-- always sends every key (empty string for absent values, stable shape),
+-- so a slugless event carries txt_evf_slug = ''. idx_tbl_event_evf_slug is
+-- UNIQUE WHERE txt_evf_slug IS NOT NULL — so writing '' (not NULL) into two
+-- rows violates it. LIVE REGRESSION: the first real PROD reconcile aborted
+-- here with "duplicate key value violates unique constraint
+-- idx_tbl_event_evf_slug, Key (txt_evf_slug)=()". Fixed by NULLIF-guarding
+-- the text overwrite fields in fn_mirror_events_to_prod's UPDATE branch.
+-- =========================================================================
+DO $t518$
+DECLARE
+  v_season INT;
+  v_evf    INT;
+  v_e1     INT;
+  v_e2     INT;
+  v_result JSONB;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'RECON-TEST';
+  SELECT id_organizer INTO v_evf FROM tbl_organizer WHERE txt_code = 'EVF';
+
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, dt_start, enum_status)
+    VALUES ('PEW-RECON8A-2034-2035', 'Slugless A', v_season, v_evf, '2035-06-01', 'PLANNED')
+    RETURNING id_event INTO v_e1;
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, dt_start, enum_status)
+    VALUES ('PEW-RECON8B-2034-2035', 'Slugless B', v_season, v_evf, '2035-06-02', 'PLANNED')
+    RETURNING id_event INTO v_e2;
+
+  -- Both UPDATE payloads carry txt_evf_slug = '' (the stable-shape empty), as
+  -- promote.py emits for events with no slug. Must NOT raise a unique violation.
+  v_result := fn_mirror_events_to_prod(
+    '[]'::JSONB,
+    jsonb_build_array(
+      jsonb_build_object('id_event', v_e1, 'txt_name', 'Slugless A2', 'txt_evf_slug', '',
+                         'txt_location', '', 'txt_country', ''),
+      jsonb_build_object('id_event', v_e2, 'txt_name', 'Slugless B2', 'txt_evf_slug', '',
+                         'txt_location', '', 'txt_country', '')
+    ),
+    '[]'::JSONB
+  );
+END;
+$t518$;
+
+SELECT is(
+  (SELECT COUNT(*)::INT FROM tbl_event
+     WHERE txt_code IN ('PEW-RECON8A-2034-2035', 'PEW-RECON8B-2034-2035')
+       AND txt_evf_slug IS NULL),
+  2,
+  '51.8: UPDATE of two slugless events stores NULL (not ''''), no unique-index collision'
 );
 
 
