@@ -132,8 +132,8 @@
     "schema_fingerprint": "62483bc64204c2e430a3987628d744a2"
   },
   "prod": {
-    "last_updated": "2026-07-05T16:45:16Z",
-    "last_sha": "a6430fc97b1eaab4d58dcc3b71cda25f0df1ac74",
+    "last_updated": "2026-07-11T07:40:45Z",
+    "last_sha": "53c0da98a019c9d368ae2cc3533419b0417dbdcf",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -258,8 +258,9 @@
       "20260705000002_fn_update_event_registration_fields.sql",
       "20260705000003_fn_import_evf_events_null_dates.sql",
       "20260705000004_fn_update_event_url_entry_list.sql",
-      "20260705000005_registration_entry_list_age_category.sql"
+      "20260705000005_registration_entry_list_age_category.sql",
+      "20260710000001_evf_slug_dedup.sql"
     ],
-    "schema_fingerprint": "c94c08d06ec7d1dad85ffb41d2b534fa"
+    "schema_fingerprint": "62483bc64204c2e430a3987628d744a2"
   }
 }
