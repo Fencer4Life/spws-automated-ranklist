@@ -89,6 +89,48 @@ def write_for_event(
     return storage_path
 
 
+def write_reconcile(
+    season: str,
+    md_text: str,
+    target: Target = "local",
+    *,
+    timestamp: str,
+    staging_dir: Path | str | None = None,
+    supabase_client=None,
+) -> str | None:
+    """Persist a CERT→PROD reconcile-run report to the chosen target(s).
+
+    Local: ``doc/staging/reconcile/{season}.{timestamp}.md`` (versioned in the
+    repo, greppable). Storage: ``reconcile/{season}/{timestamp}.md`` in the
+    CERT `staging-reports` bucket (Telegram-reachable). Mirrors
+    :func:`write_for_event` but for a whole run scoped to a season.
+    """
+    if target not in _VALID_TARGETS:
+        raise ValueError(f"invalid target {target!r}: must be one of {_VALID_TARGETS}")
+    if target == "none":
+        return None
+
+    local_path: str | None = None
+    storage_path: str | None = None
+
+    if target in ("local", "both"):
+        sdir = Path(staging_dir) if staging_dir is not None else DEFAULT_STAGING_DIR / "reconcile"
+        sdir.mkdir(parents=True, exist_ok=True)
+        out = sdir / f"{season}.{timestamp}.md"
+        out.write_text(md_text, encoding="utf-8")
+        local_path = str(out)
+
+    if target in ("storage", "both"):
+        if supabase_client is None:
+            raise ValueError(f"target={target!r} requires supabase_client; got None")
+        handler = StorageMdHandler(supabase_client)
+        storage_path = handler.upload_reconcile(season, md_text.encode("utf-8"), timestamp)
+
+    if local_path is not None:
+        return local_path
+    return storage_path
+
+
 def write_delta_for_event(
     event_code: str,
     md_bytes: bytes,

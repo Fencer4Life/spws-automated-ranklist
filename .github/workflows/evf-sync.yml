@@ -72,6 +72,9 @@ jobs:
     # Run when mode ∈ {calendar, both} (default 'both' on cron). Skip on results-only dispatch.
     if: ${{ github.event.inputs.mode != 'results' }}
     runs-on: ubuntu-latest
+    # contents: write so the run-report .md can be committed back to doc/staging.
+    permissions:
+      contents: write
     # Serialise with the manual per-event promote (promote.yml).
     concurrency:
       group: prod-write
@@ -83,8 +86,10 @@ jobs:
         with:
           python-version: '3.11'
 
+      # supabase-py is used to upload the run-report to the CERT staging-reports
+      # bucket (best-effort; the repo copy under doc/staging/reconcile always writes).
       - name: Install dependencies
-        run: pip install httpx
+        run: pip install httpx supabase
 
       - name: Promote calendar CERT → PROD
         run: python -m python.pipeline.promote --mode calendar
@@ -92,8 +97,24 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_CERT_REF: ${{ secrets.SUPABASE_CERT_REF }}
           SUPABASE_PROD_REF: ${{ secrets.SUPABASE_PROD_REF }}
+          SUPABASE_CERT_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      # Commit the human-readable reconcile run log (doc/staging/reconcile/{season}.{ts}Z.md),
+      # mirroring the per-event scrape reports. [skip ci] so it doesn't re-trigger CI.
+      - name: Commit reconcile run log
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add doc/staging/reconcile/*.md 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No reconcile report to commit"
+          else
+            git commit -m "chore: CERT→PROD reconcile run log [skip ci]"
+            git push
+          fi
 
       - name: Notify failure
         if: failure()

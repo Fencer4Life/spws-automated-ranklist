@@ -577,6 +577,88 @@ class TestPromoteCalendar:
         assert summary["deleted"] == 0
         assert summary["delete_skipped"] == [200]
 
+    def test_calendar_mode_writes_run_report(self, tmp_path):
+        """New: with report_target='local', a reconcile writes a human-readable
+        .md run log (Changes table + Summary) — like the scrape log."""
+        from python.pipeline.promote import promote_calendar
+
+        def cert_query(sql: str):
+            if "bool_active = TRUE" in sql:
+                return [_active_season_row(3)]
+            if "to_jsonb(e)" in sql:  # _read_full_events (CERT snapshot)
+                return [
+                    {
+                        "txt_code": "MPW-2025-2026",
+                        "j": {"txt_name": "Mistrzostwa Polski Weteranów", "organizer_code": "SPWS"},
+                    }
+                ]
+            # _read_cert_promotable_events
+            return [
+                {
+                    "txt_code": "MPW-2025-2026",
+                    "txt_name": "Mistrzostwa Polski Weteranów",
+                    "enum_status": "SCHEDULED",
+                    "dt_start": "2026-06-20",
+                    "dt_end": "2026-06-21",
+                    "txt_location": "Warszawa",
+                    "txt_country": "POL",
+                    "txt_venue_address": "",
+                    "url_event": None,
+                    "url_invitation": None,
+                    "url_registration": None,
+                    "dt_registration_deadline": None,
+                    "num_entry_fee": None,
+                    "txt_entry_fee_currency": "",
+                    "weapons": ["EPEE"],
+                    "id_evf_event": None,
+                    "txt_evf_slug": None,
+                    "organizer_code": "SPWS",
+                    "prior_code": None,
+                },
+            ]
+
+        prod_states = [
+            [{"txt_code": "MPW-2025-2026", "j": {"txt_name": "MPW", "organizer_code": "SPWS"}}],
+            [
+                {
+                    "txt_code": "MPW-2025-2026",
+                    "j": {"txt_name": "Mistrzostwa Polski Weteranów", "organizer_code": "SPWS"},
+                }
+            ],
+        ]
+        prod_snap_calls = [0]
+
+        def prod_query(sql: str):
+            if "bool_active = TRUE" in sql:
+                return [_active_season_row(5)]
+            if "SELECT id_event, txt_code FROM tbl_event" in sql:
+                return [{"id_event": 84, "txt_code": "MPW-2025-2026"}]
+            if "FROM tbl_organizer WHERE txt_code IN" in sql:
+                return [{"txt_code": "SPWS", "id": 42}]
+            if "FROM tbl_event WHERE txt_code IN" in sql:
+                return []
+            if "to_jsonb(e)" in sql:  # _read_full_events before/after PROD
+                idx = min(prod_snap_calls[0], 1)
+                prod_snap_calls[0] += 1
+                return prod_states[idx]
+            return [{"r": {"created": 0, "updated": 1, "deleted": 0, "delete_skipped": []}}]
+
+        summary = promote_calendar(
+            cert_query_fn=cert_query,
+            prod_query_fn=prod_query,
+            dry_run=False,
+            report_target="local",
+            staging_dir=tmp_path,
+            timestamp="20260711-145203Z",
+        )
+        report = tmp_path / "SPWS-2025-2026.20260711-145203Z.md"
+        assert report.exists(), "run report .md not written"
+        body = report.read_text()
+        assert "MPW-2025-2026" in body and "txt_name" in body
+        assert "Mistrzostwa Polski Weteranów" in body
+        assert "created 0, updated 1, deleted 0, delete_skipped 0" in body
+        assert summary["report_path"] == str(report)
+
     def test_calendar_mode_cli_rejects_event_arg(self, monkeypatch):
         """prom.7: `promote --mode calendar --event PEW1` exits non-zero with a clear error."""
         import io
