@@ -258,3 +258,15 @@ sequenceDiagram
 - Re-ingest replaces destructive rollback as the default correction; Telegram escape hatch retained.
 - Hard dependency: **CERT-first ingestion discipline** — no event may be created directly on
   PROD/LOCAL, or id-identity breaks. (Confirmed: this is the operating model.)
+
+## Amendment (2026-07-11, ADR-081)
+
+`fn_promote_season_skeleton` is **slimmed to promote the season row + scoring_config only** —
+its event-copy block (and the event `id_prior_event` resolution in `promote_season.py`) is
+removed. Event Create/Update/Delete for a season is now owned entirely by the CERT→PROD
+**reconciler** (`fn_mirror_events_to_prod`, ADR-081). Rationale: "one-time bulk event copy"
+(this skeleton path) and "incremental delta" (calendar promote) were the same operation at two
+points in time; unifying them removes the duplicate event-copy logic. Season-shell creation
+stays a deliberate manual go-live act; events populate on the next reconcile. pgTAP 48.2 is
+reworked to assert the events array is ignored; 48.4 (event prior-link resolution) retired,
+its coverage migrated to `51_prod_event_reconcile.sql` 51.1c. See ADR-081.
