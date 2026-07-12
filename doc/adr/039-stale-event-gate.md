@@ -144,3 +144,12 @@ The full outbound-message catalogue lives in the operations manual.
 - [python/scrapers/evf_calendar.py:`assert_no_future_completed`](../../python/scrapers/evf_calendar.py)
 - [python/scrapers/evf_sync.py:77](../../python/scrapers/evf_sync.py#L77) (`sync_calendar`) and [:222](../../python/scrapers/evf_sync.py#L222) (`sync_results`) — both invoke Step 0 and Step 1 at entry.
 - ADR-028 amended by this ADR (rev 2 section).
+
+## Amendment — rev 3 (2026-07-11, ADR-081)
+
+The `id_evf_event → txt_evf_slug → date+country+location` dedup ladder (rev 2, migration
+`20260710000001`, Python `_find_existing_match`) is now also enforced at the **SQL layer** in
+the CERT ingest: `fn_ingest_evf_calendar` (renamed from `fn_import_evf_events_v2`) does an
+identity-first pre-check on `id_evf_event`/`txt_evf_slug` before the location-gated allocator,
+so a venue-less repeat scrape can never mint a second row even if the Python dedup is bypassed
+(regression evf.56). Closes `fn_allocate_evf_event_code`'s blank-location blind spot. See ADR-081.

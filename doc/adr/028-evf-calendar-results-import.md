@@ -102,3 +102,15 @@ The original `(dt_start exact + canonical country)` primary / `±N day window + 
 - **Single matcher across calendar + results paths.** The previous ad-hoc `BETWEEN ±3 days + EXISTS(tournament)` query in `_compare_and_ingest` is gone; both paths now go through `_find_existing_match`.
 
 The legacy duplicates that prompted the rev 3 design were cleaned up via existing `fn_delete_event` (no merge tooling needed — they were empty rows).
+
+## Amendment (2026-07-11, ADR-081)
+
+The CERT→PROD calendar-promotion mechanism described here is superseded by the **event
+reconciler** (ADR-081): `fn_import_evf_events` is retired and replaced by
+`fn_mirror_events_to_prod` (full Create/Update/Delete, organizer-agnostic, guarded DELETE).
+The CERT-side ingest RPC `fn_import_evf_events_v2` is renamed **`fn_ingest_evf_calendar`** and
+gains an **identity-first pre-check**: a current-season row already carrying the scrape's
+`id_evf_event`/`txt_evf_slug` is reused (CURRENT_SLOT_REUSE) *before* the location-gated
+`fn_allocate_evf_event_code` runs — closing that allocator's blank-location blind spot at the
+SQL layer (Steps A/B skip on blank location → Step C previously minted a fresh code every
+scrape). This mirrors the Python `id→slug` dedup ladder (ADR-039 rev 2) in SQL. See ADR-081.
