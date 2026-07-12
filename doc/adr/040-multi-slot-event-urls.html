@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="040-multi-slot-event-urls.md">
+<meta name="adr-source-sha256" content="399bbffda23d98bad6e238bdd99ddf04159e19d3cf9547e14bd24f43170051b7">
+<title>ADR-040 · Multi-Slot Event Result URLs with Compact-on-Save</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 040</p><h1>Multi-Slot Event Result URLs with Compact-on-Save</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-25 <strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — refresh invariant generalises), ADR-029 (Tournament URL Auto-Population — discovery loop becomes multi-URL), ADR-030 (Event Registration URL — same form), ADR-036 (PROD Export — schema-driven, auto-handles), ADR-039 (EVF Dedup — unaffected).</dd></div><div><dt>Source</dt><dd class=""><code>040-multi-slot-event-urls.md</code></dd></div><div><dt>Length</dt><dd class="">101 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2026-04-25
+<strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — refresh invariant generalises), ADR-029 (Tournament URL Auto-Population — discovery loop becomes multi-URL), ADR-030 (Event Registration URL — same form), ADR-036 (PROD Export — schema-driven, auto-handles), ADR-039 (EVF Dedup — unaffected).</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#why-this-shape">Why this shape</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#positive">Positive</a></li><li class="depth-3"><a href="#negative">Negative</a></li><li class="depth-3"><a href="#outbound-surface-none">Outbound surface (none)</a></li><li class="depth-2"><a href="#test-plan">Test plan</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The EVF Circuit Budapest event (2025-09-20/21) has <strong>three</strong> organiser-published Engarde URLs, one per weapon:</p>
+<pre><code>2025_09_20_pbt   → Day 1, Épée
+2025_09_21_kard  → Day 2, Sabre
+2025_09_21_tor   → Day 2, Foil
+</code></pre>
+<p>Our schema models <code>tbl_event.url_event</code> as a single TEXT column. ADR-029's <code>populate-urls.yml</code> reads exactly one event-level URL and runs platform discovery once — which means for Budapest only one weapon's tournaments can be auto-populated; the other two must be entered manually for each of ~10 tournaments. Same problem will recur for any event the organiser splits across multiple platform URLs (per-weapon, per-day, or per-day×weapon).</p>
+<p>The naming itself was always a slight lie: <code>url_event</code> is not the <em>event's</em> URL — it's the URL of the <strong>publishing platform's grouping entity</strong> (an Engarde &quot;tournament&quot;, an FTL &quot;event&quot;, a 4Fence base path). In simple cases (Naples), one such grouping covers everything. In Budapest, three do.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Add <strong>4 nullable URL columns</strong> on <code>tbl_event</code> (<code>url_event_2</code>, <code>url_event_3</code>, <code>url_event_4</code>, <code>url_event_5</code>) alongside the existing <code>url_event</code>. Total: up to 5 result-platform URL slots per event. Slots are equal-status — no role labels, no per-slot enum, no primary pointer.</p>
+<p>On every save (<code>fn_create_event</code> / <code>fn_update_event</code> / <code>fn_refresh_evf_event_urls</code>), the 5 inputs are <strong>compacted</strong>:</p>
+<ol>
+<li><strong>Trim</strong> whitespace and treat empty as NULL.</li>
+<li><strong>Drop</strong> NULL values.</li>
+<li><strong>Dedupe</strong> preserving first occurrence.</li>
+<li><strong>Pad</strong> with NULL to length 5.</li>
+<li>Assign <code>[1] → url_event</code>, <code>[2..5] → url_event_2..5</code>.</li>
+</ol>
+<p>This is implemented as a single helper <code>fn_compact_urls(VARIADIC TEXT[]) RETURNS TEXT[]</code>, called by every write path so the invariant holds regardless of caller.</p>
+<p><strong>Invariant after every save:</strong> <em>if any URL is set, slot #1 (<code>url_event</code>) is set.</em> All existing code that special-cases <code>url_event</code> (calendar 🔗 link, ⬇ Import button visibility, ADR-029 auto-populate seed, EVF refresh write order) keeps working unchanged.</p>
+<p>The tournament URL discovery script (ADR-029, <code>python/tools/populate_tournament_urls.py</code>) iterates all non-null slots, runs platform-detection-and-discovery per URL, and merges the per-(weapon, gender, category) results, deduplicating on first occurrence with a logged warning on collision.</p>
+<p><code>tbl_tournament.url_results</code> is <strong>unchanged</strong> — it remains the leaf URL rendered in the ranklist drilldown.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="why-this-shape">Why this shape</h2>
+<ol>
+<li><strong>Schema simplicity.</strong> Four nullable TEXT columns; no new tables, no enums, no JSONB, no array column. ADR-036 schema-driven export auto-includes them. Promote.py needs one payload-key extension. Migrations stay a single ALTER + helper function.</li>
+<li><strong>No semantic break.</strong> <code>url_event</code> keeps its column name, RPC parameter name, calendar exposure, and &quot;primary&quot; role. Frontend, scrapers, promote.py, and seed exports keep working. Compact-on-save makes &quot;URL #1 = the canonical one&quot; a structural invariant rather than a coincidence.</li>
+<li><strong>Slot positions are non-semantic.</strong> The admin doesn't care if Budapest's <code>pbt</code> URL lives in slot #1 vs #3 — it's just one of three discovery seeds. Compaction loses nothing meaningful and prevents the gap-handling pathologies (slot #1 NULL, #2 set → 🔗 link disappears even though URLs exist).</li>
+<li><strong>Refresh invariant generalises trivially.</strong> ADR-028 NULL-only refresh still applies per slot. After compaction, NULL slots are always at the bottom, so newly-discovered URLs land in the lowest empty slot — predictable and idempotent.</li>
+<li><strong>5-slot ceiling is intentionally arbitrary.</strong> Covers Budapest (3) with 2× headroom. If a real event with 6+ URLs ever appears, that's the moment the slot-based design becomes wrong-shaped and we revisit (probably via a <code>tbl_event_url</code> child table). YAGNI for now.</li>
+</ol>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li>
+<p><strong>Move <code>url_event</code> to <code>tbl_tournament</code> (per-tournament URL).</strong> Cleanest data model — URL is a property of the publishing-platform-grouping which maps M:1 to tournaments. Rejected by the user: the drilldown UI already renders <code>tbl_tournament.url_results</code> (the leaf), and decoupling event-level platform URLs from event-level admin would require touching ADR-029 discovery, EVF scraper writes, and the event-card 🔗 link path simultaneously. The 5-slot extension is additive and lets us ship the actual fix without that refactor.</p>
+</li>
+<li>
+<p><strong><code>url_event TEXT</code> → <code>arr_url_event JSONB</code> array.</strong> One-column change, but the NULL-only refresh invariant becomes ambiguous on arrays (does adding a 4th URL &quot;overwrite&quot; an existing 3-element value?), the UI loses per-slot input identity, and CRUD/promote/locales all need rework. Rejected for higher cost than 4 nullable columns at no semantic gain.</p>
+</li>
+<li>
+<p><strong><code>tbl_event_url(id_event, url, enum_role, int_seq)</code> child table.</strong> First-class modelling of N URLs per event with optional role labels. Rejected as overkill for an event-shape that's 1-URL in the 95% case and never observed beyond 5; cost-correct only if 6+ URLs become routine, which we'd revisit then.</p>
+</li>
+<li>
+<p><strong>Store as-given (no compaction), with <code>if url_event OR url_event_2 OR ...</code> checks everywhere.</strong> Spreads the change across every consumer of <code>url_event</code> for no real gain. Slot positions are non-semantic, so admin's choice of &quot;which slot got cleared&quot; carries no information worth preserving.</p>
+</li>
+<li>
+<p><strong>Explicit <code>int_primary_url_slot</code> pointer column.</strong> Solves a problem we don't have — nobody's argued slot identity needs to survive across edits. YAGNI.</p>
+</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<h3 id="positive">Positive</h3>
+<ul>
+<li><strong>Backward-compatible.</strong> Every existing caller of <code>fn_create_event</code> / <code>fn_update_event</code> / <code>fn_refresh_evf_event_urls</code> keeps working — new params are nullable defaults, JSONB payloads ignore unknown keys.</li>
+<li><strong><code>url_event</code> semantics preserved.</strong> Calendar 🔗 link, ⬇ Import button, ADR-029 single-URL seed path, EVF scraper write order — all unchanged because compact-on-save guarantees slot #1 holds the first non-null value.</li>
+<li><strong>Discovery generalises.</strong> Budapest auto-populates from 3 URLs in one ⬇ click instead of 1 + 20 manual entries.</li>
+<li><strong>Refresh invariant still trivial.</strong> ADR-028's &quot;scraper only writes when target NULL/empty&quot; extends per-slot.</li>
+<li><strong>PROD seed export auto-handles.</strong> ADR-036 schema-driven export picks up the 4 new columns from <code>information_schema.columns</code>.</li>
+</ul>
+<h3 id="negative">Negative</h3>
+<ul>
+<li><strong>Slot positions reshuffle on save.</strong> Admin who pastes URLs into [NULL, B, NULL, D, NULL] sees them re-rendered as [B, D, NULL, NULL, NULL] after save. Mildly surprising once; structurally consistent forever after.</li>
+<li><strong>EVF scraper still writes only slot #1.</strong> ADR-028 scraper auto-fills <code>url_event</code> from the EVF detail page; it does not auto-populate slots #2–5 (would require teaching the scraper that one EVF event maps to N platform URLs, which is a separate, harder problem). Admin manually fills slots #2–5 for the rare multi-URL events. Acceptable: the gap is small (single-digit events per season).</li>
+<li><strong><code>fn_compact_urls</code> is centrally damaging if buggy.</strong> Mitigated by direct unit tests of the helper independent of caller RPCs (15.2, 15.3).</li>
+</ul>
+<h3 id="outbound-surface-none">Outbound surface (none)</h3>
+<p>No new Telegram messages, no new RPCs beyond <code>fn_compact_urls</code> (helper), no new admin commands.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="test-plan">Test plan</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Assertion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>15.1</code></td>
+<td><code>tbl_event</code> has columns <code>url_event_2..5</code> (TEXT, nullable).</td>
+</tr>
+<tr>
+<td><code>15.2</code></td>
+<td><code>fn_compact_urls</code> exists and returns a 5-element TEXT[].</td>
+</tr>
+<tr>
+<td><code>15.3</code></td>
+<td><code>fn_compact_urls</code> trims, drops empties, dedupes preserving first occurrence, pads NULL — <code>[' A ', NULL, 'A', 'B', '   ']</code> → <code>['A','B',NULL,NULL,NULL]</code>.</td>
+</tr>
+<tr>
+<td><code>15.4</code></td>
+<td><code>fn_create_event</code> accepts <code>p_url_event_2..5</code> and applies compact (gap input → compacted storage).</td>
+</tr>
+<tr>
+<td><code>15.5</code></td>
+<td><code>fn_update_event</code> applies compact when admin clears slot #1 of [A,B,C] → stored [B,C,NULL,NULL,NULL].</td>
+</tr>
+<tr>
+<td><code>15.6</code></td>
+<td><code>fn_refresh_evf_event_urls</code> accepts the new keys, applies per-slot NULL-only invariant, then re-compacts.</td>
+</tr>
+<tr>
+<td><code>9.44a–f</code></td>
+<td>EventManager.svelte: 5 inputs, disclosure auto-open when slots #2–5 set, filled-count, save handler trims/drops/dedupes/pads, primary styling on slot #1.</td>
+</tr>
+<tr>
+<td><code>3.16k–m</code></td>
+<td><code>populate_tournament_urls</code>: iterates non-null slots, merges by (weapon,gender,category) preserving first occurrence, logs warning on collision.</td>
+</tr>
+<tr>
+<td><code>prom.8</code></td>
+<td>Calendar-promote payload carries <code>url_event_2..5</code> to PROD via <code>fn_refresh_evf_event_urls</code>.</td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="references">References</h2>
+<ul>
+<li>Mockup: <a href="../mockups/m12_event_edit_multi_url.html"><code>doc/mockups/m12_event_edit_multi_url.html</code></a> (two states: typical 1-URL event + Budapest 3-URL event).</li>
+<li>Migration: <code>supabase/migrations/20260425000001_event_multi_url.sql</code>.</li>
+<li>Helper: <code>fn_compact_urls(VARIADIC TEXT[]) RETURNS TEXT[]</code> — pure, side-effect-free, idempotent.</li>
+<li>Discovery: <a href="../../python/tools/populate_tournament_urls.py"><code>python/tools/populate_tournament_urls.py</code></a> — <code>main()</code> loop extended.</li>
+<li>Promote: <a href="../../python/pipeline/promote.py"><code>python/pipeline/promote.py</code></a> — calendar-mode payload extension.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="039-stale-event-gate.html">← ADR-039: EVF Scraper Dedup Algorithm + Stale-Event Gate</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="041-edge-function-dispatch.html">→ ADR-041: Server-Side Workflow Dispatch via Supabase Edge Function</a></nav>
+<footer class="foot">Generated from <code>040-multi-slot-event-urls.md</code> · source SHA-256 <code>399bbffda23d98bad6e238bdd99ddf04159e19d3cf9547e14bd24f43170051b7</code></footer>
+</div></body></html>

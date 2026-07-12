@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="032-drilldown-mobile-card-layout.md">
+<meta name="adr-source-sha256" content="aee515e8978c4cc03135fc6ea82f4f58b3cf3d580925aeb552da8ff5cdf1e99c">
+<title>ADR-032 · Drilldown Mobile Card Layout</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 032</p><h1>Drilldown Mobile Card Layout</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented</dd></div><div><dt>Date</dt><dd class="">2026-04-11</dd></div><div><dt>Source</dt><dd class=""><code>032-drilldown-mobile-card-layout.md</code></dd></div><div><dt>Length</dt><dd class="">55 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Implemented<br />
+<strong>Date:</strong> 2026-04-11<br />
+<strong>Source:</strong> NFR-09, FR-36, FR-66</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#card-layout-structure">Card layout structure</a></li><li class="depth-3"><a href="#why-dual-rendering">Why dual rendering</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The DrilldownModal's 7-column tournament table (<code>Tournament</code>, <code>Date</code>, <code>Type</code>, <code>Place</code>, <code>N</code>, <code>Mult</code>, <code>Points</code>) requires <code>min-width: 480px</code> which overflows on mobile screens (375px). Users must rotate their phone to landscape to view the data, especially in +EVF/KADRA mode where two tables (domestic + international) are rendered. This is the only component in the web widget that breaks on mobile.</p>
+<p>Four alternatives were evaluated via HTML mockups (<code>doc/mockups/drilldown-mobile-options.html</code>) with real data (KORONA Przemyslaw, V2 EPEE, +EVF mode, 11 tournament results):</p>
+<ul>
+<li><strong>Option A: Responsive Card Layout</strong> (selected)</li>
+<li>Option B: Column Hiding + Expand Row</li>
+<li>Option C: Sticky First Column + Horizontal Scroll</li>
+<li>Option D: Transposed Vertical Layout</li>
+</ul>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Use <strong>dual rendering with CSS show/hide</strong>: render both the existing <code>&lt;table&gt;</code> and a new card layout (<code>.card-list</code>) in the DOM. A CSS media query (<code>@media max-width: 600px</code>) hides the table and shows cards on mobile, and vice versa on desktop.</p>
+<h3 id="card-layout-structure">Card layout structure</h3>
+<p>Each tournament result renders as a <code>.result-card</code>:</p>
+<pre><code>┌──────────────────────────────────────────────┐
+│ PPW4-V2-M-EPEE-2025-2026         110.02 ★   │  .card-top: code (link?) + points+marker
+│ Gdansk · 21 Feb 26 · PPW · 1/11 · x1.0     │  .card-meta: location · date · type · place/N · mult
+│ ↩ SPWS-2024-2025                             │  .card-carried-badge (conditional)
+└──────────────────────────────────────────────┘
+</code></pre>
+<p>All 11 data fields from the table are preserved: tournament code (text or link with <code>target=_blank</code>), location, carried badge, formatted date, type badge (<code>.domestic</code>/<code>.international</code>), place, participant count, multiplier, points with marker, and carried-row styling.</p>
+<h3 id="why-dual-rendering">Why dual rendering</h3>
+<ul>
+<li><strong>No JS viewport detection</strong> — pure CSS media query, zero runtime cost</li>
+<li><strong>Existing tests preserved</strong> — jsdom does not evaluate CSS, so both layouts are always queryable; all 24 existing DrilldownModal tests pass unchanged</li>
+<li><strong>New tests independent</strong> — 14 new tests query card elements by CSS class without needing media query simulation</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Pros</th>
+<th>Cons</th>
+<th>Rejected because</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B: Column Hiding + Expand</td>
+<td>Keeps tabular feel, compact</td>
+<td>Extra tap for details, discoverability poor</td>
+<td>Not all data visible at a glance</td>
+</tr>
+<tr>
+<td>C: Sticky First Column</td>
+<td>Minimal code change</td>
+<td>Still requires horizontal swiping</td>
+<td>Doesn't solve the core problem</td>
+</tr>
+<tr>
+<td>D: Transposed Vertical</td>
+<td>Max readability</td>
+<td>Most vertical space, loses comparison</td>
+<td>Too much scrolling for 11 results</td>
+</tr>
+<tr>
+<td>JS <code>matchMedia</code> listener</td>
+<td>Only renders one layout</td>
+<td>Complicates testing, needs resize listener</td>
+<td>More complexity for no user benefit</td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>Positive:</strong> Drilldown fits on 375px screens without rotation; no information loss; desktop unchanged</li>
+<li><strong>Positive:</strong> 14 new vitest assertions cover every card field (C.1–C.14)</li>
+<li><strong>Negative:</strong> DOM contains both layouts (~2x markup in <code>.table-section</code>); negligible perf impact since tables have max ~15 rows</li>
+<li><strong>Constraint:</strong> Future table column additions must be mirrored in the card snippet</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="031-auto-active-season.html">← ADR-031: Auto-Active Season by Date</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="033-fencer-gender-identity-enhancements.html">→ ADR-033: Fencer Gender Column + Identity Manager Enhancement</a></nav>
+<footer class="foot">Generated from <code>032-drilldown-mobile-card-layout.md</code> · source SHA-256 <code>aee515e8978c4cc03135fc6ea82f4f58b3cf3d580925aeb552da8ff5cdf1e99c</code></footer>
+</div></body></html>

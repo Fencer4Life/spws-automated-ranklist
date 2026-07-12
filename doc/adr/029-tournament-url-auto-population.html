@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="029-tournament-url-auto-population.md">
+<meta name="adr-source-sha256" content="889ff18f297a5c86966fa2ed416a71bb478ca1d14a69bb96a2c5050ff8bb0db1">
+<title>ADR-029 · Tournament URL Auto-Population + Admin CRUD</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 029</p><h1>Tournament URL Auto-Population + Admin CRUD</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-07 (updated) <strong>Relates to:</strong> FR-53, FR-54, ADR-025 (Event-Centric Ingestion)</dd></div><div><dt>Source</dt><dd class=""><code>029-tournament-url-auto-population.md</code></dd></div><div><dt>Length</dt><dd class="">87 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2026-04-07 (updated)
+<strong>Relates to:</strong> FR-53, FR-54, ADR-025 (Event-Centric Ingestion)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-url-auto-population">1. URL Auto-Population</a></li><li class="depth-3"><a href="#2-tournament-admin-crud">2. Tournament Admin CRUD</a></li><li class="depth-3"><a href="#3-promotion-url-carry">3. Promotion URL Carry</a></li><li class="depth-3"><a href="#4-prod-read-only-commands">4. PROD Read-Only Commands</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Each PPW event contains 28+ individual tournaments. After results are published on FencingTimeLive, Engarde, or 4Fence, the admin must manually enter <code>url_results</code> for every tournament — a tedious and error-prone process.</p>
+<p>All three platforms follow predictable URL patterns that can be derived from the event-level <code>url_event</code> already stored in <code>tbl_event</code>.</p>
+<p>Additionally, the Event Admin accordion needed full tournament CRUD (create, edit code/url/status, delete with confirmation, import via URL scraping).</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-url-auto-population">1. URL Auto-Population</h3>
+<p>Automatically derive tournament <code>url_results</code> from the event's <code>url_event</code> using platform-specific discovery logic.</p>
+<p><strong>Triggers:</strong></p>
+<ul>
+<li>Admin UI: ⬇ button on event row → triggers <code>populate-urls.yml</code> via GitHub Actions API</li>
+<li>Telegram: <code>populate-urls &lt;event_code&gt;</code> (CERT) / <code>populate-urls-prod &lt;event_code&gt;</code> (PROD)</li>
+</ul>
+<p><strong>Platform Discovery Strategies:</strong></p>
+<p><strong>FencingTimeLive (FTL):</strong></p>
+<ul>
+<li>Scrape event schedule HTML page</li>
+<li>Extract <code>/events/view/{UUID}</code> links for individual competitions</li>
+<li>Parse tournament names (Polish/English) to map to weapon/gender/category</li>
+<li>Build result URLs: <code>https://www.fencingtimelive.com/events/results/{UUID}</code></li>
+</ul>
+<p><strong>Engarde:</strong></p>
+<ul>
+<li>XML API at <code>/prog/getCompeForDisplay.php</code> (not HTML scraping)</li>
+<li>Returns structured XML with <code>&lt;comp&gt;</code> elements: slug, sexe, arme, titre, etat</li>
+<li>Category parsed from title V-notation first (&quot;V1&quot;, &quot;V2&quot;), slug fallback</li>
+<li>Gender from title keywords (Men's/Women's) overrides buggy <code>sexe</code> attribute</li>
+<li>Only <code>etat=&quot;completed&quot;</code> entries included (Poules/empty filtered out)</li>
+<li>Multilingual: tested with Spanish (Madrid), English (Stockholm), Hungarian (Budapest)</li>
+</ul>
+<p><strong>4Fence (Italian):</strong></p>
+<ul>
+<li>No scraping needed — URLs are deterministic from base path</li>
+<li>Generate URLs using query parameters: <code>a</code> (weapon), <code>s</code> (gender), <code>c</code> (category), <code>f=clafinale</code></li>
+<li>Weapon: SP=Epee, F=Foil, SC=Sabre; Category: 5=V0..9=V4</li>
+</ul>
+<h3 id="2-tournament-admin-crud">2. Tournament Admin CRUD</h3>
+<p><strong>Edit Tournament</strong> — inline form in accordion with fields:</p>
+<ul>
+<li><code>txt_code</code> (editable via extended <code>fn_update_tournament</code> with <code>p_code</code> parameter)</li>
+<li><code>url_results</code>, <code>enum_import_status</code>, <code>txt_import_status_reason</code></li>
+</ul>
+<p><strong>Create Tournament</strong> — inline form with weapon/gender/category/type/url, auto-generates code.</p>
+<p><strong>Delete Tournament</strong> — with <code>confirm()</code> dialog.</p>
+<p><strong>Import via URL Scrape</strong> — ⬇ button on tournament row:</p>
+<ul>
+<li>Checks <code>url_results</code> is set</li>
+<li>Triggers <code>scrape-tournament.yml</code> via GitHub Actions API</li>
+<li><code>scrape_tournament.py</code>: detect platform → fetch → parse → fuzzy match → <code>fn_ingest_tournament_results</code></li>
+</ul>
+<h3 id="3-promotion-url-carry">3. Promotion URL Carry</h3>
+<p><code>promote.py</code> now reads <code>url_results</code> from CERT tournaments and updates PROD tournaments after creation.</p>
+<h3 id="4-prod-read-only-commands">4. PROD Read-Only Commands</h3>
+<p>Telegram commands for querying PROD without writes:</p>
+<ul>
+<li><code>status-prod</code>, <code>results-prod</code>, <code>evf-status-prod</code></li>
+<li>Uses Management API with <code>SUPABASE_PROD_REF</code> (same access token as CERT)</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li><strong>Manual entry</strong> — Tedious for 28+ tournaments per event.</li>
+<li><strong>Telegram-only</strong> — Initial approach; replaced by Admin UI direct GHA trigger.</li>
+<li><strong>Supabase Edge Function</strong> — Python ecosystem not available in Deno.</li>
+<li><strong>HTML scraping for Engarde</strong> — Engarde uses JS-rendered pages; XML API is more reliable.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Reduces admin effort from ~30 manual URL entries to one button click</li>
+<li>FTL depends on HTML page structure (may break on redesign)</li>
+<li>Engarde XML API is stable and structured</li>
+<li>4Fence URLs are deterministic and resilient to UI changes</li>
+<li>Combined categories map one URL to multiple tournaments</li>
+<li><code>--dry-run</code> mode allows safe preview</li>
+<li>Admin UI requires <code>github-pat</code> and <code>github-repo</code> attributes for GHA trigger</li>
+<li>15 pytest tests (url_discovery + scrape_tournament), 2 pgTAP tests (txt_code update), 4 vitest tests (edit/create forms)</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="028-evf-calendar-results-import.html">← ADR-028: EVF Calendar + Results Import</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="030-event-registration-url-deadline.html">→ ADR-030: Event Registration URL + Deadline</a></nav>
+<footer class="foot">Generated from <code>029-tournament-url-auto-population.md</code> · source SHA-256 <code>889ff18f297a5c86966fa2ed416a71bb478ca1d14a69bb96a2c5050ff8bb0db1</code></footer>
+</div></body></html>

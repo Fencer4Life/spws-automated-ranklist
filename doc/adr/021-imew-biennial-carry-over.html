@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="021-imew-biennial-carry-over.md">
+<meta name="adr-source-sha256" content="4cd7c18d6718cac9547c56a851d26d1e359bdde07f98f698597d3499d95fa8a5">
+<title>ADR-021 · IMEW Biennial Carry-Over</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 021</p><h1>IMEW Biennial Carry-Over</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted; <strong>amended 2026-04-26 by ADR-042</strong> (mechanism updated to FK-based when EVENT_FK_MATCHING engine is active); <strong>amended 2026-06-26</strong> (results-based carry-stop)</dd></div><div><dt>Date</dt><dd class="">2026-04-04 (M10)</dd></div><div><dt>Source</dt><dd class=""><code>021-imew-biennial-carry-over.md</code></dd></div><div><dt>Length</dt><dd class="">86 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted; <strong>amended 2026-04-26 by ADR-042</strong> (mechanism updated to FK-based when EVENT_FK_MATCHING engine is active); <strong>amended 2026-06-26</strong> (results-based carry-stop)
+<strong>Date:</strong> 2026-04-04 (M10)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-06-26-results-based-carry-stop">Amendment (2026-06-26 — results-based carry-stop)</a></li><li class="depth-2"><a href="#amendment-2026-04-26-adr-042-phase-1b">Amendment (2026-04-26 — ADR-042 Phase 1B)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#modified-carry-over-logic">Modified carry-over logic</a></li><li class="depth-3"><a href="#concrete-effect">Concrete effect</a></li><li class="depth-3"><a href="#implementation">Implementation</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-06-26-results-based-carry-stop">Amendment (2026-06-26 — results-based carry-stop)</h2>
+<p><code>completed_positions</code> is redefined from status-based to <strong>current-result-existence</strong> (see ADR-018 amendment, migration <code>20260626120000</code>, supersedes <code>20260406000006</code>). The <code>rules_types</code> gate is unchanged; the carry-stop clause <code>fn_event_position(...) NOT IN (SELECT pos FROM completed_positions)</code> keeps its form, but <code>completed_positions</code> now means &quot;positions with a current-season scored result (weapon+gender scoped)&quot;. The concrete-effect table's row &quot;PPW5 not yet played (SCHEDULED event) → carried over&quot; now holds <strong>only while PPW5 has no current result</strong>; once PPW5 has results it is replaced, not carried (strict either/or — never both). Tests R.22–R.24.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-04-26-adr-042-phase-1b">Amendment (2026-04-26 — ADR-042 Phase 1B)</h2>
+<p>This ADR's <em>rule</em> — &quot;IMEW results carry biennially&quot; — is unchanged.</p>
+<p>The <em>mechanism</em> is now engine-dependent (per <code>tbl_season.enum_carryover_engine</code>):</p>
+<ul>
+<li><strong>EVENT_CODE_MATCHING</strong> (legacy, default): rules-based prefix matching as documented below. Type in <code>rules_types</code> AND prefix not in <code>completed_positions</code> → carry. Works automatically for biennial events because off-year seasons have no event with the matching prefix.</li>
+<li><strong>EVENT_FK_MATCHING</strong> (Phase 1B opt-in): explicit <code>tbl_event.id_prior_event</code> FK linkage. Biennial carry requires a placeholder current-season event whose <code>id_prior_event</code> points to last season's IMEW. Until Phase 3 ships <code>fn_init_season</code> (which auto-creates these placeholders), admin must manually insert/link placeholders for biennial events. Without the explicit link, biennial carry-over does NOT fire under FK engine.</li>
+</ul>
+<p>The A/B comparison helper (<code>fn_compare_carryover_engines</code>) surfaces this divergence pre-flip so admin can fix data first.</p>
+</section>
+<section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>IMEW (Indywidualne Mistrzostwa Europy Weteranów / Individual European Veterans Championships, tournament type <code>MEW</code>) is a <strong>biennial</strong> event — it takes place every two years. It occurred in the 2024-25 season and will <strong>not</strong> occur in 2025-26. In off years, DMEW (Drużynowe Mistrzostwa Europy Weteranów / Team European Veterans Championships) takes place instead, but SPWS does not track team results.</p>
+<p>The seed data regeneration from Excel workbooks incorrectly included IMEW-2025-2026 tournament data extracted from carry-over columns in the ranking spreadsheets. This data represents results that were carried forward in the Excel-based system, not actual 2025-26 tournament results. The automated system handles carry-over via the rolling score mechanism (ADR-018), making these phantom tournament entries both incorrect and redundant.</p>
+<p>ADR-018's original carry-over constraint required a <strong>declared event</strong> (any status) in the current season for position-matched carry-over. This meant IMEW results would only carry over if a dummy SCHEDULED IMEW event existed in the off-year season — semantically wrong (IMEW is not scheduled) and an operator burden.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p><strong>Rules-based carry-over:</strong> Change the rolling score carry-over constraint from &quot;position must be declared as an event in the current season&quot; to &quot;tournament type must appear in the season's <code>json_ranking_rules</code> buckets.&quot;</p>
+<h3 id="modified-carry-over-logic">Modified carry-over logic</h3>
+<p>Previous (ADR-018 original):</p>
+<pre><code class="language-sql">-- Carry over if position is declared but not completed
+AND fn_event_position(e.txt_code) IN (SELECT pos FROM declared_positions)
+AND fn_event_position(e.txt_code) NOT IN (SELECT pos FROM completed_positions)
+</code></pre>
+<p>New:</p>
+<pre><code class="language-sql">-- Carry over if tournament type is in ranking rules AND position is not completed
+AND t.enum_type::TEXT IN (SELECT type_code FROM rules_types)
+AND fn_event_position(e.txt_code) NOT IN (SELECT pos FROM completed_positions)
+</code></pre>
+<p>Where <code>rules_types</code> extracts all tournament types from the relevant <code>json_ranking_rules</code> section (<code>'domestic'</code> for <code>fn_ranking_ppw</code>, <code>'international'</code> for <code>fn_ranking_kadra</code>, both for <code>fn_fencer_scores_rolling</code>).</p>
+<h3 id="concrete-effect">Concrete effect</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Previous behavior</th>
+<th>New behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IMEW in off year (no event declared)</td>
+<td>Dropped — no declared position</td>
+<td><strong>Carried over</strong> — MEW is in international rules</td>
+</tr>
+<tr>
+<td>PPW5 not yet played (SCHEDULED event)</td>
+<td>Carried over — declared position</td>
+<td>Carried over — PPW in rules, PPW5 not completed</td>
+</tr>
+<tr>
+<td>PPW1 already played (COMPLETED)</td>
+<td>Not carried — position completed</td>
+<td>Not carried — PPW1 completed</td>
+</tr>
+<tr>
+<td>Random type not in rules</td>
+<td>Not carried — no declared position</td>
+<td>Not carried — type not in rules</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="implementation">Implementation</h3>
+<ol>
+<li><strong>Strip IMEW-2025-2026</strong> from 16 seed files in <code>supabase/data/2025_26/</code> — no IMEW tournament took place this season</li>
+<li><strong>Modify 3 migration files</strong> to replace <code>declared_positions</code> with <code>rules_types</code>:
+<ul>
+<li><code>20260330000001_ranking_ppw_rolling.sql</code> — <code>fn_ranking_ppw</code> (domestic rules)</li>
+<li><code>20260330000002_ranking_kadra_rolling.sql</code> — <code>fn_ranking_kadra</code> (international rules)</li>
+<li><code>20260330000003_fencer_scores_rolling.sql</code> — <code>fn_fencer_scores_rolling</code> (both)</li>
+</ul>
+</li>
+<li><strong>No SCHEDULED event needed</strong> — carry-over is automatic when type is in rules</li>
+</ol>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li>
+<p><strong>SCHEDULED event placeholder</strong> — Add a dummy SCHEDULED IMEW event in off-year seasons. Works with existing code but semantically wrong (IMEW is not scheduled), creates operator burden, and clutters the calendar view with events that won't happen.</p>
+</li>
+<li>
+<p><strong>Don't carry over IMEW in off years</strong> — Rejected. International fencers who competed in IMEW would lose significant ranking points during the off year, creating an unfair gap in kadra rankings. The Excel-based system carried these results forward, and the automated system should maintain parity.</p>
+</li>
+<li>
+<p><strong>Keep IMEW-2025-2026 as COMPLETED with Excel carry-over data</strong> — Rejected. This conflates carry-over with actual results, making it impossible to distinguish real tournament participation from inherited scores.</p>
+</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>IMEW scores from the previous season automatically contribute to rolling kadra rankings during off years — no operator action needed</li>
+<li>Carry-over is now driven by <code>json_ranking_rules</code> rather than event declarations — more robust and self-documenting</li>
+<li><code>declared_positions</code> CTE removed from all 3 rolling functions, replaced by <code>rules_types</code></li>
+<li><code>completed_positions</code> CTE retained — completed events still block carry-over (correct behavior)</li>
+<li>ADR-018's three-state table updated: &quot;not declared → dropped&quot; becomes &quot;type not in rules → dropped&quot;</li>
+<li>Pattern is fully automatic for any biennial/triennial event whose type is in the rules</li>
+<li>16 seed files stripped of phantom IMEW-2025-2026 data</li>
+<li>3 new pgTAP tests (R.19–R.21) verify IMEW biennial carry-over behavior</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="020-seed-generator-domestic-auto-create.html">← ADR-020: Seed Generator Auto-Creates Fencers for Domestic Tournaments</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="022-ingestion-db-transaction.html">→ ADR-022: Ingestion DB Transaction Strategy</a></nav>
+<footer class="foot">Generated from <code>021-imew-biennial-carry-over.md</code> · source SHA-256 <code>4cd7c18d6718cac9547c56a851d26d1e359bdde07f98f698597d3499d95fa8a5</code></footer>
+</div></body></html>

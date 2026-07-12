@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="019-domestic-only-fencer-seed.md">
+<meta name="adr-source-sha256" content="987c64ae4a773d8621106a701eca507d5b3d78a68e55403616eae83554c775a0">
+<title>ADR-019 · Domestic-Only Fencer Seed</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 019</p><h1>Domestic-Only Fencer Seed</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-04 (M9)</dd></div><div><dt>Source</dt><dd class=""><code>019-domestic-only-fencer-seed.md</code></dd></div><div><dt>Length</dt><dd class="">33 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2026-04-04 (M9)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p><code>seed_tbl_fencer.sql</code> contained 361 fencers. Only 232 had PPW/MPW/GPW results in the SQL data files (<code>supabase/data/**/*.sql</code>, covering seasons 2023-24 through 2025-26). An additional 51 fencers had domestic results in earlier seasons (2021, 2022) available only as Excel files in <code>doc/external_files/</code>. The remaining 75 were either international-only (PEW/MEW/MSW/PSW only) or zero-result (no data anywhere).</p>
+<p>The live pipeline (<code>pipeline.py</code>) already enforces this boundary: international unmatched fencers are SKIPPED, never auto-created (tests 4.17, 4.18). The seed was the only place where this rule was not enforced.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p><code>tbl_fencer</code> seed contains <strong>only</strong> fencers with at least one domestic (PPW/MPW/GPW) result. Domestic participation is derived from two sources:</p>
+<ol>
+<li><strong>SQL data files</strong> (<code>supabase/data/**/*.sql</code>) — fencer IDs appearing in PPW/MPW/GPW result blocks</li>
+<li><strong>Excel-only seasons</strong> (<code>doc/external_files/Sezon 2021</code>, <code>Sezon 2022</code>) — fencer names from domestic GP/MP sheets, fuzzy-matched against the seed using <code>rapidfuzz</code> + diacritic folding (threshold ≥90)</li>
+</ol>
+<p>International-only and zero-result fencers are excluded. When a fencer is removed from the seed, their result blocks in international tournament data (PEW/MEW/MSW/PSW) are also deleted from the SQL data files.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li><strong>Keep all fencers, mark with comments</strong> (status quo) — 75+ dead entries pollute master data, IDs waste autoincrement space, violates &quot;no garbage in&quot; principle.</li>
+<li><strong>Remove only international-only, keep zero-result</strong> — zero-result fencers contribute nothing to rankings; keeping them provides no benefit and creates confusion about membership status.</li>
+<li><strong>Hardcoded removal set</strong> (previous <code>NO_PPW_MPW_IDS</code>) — goes stale as data files change; already proven incorrect (82 IDs vs 129 actual).</li>
+<li><strong>SQL-only scan</strong> (no Excel) — would incorrectly remove 51 fencers who competed domestically in 2021/2022 but have no SQL data file results yet.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Fencer count drops from 361 to 280 — all remaining fencers have domestic tournament participation</li>
+<li>All fencer IDs shift (autoincrement resets after sort) — pgTAP tests with hardcoded IDs updated accordingly</li>
+<li>Fencers who later join SPWS domestically will be auto-created by the pipeline on their first PPW/MPW appearance; re-running <code>generate_season_seed.py</code> picks up their prior international results retroactively</li>
+<li><code>tbl_fencer</code> becomes the authoritative SPWS domestic member pool</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="018-rolling-score.html">← ADR-018: Rolling Score for Active Season</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="020-seed-generator-domestic-auto-create.html">→ ADR-020: Seed Generator Auto-Creates Fencers for Domestic Tournaments</a></nav>
+<footer class="foot">Generated from <code>019-domestic-only-fencer-seed.md</code> · source SHA-256 <code>987c64ae4a773d8621106a701eca507d5b3d78a68e55403616eae83554c775a0</code></footer>
+</div></body></html>

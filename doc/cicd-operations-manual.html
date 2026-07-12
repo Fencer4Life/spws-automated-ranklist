@@ -1,0 +1,1211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="doc-source" content="cicd-operations-manual.md">
+<meta name="doc-source-sha256" content="27dfbce9c8f1734fc07b60e8f0b8afd3b735f332914fa85182347a7eeb72e326">
+<title>CI/CD Operations Manual · SPWS</title>
+<link rel="stylesheet" href="adr/assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">SPWS · Project Documentation</p><h1>CI/CD Operations Manual</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>cicd-operations-manual.md</code></dd></div><div><dt>Length</dt><dd>807 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#architecture-overview">Architecture Overview</a></li><li class="depth-2"><a href="#1-one-time-github-setup">1. One-Time GitHub Setup</a></li><li class="depth-3"><a href="#1-1-create-environments">1.1 Create Environments</a></li><li class="depth-3"><a href="#1-2-add-repository-secrets">1.2 Add Repository Secrets</a></li><li class="depth-2"><a href="#1-3-credentials-secrets-the-three-trust-zones">1.3 Credentials &amp; secrets — the three trust zones</a></li><li class="depth-3"><a href="#zone-a-the-ui-browser">Zone A — the UI (browser)</a></li><li class="depth-3"><a href="#zone-b-the-edge-function-supabase-functions-dispatch-workflow">Zone B — the Edge Function (`supabase/functions/dispatch-workflow`)</a></li><li class="depth-3"><a href="#zone-c-the-pipeline-python-ci-runner-or-local">Zone C — the pipeline (Python, CI runner or LOCAL)</a></li><li class="depth-2"><a href="#1-4-rotating-a-credential-when-it-stops-working">1.4 Rotating a credential when it stops working</a></li><li class="depth-3"><a href="#symptom-which-credential">Symptom → which credential</a></li><li class="depth-3"><a href="#step-by-step-per-credential">Step-by-step per credential</a></li><li class="depth-2"><a href="#2-day-to-day-workflow">2. Day-to-Day Workflow</a></li><li class="depth-3"><a href="#what-happens-when-you-push-to-main">What happens when you push to main</a></li><li class="depth-3"><a href="#step-by-step">Step by step</a></li><li class="depth-2"><a href="#3-how-to-approve-prod-deployment">3. How to Approve PROD Deployment</a></li><li class="depth-3"><a href="#step-by-step-2">Step by step</a></li><li class="depth-3"><a href="#to-reject-a-deployment">To reject a deployment</a></li><li class="depth-3"><a href="#how-long-do-you-have-to-approve">How long do you have to approve?</a></li><li class="depth-3"><a href="#quick-reference">Quick reference</a></li><li class="depth-2"><a href="#4-rollback-skipping-releases">4. Rollback &amp; Skipping Releases</a></li><li class="depth-3"><a href="#why-forward-only">Why forward-only?</a></li><li class="depth-3"><a href="#can-i-skip-a-release-that-has-a-bug">Can I skip a release that has a bug?</a></li><li class="depth-3"><a href="#how-to-write-a-corrective-migration">How to write a corrective migration</a></li><li class="depth-3"><a href="#what-you-cannot-do">What you cannot do</a></li><li class="depth-2"><a href="#5-checking-deployment-status">5. Checking Deployment Status</a></li><li class="depth-3"><a href="#quick-what-s-deployed-where">Quick: What&#x27;s deployed where?</a></li><li class="depth-3"><a href="#detailed-release-manifest">Detailed: Release manifest</a></li><li class="depth-3"><a href="#terminal-commands">Terminal commands</a></li><li class="depth-3"><a href="#live-github-actions">Live: GitHub Actions</a></li><li class="depth-2"><a href="#6-what-to-do-when-things-go-wrong">6. What To Do When Things Go Wrong</a></li><li class="depth-3"><a href="#re-running-failed-jobs">Re-running failed jobs</a></li><li class="depth-2"><a href="#7-how-to-add-a-new-database-migration">7. How to Add a New Database Migration</a></li><li class="depth-2"><a href="#8-coherence-checks-explained">8. Coherence Checks Explained</a></li><li class="depth-2"><a href="#9-schema-fingerprint">9. Schema Fingerprint</a></li><li class="depth-2"><a href="#10-telegram-admin-commands">10. Telegram Admin Commands</a></li><li class="depth-3"><a href="#event-lifecycle-flow">Event lifecycle flow</a></li><li class="depth-3"><a href="#command-reference">Command reference</a></li><li class="depth-3"><a href="#rollback-vs-delete-which-to-use">rollback vs delete — which to use</a></li><li class="depth-3"><a href="#seed-export-adr-036">Seed export (ADR-036)</a></li><li class="depth-3"><a href="#outbound-notifications-from-evf-sync-yml-adr-028-adr-039">Outbound notifications from `evf-sync.yml` (ADR-028 / ADR-039)</a></li><li class="depth-2"><a href="#11-environment-sync-adr-036">11. Environment Sync (ADR-036)</a></li><li class="depth-3"><a href="#prerequisites">Prerequisites</a></li><li class="depth-3"><a href="#operation-a-mirror-prod-local">Operation A: Mirror PROD → LOCAL</a></li><li class="depth-3"><a href="#operation-b-sync-cert-from-prod">Operation B: Sync CERT from PROD</a></li><li class="depth-3"><a href="#operation-c-force-sync-prod-from-local-dangerous">Operation C: Force-sync PROD from LOCAL (DANGEROUS)</a></li><li class="depth-3"><a href="#data-audit">Data audit</a></li><li class="depth-3"><a href="#troubleshooting">Troubleshooting</a></li><li class="depth-2"><a href="#12-files-reference">12. Files Reference</a></li><li class="depth-2"><a href="#13-phase-5-5-verdict-md-persistence-telegram-delivery-adr-058-059-060-061">13. Phase 5.5 — Verdict `.md` Persistence + Telegram Delivery (ADR-058 / 059 / 060 / 061)</a></li><li class="depth-3"><a href="#architecture">Architecture</a></li><li class="depth-3"><a href="#one-time-cert-prod-setup">One-time CERT/PROD setup</a></li><li class="depth-3"><a href="#telegram-operator-commands-cheat-sheet">Telegram operator commands cheat-sheet</a></li><li class="depth-3"><a href="#disaster-recovery">Disaster recovery</a></li><li class="depth-3"><a href="#local-operator-workflow-unchanged">LOCAL operator workflow (unchanged)</a></li></ol></nav>
+  <main><section class="section-card detail"><p>This guide covers the three-tier release pipeline for the SPWS Automated Ranklist System.</p>
+</section>
+<section class="section-card detail"><h2 id="architecture-overview">Architecture Overview</h2>
+<pre><code class="language-mermaid">graph LR
+    LOCAL[&quot;&lt;b&gt;LOCAL (Docker)&lt;/b&gt;&lt;br/&gt;supabase db reset&lt;br/&gt;all migrations + seed data&lt;br/&gt;+ pgTAP tests&lt;br/&gt;schema_fingerprint = abc123&lt;br/&gt;&lt;i&gt;CI validates&lt;/i&gt;&quot;]
+    CERT[&quot;&lt;b&gt;CERT (Cloud)&lt;/b&gt;&lt;br/&gt;Mgmt API apply&lt;br/&gt;same SQL files (incremental)&lt;br/&gt;schema_fingerprint must = abc123&lt;br/&gt;&lt;i&gt;auto-deploy&lt;/i&gt;&quot;]
+    PROD[&quot;&lt;b&gt;PROD (Cloud)&lt;/b&gt;&lt;br/&gt;Mgmt API apply&lt;br/&gt;same SQL files (incremental)&lt;br/&gt;schema_fingerprint must = abc123&lt;br/&gt;&lt;i&gt;manual approval&lt;/i&gt;&quot;]
+
+    LOCAL --&gt;|fingerprint check| CERT --&gt;|fingerprint check| PROD
+</code></pre>
+<p>Two GitHub Actions workflows drive the pipeline:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Workflow</th>
+<th>File</th>
+<th>Trigger</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CI</strong></td>
+<td><code>.github/workflows/ci.yml</code></td>
+<td>Push to <code>main</code> or PR</td>
+<td>Run tests + coherence checks</td>
+</tr>
+<tr>
+<td><strong>Release</strong></td>
+<td><code>.github/workflows/release.yml</code></td>
+<td>CI success on <code>main</code></td>
+<td>Build, deploy Pages, CERT, PROD</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="1-one-time-github-setup">1. One-Time GitHub Setup</h2>
+<p>These steps are done once in the GitHub web UI.</p>
+<h3 id="1-1-create-environments">1.1 Create Environments</h3>
+<ol>
+<li>Go to your repo on GitHub: <code>https://github.com/Fencer4Life/spws-automated-ranklist</code></li>
+<li>Click <strong>Settings</strong> (top navigation bar, far right)</li>
+<li>In the left sidebar, click <strong>Environments</strong></li>
+</ol>
+<p><strong>Create <code>cert</code> environment:</strong></p>
+<ol>
+<li>Click <strong>New environment</strong></li>
+<li>Name: <code>cert</code></li>
+<li>Click <strong>Configure environment</strong></li>
+<li>Leave all protection rules <strong>unchecked</strong> (auto-deploy, no approval needed)</li>
+<li>Click <strong>Save protection rules</strong></li>
+</ol>
+<p><strong>Create <code>production</code> environment:</strong></p>
+<ol>
+<li>Click <strong>New environment</strong></li>
+<li>Name: <code>production</code></li>
+<li>Click <strong>Configure environment</strong></li>
+<li>Check <strong>Required reviewers</strong></li>
+<li>In the search box, type <code>Fencer4Life</code> and select yourself</li>
+<li>Click <strong>Save protection rules</strong></li>
+</ol>
+<p><strong><code>github-pages</code> environment:</strong></p>
+<ul>
+<li>Already exists from your Pages setup. No changes needed.</li>
+</ul>
+<h3 id="1-2-add-repository-secrets">1.2 Add Repository Secrets</h3>
+<ol>
+<li>Go to <strong>Settings</strong> → <strong>Secrets and variables</strong> → <strong>Actions</strong></li>
+<li>Click <strong>New repository secret</strong> for each:</li>
+</ol>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Secret name</th>
+<th>Where to get it</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SUPABASE_ACCESS_TOKEN</code></td>
+<td>https://supabase.com/dashboard/account/tokens → Generate new token</td>
+<td>Your personal access token</td>
+</tr>
+<tr>
+<td><code>SUPABASE_CERT_REF</code></td>
+<td>Supabase dashboard → CERT project → Settings → General</td>
+<td><code>&lt;your-cert-project-ref&gt;</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_PROD_REF</code></td>
+<td>Supabase dashboard → PROD project → Settings → General</td>
+<td><code>&lt;your-prod-project-ref&gt;</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Keep existing secrets</strong> (already configured):</p>
+<ul>
+<li><code>SUPABASE_CERT_URL</code></li>
+<li><code>SUPABASE_CERT_ANON_KEY</code></li>
+<li><code>SUPABASE_PROD_URL</code></li>
+<li><code>SUPABASE_PROD_ANON_KEY</code></li>
+</ul>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="1-3-credentials-secrets-the-three-trust-zones">1.3 Credentials &amp; secrets — the three trust zones</h2>
+<p>Secrets are split across <strong>three isolated zones</strong>. The browser never holds a privileged secret; every
+privileged action is performed server-side (CI runner or Edge Function). No secret is committed to git.</p>
+<pre><code>Browser (UI)            Edge Function (server)        Pipeline (CI runner / LOCAL)
+─────────────           ──────────────────────        ────────────────────────────
+anon key + URL          GH_DISPATCH_PAT, GH_REPO       service-role key + URL
+admin JWT (Supabase     (Supabase function secrets)    FTL_USERNAME / FTL_PASSWORD
+  Auth + MFA)           verifies caller JWT,           TELEGRAM_BOT_TOKEN / _CHAT_ID
+RLS-gated, public         allowlists workflows,        read from os.environ
+NO service-role / PAT      forwards workflow_dispatch   NO browser exposure
+/ FTL creds               PAT never reaches browser
+</code></pre>
+<h3 id="zone-a-the-ui-browser">Zone A — the UI (browser)</h3>
+<ul>
+<li>The <code>&lt;spws-ranklist&gt;</code> web component receives the Supabase <strong>URL + anon key</strong> (and a soft <code>admin-password</code>)
+as <strong>HTML attributes</strong> (<a href="../../frontend/src/main.ts">frontend/src/main.ts</a>: <code>supabase-cert-url/-key</code>,
+<code>supabase-prod-url/-key</code>, <code>admin-password</code>). <code>App.svelte</code> picks the CERT or PROD pair by
+<code>VITE_DEPLOY_ENV</code> and calls <code>initClient(url, key)</code> → <code>createClient</code> (<a href="../../frontend/src/lib/api.ts">frontend/src/lib/api.ts</a>).</li>
+<li>The key is always the <strong>anon (public) key</strong> — safe to ship in HTML; every read/write is gated by
+Postgres <strong>RLS</strong>. The service-role key is <strong>never</strong> in the bundle.</li>
+<li><strong>Admin authorization</strong> is Supabase <strong>Auth (GoTrue): email + password + TOTP MFA</strong> → a JWT
+(<code>signIn</code> in <code>App.svelte</code>, <code>auth.step</code> sign_in → mfa_enroll/mfa_challenge). RLS admin policies enforce the
+JWT; the <code>admin-password</code> attribute only gates <em>showing</em> the admin affordance client-side, it is not the
+security boundary.</li>
+<li><strong>Privileged GitHub dispatch from the UI</strong> (the ⬇ &quot;import&quot; / populate / re-ingest buttons) does <strong>not</strong>
+carry a PAT. It calls the <code>dispatch-workflow</code> Edge Function (Zone B) — ADR-041 / FR-99.</li>
+</ul>
+<h3 id="zone-b-the-edge-function-supabase-functions-dispatch-workflow">Zone B — the Edge Function (<code>supabase/functions/dispatch-workflow</code>)</h3>
+<ul>
+<li>Holds <code>GH_DISPATCH_PAT</code> (fine-grained, this repo, Actions read+write) and <code>GH_REPO</code> as <strong>Supabase
+function secrets</strong> (<code>Deno.env.get</code>, <a href="../../supabase/functions/dispatch-workflow/index.ts">index.ts</a>).</li>
+<li>Verifies the caller's Supabase JWT, checks the workflow against an <strong>allowlist</strong>
+(<code>populate-urls.yml</code>, <code>scrape-tournament.yml</code>, <code>phase5-event-runner.yml</code>, <code>regen-report.yml</code>,
+<code>ingest-event.yml</code>), then POSTs <code>workflow_dispatch</code> with <code>Authorization: Bearer &lt;PAT&gt;</code>.</li>
+<li>The <strong>PAT never reaches the browser</strong>. Set it with <code>supabase secrets set GH_DISPATCH_PAT=… GH_REPO=…</code>.</li>
+</ul>
+<h3 id="zone-c-the-pipeline-python-ci-runner-or-local">Zone C — the pipeline (Python, CI runner or LOCAL)</h3>
+<p>All pipeline credentials are read from <strong><code>os.environ</code></strong> — there is <strong>no <code>load_dotenv</code></strong>:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Secret</th>
+<th>Read by</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SUPABASE_URL</code> + <code>SUPABASE_KEY</code> (<strong>service-role</strong>)</td>
+<td><code>ingest_cli</code>, <code>db_connector</code>, <code>promote.py</code></td>
+<td>full DB read/write (bypasses RLS) — server-side only</td>
+</tr>
+<tr>
+<td><code>FTL_USERNAME</code> / <code>FTL_PASSWORD</code></td>
+<td><code>python/scrapers/ftl_auth.py</code> <code>get_authed_ftl_client</code></td>
+<td>log in to FencingTimeLive to scrape authed results pages</td>
+</tr>
+<tr>
+<td><code>TELEGRAM_BOT_TOKEN</code> / <code>TELEGRAM_CHAT_ID</code></td>
+<td><code>TelegramNotifier</code></td>
+<td>operator alerts (never Discord)</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>CI:</strong> GitHub <strong>repository secrets</strong> are injected per-step via the workflow <code>env:</code> block, e.g.
+<a href="../../.github/workflows/ingest-event.yml">ingest-event.yml</a> maps <code>SUPABASE_KEY</code> ←
+<code>secrets.SUPABASE_{CERT,PROD}_SERVICE_ROLE_KEY</code> (chosen by the <code>target</code> input), plus <code>FTL_USERNAME</code>/
+<code>FTL_PASSWORD</code> and the Telegram pair. Add these to the GitHub secrets in §1.2.</li>
+<li><strong>LOCAL:</strong> the same names live in the repo-root <strong><code>.env</code></strong> (git-ignored). Because nothing auto-loads it,
+you must export it into the shell before running the CLI:<pre><code class="language-bash">set -a; source .env; set +a       # exports FTL_USERNAME/PASSWORD, SUPABASE_URL/KEY (127.0.0.1), TELEGRAM…
+python -m python.pipeline.ingest_cli --flow ingest_domestic --event-code PPW3-2025-2026 \
+    --season-end-year 2026 --from-url      # url_results populated inline (ADR-073 N14)
+</code></pre>
+LOCAL <code>.env</code> <code>SUPABASE_URL</code> must be <code>http://127.0.0.1:54321</code> — <strong>never run <code>--replace</code> with CERT/PROD
+creds loaded</strong> (it wipes the event before re-ingest).</li>
+</ul>
+<p><strong>Rule of thumb:</strong> anon key → browser; service-role key + FTL + Telegram → pipeline only; PAT → Edge Function
+only. If a change would put any Zone-B/C secret into the browser bundle, it is wrong.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="1-4-rotating-a-credential-when-it-stops-working">1.4 Rotating a credential when it stops working</h2>
+<p>Each secret lives in <strong>one or more of four stores</strong>. When a credential breaks, regenerate it at the source,
+then update <strong>every</strong> store that holds it, then verify. The four stores:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Store</th>
+<th>Where</th>
+<th>How to edit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>GitHub repo secrets</strong></td>
+<td>repo → Settings → Secrets and variables → Actions</td>
+<td>&quot;Update&quot; each secret (value only)</td>
+</tr>
+<tr>
+<td><strong>Supabase function secrets</strong></td>
+<td>per project (CERT + PROD)</td>
+<td><code>supabase secrets set NAME=value --project-ref &lt;ref&gt;</code> (or dashboard → Edge Functions → Manage secrets)</td>
+</tr>
+<tr>
+<td><strong>LOCAL <code>.env</code></strong></td>
+<td>repo-root <code>.env</code> (git-ignored)</td>
+<td>edit the line; re-run <code>set -a; source .env; set +a</code></td>
+</tr>
+<tr>
+<td><strong>UI embed</strong></td>
+<td>the page that embeds <code>&lt;spws-ranklist …&gt;</code> (e.g. the WordPress page/HTML widget)</td>
+<td>edit the <code>supabase-*-key</code> / <code>-url</code> attribute</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p>⚠ Never commit a secret. <code>.env</code> is git-ignored — keep it that way. After any rotation, the <strong>old</strong> value
+should be revoked at the source so a leaked copy is dead.</p>
+</blockquote>
+<h3 id="symptom-which-credential">Symptom → which credential</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Credential</th>
+<th>Stores to update</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CI ingest/promote/recompute fails with 401 / &quot;permission denied&quot; / RLS error</td>
+<td><code>SUPABASE_*_SERVICE_ROLE_KEY</code> (Zone C)</td>
+<td>GitHub secrets + LOCAL <code>.env</code> (<code>SUPABASE_KEY</code>)</td>
+</tr>
+<tr>
+<td><code>supabase db push</code> / migrate-deploy step fails auth</td>
+<td><code>SUPABASE_ACCESS_TOKEN</code></td>
+<td>GitHub secrets + LOCAL <code>.env</code></td>
+</tr>
+<tr>
+<td>UI loads nothing / &quot;Invalid API key&quot; / 401 in browser console</td>
+<td><code>SUPABASE_*_ANON_KEY</code> (Zone A)</td>
+<td>UI embed attribute + GitHub secrets (<code>SUPABASE_CERT/PROD_ANON_KEY</code>, used to render the embed)</td>
+</tr>
+<tr>
+<td>Admin can't sign in (but data loads)</td>
+<td>Supabase <strong>Auth</strong> user (not a key) — reset password / re-enrol MFA in the dashboard</td>
+<td>Supabase dashboard → Authentication → Users</td>
+</tr>
+<tr>
+<td>FTL scrape: <code>FtlAuthError</code>, &quot;Discovered 0 URLs&quot;, login-redirect, or &quot;account suspended&quot;</td>
+<td><code>FTL_USERNAME</code> / <code>FTL_PASSWORD</code> (Zone C)</td>
+<td>GitHub secrets + LOCAL <code>.env</code></td>
+</tr>
+<tr>
+<td>UI ⬇ buttons: <code>Dispatch failed: Edge Function returned a non-2xx</code> / <code>gh_dispatch_failed</code> / 401 from GitHub</td>
+<td><code>GH_DISPATCH_PAT</code> (Zone B)</td>
+<td>Supabase <strong>function</strong> secrets (CERT + PROD)</td>
+</tr>
+<tr>
+<td>No Telegram alerts</td>
+<td><code>TELEGRAM_BOT_TOKEN</code> / <code>TELEGRAM_CHAT_ID</code></td>
+<td>GitHub secrets + LOCAL <code>.env</code></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="step-by-step-per-credential">Step-by-step per credential</h3>
+<p><strong>FTL_USERNAME / FTL_PASSWORD</strong> (FencingTimeLive scrape login)</p>
+<ol>
+<li>Log in to FencingTimeLive; if the password changed/expired, reset it on their site (or create a fresh account).</li>
+<li>GitHub → repo secrets → update <code>FTL_USERNAME</code> and <code>FTL_PASSWORD</code>.</li>
+<li>LOCAL <code>.env</code> → update both lines.</li>
+<li>Verify (LOCAL): <code>set -a; source .env; set +a</code> then
+<code>python -c &quot;from python.scrapers.ftl_auth import get_authed_ftl_client; get_authed_ftl_client(); print('OK')&quot;</code>
+— prints <code>OK</code> on success, raises <code>FtlAuthError</code> on bad creds.</li>
+</ol>
+<p><strong>SUPABASE service-role key</strong> (pipeline DB writes — CERT/PROD)</p>
+<ol>
+<li>Supabase dashboard → the project → Settings → API → <strong>service_role</strong> → <em>Reset</em> (or copy the rotated value).</li>
+<li>GitHub → update <code>SUPABASE_CERT_SERVICE_ROLE_KEY</code> and/or <code>SUPABASE_PROD_SERVICE_ROLE_KEY</code>.</li>
+<li>LOCAL <code>.env</code> (<code>SUPABASE_KEY</code>) only if you point LOCAL at a remote — normally LOCAL stays <code>127.0.0.1</code> (the
+local key from <code>supabase status</code>, which the dev stack regenerates on reset, never a remote service-role key).</li>
+<li>Verify: re-run the affected workflow (Actions → Run workflow) or <code>python -m python.pipeline.ingest_cli …</code>.</li>
+</ol>
+<p><strong>SUPABASE_ACCESS_TOKEN</strong> (Supabase CLI — migration deploys)</p>
+<ol>
+<li>https://supabase.com/dashboard/account/tokens → Generate new token (revoke the old one).</li>
+<li>GitHub → update <code>SUPABASE_ACCESS_TOKEN</code>; LOCAL <code>.env</code> if you deploy from your machine.</li>
+<li>Verify: <code>supabase projects list</code> (LOCAL) or re-run the deploy workflow.</li>
+</ol>
+<p><strong>SUPABASE anon key</strong> (UI, public)</p>
+<ol>
+<li>Anon keys rotate only if you reset the project's JWT secret (Settings → API). Copy the new anon key.</li>
+<li>Update the <strong>UI embed</strong> <code>supabase-cert-key</code> / <code>supabase-prod-key</code> attribute on the embedding page, and the
+GitHub <code>SUPABASE_*_ANON_KEY</code> secrets if the embed HTML is generated by a workflow.</li>
+<li>Verify: hard-refresh the site; data loads, no 401 in the console.</li>
+</ol>
+<p><strong>GH_DISPATCH_PAT</strong> (Edge Function → GitHub dispatch)</p>
+<ol>
+<li>GitHub → Settings → Developer settings → <strong>Fine-grained PAT</strong>: this repo only, <strong>Actions: Read and write</strong>;
+regenerate/replace the expiring one.</li>
+<li>Set it on <strong>both</strong> Supabase projects hosting the function:
+<code>supabase secrets set GH_DISPATCH_PAT=&lt;new&gt; GH_REPO=&lt;owner/repo&gt; --project-ref &lt;cert-ref&gt;</code> and again with
+<code>&lt;prod-ref&gt;</code> (or dashboard → Edge Functions → Manage secrets). No redeploy needed — <code>Deno.env.get</code> reads it
+at invocation.</li>
+<li>Verify: in the admin UI press a ⬇ button → expect success-with-link, not a 502.
+<em>(The GitHub <strong>MCP</strong> PAT in <code>.vscode/mcp.json</code> is a separate token for local GitHub API ops — rotate it
+there if MCP calls start failing; it is unrelated to the dispatch PAT.)</em></li>
+</ol>
+<p><strong>TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID</strong></p>
+<ol>
+<li>Regenerate the bot token via <strong>@BotFather</strong> (<code>/revoke</code> → <code>/token</code>); the chat id only changes if you move the
+target chat/channel.</li>
+<li>GitHub → update both; LOCAL <code>.env</code> likewise.</li>
+<li>Verify: <code>set -a; source .env; set +a</code> then
+<code>curl -s &quot;https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getMe&quot;</code> → <code>{&quot;ok&quot;:true,…}</code>.</li>
+</ol>
+<p>After any rotation, run <code>bash scripts/check-coherence.sh</code> (unaffected by secrets, but confirms the repo is
+still consistent) and re-run the one workflow that failed to confirm green.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="2-day-to-day-workflow">2. Day-to-Day Workflow</h2>
+<h3 id="what-happens-when-you-push-to-main">What happens when you push to main</h3>
+<pre><code class="language-mermaid">flowchart TD
+    PUSH[&quot;git push origin main&quot;]
+
+    subgraph CI[&quot;CI Workflow (4 parallel jobs)&quot;]
+        PGTAP[&quot;pgTAP — database tests in Docker&quot;]
+        PYTEST[&quot;pytest — Python tests&quot;]
+        VITEST[&quot;vitest — frontend tests&quot;]
+        COHERENCE[&quot;coherence — version sync, ADR count, etc.&quot;]
+    end
+
+    subgraph RELEASE[&quot;Release Workflow&quot;]
+        BUILD[&quot;build:&lt;br/&gt;1. Start Docker Supabase&lt;br/&gt;2. Compute LOCAL schema fingerprint&lt;br/&gt;3. Generate release-manifest.json&lt;br/&gt;4. Build frontend (vite build)&lt;br/&gt;5. Upload Pages artifact&quot;]
+        PAGES[&quot;deploy-pages → GitHub Pages updated&quot;]
+        CERT[&quot;deploy-cert → CERT DB updated&quot;]
+        PROD[&quot;deploy-prod → Waiting for approval&quot;]
+    end
+
+    PUSH --&gt; CI
+    CI --&gt;|all green| BUILD
+    BUILD --&gt; PAGES
+    BUILD --&gt; CERT
+    BUILD --&gt; PROD
+</code></pre>
+<h3 id="step-by-step">Step by step</h3>
+<ol>
+<li><strong>Make your changes locally</strong> — code, migrations, tests, docs</li>
+<li><strong>Test locally:</strong><pre><code class="language-bash">./scripts/reset-dev.sh    # Reset local DB + recreate admin user
+supabase test db          # Run pgTAP tests
+cd frontend &amp;&amp; npm test   # Run vitest
+cd .. &amp;&amp; pytest           # Run Python tests
+</code></pre>
+</li>
+<li><strong>Commit and push:</strong><pre><code class="language-bash">git add &lt;files&gt;
+git commit -m &quot;Your commit message&quot;
+git push origin main
+</code></pre>
+</li>
+<li><strong>Watch CI</strong> — go to your repo → <strong>Actions</strong> tab → you'll see the &quot;CI&quot; workflow running</li>
+<li><strong>If CI fails</strong> — click the failed job to see the error, fix locally, push again</li>
+<li><strong>If CI passes</strong> — the &quot;Release&quot; workflow starts automatically</li>
+</ol>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="3-how-to-approve-prod-deployment">3. How to Approve PROD Deployment</h2>
+<p>After the Release workflow deploys to CERT, the PROD job waits for your approval.</p>
+<h3 id="step-by-step-2">Step by step</h3>
+<ol>
+<li>
+<p><strong>Go to Actions tab</strong> in your GitHub repo</p>
+</li>
+<li>
+<p><strong>Click the &quot;Release&quot; workflow run</strong> (the most recent one)</p>
+</li>
+<li>
+<p>You'll see something like:</p>
+<pre><code>build          ✓ completed
+deploy-pages   ✓ completed
+deploy-cert    ✓ completed
+deploy-prod    ⏳ Waiting
+</code></pre>
+</li>
+<li>
+<p><strong>Click on <code>deploy-prod</code></strong> — you'll see a yellow banner:</p>
+<blockquote>
+<p><strong>Review deployments</strong>
+This workflow is awaiting review. 1 environment needs approval.</p>
+</blockquote>
+</li>
+<li>
+<p><strong>Click &quot;Review deployments&quot;</strong></p>
+</li>
+<li>
+<p><strong>Check the <code>production</code> checkbox</strong></p>
+</li>
+<li>
+<p>Optionally type a comment (e.g., &quot;Verified on CERT, looks good&quot;)</p>
+</li>
+<li>
+<p><strong>Click &quot;Approve and deploy&quot;</strong></p>
+</li>
+<li>
+<p>The <code>deploy-prod</code> job starts running — watch it turn green ✓</p>
+</li>
+</ol>
+<h3 id="to-reject-a-deployment">To reject a deployment</h3>
+<ol>
+<li>Follow steps 1-5 above</li>
+<li>Instead of &quot;Approve and deploy&quot;, click <strong>&quot;Reject&quot;</strong></li>
+<li>The PROD job is cancelled. CERT stays updated, PROD unchanged.</li>
+</ol>
+<h3 id="how-long-do-you-have-to-approve">How long do you have to approve?</h3>
+<p>GitHub environment approvals wait for <strong>30 days</strong> by default. No rush — approve when you're ready after verifying CERT.</p>
+<h3 id="quick-reference">Quick reference</h3>
+<p>To approve the PROD deployment, go to your repo's <strong>Actions</strong> tab, click the &quot;Release&quot; run, click <code>deploy-prod</code>, then &quot;Review deployments&quot; → check <code>production</code> → &quot;Approve and deploy&quot;.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="4-rollback-skipping-releases">4. Rollback &amp; Skipping Releases</h2>
+<p>Rollback is <strong>forward-only</strong> — you push a new corrective migration through the full pipeline. There is no &quot;undo&quot; button.</p>
+<h3 id="why-forward-only">Why forward-only?</h3>
+<p>The Supabase Management API only supports running SQL queries — there is no <code>DROP MIGRATION</code> or <code>ROLLBACK</code> command. And since migrations may have already modified data (not just schema), reversing them safely requires explicit corrective SQL.</p>
+<p>A SQL-level snapshot mechanism (automated pre-deploy backups in a <code>_backup</code> schema) was designed and evaluated but deferred — the complexity outweighed the practical value given that most migrations change the schema, which would block rollback. See <a href="../doc/adr/012-sql-pre-deploy-snapshots.html">ADR-012</a> for the full analysis and preserved design.</p>
+<h3 id="can-i-skip-a-release-that-has-a-bug">Can I skip a release that has a bug?</h3>
+<p>You can skip the <strong>PROD promotion</strong> — just don't approve it. Click <strong>&quot;Reject&quot;</strong> in the GitHub Actions UI and PROD stays untouched. But you cannot skip a migration once it's applied to CERT, because CERT auto-deploys.</p>
+<p><strong>Typical bug-fix flow:</strong></p>
+<ol>
+<li>Push to main → CI passes → CERT gets the migration automatically</li>
+<li>You notice a bug on CERT</li>
+<li>You <strong>reject</strong> the PROD deployment → PROD is safe</li>
+<li>You write a corrective migration, push again</li>
+<li>New pipeline: CI → CERT gets the fix → you verify → approve PROD</li>
+</ol>
+<p>CERT is your safety net — it receives everything automatically so you can catch problems before they reach PROD.</p>
+<h3 id="how-to-write-a-corrective-migration">How to write a corrective migration</h3>
+<ol>
+<li>
+<p><strong>Create a new migration file:</strong></p>
+<pre><code class="language-bash">touch supabase/migrations/20250307000002_revert_bad_change.sql
+</code></pre>
+<p>Write the reverse SQL (e.g., <code>DROP COLUMN</code>, <code>ALTER TABLE</code>, recreate the old function, etc.)</p>
+</li>
+<li>
+<p><strong>Test locally:</strong></p>
+<pre><code class="language-bash">supabase db reset      # Applies all migrations including the fix
+supabase test db        # Verify pgTAP tests pass
+</code></pre>
+</li>
+<li>
+<p><strong>Push:</strong> <code>git push origin main</code></p>
+</li>
+<li>
+<p>The pipeline runs the fix through all tiers — CI validates, CERT gets the corrective migration, you verify, then approve PROD.</p>
+</li>
+</ol>
+<h3 id="what-you-cannot-do">What you cannot do</h3>
+<ul>
+<li><strong>Roll back to a previous git SHA</strong> — the cloud DB already has the old migration applied</li>
+<li><strong>Skip a migration</strong> — they are applied in order</li>
+<li><strong>Delete a migration file</strong> — the coherence checks and tracking would break</li>
+</ul>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="5-checking-deployment-status">5. Checking Deployment Status</h2>
+<h3 id="quick-what-s-deployed-where">Quick: What's deployed where?</h3>
+<p>Open <code>deployed_migrations.json</code> in your repo. It shows:</p>
+<pre><code class="language-json">{
+  &quot;cert&quot;: {
+    &quot;last_updated&quot;: &quot;2026-03-22T15:30:00Z&quot;,
+    &quot;last_sha&quot;: &quot;abc1234&quot;,
+    &quot;applied&quot;: [&quot;migration1.sql&quot;, &quot;migration2.sql&quot;, ...]
+  },
+  &quot;prod&quot;: {
+    &quot;last_updated&quot;: &quot;2026-03-22T16:00:00Z&quot;,
+    &quot;last_sha&quot;: &quot;abc1234&quot;,
+    &quot;applied&quot;: [&quot;migration1.sql&quot;, &quot;migration2.sql&quot;, ...]
+  }
+}
+</code></pre>
+<h3 id="detailed-release-manifest">Detailed: Release manifest</h3>
+<p>Open <code>release-manifest.json</code> for the full picture:</p>
+<ul>
+<li><code>schema_fingerprint</code> — proves schema parity</li>
+<li><code>tests</code> — how many tests passed</li>
+<li><code>deployed.cert</code> / <code>deployed.prod</code> — when each env was last updated</li>
+</ul>
+<h3 id="terminal-commands">Terminal commands</h3>
+<pre><code class="language-bash"># Last 3 migrations on CERT
+cat deployed_migrations.json | jq '.cert.applied[-3:]'
+
+# Last 3 on PROD
+cat deployed_migrations.json | jq '.prod.applied[-3:]'
+
+# Are CERT and PROD in sync?
+diff &lt;(jq '.cert.applied' deployed_migrations.json) \
+     &lt;(jq '.prod.applied' deployed_migrations.json)
+# No output = in sync. Output = differences.
+</code></pre>
+<h3 id="live-github-actions">Live: GitHub Actions</h3>
+<p>Go to <strong>Actions</strong> tab → click the latest <strong>Release</strong> run → see all job statuses.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="6-what-to-do-when-things-go-wrong">6. What To Do When Things Go Wrong</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>What you see</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CI test fails</strong></td>
+<td>Red ✗ on one of the CI jobs</td>
+<td>Click the failed job, read the error log, fix your code locally, push again</td>
+</tr>
+<tr>
+<td><strong>Coherence check fails</strong></td>
+<td>Red ✗ on &quot;Coherence Checks&quot;</td>
+<td>Version mismatch, ADR count wrong, or pgTAP plan() sum wrong — see error message for details</td>
+</tr>
+<tr>
+<td><strong>CERT migration fails</strong></td>
+<td>Red ✗ on <code>deploy-cert</code></td>
+<td>SQL error in migration — check the error log, fix the SQL, push a corrective migration</td>
+</tr>
+<tr>
+<td><strong>Fingerprint mismatch</strong></td>
+<td>Red ✗ with &quot;fingerprint mismatch&quot;</td>
+<td>Schema drift — the cloud DB doesn't match local. Check if someone applied manual SQL to the cloud</td>
+</tr>
+<tr>
+<td><strong>PROD migration fails</strong></td>
+<td>Red ✗ on <code>deploy-prod</code></td>
+<td>CERT is now ahead of PROD. Fix forward: push a corrective migration through the full pipeline</td>
+</tr>
+<tr>
+<td><strong>Tracking commit fails</strong></td>
+<td>Red ✗ on &quot;Commit tracking&quot;</td>
+<td>Usually a git conflict. Go to Actions → click &quot;Re-run failed jobs&quot;</td>
+</tr>
+<tr>
+<td><strong>Release doesn't trigger</strong></td>
+<td>No Release run after CI passes</td>
+<td>Check that CI ran on <code>main</code> branch (not a PR). You can also manually trigger: Actions → Release → &quot;Run workflow&quot;</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="re-running-failed-jobs">Re-running failed jobs</h3>
+<ol>
+<li>Go to <strong>Actions</strong> → click the failed workflow run</li>
+<li>Click <strong>&quot;Re-run failed jobs&quot;</strong> (top-right button)</li>
+<li>This re-runs only the failed jobs, not the entire workflow</li>
+</ol>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="7-how-to-add-a-new-database-migration">7. How to Add a New Database Migration</h2>
+<ol>
+<li>
+<p><strong>Create the migration file:</strong></p>
+<pre><code class="language-bash"># Naming convention: YYYYMMDDHHMMSS_description.sql
+# Example:
+touch supabase/migrations/20250307000001_add_some_feature.sql
+</code></pre>
+<p>Write your SQL in this file.</p>
+</li>
+<li>
+<p><strong>Test locally:</strong></p>
+<pre><code class="language-bash">supabase db reset     # Apply all migrations from scratch
+supabase test db       # Run pgTAP tests
+</code></pre>
+</li>
+<li>
+<p><strong>Update pgTAP tests</strong> if your migration changes behavior:</p>
+<ul>
+<li>Add/update tests in <code>supabase/tests/</code></li>
+<li>Update the <code>SELECT plan(N)</code> number to match your assertion count</li>
+<li>Update the &quot;pgTAP total: N assertions&quot; line in <code>doc/archive/POC_development_plan.md</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Commit and push:</strong></p>
+<pre><code class="language-bash">git add supabase/migrations/20250307000001_add_some_feature.sql
+git add supabase/tests/  # if tests changed
+git add doc/             # if docs changed
+git commit -m &quot;Add some feature migration&quot;
+git push origin main
+</code></pre>
+</li>
+<li>
+<p><strong>The pipeline handles the rest:</strong></p>
+<ul>
+<li>CI validates (pgTAP, pytest, vitest, coherence)</li>
+<li>Release builds and deploys to Pages + CERT</li>
+<li>You approve PROD deployment</li>
+</ul>
+</li>
+</ol>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="8-coherence-checks-explained">8. Coherence Checks Explained</h2>
+<p>The coherence job runs 4 gates during CI:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Gate</th>
+<th>What it checks</th>
+<th>If it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Version sync</strong></td>
+<td><code>pyproject.toml</code> version == <code>package.json</code> version</td>
+<td>Update the version that's out of sync</td>
+</tr>
+<tr>
+<td><strong>ADR count</strong></td>
+<td>Number of <code>doc/adr/*.md</code> files == number of ADR rows in spec Appendix C</td>
+<td>Add the missing ADR row to the spec (or create the missing ADR file)</td>
+</tr>
+<tr>
+<td><strong>pgTAP total</strong></td>
+<td>Sum of all <code>SELECT plan(N)</code> in test files == &quot;pgTAP total: N&quot; in POC plan</td>
+<td>Update the documented total in <code>doc/archive/POC_development_plan.md</code></td>
+</tr>
+<tr>
+<td><strong>Migration↔doc sync</strong></td>
+<td>New migration has corresponding spec/ADR/POC change</td>
+<td>Warning only — add a doc update if applicable</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="9-schema-fingerprint">9. Schema Fingerprint</h2>
+<p>The schema fingerprint is an MD5 hash computed from your database's public schema (function definitions + table/column structure). It ensures that LOCAL, CERT, and PROD all have the exact same schema.</p>
+<p><strong>How it works:</strong></p>
+<ol>
+<li>During <code>build</code>, the pipeline starts Docker Supabase, applies all migrations, and computes the fingerprint</li>
+<li>After deploying to CERT, it computes the CERT fingerprint via the Management API and compares</li>
+<li>After deploying to PROD, same comparison</li>
+</ol>
+<p><strong>If fingerprints don't match:</strong> Someone has made manual changes to the cloud database outside of migrations. Investigate what changed and either:</p>
+<ul>
+<li>Add a migration to codify the change, or</li>
+<li>Revert the manual change on the cloud</li>
+</ul>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="10-telegram-admin-commands">10. Telegram Admin Commands</h2>
+<p>The Telegram bot (<code>@spws_ranklist_bot</code>) is the primary admin interface for event lifecycle management. Commands are polled every 5 minutes by a Google Apps Script (GAS) timer.</p>
+<h3 id="event-lifecycle-flow">Event lifecycle flow</h3>
+<pre><code>/ingest &lt;prefix&gt; &lt;url&gt; → CERT re-ingest + staging to Telegram → review → /promote → PROD + seed export
+   (or) Ingest XML → /status → /complete → /promote → PROD + seed export
+                         ↕           ↕
+                      /rollback    /delete
+</code></pre>
+<h3 id="command-reference">Command reference</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Action</th>
+<th>Side effects</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/status &lt;event&gt;</code></td>
+<td>Show event status, tournament/result/pending counts</td>
+<td>Read-only</td>
+</tr>
+<tr>
+<td><code>/complete &lt;event&gt;</code></td>
+<td>Mark event COMPLETED on CERT</td>
+<td>CERT DB only</td>
+</tr>
+<tr>
+<td><code>/rollback &lt;event&gt;</code></td>
+<td>Delete all tournaments + results, reset to PLANNED</td>
+<td>CERT DB only</td>
+</tr>
+<tr>
+<td><code>/delete &lt;event&gt;</code></td>
+<td>Rollback <strong>and</strong> delete the <code>tbl_event</code> row itself (use for phantom / erroneous events)</td>
+<td>CERT DB only</td>
+</tr>
+<tr>
+<td><code>/ingest &lt;prefix&gt; &lt;url&gt; [cert|prod]</code></td>
+<td>Re-ingest the event from its FTL URL (keep-rule + <code>url_results</code>); staging report(s) sent back to Telegram</td>
+<td>Dispatches <code>ingest-event.yml</code> (default CERT). Setup: <a href="telegram-ingest-command-gas.html">telegram-ingest-command-gas.md</a></td>
+</tr>
+<tr>
+<td><code>/promote &lt;event&gt;</code></td>
+<td>Copy CERT event data to PROD</td>
+<td>PROD updated + <strong>seed export to git</strong> (ADR-036)</td>
+</tr>
+<tr>
+<td><code>/results &lt;event&gt;</code></td>
+<td>Show top 3 per tournament</td>
+<td>Read-only</td>
+</tr>
+<tr>
+<td><code>/pending &lt;event&gt;</code></td>
+<td>Show PENDING match candidates</td>
+<td>Read-only</td>
+</tr>
+<tr>
+<td><code>/missing &lt;event&gt;</code></td>
+<td>Show expected but missing tournament categories</td>
+<td>Read-only</td>
+</tr>
+<tr>
+<td><code>/ranking &lt;weapon&gt; &lt;gender&gt; &lt;cat&gt;</code></td>
+<td>Show top 5 in domestic ranking</td>
+<td>Read-only</td>
+</tr>
+<tr>
+<td><code>/overview</code></td>
+<td>Show all events in active season</td>
+<td>Read-only</td>
+</tr>
+<tr>
+<td><code>/pause</code></td>
+<td>Pause email polling</td>
+<td>GAS flag</td>
+</tr>
+<tr>
+<td><code>/resume</code></td>
+<td>Resume email polling</td>
+<td>GAS flag</td>
+</tr>
+<tr>
+<td><code>/export-seed</code></td>
+<td>Manual seed export from PROD</td>
+<td>Triggers <code>export-seed.yml</code></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="rollback-vs-delete-which-to-use">rollback vs delete — which to use</h3>
+<ul>
+<li><strong><code>/rollback</code></strong> — the safe default. Use when you want to <strong>re-ingest</strong> the same event (e.g. the scraper got bad data, you fix the source, then re-import). The event row stays, children are wiped, status returns to PLANNED. <code>fn_rollback_event(prefix)</code> RPC.</li>
+<li><strong><code>/delete</code></strong> — stricter. Use when the event <strong>should not exist at all</strong> (wrong txt_code, duplicate caused by a scraper dedup bug, data from a different season, etc.). Wipes children AND removes the event row. Must be re-created via calendar scraper or CRUD if needed again. <code>fn_delete_event(prefix)</code> RPC (ADR-025 amendment, FR-95, migration <code>20260421000001_fn_delete_event.sql</code>).</li>
+</ul>
+<h3 id="seed-export-adr-036">Seed export (ADR-036)</h3>
+<p>Seed files are exported <strong>only after <code>/promote</code></strong> — when PROD has the latest data. The <code>promote.yml</code> workflow:</p>
+<ol>
+<li>Runs <code>promote.py</code> (CERT → PROD data transfer)</li>
+<li>Runs <code>export_seed.py --ref &lt;PROD&gt;</code> (monolithic PROD dump)</li>
+<li>Commits <code>seed_prod_YYYY-MM-DD.sql</code> to git with <code>[skip ci]</code></li>
+</ol>
+<p>Manual export: send <code>/export-seed</code> or trigger <code>export-seed.yml</code> via GitHub Actions.</p>
+<p>Local mirror: <code>./scripts/mirror-prod.sh</code> (export + reset + verify).</p>
+<h3 id="outbound-notifications-from-evf-sync-yml-adr-028-adr-039">Outbound notifications from <code>evf-sync.yml</code> (ADR-028 / ADR-039)</h3>
+<p>The EVF scraper fires unsolicited messages directly to the admin chat (no GAS round-trip). These are <em>informational</em> — none require a reply. All messages use <code>parse_mode=HTML</code>.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>Template</th>
+<th>Emitter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Calendar imported new events</td>
+<td><code>&lt;b&gt;EVF Calendar&lt;/b&gt;\n{N} new event(s) imported\nURL fields: inv={...} reg={...} deadline={...}</code></td>
+<td><code>sync_calendar</code> after <code>fn_import_evf_events</code>.</td>
+</tr>
+<tr>
+<td>URL refresh sweep complete</td>
+<td><code>&lt;b&gt;EVF URL refresh&lt;/b&gt;\nTouched: {N}, refreshed: {N}</code></td>
+<td><code>sync_calendar</code> after <code>fn_refresh_evf_event_urls</code>.</td>
+</tr>
+<tr>
+<td>Per-event diff after results scrape</td>
+<td><code>&lt;b&gt;EVF vs CERT: {name}&lt;/b&gt;\n&lt;pre&gt;{cert_code}&lt;/pre&gt;\nEVF SPWS: {N}  |  CERT: {N}\nMatch: {N}  |  EVF-only: {N}  |  CERT-only: {N}\n{N} new results ingested</code></td>
+<td><code>_compare_and_ingest</code> per event.</td>
+</tr>
+<tr>
+<td>New CERT event auto-created from EVF results</td>
+<td><code>&lt;b&gt;EVF Import&lt;/b&gt;\n&lt;pre&gt;{cert_code}&lt;/pre&gt;\n{name}\nCreated event + &lt;b&gt;{N}&lt;/b&gt; results ingested</code></td>
+<td><code>_compare_and_ingest</code> when no in-scope CERT row matched.</td>
+</tr>
+<tr>
+<td>Calendar HTML + API both unreachable</td>
+<td><code>&lt;b&gt;EVF Calendar FAILED&lt;/b&gt;\n&lt;pre&gt;{exception}&lt;/pre&gt;</code></td>
+<td><code>sync_calendar</code> on <code>RuntimeError</code> from <code>scrape_full_season_calendar</code>.</td>
+</tr>
+<tr>
+<td><strong>Logical-integrity self-heal (ADR-039 Step 0 rev 2)</strong></td>
+<td><code>&lt;b&gt;EVF Sync self-heal (Step 0)&lt;/b&gt;\n&lt;pre&gt;healed dates: {codes} | demoted→PLANNED: {codes}&lt;/pre&gt;</code></td>
+<td><code>sync_calendar</code> resolved one or more future-COMPLETED rows: <em>healed dates</em> = real date recovered from the event URL (<code>url_event</code> populated, status stays COMPLETED); <em>demoted→PLANNED</em> = no date recoverable, so the impossible COMPLETED was rolled back to PLANNED (the event URL / date get filled later by the calendar / populate-urls flow). Informational — the sync continues. Optional follow-up: confirm a demoted row eventually gets its <code>url_event</code> populated.</td>
+</tr>
+<tr>
+<td>Workflow-level failure (any non-zero exit)</td>
+<td><code>EVF sync FAILED. Check: {gh_actions_url}</code></td>
+<td><code>evf-sync.yml</code>'s <code>Notify failure</code> step (curl, plain text).</td>
+</tr>
+</tbody>
+</table></div>
+<p>Stale-event filtering (ADR-039 Step 1) is logged to stdout only — no Telegram message — to avoid notification noise on routine cron runs. The filtered count appears in the GH Actions log as <code>Stale-gate: skipping N CERT event(s) outside the 30-day window or COMPLETED</code>.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="11-environment-sync-adr-036">11. Environment Sync (ADR-036)</h2>
+<p>The system has three environments. Data flows one way: <strong>PROD → local</strong> and <strong>PROD → CERT</strong>.</p>
+<pre><code>PROD (source of truth)
+  │
+  ├──→ LOCAL  (via mirror-prod.sh)
+  │
+  └──→ CERT   (via seed-remote.sh)
+</code></pre>
+<h3 id="prerequisites">Prerequisites</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Credential</th>
+<th>What it is</th>
+<th>Where stored</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SUPABASE_ACCESS_TOKEN</code></td>
+<td>Supabase org-level Management API token</td>
+<td><code>~/.supabase_token</code> (local file, chmod 600)</td>
+</tr>
+<tr>
+<td><code>SUPABASE_PROD_REF</code></td>
+<td>PROD project reference ID</td>
+<td>Hardcoded in scripts as <code>ywgymtgcyturldazcpmw</code></td>
+</tr>
+<tr>
+<td><code>SUPABASE_CERT_REF</code></td>
+<td>CERT project reference ID</td>
+<td>Hardcoded in scripts as <code>sdomfjncmfydlkygzpgw</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>To get the access token:</strong> Go to https://supabase.com/dashboard/account/tokens → copy an active token → save to <code>~/.supabase_token</code>.</p>
+<p><strong>Other requirements:</strong></p>
+<ul>
+<li>Docker running (for local PostgreSQL)</li>
+<li>Supabase CLI installed (<code>supabase start</code> has been run at least once)</li>
+<li>Python venv set up (<code>.venv/</code> with httpx installed)</li>
+</ul>
+<hr />
+<h3 id="operation-a-mirror-prod-local">Operation A: Mirror PROD → LOCAL</h3>
+<p><strong>When to use:</strong> After promoting new data to PROD, or when your local DB is stale/broken.</p>
+<p><strong>What it does:</strong> Exports all PROD data to a timestamped SQL file, resets local DB from migrations, loads the dump, creates admin user, and verifies table counts match PROD.</p>
+<pre><code class="language-bash">./scripts/mirror-prod.sh
+</code></pre>
+<p><strong>Step-by-step (if running manually):</strong></p>
+<ol>
+<li>
+<p>Export PROD data:</p>
+<pre><code class="language-bash">./scripts/export-prod.sh
+</code></pre>
+<p>Creates <code>supabase/seed_prod_YYYY-MM-DD.sql</code> and updates symlink <code>seed_prod_latest.sql</code>.</p>
+</li>
+<li>
+<p>Reset local DB:</p>
+<pre><code class="language-bash">./scripts/reset-dev.sh
+</code></pre>
+<p>Applies all migrations + loads <code>seed_prod_latest.sql</code> + creates admin user (<code>admin@spws.local</code> / <code>admin123</code>).</p>
+</li>
+<li>
+<p>Verify:</p>
+<pre><code class="language-bash">export SUPABASE_ACCESS_TOKEN=&quot;$(cat ~/.supabase_token)&quot;
+python3 -m pytest python/tests/test_prod_mirror.py -v
+</code></pre>
+<p>All 7 tables must match PROD counts.</p>
+</li>
+<li>
+<p>Run tests:</p>
+<pre><code class="language-bash">supabase test db
+</code></pre>
+</li>
+</ol>
+<p><strong>Duration:</strong> ~2 minutes (export ~60s, reset ~30s, verify ~30s).</p>
+<p><strong>Local admin credentials:</strong> <code>admin@spws.local</code> / <code>admin123</code> (always recreated by reset-dev.sh).</p>
+<hr />
+<h3 id="operation-b-sync-cert-from-prod">Operation B: Sync CERT from PROD</h3>
+<p><strong>When to use:</strong> After CERT has diverged from PROD (e.g., after a rollback or data corruption), and you want CERT to match PROD exactly.</p>
+<p><strong>What it does:</strong> Truncates all CERT data tables and re-seeds from the local dump file. After this, CERT = PROD = LOCAL.</p>
+<p><strong>Prerequisite:</strong> Run Operation A first (so local has the latest PROD dump).</p>
+<pre><code class="language-bash">export SUPABASE_ACCESS_TOKEN=&quot;$(cat ~/.supabase_token)&quot;
+export SUPABASE_REF=sdomfjncmfydlkygzpgw
+./scripts/seed-remote.sh
+</code></pre>
+<p><strong>Step-by-step:</strong></p>
+<ol>
+<li>
+<p>Ensure local dump is current:</p>
+<pre><code class="language-bash">./scripts/export-prod.sh
+</code></pre>
+</li>
+<li>
+<p>Push dump to CERT:</p>
+<pre><code class="language-bash">export SUPABASE_ACCESS_TOKEN=&quot;$(cat ~/.supabase_token)&quot;
+export SUPABASE_REF=sdomfjncmfydlkygzpgw
+./scripts/seed-remote.sh
+</code></pre>
+</li>
+<li>
+<p>Verify (optional):</p>
+<pre><code class="language-bash">python -m python.tools.audit_results --env cert --pol-only
+</code></pre>
+</li>
+</ol>
+<p><strong>Safety:</strong> The script refuses to run against PROD without <code>--force</code> flag.</p>
+<p><strong>Duration:</strong> ~30 seconds (truncate + single API call with full dump).</p>
+<hr />
+<h3 id="operation-c-force-sync-prod-from-local-dangerous">Operation C: Force-sync PROD from LOCAL (DANGEROUS)</h3>
+<p><strong>When to use:</strong> NEVER under normal circumstances. Only if PROD data is catastrophically corrupted and you have a known-good local dump.</p>
+<pre><code class="language-bash">export SUPABASE_ACCESS_TOKEN=&quot;$(cat ~/.supabase_token)&quot;
+export SUPABASE_REF=ywgymtgcyturldazcpmw
+./scripts/seed-remote.sh --force
+</code></pre>
+<p><strong>The <code>--force</code> flag is required because this overwrites PROD.</strong></p>
+<hr />
+<h3 id="data-audit">Data audit</h3>
+<p>To check for discrepancies between environments and source URLs:</p>
+<pre><code class="language-bash">export SUPABASE_ACCESS_TOKEN=&quot;$(cat ~/.supabase_token)&quot;
+
+# Audit CERT against source tournament URLs
+python -m python.tools.audit_results --env cert --pol-only
+
+# Audit PROD
+python -m python.tools.audit_results --env prod --pol-only
+
+# Audit local
+python -m python.tools.audit_results --env local --pol-only
+</code></pre>
+<hr />
+<h3 id="troubleshooting">Troubleshooting</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Illegal header value b'Bearer '</code></td>
+<td>Token not loaded</td>
+<td>Ensure <code>~/.supabase_token</code> exists and <code>SUPABASE_ACCESS_TOKEN</code> is exported</td>
+</tr>
+<tr>
+<td><code>401 Unauthorized</code></td>
+<td>Token expired or revoked</td>
+<td>Generate new token at supabase.com/dashboard/account/tokens, save to <code>~/.supabase_token</code></td>
+</tr>
+<tr>
+<td><code>502 Bad gateway</code></td>
+<td>Supabase API outage</td>
+<td>Wait 5 minutes and retry</td>
+</tr>
+<tr>
+<td>Mirror test fails (count mismatch)</td>
+<td>Stale dump</td>
+<td>Re-run <code>./scripts/export-prod.sh</code> then <code>./scripts/reset-dev.sh</code></td>
+</tr>
+<tr>
+<td>Identity Manager shows empty</td>
+<td><code>tbl_match_candidate</code> not loaded</td>
+<td>Re-run mirror (dump includes match candidates since ADR-036)</td>
+</tr>
+<tr>
+<td>Refusing to seed PROD</td>
+<td>Safety check</td>
+<td>Add <code>--force</code> flag (only if you're absolutely sure)</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="12-files-reference">12. Files Reference</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.github/workflows/ci.yml</code></td>
+<td>CI pipeline: tests + coherence</td>
+</tr>
+<tr>
+<td><code>.github/workflows/release.yml</code></td>
+<td>Release pipeline: build → Pages → CERT → PROD</td>
+</tr>
+<tr>
+<td><code>deployed_migrations.json</code></td>
+<td>Tracks which migrations are applied to CERT/PROD</td>
+</tr>
+<tr>
+<td><code>release-manifest.json</code></td>
+<td>Release audit trail (SHA, fingerprint, test counts)</td>
+</tr>
+<tr>
+<td><code>scripts/schema-fingerprint.sh</code></td>
+<td>Compute schema fingerprint (local or cloud)</td>
+</tr>
+<tr>
+<td><code>scripts/check-new-migrations.sh</code></td>
+<td>Determine pending migrations for an environment</td>
+</tr>
+<tr>
+<td><code>scripts/apply-migrations.sh</code></td>
+<td>Apply SQL migrations via Supabase Management API</td>
+</tr>
+<tr>
+<td><code>scripts/update-tracking.sh</code></td>
+<td>Update tracking files after deployment</td>
+</tr>
+<tr>
+<td><code>scripts/generate-manifest.sh</code></td>
+<td>Generate release-manifest.json</td>
+</tr>
+<tr>
+<td><code>scripts/check-coherence.sh</code></td>
+<td>CI coherence gates</td>
+</tr>
+<tr>
+<td><code>scripts/export-prod.sh</code></td>
+<td>Export PROD to monolithic seed file (ADR-036)</td>
+</tr>
+<tr>
+<td><code>scripts/mirror-prod.sh</code></td>
+<td>Full PROD → local mirror: export + reset + verify</td>
+</tr>
+<tr>
+<td><code>scripts/seed-remote.sh</code></td>
+<td>Truncate + re-seed remote DB from seed file</td>
+</tr>
+<tr>
+<td><code>scripts/update-test-values.sh</code></td>
+<td>Update pgTAP expected values from local DB</td>
+</tr>
+<tr>
+<td><code>.github/workflows/promote.yml</code></td>
+<td>CERT → PROD promotion + seed export</td>
+</tr>
+<tr>
+<td><code>.github/workflows/export-seed.yml</code></td>
+<td>Manual seed export from PROD or CERT</td>
+</tr>
+<tr>
+<td><code>scripts/gas_email_ingestion.js</code></td>
+<td>GAS Telegram bot + email ingestion</td>
+</tr>
+<tr>
+<td><code>.github/workflows/regen-report.yml</code></td>
+<td>Phase 5.5: re-render verdict full.md, upload to Storage, Telegram-send</td>
+</tr>
+<tr>
+<td><code>.github/workflows/phase5-event-runner.yml</code></td>
+<td>Phase 5.5: run unified Phase-5 pipeline against tbl_event.url_results, drafts + Storage + Telegram</td>
+</tr>
+<tr>
+<td><code>python/pipeline/storage_md.py</code></td>
+<td>Phase 5.5: staging-reports bucket I/O wrapper (ADR-058)</td>
+</tr>
+<tr>
+<td><code>python/pipeline/md_writer.py</code></td>
+<td>Phase 5.5: verdict .md target router (local/storage/both/none) (ADR-058+061)</td>
+</tr>
+<tr>
+<td><code>python/pipeline/parity_delta.py</code></td>
+<td>Phase 5.5: EVF parity delta .md renderer (ADR-060)</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="13-phase-5-5-verdict-md-persistence-telegram-delivery-adr-058-059-060-061">13. Phase 5.5 — Verdict <code>.md</code> Persistence + Telegram Delivery (ADR-058 / 059 / 060 / 061)</h2>
+<p>After a Phase-5 ingestion (email XML or event URL), the operator receives the verdict <code>.md</code> directly on Telegram and reads it in their Obsidian vault. No admin-UI navigation needed for routine verdict reading.</p>
+<h3 id="architecture">Architecture</h3>
+<pre><code>EMAIL XML   →  GAS  →  xml-inbox/staging  →  ingest.yml             ┐
+                                                                     │
+EVENT URL   →  admin UI  →  dispatch-workflow  →  phase5-event-runner.yml  │ ──&gt;  run_pipeline + DraftStore  ──&gt;  staging-reports/{event_code}/full.md  ──&gt;  Telegram sendDocument
+                                                                     │                                          (Supabase Storage, private bucket)        (operator phone → Obsidian)
+EVENT URL   →  Telegram /stage  →  GAS  →  phase5-event-runner.yml  ┘
+
+Operator alias mutation in admin UI:
+  fn_split/transfer/discard  ──&gt;  cascade scoring  ──&gt;  regen-report.yml  ──&gt;  Storage replace + Telegram
+
+Daily 03:00 UTC cron:
+  evf-parity-sweep.yml  ──&gt;  if drift, parity_delta.render → staging-reports/{event_code}/deltas/{ts}.md → Telegram (delta caption)
+                       ──&gt;  if no drift, silent
+</code></pre>
+<h3 id="one-time-cert-prod-setup">One-time CERT/PROD setup</h3>
+<ol>
+<li>Create the <code>staging-reports</code> Supabase Storage bucket via dashboard OR <code>supabase storage create staging-reports --public=false</code> against the project. Migration <code>20260503000003</code> is a no-op on LOCAL; for CERT/PROD the bucket must be created manually (or via <code>supabase db push</code> if storage is enabled at the schema level).</li>
+<li>Verify RLS policy <code>staging_reports_authenticated_read</code> exists (the migration creates it once <code>storage.objects</code> is present).</li>
+<li>Verify the <code>dispatch-workflow</code> edge function allowlist includes <code>phase5-event-runner.yml</code> and <code>regen-report.yml</code> (Phase 5.5 deploy).</li>
+<li>Confirm secrets present: <code>SUPABASE_CERT_URL</code>, <code>SUPABASE_CERT_SERVICE_ROLE_KEY</code>, <code>SUPABASE_PROD_URL</code>, <code>SUPABASE_PROD_SERVICE_ROLE_KEY</code>, <code>FTL_USERNAME</code>, <code>FTL_PASSWORD</code>, <code>TELEGRAM_BOT_TOKEN</code>, <code>TELEGRAM_CHAT_ID</code> — all already required by existing workflows.</li>
+</ol>
+<h3 id="telegram-operator-commands-cheat-sheet">Telegram operator commands cheat-sheet</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Action</th>
+<th>Workflow / API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/stage &lt;event_code&gt;</code></td>
+<td>Run Phase-5 pipeline against <code>tbl_event.url_results</code>; drafts + <code>full.md</code> + Telegram</td>
+<td><code>phase5-event-runner.yml</code></td>
+</tr>
+<tr>
+<td><code>/regen &lt;event_code&gt;</code></td>
+<td>Re-render <code>full.md</code> from current DB state; replace + Telegram</td>
+<td><code>regen-report.yml</code></td>
+</tr>
+<tr>
+<td><code>/parity &lt;event_code&gt;</code></td>
+<td>Run EVF parity check for one event; sends delta <code>.md</code> if drift</td>
+<td><code>evf-parity-sweep.yml</code> (single-event mode)</td>
+</tr>
+<tr>
+<td><code>/verdict &lt;event_code&gt;</code></td>
+<td>Re-fetch <code>staging-reports/&lt;X&gt;/full.md</code> from Storage and Telegram-send</td>
+<td>direct Storage download via service-role</td>
+</tr>
+</tbody>
+</table></div>
+<p>Auto-delivered documents (no command needed):</p>
+<ul>
+<li><code>&lt;event_code&gt;-full.md</code> — after first ingestion + each operator-driven regen</li>
+<li><code>&lt;event_code&gt;-delta-&lt;yyyyMMdd_HHmmss&gt;.md</code> — after EVF parity sweep that found drift</li>
+</ul>
+<h3 id="disaster-recovery">Disaster recovery</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Recovery</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Storage <code>staging-reports/&lt;X&gt;/full.md</code> accidentally deleted</td>
+<td>Telegram <code>/regen &lt;X&gt;</code> (re-renders from DB)</td>
+</tr>
+<tr>
+<td>Bucket wiped entirely</td>
+<td>Recreate via <code>supabase storage create staging-reports --public=false</code>, then <code>/regen &lt;X&gt;</code> per event</td>
+</tr>
+<tr>
+<td>Telegram message lost / cleared</td>
+<td><code>/verdict &lt;X&gt;</code> re-fetches the latest <code>full.md</code> from Storage and re-sends</td>
+</tr>
+<tr>
+<td>Edge function returns &quot;invalid_workflow&quot;</td>
+<td>Confirm allowlist update was deployed (<code>supabase functions deploy dispatch-workflow</code>)</td>
+</tr>
+<tr>
+<td>Workflow fails with &quot;invalid event_code&quot;</td>
+<td>event_code must match <code>^[A-Z0-9_-]+$</code> (validated at workflow + Storage level)</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="local-operator-workflow-unchanged">LOCAL operator workflow (unchanged)</h3>
+<p>Per ADR-061, LOCAL workflow is preserved verbatim:</p>
+<ul>
+<li><code>python -m python.tools.phase5_runner --event-code &lt;X&gt;</code> writes <code>doc/staging/&lt;X&gt;.md</code> (filesystem only)</li>
+<li>No Telegram fired (token absent on LOCAL by default)</li>
+<li>No Storage upload (bucket migration is a no-op when <code>storage.buckets</code> table doesn't exist)</li>
+<li>Admin UI alias triage improvements work against LOCAL DB; the operator continues to rerun <code>phase5_report</code> from shell after triage sessions</li>
+<li>To exercise CERT-style behaviour from LOCAL: pass <code>--md-target=storage</code> + <code>--send-telegram</code> and set the env vars (against a test bot)</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="Documentation navigation"><a class="registry" href="index.html">← Documentation index</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
+<footer class="foot">Generated from <code>cicd-operations-manual.md</code> · source SHA-256 <code>27dfbce9c8f1734fc07b60e8f0b8afd3b735f332914fa85182347a7eeb72e326</code></footer>
+</div></body></html>

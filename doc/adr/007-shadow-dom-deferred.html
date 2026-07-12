@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="007-shadow-dom-deferred.md">
+<meta name="adr-source-sha256" content="dd28df5ade4d0c4f94ac63b5081070aa02f46ab47bfbe5e363d38c031ae463ef">
+<title>ADR-007 · Shadow DOM (Implemented M8)</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 007</p><h1>Shadow DOM (Implemented M8)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented (M8, 2026-03-26)</dd></div><div><dt>Date</dt><dd class="">2025-03-01 (M6) ·</dd></div><div><dt>Source</dt><dd class=""><code>007-shadow-dom-deferred.md</code></dd></div><div><dt>Length</dt><dd class="">35 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Implemented (M8, 2026-03-26)
+<strong>Date:</strong> 2025-03-01 (M6) · <strong>Resolved:</strong> 2026-03-26 (M8)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#rationale">Rationale</a></li><li class="depth-2"><a href="#planned-resolution-mvp">Planned Resolution (MVP)</a></li><li class="depth-2"><a href="#resolution-m8">Resolution (M8)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The Web Component is designed to be embedded in a WordPress site via <code>&lt;script&gt;</code> tag. Shadow DOM encapsulation would prevent host page CSS from bleeding into the ranklist — a critical requirement for production.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Defer Shadow DOM (<code>customElement: true</code> compiler mode) to the MVP phase. The POC uses direct Svelte mount without Shadow DOM.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="rationale">Rationale</h2>
+<p>Svelte's <code>customElement: true</code> compiler option is incompatible with <code>@testing-library/svelte</code>, which uses the Svelte 4 <code>new Component()</code> API (enabled via <code>compatibility.componentApi: 4</code>). Enabling custom element mode breaks all 28+ vitest unit tests.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="planned-resolution-mvp">Planned Resolution (MVP)</h2>
+<p>For MVP, build the component as a proper <code>&lt;spws-ranklist&gt;</code> custom element with isolated styles. Unit tests for the custom element build will use a separate test harness or Playwright E2E tests instead of <code>@testing-library/svelte</code>.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="resolution-m8">Resolution (M8)</h2>
+<p>Implemented in T8.7 via dual-build strategy:</p>
+<ul>
+<li><strong>Dev/Test</strong> (<code>vite.config.ts</code>): <code>compatibility.componentApi: 4</code> — <code>@testing-library/svelte</code> works for 97 vitest tests</li>
+<li><strong>Production CE</strong> (<code>vite.config.ce.ts</code>): <code>customElement: true</code> — outputs bundle registering <code>&lt;spws-ranklist&gt;</code> and <code>&lt;spws-calendar&gt;</code> with Shadow DOM</li>
+<li><strong>Playwright E2E</strong> (<code>e2e/shadow-dom.spec.ts</code>): 7 assertions verify Shadow DOM isolation, CE registration, and host CSS leak prevention</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>POC: component styles may conflict with host page CSS — acceptable for dev/demo environments</li>
+<li>POC: no <code>&lt;spws-ranklist&gt;</code> custom element tag — component is mounted via Svelte's <code>mount()</code> API</li>
+<li>All unit tests work with <code>@testing-library/svelte</code> during POC</li>
+<li><s>MVP must resolve this before WordPress deployment</s> <strong>Resolved in M8</strong></li>
+<li>Both <code>&lt;spws-ranklist&gt;</code> and <code>&lt;spws-calendar&gt;</code> now ship as custom elements with Shadow DOM isolation (NFR-13 covered, test IDs 8.55–8.61)</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="006-jsonb-ranking-rules.html">← ADR-006: JSONB Bucket-Based Ranking Rules</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="008-psw-msw-international-pool.html">→ ADR-008: PSW and MSW in International Ranking Pool</a></nav>
+<footer class="foot">Generated from <code>007-shadow-dom-deferred.md</code> · source SHA-256 <code>dd28df5ade4d0c4f94ac63b5081070aa02f46ab47bfbe5e363d38c031ae463ef</code></footer>
+</div></body></html>

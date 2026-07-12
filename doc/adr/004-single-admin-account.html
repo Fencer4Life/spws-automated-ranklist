@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="004-single-admin-account.md">
+<meta name="adr-source-sha256" content="aed8e3640ce5e5bc1e1330b5df92ec7e03a4e67e95a0e2ddbc0e81669e39663b">
+<title>ADR-004 · Single Admin Account for POC</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 004</p><h1>Single Admin Account for POC</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="superseded">Superseded by <a href="016-supabase-auth-totp-mfa.html">ADR-016</a></dd></div><div><dt>Date</dt><dd class="">2025-03-01 (M1)</dd></div><div><dt>Source</dt><dd class=""><code>004-single-admin-account.md</code></dd></div><div><dt>Length</dt><dd class="">26 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Superseded by <a href="016-supabase-auth-totp-mfa.html">ADR-016</a>
+<strong>Date:</strong> 2025-03-01 (M1)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The system needs an admin role for season setup, fencer management, match candidate review, and result corrections. The question was whether to implement multi-user admin with role-based access control.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>During POC (Phase 1), use a <strong>single admin account</strong> via Supabase Auth. The Supabase Dashboard serves as the admin UI for season/config management.</p>
+<p>RLS policies define three roles:</p>
+<ul>
+<li><code>anon</code> — public SELECT on public tables and ranking views</li>
+<li><code>authenticated</code> — full CRUD on all tables</li>
+<li><code>service_role</code> — bypasses RLS (GitHub Actions pipeline)</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Simple: no custom claims, no role hierarchy, no permission matrix</li>
+<li>The Supabase Dashboard is the admin UI — no custom admin frontend needed for POC</li>
+<li><code>tbl_match_candidate</code> and <code>tbl_audit_log</code> are not publicly readable (admin-only)</li>
+<li>If multi-admin support is needed later, Supabase supports custom claims and role-based policies — the RLS foundation is already in place</li>
+<li><s><strong>Extended to MVP (ADR-013):</strong> The client-side password gate pattern (no server-side auth for admin actions) continues for M8-M9. Admin CRUD UI uses the same single-account model. Full Supabase Auth with multi-user support deferred to Phase 3</s></li>
+<li><strong>Superseded (2026-03-26):</strong> Security audit revealed <code>anon</code> role can call SECURITY DEFINER write functions (no REVOKE applied). Client-side password gate provides no real protection. Replaced by <a href="016-supabase-auth-totp-mfa.html">ADR-016</a>: Supabase Auth + TOTP MFA with server-enforced REVOKE on write RPCs.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="003-identity-by-fk-not-name.html">← ADR-003: Identity by FK, not by Name</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="005-svelte-state-i18n.html">→ ADR-005: Svelte 5 $state for Internationalisation</a></nav>
+<footer class="foot">Generated from <code>004-single-admin-account.md</code> · source SHA-256 <code>aed8e3640ce5e5bc1e1330b5df92ec7e03a4e67e95a0e2ddbc0e81669e39663b</code></footer>
+</div></body></html>

@@ -1,0 +1,1143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="doc-source" content="requirements-traceability-matrix.md">
+<meta name="doc-source-sha256" content="a0d73348e66f11951fe98b93b8f83eb84b5339188516e8d5755356d6aba279fb">
+<title>Requirements Traceability Matrix (RTM) · SPWS</title>
+<link rel="stylesheet" href="adr/assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>194 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
+<p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
+<p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
+</section>
+<section class="section-card detail"><h2 id="functional-requirements">Functional Requirements</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Source</th>
+<th>Tests</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-01</td>
+<td>Scrape results from FTL (JSON + CSV), Engarde (HTML), 4Fence (HTML)</td>
+<td>UC1(a)</td>
+<td>3.1a–g, 3.2a–f, 3.3a–e</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-02</td>
+<td>Import results via CSV upload</td>
+<td>UC2(a,b)</td>
+<td>3.7</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-03</td>
+<td>Auto-detect scraper platform from URL</td>
+<td>UC1(a)</td>
+<td>3.1–3.3 URL dispatcher tests</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-04</td>
+<td>Fuzzy match scraped names to master fencer list</td>
+<td>UC3(a–f)</td>
+<td>4.1–4.5</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-05</td>
+<td>Alias matching (json_name_aliases)</td>
+<td>UC3(a,b)</td>
+<td>4.2 (alias tests)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-06</td>
+<td>Duplicate name disambiguation via age category</td>
+<td>§8.5(5)</td>
+<td>4.25–4.37</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-07</td>
+<td>Admin approve / dismiss / create-new-fencer for match candidates</td>
+<td>UC4(b,c)</td>
+<td>4.6–4.8, 11.13–11.16</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-08</td>
+<td>Domestic intake: auto-create fencer for UNMATCHED PPW/MPW</td>
+<td>§8.5</td>
+<td>4.10–4.14b, 9.142–9.148</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-09</td>
+<td>International intake: skip UNMATCHED PEW/MEW fencers</td>
+<td>§8.5</td>
+<td>4.15–4.18</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-10</td>
+<td>Birth year estimation (youngest boundary per category)</td>
+<td>§8.5</td>
+<td>4.19–4.21, 9.83–9.84</td>
+<td>Covered (M9, T9.9)</td>
+</tr>
+<tr>
+<td>FR-11</td>
+<td>Score computation: place points (log formula)</td>
+<td>§8.1.1</td>
+<td>2.1–2.3, 2.2a–b</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-12</td>
+<td>Score computation: DE round bonus</td>
+<td>§8.1.2</td>
+<td>2.4–2.5</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-13</td>
+<td>Score computation: podium bonus</td>
+<td>§8.1.3</td>
+<td>2.6a–d</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-14</td>
+<td>Tournament multipliers (PPW, MPW, PEW, MEW, MSW, PSW)</td>
+<td>§8.2</td>
+<td>2.7, 2.19, 9.85</td>
+<td>Covered (M9, T9.9)</td>
+</tr>
+<tr>
+<td>FR-15</td>
+<td>PPW ranking: best-K domestic + always-include MPW; <code>p_rolling</code> parameter for active-season carry-over (ADR-018)</td>
+<td>§8.3.1</td>
+<td>5.2–5.13, 5.16, 5.20–5.21, 5.23, R.4–R.12</td>
+<td>Modified (M10, rolling parameter)</td>
+</tr>
+<tr>
+<td>FR-16</td>
+<td>Kadra ranking: domestic + best-J international pool; <code>p_rolling</code> parameter for active-season carry-over (ADR-018)</td>
+<td>§8.3.2</td>
+<td>5.17, 5.19, 5.22, R.13–R.14</td>
+<td>Modified (M10, rolling parameter)</td>
+</tr>
+<tr>
+<td>FR-17</td>
+<td>V0 guard: no Kadra ranking for V0</td>
+<td>§8.3.2</td>
+<td>5.18</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-18</td>
+<td>Cross-category carryover (fencer ranked by birth-year category)</td>
+<td>§8.5(2)</td>
+<td>5.14–5.15</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-19</td>
+<td>JSONB bucket-based ranking rules</td>
+<td>§8.6.6</td>
+<td>5.4–5.7, 5.20–5.22</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-20</td>
+<td>Legacy code path (NULL json_ranking_rules)</td>
+<td>§8.6.6</td>
+<td>5.23</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-21</td>
+<td>Season lifecycle: create season, auto-create scoring config (inherits json_ranking_rules from previous season), auto-activate by date (ADR-031)</td>
+<td>UC7(a,b)</td>
+<td>1.13–1.14b, 9.40–9.46</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-22</td>
+<td>Single active season constraint (auto-derived, no overlapping dates)</td>
+<td>UC7(c)</td>
+<td>1.7, 1.15, 9.41–9.46</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-23</td>
+<td>Event lifecycle state machine</td>
+<td>UC10(a,b)</td>
+<td>1.20–1.24, 9.86–9.90</td>
+<td>Covered (M9, T9.9)</td>
+</tr>
+<tr>
+<td>FR-24</td>
+<td>Audit logging for status changes</td>
+<td>UC10(c)</td>
+<td>1.22a–b</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-25</td>
+<td>Tournament multiplier auto-population (trigger)</td>
+<td>UC9(c)</td>
+<td>1.19, 1.19c</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-26</td>
+<td>Scoring config export/import (JSON)</td>
+<td>UC18, UC19</td>
+<td>2.12–2.18</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-27</td>
+<td>Calibration comparison against reference Excel</td>
+<td>UC20</td>
+<td>2.19–2.23 (pytest)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-28</td>
+<td>Minimum participant threshold (configurable per type)</td>
+<td>§8.5(1)</td>
+<td>3.10–3.11</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-29</td>
+<td>Idempotent re-import (skip existing results)</td>
+<td>§9.5.1</td>
+<td>3.9</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-30</td>
+<td>Retry on transient network failure</td>
+<td>§9.5.1</td>
+<td>3.12</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-31</td>
+<td>Partial scrape detection (abort on incomplete data)</td>
+<td>§9.5.1</td>
+<td>3.13, 3.13b</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-32</td>
+<td>Telegram alerting on pipeline failure</td>
+<td>UC1(d)</td>
+<td>3.6</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-33</td>
+<td>Web Component: weapon/gender/category filters</td>
+<td>UC12(b)</td>
+<td>FilterBar.test.ts (5 tests)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-34</td>
+<td>Web Component: PPW/Kadra toggle with V0 guard (conditional on <code>bool_show_evf_toggle</code> season config, ADR-017)</td>
+<td>UC12(b)</td>
+<td>FilterBar.test.ts, DrilldownModal.test.ts</td>
+<td>Modified (toggle hidden by default, visible when season config enables it)</td>
+</tr>
+<tr>
+<td>FR-35</td>
+<td>Web Component: ranking table with mode-specific columns</td>
+<td>UC12(c)</td>
+<td>RanklistTable.test.ts (5 tests)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-36</td>
+<td>Web Component: fencer drilldown modal with score breakdown</td>
+<td>UC13(a,b)</td>
+<td>DrilldownModal.test.ts (24 tests)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-37</td>
+<td>ODS export (ranking + drilldown)</td>
+<td>UC12, UC13</td>
+<td>export.test.ts (5 tests)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-38</td>
+<td>API client: fetch seasons, rankings, fencer scores</td>
+<td>UC12(a)</td>
+<td>5.1a–b, api.test.ts (6 tests)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-39</td>
+<td>EN/PL internationalisation with reactive toggle</td>
+<td>§11</td>
+<td>DrilldownModal.test.ts (test K)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-40</td>
+<td>Import status transitions (PLANNED → IMPORTED → SCORED)</td>
+<td>UC1(b), UC5(c)</td>
+<td>2.9, 9.91–9.92</td>
+<td>Covered (M9, T9.9)</td>
+</tr>
+<tr>
+<td>FR-41</td>
+<td>Domestic-participation requirement: fencers with 0 domestic points excluded from ranking views</td>
+<td>§8.5(7)</td>
+<td>5.24–5.25</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-42</td>
+<td>CERT/PROD environment toggle with runtime switching</td>
+<td>§2.2</td>
+<td>8.01–8.04</td>
+<td>Covered (M8)</td>
+</tr>
+<tr>
+<td>FR-43</td>
+<td>Calendar view: chronological event list with season filter</td>
+<td>UC21(a,b)</td>
+<td>8.11–8.19, 8.38–8.43, 8.47</td>
+<td>Covered (M8)</td>
+</tr>
+<tr>
+<td>FR-44</td>
+<td>Calendar view: past/future/all toggle (scope filter conditional on <code>bool_show_evf_toggle</code>, ADR-017)</td>
+<td>UC21(c)</td>
+<td>8.44–8.45, 8.79–8.80</td>
+<td>Modified (M8, scope filter hidden by default)</td>
+</tr>
+<tr>
+<td>FR-45</td>
+<td>Calendar view: mobile-friendly layout</td>
+<td>UC21(e)</td>
+<td>8.46</td>
+<td>Covered (M8)</td>
+</tr>
+<tr>
+<td>FR-46</td>
+<td>Admin authentication: Supabase Auth + TOTP MFA (supersedes client-side password gate)</td>
+<td>UC22(a), ADR-016</td>
+<td>9.01–9.17</td>
+<td>Covered (M9, T9.0)</td>
+</tr>
+<tr>
+<td>FR-47</td>
+<td>Season CRUD via web UI</td>
+<td>UC22(b)</td>
+<td>9.18–9.22, 9.27, 9.37–9.42</td>
+<td>Covered (M9, T9.1 SQL + T9.2 UI)</td>
+</tr>
+<tr>
+<td>FR-48</td>
+<td>tbl_event schema extension: 12 columns (txt_country, txt_venue_address, url_invitation, num_entry_fee, txt_entry_fee_currency, arr_weapons, url_registration, dt_registration_deadline, url_event_2, url_event_3, url_event_4, url_event_5)</td>
+<td>UC22(c), UC21(d), ADR-030, ADR-040</td>
+<td>8.05–8.10, 8.18–8.20, 15.1</td>
+<td>Covered (M8+M9+ADR-030+ADR-040)</td>
+</tr>
+<tr>
+<td>FR-49</td>
+<td>Tournament CRUD nested under events</td>
+<td>UC22(d)</td>
+<td>9.25–9.26, 9.29, 9.50–9.55</td>
+<td>Covered (M9, T9.1 SQL + T9.4 UI)</td>
+</tr>
+<tr>
+<td>FR-50</td>
+<td>Delete cascade (event → tournaments → results)</td>
+<td>UC22(e)</td>
+<td>9.30–9.36</td>
+<td>Covered (M9, T9.1)</td>
+</tr>
+<tr>
+<td>FR-51</td>
+<td>Tournament re-import in single transaction</td>
+<td>UC23(a-f)</td>
+<td>10.1–10.7</td>
+<td>Covered (ADR-022, fn_ingest_tournament_results)</td>
+</tr>
+<tr>
+<td>FR-52</td>
+<td>Multi-category expansion (30 sub-rankings)</td>
+<td>§6.2</td>
+<td>8.20–8.26</td>
+<td>Covered (M8)</td>
+</tr>
+<tr>
+<td>FR-53</td>
+<td>Event-level batch import: multi-select tournament checklist modal. <strong>N14 (ADR-073 amendment, 2026-06-18):</strong> tournament <code>url_results</code> is now populated <strong>inline during ingestion</strong> — the <code>Commit</code> plugin writes each committed tournament's parsed results-page URL via <code>fn_find_or_create_tournament(p_url_results)</code>, gated on WEB source kinds (FTL/ENGARDE/FOURFENCE/DARTAGNAN/OPHARDT_HTML + http source_url); re-ingest overwrites, XML/EVF-API/file preserve. The drilldown link works without the flaky dispatch button (which remains a manual fallback; <code>populate_tournament_urls.py</code> ophardt branch still pending).</td>
+<td>UC22(g), ADR-073</td>
+<td>9.62–9.67, N14.4–N14.8, 46.1–46.5</td>
+<td>Partial (inline-ingestion populate ✓; file UI + Admin ⬇ button + populate-urls GHA)</td>
+</tr>
+<tr>
+<td>FR-54</td>
+<td>Tournament-level single import: own URL or file upload (FTL / Engarde / 4fence / Dartagnan)</td>
+<td>UC22(h)</td>
+<td>9.56–9.61, 3.17a–d, dart.1–dart.8, dart.url.1</td>
+<td>Partial (file UI + Admin ⬇ button + t-scrape + scrape-tournament GHA + Dartagnan parser)</td>
+</tr>
+<tr>
+<td>FR-55</td>
+<td>File import: parse results from .xlsx, .xls, .json, .csv</td>
+<td>UC22(i), UC23(c)</td>
+<td>9.58, 9.93–9.100</td>
+<td>Covered (M9, T9.5 UI + T9.10 parsers)</td>
+</tr>
+<tr>
+<td>FR-56</td>
+<td>Identity resolution admin UI: match candidate queue with approve/dismiss/create-new/assign + gender column; Identities tab in Fencers view (ADR-035)</td>
+<td>UC4(a-e)</td>
+<td>9.68–9.73, 9.77, 9.78–9.88, 11.1–11.19</td>
+<td>Covered (UI + RPCs + tab in App.svelte)</td>
+</tr>
+<tr>
+<td>FR-57</td>
+<td>Identity resolution: disambiguation modal for same-name fencers with age category fit</td>
+<td>UC3(f), UC4(b)</td>
+<td>9.74–9.76</td>
+<td>Covered (DisambiguationModal + App.svelte handlers)</td>
+</tr>
+<tr>
+<td>FR-58</td>
+<td>EVF calendar import: HTML-primary fetch from veteransfencing.eu with JSON-API cross-reference, event-level URL harvesting (<code>url_event</code>, <code>url_invitation</code>, <code>url_registration</code>), dedup, create events via <code>fn_import_evf_events_v2</code> (allocator-driven code, EVF organizer, FK auto-link, idempotent), refresh existing events via <code>fn_refresh_evf_event_urls</code> (NULL-only, protects admin edits), raise on total failure. Deadline harvesting disabled pending real-world pattern data. Dedup algorithm rev 3 (ADR-039 2026-04-25): name comparison removed, location step added, single matcher across calendar + results paths. Code allocator (ADR-043 2026-04-26): three-step ladder (CURRENT_SLOT_REUSE → PRIOR_SEASON_MATCH → NEXT_FREE_ALLOC) + classifier (PEW/IMEW/DMEW; MEW dropped); Telegram alert per NEXT_FREE_ALLOC. Automated CERT→PROD propagation via <code>promote.py --mode calendar</code> (see FR-86).</td>
+<td>UC8, UC9</td>
+<td>12.1–12.13, pytest evf.1–evf.21, evf.24, evf.40–evf.42, evf.25–evf.39, prom.5–prom.7</td>
+<td>Covered (ADR-028 rev 3 2026-04-26 → ADR-043: allocator + classifier + EVF organizer; ADR-039: dedup ladder; ADR-026 calendar mode)</td>
+</tr>
+<tr>
+<td>FR-59</td>
+<td>Two-view app shell: sidebar drawer with Ranklista + Kalendarz navigation</td>
+<td>UC12, UC21</td>
+<td>8.27–8.37</td>
+<td>Covered (M8)</td>
+</tr>
+<tr>
+<td>FR-60</td>
+<td>Event CRUD via web UI (create, edit, delete events with all fields)</td>
+<td>UC22(c)</td>
+<td>9.23–9.24, 9.28, 9.43–9.49</td>
+<td>Covered (M9, T9.1 SQL + T9.3 UI)</td>
+</tr>
+<tr>
+<td>FR-61</td>
+<td>Scoring config editor (admin, per-season, structured form)</td>
+<td>UC22(f)</td>
+<td>8.62–8.75</td>
+<td>Covered (M8)</td>
+</tr>
+<tr>
+<td>FR-62</td>
+<td>Calendar view: completed events show &quot;Wyniki&quot; link to event results URL</td>
+<td>UC21</td>
+<td>8.76–8.77</td>
+<td>Covered (M8)</td>
+</tr>
+<tr>
+<td>FR-63</td>
+<td>Calendar event links stacked vertically: Wyniki and Komunikat organizatora rendered one below the other</td>
+<td>UC21</td>
+<td>8.78</td>
+<td>Covered (ADR-017)</td>
+</tr>
+<tr>
+<td>FR-64</td>
+<td>Season-level EVF toggle config: <code>bool_show_evf_toggle</code> in <code>tbl_scoring_config</code> controls PPW/+EVF toggle visibility in Ranklist and Calendar; admin checkbox in SeasonManager edit form</td>
+<td>ADR-017</td>
+<td>9.37–9.39, 8.79–8.83</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-65</td>
+<td>Rolling ranking for active season only: <code>p_rolling BOOLEAN DEFAULT FALSE</code> on <code>fn_ranking_ppw</code> and <code>fn_ranking_kadra</code>; position-matched carry-over from previous season; declared-counterpart constraint; category crossing via current season's end year. Future (not yet active) seasons intentionally show empty ranklist — rolling only kicks in when the season becomes active (ADR-031). <strong>Amended 2026-06-26 (ADR-018/021):</strong> carry-stop is results-based (a current-season scored result for a position, weapon+gender scoped) not status-based — strict either/or, never both.</td>
+<td>ADR-018, ADR-031, §8.3.1, §8.3.2</td>
+<td>R.1–R.14, R.24</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-66</td>
+<td>Rolling drilldown: <code>fn_fencer_scores_rolling</code> returns carried-over scores with <code>bool_carried_over</code> flag and source season code; visual distinction in DrilldownModal (grey striped bars, <code>↩</code> marker, rolling info banner) and CalendarView (progress slot bar). <strong>Amended 2026-06-26 (ADR-018/021):</strong> never shows both this-year and last-year for the same position — the carried row drops the moment a current-season result exists.</td>
+<td>ADR-018</td>
+<td>R.15–R.21, R.22–R.24 (pgTAP, results-based carry-stop)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-67</td>
+<td>Birth year range subtitle on ranklist view: displays eligible birth years for selected age category and season as enumeration (e.g. <code>kat. 2 — roczniki: 1976, 1975, .. 1967</code>); V4 open-ended (&quot;i starsi&quot;/&quot;and older&quot;); updates on category/season/locale change; PL+EN</td>
+<td>UC12</td>
+<td>BY.1–BY.7</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-68</td>
+<td>Biennial event carry-over: rolling carry-over uses rules-based type matching (<code>json_ranking_rules</code> buckets) instead of declared-event matching; IMEW (type=MEW) results from previous season automatically carry over when MEW is in the international rules, even without an IMEW event in the current season (ADR-021)</td>
+<td>ADR-021</td>
+<td>R.19–R.21</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-70</td>
+<td>Orchestrator parses FTL XML metadata and routes to correct DB tournament by weapon+gender+category+date; unified path via <code>ingest_xml_unified</code> routes through <code>run_pipeline</code> + DraftStore + <code>fn_commit_event_draft</code> (ADR-067 retires legacy <code>process_xml_file</code>)</td>
+<td>ADR-022, ADR-067, §2.5</td>
+<td>9.149–9.151, 67.U1–67.U4 (unified ingest entry point + per-file URL fragments + deprecation)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-71</td>
+<td>Orchestrator splits combined-category XML (v0v1, v0v1v2) into per-category result sets with re-ranking; structural pool-only skip drops ELIMINACJE qualifier files (<code>&lt;Poule&gt;</code> without <code>&lt;Tableau&gt;</code>) at the parser so they never reach the splitter (ADR-067); Stage-0 roster reconciliation creates genuinely-new combined-pool participants up front (high-precision exact, not fuzzy) so they are not glued to existing names, and reconciles a conflicting birth year to the bracket V-cat — promotion → band youngest edge, demotion → midpoint (ADR-056 Stage-0, amend 2026-06-26)</td>
+<td>ADR-024, ADR-056, ADR-067</td>
+<td>9.152–9.154, 67.P1–67.P8 (pool-only structural skip), S0.1–S0.9 + 10.4.1/10.4.2/10.4.2b (pytest <code>test_s0_reconcile_roster</code>: midpoint/authoritative-vcat/exact-create/promotion-edge+demotion-midpoint/international-skip/idempotence/cross-bracket-conflict/staging-md)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-72</td>
+<td>Orchestrator resolves fencer identities via fuzzy matching against DB (domestic auto-create, international skip)</td>
+<td>UC3, ADR-020</td>
+<td>9.155–9.157</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-73</td>
+<td><code>fn_ingest_tournament_results</code> atomically deletes old + inserts new results + scores in single transaction</td>
+<td>ADR-014, ADR-022</td>
+<td>10.1–10.7</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-74</td>
+<td>CLI entry point processes single XML files, .zip archives, or Supabase Storage staging bucket</td>
+<td>ADR-023</td>
+<td>9.166–9.168</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-75</td>
+<td>Google Apps Script extracts email .zip attachments from Gmail → uploads to Supabase Storage staging</td>
+<td>ADR-023</td>
+<td>Manual E2E ✓</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-76</td>
+<td>GitHub Actions <code>ingest.yml</code> downloads from Storage staging → processes → archives</td>
+<td>ADR-023</td>
+<td>Manual E2E ✓</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-77</td>
+<td>Processed .zip archived to <code>archive/{season}/{event}.zip</code>; staging cleaned; previous event compressed</td>
+<td>ADR-023</td>
+<td>9.169–9.172, 9.191–9.192</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-78</td>
+<td>Telegram notifications for all pipeline events (13 use cases: routine, warnings, alerts, overdue)</td>
+<td>ADR-025</td>
+<td>9.173–9.190</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-79</td>
+<td>Event-centric ingestion: match XML to existing event by date, create tournaments on-the-fly</td>
+<td>ADR-025</td>
+<td>10.8–10.12, 9.193</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-80</td>
+<td>Event status lifecycle: PLANNED → IN_PROGRESS → COMPLETED with rollback</td>
+<td>ADR-025</td>
+<td>10.12–10.15</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-81</td>
+<td>Telegram command interface: 20+ admin commands for lifecycle, review, storage, season, PROD, URLs, emergency</td>
+<td>ADR-025</td>
+<td>10.16–10.22</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-82</td>
+<td>CERT → PROD promotion triggered from Telegram and Admin UI</td>
+<td>ADR-026</td>
+<td>PPW4 E2E ✓</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-83</td>
+<td>Batch summary notification after each ingestion run</td>
+<td>ADR-025</td>
+<td>9.197</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-84</td>
+<td>ADR-024 compliance: flag PENDING for unknown DOB in combined categories</td>
+<td>ADR-024/025</td>
+<td>9.194–9.196</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-85</td>
+<td>Workflow failure notifications via Telegram</td>
+<td>ADR-025</td>
+<td>9.202–9.203</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-86</td>
+<td>CERT → PROD promotion: per-tournament transfer with url_results carry and error recovery (event mode), plus automated EVF calendar propagation (calendar mode — new events + URL refresh via <code>fn_import_evf_events</code> / <code>fn_refresh_evf_event_urls</code>; runs after 3-day EVF scrape cron, admin edits protected, concurrency-group-protected from overlap with event-promote)</td>
+<td>ADR-026 (rev 2026-04-20), ADR-028</td>
+<td>9.204–9.207, prom.5–prom.7</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-87</td>
+<td>Auto-export seed SQL files after promotion (committed to repo)</td>
+<td>ADR-026</td>
+<td>9.208</td>
+<td>Superseded by FR-88</td>
+</tr>
+<tr>
+<td>FR-88</td>
+<td>Monolithic PROD seed export on promote (schema-driven, single file)</td>
+<td>ADR-027→ADR-036</td>
+<td>9.209–9.213</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-89</td>
+<td>Auto-resume email polling on event day</td>
+<td>ADR-027</td>
+<td>GAS E2E ✓</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-90</td>
+<td>Event registration URL: nullable <code>url_registration</code> on <code>tbl_event</code>, displayed in Calendar before deadline/start, editable in Admin UI</td>
+<td>UC21, ADR-030</td>
+<td>8.18–8.20, 8.21–8.25, 9.43a–9.43c</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-91</td>
+<td>Event registration deadline: nullable <code>dt_registration_deadline</code> on <code>tbl_event</code>, displayed in Calendar until deadline passes, editable in Admin UI</td>
+<td>UC21, ADR-030</td>
+<td>8.18–8.20, 8.21–8.25, 9.43a–9.43c</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-92</td>
+<td>Fencer gender column with backfill from tournament participation, inline admin edit, gender mismatch highlighting in Identity Manager, and automated cross-gender scoring enforcement (ADR-034)</td>
+<td>ADR-033, ADR-034</td>
+<td>11.16–11.19, 9.85–9.86, 9.89–9.94, 14.CG1–14.CG9</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-93</td>
+<td>Birth year review tab: filter/search/edit/tournament history grouped by season/birth year hints + auto-suggest/age category inconsistency flag (now fires for estimated/downgraded BYs too — ADR-056 Stage-0); birth-year estimate convention is the band MIDPOINT</td>
+<td>UC16, ADR-035, ADR-056</td>
+<td>9.100–9.113, 9.111b, 13.1–13.4, 43.1–43.9 (Stage-0 RPC/flag transitions + audit), vitest 5.1 (midpoint)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-94</td>
+<td>Derived event display status: PLANNED events whose <code>dt_end &lt; today</code> render as amber &quot;Awaiting results&quot; / &quot;Oczekiwanie na wyniki&quot; instead of misleading &quot;Planowany&quot;. View-layer helper only — underlying <code>enum_status</code> unchanged, preserving ADR-018 rolling carry-over invariant. Self-heals when <code>fn_ingest_tournament_results</code> fires.</td>
+<td>UC21, ADR-037</td>
+<td>ES.1–ES.11, 8.41b</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-95</td>
+<td>Event deletion admin tool: <code>fn_delete_event(prefix)</code> RPC (+ Telegram <code>delete &lt;prefix&gt;</code> command) performs rollback + removal of <code>tbl_event</code> row in a single transaction. Used when an event was created in error (wrong-ingest, erroneous scrape, dedup-bug phantom). Stricter than <code>rollback</code> (which keeps the event row for re-ingest). Prefix-matches in the active season, reuses <code>_resolve_event_prefix</code> + <code>fn_delete_tournament_cascade</code> helpers. Admin-only (REVOKE anon, GRANT authenticated).</td>
+<td>UC22(e), UC27, ADR-025 (amendment 2026-04-21)</td>
+<td>10.29–10.32</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-96</td>
+<td>EVF stale-event gate: scraper does not auto-create or auto-update events outside the 30-day fresh window or marked <code>enum_status='COMPLETED'</code>. <code>is_in_scope(event)</code> predicate is applied to existing CERT rows AND scraped EVF events before passing them to <code>_find_existing_match</code> / <code>_create_cert_event</code>. Stale events are admin-territory; the cron only ever touches in-flight (≤30 days post-end, not COMPLETED) rows. Implemented in <code>python/scrapers/evf_calendar.py</code> (<code>is_in_scope</code>, <code>STALE_WINDOW_DAYS</code>) and applied at entry of <code>sync_calendar</code> / <code>sync_results</code> in <code>evf_sync.py</code>.</td>
+<td>UC25, ADR-039</td>
+<td>pytest evf.22, evf.24</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-97</td>
+<td>EVF logical-integrity guard: a <code>tbl_event</code> row with <code>dt_start &gt; today AND enum_status = 'COMPLETED'</code> is data corruption. <strong>ADR-039 rev 2 (2026-06-13):</strong> <code>sync_calendar</code> self-heals each violator via <code>_heal_future_completed</code> — recover the real date from the <strong>event URL</strong> (<code>url_event</code> → EVF-calendar match → FTL fallback; authed FTL session, ADR-069; <code>fetch_ftl_event_metadata</code> accepts <code>eventSchedule</code> + <code>results</code> forms), then rewrite <code>dt_start</code>/<code>dt_end</code>, <code>dt_tournament</code> and <strong>populate <code>url_event</code></strong> (status stays COMPLETED). When no date is recoverable, demote <code>enum_status</code> COMPLETED → PLANNED (bypassing the terminal-COMPLETED lifecycle trigger) so the guard clears. <code>compute_future_completed_corrections</code> returns <code>(corrections, status_flips)</code> (pure). The sync no longer hard-halts on this class; <code>assert_no_future_completed</code> remains only as a post-heal assertion.</td>
+<td>UC25, UC27, ADR-039, ADR-069</td>
+<td>pytest evf.23, evf.44–evf.50</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-98</td>
+<td>Multi-slot event result URLs: <code>tbl_event</code> carries up to 5 nullable result-platform URL slots (<code>url_event</code>, <code>url_event_2..5</code>); admin enters them via the Event Edit form (slot #1 visible, slots #2–5 behind a disclosure with filled-count). On every save the 5 inputs are compacted (trim → drop empty → dedupe first-occurrence → pad NULL) so any non-null URL always lives in slot #1, preserving every existing <code>url_event</code>-as-primary code path (calendar 🔗 link, ⬇ Import button, ADR-029 auto-populate seed, ADR-028 EVF refresh write order). Tournament URL discovery iterates all non-null slots and merges per-(weapon,gender,category) results dedupe-first. <code>tbl_tournament.url_results</code> unchanged (drilldown leaf). Implemented as <code>fn_compact_urls(VARIADIC TEXT[]) RETURNS TEXT[]</code> shared by <code>fn_create_event</code> / <code>fn_update_event</code> / <code>fn_refresh_evf_event_urls</code>.</td>
+<td>UC21, UC22(c), ADR-040</td>
+<td>15.1–15.6, 9.44a–9.44f, pytest 3.16k–m, prom.8</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-99</td>
+<td>Server-side workflow dispatch: admin UI ⬇ buttons invoke a Supabase Edge Function (<code>dispatch-workflow</code>) that holds the GitHub PAT as a Supabase env secret and forwards <code>workflow_dispatch</code> calls. PAT never appears in HTML/JS bundles. Function uses an allowlist (<code>populate-urls.yml</code>, <code>scrape-tournament.yml</code>), verifies caller JWT (built-in Supabase auth), and returns sync <code>{ok, runs_url}</code>. Per-event inline status renders below the event-row in the admin accordion (pending → success-with-link → error). <code>github-pat</code> / <code>github-repo</code> HTML attributes removed from <code>&lt;spws-ranklist&gt;</code>. Telegram path (GAS server-side PAT) untouched. <strong>N15 (2026-06-19):</strong> new Telegram lifecycle command <code>ingest &lt;prefix&gt; &lt;url&gt; [cert|prod]</code> dispatches <code>ingest-event.yml</code> via the same GAS→<code>workflow_dispatch</code> path as <code>promote</code>; the from-URL ingest sets <code>tbl_event.url_event</code> (admin), re-ingests (keep-rule + N14 <code>url_results</code>), and sends the staging <code>full.md</code>+<code>.diff.md</code> back to Telegram (reuses ADR-059 <code>send_staging_report</code>/<code>send_document</code>; <code>ingest_cli --send-telegram --md-target storage</code>). GAS snippet: <a href="telegram-ingest-command-gas.html">telegram-ingest-command-gas.md</a>.</td>
+<td>UC22(c), UC27, ADR-041, ADR-025, ADR-059</td>
+<td>9.45a–9.45f, N15.1–N15.4</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-100</td>
+<td>Season-init wizard with skeleton pre-allocation: admin creates a new season via a 3-step modal (Identity → Scoring → Confirm). On commit, <code>fn_create_season_with_skeletons</code> runs as one atomic transaction — INSERT season → overwrite default scoring config (carries <code>bool_show_evf_toggle</code>) → call <code>fn_init_season(p_id_season)</code> which produces one CREATED-status skeleton per recurring event kind (<code>^PPW\d+-</code> family, <code>^PEW\d+-</code> family, always-MPW, always-MSW, optional IMEW/DMEW per <code>enum_european_event_type</code>) plus 6 V2 child tournaments per skeleton. Cancel at any step = nothing persists (transaction rollback). Post-commit EDIT form shows skeletons as calendar-style boxes with &quot;↶ Cofnij całość&quot; link calling <code>fn_revert_season_init</code> (refuses if any skeleton has advanced past CREATED). EventManager exposes editable <code>txt_code</code> (cascades to children via <code>fn_update_event</code> v2) and <code>id_prior_event</code> picker. Supersedes carry-over admin runbook §3, §4, §6, §9.</td>
+<td>UC22(a), ADR-044</td>
+<td>ph3.1–ph3.21 (pgTAP), ph3.23–ph3.37 (vitest wizard), ph3c.1–ph3c.12 (vitest EventManager)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-101</td>
+<td>Configurable carry-over engine selection per season (admin UI): <code>tbl_season.enum_carryover_engine</code> is exposed as a dropdown inside <code>ScoringConfigEditor</code> Section 4b &quot;🔀 Silnik carry-over&quot;. Dropdown lists all <code>enum_event_carryover_engine</code> values dynamically (extensible — new engines auto-appear). Save flow patches <code>tbl_season</code> separately from <code>tbl_scoring_config</code> (instant flip, no migration). 🎯 Konfiguracja punktacji button rendered only on future + active seasons (past-complete seasons hide it; defense-in-depth via existing <code>readonly</code> prop). Greenfield seasons default to <code>EVENT_FK_MATCHING</code> after the Phase 3 column-DEFAULT flip; existing rows preserved. Supersedes carry-over admin runbook §5 (&quot;flip via SQL&quot;).</td>
+<td>UC22(a), ADR-045, ADR-042</td>
+<td>ph3.22a/b/c (pgTAP), ph3.37a–g (vitest)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-102</td>
+<td>Unified Phase-5 ingestion pipeline: every XML/URL ingestion path routes through <code>run_pipeline</code> + DraftStore producing <code>tbl_*_draft</code> rows; direct writes to <code>tbl_result</code> from ingestion code are prohibited. Email-arrived XML and event-URL ingest produce identical artefacts (drafts + verdict <code>.md</code>) and require operator triage before commit.</td>
+<td>ADR-050 (Phase 5.5 closeout), ADR-061</td>
+<td>5.5 (md_writer), 5.7 (process_xml_file rewrite — pending)</td>
+<td>Partial</td>
+</tr>
+<tr>
+<td>FR-103</td>
+<td>Verdict <code>.md</code> persisted to Supabase Storage on CERT/PROD: every event ingestion produces <code>staging-reports/{event_code}/full.md</code> (replace-on-regen); EVF parity sweeps append <code>staging-reports/{event_code}/deltas/{ts}.md</code>. Bucket is private; service-role writes; authenticated reads. LOCAL fallback is filesystem <code>doc/staging/&lt;event&gt;.md</code> (storage disabled).</td>
+<td>ADR-058</td>
+<td>5.6 (storage_md), 5.12 (bucket RLS pgTAP)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-104</td>
+<td>Verdict <code>.md</code> delivered via Telegram document attachment: operator receives <code>.md</code> via Bot API <code>sendDocument</code> (multipart/form-data, MIME <code>text/markdown</code>) on first ingestion, post-triage regen, and EVF delta sweeps. Caption tags <code>kind</code> (full/delta) + contextual <code>extras</code> (tournament_count, pending_aliases, changes, reason) so operator can sort scrollback. Null-safe (skipped if no token/chat_id env vars on LOCAL).</td>
+<td>ADR-059, ADR-061</td>
+<td>5.9 (TelegramNotifier.send_document)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-105</td>
+<td>EVF parity sweep emits delta-only <code>.md</code> (only changed rows; never overwrites <code>full.md</code> from sweep); silent on no-drift. Per-event timestamped delta files at <code>staging-reports/{event_code}/deltas/{yyyyMMdd_HHmmss}.md</code> + Telegram document. <code>full.md</code> is owned by operator-driven actions only (first ingest, alias mutation regen).</td>
+<td>ADR-060</td>
+<td>5.8 (parity_delta renderer)</td>
+<td>Partial (renderer covered; sweep wiring pending)</td>
+</tr>
+<tr>
+<td>FR-106</td>
+<td>Alias triage UX: FencerAliasManager sorts unreviewed-aliases-first with amber visual highlight + &quot;🔍 N&quot; badge; auto-expand first unreviewed fencer on mount; &quot;unreviewed only&quot; filter checkbox. Modal-based &quot;Create new fencer&quot; replaces window.prompt chain (prepopulated with surname/firstname parsed + BY suggestion from V-cat × season-end-year). Cascade tournament list (id_tournaments[] + tournament_labels[] from extended RPCs) surfaced post-mutation in the status banner; cross-event ⚠ warning when prior signed-off events were touched.</td>
+<td>ADR-050 (Phase 5.5), ADR-058+059</td>
+<td>5.10 (vw_fencer_aliases ext), 5.11 (RPC tournament cascade), 5.1–5.4 (vitest — pending)</td>
+<td>Partial</td>
+</tr>
+<tr>
+<td>FR-107</td>
+<td>LOCAL operator workflow guarantee: <code>phase5_runner</code> / <code>phase5_report</code> default <code>--md-target=local</code> (filesystem write to <code>doc/staging/&lt;event&gt;.md</code>, no Storage upload, no Telegram); CERT/PROD CI workflows pass <code>--md-target=storage</code> explicitly. <code>dispatch-workflow</code> allowlist gains <code>phase5-event-runner.yml</code> + <code>regen-report.yml</code> for admin UI + GAS Telegram dispatch.</td>
+<td>ADR-061</td>
+<td>5.5 (md_writer target switch), L1–L6 LOCAL smoke</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-108</td>
+<td>Telegram operator commands (extends ADR-025): <code>/regen &lt;event_code&gt;</code>, <code>/stage &lt;event_code&gt;</code>, <code>/parity &lt;event_code&gt;</code>, <code>/verdict &lt;event_code&gt;</code> — all dispatched from GAS <code>checkTelegramCommands</code> to GitHub workflows or Storage downloads. <code>/help</code> text rewritten to enumerate commands + describe auto-delivered documents (filename pattern, when fired).</td>
+<td>ADR-061</td>
+<td>C16 (CERT smoke — manual)</td>
+<td>Pending (GAS extension + smoke)</td>
+</tr>
+<tr>
+<td>FR-109</td>
+<td>FTL event-schedule discovery skips brackets whose first significant token isn't in the SPWS-recognised vocabulary (Polish/English weapon, gender, V-cat, format markers); skipped entries surface in the per-event staging md with reason <code>&quot;guest event (non-SPWS bracket name)&quot;</code>. Closes the PPW4-2024-2025 AKADEMICKIE bug where a foreign competition shared the FTL schedule URL and produced duplicate <code>(id_fencer, id_tournament_draft)</code> pairs that blocked commit. Complementary to FR-? structural pool-round detection (ADR-057) — name whitelist at discovery, structural detection post-match.</td>
+<td>ADR-062</td>
+<td>5.21.1–5.21.4 (pytest <code>test_scrapers.py::TestFTLEventSchedule</code>)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-110</td>
+<td>FTL bracket-name parser tolerates Polish-grammar variants used by different SPWS organizers: <code>GENDER_MALE</code> accepts both genitive (<code>MĘŻCZYZN</code>, plain Z) and nominative (<code>MĘŻCZYŹNI</code>, with Ź) plural roots with optional plural suffix; <code>MIKST_PATTERN</code> recognises <code>GRUPY ZBIORCZE</code> as a pool-round indicator equivalent to MIKST/Mixed. A weapon-bearing bracket with <strong>no gender keyword</strong> (FT <code>Sexe=&quot;X&quot;</code>, e.g. Polish <code>Szabla kat. 4</code> / <code>kat. 0</code>) defaults gender to <code>M</code> (ADR-34) instead of returning None, so the URL discovery path keeps the V0/V4 sabre brackets the XML path keeps — making URL ingest byte-equal to XML (2026-06-03). Closes the PPW5-2024-2025 silent-drop bug (14/26 brackets lost) and the PPW5-2025-2026 V0/V4 sabre drop. Regression-locked on the original genitive form.</td>
+<td>ADR-063, ADR-34</td>
+<td>5.22.1, 5.22.2, 5.22.2b (regression), 5.22.3, 3.15g2 (kat-no-gender → ADR-34 default) (pytest <code>test_scrapers.py::TestFTLEventSchedule</code>)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-111</td>
+<td>Min-participants threshold gates ingestion: tournaments with <code>n_competitors &lt; threshold</code> are skipped at ingestion (no <code>tbl_tournament</code> row created). Threshold read per-season + per-type: PPW/MPW/PSW use <code>tbl_scoring_config.int_min_participants_ppw</code> (default 1); PEW/MEW/MSW use <code>int_min_participants_evf</code> (default 5). Strict less-than semantics: threshold=1 includes single-competitor walkover brackets; threshold=2 excludes them. Walkover semantics in FTL (<code>parse_ftl_json</code>, <code>parse_json</code>) and PPW1 XLSX parsers: when exactly one non-<code>excluded</code> entry has null/empty place, assign place=1 so the threshold can do its job. Staging summary lists every gated drop with name + weapon + gender + V-cat + n + reason + URL. Schema unchanged (columns existed since <code>20250301000001</code>).</td>
+<td>UC22(f), ADR-066</td>
+<td>pytest 5.M3.1–5.M3.10 (<code>test_ftl_walkover.py</code>), 5.M4.1–5.M6.7 (<code>test_min_participants_helper.py</code>), 5.M7.1–5.M7.3 (<code>test_min_participants_summary.py</code>), 5.M9.1–5.M9.5 (<code>test_ppw1_xlsx_walkover.py</code>); pgTAP 5.M8.1–5.M8.4 (<code>42_min_participants_threshold.sql</code>)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-112</td>
+<td><strong>Rule-driven plugin ingestion architecture</strong> (NEW design, <a href="ingestion_pipeline_NEW_design.html">ingestion_pipeline_NEW_design.md</a>): three one-directional layers — RuleBook+RuleEngine resolve a named <code>Flow</code> into a DAG-validated <code>ExecutionPlan</code> <em>before</em> execution → generic Orchestrator runs it → Plugins (<code>IngestPlugin</code> contract reads/writes/effects + applies + run; kinds Source/Gate/Transform/Mutator/Reactor). Mutators emit signals; Reactors observe a signal → emit a Flow (no back-edges). Adding a scenario = adding a Rule, no orchestrator/plugin change.</td>
+<td>ADR-073 (amends ADR-050)</td>
+<td>N1.1–N1.18 (test_rule_engine.py, test_pipeline_core.py): planner flow→sequence, DAG-validation rejects mis-order, orchestrator skip/fault/abort/trace; N2.1 parity (new path == run_pipeline pctx); N7.1–N7.8 (test_commit_persist.py): Commit persists per V-cat bracket via fn_find_or_create_tournament + fn_ingest_tournament_results, per-V-cat own count (ADR-049 amend), method→legacy enum_match_status map, _skip_commit short-circuit, RECOMPUTE write-back deferred; live LOCAL end-to-end ingest writes tbl_result + scores; N8.1–N8.6 (test_ingest_cli_flow.py): ingest_cli <code>--flow ingest_domestic</code> parses via PARSERS + runs run_flow per file (no draft gate), per-file source_url, pool-only skip, unknown-event ValueError; live LOCAL parity (NEW run_flow vs OLD draft-commit) byte-matches scores on single-cat + combined pool</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-113</td>
+<td><strong><code>ResolveFencers</code> early auto-resolution, no human gate</strong> (NEW design): merged Stage-0 ⊕ Stage-6 plugin owning <em>name → governed fencer</em>, runs first of the core; Phase A exact + BY reconcile (<strong>promotion → band youngest edge, demotion → midpoint</strong>, ADR-056 amend 2026-06-26; via shared <code>reconcile_fencer_birth_year</code>, not forked), Phase B fuzzy link-or-create by calibrated <code>AUTO_LINK_THRESHOLD</code>; asymmetric safety (create-over-uncertain-link). Name canonicalized (<code>canonicalize_scraped_name</code>) before the surname/first split so dirty FTL strings (<code>SAMECKA -NACZYŃSKA (1) Martyna</code>) don't spawn duplicates (ADR-065 amend). Replaces the ADR-050 review gate.</td>
+<td>ADR-070 (amends ADR-050/056/065)</td>
+<td>N3.1–N3.9 (test_resolve_fencers.py): exact-link/reconcile-BY/create/fuzzy-link/two-phase BY settling/calibration false-link bound/split-uses-governed-BY; promotion→youngest-edge + demotion→midpoint + cross-season stability (test_resolve_fencers + test_s0_reconcile_roster 10.4.1/10.4.2/10.4.2b); canonicalization + 5 dirty-variant AUTO_MATCH + over-merge regression (test_matcher.py)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-114</td>
+<td><strong>Master-data dedup sweep</strong> (NEW design): <code>DEDUP_SWEEP</code> flow runs <code>ResolveFencers</code> whole-roster; <code>fn_merge_fencers</code> re-points results <strong>and <code>tbl_match_candidate</code></strong> to the survivor (FK identity) + folds aliases; conflicting BYs reconciled (promotion → youngest edge, ADR-056 amend); merges emit <code>master_data.changed</code> → recompute.</td>
+<td>ADR-071</td>
+<td>pgTAP 44.9–44.12 (re-points results + <code>tbl_match_candidate</code> + folds aliases + deletes dup; <strong>44.12</strong> = match_candidate FK re-point before dup delete, ADR-071 amend 2026-06-26); N5.5–N5.6 (DEDUP_SWEEP whole-roster merge)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-115</td>
+<td><strong>Self-healing recompute</strong> (NEW design): a master-data change auto-triggers <code>RECOMPUTE_DOMESTIC</code> — re-derive V-cats + re-score the affected <strong>event</strong> from stored FK-linked results (no source, no re-match). Event-granular (relocation crosses brackets); column-aware CDC trigger + <code>tbl_recompute_queue</code> + debounced worker; convergent (Commit effects=live ⇒ no re-trigger).</td>
+<td>ADR-072</td>
+<td>pgTAP 44.1–44.8 (column-aware trigger enqueues on BY/nationality, no-op on name; dedup coalesce; watermark); N4.1–N4.6 (recompute re-partitions by governed BY, boundary-crossing, twice==once); N5.1–N5.4 (debounce/claim/quiescence); <strong>deterministic CLAIMED recovery</strong> — <code>claim_recompute_batch</code> reclaims orphaned CLAIMED rows (PENDING+CLAIMED, single-writer; no stale-claim timeout, ADR-072 amend 2026-06-26) in <code>test_db_connector.py</code>; N9.1–N9.7 (test_recompute_persist.py): RECOMPUTE Commit write-back re-partitions by (weapon, gender, governed-V-cat), relocates across brackets, clears emptied brackets, skips BY-null rows; N5.7 (worker --drain CLI for the recompute-drain.yml scheduler); live LOCAL heal E2E (BY correction → CDC enqueue → debounced worker → fencer relocated V2→V3 + V2 re-scored on new field, no human action)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-116</td>
+<td><strong>No-hard-halt fault resolution</strong> (NEW design): a domain problem is <code>ctx.fault(kind)</code>, never a halt; declarative <code>REMEDIATIONBOOK</code> applies an inline deterministic fix (drop_bracket / skip_bracket / accept_parsed / …) so the flow always reaches <code>Commit</code>; <code>Escalate</code> plugin fires Telegram only per policy (<code>ALWAYS</code>/<code>ON_LOSS</code>), post-commit, informational, never blocks. Reframes V0-international (exclude), below-min (drop), count-mismatch (flag) from halts to faults.</td>
+<td>ADR-074 (reverses halt-by-exception in ADR-050/057/067; amends ADR-038/066/069)</td>
+<td>N2.4–N2.9 (count-mismatch→accept+escalate, below-min→drop→commit, EVENT_NOT_RESOLVED→Abort, Escalate ALWAYS/ON_LOSS); N1.13/N1.14 (orchestrator fault-no-halt / Abort); N10.1–N10.7 (test_post_commit_chain.py): the PostCommit reactor chains POST_COMMIT after a committing flow, carrying event/faults/drops; a dropped below-min bracket auto-sends the ON_LOSS escalate Telegram, a clean ingest only the summary; converges (no back-edge, react=False on recurse)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-117</td>
+<td><strong>Source retention for dead-URL re-ingest</strong> (NEW design): <code>ParseSource</code> persists <code>source_artifact_path</code>; an event whose live URL is dead can be re-ingested from retained bytes (<code>source=retained</code>). Distinct from recompute (which never touches source).</td>
+<td>ADR-072</td>
+<td>N4.6 (ParseSource retains source_artifact_path for source=retained re-ingest)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-118</td>
+<td><strong>Staging report as a first-class plugin output</strong> (NEW design): a fifth Context channel <code>report</code> (<code>ReportFragment(plugin, kind, section, payload)</code> + <code>ctx.add_report</code>/<code>BasePlugin.report</code>, bypasses write-discipline, every plugin kind emits) — every plugin serializes its own fragment as it runs, and one terminal <strong><code>StagingFormatter</code></strong> (Mutator/<code>docs</code>) shapes the merged fragments into <code>doc/staging/&lt;EVENT&gt;.&lt;ts&gt;.md</code> (from <code>STAGING_TEMPLATE</code>) + <code>.diff.md</code> (reuses <code>three_way_diff</code>). Event-scoped POST_COMMIT tail (CLI <code>_fire_staging_report</code> seeds <code>_bracket_reports</code>; per-bracket reactor fire SKIPs it). Timestamped filenames compare reruns. Informational/post-commit — restores the review artifact ADR-074 removed, no drafts.</td>
+<td>ADR-075 (restores ADR-050 artifact under ADR-074; reuses ADR-058/061)</td>
+<td>N11.1–N11.7 (test_staging_report.py): report channel + add_report tagging/write-discipline-bypass, BasePlugin.report name+kind, every plugin emits its fragment in a real flow, StagingFormatter applies-at-event-scope, .md template order + schedule skips, .diff.md via three_way_diff, CLI fires one event-scoped POST_COMMIT + timestamped stems; <strong>N12.1–N12.7 (richness parity, 2026-06-17): DetectPoolRound name/reason/url + ResolveFencers alias_writebacks + per-created near-miss; rich automation-report renderers reusing <code>_fetch_event_meta</code>/<code>_live_tournament_rows</code>/<code>_check_pool_round_count</code>/<code>_classify_alias_pair</code> (full event header, automation-gaps centerpiece, created+near-miss, BY-reconcile cols, matching paths/verdicts/BY-quality/NULL+estimated tables w/ bracket+place, deduped committed table, present-but-omitted brackets, parse-status +reasons, no sign-off)</strong></td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-119</td>
+<td><strong>Overlapping-FTL-listing dedup (overlap-clobber fix)</strong> (NEW design): several rounds resolving to the same <code>event·weapon·gender·age_category</code> overwrote each other (delete-reimport). <strong>Rule 1</strong> drops pools-only rounds (no DE/Tableau) on the from-URL path + fixes the bogus bundled skip reasons; <strong>Rule 2 keep-rule</strong> (<code>_resolve_sources</code>) keeps one source per category (dedicated single &gt; BRACKET; else smaller BRACKET), <code>Commit</code> honours a per-listing <code>commit_cats</code> allow-set (no double-write); set-aside duplicates flagged (never stalled/merged). Discovered rounds + status persist on <code>tbl_event.json_ingest_sources</code> (display-only, never scored) + admin <code>json_source_overrides</code> (<code>fn_set_event_source_override</code>, on <code>vw_calendar</code>); the event accordion shows committed/dropped/skipped rows + skip/process toggle + <strong>Re-ingest</strong> button (<code>ingest-event.yml</code>).</td>
+<td>ADR-076 (extends ADR-067; ADR-014/022/025/006/041; surfaces via ADR-075)</td>
+<td>N13.1 (<code>_ftl_has_direct_elimination</code> + accurate skip reasons), N13.2 (<code>commit_cats</code> filter), N13.3 (<code>_resolve_sources</code> keep-rule + Rule 2b + override), N13.4 pgTAP 45.1–45.6 (<code>tbl_event</code> JSONB + RPC + <code>vw_calendar</code>), N13.5 (staging duplicate flags + per-source split), N13.6 vitest (accordion source rows + toggle); dry-run validated PPW3/PPW4/PPW5</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-120</td>
+<td><strong><code>tbl_registration</code></strong> (ephemeral, public self-registration record): <code>id_event</code>, nullable <code>id_fencer</code> (matched fencer, NULL until/unless resolved), declared <code>txt_surname</code>/<code>txt_first_name</code>/<code>enum_gender</code>/<code>int_birth_year</code>, <code>arr_weapons</code>, computed <code>txt_ftl_name</code> (canonical name + <code>(N)</code> marker), <code>ts_consent</code>/<code>txt_consent_version</code>, salted <code>txt_email_hash</code> (abuse log only, never the raw email), <code>ts_created</code>. <strong>No payment-status column</strong> — this system displays bank-transfer info but does not track whether it's paid; that's checked in person at the venue (corrected 2026-07-04). <code>UNIQUE(id_event, id_fencer)</code> enables anonymous-path upsert (NULLs distinct, so unmatched registrations never collide).</td>
+<td>ADR-079 §5</td>
+<td>49.1–49.6, 49.20–49.21 (pgTAP: table + columns + no-payment-column regression guard + upsert-not-duplicate + NULLs never collide)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-121</td>
+<td><strong><code>tbl_event</code> registration/delivery columns</strong>: <code>url_entry_list</code>, <code>txt_organizer_email</code>, <code>ts_ftl_sent</code>, <code>num_entry_fee_2w</code>, <code>num_entry_fee_3w</code>, <code>bool_use_spws_registration</code> (<code>url_registration</code>/<code>dt_registration_deadline</code> already existed, ADR-030).</td>
+<td>ADR-080 §5, ADR-030</td>
+<td>49.7–49.12 (pgTAP: columns present)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-122</td>
+<td><strong>RLS — no direct public writes to <code>tbl_registration</code></strong>: no anon INSERT/UPDATE/DELETE row policy exists (implicit deny); the only public write path is a <code>SECURITY DEFINER</code> RPC (<code>fn_create_registration</code>) which is the sole <code>anon</code>-executable entry point. <strong>Consent write path (Phase 2 P2.0, added 2026-07-05):</strong> <code>fn_create_registration</code> gains <code>p_consent_version TEXT DEFAULT NULL</code> — stamps <code>ts_consent = now()</code> + <code>txt_consent_version</code> when given (the frontend passes it at RODO-accept, D5); NULL leaves both unchanged (legacy/no-consent callers unaffected). <strong>Registration-window guard (D10):</strong> the same RPC <code>RAISE</code>s once <code>COALESCE(dt_registration_deadline, dt_start)</code> is in the past, so a stale/expired shared link can no longer write a registration; NULL-date events (open, incl. existing pgTAP fixtures) stay unaffected.</td>
+<td>ADR-079 §1 (read-only invariant), ADR-079 §5, ADR-078 §7 (consent versioned+timestamped)</td>
+<td>49.13–49.14 (pgTAP: direct anon write denied, RPC succeeds); <strong>49.23–49.24</strong> (consent stamped when given; past-deadline write rejected)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-123</td>
+<td><strong>Public entry-list view</strong> (<code>vw_registration_entry_list</code>): surname/first name/gender/weapons/<strong>age category</strong> per registration, <strong>every declared registration, no payment gate</strong> (corrected 2026-07-04 — this system does not track payment completion; the organizer verifies it in person at the venue) — explicitly <strong>excludes birth year and club</strong> (GDPR minimisation, matches the public roster mockup). <strong>Category column/filter added 2026-07-05</strong> — <code>enum_age_category</code> (via <code>fn_age_category</code>, joining <code>tbl_event</code>/<code>tbl_season</code> for the season end year) now exposed on the view and rendered as a badge + filter in <code>EntryList.svelte</code> (matching <code>FilterBar.svelte</code>'s V0 (30+)…V4 (70+) option convention), closing a gap where the view/component previously omitted it despite the mockup showing it. <strong>Mobile layout fix (same day, user-reported on-device regression):</strong> the ≤480px row layout previously collapsed every <code>&lt;td&gt;</code> to its own block (5 stacked lines per fencer); <code>EntryList.svelte</code> now renders one non-wrapping flex row per fencer (name left, ellipsis-truncated; category+weapon badges packed right). Dropped the redundant <code>Lp</code> (row number) and <code>Gender</code> display columns (gender stays filterable, just not shown as a column) — surname/first name make gender/Lp redundant. The three filter dropdowns (weapon/category/gender) now sit in a 3-column grid, each under its own <code>&lt;label&gt;</code> (<code>Broń</code>/<code>Kategoria</code>/<code>Płeć</code>) with a <code>--</code> placeholder option, replacing the old folded-in &quot;Weapon: all&quot; style option text; select font bumped to 16px (legible + avoids iOS auto-zoom-on-focus). View column list and <code>enum_gender</code> filter semantics unchanged. Readable by <code>anon</code> (view owner bypasses the base table's restrictive RLS, the same pattern used by every other <code>vw_*</code> in this codebase).</td>
+<td>ADR-079 §5, ADR-078 (minimisation), spec §5.2 invariants</td>
+<td>49.15–49.17, 49.17b, 49.25–49.27 (pgTAP: view excludes BY/club, anon SELECT succeeds, unpaid/PENDING registration still appears, category column type + computed value + BY-still-excluded regression guard); vitest <code>EntryList.test.ts</code> 12 total (8→11, +3 category badge/filter/options 2026-07-05 AM; 11→12, +1 filter-label/placeholder convention 2026-07-05 PM mobile fix)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-124</td>
+<td><strong>Exact-tuple match RPC</strong> (<code>fn_match_registration_fencer</code>): read-only, case/space-normalised exact <code>(surname, first_name, birth_year)</code> lookup against <code>tbl_fencer</code> — the <strong>complete</strong> form-side identity router. Exact triple → ADR-079 Path A (skip-email fast path); <strong>any</strong> miss (unknown, near-miss typo, right-name/wrong-BY) → the email-verify path. The form does <strong>no</strong> fuzzy matching: ADR-079's Paths B/C/D are an <strong>ingestion-time</strong> reconciliation model realised by the <strong>existing</strong> Python <code>find_best_match</code> (never invoked synchronously from the browser), so the &quot;invocation gap&quot; closes by construction — no Python-from-frontend bridge is needed (ADR-079 §2 implementation note, resolved 2026-07-05; supersedes the earlier &quot;OPEN Phase 2 design question&quot;).</td>
+<td>ADR-079 §2 (Model B paths + implementation note)</td>
+<td>49.18–49.19, 49.22 (pgTAP: exact match found/not found; strong-name near-miss → NULL → email path)</td>
+<td>Covered (form-side exact routing complete; B/C/D reconciled at ingestion)</td>
+</tr>
+<tr>
+<td>FR-125</td>
+<td><strong>Canonical seed-name formatting</strong>: <code>to_canonical_name</code> (surname UPPERCASE, given name Title case, fixes legacy all-caps given names) + <code>format_prenom_with_marker</code> (appends the <code>(N)</code> age-category digit).</td>
+<td>ADR-080 §1</td>
+<td><code>python/tests/test_ftl_seed_export.py</code> — 7 tests (basic/hyphenated/legacy-caps/whitespace/marker)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-126</td>
+<td><strong>Mix-all pool interleave</strong> (<code>interleave_mixall</code>): round-robin &quot;snake by rank&quot; across the 10 domestic sub-rankings in fixed order <code>FV0,FV1,FV2,FV3,FV4,MV0,MV1,MV2,MV3,MV4</code>, empty sub-rankings skipped.</td>
+<td>ADR-080 §2</td>
+<td><code>test_ftl_seed_export.py</code> — 3 tests (worked-example order incl. skip-empty, empty input, all-empty)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-127</td>
+<td><strong>Predicted combined DE brackets</strong> (<code>predict_combined_brackets</code>): per weapon×gender (never merged across gender), order V0→V4, skip empties, accumulate left-to-right, close a bracket at running count ≥ T=4, fold a trailing sub-T bracket into the previous one (or make it the sole bracket if none precede).</td>
+<td>ADR-080 §3</td>
+<td><code>test_ftl_seed_export.py</code> — 5 tests (exact-close, skip-empty adjacency, trailing-fold, whole-under-T degenerate case, all-empty)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-128</td>
+<td><strong>Seed file naming</strong> (<code>seed_filename</code>, <code>combined_bracket_scope</code>): <code>&lt;season&gt;_&lt;eventcode&gt;_&lt;weapon&gt;_&lt;scope&gt;.xml</code>, <code>&lt;scope&gt;</code> = <code>mixall</code> or <code>&lt;G&gt;-&lt;cat&gt;</code> (single or compact-joined combined, e.g. <code>M-V0V1</code>).</td>
+<td>ADR-080 §4</td>
+<td><code>test_ftl_seed_export.py</code> — 5 tests (mixall, single DE, combined DE, scope builder ×2)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-129</td>
+<td><strong>FIE XML generation</strong> (<code>build_fie_xml</code>): <code>&lt;BaseCompetitionIndividuelle&gt;</code> root (<code>Championnat=SPWS</code>, <code>Federation=POL</code>, <code>Date=&quot;&quot;</code>) + <code>&lt;Tireur&gt;</code> children — omits <code>DateNaissance</code> and <code>Lateralite</code> entirely, <code>Club=&quot;&quot;</code>/<code>Licence=&quot;&quot;</code> (not collected), canonical <code>Nom</code>/<code>Prenom</code> with <code>(N)</code> marker preserved, tireur order preserved.</td>
+<td>ADR-080 §1</td>
+<td><code>test_ftl_seed_export.py</code> — 4 tests (omitted fields, root attrs, tireur attrs, multi-tireur order)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-130</td>
+<td><strong>Public registration UI (Phase 2)</strong>: standalone shareable page <code>frontend/register.html</code> (own URL, zero dependency on calendar/main app) renders <code>&lt;spws-registration event=&quot;…&quot;&gt;</code> (identity → exact-match routing → RODO consent gate → payment, click-to-copy) or <code>&lt;spws-entry-list event=&quot;…&quot;&gt;</code> (<code>?view=list</code>) — custom elements built by <code>vite.config.ce.ts</code>. <strong>Expiry gating (D10, client-side mirror of the FR-122 server guard):</strong> <code>today ≤ COALESCE(dt_registration_deadline, dt_start)</code> → form open; past cutoff but <code>≤ dt_end</code> → &quot;Zapisy zamknięte&quot; (list still viewable); past <code>dt_end</code> → whole page expired, no form/list. <code>bool_use_spws_registration=FALSE</code> → external <code>url_registration</code> link only (self-enforced, so a shared link is always safe). Mobile-first (D8): single-column reflow ≤480px, no horizontal scroll, ≥36px touch targets. <strong>RODO checkbox mobile fix + invalid-state cue (same day, user-reported on-device regression):</strong> the global <code>input, select { width: 100% }</code> rule was stretching the RODO <code>&lt;input type=&quot;checkbox&quot;&gt;</code> to fill its flex row, pushing the consent label off-screen on narrow viewports — <code>.reg-rodo-checkbox</code> now overrides to a fixed custom-styled 20×20px box (<code>appearance: none</code>, own checked/unchecked paint) so D8's &quot;no horizontal scroll&quot; holds on the consent step too. The accept button no longer hard-<code>disabled</code>s on an unticked box (which silently swallowed the click with no feedback); clicking without consent now sets <code>consentInvalid</code> — the checkbox fills light red (<code>rgba(255,92,92,.45)</code> background + red border) until the box is ticked, then clears automatically. <strong>Calendar integration (P2.8, amended ADR-079 §7 2026-07-05):</strong> admin <code>EventManager.svelte</code> &quot;Rejestracja SPWS&quot; section (toggle + 2/3-weapon fee tiers) writes via extended <code>fn_update_event</code>, which now also auto-derives and persists absolute <code>url_registration</code>/<code>url_entry_list</code> (<code>fn_update_event p_url_entry_list</code>, migration <code>20260705000004</code>) so a cross-origin embed is self-sufficient (no <code>registration-base</code> attribute — that plumbing was removed). <code>CalendarView.svelte</code> renders both links from the stored columns and opens them in an in-app <code>RegistrationModal.svelte</code> overlay (DrilldownModal-style; <code>RegistrationForm</code>/<code>EntryList</code> gained <code>onclose</code>/<code>onviewlist</code> props) instead of navigating away; <code>href</code> is kept for copy-link/open-in-new-tab. <code>bool_use_spws_registration=FALSE</code> still keeps the existing external <code>url_registration</code> link unchanged, plain navigation (add-only, ADR-080 §5 UI constraint).</td>
+<td>ADR-079 §6 (UI), §7 (URL auto-fill + modal, 2026-07-05 amend), ADR-080 §5 (add-only constraint), ADR-078 (RODO notice/consent)</td>
+<td>vitest: <code>RegistrationForm.test.ts</code> (18: +2 accept-without-consent flags invalid / ticking clears invalid + writes, 2026-07-05 PM mobile fix), <code>EntryList.test.ts</code> (12, see FR-123), <code>birthYearEstimate.test.ts</code> +8 (<code>birthYearToVcat</code>), <code>api.registration.test.ts</code> +2 (<code>fetchEventForRegistration</code>), <code>EventManager.test.ts</code> +3, <code>CalendarView.test.ts</code> +2 (+2 ADR-079§7: stored-URL links, modal open/close); <code>RegistrationModal.test.ts</code> (5, new); pgTAP 8.23 (<code>fn_update_event</code> registration fields) + 8.24 (<code>p_url_entry_list</code>); LOCAL E2E (exact-match fencer → RODO accept → <code>tbl_registration</code> row with <code>ts_consent</code>/<code>txt_consent_version</code> → appears in entry list)</td>
+<td>Covered</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p><strong>Note:</strong> FR-69 was retired before assignment; gap is intentional. FR-102–FR-108 added Phase 5.5 (2026-05-03). FR-109 added Phase 5.5 follow-up (2026-05-03, ADR-062). FR-110 added same day (2026-05-03, ADR-063). FR-111 added 2026-05-10 (ADR-066). <strong>FR-112–FR-117 added 2026-06-14 (NEW pipeline design, ADR-070–074); implemented + tested 2026-06-15 (build M1–M5) — now Covered.</strong> <strong>FR-118 added 2026-06-16 (staging report, ADR-075); implemented + tested same day — Covered.</strong> <strong>FR-119 added 2026-06-18 (overlap-clobber dedup, ADR-076); implemented + tested same day — Covered.</strong> <strong>FR-120–FR-124 added 2026-07-04 (event registration Phase 1 — DB schema, ADR-079/080); implemented + tested same day — Covered. FR-124 invocation-gap resolved 2026-07-05: the form-side matcher is exact-only (Path A vs email-verify); fuzzy B/C/D reconciliation stays at ingestion (existing Python <code>find_best_match</code>), so no Python-from-frontend bridge is needed — pgTAP 49.22 pins the contract (ADR-079 §2 implementation note).</strong> <strong>FR-125–FR-129 added 2026-07-04 (event registration Phase 3 — FTL seed export pure logic, ADR-080); implemented + tested same day — Covered. DB-querying orchestration layer built 2026-07-05 (<code>python/pipeline/ftl_seed_export.py</code> pure functions <code>registration_subranking_key</code>/<code>assemble_mixall_subrankings</code>/<code>mixall_tireurs</code>/<code>build_event_mixall_files</code>/<code>bundle_seed_zip</code> + thin Supabase glue <code>python/pipeline/ftl_seed_export_db.py::FtlSeedExporter</code>): POPULATION = every declared <code>tbl_registration</code> row (no payment gate), ORDERING from <code>fn_ranking_ppw</code> (ranked-then-unranked-by-<code>ts_created</code>), <code>(N)</code> from the DECLARED BY — <code>python/tests/test_ftl_seed_orchestration.py</code>, 15 tests, pytest 1003→1018. Mix-all seed files match the validated reference <code>doc/external_files/FTL_SRC/SPWS_ppw_epee_mixall_noBY.xml</code>. Per-bracket DE seed files deferred (no validated DE reference; <code>predict_combined_brackets</code>/<code>combined_bracket_scope</code> ready for when there is one).</strong> <strong>FR-130 added 2026-07-05 (event registration Phase 2 — public registration UI + calendar integration, ADR-079/080); implemented + tested same day — Covered.</strong> Total active FRs = 129 implemented = 129 assigned.</p>
+</blockquote>
+</section>
+<section class="section-card detail"><h2 id="non-functional-requirements">Non-Functional Requirements</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Source</th>
+<th>Tests</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NFR-01</td>
+<td>API response &lt; 500 ms; scoring engine &lt; 2 s per tournament</td>
+<td>§10</td>
+<td>—</td>
+<td>Not tested</td>
+</tr>
+<tr>
+<td>NFR-02</td>
+<td>99.9% availability via Supabase managed hosting</td>
+<td>§10</td>
+<td>—</td>
+<td>Infrastructure (not testable)</td>
+</tr>
+<tr>
+<td>NFR-03</td>
+<td>Storage &lt; 100 MB for 5 seasons</td>
+<td>§10</td>
+<td>—</td>
+<td>Not tested</td>
+</tr>
+<tr>
+<td>NFR-04</td>
+<td>50 concurrent users</td>
+<td>§10</td>
+<td>—</td>
+<td>Not tested</td>
+</tr>
+<tr>
+<td>NFR-05</td>
+<td>RLS: anon read-only on public tables</td>
+<td>§9.2.1</td>
+<td>1.10a–b, 1.25</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>NFR-06</td>
+<td>RLS: authenticated full CRUD</td>
+<td>§9.2.1</td>
+<td>1.11</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>NFR-07</td>
+<td>RLS: audit log not publicly readable</td>
+<td>§9.2.1</td>
+<td>1.26</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>NFR-08</td>
+<td>Browser compatibility (Chrome, Firefox, Safari, Edge)</td>
+<td>§10</td>
+<td>—</td>
+<td>Not tested</td>
+</tr>
+<tr>
+<td>NFR-09</td>
+<td>Mobile responsive ≥ 375 px</td>
+<td>§10, ADR-032</td>
+<td>C.1–C.14</td>
+<td>Covered (drilldown cards)</td>
+</tr>
+<tr>
+<td>NFR-10</td>
+<td>Pipeline observability (structured logs + Telegram)</td>
+<td>§10</td>
+<td>3.6 (Telegram only)</td>
+<td>Partial</td>
+</tr>
+<tr>
+<td>NFR-11</td>
+<td>Database migration strategy (numbered SQL files)</td>
+<td>§9.9</td>
+<td>1.1a–1.2i (schema verification)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>NFR-12</td>
+<td>Data integrity (Supabase daily backups)</td>
+<td>§10</td>
+<td>—</td>
+<td>Infrastructure (not testable)</td>
+</tr>
+<tr>
+<td>NFR-13</td>
+<td>Shadow DOM isolation (host CSS does not leak)</td>
+<td>§5, §6</td>
+<td>8.55–8.61</td>
+<td>Covered (M8)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section class="section-card detail"><h2 id="coverage-summary">Coverage Summary</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Count</th>
+<th>FRs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Covered</td>
+<td>99</td>
+<td>FR-01–FR-52, FR-55–FR-58, FR-59–FR-68, FR-70–FR-86, FR-88–FR-101, FR-103, FR-104, FR-107, FR-109, FR-110</td>
+</tr>
+<tr>
+<td>Partial</td>
+<td>5</td>
+<td>FR-53, FR-54, FR-102, FR-105, FR-106</td>
+</tr>
+<tr>
+<td>Pending</td>
+<td>1</td>
+<td>FR-108 (GAS extension + CERT smoke)</td>
+</tr>
+<tr>
+<td>Superseded</td>
+<td>1</td>
+<td>FR-87 (by FR-88)</td>
+</tr>
+<tr>
+<td>Not tested (NFR)</td>
+<td>4</td>
+<td>NFR-01, NFR-03, NFR-04, NFR-08</td>
+</tr>
+<tr>
+<td>Infrastructure (NFR)</td>
+<td>2</td>
+<td>NFR-02, NFR-12</td>
+</tr>
+<tr>
+<td>Covered (NFR)</td>
+<td>7</td>
+<td>NFR-05, NFR-06, NFR-07, NFR-09, NFR-10 (partial), NFR-11, NFR-13</td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section class="section-card detail"><h2 id="rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</h2>
+<p>The rebuild introduces infrastructure tests that don't map to user-facing FRs. They are catalogued here for traceability against the architecture decisions that introduced them. For the rebuild's per-sub-phase status, see <a href="development_history.html">doc/development_history.md</a> §Phase 2b.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>ADR</th>
+<th>Scope</th>
+<th>Tests</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a></td>
+<td>Unified Ingestion Pipeline — IR contract + 8 parsers + parser registry (Phase 1); draft tables + dry-run loop + commit/discard RPCs (Phase 2); pipeline body S1-S7 + override system + alias writeback + 3-way diff + interactive review CLI (Phase 3)</td>
+<td><strong>Phase 1</strong>: <code>python/tests/test_ir.py::ir.1</code>–<code>ir.7</code>; <code>python/tests/test_ir_contracts.py</code> (41 parser-contract assertions across 9 test classes). <strong>Phase 2</strong>: <code>supabase/tests/27_draft_tables.sql::27.1</code>–<code>27.26</code> (30 pgTAP); <code>python/tests/test_draft_store.py::P2.D1</code>–<code>P2.D9</code> (9); <code>python/tests/test_draft_diff.py::P2.M1</code>–<code>P2.M5</code> (5); <code>python/tests/test_ingest_cli.py::P2.C1</code>–<code>P2.C6</code> (6). <strong>Phase 3</strong>: <code>supabase/tests/28_alias_writeback.sql::28.1</code>–<code>28.8</code> (8 pgTAP — fn_update_fencer_aliases NULL init, dedup, trim, empty-reject); <code>python/tests/test_pipeline_types.py::P3.T1</code>–<code>P3.T8</code> (8 — HaltError + Overrides + PipelineContext shape); <code>python/tests/test_overrides.py::P3.OV1</code>–<code>P3.OV15</code> (15 — 5-surface YAML parser); <code>python/tests/test_pipeline_stages.py::P3.RP.x</code> + <code>P3.S1.x</code>–<code>P3.S7.x</code> (29 — dispatcher + per-stage isolation tests for S1-S7); <code>python/tests/test_three_way_diff.py::P3.D1</code>–<code>P3.D12</code> (12 — 4-bucket classifier + histogram + markdown); <code>python/tests/test_review_cli.py::P3.RC1</code>–<code>P3.RC12</code> (15 incl. 3 EVF-API-path tests — interactive review lifecycle); <code>python/tests/test_pipeline_integration.py::P3.INT.1</code>–<code>P3.INT.4</code> (4 — end-to-end against live LOCAL Supabase, skip-on-unreachable)</td>
+<td>Covered (Phase 1 2026-05-01; Phase 2 + Phase 3 2026-05-02)</td>
+</tr>
+<tr>
+<td><a href="adr/055-ingest-traceability.html">ADR-055</a></td>
+<td>Per-parser provenance stamps on <code>tbl_event</code> + <code>tbl_tournament</code>; cap-6 history tables; 8 design decisions D1–D8</td>
+<td><code>supabase/tests/26_ingest_traceability.sql::26.1</code>–<code>26.23</code> (enum + stamp columns + history tables + FK CASCADE + UNIQUE + cap-of-6 trigger + per-parent isolation); also exercised by Phase 2's <code>27.18</code> (commit appends history with run_id)</td>
+<td>Covered (Phase 1, 2026-05-01)</td>
+</tr>
+<tr>
+<td>ADR-054 (planned)</td>
+<td>Carry-over FK + 366-day cap</td>
+<td>TBD — Phase 7</td>
+<td>Pending</td>
+</tr>
+</tbody>
+</table></div>
+<p>ADR-051 (reserved-but-empty), ADR-052, and ADR-053 are catalogued in the spec's Appendix C — Architecture Decision Registry, not duplicated here.</p>
+<p>The cross-language enum-sync invariant (Python <code>SourceKind</code> ↔ Postgres <code>enum_parser_kind</code>) is enforced at runtime by <code>test_ir.py::test_source_kind_matches_postgres_enum</code> — drift detector for any future source addition.</p>
+</section>
+<section class="section-card detail"><h2 id="cross-references">Cross-references</h2>
+<ul>
+<li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
+<li>Test baseline (counts per suite): Project Specification Appendix D</li>
+<li>Use cases: Project Specification §3</li>
+<li>Functional scope: Project Specification §6 (Implementation Phasing) → externalized to <a href="development_history.html">doc/development_history.md</a></li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="Documentation navigation"><a class="registry" href="index.html">← Documentation index</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a0d73348e66f11951fe98b93b8f83eb84b5339188516e8d5755356d6aba279fb</code></footer>
+</div></body></html>

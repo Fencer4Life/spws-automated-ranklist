@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="078-gdpr-data-handling.md">
+<meta name="adr-source-sha256" content="732df6c3cd3c7dbe29299fbfc7ca6cfd763fb2faa1bee4b7cf7b2fe8b29edd0a">
+<title>ADR-078 · GDPR Data Handling &amp; Data-Subject Rights</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 078</p><h1>GDPR Data Handling &amp; Data-Subject Rights</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (consent capture — <code>ts_consent</code>/<code>txt_consent_version</code> stamped by <code>fn_create_registration</code> — and the RODO consent-gate step <strong>implemented</strong> 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending)</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>078-gdpr-data-handling.md</code></dd></div><div><dt>Length</dt><dd class="">205 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed (consent capture — <code>ts_consent</code>/<code>txt_consent_version</code> stamped by <code>fn_create_registration</code> — and the RODO consent-gate step <strong>implemented</strong> 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending)
+<strong>Date:</strong> 2026-07-04
+<strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-079, ADR-080</p>
+<blockquote>
+<p><strong>Scope &amp; standing of this document.</strong> This ADR is a precise, audit-legible
+data-protection <em>design rationale</em> with citations to the operative law
+(Regulation (EU) 2016/679 and the Polish Act of 10 May 2018), authored to be
+implementation-ready. Every Article reference links to its operative text in the
+References section. It is <strong>not</strong> a substitute for formal legal advice: before
+go-live SPWS should obtain a one-time review by Polish counsel or a Data
+Protection Officer, execute the Supabase Data Processing Agreement, and publish
+the privacy notice (<em>informacja RODO</em>) and Record of Processing Activities.</p>
+</blockquote>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-personal-data-inventory">1. Personal-data inventory</a></li><li class="depth-3"><a href="#2-controller-processor">2. Controller / processor</a></li><li class="depth-3"><a href="#3-data-subject-rights-art-12-22">3. Data-subject rights (Art. 12–22)</a></li><li class="depth-3"><a href="#4-right-to-erasure-anonymise-and-keep-art-17">4. Right to erasure — anonymise-and-keep (Art. 17)</a></li><li class="depth-3"><a href="#5-abuse-defence-art-12-5-art-17-3-e">5. Abuse defence (Art. 12(5), Art. 17(3)(e))</a></li><li class="depth-3"><a href="#6-security-art-32">6. Security (Art. 32)</a></li><li class="depth-3"><a href="#7-records-of-processing-art-30-breach-art-33-34-consent-art-7">7. Records of processing (Art. 30), breach (Art. 33/34), consent (Art. 7)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The Event Registration subsystem (ADR-079) has fencers <strong>self-declare</strong> personal
+data — surname, first name, gender, birth year, and (for non-exact matches) an
+email — so that the ranklist and the FTL seed carry clean, authoritative
+identities. Publishing a public veterans ranking and collecting registrations
+makes SPWS a <strong>data controller</strong> under Regulation (EU) 2016/679 (GDPR) and the
+Polish Act of 10 May 2018 on the Protection of Personal Data (supervisory
+authority: <strong>UODO</strong> — Urząd Ochrony Danych Osobowych).</p>
+<p>This is true <strong>already</strong> — the existing ranklist holds names + birth years. The
+new subsystem widens the collection (email, per-event registration) and therefore
+requires an explicit, documented data-protection design. None of the data is
+<strong>special-category</strong> data under Art. 9 (no health, biometric, etc.), so the
+ordinary-personal-data regime applies — no heightened obligations and <strong>no legal
+requirement for application-level field encryption</strong>.</p>
+<p>Payment is <strong>display-only bank transfer</strong> (the association's IBAN is shown; the
+fencer pays from their own bank). SPWS never stores, processes, or transmits
+cardholder data, so the system is <strong>entirely out of PCI-DSS scope</strong>; PCI is not a
+factor in any storage decision.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Adopt a proportionate, minimisation-first data-protection design. The key
+structural choice — enforced in ADR-079 — is that the registration subsystem is
+<strong>read-only against <code>tbl_fencer</code></strong>, so declared data lands only in an ephemeral
+<code>tbl_registration</code> and never mutates the source of truth except through the
+supervised ingestion pipeline. That containment is the backbone of every control
+below.</p>
+<h3 id="1-personal-data-inventory">1. Personal-data inventory</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Data element</th>
+<th>Purpose</th>
+<th>Lawful basis (Art. 6)</th>
+<th>Storage</th>
+<th>Retention</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Surname, first name, gender, birth year</td>
+<td>Ranking + age-category verification</td>
+<td>Legitimate interest 6(1)(f)</td>
+<td><code>tbl_fencer</code> (durable), <code>tbl_registration</code> (ephemeral)</td>
+<td>Ranking record durable; registration purged post-ingest</td>
+</tr>
+<tr>
+<td>Weapon + category selections</td>
+<td>Register the fencer for the event</td>
+<td>Contract 6(1)(b)</td>
+<td><code>tbl_registration</code></td>
+<td>Purged after results ingested + reconciled</td>
+</tr>
+<tr>
+<td>Email (only on non-exact match)</td>
+<td>One-time verification (friction/accountability)</td>
+<td>Legitimate interest 6(1)(f)</td>
+<td>GoTrue auth (<strong>not</strong> <code>tbl_fencer</code>)</td>
+<td>Transient; not persisted in domain tables</td>
+</tr>
+<tr>
+<td>Salted email <strong>hash</strong> + request timestamps</td>
+<td>Abuse defence (repeat erase/register)</td>
+<td>Legal claims 17(3)(e)</td>
+<td><code>tbl_registration</code> / abuse log</td>
+<td>Minimal, bounded</td>
+</tr>
+<tr>
+<td>Club (free text)</td>
+<td>Generate FTL seed files only</td>
+<td>— (transient)</td>
+<td><strong>Never stored</strong></td>
+<td>Discarded after seed generation</td>
+</tr>
+<tr>
+<td>Payment reference + paid/unpaid status</td>
+<td>Reconcile the entry fee</td>
+<td>Contract 6(1)(b)</td>
+<td><code>tbl_registration</code></td>
+<td>Purged with the registration</td>
+</tr>
+</tbody>
+</table></div>
+<p>Birth <strong>date</strong> is not collected (year-only suffices for the age category); full
+DOB is an optional field used <em>only</em> to disambiguate a same-name-same-year
+collision. Email lives in <strong>GoTrue</strong>, not <code>tbl_fencer</code>, keeping the ranking table
+free of contact PII (data protection by design, Art. 25).</p>
+<h3 id="2-controller-processor">2. Controller / processor</h3>
+<ul>
+<li><strong>Controller:</strong> SPWS (determines purposes and means).</li>
+<li><strong>Processor:</strong> Supabase (hosting/DB) — requires a Data Processing Agreement
+(Art. 28) and an <strong>EU region</strong> (Art. 44+ data-residency).</li>
+<li><strong>Recipient:</strong> the event <strong>organizer</strong> receives the roster (names + categories)
+via the seed email (ADR-080) — a recipient under the event-running purpose,
+recorded in the ROPA.</li>
+</ul>
+<h3 id="3-data-subject-rights-art-12-22">3. Data-subject rights (Art. 12–22)</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Right</th>
+<th>Article</th>
+<th>How it is satisfied</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Information / transparency</td>
+<td>13–14</td>
+<td>Privacy notice shown at collection (form Step 1 link) + acceptance gate before payment</td>
+</tr>
+<tr>
+<td>Access</td>
+<td>15</td>
+<td>Self-service &quot;Sprawdź zgłoszenie&quot; (no login) + admin export</td>
+</tr>
+<tr>
+<td>Rectification</td>
+<td>16</td>
+<td><strong>The birth-year reconciliation flow <em>is</em> rectification</strong> (ADR-079), applied at ingestion</td>
+</tr>
+<tr>
+<td>Erasure</td>
+<td>17</td>
+<td>Anonymise-and-keep (see §4)</td>
+</tr>
+<tr>
+<td>Restriction</td>
+<td>18</td>
+<td>Admin flag suspends processing pending dispute</td>
+</tr>
+<tr>
+<td>Portability</td>
+<td>20</td>
+<td>Registration record exportable (declared data)</td>
+</tr>
+<tr>
+<td>Objection</td>
+<td>21</td>
+<td>Objection to the legitimate-interest ranking → routes into the erasure path</td>
+</tr>
+</tbody>
+</table></div>
+<p>The <strong>acceptance gate</strong> before payment is worded as <em>&quot;I accept the participation
+terms and acknowledge the privacy notice&quot;</em> — a contract precondition plus Art. 13
+transparency, <strong>not</strong> Art. 7 consent. Consent-or-no-service is invalid consent
+(Art. 7(4)); genuine Art. 7 consent is reserved for <strong>optional</strong> processing
+(photos, newsletter) as separate, non-blocking toggles.</p>
+<h3 id="4-right-to-erasure-anonymise-and-keep-art-17">4. Right to erasure — anonymise-and-keep (Art. 17)</h3>
+<p><strong>Legal crux.</strong> <a href="https://gdpr-info.eu/art-4-gdpr/">Pseudonymisation</a> (Art. 4(5) —
+data no longer attributable to a subject <em>without additional information kept
+separately</em>) <strong>remains personal data</strong> and does <strong>not</strong> satisfy an erasure request.
+Only <strong>anonymisation</strong> — where re-identification is irreversibly impossible for
+anyone, controller included (<a href="https://gdpr-info.eu/recitals/no-26/">Recital 26</a>;
+<a href="https://ec.europa.eu/justice/article-29/documentation/opinion-recommendation/files/2014/wp216_en.pdf">Article 29 Working Party Opinion 05/2014 on Anonymisation Techniques,
+WP216</a>) —
+takes data outside the Regulation and thereby fulfils
+<a href="https://gdpr-info.eu/art-17-gdpr/">Art. 17</a>. A reversible &quot;alias&quot; that keeps a
+lookup table is therefore <strong>insufficient</strong>: the scrub must destroy the mapping and
+every identifying attribute. WP216 further warns that <em>singling out</em> a record from
+context can defeat anonymisation — the basis for the small-field caveat below.</p>
+<p>On an erasure request for fencer <em>X</em>, <strong>scrub-in-place</strong>:</p>
+<ul>
+<li><strong>Keep:</strong> the internal surrogate <code>id_fencer</code> + the result rows (place, score,
+category) — so other fencers' historical standings and points are not disturbed
+(deleting a result would shift everyone who placed below <em>X</em>).</li>
+<li><strong>Irreversibly delete / null:</strong> <code>txt_surname</code>, <code>txt_first_name</code>,
+<code>int_birth_year</code>, <code>json_name_aliases</code> (aliases identify too), the GoTrue user +
+email, and any registration rows.</li>
+<li>Display name becomes a <strong>fixed shared label</strong> (&quot;Zawodnik anonimowy&quot;), <strong>not</strong> a
+per-person reversible alias. A minimal <code>ts_erased</code> marker records that erasure
+occurred (accountability).</li>
+</ul>
+<pre><code class="language-mermaid">flowchart TD
+  A[Erasure request for fencer X] --&gt; B{Result rows exist?}
+  B -- no --&gt; D[Hard-delete fencer row + email]
+  B -- yes --&gt; C[Scrub identity: null name/BY/aliases, delete email/GoTrue user]
+  C --&gt; E[Keep result rows under fixed label 'Zawodnik anonimowy']
+  E --&gt; F{Tiny field re-identifiable?}
+  F -- no --&gt; G[Done — anonymised, out of GDPR scope]
+  F -- yes --&gt; H[Escalate: suppress the specific result rows]
+</code></pre>
+<p><strong>Caveat:</strong> in very small veteran fields a unique result may remain
+re-identifiable from public context; the escalation path is full result
+<strong>suppression</strong>.</p>
+<p><strong>Erasure is not a ban.</strong> It removes held data; the person may re-register (a fresh
+contract). GDPR <strong>forbids</strong> a permanent identity-keyed &quot;do-not-admit&quot; blocklist
+(that list would itself be retained personal data contradicting the erasure).</p>
+<h3 id="5-abuse-defence-art-12-5-art-17-3-e">5. Abuse defence (Art. 12(5), Art. 17(3)(e))</h3>
+<p>A troll cycling erase → re-register → erase is handled by:</p>
+<ul>
+<li><strong>Art. 12(5):</strong> refuse, or charge a reasonable fee for, &quot;manifestly unfounded or
+excessive, in particular repetitive&quot; requests.</li>
+<li><strong>Art. 17(3)(e):</strong> retain a <strong>minimal</strong> abuse-defence log — a <em>salted hash</em> of
+the email + request timestamps (no readable identity) — to evidence repetition.</li>
+<li>Anonymise-and-keep makes each erasure <strong>cheap and idempotent</strong> (attribute-scrub,
+no ranking recompute), so a troll's effort exceeds ours — near-zero leverage.</li>
+</ul>
+<h3 id="6-security-art-32">6. Security (Art. 32)</h3>
+<p>Proportionate to ordinary personal data — satisfied by measures already present or
+free: TLS in transit (HTTPS), at-rest encryption (Supabase default), RLS access
+control (public insert via RPC, read-only entry-list view, admin-only writes),
+admin MFA/TOTP (ADR-016), and email segregated in GoTrue. <strong>No bespoke
+application-level field encryption</strong> is required for ordinary PII.</p>
+<h3 id="7-records-of-processing-art-30-breach-art-33-34-consent-art-7">7. Records of processing (Art. 30), breach (Art. 33/34), consent (Art. 7)</h3>
+<ul>
+<li><strong>ROPA:</strong> maintain a register — purposes, categories, recipients (Supabase,
+organizer), retention, safeguards.</li>
+<li><strong>Breach:</strong> notify UODO within 72 h where required; notify subjects on high risk.</li>
+<li><strong>Consent (optional only):</strong> versioned + timestamped in <code>tbl_registration</code>
+(<code>txt_consent_version</code>, <code>ts_consent</code>).</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Adds <code>tbl_registration</code> (ephemeral, RLS-gated) and email in GoTrue; <strong>no</strong> email
+column on <code>tbl_fencer</code>.</li>
+<li>Erasure requires the anonymise-and-keep function + the small-field suppression
+escalation.</li>
+<li>Operational/paperwork obligations (not engineering): privacy notice (RODO), DPA
+with Supabase, EU-region confirmation, ROPA, retention job. A one-time local
+legal review is recommended; this ADR is the proportionate design, not legal
+advice.</li>
+<li>New FRs to be registered in the RTM during implementation (registration,
+erasure, retention, consent).</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="references">References</h2>
+<p><strong>Primary legislation &amp; authority</strong></p>
+<ul>
+<li><a href="https://eur-lex.europa.eu/eli/reg/2016/679/oj">Regulation (EU) 2016/679 (GDPR)</a> — consolidated official text (EUR-Lex).</li>
+<li><a href="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20180001000">Ustawa z dnia 10 maja 2018 r. o ochronie danych osobowych</a> — the Polish implementing Act (ISAP).</li>
+<li><a href="https://uodo.gov.pl/en">UODO</a> — Urząd Ochrony Danych Osobowych, the Polish supervisory authority.</li>
+</ul>
+<p><strong>Cited provisions (each link resolves to the operative text; obligations paraphrased above)</strong></p>
+<ul>
+<li><a href="https://gdpr-info.eu/art-4-gdpr/">Art. 4(5)</a> — <em>pseudonymisation</em> (reversible; remains personal data).</li>
+<li><a href="https://gdpr-info.eu/recitals/no-26/">Recital 26</a> — <em>anonymous information</em> is outside the Regulation; re-identification test.</li>
+<li><a href="https://gdpr-info.eu/art-5-gdpr/">Art. 5</a> — principles: lawfulness, <strong>minimisation</strong> 5(1)(c), accuracy 5(1)(d), <strong>storage limitation</strong> 5(1)(e).</li>
+<li><a href="https://gdpr-info.eu/art-6-gdpr/">Art. 6</a> — lawful bases: <strong>contract</strong> 6(1)(b), <strong>legitimate interests</strong> 6(1)(f).</li>
+<li><a href="https://gdpr-info.eu/art-7-gdpr/">Art. 7</a> — conditions for consent; <strong>7(4)</strong> consent must be freely given.</li>
+<li><a href="https://gdpr-info.eu/art-9-gdpr/">Art. 9</a> — special-category data (<strong>none</strong> processed here).</li>
+<li><a href="https://gdpr-info.eu/art-12-gdpr/">Art. 12</a> — transparency + <strong>12(5)</strong> manifestly unfounded / excessive requests.</li>
+<li><a href="https://gdpr-info.eu/art-13-gdpr/">Art. 13</a> — information at the point of collection.</li>
+<li>Rights: <a href="https://gdpr-info.eu/art-15-gdpr/">Art. 15</a> access · <a href="https://gdpr-info.eu/art-16-gdpr/">16</a> rectification · <a href="https://gdpr-info.eu/art-17-gdpr/">17</a> erasure (incl. <strong>17(3)(e)</strong> legal claims) · <a href="https://gdpr-info.eu/art-18-gdpr/">18</a> restriction · <a href="https://gdpr-info.eu/art-20-gdpr/">20</a> portability · <a href="https://gdpr-info.eu/art-21-gdpr/">21</a> objection.</li>
+<li><a href="https://gdpr-info.eu/art-25-gdpr/">Art. 25</a> — data protection by design and by default.</li>
+<li><a href="https://gdpr-info.eu/art-28-gdpr/">Art. 28</a> — processor / Data Processing Agreement.</li>
+<li><a href="https://gdpr-info.eu/art-30-gdpr/">Art. 30</a> — records of processing (ROPA).</li>
+<li><a href="https://gdpr-info.eu/art-32-gdpr/">Art. 32</a> — security of processing (encryption named as an <em>example</em>, risk-based).</li>
+<li><a href="https://gdpr-info.eu/art-33-gdpr/">Art. 33</a> / <a href="https://gdpr-info.eu/art-34-gdpr/">Art. 34</a> — breach notification (72 h to the authority).</li>
+<li><a href="https://gdpr-info.eu/art-44-gdpr/">Art. 44</a> — general principle for transfers / data residency.</li>
+</ul>
+<p><strong>Guidance</strong></p>
+<ul>
+<li><a href="https://ec.europa.eu/justice/article-29/documentation/opinion-recommendation/files/2014/wp216_en.pdf">Article 29 Working Party, Opinion 05/2014 on Anonymisation Techniques (WP216)</a> — the authoritative treatment of anonymisation vs pseudonymisation and residual <em>singling-out</em> risk (underpins §4).</li>
+</ul>
+<p><em>Link note: <code>eur-lex.europa.eu</code> and <code>isap.sejm.gov.pl</code> are the authoritative sources; <code>gdpr-info.eu</code> is a widely-used convenience host of the article text.</em></p>
+<p><strong>Related ADRs:</strong> ADR-079 (registration/identity, read-only invariant), ADR-080 (seeding + organizer recipient), ADR-016 (admin MFA), ADR-056 (BY reconciliation).</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="077-event-lifecycle-season-skeletons.html">← ADR-077: Event lifecycle, season-skeleton provisioning &amp; CERT→PROD calendar promotion</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="079-event-self-registration-identity.html">→ ADR-079: Event Self-Registration &amp; Identity Resolution</a></nav>
+<footer class="foot">Generated from <code>078-gdpr-data-handling.md</code> · source SHA-256 <code>732df6c3cd3c7dbe29299fbfc7ca6cfd763fb2faa1bee4b7cf7b2fe8b29edd0a</code></footer>
+</div></body></html>

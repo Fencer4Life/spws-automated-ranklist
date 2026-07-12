@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="065-ftl-per-fencer-vcat-marker-check.md">
+<meta name="adr-source-sha256" content="a004d06a73d3b5374ac2e7ad87d46a7ae84a26618a770d88604b34e8255a79a9">
+<title>ADR-065 · FTL per-fencer V-cat marker check at the splitter</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 065</p><h1>FTL per-fencer V-cat marker check at the splitter</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (drafted 2026-05-08; renumbered 063 → 065 on 2026-05-10 to resolve conflict with the already-committed ADR-063 polish-plural-and-grupy-zbiorcze) <strong>Related:</strong> ADR-049 (joint-pool split flag), ADR-056 (V-cat resolution by post-match fencer birth year — bracket-label-wins revision), ADR-057 (eventSchedule splitter) <strong>Phase:</strong> 5 (operational rebuild)</dd></div><div><dt>Date</dt><dd class="">Not recorded</dd></div><div><dt>Source</dt><dd class=""><code>065-ftl-per-fencer-vcat-marker-check.md</code></dd></div><div><dt>Length</dt><dd class="">114 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (drafted 2026-05-08; renumbered 063 → 065 on 2026-05-10 to resolve conflict with the already-committed ADR-063 polish-plural-and-grupy-zbiorcze)
+<strong>Related:</strong> ADR-049 (joint-pool split flag), ADR-056 (V-cat resolution by post-match fencer birth year — bracket-label-wins revision), ADR-057 (eventSchedule splitter)
+<strong>Phase:</strong> 5 (operational rebuild)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#test-scope">Test scope</a></li><li class="depth-2"><a href="#implementation">Implementation</a></li><li class="depth-2"><a href="#amendment-2026-06-26-canonicalize-the-scraped-name-before-the-surname-first-split">Amendment (2026-06-26) — canonicalize the scraped name before the surname/first split</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>ADR-056's 2026-05-03 revision established <strong>&quot;single-V-cat bracket label wins&quot;</strong> as the rule for past tournaments: when an FTL bracket name parses to a single V-cat (e.g. <code>Vet-50 Men's Épée</code> → V2), every fencer in that bracket is assigned to that V-cat regardless of their birth-year-derived V-cat. This preserves the organizer's placement decision for the season's ranklist.</p>
+<p>The rule depends on a hidden assumption: <strong>the bracket name accurately reflects the bracket's contents</strong>. If the organizer dumps multiple V-cats into a single bracket but lazily labels it as one V-cat, the splitter takes that label at face value and the V-cat trigger (which intentionally bypasses BY-checking when <code>enum_source_age_category IS NOT NULL</code> per ADR-056) lets the wrong-V-cat rows through silently.</p>
+<p>Phase 5 ingestion of <code>PPW2-2025-2026</code> on 2026-05-08 hit this case:</p>
+<ul>
+<li>FTL bracket <code>'SZPADA KOBIET 2 WETERANI'</code> parsed cleanly as <code>('EPEE', 'F', 'V2')</code>.</li>
+<li>Its 7 fencers actually spanned V0+V1+V2, with each fencer's actual V-cat encoded in their name string:
+<ul>
+<li><code>&quot;PĘCZEK (0) Sandra&quot;</code> → V0</li>
+<li><code>&quot;KAMIŃSKA   1 Gabriela&quot;</code> → V1</li>
+<li><code>&quot;WASILCZUK (2) Beata&quot;</code> → V2</li>
+</ul>
+</li>
+<li>The pipeline assigned all 7 to V2; 4 of them were also correctly present in the per-V-cat V0/V1 brackets (registered separately by the same organizer); ranklist contained KAMIŃSKA twice (V1 + V2).</li>
+</ul>
+<p>The per-fencer markers are evidence that the organizer KNEW the bracket was a joint pool — they tagged each fencer manually because the bracket name couldn't disambiguate. Reading those markers preserves the organizer's intent (which ADR-056 says we should honour).</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p><strong>The FTL eventSchedule splitter inspects per-fencer name markers and downgrades misregistered brackets to joint-pool.</strong></p>
+<p>Implementation in <code>python/pipeline/review_cli.py</code>:</p>
+<ol>
+<li>
+<p><strong>Marker extractor</strong> <code>_extract_vcat_marker(fencer_name) -&gt; int | None</code>:</p>
+<ul>
+<li>Regex <code>\s+\(?([0-4])\)?\s+</code> matches a digit 0-4 surrounded by whitespace, optionally parenthesized.</li>
+<li>Catches both Polish conventions: <code>&quot;PĘCZEK (0) Sandra&quot;</code> and <code>&quot;KAMIŃSKA   1 Gabriela&quot;</code>.</li>
+<li>Returns <code>None</code> for clean names without markers.</li>
+</ul>
+</li>
+<li>
+<p><strong>Bracket-vs-markers reconciler</strong> <code>_bracket_marker_conflict(parsed, bracket_vcat)</code>:</p>
+<ul>
+<li>When <code>bracket_vcat is None</code> (already joint-pool) → no conflict.</li>
+<li>When no fencer in the bracket has a marker → no conflict (trust the bracket name; the organizer didn't bother encoding because there was no ambiguity).</li>
+<li>When all marker-bearing fencers agree with <code>bracket_vcat</code> → no conflict (consistent).</li>
+<li>When any marker-bearing fencer disagrees → <strong>conflict</strong>. The bracket is misregistered.</li>
+</ul>
+</li>
+<li>
+<p><strong>Downgrade in <code>Fetcher.fetch_event_url_with_skips</code></strong>: when a conflict is detected for a single-V-cat bracket, set <code>category = None</code> before calling <code>_annotate_parsed</code>. This makes <code>parsed.category_hint = None</code>, which (per ADR-056's joint-pool clause) routes the bracket through the BY-derivation path — every fencer is assigned to her actual birth-year-derived V-cat.</p>
+</li>
+</ol>
+<p>The downgrade is logged to stderr with the marker distribution (e.g. <code>mislabeled as V2: V0=1 V1=3 V2=3 → downgrading to joint-pool</code>) so the operator can verify on the per-event staging summary.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>Strip markers from fencer names but keep bracket V-cat (no downgrade)</strong>: would silently re-assign the wrong-V-cat fencers (KAMIŃSKA stays in V2 even though her marker says V1). Defeats the marker's purpose as evidence.</li>
+<li><strong>Halt and surface bracket misregistration to operator</strong>: safer in principle but interrupts bulk runs for what is genuinely fixable data — the BY-derivation path produces the correct routing. The downgrade-and-log approach gives operators the same visibility (in the staging summary) without blocking ingestion.</li>
+<li><strong>Always-on BY enforcement at the trigger</strong>: would invalidate ADR-056's deliberate &quot;bracket label wins&quot; rule for the legitimate cross-season case (ZAWROTNIAK V1 in 2023-24 vs V2 in 2024-25). Rejected — see ADR-056 revision.</li>
+<li><strong>Per-source override YAML to mark specific brackets as joint-pool</strong>: scales poorly across hundreds of brackets and requires upfront knowledge of each misregistration. The marker-based check is automatic and source-driven.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>Positive</strong></p>
+<ul>
+<li>Misregistered FTL brackets are caught at staging time, before drafts commit.</li>
+<li>Each fencer is routed to her actual V-cat by BY-derivation when the organizer's per-fencer markers disagree with the bracket label — preserving organizer intent (the markers ARE the per-fencer placement decision).</li>
+<li>ADR-056's &quot;bracket label wins&quot; rule remains intact for clean per-V-cat brackets (most cases).</li>
+<li>No data corruption can land in <code>tbl_result</code> from this class of operator error.</li>
+</ul>
+<p><strong>Negative / risks</strong></p>
+<ul>
+<li>Polish-specific marker convention. Other federations may use different formats (none seen yet in the rebuild scope).</li>
+<li>The check runs only for FTL eventSchedule paths. Other parsers (Engarde, FT XML, Ophardt, admin XLSX upload) carry their own V-cat assignment paths and don't benefit. Each parser needs its own equivalent guard if it can produce the same class of error.</li>
+<li>A bracket that legitimately mixes V-cats AND happens to have markers all matching its label (extremely unlikely) would not be flagged. Acceptable — that case isn't actually misregistration.</li>
+</ul>
+<p><strong>Neutral</strong></p>
+<ul>
+<li>The ADR-056 trigger (<code>fn_assert_result_vcat</code>) is unchanged. The bypass for <code>enum_source_age_category IS NOT NULL</code> still load-bears for the legitimate cross-season carry-over case. We're tightening the producer, not the enforcer.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="test-scope">Test scope</h2>
+<p>Plan IDs <strong>P5.M1.1–P5.M1.11</strong> in <code>python/tests/test_vcat_marker.py</code>:</p>
+<ul>
+<li>5.M1.1 — <code>_extract_vcat_marker</code> parses <code>&quot;(N)&quot;</code> parenthesized markers.</li>
+<li>5.M1.2 — parses bare-digit <code>&quot; N &quot;</code> markers.</li>
+<li>5.M1.3 — returns <code>None</code> on clean fencer names.</li>
+<li>5.M1.4 — handles empty / None / out-of-range digits.</li>
+<li>5.M1.5 — handles hyphenated surnames (<code>SAMECKA - NACZYŃSKA 1 Martyna</code>).</li>
+<li>5.M1.6 — <code>_bracket_marker_conflict</code>: bracket already joint-pool → no conflict signal.</li>
+<li>5.M1.7 — bracket with no per-fencer markers → no conflict (trust label).</li>
+<li>5.M1.8 — markers all consistent with bracket V-cat → no conflict.</li>
+<li>5.M1.9 — bracket says V2 but markers span V0/V1/V2 → conflict (misregistration).</li>
+<li>5.M1.10 — single outlier marker triggers conflict.</li>
+<li>5.M1.11 — empty bracket → no conflict.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="implementation">Implementation</h2>
+<p>Files modified:</p>
+<ul>
+<li><code>python/pipeline/review_cli.py</code> — added <code>_extract_vcat_marker</code>, <code>_bracket_marker_conflict</code>, wired into <code>Fetcher.fetch_event_url_with_skips</code>.</li>
+<li><code>python/tests/test_vcat_marker.py</code> — new file, 11 unit tests.</li>
+</ul>
+<p>No migration required. No schema change. Rolls forward only.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-06-26-canonicalize-the-scraped-name-before-the-surname-first-split">Amendment (2026-06-26) — canonicalize the scraped name before the surname/first split</h2>
+<p>The marker check above operates at the <em>splitter</em> (V-cat routing). The <strong>matcher</strong> had a
+parallel gap: per-fencer markers were stripped at compare time (<code>strip_category_markers</code>)
+but <strong>not before <code>parse_scraped_name</code> split surname from first name</strong>, and a
+space-before-hyphen (<code>&quot;SAMECKA -NACZYŃSKA (1) Martyna&quot;</code>) made the split read the surname
+as just <code>&quot;SAMECKA&quot;</code>. That failed the Phase-A exact check <em>and</em> dropped the Phase-B fuzzy
+score to PENDING (68.8) — so the domestic branch <strong>auto-created a duplicate fencer</strong>
+instead of linking to the existing one. Live impact: a duplicate <code>#330</code> for
+SAMECKA-NACZYŃSKA Martyna on CERT and PROD, splitting her across V0/V1.</p>
+<p><strong>Decision:</strong> <code>canonicalize_scraped_name</code> (in <code>python/matcher/fuzzy_match.py</code>) runs at the
+<strong>top of <code>parse_scraped_name</code></strong>, before the split — (1) collapse whitespace, (2) strip
+V-cat markers (parenthesized <code>(0)</code> <em>and</em> bare-digit <code>&quot; 1 &quot;</code>, ADR-065 convention),
+(3) normalize hyphen spacing (<code>SAMECKA -NACZYŃSKA</code> → <code>SAMECKA-NACZYŃSKA</code>), (4) final
+collapse. This fixes exact-match, fuzzy-match, and the stored <code>txt_surname</code>/<code>txt_first_name</code>
+of any genuinely-new fencer in one place. The marker is <strong>not lost for routing</strong> — that
+still reads <code>raw_age_marker</code> / <code>category_hint</code>, independent of the name string.</p>
+<p>Tests: <code>python/tests/test_matcher.py</code> (canonicalization; the 5 dirty FTL variants all
+AUTO_MATCH the existing fencer; over-merge regression for distinct hyphenated surnames
+like <code>GIERS-ROMEK</code>). Rolls forward only; no migration.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="064-asymmetric-gender-filter-matcher.html">← ADR-064: Asymmetric gender filter at matcher time (domestic events only)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="066-min-participants-ingestion-gate.html">→ ADR-066: Min-participants threshold gates ingestion, not scoring</a></nav>
+<footer class="foot">Generated from <code>065-ftl-per-fencer-vcat-marker-check.md</code> · source SHA-256 <code>a004d06a73d3b5374ac2e7ad87d46a7ae84a26618a770d88604b34e8255a79a9</code></footer>
+</div></body></html>

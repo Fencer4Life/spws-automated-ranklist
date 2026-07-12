@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="059-telegram-document-delivery.md">
+<meta name="adr-source-sha256" content="1b794571b6dcf8ba9b60cb5f6296032dd9295caf64d7fbef473f5aba1dc55e52">
+<title>ADR-059 · Telegram sendDocument as primary verdict read surface</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 059</p><h1>Telegram <code>sendDocument</code> as primary verdict read surface</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Proposed</dd></div><div><dt>Date</dt><dd class="">2026-05-03</dd></div><div><dt>Source</dt><dd class=""><code>059-telegram-document-delivery.md</code></dd></div><div><dt>Length</dt><dd class="">98 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed
+<strong>Date:</strong> 2026-05-03
+<strong>Amends:</strong> ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-058 (staging-reports bucket).</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-3"><a href="#a-in-ui-markdown-viewer">A. In-UI Markdown viewer</a></li><li class="depth-3"><a href="#b-email-delivery">B. Email delivery</a></li><li class="depth-3"><a href="#c-webhook-to-obsidian-sync-api">C. Webhook to Obsidian sync API</a></li><li class="depth-3"><a href="#d-send-md-content-as-sendmessage-text">D. Send `.md` content as `sendMessage` text</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#status-deliverables-proposed-not-yet-shipped">Status — deliverables (proposed, not yet shipped)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Phase 5.5 of the rebuild persists verdict <code>.md</code> files to Supabase Storage (per ADR-058). The operator needs a way to <strong>read</strong> these files on a phone and archive them in their Obsidian vault.</p>
+<p>Three reading surfaces were considered:</p>
+<ol>
+<li><strong>Admin UI Markdown viewer</strong> — Svelte component that fetches the <code>.md</code> from Storage via signed URL and renders with a Markdown library (<code>marked</code>).</li>
+<li><strong>Email delivery</strong> — push the <code>.md</code> as an email attachment.</li>
+<li><strong>Telegram document delivery</strong> — push the <code>.md</code> as a Telegram document attachment via the existing bot.</li>
+</ol>
+<p>The operator already uses Telegram heavily (per ADR-025): all alerting, daily cron summaries, EVF parity notifications, ingest results. Telegram has Obsidian-friendly share-sheet integration on mobile (tap → &quot;Open with&quot; → Obsidian). The operator explicitly asked for Telegram delivery so they can save <code>.md</code> files to their Obsidian vault on phone.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Telegram Bot API <code>sendDocument</code> is the primary verdict read surface. No admin-UI Markdown viewer is built.</p>
+<p><strong><code>TelegramNotifier.send_document</code></strong> (new method in <code>python/pipeline/notifications.py</code>):</p>
+<pre><code class="language-python">def send_document(
+    self,
+    file_bytes: bytes,
+    filename: str,
+    caption: str,
+    *,
+    chat_id: str | None = None,
+) -&gt; dict:
+    &quot;&quot;&quot;POST multipart/form-data to /sendDocument.&quot;&quot;&quot;
+</code></pre>
+<p>POSTs <code>multipart/form-data</code> to <code>https://api.telegram.org/bot&lt;token&gt;/sendDocument</code> with:</p>
+<ul>
+<li><code>document</code> part: <code>(filename, file_bytes, &quot;text/markdown&quot;)</code></li>
+<li><code>chat_id</code> form field</li>
+<li><code>caption</code> form field with HTML parse mode</li>
+</ul>
+<p><strong>Higher-level wrapper</strong> <code>send_staging_report(event_code, md_bytes, kind, extras)</code> builds a structured caption (e.g. <code>📄 EVENT-A · full · 6 tournaments · 47 ❌ aliases pending</code>) and an explicit filename (<code>{event_code}-full.md</code> or <code>{event_code}-delta-{ts}.md</code>).</p>
+<p><strong>When Telegram fires:</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>Document sent?</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Email XML ingestion (<code>ingest.yml</code> → <code>ingest_cli</code>)</td>
+<td>✅ <code>full.md</code> per resolved event</td>
+<td>First materialisation.</td>
+</tr>
+<tr>
+<td>Event-URL ingestion (<code>phase5-event-runner.yml</code> → <code>phase5_runner</code>)</td>
+<td>✅ <code>full.md</code></td>
+<td>Same.</td>
+</tr>
+<tr>
+<td>NEW-pipeline from-URL re-ingest (<code>ingest-event.yml</code> → <code>ingest_cli --from-url --send-telegram</code>)</td>
+<td>✅ <code>full.md</code> + <code>.diff.md</code></td>
+<td><strong>N15 (2026-06-19):</strong> the Telegram <code>ingest &lt;prefix&gt; &lt;url&gt;</code> loop — staging back to phone for review before <code>promote</code>. Reuses <code>send_staging_report</code>/<code>send_document</code>.</td>
+</tr>
+<tr>
+<td>Operator alias mutation → <code>regen-report.yml</code> → <code>phase5_report</code></td>
+<td>✅ <code>full.md</code> (auto, tagged <code>reason='regen'</code>)</td>
+<td>Operator wants every regenerated verdict on phone.</td>
+</tr>
+<tr>
+<td>EVF daily parity sweep detects ≥1 change</td>
+<td>✅ <code>delta.md</code></td>
+<td>Unattended overnight; operator wakes up to read changes.</td>
+</tr>
+<tr>
+<td>EVF parity sweep finds zero drift</td>
+<td>❌ silent</td>
+<td>No-op silence.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Verified feasibility against <a href="https://core.telegram.org/bots/api">core.telegram.org/bots/api</a>:</strong></p>
+<ul>
+<li><code>sendDocument</code> accepts arbitrary file types via <code>multipart/form-data</code>.</li>
+<li>Standard Bot API size limit: 50 MB upload. Our <code>.md</code> files are ~30 KB (full) and ~5 KB (delta) — three orders of magnitude under.</li>
+<li>MIME type <code>text/markdown</code> is accepted; no extension blacklist for sendDocument.</li>
+</ul>
+<p><strong>Behavioural caveat:</strong> mobile Telegram clients render <code>.md</code> as a generic file attachment with a download/open icon (operator taps → &quot;Open with&quot; → Obsidian). Telegram Desktop sometimes shows inline text preview. No client treats <code>.md</code> as suspicious or strips it.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<h3 id="a-in-ui-markdown-viewer">A. In-UI Markdown viewer</h3>
+<p>Rejected: adds frontend dependency (<code>marked</code> ~50 KB), signed-URL plumbing, environment-switching code; operator prefers to read on phone in Obsidian, not at desk in browser.</p>
+<h3 id="b-email-delivery">B. Email delivery</h3>
+<p>Rejected: slower (poll vs push), no Obsidian share-sheet integration, requires SMTP secrets.</p>
+<h3 id="c-webhook-to-obsidian-sync-api">C. Webhook to Obsidian sync API</h3>
+<p>Rejected: overkill, requires per-operator Obsidian sync configuration, ties the system to a specific Obsidian setup.</p>
+<h3 id="d-send-md-content-as-sendmessage-text">D. Send <code>.md</code> content as <code>sendMessage</code> text</h3>
+<p>Rejected: 4096-character limit per message; <code>.md</code> files exceed this.</p>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>Positive:</strong></p>
+<ul>
+<li>Operator reads on phone immediately after CI completes — no admin-UI navigation required.</li>
+<li>Telegram scrollback IS the verdict history, naturally indexed by event_code via filename.</li>
+<li>Captions tagged <code>kind='full'/'delta'</code> and <code>reason='regen'/etc</code> so the operator can mentally sort scrollback.</li>
+<li>Drops a frontend dependency — admin UI stays lean.</li>
+</ul>
+<p><strong>Negative:</strong></p>
+<ul>
+<li>High-frequency triage sessions emit many <code>.md</code> deliveries (one per alias mutation that triggers regen). Mitigation: caption-tagged <code>reason='regen'</code> so the operator can mentally batch them. Not throttled in this ADR.</li>
+<li>LOCAL devs do not receive Telegram by default (no token env var); that's intentional but means LOCAL devs must explicitly opt in by setting <code>TELEGRAM_BOT_TOKEN</code> + <code>TELEGRAM_CHAT_ID</code> to test the document-delivery code path against a personal test bot.</li>
+<li>Telegram client behaviour for <code>.md</code> varies by platform; CERT smoke step C8 verifies all three (iOS, Android, Desktop) before declaring done.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="status-deliverables-proposed-not-yet-shipped">Status — deliverables (proposed, not yet shipped)</h2>
+<ul>
+<li><code>python/pipeline/notifications.py</code> extension (<code>send_document</code>, <code>send_staging_report</code>)</li>
+<li><code>python/tests/test_telegram_send_document.py</code> — multipart shape, null-safety, caption rendering</li>
+<li>Wired into <code>ingest_cli.py</code>, <code>phase5_runner.py</code>, <code>phase5_report.py</code>, <code>evf_parity_sweep.py</code></li>
+<li>GAS <code>/help</code> text update + 4 new operator commands (<code>/regen</code>, <code>/stage</code>, <code>/parity</code>, <code>/verdict</code>) per ADR-061</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="058-staging-reports-storage-bucket.html">← ADR-058: staging-reports Supabase Storage bucket for verdict .md</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="060-evf-parity-delta-md.html">→ ADR-060: EVF parity sweep emits delta-only .md (no full.md overwrite)</a></nav>
+<footer class="foot">Generated from <code>059-telegram-document-delivery.md</code> · source SHA-256 <code>1b794571b6dcf8ba9b60cb5f6296032dd9295caf64d7fbef473f5aba1dc55e52</code></footer>
+</div></body></html>

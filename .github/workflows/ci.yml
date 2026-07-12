@@ -39,14 +39,20 @@ jobs:
 
       # Ruff baseline is clean (lint + format) — these steps now ENFORCE (block CI).
       - name: Ruff lint
-        run: ruff check python/
+        run: ruff check python/ scripts/render_adrs.py scripts/render_docs.py
 
       - name: Ruff format check
-        run: ruff format --check python/
+        run: ruff format --check python/ scripts/render_adrs.py scripts/render_docs.py
 
       # basedpyright baseline is clean — enforces (blocks CI), same as ruff above.
       - name: basedpyright type-check
-        run: basedpyright python/
+        run: basedpyright python/ scripts/render_adrs.py scripts/render_docs.py
+
+      - name: Validate generated ADR HTML
+        run: python scripts/render_adrs.py --check
+
+      - name: Validate generated Docs HTML
+        run: python scripts/render_docs.py --check
 
       - name: Run pytest
         run: pytest

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="009-cert-prod-runtime-toggle.md">
+<meta name="adr-source-sha256" content="c1a3cf363627b33e76a3f9ad319d53420e4e9c4cb532bf4b0db0f5d7ae2d9168">
+<title>ADR-009 · CERT/PROD Runtime Toggle (Single GitHub Pages Site)</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 009</p><h1>CERT/PROD Runtime Toggle (Single GitHub Pages Site)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2025-03-15 (M6)</dd></div><div><dt>Source</dt><dd class=""><code>009-cert-prod-runtime-toggle.md</code></dd></div><div><dt>Length</dt><dd class="">27 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2025-03-15 (M6)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The SPWS ranklist frontend needs to serve two Supabase backends: CERT (staging for new data) and PROD (verified data). Both run on Supabase cloud with separate project refs. The frontend is deployed to GitHub Pages.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Deploy a single GitHub Pages site with a runtime CERT/PROD toggle. Credentials for both environments are injected at build time via <code>sed</code> in the GitHub Actions deploy workflow, stored as GitHub Actions secrets.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li><strong>Separate GitHub Pages per environment</strong> (e.g., <code>/cert/</code> and <code>/prod/</code> paths or separate repos) — doubles deployment complexity, harder to keep in sync.</li>
+<li><strong>Separate branches</strong> (cert and prod branches deployed to different URLs) — divergent codebases, merge conflicts.</li>
+<li><strong>Environment variable at build time</strong> (two separate builds) — requires two workflow runs, two artifacts, two URLs to share.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Single URL for stakeholders — CERT/PROD switch is in-app, no URL management.</li>
+<li><code>dualEnv</code> derived flag: <code>$derived(!!(certUrl &amp;&amp; certKey &amp;&amp; prodUrl &amp;&amp; prodKey))</code> — toggle hidden when any credential is missing (e.g., local dev with only CERT).</li>
+<li>Credentials injected via 4 <code>sed</code> commands in <code>deploy.yml</code> replacing placeholder attributes in <code>index.html</code>.</li>
+<li>Security: RLS enforces anon = SELECT-only on both backends. No <code>service_role</code> keys in frontend. Build step verifies no localhost URLs or service keys leak into output.</li>
+<li>Reactivity chain: <code>activeEnv</code> → <code>$derived(supabaseUrl/Key)</code> → <code>$effect</code> re-initializes Supabase client on switch.</li>
+<li>Local dev: only CERT-like local Supabase available, toggle hidden automatically.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="008-psw-msw-international-pool.html">← ADR-008: PSW and MSW in International Ranking Pool</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="010-age-category-by-birth-year.html">→ ADR-010: Age Category by Birth Year (Cross-Category Carryover)</a></nav>
+<footer class="foot">Generated from <code>009-cert-prod-runtime-toggle.md</code> · source SHA-256 <code>c1a3cf363627b33e76a3f9ad319d53420e4e9c4cb532bf4b0db0f5d7ae2d9168</code></footer>
+</div></body></html>

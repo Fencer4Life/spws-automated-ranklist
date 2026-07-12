@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="039-stale-event-gate.md">
+<meta name="adr-source-sha256" content="4df38902c118dd3638bc76552a698663c81ef65b4a92d70b89974339facb1ef1">
+<title>ADR-039 · EVF Scraper Dedup Algorithm + Stale-Event Gate</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 039</p><h1>EVF Scraper Dedup Algorithm + Stale-Event Gate</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-06-13 rev 2 — Step 0 self-heals from FTL before halting)</dd></div><div><dt>Date</dt><dd class="">2026-04-25 <strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)</dd></div><div><dt>Source</dt><dd class=""><code>039-stale-event-gate.md</code></dd></div><div><dt>Length</dt><dd class="">155 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (revised 2026-06-13 rev 2 — Step 0 self-heals from FTL before halting)
+<strong>Date:</strong> 2026-04-25
+<strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#step-0-logical-integrity-guard">Step 0 — Logical-integrity guard</a></li><li class="depth-4"><a href="#rev-2-2026-06-13-self-heal-never-hard-halt">rev 2 (2026-06-13) — self-heal, never hard-halt</a></li><li class="depth-3"><a href="#step-1-stale-event-gate">Step 1 — Stale-event gate</a></li><li class="depth-3"><a href="#step-2-date-gate-blocking-for-dedup">Step 2 — Date gate (BLOCKING for dedup)</a></li><li class="depth-3"><a href="#step-3-country-corroboration-strong">Step 3 — Country corroboration (STRONG)</a></li><li class="depth-3"><a href="#step-4-location-corroboration-medium-fallback">Step 4 — Location corroboration (MEDIUM, fallback)</a></li><li class="depth-3"><a href="#step-5-no-match-return-none">Step 5 — No match → return None</a></li><li class="depth-3"><a href="#deliberately-removed-name-comparison">Deliberately removed: name comparison</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#positive">Positive</a></li><li class="depth-3"><a href="#negative">Negative</a></li><li class="depth-3"><a href="#outbound-telegram-surface-new-this-adr">Outbound Telegram surface (new, this ADR)</a></li><li class="depth-2"><a href="#test-plan">Test plan</a></li><li class="depth-2"><a href="#references">References</a></li><li class="depth-2"><a href="#amendment-rev-3-2026-07-11-adr-081">Amendment — rev 3 (2026-07-11, ADR-081)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The first version of the EVF dedup logic (<a href="https://github.com/Fencer4Life/spws-automated-ranklist/commit/e440299">commit <code>e440299</code></a>) used <code>(dt_start exact, canonical country)</code> as the primary key with a <code>±N day window + fuzzy-name ≥ 80%</code> fallback. EVF actively renames events mid-season — the canonical incident was &quot;EVF Circuit Napoli&quot; → &quot;EVF Circuit – Naples (ITA)&quot;, which scored ~73% on <code>token_set_ratio</code> and slipped below the 80% threshold. Three duplicate event rows were inserted into CERT and propagated to PROD via the calendar-promote cron:</p>
+<ul>
+<li><code>PEW-PALAVESUVI-2025-2026</code> (vs seed-numbered <code>PEW4-2025-2026</code> Naples)</li>
+<li><code>PEW-OSRODEKSPO-2025-2026</code> (vs <code>PEW6-2025-2026</code> Jabłonna)</li>
+<li><code>PEW-CHANIAKLAD-2025-2026</code> (vs <code>PEW8-2025-2026</code> Chania)</li>
+</ul>
+<p>All three duplicates had 0 results — the calendar scrape created the row, but the results scrape continued to match the seed-numbered keeper (because of an unrelated <code>EXISTS(tbl_tournament)</code> filter in the results-side query). The calendar UI displayed both rows side-by-side. The cleanup itself was a one-line <code>fn_delete_event</code> call per dup. The remaining work is to ensure the scraper never produces another such duplicate.</p>
+<p>Two architectural problems the original design did not address:</p>
+<ol>
+<li><strong>EVF retroactively edits old results.</strong> When the cron ran on 2026-04-25 it observed Budapest 2025-09-20 (7 months past) growing 6 new &quot;EVF-only&quot; fencers vs CERT. Without a stale-event gate, the scraper kept syncing changes to long-finished events, opening surface area for further drift.</li>
+<li><strong>Future events marked COMPLETED is data corruption.</strong> Nothing in the original design caught this; the scraper would happily proceed on top of a broken state and propagate the error.</li>
+</ol>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>The EVF scraper applies a <strong>5-step algorithm</strong> for every cron run. Steps are evaluated in order; an earlier step's verdict is binding.</p>
+<h3 id="step-0-logical-integrity-guard">Step 0 — Logical-integrity guard</h3>
+<p>Before any matching, scan the active-season CERT events for the invariant:</p>
+<pre><code>NOT (dt_start &gt; today AND enum_status = 'COMPLETED')
+</code></pre>
+<p>Any row violating it is, in the original design (rev 1), a hard halt: raise <code>LogicalIntegrityError</code>, send the <strong>EVF Sync HALT</strong> Telegram alert, exit non-zero, and wait for a manual SQL fix.</p>
+<h4 id="rev-2-2026-06-13-self-heal-never-hard-halt">rev 2 (2026-06-13) — self-heal, never hard-halt</h4>
+<p>Rev 1 halted the <em>entire</em> daily pipeline for the most common cause of a Step 0 violation: an event already scored from FTL that was left with a <strong>placeholder date</strong> (e.g. <code>PEW63e</code>/<code>PEW64s</code>, scored from the BVF 6-Weapon International — Guildford GBR — but stamped <code>2026-10-01</code>/<code>2026-11-11</code>). This is recoverable, yet it took the cron down daily and demanded hand-written SQL.</p>
+<p>Rev 2 replaces the halt with a <strong>self-heal pass</strong> keyed on the <strong>event URL</strong> (<code>tbl_event.url_event</code>), the authoritative source for an event's real date. Per violator:</p>
+<ol>
+<li><strong>Recover the event date</strong> (<code>_resolve_event_date</code>), in priority order:
+<ul>
+<li><strong>(a)</strong> the row's own <code>url_event</code>;</li>
+<li><strong>(b) primary — EVF calendar:</strong> match the violator to the event the sync already scraped that run (via <code>match_scraped_to_existing</code> with the <strong>date gate disabled</strong> — the date is the broken field — so it keys on country/location per Steps 3–4) and take that event's URL + date;</li>
+<li><strong>(c) fallback — FTL:</strong> the event's tournament results pages.
+The event URL (FTL <code>eventSchedule</code> or <code>events/results</code>) is fetched with the authed ADR-069 session (<code>get_authed_ftl_client</code> → <code>fetch_ftl_event_metadata</code>, which now accepts both URL forms).</li>
+</ul>
+</li>
+<li><strong>Date-healable</strong> (a valid date <code>≤ today</code> was recovered) → rewrite <code>dt_start</code>/<code>dt_end</code> + the FTL-backed <code>dt_tournament</code>, and <strong>populate <code>url_event</code></strong> with the resolved URL. Status stays <code>COMPLETED</code>.</li>
+<li><strong>Not date-healable</strong> (no event URL, no calendar match, no FTL date, or auth failure) → <strong>demote <code>enum_status</code> <code>COMPLETED</code> → <code>PLANNED</code></strong> so the row is no longer future-COMPLETED. <code>url_event</code>/date get populated later by the calendar / <code>populate_tournament_urls</code> flow; the demotion is logged via the informational <strong>EVF Sync self-heal</strong> Telegram notice.</li>
+</ol>
+<p>The status demotion must bypass <code>fn_validate_event_transition</code> (Section 3 of <code>lifecycle_triggers</code>), which makes <code>COMPLETED</code> terminal — the heal disables <code>trg_event_transition</code> for that single <code>UPDATE</code> (a deliberate system-level reconciliation; the everyday lifecycle contract is unchanged).</p>
+<p><strong>Consequence — the sync no longer hard-halts on this class.</strong> A future-COMPLETED row is either date-healed or demoted; either way the guard clears. <code>assert_no_future_completed</code> is retained only as a post-heal belt-and-braces assertion. FTL/calendar remain the sole date authorities — the heal never invents a date. The decision of corrections-vs-flips is a pure function (<code>compute_future_completed_corrections</code> → <code>(corrections, status_flips)</code>); DB/HTTP side-effects live in <code>evf_sync._heal_future_completed</code>.</p>
+<h3 id="step-1-stale-event-gate">Step 1 — Stale-event gate</h3>
+<p>For every event (scraped or existing):</p>
+<pre><code>in_scope(event) iff
+    event.enum_status != 'COMPLETED'
+  AND
+    (today − event.dt_end) &lt; 30 days       (dt_end NULL → use dt_start)
+</code></pre>
+<p>For scraped rows from EVF (no <code>enum_status</code> field), only the date clause applies. Out-of-scope events are <strong>never auto-created and never auto-updated</strong> — admin handles them via <code>fn_delete_event</code> / manual SQL.</p>
+<h3 id="step-2-date-gate-blocking-for-dedup">Step 2 — Date gate (BLOCKING for dedup)</h3>
+<p><code>|S.dt_start − e.dt_start| ≤ 7 days</code>. Wide enough to absorb HTML-vs-API one-day skews and 6-day team championships; tight enough that EVF's own scheduling (no two of its events in the same country within a week) guarantees no false merges.</p>
+<h3 id="step-3-country-corroboration-strong">Step 3 — Country corroboration (STRONG)</h3>
+<p><code>canon_country(S) == canon_country(e)</code> (both non-empty) → match. Stop. The alias table at <a href="../../python/scrapers/evf_calendar.py#L45">python/scrapers/evf_calendar.py:45</a> handles 18+ language variants (Polska/Poland, Italia/Italy, Österreich/Austria, etc).</p>
+<h3 id="step-4-location-corroboration-medium-fallback">Step 4 — Location corroboration (MEDIUM, fallback)</h3>
+<p>When country is missing on either side: <code>fuzz.token_set_ratio(diacritic_fold(S.location), diacritic_fold(e.txt_location)) ≥ 70</code> → match. Punctuation is stripped and case is normalised before tokenisation so <code>&quot;Stockholm, Sweden&quot;</code> matches <code>&quot;Stockholm&quot;</code>.</p>
+<h3 id="step-5-no-match-return-none">Step 5 — No match → return None</h3>
+<p>Caller decides: in-scope no-match → auto-create. Out-of-scope no-match → log + skip.</p>
+<h3 id="deliberately-removed-name-comparison">Deliberately removed: name comparison</h3>
+<p>EVF actively renames events mid-season (the Napoli↔Naples incident). Date + country + location are <em>physical</em> properties that cannot be renamed away. Re-introducing fuzzy-name matching would re-open the duplicate-creation surface area.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li>
+<p><strong>Lower the name-fuzzy threshold to 70%.</strong> Rejected: the same threshold that catches Napoli↔Naples also accidentally merges adjacent same-country events with overlapping vocabulary. We have no upper bound on rename creativity — solving the symptom widens the bug class.</p>
+</li>
+<li>
+<p><strong>Merge rather than delete legacy duplicates</strong> (via a hypothetical <code>fn_merge_event</code> RPC). Rejected: in the actual incident, the venue-coded duplicates were all empty (0 results). A re-parenting RPC was solving a problem we did not have; <code>fn_delete_event</code> was sufficient. Speculative tooling carrying its own test surface, ADR registry burden, and cleanup logic for a future event-collision case nobody has observed yet violates YAGNI.</p>
+</li>
+<li>
+<p><strong>Embed <code>is_in_scope</code> inside <code>_find_existing_match</code>.</strong> Rejected: the matcher should be a pure function of inputs. Pushing the gate to the caller (<code>evf_sync.sync_calendar</code> / <code>sync_results</code>) keeps the matcher composable and decision-pure, which simplifies tests (<code>evf.22</code> tests <code>is_in_scope</code> directly; <code>evf.24</code> tests the caller-pre-filter pattern).</p>
+</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<h3 id="positive">Positive</h3>
+<ul>
+<li><strong>Single source of truth</strong> for event identity matching — <code>_find_existing_match</code> is shared between calendar and results paths. The previous divergent ad-hoc queries in <code>_compare_and_ingest</code> are gone.</li>
+<li><strong>Bounded scrape surface</strong> — the 30-day window means each cron run only ever touches at most ~2-3 events (the in-flight ones). Stale event noise is eliminated.</li>
+<li><strong>Loud failure on data corruption</strong> — Step 0 surfaces invariant violations to Telegram immediately rather than silently propagating broken state.</li>
+<li><strong>Deterministic decisions</strong> — no fuzzy name scoring means the same scrape always produces the same result. No more &quot;scraper is non-deterministic&quot; mysteries.</li>
+</ul>
+<h3 id="negative">Negative</h3>
+<ul>
+<li><strong>Stale events require manual creation.</strong> If EVF publishes an event into the API &gt; 30 days after it ran, the admin must manually create the CERT row before the next cron will sync results. Acceptable because such retroactive publishes are rare and admin-flagged is safer than auto-create-and-hope.</li>
+<li><strong>Two new outbound Telegram messages</strong> (one new failure mode + one informational summary). Documented in <a href="../cicd-operations-manual.md"><code>doc/cicd-operations-manual.md</code></a> §10.</li>
+</ul>
+<h3 id="outbound-telegram-surface-new-this-adr">Outbound Telegram surface (new, this ADR)</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>Template</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Step 0 self-heal applied (informational, rev 2)</td>
+<td><code>&lt;b&gt;EVF Sync self-heal (Step 0)&lt;/b&gt;\n&lt;pre&gt;healed dates: {codes} | demoted→PLANNED: {codes}&lt;/pre&gt;</code></td>
+</tr>
+<tr>
+<td>Step 1 events filtered (informational)</td>
+<td>Logged to stdout; no separate Telegram unless wanted by future iteration.</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p>rev 2 removed the <strong>EVF Sync HALT</strong> message for this class — a future-COMPLETED row is now always either date-healed or demoted, so the sync no longer halts (and no longer needs manual SQL) on it.</p>
+</blockquote>
+<p>The full outbound-message catalogue lives in the operations manual.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="test-plan">Test plan</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Assertion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>evf.19</code></td>
+<td>Renamed event with name-similarity but no country/location → NO match (regression guard for the name-fallback removal).</td>
+</tr>
+<tr>
+<td><code>evf.20</code></td>
+<td>Country missing on either side, location overlap ≥ 70% → match via Step 4.</td>
+</tr>
+<tr>
+<td><code>evf.21</code></td>
+<td>Date drift edge: ±7d matches, ±8d does not.</td>
+</tr>
+<tr>
+<td><code>evf.22</code></td>
+<td><code>is_in_scope</code> correctly classifies stale-PLANNED, stale-COMPLETED, fresh-PLANNED, fresh-COMPLETED, future-PLANNED.</td>
+</tr>
+<tr>
+<td><code>evf.23</code></td>
+<td><code>assert_no_future_completed</code> raises <code>LogicalIntegrityError</code> when given a future-COMPLETED row.</td>
+</tr>
+<tr>
+<td><code>evf.24</code></td>
+<td>Caller-side <code>is_in_scope</code> pre-filter excludes COMPLETED rows from <code>deduplicate_events</code> candidates.</td>
+</tr>
+<tr>
+<td><code>evf.44</code></td>
+<td>rev 2: <code>compute_future_completed_corrections</code> heals a violator from a recovered past date (earliest→dt_start, latest→dt_end); no status flip.</td>
+</tr>
+<tr>
+<td><code>evf.45</code></td>
+<td>rev 2: no date recovered → violator returned as a <code>status_flip</code> (not a halt).</td>
+</tr>
+<tr>
+<td><code>evf.46</code></td>
+<td>rev 2: recovered date still in the future → <code>status_flip</code> (no swapping one bad date for another).</td>
+</tr>
+<tr>
+<td><code>evf.47</code></td>
+<td>rev 2: <code>_heal_future_completed</code> heals from the <strong>event URL</strong> — <code>UPDATE tbl_event</code> sets dt + populates <code>url_event</code>; no flip.</td>
+</tr>
+<tr>
+<td><code>evf.48</code></td>
+<td>rev 2: no recoverable date → no date <code>UPDATE</code>; the row's status is demoted instead.</td>
+</tr>
+<tr>
+<td><code>evf.49</code></td>
+<td>rev 2: the demotion bypasses the lifecycle trigger (<code>DISABLE</code>/<code>ENABLE TRIGGER trg_event_transition</code> around <code>enum_status='PLANNED'</code>).</td>
+</tr>
+<tr>
+<td><code>evf.50</code></td>
+<td>rev 2: <code>fetch_ftl_event_metadata</code> parses the date from a <code>/tournaments/eventSchedule/</code> event URL (not only <code>/events/results/</code>).</td>
+</tr>
+</tbody>
+</table></div>
+<p>(Plus existing <code>evf.4</code>, <code>evf.5</code>, <code>evf.13</code>, <code>evf.14</code>–<code>evf.18</code> updated to align with the new ladder.)</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="references">References</h2>
+<ul>
+<li><a href="../../python/scrapers/evf_calendar.py#L614">python/scrapers/evf_calendar.py:614</a> — <code>_find_existing_match</code> (rev 2)</li>
+<li><a href="../../python/scrapers/evf_calendar.py">python/scrapers/evf_calendar.py:<code>is_in_scope</code></a></li>
+<li><a href="../../python/scrapers/evf_calendar.py">python/scrapers/evf_calendar.py:<code>assert_no_future_completed</code></a></li>
+<li><a href="../../python/scrapers/evf_sync.py#L77">python/scrapers/evf_sync.py:77</a> (<code>sync_calendar</code>) and <a href="../../python/scrapers/evf_sync.py#L222">:222</a> (<code>sync_results</code>) — both invoke Step 0 and Step 1 at entry.</li>
+<li>ADR-028 amended by this ADR (rev 2 section).</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-rev-3-2026-07-11-adr-081">Amendment — rev 3 (2026-07-11, ADR-081)</h2>
+<p>The <code>id_evf_event → txt_evf_slug → date+country+location</code> dedup ladder (rev 2, migration
+<code>20260710000001</code>, Python <code>_find_existing_match</code>) is now also enforced at the <strong>SQL layer</strong> in
+the CERT ingest: <code>fn_ingest_evf_calendar</code> (renamed from <code>fn_import_evf_events_v2</code>) does an
+identity-first pre-check on <code>id_evf_event</code>/<code>txt_evf_slug</code> before the location-gated allocator,
+so a venue-less repeat scrape can never mint a second row even if the Python dedup is bypassed
+(regression evf.56). Closes <code>fn_allocate_evf_event_code</code>'s blank-location blind spot. See ADR-081.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="038-evf-intake-polish-only.html">← ADR-038: EVF-Organized Tournaments Ingest POL-Only Rows</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="040-multi-slot-event-urls.html">→ ADR-040: Multi-Slot Event Result URLs with Compact-on-Save</a></nav>
+<footer class="foot">Generated from <code>039-stale-event-gate.md</code> · source SHA-256 <code>4df38902c118dd3638bc76552a698663c81ef65b4a92d70b89974339facb1ef1</code></footer>
+</div></body></html>

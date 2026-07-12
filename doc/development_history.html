@@ -1,0 +1,2086 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="doc-source" content="development_history.md">
+<meta name="doc-source-sha256" content="fcd2a048cf5f23847e79d14669cb2e1fa46c3177e0c587f37d546db592ca11d2">
+<title>Development History — SPWS Automated Ranklist System · SPWS</title>
+<link rel="stylesheet" href="adr/assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Development History — SPWS Automated Ranklist System</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>development_history.md</code></dd></div><div><dt>Length</dt><dd>1644 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#phase-1-proof-of-concept-m0-m6">Phase 1: Proof of Concept (M0–M6)</a></li><li class="depth-3"><a href="#milestones">Milestones</a></li><li class="depth-3"><a href="#key-decisions-poc">Key Decisions (POC)</a></li><li class="depth-2"><a href="#phase-2-minimum-viable-product-m8-m10">Phase 2: Minimum Viable Product (M8–M10)</a></li><li class="depth-3"><a href="#milestones-2">Milestones</a></li><li class="depth-3"><a href="#key-decisions-mvp">Key Decisions (MVP)</a></li><li class="depth-2"><a href="#phase-3-go-to-production">Phase 3: Go-to-Production</a></li><li class="depth-3"><a href="#deliverables">Deliverables</a></li><li class="depth-3"><a href="#key-decisions-go-to-prod">Key Decisions (Go-to-PROD)</a></li><li class="depth-2"><a href="#infrastructure">Infrastructure</a></li><li class="depth-3"><a href="#github-actions-workflows">GitHub Actions Workflows</a></li><li class="depth-3"><a href="#telegram-commands-20">Telegram Commands (20+)</a></li><li class="depth-3"><a href="#environments">Environments</a></li><li class="depth-2"><a href="#post-mvp-enhancements">Post-MVP Enhancements</a></li><li class="depth-3"><a href="#date-aware-event-status-transitions-implementation-plan">Date-Aware Event Status Transitions — Implementation Plan</a></li><li class="depth-4"><a href="#tests-tdd-red-phase-first">Tests (TDD — RED phase first)</a></li><li class="depth-4"><a href="#implementation-green-phase">Implementation (GREEN phase)</a></li><li class="depth-4"><a href="#documentation">Documentation</a></li><li class="depth-4"><a href="#execution-order">Execution Order</a></li><li class="depth-4"><a href="#implementation-notes-2026-04-11">Implementation Notes (2026-04-11)</a></li><li class="depth-3"><a href="#bug-fix-season-scoring-config-inheritance-2026-04-11">Bug Fix: Season scoring config inheritance (2026-04-11)</a></li><li class="depth-3"><a href="#auto-active-season-by-date-overlap-constraint-punktacja-relocation-2026-04-11">Auto-Active Season by Date + Overlap Constraint + Punktacja Relocation (2026-04-11)</a></li><li class="depth-3"><a href="#drilldown-mobile-card-layout-adr-032-2026-04-11">Drilldown Mobile Card Layout (ADR-032) — 2026-04-11</a></li><li class="depth-3"><a href="#fencer-gender-identity-manager-enhancement-adr-033-adr-034-2026-04-11">Fencer Gender + Identity Manager Enhancement (ADR-033, ADR-034) — 2026-04-11</a></li><li class="depth-3"><a href="#fencers-view-with-tabs-adr-035-2026-04-12">Fencers View with Tabs (ADR-035) — 2026-04-12</a></li><li class="depth-3"><a href="#cross-gender-scoring-enforcement-adr-034-2026-04-12">Cross-Gender Scoring Enforcement (ADR-034) — 2026-04-12</a></li><li class="depth-3"><a href="#multi-slot-event-result-urls-adr-040-2026-04-25">Multi-Slot Event Result URLs (ADR-040) — 2026-04-25</a></li><li class="depth-3"><a href="#server-side-workflow-dispatch-via-edge-function-adr-041-2026-04-25">Server-Side Workflow Dispatch via Edge Function (ADR-041) — 2026-04-25</a></li><li class="depth-4"><a href="#amendment-2026-04-25-refresh-on-dispatch-ux-8-tests">Amendment 2026-04-25 — Refresh-on-dispatch UX (8 tests)</a></li><li class="depth-4"><a href="#amendment-2026-04-25-banner-clears-after-refresh-prod-target">Amendment 2026-04-25 — Banner clears after refresh + PROD target</a></li><li class="depth-4"><a href="#amendment-2026-04-26-phase-3a-carry-over-admin-rpcs-25-new-pgtap">Amendment 2026-04-26 — Phase 3a carry-over admin RPCs (25 new pgTAP)</a></li><li class="depth-4"><a href="#amendment-2026-04-26-phase-3b-carry-over-admin-ui-24-new-vitest">Amendment 2026-04-26 — Phase 3b carry-over admin UI (24 new vitest)</a></li><li class="depth-4"><a href="#amendment-2026-04-26-phase-3c-eventmanager-extensions-14-new-vitest">Amendment 2026-04-26 — Phase 3c EventManager extensions (14 new vitest)</a></li><li class="depth-3"><a href="#v-cat-invariant-trigger-combined-pool-splitter-consolidation-adr-047-2026-04-29-2026-04-30">V-cat Invariant Trigger + Combined-Pool Splitter Consolidation (ADR-047) — 2026-04-29 → 2026-04-30</a></li><li class="depth-3"><a href="#source-vs-db-audit-phantom-row-discovery-adr-048-2026-04-30">Source-vs-DB Audit + Phantom-Row Discovery (ADR-048) — 2026-04-30</a></li><li class="depth-3"><a href="#local-cert-prod-replication-2026-04-30">LOCAL → CERT → PROD Replication (2026-04-30)</a></li><li class="depth-3"><a href="#joint-pool-split-flag-adr-049-2026-04-30">Joint-Pool Split Flag (ADR-049) — 2026-04-30</a></li><li class="depth-3"><a href="#local-cert-prod-unification-active-2025-26-promote-2026-05-17">LOCAL/CERT/PROD unification + active 2025-26 promote (2026-05-17)</a></li><li class="depth-3"><a href="#ppw4-ppw5-xml-ingest-re-do-structural-pool-only-skip-unified-pipeline-2026-05-27">PPW4/PPW5 XML ingest re-do — structural pool-only skip + unified pipeline (2026-05-27)</a></li><li class="depth-3"><a href="#ppw4-ppw5-url-re-ingest-to-cert-prod-participant-count-fix-2026-06-03">PPW4/PPW5 URL re-ingest to CERT/PROD + participant-count fix (2026-06-03)</a></li><li class="depth-3"><a href="#evf-sync-self-heal-of-future-completed-rows-adr-039-rev-2-2026-06-13">EVF sync self-heal of future-COMPLETED rows (ADR-039 rev 2) — 2026-06-13</a></li><li class="depth-3"><a href="#stage-0-roster-reconciliation-in-the-unified-pipeline-adr-056-rev-2026-06-13">Stage 0 — roster reconciliation in the unified pipeline (ADR-056 rev) — 2026-06-13</a></li><li class="depth-3"><a href="#new-ingestion-pipeline-rule-driven-plugin-rebuild-adr-070-074-2026-06-15">NEW ingestion pipeline — rule-driven plugin rebuild (ADR-070–074) — 2026-06-15</a></li><li class="depth-3"><a href="#ci-seed-load-fix-collision-resilient-pew-splitter-adr-046-amendment-2026-06-25">CI seed-load fix + collision-resilient PEW splitter (ADR-046 amendment) — 2026-06-25</a></li><li class="depth-3"><a href="#duplicate-fencer-fix-deterministic-recompute-recovery-adr-056-065-071-072-amendments-2026-06-26">Duplicate-fencer fix + deterministic recompute recovery (ADR-056/065/071/072 amendments) — 2026-06-26</a></li><li class="depth-2"><a href="#results-based-carry-stop-never-both-seasons-of-one-event-2026-06-26">Results-based carry-stop — never both seasons of one event (2026-06-26)</a></li><li class="depth-2"><a href="#joint-pool-split-place-numerator-reranked-per-v-cat-adr-049-amendment-2026-06-27">Joint-pool split — place numerator reranked per V-cat (ADR-049 amendment) — 2026-06-27</a></li><li class="depth-2"><a href="#carry-over-picker-round-trip-explicit-unlink-adr-044-amendment-2026-06-27">Carry-over picker round-trip + explicit unlink (ADR-044 amendment) — 2026-06-27</a></li><li class="depth-2"><a href="#cross-gender-guest-reconcile-fixpoint-adr-056-amendment-2026-06-27">Cross-gender-guest reconcile fixpoint (ADR-056 amendment) — 2026-06-27</a></li><li class="depth-2"><a href="#archived-documents">Archived Documents</a></li><li class="depth-2"><a href="#appendix-implementation-phasing-solution-approach">Appendix: Implementation Phasing &amp; Solution Approach</a></li><li class="depth-3"><a href="#phase-1-proof-of-concept-poc-completed-2026-03-25">Phase 1: Proof of Concept (POC) — COMPLETED (2026-03-25)</a></li><li class="depth-3"><a href="#phase-2-minimum-viable-product-mvp-completed-2026-04-04">Phase 2: Minimum Viable Product (MVP) — COMPLETED (2026-04-04)</a></li><li class="depth-3"><a href="#phase-2b-go-to-prod">Phase 2b: Go-to-PROD</a></li><li class="depth-4"><a href="#rebuild-progress-sub-phases-of-phase-2b">Rebuild progress (sub-phases of Phase 2b)</a></li><li class="depth-4"><a href="#phase-5-5-unified-ingestion-storage-verdicts-telegram-delivery-alias-triage-ux-in-progress-started-2026-05-03">Phase 5.5 — Unified ingestion + Storage verdicts + Telegram delivery + alias triage UX (in progress, started 2026-05-03)</a></li><li class="depth-3"><a href="#phase-3-advanced-integrations-no-longer-planned">Phase 3: Advanced Integrations - No Longer planned.</a></li><li class="depth-3"><a href="#self-contained-carry-stop-cross-gender-pgtap-fixtures-2026-06-28">Self-contained carry-stop / cross-gender pgTAP fixtures (2026-06-28)</a></li><li class="depth-3"><a href="#event-self-registration-phase-2-public-registration-ui-2026-07-05">Event self-registration — Phase 2 public registration UI (2026-07-05)</a></li><li class="depth-3"><a href="#2026-07-05-adr-079-amend-spws-registration-url-auto-fill-calendar-link-fix">2026-07-05 — ADR-079 amend: SPWS-registration URL auto-fill (calendar link fix)</a></li><li class="depth-3"><a href="#2026-07-05-adr-079-7-amend-in-app-registration-modal-register-html-build-correction">2026-07-05 — ADR-079 §7 amend: in-app registration modal + register.html build correction</a></li><li class="depth-3"><a href="#2026-07-05-adr-079-7-d-fix-register-html-unstyled-on-npm-run-dev-post-deploy-user-report">2026-07-05 — ADR-079 §7(d): fix register.html unstyled on `npm run dev` (post-deploy user report)</a></li><li class="depth-3"><a href="#2026-07-05-fr-123-entry-list-age-category-calendar-multi-weapon-fee-display">2026-07-05 — FR-123 entry-list age category + calendar multi-weapon fee display</a></li><li class="depth-3"><a href="#2026-07-05-mobile-gdpr-checkbox-entry-list-layout-fixes-same-day-follow-up">2026-07-05 — Mobile GDPR checkbox + entry-list layout fixes (same-day follow-up)</a></li></ol></nav>
+  <main><section class="section-card detail"><p><strong>This is a read-only archive.</strong> For the living specification, see <a href="Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.html">Project Specification</a>.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="phase-1-proof-of-concept-m0-m6">Phase 1: Proof of Concept (M0–M6)</h2>
+<p><strong>Completed:</strong> 2026-03-25
+<strong>Scope:</strong> Male Epee V2 (50+) only — single sub-ranking end-to-end
+<strong>Assertions at completion:</strong> 236 (pgTAP + pytest + vitest)</p>
+<h3 id="milestones">Milestones</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Milestone</th>
+<th>Description</th>
+<th>Date</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M0</td>
+<td>Project setup: Supabase, Python venv, Svelte 5, pgTAP</td>
+<td>2026-03-01</td>
+</tr>
+<tr>
+<td>M1</td>
+<td>Database foundation: 8 tables, enums, indexes, audit trigger, RLS</td>
+<td>2026-03-05</td>
+</tr>
+<tr>
+<td>M2</td>
+<td>Scoring engine: <code>fn_calc_tournament_scores</code> with place points, DE bonus, podium bonus, multiplier</td>
+<td>2026-03-08</td>
+</tr>
+<tr>
+<td>M3</td>
+<td>Data ingestion: FTL (JSON+CSV), Engarde (HTML), 4Fence (HTML) scrapers + URL dispatcher</td>
+<td>2026-03-10</td>
+</tr>
+<tr>
+<td>M4</td>
+<td>Identity resolution: RapidFuzz matching, alias support, disambiguation pipeline</td>
+<td>2026-03-14</td>
+</tr>
+<tr>
+<td>M5</td>
+<td>Ranking views: <code>fn_ranking_ppw</code> (domestic) + <code>fn_ranking_kadra</code> (international pool)</td>
+<td>2026-03-18</td>
+</tr>
+<tr>
+<td>M6</td>
+<td>Frontend: Svelte 5 Web Component with FilterBar, RanklistTable, DrilldownModal, ScoreChart</td>
+<td>2026-03-25</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="key-decisions-poc">Key Decisions (POC)</h3>
+<ul>
+<li>ADR-001: Hybrid scoring config (DB + JSONB rules)</li>
+<li>ADR-002: Calculate once, store forever</li>
+<li>ADR-003: Identity by FK (not name)</li>
+<li>ADR-005: Svelte $state for i18n</li>
+<li>ADR-006: JSONB ranking rules</li>
+<li>ADR-007: Shadow DOM isolation</li>
+</ul>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="phase-2-minimum-viable-product-m8-m10">Phase 2: Minimum Viable Product (M8–M10)</h2>
+<p><strong>Completed:</strong> 2026-04-04
+<strong>Scope:</strong> All 30 sub-rankings (3 weapons x 2 genders x 5 categories V0-V4)
+<strong>Assertions at completion:</strong> 544 (192 pgTAP + 104 pytest + 166 vitest + 7 Playwright + 75 new)</p>
+<h3 id="milestones-2">Milestones</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Milestone</th>
+<th>Description</th>
+<th>Date</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M8</td>
+<td>Multi-category data + Calendar UI + Schema extensions (arr_weapons, organizer, entry_fee)</td>
+<td>2026-03-26</td>
+</tr>
+<tr>
+<td>M9</td>
+<td>Admin CRUD (seasons, events, tournaments) + Identity resolution UI + File import parsers + Ingestion pipeline</td>
+<td>2026-04-04</td>
+</tr>
+<tr>
+<td>M10</td>
+<td>Rolling score for active season: carry-over from previous season, birth year subtitle, progress bar</td>
+<td>2026-03-29</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="key-decisions-mvp">Key Decisions (MVP)</h3>
+<ul>
+<li>ADR-008: PSW/MSW in international pool</li>
+<li>ADR-009: CERT/PROD runtime toggle</li>
+<li>ADR-010: Age category by birth year</li>
+<li>ADR-011: Three-tier release pipeline (LOCAL→CERT→PROD)</li>
+<li>ADR-013: POC→MVP transition strategy</li>
+<li>ADR-014: Delete-reimport strategy</li>
+<li>ADR-015: M8 UI design decisions</li>
+<li>ADR-016: Supabase Auth + TOTP MFA</li>
+<li>ADR-017: Season-configurable EVF toggle</li>
+<li>ADR-018: Rolling score for active season</li>
+<li>ADR-019: Domestic-only fencer seed</li>
+<li>ADR-020: Seed generator domestic auto-create</li>
+<li>ADR-021: IMEW biennial carry-over</li>
+</ul>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="phase-3-go-to-production">Phase 3: Go-to-Production</h2>
+<p><strong>Completed:</strong> 2026-04-07
+<strong>Scope:</strong> Full ingestion pipeline, EVF scraping, admin CRUD, CERT→PROD promotion
+<strong>Assertions at completion:</strong> 713 (236 pgTAP + 269 pytest + 201 vitest + 7 Playwright)</p>
+<h3 id="deliverables">Deliverables</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Description</th>
+<th>ADRs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pipeline Orchestration</td>
+<td>FTL XML parsing, combined-category splitting, fuzzy matching, atomic ingest</td>
+<td>ADR-022, 024</td>
+</tr>
+<tr>
+<td>Email Ingestion</td>
+<td>GAS polls Gmail → Supabase Storage → GitHub Actions ingest.yml</td>
+<td>ADR-023</td>
+</tr>
+<tr>
+<td>Event-Centric Ingestion</td>
+<td>Match XML to event by date, create tournaments on-the-fly, 20+ Telegram commands</td>
+<td>ADR-025</td>
+</tr>
+<tr>
+<td>CERT → PROD Promotion</td>
+<td>Per-tournament transfer with url_results carry, error recovery</td>
+<td>ADR-026</td>
+</tr>
+<tr>
+<td>Seed Export</td>
+<td>Full-season export from CERT, name-based lookups, auto-commit</td>
+<td>ADR-027</td>
+</tr>
+<tr>
+<td>EVF Calendar + Results</td>
+<td>JSON API scraper, calendar HTML parser, cron every 3 days, 7 events/64 results ingested</td>
+<td>ADR-028</td>
+</tr>
+<tr>
+<td>Tournament URL Auto-Population</td>
+<td>FTL/Engarde/4Fence discovery, Admin UI ⬇ buttons, PROD commands</td>
+<td>ADR-029</td>
+</tr>
+<tr>
+<td>Identity Resolution DB Wiring</td>
+<td>fn_approve/dismiss/create RPCs, match candidates view, integration tests</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Calendar UI Color Coding</td>
+<td>PEW blue, IMEW/MSW gold, 3-line slot boxes with city</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Admin Tournament CRUD</td>
+<td>Inline edit/create forms, delete with confirm, tooltips, import via GHA</td>
+<td>ADR-029</td>
+</tr>
+<tr>
+<td>UI Layout Improvements</td>
+<td>Season selector + env toggle moved to filter bars/footers</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="key-decisions-go-to-prod">Key Decisions (Go-to-PROD)</h3>
+<ul>
+<li>ADR-022: Ingestion DB transaction (single Postgres function)</li>
+<li>ADR-023: Email ingestion via GAS + Supabase Storage</li>
+<li>ADR-024: Combined category splitting (DOB-based)</li>
+<li>ADR-025: Event-centric ingestion + Telegram admin</li>
+<li>ADR-026: CERT → PROD promotion</li>
+<li>ADR-027: Full-season seed export</li>
+<li>ADR-028: EVF calendar + results import (JSON API)</li>
+<li>ADR-029: Tournament URL auto-population + admin CRUD</li>
+</ul>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="infrastructure">Infrastructure</h2>
+<h3 id="github-actions-workflows">GitHub Actions Workflows</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Workflow</th>
+<th>Trigger</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ci.yml</code></td>
+<td>Push to main</td>
+<td>pgTAP + pytest + vitest + coherence checks</td>
+</tr>
+<tr>
+<td><code>release.yml</code></td>
+<td>CI success</td>
+<td>Deploy to CERT (auto) + PROD (manual approval)</td>
+</tr>
+<tr>
+<td><code>ingest.yml</code></td>
+<td>GAS / manual</td>
+<td>Process XML from Supabase Storage staging</td>
+</tr>
+<tr>
+<td><code>evf-sync.yml</code></td>
+<td>Cron (3 days) / manual</td>
+<td>EVF calendar + results scraping</td>
+</tr>
+<tr>
+<td><code>export-seed.yml</code></td>
+<td>Telegram / manual</td>
+<td>Full-season seed export from CERT</td>
+</tr>
+<tr>
+<td><code>promote.yml</code></td>
+<td>Telegram / manual</td>
+<td>CERT → PROD event promotion</td>
+</tr>
+<tr>
+<td><code>populate-urls.yml</code></td>
+<td>Admin UI / Telegram</td>
+<td>Discover tournament URLs from event page</td>
+</tr>
+<tr>
+<td><code>scrape-tournament.yml</code></td>
+<td>Admin UI / Telegram</td>
+<td>Scrape results from tournament URL</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="telegram-commands-20">Telegram Commands (20+)</h3>
+<p><strong>Lifecycle:</strong> status, complete, rollback, promote
+<strong>Review:</strong> results, pending, missing
+<strong>Storage:</strong> staging, cleanup
+<strong>Season:</strong> season, ranking, ingest, export-seed
+<strong>EVF:</strong> evf-cal-import, evf-results-import, evf-status
+<strong>URLs:</strong> populate-urls, populate-urls-prod, t-scrape
+<strong>PROD:</strong> status-prod, results-prod, evf-status-prod
+<strong>Emergency:</strong> pause, resume</p>
+<h3 id="environments">Environments</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Env</th>
+<th>Supabase Ref</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LOCAL</td>
+<td><code>127.0.0.1:54321</code></td>
+<td>Development + testing</td>
+</tr>
+<tr>
+<td>CERT</td>
+<td><code>sdomfjncmfydlkygzpgw</code></td>
+<td>Staging / validation</td>
+</tr>
+<tr>
+<td>PROD</td>
+<td><code>ywgymtgcyturldazcpmw</code></td>
+<td>Public-facing</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="post-mvp-enhancements">Post-MVP Enhancements</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+<th>Date</th>
+<th>ADR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Event Registration URL + Deadline</td>
+<td>Two new fields on <code>tbl_event</code> (<code>url_registration</code>, <code>dt_registration_deadline</code>); conditional display in Calendar (deadline + link hide after cutoff date); admin edit form; 3 pgTAP + 8 vitest assertions</td>
+<td>2026-04-11</td>
+<td>ADR-030</td>
+</tr>
+<tr>
+<td>Local dev reset script</td>
+<td><code>scripts/reset-dev.sh</code> — combines <code>supabase db reset</code> with admin user recreation via GoTrue API (LOCAL ONLY)</td>
+<td>2026-04-11</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Date-aware event status transitions</td>
+<td>Replace static <code>VALID_TRANSITIONS</code> map in EventManager with date-aware logic: future events allow all statuses, past events lock status. Aligns UI with DB rollback support (ADR-025). Fixes spec state diagram. +3 vitest assertions</td>
+<td>2026-04-11</td>
+<td>— (aligns with ADR-025)</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="date-aware-event-status-transitions-implementation-plan">Date-Aware Event Status Transitions — Implementation Plan</h3>
+<p><strong>Problem:</strong> An IMSW event on CERT was accidentally marked COMPLETED despite being a future event. The frontend <code>VALID_TRANSITIONS</code> map has <code>COMPLETED: []</code>, blocking all transitions from COMPLETED. The DB trigger (<code>fn_validate_event_transition</code>) already permits <code>COMPLETED → PLANNED</code> and <code>COMPLETED → IN_PROGRESS</code> per ADR-025, but the UI never exposed these.</p>
+<p><strong>Approach:</strong> Replace static transition map with <code>getAvailableStatuses(event)</code> function:</p>
+<ul>
+<li><strong>Future event</strong> (<code>dt_start &gt;= today</code> or <code>dt_start</code> is null): offer ALL statuses except current</li>
+<li><strong>Past event</strong> (<code>dt_start &lt; today</code>): no dropdown (locked)</li>
+<li>DB trigger remains the authoritative safety net for invalid transitions</li>
+</ul>
+<h4 id="tests-tdd-red-phase-first">Tests (TDD — RED phase first)</h4>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>File</th>
+<th>Assertion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>9.49</td>
+<td><code>frontend/tests/EventManager.test.ts</code></td>
+<td><strong>REWRITE:</strong> past event (dt_start='2025-01-15') shows NO status dropdown</td>
+</tr>
+<tr>
+<td>9.87</td>
+<td><code>frontend/tests/EventManager.test.ts</code></td>
+<td>Future COMPLETED event (dt_start='2027-10-15') shows dropdown with 5 statuses (all except COMPLETED)</td>
+</tr>
+<tr>
+<td>9.88</td>
+<td><code>frontend/tests/EventManager.test.ts</code></td>
+<td>Event with dt_start=null shows dropdown (all except current)</td>
+</tr>
+<tr>
+<td>9.89</td>
+<td><code>frontend/tests/EventManager.test.ts</code></td>
+<td>Future CANCELLED event shows dropdown with 5 statuses</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="implementation-green-phase">Implementation (GREEN phase)</h4>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>frontend/src/components/EventManager.svelte</code></td>
+<td>Remove <code>VALID_TRANSITIONS</code> (lines 222–229); add <code>ALL_STATUSES</code> + <code>getAvailableStatuses(event)</code> function; update template (lines 64–71)</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="documentation">Documentation</h4>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>doc/Project Specification. SPWS Automated Ranklist System.md</code> (lines 1340–1354)</td>
+<td>Update mermaid state diagram: add <code>PLANNED→IN_PROGRESS</code>, <code>IN_PROGRESS→PLANNED</code>, <code>COMPLETED→IN_PROGRESS</code>, <code>COMPLETED→PLANNED</code>; remove <code>COMPLETED→[*]</code>; add note about UI date-aware locking</td>
+</tr>
+<tr>
+<td><code>doc/Project Specification. SPWS Automated Ranklist System.md</code> (Appendix D)</td>
+<td>vitest count +3 (net: rewrite 9.49 + add 9.87–9.89)</td>
+</tr>
+<tr>
+<td>RTM FR-23</td>
+<td>No change needed — already references 9.86–9.90</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="execution-order">Execution Order</h4>
+<ol>
+<li>Write tests → run → confirm RED</li>
+<li>Implement <code>getAvailableStatuses()</code> → run → confirm GREEN</li>
+<li>Update spec state diagram + Appendix D</li>
+<li>Update this development_history.md entry with implementation notes</li>
+</ol>
+<h4 id="implementation-notes-2026-04-11">Implementation Notes (2026-04-11)</h4>
+<ul>
+<li><strong>RED:</strong> 4 tests failed as expected (9.49 rewrite + 9.87–9.89 new)</li>
+<li><strong>GREEN:</strong> All 215 vitest tests pass after replacing <code>VALID_TRANSITIONS</code> with <code>getAvailableStatuses(event)</code></li>
+<li><strong>Spec:</strong> Updated mermaid state diagram (added ADR-025 rollback transitions, <code>PLANNED→IN_PROGRESS</code> auto-ingestion); added UI date-aware locking note</li>
+<li><strong>Appendix D:</strong> vitest 212→215, total 727→730</li>
+<li><strong>RTM FR-23:</strong> No change needed — already references 9.86–9.90</li>
+<li><strong>No new ADR:</strong> UI bugfix aligning with existing ADR-025 DB capabilities</li>
+</ul>
+<h3 id="bug-fix-season-scoring-config-inheritance-2026-04-11">Bug Fix: Season scoring config inheritance (2026-04-11)</h3>
+<p><strong>Problem:</strong> New seasons created via <code>fn_create_season</code> got <code>json_ranking_rules = NULL</code> in their auto-created <code>tbl_scoring_config</code> row. This caused rolling carry-over (ADR-018) to never activate — the ranking function fell into the legacy code path where rolling is not supported.</p>
+<p><strong>Root cause:</strong> The <code>fn_auto_create_scoring_config</code> trigger only inserted <code>id_season</code>, relying on column defaults. Since <code>json_ranking_rules</code> defaults to NULL, new seasons always lacked the JSONB bucket rules required for rolling.</p>
+<p><strong>Fix:</strong> Migration <code>20260411000002</code> — trigger now copies <code>json_ranking_rules</code> and <code>bool_show_evf_toggle</code> from the most recent previous season. Includes data patch for existing season SPWS-2026-2027.</p>
+<ul>
+<li><strong>RED:</strong> Test 9.40 failed (<code>json_ranking_rules not copied to new season</code>)</li>
+<li><strong>GREEN:</strong> All 240 pgTAP assertions pass after migration applied</li>
+<li><strong>RTM:</strong> FR-21 tests column updated (added 9.40)</li>
+<li><strong>Appendix D:</strong> pgTAP 239→240, T9.1 23→24</li>
+<li><strong>ADR-018:</strong> Added prerequisite note about <code>fn_auto_create_scoring_config</code> copying rules</li>
+</ul>
+<h3 id="auto-active-season-by-date-overlap-constraint-punktacja-relocation-2026-04-11">Auto-Active Season by Date + Overlap Constraint + Punktacja Relocation (2026-04-11)</h3>
+<p><strong>ADR-031:</strong> <code>bool_active</code> on <code>tbl_season</code> is now auto-derived from dates. Primary rule: <code>dt_start &lt;= TODAY &lt;= dt_end</code>. Fallback: nearest future season. Eliminates admin overhead for season transitions.</p>
+<p><strong>Changes:</strong></p>
+<ul>
+<li>Migration <code>20260411000003</code>: <code>fn_refresh_active_season()</code> function + <code>trg_season_refresh_active</code> trigger + <code>excl_season_date_overlap</code> exclusion constraint (btree_gist). Dropped <code>idx_season_active</code> partial unique index.</li>
+<li>Frontend: <code>refreshActiveSeason()</code> called on app load for midnight boundary handling</li>
+<li>Frontend: Punktacja menu item removed from sidebar; gear button added to each season row in SeasonManager, opens ScoringConfigEditor inline below the season list</li>
+<li>Frontend: Friendly error message for overlapping season dates</li>
+<li>Updated tests: 1.7 (exclusion constraint check), 1.15 (overlap rejection), 9.41-9.46 (auto-active logic), 10.23-10.24 (explicit season ID for carry-over)</li>
+</ul>
+<p><strong>TDD:</strong></p>
+<ul>
+<li><strong>RED:</strong> 6 new pgTAP tests failed (fn_refresh_active_season not found, exclusion_violation not raised)</li>
+<li><strong>GREEN:</strong> All 246 pgTAP + 215 vitest tests pass</li>
+<li><strong>RTM:</strong> FR-21, FR-22 updated; Appendix C: added ADR-031; Appendix D: pgTAP 240-&gt;246, T9.1 24-&gt;30</li>
+<li><strong>ADRs updated:</strong> ADR-018 (prerequisite note + ADR-031 ref), ADR-025 (ADR-031 note), ADR-027 (ADR-031 note)</li>
+</ul>
+<p><strong>Design decision:</strong> Future (not yet active) seasons intentionally show an empty ranklist. Rolling carry-over only kicks in when the season actually becomes active. This is by design — documented in ADR-018 (point 6), ADR-031 (consequences), and FR-65 (RTM).</p>
+<hr />
+<h3 id="drilldown-mobile-card-layout-adr-032-2026-04-11">Drilldown Mobile Card Layout (ADR-032) — 2026-04-11</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+<th>Date</th>
+<th>ADR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Drilldown Mobile Card Layout</td>
+<td>Dual-render table + card layout in DrilldownModal; CSS media query (<code>max-width: 600px</code>) shows cards on mobile, hides table; all 11 data fields preserved; 14 new vitest assertions (C.1–C.14)</td>
+<td>2026-04-11</td>
+<td>ADR-032</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Problem:</strong> The 7-column tournament table in DrilldownModal overflows on 375px mobile screens (<code>min-width: 480px</code>), especially in +EVF mode with two tables. Users must rotate to landscape.</p>
+<p><strong>Approach:</strong> Render both <code>&lt;table&gt;</code> and <code>.card-list</code> in DOM. CSS media query swaps visibility. No JS viewport detection. Existing tests unaffected (jsdom ignores CSS).</p>
+<p><strong>Changes:</strong></p>
+<ul>
+<li><code>DrilldownModal.svelte</code>: New <code>{#snippet tournamentCards(rows)}</code> with <code>.result-card</code> per tournament; card CSS (65 lines); <code>@media (max-width: 600px)</code> hides table, shows cards; removed <code>table { min-width: 480px }</code> mobile override</li>
+<li><code>DrilldownModal.test.ts</code>: 14 new tests (C.1–C.14) covering all card elements: tournament code (text + link), location, date, type badge, place/N, multiplier, points+marker, carried class, carried badge, KADRA vs PPW card-list count</li>
+</ul>
+<p><strong>TDD:</strong></p>
+<ul>
+<li><strong>RED:</strong> 14 new tests failed (<code>.card-list</code> not found, <code>.result-card</code> elements missing)</li>
+<li><strong>GREEN:</strong> All 229 vitest tests pass (215 existing + 14 new)</li>
+<li><strong>RTM:</strong> NFR-09 updated (Not tested → Covered); Appendix C: added ADR-032; Appendix D: vitest 215→229, total 730→744</li>
+<li><strong>Coverage:</strong> NFR-09 (Mobile responsive ≥ 375px) now covered by C.1–C.14</li>
+</ul>
+<h3 id="fencer-gender-identity-manager-enhancement-adr-033-adr-034-2026-04-11">Fencer Gender + Identity Manager Enhancement (ADR-033, ADR-034) — 2026-04-11</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+<th>Date</th>
+<th>ADR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fencer Gender Column</td>
+<td><code>enum_gender</code> on <code>tbl_fencer</code>, backfilled from tournament participation (majority vote); authoritative source — never overwritten by import</td>
+<td>2026-04-11</td>
+<td>ADR-033</td>
+</tr>
+<tr>
+<td>Identity Manager Redesign</td>
+<td>Card-based layout with inline edit form: fencer dropdown (suggested/create new/search), always-editable fields (SURNAME forced ALL CAPS, first name, gender, birth year), inline error display, form stays open on error, auto-closes on success</td>
+<td>2026-04-12</td>
+<td>ADR-033</td>
+</tr>
+<tr>
+<td>Widened Identity RPCs</td>
+<td><code>fn_approve_match</code>, <code>fn_dismiss_match</code>, <code>fn_create_fencer_from_match</code> now accept AUTO_MATCHED status; <code>fn_create_fencer_from_match</code> accepts gender parameter; new <code>fn_update_fencer_gender</code> RPC</td>
+<td>2026-04-11</td>
+<td>ADR-033</td>
+</tr>
+<tr>
+<td>Cross-Gender Scoring Rules</td>
+<td>Documented asymmetric rules: man in women's → never counts; woman in men's → moved to women's ranklist if no women's tournament exists, else dropped. Enforcement deferred.</td>
+<td>2026-04-11</td>
+<td>ADR-034</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Problem:</strong> The Identity Manager had limited actions (approve only PENDING, create-new only UNMATCHED domestic). No way to reassign matches to different fencers. No gender tracking on fencers led to a woman appearing in men's sabre rankings.</p>
+<p><strong>Approach:</strong> Add <code>enum_gender</code> column with backfill. Redesign Identity Manager as card-based layout with unified inline edit form per candidate (replaces separate modal dialogs). Dropdown selects fencer source (suggested match / create new / search), all fields always editable, surname forced ALL CAPS. Form stays open on error, auto-closes on successful status change. Document cross-gender scoring rules as ADR-034 (deferred enforcement, gender mismatch is informational per ADR-034).</p>
+<p><strong>Changes:</strong></p>
+<ul>
+<li>Migration <code>20260412000001</code>: ALTER TABLE + backfill + 4 RPCs (CREATE OR REPLACE + new fn_update_fencer_gender) + updated vw_match_candidates</li>
+<li><code>IdentityManager.svelte</code>: complete rewrite — card layout, inline edit form with fencer dropdown + search panel, always-editable fields, SURNAME ALL CAPS, error banner, auto-close on status change</li>
+<li><code>CreateFencerModal.svelte</code> (new): standalone form modal (kept for potential reuse)</li>
+<li><code>FencerSearchModal.svelte</code> (new): standalone search modal (kept for potential reuse)</li>
+<li><code>App.svelte</code>: allFencers state, loadAllFencers, handleAssignFencer, handleUpdateFencerGender, handleCreateNewFencer (now accepts form data), identityError state</li>
+<li><code>api.ts</code>: fetchAllFencers, updateFencerGender, createFencerFromMatch with gender</li>
+<li><code>types.ts</code>: FencerListItem, MatchCandidate + gender fields</li>
+<li>Locale keys: 11 new identity_ keys (en + pl)</li>
+<li>Mockup: <code>doc/mockups/identity-edit-form.html</code></li>
+</ul>
+<p><strong>TDD:</strong></p>
+<ul>
+<li><strong>RED:</strong> 8 pgTAP + 12 vitest new assertions failed</li>
+<li><strong>GREEN:</strong> All 254 pgTAP + 241 vitest pass</li>
+<li><strong>RTM:</strong> FR-07 tests updated; FR-56 tests expanded (9.83–9.88, 11.13–11.19); new FR-92 added; ADR-033+034 in Appendix C; Appendix D: pgTAP 246→254, vitest 229→241, total 744→771</li>
+<li><strong>Coverage:</strong> FR-92 (Fencer gender) covered by 11.16–11.19, 9.85–9.86, 9.89–9.94</li>
+</ul>
+<h3 id="fencers-view-with-tabs-adr-035-2026-04-12">Fencers View with Tabs (ADR-035) — 2026-04-12</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+<th>Date</th>
+<th>ADR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fencers View</td>
+<td>Renamed <code>admin_identities</code> → <code>admin_fencers</code>; tab bar inlined in App.svelte with fencer count header; sticky tab bar + filter rows</td>
+<td>2026-04-12</td>
+<td>ADR-035</td>
+</tr>
+<tr>
+<td>Identities Tab</td>
+<td>Existing IdentityManager preserved with zero logic changes, rendered as Tab 1</td>
+<td>2026-04-12</td>
+<td>ADR-035</td>
+</tr>
+<tr>
+<td>Birth Year Review Tab</td>
+<td>Full fencer list with filters (birth year status + gender), search, expandable edit form with gender dropdown + birth year + accuracy, tournament history grouped by season, birth year hints + auto-suggest, age category inconsistency flag, form closes on Save/Cancel</td>
+<td>2026-04-12</td>
+<td>ADR-035</td>
+</tr>
+<tr>
+<td>fn_update_fencer_birth_year</td>
+<td>New RPC for admin birth year + estimated flag edits</td>
+<td>2026-04-12</td>
+<td>ADR-035</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Problem:</strong> Auto-created fencers had estimated or missing birth years with no admin workflow to review and confirm them. The Identity Manager was a single-purpose view that couldn't accommodate fencer data quality tasks.</p>
+<p><strong>Approach:</strong> Consolidate fencer-related admin work into a tabbed &quot;Fencers&quot; view. Tab bar inlined in App.svelte (a separate FencerView.svelte wrapper was attempted but caused Svelte 5 <code>state_unsafe_mutation</code> — <code>Array.sort()</code> inside <code>$derived</code> mutates reactive state; fixed with <code>[...list].sort()</code> and inlined approach). Tab 1 renders IdentityManager (zero changes). Tab 2 adds BirthYearReview with tournament history context, age category hints, gender edit, and inconsistency detection. All UI text internationalized via <code>t()</code>. Conflict-scanned all 34 existing ADRs — zero conflicts.</p>
+<p><strong>Changes:</strong></p>
+<ul>
+<li><code>BirthYearReview.svelte</code> (new): fencer list with filters/search, expandable edit form (gender dropdown + birth year + accuracy), tournament history grouped by season, birth year hint + auto-suggest, inconsistency flag, sticky filter bar, form closes on Save/Cancel</li>
+<li><code>App.svelte</code>: tab bar with Identities/Birth year review, fencer count header, sticky positioning; new handlers for birth year update + gender update + tournament history fetch</li>
+<li>Migration <code>20260412000004</code>: <code>fn_update_fencer_birth_year(p_fencer_id, p_birth_year, p_estimated)</code></li>
+<li><code>Sidebar.svelte</code>: <code>admin_identities</code> → <code>admin_fencers</code></li>
+<li><code>IdentityManager.svelte</code>: sticky filter bar added</li>
+<li><code>types.ts</code>: AppView updated, new <code>FencerTab</code>, <code>BirthYearFilter</code>, <code>FencerTournamentRow</code> types; <code>FencerListItem</code> extended with <code>bool_birth_year_estimated</code>, <code>txt_nationality</code></li>
+<li><code>api.ts</code>: <code>fetchFencerTournamentHistory</code>, <code>updateFencerBirthYear</code>, extended <code>fetchAllFencers</code></li>
+<li>Locale keys: 16 new keys (en + pl), <code>nav_admin_identities</code> removed</li>
+<li><strong>Svelte 5 lesson:</strong> Never call <code>.sort()</code> on reactive arrays inside <code>$derived</code> — use <code>[...array].sort()</code> to avoid <code>state_unsafe_mutation</code></li>
+</ul>
+<p><strong>TDD:</strong></p>
+<ul>
+<li><strong>RED:</strong> 5 pgTAP + 14 vitest new assertions failed</li>
+<li><strong>GREEN:</strong> All 259 pgTAP + 255 vitest pass</li>
+<li><strong>RTM:</strong> FR-56 updated (tab in App.svelte); new FR-93 added; ADR-035 in Appendix C; Appendix D: pgTAP 254→259, vitest 241→255, total 771→790</li>
+<li><strong>Coverage:</strong> FR-93 covered by 9.100–9.113, 13.1–13.4; UC16 partially implemented (birth year + gender editing; merge deferred)</li>
+</ul>
+<h3 id="cross-gender-scoring-enforcement-adr-034-2026-04-12">Cross-Gender Scoring Enforcement (ADR-034) — 2026-04-12</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+<th>Date</th>
+<th>ADR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>fn_effective_gender</td>
+<td>Pure SQL helper computing effective ranklist gender per ADR-034 asymmetric rules: normal match, man-in-F (dropped), woman-in-M without F sibling (reassigned to F), woman-in-M with F sibling (dropped)</td>
+<td>2026-04-12</td>
+<td>ADR-034</td>
+</tr>
+<tr>
+<td>Ranking function updates</td>
+<td>All 4 ranking functions (<code>fn_ranking_ppw</code>, <code>fn_ranking_kadra</code>, <code>fn_fencer_scores_rolling</code>, <code>fn_category_ranking</code>) filter on <code>fn_effective_gender()</code> instead of raw <code>t.enum_gender</code></td>
+<td>2026-04-12</td>
+<td>ADR-034</td>
+</tr>
+<tr>
+<td>PPW5 sabre seed data</td>
+<td>PPW5-V1-M-SABRE-2025-2026 (Gdańsk, 2026-04-11): SAMECKA-NACZYŃSKA Martyna as sole participant — first real cross-gender case in seed data</td>
+<td>2026-04-12</td>
+<td>ADR-034</td>
+</tr>
+<tr>
+<td>Calendar filter fix</td>
+<td>Time filter dropdown (All/Past/Future) now also filters event boxes at the top, matching the SPWS/+EVF toggle behaviour</td>
+<td>2026-04-12</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Problem:</strong> SAMECKA-NACZYŃSKA Martyna (F) appeared in the M sabre V1 ranklist on CERT because she was the sole participant in PPW5-V1-M-SABRE-2025-2026 (a joined tournament). ADR-034 documented the rules but enforcement was deferred to manual admin review.</p>
+<p><strong>Approach:</strong> Automated enforcement at ranking query time via <code>fn_effective_gender</code> helper function. The helper encodes all 4 ADR-034 rules in a single CASE expression. The EXISTS subquery (sibling tournament check) only fires for the rare cross-gender mismatch case — normal results short-circuit. Scores are not recalculated (ADR-002 respected); only ranklist assignment changes. Each ranking function's <code>AND t.enum_gender = p_gender</code> replaced with a one-line <code>fn_effective_gender(...)</code> call (10 filter sites across 4 functions).</p>
+<p><strong>Changes:</strong></p>
+<ul>
+<li>Migration <code>20260412000005</code>: <code>fn_effective_gender</code> + DROP/CREATE of <code>fn_ranking_ppw</code>, <code>fn_ranking_kadra</code>, <code>fn_fencer_scores_rolling</code>; CREATE OR REPLACE of <code>fn_category_ranking</code> (added <code>tbl_fencer</code> join). Includes IN_PROGRESS carry-over fix from migration <code>000006</code> (which the DROP/CREATE would otherwise undo).</li>
+<li><code>supabase/data/2025_2026/v1_m_sabre.sql</code>: PPW5 seed data with Martyna's cross-gender result</li>
+<li><code>supabase/data/2025_2026/zz_events_metadata.sql</code>: PPW5 status SCHEDULED → COMPLETED</li>
+<li><code>supabase/tests/09_rolling_score.sql</code>: cascade-safe DELETE for PPW5 event (FK from new tournament)</li>
+<li><code>frontend/src/components/CalendarView.svelte</code>: time filter applied to event boxes (positionSlots)</li>
+</ul>
+<p><strong>TDD:</strong></p>
+<ul>
+<li><strong>RED:</strong> 9 pgTAP tests failed (fn_effective_gender does not exist)</li>
+<li><strong>GREEN:</strong> All 268 pgTAP + 269 pytest + 255 vitest pass</li>
+<li><strong>RTM:</strong> FR-92 tests expanded (14.CG1–14.CG9); ADR-034 status Deferred→Implemented in Appendix C; Appendix D: pgTAP 259→268, total 790→799</li>
+<li><strong>Coverage:</strong> FR-92 (Cross-gender scoring) fully covered by fn_effective_gender unit tests + ranking integration tests</li>
+</ul>
+<h3 id="multi-slot-event-result-urls-adr-040-2026-04-25">Multi-Slot Event Result URLs (ADR-040) — 2026-04-25</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+<th>Date</th>
+<th>ADR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tbl_event.url_event_2..5</code></td>
+<td>4 nullable TEXT columns alongside the existing <code>url_event</code>. Up to 5 result-platform URL slots per event. Slots are equal-status — no role labels, no per-slot enum, no primary pointer.</td>
+<td>2026-04-25</td>
+<td>ADR-040</td>
+</tr>
+<tr>
+<td><code>fn_compact_urls(VARIADIC TEXT[])</code></td>
+<td>Pure helper. Trim → drop empty → dedupe first-occurrence → pad NULL to length 5. Shared by <code>fn_create_event</code>, <code>fn_update_event</code>, <code>fn_refresh_evf_event_urls</code>. Compact-on-save guarantees: <em>if any URL is set, slot #1 (<code>url_event</code>) is set.</em></td>
+<td>2026-04-25</td>
+<td>ADR-040</td>
+</tr>
+<tr>
+<td>EventManager.svelte form</td>
+<td>URL section with slot #1 visible (primary cyan border) and slots #2–5 behind a disclosure (auto-opens when any of #2–5 has content; filled-count display). Save handler compacts before calling <code>oncreate</code>/<code>onupdate</code>.</td>
+<td>2026-04-25</td>
+<td>ADR-040</td>
+</tr>
+<tr>
+<td><code>discover_tournament_urls_for_event</code></td>
+<td>New entry point in <code>populate_tournament_urls.py</code>. Iterates non-null slots, runs platform-detect-and-discover per URL, merges per-(weapon,gender,category) results dedupe-first-occurrence. Logs warning on collision.</td>
+<td>2026-04-25</td>
+<td>ADR-040</td>
+</tr>
+<tr>
+<td>promote.py calendar mode</td>
+<td><code>_read_cert_evf_events</code> SQL extended to select all 5 slots; <code>_build_refresh_payload</code> ships <code>url_event_2..5</code> keys to PROD. Per-slot NULL-only invariant + post-write recompact preserve admin-edit protection.</td>
+<td>2026-04-25</td>
+<td>ADR-040</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Problem:</strong> EVF Circuit Budapest 2025-09-20/21 had three organiser-published Engarde URLs (one per weapon: <code>pbt</code>/<code>kard</code>/<code>tor</code>). Our schema modelled <code>tbl_event.url_event</code> as a single TEXT column, so ADR-029's <code>populate-urls.yml</code> could only auto-populate one weapon's tournaments; the other ~20 had to be entered manually. The same shape recurs for any event the organiser splits across multiple platform URLs (per-weapon, per-day, or per-day×weapon).</p>
+<p><strong>Approach:</strong> Additive schema extension — 4 nullable columns, not an array or child table. Compact-on-save makes &quot;URL #1 = canonical primary&quot; a structural invariant rather than coincidence, so every existing <code>url_event</code>-dependent code path (calendar 🔗 link, ⬇ Import button, ADR-029 auto-populate seed, ADR-028 refresh write order) keeps working unchanged. Slot positions are non-semantic; admin's choice of &quot;which slot got cleared&quot; carries no information worth preserving across edits.</p>
+<p><strong>Changes:</strong></p>
+<ul>
+<li>Migration <code>20260425000001_event_multi_url.sql</code>: 4 ALTER TABLEs, <code>fn_compact_urls</code>, fn_create_event/fn_update_event recreated with 4 new params, fn_refresh_evf_event_urls extended with per-slot NULL-only invariant + post-write compact.</li>
+<li><code>supabase/tests/15_event_multi_url.sql</code>: 6 new pgTAP assertions (15.1–15.6).</li>
+<li><code>frontend/src/lib/types.ts</code>: 4 fields on <code>CalendarEvent</code>, 4 on <code>Create/UpdateEventParams</code>.</li>
+<li><code>frontend/src/lib/api.ts</code>: pass <code>p_url_event_2..5</code> in createEvent / updateEvent.</li>
+<li><code>frontend/src/lib/locales/{en,pl}.json</code>: 5 new keys.</li>
+<li><code>frontend/src/components/EventManager.svelte</code>: 5-slot URL section, disclosure, filled-count, <code>compactUrls</code> helper, primary marker on slot #1.</li>
+<li><code>frontend/tests/EventManager.test.ts</code>: 6 new vitest cases (9.44a–9.44f).</li>
+<li><code>python/tools/populate_tournament_urls.py</code>: <code>discover_tournament_urls_for_event</code> + main() reads all 5 slots.</li>
+<li><code>python/pipeline/promote.py</code>: SQL select extended; <code>_build_refresh_payload</code> ships all 5 slots.</li>
+<li><code>python/tests/test_url_discovery.py</code>: 3 new pytest cases (3.16k–3.16m).</li>
+<li><code>python/tests/test_promote.py</code>: 1 new case (prom.8).</li>
+<li><code>doc/mockups/m12_event_edit_multi_url.html</code>: dual-state mockup (typical 1-URL + Budapest 3-URL).</li>
+</ul>
+<p><strong>TDD:</strong></p>
+<ul>
+<li><strong>RED:</strong> 6 pgTAP + 6 vitest + 4 pytest assertions failed (column missing, fn_compact_urls absent, form lacks slots #2–5, multi-slot discovery absent, refresh payload missing keys).</li>
+<li><strong>GREEN:</strong> 292 pgTAP + 314 pytest (9 skipped) + 273 vitest pass.</li>
+<li><strong>RTM:</strong> FR-48 updated (12 tbl_event extension columns); FR-98 added; ADR-040 in Appendix C; Appendix D: pgTAP 286→292, pytest 310→314, vitest 267→273, total 870→886.</li>
+<li><strong>Coverage:</strong> FR-98 fully covered (15.1–15.6 + 9.44a–f + 3.16k–m + prom.8).</li>
+</ul>
+<h3 id="server-side-workflow-dispatch-via-edge-function-adr-041-2026-04-25">Server-Side Workflow Dispatch via Edge Function (ADR-041) — 2026-04-25</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+<th>Date</th>
+<th>ADR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dispatch-workflow</code> Edge Function</td>
+<td>Deno function holds the GH PAT as a Supabase env secret (<code>GH_DISPATCH_PAT</code>, <code>GH_REPO</code>); accepts <code>{ workflow, inputs }</code> from authenticated callers; allowlist of two workflows (<code>populate-urls.yml</code>, <code>scrape-tournament.yml</code>); returns sync <code>{ ok, runs_url }</code> after calling GitHub's dispatches API. PAT never appears in browser.</td>
+<td>2026-04-25</td>
+<td>ADR-041</td>
+</tr>
+<tr>
+<td><code>requestDispatch()</code> API</td>
+<td>Frontend helper calling <code>supabase.functions.invoke('dispatch-workflow', ...)</code>. Caller's session JWT auto-attached. Returns <code>DispatchResult</code> typed union.</td>
+<td>2026-04-25</td>
+<td>ADR-041</td>
+</tr>
+<tr>
+<td>EventManager inline status</td>
+<td>Per-event-row dispatch status (pending → success-with-link → error) rendered below the event-row, above the tournament-list. Auto-clears 5 minutes after terminal state. Multiple events can show independent statuses.</td>
+<td>2026-04-25</td>
+<td>ADR-041</td>
+</tr>
+<tr>
+<td>Removed: <code>github-pat</code> / <code>github-repo</code> HTML attributes</td>
+<td>Stripped from <code>&lt;spws-ranklist&gt;</code> web component (App.svelte props + index.html). PAT never lives in HTML again. <code>triggerGitHubWorkflow</code> still exported from api.ts as legacy API but no longer called from App.svelte.</td>
+<td>2026-04-25</td>
+<td>ADR-041</td>
+</tr>
+<tr>
+<td><code>release.yml</code> Edge Function deploy</td>
+<td>New step in deploy-cert + deploy-prod jobs: <code>supabase functions deploy dispatch-workflow --project-ref ...</code>. Idempotent; replaces function on each release.</td>
+<td>2026-04-25</td>
+<td>ADR-041</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Problem:</strong> The admin UI's ⬇ buttons triggered GitHub workflows by reading a PAT from a <code>github-pat</code> HTML attribute on <code>&lt;spws-ranklist&gt;</code> and POSTing to GitHub's dispatches API directly from the browser. The deployed <code>index.html</code> is served by GitHub Pages at a public URL — embedding a PAT in that HTML means anyone with View Source could scrape it. The release pipeline already declined to populate the attribute (the four <code>sed</code> lines covered <code>supabase-*</code> only, deliberately not <code>github-*</code>), which made the button effectively dev-only on cloud and pushed admins to use the secure Telegram path. Admins wanted both surfaces working, securely.</p>
+<p><strong>Approach:</strong> Server-side workflow dispatch via Supabase Edge Function. Browser invokes <code>supabase.functions.invoke('dispatch-workflow', ...)</code> with the user's session JWT auto-attached; the function (Deno, ~100 lines including CORS + validation) reads the PAT from <code>Deno.env.get('GH_DISPATCH_PAT')</code> and forwards a <code>workflow_dispatch</code> call to GitHub. Allowlist of two workflows narrows the function's blast radius even if the auth check is bypassed — only <code>populate-urls.yml</code> and <code>scrape-tournament.yml</code> are reachable through it. Sub-second click-to-dispatch latency.</p>
+<p><strong>Why not the cron-poller queue I drafted first:</strong> rejected after re-evaluation. The &quot;uses zero PATs&quot; framing was rhetorical (Supabase env secret is not meaningfully less secure than <code>GITHUB_TOKEN</code> inside a runner); the queue added a <code>tbl_dispatch_request</code> table + RLS + 2 RPCs + a workflow YAML + frontend polling logic for no security advantage and worse UX (60s worst-case latency, 1440 wasted runs/day). The Edge Function is ~100 LoC for the same security guarantee at sub-second latency.</p>
+<p><strong>Changes:</strong></p>
+<ul>
+<li>New <code>supabase/functions/dispatch-workflow/index.ts</code> (Deno, ~100 lines).</li>
+<li><code>supabase/config.toml</code>: declare <code>[functions.dispatch-workflow] verify_jwt = true</code>.</li>
+<li><code>frontend/src/lib/api.ts</code>: <code>requestDispatch()</code> + <code>DispatchResult</code> type.</li>
+<li><code>frontend/src/components/EventManager.svelte</code>: <code>dispatchAndTrack</code> helper, <code>handleDispatchEvent</code>, <code>handleDispatchTournament</code>, per-event <code>dispatchStatus: Map&lt;id, DispatchState&gt;</code>, inline status block in template, dispatch CSS.</li>
+<li><code>frontend/src/components/EventManager.svelte</code>: removed <code>onimportevent</code> and <code>onimporttournament</code> props; ⬇ buttons call internal handlers directly.</li>
+<li><code>frontend/src/App.svelte</code>: removed <code>handleImportEvent</code>, <code>handleImportTournament</code>, <code>triggerGitHubWorkflow</code> import, <code>github-pat</code> / <code>github-repo</code> props.</li>
+<li><code>frontend/index.html</code>: removed <code>github-pat=&quot;&quot;</code> and <code>github-repo=&quot;&quot;</code> attributes.</li>
+<li><code>frontend/tests/EventManager.test.ts</code>: 6 new vitest cases (9.45a–9.45f) with <code>vi.mock('../src/lib/api')</code> for <code>requestDispatch</code>.</li>
+<li><code>.github/workflows/release.yml</code>: <code>supabase functions deploy dispatch-workflow</code> step in <code>deploy-cert</code> and <code>deploy-prod</code>.</li>
+</ul>
+<p><strong>One-time setup per environment</strong> (admin runs once, manually):</p>
+<pre><code>supabase secrets set --project-ref &lt;CERT_REF&gt; GH_DISPATCH_PAT=&lt;fine-grained-pat&gt; GH_REPO=Fencer4Life/spws-automated-ranklist
+supabase secrets set --project-ref &lt;PROD_REF&gt; GH_DISPATCH_PAT=&lt;fine-grained-pat&gt; GH_REPO=Fencer4Life/spws-automated-ranklist
+</code></pre>
+<p>The PAT should be <strong>fine-grained, scoped to this repo only, with <code>Actions: read and write</code> permission and nothing else</strong>.</p>
+<p><strong>TDD:</strong></p>
+<ul>
+<li><strong>RED:</strong> 5/6 vitest assertions failed (the 6th — button hidden when <code>url_event</code> null — was already passing; treated as regression guard).</li>
+<li><strong>GREEN:</strong> 293 pgTAP + 314 pytest (9 skipped) + 279 vitest pass.</li>
+<li><strong>RTM:</strong> FR-99 added; ADR-041 in Appendix C; Appendix D: vitest 273→279, total 887→893.</li>
+<li><strong>Coverage:</strong> FR-99 fully covered (9.45a–9.45f).</li>
+</ul>
+<h4 id="amendment-2026-04-25-refresh-on-dispatch-ux-8-tests">Amendment 2026-04-25 — Refresh-on-dispatch UX (8 tests)</h4>
+<p><strong>Problem:</strong> the dispatch returns instantly (workflow accepted by GitHub Actions) but the actual <code>url_results</code> PATCH lands ~20-30 seconds later when the script runs. Admin clicked ⬇, saw <code>✓ Triggered</code>, but the tournament list still showed empty URLs because the frontend never re-fetched. Manual hard-refresh of the browser was the only way to see the new data.</p>
+<p><strong>Approach:</strong> Two complementary refresh triggers, both calling existing <code>App.reloadAdminEvents</code> via a new <code>onrefresh</code> prop:</p>
+<ol>
+<li><strong>Auto-refresh ~40s after dispatch success.</strong> <code>setTimeout(onrefresh, 40_000)</code> scheduled in <code>dispatchAndTrack</code>'s success branch, per-event timer ID tracked so a second dispatch on the same event resets the clock (latest wins, no double-fire).</li>
+<li><strong>Refetch on every accordion expand (▶ → ▼).</strong> <code>toggleExpand</code> calls <code>runRefreshFor(eventId)</code> on the collapsed→expanded transition; collapsing is a no-op for refresh. Maps to natural admin intent (&quot;show me this event's tournaments now&quot;). Always fires regardless of whether a dispatch happened — consistent semantics, no stale-tracking state.</li>
+</ol>
+<p><strong>Spinner UX (clever, not generic — see <a href="archive/adr041_refresh_ux_plan.md"><code>doc/archive/adr041_refresh_ux_plan.md</code></a>):</strong></p>
+<ul>
+<li><strong>Delayed-show ≥200 ms</strong> — sub-200ms refreshes (the 95% case on CERT) render zero spinner. No flicker on fast networks.</li>
+<li><strong>Per-event <code>Map&lt;id_event, RefreshPhase&gt;</code></strong> — no global overlay. A slow refresh on one event doesn't blank-out the rest of the calendar.</li>
+<li><strong>Banner lifecycle morph</strong> for dispatch-triggered auto-refresh — the existing dispatch-status banner reuses its slot to morph through <code>Triggering → Triggered → Refreshing → Refreshed at HH:MM:SS</code>. One coherent timeline; CSS animates the colour transition for free.</li>
+<li><strong>Triangle morph</strong> for expand-triggered refresh on events with no dispatch banner — the expand triangle itself morphs <code>▶ → ◐ (CSS-spun) → ✓ (1.5s) → ▼</code>. Co-located with the action that triggered it; zero new UI elements.</li>
+</ul>
+<p><strong>State machine (per event):</strong></p>
+<pre><code>idle ──[refresh starts]──→ pending ──[&lt;200ms]──→ success-flash (1.5s) ──→ idle
+                              ↘[≥200ms]──→ visible ──[done]──→ success-flash ──→ idle
+                                                  ↘[error]──→ failed (3s) ──→ idle
+</code></pre>
+<p>One state machine, two render targets (banner-morph or triangle-morph) depending on whether a dispatch banner already exists for that event.</p>
+<p><strong>Changes:</strong></p>
+<ul>
+<li><code>frontend/src/components/EventManager.svelte</code>: new <code>onrefresh</code> prop, <code>refreshState: Map&lt;number, RefreshPhase&gt;</code>, <code>dispatchTimers: Map&lt;number, Timeout&gt;</code>, <code>runRefreshFor(eventId)</code> helper with delayed-show pattern, auto-refresh <code>setTimeout</code> in <code>dispatchAndTrack</code> success branch, <code>toggleExpand</code> fires refresh on collapsed→expanded only, expand-button class morph (<code>refreshing</code> / <code>refresh-success</code> / <code>refresh-failed</code>) + glyph morph (◐/✓/⚠), dispatch-banner content morph during refresh phases.</li>
+<li><code>frontend/src/App.svelte</code>: pass <code>onrefresh={reloadAdminEvents}</code> to <code>&lt;EventManager&gt;</code>.</li>
+<li><code>frontend/tests/EventManager.test.ts</code>: 8 new vitest cases (9.45g–9.45n) using <code>vi.useFakeTimers</code> + <code>vi.advanceTimersByTimeAsync</code> for deterministic timing.</li>
+</ul>
+<p><strong>TDD:</strong></p>
+<ul>
+<li><strong>RED:</strong> 6/8 new tests failed (9.45j and 9.45k passed vacuously pre-implementation — collapse never called onrefresh because no impl existed; spinner-not-rendered passed because no spinner element existed).</li>
+<li><strong>GREEN:</strong> 293 pgTAP + 314 pytest (9 skipped) + 287 vitest pass.</li>
+<li><strong>Appendix D:</strong> vitest 279→287, total 893→901.</li>
+<li><strong>Coverage:</strong> FR-99 extended with refresh UX coverage (9.45g–9.45n).</li>
+</ul>
+<h4 id="amendment-2026-04-25-banner-clears-after-refresh-prod-target">Amendment 2026-04-25 — Banner clears after refresh + PROD target</h4>
+<p>Two small follow-ups:</p>
+<ol>
+<li>
+<p><strong>Dispatch banner clears 1.5s after a successful refresh.</strong> Previously the banner stayed for the full 5-minute auto-clear window; visually screwed up the accordion long after the dispatch + downstream refresh had completed. Now <code>runRefreshFor</code>'s success branch — at the end of the 1.5s success-flash — also removes the dispatch banner, guarded by a <code>dispatchTsAtStart</code> comparison so a fresh dispatch on the same event during the success-flash window doesn't get its banner prematurely wiped. Test 9.45o asserts banner is gone 1.5s after refresh resolves.</p>
+</li>
+<li>
+<p><strong>PROD target threading.</strong> The <code>populate-urls.yml</code> workflow already accepted <code>target: cert | prod</code>; the frontend wasn't passing it, so PROD admin clicks always wrote to CERT. Now <code>EventManager</code> accepts an <code>activeEnv: 'CERT' | 'PROD'</code> prop and threads <code>target: activeEnv.toLowerCase()</code> into both populate-urls and scrape-tournament dispatches. <code>scrape-tournament.yml</code> extended with the same <code>target</code> input + ternary <code>SUPABASE_URL/KEY</code> selection (mirrors populate-urls.yml). Telegram path untouched — GAS doesn't pass <code>target</code>, so the workflow's <code>default: 'cert'</code> kicks in (backward-compatible). Tests 9.45p (target=cert) and 9.45q (target=prod). 9.45a updated to use <code>objectContaining</code> since inputs now carry an extra <code>target</code> field.</p>
+</li>
+</ol>
+<p><strong>Files modified:</strong></p>
+<ul>
+<li><code>frontend/src/components/EventManager.svelte</code> — banner-clear in <code>runRefreshFor</code> success; new <code>activeEnv</code> prop; <code>target</code> in dispatch inputs.</li>
+<li><code>frontend/src/App.svelte</code> — pass <code>activeEnv</code> to <code>&lt;EventManager&gt;</code>.</li>
+<li><code>.github/workflows/scrape-tournament.yml</code> — <code>target</code> input + ternary env vars.</li>
+<li><code>frontend/tests/EventManager.test.ts</code> — 3 new tests (9.45o, 9.45p, 9.45q); 9.45a softened to <code>objectContaining</code>.</li>
+</ul>
+<p><strong>TDD:</strong></p>
+<ul>
+<li><strong>GREEN:</strong> 293 pgTAP + 314 pytest (9 skipped) + 290 vitest pass.</li>
+<li><strong>Appendix D:</strong> vitest 287→290, total 901→904.</li>
+</ul>
+<h4 id="amendment-2026-04-26-phase-3a-carry-over-admin-rpcs-25-new-pgtap">Amendment 2026-04-26 — Phase 3a carry-over admin RPCs (25 new pgTAP)</h4>
+<p>Phase 3a turns the carry-over admin runbook into point-and-click. Six new migrations, one new test file, the column DEFAULT flipped to FK for greenfield seasons, and three baseline-restore items rolled in.</p>
+<p><strong>Backend RPCs</strong> (all in <code>supabase/migrations/20260428000001</code>–<code>20260428000006</code>):</p>
+<ol>
+<li><code>tbl_season.enum_carryover_engine</code> DEFAULT flipped <code>EVENT_CODE_MATCHING</code> → <code>EVENT_FK_MATCHING</code>. Existing rows untouched. ADR-045.</li>
+<li><code>fn_update_event</code> v2 — adds <code>p_code</code> (cascade rename) and <code>p_id_prior_event</code> (admin picker). Cascade rebuilds child tournament codes from <code>(enum_age_category, enum_gender, enum_weapon)</code> so PPW/PEW (<code>-V{age}-</code> infix) and MEW/MSW/MPW (appended <code>-G-W</code>) styles both work. Detection key on a sample child: <code>~ '-V\d-'</code>.</li>
+<li><code>fn_init_season(p_id_season)</code> + helper <code>_fn_create_skeleton_children</code>. Iterates <code>^PPW\d+-</code> and <code>^PEW\d+-</code> priors, always inserts MPW + MSW (matches <code>^I?MSW-</code> to cover the IMSW seed inconsistency), inserts a single IMEW/DMEW per <code>enum_european_event_type</code> with biennial-aware lookup. First-ever season creates singletons only with NULL <code>id_prior_event</code>. Idempotency-guarded.</li>
+<li><code>fn_create_season_with_skeletons</code> — wizard's atomic RPC. INSERT season → <code>fn_import_scoring_config</code> overwrite of trigger defaults → <code>fn_init_season</code>. Implicit transaction = &quot;cancel = nothing persists&quot;.</li>
+<li><code>fn_revert_season_init(p_id_season)</code> — refuses if any skeleton has advanced past CREATED. Otherwise children → events → scoring_config → season.</li>
+<li><code>fn_copy_prior_scoring_config(p_dt_start)</code> — read-only helper for wizard step-2 pre-fill. Returns NULL if no chronological prior.</li>
+</ol>
+<p><strong>Path A baseline restoration</strong> (rolled into the same commit):</p>
+<ul>
+<li>Test 9.05 in <code>07_auth_revoke.sql</code> was hardcoded to <code>fn_calc_tournament_scores(1)</code> = DMEW-F-EPEE = intentionally empty team placeholder. Switched to tournament 7 (<code>GP1-V0-F-EPEE-2023-2024</code> — historical seed with results). Path A reasoning: never delete data; pick a tournament that always has results.</li>
+<li><code>seed_post_backfill.sql</code> walks <code>PEW-LIÈGE-2025-2026</code> <code>PLANNED → IN_PROGRESS → SCORED → COMPLETED</code> so the empty F-SABRE / M-SABRE child tournaments match the SPORTHALLE/SALLEJEANZ pattern (held event, weapon slot had zero entrants). Required walk-through-trigger because direct <code>PLANNED → COMPLETED</code> is rejected by <code>fn_validate_event_transition</code>.</li>
+<li><code>10_ingest_pipeline.sql</code> regression: test 10.24 was written for CODE engine semantics (no <code>id_prior_event</code> linkage on its in-test fixture); the Phase 3 default flip to FK silently broke it. Pinned the in-test <code>CARRY-CURR</code> season explicitly to <code>EVENT_CODE_MATCHING</code> to keep the test scope honest.</li>
+</ul>
+<p><strong>ADRs:</strong></p>
+<ul>
+<li><strong>ADR-044</strong> Phase 3 Admin UI + Season-Init Wizard (atomic transaction model)</li>
+<li><strong>ADR-045</strong> Carry-over Engine Selectable Per-Season + Default Flipped to FK</li>
+<li><strong>ADR-042</strong> amended — engine selection now admin-configurable; default flipped to FK; existing rows untouched (admin opts in via UI)</li>
+</ul>
+<p><strong>Test counts:</strong></p>
+<ul>
+<li>pgTAP: 344 → <strong>369</strong> (+25 in <code>19_phase3_wizard.sql</code>: ph3.1–22 + ph3.22a/b/c)</li>
+<li>pytest: <strong>317</strong> unchanged</li>
+<li>vitest: <strong>293</strong> unchanged</li>
+<li>Appendix D total: 961 → <strong>986</strong></li>
+</ul>
+<p><strong>Notable design calls:</strong></p>
+<ul>
+<li><code>p_id_prior_event</code> semantics = <code>COALESCE(p_id_prior_event, id_prior_event)</code> — NULL leaves unchanged, matches <code>p_id_organizer</code> pattern. Backward-compat with App.svelte 19-arg callers preserved until Phase 3c.</li>
+<li>ph3.12 (Day-1 parity) relaxed from exact-equality to &quot;≥ prior count − 5&quot;. Under FK rolling, a new season's carry chain includes prior + prior-of-prior within the 366-day cap, which the prior's final ranklist excludes by definition.</li>
+<li><code>fn_init_season</code> is intentionally idempotency-guarded. The wizard never calls it twice (atomic RPC); admin re-init = <code>fn_revert_season_init</code> first, then wizard again.</li>
+</ul>
+<p><strong>TDD:</strong></p>
+<ul>
+<li><strong>RED:</strong> 23/25 new pgTAP failed initially. Two false starts (jsonb NULL key in <code>fn_init_season</code>'s <code>by_kind</code> return, IMSW-vs-MSW prior regex) found and fixed.</li>
+<li><strong>GREEN:</strong> 369 pgTAP + 317 pytest (9 skipped) + 293 vitest pass.</li>
+<li><strong>Coherence</strong>: caught Gate 3 on the first push (<code>4da1659</code> failed CI on missing Appendix D bump); fixed forward in <code>bbd6c7a</code>. Memory rule <code>feedback_coherence_check.md</code> re-affirmed.</li>
+</ul>
+<p><strong>Pending follow-ups (Phase 3b + 3c):</strong></p>
+<ul>
+<li>SeasonManager 3-step wizard component + skeleton inventory rendering</li>
+<li>ScoringConfigEditor Section 4b &quot;🔀 Silnik carry-over&quot; engine dropdown + 🎯 button visibility rule</li>
+<li>EventManager season selector at top + <code>txt_code</code> editable + <code>id_prior_event</code> picker + Skeletons collapsible panel</li>
+<li>App.svelte rewires <code>fn_update_event</code> callsites to the v2 21-arg signature</li>
+<li>~34 vitest assertions ph3.23–ph3.37g + EventManager extensions</li>
+</ul>
+<h4 id="amendment-2026-04-26-phase-3b-carry-over-admin-ui-24-new-vitest">Amendment 2026-04-26 — Phase 3b carry-over admin UI (24 new vitest)</h4>
+<p>Phase 3b lands the admin-facing UI on top of Phase 3a's RPCs. Two commits:</p>
+<p><strong>Phase 3b.1 (commit 4b18a93) — engine dropdown + 🎯 button visibility (8 vitest):</strong></p>
+<ul>
+<li>ScoringConfigEditor gains Section 4b &quot;🔀 Silnik carry-over&quot; between Intake and Rules. Dropdown lists every value of <code>CARRYOVER_ENGINE_VALUES</code> (extensible — new engines added to the SQL enum auto-appear after a <code>types.ts</code> update). Default for new seasons = FK; existing seasons reflect their <code>tbl_season.enum_carryover_engine</code>. (legacy) tag + amber warning when CODE selected. <code>onsave</code> payload carries <code>engine</code> so App.svelte's handler can patch <code>tbl_season.enum_carryover_engine</code> separately from the scoring config (instant flip, no migration).</li>
+<li>SeasonManager <code>🎯 Konfiguracja punktacji</code> button hidden entirely for past-complete (<code>dt_end &lt; today</code>) seasons; future + active seasons render it as before. The existing <code>readonly</code> prop on the editor stays as defense-in-depth.</li>
+<li>api.ts: <code>fetchScoringConfig</code> joins <code>tbl_season.enum_carryover_engine</code> into the returned config; new <code>updateSeasonCarryoverEngine</code> does a direct PostgREST PATCH on <code>tbl_season</code>. <code>EventStatus</code> type extended with <code>CREATED</code> + <code>SCORED</code> (drift fix from Phase 1B).</li>
+<li>Tests: ph3.37a (dropdown lists all enum values), ph3.37b ×2 (default-FK + reflects existing), ph3.37c (legacy tag), ph3.37d (<code>onsave</code> payload carries engine), ph3.37e (existing season editor shows current engine), ph3.37f (past-complete hides button), ph3.37g (future renders button).</li>
+</ul>
+<p><strong>Phase 3b.2 (commit 64e6f52) — SeasonManager 3-step wizard + skeleton inventory (16 vitest):</strong></p>
+<ul>
+<li>New <code>SeasonManagerWizard.svelte</code> (~650 lines) — 3-step modal state machine: Identity (code/dates/int_carryover_days/enum_european_event_type segmented) → Scoring (embedded ScoringConfigEditor pre-filled via <code>fn_copy_prior_scoring_config(dtStart)</code> or static defaults if no prior) → Confirm (skeleton breakdown count from prior season's events). Atomic-cancel: <code>oncommit</code> fires only on ✓ Utwórz at step 3.</li>
+<li>SeasonManager: hosts the wizard via <code>wizardOpen</code> state. EDIT form gains a 🔁 Carry-over section (days input + IMEW/DMEW segmented) and a 🦴 Skeleton inventory grouped by kind (PPW / PEW / Mistrzostwa) with calendar-style purple boxes. &quot;↶ Cofnij całość&quot; link confirms then calls <code>fn_revert_season_init</code>.</li>
+<li>api.ts: 5 new functions — <code>copyPriorScoringConfig</code>, <code>createSeasonWithSkeletons</code>, <code>revertSeasonInit</code>, <code>updateSeasonCarryoverFields</code>, plus the engine helper from 3b.1.</li>
+<li>App.svelte: 4 new wizard handlers (<code>handleWizardLoadPrior</code>, <code>handleWizardCommit</code>, <code>handleFetchSkeletons</code>, <code>handleRevertSeasonInit</code>); <code>handleUpdateSeason</code> widened from 5 to 7 args (+ <code>carryoverDays</code>, <code>europeanType</code>).</li>
+<li>Tests: 16 wizard tests (<code>SeasonManagerWizard.test.ts</code>) covering open/close, validation gates (duplicate code, dt_end&lt;dt_start), step transitions, cancel-at-each-step (3 cases), ← Wstecz preservation, IMEW/DMEW segmented, commit payload assembly. 4 existing SeasonManager tests (9.38 / 9.39 / 8.81 / 8.83) updated to track the architectural change called out in the plan (&quot;now opens 3-step wizard instead of inline form&quot;).</li>
+</ul>
+<p><strong>i18n:</strong> +56 keys per locale (PL + EN), all wizard / engine / skeleton inventory labels.</p>
+<p><strong>TDD:</strong></p>
+<ul>
+<li><strong>GREEN:</strong> 369 pgTAP + 317 pytest (9 skipped) + 317 vitest pass (vitest 293 → 317, +24 across 3b.1 + 3b.2).</li>
+<li><strong>Coherence</strong>: caught Gate 3 once during 3a (commit 4da1659 → bbd6c7a fix-forward); 3b.1 + 3b.2 ran clean pre-push.</li>
+</ul>
+<h4 id="amendment-2026-04-26-phase-3c-eventmanager-extensions-14-new-vitest">Amendment 2026-04-26 — Phase 3c EventManager extensions (14 new vitest)</h4>
+<p>Phase 3c (commit 29afa4b) finishes the trilogy. The EventManager admin page gains a season selector, surfaces the v2 <code>fn_update_event</code> extras (<code>txt_code</code> cascade rename + <code>id_prior_event</code> picker), and renders a collapsible Skeletons panel.</p>
+<p><strong>EventManager.svelte additions:</strong></p>
+<ul>
+<li>Season selector dropdown in the header lists every season; change fires <code>onseasonchange</code> callback so App.svelte can update <code>selectedSeasonId</code> and refetch events. Callback pattern matches CalendarView.</li>
+<li>Edit form: <code>form-event-code</code> input pre-fills <code>txt_code</code>; cascade hint (⚠️ &quot;Renaming cascades to related tournaments&quot;) surfaces only when the value differs from the original. <code>fn_update_event</code> v2's cascade rebuilds child codes from enum fields on save.</li>
+<li>Edit form: <code>form-prior-event</code> dropdown picker filtered to events from chronologically-prior seasons (<code>s.dt_end &lt; currentSeason.dt_start</code>). Empty option = &quot;(none)&quot;; selected value flips <code>id_prior_event</code>.</li>
+<li>Collapsible Skeletons panel below the event list — purple-bordered, count badge (&quot;N pending&quot;), CREATED-only filter (PLANNED/SCORED/COMPLETED rows hidden). Empty state when no skeletons exist.</li>
+<li><code>handleSave</code> passes <code>code</code> only when changed (no-op rename avoided); always passes <code>priorEventId</code> (NULL = leave unchanged).</li>
+</ul>
+<p><strong>api.ts:</strong> <code>updateEvent</code> now passes <code>p_code</code> + <code>p_id_prior_event</code> to <code>fn_update_event</code> v2. Both default to null so legacy callers are unaffected. <code>UpdateEventParams</code> type widened with <code>code?</code> + <code>priorEventId?</code> fields.</p>
+<p><strong>App.svelte:</strong> EventManager mount adds <code>onseasonchange={(id) =&gt; { selectedSeasonId = id; handleSeasonChange() }}</code> reusing the existing flow that refetches calendarEvents + scoring config.</p>
+<p><strong>i18n:</strong> +10 keys per locale for season selector / event code / prior event / skeleton panel labels.</p>
+<p><strong>Tests:</strong> 14 new in <code>EventManager.test.ts</code> — ph3c.1 (selector renders), ph3c.2 (selector fires callback), ph3c.3 (code pre-fill), ph3c.4 (cascade hint), ph3c.5 (picker filter), ph3c.6 ×2 (code only when changed), ph3c.7 ×2 (priorEventId always threaded), ph3c.8 (panel collapsed by default), ph3c.9 (expand on click), ph3c.10 (CREATED-only filter), ph3c.11 (status badge), ph3c.12 (empty state).</p>
+<p><strong>TDD:</strong></p>
+<ul>
+<li><strong>GREEN:</strong> 369 pgTAP + 317 pytest (9 skipped) + 331 vitest pass (vitest 317 → 331, +14).</li>
+<li><strong>Coherence:</strong> all 4 gates green pre-push.</li>
+</ul>
+<p><strong>Phase 3 trilogy complete.</strong> Total deltas across 3a/3b/3c: pgTAP 344 → 369 (+25), vitest 293 → 331 (+38), pytest unchanged. Carry-over admin runbook §3 (manual FK linkage), §4 (biennial placeholder), §5 (engine flip via SQL), §6 (instant rollback), §9 (pre-create CREATED slot) all superseded by point-and-click UI.</p>
+<h3 id="v-cat-invariant-trigger-combined-pool-splitter-consolidation-adr-047-2026-04-29-2026-04-30">V-cat Invariant Trigger + Combined-Pool Splitter Consolidation (ADR-047) — 2026-04-29 → 2026-04-30</h3>
+<p><strong>Problem.</strong> Combined-pool ingestion (V0+V1 pools, etc.) had a working splitter only on the FencingTime XML path; FTL JSON, Engarde, 4Fence, Dartagnan and CSV/xlsx paths dumped the entire pool into whichever V-cat tournament admin had pasted the URL onto. Result: 209 V-cat-mismatched rows on LOCAL (and the same on CERT/PROD), where <code>enum_age_category</code> of the tournament disagreed with <code>fn_age_category(fencer.int_birth_year, season_end_year)</code>.</p>
+<p><strong>Fix (Layers 1–3).</strong> <code>python/pipeline/age_split.py</code> now hosts the splitter, exporting <code>split_combined_results()</code> (ADR-024 logic) and <code>birth_year_to_vcat()</code> helper. Every ingestion path imports from there: <code>python/scrapers/fencingtime_xml.py</code> re-exports for backward compatibility, <code>python/tools/scrape_tournament.py</code> finds sibling V-cat tournaments sharing a URL and ingests per-V-cat, <code>python/scrapers/evf_sync.py</code> adds a defensive WARN cross-check (no reassignment — EVF API is per-category). DB-side: migration <code>20260429000004_assert_result_vcat_trigger.sql</code> adds <code>fn_vcat_violation_msg(...)</code> (pure helper) + <code>fn_assert_result_vcat()</code> BEFORE INSERT/UPDATE trigger on <code>tbl_result</code> (NOTICE-only mode).</p>
+<p><strong>Layer 5 admin surface.</strong> Migration <code>20260430000001_vw_vcat_violation.sql</code> adds the read-only view <code>vw_vcat_violation</code> exposing every existing violator. CLI <code>python/tools/audit_vcat_violations.py</code> queries it for LOCAL or via Management API for CERT/PROD.</p>
+<p><strong>Layer 6 cleanup attempt + reversal.</strong> <code>python/tools/replay_vcat_violations.py</code> performed an in-DB redo (round 1: 22 BY-derived moves + 178 dupe-deletes; round 2: 9 orphan moves + creation of 7 missing-sibling tournaments). The FATAL flip migration (<code>20260430000002_assert_result_vcat_fatal.sql</code>) was applied. The replay's BY-derived logic was then proven partially wrong — Stockholm-class fabricated rows surfaced. Round 2 was fully reversed; the 7 phantom tournaments were dropped. Eight remaining V-cat violators were resolved by per-row admin-approved deletes (GRODNER 7913, NOWAK 8010, KAZIK 10096, BORKOWSKI 10410, BAZAK 10472, OWCZAREK 9217, LIPKOWSKA 9298, KOWALSKA 9299) plus one BY revert + ineligible-row delete (PAWŁOWSKI 8014). Final state: 0 V-cat invariant violators on LOCAL; FATAL trigger active and validated by smoke test.</p>
+<p><strong>Test fixture bypass.</strong> Nine pgTAP test files (01, 02, 03, 07, 08, 09, 10, 11, 19) gained a <code>ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;</code> to keep their arbitrary-V-cat fixtures functional. Targeted disable preserves audit + status-transition triggers.</p>
+<h3 id="source-vs-db-audit-phantom-row-discovery-adr-048-2026-04-30">Source-vs-DB Audit + Phantom-Row Discovery (ADR-048) — 2026-04-30</h3>
+<p><strong>Problem.</strong> Layer 2 trigger catches V-cat-vs-BY mismatch; it does not catch fencers who never appeared in the source URL at all (Stockholm-class fabrication). GRODNER's PEW5ef row was the discovery vehicle: BY=1960 → V3 by math, but Engarde's vet2026 results contain no GRODNER in any V-cat — the row was wholly fabricated by some prior ingest.</p>
+<p><strong>Audit.</strong> Full vendor-source cross-check on LOCAL (2655 result rows × 538 unique URLs across FTL / Engarde / 4Fence / Dartagnan / EVF API). Result: 1948 OK matches, 37 weak matches (diacritic noise), <strong>670 phantom rows</strong> (URL fetched + parsed but DB fencer not present, OR URL missing/broken). Phantoms are not international-only — domestic events held 309, international 317.</p>
+<p><strong>Decision.</strong> Verdict policy: any condition where the source can't confirm the fencer (URL error, no URL, parse error, fencer not in parsed list) collapses into PHANTOM. No auto-deletes — every phantom resolution requires per-row admin approval. Bulk phantom-row resolution deferred to the from-scratch re-scrape that will replace all result data with vendor-verified ingestion.</p>
+<h3 id="local-cert-prod-replication-2026-04-30">LOCAL → CERT → PROD Replication (2026-04-30)</h3>
+<p><strong>Goal.</strong> CERT and PROD were holding the original 209 violators plus their own pre-existing fabrications. LOCAL was post-cleanup (0 V-cat violators, the 670 audit phantoms documented but not yet deleted). The user chose to replicate LOCAL state to both cloud envs as the new baseline before the from-scratch re-scrape.</p>
+<p><strong>Tooling.</strong> <code>python/pipeline/export_seed_local.py</code> wraps <code>export_seed.py</code>'s schema-driven monolithic format but reads from LOCAL via <code>docker exec psql</code> (Management API is cloud-only). Patches: strip <code>id_prior_event</code> from <code>tbl_event</code> INSERTs (FK to other rows whose ids change after <code>TRUNCATE RESTART IDENTITY</code>) and append <code>fn_backfill_id_prior_event()</code> at end; normalise array literals to PG <code>'{a,b,c}'</code> text format for clean enum implicit-cast.</p>
+<p><strong>Execution.</strong> Migrations applied to CERT/PROD via Management API: NOTICE-only V-cat trigger + <code>vw_vcat_violation</code> view. <strong>FATAL flip not applied</strong> to CERT/PROD — premature until phantoms are cleared by the re-scrape. <code>seed-remote.sh</code>'s shell-arg-limit hit on the 2.1 MB seed file was bypassed via <code>jq --rawfile</code> + <code>curl --data-binary @file</code>. Final state on CERT and PROD identical to LOCAL: 3 seasons / 329 fencers / 60 events / 756 tournaments / 2655 results / 18 carry-over FKs (from <code>fn_backfill_id_prior_event()</code>) / 0 V-cat violators.</p>
+<h3 id="joint-pool-split-flag-adr-049-2026-04-30">Joint-Pool Split Flag (ADR-049) — 2026-04-30</h3>
+<p><strong>Problem.</strong> Two related joint-pool bugs surfaced after the V-cat trigger landed. PPW4 women epee ran V0+V1 as one 7-fencer pool with both DB rows sharing the same FTL URL, but <code>int_participant_count</code> on each row stored the per-V-cat slice (4 and 3) instead of the full pool (7) — Gabriela KAMIŃSKA's V1 ranking points were 96.35 instead of 97.22. PPW5 women epee ran V0/V1/V2/V4 as one 11-fencer pool whose source published per-V-cat URLs, so the splitter never even ran. Pre-this-change there was no schema relationship marking sibling V-cat rows as one physical pool — membership was inferable only from URL equality, which is brittle and silent on per-V-cat URL cases.</p>
+<p><strong>Rejected first attempt.</strong> A self-referential FK <code>tbl_tournament.id_joint_pool_parent</code> was drafted, applied to LOCAL, and reverted within the same session. Reasons: introduces parent/child asymmetry where none exists in the domain (every V-cat slice is equally a &quot;child&quot;), arbitrary lowest-id tie-break, regex-on-scraped-names backfill, harder admin UI.</p>
+<p><strong>Decision.</strong> Single boolean flag <code>tbl_tournament.bool_joint_pool_split BOOLEAN NOT NULL DEFAULT FALSE</code>, set by the ingester at write time. All siblings of a joint pool share <code>(id_event, enum_weapon, enum_gender, url_results)</code> and carry the flag TRUE; <code>int_participant_count</code> on each = full physical pool size. No parent row, no FK, all siblings equal.</p>
+<p><strong>Schema migrations.</strong> <code>20260430000003_joint_pool_split.sql</code> adds the column + partial index <code>idx_tbl_tournament_joint_split</code>. <code>20260430000004_fn_backfill_joint_pool_split.sql</code> provides idempotent retroactive remediation (shared-URL detection only — PPW5-class needs re-scrape).</p>
+<p><strong>Ingester contract.</strong> <code>python/tools/scrape_tournament.py</code> now: (1) extracts pure helper <code>plan_joint_pool_actions(siblings, buckets)</code> that classifies the sibling set after the V-cat split; (2) DELETEs sibling rows whose buckets are empty (admin-registration mistake — admin pasted URL on a V-cat with no actual entrants), with Telegram alert per delete; (3) PATCHes <code>bool_joint_pool_split=TRUE</code> on every non-empty sibling of a joint pool; (4) passes <code>p_participant_count = len(parsed_rows)</code> for joint pools (full physical pool size) instead of <code>len(bucket_rows)</code>. Solo tournament behaviour unchanged.</p>
+<p><strong>Backfill execution (2026-04-30).</strong> Function applied + run on LOCAL/CERT/PROD: 86 PPW4-class joint-pool groups detected on each, 206 sibling rows flagged TRUE per env, 186 <code>int_participant_count</code> values rewritten on CERT/PROD (LOCAL was net-zero because the rejected FK design's backfill had already corrected counts earlier the same day). 206 affected tournaments re-scored on each via <code>fn_calc_tournament_scores</code>. Verification: <code>PPW4-V1-F-EPEE-2025-2026</code> row N=7, points=97.22 on all three envs.</p>
+<p><strong>Tests.</strong> pgTAP <code>25_joint_pool_split.sql</code> — 7 assertions (column shape, partial index, function existence, sibling flag, count rewrite, standalone untouched, idempotence). pytest <code>test_scrape_tournament_joint_pool.py</code> — 4 tests (3 unit on <code>plan_joint_pool_actions</code>, 1 main() integration asserting DELETE on empty sibling + PATCH <code>bool_joint_pool_split=TRUE</code> + POST <code>p_participant_count = len(parsed_rows)</code>). pgTAP file 25: 7/7 GREEN; pytest 354 passed / 9 skipped; vitest 332/332 GREEN.</p>
+<p><strong>ADR-048 update.</strong> Its &quot;Joint-pool reference field — also deferred&quot; subsection now reads &quot;superseded by ADR-049.&quot; MEMORY.md ADR registry updated.</p>
+<p><strong>Scope unchanged.</strong> PPW5-class on all three envs is still broken — no DB signal exists for retroactive detection. Will be corrected by the from-scratch re-scrape, where the new ingester contract above writes the flag at ingestion time.</p>
+<hr />
+<h3 id="local-cert-prod-unification-active-2025-26-promote-2026-05-17">LOCAL/CERT/PROD unification + active 2025-26 promote (2026-05-17)</h3>
+<p><strong>Goal.</strong> Bring CERT and PROD into byte-identical alignment with LOCAL (the post-rebuild source of truth) and complete the active-2025-26 cycle (PPW1–PPW5) end-to-end on all three envs.</p>
+<p><strong>Phases.</strong></p>
+<ul>
+<li><strong>Phase A — verify EVF surface.</strong> Confirmed EVF events identical across LOCAL/CERT/PROD (58 events / 260 tournaments / 691 results). EVF data lived on LOCAL alongside SPWS, not only on CERT/PROD as initially assumed. This unblocked a non-destructive unification strategy.</li>
+<li><strong>Phase B — <code>tbl_fencer</code> id renumber.</strong> CERT had 35 ghost fencers (Polish-named, leftovers from the legacy pipeline) and 310 fencers whose <code>id_fencer</code> differed from LOCAL's. PROD had the same 35 ghosts but its remaining 329 ids already matched LOCAL. Deleted the ghosts (cascade through <code>tbl_result</code>, <code>tbl_match_candidate</code>) and renumbered CERT's 310 fencers using a two-pass sentinel approach (drop FKs → negate via <code>UPDATE … SET id = -id</code> → reassign via <code>UPDATE FROM VALUES (-old, new)</code> → restore FKs). PROD: 0 renumbers. End state: 329 fencers per env, same ids everywhere.</li>
+<li><strong>Phase B.2 — alias JSONB normalization.</strong> Discovered LOCAL's <code>json_name_aliases / json_user_confirmed_aliases / json_revoked_aliases</code> were stored as JSONB strings wrapping Postgres array literals (<code>&quot;{\&quot;a\&quot;,\&quot;b\&quot;}&quot;</code>) rather than proper JSONB arrays. The pipeline's alias matcher reads them as arrays and silently treats stringified arrays as a single token, blocking some commits at the alias gate. Normalized all 671 rows on LOCAL via <code>to_jsonb((value #&gt;&gt; '{}')::text[])</code>, then synced to CERT + PROD.</li>
+<li><strong>Phase C — historical SPWS resync.</strong> For each of 17 completed SPWS events on LOCAL (GP1–8 + MPW + IMEW across 2023-24 and 2024-25), wiped CERT/PROD's children via direct DELETE (since <code>fn_rollback_event</code> is active-season-scoped) and replayed LOCAL's tournaments + results through <code>fn_find_or_create_tournament</code> + <code>fn_ingest_tournament_results</code>. EVF events untouched.</li>
+<li><strong>Phase D — active 2025-26 cycle.</strong> Re-ingested PPW1–PPW5 on CERT via <code>python -m python.tools.recreate_active_season_2025_2026 --event PPWn</code> (driver path; user picked &quot;Path A&quot; over the GAS email path for PPW4/5) and promoted each to PROD via <code>gh workflow run promote.yml</code>. Final counts byte-identical across LOCAL/CERT/PROD: PPW1 23/85, PPW2 24/74, PPW3 25/128, PPW4 24/88, PPW5 26/83.</li>
+</ul>
+<p><strong>Side-fixes shipped along the way (commits <code>97267d5</code>, <code>23aa6db</code>, <code>c3252e1</code>).</strong></p>
+<ul>
+<li><code>promote.py</code> — three bug fixes for cross-env copy of Phase-5-pipeline results: (a) <code>txt_scraped_name</code> falls back from <code>tbl_result</code> → <code>tbl_match_candidate</code> → fencer-name composite (Phase 5 stopped writing match_candidate rows); (b) event status transitions step PLANNED → IN_PROGRESS → COMPLETED (direct PLANNED → COMPLETED was rejected by <code>fn_validate_event_transition</code>); (c) <code>enum_source_age_category</code> is propagated end-to-end so <code>fn_assert_result_vcat</code>'s &quot;bracket-label wins&quot; early-exit fires on PROD (ADR-056 revision behavior).</li>
+<li><code>recreate_active_season_2025_2026.py</code> — dedup function replaced LOCAL-only <code>docker exec ... psql</code> with Supabase Management API when <code>SUPABASE_URL</code> is not 127.0.0.1; same SQL both ways.</li>
+<li>New migration <code>20260511000001_ingest_results_carry_source_vcat.sql</code> — <code>fn_ingest_tournament_results</code> now reads <code>enum_source_age_category</code> from each payload entry (optional; defaults to NULL when omitted — backwards compatible).</li>
+</ul>
+<p><strong>Known cosmetic divergence (deferred).</strong> <code>enum_match_method</code> on PROD for the 287 active-2025-26 results: 287 AUTO_MATCH vs LOCAL/CERT 274 AUTO_MATCH + 13 NULL. The 13 NULL rows are V-cat-marker-downgrade fencers whose pipeline path leaves the column NULL; <code>fn_ingest_tournament_results</code> defaults them to AUTO_MATCH via the legacy enum_match_status mapping. Fix would require another migration; impact is presentational only.</p>
+<p><strong>Ephemeral tooling</strong> (not committed, regenerate from project memory): <code>/tmp/phase_b_unify_fencer.py</code>, <code>/tmp/phase_b2_sync_aliases.py</code>, <code>/tmp/phase_c_resync_spws_history.py</code>, <code>/tmp/run_event_cycle.sh</code>.</p>
+<p><strong>Memory.</strong> <a href="../doc-redacted-path">project_local_cert_prod_unification_2026-05-17.md</a>.</p>
+<hr />
+<h3 id="ppw4-ppw5-xml-ingest-re-do-structural-pool-only-skip-unified-pipeline-2026-05-27">PPW4/PPW5 XML ingest re-do — structural pool-only skip + unified pipeline (2026-05-27)</h3>
+<p><strong>Goal.</strong> Resolve user-reported bug: PPW4-V1-M-EPEE-2025-2026 and PPW5-V1-M-EPEE-2025-2026 showed <code>int_participant_count = 35 / 36</code> (phantom values) and dead <code>file://</code> URLs on <code>tbl_tournament.url_results</code>. The Maciej Sękowski drill-down made the symptom visible.</p>
+<p><strong>Root cause.</strong> Architectural divergence between two parallel XML-ingestion paths (legacy <code>orchestrator.process_xml_file</code> vs unified <code>review_cli.run_iteration</code>). The legacy path bypassed <code>fn_commit_event_draft</code>, so the joint-pool detector keyed off a shared <code>file://</code> URL across all 5 V-cat siblings and re-summed <code>int_participant_count</code> to the POL-only count across phantom buckets (35 PPW4 / 36 PPW5). Compounding the problem: the legacy path ingested combined-pool ELIMINACJE qualifier XMLs (<code>&lt;Poule&gt;</code> only, no <code>&lt;Tableau&gt;</code>) as if they were ranking-relevant brackets, with the splitter carving them into phantom V0-V4 buckets that did not correspond to any real DE bracket on FTL.</p>
+<p><strong>Fix landed on branch <code>fix/xml-ingest-unified-pipeline</code></strong> (3 commits, ADR-067):</p>
+<ul>
+<li><strong><code>b4dc173</code></strong> — <code>python.pipeline.ingest_cli.ingest_xml_unified(path, event_code, season_end_year, …)</code>: routes local XML through <code>run_pipeline</code> + <code>DraftStore</code> + <code>fn_commit_event_draft</code>, same path URL scrape uses. CLI gains <code>--event-code &lt;code&gt;</code> flag; operator commits via existing <code>--commit-draft &lt;run_id&gt;</code>. Legacy <code>process_xml_file</code> marked <code>@deprecated</code> with runtime <code>DeprecationWarning</code>; deletion in a follow-up cycle.</li>
+<li><strong><code>93a2771</code></strong> — <code>ParsedTournament.is_pool_only_qualifier: bool</code> field; FT XML parser sets it structurally (<code>&lt;Poule&gt;</code> present AND <code>&lt;Tableau&gt;</code> absent — i.e. has-pool-no-tableau). <code>s1_validate_ir</code> halts with <code>POOL_ROUND_DETECTED</code> when set. Detection never relies on <code>AltName</code>/<code>Sexe</code>/filename per user instruction (organizer naming is unreliable across events/years). Legacy path patched with same structural pre-check.</li>
+<li><strong><code>347eb19</code></strong> — Per-file URL fragments (<code>&lt;url_event&gt;#&lt;filename&gt;</code>) so the joint-pool detector groups siblings only within one combined-bracket XML, never across files. FT XML AltName regex recognizes both <code>vN</code> (legacy) and Polish <code>kat. N</code> (PPW5 convention; surfaced because the new regex collapsed <code>kat. 1</code> to <code>category_hint=None</code> → BY-derivation → duplicate V0/V1 draft rows from one V1 XML). <code>s1</code> allows <code>gender=None</code> per ADR-34 (draft writer defaults to <code>'M'</code>, <code>fn_effective_gender</code> reassigns women's points at query time).</li>
+</ul>
+<p><strong>Cross-verification.</strong> PPW5 has live FTL per-V-cat brackets (<code>2F7708500E2F4F199D4FC25A7B74D0D0</code>). PPW5 M-Epee per-V-cat counts after re-ingest = 5 / 8 / 11 / 6 / 6 — exact match to FTL bracket sizes. PPW4 FTL event-schedule page returns empty (event not published live); only the local XML serves as source.</p>
+<p><strong>LOCAL outcome.</strong> PPW4 24 tournaments / 87 results, PPW5 22 tournaments / 81 results. Maciej Sękowski V1 M-Epee: PPW4 35/139.4 → 10/109.39 (real V0+V1 joint pool from <code>VABCME</code> combined bracket), PPW5 36/139.7 → 8/98.00 (real V1 standalone bracket). CERT/PROD promotion was deferred (no LOCAL→CERT path exists; promote.py is CERT→PROD only).</p>
+<p><strong>Test additions.</strong> <code>python/tests/test_ingest_cli_unified.py</code> (4 assertions: 67.U1–67.U4) + <code>python/tests/test_pool_only_skip.py</code> (8 assertions: 67.P1–67.P8) + <code>python/tests/test_ir.py</code> contract update. Three-suite GREEN: pgTAP 566, pytest 753, vitest 371.</p>
+<p><strong>Memory.</strong> <a href="../doc-redacted-path">project_ppw4_ppw5_xml_redo_2026-05-27.md</a>.</p>
+<hr />
+<h3 id="ppw4-ppw5-url-re-ingest-to-cert-prod-participant-count-fix-2026-06-03">PPW4/PPW5 URL re-ingest to CERT/PROD + participant-count fix (2026-06-03)</h3>
+<p><strong>Goal.</strong> Propagate the 2026-05-27 correction to CERT/PROD (which still carried the
+inflated joint-pool <code>int_participant_count</code>: PPW4 M-Épée V0–V4 all = 35, M-Sabre = 21),
+re-ingesting from the <strong>live FTL event-level URL</strong> through the one unified pipeline.</p>
+<p><strong>URL == XML parity bug (the one real code fix).</strong> The URL discovery path
+(<code>scrape_ftl_event_urls.parse_tournament_name</code>) returned <code>None</code> for weapon-bearing
+brackets with no gender keyword (FT <code>Sexe=&quot;X&quot;</code>, Polish <code>Szabla kat. 4</code> / <code>kat. 0</code>),
+so it silently dropped the PPW5 V0/V4 sabre brackets the XML path keeps. Fix: default
+gender to <code>M</code> (ADR-34) — see ADR-063 amendment. After the fix the URL handler
+(<code>recreate_active_season_2025_2026.ingest_event</code> via <code>Fetcher.fetch_event_url_with_skips</code>
+→ <code>run_pipeline</code> → <code>fn_commit_event_draft</code>) produces byte-identical output to the XML
+handler: PPW4 24t/87r, PPW5 22t/81r.</p>
+<p><strong>Deployment (LOCAL + CERT + PROD all identical).</strong> Per env/event: wipe children →
+re-ingest via URL → commit. Notes: <code>fn_commit_event_draft</code> does plain INSERT (no
+ON CONFLICT) so the event must be wiped first; <code>tbl_match_candidate.id_result</code> FK rows
+(promote.py TEE-writes on PROD) must be deleted before <code>tbl_result</code>; PROD's PPW5
+<code>url_event</code> was NULL (drift) and was set to the FTL eventSchedule URL. Verified all 3:
+Maciej Sękowski V1 M-Épée PPW4 10/109.39, PPW5 8/98.00.</p>
+<p><strong>Group B — participant-count reconcile (CERT/PROD via PostgREST, Management API token
+expired).</strong> 65 tournaments (IMEW-2023-24 + IMEW-2024-25 international field sizes
+collapsed to result-counts, e.g. IMEW-V2-M-EPEE 6→224; + GP1/2/3 drift) PATCHed to
+LOCAL values and re-scored. 2 empty 0-result tournaments left out per operator.</p>
+<p><strong>Tests / seed.</strong> Seed regenerated from corrected LOCAL → <code>seed_prod_2026-06-03.sql</code>
+(symlink repointed). 6 pgTAP magic numbers recalibrated after the count correction
+(09_rolling_score R.4/R.6/R.8/R.10/R.11; 14_cross_gender CG.8 retargeted to
+PPW5-V0-M-SABRE). +1 pytest (3.15g2). Three-suite GREEN: pgTAP 566, pytest 754, vitest 371.</p>
+<p><strong>Memory.</strong> <a href="../doc-redacted-path">project_ppw4_ppw5_url_reingest_2026-06-03.md</a>.</p>
+<hr />
+<h3 id="evf-sync-self-heal-of-future-completed-rows-adr-039-rev-2-2026-06-13">EVF sync self-heal of future-COMPLETED rows (ADR-039 rev 2) — 2026-06-13</h3>
+<p><strong>Problem.</strong> The daily <strong>EVF Calendar + Results Sync</strong> GitHub Action had failed every run
+since ~2026-06-06. Not a bug — the ADR-039 Step 0 logical-integrity guard correctly
+halted because CERT held two future-COMPLETED rows: <code>PEW63e-2025-2026</code> (<code>2026-10-01</code>)
+and <code>PEW64s-2025-2026</code> (<code>2026-11-11</code>). Both are slices of the <strong>BVF 6 Weapon
+International 2026</strong> (Guildford, Jan 10–11), scored from FTL but left with placeholder
+filler dates during the EVF combined-pool re-fix.</p>
+<p><strong>Fix (rev 2, redesigned around the EVENT URL).</strong> Step 0 self-heals and <strong>never hard-halts</strong>
+on this class. <code>sync_calendar</code> → <code>_heal_future_completed</code> recovers each violator's real date
+from the <strong>event URL</strong> (<code>tbl_event.url_event</code> → EVF-calendar match → FTL fallback; authed
+ADR-069 session; <code>fetch_ftl_event_metadata</code> now accepts both <code>eventSchedule</code> and <code>results</code>
+URL forms). Date-healable rows get <code>dt_start</code>/<code>dt_end</code> + <code>dt_tournament</code> rewritten and
+<strong><code>url_event</code> populated</strong> (status stays COMPLETED). When no date is recoverable, the row's
+<code>enum_status</code> is demoted COMPLETED → PLANNED — bypassing the terminal-COMPLETED lifecycle
+trigger <code>trg_event_transition</code> — so the guard clears and the URL/date get filled later by
+the calendar / populate-urls flow. <code>compute_future_completed_corrections</code> is pure, returning
+<code>(corrections, status_flips)</code>. <code>evf-sync.yml</code> gained <code>FTL_USERNAME</code>/<code>FTL_PASSWORD</code>.</p>
+<p><strong>Diagnosis pivot.</strong> The first attempt read tournament <code>url_results</code> (NULL on CERT) and
+re-halted. The real fix uses the event URL: PEW62/63e/64s are all the one Guildford event,
+whose FTL eventSchedule page (<code>…/E2A7B077F2824DD8A7F2E413B4211296</code>) yields Jan 10–11 2026.</p>
+<p><strong>Data fix.</strong> On CERT, populated <code>url_event</code> (Guildford eventSchedule) + real dates on
+PEW62efs/PEW63e/PEW64s and their tournaments → 0 future-COMPLETED rows remain. PROD has none
+of these events. Active seed <code>seed_prod_2026-06-03.sql</code> updated (dates + url_event).</p>
+<p><strong>Known follow-up (out of scope, &quot;just fix the dates&quot;).</strong> <code>PEW64s-V1-M-SABRE</code> shares an
+FTL URL with <code>PEW62-V1-M-SABRE</code> — a likely double-count to reconcile separately. (Tournament
+<code>url_results</code> left NULL on CERT to avoid re-introducing it.)</p>
+<p><strong>Tests.</strong> +8 pytest (evf.44–evf.50): heal logic, event-URL orchestration, trigger-bypassed
+status flip, eventSchedule URL parsing. pytest 763, vitest 371.
+pgTAP <code>09_rolling_score</code> pre-existing harness/seed-drift failures unchanged by this work
+(verified by reverting the seed edit — identical failure set).</p>
+<p><strong>Memory.</strong> <a href="../doc-redacted-path">project_evf_sync_self_heal_2026-06-13.md</a>.</p>
+<hr />
+<h3 id="stage-0-roster-reconciliation-in-the-unified-pipeline-adr-056-rev-2026-06-13">Stage 0 — roster reconciliation in the unified pipeline (ADR-056 rev) — 2026-06-13</h3>
+<p><strong>Goal.</strong> Stop &quot;class-B&quot; contamination: genuinely-new participants (e.g. the
+foreign women in PPW3's combined women's épée pool <code>E81CEE6F</code> — RABAB,
+MITSKEVICH, KALECKA, SKRINSKAITĖ, RIVERA CASTRO, …) were being fuzzy-glued by
+the matcher onto the nearest existing Polish name, and stored birth years
+drifted out of step with the V-cat brackets fencers actually competed in
+(ADR-010: ranking category is BY-derived).</p>
+<p><strong>Change.</strong> New FIRST pipeline stage <code>s0_reconcile_roster</code> (registered before
+<code>s1_validate_ir</code> in <code>python/pipeline/orchestrator.py</code>), source-agnostic at the
+IR layer, running before the matcher. Two mirror jobs per row, keyed on the
+row's authoritative V-cat (bracket <code>category_hint</code> → else FTL <code>(N)</code>
+<code>raw_age_marker</code> → else unknown): (1) create absent participants by a
+HIGH-PRECISION exact check (normalized surname+first+alias, nationality-folded;
+NOT fuzzy) with an estimated band-midpoint BY (NULL when V-cat unmarked); (2)
+correct a matched fencer's stored BY that conflicts with the bracket V-cat to the
+band midpoint — estimated kept, <strong>CONFIRMED overwritten + downgraded to
+estimated</strong> and surfaced loudly in the staging .md top blocks + the admin
+Birth-year review tab. International (PEW/MEW/MSW) events skipped (ADR-038).
+Idempotent; never halts.</p>
+<p><strong>Estimate convention.</strong> Changed the BY estimate from the band youngest-edge to
+the band <strong>MIDPOINT</strong> anchor (V0→35, V1→45, V2→55, V3→65, V4→75; season-relative)
+in <code>python/matcher/pipeline.py::estimate_birth_year</code> (single source of truth),
+mirrored in <code>frontend/src/lib/birthYearEstimate.ts</code> + the runner's
+<code>_estimate_birth_year_for_vcat</code>. Ranking-neutral (both map to the same band). A
+one-time guarded backfill migration <code>20260613000002</code> re-midpoints existing
+estimated fencers, rewriting a BY only when <code>fn_age_category</code> is unchanged for
+every result-season (neutral by construction).</p>
+<p><strong>Reuse, no new DB objects.</strong> Creation uses the existing <code>db.insert_fencer</code>;
+reconciliation uses the existing <code>fn_update_fencer_birth_year</code> RPC (audit-logged).
+No new RPC, no new column (reuses <code>bool_birth_year_estimated</code>).</p>
+<p><strong>Tests.</strong> pytest <code>test_s0_reconcile_roster.py</code> (28 assertions: midpoint,
+authoritative-V-cat, high-precision create incl. NULL-BY/alias/nationality-fold,
+reconcile estimated+confirmed, international-skip, idempotence, cross-bracket
+conflict, staging-md) + updated <code>test_matcher</code> midpoint expectations; pgTAP
+<code>43_stage0_reconciliation.sql</code> (RPC transitions + audit-trigger preservation +
+NULL/midpoint inserts); vitest <code>birthYearEstimate</code> midpoint + <code>BirthYearReview</code>
+9.111b (inconsistency flag for estimated/downgraded BYs). All three suites green
+(pytest 791, vitest 372, pgTAP 577).</p>
+<p><strong>E2E (LOCAL).</strong> <code>reset-dev.sh</code> → ingest PPW3: the 9 unmarked women created with
+NULL BY + flagged (BLR/LTU/CRC nationalities), NOT glued to Poles (329→359
+fencers); two real CONFIRMED→downgraded reconciliations surfaced (POKRYWA,
+PAWŁOWSKI); constructed estimated-conflict reconciled to band midpoint.</p>
+<p><strong>ADRs.</strong> Amended ADR-056 (Stage-0 rev + midpoint table), ADR-050 (s0 stage),
+ADR-010 (BY-derived justification), ADR-038 (skip international). No new ADRs.</p>
+<p><strong>Memory.</strong> <a href="../doc-redacted-path">project_stage0_reconciliation_done_2026-06-13.md</a>.</p>
+<hr />
+<h3 id="new-ingestion-pipeline-rule-driven-plugin-rebuild-adr-070-074-2026-06-15">NEW ingestion pipeline — rule-driven plugin rebuild (ADR-070–074) — 2026-06-15</h3>
+<p>Rebuilt the ingestion pipeline from a fixed stage monolith into a <strong>rule-driven plugin
+pipeline</strong> (design doc <a href="ingestion_pipeline_NEW_design.html">ingestion_pipeline_NEW_design.md</a>,
+now CURRENT). Domestic-only scope: 4 flows (<code>INGEST_DOMESTIC</code>, <code>RECOMPUTE_DOMESTIC</code>,
+<code>DEDUP_SWEEP</code>, <code>POST_COMMIT</code>) + 2 reactors (<code>SelfHealing</code>, <code>PostCommit</code>); international deferred
+(design §12). Built TDD, RED-first, in five milestones — reuse-first throughout (the plugins
+<em>wrap</em> the existing <code>stages.py</code> functions via <code>python/pipeline/plugins/bridge.py</code>; no domain
+logic was rewritten).</p>
+<ul>
+<li>
+<p><strong>M1 — Core + engine</strong> (<code>core/contract.py</code>, <code>core/orchestrator.py</code>, <code>engine/{flows,rulebook,rule_engine}.py</code>,
+<code>run.py</code>): the <code>IngestPlugin</code> contract, generic one-direction <code>Orchestrator</code>, <code>RuleEngine.plan</code> →
+DAG-validated <code>ExecutionPlan</code>. Tests N1.1–N1.18.</p>
+</li>
+<li>
+<p><strong>M2 — Plugins + no-halt</strong> (<code>plugins/*</code>): each plugin wraps a stage; <code>HaltError → ctx.fault</code>; the
+declarative <code>REMEDIATIONBOOK</code> applies inline fixes via middleware so the flow always reaches <code>Commit</code>;
+<code>Escalate</code> is last-resort Telegram. Tests N2.1–N2.9.</p>
+</li>
+<li>
+<p><strong>M3 — ResolveFencers merge</strong> (<code>plugins/resolve_fencers.py</code>): merged Stage-0 ⊕ Stage-6 into one early
+two-phase plugin (exact + band-midpoint reconcile, then fuzzy link-or-create); link policy inherits the
+matcher's calibrated <code>AUTO_MATCHED</code> status; <code>DetectCombinedPool</code>/<code>SplitByAge</code> read the governed BY.
+Tests N3.1–N3.9.</p>
+</li>
+<li>
+<p><strong>M4 — RECOMPUTE_DOMESTIC</strong> (<code>plugins/recompute.py</code>, <code>db_connector.fetch_event_results</code>): event-granular
+self-heal from stored FK rows (no source, no re-match) + <code>source_artifact_path</code> retention. Tests N4.1–N4.6.</p>
+</li>
+<li>
+<p><strong>M5 — CDC + dedup</strong> (migration <code>20260615000001</code>, <code>recompute/worker.py</code>): <code>tbl_recompute_queue</code> +
+watermark, column-aware <code>trg_fencer_change_enqueue</code>, <code>fn_enqueue_affected_events</code>, <code>fn_merge_fencers</code>,
+debounced worker, <code>DEDUP_SWEEP</code> whole-roster sweep. pgTAP 44.1–44.11 (live) + pytest N5.1–N5.6.</p>
+</li>
+<li>
+<p><strong>Step A — <code>Commit</code> actually persists</strong> (<code>plugins/ingest.py</code> <code>Commit.run</code>) — 2026-06-16: until now
+<code>Commit</code> called <code>db.ingest_results(pctx)</code> with the wrong arguments and only &quot;passed&quot; because tests
+used a <code>MagicMock</code> DB — no row ever reached <code>tbl_result</code> through the new pipeline. Rewritten to, per
+V-cat bracket in <code>final_vcats</code>: resolve/create the bracket's tournament (<code>db.find_or_create_tournament</code>)
+and call the existing atomic RPC <code>fn_ingest_tournament_results</code> via <code>db.ingest_results(tournament_id, rows, participant_count)</code> (delete-old + insert + score in one transaction, idempotent — ADR-014/022).
+<code>participant_count</code> is each bracket's OWN row count (ADR-049 amendment 2026-06-04 — per-V-cat, never
+the summed pool), so combined/joint pools score correctly for free. The new <code>method</code>→legacy
+<code>enum_match_status</code> map (<code>AUTO_CREATED</code>→<code>NEW_FENCER</code>, …) keeps the RPC's enum cast valid. <code>_skip_commit</code>
+short-circuits; <code>RECOMPUTE_DOMESTIC</code> (parsed=None) records a deferred commit (live write-back is Step C,
+since <code>LoadCommitted</code> flattens per-bracket weapon/gender/date). Tests N7.1–N7.8 (<code>test_commit_persist.py</code>).
+<strong>Live LOCAL acceptance:</strong> ran the full <code>INGEST_DOMESTIC</code> flow via <code>run_flow</code> against real Postgres on a
+throwaway PPW9 event with two real fencers — <code>tbl_result</code> rows persisted with computed
+<code>num_final_score</code> (71.34 / 8.56), tournament status <code>SCORED</code>, then cleaned up. First true end-to-end
+ingest through the new pipeline. Next: Step B (wire <code>run_flow</code> into <code>ingest_cli</code> + parity).</p>
+</li>
+<li>
+<p><strong>Step B — <code>run_flow</code> wired into the CLI</strong> (<code>ingest_cli.ingest_via_flow</code> + <code>--flow ingest_domestic</code>)
+— 2026-06-16: the engine previously had no operator entry point (<code>run_flow</code> was referenced only by
+<code>run.py</code>, <code>worker.py</code>, tests; the CLI drove the OLD draft pipeline). <code>ingest_via_flow</code> parses each XML
+via the <code>fencingtime_xml</code> parser (PARSERS registry), injects the IR into <code>svc.config[&quot;parsed&quot;]</code>, and
+runs <code>INGEST_DOMESTIC</code> through <code>run_flow</code> — <code>Commit</code> writes live atomically per V-cat bracket (Step A),
+<strong>no draft/review gate</strong> (ADR-074 auto-commit). Per-file <code>source_url = url_event#&lt;filename&gt;</code>; pool-only
+qualifiers skipped; unknown event_code → ValueError. Tests N8.1–N8.6 (<code>test_ingest_cli_flow.py</code>).
+<strong>Live LOCAL parity acceptance:</strong> ingested the same XML through the NEW <code>run_flow</code> CLI and the OLD
+draft-commit path into a throwaway event and diffed committed <code>tbl_result</code> by
+<code>(vcat, scraped_name, place) → num_final_score</code> (scoring depends on place + participant_count, not
+identity, isolating commit+scoring). <strong>Single-cat</strong> (single_category.xml, 5 fencers, V2) and
+<strong>combined pool</strong> (synthetic 2×V1 + 2×V2, split into two brackets scored on own counts) both
+byte-matched the legacy path. Test-created fencers swept by id snapshot. Next: Step C (schedule the
+self-healing worker + live heal).</p>
+</li>
+<li>
+<p><strong>Step C — self-healing recompute, live + scheduled</strong> (<code>Commit._commit_recompute</code>,
+<code>db_connector.{fetch_event_results,fetch_event_tournaments,clear_tournament_results,find_event_by_id}</code>,
+<code>recompute.LoadCommitted</code>, <code>recompute/worker.main</code>, <code>recompute-drain.yml</code>) — 2026-06-16. <strong>RECOMPUTE
+write-back</strong> (deferred from Step A) is now real: <code>Commit</code> groups the loaded matches by
+<strong>(weapon, gender, governed-V-cat)</strong> — an event spans many weapon/gender brackets, so V-cat alone would
+wrongly merge weapons — resolves each bracket's tournament and re-writes it via the atomic RPC, then
+<strong>clears</strong> any pre-existing bracket a birth-year relocation emptied. <code>StageMatchResult</code> gained
+<code>weapon</code>/<code>gender</code>/<code>tournament_date</code>; <code>LoadCommitted</code> derives <code>season_end_year</code> from the event's season
+(the CDC trigger only passes <code>id_fencer→events</code>). <strong>Two live-Postgres bugs in the never-run M4 reader
+fixed:</strong> <code>fetch_event_results</code> selected <code>enum_age_category</code>/weapon/gender off <code>tbl_result</code> where they
+don't exist — they live on <code>tbl_tournament</code>. <strong>Live LOCAL heal E2E:</strong> ingested 3 épée-M V2 fencers,
+corrected one fencer's BY to cross V2→V3, the CDC trigger enqueued the event, the debounced worker
+recomputed it, and the fencer relocated to a fresh V3 bracket <strong>while V2 was re-scored on its new
+2-person field</strong> (82.98/5.33 → 71.34/3.78) — no human action beyond the BY edit. <strong>Scheduling:</strong>
+<code>worker.main</code> (<code>python -m python.pipeline.recompute.worker --drain</code>) + <code>recompute-drain.yml</code> (GitHub
+Actions cron every 15 min against CERT, workflow-injection-safe input via env). Deliberately uses the
+repo's existing GH-cron scheduler pattern (evf-sync) instead of the design's pg_cron→Edge-Function
+sketch — no pg_cron/edge-runtime dependency; the worker's 120s debounce coalesces bursts. LOCAL stays
+manual. The cron→CERT chain is CERT-deploy (verified on next CERT deploy); the trigger→queue→worker→
+recompute→persist core is LOCAL-verified. Tests N9.1–N9.7 (<code>test_recompute_persist.py</code>) + N5.7
+(worker CLI). Next: Step D (chain the PostCommit reactor).</p>
+</li>
+<li>
+<p><strong>Step D — PostCommit reactor chained</strong> (<code>reactors.py</code>, <code>run.run_flow</code>) — 2026-06-16: the
+<code>Commit → live.committed → POST_COMMIT</code> chain is now real (was conceptual, §3.4). After a committing
+flow (<code>INGEST_DOMESTIC</code> / <code>RECOMPUTE_DOMESTIC</code>) reaches <code>Commit</code>, <code>run_flow</code> fires <code>POST_COMMIT</code>
+(ParticipantCount + Notify) on a child Context carrying the committed event + faults + dropped
+brackets, so escalation policy (ALWAYS / ON_LOSS) sees the same loss the commit produced.
+<code>should_react_post_commit</code> gates on a <code>committed</code> outcome <strong>and</strong> the rulebook actually offering a
+POST_COMMIT rule (so custom/partial rulebooks in tests don't trigger a plan they don't define);
+<code>react=False</code> on the recursive call + POST_COMMIT having no Commit make the loop converge with no
+back-edge. <strong>Acceptance met:</strong> an ingest that dropped a below-min bracket auto-sends the
+<code>escalate:BELOW_MIN</code> ON_LOSS Telegram; a clean ingest sends only the summary. Tests N10.1–N10.7
+(<code>test_post_commit_chain.py</code>). <strong>This closes the &quot;engine without a steering wheel&quot; gap</strong> — the four
+flows + both reactors (SelfHealing via the CDC trigger/worker, PostCommit via run_flow chaining) now
+run end-to-end; an operator ingest persists live, self-heals on master-data edits, and notifies.</p>
+</li>
+<li>
+<p><strong>Step E — staging report restored as a first-class plugin output</strong> (ADR-075;
+<code>core/contract.py</code>, <code>plugins/base.py</code>, all INGEST plugins, <code>plugins/staging_formatter.py</code>,
+<code>engine/rulebook.py</code>, <code>ingest_cli.py</code>, <code>md_writer.py</code>, <code>three_way_diff.py</code>) — 2026-06-16. ADR-074's
+auto-commit removed the OLD draft-then-review <code>.md</code>/<code>.diff.md</code>; the PPW3 from-URL debug run showed the
+cost (silent markerless-fencer drops, no surfaced report). Restored as <strong>informational/post-commit</strong>
+via <strong>Option B (distributed emission)</strong>, chosen by the user over a single reconstructing plugin: a
+<strong>fifth Context channel</strong> <code>report</code> (<code>ReportFragment(plugin, kind, section, payload)</code> +
+<code>ctx.add_report</code>/<code>BasePlugin.report</code>, bypasses write-discipline, every plugin kind emits) — every
+plugin serializes its own fragment as it runs, and one terminal <strong><code>StagingFormatter</code></strong> (Mutator,
+<code>effects=docs</code>) merges all brackets' fragments (<code>_bracket_reports</code>) into <code>doc/staging/&lt;EVENT&gt;.&lt;ts&gt;.md</code>
+(rendered from <code>STAGING_TEMPLATE</code>, an ordered section spec — the &quot;template&quot;, no Jinja dep) + <code>.diff.md</code>
+(reuses <code>three_way_diff</code> verbatim). Event-scoped: the CLI's <code>_fire_staging_report</code> fires ONE
+event-level <code>POST_COMMIT</code> after the bracket loop seeding <code>_bracket_reports</code>; the per-bracket reactor
+fire SKIPs the formatter. One UTC timestamp per run names both files so reruns of the same event are
+comparable (the user asked for this explicitly); <code>md_writer.write_for_event</code> + <code>three_way_diff.write_diff</code>
+gained a backward-compatible <code>timestamp</code> param. Tests N11.1–N11.7 (<code>test_staging_report.py</code>).</p>
+</li>
+<li>
+<p><strong>Step E.2 — richness parity + automation-report framing (ADR-075 rev)</strong> — 2026-06-17: the first
+<code>.md</code> was ~1/3 the OLD pipeline's content; reworked the formatter to reach parity by <strong>iterating per
+bracket</strong> + <strong>reusing the OLD pure DB-readers</strong> (<code>_fetch_event_meta</code>, <code>_live_tournament_rows</code>,
+<code>_check_pool_round_count</code>, <code>_classify_alias_pair</code> — no pctx). Enriched two fragments: <code>DetectPoolRound</code>
+(name/reason/url/weapon) + <code>ResolveFencers</code> (<code>alias_writebacks</code> + per-created fuzzy <strong>near-miss</strong> so a
+likely duplicate is visible). The file is now an <strong>automation report</strong>: leads with <em>Detected automation
+gaps</em>, then full event header / created (+near-miss) / BY reconciliations (Fencer·BY·status·reason) /
+fencer matching (method · name-resolution · alias verdicts · BY-quality · NULL+estimated tables w/
+bracket+place) / committed tournaments (live, deduped, distinct) / brackets present-but-omitted / parse
+status (+skip/exception reasons). <strong>No sign-off</strong> (full automation). <code>url_results</code> left blank unless
+admin-entered (admin-managed URL rule). Tests N12.1–N12.7. Live PPW3 from-url re-ingest confirms
+section-by-section parity with OLD <code>doc/staging/PPW3-2025-2026.md</code>.</p>
+</li>
+<li>
+<p><strong>Step F — overlap-clobber fix: discard pools-only, keep one listing per category (ADR-076)</strong> —
+2026-06-18: the from-URL ingest committed <strong>wrong counts</strong> because several FTL rounds resolving to the
+same <code>event·weapon·gender·age_category</code> overwrote each other (delete-reimport, last-writer-wins).
+<strong>Rule 1</strong> — drop pools-only rounds (no DE/Tableau) via <code>_ftl_has_direct_elimination</code> (the from-URL
+analog of ADR-067's XML <code>&lt;Poule&gt;</code>-no-<code>&lt;Tableau&gt;</code>), + fixed the bogus bundled skip reasons (an
+<code>ELIMINACJE</code> round is a pools-only qualifier, not &quot;DE/amateur/junior&quot;). <strong>Rule 2 keep-rule</strong>
+(<code>_resolve_sources</code>) — one source per category: a dedicated single listing beats a BRACKET; else the
+smaller BRACKET wins; <code>Commit</code> honours a per-listing <code>commit_cats</code> allow-set so no category is
+double-written. Set-aside duplicates are <strong>flagged, never stalled/merged</strong> (incomparable place numbers).
+Discovered rounds + status persist on <code>tbl_event.json_ingest_sources</code> (display-only — never scored) +
+admin <code>json_source_overrides</code> (<code>fn_set_event_source_override</code>, exposed on <code>vw_calendar</code>); the <strong>event
+accordion</strong> renders committed ✅ / dropped ⊘ / skipped ⚠ rows with a skip/process toggle + <strong>Re-ingest</strong>
+button (<code>ingest-event.yml</code>, ADR-041 dispatch). Staging report gains duplicate flags + a &quot;Category split
+per source listing (fencers + BY)&quot; section. Tests N13.1–N13.6 (pytest + pgTAP 45.1–45.6 + vitest).
+<strong>Dry-run + live validated:</strong> PPW3 drops the pools-only <code>Szpada kat. Veteran</code> + flags the amateur
+<code>Men's Épée</code>; PPW4 + PPW5 clean (every category one source, no intervention).</p>
+</li>
+<li>
+<p><strong>Step G — populate tournament <code>url_results</code> during ingestion (ADR-073 amendment)</strong> — 2026-06-18: the
+fencer Drilldown links each result to its FTL/Engarde/4fence/Ophardt results page from
+<code>tbl_tournament.url_results</code> (via <code>vw_score</code>), which previously relied on the flaky event-level &quot;populate
+from event URL&quot; dispatch button (502 on <code>workflow_dispatch</code>). The from-URL ingest already holds each
+committed tournament's results-page URL (<code>parsed.source_url</code>), so the <strong><code>Commit</code> plugin</strong> now writes it
+inline via a new <code>fn_find_or_create_tournament(p_url_results)</code> arg (migration <code>20260619000001</code>, which drops
+the prior 7-arg overload first to keep 6-arg calls unambiguous). Gated on WEB source kinds
+(<code>_WEB_SOURCE_KINDS</code> = FTL/ENGARDE/FOURFENCE/DARTAGNAN/OPHARDT_HTML + http source_url): re-ingest
+overwrites; <code>FENCINGTIME_XML</code>/<code>EVF_API</code>/<code>FILE_IMPORT</code> and non-http pass NULL → preserve (EVF API URL is a
+JSON endpoint, not a page; <code>url_event</code> stays admin-managed). Staging report's Committed section shows the
+persisted link + a <code>Tournament URLs populated: N/M</code> summary. Tests N14.4–N14.8 (<code>test_url_results_on_ingest.py</code>)</p>
+<ul>
+<li>pgTAP 46.1–46.5. (Standalone tool's <code>ophardt</code> discovery branch deferred — <code>fencingworldwide.com</code> event
+index needs a parser + fixture; the pipeline already covers ophardt url_results during ingestion.)</li>
+</ul>
+</li>
+<li>
+<p><strong>Step H — <code>ingest &lt;prefix&gt; &lt;url&gt;</code> Telegram loop + staging-to-Telegram (N15, ADR-025/059 amendments)</strong> —
+2026-06-19: closed the operator loop <strong>ingest on CERT → review staging on the phone → promote</strong>. Reused the
+existing GAS <code>getUpdates</code>→<code>workflow_dispatch</code>+PAT path (the same one <code>promote</code> uses) — a new Telegram
+lifecycle command <code>ingest &lt;prefix&gt; &lt;url&gt; [cert|prod]</code> (18 commands) dispatches <code>ingest-event.yml</code>. The
+from-URL ingest gained <code>url_event_override</code> (admin-managed write of <code>tbl_event.url_event</code> via new
+<code>db_connector.set_event_url_event</code>), <code>send_telegram</code>, and <code>md_target</code>; after the POST_COMMIT staging fire it
+sends the full <code>.md</code> + <code>.diff.md</code> to Telegram via ADR-059's <code>send_staging_report</code>/<code>send_document</code>
+(<code>StagingFormatter</code> now stashes the rendered bytes on ctx + honours <code>md_target</code> for Storage). <code>ingest-event.yml</code>
+gained an optional <code>url_event</code> input + <code>--send-telegram --md-target storage</code>. No webhook, no new ADR — pure
+reuse. The external GAS snippet is delivered as <code>doc/telegram-ingest-command-gas.md</code> (manual paste). Tests
+N15.1–N15.4 (<code>test_ingest_telegram_staging.py</code>). <code>promote</code> unchanged.</p>
+</li>
+</ul>
+<p><strong>Tests.</strong> pgTAP 577 → 588 (unchanged in Step E — Python-only); pytest +49 (M1–M5) +8 (Step A, N7.1–N7.8)
++6 (Step B, N8.1–N8.6) +8 (Step C, N9.1–N9.7 + N5.7) +7 (Step D, N10.1–N10.7) +N11.1–N11.7 (Step E) +N12.1–N12.7 (Step E.2 richness)
+across <code>test_rule_engine</code>, <code>test_pipeline_core</code>, <code>test_pipeline_plugins</code>, <code>test_resolve_fencers</code>,
+<code>test_recompute</code>, <code>test_recompute_worker</code>, <code>test_commit_persist</code>, <code>test_ingest_cli_flow</code>,
+<code>test_recompute_persist</code>, <code>test_post_commit_chain</code>, <code>test_staging_report</code>, <code>test_scrapers</code>;
+Step F (N13.1–N13.6) + pgTAP 45.1–45.6; Step G (N14.4–N14.8) + pgTAP 46.1–46.5; Step H (N15.1–N15.4, Python-only).
+Final: pytest 936, vitest 375, pgTAP 599.</p>
+<p><strong>ADRs.</strong> ADR-070–074 Accepted; ADR-075 Accepted (staging report — fifth Context channel + terminal
+formatter); ADR-076 Accepted (overlap-clobber: pools-only discard + one-listing-per-category keep-rule +
+UI source overrides); amended ADR-050 (stages→plugins, draft tables removed; review artifact restored by
+ADR-075), ADR-056 (Stage-0 absorbed), ADR-067 (extended to FTL JSON by ADR-076),
+ADR-038/066/067/069 (halts → faults), reversed halt-by-exception in ADR-050/057/067. RTM FR-112–119 Covered.</p>
+<p><strong>Deferred (design §12, international only):</strong> <code>FRESH_INGEST_INTERNATIONAL</code>, <code>EVF_SYNC</code>, <code>PewCascade</code>,
+<code>EvfParity</code>; real pg_cron wiring of the recompute worker; <code>LISTEN/NOTIFY</code> dispatch; <code>tbl_flow_rule</code>.</p>
+<p><strong>Memory.</strong> <a href="../doc-redacted-path">project_new_pipeline_build_2026-06-14.md</a>.</p>
+<hr />
+<h3 id="ci-seed-load-fix-collision-resilient-pew-splitter-adr-046-amendment-2026-06-25">CI seed-load fix + collision-resilient PEW splitter (ADR-046 amendment) — 2026-06-25</h3>
+<p>The <code>auto-export seed from PROD after promote PPW3</code> commit (63a2401, <code>[skip ci]</code>) bumped
+<code>seed_prod_latest.sql</code> 06-13 → 06-19. The 06-19 export carried <code>PEW3s-2025-2026</code> (Munich, Dec 6) and
+<code>PEW5s-2025-2026</code> (Stockholm, Feb 7) — <strong>real EVF sabre legs</strong> — but with empty EPEE/FOIL placeholder
+child slots. <code>fn_split_pew_by_weapon()</code> (run in <code>seed_post_backfill.sql</code>) derived <code>efs</code> from those empty
+slots and tried to rename onto the existing <code>PEW3efs</code> / <code>PEW5ef</code> → <code>idx_event_code</code> duplicate-key →
+<strong>the whole seed load aborted</strong>, half-populating the DB and failing 14 pgTAP scoring assertions on CI
+(<code>03</code>, <code>09</code>, <code>14</code>) plus LOCAL <code>reset-dev.sh</code>.</p>
+<p>The fix preserves the real events and <strong>never discards a result</strong> (an earlier drop-the-events approach
+was rejected — it destroyed real calendar data). Migration
+<code>20260625000001_phase4_pew_split_collision_guard.sql</code> makes <code>fn_split_pew_by_weapon</code> self-healing:</p>
+<ul>
+<li><strong>Step 1.5 prune</strong> — drop child tournaments with no results whose weapon is absent from the event's
+explicit <code>[efs]+</code> code suffix (spurious empty placeholder slots; trust the admin-set code).</li>
+<li><strong>Step 2 collision resolution by provenance</strong> — when the weapon-derived code collides, an empty
+(0-result) duplicate is merged away so the result-bearing event takes the code (<code>NOTICE</code>); a
+result-bearing-vs-result-bearing collision is skipped with a <code>WARNING</code> for operator review.</li>
+</ul>
+<p>Outcome: <code>PEW3s</code>/<code>PEW5s</code> survive as their real sabre events, the duplicate empty/result twins merge,
+result-row count is conserved (2673 in = 2673 after), and the ph4.8 &quot;child weapon ∈ parent suffix&quot;
+invariant holds. pgTAP <code>47_pew_split_collision.sql</code> (C.1–C.6, TDD RED→GREEN).</p>
+<ul>
+<li><strong>Recalibration:</strong> the clean 06-19 load exposed that the PPW3 promotion corrected 5 domestic EPEE
+participant counts; <code>09_rolling_score.sql</code> R.4/R.6/R.7/R.8/R.9/R.10/R.11/R.12/R.13/R.14 magic numbers
+re-derived to the new engine output (largest: PARDUS 39.07→22.56, TRACZ 48.87→36.42 — V3/best-K
+sensitive). Tests 03/14 needed no change once the seed loaded cleanly.</li>
+<li><strong>Python:</strong> <code>calibrate_compare.py</code> <code>load_db_scores</code> type errors cleared (<code>sb is None</code> guard +
+<code>cast(dict[str, Any], row)</code>) — basedpyright 0.</li>
+</ul>
+<p><strong>Tests.</strong> pgTAP 599 → 605 (+6 test 47); pytest unchanged (932 passed). ADR-046 amended.</p>
+<hr />
+<h3 id="duplicate-fencer-fix-deterministic-recompute-recovery-adr-056-065-071-072-amendments-2026-06-26">Duplicate-fencer fix + deterministic recompute recovery (ADR-056/065/071/072 amendments) — 2026-06-26</h3>
+<p><strong>Incident.</strong> On CERT and PROD the ingestion pipeline had created a <strong>duplicate</strong> fencer
+(<code>#330</code>) for SAMECKA-NACZYŃSKA Martyna, so she appeared in <strong>both V0 and V1</strong>. Root cause
+(traced + reproduced): FTL emits <code>&quot;SAMECKA -NACZYŃSKA (1) Martyna&quot;</code> — a space before the
+hyphen plus a per-fencer V-cat marker. <code>parse_scraped_name</code> split on the first space →
+surname <code>&quot;SAMECKA&quot;</code> → Phase-A exact miss <strong>and</strong> Phase-B fuzzy drop to PENDING (68.8) → the
+domestic branch auto-created a new fencer instead of linking. Her true confirmed BY (1985,
+a real V0/V1 boundary) had also been overwritten to an estimated band-midpoint.</p>
+<p><strong>Code (committed to main).</strong></p>
+<ul>
+<li><code>52346b5</code> — <code>canonicalize_scraped_name</code> (collapse whitespace → strip parenthesized +
+bare-digit markers → normalize hyphen spacing) at the top of <code>parse_scraped_name</code>, so
+exact/fuzzy/create all see the clean form (ADR-065 amend). Promotion now reconciles a
+conflicting BY to the band <strong>youngest edge</strong>, not the midpoint — cross-season stable
+(<code>reconciled_birth_year</code>; ADR-056 amend). The reconcile op is one shared
+<code>reconcile_fencer_birth_year</code> both ingestion pipelines delegate to (not forked).</li>
+<li><code>ed6568e</code> — <code>fn_merge_fencers</code> re-points <code>tbl_match_candidate.id_fencer</code> before the dup
+delete (FK abort fix; migration <code>20260626000001</code>, pgTAP 44.12; ADR-071 amend).</li>
+<li><code>46a5d92</code> — deterministic recompute-queue recovery: <code>claim_recompute_batch</code> claims every
+not-DONE row (PENDING + CLAIMED) under the single-writer serialization guarantee, replacing
+a rejected 10-min stale-claim timeout (ADR-072 amend).</li>
+</ul>
+<p><strong>Data repair (CERT + PROD).</strong> <code>fn_merge_fencers(247, 330)</code> after restoring <code>#247</code> BY to
+1985 confirmed (and re-pointing the dup's match-candidate rows) — <code>#330</code> gone, results
+re-pointed, dirty spelling folded as an alias, 0 artefact rows on either env. CERT recompute
+queue drained to all-DONE.</p>
+<p><strong>Tests.</strong> pgTAP 605 → 606 (+1 test 44.12); pytest 957 → 958. CI green.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="results-based-carry-stop-never-both-seasons-of-one-event-2026-06-26">Results-based carry-stop — never both seasons of one event (2026-06-26)</h2>
+<p><strong>Symptom.</strong> In the ranklist drill-down a fencer could see <strong>both</strong> this-season's and last-season's
+MPW (and any other event type) at once. Reported as &quot;this is a mistake no matter how you look at it.&quot;</p>
+<p><strong>Root cause.</strong> The active <code>EVENT_CODE_MATCHING</code> engine splits scores into a <code>current_scores</code> CTE
+(ungated — shown whenever a current result exists) and a <code>carried_scores</code> CTE (dropped only when the
+position is in <code>completed_positions</code>). <code>completed_positions</code> was keyed on event <strong>status</strong>
+<code>IN ('COMPLETED','IN_PROGRESS')</code> (patched by <code>20260406000006</code>). An ingested event sitting at a status
+outside that set — e.g. <code>SCHEDULED</code> (ingest's auto-bump is gated on <code>PLANNED</code> only) — showed the
+current result <em>and</em> still carried last year's → both visible / double-counted in the best-K pool.</p>
+<p><strong>Fix (ADR-018/021 amendment, migration <code>20260626120000</code>, supersedes <code>20260406000006</code>).</strong> Redefine
+<code>completed_positions</code> from status-based to <strong>&quot;positions the current season already has a scored
+result for&quot;</strong>, scoped to the queried <strong>weapon+gender</strong>, in all three active-engine functions
+(<code>fn_fencer_scores_rolling_event_code_matching</code>, <code>fn_ranking_ppw_event_code_matching</code>,
+<code>fn_ranking_kadra_event_code_matching</code>). Strict per-(position, weapon, gender) <strong>either/or</strong>: a
+current result supersedes the carried prior-season equivalent the instant it exists, regardless of
+lifecycle status. Status-independent — no dependence on <code>SCHEDULED→IN_PROGRESS→COMPLETED</code> hygiene.
+The inactive <code>EVENT_FK_MATCHING</code> engine (ADR-042) keys carry-stop on <code>SCORED</code> and is left unchanged
+(known boundary divergence if ever activated).</p>
+<p><strong>Tests.</strong> pgTAP 606 → 609: +3 new (R.22–R.24 — never-both with a current result in a <code>SCHEDULED</code>
+event); R.6/R.18 reworked from status-driven to results-driven; R.10 recalibrated 196.78 → 135.88
+(DROBIŃSKI's PPW5-prev was double-counting because PPW5-2025-2026 is <code>SCHEDULED</code> but has results).
+pytest 958, vitest 375 unchanged. CI green.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="joint-pool-split-place-numerator-reranked-per-v-cat-adr-049-amendment-2026-06-27">Joint-pool split — place numerator reranked per V-cat (ADR-049 amendment) — 2026-06-27</h2>
+<p><strong>Problem.</strong> In the drilldown for a mixed-age domestic pool (e.g. V1 Épée Women MPW, V0+V1
+running as one 7-fencer pool ranked per V-cat), the V1 fencers showed nonsensical place
+fractions — <code>1/3</code>, <code>4/3</code>, <code>7/3</code> — and two of the three V1 fencers were silently awarded <strong>0</strong>
+points. Root-caused (graphify + Explore traced to <code>python/pipeline/plugins/ingest.py</code>): the
+per-V-cat split stored each fencer's <strong>whole-pool finishing place</strong> (<code>1,4,7</code>) in the slice's
+<code>tbl_result.int_place</code>, while <code>int_participant_count</code> was correctly the per-V-cat slice size (<code>3</code>,
+from the 2026-06-04 count amendment). The scoring engine zeroes any <code>int_place &gt; int_participant_count</code>
+(<code>02_scoring_engine.sql</code> 2.1c/2.3), so every fencer whose whole-pool place exceeded the slice size
+scored 0 — the field-size denominator had been fixed in isolation while its place-numerator twin was
+left wrong.</p>
+<p><strong>Regression.</strong> The legacy splitter <code>python/pipeline/age_split.py</code> reranked each slice to <code>1..N</code>; the
+NEW plugin pipeline (ADR-073) <code>Commit</code> mutator dropped that step when it replaced the splitter, and the
+2026-06-04 count amendment then made the mismatch actively wrong (N below the whole-pool places).</p>
+<p><strong>Fix.</strong> <code>_rerank_places</code> (dense rank by original place — ties preserved, no gaps: <code>{1,4,4,7}→{1,2,2,3}</code>)
+in <code>ingest.py</code>, applied in both <code>Commit.run</code> (INGEST_DOMESTIC) and <code>_commit_recompute</code>
+(RECOMPUTE_DOMESTIC, so re-running self-heals). Domestic-only by flow routing — <code>Commit</code> never runs in
+the deferred international flows (§12), which keep genuine world placings (<code>place &gt; N → 0</code> intended).
+No SQL change: the scoring contract was already correct; it was fed bad places.</p>
+<p><strong>Data repair.</strong> <code>PPW4-2025-2026</code> + <code>PPW5-2025-2026</code> self-healed via <code>RECOMPUTE_DOMESTIC</code> on LOCAL →
+0 rows remain with <code>place &gt; N</code>; previously-zeroed fencers restored (PPW4-V1-F-EPEE: <code>{1,3,5,6}</code> →
+<code>1,2,3,4</code>, last place = 1.00 floor). The 22 other domestic <code>place &gt; N</code> brackets are a <strong>different</strong>
+issue (<code>bool_joint_pool_split = FALSE</code>: participant-count errors / genuine ties) — left for separate
+work (tracked PPW3/4/5 DATA fix).</p>
+<p><strong>Tests.</strong> pytest <code>test_commit_persist.py</code> N7.9–N7.12 (RED→GREEN): 958 → 962. pgTAP unchanged at 609
+(scoring contract already pinned). vitest 375 unchanged (display heals once data is correct).</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="carry-over-picker-round-trip-explicit-unlink-adr-044-amendment-2026-06-27">Carry-over picker round-trip + explicit unlink (ADR-044 amendment) — 2026-06-27</h2>
+<p><strong>Problem.</strong> In the EventManager admin form, the <code>id_prior_event</code> dropdown (links an EVENT to
+its previous-season counterpart — the FK behind the rolling/carry-over score engine) appeared
+not to save: pick a counterpart, click Save, reopen the event, and the dropdown was back at
+&quot;— none —&quot;.</p>
+<p><strong>Root cause — read path, not write path.</strong> Traced end-to-end (graphify + grep): the save chain
+was sound — <code>EventManager.handleSave</code> → <code>updateEvent</code> → <code>fn_update_event</code> persisted the FK to
+<code>tbl_event</code> (already verified by pgTAP ph3.16). But the UI refetches through <code>vw_calendar</code>
+(<code>fetchCalendarEvents</code>), and that view never SELECTed <code>id_prior_event</code>, so <code>openEditForm</code> read
+<code>event.id_prior_event</code> as <code>undefined</code> and reset the picker. Classic &quot;new <code>tbl_event</code> column →
+rebuild <code>vw_calendar</code> or the round-trip silently breaks&quot;: the column was added in
+<code>20260425000005</code> for the FK engine but never surfaced on the view.</p>
+<p><strong>Fix.</strong> Migration <code>20260627000001_vw_calendar_prior_event.sql</code> — (1) rebuild <code>vw_calendar</code> from
+its <code>20260618000001</code> definition with <code>e.id_prior_event</code> added (functionally dependent on the
+grouped PK, no <code>GROUP BY</code> change; grants re-issued); (2) make the picker's &quot;— none —&quot; actually
+unlink — <code>fn_update_event</code> now reads <code>NULL</code> = leave unchanged (legacy 19-arg callers unaffected),
+<code>-1</code> = explicit clear, <code>&gt;0</code> = set (signature unchanged → grants hold). Frontend:
+<code>CalendarEvent.id_prior_event</code> added to the type (inline cast dropped); picker is authoritative,
+sending <code>-1</code> for &quot;none&quot;.</p>
+<p><strong>Tests.</strong> pgTAP <code>05_calendar_view.sql</code> 8.21 (set + <code>vw_calendar</code> round-trip) + 8.22 (<code>-1</code> unlink;
+NULL leaves unchanged) — RED (column absent) → GREEN; full suite 611 on fresh seed (the earlier
+09/14 &quot;failures&quot; were the documented stale-seed artifact, cleared by <code>reset-dev.sh</code>). vitest
+<code>EventManager.test.ts</code> ph3c.7 reworked (reopen pre-fills picker from saved FK; &quot;none&quot; sends <code>-1</code>)</p>
+<ul>
+<li>round-trip case — 374 → 376. Build clean. pgTAP total 609 → 611.</li>
+</ul>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="cross-gender-guest-reconcile-fixpoint-adr-056-amendment-2026-06-27">Cross-gender-guest reconcile fixpoint (ADR-056 amendment) — 2026-06-27</h2>
+<p><strong>Problem.</strong> SAMECKA-NACZyŃSKA (V1 woman) competes as a cross-gender guest in PPW5's V0 men's
+sabre bracket (&quot;Szabla kat. 0&quot;). Every reingest <strong>demoted her stored BY to the V0 midpoint
+(1991)</strong> — the 2026-06-26 demotion-to-midpoint path firing off the wrong (V0) bracket label.
+Once the BY was hand-held at V1, the single-cat V0 bracket then <strong>aborted on commit</strong>
+(<code>fn_assert_result_vcat</code> rejects a V1 fencer in a V0 tournament). Order-dependent / non-fixpoint.</p>
+<p><strong>Root cause.</strong> The bracket label is untrustworthy for a cross-gender guest, yet reconcile
+trusted it (demoting her) and the splitter trusted it (forcing her into V0). The 2026-06-26
+amendment fixed the <em>correction target</em> but not <em>whether to correct at all</em>.</p>
+<p><strong>Fix (ADR-056 amend, Python-only — no migration).</strong> (1) <strong>Guard 1</strong> — a CONFIRMED BY is
+promote-only; a demotion conflict is a logged no-op (age is monotonic); Estimated may still
+demote to midpoint. (2) <strong>Guard 2</strong> — a mixed-gender bracket (<code>_bracket_mixed_gender</code>, &gt;1 distinct
+fencer gender) never calibrates BY. (3) <code>s7_split_by_vcat</code> routes to BY-derivation when
+<code>category_hint is None</code> OR mixed-gender (<code>fetch_genders_batch</code>) — mixed-gender treated as a
+combined/mixed-age pool; single-gender label brackets keep label-wins (GP1 5.19.x). (4) <code>Commit</code>
+defaults <code>gender None→'M'</code> (<code>Sexe=&quot;X&quot;</code> brackets); women reassigned at query (ADR-034). Shared
+<code>reconcile_fencer_birth_year</code> so both pipelines stay in lockstep.</p>
+<p><strong>Result.</strong> LOCAL repaired: BY 1985 (V1) stable across repeated PPW5/MPW reingests (was flipping
+to 1991); MPW-2025-2026 épée files her in V1; PPW5 sabre V0 commits the 3 men cleanly (no abort).</p>
+<p><strong>Known follow-up.</strong> The ADR-076 from-URL keep-rule (<code>_resolve_sources</code>) computes <code>commit_cats</code>
+from parsed bracket names, so a cross-gender guest's split-out slice (SAMECKA → SABRE/V1 under
+bracket gender M) can be <em>held</em> and dropped — fully retaining guest results needs per-fencer-gender
+commit. Tracked separately.</p>
+<p><strong>Tests.</strong> pytest 962 → 970 — <code>test_resolve_fencers.py</code> (confirmed-demotion no-op, estimated
+demote, mixed-gender skip, order-independence), <code>test_s0_reconcile_roster.py</code> (10.4.2b/10.4.2c),
+<code>test_vcat_from_birthyear.py</code> (5.20.1–5.20.3 mixed-gender/mixed-age split), <code>test_pipeline_plugins.py</code>
+(N2.10 commit gender None→'M'). vitest 376, ruff 0. pgTAP unaffected (no SQL).</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="archived-documents">Archived Documents</h2>
+<p>The following documents contain the original detailed plans. They are superseded by this history and the Project Specification:</p>
+<ul>
+<li><code>doc/archive/POC_development_plan.md</code> — POC milestones M0–M6 (archived)</li>
+<li><code>doc/archive/MVP_development_plan.md</code> — MVP milestones M8–M10 (archived)</li>
+<li><code>doc/archive/Go-to-PROD.md</code> — Go-to-PROD items 2.1–2.9 (archived)</li>
+</ul>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="appendix-implementation-phasing-solution-approach">Appendix: Implementation Phasing &amp; Solution Approach</h2>
+<p><em>Extracted from Project Specification §6 in Phase 0.5 (2026-05-01). The spec now points back to this appendix.</em></p>
+<p>To manage complexity, the system was built iteratively, ensuring value was delivered at each stage while keeping the final, holistic requirements in mind.</p>
+<h3 id="phase-1-proof-of-concept-poc-completed-2026-03-25">Phase 1: Proof of Concept (POC) — COMPLETED (2026-03-25)</h3>
+<ul>
+<li>
+<p><strong>Goal:</strong> Validate the core math, scraping viability, admin workflow, and UI portability.</p>
+</li>
+<li>
+<p><strong>Scope:</strong> Male Epee V2 (50+) category only.</p>
+</li>
+<li>
+<p><strong>Status:</strong> All deliverables complete except automated ingestion pipeline (deferred to MVP M9). See <a href="archive/POC_development_plan.md#poc-completion-summary">POC Development Plan</a> and <a href="adr/013-poc-mvp-transition.html">ADR-013</a>.</p>
+</li>
+<li>
+<p><strong>Use Cases:</strong> UC1–UC5 (ingestion, matching, scoring), UC7–UC11 (season/config management), UC12–UC13 (public ranklist + drill-down), UC18–UC20 (scoring config export/import/calibration).</p>
+</li>
+</ul>
+<blockquote>
+<p>⚠ ADR-050 (Phase 6) drops <code>tbl_match_candidate</code>; provenance moves to <code>tbl_result.{txt_scraped_name, num_match_confidence, enum_match_method}</code>. The deliverables list below describes the as-built MVP, not the post-rebuild target.</p>
+</blockquote>
+<ul>
+<li>
+<p><strong>Deliverables:</strong></p>
+<ul>
+<li>
+<p>Python scrapers for FencingTimeLive, Engarde, and 4Fence — logic ported from existing VBA macros.</p>
+</li>
+<li>
+<p>Full PostgreSQL schema: <code>tbl_fencer</code>, <code>tbl_organizer</code>, <code>tbl_event</code>, <code>tbl_tournament</code>, <code>tbl_result</code>, <code>tbl_season</code>, <code>tbl_scoring_config</code>, <code>tbl_match_candidate</code>, <code>tbl_audit_log</code>.</p>
+</li>
+<li>
+<p>Scoring engine (<code>fn_calc_tournament_scores</code>) implementing the EVF/SPWS Log Formula (spec §8.1).</p>
+</li>
+<li>
+<p>SQL Views: <code>vw_score</code> (denormalised drill-down), <code>vw_ranking_ppw</code> (PPW ranking with configurable best-of + conditional MPW drop).</p>
+</li>
+<li>
+<p>Season &amp; scoring configuration management via Admin UI (Supabase Dashboard for POC).</p>
+</li>
+<li>
+<p><strong>Hybrid scoring config workflow (spec §8.6):</strong> <code>fn_export_scoring_config</code> and <code>fn_import_scoring_config</code> SQL functions enabling JSON export/import for rapid local editing. Python helpers (<code>calibrate_config.py</code>, <code>calibrate_compare.py</code>) for the calibration loop.</p>
+</li>
+<li>
+<p>Supabase Auth with RLS policies: public read on ranking views, admin write on all tables.</p>
+</li>
+<li>
+<p>Identity resolution pipeline (RapidFuzz matcher + <code>tbl_match_candidate</code> for admin review).</p>
+</li>
+<li>
+<p>GitHub Actions pipeline with error handling, retries, and Telegram alerting.</p>
+</li>
+<li>
+<p>DB migration scripts (Supabase CLI migrations) and seed data for one test season (including default <code>tbl_scoring_config</code> with calibrated parameters).</p>
+</li>
+<li>
+<p>Web Component running locally in a &quot;Shadow Wrapper&quot; mimicking WordPress CSS, featuring the Ranklist View (with weapon/gender/category filters) and Drill-down Audit View.</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="phase-2-minimum-viable-product-mvp-completed-2026-04-04">Phase 2: Minimum Viable Product (MVP) — COMPLETED (2026-04-04)</h3>
+<ul>
+<li>
+<p><strong>Goal:</strong> Full operational system replacing the Excel system for all 30 sub-rankings.</p>
+</li>
+<li>
+<p><strong>Scope:</strong> All 30 sub-rankings (3 Weapons × 2 Genders × 5 Categories V0–V4; see spec §9.1.1a for age brackets). Combined V3+4-F category for women. V0 is domestic-only — no Kadra ranking (see spec §9.4).</p>
+</li>
+<li>
+<p><strong>Status:</strong> All 3 milestones complete. <strong>544 test assertions</strong> (189 pgTAP + 175 pytest + 173 vitest + 7 Playwright). See <a href="archive/MVP_development_plan.md">MVP Development Plan</a>.</p>
+</li>
+<li>
+<p><strong>Milestones:</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Milestone</th>
+<th>Status</th>
+<th>Key Deliverables</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M8</td>
+<td>Multi-Category Data + Calendar UI + Schema Extensions</td>
+<td>COMPLETED (2026-03-26)</td>
+<td>30-category seed data, Calendar view, 6 <code>tbl_event</code> columns, Shadow DOM, admin auth, scoring config editor</td>
+</tr>
+<tr>
+<td>M9</td>
+<td>Admin CRUD + Identity Resolution + Tooling</td>
+<td>COMPLETED (2026-04-04)</td>
+<td>Supabase Auth + TOTP MFA, CRUD SQL + UI (seasons/events/tournaments), identity admin UI, file import parsers, seed generator tooling (ADR-019, ADR-020)</td>
+</tr>
+<tr>
+<td>M10</td>
+<td>Rolling Score for Active Season</td>
+<td>COMPLETED (2026-03-29)</td>
+<td><code>p_rolling</code> parameter on ranking functions, <code>fn_fencer_scores_rolling</code>, carried-over visual distinction, calendar progress indicator, birth year subtitle</td>
+</tr>
+</tbody>
+</table></div>
+</li>
+<li>
+<p><strong>Deliverables (completed):</strong></p>
+<ul>
+<li>
+<p>All 30 categories seeded (3 weapons × 2 genders × 5 age categories) with data from <code>doc/external_files/</code> Excel files.</p>
+</li>
+<li>
+<p><strong>Calendar view</strong> (<code>&lt;spws-calendar&gt;</code> custom element): vertical chronological event browser with season filter, past/future/all toggle, mobile-friendly layout. Two-view app: Ranklist | Calendar.</p>
+</li>
+<li>
+<p><strong>Schema extensions:</strong> 6 columns on <code>tbl_event</code>: <code>txt_country</code>, <code>txt_venue_address</code>, <code>url_invitation</code>, <code>num_entry_fee</code>, <code>txt_entry_fee_currency</code>, <code>arr_weapons</code>.</p>
+</li>
+<li>
+<p><strong>Admin authentication:</strong> Supabase Auth with email + password and mandatory TOTP MFA (<a href="adr/016-supabase-auth-totp-mfa.html">ADR-016</a>). Write functions REVOKE'd from <code>anon</code>; require <code>authenticated</code> JWT. 59-minute inactivity timeout.</p>
+</li>
+<li>
+<p><strong>Admin CRUD UI:</strong> Authenticated web interface for season, event, and tournament management. Delete cascades to child records. Two import paths: event-level batch (multi-select modal) and tournament-level single (file upload). Manual tournament creation via &quot;+ Dodaj turniej&quot;. File import supports .xlsx/.xls/.json/.csv.</p>
+</li>
+<li>
+<p><strong>Identity resolution admin UI:</strong> Web interface for match candidate queue with approve/dismiss/create-new actions and disambiguation modal (<a href="adr/016-supabase-auth-totp-mfa.html">ADR-016</a>). Frontend complete; DB wiring deferred to Go-to-PROD.</p>
+</li>
+<li>
+<p><strong>Rolling score for active season:</strong> Position-matched carry-over from previous season with declared-counterpart constraint (<a href="adr/018-rolling-score.html">ADR-018</a>). Visual distinction in DrilldownModal (striped bars, <code>↩</code> marker) and CalendarView (progress slots). Birth year range subtitle on ranklist view.</p>
+</li>
+<li>
+<p><strong>Season-configurable EVF toggle:</strong> PPW/Kadra toggle visibility controlled by per-season <code>bool_show_evf_toggle</code> flag (<a href="adr/017-season-configurable-evf-toggle.html">ADR-017</a>).</p>
+</li>
+<li>
+<p><strong>Shadow DOM isolation:</strong> Both <code>&lt;spws-ranklist&gt;</code> and <code>&lt;spws-calendar&gt;</code> ship as custom elements with Shadow DOM encapsulation (<a href="adr/007-shadow-dom-deferred.html">ADR-007</a>).</p>
+</li>
+<li>
+<p><strong>Seed generator tooling:</strong> <code>generate_season_seed.py</code> with domestic auto-create (<a href="adr/020-seed-generator-domestic-auto-create.html">ADR-020</a>), <code>sort_and_clean_fencers.py</code> for master fencer list maintenance (<a href="adr/019-domestic-only-fencer-seed.html">ADR-019</a>).</p>
+</li>
+<li>
+<p><strong>Scoring config editor:</strong> Structured form with 5 collapsible sections, per-season config, bucket editor for ranking rules.</p>
+</li>
+<li>
+<p>Web Components deployed to CERT environment; PROD deployment pending Go-to-PROD phase.</p>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Architecture decisions (MVP):</strong> ADR-013 (POC→MVP transition), ADR-014 (delete+reimport), ADR-015 (M8 UI decisions), ADR-016 (Supabase Auth + TOTP MFA), ADR-017 (EVF toggle), ADR-018 (rolling score), ADR-019 (domestic-only seed), ADR-020 (seed generator auto-create).</p>
+</li>
+</ul>
+<h3 id="phase-2b-go-to-prod">Phase 2b: Go-to-PROD</h3>
+<ul>
+<li>
+<p><strong>Goal:</strong> Complete the automated ingestion pipeline and deploy the full system to production on the SPWS WordPress site.</p>
+</li>
+<li>
+<p><strong>Status:</strong> IN PROGRESS — active rebuild plan at <code>/Users/aleks/.claude/plans/now-we-have-a-precious-wren.md</code> (master) with phase subplans at <a href="plans/rebuild/">doc/plans/rebuild/</a>. Original archived plan: <a href="archive/Go-to-PROD.md">Go-to-PROD Plan</a>.</p>
+</li>
+</ul>
+<h4 id="rebuild-progress-sub-phases-of-phase-2b">Rebuild progress (sub-phases of Phase 2b)</h4>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Sub-phase</th>
+<th>Status</th>
+<th>Date</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.0a — CI Node 24 upgrade</td>
+<td>✅ DONE</td>
+<td>2026-04-30</td>
+<td>CI upgraded ahead of the rebuild lifetime</td>
+</tr>
+<tr>
+<td>0.0b — Plan decomposition (master + 9 subplans)</td>
+<td>✅ DONE</td>
+<td>2026-05-01</td>
+<td><code>doc/plans/rebuild/</code></td>
+</tr>
+<tr>
+<td>0.5 — Spec refactor + RTM externalization</td>
+<td>✅ DONE</td>
+<td>2026-05-01</td>
+<td>Spec 1773 → 1441 lines; RTM externalized to <code>doc/requirements-traceability-matrix.md</code>; SuperFive moved to <code>doc/backlog/superfive-phase-3.md</code>; <code>scripts/check-spec-sync.sh</code> CI gate added</td>
+</tr>
+<tr>
+<td>0 — Schema prep + cert_ref + rules + matcher config + Claude modules</td>
+<td>✅ DONE</td>
+<td>2026-05-01</td>
+<td>Migrations <code>20260501000001_phase0_schema_prep.sql</code> + <code>20260501000002_cert_ref_schema.sql</code>; ADR-050 stub; rules registry R001-R012 (incl. R005b); <code>scripts/load-cert-ref.sh</code>; <code>python/matcher/config.yaml</code></td>
+</tr>
+<tr>
+<td>1 — Traceability schema + IR + 8 parsers + Ophardt + parser registry</td>
+<td>✅ DONE</td>
+<td>2026-05-01</td>
+<td>ADR-055 migration <code>20260501000003_phase1_ingest_traceability.sql</code> (23 pgTAP); <code>python/pipeline/ir.py</code> (<code>SourceKind</code>/<code>ParsedResult</code>/<code>ParsedTournament</code>/<code>make_synthetic_id</code>); 8 parsers IR-conformed (FTL/Engarde/file_import/FT XML/4Fence/Dartagnan/EVF API + new Ophardt); <code>python/scrapers/__init__.py</code> <code>PARSERS</code> dict; 41 IR contract pytest assertions; cross-language enum sync test</td>
+</tr>
+<tr>
+<td>2 — Draft tables + dry-run loop</td>
+<td>✅ DONE</td>
+<td>2026-05-02</td>
+<td>Migration <code>20260501000004_phase2_draft_tables.sql</code> (30 pgTAP — <code>27.1</code>–<code>27.26</code>): <code>tbl_tournament_draft</code> + <code>tbl_result_draft</code> (loose, no FKs, draft-local PK + <code>txt_run_id UUID</code>); 3 RPCs (<code>fn_commit_event_draft</code>, <code>fn_discard_event_draft</code>, <code>fn_dry_run_event_draft</code>) returning JSONB counts + never throwing on missing run_id. <code>python/pipeline/draft_store.py</code> (DraftStore wrapping Supabase REST; 9 pytest); <code>python/pipeline/draft_diff.py</code> (markdown formatter; 5 pytest). Extended <code>python/pipeline/ingest_cli.py</code> with <code>--commit-draft</code> / <code>--discard-draft</code> / <code>--list-drafts</code> / <code>--resume-run-id</code> (mutex group; zero-count → <code>notifier.warning()</code> + exit 1; 6 pytest). 5 design decisions D1-D5 locked in micro-RFC, captured in ADR-050 §&quot;Status — Phase 2 deliverables&quot;. <code>--dry-run</code> orchestrator integration deferred to Phase 3.</td>
+</tr>
+<tr>
+<td>3 — Stages 1-7 + alias writeback + 3-way diff + interactive CLI</td>
+<td>✅ DONE</td>
+<td>2026-05-02</td>
+<td>Migration <code>20260502000001_phase3_fn_alias_writeback.sql</code> (8 pgTAP — <code>28.1</code>–<code>28.8</code>): <code>fn_update_fencer_aliases</code> with NULL init, case-insensitive dedup, whitespace trim, empty-reject. New modules: <code>python/pipeline/types.py</code> (HaltError + Overrides + PipelineContext + StageMatchResult; 8 pytest), <code>python/pipeline/overrides.py</code> (5-surface YAML parser; 15 pytest), <code>python/pipeline/stages.py</code> (S1-S7 free functions, halt-by-exception; 29 pytest), <code>python/pipeline/three_way_diff.py</code> (4-bucket classifier + histogram + markdown; 12 pytest), <code>python/pipeline/review_cli.py</code> (ReviewSession with 4 source-of-truth choices incl. EVF API; 15 pytest). Updated <code>python/pipeline/orchestrator.py</code> (added <code>run_pipeline</code> dispatcher; legacy <code>process_xml_file</code> annotated with deprecation note). Updated <code>python/pipeline/db_connector.py</code> (added <code>find_event_by_code</code>, <code>fetch_cert_rows_for_event</code> stub, <code>call_age_categories_batch</code>). 4 end-to-end integration tests (<code>test_pipeline_integration.py</code>) skip cleanly when LOCAL DB unreachable. 5 design decisions Q1-Q5 locked in micro-RFC, captured in ADR-050 §&quot;Status — Phase 3 deliverables&quot;. 4 deferrals to Phase 4: frozen-snapshot, production fetcher wiring, real cert_ref query, EVF parity gate, URL→data deep validation.</td>
+</tr>
+<tr>
+<td>4 — Commit path + EVF parity + alias UI</td>
+<td>✅ DONE</td>
+<td>2026-05-02</td>
+<td>Migrations <code>20260502000002_phase4_evf_parity_lifecycle.sql</code> (12 pgTAP), <code>20260502000003_phase4_alias_management.sql</code> (16 pgTAP), <code>20260502000004</code> cert_ref enum + <code>…000005</code> cert_ref query RPCs, <code>…000006_pew_cascade_hook.sql</code> (5 pgTAP), <code>…000007_evf_promote_rpcs.sql</code> (10 pgTAP) — <code>fn_promote_evf_published</code>/<code>fn_annotate_parity_fail</code>/<code>fn_event_results_for_parity</code>/<code>fn_evf_events_pending_parity</code>. Python: <code>url_validation.py</code> (Stage 7 6-field halt + PEW cascade flag, 20 pytest), <code>evf_parity.py</code> (3 sub-checks ±0.5, 12 pytest), <code>commit_lifecycle.py</code> (post-commit cascade + parity + batched Telegram, 7 pytest), <code>evf_parity_sweep.py</code> (daily cron with 30d retry window, 5 pytest), <code>cert_ref.py</code> parser (8 pytest). <code>db_connector.py</code> extended with parity + cascade RPC wrappers. <code>notifications.py</code> extended with 7 Phase-4 templates (commit / promote / parity-fail / halt / cron summary / cascade / EVF empty; 8 pytest). <code>review_cli.py</code> wired post-commit hooks + Telegram halt notification. New mockup <code>doc/mockups/m11_fencer_aliases.html</code> with 4 design options (Expandable / Cards / Two-pane / Dense). New Svelte component <code>FencerAliasManager.svelte</code> (6 vitest) + <code>frontend/src/lib/api.ts</code> wrappers <code>listFencerAliases</code>/<code>transferFencerAlias</code>/<code>splitFencerFromAlias</code>/<code>discardFencerAliasAndResults</code> (4 vitest). <code>FencerWithAliases</code> type added. New GitHub Actions workflow <code>.github/workflows/evf-parity-sweep.yml</code> (daily 04:00 UTC, prod-write concurrency group).</td>
+</tr>
+<tr>
+<td>5 — Operational rebuild (every event reviewed and committed)</td>
+<td>⏳ pending</td>
+<td>—</td>
+<td>Subplan: <code>doc/plans/rebuild/p5-execute.md</code></td>
+</tr>
+<tr>
+<td>6 — Drop tbl_match_candidate + remove old UI + finalize + LOCAL→CERT→PROD</td>
+<td>⏳ pending</td>
+<td>—</td>
+<td>Subplan: <code>doc/plans/rebuild/p6-finalize.md</code></td>
+</tr>
+<tr>
+<td>7 — Carry-over FK + 366-day cap + admin UI</td>
+<td>⏳ pending</td>
+<td>—</td>
+<td>Subplan: <code>doc/plans/rebuild/p7-carryover.md</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>ADRs landed during the rebuild: <a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a> (umbrella), <a href="adr/052-url-data-validation.html">ADR-052</a> (URL→data validation, 2026-05-02), <a href="adr/053-evf-parity-gate.html">ADR-053</a> (EVF backup-source + parity gate + EVF_PUBLISHED promotion lifecycle, 2026-05-02), <a href="adr/055-ingest-traceability.html">ADR-055</a> (parser provenance + cap-6 history). ADR-051 was reserved for a frozen-snapshot policy but the concept was retired 2026-05-02 (cert_ref fallback became just-another-parser); the number stays empty. ADR-054 reserved for carry-over FK + 366-day cap (Phase 7).</p>
+<p>Test totals at end of Phase 1: pgTAP 427 (+23), pytest 402 (+48), vitest 332 (unchanged).
+Test totals at end of Phase 2: pgTAP 457 (+30), pytest 422 (+20, excl. pre-existing <code>test_prod_mirror</code> CI skip), vitest 332 (unchanged).
+Test totals at end of Phase 3: pgTAP 465 (+8), pytest 505 (+83 across 6 new test modules; integration tests skip when LOCAL DB unreachable in CI), vitest 332 (unchanged).
+Test totals at end of Phase 4: pgTAP 508 (+43 — 12 parity-lifecycle, 16 alias-management, 5 cert_ref, 10 promote-RPCs, plus prior cert_ref enum / 9-parser updates), pytest 564 (+59 across <code>test_url_validation</code>, <code>test_evf_parity</code>, <code>test_commit_lifecycle</code>, <code>test_evf_parity_sweep</code>, <code>test_cert_ref_parser</code>, plus notification + S7 assertions; excludes pre-existing <code>test_prod_mirror</code> CI skip), vitest 344 (+12: 4 alias-RPC + 7 alias-component + 1 type-shape).</p>
+<h4 id="phase-5-5-unified-ingestion-storage-verdicts-telegram-delivery-alias-triage-ux-in-progress-started-2026-05-03">Phase 5.5 — Unified ingestion + Storage verdicts + Telegram delivery + alias triage UX (in progress, started 2026-05-03)</h4>
+<p>Closes the remaining gaps preventing CERT-only operation while preserving the in-progress LOCAL rebuild verbatim. Five workstreams + planning canonicalisation:</p>
+<ul>
+<li><strong>Planning canonicalisation:</strong> <a href="claude/planning.md">doc/claude/planning.md</a> written and referenced from CLAUDE.md. Promotes 16 planning rules from user-MEMORY (verify-before-claim, walk-through scenarios, LOCAL parity, TDD strict order, ADR draft sign-off, doc completeness, CI/CD + Telegram operational hooks, per-event sign-off) to project-canonical instructions every Claude session sees.</li>
+<li><strong>4 ADRs proposed:</strong> <a href="adr/058-staging-reports-storage-bucket.html">ADR-058</a> (<code>staging-reports</code> bucket), <a href="adr/059-telegram-document-delivery.html">ADR-059</a> (Telegram <code>sendDocument</code> as primary verdict surface), <a href="adr/060-evf-parity-delta-md.html">ADR-060</a> (EVF delta-only <code>.md</code>), <a href="adr/061-local-parity-and-telegram-commands.html">ADR-061</a> (LOCAL preserved + 4 new GAS commands).</li>
+<li><strong>3 SQL migrations + 3 pgTAP suites GREEN:</strong>
+<ul>
+<li><code>20260503000001</code> extends <code>vw_fencer_aliases</code> + <code>fn_list_fencer_aliases</code> with <code>latest_category_hint</code>, <code>latest_season_end_year</code>, <code>json_user_confirmed_aliases</code> passthrough, <code>int_unreviewed_alias_count</code>. Default order is unreviewed-first DESC. (8 pgTAP, 5.10).</li>
+<li><code>20260503000002</code> extends <code>fn_transfer_fencer_alias</code> + <code>fn_discard_fencer_alias_and_results</code> to return <code>id_tournaments INT[]</code> + <code>tournament_labels TEXT[]</code> alongside the existing <code>tournaments_recomputed</code> count. Cross-event cascades become visible to UI. (8 pgTAP, 5.11).</li>
+<li><code>20260503000003</code> declares the <code>staging-reports</code> Storage bucket via DO block guarded against missing <code>storage.buckets</code> (LOCAL no-op, CERT/PROD applies). RLS: authenticated SELECT, service_role writes. (5 pgTAP, 5.12 — skips on LOCAL).</li>
+</ul>
+</li>
+<li><strong>3 Python modules + 24 pytest GREEN:</strong>
+<ul>
+<li><code>python/pipeline/storage_md.py</code> — bucket I/O wrapper with event_code regex validation (5.6, 7 tests).</li>
+<li><code>python/pipeline/md_writer.py</code> — target router (<code>local</code>/<code>storage</code>/<code>both</code>/<code>none</code>), defaults to <code>local</code> for shell flows (5.5, 7 tests).</li>
+<li><code>python/pipeline/parity_delta.py</code> — renders before→after <code>.md</code> from <code>ParityChange</code> records, returns None on empty input (5.8, 4 tests).</li>
+</ul>
+</li>
+<li><strong>Telegram extension + 6 pytest GREEN:</strong> <code>TelegramNotifier.send_document</code> + <code>send_staging_report(kind, extras)</code> POST <code>multipart/form-data</code> to Bot API; null-safe when token/chat_id missing (LOCAL default). Verified <code>sendDocument</code> accepts arbitrary types via <a href="https://core.telegram.org/bots/api">core.telegram.org/bots/api</a>; ≤50 MB limit (our <code>.md</code> ~30 KB). (5.9).</li>
+<li><strong>2 GH workflows + edge fn allowlist:</strong> <code>.github/workflows/regen-report.yml</code> + <code>.github/workflows/phase5-event-runner.yml</code> (env-var hardened against command injection, regex-validated event_code). <code>dispatch-workflow</code> ALLOWED_WORKFLOWS grew from 2 → 4.</li>
+<li><strong>RTM additions:</strong> FR-102 (unified pipeline), FR-103 (<code>.md</code> to Storage), FR-104 (Telegram delivery), FR-105 (EVF delta-only), FR-106 (alias triage UX), FR-107 (LOCAL guarantee), FR-108 (Telegram operator commands).</li>
+</ul>
+<p>Test totals at Phase 5.5 (in progress, second push): pgTAP 508 → <strong>543</strong> (+35), pytest 564 → <strong>647</strong> (+30 from 5.5/5.6/5.8/5.9 plus rebuild-session pytest), vitest 344 → <strong>372</strong> (+28 from 5.1 birthYearEstimate, 5.2 CreateFencerFromAliasModal, 5.3 api.regenStagingReport, 5.4 FencerAliasManager unreviewed-first sort).</p>
+<p><strong>Workstream 4 (alias triage UI) shipped this push (2026-05-03 second commit)</strong>:</p>
+<ul>
+<li><code>frontend/src/lib/birthYearEstimate.ts</code> — TS port of <code>_estimate_birth_year_for_vcat</code> (9 tests, 5.1).</li>
+<li><code>frontend/src/components/CreateFencerFromAliasModal.svelte</code> — modal mirroring <code>CreateFencerModal.svelte</code> with BY suggestion derived from <code>(latest_category_hint, latest_season_end_year)</code>; stricter validation (BY required, in [1900, 2030]); 7 tests, 5.2.</li>
+<li><code>frontend/src/components/FencerAliasManager.svelte</code> — unreviewed-first sort, <code>class:has-unreviewed</code> left-border + <code>🔍 N</code> badge, auto-expand the first unreviewed-fencer row on mount, &quot;unreviewed only&quot; filter checkbox, per-alias <code>class:unreviewed</code> chip with 🔍 prefix; 8 tests, 5.4; existing 7 tests preserved.</li>
+<li><code>frontend/src/lib/api.ts</code> — <code>regenStagingReport(eventCode)</code> gated by <code>VITE_DEPLOY_ENV</code> (LOCAL no-op returns <code>{skipped: 'local'}</code>, CERT/PROD invokes <code>dispatch-workflow</code> for <code>regen-report.yml</code> with target=cert|prod); extended TS <code>FencerWithAliases</code> + new <code>NewFencerData</code> + <code>AliasMutationResult</code> types; 4 tests, 5.3.</li>
+<li><code>frontend/src/App.svelte</code> — modal mounted, <code>handleAliasCreate</code> rewritten to open the modal with prepopulated context (instead of the four sequential <code>window.prompt()</code> calls), new <code>handleAliasCreateConfirm</code> runs split → cascade banner with per-tournament list → cross-event ⚠ warning → per-event <code>regenStagingReport</code> loop. <code>error</code> banner gains <code>white-space: pre-line</code> so multi-step output renders.</li>
+</ul>
+<p><strong>Pending in Phase 5.5 (next focused sessions):</strong></p>
+<ul>
+<li>
+<p>Frontend alias UI (Workstream 4): <code>CreateFencerFromAliasModal.svelte</code>, FencerAliasManager unreviewed-first sort + amber highlight, App.svelte cascade banner.</p>
+</li>
+<li>
+<p><code>process_xml_file</code> rewrite (Workstream 2, plan-test-ID 5.7): the email path joins <code>run_pipeline</code> + DraftStore. This is the largest remaining refactor; deferred to a focused session.</p>
+</li>
+<li>
+<p><code>phase5_runner</code> / <code>phase5_report</code> CLI flag wiring (<code>--md-target</code>, <code>--send-telegram</code>).</p>
+</li>
+<li>
+<p><code>evf_parity_sweep.py</code> extension to call <code>parity_delta.render</code> + <code>notifier.send_staging_report</code>.</p>
+</li>
+<li>
+<p>GAS Telegram extension: 4 new commands + <code>/help</code> rewrite + <code>downloadFromSupabaseStorage</code> helper.</p>
+</li>
+<li>
+<p>Ops manual updates + LOCAL smoke L1-L6 + CERT smoke C1-C16.</p>
+</li>
+<li>
+<p><strong>Scope (deferred from MVP M9b):</strong></p>
+<ul>
+<li><strong>Pipeline orchestration:</strong> End-to-end flow (parse file → fuzzy match → insert results → score) in a single DB transaction per ADR-014.</li>
+<li><strong>Identity resolution DB wiring:</strong> Connect IdentityManager/DisambiguationModal callbacks to Supabase RPC for approve/dismiss/create-new actions.</li>
+<li><strong>URL scraping tab:</strong> Second tab in import modals for scraping results directly from tournament URLs.</li>
+<li><strong>EVF calendar import:</strong> Scrape veteransfencing.eu, deduplicate against existing events, create events + tournaments.</li>
+<li><strong>Automated ingestion pipeline</strong> (<code>ingest.yml</code>): GitHub Actions workflow with scheduled + manual dispatch.</li>
+<li><strong>Pipeline observability:</strong> Structured logging for all pipeline operations.</li>
+<li><strong>PROD deployment:</strong> Deploy Web Components to the live WordPress site.</li>
+</ul>
+</li>
+</ul>
+<h3 id="phase-3-advanced-integrations-no-longer-planned">Phase 3: Advanced Integrations - No Longer planned.</h3>
+<ul>
+<li>
+<p><strong>Goal:</strong> Pool-level tracking and Kadra tier automation.</p>
+</li>
+<li>
+<p><strong>Deliverables:</strong></p>
+<ul>
+<li>
+<p><strong>SuperFive Ranking:</strong> DEPRICATED. No longer planned to Upgrade scrapers to pull V/M (victories/matches), TS (touches scored), and Ind (indicator) metrics from PPW pool rounds. Implement <code>tbl_pool_result</code> (see spec §9.8) and a separate <code>vw_ranking_superfive</code> view. SuperFive relates only to PPW pool-round data, not DE results.</p>
+</li>
+<li>
+<p><strong>Kadra Tier Classification:</strong> DEPRICATED. No longer planned to Add <code>vw_kadra_tiers</code> view that classifies fencers into Kadra A, B, C, or D based on configurable thresholds (start counts and point thresholds stored in <code>tbl_scoring_config.json_extra</code>). This is used only for National Team nomination discussions and is kept as a separate view from <code>vw_ranking_kadra</code>.</p>
+</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h3 id="self-contained-carry-stop-cross-gender-pgtap-fixtures-2026-06-28">Self-contained carry-stop / cross-gender pgTAP fixtures (2026-06-28)</h3>
+<p><strong>Test-robustness pass — no production SQL changed.</strong> <code>supabase/tests/09_rolling_score.sql</code>
+(24 subtests) and <code>14_cross_gender_scoring.sql</code> (9) previously asserted against live/seed DB
+content: named production fencers (KORONA, ZIELIŃSKI, SAMECKA, TECŁAW…), a hard-coded
+&quot;PPW5+MPW SCHEDULED&quot; seed-state assumption, and ~10 exact production magic-number scores
+(356.92, 389.45, 135.88, 739.01, 85.59…). They had been recalibrated ≥3× (2026-06-03/-25/-26)
+and broke again the moment MPW-2025-2026 was ingested; an empty active season at rollover would
+break them all. This was a structural test-design defect — editing them every season was the
+treadmill to kill.</p>
+<p>Both files now build their <strong>own throwaway synthetic world</strong> in-transaction and <code>ROLLBACK</code>:</p>
+<ul>
+<li>Two non-active synthetic seasons set on the active results-based engine — <code>TST-PREV</code>
+(2090-09-01→2091-08-31) and <code>TST-CURR</code> (2091-09-01→2092-08-31); the DATE order makes PREV the
+carry source (plus <code>TST-ROOT</code> 1850, the earliest of all seasons, to exercise the
+no-previous-season branch for R.5). <code>enum_carryover_engine</code> is set explicitly to
+<code>EVENT_CODE_MATCHING</code> (the table default has since moved to the inactive <code>EVENT_FK_MATCHING</code>).</li>
+<li>Each season's scoring config is a clone (<code>UPDATE … FROM</code>) of the latest real season's full
+config + <code>json_ranking_rules</code> → engine-real place-point formula, but our inputs.</li>
+<li>Synthetic fencers with BYs chosen so each tournament's V-cat equals
+<code>fn_age_category(BY, season_end_year)</code> — satisfies the FATAL <code>trg_assert_result_vcat</code> with <strong>no</strong>
+trigger-disable hack. Scenarios are isolated on independent <code>(weapon, gender)</code> lanes because the
+carry-stop key <code>completed_positions</code> is scoped to weapon+gender (not category).</li>
+<li>Expected values are <strong>engine-derived</strong> (read back the synthetic tournaments' own
+<code>num_final_score</code> and assert the rolling/best-K/carry composition of <em>those</em> — exact equality
+because both sides sum the same stored scores) or <strong>structural</strong> (carried-over counts, never-both
+one-row-per-position, source-season code, rules-based MEW carry on/off). Every ADR mapping is
+preserved: R.6 status-independence, R.10/R.22–R.24 results-based never-both, R.9 category
+crossing, R.11/R.12 event-deletion carry-resume, R.13/R.14 kadra domestic+international,
+R.15–R.20 carried-over flags, R.19–R.21 biennial rules-based IMEW carry; CG.4/CG.5 sibling
+reassign/drop, CG.6–CG.8 ranking + drilldown, CG.9 NULL-gender backward compat.</li>
+</ul>
+<p><code>plan(24)</code> / <code>plan(9)</code> preserved → assertion total unchanged (no Gate-3 doc churn). The files now
+pass against the current mutated LOCAL DB with <strong>no <code>reset-dev.sh</code></strong>, and stay green after any
+future reingest or season rollover. Carry-stop ADR-018/021 and cross-gender ADR-034 behaviour is
+unchanged; only the tests' coupling to production data was removed.</p>
+<hr />
+<h3 id="event-self-registration-phase-2-public-registration-ui-2026-07-05">Event self-registration — Phase 2 public registration UI (2026-07-05)</h3>
+<p>Built the standalone, mobile-first public registration page (<code>frontend/register.html</code>,
+custom elements <code>&lt;spws-registration&gt;</code>/<code>&lt;spws-entry-list&gt;</code>) on top of the Phase 1 DB schema
+(ADR-078/079/080; <code>tbl_registration</code> + <code>fn_create_registration</code>/<code>fn_match_registration_fencer</code>,
+2026-07-04). Build order P2.0–P2.8, strict TDD throughout:</p>
+<ul>
+<li><strong>P2.0</strong> <code>fn_create_registration</code> gains <code>p_consent_version</code> (stamps <code>ts_consent</code>/
+<code>txt_consent_version</code>, D5) and a D10 registration-window guard (rejects the write once
+<code>COALESCE(dt_registration_deadline, dt_start)</code> is past; NULL-date events stay open) — migration
+<code>20260705000001_registration_consent.sql</code>, pgTAP 649→651 (49.23–49.24).</li>
+<li><strong>P2.1–P2.7</strong> <code>RegistrationForm.svelte</code> (step state machine: <code>loading → identity → (exact-match skip / email-verify) → rodo → payment</code>, plus <code>not_found</code>/<code>external</code>/<code>expired</code>/<code>closed</code> D10
+states) + <code>EntryList.svelte</code> (on-demand roster, no payment gate, no category filter — the
+shipped <code>vw_registration_entry_list</code> doesn't expose category and extending it was out of scope
+for this build) + CE wrappers (<code>RegistrationElement.svelte</code>/<code>EntryListElement.svelte</code>) +
+<code>register.html</code> static page reading <code>?event=</code>/<code>?view=list</code>.</li>
+<li><strong>P2.8</strong> Calendar integration: <code>CalendarView.svelte</code> generates SPWS-hosted register/entry-list
+links (<code>registrationBase + ?event=&lt;code&gt;[&amp;view=list]</code>) when <code>bool_use_spws_registration</code> is set,
+falling back to the existing external <code>url_registration</code> link otherwise; <code>EventManager.svelte</code>
+gets a new &quot;Rejestracja SPWS&quot; section (<strong>edit form only</strong>, per ADR-080 §5 scope) toggling
+<code>bool_use_spws_registration</code>/<code>num_entry_fee_2w</code>/<code>num_entry_fee_3w</code> via <code>fn_update_event</code>
+(migration <code>20260705000002_fn_update_event_registration_fields.sql</code> — explicit <code>DROP FUNCTION</code>
+before the widened <code>CREATE OR REPLACE</code>, since Postgres treats a longer parameter list as a new
+overload rather than a replacement; this had silently broken two unrelated pre-existing pgTAP
+files, <code>15_event_multi_url.sql</code>/<code>19_phase3_wizard.sql</code>, on the first attempt). pgTAP 651→652
+(8.23 in <code>05_calendar_view.sql</code>).</li>
+<li><strong>Svelte 5 gotcha hit during E2E debug:</strong> a child component's <code>$effect</code> can run <em>before</em> its
+parent's — <code>RegistrationElement</code>/<code>EntryListElement</code> were calling <code>initClient</code> (the shared
+Supabase client singleton) inside <code>$effect</code>, so on a cold page load the child form's own effect
+sometimes fired first, called the API against an uninitialized client, and the rejection was
+silently swallowed. Fixed by making <code>initClient</code> run synchronously at component-script top level
+(guaranteed before any child mounts) in both CE wrappers, plus a defensive <code>.catch()</code> on the
+form's fetch effect.</li>
+</ul>
+<p>vitest 412→448, all green; <code>svelte-check</code> 0 errors; pgTAP 649→652; full manual E2E on LOCAL
+(real fencer ADAMCZEWSKI Wojciech, id_fencer=1) through identity → RODO → payment → entry-list,
+all D10 states, EN/PL toggle, mobile viewport — fixtures cleaned up after. RTM FR-122 amended,
+new FR-130 added; spec §5.2 flipped from &quot;(planned)&quot; to &quot;Phases 1–2 done, Phase 3 partial,
+Phases 4–5 not started (blocked on Resend/eu.org email infra)&quot;. Phase 3 (FTL seed export, done
+2026-07-04) is unaffected by this build; Phases 4 (organizer-email delivery) and 5 (Telegram
+<code>send &lt;code&gt; participants</code>) remain future work.</p>
+<hr />
+<h3 id="2026-07-05-adr-079-amend-spws-registration-url-auto-fill-calendar-link-fix">2026-07-05 — ADR-079 amend: SPWS-registration URL auto-fill (calendar link fix)</h3>
+<p><strong>Reported:</strong> the active-season PPW1-2026-2027 event showed a registration deadline + fee on the
+calendar but <strong>no clickable registration link</strong>, despite <code>bool_use_spws_registration=TRUE</code>. Root
+cause: <code>CalendarView</code> gated the generated links on a <code>registrationBase</code> prop that <strong>neither</strong> entry
+point (internal app <code>App.svelte</code> / CE <code>index.ce.html</code>) ever supplied → <code>useSpwsReg</code> always false;
+and the event's <code>url_registration</code> was empty so the fallback link was also skipped. P2.8's link
+<em>rendering</em> shipped; the <em>wiring that feeds it</em> did not.</p>
+<p><strong>Decision (user):</strong> store self-contained ABSOLUTE <code>register.html</code> URLs in the DB rather than thread
+a deployment attribute, so a calendar embedded cross-origin (e.g. WordPress) is self-sufficient —
+a deliberate exception to the &quot;URLs are always hand-entered&quot; rule (see memory
+<code>feedback_urls_admin_managed</code>). Ticking <code>bool_use_spws_registration</code> on the EventManager form
+auto-fills <strong>both</strong> <code>url_registration</code> (<code>?event=&lt;code&gt;</code>) and <code>url_entry_list</code> (<code>&amp;view=list</code>) from
+<code>new URL('register.html', window.location.href).href</code> + the event <code>txt_code</code>; untick clears both.
+The fields render read-only while the toggle is on.</p>
+<p><strong>Changes:</strong> migration <code>20260705000004_fn_update_event_url_entry_list.sql</code> (adds <code>p_url_entry_list</code>,
+direct-assign like <code>url_registration</code>); <code>api.ts updateEvent</code> passes <code>p_url_entry_list</code>
+(<code>urlEntryList</code> on <code>UpdateEventParams</code>); <code>EventManager.svelte</code> toggle handler + read-only URL fields</p>
+<ul>
+<li><code>event_entry_list_url_label</code> i18n (PL/EN); <code>CalendarView.svelte</code> now renders the form link from
+<code>url_registration</code> and a new entry-list link from <code>url_entry_list</code>, and the dead
+<code>registrationBase</code>/<code>useSpwsReg</code>/<code>spwsFormLink</code>/<code>spwsListLink</code> plumbing + the <code>registration-base</code> CE
+attr were removed. <strong><code>register.html</code> folded into the MAIN vite build</strong> (<code>vite.config.ts</code> input; was
+CE-only in <code>dist-ce</code>, which <code>release.yml</code> never deployed) + release.yml sed-injects its cloud creds.</li>
+</ul>
+<p><strong>Verified (LOCAL):</strong> vitest 448→449, <code>svelte-check</code> 0 errors, <code>ruff</code> 0, pgTAP 653→654 (8.24; the
+3 <code>03_views_api</code> ranking-count failures are the known stale-seed harness drift, unrelated); built
+<code>dist/register.html</code> works under <code>vite preview</code>; and the calendar E2E — PPW1-2026-2027 now shows
+<strong>Rejestracja →</strong> + <strong>Lista zgłoszonych →</strong> links resolving to the working register.html flow.
+EN/PL toggle intact. RTM FR-125 (registration link surfacing) note; spec Appendix D total bumped.</p>
+<p><strong>Correction (see next entry):</strong> the &quot;<code>register.html</code> folded into the MAIN vite build&quot; decision
+above was reverted the same day — it broke shadow-DOM CSS. See below.</p>
+<hr />
+<h3 id="2026-07-05-adr-079-7-amend-in-app-registration-modal-register-html-build-correction">2026-07-05 — ADR-079 §7 amend: in-app registration modal + register.html build correction</h3>
+<p>Continuation of the same-day fix above (plan <code>~/.claude/plans/typed-weaving-crab.md</code>, tasks
+M1-M7): the calendar links now worked, but clicking one still <strong>navigated away</strong> from the
+calendar to the standalone <code>register.html</code> page.</p>
+<p><strong>Changes:</strong> <code>RegistrationForm.svelte</code>/<code>EntryList.svelte</code> gain optional <code>onclose</code>/<code>onviewlist</code>
+props (undefined on the standalone page — nothing to close to there; renders a <code>×</code> close button
+and routes the entry-list link through a callback instead of an <code>&lt;a href&gt;</code> when provided). New
+<code>RegistrationModal.svelte</code> — a backdrop-overlay wrapper matching the existing <code>DrilldownModal</code>
+interaction pattern (backdrop click / <code>onclose</code> closes; full-bleed on ≤600px). <code>CalendarView</code>
+intercepts left-click on the SPWS-hosted registration/entry-list links (<code>preventDefault</code> +
+open the modal) <strong>only when</strong> <code>bool_use_spws_registration</code> is true; the <code>href</code> is left in place
+so right-click &quot;copy link&quot; / open-in-new-tab still resolve correctly, and a hand-entered external
+<code>url_registration</code> (flag off) is untouched — plain navigation, no <code>onclick</code> at all.</p>
+<p><strong>Build correction:</strong> the earlier decision to move <code>register.html</code> into the <strong>main</strong> Vite build
+is reverted. Svelte only inlines a nested (non-custom-element) child component's <code>&lt;style&gt;</code> into a
+shadow root when the <strong>whole</strong> compile graph runs with <code>customElement: true</code> — under the main
+build's plain config, <code>RegistrationForm</code>/<code>EntryList</code> styles land in the document <code>&lt;head&gt;</code> instead,
+invisible inside <code>&lt;spws-registration&gt;</code>'s shadow DOM, so the page rendered completely unstyled.
+<code>register.html</code> reverts to a <code>vite.config.ce.ts</code> input (as it always was); <code>release.yml</code> instead
+gains a second build step (<code>vite build --config vite.config.ce.ts</code>) whose <code>dist-ce/register.html</code></p>
+<ul>
+<li><code>dist-ce/assets/</code> are copied into the already-built <code>dist/</code>, so Pages still ships one merged
+output — the original &quot;never deployed&quot; gap stays closed without re-splitting the artefact.
+<code>register.html</code> also gained an inline page-shell <code>&lt;style&gt;</code> (dark background/padding matching
+<code>doc/mockups/registration_*.html</code>) — without it the shadow-scoped card floated on a bare white page.</li>
+</ul>
+<p><strong>Verified (LOCAL):</strong> vitest 449→463 (<code>RegistrationModal.test.ts</code> new, 5 tests; <code>CalendarView</code>/
+<code>RegistrationForm</code>/<code>EntryList</code>/<code>EventManager</code> tests extended), <code>svelte-check</code> 0 errors, pgTAP 654
+unchanged (no new migration this round; full <code>supabase test db</code> green modulo the pre-existing 3
+<code>03_views_api.sql</code> failures, confirmed present on <code>main</code> before this branch too). ADR-079 gains a
+new §7 &quot;Amendment (2026-07-05)&quot; documenting both the URL auto-fill and this modal/build
+correction in one place.</p>
+<p><strong>OPEN:</strong> ADR-079 §7 awaiting user sign-off before commit; CERT/PROD reached via the next
+<code>release.yml</code> run (register.html now ships in the merged build); existing PROD events with the
+flag on but empty URLs need an admin re-save (toggle off/on) to populate
+<code>url_registration</code>/<code>url_entry_list</code>.</p>
+<hr />
+<h3 id="2026-07-05-adr-079-7-d-fix-register-html-unstyled-on-npm-run-dev-post-deploy-user-report">2026-07-05 — ADR-079 §7(d): fix register.html unstyled on <code>npm run dev</code> (post-deploy user report)</h3>
+<p>Pushed to <code>main</code> (commit <code>15b858e</code>), CI green, CERT + PROD both auto-deployed (this repo's
+<code>release.yml</code> cascades LOCAL-verified changes straight through both environments, no manual
+gate). Live-verified <code>register.html</code> reachable on CERT via GH Pages. User then reported the
+copy-pasted link (<code>http://localhost:5173/register.html?event=PPW1-2026-2027</code>, meant for sharing
+e.g. on Facebook) rendered as bare, unstyled HTML, while the same link clicked <em>inside</em> the
+calendar (opening the in-app <code>RegistrationModal</code>) looked correct.</p>
+<p><strong>Root cause:</strong> <code>npm run dev</code> runs plain <code>vite</code>, which loads <code>vite.config.ts</code> (the main config) —
+a code path <code>d</code>'s <code>(c)</code> production fix never touched, because that fix only changed
+<code>vite.config.ce.ts</code> + <code>release.yml</code>. <code>vite.config.ts</code> never set
+<code>compilerOptions.customElement: true</code>, so Svelte compiled the <code>ce/*.svelte</code> wrapper files as plain
+components on the dev server — the identical &quot;styles land in <code>&lt;head&gt;</code>, invisible inside the
+shadow DOM&quot; bug as (c), on a path (c) didn't cover. The in-app modal gave no warning signal
+because it never crosses the custom-element boundary at all (it imports <code>RegistrationForm</code>/
+<code>EntryList</code> directly as ordinary components).</p>
+<p><strong>Fix:</strong> add <code>compilerOptions.customElement: true</code> to <code>vite.config.ts</code> (one line). Verified safe —
+only the four <code>ce/*.svelte</code> wrapper files declare <code>&lt;svelte:options customElement&gt;</code>; <code>App.svelte</code>/
+<code>main.ts</code> (the main admin app) don't use it, so the flag is a no-op for everything else in that
+config. Reproduced the bug and confirmed the fix live via the LOCAL dev server (<code>frontend-dev</code>,
+port 5199): before the fix, <code>register.html</code> showed raw unstyled form fields on a dark page-shell
+background; after, it renders pixel-identical to the in-app modal. Confirmed no regression to the
+main ranklist/calendar app (Ranking table, Kalendarz tab, admin sign-in modal all screenshot-
+verified unaffected) and to the existing <code>release.yml</code> CE-bundle-merge path (left untouched,
+already verified working on CERT/PROD before this fix).</p>
+<p><strong>Verified (LOCAL):</strong> vitest 463/463 unchanged, <code>svelte-check</code> 0 errors, main <code>vite build</code> still
+emits only <code>dist/index.html</code> (no change to what <code>release.yml</code> builds/merges). ADR-079 gains §7(d).</p>
+<hr />
+<h3 id="2026-07-05-fr-123-entry-list-age-category-calendar-multi-weapon-fee-display">2026-07-05 — FR-123 entry-list age category + calendar multi-weapon fee display</h3>
+<p>Two more gaps reported directly by the user while testing the registration work above.</p>
+<p><strong>1. Entry-list age category (mockup parity).</strong> <code>doc/mockups/registration_entry_list.html</code> shows
+a &quot;Kat.&quot; column (a per-row V0–V4 badge) and a &quot;Kategoria&quot; filter dropdown, but <code>EntryList.svelte</code>
+never had either — <code>vw_registration_entry_list</code> (migration <code>20260704000001</code>) only ever selected
+surname/first_name/gender/weapons. This was a previously-documented deferral, not a new request;
+RTM FR-123 already (incorrectly) claimed the view &quot;matches the public roster mockup.&quot;</p>
+<p>Fix: <code>vw_registration_entry_list</code> (migration <code>20260705000005</code>) now computes <code>enum_age_category</code>
+via the existing <code>fn_age_category(int_birth_year, season_end_year)</code> (joining <code>tbl_event</code>/
+<code>tbl_season</code> for the season end year, the same pattern <code>vw_vcat_violation</code> uses) —
+<code>int_birth_year</code> itself stays excluded from the SELECT list (GDPR minimisation, ADR-078
+unchanged, pinned by pgTAP 49.15/49.27). <code>EntryList.svelte</code> gained a 5th filter (category
+dropdown, same V0 (30+)…V4 (70+) option convention as <code>FilterBar.svelte</code>) and a &quot;Kat.&quot; column
+rendering a pill badge (<code>.el-cat</code>, matching the mockup's <code>.cat</code> class). The two i18n keys this
+needed (<code>reg_filter_category_all</code>, <code>reg_col_category</code>) already existed unused in both locale
+files — no new i18n keys added. pgTAP 654→657 (49.25–49.27: column type, computed-value
+correctness against the existing NOWAK/1975 fixture in a season ending 2099 → V4, and an explicit
+int_birth_year-still-excluded regression guard). vitest 463→466 (badge render, category filter,
+filter option labels).</p>
+<p><strong>2. Calendar entries never showed the 2-weapon/3-weapon fee tiers.</strong> <code>tbl_event</code> already has
+<code>num_entry_fee_2w</code>/<code>num_entry_fee_3w</code> (edited via <code>EventManager.svelte</code>, used by
+<code>RegistrationForm.svelte</code> to compute a fencer's own fee) and <code>CalendarView.svelte</code> already
+fetched both columns — but its render only ever printed the base <code>num_entry_fee</code>. PPW1-2026-2027
+has all three tiers filled (250/350/400 PLN) and only 250 ever showed. Pure display-only fix, no
+DB/API change: <code>CalendarView.svelte</code> now renders an additional <code>.timeline-fee</code> line for each
+filled tier, reusing the existing <code>event_entry_fee_2w_label</code>/<code>event_entry_fee_3w_label</code> i18n keys
+(already used by <code>EventManager.svelte</code>'s edit form, never before by the calendar). vitest 466→468
+(all three tiers render; the single-fee case still renders exactly one line, no regression).</p>
+<p><strong>Verified (LOCAL):</strong> <code>supabase test db</code> 657/657 (all green — the reset that applied migration
+<code>20260705000005</code> also happened to clear the previously-known 3 <code>03_views_api.sql</code> stale-seed
+failures, since <code>supabase db reset</code> regenerates the seed cleanly). <code>svelte-check</code> 0 errors.
+<code>npm test</code> 468/468. <code>postgrestools check</code> on the new migration + the modified pgTAP file — clean
+aside from the pre-existing pgTAP polymorphic-function static-analysis false positives (documented
+baseline, not a real issue). No ADR touch for either item — both are additive (a DB view column +
+a frontend display line) closing already-documented, already-approved-scope gaps, not new
+architectural tradeoffs.</p>
+<hr />
+<h3 id="2026-07-05-mobile-gdpr-checkbox-entry-list-layout-fixes-same-day-follow-up">2026-07-05 — Mobile GDPR checkbox + entry-list layout fixes (same-day follow-up)</h3>
+<p>Two more on-device regressions the user hit testing the two fixes above on an actual phone,
+frontend-only (no DB/migration changes).</p>
+<p><strong>1. RODO consent checkbox laid out off-screen on mobile.</strong> <code>RegistrationForm.svelte</code>'s global
+<code>input, select { width: 100% }</code> rule (meant for the identity-step text fields) was also stretching
+the RODO step's <code>&lt;input type=&quot;checkbox&quot;&gt;</code> to fill its flex row (<code>.reg-ack { display: flex }</code>),
+pushing the consent label off to the side/off-screen on narrow viewports — violating FR-130's own
+D8 mobile-first invariant (&quot;no horizontal scroll&quot;) on the one step it hadn't been checked against.
+Fix: <code>.reg-rodo-checkbox</code> now overrides to a fixed, custom-painted 20×20px box (<code>appearance: none</code>
+with its own checked-state fill/tick, since the native browser checkbox ignores most styling once
+<code>width</code> is constrained back down).</p>
+<p><strong>2. No feedback when accepting without ticking consent.</strong> The accept button previously just
+<code>disabled</code>'d until the checkbox was checked — clicking it while unchecked was a silent no-op with
+no visible cue. Per the user's explicit ask, the button is no longer hard-<code>disabled</code>; <code>acceptRodo()</code>
+now checks <code>consentChecked</code> itself and, if unset, sets a new <code>consentInvalid</code> state that fills the
+checkbox background light red (<code>rgba(255,92,92,.45)</code>) until the box is ticked (auto-clears on
+change). vitest: replaced the old single &quot;disabled until ticked&quot; test with two — accept-without-
+consent doesn't submit + flags invalid, and ticking clears the flag then submits normally
+(<code>RegistrationForm.test.ts</code> 17→18: +2 new, −1 old disabled-attribute assertion removed).</p>
+<p><strong>3. Entry-list mobile layout was an unreadable 5-line-per-fencer stack.</strong> The existing
+<code>@media (max-width: 480px) { table, thead, tbody, th, td, tr { display: block } }</code> rule (pre-dating
+this session, never mockup-specified) collapsed every <code>&lt;td&gt;</code> to its own block line with the header
+hidden — already marginal at 4 columns, actively broken once the age-category column made it 5:
+<code>1 / ATANASSOW Aleksander / M / V2 / E</code> stacked vertically per fencer. Redesigned as a single
+non-wrapping flex row per fencer: name on the left (<code>flex: 1 1 auto</code>, ellipsis-truncated so a long
+name can't push badges off-screen), category + weapon badges packed tight on the right. Also
+dropped the <code>Lp</code> (row number) and <code>Gender</code> display columns entirely per explicit request — surname</p>
+<ul>
+<li>first name already make both redundant (gender stays filterable, just not shown as its own
+column/badge). The three filter dropdns (weapon/category/gender) moved from folded-in &quot;Weapon:
+all&quot;-style option text into a 3-column grid, each under its own <code>&lt;label&gt;</code> (<code>Broń</code>/<code>Kategoria</code>/
+<code>Płeć</code>) with a plain <code>--</code> placeholder option — clearer at a glance and matches how the user asked
+for the calendar's own filters to read. Select font bumped 0.9em→16px (both more legible and the
+standard fix to stop iOS auto-zooming the page on focus). <code>reg_col_lp</code>, <code>reg_col_gender</code>,
+<code>reg_filter_weapon_all</code>, <code>reg_filter_category_all</code>, <code>reg_filter_gender_all</code> i18n keys removed
+(dead after the above — nothing else referenced them). vitest <code>EntryList.test.ts</code> 11→12 (label/
+placeholder-convention test, superseding the old folded-option-text assertion).</li>
+</ul>
+<p><strong>Native <code>&lt;select&gt;</code> popup position/style (deferred, no code change):</strong> the user also flagged the
+native option-list popup opening above the trigger with small text on macOS — that's OS/browser
+chrome rendered outside the page's DOM, not stylable via page CSS at all; font-size 16px on the
+<code>&lt;select&gt;</code> itself does carry through to the popup (fixed above), but position/skin cannot be
+forced short of replacing the native <code>&lt;select&gt;</code> with a fully custom dropdown widget. Offered that
+as a follow-up; user deferred pending on-device testing of the fixes above — <strong>OPEN</strong> if requested.</p>
+<p><strong>Verified (LOCAL):</strong> <code>npm test</code> 470/470, <code>svelte-check</code> 0 errors, <code>supabase test db</code> 657/657 (one
+transient local-only failure diagnosed mid-session as pollution from manual <code>docker exec</code> test
+registrations created for earlier fee-tier verification — not a regression; <code>./scripts/reset- dev.sh</code> restored a clean 657/657 before commit). No ADR touch (UI/CSS bug fixes, no architectural
+tradeoff). Pushed directly to <code>main</code> (<code>026a284</code>→<code>2ab852a</code> after rebasing past two auto-generated
+CERT/PROD tracking commits); CI green; Release cascade needed two manual re-runs for transient
+infra faults unrelated to this change — GitHub Pages' <code>Deployment failed, try again later.</code> and
+<code>supabase/setup-cli@v1</code>'s GitHub API rate limit resolving the latest CLI release — both succeeded
+on retry, full <code>build</code>→<code>deploy-pages</code>→<code>deploy-cert</code>→<code>deploy-prod</code> cascade green.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="Documentation navigation"><a class="registry" href="index.html">← Documentation index</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
+<footer class="foot">Generated from <code>development_history.md</code> · source SHA-256 <code>fcd2a048cf5f23847e79d14669cb2e1fa46c3177e0c587f37d546db592ca11d2</code></footer>
+</div></body></html>

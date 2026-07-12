@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="055-ingest-traceability.md">
+<meta name="adr-source-sha256" content="9314a8c528f62abe8a1d9285133c9ae274ce566c58c8088384f3593c53a90195">
+<title>ADR-055 · Ingest Traceability — Per-Parser Provenance + Bounded History</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 055</p><h1>Ingest Traceability — Per-Parser Provenance + Bounded History</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted; LOCAL implementation committed 2026-05-01 as part of Phase 1 of the rebuild (<code>/Users/aleks/.claude/plans/now-we-have-a-precious-wren.md</code>). CERT/PROD land via Phase 6 promotion.</dd></div><div><dt>Date</dt><dd class="">2026-05-01</dd></div><div><dt>Source</dt><dd class=""><code>055-ingest-traceability.md</code></dd></div><div><dt>Length</dt><dd class="">166 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted; LOCAL implementation committed 2026-05-01 as part of Phase 1 of the rebuild (<code>/Users/aleks/.claude/plans/now-we-have-a-precious-wren.md</code>). CERT/PROD land via Phase 6 promotion.</p>
+<p><strong>Date:</strong> 2026-05-01</p>
+<p><strong>Relates to:</strong> ADR-050 (Unified Ingestion Pipeline) — this ADR fills the parser-provenance gap left open in ADR-050. Identity provenance (already on <code>tbl_result.{txt_scraped_name, num_match_confidence, enum_match_method}</code> per ADR-050 Phase 0) and parser provenance (this ADR) are complementary: identity answers &quot;who is this fencer?&quot;, parser provenance answers &quot;which scraper produced this row?&quot;.</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#eight-design-decisions-locked-2026-05-01-via-brainstorm">Eight design decisions (locked 2026-05-01 via brainstorm)</a></li><li class="depth-3"><a href="#schema">Schema</a></li><li class="depth-3"><a href="#behavior-contract-verified-by-supabase-tests-26-ingest-traceability-sql">Behavior contract (verified by `supabase/tests/26_ingest_traceability.sql`)</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-3"><a href="#a-discriminator-only-single-columns-on-parent-rows-no-history-table">A. Discriminator-only (single columns on parent rows; no history table)</a></li><li class="depth-3"><a href="#b-history-only-no-current-stamp-columns-always-join-to-history-for-the-current-answer">B. History-only (no current-stamp columns; always JOIN to history for the &quot;current&quot; answer)</a></li><li class="depth-3"><a href="#c-single-polymorphic-history-table-with-target-kind-discriminator">C. Single polymorphic history table with `target_kind` discriminator</a></li><li class="depth-3"><a href="#d-result-level-provenance-tbl-result-txt-run-id">D. Result-level provenance (`tbl_result.txt_run_id`)</a></li><li class="depth-3"><a href="#e-time-based-retention-delete-history-rows-older-than-x-months-instead-of-count-cap">E. Time-based retention (delete history rows older than X months) instead of count cap</a></li><li class="depth-3"><a href="#f-land-it-in-phase-4-commit-path">F. Land it in Phase 4 (commit path)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#migration-path-for-existing-data">Migration path for existing data</a></li><li class="depth-2"><a href="#open-follow-ups">Open follow-ups</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The legacy ingestion pipeline gave no answer to &quot;which parser produced this tournament's results?&quot; or &quot;when was this last scraped?&quot; beyond <code>tbl_event.url_results</code> (the URL the admin entered) and the tournament's <code>enum_import_status</code>. After the unified pipeline lands, eight different parsers (FencingTime XML, FTL, Engarde, 4Fence, Dartagnan, EVF API, file_import, Ophardt-HTML) will all feed the same orchestrator. Without per-row provenance:</p>
+<ul>
+<li>Forensic queries like &quot;every Ophardt-parsed tournament this season&quot; are impossible.</li>
+<li>Re-ingest history is invisible; if a tournament was re-scraped twice via different parsers, only the latest parsing exists in the data and there is no audit trail.</li>
+<li>Bug-replay is hard: when a parsing bug is discovered, you can't tell which existing rows were produced by the broken code.</li>
+<li>Phase 5 of the rebuild reviews ~750 tournaments individually; admin needs a &quot;what produced this last time?&quot; badge per row, otherwise every review starts from zero context.</li>
+</ul>
+<p>The orchestrator's draft tables (Phase 2, ADR-050) already carry <code>txt_run_id</code> UUID, but that lives only on drafts, not on committed live rows.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Add per-parser provenance at two levels of the data hierarchy:</p>
+<ol>
+<li><strong>Hot stamp</strong> (the &quot;current&quot; answer) — three columns on each parent row: <code>enum_parser_kind</code>, <code>dt_last_scraped</code>, <code>txt_source_url_used</code>. Cheap reads in admin UI; overwritten on each successful re-scrape.</li>
+<li><strong>Audit history</strong> (the &quot;how did we get here&quot; answer) — append-only sibling table per parent. Each successful commit appends one row carrying the stamp plus <code>txt_run_id</code> (linking back to the Phase 2 draft that produced this commit). Capped at 6 rows per parent by a <code>BEFORE INSERT</code> trigger that evicts the oldest row beyond top-5-by-recency before each insert.</li>
+</ol>
+<p>Hierarchy reminder (per house convention): <code>tbl_event</code> → <code>tbl_tournament</code> → <code>tbl_result</code>. Stamps live at the <strong>event</strong> and <strong>tournament</strong> levels; results inherit from their tournament. A single event can mix sources across child tournaments (e.g., FTL primary + EVF API re-fix on one tournament), so an event-level stamp alone would lie.</p>
+<h3 id="eight-design-decisions-locked-2026-05-01-via-brainstorm">Eight design decisions (locked 2026-05-01 via brainstorm)</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Decision</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>D1</strong></td>
+<td>Stamp at <strong>both</strong> event and tournament level</td>
+<td>Some events mix parsers across child tournaments; an event-level-only stamp would silently lie in those cases</td>
+</tr>
+<tr>
+<td><strong>D2</strong></td>
+<td>Each stamp = <strong>parser + timestamp + source URL</strong></td>
+<td>Triplet of &quot;what / when / where&quot; — minimum needed for the admin to replay or re-fetch</td>
+</tr>
+<tr>
+<td><strong>D3</strong></td>
+<td><strong>Overwrite current stamp + append to history</strong></td>
+<td>Hot path stays cheap (no JOIN); forensic path stays complete</td>
+</tr>
+<tr>
+<td><strong>D4</strong></td>
+<td><strong>Two separate</strong> history tables (<code>tbl_event_ingest_history</code>, <code>tbl_tournament_ingest_history</code>)</td>
+<td>Avoids a polymorphic FK with a nullable parent pointer; each row is unambiguous</td>
+</tr>
+<tr>
+<td><strong>D5</strong></td>
+<td><strong>Per-parent cap of 6 rows</strong>, older auto-deleted on insert via <code>BEFORE INSERT</code> trigger</td>
+<td>Bounded growth without cron; absolute ceiling ~8,300 rows total at peak (~80 events + ~750 tournaments × 6 + per-parent cap-of-six)</td>
+</tr>
+<tr>
+<td><strong>D6</strong></td>
+<td>Only <strong>successful commits</strong> trigger a history row</td>
+<td>Failed/discarded drafts have their own audit trail via <code>tbl_*_draft.txt_run_id</code> (Phase 2). The history table earns its keep as the <em>committed</em> record.</td>
+</tr>
+<tr>
+<td><strong>D7</strong></td>
+<td>History row carries <strong>stamp + run_id</strong></td>
+<td>Run_id (UUID) is structurally load-bearing — it's the only link from a committed history row back to the draft tables that produced it</td>
+</tr>
+<tr>
+<td><strong>D8</strong></td>
+<td>Land it in <strong>Phase 1</strong> (not deferred to Phase 4)</td>
+<td>Schema is small, design is locked, and Phase 2/3/4 get a stable target instead of designing around a moving one</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="schema">Schema</h3>
+<p>Migration: <code>supabase/migrations/20260501000003_phase1_ingest_traceability.sql</code>.</p>
+<p><strong>Enum</strong> (mirrors Python <code>SourceKind</code> in <code>python/pipeline/ir.py</code>, declared order kept aligned):</p>
+<pre><code class="language-sql">CREATE TYPE enum_parser_kind AS ENUM (
+  'FENCINGTIME_XML', 'FTL', 'ENGARDE', 'FOURFENCE',
+  'DARTAGNAN', 'EVF_API', 'FILE_IMPORT', 'OPHARDT_HTML'
+);
+</code></pre>
+<p><strong>Stamp columns</strong> (added to both <code>tbl_event</code> and <code>tbl_tournament</code>, all nullable — events may exist before any scrape; cert_ref-fallback events also produce stamps via the cert_ref parser):</p>
+<pre><code class="language-sql">ALTER TABLE tbl_event       ADD COLUMN enum_parser_kind     enum_parser_kind,
+                            ADD COLUMN dt_last_scraped      TIMESTAMPTZ,
+                            ADD COLUMN txt_source_url_used  TEXT;
+ALTER TABLE tbl_tournament  ADD COLUMN enum_parser_kind     enum_parser_kind,
+                            ADD COLUMN dt_last_scraped      TIMESTAMPTZ,
+                            ADD COLUMN txt_source_url_used  TEXT;
+</code></pre>
+<p><strong>History tables</strong> (one per parent, with FK CASCADE on parent delete, UNIQUE on (parent_fk, txt_run_id), and an index on (parent_fk, dt_committed DESC) for &quot;show me the last 6&quot;):</p>
+<pre><code class="language-sql">CREATE TABLE tbl_event_ingest_history (
+  id_event_ingest_history  SERIAL PRIMARY KEY,
+  id_event                 INT NOT NULL REFERENCES tbl_event(id_event) ON DELETE CASCADE,
+  txt_run_id               UUID NOT NULL,
+  enum_parser_kind         enum_parser_kind NOT NULL,
+  dt_committed             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  txt_source_url           TEXT,
+  UNIQUE (id_event, txt_run_id)
+);
+-- mirror: tbl_tournament_ingest_history with id_tournament FK
+</code></pre>
+<p><strong>Cap-of-6 trigger</strong> (one per history table, defensive <code>OFFSET 5</code> deletes any rows beyond the top-5-by-recency before NEW is inserted, so post-insert total = 6):</p>
+<pre><code class="language-sql">CREATE OR REPLACE FUNCTION fn_enforce_event_history_cap()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  DELETE FROM tbl_event_ingest_history
+   WHERE id_event = NEW.id_event
+     AND id_event_ingest_history IN (
+       SELECT id_event_ingest_history
+         FROM tbl_event_ingest_history
+        WHERE id_event = NEW.id_event
+        ORDER BY dt_committed DESC, id_event_ingest_history DESC
+        OFFSET 5
+     );
+  RETURN NEW;
+END;
+$$;
+</code></pre>
+<h3 id="behavior-contract-verified-by-supabase-tests-26-ingest-traceability-sql">Behavior contract (verified by <code>supabase/tests/26_ingest_traceability.sql</code>)</h3>
+<ul>
+<li>26.1–26.2: enum exists with the 8 declared values in declared order.</li>
+<li>26.3–26.8: stamp columns exist on both parent tables with correct types (nullable).</li>
+<li>26.9–26.18: history tables exist with the correct column types (UUID, enum, TIMESTAMPTZ, TEXT).</li>
+<li>26.19: deleting a parent event cascades to its history rows (zero survivors).</li>
+<li>26.20: duplicate (parent_fk, txt_run_id) raises <code>unique_violation</code>.</li>
+<li>26.21: inserting 7 rows for one parent leaves exactly 6 (cap holds).</li>
+<li>26.22: the <em>oldest</em> row is the one evicted (verified by URL identity).</li>
+<li>26.23: cap trigger fires on the tournament side too.</li>
+</ul>
+<p>23 pgTAP assertions; all green (404 → 427 total).</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<h3 id="a-discriminator-only-single-columns-on-parent-rows-no-history-table">A. Discriminator-only (single columns on parent rows; no history table)</h3>
+<p>Cheaper. But re-scrapes overwrite each other; no forensic chain; no answer to &quot;this tournament was re-scraped 3 times — show me what changed each time.&quot; Rejected because the rebuild's premise (per ADR-050) is exactly that we lost the trail of how data got here. Re-creating the same gap on day one of the new pipeline isn't an improvement.</p>
+<h3 id="b-history-only-no-current-stamp-columns-always-join-to-history-for-the-current-answer">B. History-only (no current-stamp columns; always JOIN to history for the &quot;current&quot; answer)</h3>
+<p>Pure normal form. But every admin-UI row needs a sub-query (<code>SELECT ... FROM history WHERE parent = X ORDER BY dt_committed DESC LIMIT 1</code>). Rejected because the admin Calendar/Event UI re-renders these badges constantly during Phase 5; the join cost grows with row count. The hybrid pays one trigger insert + a denormalized column to skip every read-time join.</p>
+<h3 id="c-single-polymorphic-history-table-with-target-kind-discriminator">C. Single polymorphic history table with <code>target_kind</code> discriminator</h3>
+<p>One table with <code>target_kind ENUM('EVENT','TOURNAMENT')</code> + nullable <code>id_event</code> and <code>id_tournament</code>. Saves one table at the cost of polymorphism. Rejected because the FK column nullability hides bugs (orphan rows pointing to nothing), and queries always have to remember to filter by <code>target_kind</code>. Two tables with non-null FKs is the boring-and-correct option.</p>
+<h3 id="d-result-level-provenance-tbl-result-txt-run-id">D. Result-level provenance (<code>tbl_result.txt_run_id</code>)</h3>
+<p>Considered for completeness. Rejected because Stage 11 commit replaces a tournament's results atomically (drop-and-reload per ADR-050); inheritance through <code>tbl_result.fk_tournament → tbl_tournament.txt_last_run_id</code>-equivalent is sufficient. Adding result-level run_id buys nothing today and adds 4 columns × ~2,700 result rows of denormalized data.</p>
+<h3 id="e-time-based-retention-delete-history-rows-older-than-x-months-instead-of-count-cap">E. Time-based retention (delete history rows older than X months) instead of count cap</h3>
+<p>Standard pattern. Rejected because (i) it requires a scheduled job that someone has to remember; (ii) for low-volume parents like our events, 6 historical scrapes can span years — a date-based cap could erase the only previous record of a rarely-touched event.</p>
+<h3 id="f-land-it-in-phase-4-commit-path">F. Land it in Phase 4 (commit path)</h3>
+<p>Considered. Rejected because Phase 2/3 designs the orchestrator and the diff renderer; both want a stable target schema for the run_id linkage. Pushing the schema to Phase 4 forces Phase 2/3 to use scratch state that has to be migrated later.</p>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>Positive:</strong></p>
+<ul>
+<li>Per-tournament source badge becomes a one-row read on <code>tbl_tournament</code> columns — admin UI gets the answer for free.</li>
+<li>Forensic queries like &quot;every tournament Ophardt parsed this season&quot; become trivial: <code>WHERE enum_parser_kind = 'OPHARDT_HTML' AND dt_last_scraped &gt;= ...</code>.</li>
+<li>Replay loop: an admin can pull <code>txt_source_url_used</code> and re-fetch the source bytes today, even if the admin-entered <code>url_results</code> later changes.</li>
+<li>Cap-of-6 trigger keeps growth bounded forever without cron — set-and-forget.</li>
+<li><code>txt_run_id</code> becomes the load-bearing identifier across Phase 2 drafts, Phase 4 commit, and Phase 5 review.</li>
+</ul>
+<p><strong>Negative:</strong></p>
+<ul>
+<li>Two new tables to maintain. Their schema is locked early; future evolution (e.g., adding <code>txt_admin_user</code>) requires migrations.</li>
+<li>The <code>BEFORE INSERT</code> trigger fires on every commit. Trigger is O(log N) due to indexes, N ≤ 6, so cost is negligible but non-zero.</li>
+<li>Stamp columns on <code>tbl_event</code> and <code>tbl_tournament</code> denormalize the latest history row — the trigger and Stage 11 commit must keep them in sync. Drift between the columns and the most-recent history row is a possible bug class going forward.</li>
+<li>Result-level provenance is <strong>not</strong> added (alternative D rejected). If a future use case needs per-result run linkage, this ADR will need to be revisited.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="migration-path-for-existing-data">Migration path for existing data</h2>
+<p><code>enum_parser_kind</code>, <code>dt_last_scraped</code>, <code>txt_source_url_used</code> are nullable on add. Pre-rebuild rows have NULL — semantics: &quot;no scrape recorded under the new model.&quot; Phase 5 (per ADR-050) re-ingests every event, populating the columns and the history table on each commit. After Phase 5: all production-active events have non-NULL stamps. Events sourced via the cert_ref fallback parser (no live URL available) get <code>enum_parser_kind = 'CERT_REF'</code> and <code>txt_source_url_used = NULL</code>.</p>
+<p>CERT/PROD inherit the schema via Phase 6 promotion (per ADR-050). The rebuild restores from rebuilt LOCAL, so the columns and history tables arrive fully populated.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-follow-ups">Open follow-ups</h2>
+<ul>
+<li><strong>Phase 2 (drafts):</strong> when the draft → live commit path is wired, write to <code>tbl_*_ingest_history</code> atomically with the live-table writes inside <code>fn_commit_event_draft(p_run_id)</code>.</li>
+<li><strong>Phase 4 (commit + UI):</strong> admin Calendar/Event view should surface <code>enum_parser_kind</code> as a badge and <code>dt_last_scraped</code> as a relative timestamp. History modal shows the last 6 entries.</li>
+<li><strong>Phase 5 (execute):</strong> every event reviewed and committed populates these columns; risk-gate verifies non-NULL coverage on all active events.</li>
+<li><strong>Multi-admin futures:</strong> <code>txt_admin_user</code> was rejected in this ADR (D7 / alternative trail) but can be added later via ALTER TABLE if SPWS adds more than one admin operator.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="053-evf-parity-gate.html">← ADR-053: EVF backup-source + parity gate + EVF_PUBLISHED promotion lifecycle</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="056-vcat-from-birthyear.html">→ ADR-056: V-cat resolution by post-match fencer birth year</a></nav>
+<footer class="foot">Generated from <code>055-ingest-traceability.md</code> · source SHA-256 <code>9314a8c528f62abe8a1d9285133c9ae274ce566c58c8088384f3593c53a90195</code></footer>
+</div></body></html>

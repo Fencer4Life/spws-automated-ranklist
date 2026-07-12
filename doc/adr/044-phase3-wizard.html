@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="044-phase3-wizard.md">
+<meta name="adr-source-sha256" content="8960eb0ee10092f82c0af6e3742560a2ee955921edef87250d7e40ee539e229c">
+<title>ADR-044 · Phase 3 Admin UI + Season-Init Wizard (atomic transaction model)</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 044</p><h1>Phase 3 Admin UI + Season-Init Wizard (atomic transaction model)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (Phase 3a backend implemented 2026-04-26; Phase 3b/3c UI pending)</dd></div><div><dt>Date</dt><dd class="">2026-04-26 <strong>Relates to:</strong> ADR-018 (Rolling Score), ADR-021 (IMEW biennial), ADR-042 (engine dispatcher), ADR-043 (allocator), ADR-045 (engine selector + default flip)</dd></div><div><dt>Source</dt><dd class=""><code>044-phase3-wizard.md</code></dd></div><div><dt>Length</dt><dd class="">138 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (Phase 3a backend implemented 2026-04-26; Phase 3b/3c UI pending)
+<strong>Date:</strong> 2026-04-26
+<strong>Relates to:</strong> ADR-018 (Rolling Score), ADR-021 (IMEW biennial), ADR-042 (engine dispatcher), ADR-043 (allocator), ADR-045 (engine selector + default flip)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#ux-shape">UX shape</a></li><li class="depth-3"><a href="#backend-atomicity">Backend atomicity</a></li><li class="depth-3"><a href="#skeleton-inventory">Skeleton inventory</a></li><li class="depth-3"><a href="#revert-semantics">Revert semantics</a></li><li class="depth-3"><a href="#cascade-rename-in-fn-update-event-v2">Cascade rename in `fn_update_event` v2</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#migration-test-references">Migration &amp; test references</a></li><li class="depth-2"><a href="#amendment-2026-06-27-carry-over-picker-round-trip-explicit-unlink">Amendment (2026-06-27) — carry-over picker round-trip + explicit unlink</a></li><li class="depth-2"><a href="#future-work">Future work</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Phase 1B (FK carry-over engine) and Phase 2 (EVF allocator + classifier) shipped to CERT 2026-04-26. The schema is in place; rolling-score correctness is verified per-season; but the admin still has to drive the carry-over chain by hand:</p>
+<ul>
+<li><code>psql</code> to pre-create <code>CREATED</code>-status PEW slots (runbook §9)</li>
+<li><code>psql</code> to insert <code>IMEW</code>/<code>DMEW</code> placeholders in DMEW years (runbook §4)</li>
+<li><code>psql</code> to manually link <code>id_prior_event</code> for slug events (runbook §3)</li>
+<li>SQL editor to toggle <code>tbl_season.int_carryover_days</code>, <code>enum_european_event_type</code>, <code>enum_carryover_engine</code> (runbook §5)</li>
+</ul>
+<p>Phase 3 turns all of that into point-and-click. The wizard pre-allocates skeleton events, the EDIT form lets admin edit <code>txt_code</code> (with cascade to children) and pick <code>id_prior_event</code> from a dropdown, and the ScoringConfigEditor gains an engine dropdown so flipping CODE→FK is one click + Save.</p>
+<p>The shape of the wizard, and the atomicity guarantee around it, are the architectural decisions captured here.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p><strong>Three-step modal wizard with a single atomic backend RPC.</strong></p>
+<h3 id="ux-shape">UX shape</h3>
+<ol>
+<li><strong>Step 1 — Identity + carry-over:</strong> <code>txt_code</code>, <code>dt_start</code>, <code>dt_end</code>, <code>int_carryover_days</code> (default 366), <code>enum_european_event_type</code> segmented control (None / IMEW / DMEW), <code>bool_show_evf_toggle</code> checkbox.</li>
+<li><strong>Step 2 — Scoring config:</strong> embeds <code>ScoringConfigEditor</code> pre-filled via <code>fn_copy_prior_scoring_config(p_dt_start)</code>. Banner reads &quot;Skopiowane z SPWS-YYYY-YYYY&quot; when prior exists, &quot;Wartości domyślne&quot; when not. ScoringConfigEditor's Section 4b &quot;🔀 Silnik carry-over&quot; hosts the engine dropdown (defaulting to <code>EVENT_FK_MATCHING</code> for new seasons — see ADR-045).</li>
+<li><strong>Step 3 — Confirm:</strong> <code>fn_preview_init_season(...)</code> shows the skeleton inventory (e.g. &quot;5 PPW + 9 PEW + 1 MPW + 1 MSW + 1 IMEW = 17&quot;) and the chosen scoring config diff. Buttons: &quot;← Wstecz&quot; (preserves entered values), &quot;✓ Utwórz&quot; (commit), &quot;✕ Anuluj&quot; (full discard).</li>
+</ol>
+<h3 id="backend-atomicity">Backend atomicity</h3>
+<p><code>fn_create_season_with_skeletons(p_code, p_dt_start, p_dt_end, p_carryover_days, p_european_type, p_carryover_engine, p_scoring_config, p_show_evf)</code> is the single RPC the wizard's &quot;✓ Utwórz&quot; calls. Body:</p>
+<pre><code class="language-sql">BEGIN
+  v_id := INSERT INTO tbl_season (...)         -- trg_season_auto_config inserts default scoring config
+  PERFORM fn_import_scoring_config(p_scoring_config || jsonb_build_object('id_season', v_id, 'show_evf_toggle', p_show_evf))
+  v_count := (fn_init_season(v_id)).skeletons_created
+  RETURN (v_id, v_count)
+END
+</code></pre>
+<p>Implicit Postgres transaction. If anything raises (duplicate code, JSONB schema drift, init exception), the entire wizard's effect is rolled back — the season is gone, scoring config is gone, skeletons never existed. This matches the user's &quot;cancel = nothing persists&quot; requirement and removes the half-shipped-season failure mode that the runbook flow has.</p>
+<h3 id="skeleton-inventory">Skeleton inventory</h3>
+<p><code>fn_init_season(p_id_season)</code> is the algorithm:</p>
+<ul>
+<li>Resolve chronological prior via <code>MAX(id_season) WHERE dt_end &lt; p_id_season.dt_start</code></li>
+<li>For each prior <code>^PPW\d+-</code> event → one CREATED skeleton with NULL location (rotating venues)</li>
+<li>For each prior <code>^PEW\d+-</code> event (numbered only — slugs excluded) → one CREATED skeleton with prior's location/country copied</li>
+<li>Always insert <code>MPW-{suffix}</code> and <code>MSW-{suffix}</code> (<code>MSW</code> prior lookup uses <code>^I?MSW-</code> to handle the IMSW seed-naming inconsistency)</li>
+<li>If <code>enum_european_event_type</code> is set, insert <code>IMEW-{suffix}</code> or <code>DMEW-{suffix}</code> with biennial-aware lookup (most recent prior matching event regardless of season distance — covers IMEW biennial alternation, ADR-021)</li>
+<li>Each skeleton gets 6 V2 child tournaments (M/F × EPEE/FOIL/SABRE) via <code>_fn_create_skeleton_children</code></li>
+<li>First-ever season (no chronological prior): create <code>MPW</code> + <code>MSW</code> + optional European singletons only, all with NULL <code>id_prior_event</code></li>
+</ul>
+<p><code>fn_init_season</code> is <strong>idempotency-guarded</strong> — refuses if any event exists in the target season already. The wizard never calls it twice (atomic RPC); <code>fn_revert_season_init</code> is the only path back to a pristine state.</p>
+<h3 id="revert-semantics">Revert semantics</h3>
+<p><code>fn_revert_season_init(p_id_season)</code> is the EDIT form's &quot;↶ Cofnij całość&quot; link. It refuses if any skeleton has advanced past <code>CREATED</code>. Otherwise it deletes children → events → scoring_config → season in one transaction. The transition trigger's universal <code>→ CREATED</code> rollback (Phase 1B) lets admin manually demote skeletons that have been promoted, which then re-enables full revert.</p>
+<h3 id="cascade-rename-in-fn-update-event-v2">Cascade rename in <code>fn_update_event</code> v2</h3>
+<p>Adds <code>p_code TEXT</code> and <code>p_id_prior_event INT</code> (both default NULL = &quot;leave unchanged&quot;). When <code>p_code</code> differs from the current event code, child tournament codes are <strong>rebuilt from scratch</strong> using their existing <code>(enum_age_category, enum_gender, enum_weapon)</code> fields and the new event code:</p>
+<ul>
+<li>Detection key: <code>txt_code ~ '-V\d-'</code> on a sample child → PPW/PEW pattern (<code>{kind}-V{age}-{G}-{W}-{suffix}</code>)</li>
+<li>Otherwise: MEW/MSW/MPW pattern (<code>{full_event_code}-{G}-{W}</code>)</li>
+</ul>
+<p>A naive <code>replace(child_code, old_code, new_code)</code> does not work for PPW/PEW because the season suffix is embedded mid-code, not at the start.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Inline form (no modal).</strong> Reject — the season-create form is already cramped; embedding scoring config + preview in-line would push the FAB pattern off-screen on small admin laptops.</li>
+<li><strong>One RPC per step (<code>fn_create_season</code> → <code>fn_set_scoring_config</code> → <code>fn_init_season</code>).</strong> Reject — three separate transactions mean a failed step 3 leaves a half-created season + scoring config orphaned. The wizard would need defensive cleanup paths in the frontend. Atomic RPC removes this entire failure class.</li>
+<li><strong>Skip the preview step, commit on step 2.</strong> Reject — without a preview, admin has no chance to review the inferred skeleton inventory (which depends on prior-season state, often surprising — e.g. IMEW vs DMEW year). The preview step is cheap (read-only <code>fn_preview_init_season</code> call) and high-value as a sanity check before commit.</li>
+<li><strong>Pre-populate skeletons on <code>tbl_season</code> INSERT trigger.</strong> Reject — couples season identity with skeleton initialization too tightly. Admin should be able to create a season &quot;loose&quot; (e.g. for archival import) without skeletons. The wizard is opt-in; the legacy 3-arg <code>fn_create_season</code> still exists for that case.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>Positive:</strong></p>
+<ul>
+<li>Admin no longer needs <code>psql</code> for the routine carry-over flow — runbook §3, §4, §5, §6, §9 are all replaced by point-and-click.</li>
+<li>Atomic transaction = no half-shipped seasons. Cancel at any wizard step leaves zero residue.</li>
+<li>Skeleton-with-FK-linkage is now the default flow, which is the precondition for the FK engine to work correctly. Combined with ADR-045's default flip, greenfield seasons get correct rolling scores out of the box.</li>
+<li>&quot;↶ Cofnij całość&quot; gives a one-click panic button while the season is still pristine — useful when admin realises they entered the wrong dates.</li>
+</ul>
+<p><strong>Negative / accepted costs:</strong></p>
+<ul>
+<li><code>fn_create_season_with_skeletons</code> is a fat RPC (8 params). Mitigated by always calling via the wizard, which assembles the payload from typed UI state.</li>
+<li>The atomic transaction holds locks on <code>tbl_season</code>, <code>tbl_scoring_config</code>, <code>tbl_event</code>, <code>tbl_tournament</code> for the duration of skeleton init. With 17 events × 6 children = 102 inserts, this is ~50ms locally; not a concurrency concern at SPWS scale (single admin session at a time).</li>
+<li><code>fn_init_season</code>'s skeleton count depends on prior-season inventory, which can surprise admin (e.g. SPWS-2025-2026 has only 9 PEWs because three more arrived as slugs and the regex excludes them). Mitigated by Step 3's explicit preview.</li>
+<li>Cascade rename writes the rebuilt code unconditionally; a child whose code was hand-edited to deviate from the convention would lose that hand-edit. Acceptable since the convention is enforced by <code>_fn_create_skeleton_children</code> and bulk imports; outlier children would be a bug today.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="migration-test-references">Migration &amp; test references</h2>
+<ul>
+<li>Migrations: <a href="../../supabase/migrations/20260428000003_fn_init_season.sql"><code>20260428000003_fn_init_season.sql</code></a>, <a href="../../supabase/migrations/20260428000004_fn_create_season_with_skeletons.sql"><code>20260428000004_fn_create_season_with_skeletons.sql</code></a>, <a href="../../supabase/migrations/20260428000005_fn_revert_season_init.sql"><code>20260428000005_fn_revert_season_init.sql</code></a>, <a href="../../supabase/migrations/20260428000006_fn_copy_prior_scoring_config.sql"><code>20260428000006_fn_copy_prior_scoring_config.sql</code></a>, <a href="../../supabase/migrations/20260428000002_fn_update_event_v2.sql"><code>20260428000002_fn_update_event_v2.sql</code></a></li>
+<li>Tests: <a href="../../supabase/tests/19_phase3_wizard.sql"><code>supabase/tests/19_phase3_wizard.sql</code></a> — ph3.1 – ph3.21 + ph3.22a/b/c (25 assertions)</li>
+<li>Plan: <code>~/.claude/plans/eager-knitting-fog.md</code></li>
+<li>Mocks: <a href="../mockups/m13_event_manager_phase3.html"><code>doc/mockups/m13_event_manager_phase3.html</code></a>, <a href="../mockups/m13_season_manager_phase3.html"><code>doc/mockups/m13_season_manager_phase3.html</code></a></li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-06-27-carry-over-picker-round-trip-explicit-unlink">Amendment (2026-06-27) — carry-over picker round-trip + explicit unlink</h2>
+<p>The Phase-3c <code>id_prior_event</code> picker (link an EVENT to its previous-season
+counterpart — the FK that drives the rolling/carry-over engine, ADR-018/021/042)
+<strong>saved but appeared not to</strong>: editing an event, choosing a counterpart, and
+clicking Save left the dropdown back at &quot;— none —&quot; on reopen.</p>
+<p><strong>Root cause</strong> — read path, not write path. <code>fn_update_event</code> persisted the FK to
+<code>tbl_event</code> correctly (verified by ph3.16). But <code>vw_calendar</code>, which the admin form
+refetches through (<code>fetchCalendarEvents</code>), never SELECTed <code>id_prior_event</code>, so
+<code>openEditForm</code> read <code>event.id_prior_event</code> as <code>undefined</code> and reset the picker. This
+is exactly the &quot;new <code>tbl_event</code> column → rebuild <code>vw_calendar</code> or the round-trip
+silently breaks&quot; discipline — the column was added in <code>20260425000005</code> for the FK
+engine but never surfaced on the view.</p>
+<p><strong>Fix</strong> — migration <code>20260627000001_vw_calendar_prior_event.sql</code>:</p>
+<ol>
+<li>Rebuild <code>vw_calendar</code> from its <code>20260618000001</code> definition with <code>e.id_prior_event</code>
+added (functionally dependent on the grouped PK — no <code>GROUP BY</code> change). Re-issue
+grants (a recreated view loses them).</li>
+<li>While here, make the picker's &quot;— none —&quot; option actually <strong>unlink</strong>. The original
+write used <code>COALESCE(p_id_prior_event, id_prior_event)</code>, so a NULL meant &quot;leave
+unchanged&quot; and an existing link could never be cleared from the UI. <code>fn_update_event</code>
+now reads three intents on <code>p_id_prior_event</code>: <code>NULL</code> → leave unchanged (legacy
+19-arg callers unaffected), <code>-1</code> → explicit clear, <code>&gt;0</code> → set. The signature is
+unchanged, so the existing REVOKE/GRANT still holds.</li>
+</ol>
+<p><strong>Frontend</strong> — <code>CalendarEvent.id_prior_event</code> added to the type (the inline cast in
+<code>openEditForm</code> is dropped); the picker is now authoritative, sending <code>-1</code> for &quot;none&quot;
+so the save reflects the dropdown state exactly.</p>
+<p><strong>Tests</strong> — pgTAP <code>05_calendar_view.sql</code> 8.21 (set + <code>vw_calendar</code> round-trip) and
+8.22 (<code>-1</code> unlink, NULL leaves unchanged); vitest <code>EventManager.test.ts</code> ph3c.7
+(reopen pre-fills the picker from the saved FK; &quot;none&quot; sends <code>-1</code>). Total 609→611.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="future-work">Future work</h2>
+<ul>
+<li><strong>Phase 3b</strong>: SeasonManager 3-step wizard component + skeleton inventory rendering (calendar-style purple boxes per locked mock). 22 vitest assertions ph3.23–ph3.37g.</li>
+<li><strong>Phase 3c</strong>: EventManager season selector at top, <code>txt_code</code> editable with cascade, <code>id_prior_event</code> picker, Skeletons collapsible panel. ~12 vitest assertions extending <code>EventManager.test.ts</code>. App.svelte rewires <code>fn_update_event</code> callsites to the v2 21-arg signature.</li>
+<li><strong>Once Phase 3c lands</strong>, mark <code>project_carryover_admin_runbook.md</code> §3, §4, §5, §6, §9 as superseded.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="043-evf-event-allocator.html">← ADR-043: EVF Event Code Allocator + Classifier (Phase 2)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="045-engine-selector-default-flip.html">→ ADR-045: Carry-over engine selectable per-season via admin UI; default flipped to FK</a></nav>
+<footer class="foot">Generated from <code>044-phase3-wizard.md</code> · source SHA-256 <code>8960eb0ee10092f82c0af6e3742560a2ee955921edef87250d7e40ee539e229c</code></footer>
+</div></body></html>

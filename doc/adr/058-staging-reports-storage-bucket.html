@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="058-staging-reports-storage-bucket.md">
+<meta name="adr-source-sha256" content="12138f327abaf853478fb1712a3fdffecb3178e1628ebb6f7776c1a33b6c80ca">
+<title>ADR-058 · staging-reports Supabase Storage bucket for verdict .md</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 058</p><h1><code>staging-reports</code> Supabase Storage bucket for verdict <code>.md</code></h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Proposed</dd></div><div><dt>Date</dt><dd class="">2026-05-03</dd></div><div><dt>Source</dt><dd class=""><code>058-staging-reports-storage-bucket.md</code></dd></div><div><dt>Length</dt><dd class="">82 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed
+<strong>Date:</strong> 2026-05-03
+<strong>Amends:</strong> ADR-050 (Unified Ingestion Pipeline) — Phase 5.5 closes the verdict-persistence gap.</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-3"><a href="#a-extend-the-existing-xml-inbox-bucket-with-a-staging-reports-folder">A. Extend the existing `xml-inbox` bucket with a `staging-reports/` folder</a></li><li class="depth-3"><a href="#b-commit-md-back-to-the-git-repo-via-gh-workflow-skip-ci">B. Commit `.md` back to the git repo via GH workflow `[skip ci]`</a></li><li class="depth-3"><a href="#c-store-the-md-as-a-text-column-on-tbl-event">C. Store the `.md` as a `TEXT` column on `tbl_event`</a></li><li class="depth-3"><a href="#d-no-verdict-persistence-on-cert-operator-runs-the-pipeline-locally-to-regenerate">D. No verdict persistence on CERT — operator runs the pipeline locally to regenerate</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#status-deliverables-proposed-not-yet-shipped">Status — deliverables (proposed, not yet shipped)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Phase 5 of the rebuild produces a per-event <code>doc/staging/&lt;event_code&gt;.md</code> &quot;verdict&quot; document — the operator-facing summary of the unified pipeline's match decisions, alias outcomes, and pool-bracket disposition. Today this file is written by <code>phase5_runner.py:492</code> and <code>phase5_report.py:108</code> via <code>Path.write_text()</code> to the operator's local filesystem only.</p>
+<p>This worked for the historical re-ingest (operator running <code>phase5_runner</code> from a developer laptop against LOCAL DB) but blocks the CERT-only future:</p>
+<ul>
+<li>The operator has no LOCAL access for season-current events — they arrive via email (GAS → <code>xml-inbox/staging</code> → <code>ingest.yml</code>) or via the admin-UI &quot;Stage event&quot; button (dispatch-workflow → <code>phase5-event-runner.yml</code>).</li>
+<li>In CI, <code>Path.write_text(&quot;doc/staging/&lt;X&gt;.md&quot;)</code> writes to an ephemeral runner that's destroyed at job exit. The operator never sees the file.</li>
+<li>Committing <code>.md</code> back to the git repo from CI is fragile (PR-style noise, race conditions with merges, bloats history).</li>
+</ul>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>A new private Supabase Storage bucket <code>staging-reports</code> persists verdict <code>.md</code> files on CERT and PROD. Per-event subfolder structure:</p>
+<pre><code>staging-reports/
+  {event_code}/
+    full.md                              ← latest full verdict (replace-on-regen)
+    deltas/
+      20260603_034512.md                 ← EVF parity sweep delta (append-only)
+      20260604_034507.md
+      …
+</code></pre>
+<p>Bucket properties:</p>
+<ul>
+<li><strong>Visibility:</strong> private. RLS allows service-role write (CI workflows + edge functions) and authenticated-admin read.</li>
+<li><strong>Retention:</strong> keep forever. Manual cleanup only via <code>supabase storage rm</code>. Files are tiny (full ~30 KB, delta ~2-5 KB).</li>
+<li><strong>Migration:</strong> <code>supabase/migrations/20260503000003_phase5_staging_reports_bucket.sql</code> declares the bucket via <code>INSERT INTO storage.buckets</code> + RLS policies.</li>
+</ul>
+<p><code>md_writer.py</code> (NEW, extracts the existing renderer from <code>phase5_runner.py::_build_*_md</code>) takes a <code>target</code> parameter:</p>
+<ul>
+<li><code>local</code> — <code>Path.write_text()</code> to filesystem (LOCAL devs, default for shell invocations)</li>
+<li><code>storage</code> — uploads to bucket via <code>storage_md.py</code> (CI workflows, default for <code>--md-target=storage</code>)</li>
+<li><code>both</code> — writes both</li>
+<li><code>none</code> — no-op (rare, for tests)</li>
+</ul>
+<p>LOCAL Supabase has storage disabled in <code>config.toml</code> — the migration runs cleanly (it's a pure DDL insert) but the storage server is not operational on LOCAL. LOCAL operators continue using <code>--md-target=local</code> (filesystem) — no behavioural change from today.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<h3 id="a-extend-the-existing-xml-inbox-bucket-with-a-staging-reports-folder">A. Extend the existing <code>xml-inbox</code> bucket with a <code>staging-reports/</code> folder</h3>
+<p>Rejected: different lifecycles (xml-inbox is write-once-then-archive raw input data; staging-reports is write-many human-readable per-event verdict snapshots). Mixing them complicates RLS reasoning and ADR-023's archival policies.</p>
+<h3 id="b-commit-md-back-to-the-git-repo-via-gh-workflow-skip-ci">B. Commit <code>.md</code> back to the git repo via GH workflow <code>[skip ci]</code></h3>
+<p>Rejected: bloats repo, makes ranklist publication race with .md regen pushes, requires write access from CI to <code>main</code>, creates merge-conflict surface area when operator's branch is open.</p>
+<h3 id="c-store-the-md-as-a-text-column-on-tbl-event">C. Store the <code>.md</code> as a <code>TEXT</code> column on <code>tbl_event</code></h3>
+<p>Rejected: wrong tool for a multi-KB blob, breaks streaming/pagination patterns, makes the table awkward to query.</p>
+<h3 id="d-no-verdict-persistence-on-cert-operator-runs-the-pipeline-locally-to-regenerate">D. No verdict persistence on CERT — operator runs the pipeline locally to regenerate</h3>
+<p>Rejected: the operator no longer has LOCAL access for season-current events. This is the problem we're solving.</p>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>Positive:</strong></p>
+<ul>
+<li>Verdicts persist on CERT/PROD without git noise.</li>
+<li>Operator can re-fetch any historical verdict (full.md or any prior delta).</li>
+<li>Per-event subfolder isolates manual cleanup (delete one event's folder, others untouched).</li>
+<li>Append-only deltas/ log gives a chronological change record per event.</li>
+</ul>
+<p><strong>Negative:</strong></p>
+<ul>
+<li>Bucket creation is manual on each environment (no migration enforces it on LOCAL since storage is disabled there). Plan-test-ID 5.12 catches &quot;missing bucket&quot; loudly via pgTAP.</li>
+<li>Storage retention grows over time; manual cleanup eventually needed (negligible at current scale: ~30 events/year × ~30 KB full + ~365 daily deltas × ~3 KB = ~11 MB/year/event).</li>
+<li>LOCAL devs must remember <code>--md-target=local</code> (the default) to avoid attempts at storage write that would fail.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="status-deliverables-proposed-not-yet-shipped">Status — deliverables (proposed, not yet shipped)</h2>
+<ul>
+<li>Migration <code>supabase/migrations/20260503000003_phase5_staging_reports_bucket.sql</code></li>
+<li><code>python/pipeline/md_writer.py</code> (renderer extraction + target switch)</li>
+<li><code>python/pipeline/storage_md.py</code> (bucket I/O wrapper)</li>
+<li><code>scripts/create-staging-reports-bucket.sh</code> (idempotent CLI helper for fresh envs)</li>
+<li><code>supabase/tests/37_staging_reports_bucket_rls.sql</code> (pgTAP — bucket exists, RLS correct)</li>
+<li><code>python/tests/test_md_writer.py</code>, <code>python/tests/test_storage_md.py</code></li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="057-pool-round-structural-detection.html">← ADR-057: Pool-round detection by structural data signal, not bracket-name regex</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="059-telegram-document-delivery.html">→ ADR-059: Telegram sendDocument as primary verdict read surface</a></nav>
+<footer class="foot">Generated from <code>058-staging-reports-storage-bucket.md</code> · source SHA-256 <code>12138f327abaf853478fb1712a3fdffecb3178e1628ebb6f7776c1a33b6c80ca</code></footer>
+</div></body></html>

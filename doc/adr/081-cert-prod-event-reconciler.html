@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="081-cert-prod-event-reconciler.md">
+<meta name="adr-source-sha256" content="3339ee4fafb51e9aaed0f2b37793136fd68e1c4048bb360fd2637fadefd294f6">
+<title>ADR-081 · CERT→PROD Event Reconciler</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 081</p><h1>CERT→PROD Event Reconciler</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-07-11, shipped to CERT+PROD)</dd></div><div><dt>Date</dt><dd class="">2026-07-11</dd></div><div><dt>Source</dt><dd class=""><code>081-cert-prod-event-reconciler.md</code></dd></div><div><dt>Length</dt><dd class="">109 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (2026-07-11, shipped to CERT+PROD)
+<strong>Date:</strong> 2026-07-11
+<strong>Source:</strong> CERT→PROD calendar promotion (spec §; migrations <code>20260711000001</code>, <code>20260711000002</code>). Supersedes the calendar-delta half of ADR-026; amends ADR-028, ADR-039 (rev 3), ADR-077.</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-organizer-agnostic-verified-from-source">1. Organizer-agnostic, verified from source</a></li><li class="depth-3"><a href="#2-whole-set-diff-no-code-filter">2. Whole-set diff, no code filter</a></li><li class="depth-3"><a href="#3-field-ownership-split-update">3. Field-ownership split (UPDATE)</a></li><li class="depth-3"><a href="#4-guarded-delete">4. Guarded DELETE</a></li><li class="depth-3"><a href="#5-create-is-childless">5. CREATE is childless</a></li><li class="depth-3"><a href="#6-active-season-mismatch-guard">6. Active-season-mismatch guard</a></li><li class="depth-3"><a href="#7-run-log">7. Run log</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The CERT→PROD calendar-promotion path (<code>python/pipeline/promote.py::promote_calendar</code> →
+<code>fn_import_evf_events</code>, the ADR-026 amendment) was written as an <strong>EVF special-case</strong>
+and carried three coupled defects, all from the same assumption — &quot;this path only ever
+sees EVF&quot;:</p>
+<ol>
+<li><strong>Hardcoded organizer.</strong> The function ran <code>SELECT id_organizer ... WHERE txt_code = 'SPWS'</code>
+once and stamped it on every promoted event — never verified. Confirmed live: 7 Samorin
+rows on PROD mis-tagged SPWS instead of EVF.</li>
+<li><strong>Insert-or-refresh only, no DELETE.</strong> It could introduce divergence from CERT but never
+remove it. When CERT's own dedup bug (ADR-039 rev 2 / migration <code>20260710000001</code>) minted 7
+Samorin duplicates and they were promoted, then CERT was collapsed back to 1, the 6 dead
+PROD rows had <strong>no route to removal</strong> and needed manual surgery.</li>
+<li><strong><code>PEW/MEW</code> code-prefix filter.</strong> The only <em>incremental</em> CERT→PROD event path excluded
+domestic PPW/MPW — a domestic event added after season go-live could never reach PROD.</li>
+</ol>
+<p>A fourth, upstream defect fed the duplicates in: <code>fn_allocate_evf_event_code</code>'s
+location-matching Steps A/B are gated <code>IF v_loc_key &lt;&gt; ''</code>, so a venue-less future event
+(blank location) skipped both and Step C minted a fresh code on every scrape.</p>
+<p>The root realization: <strong>&quot;one-time bulk event copy&quot; (season skeleton, ADR-077) and
+&quot;incremental delta&quot; (calendar promote) are the same operation at two points in time</strong> — a
+reconcile of PROD's event set to CERT's. Written as one reconciler, both the organizer bug
+and the duplicate accumulation disappear, and the domestic gap closes.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Replace <code>fn_import_evf_events</code> with <strong><code>fn_mirror_events_to_prod(p_creates, p_updates, p_deletes JSONB)</code></strong> — a full <strong>Create / Update / Delete reconciler</strong> over the <em>whole</em>
+active-season event set, keyed on <code>txt_code</code>. <code>promote_calendar</code> becomes the diff engine.</p>
+<h3 id="1-organizer-agnostic-verified-from-source">1. Organizer-agnostic, verified from source</h3>
+<p><code>id_organizer</code> is never hardcoded. <code>promote_calendar</code> reads each CERT event's real organizer
+<strong>code</strong> and resolves it to a PROD id <strong>by <code>txt_code</code></strong> (via the shared <code>_prod_code_to_id</code>,
+the same helper <code>promote_season.py</code> uses — raw ids diverge across environments). The SQL
+<code>RAISE</code>s if a code doesn't resolve — <strong>fail loud, never guess</strong>. Same rule for <code>id_prior_event</code>.</p>
+<h3 id="2-whole-set-diff-no-code-filter">2. Whole-set diff, no code filter</h3>
+<p><code>_read_cert_promotable_events</code> reads <strong>all</strong> active-season events (no <code>PEW/MEW</code> filter), joins
+<code>tbl_organizer</code> for the code. Diff by <code>txt_code</code>: CERT∖PROD → CREATE, CERT∩PROD → UPDATE,
+PROD∖CERT → DELETE.</p>
+<h3 id="3-field-ownership-split-update">3. Field-ownership split (UPDATE)</h3>
+<ul>
+<li><strong>Source-owned identity</strong> (<code>txt_name</code>, dates, location, country, <code>id_organizer</code>,
+<code>arr_weapons</code>, <code>id_evf_event</code>, <code>txt_evf_slug</code>) → overwrite from CERT (this is the mis-tag
+repair). Empty CERT values collapse to &quot;keep current&quot; via <code>NULLIF</code> — never write <code>''</code> into
+the uniquely-indexed <code>txt_evf_slug</code> (migration <code>20260711000002</code>, live-caught crash).</li>
+<li><strong>Admin-owned URL/fee/registration</strong> fields → <strong>fill-blank-only</strong> (never clobber a hand
+entry — reuses the <code>fn_refresh_evf_event_urls</code> contract; <code>feedback_urls_admin_managed</code>).</li>
+<li><strong><code>enum_status</code>, tournaments, results</strong> → never touched (owned by the results lifecycle /
+<code>promote_event</code>).</li>
+</ul>
+<h3 id="4-guarded-delete">4. Guarded DELETE</h3>
+<p>Delete a PROD event only if <code>enum_status = 'PLANNED'</code> <strong>and</strong> it has zero <code>tbl_result</code> rows
+(empty tournaments dropped first, transactional). A results-bearing event absent from CERT is
+returned in <code>delete_skipped</code> for investigation — <strong>never erased</strong>. Once an event has results
+its status leaves PLANNED, so it is structurally untouchable here.</p>
+<h3 id="5-create-is-childless">5. CREATE is childless</h3>
+<p>New events are created without tournament children (results-promotion creates tournaments on
+demand; skeleton-promoted domestic events are already childless).</p>
+<h3 id="6-active-season-mismatch-guard">6. Active-season-mismatch guard</h3>
+<p><code>promote_calendar</code> refuses when CERT and PROD are on <strong>different</strong> active seasons — comparing
+CERT's new-season events against PROD's old-season set would misfile creates under the wrong
+<code>id_season</code> and propose deleting PROD's entire outgoing season. This cross-season misfiling is
+exactly how the 7 PROD Samorin duplicates (coded <code>-2026-2027</code>) came to sit under the
+<code>2025-2026</code> season id. The active season is a live admin toggle, so this guard is essential.</p>
+<h3 id="7-run-log">7. Run log</h3>
+<p>Every reconcile writes a human-readable <code>.md</code> run log (like the per-event scrape log) to
+<code>doc/staging/reconcile/{season}.{ts}Z.md</code> (committed by the workflow) + the CERT
+<code>staging-reports</code> bucket. Column-agnostic: it diffs <code>to_jsonb(row)</code> minus env-local noise
+(raw ids/timestamps, organizer→code), so URLs, fees, registration flags, and any future
+column appear with no code change. Two sections — <em>Changes applied</em> (PROD before→after, real
+changes only) and <em>Divergences NOT synced</em> (CERT vs PROD-after: admin-owned kept,
+lifecycle status, or an UNMAPPED new column) — plus a Summary (RPC counts + convergence).</p>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>Self-healing:</strong> the reconciler removes divergence from CERT, not just adds to it — the
+first live PROD run auto-deleted the 6→7 Samorin orphans and re-tagged the survivor EVF.</li>
+<li><strong>Domestic events</strong> now reach PROD incrementally (no code filter).</li>
+<li><strong>Organizer mis-tag is structurally impossible</strong> — no literal survives anywhere.</li>
+<li><strong><code>fn_import_evf_events</code> retired.</strong> <code>fn_promote_season_skeleton</code> slimmed to season +
+scoring_config only (ADR-077 amendment); event C/U/D is owned entirely by the reconciler.</li>
+<li><strong>Two rollout gotchas, both guarded + regression-tested:</strong> the season mismatch (§6) and the
+<code>txt_evf_slug</code> <code>''</code>-vs-NULL unique-index crash (§3, migration <code>20260711000002</code>). The
+reconciler's single-transaction design meant the crash rolled PROD back cleanly — no data
+lost.</li>
+<li>Cost: the reconcile is season-scoped and reads the full event set on both sides plus two
+PROD snapshots for the run log; the tables are small (tens of rows).</li>
+</ul>
+<p>Tests: pgTAP <code>51_prod_event_reconcile.sql</code> (51.1–51.8), <code>18</code> evf.56 (ingest pre-check);
+pytest <code>test_promote.py</code>, <code>test_promote_season.py</code>, <code>test_reconcile_report.py</code>.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="080-clean-roster-ftl-seeding.html">← ADR-080: Clean-Roster FTL Seeding</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="082-markdown-source-generated-html-docs.html">→ ADR-082: Markdown-Source, Generated-HTML Documentation Standard</a></nav>
+<footer class="foot">Generated from <code>081-cert-prod-event-reconciler.md</code> · source SHA-256 <code>3339ee4fafb51e9aaed0f2b37793136fd68e1c4048bb360fd2637fadefd294f6</code></footer>
+</div></body></html>

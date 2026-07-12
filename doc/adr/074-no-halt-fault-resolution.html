@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="074-no-halt-fault-resolution.md">
+<meta name="adr-source-sha256" content="627caf9428fb4b48bbc0443a9214cdd271b041dadac1e63b90daae232d9b4b00">
+<title>ADR-074 · No hard halt — declarative fault resolution + last-resort escalation</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 074</p><h1>No hard halt — declarative fault resolution + last-resort escalation</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §2 / §5.2. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> <strong>reverses</strong> the halt-by-exception model of ADR-050 / ADR-057 / ADR-067; <strong>amends</strong> ADR-038 (V0), ADR-066 (min-participants), ADR-069 (participant-count &quot;HALT gate&quot;); ADR-073 (orchestrator), ADR-059 (Telegram), ADR-072 (self-healing).</dd></div><div><dt>Source</dt><dd class=""><code>074-no-halt-fault-resolution.md</code></dd></div><div><dt>Length</dt><dd class="">68 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
+<a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §2 / §5.2. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.
+<strong>Date:</strong> 2026-06-14
+<strong>Relates to:</strong> <strong>reverses</strong> the halt-by-exception model of ADR-050 / ADR-057 / ADR-067; <strong>amends</strong>
+ADR-038 (V0), ADR-066 (min-participants), ADR-069 (participant-count &quot;HALT gate&quot;); ADR-073 (orchestrator),
+ADR-059 (Telegram), ADR-072 (self-healing).</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The pipeline was built on <strong>halt-by-exception</strong>: a gate that hit a problem raised <code>Halt</code> and the run
+stopped, awaiting a human. ADR-066 (below-min), ADR-069 (count mismatch — literally titled &quot;HALT gate&quot;),
+ADR-057 / ADR-067 (pool-round / invalid IR) and the V0-on-international rule (ADR-038) all hard-stop. For a
+<em>fully automated</em> pipeline this is fatal: any single bad bracket halts the whole event and demands an
+operator. Full automation requires the run to <strong>always reach a committed, consistent state</strong>.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p><strong>No domain problem ever hard-halts.</strong> A gate/transform that hits one calls <code>ctx.fault(kind, detail)</code>; the
+orchestrator does <strong>not</strong> stop. Resolution is governed by an explicit, declarative <strong><code>REMEDIATIONBOOK</code></strong>
+(<code>dict[FaultKind → Remediation]</code>, a sibling of the RuleBook — error policy is business logic, kept out of
+hidden <code>if</code>s inside plugins). Each <code>Remediation</code> carries an <strong>inline deterministic fix</strong> applied in-pass
+(<code>drop_bracket</code>, <code>skip_bracket</code>, <code>accept_parsed</code>, <code>keep_combined</code>, <code>skip_artifact</code>) so the flow runs on to
+<code>Commit</code>, plus an <strong>escalation policy</strong> (<code>NEVER</code> / <code>ON_LOSS</code> / <code>ALWAYS</code>).</p>
+<p>A dedicated <strong><code>Escalate</code></strong> plugin (the &quot;error plugin&quot;; Mutator, <code>effects: external</code>) runs <strong>last</strong>, inside
+<code>POST_COMMIT</code>'s <code>Notify</code>, <em>after</em> the event is already committed in its best automatically-resolved state.
+It sends a Telegram message <strong>only</strong> for <code>ALWAYS</code> faults, or <code>ON_LOSS</code> when the inline fix dropped data. It
+is <strong>informational and asks for a human decision — it never blocks</strong>. Only a genuine infra <code>Abort</code> (e.g.
+DB down) stops a run, and it is retried, never gated.</p>
+<p>Three &quot;hard&quot; rules are <strong>reframed, not weakened</strong>:</p>
+<ul>
+<li><strong>V0-on-international (ADR-038, R005b):</strong> hard <em>exclusion</em> of the V0 row — the invariant (no V0 in an
+international ranking) is preserved — not a hard <em>halt</em>; the rest commits, <code>Escalate=ALWAYS</code>.
+(International is deferred — design §12 — so this is documented, not yet active.)</li>
+<li><strong>Below-min bracket (ADR-066):</strong> auto-<strong>drop</strong> the bracket (it isn't a rankable tournament), commit the
+rest, <code>Escalate=ON_LOSS</code>.</li>
+<li><strong>Participant-count mismatch (ADR-069):</strong> the post-commit validator becomes a <strong>fault</strong>
+(<code>accept_parsed</code> + <code>Escalate=ALWAYS</code>), not a halt — it flags loudly but never blocks.</li>
+</ul>
+<p>Problems that need a <em>different flow</em> (a master-data correction → re-derive an event) are <strong>not</strong> faults —
+they travel the Mutator→signal→Reactor self-healing seam (ADR-072). Faults fix the <em>current</em> run inline;
+self-healing fixes <em>other</em> events asynchronously. Together: full automation, no gate.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>Keep halt-by-exception with auto-retry.</strong> Rejected: retrying a deterministic data problem (below-min)
+loops forever — the problem needs a <em>decision</em> (drop), and that decision can be encoded.</li>
+<li><strong>Hidden auto-resolution inside each gate.</strong> Rejected: spreads error policy across plugins. The
+<code>REMEDIATIONBOOK</code> keeps it in one inspectable place (mirrors the RuleBook).</li>
+<li><strong>Telegram as a gate (block until the operator replies).</strong> Rejected: that <em>is</em> a human gate. Escalation
+is post-commit and informational; the system keeps running on its best automatic resolution.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>The domestic pipeline always runs to a committed, notified state; no operator is ever in the critical
+path.</li>
+<li>ADR-069's <code>PARTICIPANT_COUNT_MISMATCH</code> halt and the splitter / pool-round / invalid-IR halts become
+faults; <code>HaltReason</code> is retired in favour of <code>FaultKind</code> + a narrow <code>Abort</code>.</li>
+<li>Telegram volume is bounded by escalation policy, not one message per problem.</li>
+<li>Data loss (a dropped bracket) is always surfaced (<code>ON_LOSS</code>), so a <em>silent</em> drop is impossible.</li>
+</ul>
+</section>
+<section class="section-card adr-section tests"><p class="kicker">tests</p><h2 id="tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</h2>
+<p>below-min → drop + continue → commit; count-mismatch → accept + escalate; flow reaches <code>Commit</code> despite a
+fault; <code>Escalate</code> fires only per policy; infra <code>Abort</code> is retried, not gated.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="073-plugin-rule-engine-architecture.html">← ADR-073: Plugin + rule-engine ingestion architecture</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="075-staging-report-fragment-channel.html">→ ADR-075: Staging report — a fifth Context channel + per-plugin fragments + terminal formatter</a></nav>
+<footer class="foot">Generated from <code>074-no-halt-fault-resolution.md</code> · source SHA-256 <code>627caf9428fb4b48bbc0443a9214cdd271b041dadac1e63b90daae232d9b4b00</code></footer>
+</div></body></html>

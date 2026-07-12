@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="072-cdc-recompute-debounce.md">
+<meta name="adr-source-sha256" content="c9d51a1c652990c4309c2da4a65441bd95a6afe2919c2597841987540eb7f0da">
+<title>ADR-072 · Master-data-change-triggered idempotent recompute (CDC queue + debounce)</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 072</p><h1>Master-data-change-triggered idempotent recompute (CDC queue + debounce)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §6 / §8. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY), ADR-070 (identity) / ADR-071 (dedup) — the change <em>sources</em>; ADR-041 (edge-function dispatch), ADR-074 (no-halt recompute). This ADR builds the <strong>self-healing</strong> half of the pipeline.</dd></div><div><dt>Source</dt><dd class=""><code>072-cdc-recompute-debounce.md</code></dd></div><div><dt>Length</dt><dd class="">98 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
+<a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §6 / §8. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.
+<strong>Date:</strong> 2026-06-14
+<strong>Relates to:</strong> ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY),
+ADR-070 (identity) / ADR-071 (dedup) — the change <em>sources</em>; ADR-041 (edge-function dispatch),
+ADR-074 (no-halt recompute). This ADR builds the <strong>self-healing</strong> half of the pipeline.</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</a></li><li class="depth-2"><a href="#amendment-2026-06-26-deterministic-claimed-recovery-no-time-heuristic">Amendment (2026-06-26) — deterministic CLAIMED recovery (no time heuristic)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Birth years will be wrong on first ingest and corrected repeatedly during cleanup; merges (ADR-071) move
+results between fencers. A correction must propagate to the live ranking <strong>automatically</strong>, or
+&quot;self-healing&quot; is just a slogan. Critically, a V-cat change is structurally a <strong>re-bracketing</strong>, not
+merely a re-score — a fencer's result <em>relocates</em> between an event's V-cat brackets (e.g. V2 → V3).</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>A master-data change auto-triggers <strong><code>RECOMPUTE_DOMESTIC</code></strong>, which re-derives V-cats and re-scores the
+affected event(s) <strong>from stored, FK-linked results — no source fetch, no re-match</strong>
+(<code>LoadCommitted → AssignFinalVcat → ValidateCounts → Commit</code>).</p>
+<ul>
+<li><strong>Event-granular (not tournament-granular).</strong> The recompute unit is the <em>event</em>: a single bracket cannot
+absorb a relocation because the moving result is stored under its <strong>OLD</strong> bracket. <code>LoadCommitted</code> loads
+<em>all</em> of an event's brackets; <code>Commit</code> re-partitions results by derived V-cat (creating/dropping bracket
+rows), recounts (honouring stored joint-pool flags, ADR-049), and re-scores.</li>
+<li><strong>CDC trigger, column-aware.</strong> <code>trg_fencer_change_enqueue</code> enqueues the affected <code>id_event</code>s into
+<code>tbl_recompute_queue</code> on <strong>BY / merge / nationality</strong> changes; <strong>name/alias edits enqueue nothing</strong>
+(the FK is durable).</li>
+<li><strong>Debounced worker.</strong> Edits land in <code>tbl_fencer</code> immediately and bump a watermark; the worker drains
+only when quiet ≥ <code>DEBOUNCE_WINDOW</code>, dedups by <code>id_event</code>, and recomputes each affected event <strong>once</strong>
+against the fully-corrected roster.</li>
+<li><strong>Convergent (fixpoint).</strong> <code>Commit</code> declares <code>effects: live</code> (not <code>master_data</code>), so a recompute never
+re-fires the trigger; a change-gated trigger + idempotent recompute ⇒ the loop settles.</li>
+<li><strong>Source retention (BR-13).</strong> <code>ParseSource</code> persists <code>source_artifact_path</code> so a dead-URL event can be
+<em>re-ingested</em> (a fresh-ingest flow with <code>source=retained</code>) — this is distinct from recompute, which
+never touches source.</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>Tournament-granular recompute.</strong> Rejected: cannot absorb a cross-bracket relocation — the destination
+bracket has no stored copy of the moving result.</li>
+<li><strong>Full re-ingest on every edit.</strong> Rejected: needless source fetch + re-match; recompute works from
+durable FK-linked rows (ADR-003) and is cheaper and deterministic.</li>
+<li><strong>Synchronous recompute on every edit (no debounce).</strong> Rejected: a <code>DEDUP_SWEEP</code> touching many fencers
+would re-score the same event dozens of times; debounce coalesces to one rerun per event.</li>
+<li><strong>LISTEN/NOTIFY daemon vs pg_cron drain.</strong> pg_cron recommended first (simpler, reuses ADR-041 dispatch);
+LISTEN/NOTIFY is a latency knob (design §11).</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Corrections heal the ranking with <strong>no operator action</strong>; <code>DEDUP_SWEEP</code> (ADR-071) + recompute is a
+closed, convergent loop.</li>
+<li>New DB objects: <code>tbl_recompute_queue</code>, <code>trg_fencer_change_enqueue</code>, <code>fn_enqueue_affected_events</code>, and a
+debounced <code>python/pipeline/recompute/worker.py</code>.</li>
+<li><code>ValidateCounts</code> on recompute is <strong>no-halt</strong> (ADR-074): a relocation that drops a bracket below min
+auto-drops it and the heal still completes — a correction is never blockable.</li>
+<li><strong>Scheduler realization (Step C, 2026-06-16).</strong> The drain runs as a <strong>GitHub Actions cron</strong>
+(<code>recompute-drain.yml</code>, every 15 min against CERT, <code>python -m python.pipeline.recompute.worker --drain</code>) — the repo's established scheduler pattern (cf. <code>evf-sync.yml</code>) — rather than the
+pg_cron→Edge-Function sketch above. This drops the pg_cron / edge-runtime dependency (neither is
+enabled on LOCAL); the worker's 120 s <code>DEBOUNCE_WINDOW</code> does the coalescing the cron cadence does not.
+LOCAL stays manual. pg_cron / LISTEN-NOTIFY remain available as a later latency knob (design §11).</li>
+<li><strong>RECOMPUTE write-back partition key (Step C).</strong> <code>Commit</code> re-persists by <strong>(weapon, gender,
+governed-V-cat)</strong>, not V-cat alone — an event spans many weapon/gender brackets — and <strong>clears</strong> a
+bracket a relocation empties. The recompute reader (<code>fetch_event_results</code>) reads the V-cat / weapon /
+gender off <code>tbl_tournament</code> (where they live), not <code>tbl_result</code>.</li>
+</ul>
+</section>
+<section class="section-card adr-section tests"><p class="kicker">tests</p><h2 id="tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</h2>
+<p>trigger fires only on real change + enqueues the correct events (pgTAP); debounce / claim / coalesce;
+recompute-twice == once (idempotence); a boundary-crossing BY change re-partitions to the correct bracket;
+recompute-to-quiescence.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-06-26-deterministic-claimed-recovery-no-time-heuristic">Amendment (2026-06-26) — deterministic CLAIMED recovery (no time heuristic)</h2>
+<p>The <code>PENDING → CLAIMED → DONE</code> lifecycle had no recovery for a worker killed <strong>mid-drain</strong>:
+<code>claim_recompute_batch</code> only looked at PENDING, so rows already flipped to CLAIMED were
+stranded forever (invisible to the next run and the cron). This bit live — a drain killed
+during the SAMECKA-NACZYŃSKA repair left 39 rows stuck CLAIMED.</p>
+<p>A first fix added a 10-minute <code>STALE_CLAIM_SECONDS</code> timeout; it was rejected as a fragile
+heuristic (a legitimate recompute running longer would be double-claimed) and an unwanted
+permanent &quot;guess whether the worker died&quot; mechanism.</p>
+<p><strong>Decision (deterministic):</strong> CERT drains are <strong>serialized</strong> — the <code>recompute-drain</code>
+workflow's <code>cert-recompute</code> concurrency group (<code>cancel-in-progress: false</code>) plus the
+worker's 120s debounce mean <strong>one drain at a time</strong>. Under that single-writer model, any
+row still CLAIMED when a new drain <em>starts</em> is provably an orphan from a worker that died
+mid-run — no live worker owns it. So <code>claim_recompute_batch</code> now claims <strong>every not-DONE
+row (PENDING AND CLAIMED)</strong> in one CLAIMED flip — deterministic crash recovery, no clock.
+Claiming straight to CLAIMED (never resetting to PENDING) keeps the one-PENDING-per-event
+partial unique index safe even when a fresh PENDING coexists with an orphaned CLAIMED for
+the same event; recompute is idempotent, so the queue converges to DONE.</p>
+<p>Verified live: re-draining CERT reclaimed the 39 stranded rows (20 distinct events
+recomputed) → queue all DONE. Test: <code>python/tests/test_db_connector.py</code>
+(<code>test_claim_recompute_batch_reclaims_orphaned_claimed</code>).</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="071-mdm-dedup-sweep.html">← ADR-071: Master-data management + eventual-consistency dedup (DEDUP_SWEEP)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="073-plugin-rule-engine-architecture.html">→ ADR-073: Plugin + rule-engine ingestion architecture</a></nav>
+<footer class="foot">Generated from <code>072-cdc-recompute-debounce.md</code> · source SHA-256 <code>c9d51a1c652990c4309c2da4a65441bd95a6afe2919c2597841987540eb7f0da</code></footer>
+</div></body></html>

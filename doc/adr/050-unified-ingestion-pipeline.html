@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="050-unified-ingestion-pipeline.md">
+<meta name="adr-source-sha256" content="e87d88a35994756b533ebb2c49dfd7685bf0dcd50f76b4b85e0589b4fffbf46a">
+<title>ADR-050 · Unified Ingestion Pipeline (rebuild — Phases 0–6)</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 050</p><h1>Unified Ingestion Pipeline (rebuild — Phases 0–6)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted; rebuild active. Phase 0 schema-prep + cert_ref scaffolding committed 2026-05-01. Phases 1–6 land on <code>main</code> over the rebuild lifetime; this ADR is a stub that gets fleshed out as each phase commits.</dd></div><div><dt>Date</dt><dd class="">2026-05-01</dd></div><div><dt>Source</dt><dd class=""><code>050-unified-ingestion-pipeline.md</code></dd></div><div><dt>Length</dt><dd class="">280 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted; rebuild active. Phase 0 schema-prep + cert_ref scaffolding committed 2026-05-01. Phases 1–6 land on <code>main</code> over the rebuild lifetime; this ADR is a stub that gets fleshed out as each phase commits.</p>
+<p><strong>Date:</strong> 2026-05-01</p>
+<p><strong>Supersedes:</strong> ADR-024 (Combined Category Splitting), ADR-025 (Event-Centric Ingestion + Telegram Admin — <strong>narrowed by ADR-077 (2026-06-28) to the <em>ingestion mechanism</em> only; ADR-025's event-status lifecycle + Telegram admin surface live on, carried forward by ADR-077</strong>), ADR-039 (EVF Scraper Dedup + Stale-Event Gate), ADR-049 (Joint-Pool Split Flag).
+<strong>Amended by:</strong> ADR-052 (URL→data validation), ADR-053 (EVF backup-source + parity gate + EVF_PUBLISHED promotion), ADR-054 (Carry-over FK + 366-day cap), ADR-055 (Ingest traceability — parser-kind enum + cap-6 history tables).
+<strong>Superseded concepts:</strong> Frozen-snapshot status was retired 2026-05-02 — cert_ref fallback became just-another-parser through the standard pipeline; no special status needed. ADR-051 was reserved for that policy and is now empty.</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#architecture">Architecture</a></li><li class="depth-3"><a href="#identity-model">Identity model</a></li><li class="depth-3"><a href="#draft-tables-phase-2">Draft tables (Phase 2)</a></li><li class="depth-3"><a href="#rules-registry">Rules registry</a></li><li class="depth-3"><a href="#matcher-tuning">Matcher tuning</a></li><li class="depth-3"><a href="#evf-role">EVF role</a></li><li class="depth-3"><a href="#cert-ref-fallback-as-a-parser">Cert_ref fallback as a parser</a></li><li class="depth-3"><a href="#status-enum-phase-4-see-adr-053">Status enum (Phase 4 — see ADR-053)</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-3"><a href="#a-continue-patching-the-legacy-pipeline-source-by-source">A. Continue patching the legacy pipeline source-by-source</a></li><li class="depth-3"><a href="#b-rewrite-in-place-without-cert-ref-draft-tables">B. Rewrite in place without cert_ref / draft tables</a></li><li class="depth-3"><a href="#c-run-the-new-pipeline-alongside-the-old-one-strangler-fig-at-the-source-level">C. Run the new pipeline alongside the old one (strangler-fig at the source level)</a></li><li class="depth-3"><a href="#d-defer-the-carry-over-fk-migration-to-part-of-this-rebuild">D. Defer the carry-over FK migration to part of this rebuild</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#status-phase-0-deliverables-committed-2026-05-01">Status — Phase 0 deliverables (committed 2026-05-01)</a></li><li class="depth-2"><a href="#status-phase-1-deliverables-committed-2026-05-01">Status — Phase 1 deliverables (committed 2026-05-01)</a></li><li class="depth-2"><a href="#status-phase-2-deliverables-committed-2026-05-02">Status — Phase 2 deliverables (committed 2026-05-02)</a></li><li class="depth-2"><a href="#status-phase-3-deliverables-committed-2026-05-02">Status — Phase 3 deliverables (committed 2026-05-02)</a></li><li class="depth-2"><a href="#status-phase-5-5-deliverables-in-progress-2026-05-03">Status — Phase 5.5 deliverables (in progress 2026-05-03)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The legacy ingestion pipeline accumulated divergence from years of partial fixes. Eight source paths (XML, FTL, Engarde, 4Fence, Dartagnan, EVF API, CSV/XLSX/JSON, Ophardt) each grew their own combined-pool detection, identity-resolution wiring, and ingest control flow. Most recently the combined-pool splitter bug (<code>memory: project_split_combined_pool_fix.md</code>) exposed that 5 of the 8 paths silently mishandled V-cat splitting — the worst kind of partial unification, because the code looked shared but wasn't.</p>
+<p>The result: identity provenance lived in <code>tbl_match_candidate</code> (a workflow-state table, not a provenance table); ingest behavior diverged source-by-source; carry-over relied on <code>txt_code</code> prefix matching; URL→data correctness was unenforced; EVF was treated as primary source instead of a backup with parity verification.</p>
+<p>Continuing to patch was no longer an option. The team chose a structured rebuild: drop <code>tbl_tournament</code> + <code>tbl_result</code> + <code>tbl_match_candidate</code> from LOCAL, re-ingest every event chronologically through one unified pipeline with per-event interactive admin review, then re-seed CERT and PROD from rebuilt LOCAL.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>The rebuild is structured as 9 phases (0.0a → 7), each gated by explicit deliverables and a risk-gate:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Focus</th>
+<th>Subplan</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.0a</td>
+<td>CI Node 24 upgrade (precondition for the rebuild lifetime)</td>
+<td><a href="../plans/rebuild/p0-0-ci-upgrade.md">p0-0-ci-upgrade.md</a></td>
+</tr>
+<tr>
+<td>0.0b</td>
+<td>Plan decomposition (master + 9 subplans)</td>
+<td>done in commit 5891bb5</td>
+</tr>
+<tr>
+<td>0.5</td>
+<td>Spec refactor + RTM externalization</td>
+<td>done in commit 12dd202</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Schema prep + cert_ref + rules + matcher config + Claude module edits</td>
+<td><a href="../plans/rebuild/p0-prep.md">p0-prep.md</a></td>
+</tr>
+<tr>
+<td>1</td>
+<td>IR + 8 parsers (7 existing + Ophardt server-rendered HTML, per spike outcome <a href="../audits/ophardt_format_research.md">doc/audits/ophardt_format_research.md</a>)</td>
+<td><a href="../plans/rebuild/p1-ir-parsers.md">p1-ir-parsers.md</a></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Draft tables + dry-run loop</td>
+<td><a href="../plans/rebuild/p2-drafts.md">p2-drafts.md</a></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Stages 1-7 + alias writeback + 3-way diff + interactive CLI</td>
+<td><a href="../plans/rebuild/p3-pipeline.md">p3-pipeline.md</a></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Commit path + EVF parity + alias UI</td>
+<td><a href="../plans/rebuild/p4-commit-ui.md">p4-commit-ui.md</a></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Operational rebuild — every event reviewed and committed</td>
+<td><a href="../plans/rebuild/p5-execute.md">p5-execute.md</a></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Drop tbl_match_candidate + remove old UI + finalize + LOCAL→CERT→PROD</td>
+<td><a href="../plans/rebuild/p6-finalize.md">p6-finalize.md</a></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Carry-over FK + 366-day cap + admin UI</td>
+<td><a href="../plans/rebuild/p7-carryover.md">p7-carryover.md</a></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="architecture">Architecture</h3>
+<p>8 source mouths feed a normalized intermediate representation (IR). Stages 1–11 are uniform across sources. The IR contract (see <a href="../plans/rebuild/p1-ir-parsers.md">p1-ir-parsers.md</a>):</p>
+<p><strong>Stage 0 — roster reconciliation (added 2026-06-13, ADR-056 rev).</strong> A new
+FIRST stage <code>s0_reconcile_roster</code> runs <em>before</em> <code>s1_validate_ir</code> (and therefore
+before the matcher). For every result row it (1) creates genuinely-new
+participants by a HIGH-PRECISION exact check (so the matcher exact-matches them
+instead of fuzzy-gluing them to the nearest existing name) with an estimated
+band-midpoint birth year (NULL when the V-cat is unmarked), and (2) corrects a
+matched fencer's stored birth year when it conflicts with the bracket's
+authoritative V-cat (estimated kept; CONFIRMED downgraded, surfaced loudly).
+International events (PEW/MEW/MSW, ADR-038) are skipped. It never halts and is
+idempotent. See ADR-056 (2026-06-13 revision) for the full rule + midpoint
+table. The full stage tuple is now:
+<code>s0_reconcile_roster → s1_validate_ir → s2_resolve_event → s3_detect_combined_pool → s4_split_via_batch → s5_detect_joint_pool → s6_resolve_identity → s7_validate → s7_pool_round_check → s7_split_by_vcat</code>.</p>
+<ul>
+<li><code>ParsedTournament</code> — date, weapon, gender, season_end_year, organizer hint, source kind, raw pool size, category hint, list of results.</li>
+<li><code>ParsedResult</code> — name, country, birth year, place, raw age marker, source vcat hint, excluded flag, source row id.</li>
+<li><code>MatchResult</code> gains <code>alternatives: list[Candidate]</code> so per-event diffs can render top-N candidates for ambiguous matches.</li>
+</ul>
+<h3 id="identity-model">Identity model</h3>
+<p><code>tbl_match_candidate</code> (workflow-state table) is replaced with per-result provenance on <code>tbl_result</code>:</p>
+<ul>
+<li><code>txt_scraped_name TEXT</code> — original name as scraped</li>
+<li><code>num_match_confidence NUMERIC(5,2)</code> — fuzzy-match score at resolution time</li>
+<li><code>enum_match_method</code> enum — one of <code>AUTO_MATCH | USER_CONFIRMED | AUTO_CREATED | BY_ESTIMATED</code></li>
+</ul>
+<p>Cross-event match memory: <code>tbl_fencer.json_name_aliases</code> is appended on every USER_CONFIRMED admin decision (alias write-back).</p>
+<p><code>tbl_match_candidate</code> stays present and unwritten (TEE behaviour during rebuild) until Phase 6, which drops the table after rewriting <code>supabase/tests/11_identity_resolution.sql</code> against the new model.</p>
+<h3 id="draft-tables-phase-2">Draft tables (Phase 2)</h3>
+<p><code>tbl_tournament_draft</code> and <code>tbl_result_draft</code> mirror their live counterparts plus <code>txt_run_id TEXT</code>. Crash-consistent, transactional, resumable. RPCs <code>fn_commit_event_draft(p_run_id)</code> and <code>fn_discard_event_draft(p_run_id)</code> move drafts to live or discard them.</p>
+<h3 id="rules-registry">Rules registry</h3>
+<p>R001–R012 (plus R005b) at <a href="../rules/">doc/rules/</a> — Pandoc-built, per-rule markdown source-of-truth, single <code>rules.html</code> master. Rule files reference back to this ADR and to phase subplans.</p>
+<h3 id="matcher-tuning">Matcher tuning</h3>
+<p>Single config file <code>python/matcher/config.yaml</code> — thresholds, Polish normalizations, nicknames map, diagnostic config. Hot-reloads between event runs in Phase 5.</p>
+<h3 id="evf-role">EVF role</h3>
+<p>EVF API is a <strong>backup source</strong> for EVF-organized events only. Post-commit parity gate (ADR-053) verifies POL count + placements + score within ±0.5; failures route to <code>enum_status = 'SCORED'</code> with notes in <code>tbl_event.txt_parity_notes</code>. Transitive trust: if the unified pipeline agrees with EVF API on EVF-organized events, the engine handles SPWS+FIE events correctly too.</p>
+<h3 id="cert-ref-fallback-as-a-parser">Cert_ref fallback as a parser</h3>
+<p>When operator picks <code>[5]</code> in the review CLI (no live URL available), cert_ref placements are produced as a <code>ParsedTournament</code> IR via a small parser module and fed through the standard Stages 1-11 pipeline. The engine still computes points; no special status is recorded. Stage 7 (URL→data validation) is skipped for this path because there is no URL to validate.</p>
+<h3 id="status-enum-phase-4-see-adr-053">Status enum (Phase 4 — see ADR-053)</h3>
+<p><code>tbl_event.txt_source_status</code> carries two values: <code>ENGINE_COMPUTED</code> (engine output, default for every event regardless of organizer) and <code>EVF_PUBLISHED</code> (EVF-organized events whose engine output passed the parity gate and was overwritten with EVF's authoritative published numbers). DB-level CHECK constraint enforces <code>EVF_PUBLISHED</code> is only valid for <code>txt_organizer = 'EVF'</code>.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<h3 id="a-continue-patching-the-legacy-pipeline-source-by-source">A. Continue patching the legacy pipeline source-by-source</h3>
+<p>Already attempted for ~6 months; produced the partial-unification bug class. Rejected.</p>
+<h3 id="b-rewrite-in-place-without-cert-ref-draft-tables">B. Rewrite in place without cert_ref / draft tables</h3>
+<p>Considered but rejected: cert_ref is the diff baseline against which Phase 5 reviews are evaluated. Without it, an operator reviewing a re-ingested event has no &quot;what did this look like in PROD?&quot; reference except a SQL dump file — fragile, not queryable.</p>
+<h3 id="c-run-the-new-pipeline-alongside-the-old-one-strangler-fig-at-the-source-level">C. Run the new pipeline alongside the old one (strangler-fig at the source level)</h3>
+<p>Initial attractive option; rejected because the legacy pipeline's identity model (tbl_match_candidate) is fundamentally incompatible with per-result provenance on tbl_result. Running both at once creates two divergent provenance stories; the rebuild needs one.</p>
+<h3 id="d-defer-the-carry-over-fk-migration-to-part-of-this-rebuild">D. Defer the carry-over FK migration to part of this rebuild</h3>
+<p>Considered including ADR-054 cap enforcement + FK default flip in Phase 0–6. Rejected because:</p>
+<ul>
+<li>The rebuild scope is already large (9 phases, ~10 weeks);</li>
+<li>The FK engine is shipped and tested (ADR-042/045) — just not the default;</li>
+<li>Phase 7 can run cleanly post-rebuild against the now-consistent data without affecting the rebuild's exit gate.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>Positive:</strong></p>
+<ul>
+<li>Single ingest path for 8 sources — no source-specific divergence.</li>
+<li>Per-result provenance is queryable directly without a candidate-table join.</li>
+<li>3-way diff (Source / cert_ref / draft) is a powerful operator tool for catching regressions and source drift.</li>
+<li>Rules registry is the canonical &quot;what should the pipeline do&quot; reference, separate from &quot;how does the spec describe the system&quot;.</li>
+<li>Per-event interactive review surfaces low-confidence matches and source-of-truth choices to a human, not buried in cron logs.</li>
+</ul>
+<p><strong>Negative:</strong></p>
+<ul>
+<li>Phase 5 may span weeks (~60 events × per-event review). Drafts persist via run_id; user can pause/resume.</li>
+<li>During the rebuild lifetime, <code>tbl_match_candidate</code> is a TEE write target — code maintenance overhead until Phase 6 drops it.</li>
+<li>The cert_ref schema lives in the same Postgres DB as <code>public.*</code> — accidental writes are blocked by GRANT but the surface area is larger.</li>
+<li>Cross-event alias drift: an incorrectly-confirmed alias propagates to future ingests via <code>json_name_aliases</code>. Mitigated by audit log + admin revocation CLI.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="status-phase-0-deliverables-committed-2026-05-01">Status — Phase 0 deliverables (committed 2026-05-01)</h2>
+<ul>
+<li>✅ Migration <code>supabase/migrations/20260501000001_phase0_schema_prep.sql</code>:
+<ul>
+<li><code>enum_match_method</code> enum</li>
+<li><code>tbl_result.{txt_scraped_name, num_match_confidence, enum_match_method}</code> columns</li>
+<li><code>enum_source_status</code> enum + <code>tbl_event.txt_source_status</code> column</li>
+<li><code>fn_age_categories_batch(INT[], INT)</code> for the splitter</li>
+<li><code>fn_ingest_tournament_results</code> rewritten with TEE write to tbl_result + tbl_match_candidate</li>
+</ul>
+</li>
+<li>✅ Migration <code>supabase/migrations/20260501000002_cert_ref_schema.sql</code> — read-only <code>cert_ref.{tbl_fencer, tbl_event, tbl_tournament, tbl_result}</code> scaffold</li>
+<li>✅ <code>scripts/load-cert-ref.sh</code> — populates cert_ref from public; verified against current LOCAL (329/84/756/2655 rows)</li>
+<li>✅ <code>python/matcher/config.yaml</code> — thresholds + Polish folding + nicknames</li>
+<li>✅ <code>python/pipeline/export_seed.py</code> — <code>tbl_match_candidate</code> export removed</li>
+<li>✅ <code>doc/rules/</code> framework — Makefile + README + R001-R012 seed files</li>
+<li>✅ Claude-guidance modules aligned (commit 6250f04) — REBUILD WAIVER / REBUILD-NEW markers; <code>tbl_match_candidate</code> removal noted</li>
+<li>✅ pgTAP 404/404 green; pytest 360/363 (1 pre-existing data-drift, see commit body); vitest 332/332 green</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="status-phase-1-deliverables-committed-2026-05-01">Status — Phase 1 deliverables (committed 2026-05-01)</h2>
+<p>Phase 1 ships the <strong>traceability schema</strong> (ADR-055) and the <strong>intermediate representation + 8 parsers + parser registry</strong>. 7 commits land between <code>4409f95</code> and <code>6ae21c0</code> on <code>main</code>.</p>
+<ul>
+<li>✅ Migration <code>supabase/migrations/20260501000003_phase1_ingest_traceability.sql</code> (ADR-055):
+<ul>
+<li><code>enum_parser_kind</code> Postgres enum (8 values, mirrors Python <code>SourceKind</code>)</li>
+<li>Stamp columns on <code>tbl_event</code> + <code>tbl_tournament</code>: <code>enum_parser_kind</code>, <code>dt_last_scraped</code>, <code>txt_source_url_used</code></li>
+<li>History tables <code>tbl_event_ingest_history</code> + <code>tbl_tournament_ingest_history</code> with FK CASCADE, UNIQUE(parent, run_id), <code>BEFORE INSERT</code> cap-of-6 trigger</li>
+<li>23 pgTAP assertions in <code>supabase/tests/26_ingest_traceability.sql</code></li>
+</ul>
+</li>
+<li>✅ <code>python/pipeline/ir.py</code>: <code>SourceKind</code>, <code>ParsedResult</code>, <code>ParsedTournament</code>, <code>make_synthetic_id()</code>. Cross-language enum sync test verifies Python ↔ Postgres alignment at runtime.</li>
+<li>✅ All 8 parsers conform to the IR via <code>parse_*()</code> factories (see <a href="../plans/rebuild/p1-ir-parsers.md">p1-ir-parsers.md</a> for the per-parser table). Native IDs where available (FencingTime XML, FTL JSON, Ophardt); <code>make_synthetic_id()</code> for the rest.</li>
+<li>✅ <code>python/scrapers/__init__.py</code> <code>PARSERS</code> dict — single source of truth mapping each <code>SourceKind</code> to its canonical parser; pytest contract guards completeness.</li>
+<li>✅ Ophardt parser written from scratch + spike-captured fixture (Munich 2024 EVF Circuit Memoriam Max Geuter, Foil Men's O50). Server-rendered HTML, no Playwright dep needed.</li>
+<li>✅ Test totals: pgTAP 404 → 427 (+23 ADR-055); pytest 354 → 402 (+7 IR contract + 41 parser contracts); vitest 332 unchanged.</li>
+<li>✅ Coherence + spec-sync gates pass.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="status-phase-2-deliverables-committed-2026-05-02">Status — Phase 2 deliverables (committed 2026-05-02)</h2>
+<p>Phase 2 ships the <strong>draft scratch state + dry-run loop</strong> — the infrastructure that Phase 3 will populate via the IR pipeline and Phase 4 will commit through.</p>
+<p><strong>Locked design decisions</strong> (5-question micro-RFC, conversation 2026-05-01):</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Decision</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D1</td>
+<td><code>--dry-run</code> = no DB writes anywhere</td>
+<td>Cleaner than rollback-then-discard. <code>fn_dry_run_event_draft</code> is a stateless validator/counter; Python computes diff from in-memory IR.</td>
+</tr>
+<tr>
+<td>D2</td>
+<td>RPCs return JSONB; never throw on missing run_id</td>
+<td>CLI inspects counts; zero-count routes to Telegram via <code>notifier.warning()</code> + exit code 1. Successes go to stdout only.</td>
+</tr>
+<tr>
+<td>D3</td>
+<td>Tournament-level diff + match-method aggregate</td>
+<td>Per-fencer detail and 3-way diff against live = Phase 3 (kept the boundary clean).</td>
+</tr>
+<tr>
+<td>D4</td>
+<td><code>20260501000004_phase2_draft_tables.sql</code></td>
+<td>Today's date + next slot; future phases drift to commit date if past the week.</td>
+</tr>
+<tr>
+<td>D5</td>
+<td>Extend <code>DbConnector</code> (Supabase REST)</td>
+<td>All txn boundaries inside SQL functions. <strong>No psycopg2 at runtime.</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Shipped:</strong></p>
+<ul>
+<li>✅ Migration <code>supabase/migrations/20260501000004_phase2_draft_tables.sql</code>:
+<ul>
+<li><code>tbl_tournament_draft</code> (22 cols, draft-local PK + 20 mirror cols + <code>txt_run_id UUID</code>) + index on <code>txt_run_id</code></li>
+<li><code>tbl_result_draft</code> (17 cols, draft-local PK + <code>id_tournament_draft</code> linkage + 13 mirror cols + <code>txt_run_id UUID</code>) + index on <code>txt_run_id</code></li>
+<li><strong>Loose</strong>: zero FK constraints (drafts may stage unresolved values)</li>
+<li><code>fn_commit_event_draft(UUID) RETURNS JSONB</code> — atomic move via CTE chain (<code>txt_code</code> → live id mapping), sets <code>bool_joint_pool_split</code> on siblings sharing <code>url_results</code>, appends <code>tbl_*_ingest_history</code> (Phase 1 ADR-055), writes audit, deletes drafts</li>
+<li><code>fn_discard_event_draft(UUID) RETURNS JSONB</code> — deletes drafts, writes <code>DRAFT_DISCARD</code> audit always</li>
+<li><code>fn_dry_run_event_draft(JSONB) RETURNS JSONB</code> — pure function; counts + joint-pool sibling group detection from IR payload; no writes</li>
+<li>30 pgTAP assertions in <code>supabase/tests/27_draft_tables.sql</code></li>
+</ul>
+</li>
+<li>✅ <code>python/pipeline/draft_store.py</code> — <code>DraftStore</code> wraps the supabase REST client. Methods: <code>write_tournament_drafts</code>, <code>write_result_drafts</code>, <code>read_drafts</code>, <code>list_drafts</code>, <code>commit</code>, <code>discard</code>, <code>dry_run</code>. 9 pytest assertions.</li>
+<li>✅ <code>python/pipeline/draft_diff.py</code> — <code>format_diff(run_id, payload, rpc_result, event_match)</code>. Renders title, event match, would-create counts, per-tournament table, match-method aggregate. 5 pytest assertions.</li>
+<li>✅ Extended <code>python/pipeline/ingest_cli.py</code> with 4 mutually-exclusive draft-management flags: <code>--commit-draft &lt;UUID&gt;</code>, <code>--discard-draft &lt;UUID&gt;</code>, <code>--list-drafts</code>, <code>--resume-run-id &lt;UUID&gt;</code>. Zero-count outcomes route to <code>notifier.warning()</code> + exit 1. 6 pytest assertions.</li>
+<li>✅ Test totals: pgTAP 427 → 457 (+30); pytest 402 → 422 (+9 draft_store + 5 draft_diff + 6 CLI mgmt, excl. pre-existing <code>test_prod_mirror</code> CI skip); vitest 332 unchanged.</li>
+<li>✅ Coherence + spec-sync gates pass.</li>
+</ul>
+<p><strong>Deviations from plan text</strong> (documented in migration header):</p>
+<ol>
+<li>Plan said <code>LIKE tbl_tournament INCLUDING ALL</code>; reality uses <strong>explicit DDL</strong>. Reason: <code>LIKE INCLUDING ALL</code> would inherit the SERIAL sequence and collide draft inserts with live PK allocation. Explicit DDL gives drafts their own <code>id_tournament_draft</code> sequence and renames the linkage column on <code>tbl_result_draft</code> for clarity.</li>
+<li>Plan said <code>txt_run_id TEXT NOT NULL</code>; reality uses <strong><code>UUID NOT NULL</code></strong> to match what Phase 1 already shipped on <code>tbl_*_ingest_history.txt_run_id</code>. The <code>txt_</code> prefix on a UUID column is a name/type mismatch inherited from Phase 1.</li>
+<li><code>--dry-run</code> orchestrator integration is <strong>deferred to Phase 3</strong> — Phase 2 keeps the existing path-based <code>--dry-run</code> (calls <code>process_xml_file(dry_run=True)</code>); the IR-driven dry-run that builds a JSONB payload from the new parsers and invokes <code>fn_dry_run_event_draft</code> lands in Phase 3 alongside the orchestrator rewrite. The Phase 2 risk gate is satisfied by <code>--resume-run-id</code> (re-renders diff from existing drafts) and <code>format_diff</code> proven via tests.</li>
+</ol>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="status-phase-3-deliverables-committed-2026-05-02">Status — Phase 3 deliverables (committed 2026-05-02)</h2>
+<p>Phase 3 ships the <strong>unified pipeline body</strong> — Stages 1-7, the override system, the alias-writeback RPC, the 3-way diff verifier, and the interactive review CLI that operators use during the Phase 5 rebuild.</p>
+<p><strong>Locked design decisions</strong> (5-question micro-RFC, conversation 2026-05-02):</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Q</th>
+<th>Decision</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q1</td>
+<td>Override YAML — 5 surfaces (identity, splitter, URL, match-method, joint-pool); EVF V0 ack omitted</td>
+<td>V0+EVF = data corruption per R005b — fix upstream, no override.</td>
+</tr>
+<tr>
+<td>Q2</td>
+<td>Procedural pipeline + <code>PipelineContext</code> dataclass; halt-by-exception</td>
+<td>Lower ceremony than class-based; matches existing <code>process_xml_file</code> style; cleaner unit tests.</td>
+</tr>
+<tr>
+<td>Q3</td>
+<td>Keep <code>process_xml_file</code> untouched + deprecation note</td>
+<td>Phase 6 deletes it; &quot;shim&quot; framing wrong — back-compat is just &quot;don't touch.&quot;</td>
+</tr>
+<tr>
+<td>Q4</td>
+<td>Separate <code>python/pipeline/review_cli.py</code> module</td>
+<td>Own arg surface; zero breakage to ingest_cli.</td>
+</tr>
+<tr>
+<td>Q5</td>
+<td>3-way diff in pure Python</td>
+<td>One-language end-to-end; SQL JOIN performance moot at event scale.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Shipped (10 modules, 91 new tests):</strong></p>
+<ul>
+<li>✅ <code>python/pipeline/types.py</code> — <code>HaltError</code> + <code>HaltReason</code> enum + <code>Overrides</code> (5 sub-classes) + <code>PipelineContext</code> + <code>StageMatchResult</code>. 8 pytest assertions (P3.T1-P3.T8).</li>
+<li>✅ <code>python/pipeline/overrides.py</code> — YAML parser for the 5 override surfaces, jsonschema-style validation, <code>OverrideValidationError</code> with file path. PyYAML promoted to runtime dep. 15 pytest assertions (P3.OV1-P3.OV15).</li>
+<li>✅ Migration <code>supabase/migrations/20260502000001_phase3_fn_alias_writeback.sql</code> — <code>fn_update_fencer_aliases(INT, TEXT) RETURNS JSONB</code> with NULL→array init, case-insensitive dedup, whitespace trim, empty-rejection. 8 pgTAP assertions in <code>supabase/tests/28_alias_writeback.sql</code>.</li>
+<li>✅ <code>python/pipeline/stages.py</code> — 7 stage functions S1-S7 with halt-by-exception and override application. 29 pytest assertions in <code>test_pipeline_stages.py</code> (per-stage isolation + dispatcher tests).</li>
+<li>✅ Updated <code>python/pipeline/orchestrator.py</code> — added <code>run_pipeline()</code> dispatcher resolving stages by name (so monkeypatch tests work); legacy <code>process_xml_file</code> annotated with deprecation note pointing to <code>run_pipeline</code>.</li>
+<li>✅ Extended <code>python/pipeline/db_connector.py</code> — <code>find_event_by_code()</code>, <code>fetch_cert_rows_for_event()</code> (Phase 3 stub), <code>call_age_categories_batch()</code> (Stage 4 batch RPC wrapper).</li>
+<li>✅ <code>python/pipeline/three_way_diff.py</code> — 4-bucket classifier (<code>classify</code>, <code>build_diff</code>), 7-bin confidence histogram, markdown renderer, <code>write_diff</code> to <code>doc/staging/&lt;event_code&gt;.diff.md</code>. Bucket semantics per <code>project_cert_prod_not_baseline.md</code> (CERT is reference-only, not baseline). 12 pytest assertions in <code>test_three_way_diff.py</code>.</li>
+<li>✅ <code>python/pipeline/review_cli.py</code> — <code>ReviewSession</code> with injectable prompt + output (testable without stdin). 4 source-of-truth choices (recorded URL / paste URL / paste path / EVF API; cert_ref fallback parser added Phase 4). Lifecycle: event summary → choice → fetch → run_iteration (overrides hot-reloaded each iteration) → diff → action prompt → commit/discard/iterate. 15 pytest assertions in <code>test_review_cli.py</code> (incl. EVF API path per <code>project_evf_predominance.md</code> — EVF events are predominant, source-of-truth on EVF site).</li>
+<li>✅ End-to-end integration tests in <code>python/tests/test_pipeline_integration.py</code> — 4 tests against live LOCAL Supabase (skip cleanly when unreachable, matching the established pattern).</li>
+<li>✅ Test totals: pgTAP 457 → 465 (+8); pytest 422 → 505 (+83 across 6 new test modules); vitest 332 unchanged.</li>
+<li>✅ Coherence + spec-sync gates pass.</li>
+</ul>
+<p><strong>Deferred to Phase 4 (per master plan boundaries, not time pressure):</strong></p>
+<ol>
+<li><strong>Cert_ref fallback parser</strong> — produces <code>ParsedTournament</code> IR from <code>cert_ref.tbl_*</code> rows; integrated as 9th parser in the registry. No special pipeline branch; engine still runs.</li>
+<li><strong>Production fetcher wiring</strong> — <code>Fetcher</code> raises <code>NotImplementedError</code> for <code>fetch_url</code>/<code>fetch_path</code>/<code>fetch_evf_api</code>; tests inject mocks. Phase 4 wires the existing 8 scrapers to the Fetcher methods.</li>
+<li><strong><code>fetch_cert_rows_for_event</code> real query</strong> — Phase 3 stub returns <code>[]</code>; Phase 4 implements when cert_ref is operationally populated.</li>
+<li><strong>EVF parity gate</strong> (R011) — Phase 4 ADR-053.</li>
+<li><strong>URL→data deep validation</strong> (R009/ADR-052) — Phase 4.</li>
+</ol>
+<p><strong>Domain corrections captured during Phase 3 design (saved as project memories):</strong></p>
+<ul>
+<li><code>project_cert_prod_not_baseline.md</code> — CERT/PROD share LOCAL's drift; reference only, not trust source.</li>
+<li><code>project_evf_predominance.md</code> — EVF events outnumber SPWS; SPWS quality is critical; EVF errors recoverable via EVF API.</li>
+<li><code>project_evf_eligibility_v1plus.md</code> — EVF requires age 40+; V0 in EVF data = corruption, hard halt.</li>
+<li><code>feedback_be_the_architect.md</code> — User delegated all technical decisions; ask only about domain-specific requirements.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="status-phase-5-5-deliverables-in-progress-2026-05-03">Status — Phase 5.5 deliverables (in progress 2026-05-03)</h2>
+<p>Phase 5.5 closes the remaining gaps preventing CERT-only operation:</p>
+<ol>
+<li>
+<p><strong>Legacy <code>process_xml_file</code> direct-write retired</strong> — rewritten as a thin shim over <code>run_pipeline</code> + DraftStore so email-arrived XML produces drafts identical to manual <code>phase5_runner</code>. The &quot;LEGACY&quot; comment block in <a href="../../python/pipeline/orchestrator.py">orchestrator.py</a> is removed. <em>(Pending implementation; plan-test-ID 5.7.)</em></p>
+</li>
+<li>
+<p><strong>Verdict <code>.md</code> persisted to Supabase Storage</strong> — new bucket <code>staging-reports</code> with per-event subfolder structure (<code>{event_code}/full.md</code> replace-on-regen + <code>{event_code}/deltas/{ts}.md</code> append-only). Backed by new modules <code>python/pipeline/storage_md.py</code> + <code>python/pipeline/md_writer.py</code>. ADR-058. Plan-test-IDs 5.5, 5.6, 5.12.</p>
+</li>
+<li>
+<p><strong>Telegram document delivery</strong> — <code>TelegramNotifier.send_document</code> extends <a href="../../python/pipeline/notifications.py">notifications.py</a> with multipart/form-data POST to Bot API <code>sendDocument</code>. Higher-level <code>send_staging_report(kind='full'|'delta', extras=...)</code> wraps with structured caption. ADR-059. Plan-test-ID 5.9.</p>
+</li>
+<li>
+<p><strong>EVF parity sweep emits delta-only <code>.md</code></strong> — <code>python/pipeline/parity_delta.py</code> renders before→after diff tables; never overwrites <code>full.md</code> from sweep. ADR-060. Plan-test-ID 5.8.</p>
+</li>
+<li>
+<p><strong>LOCAL parity preserved</strong> — all new infra gated to CERT/PROD via <code>--md-target</code> CLI flag (default <code>local</code>) and <code>VITE_DEPLOY_ENV</code> env switch. LOCAL operator continues today's filesystem + shell-rerun habit unchanged. ADR-061.</p>
+</li>
+<li>
+<p><strong>Alias triage UX overhaul</strong> — FencerAliasManager sorts unreviewed-aliases-first with amber highlight; modal-based &quot;Create new fencer&quot; replaces window.prompt chain; cascade tournament list surfaced post-mutation via extended RPC return shape (<code>id_tournaments[]</code> + <code>tournament_labels[]</code>). Migrations <code>20260503000001</code> + <code>20260503000002</code>. Plan-test-IDs 5.1–5.4 (vitest, pending), 5.10, 5.11.</p>
+</li>
+<li>
+<p><strong>CERT command surface via Telegram</strong> — 4 new GAS commands <code>/regen</code>, <code>/stage</code>, <code>/parity</code>, <code>/verdict</code> + extended <code>/help</code>. Edge-fn <code>dispatch-workflow</code> allowlist gains <code>phase5-event-runner.yml</code> + <code>regen-report.yml</code>. ADR-061. <em>(GAS extension pending.)</em></p>
+</li>
+</ol>
+<p><strong>Shipped 2026-05-03 (this date):</strong></p>
+<ul>
+<li>✅ Migrations <code>supabase/migrations/20260503000001_phase5_alias_view_with_context.sql</code> (+8 pgTAP), <code>20260503000002_phase5_alias_rpcs_return_tournaments.sql</code> (+8), <code>20260503000003_phase5_staging_reports_bucket.sql</code> (+5; LOCAL skips when storage disabled).</li>
+<li>✅ pgTAP suites <code>35_alias_view_context.sql</code>, <code>36_alias_rpcs_return_tournaments.sql</code>, <code>37_staging_reports_bucket_rls.sql</code> — all green on LOCAL.</li>
+<li>✅ Python modules <code>storage_md.py</code>, <code>md_writer.py</code>, <code>parity_delta.py</code> — all GREEN (24 new pytest assertions).</li>
+<li>✅ <code>TelegramNotifier.send_document</code> + <code>send_staging_report</code> extension — GREEN (6 new pytest assertions).</li>
+<li>✅ GH workflows <code>.github/workflows/regen-report.yml</code> + <code>.github/workflows/phase5-event-runner.yml</code> (security-hardened: env vars throughout, regex-validated event_code).</li>
+<li>✅ <code>supabase/functions/dispatch-workflow/index.ts</code> ALLOWED_WORKFLOWS extended (2 → 4 entries).</li>
+<li>✅ Test totals: pgTAP 508 → 543 (+35); pytest +30 (24 new + 6 Telegram); vitest unchanged (pending).</li>
+<li>✅ ADRs 058/059/060/061 written with <code>Status: Proposed</code>.</li>
+<li>✅ <code>doc/claude/planning.md</code> written and referenced from CLAUDE.md (canonicalises planning rules).</li>
+</ul>
+<p><strong>Pending (next sessions):</strong></p>
+<ul>
+<li>Frontend alias UI (Workstream 4): CreateFencerFromAliasModal.svelte, FencerAliasManager.svelte sort/highlight/auto-expand, cascade banner in App.svelte.</li>
+<li><code>process_xml_file</code> rewrite (Workstream 2): the biggest refactor; plan-test-ID 5.7 will assert email path now produces drafts (not direct writes).</li>
+<li><code>phase5_runner</code> / <code>phase5_report</code> CLI extensions: <code>--md-target</code> + <code>--send-telegram</code> flags wired into the existing inline <code>Path.write_text()</code> paths.</li>
+<li><code>evf_parity_sweep.py</code> wiring: build ParityChange list → call <code>parity_delta.render</code> → upload + Telegram.</li>
+<li>GAS Telegram commands + <code>/help</code> rewrite.</li>
+<li>Ops manual update + LOCAL/CERT smoke runs.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="049-joint-pool-split-flag.html">← ADR-049: Joint-pool split flag on tbl_tournament</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="052-url-data-validation.html">→ ADR-052: URL→data validation enforcement at Stage 7</a></nav>
+<footer class="foot">Generated from <code>050-unified-ingestion-pipeline.md</code> · source SHA-256 <code>e87d88a35994756b533ebb2c49dfd7685bf0dcd50f76b4b85e0589b4fffbf46a</code></footer>
+</div></body></html>

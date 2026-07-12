@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="045-engine-selector-default-flip.md">
+<meta name="adr-source-sha256" content="024888f9a8401fa2d00656fb7227b67a866ce5e59ba7d672f3ef6f46ce722d30">
+<title>ADR-045 · Carry-over engine selectable per-season via admin UI; default flipped to FK</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 045</p><h1>Carry-over engine selectable per-season via admin UI; default flipped to FK</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (Phase 3a backend implemented 2026-04-26; UI dropdown lands in Phase 3b)</dd></div><div><dt>Date</dt><dd class="">2026-04-26 <strong>Relates to:</strong> ADR-042 (engine dispatcher — amended by this ADR), ADR-044 (Phase 3 wizard)</dd></div><div><dt>Source</dt><dd class=""><code>045-engine-selector-default-flip.md</code></dd></div><div><dt>Length</dt><dd class="">82 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (Phase 3a backend implemented 2026-04-26; UI dropdown lands in Phase 3b)
+<strong>Date:</strong> 2026-04-26
+<strong>Relates to:</strong> ADR-042 (engine dispatcher — amended by this ADR), ADR-044 (Phase 3 wizard)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-flip-the-column-default-for-new-rows">1. Flip the column DEFAULT for new rows</a></li><li class="depth-3"><a href="#2-engine-selection-moves-into-scoringconfigeditor-as-a-dropdown">2. Engine selection moves into ScoringConfigEditor as a dropdown</a></li><li class="depth-3"><a href="#3-reachability-rule-past-complete-seasons-hide-the-button">3. Reachability rule — past-complete seasons hide the 🎯 button</a></li><li class="depth-3"><a href="#why-inside-scoringconfigeditor-and-not-on-the-season-form">Why inside ScoringConfigEditor and not on the season form?</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#migration-test-references">Migration &amp; test references</a></li><li class="depth-2"><a href="#future-work">Future work</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>ADR-042 introduced the strangler-fig dispatcher with two engines (<code>EVENT_CODE_MATCHING</code> legacy, <code>EVENT_FK_MATCHING</code> Phase 1B). The column DEFAULT was deliberately left at <code>EVENT_CODE_MATCHING</code> so that no existing season changed behavior on Phase 1A/1B deploy. Admin would opt seasons in once each was verified safe via <code>fn_compare_carryover_engines</code>.</p>
+<p>Two things have changed since then:</p>
+<ol>
+<li><strong>The FK engine has been verified safe.</strong> Phase 1B's deploy (2026-04-26) ran A/B comparison on SPWS-2025-2026; the only deltas were corrections (slug PEWs that legacy mis-attributed via prefix collision; PEW10 with no current-season slot; IMEW carrying biennially via FK rather than via prefix-string heuristic). No regressions.</li>
+<li><strong>Phase 3's <code>fn_init_season</code> now creates skeletons with <code>id_prior_event</code> linked.</strong> New seasons going forward will have a complete FK chain by construction. Without flipping the default, every greenfield season would route to the legacy engine despite having a perfect FK substrate sitting unused.</li>
+</ol>
+<p>Plus the runbook §5 (&quot;flip via SQL&quot;) flow — admin SSH-ing into psql to <code>UPDATE tbl_season SET enum_carryover_engine = ...</code> — is exactly the kind of friction Phase 3 is supposed to eliminate.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Two changes, made in the same Phase 3a migration:</p>
+<h3 id="1-flip-the-column-default-for-new-rows">1. Flip the column DEFAULT for new rows</h3>
+<pre><code class="language-sql">ALTER TABLE tbl_season
+  ALTER COLUMN enum_carryover_engine
+    SET DEFAULT 'EVENT_FK_MATCHING'::enum_event_carryover_engine;
+</code></pre>
+<p>Existing rows are <strong>not</strong> rewritten. Pre-Phase-3 seasons keep whatever value they currently hold (almost always <code>EVENT_CODE_MATCHING</code>). Admin opts each one in via the UI dropdown.</p>
+<h3 id="2-engine-selection-moves-into-scoringconfigeditor-as-a-dropdown">2. Engine selection moves into ScoringConfigEditor as a dropdown</h3>
+<p>A new Section 4b &quot;🔀 Silnik carry-over&quot; between Intake and Rules sections. Dropdown lists <strong>all values</strong> of <code>enum_event_carryover_engine</code> dynamically (via PostgREST enum introspection or a hard-coded list synced from the enum) so future engines (<code>EVENT_CITY_MATCHING</code>, etc.) automatically appear.</p>
+<p>Per-engine descriptive hint + (where applicable) deprecation tag:</p>
+<ul>
+<li><code>EVENT_FK_MATCHING — default (FK based, ADR-042/043)</code> — preferred</li>
+<li><code>EVENT_CODE_MATCHING — (legacy) prefix-string</code> — kept for compatibility, has the <code>(legacy)</code> tag</li>
+</ul>
+<p>Save flow: ScoringConfigEditor's <code>onsave</code> payload gains an <code>engine</code> field; App.svelte's handler patches <code>tbl_season.enum_carryover_engine</code> separately from the <code>tbl_scoring_config</code> patch (instant flip, no migration needed).</p>
+<h3 id="3-reachability-rule-past-complete-seasons-hide-the-button">3. Reachability rule — past-complete seasons hide the 🎯 button</h3>
+<p>To avoid an admin accidentally flipping the engine on a finalised historical season, the <code>🎯 Konfiguracja punktacji</code> button is rendered only on <strong>future</strong> + <strong>active</strong> seasons. Past-complete (<code>dt_end &lt; today</code>) seasons hide the button entirely. The existing <code>readonly</code> prop on <code>ScoringConfigEditor</code> stays as defense-in-depth in case the editor is reached via a bookmarked URL.</p>
+<h3 id="why-inside-scoringconfigeditor-and-not-on-the-season-form">Why inside ScoringConfigEditor and not on the season form?</h3>
+<p>The season form is the wizard's Step 1 — used only at season creation. Engine flips happen throughout a season's life (e.g. flipping CODE→FK after slug-event cleanup). ScoringConfigEditor is reachable from every active/future season's card, so the engine dropdown is reachable any time.</p>
+<p>The wizard's Step 2 embeds <code>ScoringConfigEditor</code>, so the engine choice for a brand-new season is implicitly carried via the editor's <code>onsave</code> payload — Step 1 stays clean.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Flip the default and rewrite all existing rows in the same migration.</strong> Reject — silent behavior change on existing seasons would invalidate finalised ranklists and contradict ADR-042's &quot;per-season opt-in&quot; guarantee. Phase 1B's A/B verification is per-season, not global.</li>
+<li><strong>Keep CODE as default; require explicit engine choice on every wizard run.</strong> Reject — the wizard's whole point is &quot;good defaults&quot;; making admin choose CODE-or-FK every time is friction without value (FK is now strictly better for new seasons because skeletons have FKs by construction).</li>
+<li><strong>Hard-code only <code>EVENT_FK_MATCHING</code> in the UI; remove the dropdown.</strong> Reject — the strangler-fig design's whole value is being able to ship new engines without rewriting existing ones. A dropdown is the right abstraction; the UI should grow with the enum.</li>
+<li><strong>Engine dropdown on the season identity form.</strong> Reject — see &quot;Why inside ScoringConfigEditor&quot; above.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>Positive:</strong></p>
+<ul>
+<li>Greenfield seasons get the correct engine for free. No <code>psql</code> step.</li>
+<li>Admin can flip engine on existing seasons via UI — runbook §5 (&quot;flip via SQL&quot;) is superseded.</li>
+<li>Past-complete seasons are protected from accidental engine flips by the visibility rule.</li>
+<li>The dropdown is extensible by design: adding a new engine = <code>ALTER TYPE … ADD VALUE</code> + new engine function + new i18n key. UI auto-renders.</li>
+</ul>
+<p><strong>Negative / accepted costs:</strong></p>
+<ul>
+<li>Two writes for an engine flip (scoring config patch + season patch). Acceptable; both are sub-ms.</li>
+<li><code>ScoringConfigEditor</code>'s <code>onsave</code> payload widens to include a non-scoring field. Acceptable; the editor already passes <code>id_season</code> which is also non-scoring metadata.</li>
+<li>Past-complete season hidden button = admin can't open the editor at all on those seasons. Acceptable since post-finalisation reads happen through CalendarView/Ranklist, not the editor.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="migration-test-references">Migration &amp; test references</h2>
+<ul>
+<li>Migration: <a href="../../supabase/migrations/20260428000001_phase3_schema_extensions.sql"><code>20260428000001_phase3_schema_extensions.sql</code></a></li>
+<li>Tests: <a href="../../supabase/tests/19_phase3_wizard.sql"><code>supabase/tests/19_phase3_wizard.sql</code></a> — ph3.22a (DEFAULT is FK), ph3.22b (<code>fn_create_season_with_skeletons</code> honors <code>p_carryover_engine</code>), ph3.22c (existing rows preserved)</li>
+<li>Phase 3b vitest assertions to come: ph3.37a–e (dropdown lists all enum values, default-FK-on-new, legacy tag on CODE, <code>onsave</code> payload patches season separately, existing season's editor shows current engine), ph3.37f–g (button visibility rule)</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="future-work">Future work</h2>
+<ul>
+<li><strong>Phase 3b</strong> lands the dropdown in <code>ScoringConfigEditor.svelte</code> + 🎯 button visibility guard in <code>SeasonManager.svelte</code> + i18n keys (<code>sc_section_engine</code>, <code>sc_engine_label</code>, <code>sc_engine_opt_*</code>, <code>sc_engine_hint_*</code>).</li>
+<li><strong>Eventually</strong>, when no live season uses <code>EVENT_CODE_MATCHING</code>, drop the legacy engine functions and remove the dropdown's CODE option. The dropdown's extensibility supports this — just remove an enum value.</li>
+<li><strong>Audit-log integration</strong>: engine flips should fire an <code>tbl_audit_log</code> entry (changing engine alters reported scores). The existing <code>trg_audit_season</code> trigger covers UPDATEs on <code>tbl_season</code>, so this is already in place; verify the audit row captures <code>enum_carryover_engine</code> in the JSONB diff.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="044-phase3-wizard.html">← ADR-044: Phase 3 Admin UI + Season-Init Wizard (atomic transaction model)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="046-pew-weapon-suffix.html">→ ADR-046: PEW event codes carry weapon-letter suffix; one event = one physical weekend</a></nav>
+<footer class="foot">Generated from <code>045-engine-selector-default-flip.md</code> · source SHA-256 <code>024888f9a8401fa2d00656fb7227b67a866ce5e59ba7d672f3ef6f46ce722d30</code></footer>
+</div></body></html>

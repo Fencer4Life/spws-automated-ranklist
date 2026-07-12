@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="033-fencer-gender-identity-enhancements.md">
+<meta name="adr-source-sha256" content="301828c8d19319d319045cc0b6d160d70bdf3046251a3a449a162b3e79d5169a">
+<title>ADR-033 · Fencer Gender Column + Identity Manager Enhancement</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 033</p><h1>Fencer Gender Column + Identity Manager Enhancement</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented</dd></div><div><dt>Date</dt><dd class="">2026-04-11</dd></div><div><dt>Source</dt><dd class=""><code>033-fencer-gender-identity-enhancements.md</code></dd></div><div><dt>Length</dt><dd class="">61 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Implemented<br />
+<strong>Date:</strong> 2026-04-11<br />
+<strong>Source:</strong> FR-07, FR-56, FR-92</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives">Alternatives</a></li><li class="depth-2"><a href="#related-adrs">Related ADRs</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The <code>tbl_fencer</code> table had no gender column. Gender was only tracked at the tournament level (<code>tbl_tournament.enum_gender</code>). This caused two problems:</p>
+<ol>
+<li><strong>No gender validation</strong> — a woman could appear in men's rankings (and vice versa) with no system-level guard. This happened in practice: a woman's result in a men's V1 sabre tournament appeared in the men's sabre ranklist.</li>
+<li><strong>Limited Identity Manager UI</strong> — the admin view only allowed approving PENDING matches (not AUTO_MATCHED), &quot;Create new fencer&quot; was restricted to UNMATCHED domestic tournaments, there was no way to reassign a match to a different existing fencer, and the auto-parse name split had no form for correction.</li>
+</ol>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<ol>
+<li>
+<p><strong>Add <code>enum_gender</code> to <code>tbl_fencer</code></strong> — nullable column using existing <code>enum_gender_type</code>. Backfilled from tournament participation via majority vote (fencer gets the gender of the tournament type they appeared in most). The fencer's gender in <code>tbl_fencer</code> is the <strong>authoritative source</strong> and must never be overwritten by import processes.</p>
+</li>
+<li>
+<p><strong>Widen identity RPCs</strong> — <code>fn_approve_match</code>, <code>fn_dismiss_match</code>, and <code>fn_create_fencer_from_match</code> now accept <code>AUTO_MATCHED</code> status in addition to <code>PENDING</code>/<code>UNMATCHED</code>.</p>
+</li>
+<li>
+<p><strong>Add <code>fn_update_fencer_gender</code> RPC</strong> — allows admin to set/correct fencer gender.</p>
+</li>
+<li>
+<p><strong>Update <code>fn_create_fencer_from_match</code></strong> — accepts optional <code>p_gender</code> parameter, stored on the new fencer.</p>
+</li>
+<li>
+<p><strong>Redesign Identity Manager UI</strong> as card-based layout with inline edit forms:</p>
+<ul>
+<li><strong>Collapsed view</strong>: each candidate is a compact card showing scraped name, tournament code, confidence badge, suggested fencer, status, gender mismatch warning</li>
+<li><strong>Expanded edit form</strong> (click to open): single fencer dropdown with three choices:
+<ul>
+<li><code>✓ Suggested match</code> — pre-fills fields from matched fencer</li>
+<li><code>➕ Create new fencer</code> — pre-fills from scraped name</li>
+<li><code>🔍 Search other fencers</code> — shows searchable fencer list, selecting pre-fills fields</li>
+</ul>
+</li>
+<li><strong>All fields always editable</strong>: Surname (forced ALL CAPS), First name, Gender (M/F), Birth year. Dropdown pre-fills but admin can always type by hand.</li>
+<li><strong>Surname forced ALL CAPS</strong> via CSS <code>text-transform</code> + <code>.toUpperCase()</code> on save</li>
+<li><strong>Save logic</strong>: if existing fencer selected → approve/assign + update fencer data if changed; if &quot;Create new&quot; → create new fencer with form values</li>
+<li><strong>Gender mismatch warning</strong> when fencer gender ≠ tournament gender</li>
+<li><strong>Error messages</strong> displayed inline in the Identity Manager view</li>
+<li><strong>Dismiss/Cancel</strong> buttons alongside Save</li>
+<li><strong>Read-only</strong> for 100% confidence + APPROVED rows (no edit button)</li>
+<li>Mockup: <code>doc/mockups/identity-edit-form.html</code></li>
+</ul>
+</li>
+</ol>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives">Alternatives</h2>
+<ul>
+<li><strong>Add gender as NOT NULL</strong> — rejected because existing fencers lack gender data; nullable allows gradual backfill.</li>
+<li><strong>Derive gender at query time from tournament</strong> — rejected because fencer gender should be authoritative (see ADR-034 for cross-gender tournament scenarios).</li>
+<li><strong>Server-side fencer search</strong> — deferred; client-side filtering with max 50 displayed results is sufficient for current data volume.</li>
+<li><strong>Separate modal dialogs for create/assign/approve</strong> — replaced with unified inline edit form per card; modals were confusing with too many buttons.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="related-adrs">Related ADRs</h2>
+<ul>
+<li><strong>ADR-003</strong> (Identity by FK) — gender is a new attribute on the fencer entity, supplementing the FK-based identity model.</li>
+<li><strong>ADR-014</strong> (Delete-Reimport Strategy) — reimport does not touch <code>tbl_fencer.enum_gender</code>; the fencer's gender is authoritative and preserved across reimports.</li>
+<li><strong>ADR-024</strong> (Combined Category Splitting) — analogous problem for age categories; this ADR addresses gender dimension.</li>
+<li><strong>ADR-025</strong> (Event-Centric Ingestion + Telegram Admin) — the ingestion pipeline creates match candidates but never sets fencer gender; gender is admin-managed only.</li>
+<li><strong>ADR-034</strong> (Cross-Gender Tournament Scoring) — documents the scoring rules for cross-gender participation; depends on this ADR's gender column for mismatch detection.</li>
+<li><strong>ADR-035</strong> (Fencers View with Tabs) — gender edit also available in Birth year review tab for correcting missing/wrong gender values alongside birth year confirmation.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><code>tbl_fencer</code> gains <code>enum_gender</code> column (nullable)</li>
+<li><code>vw_match_candidates</code> returns <code>enum_tournament_gender</code> and <code>enum_fencer_gender</code></li>
+<li>Gender mismatches are now visible in the admin UI for manual review</li>
+<li>Two new frontend components: <code>CreateFencerModal.svelte</code>, <code>FencerSearchModal.svelte</code></li>
+<li>Test count: pgTAP 246→254 (+8), vitest 229→241 (+12)</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="032-drilldown-mobile-card-layout.html">← ADR-032: Drilldown Mobile Card Layout</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="034-cross-gender-tournament-scoring.html">→ ADR-034: Cross-Gender Tournament Scoring</a></nav>
+<footer class="foot">Generated from <code>033-fencer-gender-identity-enhancements.md</code> · source SHA-256 <code>301828c8d19319d319045cc0b6d160d70bdf3046251a3a449a162b3e79d5169a</code></footer>
+</div></body></html>

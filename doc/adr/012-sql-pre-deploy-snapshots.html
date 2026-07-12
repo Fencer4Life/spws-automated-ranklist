@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="012-sql-pre-deploy-snapshots.md">
+<meta name="adr-source-sha256" content="99e1b1a7f9690afb8ec186b24c5407fa57067b13f1b00fc7d95c4035842e65dc">
+<title>ADR-012 · SQL-Level Pre-Deploy Snapshots for PROD</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 012</p><h1>SQL-Level Pre-Deploy Snapshots for PROD</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="deferred">Deferred</dd></div><div><dt>Date</dt><dd class="">2026-03-23 (M7)</dd></div><div><dt>Source</dt><dd class=""><code>012-sql-pre-deploy-snapshots.md</code></dd></div><div><dt>Length</dt><dd class="">85 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Deferred
+<strong>Date:</strong> 2026-03-23 (M7)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#deferred-design-summary">Deferred design summary</a></li><li class="depth-3"><a href="#weaknesses-identified-during-design">Weaknesses identified during design</a></li><li class="depth-3"><a href="#storage-estimate-30-categories-5-seasons">Storage estimate (30 categories × 5 seasons)</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The three-tier release pipeline (ADR-011) uses forward-only rollback — corrective
+migrations pushed through the pipeline. This covers schema issues but not data
+corruption caused by migrations (DELETE, UPDATE with wrong values, etc.). A mechanism
+was designed to restore PROD data to its pre-migration state.</p>
+<p>Key constraint: the Supabase Management API only supports running SQL queries — no
+pg_dump, no PITR, no filesystem access.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p><strong>Deferred.</strong> After thorough design and analysis, the snapshot mechanism was deemed
+too complex relative to its practical value:</p>
+<ul>
+<li>Most migrations in this project change the schema (new functions, views, columns),
+which blocks rollback entirely via the fingerprint gate</li>
+<li>The mechanism is primarily valuable for data-only migrations, which are rare
+outside the ingestion pipeline (M7)</li>
+<li>Forward-only corrective migrations (ADR-011) remain sufficient for the POC phase</li>
+</ul>
+<p>The full technical design is preserved below for future implementation if data-only
+migrations become common.</p>
+<h3 id="deferred-design-summary">Deferred design summary</h3>
+<p>Automated SQL-level snapshots in a <code>_backup</code> schema before each PROD migration deploy.
+Snapshots are data-only (no schema state). Restorability gated by schema fingerprint:</p>
+<ul>
+<li><strong>Data-only migration</strong> (fingerprint unchanged): snapshot marked restorable</li>
+<li><strong>Schema-changing migration</strong> (fingerprint changed): snapshot marked non-restorable</li>
+</ul>
+<p>Key mechanisms:</p>
+<ul>
+<li><code>_snapshot_registry</code> table in <code>_backup</code> schema with pre_fingerprint, restorable flag, tables JSONB</li>
+<li>Dynamic table discovery (all public BASE TABLEs except tbl_audit_log)</li>
+<li>Restore as single SQL statement (Management API creates new connection per call — session_replication_role doesn't persist)</li>
+<li>Concurrency group shared between restore.yml and release.yml</li>
+<li>Partial snapshot cleanup via trap on failure</li>
+<li>On-demand snapshots via workflow_dispatch</li>
+<li>Retention: last 3 snapshots (~4.5-5 MB each at 30 categories × 5 seasons)</li>
+<li>Safety layers: CONFIRM-RESTORE input, production environment approval, restorable flag check</li>
+</ul>
+<h3 id="weaknesses-identified-during-design">Weaknesses identified during design</h3>
+<ol>
+<li><strong>Narrow restore window:</strong> Schema changes (most migrations) mark ALL snapshots
+non-restorable. Effective pool is 0-1 usable snapshots most of the time.</li>
+<li><strong>No transactional consistency:</strong> Each CREATE TABLE AS SELECT is a separate API call.
+Concurrent writes produce inconsistent cross-table snapshots.</li>
+<li><strong>No pre-restore safety net:</strong> Restore overwrites current data with no undo.</li>
+<li><strong>No CERT snapshots:</strong> CERT auto-deploys with no rollback capability.</li>
+<li><strong>No verification:</strong> Snapshot correctness not validated after creation.</li>
+<li><strong>NULL restorable flag:</strong> If mark-snapshot-restorable fails, snapshot is stuck as
+NULL (unknown) forever.</li>
+<li><strong>Management API rate limits:</strong> 20+ API calls per snapshot at scale.</li>
+<li><strong>No alerting:</strong> No notification when all snapshots become non-restorable.</li>
+</ol>
+<h3 id="storage-estimate-30-categories-5-seasons">Storage estimate (30 categories × 5 seasons)</h3>
+<p>Per snapshot: ~4.5-5 MB (tbl_result dominates at 70%)
+3 snapshots: ~13-15 MB (~2.5-3% of Supabase free tier 500 MB)</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li><strong>pg_dump</strong> — Management API cannot run pg_dump. No filesystem access.</li>
+<li><strong>PITR (Point-in-Time Recovery)</strong> — Requires Supabase Pro plan ($25/mo).
+Restores entire database (not selective). Overkill for POC.</li>
+<li><strong>Blue-green (credential swap)</strong> — 2x cost (two Supabase projects). Operational
+complexity for a single-operator system.</li>
+<li><strong>Application-level backup</strong> — Custom API endpoint. Adds attack surface.
+Requires service_role key in client — security risk.</li>
+<li><strong>Additive-safe restore (column matching)</strong> — Intersection of backup/current
+columns for INSERT. Produces partial state — unpredictable results.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Forward-only corrective migrations remain the only rollback mechanism (ADR-011)</li>
+<li>No additional complexity, scripts, or workflows to maintain</li>
+<li>Data corruption from migrations requires manual investigation + corrective SQL</li>
+<li>If data-only migrations become common (M7 ingestion pipeline), revisit this ADR</li>
+<li>Zero implementation cost — design preserved for future reference</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="011-artifact-release-pipeline.html">← ADR-011: Three-Tier Artifact Release Pipeline with Schema Fingerprinting</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="013-poc-mvp-transition.html">→ ADR-013: POC-to-MVP Transition</a></nav>
+<footer class="foot">Generated from <code>012-sql-pre-deploy-snapshots.md</code> · source SHA-256 <code>99e1b1a7f9690afb8ec186b24c5407fa57067b13f1b00fc7d95c4035842e65dc</code></footer>
+</div></body></html>

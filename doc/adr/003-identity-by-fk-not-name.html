@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="003-identity-by-fk-not-name.md">
+<meta name="adr-source-sha256" content="99df38c9a648bc3f202dffe82c6e329f40fd97b6a02bfe1386b080f95d57b3b2">
+<title>ADR-003 · Identity by FK, not by Name</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 003</p><h1>Identity by FK, not by Name</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2025-03-02 (M4)</dd></div><div><dt>Source</dt><dd class=""><code>003-identity-by-fk-not-name.md</code></dd></div><div><dt>Length</dt><dd class="">23 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2025-03-02 (M4)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The legacy Excel workbook uses XLOOKUP on fencer name strings to cross-reference results across tournament sheets. This breaks silently when names have typos, diacritical variations, or format differences between sources.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Replace name-based lookups with an <code>id_fencer</code> foreign key in <code>tbl_result</code> pointing to <code>tbl_fencer</code>. A fuzzy matching pipeline (RapidFuzz <code>token_sort_ratio</code>) resolves scraped names to fencer IDs at import time.</p>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Fencer identity is a stable numeric ID, not a fragile string</li>
+<li><code>tbl_fencer</code> is the single source of truth for identity (270 SPWS members)</li>
+<li>Name corrections in <code>tbl_fencer</code> don't break existing <code>id_fencer</code> links</li>
+<li>Ranking views join on integer FK — fast and unambiguous</li>
+<li><code>tbl_result.id_fencer</code> is nullable: scrapers insert with NULL, the matcher links afterwards</li>
+<li><code>tbl_result.txt_scraped_name</code> preserves the original scraped name for audit</li>
+<li>Unmatched names create <code>tbl_match_candidate</code> rows for admin review</li>
+<li>Trade-off: requires the identity resolution pipeline (M4) as a prerequisite for scoring</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="002-calculate-once-store-forever.html">← ADR-002: Calculate Once, Store Forever</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="004-single-admin-account.html">→ ADR-004: Single Admin Account for POC</a></nav>
+<footer class="foot">Generated from <code>003-identity-by-fk-not-name.md</code> · source SHA-256 <code>99df38c9a648bc3f202dffe82c6e329f40fd97b6a02bfe1386b080f95d57b3b2</code></footer>
+</div></body></html>

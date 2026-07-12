@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="061-local-parity-and-telegram-commands.md">
+<meta name="adr-source-sha256" content="275eff0dd24496b3a8e21e41ae3a85f1849decf95bd0674a3461d02777429938">
+<title>ADR-061 · LOCAL operator workflow preserved verbatim; Telegram-driven CERT command surface</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 061</p><h1>LOCAL operator workflow preserved verbatim; Telegram-driven CERT command surface</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Proposed</dd></div><div><dt>Date</dt><dd class="">2026-05-03</dd></div><div><dt>Source</dt><dd class=""><code>061-local-parity-and-telegram-commands.md</code></dd></div><div><dt>Length</dt><dd class="">93 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed
+<strong>Date:</strong> 2026-05-03
+<strong>Amends:</strong> ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-041 (Edge function dispatch), ADR-050 (Unified Ingestion Pipeline).</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#local-workflow-guarantee-unchanged-from-today">LOCAL workflow guarantee (unchanged from today)</a></li><li class="depth-3"><a href="#cert-command-surface-telegram-driven">CERT command surface — Telegram-driven</a></li><li class="depth-3"><a href="#dispatch-workflow-allowlist-extension">dispatch-workflow allowlist extension</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-3"><a href="#a-build-local-parity-via-vite-shell-spawn-middleware">A. Build LOCAL parity via vite shell-spawn middleware</a></li><li class="depth-3"><a href="#b-lift-local-to-use-storage-too">B. Lift LOCAL to use Storage too</a></li><li class="depth-3"><a href="#c-skip-telegram-commands-require-admin-ui-for-all-cert-operations">C. Skip Telegram commands; require admin-UI for all CERT operations</a></li><li class="depth-3"><a href="#d-hardcode-workflow-names-in-gas-no-edge-fn-dispatch">D. Hardcode workflow names in GAS (no edge fn dispatch)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#status-deliverables-proposed-not-yet-shipped">Status — deliverables (proposed, not yet shipped)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Two requirements collided during Phase 5.5 planning:</p>
+<ol>
+<li>
+<p><strong>LOCAL parity</strong> — the operator is mid-rebuild on LOCAL (GP5/GP6 of 2023-2024 of the rebuild). All new infrastructure (Storage bucket, Telegram delivery, edge-function regen, GH workflow dispatch) must NOT change the LOCAL operator workflow they have today.</p>
+</li>
+<li>
+<p><strong>CERT operability without LOCAL</strong> — for season-current ingestion (June 2026 onwards), the operator works against CERT only. They have no local checkout of the repo, no Python venv, no shell access. They need to drive ingestion + triage + verdict re-fetch entirely from a phone (Telegram) and an admin UI.</p>
+</li>
+</ol>
+<p>The first requirement says: keep LOCAL filesystem-based, no Telegram, no Storage. The second says: build a rich CERT-side command surface.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="local-workflow-guarantee-unchanged-from-today">LOCAL workflow guarantee (unchanged from today)</h3>
+<p>After this plan ships, LOCAL operators continue to:</p>
+<ul>
+<li>Run <code>python -m python.tools.phase5_runner --event-code &lt;X&gt;</code> from shell against LOCAL DB.</li>
+<li>Get <code>.md</code> written to <code>doc/staging/&lt;X&gt;.md</code> via <code>Path.write_text()</code> (existing line 492 behaviour).</li>
+<li>No Telegram fired (no <code>TELEGRAM_BOT_TOKEN</code> env var on LOCAL by default).</li>
+<li>No Storage upload (<code>config.toml</code> keeps storage disabled).</li>
+<li>Open admin UI on <code>localhost:5173</code> against LOCAL Supabase. Aliases tab gets the additive UI improvements (unreviewed-first sort, modal, cascade banner) — these are pure frontend + RPC changes and work against any DB.</li>
+<li>Manually rerun <code>python -m python.tools.phase5_report --event-code &lt;X&gt;</code> from shell to refresh the <code>.md</code> after a triage session — exactly the habit they have today.</li>
+</ul>
+<p><strong>No vite shell-spawn middleware</strong> is built. Reasons: (a) it's not how the operator works today, (b) shell-spawning Python from a Node dev server has PYTHONPATH/venv-activation traps, (c) if LOCAL admin-UI parity is later wanted, it can be added in a focused follow-up without changing this plan.</p>
+<p><code>--md-target</code> CLI flag defaults to <code>local</code> (preserving today's filesystem behaviour). CI workflows pass <code>--md-target=storage</code> explicitly.</p>
+<h3 id="cert-command-surface-telegram-driven">CERT command surface — Telegram-driven</h3>
+<p>The GAS at <code>scripts/gas_email_ingestion.js</code> already polls Telegram for admin commands (per ADR-025). This ADR extends the command set with <strong>4 new operator commands</strong> that drive the CERT-side automation without admin-UI navigation:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/regen &lt;event_code&gt;</code></td>
+<td>Triggers <code>regen-report.yml</code> workflow → re-renders <code>full.md</code> from current DB state, uploads to Storage, sends Telegram document. Useful when operator wants a fresh verdict without doing an alias mutation.</td>
+</tr>
+<tr>
+<td><code>/stage &lt;event_code&gt;</code></td>
+<td>Triggers <code>phase5-event-runner.yml</code> workflow → runs the Phase-5 pipeline against the URL on <code>tbl_event.url_results</code>. Equivalent to the admin-UI &quot;Stage event&quot; button.</td>
+</tr>
+<tr>
+<td><code>/parity &lt;event_code&gt;</code></td>
+<td>Triggers a one-off EVF parity check for that single event (extends existing <code>evf-parity-sweep.yml</code> to accept optional <code>event_code</code> input). Sends delta <code>.md</code> if drift; replies &quot;no drift&quot; otherwise.</td>
+</tr>
+<tr>
+<td><code>/verdict &lt;event_code&gt;</code></td>
+<td>Fetches <code>staging-reports/{event_code}/full.md</code> from Storage and re-sends as a Telegram document. Useful if operator deleted the original message or wants to re-import to Obsidian.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong><code>/help</code> extension</strong> — the help text is rewritten to list all commands (existing + new) plus describes the auto-delivered documents the operator should expect (full.md after ingest/regen, delta.md after EVF sweeps).</p>
+<h3 id="dispatch-workflow-allowlist-extension">dispatch-workflow allowlist extension</h3>
+<p><code>supabase/functions/dispatch-workflow/index.ts</code> ALLOWED_WORKFLOWS gains:</p>
+<ul>
+<li><code>phase5-event-runner.yml</code></li>
+<li><code>regen-report.yml</code></li>
+</ul>
+<p>(Existing entries: <code>populate-urls.yml</code>, <code>scrape-tournament.yml</code>.)</p>
+<p>The same edge function is invoked by both the admin UI (&quot;Stage event&quot; button on event detail panel) and the GAS Telegram dispatcher (via the existing <code>triggerGitHubWorkflow</code> GAS helper). Single allowlist enforcement point.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<h3 id="a-build-local-parity-via-vite-shell-spawn-middleware">A. Build LOCAL parity via vite shell-spawn middleware</h3>
+<p>Rejected for this ADR. Brittle pattern, not how operator works today, can be added later. Captured as future ADR-062 (deferred).</p>
+<h3 id="b-lift-local-to-use-storage-too">B. Lift LOCAL to use Storage too</h3>
+<p>Rejected: requires enabling storage in <code>config.toml</code>, disrupts in-flight rebuild, increases LOCAL setup complexity for negligible benefit (operator reads <code>doc/staging/&lt;X&gt;.md</code> directly today).</p>
+<h3 id="c-skip-telegram-commands-require-admin-ui-for-all-cert-operations">C. Skip Telegram commands; require admin-UI for all CERT operations</h3>
+<p>Rejected: forces operator to context-switch to laptop/browser for routine ops (re-fetch verdict, re-stage). Telegram commands keep the phone-only workflow viable.</p>
+<h3 id="d-hardcode-workflow-names-in-gas-no-edge-fn-dispatch">D. Hardcode workflow names in GAS (no edge fn dispatch)</h3>
+<p>Rejected: GAS already uses the existing <code>triggerGitHubWorkflow</code> helper which calls GitHub directly with the GAS-owned PAT. Edge function dispatch is the admin-UI path; GAS already has the PAT and bypasses. Both paths supported (different auth surfaces).</p>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>Positive:</strong></p>
+<ul>
+<li>LOCAL rebuild loop stays untouched — operator keeps using <code>phase5_runner</code> / <code>phase5_report</code> from shell, no surprises.</li>
+<li>CERT operator has full control from phone via Telegram commands — no laptop required for routine ops.</li>
+<li><code>dispatch-workflow</code> allowlist remains the single point of truth for which workflows are CI-triggerable.</li>
+<li>New commands documented in <code>/help</code> so operator can discover without reading the GAS source.</li>
+</ul>
+<p><strong>Negative:</strong></p>
+<ul>
+<li>Two parallel command surfaces (admin UI buttons + Telegram commands) for <code>/stage</code> and <code>/regen</code>. Acceptable: they call the same backend and are documented together.</li>
+<li>LOCAL admin-UI does NOT have a &quot;Stage event&quot; button or a UI-triggered regen (no vite middleware). Operator must shell out. This matches today's behaviour exactly.</li>
+<li>GAS code grows; testing remains mostly manual (ADR-025 already documented this trade-off).</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="status-deliverables-proposed-not-yet-shipped">Status — deliverables (proposed, not yet shipped)</h2>
+<ul>
+<li><code>supabase/functions/dispatch-workflow/index.ts</code> ALLOWED_WORKFLOWS extension</li>
+<li><code>scripts/gas_email_ingestion.js</code> — 4 new command cases + <code>downloadFromSupabaseStorage</code> helper + extended <code>/help</code> text</li>
+<li><code>doc/cicd-operations-manual.md</code> updates: command cheat-sheet, runbook for fresh CERT/PROD setup, disaster recovery section</li>
+<li>CERT smoke test C16: end-to-end Telegram command verification</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="060-evf-parity-delta-md.html">← ADR-060: EVF parity sweep emits delta-only .md (no full.md overwrite)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="062-spws-bracket-name-filter.html">→ ADR-062: Skip non-SPWS bracket names at FTL event-schedule discovery</a></nav>
+<footer class="foot">Generated from <code>061-local-parity-and-telegram-commands.md</code> · source SHA-256 <code>275eff0dd24496b3a8e21e41ae3a85f1849decf95bd0674a3461d02777429938</code></footer>
+</div></body></html>

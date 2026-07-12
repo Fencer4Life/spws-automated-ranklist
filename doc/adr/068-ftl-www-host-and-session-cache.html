@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="068-ftl-www-host-and-session-cache.md">
+<meta name="adr-source-sha256" content="8e765e4abe3f5c3faf8123f600cd2fa5640b0247f0cc06bcf3331493271f25fc">
+<title>ADR-068 · FTL www-host normalization + cached non-rolling session</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 068</p><h1>FTL <code>www</code>-host normalization + cached non-rolling session</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-05-31)</dd></div><div><dt>Date</dt><dd class="">Not recorded</dd></div><div><dt>Source</dt><dd class=""><code>068-ftl-www-host-and-session-cache.md</code></dd></div><div><dt>Length</dt><dd class="">76 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (2026-05-31)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The &quot;Populate Tournament URLs&quot; workflow silently produced &quot;Discovered 0 /
+Updated 0&quot; for FTL events (e.g. <code>PPW4-2025-2026</code>) while reporting a GitHub
+Actions <strong>success</strong>. Investigation (2026-05-31) established:</p>
+<ol>
+<li>FTL requires an authenticated session for <code>eventSchedule</code>/<code>results</code> pages
+(unauthenticated requests <code>302</code> to <code>/account/login</code>).</li>
+<li>Login itself works: <code>POST www/login</code>, <strong>form-encoded</strong> body
+<code>{username:&lt;email&gt;, password}</code>, header <code>x-csrf-token</code> read from
+<code>&lt;meta name=&quot;csrf_token&quot;&gt;</code>; success = <code>200</code> with the returnUrl as body, sets
+the <code>connect.sid</code> cookie. (Confirmed against the live page and
+<code>/js/login.*.js</code> — the browser uses jQuery <code>$.post</code>, i.e. form-encoded.)</li>
+<li><strong>Root cause:</strong> <code>connect.sid</code> is <strong>host-only to <code>www.fencingtimelive.com</code></strong>
+(no <code>Domain</code> attribute). The DB stores event/result URLs on the <strong>apex</strong>
+host <code>fencingtimelive.com</code>, so httpx never sends the cookie → the fetch
+<code>302</code>s to the login page → <code>parse_event_schedule</code> finds 0 <code>/events/view/</code>
+links → &quot;Discovered 0&quot;. Credentials, login mechanism, and parser were all
+correct.</li>
+<li>The failure was <strong>silent</strong>: login succeeds, so neither the status check nor
+the post-login redirect check tripped; only the later <em>resource</em> fetch was
+redirected, and the parser treated the login page as &quot;an event with no
+brackets&quot;.</li>
+<li>The <code>connect.sid</code> cookie is <strong>non-rolling</strong>: <code>Expires = login + 10 days</code>,
+and is <strong>not</strong> refreshed by authenticated requests (verified empirically —
+the token value and expiry were byte-identical before/after authed GETs, and
+no <code>Set-Cookie</code> was re-issued on resource fetches).</li>
+</ol>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<ol>
+<li><strong>Normalize host apex → <code>www</code></strong> before every FTL fetch, via
+<code>normalize_ftl_url()</code> applied at the discovery call sites
+(<code>populate_tournament_urls.discover_tournament_urls</code>,
+<code>scrape_ftl_event_urls.scrape_all</code>) <strong>and</strong> a request event-hook on the
+client yielded by <code>get_authed_ftl_client()</code> (belt-and-suspenders, so any
+future caller is covered automatically).</li>
+<li><strong>Cache the session</strong> (cookie jar + <code>connect.sid</code> expiry) process-globally.
+Reuse it across <code>get_authed_ftl_client()</code> calls and re-login only when
+within 12 h of expiry or when <code>force_login=True</code>. (&quot;Log once, reuse the
+token&quot; — matches FTL's session model.)</li>
+<li><strong>Fail loudly:</strong> a response event-hook raises <code>FtlAuthError</code> if a <em>resource</em>
+request is redirected to <code>/account/login</code> (login-flow paths excluded), so an
+expired/invalid session no longer masquerades as &quot;0 results / success&quot;.</li>
+</ol>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>Rotate FTL credentials</strong> — rejected; the credentials were valid. Would not
+have fixed the host mismatch.</li>
+<li><strong>Send the cookie to both apex and <code>www</code></strong> — rejected; relies on apex
+behaviour and may still redirect. Host normalization is deterministic.</li>
+<li><strong>Switch login to a JSON body</strong> — rejected; the browser uses form-encoded
+<code>$.post</code> (confirmed in <code>login.*.js</code>). The current format is already correct.</li>
+<li><strong>Persist the session cookie to disk/secret across processes</strong> — deferred.
+The in-process cache covers multi-fetch runs (<code>scrape_all</code>, the ingest
+pipeline). Cross-dispatch reuse (one login per ~10 days across separate
+workflow runs) is a possible follow-up.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Populate/scrape now discover URLs reliably; verified live against PPW4
+(28 brackets discovered vs 0 before the fix).</li>
+<li>Silent &quot;success with 0 results&quot; becomes a loud <code>FtlAuthError</code> (workflow fails
+<ul>
+<li>Telegram alert), surfacing genuine session expiry instead of hiding it.</li>
+</ul>
+</li>
+<li>The session is reused within a run → fewer logins, lower lockout risk.</li>
+<li>New tests in <code>python/tests/test_ftl_auth.py</code> (3.20h–k): URL normalization,
+client host-rewrite, cached-session reuse, loud login-redirect. The file goes
+from 8 → 12 tests.</li>
+<li>Supersedes the earlier uncommitted partial fix (a post-login redirect check),
+which did not catch the resource-fetch redirect case.</li>
+<li>The DB continues to store apex URLs (admin-entered, ADR — URLs are
+admin-managed); normalization happens only at fetch time, so no data
+migration is required.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="067-structural-pool-only-skip-unified-xml-ingest.html">← ADR-067: Structural pool-only skip + unified XML ingest pipeline</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="069-participant-count-url-validator.html">→ ADR-069: Per-tournament participant-count URL validator (HALT gate)</a></nav>
+<footer class="foot">Generated from <code>068-ftl-www-host-and-session-cache.md</code> · source SHA-256 <code>8e765e4abe3f5c3faf8123f600cd2fa5640b0247f0cc06bcf3331493271f25fc</code></footer>
+</div></body></html>

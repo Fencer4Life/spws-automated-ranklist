@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="071-mdm-dedup-sweep.md">
+<meta name="adr-source-sha256" content="5ca0152c6e777ff482e2d1fee2ba30e734fdcab6c00a453353abf49d1b531593">
+<title>ADR-071 · Master-data management + eventual-consistency dedup (DEDUP_SWEEP)</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 071</p><h1>Master-data management + eventual-consistency dedup (<code>DEDUP_SWEEP</code>)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §5.1 / §6. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> ADR-070 (<code>ResolveFencers</code>), ADR-072 (recompute / self-healing), ADR-003 (FK identity), ADR-056 (band-midpoint BY reconcile), ADR-055 (provenance).</dd></div><div><dt>Source</dt><dd class=""><code>071-mdm-dedup-sweep.md</code></dd></div><div><dt>Length</dt><dd class="">66 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
+<a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §5.1 / §6. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.
+<strong>Date:</strong> 2026-06-14
+<strong>Relates to:</strong> ADR-070 (<code>ResolveFencers</code>), ADR-072 (recompute / self-healing), ADR-003 (FK identity),
+ADR-056 (band-midpoint BY reconcile), ADR-055 (provenance).</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</a></li><li class="depth-2"><a href="#amendment-2026-06-26-fn-merge-fencers-clears-the-match-candidate-fk">Amendment (2026-06-26) — `fn_merge_fencers` clears the match_candidate FK</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>ADR-070's asymmetric safety deliberately <strong>creates duplicates</strong> rather than risk a wrong link. Full
+automation therefore needs a counterpart that cleans them up <em>without a human</em> — otherwise the roster
+slowly accumulates duplicate fencers and conflicting birth years, and the create-then-dedup bet never
+pays off.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Govern <code>tbl_fencer</code> as a deduplicated <strong>master-data store</strong> maintained by an eventual-consistency sweep,
+<strong><code>DEDUP_SWEEP</code></strong> — a flow that runs <code>ResolveFencers</code> in <code>scope=whole_roster</code> mode. It is the <em>same</em>
+dedup + BY-reconcile logic as per-bracket ingest (ADR-070), not a separate subsystem — only the scope
+differs. It:</p>
+<ul>
+<li>merges duplicate fencers via a new <strong><code>fn_merge_fencers</code></strong> RPC: re-points <code>tbl_result.id_fencer</code> to the
+survivor (identity is the FK, ADR-003) and folds aliases; and</li>
+<li>reconciles conflicting birth years to the <strong>band midpoint</strong> (ADR-056).</li>
+</ul>
+<p>Every merge/reconcile emits <code>master_data.changed</code>; the <code>SelfHealing</code> reactor (ADR-072) turns each into a
+<code>RECOMPUTE_DOMESTIC</code> of the affected events. <strong>The sort <em>is</em> the rebuild</strong> — no manual re-score.
+<code>DEDUP_SWEEP</code> is schedulable (pg_cron) or operator-triggered, and is the bootstrap tool for a roster
+seeded with known duplicates + wrong BYs.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>A separate MDM service / table.</strong> Rejected: the resolution logic already lives in <code>ResolveFencers</code>; a
+second copy would drift. One code path, two entry points (per-bracket, whole-roster).</li>
+<li><strong>Dedup at ingestion only (no sweep).</strong> Rejected: a duplicate is often only detectable once <em>both</em>
+spellings have been seen across different events; a roster-wide sweep catches what per-bracket
+resolution structurally cannot.</li>
+<li><strong>Merges requiring human confirmation.</strong> Rejected: contradicts full automation. A merge is FK-repointing
+with provenance (ADR-055); a wrong merge surfaces via <code>Escalate</code> (ADR-074) and is itself reversible by a
+later sweep.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>The create-then-dedup asymmetry (ADR-070) is closed into a convergent loop with recompute (ADR-072).</li>
+<li><code>fn_merge_fencers</code> is the one audited merge primitive.</li>
+<li>Bootstrapping a roster with known duplicates + wrong birth years becomes a single <code>DEDUP_SWEEP</code> run that
+fans out to per-event recomputes automatically.</li>
+</ul>
+</section>
+<section class="section-card adr-section tests"><p class="kicker">tests</p><h2 id="tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</h2>
+<p>merge re-points results + folds aliases; BY reconcile to midpoint; sweep enqueues exactly the affected
+events for recompute; idempotent (a second sweep no-ops).</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-06-26-fn-merge-fencers-clears-the-match-candidate-fk">Amendment (2026-06-26) — <code>fn_merge_fencers</code> clears the match_candidate FK</h2>
+<p>The original <code>fn_merge_fencers</code> re-pointed <code>tbl_result</code> to the survivor but <strong>not</strong>
+<code>tbl_match_candidate.id_fencer</code>, which <em>also</em> FK-references <code>tbl_fencer</code>. A duplicate
+carrying any non-colliding match-candidate row therefore aborted the merge on
+<code>tbl_match_candidate_id_fencer_fkey</code> at the <code>DELETE FROM tbl_fencer</code> — hit live during the
+SAMECKA-NACZYŃSKA dedup (the duplicate held AUTO_MATCHED / NEW_FENCER candidate rows).</p>
+<p><strong>Fix:</strong> the merge now re-points the duplicate's remaining match-candidate rows to the
+survivor before deleting the dup (the audit follows the re-pointed result). Migration
+<code>supabase/migrations/20260626000001_fn_merge_fencers_repoint_match_candidate.sql</code>; pgTAP
+<code>44.12</code> reproduced the FK abort (RED) and passes after the fix.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="070-resolve-fencers-auto-resolution.html">← ADR-070: ResolveFencers auto-resolution (merged Stage-0 ⊕ Stage-6, runs early), no human review gate</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="072-cdc-recompute-debounce.html">→ ADR-072: Master-data-change-triggered idempotent recompute (CDC queue + debounce)</a></nav>
+<footer class="foot">Generated from <code>071-mdm-dedup-sweep.md</code> · source SHA-256 <code>5ca0152c6e777ff482e2d1fee2ba30e734fdcab6c00a453353abf49d1b531593</code></footer>
+</div></body></html>

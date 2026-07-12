@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="024-combined-category-splitting.md">
+<meta name="adr-source-sha256" content="7d01a29c94cb75b0d8bbd4d3388a65527316b1db52a49ed8cdd103a67802017d">
+<title>ADR-024 · Combined Category Splitting Strategy</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 024</p><h1>Combined Category Splitting Strategy</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-05 (Go-to-PROD)</dd></div><div><dt>Source</dt><dd class=""><code>024-combined-category-splitting.md</code></dd></div><div><dt>Length</dt><dd class="">48 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2026-04-05 (Go-to-PROD)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#edge-case-unresolvable-fencers">Edge Case: Unresolvable Fencers</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Some Polish domestic tournaments combine age categories — e.g., V0 and V1 fencers compete together in a single pool. The FencingTime Live XML file has <code>AltName=&quot;SZPADA MĘŻCZYZN v0v1&quot;</code> and contains all fencers mixed. However, the ranking system needs per-category results (separate <code>tbl_tournament</code> records for V0 and V1), each with independent placement (1st, 2nd, 3rd within V0; 1st, 2nd, 3rd within V1).</p>
+<p>The <code>split_combined_results()</code> function already exists in <code>python/scrapers/fencingtime_xml.py</code> (tested: 9.126–9.127). This ADR documents the strategy and edge case handling.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Use <strong>birth date (<code>DateNaissance</code>) from the XML</strong> as the primary mechanism to assign fencers to their correct age category within a combined tournament. The splitting logic:</p>
+<ol>
+<li>Parse <code>AltName</code> to detect combined categories (e.g., <code>v0v1</code> → <code>[V0, V1]</code>)</li>
+<li>For each <code>&lt;Tireur&gt;</code>:
+a. If <code>DateNaissance</code> is present → calculate age → <code>birth_year_matches_category()</code> assigns category
+b. If <code>DateNaissance</code> is missing → cross-reference <code>fencer_db</code> by name for known birth year
+c. If neither resolves → <strong>flag as PENDING for admin review</strong> (do not silently assign)</li>
+<li>Group fencers by resolved category</li>
+<li>Re-rank within each category: place 1, 2, 3, ... preserving relative order from the combined results</li>
+</ol>
+<h3 id="edge-case-unresolvable-fencers">Edge Case: Unresolvable Fencers</h3>
+<p>When a fencer's category cannot be determined (no DOB in XML, not found in <code>fencer_db</code>), the system:</p>
+<ul>
+<li>Creates the result with <code>tbl_match_candidate.enum_status = 'PENDING'</code></li>
+<li>Sends a Telegram notification: &quot;⚠️ N fencers without birth date in v0v1 file — can't split. Review needed.&quot;</li>
+<li>Admin resolves by assigning the correct category in the Identity Manager UI</li>
+</ul>
+<p>This differs from the current fallback implementation which silently assigns to the lowest category. The ADR mandates explicit admin review for ambiguous cases.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li>
+<p><strong>Silent fallback to lowest category</strong> — The current <code>split_combined_results()</code> implementation assigns unresolvable fencers to the lowest category (e.g., V0 in a V0V1 split). Simple but can place a V1 fencer in V0 results, corrupting rankings. Acceptable for seed data generation where admin reviews output, but not for automated ingestion.</p>
+</li>
+<li>
+<p><strong>Skip unresolvable fencers entirely</strong> — Don't import results for fencers whose category can't be determined. Loses data; the fencer participated and has a valid result.</p>
+</li>
+<li>
+<p><strong>Treat combined category as a single tournament</strong> — Don't split at all; create a single V0V1 tournament. Breaks the ranking model which requires per-category tournaments for scoring.</p>
+</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Combined category files produce multiple tournament imports (one per detected category)</li>
+<li>Birth date coverage in XML files determines how many fencers can be auto-split</li>
+<li>Fencers without DOB and not in <code>fencer_db</code> require manual admin intervention</li>
+<li>The existing <code>split_combined_results()</code> function needs a minor change: instead of fallback to lowest category, mark unresolvable fencers for admin review</li>
+<li>Telegram notifications ensure admin is aware of pending splits immediately</li>
+<li>As the <code>tbl_fencer</code> master data grows (more birth years known), fewer fencers will be unresolvable over time</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="023-email-ingestion-gas-storage.html">← ADR-023: Email Ingestion via Google Apps Script + Supabase Storage</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="025-event-centric-ingestion-telegram.html">→ ADR-025: Event-Centric Ingestion + Telegram Admin Interface</a></nav>
+<footer class="foot">Generated from <code>024-combined-category-splitting.md</code> · source SHA-256 <code>7d01a29c94cb75b0d8bbd4d3388a65527316b1db52a49ed8cdd103a67802017d</code></footer>
+</div></body></html>

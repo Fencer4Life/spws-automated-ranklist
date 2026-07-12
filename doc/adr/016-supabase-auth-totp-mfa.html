@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="016-supabase-auth-totp-mfa.md">
+<meta name="adr-source-sha256" content="917333ab41c0c727b3a23f0aac04a114c7c9a3730b9dc6f802c7b309071938d8">
+<title>ADR-016 · Supabase Auth with TOTP MFA for Admin Access</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 016</p><h1>Supabase Auth with TOTP MFA for Admin Access</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-03-26 (M9)</dd></div><div><dt>Source</dt><dd class=""><code>016-supabase-auth-totp-mfa.md</code></dd></div><div><dt>Length</dt><dd class="">141 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2026-03-26 (M9)
+<strong>Supersedes:</strong> <a href="004-single-admin-account.html">ADR-004</a> (Single Admin Account for POC)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#authentication-flow">Authentication Flow</a></li><li class="depth-3"><a href="#session-management">Session Management</a></li><li class="depth-3"><a href="#multi-admin-support">Multi-Admin Support</a></li><li class="depth-3"><a href="#server-side-enforcement-sql-migration">Server-Side Enforcement (SQL Migration)</a></li><li class="depth-3"><a href="#admin-account-setup-step-by-step">Admin Account Setup (Step-by-Step)</a></li><li class="depth-3"><a href="#supabase-js-sdk-calls">Supabase JS SDK Calls</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#positive">Positive</a></li><li class="depth-3"><a href="#negative">Negative</a></li><li class="depth-3"><a href="#migration-from-adr-004">Migration from ADR-004</a></li><li class="depth-3"><a href="#mockup">Mockup</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>ADR-004 established a client-side password gate for admin access during POC and M8. The password is passed as an HTML attribute on the <code>&lt;spws-ranklist&gt;</code> web component and compared in JavaScript — no server-side verification occurs.</p>
+<p><strong>Security audit (2026-03-26) revealed a critical vulnerability:</strong></p>
+<ol>
+<li>The <code>admin-password</code> attribute is visible in the DOM via browser DevTools.</li>
+<li>All <code>SECURITY DEFINER</code> write functions (<code>fn_import_scoring_config</code>, <code>fn_calc_tournament_scores</code>, etc.) are callable by the <code>anon</code> role because PostgreSQL defaults to <code>GRANT EXECUTE TO PUBLIC</code> and no <code>REVOKE</code> was applied.</li>
+<li>The Supabase anon API key is public (embedded in the JS bundle by design).</li>
+<li><strong>Result:</strong> Any user can call write RPCs directly from the browser console, bypassing the client-side gate entirely. This allows corruption of scoring configuration, which would obliterate the ranking calculation.</li>
+</ol>
+<p>The M8 admin UI (scoring config editor, future CRUD screens) makes this a live risk — the write surface is now exposed in production.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Replace the client-side password gate with <strong>Supabase Auth (email + password) plus TOTP MFA (two-factor authentication)</strong>. This is a built-in, free-tier feature of Supabase GoTrue.</p>
+<h3 id="authentication-flow">Authentication Flow</h3>
+<ol>
+<li><strong>Admin visits <code>?admin=1</code></strong> → sign-in modal appears (email + password)</li>
+<li><strong>First login only:</strong> MFA enrollment screen (scan QR code with authenticator app, confirm with 6-digit code)</li>
+<li><strong>Every login:</strong> After email+password, TOTP challenge screen (enter 6-digit code from authenticator app)</li>
+<li><strong>Success:</strong> Supabase issues a full <code>authenticated</code> JWT → admin UI unlocks</li>
+</ol>
+<h3 id="session-management">Session Management</h3>
+<ul>
+<li><strong>JWT expiry:</strong> 1 hour (Supabase dashboard setting: <code>JWT_EXP = 3600</code>)</li>
+<li><strong>Client-side inactivity timer:</strong> 59 minutes — fires <code>signOut()</code> before JWT expires</li>
+<li><strong>No refresh token logic</strong> — the 59-min timeout always fires first, keeping implementation simple</li>
+<li><strong>&quot;Wyloguj&quot; button:</strong> calls <code>supabase.auth.signOut()</code> → JWT destroyed → sign-in modal reappears</li>
+</ul>
+<h3 id="multi-admin-support">Multi-Admin Support</h3>
+<ul>
+<li>Each admin has their own Supabase Auth account (email + password + independent TOTP enrollment)</li>
+<li>Created via Supabase Dashboard → Auth → Users</li>
+<li>All <code>authenticated</code> users have admin privileges (no role table needed — only admins ever sign in; public visitors use the <code>anon</code> key)</li>
+<li>Supabase free tier: 50,000 monthly active users — effectively unlimited</li>
+</ul>
+<h3 id="server-side-enforcement-sql-migration">Server-Side Enforcement (SQL Migration)</h3>
+<pre><code class="language-sql">-- Revoke write functions from anon and PUBLIC
+REVOKE EXECUTE ON FUNCTION fn_import_scoring_config(JSONB) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION fn_calc_tournament_scores(INT) FROM anon, PUBLIC;
+-- (same for all other write functions)
+
+-- Grant only to authenticated role
+GRANT EXECUTE ON FUNCTION fn_import_scoring_config(JSONB) TO authenticated;
+GRANT EXECUTE ON FUNCTION fn_calc_tournament_scores(INT) TO authenticated;
+</code></pre>
+<p>PostgREST checks the JWT on every request. Without a valid <code>authenticated</code> JWT, write RPCs return <code>permission denied</code>.</p>
+<h3 id="admin-account-setup-step-by-step">Admin Account Setup (Step-by-Step)</h3>
+<p><strong>Prerequisites:</strong> Access to the Supabase project dashboard (CERT and PROD).</p>
+<ol>
+<li><strong>Open Supabase Dashboard</strong> → select the target project (CERT or PROD)</li>
+<li><strong>Auth → Settings → General:</strong> Verify JWT expiry is 3600 seconds (1 hour)</li>
+<li><strong>Auth → Settings → MFA:</strong> Enable TOTP as a factor type</li>
+<li><strong>Auth → Users → Add User:</strong>
+<ul>
+<li>Email: the admin's real email (e.g., <code>jan.kowalski@spws.pl</code>)</li>
+<li>Password: strong, unique password (admin chooses their own)</li>
+<li>Auto-confirm: Yes (skip email verification — the admin list is curated manually)</li>
+</ul>
+</li>
+<li><strong>Repeat step 4</strong> for each additional admin</li>
+<li><strong>Run the SQL migration</strong> to REVOKE write functions from <code>anon</code>/<code>PUBLIC</code> and GRANT to <code>authenticated</code></li>
+<li><strong>First admin login:</strong> Admin visits <code>?admin=1</code> → enters email + password → sees MFA enrollment screen → scans QR code with authenticator app (Google Authenticator, Authy, 1Password, etc.) → enters 6-digit confirmation code → MFA activated</li>
+<li><strong>Subsequent logins:</strong> Email + password → 6-digit TOTP code → admin session active</li>
+</ol>
+<p><strong>The email used for login is the email entered in step 4.</strong> Each admin uses their own email address. There is no shared account.</p>
+<h3 id="supabase-js-sdk-calls">Supabase JS SDK Calls</h3>
+<pre><code class="language-typescript">// Step 1: Sign in
+const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+// Step 2: Check MFA enrollment
+const factors = await supabase.auth.mfa.listFactors()
+if (factors.data.totp.length === 0) {
+  // First time: enroll
+  const { data: enroll } = await supabase.auth.mfa.enroll({ factorType: 'totp' })
+  // enroll.totp.qr_code → display QR, enroll.totp.secret → manual entry fallback
+  // After user enters confirmation code:
+  await supabase.auth.mfa.challengeAndVerify({ factorId: enroll.id, code: userCode })
+} else {
+  // Returning user: challenge
+  const factor = factors.data.totp[0]
+  const { data: challenge } = await supabase.auth.mfa.challenge({ factorId: factor.id })
+  await supabase.auth.mfa.verify({ factorId: factor.id, challengeId: challenge.id, code: userCode })
+}
+
+// Step 3: Sign out (on inactivity or manual logout)
+await supabase.auth.signOut()
+</code></pre>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Pros</th>
+<th>Cons</th>
+<th>Why rejected</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Keep ADR-004 + REVOKE only</strong></td>
+<td>Minimal code change (1 SQL migration)</td>
+<td>Still single shared password, no 2FA, password in DOM</td>
+<td>Doesn't fix the root authentication problem</td>
+</tr>
+<tr>
+<td><strong>Supabase Auth without MFA</strong></td>
+<td>Simpler than full MFA</td>
+<td>Single factor (password only) vulnerable to credential theft</td>
+<td>MFA is free and adds significant security for minimal complexity</td>
+</tr>
+<tr>
+<td><strong>External auth provider (Auth0, Clerk)</strong></td>
+<td>Feature-rich</td>
+<td>Additional vendor dependency, cost, integration complexity</td>
+<td>Supabase Auth is already running (GoTrue container), free, and sufficient</td>
+</tr>
+<tr>
+<td><strong>Custom JWT + bcrypt</strong></td>
+<td>Full control</td>
+<td>Significant implementation effort, security responsibility shifts to us</td>
+<td>Supabase Auth is battle-tested; no reason to build custom</td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<h3 id="positive">Positive</h3>
+<ul>
+<li><strong>Write functions are server-enforced</strong> — <code>anon</code> role cannot call them regardless of client-side state</li>
+<li><strong>Two-factor authentication</strong> — even if password is compromised, attacker needs the authenticator app</li>
+<li><strong>Multi-admin support</strong> — each admin has independent credentials and MFA enrollment</li>
+<li><strong>No secrets in client bundle</strong> — <code>admin-password</code> attribute removed from web component</li>
+<li><strong>Free tier</strong> — Supabase Auth + TOTP MFA is included in the free plan (50k MAU)</li>
+<li><strong>Simple session model</strong> — 59-min timeout, no refresh logic, single-use JWT</li>
+</ul>
+<h3 id="negative">Negative</h3>
+<ul>
+<li><strong>Dashboard dependency</strong> — admin users must be created in Supabase Dashboard (no self-registration)</li>
+<li><strong>MFA enrollment UX</strong> — first login requires authenticator app setup (one-time cost)</li>
+<li><strong>Existing tests (8.48–8.54) must be rewritten</strong> — <code>AdminPasswordModal</code> replaced by sign-in + MFA modals</li>
+</ul>
+<h3 id="migration-from-adr-004">Migration from ADR-004</h3>
+<ol>
+<li>Delete <code>AdminPasswordModal.svelte</code></li>
+<li>Remove <code>admin-password</code> prop from <code>&lt;spws-ranklist&gt;</code> web component</li>
+<li>Add <code>AdminSignInModal.svelte</code>, <code>AdminMfaEnrollModal.svelte</code>, <code>AdminMfaChallengeModal.svelte</code></li>
+<li>Add <code>src/lib/admin-auth.svelte.ts</code> (auth state + MFA flow logic)</li>
+<li>SQL migration: REVOKE write functions from <code>anon</code>/<code>PUBLIC</code>, GRANT to <code>authenticated</code></li>
+<li>Update ADR-004 status to &quot;Superseded by ADR-016&quot;</li>
+<li>Rewrite tests 8.48–8.54 for new auth flow</li>
+</ol>
+<h3 id="mockup">Mockup</h3>
+<p>See <a href="../mockups/m9_auth_mfa_flow.html">doc/mockups/m9_auth_mfa_flow.html</a> for the visual design of all 4 screens (sign-in, MFA enrollment, TOTP challenge, authenticated admin session).</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="015-m8-ui-design-decisions.html">← ADR-015: M8 UI Design Decisions</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="017-season-configurable-evf-toggle.html">→ ADR-017: Season-Configurable EVF Toggle</a></nav>
+<footer class="foot">Generated from <code>016-supabase-auth-totp-mfa.md</code> · source SHA-256 <code>917333ab41c0c727b3a23f0aac04a114c7c9a3730b9dc6f802c7b309071938d8</code></footer>
+</div></body></html>

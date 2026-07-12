@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="079-event-self-registration-identity.md">
+<meta name="adr-source-sha256" content="0b9f1fcf6760dcc20590c2687cab247a4e97f9f953daaf2273f402a4228fd274">
+<title>ADR-079 · Event Self-Registration &amp; Identity Resolution</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 079</p><h1>Event Self-Registration &amp; Identity Resolution</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (email delivery) not started, blocked on Resend/eu.org). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation.</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>079-event-self-registration-identity.md</code></dd></div><div><dt>Length</dt><dd class="">264 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (email delivery) not started, blocked on Resend/eu.org). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation.
+<strong>Date:</strong> 2026-07-04
+<strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-core-invariant-registration-is-read-only-on-tbl-fencer">1. Core invariant — registration is READ-ONLY on `tbl_fencer`</a></li><li class="depth-3"><a href="#2-identity-model-model-b-email-as-one-time-verification-not-an-account">2. Identity model — Model B (email as one-time verification, not an account)</a></li><li class="depth-4"><a href="#implementation-note-form-side-routing-is-exact-only-no-python-bridge-2026-07-05">Implementation note — form-side routing is exact-only; no Python bridge (2026-07-05)</a></li><li class="depth-3"><a href="#3-by-reconciliation-matrix-runs-at-ingestion-not-the-form">3. BY reconciliation matrix (runs at INGESTION, not the form)</a></li><li class="depth-3"><a href="#4-impersonation-hardening">4. Impersonation hardening</a></li><li class="depth-3"><a href="#5-schema-phase-1">5. Schema (Phase 1)</a></li><li class="depth-3"><a href="#6-ui">6. UI</a></li><li class="depth-3"><a href="#7-amendment-2026-07-05-registration-url-auto-fill-in-app-modal-presentation">7. Amendment (2026-07-05) — registration URL auto-fill + in-app modal presentation</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Automation is stuck near 90 % because birth-year (BY) data in <code>tbl_fencer</code> is
+unreliable — worst case, two different people share an identical name with
+different BY. BY today flows <em>backwards</em> (scrape → fuzzy match → BY <strong>estimated</strong>
+from the tournament's age band, <code>bool_birth_year_estimated=TRUE</code>; ADR-056). If
+fencers <strong>self-declare</strong> identity + BY <em>before</em> the event, that BY becomes an
+authoritative signal and discrepancies drop toward zero for registered fencers.</p>
+<p>The challenge: prevent duplicate/conflicting entries and corruption of the fencer
+table by mistaken or malicious registrations, while keeping the flow usable for
+elderly veterans (who forget emails) and minimising stored personal data
+(ADR-078).</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-core-invariant-registration-is-read-only-on-tbl-fencer">1. Core invariant — registration is READ-ONLY on <code>tbl_fencer</code></h3>
+<p>The registration subsystem <strong>reads</strong> <code>tbl_fencer</code> (to match, derive category,
+route the flow) and <strong>writes only</strong> <code>tbl_registration</code> (ephemeral) + generates the
+FTL seed. It <strong>never</strong> writes <code>tbl_fencer</code>, results, or the ranking. Those are
+mutated only by (a) the event-ingestion pipeline and (b) explicit admin actions
+(merges, manual edits, GDPR erasure) — unchanged from today.</p>
+<p>Declared BY/identity rides on the registration record as a <strong>high-quality signal</strong>;
+ingestion name-matches the seeded exact name → pulls the declared BY → feeds the
+<strong>existing</strong> reconciliation machinery (<code>stages.py</code>, <code>fuzzy_match.py</code>, the PENDING /
+IdentityManager flow), which does the authoritative write and marks the BY
+<em>confirmed</em>. New fencers are <strong>not</strong> created at sign-up — a fencer enters
+<code>tbl_fencer</code> only when results ingest (today's behaviour), now enriched with a
+declared BY instead of a guess.</p>
+<p><strong>Security consequence (by construction):</strong> a malicious registration can at most
+create a junk, ephemeral, deletable <code>tbl_registration</code> row — it cannot mutate an
+identity or a ranking, because that code path does not exist in the registration
+flow.</p>
+<h3 id="2-identity-model-model-b-email-as-one-time-verification-not-an-account">2. Identity model — Model B (email as one-time verification, not an account)</h3>
+<p>The form collects <strong>Surname, Name, Gender, BY</strong>, normalises (case/diacritics/
+spacing), and matches via <code>find_best_match</code>. One gate rule: <strong>skip email only on an
+exact <code>(Surname, Name, BY)</code> triple match; every other path takes one magic-link
+click.</strong> Email proves <strong>inbox control, not identity</strong> — it is friction +
+accountability, never load-bearing for integrity. There is <strong>no persistent
+account</strong>: a veteran who lost an old email just verifies whatever inbox they have
+now; admin intervention shrinks to true edge cases (formal erasure, disputes).</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Match result</th>
+<th>Email?</th>
+<th>Outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>exact name <strong>and</strong> BY equal</td>
+<td>No</td>
+<td>anonymous fast-path → weapon → category → RODO → payment</td>
+</tr>
+<tr>
+<td>B</td>
+<td>strong name (≥95), BY differs</td>
+<td>Yes</td>
+<td>verify → reconciliation (below), record on registration</td>
+</tr>
+<tr>
+<td>C</td>
+<td>weak name (50–94)</td>
+<td>Yes</td>
+<td>verify → &quot;is this you?&quot; + admin review</td>
+</tr>
+<tr>
+<td>D</td>
+<td>no match</td>
+<td>Yes</td>
+<td>verify → new registration (declared BY carried to ingestion)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Dedup on the anonymous path is enforced by <code>UNIQUE(id_event, id_fencer)</code> upsert. A
+fencer correcting our BY types a different year → the triple no longer matches →
+auto-routed into the verified path.</p>
+<h4 id="implementation-note-form-side-routing-is-exact-only-no-python-bridge-2026-07-05">Implementation note — form-side routing is exact-only; no Python bridge (2026-07-05)</h4>
+<p>The four-path table above is a <strong>conceptual</strong> identity model. In implementation it
+resolves to a <strong>binary</strong> form-side decision, because the step-2 mockup (the build
+SSOT) deliberately collapses Paths B/C/D into a <strong>single</strong> &quot;we couldn't match you
+exactly — confirm by one-time email link&quot; screen that shows <strong>no</strong> fuzzy candidate
+and explicitly states <em>&quot;final identity matching happens when the organizer loads
+results.&quot;</em></p>
+<p>Consequently:</p>
+<ul>
+<li>The <strong>public form</strong> performs <strong>only</strong> the exact <code>(surname, first, BY)</code> triple
+lookup — <code>fn_match_registration_fencer</code> (SQL RPC, <code>anon</code>-callable). Exact hit →
+Path A (skip email); <strong>any</strong> miss (unknown, near-miss typo, or right-name/wrong-BY)
+→ the email-verify path. It does <strong>no</strong> fuzzy matching. (Pinned by pgTAP 49.22.)</li>
+<li>The <strong>fuzzy</strong> distinctions among B/C/D (<code>find_best_match</code>, RapidFuzz) are an
+<strong>ingestion-time reconciliation</strong> concern (§3), realised by the <strong>existing</strong>
+Python matcher that already runs when results are scraped — never invoked
+synchronously from the browser.</li>
+</ul>
+<p>This <strong>closes the &quot;invocation gap&quot;</strong> flagged during Phase 1 (there is no mechanism
+for the public frontend to call Python's <code>find_best_match</code>) <strong>by construction</strong>:
+there is nothing the frontend needs to invoke in Python. A synchronous
+Python-from-browser bridge (a hosted Python request/response service, or a SQL
+<code>pg_trgm</code> re-implementation of the matcher) was considered and <strong>rejected</strong> — it
+would add always-on infrastructure (violating the serverless, zero-dollar
+architecture) or a second divergent matcher, to serve a UX flow that intentionally
+does not use a form-side fuzzy result. Path A — the only integrity-sensitive,
+no-email fast path — is exact equality, so no fuzzy logic is security-load-bearing
+at the form regardless.</p>
+<h3 id="3-by-reconciliation-matrix-runs-at-ingestion-not-the-form">3. BY reconciliation matrix (runs at INGESTION, not the form)</h3>
+<p>The declared BY is reconciled against the stored BY by the ingestion pipeline. A
+<strong>confirmed</strong> BY is <strong>sacrosanct</strong> — self-service never overwrites it:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Stored BY</th>
+<th>Declared − stored</th>
+<th>Interpretation</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Estimated</td>
+<td>any</td>
+<td>our guess; declaration wins</td>
+<td>overwrite ← declared, mark confirmed</td>
+</tr>
+<tr>
+<td>Confirmed</td>
+<td>any discrepancy</td>
+<td>may be a namesake / bad edit</td>
+<td><strong>quarantine → admin review; real row untouched</strong></td>
+</tr>
+<tr>
+<td>— (multiple same-name)</td>
+<td>—</td>
+<td>self-declared BY selects the twin</td>
+<td>link closest; none in band → new</td>
+</tr>
+</tbody>
+</table></div>
+<p>Two genuinely different people with the <strong>same name + same BY</strong> is the residual
+hard case — disambiguated only by email, club, or optional full DOB.</p>
+<h3 id="4-impersonation-hardening">4. Impersonation hardening</h3>
+<p>Email verification does <strong>not</strong> stop a foul player entering a victim's name. The
+system does <strong>not</strong> track payment completion digitally — it only displays
+bank-transfer instructions so the fencer can pay correctly; there is no
+&quot;paid&quot; gate on the seed or entry list (corrected 2026-07-04 — an earlier draft
+of this ADR proposed one, which wrongly assumed digital payment tracking this
+system does not do). The real defences: (a) the read-only invariant +
+confirmed-BY-sacrosanct rule → no data corruption; (b) <strong>venue-level check</strong> —
+the organizer verifies payment (and can challenge an unfamiliar face) in person
+at check-in, before the competition starts — a physical control, not enforced
+in software; (c) the ranking is <strong>results-based</strong>, so a fake entry that never
+fences has zero ranking effect, and the victim can spot the bogus entry via
+&quot;Sprawdź zgłoszenie&quot; for admin removal; (d) the salted-hash abuse log + rate
+limit. This is the same residual exposure every open amateur registration
+carries (competit.pl included) — minimised, detectable, reversible, not
+eliminated.</p>
+<h3 id="5-schema-phase-1">5. Schema (Phase 1)</h3>
+<ul>
+<li>New <code>tbl_registration</code> (EPHEMERAL, RLS-gated — <strong>rows, not a JSON file</strong>: public
+concurrent writes need ACID; a file has no locking, no host with Supabase Storage
+disabled, no access control, and is a GDPR hazard if committed): <code>id_event</code>,
+<code>id_fencer</code> (nullable match), declared surname/first/gender/BY, weapons,
+<code>txt_ftl_name</code>, <code>ts_consent</code>, <code>txt_consent_version</code>, salted email hash,
+<code>ts_created</code>. <strong>No payment-status column</strong> — payment completion is not
+tracked digitally (corrected 2026-07-04; see §4). Optional own <code>reg</code> schema.</li>
+<li><code>tbl_event</code> additions: <code>url_entry_list</code>, <code>txt_organizer_email</code>, <code>ts_ftl_sent</code>,
+<code>num_entry_fee_2w</code>, <code>num_entry_fee_3w</code>, <code>bool_use_spws_registration</code>
+(<code>url_registration</code> + <code>dt_registration_deadline</code> already exist, ADR-030).</li>
+<li>RLS: registration insert only via a controlled RPC; a public read-only entry-list
+view (name · gender · category · weapons — <strong>no BY, no club</strong>); writes REVOKEd
+from <code>anon</code>.</li>
+</ul>
+<h3 id="6-ui">6. UI</h3>
+<p>Public Svelte route + custom element <code>&lt;spws-registration event=&quot;…&quot;&gt;</code> (mirrors
+<code>&lt;spws-ranklist&gt;</code>/<code>&lt;spws-calendar&gt;</code>), reachable from the calendar's
+<code>url_registration</code>, plus a public <code>url_entry_list</code> &quot;Lista zgłoszonych&quot;. Bilingual
+PL/EN. Mockups: <code>doc/mockups/registration_step{1,2,3}_*.html</code>,
+<code>registration_rodo_consent.html</code>, <code>registration_entry_list.html</code>.</p>
+<h3 id="7-amendment-2026-07-05-registration-url-auto-fill-in-app-modal-presentation">7. Amendment (2026-07-05) — registration URL auto-fill + in-app modal presentation</h3>
+<p>Two follow-on gaps surfaced once §6's UI was live: the calendar never actually
+rendered a registration link (nothing fed it a base URL), and the flow that
+was reached always navigated the fencer away from the calendar. Both are fixed
+here; neither changes §1–§5 (read-only invariant, Model B, BY matrix,
+impersonation defence, schema are all unchanged).</p>
+<p><strong>a) Self-contained URLs, admin-triggered (a deliberate, scoped exception to
+[[feedback_urls_admin_managed]]).</strong> <code>CalendarView.svelte</code> gated the SPWS links
+on <code>bool_use_spws_registration &amp;&amp; registrationBase !== ''</code>, but no entry point
+(<code>App.svelte</code>, <code>index.ce.html</code>) ever supplied <code>registrationBase</code> — so the
+generated link never rendered, and PPW1-2026-2027 (flag on, no
+<code>url_registration</code>) showed nothing. Rather than thread a deployment-time
+<code>registration-base</code> attribute through every embed (LOCAL, GH Pages, a future
+WordPress iframe), <strong><code>url_registration</code> and <code>url_entry_list</code> are computed
+client-side and persisted</strong> the moment the admin ticks
+<code>bool_use_spws_registration</code> in <code>EventManager.svelte</code>:
+<code>new URL('register.html', window.location.href).href</code> + <code>?event=&lt;txt_code&gt;</code>
+(+<code>&amp;view=list</code>). Unticking clears both. This makes a calendar embedded on a
+foreign origin self-sufficient — the stored URL, not the embedding page,
+determines where registration lives. <code>fn_update_event</code> gains
+<code>p_url_entry_list TEXT</code> (migration <code>20260705000004</code>, DIRECT assignment — value
+sets, <code>NULL</code> clears — matching how <code>p_registration</code> already treats
+<code>url_registration</code>, <strong>not</strong> the &quot;NULL = unchanged&quot; convention the function's
+other trailing params use, since the two registration URLs are always sent
+together by the form). <code>CalendarView</code> now renders both links straight from the
+stored columns; the old <code>registrationBase</code>/<code>useSpwsReg</code> prop plumbing is
+removed entirely (dead once the URLs are self-contained).</p>
+<p><strong>b) In-app modal instead of navigation.</strong> Once the links worked, clicking one
+still took the fencer off the calendar to the standalone <code>register.html</code> page
+— jarring, and it lost the calendar's context. <code>RegistrationForm.svelte</code> and
+<code>EntryList.svelte</code> gain optional <code>onclose</code>/<code>onviewlist</code> callback props
+(undefined on the standalone page — nothing to close to there); a new
+<code>RegistrationModal.svelte</code> wraps them in the same backdrop-click-to-close
+overlay pattern already used by <code>DrilldownModal</code>, full-bleed on ≤600px
+viewports. <code>CalendarView</code> opens this modal on left-click for
+<code>bool_use_spws_registration=true</code> events (<code>e.preventDefault()</code>); the <code>href</code> is
+left on the anchor unchanged, so right-click &quot;copy link&quot; / open-in-new-tab
+still resolve to the real standalone URL. Links to a plain hand-entered
+<code>url_registration</code> (flag off) are untouched — plain <code>&lt;a&gt;</code> navigation, no modal,
+by construction (only SPWS-hosted events get an <code>onclick</code> handler at all).</p>
+<p><strong>c) <code>register.html</code> stays a CE-bundle artefact (a correction, not a
+sequel).</strong> The reachable-fix for (a)+(b) first tried moving <code>register.html</code>
+into the <strong>main</strong> Vite build (<code>vite.config.ts</code>) so a single <code>dist/</code> covered
+everything <code>release.yml</code> deploys. That produced completely unstyled
+(&quot;bare-HTML&quot;) <code>&lt;spws-registration&gt;</code>/<code>&lt;spws-entry-list&gt;</code> output: Svelte only
+inlines a nested (non-custom-element) child component's <code>&lt;style&gt;</code> into a
+shadow root when the <strong>whole</strong> compile graph runs under
+<code>customElement: true</code>; under the main build's plain config those styles land
+in the document <code>&lt;head&gt;</code> instead, invisible inside the CE's shadow DOM. Fix:
+<code>register.html</code> reverts to being an input of <code>vite.config.ce.ts</code> (as it always
+was) alongside <code>index.ce.html</code>, and <code>release.yml</code> gains a second build step —
+<code>vite build --config vite.config.ce.ts</code> — whose <code>dist-ce/register.html</code> +
+<code>dist-ce/assets/</code> are copied into the already-built <code>dist/</code> so Pages still
+ships one merged output (closing the original &quot;never deployed&quot; gap without
+re-splitting the artefact). Credential <code>sed</code> now targets <code>register.html</code>
+directly (shared source, injected once, read by both build configs).
+<code>register.html</code> also gained an inline page-shell <code>&lt;style&gt;</code> (dark background +
+padding matching <code>doc/mockups/registration_*.html</code>) — without it the
+CE-shadow-scoped card floated on the surrounding page's default white
+background.</p>
+<p>pgTAP 652→654 (8.24 <code>fn_update_event</code> URL auto-fill + prior 12.14 EVF
+null-date fix, same day); vitest 449→463 (<code>RegistrationModal.test.ts</code> new,
+<code>CalendarView</code>/<code>RegistrationForm</code>/<code>EntryList</code>/<code>EventManager</code> tests extended);
+<code>svelte-check</code> 0 errors throughout.</p>
+<p><strong>d) The same unstyled-render bug also hit LOCAL <code>npm run dev</code> (found after
+push, user report).</strong> (c) fixed the deployed/production path — CERT and PROD
+both verified rendering correctly — but the <em>local dev server</em> is a separate
+code path: <code>npm run dev</code> runs plain <code>vite</code>, which reads <strong><code>vite.config.ts</code></strong>
+(the main config), not <code>vite.config.ce.ts</code>. <code>vite.config.ts</code> never set
+<code>compilerOptions.customElement: true</code>, so visiting <code>register.html</code> directly
+on the dev server (e.g. <code>http://localhost:5173/register.html?event=...</code> — the
+exact URL an admin copies out of the calendar link to paste into Facebook/a
+share) hit the identical shadow-DOM-styling gap as (c), just on a different
+build path that (c) never touched. The in-app modal never showed this because
+it renders <code>RegistrationForm</code>/<code>EntryList</code> as ordinary imported components
+(normal Vite dev CSS injection), never through the <code>&lt;spws-registration&gt;</code>
+custom-element boundary — so a working calendar modal gave no signal that the
+standalone URL was broken. Fix: add <code>compilerOptions.customElement: true</code> to
+<code>vite.config.ts</code> too. Verified safe — <code>App.svelte</code>/<code>main.ts</code> (the main app)
+never declare <code>&lt;svelte:options customElement&gt;</code>, so only the four <code>ce/*.svelte</code>
+wrapper files (which already declare it) are affected; the flag has no effect
+on components that don't opt in. Confirmed empirically: <code>register.html</code> on
+the plain <code>npm run dev</code> server now renders identically to the in-app modal;
+the main ranklist/calendar app is unaffected (screenshots, console clean
+apart from a pre-existing unrelated stale-auth-token log). vitest still
+463/463, <code>svelte-check</code> 0 errors, main <code>vite build</code> unaffected (still emits
+only <code>dist/index.html</code> — the CE-bundle-merge path in <code>release.yml</code> from (c)
+is untouched, since that path was already verified working on CERT/PROD).</p>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>No new form-side write path to <code>tbl_fencer</code>; reconciliation reuses existing
+ingestion code (declared BY replaces estimation).</li>
+<li>Elderly-friendly: most veterans use the frictionless anonymous path; email only
+on non-exact match, never a recoverable account.</li>
+<li>Birth year exposed in the ranking drilldown remains lawful (ADR-078 §3, Art. 13
+transparency + legitimate interest — purpose: category verification).</li>
+<li>(§7) <code>url_registration</code>/<code>url_entry_list</code> are the one admin-managed-URL
+exception in the codebase: auto-derived, not hand-typed, whenever
+<code>bool_use_spws_registration</code> is on. Every other event URL keeps the
+hand-entered convention.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="references">References</h2>
+<ul>
+<li>ADR-078 (GDPR), ADR-080 (seeding), ADR-056 (BY reconciliation), ADR-016 (admin
+auth), ADR-030 (registration URL + deadline), ADR-034/064 (gender at matcher),
+ADR-050/070–074 (ingestion pipeline).</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="078-gdpr-data-handling.html">← ADR-078: GDPR Data Handling &amp; Data-Subject Rights</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="080-clean-roster-ftl-seeding.html">→ ADR-080: Clean-Roster FTL Seeding</a></nav>
+<footer class="foot">Generated from <code>079-event-self-registration-identity.md</code> · source SHA-256 <code>0b9f1fcf6760dcc20590c2687cab247a4e97f9f953daaf2273f402a4228fd274</code></footer>
+</div></body></html>

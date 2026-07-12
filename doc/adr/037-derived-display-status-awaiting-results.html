@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="037-derived-display-status-awaiting-results.md">
+<meta name="adr-source-sha256" content="2ac95f512b4f99f1d5eda6e6d6f0400288ba8327ef72d3864b50bb444811e247">
+<title>ADR-037 · Derived Display Status — &quot;Awaiting Results&quot;</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 037</p><h1>Derived Display Status — &quot;Awaiting Results&quot;</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented</dd></div><div><dt>Date</dt><dd class="">2026-04-20 <strong>Related:</strong> ADR-018 (Rolling Score for Active Season), ADR-025 (Event-Centric Ingestion), ADR-028 (EVF Calendar + Results Import)</dd></div><div><dt>Source</dt><dd class=""><code>037-derived-display-status-awaiting-results.md</code></dd></div><div><dt>Length</dt><dd class="">51 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Implemented
+<strong>Date:</strong> 2026-04-20
+<strong>Related:</strong> ADR-018 (Rolling Score for Active Season), ADR-025 (Event-Centric Ingestion), ADR-028 (EVF Calendar + Results Import)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p><code>tbl_event.enum_status</code> has six values — <code>PLANNED</code>, <code>SCHEDULED</code>, <code>CHANGED</code>, <code>IN_PROGRESS</code>, <code>COMPLETED</code>, <code>CANCELLED</code> — and the transition <code>PLANNED → IN_PROGRESS</code> is driven by <em>results ingestion</em>, not by calendar date. The transition fires automatically inside <code>fn_ingest_tournament_results</code> the moment the first tournament result arrives.</p>
+<p>This leaves a visible gap: EVF events whose <code>dt_end</code> has already passed but whose results haven't been ingested yet (normal for EVF circuit — results lag by ~2 days per ADR-028) show as <code>PLANNED</code> in the Calendar UI, which misleads users into thinking the event is still upcoming.</p>
+<p>An obvious fix — auto-flipping <code>PLANNED → IN_PROGRESS</code> at <code>dt_start &lt; today</code> — would break ADR-018. The rolling carry-over query explicitly drops the previous-season score when the current-season equivalent becomes <code>IN_PROGRESS</code> (<a href="../../supabase/migrations/20260406000006_fix_carryover_in_progress.sql">migration 20260406000006</a>). The invariant is: <em>a new event replaces the old carry-over only when the new event has actual data</em>. An <code>IN_PROGRESS</code> event with no results would silently wipe the prior-season score and leave the ranklist slot empty.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Do not couple <code>enum_status</code> to the calendar. Instead, introduce a <strong>view-layer derived display status</strong> computed at render time.</p>
+<ul>
+<li>New helper <a href="../../frontend/src/lib/eventStatus.ts">frontend/src/lib/eventStatus.ts</a> exposes <code>getEventDisplayStatus(status, dt_end, dt_start?, today?)</code> → <code>{ cssClass, labelKey }</code>.</li>
+<li>PLANNED + <code>dt_end &lt; today</code> (fallback <code>dt_start</code> when <code>dt_end</code> is null) → <strong><code>status_awaiting_results</code></strong> with <code>.status-awaiting</code> (amber <code>#fef3c7</code> bg / <code>#92400e</code> text). All other rows pass through unchanged.</li>
+<li>Two i18n keys added (EN / PL): <code>status_awaiting_results</code> (&quot;Awaiting results&quot; / &quot;Oczekiwanie na wyniki&quot;), <code>status_changed</code> (&quot;Changed&quot; / &quot;Zmienione&quot;).</li>
+<li>Consumers: <a href="../../frontend/src/components/CalendarView.svelte">CalendarView.svelte</a> and <a href="../../frontend/src/components/EventManager.svelte">EventManager.svelte</a> — both replaced their local <code>statusClass</code> / <code>statusLabel</code> functions with a single shared helper call.</li>
+<li>The comparison uses ISO-string comparison against <code>new Date().toISOString().slice(0, 10)</code> — all DB <code>dt_*</code> columns are <code>DATE</code> (no time component), no timezone handling needed.</li>
+</ul>
+<p><strong>Truth table:</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th><code>enum_status</code></th>
+<th><code>dt_end</code> vs today</th>
+<th><code>labelKey</code></th>
+<th><code>cssClass</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PLANNED</code></td>
+<td>future / unknown</td>
+<td><code>status_planned</code></td>
+<td><code>status-planned</code></td>
+</tr>
+<tr>
+<td><code>PLANNED</code></td>
+<td><strong>past</strong></td>
+<td><strong><code>status_awaiting_results</code></strong></td>
+<td><strong><code>status-awaiting</code></strong></td>
+</tr>
+<tr>
+<td><code>SCHEDULED</code></td>
+<td>any</td>
+<td><code>status_scheduled</code></td>
+<td><code>status-scheduled</code></td>
+</tr>
+<tr>
+<td><code>CHANGED</code></td>
+<td>any</td>
+<td><code>status_changed</code></td>
+<td><code>status-changed</code></td>
+</tr>
+<tr>
+<td><code>IN_PROGRESS</code></td>
+<td>any</td>
+<td><code>status_in_progress</code></td>
+<td><code>status-inprogress</code></td>
+</tr>
+<tr>
+<td><code>COMPLETED</code></td>
+<td>any</td>
+<td><code>status_completed</code></td>
+<td><code>status-completed</code></td>
+</tr>
+<tr>
+<td><code>CANCELLED</code></td>
+<td>any</td>
+<td><code>status_cancelled</code></td>
+<td><code>status-cancelled</code></td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li><strong>Auto-transition <code>PLANNED → IN_PROGRESS</code> at <code>dt_start &lt; today</code> via cron or DB trigger.</strong> Rejected — breaks ADR-018 rolling carry-over invariant. Past-date events without results would wipe prior-season scores from the ranklist.</li>
+<li><strong>New enum value <code>AWAITING_RESULTS</code>.</strong> Rejected — schema change, new transitions to define in <code>fn_validate_event_transition</code>, new columns exposed in views, no functional benefit over the pure-view solution.</li>
+<li><strong>Auto-transition with grace period (e.g. <code>dt_end + 14 days</code>).</strong> Rejected as overkill for today's need — requires nightly job, new column, new ADR on &quot;when to give up waiting&quot;. Could be revisited if we ever want the ranklist to proactively discard stale carry-over.</li>
+<li><strong>Do nothing.</strong> Rejected — &quot;Planowany&quot; on an elapsed event is misleading to end users, and fixing it at the view layer costs nothing.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>Zero DB / enum / trigger / scoring impact.</strong> <code>enum_status</code> values, transitions, <code>fn_validate_event_transition</code>, <code>fn_ingest_tournament_results</code>, <code>fn_complete_event</code>, <code>fn_rollback_event</code>, and <code>vw_calendar</code> are all untouched. ADR-018 rolling carry-over invariant holds.</li>
+<li><strong>Self-healing.</strong> When results are ingested, <code>fn_ingest_tournament_results</code> flips <code>enum_status</code> to <code>IN_PROGRESS</code> and the badge changes automatically on next render — no cron, no manual cleanup, no state drift.</li>
+<li><strong>Single source of truth for the label.</strong> The helper is used by Calendar and EventManager; any future consumer (admin drill-down, Telegram rendering, email templates) imports the same function. No per-component switch statements to drift out of sync.</li>
+<li><strong>Bonus fix.</strong> EventManager was previously rendering the raw enum string (<code>&quot;PLANNED&quot;</code>, <code>&quot;SCHEDULED&quot;</code>) instead of the i18n label. Adopting the helper closed that pre-existing bug.</li>
+<li><strong>Not stored in DB.</strong> Consumers that bypass the frontend (Telegram bot, server-side email digest, future BI dashboards) will see raw <code>enum_status</code>. If/when those consumers need the &quot;awaiting&quot; distinction, port <code>getEventDisplayStatus</code> to SQL or Python — the logic is a single <code>CASE</code> expression.</li>
+<li><strong>Test coverage.</strong> +11 vitest unit tests in <code>frontend/tests/eventStatus.test.ts</code> (ES.1–ES.11) covering every row of the truth table, including the null-both-dates edge and same-day grace. +1 vitest integration test in <code>frontend/tests/CalendarView.test.ts</code> (8.41b) asserting the amber badge renders. vitest total: 255 → 267.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="036-prod-export-local-mirror.html">← ADR-036: PROD Export &amp; Local Mirror (Single Monolithic Dump)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="038-evf-intake-polish-only.html">→ ADR-038: EVF-Organized Tournaments Ingest POL-Only Rows</a></nav>
+<footer class="foot">Generated from <code>037-derived-display-status-awaiting-results.md</code> · source SHA-256 <code>2ac95f512b4f99f1d5eda6e6d6f0400288ba8327ef72d3864b50bb444811e247</code></footer>
+</div></body></html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="075-staging-report-fragment-channel.md">
+<meta name="adr-source-sha256" content="ed9357c9e125784c9b8ddfe44abbc77c80894add0d86039f8adcf604444c389a">
+<title>ADR-075 · Staging report — a fifth Context channel + per-plugin fragments + terminal formatter</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 075</p><h1>Staging report — a fifth Context channel + per-plugin fragments + terminal formatter</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-16, NEW pipeline build). Design in <a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §4.1 / §4.1a / §5.2a. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-16 <strong>Relates to:</strong> ADR-073 (plugin/rule-engine contract — adds the <code>report</code> channel + per-kind emit), ADR-074 (no-halt / no-draft — this restores the lost staging artifact <em>without</em> reintroducing drafts), ADR-058/061 (verdict <code>.md</code> target router — reuses <code>md_writer.write_for_event</code>), ADR-050 (the OLD draft-then-review pipeline whose <code>.md</code>/<code>.diff.md</code> this replaces).</dd></div><div><dt>Source</dt><dd class=""><code>075-staging-report-fragment-channel.md</code></dd></div><div><dt>Length</dt><dd class="">86 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-16, NEW pipeline build). Design in
+<a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §4.1 / §4.1a / §5.2a.
+<strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.
+<strong>Date:</strong> 2026-06-16
+<strong>Relates to:</strong> ADR-073 (plugin/rule-engine contract — adds the <code>report</code> channel + per-kind emit),
+ADR-074 (no-halt / no-draft — this restores the lost staging artifact <em>without</em> reintroducing drafts),
+ADR-058/061 (verdict <code>.md</code> target router — reuses <code>md_writer.write_for_event</code>), ADR-050 (the OLD
+draft-then-review pipeline whose <code>.md</code>/<code>.diff.md</code> this replaces).</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>ADR-074 removed the draft tables and the human review gate (auto-commit, faults resolved inline). A
+side-effect was the loss of the OLD pipeline's two <strong>human-review files</strong> per event —
+<code>doc/staging/&lt;EVENT&gt;.md</code> (the full ingestion summary) and <code>&lt;EVENT&gt;.diff.md</code> (the 3-way Source/CERT/New
+diff). The PPW3 from-URL debug run showed the cost: the NEW pipeline silently dropped markerless
+fencers and let a minority-gender épée pool through with <strong>no surfaced report</strong>. Operators still need
+to <em>audit</em> a committed run — they just must not be a <em>gate</em> in front of it.</p>
+<p>The staging file aggregates information produced <em>throughout</em> ingestion (stage-0 reconciliation, fuzzy
+matching, pool-round detection, count validation, commit results). The design question was where that
+information should come from.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Add a <strong>fifth forward channel</strong> to <code>Context</code>: <code>report</code> — an append log of <code>ReportFragment(plugin, kind, section, payload)</code>, peer to <code>data</code> / <code>trace</code> / <code>warnings</code> / <code>faults</code>. <code>ctx.add_report(section, **payload)</code> (and the <code>BasePlugin.report</code> convenience) tag each fragment with the active plugin's name
+and kind; like <code>fault()</code>/<code>warn()</code> it is a forward signal, <strong>not</strong> a DAG key, so it bypasses
+write-discipline and is callable by <strong>every plugin kind</strong>.</p>
+<p><strong>Every plugin serializes its own contribution as it runs</strong> (Source → parsed bracket; Gates → their
+checks; Transforms → structure; Mutators → identity/commit). <strong>One terminal <code>StagingFormatter</code></strong>
+(Mutator, <code>effects={&quot;docs&quot;}</code>) shapes the accumulated fragments into the files from <code>STAGING_TEMPLATE</code>
+(an ordered <code>(heading, renderer)</code> spec — the &quot;template&quot;; no Jinja dependency in the repo). It is the
+only plugin that touches the filesystem. The <code>.md</code> is rendered from the template; the <code>.diff.md</code> reuses
+<code>three_way_diff</code> verbatim, fed from the <code>IDENTITY</code> matches + <code>db.fetch_cert_rows_for_event</code>.</p>
+<p><code>StagingFormatter</code> lives at the tail of the <code>POST_COMMIT</code> flow but renders only at <strong>event scope</strong>: the
+CLI fires ONE event-level <code>POST_COMMIT</code> after the bracket loop (<code>ingest_cli._fire_staging_report</code>),
+seeding <code>_bracket_reports</code> (every bracket's <code>report</code>) and schedule-level skips. <code>applies()</code> is True only
+when <code>_bracket_reports</code> is present, so the per-bracket POST_COMMIT the <code>PostCommit</code> reactor fires SKIPs
+it. One UTC stamp per run names both files — <code>doc/staging/&lt;EVENT&gt;.&lt;YYYYMMDD-HHMMSSZ&gt;.md</code> / <code>.diff.md</code> —
+so reruns of the same event are comparable.</p>
+<p>This layer is <strong>informational / post-commit</strong> (consistent with ADR-074): no drafts, no blocking gate.
+The operator reviews the <code>.md</code>, fixes via the alias UI / a master-data edit, and re-runs — self-healing
+(ADR-072) re-derives the affected events.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>(A) A single terminal plugin that reconstructs the report from the legacy <code>_legacy</code> pctx.</strong>
+Rejected: brittle and couples the report to plugin <em>side-effects</em> — any contribution not happening to
+land on the pctx is invisible, and the report is reverse-engineered rather than declared. The user
+explicitly chose distributed emission.</li>
+<li><strong>(B, chosen) Distributed fragment emission + a terminal shaper.</strong> Each plugin owns its slice (it
+knows best what it did); the report is a first-class, self-describing output; new plugins extend it by
+emitting a fragment. Mirrors how the OLD pipeline already accumulated state across stages and shaped
+it at the end, but as a declared channel.</li>
+<li><strong>A blocking curation gate (re-introduce drafts).</strong> Rejected: reverses ADR-074. The files are
+informational; the pipeline already committed its best automatic state.</li>
+<li><strong>A Jinja template file.</strong> Rejected: no Jinja dependency in the repo; an ordered Python
+<code>(heading, renderer)</code> spec is the lighter &quot;template&quot; and keeps rendering testable per-section.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>The NEW pipeline regains per-event audit visibility lost with the draft gate, with no human in the
+critical path.</li>
+<li>Every plugin gains a one-line emit; the contract (<code>Context</code>/<code>BasePlugin</code>) carries the capability, so
+the report stays self-contained and extensible.</li>
+<li><code>POST_COMMIT</code> now ends <code>ParticipantCount → Notify → StagingFormatter</code>; the per-bracket reactor fire
+SKIPs the formatter (event-scope gate), so only the CLI's event-level fire renders.</li>
+<li><code>md_writer.write_for_event</code> and <code>three_way_diff.write_diff</code> gain an optional, backward-compatible
+<code>timestamp</code> param; existing callers are unaffected.</li>
+<li>Timestamped filenames accumulate in <code>doc/staging/</code>; pruning old runs is left to the operator.</li>
+<li>During the bridge, <code>ResolveFencers</code> writes identity data to both the legacy pctx (parity bridge) and
+the report channel; the report channel is the file's source of truth.</li>
+</ul>
+</section>
+<section class="section-card adr-section tests"><p class="kicker">tests</p><h2 id="tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</h2>
+<p>N11.1 <code>Context.report</code> + <code>add_report</code> tagging + write-discipline bypass · N11.2 <code>BasePlugin.report</code>
+forwards name+kind · N11.3 every plugin emits its fragment during a real flow · N11.4
+<code>StagingFormatter.applies</code> gates on <code>_bracket_reports</code> · N11.5 renders the <code>.md</code> template in order +
+schedule skips surface · N11.6 writes the <code>.diff.md</code> via <code>three_way_diff</code> · N11.7 the CLI fires exactly
+one event-scoped POST_COMMIT seeded with all bracket reports; timestamped filenames share a stem.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="074-no-halt-fault-resolution.html">← ADR-074: No hard halt — declarative fault resolution + last-resort escalation</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="076-pool-round-discard-and-listing-keep-rule.html">→ ADR-076: Overlapping FTL listings — discard pool-only rounds, keep one listing per category, flag duplicates (UI-resolvable)</a></nav>
+<footer class="foot">Generated from <code>075-staging-report-fragment-channel.md</code> · source SHA-256 <code>ed9357c9e125784c9b8ddfe44abbc77c80894add0d86039f8adcf604444c389a</code></footer>
+</div></body></html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="008-psw-msw-international-pool.md">
+<meta name="adr-source-sha256" content="c4fd80c15b0b651897bf42c9e692823059f6edbaffd8868989936cfa1b52ac53">
+<title>ADR-008 · PSW and MSW in International Ranking Pool</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 008</p><h1>PSW and MSW in International Ranking Pool</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="">Amended (2026-04-05)</dd></div><div><dt>Date</dt><dd class="">2025-03-05 (M6)</dd></div><div><dt>Source</dt><dd class=""><code>008-psw-msw-international-pool.md</code></dd></div><div><dt>Length</dt><dd class="">38 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Amended (2026-04-05)
+<strong>Date:</strong> 2025-03-05 (M6)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#schema-changes">Schema Changes</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The original spec defined the international ranking pool (Kadra) as PEW + MEW only. Two additional tournament types needed inclusion:</p>
+<ul>
+<li><strong>MSW</strong> (World Veterans Championship) — high-prestige, multiplier 2.0</li>
+<li><strong>PSW</strong> (FIE Veterans World Cup) — announced by FIE but <strong>not yet held</strong>; enum value reserved</li>
+</ul>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Include MSW in the international ranking pool alongside PEW and MEW. All three types compete together in a single <code>best-J</code> bucket via <code>json_ranking_rules</code>:</p>
+<pre><code class="language-json">{&quot;types&quot;: [&quot;PEW&quot;, &quot;MEW&quot;, &quot;MSW&quot;], &quot;best&quot;: 3}
+</code></pre>
+<p><strong>PSW is reserved but not active.</strong> FIE has announced a Veterans World Cup (PSW) but no event has taken place yet. The <code>PSW</code> enum value exists in <code>enum_tournament_type</code> for forward compatibility. When PSW events begin, add <code>&quot;PSW&quot;</code> to the international bucket in <code>season_config.sql</code> — no code changes needed thanks to ADR-006 (JSONB bucket rules).</p>
+<p><strong>EVF Criterium Mondial (formerly coded as PS/PSW)</strong> is actually an EVF event, not FIE. It uses tournament type <code>PEW</code> and event code <code>PEW10</code> (2025-26 season onward).</p>
+<p>This was enabled by ADR-006 (JSONB bucket rules) — no schema migration was needed, only a data change in <code>season_config.sql</code>.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="schema-changes">Schema Changes</h2>
+<ul>
+<li><code>enum_tournament_type</code>: <code>PSW</code> value exists (reserved for future FIE events)</li>
+<li><code>tbl_scoring_config</code>: <code>num_psw_multiplier</code> column (default 2.0, unused until PSW events occur)</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>MSW results scored with 2.0 multiplier appear in Kadra ranking automatically</li>
+<li>The combined pool means PEW, MEW, and MSW results compete for the same best-J slots</li>
+<li>PSW can be activated per-season by adding it to <code>json_ranking_rules</code> when FIE starts the World Cup</li>
+<li>No change to <code>fn_ranking_kadra</code> SQL — the JSONB bucket path handles arbitrary type lists</li>
+<li>V0 guard remains: no Kadra ranking for V0 (no EVF equivalent regardless of tournament types)</li>
+<li>EVF Criterium Mondial uses PEW type, not PSW — it is an EVF circuit event</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="007-shadow-dom-deferred.html">← ADR-007: Shadow DOM (Implemented M8)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="009-cert-prod-runtime-toggle.html">→ ADR-009: CERT/PROD Runtime Toggle (Single GitHub Pages Site)</a></nav>
+<footer class="foot">Generated from <code>008-psw-msw-international-pool.md</code> · source SHA-256 <code>c4fd80c15b0b651897bf42c9e692823059f6edbaffd8868989936cfa1b52ac53</code></footer>
+</div></body></html>

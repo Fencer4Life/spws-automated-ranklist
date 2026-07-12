@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="063-polish-plural-and-grupy-zbiorcze.md">
+<meta name="adr-source-sha256" content="47a61d23f16fd9981840c3a40d69f25155b6042490b7427270dd48f191ccf92c">
+<title>ADR-063 · Polish-plural-case + GRUPY ZBIORCZE pool-round recognition in FTL bracket parsing</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 063</p><h1>Polish-plural-case + GRUPY ZBIORCZE pool-round recognition in FTL bracket parsing</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-05-03) <strong>Related:</strong> ADR-050 (unified ingestion pipeline), ADR-057 (pool-round structural detection), ADR-062 (SPWS bracket-name filter) <strong>Phase:</strong> 5 (operational rebuild)</dd></div><div><dt>Date</dt><dd class="">Not recorded</dd></div><div><dt>Source</dt><dd class=""><code>063-polish-plural-and-grupy-zbiorcze.md</code></dd></div><div><dt>Length</dt><dd class="">58 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (2026-05-03)
+<strong>Related:</strong> ADR-050 (unified ingestion pipeline), ADR-057 (pool-round structural detection), ADR-062 (SPWS bracket-name filter)
+<strong>Phase:</strong> 5 (operational rebuild)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#implementation">Implementation</a></li><li class="depth-2"><a href="#test-scope-tdd">Test scope (TDD)</a></li><li class="depth-2"><a href="#amendment-2026-06-03-no-gender-kat-n-brackets-default-to-m-adr-34-parity">Amendment (2026-06-03) — no-gender `kat. N` brackets default to `M` (ADR-34 parity)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>PPW5-2024-2025 ingestion silently dropped 14 of 26 brackets at the FTL splitter (&quot;unparseable bracket name&quot;) because the organizer used a different — but equally valid — Polish-grammar convention than PPW1-PPW4:</p>
+<ol>
+<li><strong>Plural case for &quot;men&quot;:</strong> PPW5 used the <em>nominative plural</em> <code>MĘŻCZYŹNI</code> (with <code>Ź</code> — Z-acute). The existing <code>GENDER_MALE</code> regex <code>MĘŻCZYZN[I]?</code> only matched the <em>genitive plural</em> root <code>MĘŻCZYZN</code> (with plain <code>Z</code>) used in <code>kategoria N</code> constructs by PPW1-PPW4 organizers.</li>
+<li><strong>Pool-round naming:</strong> PPW5 named the preliminary all-fencer pools <code>GRUPY ZBIORCZE</code> (Polish: &quot;collective groups&quot;) rather than <code>MIKST</code> or <code>Mixed</code>. They aren't tournaments — they only seed the per-V-cat brackets — but were neither in <code>MIKST_PATTERN</code> nor recognised structurally because the bracket name lacks gender words and <code>parse_tournament_name</code> returns <code>None</code>, falling into the generic &quot;unparseable&quot; bucket.</li>
+</ol>
+<p>Both forms are correct organizer-dependent Polish. Our parser was tightly typed against one specific convention.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<ul>
+<li><strong>Widen <code>GENDER_MALE</code></strong> from <code>MĘŻCZYZN[I]?</code> to <code>MĘŻCZY[ZŹ]N[IY]?</code> — accepts both genitive (Z) and nominative (Ź) roots, optional plural suffix <code>I</code>/<code>Y</code>.</li>
+<li><strong>Extend <code>MIKST_PATTERN</code></strong> with <code>\bGRUPY\s+ZBIORCZE\b</code> so these brackets get the existing pool-round skip path with reason <code>&quot;Mixed/MIKST (pool round)&quot;</code>.</li>
+<li><strong>Lock the original genitive form via regression test 5.22.2b</strong> so future regex tweaks don't accidentally drop PPW1-PPW4 grammar.</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>Per-event YAML override.</strong> Reactive; new organizer convention = new override. Doesn't scale.</li>
+<li><strong>Drop strict gender-name matching and infer gender from fencer roster.</strong> Bigger change; weakens parser confidence everywhere; defers gender resolution to a stage that can't halt early.</li>
+<li><strong>Widen the regex</strong> (chosen). Minimal, declarative, locked by tests, easy to extend if SPWS adopts further variants.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>Positive:</strong> PPW5-class events ingest fully (14 → 0 unparseable brackets). Future bracket names using either Polish-plural form parse cleanly. <code>GRUPY ZBIORCZE</code> brackets now categorized as pool rounds in the staging md instead of <code>unparseable bracket name</code>.</p>
+<p><strong>Negative / risks:</strong> Vocabulary maintenance burden grows if SPWS adopts further organizer-specific variants. 5.22.x test suite locks in the current accepted forms — adding new ones requires both code + test update.</p>
+<p><strong>Neutral:</strong> <code>MIKST_PATTERN</code> is now a small mixed-language enum (Polish + English). Acceptable; the regex is still trivially readable.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="implementation">Implementation</h2>
+<ul>
+<li><a href="../../python/tools/scrape_ftl_event_urls.py">python/tools/scrape_ftl_event_urls.py</a> — <code>GENDER_MALE</code> and <code>MIKST_PATTERN</code> regex updates with inline comments documenting the grammatical reasoning.</li>
+<li><a href="../../python/tests/test_scrapers.py">python/tests/test_scrapers.py</a> — <code>TestFTLEventSchedule</code> plan tests 5.22.1 / 5.22.2 / 5.22.2b / 5.22.3.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="test-scope-tdd">Test scope (TDD)</h2>
+<ul>
+<li>pytest 5.22.1 — <code>parse_tournament_name(&quot;SZABLA MĘŻCZYŹNI V0&quot;)</code> → <code>(SABRE, M, V0)</code></li>
+<li>pytest 5.22.2 — <code>parse_tournament_name(&quot;FLORET MĘŻCZYŹNI V3&quot;)</code> → <code>(FOIL, M, V3)</code></li>
+<li>pytest 5.22.2b — regression guard: original <code>&quot;SZPADA MĘŻCZYZN kategoria 2&quot;</code> (genitive) → <code>(EPEE, M, V2)</code> still parses</li>
+<li>pytest 5.22.3 — <code>parse_event_schedule</code> skips <code>GRUPY ZBIORCZE</code> brackets as pool rounds; real <code>MĘŻCZYŹNI V0</code> bracket alongside is kept</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-06-03-no-gender-kat-n-brackets-default-to-m-adr-34-parity">Amendment (2026-06-03) — no-gender <code>kat. N</code> brackets default to <code>M</code> (ADR-34 parity)</h2>
+<p><code>parse_tournament_name</code> previously returned <code>None</code> for a weapon-bearing bracket
+with <strong>no gender keyword</strong> (the FT <code>Sexe=&quot;X&quot;</code> case, e.g. Polish <code>Szabla kat. 4</code> /
+<code>Szabla kat. 0</code>). The URL discovery path therefore silently dropped the PPW5 V0/V4
+men's-sabre brackets that the XML ingest path keeps (the XML path defaults gender
+to <code>M</code> per ADR-34 and lets <code>fn_effective_gender</code> reassign any women at query time).
+Fix: when weapon + category are present but no gender keyword matches, default
+gender to <code>M</code> — making URL ingest byte-identical to XML ingest for PPW4/PPW5.
+Guest-event names are still filtered upstream by <code>SPWS_BRACKET_FIRST_TOKEN</code>.
+Test: pytest 3.15g2 (<code>test_scrapers.py::TestFTLEventSchedule::test_parse_tournament_name_polish_kat_no_gender_defaults_male</code>).</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="062-spws-bracket-name-filter.html">← ADR-062: Skip non-SPWS bracket names at FTL event-schedule discovery</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="064-asymmetric-gender-filter-matcher.html">→ ADR-064: Asymmetric gender filter at matcher time (domestic events only)</a></nav>
+<footer class="foot">Generated from <code>063-polish-plural-and-grupy-zbiorcze.md</code> · source SHA-256 <code>47a61d23f16fd9981840c3a40d69f25155b6042490b7427270dd48f191ccf92c</code></footer>
+</div></body></html>

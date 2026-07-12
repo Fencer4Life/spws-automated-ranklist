@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="006-jsonb-ranking-rules.md">
+<meta name="adr-source-sha256" content="695f8a7efae9402777270ebe8755ffb3c10dbf8a4ec4a4a30647afe46c8ee719">
+<title>ADR-006 · JSONB Bucket-Based Ranking Rules</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 006</p><h1>JSONB Bucket-Based Ranking Rules</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2025-03-05 (M5/M6)</dd></div><div><dt>Source</dt><dd class=""><code>006-jsonb-ranking-rules.md</code></dd></div><div><dt>Length</dt><dd class="">41 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2025-03-05 (M5/M6)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#dual-code-path">Dual Code Path</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The ranking aggregation logic (best-K PPW, always-include MPW, best-J international pool) was initially hardcoded as integer columns in <code>tbl_scoring_config</code> (<code>int_ppw_best_count</code>, <code>bool_mpw_droppable</code>, <code>int_pew_best_count</code>, <code>bool_mew_droppable</code>). Adding PSW as a new tournament type would have required a schema migration to add columns for every new type.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Add <code>json_ranking_rules JSONB</code> to <code>tbl_scoring_config</code>. The JSONB value defines <strong>buckets</strong> — groups of tournament types with a selection rule (<code>best: N</code> or <code>always: true</code>). The ranking functions (<code>fn_ranking_ppw</code>, <code>fn_ranking_kadra</code>) iterate buckets dynamically via <code>jsonb_array_elements</code>.</p>
+<pre><code class="language-json">{
+  &quot;domestic&quot;: [
+    {&quot;types&quot;: [&quot;PPW&quot;], &quot;best&quot;: 4},
+    {&quot;types&quot;: [&quot;MPW&quot;], &quot;always&quot;: true}
+  ],
+  &quot;international&quot;: [
+    {&quot;types&quot;: [&quot;PPW&quot;], &quot;best&quot;: 4},
+    {&quot;types&quot;: [&quot;MPW&quot;], &quot;always&quot;: true},
+    {&quot;types&quot;: [&quot;PEW&quot;, &quot;MEW&quot;, &quot;MSW&quot;], &quot;best&quot;: 3}
+  ]
+}
+</code></pre>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="dual-code-path">Dual Code Path</h2>
+<ul>
+<li><code>json_ranking_rules = NULL</code> (SPWS-2023-2024): legacy hardcoded K/J logic</li>
+<li><code>json_ranking_rules</code> populated (SPWS-2024-2025+): JSONB bucket selection</li>
+</ul>
+<p>Both paths coexist — historical seasons keep their NULL value and legacy behaviour.</p>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Adding new tournament types (PSW, future types) requires no schema migration — just edit the JSONB</li>
+<li>Rules are version-controlled per season in <code>supabase/data/{season}/season_config.sql</code></li>
+<li>No redeployment needed when rules change — pure data update</li>
+<li>Trade-off: JSONB is less strictly typed than dedicated columns — validation is at application level</li>
+<li>Trade-off: two code paths in ranking functions (legacy + JSONB) increase complexity</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="005-svelte-state-i18n.html">← ADR-005: Svelte 5 $state for Internationalisation</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="007-shadow-dom-deferred.html">→ ADR-007: Shadow DOM (Implemented M8)</a></nav>
+<footer class="foot">Generated from <code>006-jsonb-ranking-rules.md</code> · source SHA-256 <code>695f8a7efae9402777270ebe8755ffb3c10dbf8a4ec4a4a30647afe46c8ee719</code></footer>
+</div></body></html>

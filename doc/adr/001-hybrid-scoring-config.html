@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="001-hybrid-scoring-config.md">
+<meta name="adr-source-sha256" content="06c1a12534ddcc00d26c38643ffeee23e270b2ebe6fedd6c556aef78500cd721">
+<title>ADR-001 · Hybrid Scoring Configuration (Table + JSON Export/Import)</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 001</p><h1>Hybrid Scoring Configuration (Table + JSON Export/Import)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2025-03-01 (M2)</dd></div><div><dt>Source</dt><dd class=""><code>001-hybrid-scoring-config.md</code></dd></div><div><dt>Length</dt><dd class="">32 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2025-03-01 (M2)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The scoring engine needs configurable parameters (MP value, multipliers, podium bonuses, best-K counts, etc.) that the admin can tune during calibration. The question was where to store these parameters: purely in the database, or in a JSON config file.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Use a <strong>hybrid</strong> approach: production truth lives in <code>tbl_scoring_config</code> (typed columns, FK to season, RLS-protected, ts_updated tracking), while local editing is enabled via <code>fn_export_scoring_config</code> / <code>fn_import_scoring_config</code> SQL functions that convert the row to/from JSON.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<p><strong>Pure JSON file:</strong></p>
+<ul>
+<li>Not queryable by SQL — the scoring engine can't <code>SELECT</code> it</li>
+<li>Two sources of truth (file + DB) inevitably drift</li>
+<li>The deployed app can't read a local file</li>
+<li>No schema validation unless custom-built</li>
+</ul>
+<p><strong>Pure database table (edit via Supabase UI only):</strong></p>
+<ul>
+<li>Supabase Table Editor is clunky for rapid iteration during calibration</li>
+<li>Every tweak requires a browser round-trip</li>
+<li>No local diff/history in editor</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Calibration workflow is fast: export → edit in VS Code → import → re-score → compare</li>
+<li>Python helpers (<code>calibrate_config.py</code>, <code>calibrate_compare.py</code>) wrap the RPC calls</li>
+<li>Exported JSON is diffable and committable to Git</li>
+<li>The single source of truth is always the database — JSON files are ephemeral working copies</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><span class="previous"></span><a class="registry" href="index.html">ADR registry</a><a class="next" href="002-calculate-once-store-forever.html">→ ADR-002: Calculate Once, Store Forever</a></nav>
+<footer class="foot">Generated from <code>001-hybrid-scoring-config.md</code> · source SHA-256 <code>06c1a12534ddcc00d26c38643ffeee23e270b2ebe6fedd6c556aef78500cd721</code></footer>
+</div></body></html>

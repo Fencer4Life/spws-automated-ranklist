@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="042-carryover-engine-dispatcher.md">
+<meta name="adr-source-sha256" content="23d88f9a0f43b4aafdacdd31068a127e939b618467f9bc25f90d0569c5afc1ca">
+<title>ADR-042 · Per-season carry-over engine selection via dispatcher pattern</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 042</p><h1>Per-season carry-over engine selection via dispatcher pattern</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted — Phase 1A + 1B implemented; <strong>amended Phase 3</strong> (2026-04-26) to flip the column DEFAULT from <code>EVENT_CODE_MATCHING</code> to <code>EVENT_FK_MATCHING</code> for new seasons and to make engine selection admin-configurable via the ScoringConfigEditor dropdown (see ADR-045). Existing rows are not rewritten; admin opts each one in via the UI.</dd></div><div><dt>Date</dt><dd class="">2026-04-25 (created), 2026-04-26 (Phase 3 amendment) <strong>Relates to:</strong> ADR-018 (Rolling Score for Active Season), ADR-021 (IMEW biennial carry-over), ADR-044 (Phase 3 wizard), ADR-045 (engine selector + default flip)</dd></div><div><dt>Source</dt><dd class=""><code>042-carryover-engine-dispatcher.md</code></dd></div><div><dt>Length</dt><dd class="">103 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted — Phase 1A + 1B implemented; <strong>amended Phase 3</strong> (2026-04-26) to flip the column DEFAULT from <code>EVENT_CODE_MATCHING</code> to <code>EVENT_FK_MATCHING</code> for new seasons and to make engine selection admin-configurable via the ScoringConfigEditor dropdown (see ADR-045). Existing rows are not rewritten; admin opts each one in via the UI.
+<strong>Date:</strong> 2026-04-25 (created), 2026-04-26 (Phase 3 amendment)
+<strong>Relates to:</strong> ADR-018 (Rolling Score for Active Season), ADR-021 (IMEW biennial carry-over), ADR-044 (Phase 3 wizard), ADR-045 (engine selector + default flip)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#schema-additions">Schema additions</a></li><li class="depth-3"><a href="#dispatcher-pattern">Dispatcher pattern</a></li><li class="depth-3"><a href="#naming-convention">Naming convention</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#migration-test-references">Migration &amp; test references</a></li><li class="depth-2"><a href="#future-work">Future work</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Rolling-score carry-over currently identifies a &quot;position&quot; by parsing the prefix of <code>tbl_event.txt_code</code> via <code>fn_event_position(p_code) = split_part(p_code, '-', 1)</code>. The carry-over rule then says: a prior-season event carries into the current-season pool unless an event with the same prefix has been COMPLETED in the current season.</p>
+<p>This breaks for EVF-scraped events whose codes are venue slugs (<code>PEW-SALLEJEANZ-2025-2026</code>, <code>PEW-SPORTHALLE-2025-2026</code>). Their <code>fn_event_position</code> returns just <code>PEW</code>, colliding all such events into a single position and silently corrupting the rolling pool.</p>
+<p>The intended fix is FK-based linkage: a new <code>tbl_event.id_prior_event</code> column making the cross-year relationship explicit, plus a <code>vw_eligible_event</code> view that becomes the single source of truth for what contributes to a season's rolling pool. But replacing the carry-over engine in one shot is risky:</p>
+<ul>
+<li>Three rolling-score functions, each 200–300 lines of intricate CTE logic</li>
+<li>Existing 21 pgTAP assertions hardcode expected scores from real seed data</li>
+<li>Production seasons must not silently drift after deploy</li>
+<li>Future engines may emerge (city-matching, organizer-matching, ranking-rule-specific) — we want a structure that admits new engines without rewriting existing ones</li>
+</ul>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Introduce a per-season carry-over engine flag and a dispatcher pattern. Each rolling-score function (<code>fn_ranking_ppw</code>, <code>fn_ranking_kadra</code>, <code>fn_fencer_scores_rolling</code>) becomes a thin dispatcher that reads the season's flag and routes to a named engine implementation. Engine implementations carry verbose suffixes (<code>_event_code_matching</code>, <code>_event_fk_matching</code>, ...) that explicitly name what they match on.</p>
+<h3 id="schema-additions">Schema additions</h3>
+<pre><code class="language-sql">CREATE TYPE enum_event_carryover_engine AS ENUM (
+  'EVENT_CODE_MATCHING',  -- existing prefix-string logic
+  'EVENT_FK_MATCHING'     -- Phase 1B: FK-based via id_prior_event
+);
+
+ALTER TABLE tbl_season
+  ADD COLUMN enum_carryover_engine enum_event_carryover_engine
+    NOT NULL DEFAULT 'EVENT_CODE_MATCHING';
+</code></pre>
+<h3 id="dispatcher-pattern">Dispatcher pattern</h3>
+<p>The current function bodies are renamed in-place by appending <code>_event_code_matching</code> (preserving OID and behavior). New functions with the original public names are created as dispatchers:</p>
+<pre><code class="language-sql">CREATE FUNCTION fn_ranking_ppw(...) RETURNS TABLE (...) ... AS $$
+DECLARE v_engine enum_event_carryover_engine; v_resolved_season INT;
+BEGIN
+  v_resolved_season := COALESCE(p_season, (SELECT id_season FROM tbl_season WHERE bool_active LIMIT 1));
+  SELECT enum_carryover_engine INTO v_engine FROM tbl_season WHERE id_season = v_resolved_season;
+  CASE v_engine
+    WHEN 'EVENT_CODE_MATCHING' THEN
+      RETURN QUERY SELECT * FROM fn_ranking_ppw_event_code_matching(p_weapon, p_gender, p_category, p_season, p_rolling);
+    WHEN 'EVENT_FK_MATCHING' THEN
+      RAISE EXCEPTION 'Carryover engine EVENT_FK_MATCHING is not yet implemented for season %', v_resolved_season;
+    ELSE
+      RAISE EXCEPTION 'Unknown carryover engine: % for season %', v_engine, v_resolved_season;
+  END CASE;
+END $$;
+</code></pre>
+<p>The dispatcher's signature is byte-identical to the renamed engine. PostgREST clients (the frontend) see no change.</p>
+<h3 id="naming-convention">Naming convention</h3>
+<ul>
+<li>Enum values: SCREAMING_SNAKE matching the existing <code>enum_event_status</code> style (<code>PLANNED</code>, <code>IN_PROGRESS</code>, etc.)</li>
+<li>Engine functions: <code>&lt;base&gt;_&lt;engine_name&gt;</code> — <code>fn_ranking_ppw_event_code_matching</code>. Verbose by design so the engine type is unambiguous when reading code or grep results.</li>
+<li>Dispatcher functions: keep the original public name (e.g. <code>fn_ranking_ppw</code>).</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li>
+<p><strong>Direct rewrite (no dispatcher).</strong> Replace the existing function bodies with FK-based logic in one migration. Rejected: high risk, no rollback path beyond writing reverse migrations, can't A/B compare engines, can't ship in stages.</p>
+</li>
+<li>
+<p><strong>Single function with branched body</strong> (<code>IF engine = 'FK' THEN ... ELSE ...</code> inside one large function). Rejected: function bodies grow to 400+ lines mixing two engines; harder to delete legacy branch later; harder to add a third engine.</p>
+</li>
+<li>
+<p><strong>Global feature flag</strong> (one flag for all seasons). Rejected: blunt rollout. Per-season opt-in lets us migrate one season at a time, leaving finalized history untouched, and instantly revert via <code>UPDATE tbl_season ... WHERE id_season = X</code>.</p>
+</li>
+<li>
+<p><strong>String-prefix fallback when FK is NULL.</strong> Rejected: doubles the carry-over surface forever; the prefix mechanism is exactly the bug we're fixing. Fail-closed (NULL FK ⇒ no carry) forces explicit data hygiene.</p>
+</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>Positive:</strong></p>
+<ul>
+<li>Per-season rollout — opt seasons in to new engines independently; finalized seasons stay frozen</li>
+<li>Instant rollback — flip the flag via a single UPDATE; no migration needed</li>
+<li>Future engines slot in cheaply: ADD VALUE to the enum, CREATE FUNCTION the engine, append a <code>WHEN</code> branch to dispatchers</li>
+<li>Phase 1A landed with zero behavior change (default <code>EVENT_CODE_MATCHING</code> preserves existing logic)</li>
+<li>A/B comparison enabled — Phase 1B will add <code>fn_compare_carryover_engines(p_id_season)</code> to quantify per-fencer drift before flipping a season</li>
+</ul>
+<p><strong>Negative / accepted costs:</strong></p>
+<ul>
+<li>Two function lookups per rolling-score call (dispatcher + engine). Negligible overhead.</li>
+<li>Dispatcher must duplicate engine signatures verbatim; signature drift would silently break PostgREST clients. Mitigated by pgTAP signature-existence tests (D.3-D.5) and dispatcher-vs-direct routing test (D.6).</li>
+<li>The <code>RAISE EXCEPTION</code> placeholder in the EVENT_FK_MATCHING branch leaks an admin-only error message if a season is set to that value before Phase 1B ships. Default keeps everyone on EVENT_CODE_MATCHING; admin won't manually flip until Phase 1B is ready.</li>
+<li>Code lives in two places (engine + dispatcher) until we eventually drop legacy engines.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="migration-test-references">Migration &amp; test references</h2>
+<ul>
+<li>Migrations: <a href="../../supabase/migrations/20260425000003_carryover_engine_enum.sql"><code>20260425000003_carryover_engine_enum.sql</code></a>, <a href="../../supabase/migrations/20260425000004_rolling_function_dispatcher.sql"><code>20260425000004_rolling_function_dispatcher.sql</code></a></li>
+<li>Tests: <a href="../../supabase/tests/16_dispatcher.sql"><code>supabase/tests/16_dispatcher.sql</code></a> — D.1–D.8</li>
+<li>Regression gate: existing R.1–R.21 in <a href="../../supabase/tests/09_rolling_score.sql"><code>supabase/tests/09_rolling_score.sql</code></a> continue to pass (they call public dispatcher names; default engine routes to legacy logic)</li>
+<li>Plan: <code>~/.claude/plans/sequential-snacking-castle.md</code> (Phase 1A)</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="future-work">Future work</h2>
+<ul>
+<li><strong>Phase 1B</strong>: implement <code>fn_*_event_fk_matching</code> engines using <code>tbl_event.id_prior_event</code> and <code>vw_eligible_event</code>; add <code>fn_compare_carryover_engines</code> for A/B verification; flip SPWS-2025-2026 to <code>EVENT_FK_MATCHING</code> after slug-event manual cleanup. <em>(SHIPPED 2026-04-26 in commit 997ff30.)</em></li>
+<li><strong>Phase 3 amendment (SHIPPED 2026-04-26 in commit 4da1659):</strong> column DEFAULT flipped to <code>EVENT_FK_MATCHING</code> (greenfield seasons only); engine selection moved into the ScoringConfigEditor as a dropdown (Section 4b). Pre-Phase-3 seasons are untouched — admin opts each one in. The legacy CODE branch in the dispatcher remains for compatibility. See ADR-045 for the rationale and ADR-044 for the wizard that exercises the new default.</li>
+<li><strong>Eventual cleanup</strong>: when no live season uses <code>EVENT_CODE_MATCHING</code>, drop the legacy engine functions and remove the <code>WHEN 'EVENT_CODE_MATCHING'</code> branch from dispatchers.</li>
+<li><strong>ADR-021</strong> amendment pending Phase 1B (rule unchanged; expression mechanism updated to FK-based).</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="041-edge-function-dispatch.html">← ADR-041: Server-Side Workflow Dispatch via Supabase Edge Function</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="043-evf-event-allocator.html">→ ADR-043: EVF Event Code Allocator + Classifier (Phase 2)</a></nav>
+<footer class="foot">Generated from <code>042-carryover-engine-dispatcher.md</code> · source SHA-256 <code>23d88f9a0f43b4aafdacdd31068a127e939b618467f9bc25f90d0569c5afc1ca</code></footer>
+</div></body></html>
