@@ -6,7 +6,7 @@
 
 ## Context
 
-Admin-managed URLs (`tbl_event.url_results` and `tbl_tournament.url_results`) are hand-entered for vendor systems (Fencingtimelive, Engarde, Ophardt, etc.). When the operator pastes a wrong URL — or pastes the right URL into the wrong event row — the ingestion pipeline silently associates wrong results with the event. Memory rule [feedback_validate_url_writes.md](/Users/aleks/.claude/projects/-Users-aleks-coding-SPWSranklist/memory/feedback_validate_url_writes.md) documents that this has caused real data corruption.
+Admin-managed URLs (`tbl_event.url_results` and `tbl_tournament.url_results`) are hand-entered for vendor systems (Fencingtimelive, Engarde, Ophardt, etc.). When the operator pastes a wrong URL — or pastes the right URL into the wrong event row — the ingestion pipeline silently associates wrong results with the event. Memory rule `feedback_validate_url_writes` documents that this has caused real data corruption.
 
 The agreed remediation: scrape the URL, compare metadata to the event row, REJECT on mismatch. Stage 7 of the unified pipeline is where this comparison runs.
 
