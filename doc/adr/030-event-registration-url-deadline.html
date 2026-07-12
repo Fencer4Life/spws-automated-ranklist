@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="030-event-registration-url-deadline.md">
+<meta name="adr-source-sha256" content="fb0b4d4329a9bcc4ad7e258bb1deb3449d7f5558743011f4145038574174b845">
+<title>ADR-030 · Event Registration URL + Deadline</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 030</p><h1>Event Registration URL + Deadline</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented</dd></div><div><dt>Date</dt><dd class="">2026-04-11</dd></div><div><dt>Source</dt><dd class=""><code>030-event-registration-url-deadline.md</code></dd></div><div><dt>Length</dt><dd class="">305 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Implemented<br />
+<strong>Date:</strong> 2026-04-11<br />
+<strong>Source:</strong> UC21, FR-90, FR-91</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#new-fields">New fields</a></li><li class="depth-3"><a href="#display-logic-in-calendar-view">Display logic in Calendar View</a></li><li class="depth-3"><a href="#visual-style">Visual style</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#implementation-plan">Implementation Plan</a></li><li class="depth-3"><a href="#1-spec-rtm-updates">1. Spec &amp; RTM Updates</a></li><li class="depth-4"><a href="#new-functional-requirements-after-fr-89">New Functional Requirements (after FR-89)</a></li><li class="depth-4"><a href="#other-spec-updates">Other spec updates</a></li><li class="depth-3"><a href="#2-database-migration">2. Database Migration</a></li><li class="depth-3"><a href="#3-pgtap-tests">3. pgTAP Tests</a></li><li class="depth-3"><a href="#4-frontend-types">4. Frontend Types</a></li><li class="depth-3"><a href="#5-frontend-api">5. Frontend API</a></li><li class="depth-3"><a href="#6-locale-keys">6. Locale Keys</a></li><li class="depth-3"><a href="#7-calendar-view">7. Calendar View</a></li><li class="depth-3"><a href="#8-event-manager-admin-edit-form">8. Event Manager (Admin Edit Form)</a></li><li class="depth-3"><a href="#9-vitest-tests">9. Vitest Tests</a></li><li class="depth-3"><a href="#10-development-history">10. Development History</a></li><li class="depth-3"><a href="#11-memory-md">11. MEMORY.md</a></li><li class="depth-2"><a href="#execution-order-tdd">Execution Order (TDD)</a></li><li class="depth-2"><a href="#files-modified-summary">Files Modified (Summary)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Fencing events typically require pre-registration. Organisers publish a registration URL and often a deadline. Currently <code>tbl_event</code> has no fields for registration information — only <code>url_event</code> (results) and <code>url_invitation</code> (organiser announcement). Participants need to see registration links in the Calendar view before the event starts, and admins need to enter this data via the Admin UI.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Store registration URL and deadline as two nullable fields on <code>tbl_event</code>. Display conditionally based on date logic. Manual entry only for now; automation deferred to a later enhancement.</p>
+<h3 id="new-fields">New fields</h3>
+<ul>
+<li><code>url_registration TEXT</code> — nullable</li>
+<li><code>dt_registration_deadline DATE</code> — nullable</li>
+</ul>
+<h3 id="display-logic-in-calendar-view">Display logic in Calendar View</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th><code>url_registration</code></th>
+<th><code>dt_registration_deadline</code></th>
+<th>What shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>set</td>
+<td>set</td>
+<td>Both deadline + link, <strong>until deadline passes</strong></td>
+</tr>
+<tr>
+<td>set</td>
+<td>null</td>
+<td>Link only, <strong>until dt_start passes</strong></td>
+</tr>
+<tr>
+<td>null</td>
+<td>set</td>
+<td>Deadline text only (no link), <strong>until deadline passes</strong></td>
+</tr>
+<tr>
+<td>null</td>
+<td>null</td>
+<td>Nothing</td>
+</tr>
+</tbody>
+</table></div>
+<p>Rules:</p>
+<ul>
+<li><strong>Deadline date</strong> displays if <code>dt_registration_deadline</code> is set AND <code>today &lt;= dt_registration_deadline</code></li>
+<li><strong>Registration link</strong> displays if <code>url_registration</code> is set AND <code>today &lt;= (dt_registration_deadline ?? dt_start)</code></li>
+<li>After the relevant date passes, both disappear</li>
+</ul>
+<h3 id="visual-style">Visual style</h3>
+<p>2-tier urgency color coding based on days remaining until the cutoff date (<code>dt_registration_deadline ?? dt_start</code>):</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Color</th>
+<th>CSS class</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>7+ days remaining</td>
+<td>Dark green <code>#2e7d32</code></td>
+<td>(default)</td>
+<td>Plenty of time</td>
+</tr>
+<tr>
+<td>&lt; 7 days remaining</td>
+<td>Red <code>#c33</code></td>
+<td><code>.reg-urgent</code></td>
+<td>Act soon</td>
+</tr>
+</tbody>
+</table></div>
+<p>Both the deadline text (<code>.registration-deadline</code>) and the registration link (<code>.registration-link</code>) change color together — the <code>.reg-urgent</code> class is applied to the parent <code>.timeline-registration</code> container.</p>
+<p>Implementation: <code>regUrgent</code> is computed per-event as a <code>@const</code> in the <code>{#each}</code> block:</p>
+<pre><code>regCutoff = dt_registration_deadline ?? dt_start
+regUrgent = (cutoff - today) &lt; 7 days
+</code></pre>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li><strong>Separate registration table</strong> — rejected, overkill for two fields</li>
+<li><strong>Store on tournament level</strong> — rejected, registration is per-event not per-tournament</li>
+<li><strong>Store deadline as part of URL field (convention)</strong> — rejected, prevents proper date comparison logic</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>New migration: <code>ALTER TABLE</code>, <code>vw_calendar</code> rebuild, CRUD function signature change</li>
+<li>No impact on scoring engine, scrapers, or ingestion pipeline</li>
+<li>Existing seed data unaffected (NULL defaults)</li>
+<li>Future automation (e.g. scraping registration URLs from organiser sites) requires no schema change — just <code>UPDATE tbl_event SET url_registration = ...</code></li>
+</ul>
+<hr />
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="implementation-plan">Implementation Plan</h2>
+<h3 id="1-spec-rtm-updates">1. Spec &amp; RTM Updates</h3>
+<p><strong>File:</strong> <code>doc/Project Specification. SPWS Automated Ranklist System.md</code></p>
+<h4 id="new-functional-requirements-after-fr-89">New Functional Requirements (after FR-89)</h4>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Source</th>
+<th>Tests</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-90</td>
+<td>Event registration URL: nullable <code>url_registration</code> on <code>tbl_event</code>, displayed in Calendar before deadline/start, editable in Admin UI</td>
+<td>UC21, ADR-030</td>
+<td>8.18–8.20, 9.43a–9.43c</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>FR-91</td>
+<td>Event registration deadline: nullable <code>dt_registration_deadline</code> on <code>tbl_event</code>, displayed in Calendar until deadline passes, editable in Admin UI</td>
+<td>UC21, ADR-030</td>
+<td>8.18–8.20, 9.43a–9.43c</td>
+<td>Pending</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="other-spec-updates">Other spec updates</h4>
+<ul>
+<li>FR-48: add <code>url_registration, dt_registration_deadline</code> to column list (&quot;6 columns&quot; → &quot;8 columns&quot;)</li>
+<li>Appendix C — ADR table: add ADR-030 row</li>
+<li>Appendix D — Test Baseline: update counts after implementation (pgTAP +3, vitest +8)</li>
+</ul>
+<h3 id="2-database-migration">2. Database Migration</h3>
+<p><strong>New file:</strong> <code>supabase/migrations/20260411000001_event_registration.sql</code></p>
+<pre><code class="language-sql">-- Add registration fields
+ALTER TABLE tbl_event ADD COLUMN IF NOT EXISTS url_registration TEXT;
+ALTER TABLE tbl_event ADD COLUMN IF NOT EXISTS dt_registration_deadline DATE;
+
+-- Recreate vw_calendar with new columns
+DROP VIEW IF EXISTS vw_calendar;
+CREATE VIEW vw_calendar AS
+SELECT
+  e.id_event, e.txt_code, e.txt_name, e.id_season,
+  s.txt_code AS txt_season_code,
+  e.id_organizer, o.txt_name AS txt_organizer_name,
+  e.txt_location, e.txt_country, e.txt_venue_address,
+  e.url_invitation, e.num_entry_fee, e.txt_entry_fee_currency,
+  e.arr_weapons,
+  e.dt_start, e.dt_end, e.url_event, e.enum_status,
+  e.url_registration, e.dt_registration_deadline,
+  COUNT(t.id_tournament)::INT AS num_tournaments,
+  COALESCE(BOOL_OR(t.enum_type IN ('PEW','MEW','MSW','PSW')), FALSE) AS bool_has_international
+FROM tbl_event e
+JOIN tbl_season s ON s.id_season = e.id_season
+LEFT JOIN tbl_organizer o ON o.id_organizer = e.id_organizer
+LEFT JOIN tbl_tournament t ON t.id_event = e.id_event
+GROUP BY e.id_event, s.txt_code, o.txt_name
+ORDER BY e.dt_start ASC;
+
+GRANT SELECT ON vw_calendar TO anon;
+GRANT SELECT ON vw_calendar TO authenticated;
+
+-- Recreate fn_create_event with new params (appended after p_weapons)
+CREATE OR REPLACE FUNCTION fn_create_event(
+  p_code TEXT, p_name TEXT, p_id_season INT, p_id_organizer INT,
+  p_location TEXT DEFAULT NULL, p_dt_start DATE DEFAULT NULL,
+  p_dt_end DATE DEFAULT NULL, p_url_event TEXT DEFAULT NULL,
+  p_country TEXT DEFAULT NULL, p_venue_address TEXT DEFAULT NULL,
+  p_invitation TEXT DEFAULT NULL, p_entry_fee NUMERIC DEFAULT NULL,
+  p_entry_fee_currency TEXT DEFAULT NULL,
+  p_weapons enum_weapon_type[] DEFAULT NULL,
+  p_registration TEXT DEFAULT NULL,
+  p_registration_deadline DATE DEFAULT NULL
+) RETURNS INT ...
+
+-- Recreate fn_update_event with new params (appended after p_weapons)
+CREATE OR REPLACE FUNCTION fn_update_event(
+  p_id INT, p_name TEXT, p_location TEXT, p_dt_start DATE,
+  p_dt_end DATE, p_url_event TEXT, p_country TEXT,
+  p_venue_address TEXT, p_invitation TEXT, p_entry_fee NUMERIC,
+  p_entry_fee_currency TEXT DEFAULT NULL, p_id_organizer INT DEFAULT NULL,
+  p_weapons enum_weapon_type[] DEFAULT NULL,
+  p_registration TEXT DEFAULT NULL,
+  p_registration_deadline DATE DEFAULT NULL
+) RETURNS VOID ...
+
+-- REVOKE/GRANT with updated signatures
+</code></pre>
+<h3 id="3-pgtap-tests">3. pgTAP Tests</h3>
+<p><strong>File:</strong> <code>supabase/tests/05_calendar_view.sql</code> — plan(7) → plan(10)</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Assertion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>8.18</td>
+<td><code>tbl_event</code> has columns <code>url_registration</code> (TEXT) and <code>dt_registration_deadline</code> (DATE)</td>
+</tr>
+<tr>
+<td>8.19</td>
+<td><code>vw_calendar</code> includes <code>url_registration</code> and <code>dt_registration_deadline</code> columns</td>
+</tr>
+<tr>
+<td>8.20</td>
+<td><code>fn_create_event</code> and <code>fn_update_event</code> accept registration params and persist them</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="4-frontend-types">4. Frontend Types</h3>
+<p><strong>File:</strong> <code>frontend/src/lib/types.ts</code></p>
+<p>Add to <code>CalendarEvent</code>:</p>
+<pre><code class="language-ts">url_registration: string | null
+dt_registration_deadline: string | null
+</code></pre>
+<p>Add to <code>CreateEventParams</code> and <code>UpdateEventParams</code>:</p>
+<pre><code class="language-ts">registration?: string
+registrationDeadline?: string
+</code></pre>
+<h3 id="5-frontend-api">5. Frontend API</h3>
+<p><strong>File:</strong> <code>frontend/src/lib/api.ts</code></p>
+<p>Add to <code>createEvent()</code> and <code>updateEvent()</code>:</p>
+<pre><code class="language-ts">p_registration: params.registration ?? null,
+p_registration_deadline: params.registrationDeadline ?? null,
+</code></pre>
+<h3 id="6-locale-keys">6. Locale Keys</h3>
+<p><strong>Files:</strong> <code>frontend/src/lib/locales/en.json</code>, <code>pl.json</code></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>EN</th>
+<th>PL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>event_registration</code></td>
+<td><code>Registration</code></td>
+<td><code>Rejestracja</code></td>
+</tr>
+<tr>
+<td><code>event_registration_label</code></td>
+<td><code>Registration URL</code></td>
+<td><code>URL rejestracji</code></td>
+</tr>
+<tr>
+<td><code>event_registration_deadline_label</code></td>
+<td><code>Registration deadline</code></td>
+<td><code>Termin rejestracji</code></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="7-calendar-view">7. Calendar View</h3>
+<p><strong>File:</strong> <code>frontend/src/components/CalendarView.svelte</code></p>
+<p>Registration block in <code>timeline-links</code> section (after invitation link, before entry fee):</p>
+<pre><code class="language-svelte">{@const regCutoff = event.dt_registration_deadline ?? event.dt_start ?? ''}
+{@const showRegDeadline = event.dt_registration_deadline != null &amp;&amp; today &lt;= event.dt_registration_deadline}
+{@const showRegLink = event.url_registration != null &amp;&amp; regCutoff !== '' &amp;&amp; today &lt;= regCutoff}
+{@const regUrgent = regCutoff !== '' &amp;&amp; (new Date(regCutoff).getTime() - new Date(today).getTime()) &lt; 7 * 86400000}
+
+{#if showRegDeadline || showRegLink}
+  &lt;div class=&quot;timeline-registration&quot; class:reg-urgent={regUrgent}&gt;
+    {#if showRegDeadline}
+      &lt;span class=&quot;registration-deadline&quot;&gt;
+        {t('event_registration_deadline_label')}: {formatDate(event.dt_registration_deadline)}
+      &lt;/span&gt;
+    {/if}
+    {#if showRegLink}
+      &lt;a class=&quot;registration-link&quot; href={event.url_registration} target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;
+        {t('event_registration')} &amp;rarr;
+      &lt;/a&gt;
+    {/if}
+  &lt;/div&gt;
+{/if}
+</code></pre>
+<p>Conditions (computed per-event as <code>@const</code> inside <code>{#each}</code>):</p>
+<ul>
+<li><code>regCutoff</code> = <code>dt_registration_deadline ?? dt_start</code> — the date that drives both visibility and urgency</li>
+<li><code>showRegDeadline</code> = <code>dt_registration_deadline != null &amp;&amp; today &lt;= dt_registration_deadline</code></li>
+<li><code>showRegLink</code> = <code>url_registration != null &amp;&amp; today &lt;= regCutoff</code></li>
+<li><code>regUrgent</code> = <code>(regCutoff - today) &lt; 7 days</code> — toggles <code>.reg-urgent</code> CSS class on parent container</li>
+</ul>
+<p>Color coding:</p>
+<ul>
+<li>Default (7+ days): dark green <code>#2e7d32</code> on <code>.registration-deadline</code> and <code>.registration-link</code></li>
+<li>Urgent (&lt; 7 days): red <code>#c33</code> via <code>.reg-urgent .registration-deadline</code> and <code>.reg-urgent .registration-link</code></li>
+</ul>
+<h3 id="8-event-manager-admin-edit-form">8. Event Manager (Admin Edit Form)</h3>
+<p><strong>File:</strong> <code>frontend/src/components/EventManager.svelte</code></p>
+<p>New state: <code>draftRegistration</code>, <code>draftRegistrationDeadline</code></p>
+<p>Two new form fields (in both edit + create forms, after invitation field):</p>
+<pre><code class="language-html">&lt;label&gt;{t('event_registration_deadline_label')}
+  &lt;input data-field=&quot;form-registration-deadline&quot; type=&quot;date&quot; bind:value={draftRegistrationDeadline} /&gt;
+&lt;/label&gt;
+&lt;label&gt;{t('event_registration_label')}
+  &lt;input data-field=&quot;form-registration&quot; type=&quot;text&quot; bind:value={draftRegistration} /&gt;
+&lt;/label&gt;
+</code></pre>
+<p>Wire into <code>openCreateForm()</code>, <code>openEditForm()</code>, <code>handleSave()</code>.</p>
+<h3 id="9-vitest-tests">9. Vitest Tests</h3>
+<p><strong>CalendarView.test.ts</strong> — +7 tests:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Assertion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>8.21</td>
+<td>Registration link + deadline shown when both set and today &lt;= deadline</td>
+</tr>
+<tr>
+<td>8.22</td>
+<td>Registration link only shown (no deadline) when URL set and today &lt;= dt_start</td>
+</tr>
+<tr>
+<td>8.23</td>
+<td>Registration deadline text shown without link when only deadline set</td>
+</tr>
+<tr>
+<td>8.24</td>
+<td>Nothing shown when both null</td>
+</tr>
+<tr>
+<td>8.25</td>
+<td>Nothing shown when deadline/dt_start has passed (date in the past)</td>
+</tr>
+<tr>
+<td>8.26</td>
+<td>Registration block has <code>.reg-urgent</code> class when &lt; 7 days remain</td>
+</tr>
+<tr>
+<td>8.26b</td>
+<td>Registration block has no <code>.reg-urgent</code> class when 7+ days remain</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>EventManager.test.ts</strong> — +3 tests:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Assertion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>9.43a</td>
+<td>Edit form populates registration URL and deadline from event data</td>
+</tr>
+<tr>
+<td>9.43b</td>
+<td>Create form has empty registration fields</td>
+</tr>
+<tr>
+<td>9.43c</td>
+<td>Save includes registration + registrationDeadline in params</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="10-development-history">10. Development History</h3>
+<p><strong>File:</strong> <code>doc/development_history.md</code> — add Post-MVP enhancement entry with ADR-030 reference.</p>
+<h3 id="11-memory-md">11. MEMORY.md</h3>
+<p>Update ADR registry line to include ADR-030.</p>
+<hr />
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="execution-order-tdd">Execution Order (TDD)</h2>
+<ol>
+<li><strong>Documentation first:</strong> This ADR, Spec RTM (FR-90, FR-91), Appendix C+D</li>
+<li><strong>Write tests (RED):</strong> pgTAP 3 + vitest 10</li>
+<li><strong>Run tests → confirm RED</strong></li>
+<li><strong>Implementation:</strong> migration → types → api → locales → CalendarView (+ color coding) → EventManager</li>
+<li><strong>Run tests → confirm GREEN</strong></li>
+<li><strong>Update test baseline</strong> (pgTAP 239, vitest 212, total 727)</li>
+<li><strong>Update development_history.md + MEMORY.md</strong></li>
+</ol>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="files-modified-summary">Files Modified (Summary)</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>doc/adr/030-event-registration-url-deadline.md</code></td>
+<td>NEW — this ADR</td>
+</tr>
+<tr>
+<td><code>doc/Project Specification. SPWS Automated Ranklist System.md</code></td>
+<td>FR-90, FR-91 in RTM; FR-48 update; Appendix C+D</td>
+</tr>
+<tr>
+<td><code>doc/development_history.md</code></td>
+<td>Post-MVP enhancement entry</td>
+</tr>
+<tr>
+<td><code>supabase/migrations/20260411000001_event_registration.sql</code></td>
+<td>NEW — schema + view + CRUD (drops old overloads)</td>
+</tr>
+<tr>
+<td><code>supabase/tests/05_calendar_view.sql</code></td>
+<td>+3 assertions (8.18–8.20)</td>
+</tr>
+<tr>
+<td><code>frontend/src/lib/types.ts</code></td>
+<td>CalendarEvent + Create/UpdateEventParams</td>
+</tr>
+<tr>
+<td><code>frontend/src/lib/api.ts</code></td>
+<td>createEvent + updateEvent params</td>
+</tr>
+<tr>
+<td><code>frontend/src/lib/locales/en.json</code></td>
+<td>3 new keys</td>
+</tr>
+<tr>
+<td><code>frontend/src/lib/locales/pl.json</code></td>
+<td>3 new keys</td>
+</tr>
+<tr>
+<td><code>frontend/src/components/CalendarView.svelte</code></td>
+<td>Registration block with date logic + 2-tier color coding</td>
+</tr>
+<tr>
+<td><code>frontend/src/components/EventManager.svelte</code></td>
+<td>2 new form fields + state + handlers</td>
+</tr>
+<tr>
+<td><code>frontend/tests/CalendarView.test.ts</code></td>
+<td>+7 tests (8.21–8.26b)</td>
+</tr>
+<tr>
+<td><code>frontend/tests/EventManager.test.ts</code></td>
+<td>+3 tests (9.43a–9.43c)</td>
+</tr>
+<tr>
+<td><code>scripts/reset-dev.sh</code></td>
+<td>NEW — local DB reset + admin user recreation</td>
+</tr>
+</tbody>
+</table></div>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="029-tournament-url-auto-population.html">← ADR-029: Tournament URL Auto-Population + Admin CRUD</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="031-auto-active-season.html">→ ADR-031: Auto-Active Season by Date</a></nav>
+<footer class="foot">Generated from <code>030-event-registration-url-deadline.md</code> · source SHA-256 <code>fb0b4d4329a9bcc4ad7e258bb1deb3449d7f5558743011f4145038574174b845</code></footer>
+</div></body></html>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="069-participant-count-url-validator.md">
+<meta name="adr-source-sha256" content="2c4af3bfe2341dcab1a938a73ecdd7d1d7ed28d2a4f146c8dc4dac0481e4ed1d">
+<title>ADR-069 · Per-tournament participant-count URL validator (HALT gate)</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 069</p><h1>Per-tournament participant-count URL validator (HALT gate)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted; implemented LOCAL 2026-06-04.</dd></div><div><dt>Date</dt><dd class="">2026-06-04 <strong>Relates to:</strong> ADR-049 (joint-pool split + its 2026-06-04 per-V-cat amendment), ADR-052 (URL→data validation), ADR-038 (per-cat field count), ADR-024 (combined category splitting).</dd></div><div><dt>Source</dt><dd class=""><code>069-participant-count-url-validator.md</code></dd></div><div><dt>Length</dt><dd class="">84 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted; implemented LOCAL 2026-06-04.
+<strong>Date:</strong> 2026-06-04
+<strong>Relates to:</strong> ADR-049 (joint-pool split + its 2026-06-04 per-V-cat amendment),
+ADR-052 (URL→data validation), ADR-038 (per-cat field count), ADR-024 (combined
+category splitting).</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests">Tests</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Two failure classes corrupt <code>int_participant_count</code>, which <code>fn_calc_tournament_scores</code>
+reads directly:</p>
+<ul>
+<li><strong>(A) Joint-pool sum inflation</strong> — the pre-amendment ADR-049 rule summed V-cat
+siblings sharing a <code>url_results</code>. Fixed by the ADR-049 amendment + its pgTAP
+invariant.</li>
+<li><strong>(B) Result-row contamination</strong> — the stored result-row count is itself wrong
+(e.g. <code>PPW3-V1-F-EPEE</code> committed 10 rows while the FTL bracket holds 6). A
+pure internal invariant (<code>int_participant_count == COUNT(tbl_result)</code>) cannot
+see this: both sides are equally inflated.</li>
+</ul>
+<p>Class (B) can only be caught by comparing the committed count against the live
+result bracket. <code>fn_commit_event_draft</code> is a plain INSERT path with no such
+check; the existing pre-commit S7 count check (ADR-052) compares the <em>combined</em>
+<code>raw_pool_size</code> before the per-V-cat split, so it is blind to per-bracket counts.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Add a <strong>post-commit, per-tournament URL validator</strong>. After <code>fn_commit_event_draft</code>,
+for each committed tournament:</p>
+<ol>
+<li>Re-fetch its <code>url_results</code> (authed FTL client where required).</li>
+<li>Compute the <strong>per-V-cat membership</strong> the bracket actually contains — split by
+<code>birth_year</code> via <code>vcat_for_age(season_end_year − birth_year)</code>, mirroring the
+pipeline's <code>s7_split_by_vcat</code>.</li>
+<li>Compare to the stored <code>int_participant_count</code>.</li>
+</ol>
+<p>A mismatch is a <strong><code>PARTICIPANT_COUNT_MISMATCH</code> halt</strong>: the run fails and the
+event is flagged. The commit has already written, but this is safe in the
+recreate/deploy flow because it wipes-and-re-ingests and nothing is promoted to
+CERT/PROD until the run is clean. A missing URL (cert_ref / xlsx) or a fetch
+error is a <strong>warn</strong> — never a silent pass, but does not block.</p>
+<p>Implementation:</p>
+<ul>
+<li>Pure module <code>python/pipeline/participant_count_validation.py</code>
+(<code>validate_event_participant_counts(tournaments, fetcher, *, season_end_year)</code>
+→ list of <code>CountFinding</code>; <code>has_halt(findings)</code>), decoupled from the DB for
+unit testing.</li>
+<li>Wired into <code>recreate_active_season_2025_2026.ingest_event</code> after the commit,
+re-fetching via <code>Fetcher(http_client=get_authed_ftl_client())</code>.</li>
+<li>New enum value <code>HaltReason.PARTICIPANT_COUNT_MISMATCH</code>.</li>
+</ul>
+<p><strong>Scope:</strong> SPWS-domestic events (PPW/MPW/GP), where everyone enters the ranklist
+so <code>int_participant_count</code> equals the per-V-cat bracket size. International
+events use ADR-038 full-field counts and are <strong>not</strong> validated this way (would
+false-positive).</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>Pre-commit pipeline stage</strong> (after <code>s7_split_by_vcat</code>). Rejected: the
+per-V-cat counts are correct at that point; the inflation (class A) was applied
+later by the commit recompute, and contamination (class B) needs the live URL.
+A per-bracket pre-commit stage is structurally blind to both.</li>
+<li><strong>pgTAP-only internal invariant</strong> (<code>pcount == COUNT(tbl_result)</code>). Kept as a
+complementary CI guard (no network), but it cannot catch class (B). The two
+layers are defense-in-depth for different failure classes.</li>
+<li><strong>Re-fetch vs. reuse rows parsed during ingest.</strong> Re-fetch chosen: it is true
+external ground truth and catches parse + split bugs, not just downstream
+computation.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Every domestic re-ingest self-verifies its committed counts against the live
+brackets; a bad scrape fails loudly instead of silently corrupting scores.</li>
+<li>One authed fetch per distinct bracket URL per ingest (cached per URL).</li>
+<li>The validator is reusable (pure function) for ad-hoc audits.</li>
+</ul>
+</section>
+<section class="section-card adr-section tests"><p class="kicker">tests</p><h2 id="tests">Tests</h2>
+<ul>
+<li>pytest <code>test_participant_count_validation.py</code> — C2.1–C2.6: per-V-cat match
+passes; sum-inflation halts; contamination halts; shared-URL per-V-cat correct
+passes; no-URL warns; fetch-error warns; <code>has_halt</code> helper.</li>
+<li>Complemented by pgTAP 25.5 / 27.27 (ADR-049 amendment) enforcing
+<code>int_participant_count == own result count</code> for joint rows.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="068-ftl-www-host-and-session-cache.html">← ADR-068: FTL www-host normalization + cached non-rolling session</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="070-resolve-fencers-auto-resolution.html">→ ADR-070: ResolveFencers auto-resolution (merged Stage-0 ⊕ Stage-6, runs early), no human review gate</a></nav>
+<footer class="foot">Generated from <code>069-participant-count-url-validator.md</code> · source SHA-256 <code>2c4af3bfe2341dcab1a938a73ecdd7d1d7ed28d2a4f146c8dc4dac0481e4ed1d</code></footer>
+</div></body></html>

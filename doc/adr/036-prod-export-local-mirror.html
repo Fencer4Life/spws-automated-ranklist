@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="036-prod-export-local-mirror.md">
+<meta name="adr-source-sha256" content="c07aae3e1e5d8bf3b607ccaaa5bccaa7f29529b0c9984598b5545dbd399d2e8a">
+<title>ADR-036 · PROD Export &amp; Local Mirror (Single Monolithic Dump)</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 036</p><h1>PROD Export &amp; Local Mirror (Single Monolithic Dump)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented</dd></div><div><dt>Date</dt><dd class="">2026-04-12</dd></div><div><dt>Source</dt><dd class=""><code>036-prod-export-local-mirror.md</code></dd></div><div><dt>Length</dt><dd class="">145 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Implemented<br />
+<strong>Date:</strong> 2026-04-12<br />
+<strong>Source:</strong> ADR-027 (Full-Season Seed Export), ADR-026 (CERT→PROD Promotion)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#schema-driven-export-future-proof">Schema-driven export (future-proof)</a></li><li class="depth-3"><a href="#tables-exported-in-fk-safe-order">Tables exported (in FK-safe order)</a></li><li class="depth-3"><a href="#what-s-not-exported-by-design">What&#x27;s NOT exported (by design)</a></li><li class="depth-3"><a href="#output">Output</a></li><li class="depth-2"><a href="#scripts">Scripts</a></li><li class="depth-2"><a href="#operations-manual">Operations Manual</a></li><li class="depth-3"><a href="#quick-one-command-mirror">Quick: One-command mirror</a></li><li class="depth-3"><a href="#step-by-step">Step-by-step</a></li><li class="depth-4"><a href="#prerequisites">Prerequisites</a></li><li class="depth-4"><a href="#step-1-export-prod">Step 1: Export PROD</a></li><li class="depth-4"><a href="#step-2-reset-local-db">Step 2: Reset local DB</a></li><li class="depth-4"><a href="#step-3-verify">Step 3: Verify</a></li><li class="depth-4"><a href="#step-4-run-all-test-suites">Step 4: Run all test suites</a></li><li class="depth-3"><a href="#troubleshooting">Troubleshooting</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#full-operations-guide">Full Operations Guide</a></li><li class="depth-2"><a href="#related-adrs">Related ADRs</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>After the CERT/PROD data integrity audit (2026-04-12), we needed local DB to be an exact mirror of PROD. The original multi-file approach (per-category SQL files loaded via config.toml glob) was fragile — directory naming mismatches, duplicate INSERTs across files, and complex ordering dependencies.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Replace the multi-file seed approach with a <strong>single monolithic SQL dump</strong> — one timestamped file that recreates all data in one shot.</p>
+<h3 id="schema-driven-export-future-proof">Schema-driven export (future-proof)</h3>
+<p>The export script does NOT hardcode column names. For each table it:</p>
+<ol>
+<li>Queries <code>information_schema.columns</code> at runtime to discover ALL columns</li>
+<li>Skips only auto-generated columns (<code>id_*</code> serial PKs, <code>ts_created</code>, <code>ts_updated</code>)</li>
+<li>Generates INSERT statements with all remaining columns</li>
+</ol>
+<p>Any column added in future migrations is automatically included without code changes.</p>
+<h3 id="tables-exported-in-fk-safe-order">Tables exported (in FK-safe order)</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Order</th>
+<th>Table</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>tbl_season</code></td>
+<td>All seasons</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>tbl_organizer</code></td>
+<td>All organizers</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>tbl_scoring_config</code></td>
+<td>JSONB ranking rules per season (via UPDATE after trigger-created defaults)</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>tbl_fencer</code></td>
+<td>All columns: surname, first name, birth year, estimated, nationality, gender, club, aliases</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>tbl_event</code></td>
+<td>All columns: code, name, location, country, venue, dates, URLs, registration, fees, weapons, status</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>tbl_tournament</code></td>
+<td>All columns: code, name, type, weapon, gender, category, date, participants, multiplier, URLs, status</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>tbl_result</code></td>
+<td>Fencer FK via name lookup, tournament FK via code lookup, place, score</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>tbl_match_candidate</code></td>
+<td>Identity audit trail for results. FK via result (tournament+place+fencer) + fencer name lookup</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="what-s-not-exported-by-design">What's NOT exported (by design)</h3>
+<ul>
+<li><code>tbl_audit_log</code> — runtime audit trail</li>
+<li>Auth users — local: <code>reset-dev.sh</code>, cloud: Dashboard</li>
+<li>Schema/migrations — code artifacts, not data</li>
+</ul>
+<h3 id="output">Output</h3>
+<pre><code>supabase/seed_prod_2026-04-12.sql    # timestamped dump
+supabase/seed_prod_latest.sql        # symlink to latest dump
+</code></pre>
+<p><code>config.toml</code> loads <code>seed_prod_latest.sql</code> as the sole seed file during <code>supabase db reset</code>.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="scripts">Scripts</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Purpose</th>
+<th>Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>scripts/export-prod.sh</code></td>
+<td>Export PROD → single timestamped SQL file</td>
+<td><code>./scripts/export-prod.sh</code></td>
+</tr>
+<tr>
+<td><code>scripts/mirror-prod.sh</code></td>
+<td>Export + reset + verify (one command)</td>
+<td><code>./scripts/mirror-prod.sh</code></td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="operations-manual">Operations Manual</h2>
+<h3 id="quick-one-command-mirror">Quick: One-command mirror</h3>
+<pre><code class="language-bash">./scripts/mirror-prod.sh
+</code></pre>
+<h3 id="step-by-step">Step-by-step</h3>
+<h4 id="prerequisites">Prerequisites</h4>
+<ul>
+<li>Supabase CLI running locally (<code>supabase start</code>)</li>
+<li>Python venv activated (<code>source .venv/bin/activate</code>)</li>
+<li>Docker running (for local PostgreSQL)</li>
+</ul>
+<h4 id="step-1-export-prod">Step 1: Export PROD</h4>
+<pre><code class="language-bash">./scripts/export-prod.sh
+</code></pre>
+<p>What happens:</p>
+<ol>
+<li>Connects to PROD via Supabase Management API</li>
+<li>Discovers all columns for each table from <code>information_schema.columns</code></li>
+<li>Queries all rows from each table in FK-safe order</li>
+<li>Writes <code>supabase/seed_prod_YYYY-MM-DD.sql</code> with:
+<ul>
+<li>Season INSERTs</li>
+<li>Organizer INSERTs</li>
+<li>Scoring config UPDATEs (trigger creates defaults, then override with PROD values)</li>
+<li>Fencer bulk INSERT (all columns)</li>
+<li>Per-event block: event INSERT + tournament INSERTs + result INSERTs</li>
+</ul>
+</li>
+<li>Updates <code>seed_prod_latest.sql</code> symlink</li>
+</ol>
+<h4 id="step-2-reset-local-db">Step 2: Reset local DB</h4>
+<pre><code class="language-bash">./scripts/reset-dev.sh
+</code></pre>
+<p><code>supabase db reset</code> applies migrations then loads <code>seed_prod_latest.sql</code> via config.toml. Creates admin user.</p>
+<h4 id="step-3-verify">Step 3: Verify</h4>
+<pre><code class="language-bash">python -m pytest python/tests/test_prod_mirror.py -v
+</code></pre>
+<p>Compares row counts for all 7 tables between PROD (Management API) and local (docker exec). Any mismatch = FAIL.</p>
+<h4 id="step-4-run-all-test-suites">Step 4: Run all test suites</h4>
+<pre><code class="language-bash">supabase test db
+python -m pytest python/tests/ -v
+cd frontend &amp;&amp; npm test
+</code></pre>
+<h3 id="troubleshooting">Troubleshooting</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Management API 429/502</td>
+<td>Rate limit / outage</td>
+<td>Script auto-retries 3x with backoff</td>
+</tr>
+<tr>
+<td>Mirror test fails</td>
+<td>Stale dump</td>
+<td>Re-run <code>./scripts/export-prod.sh</code></td>
+</tr>
+<tr>
+<td>pgTAP tests fail</td>
+<td>Test uses hardcoded IDs or stale expected values</td>
+<td>Fix test</td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li><strong>Multi-file per-category approach (ADR-027)</strong> — rejected; directory naming mismatches, duplicate INSERTs, fragile glob ordering</li>
+<li><strong>pg_dump/pg_restore</strong> — rejected; port 5432 is blocked on cloud Supabase</li>
+<li><strong>Supabase REST API export</strong> — rejected; service_role key blocked in some contexts</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Local DB mirrors PROD with one command</li>
+<li>Schema-driven: future columns auto-included</li>
+<li>Timestamped dumps provide rollback snapshots</li>
+<li>Old per-category seed files (<code>supabase/data/</code>, <code>seed.sql</code>, <code>seed_tbl_fencer.sql</code>) replaced by single file</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="full-operations-guide">Full Operations Guide</h2>
+<p>See <strong><code>doc/cicd-operations-manual.md</code> §11 (Environment Sync)</strong> for complete step-by-step procedures for all sync operations (PROD → local, PROD → CERT, data audit).</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="related-adrs">Related ADRs</h2>
+<ul>
+<li><strong>ADR-027</strong> (Full-Season Seed Export) — superseded by this ADR for local mirroring</li>
+<li><strong>ADR-026</strong> (CERT→PROD Promotion) — data promotion workflow this export complements</li>
+<li><strong>ADR-014</strong> (Delete-Reimport Strategy) — idempotent INSERT patterns reused</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="035-fencers-view-tabs.html">← ADR-035: Fencers View with Tabs</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="037-derived-display-status-awaiting-results.html">→ ADR-037: Derived Display Status — &quot;Awaiting Results&quot;</a></nav>
+<footer class="foot">Generated from <code>036-prod-export-local-mirror.md</code> · source SHA-256 <code>c07aae3e1e5d8bf3b607ccaaa5bccaa7f29529b0c9984598b5545dbd399d2e8a</code></footer>
+</div></body></html>

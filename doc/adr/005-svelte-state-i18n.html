@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="005-svelte-state-i18n.md">
+<meta name="adr-source-sha256" content="d84224557329f3009f2057d5c8a5e0571559e22a7f621e8e00487daec2f3f32e">
+<title>ADR-005 · Svelte 5 $state for Internationalisation</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 005</p><h1>Svelte 5 $state for Internationalisation</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2025-03-06 (M6)</dd></div><div><dt>Source</dt><dd class=""><code>005-svelte-state-i18n.md</code></dd></div><div><dt>Length</dt><dd class="">32 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2025-03-06 (M6)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#key-sub-decisions">Key Sub-decisions</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The Web Component needs EN/PL language support. Options ranged from full i18n libraries (i18next, svelte-i18n) to a lightweight custom solution.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Use a minimal custom approach:</p>
+<ul>
+<li><strong>Locale store:</strong> Svelte 5 module-level <code>$state</code> in <code>locale.svelte.ts</code> — zero extra dependencies</li>
+<li><strong>Translation source:</strong> Two flat JSON files (<code>en.json</code>, <code>pl.json</code>) — hand-editable by a non-developer</li>
+<li><strong>Translation function:</strong> <code>t(key, vars?)</code> with <code>{placeholder}</code> interpolation — intentionally mirrors i18next signature</li>
+<li><strong>Toggle component:</strong> <code>LangToggle.svelte</code> with flag buttons, placed in app header and modal headers</li>
+<li><strong>Date localisation:</strong> <code>toLocaleString('pl-PL', { month: 'short' })</code> for automatic month abbreviations</li>
+</ul>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="key-sub-decisions">Key Sub-decisions</h2>
+<ul>
+<li>Default is English — all existing tests assert against English strings</li>
+<li>ODS export headers are never translated (stable data-format labels)</li>
+<li><code>t()</code> falls back to returning the key itself on missing translations — visible bug, never silent</li>
+<li><code>{@const}</code> only inside Svelte special blocks; <code>$derived</code> for plain <code>&lt;div&gt;</code> context</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>46 locale keys across 9 component groups, all in both <code>en.json</code> and <code>pl.json</code></li>
+<li>Switching locale re-renders all visible strings without page reload</li>
+<li>Migration to i18next requires replacing only <code>locale.svelte.ts</code> — JSON files and <code>t()</code> call sites are compatible</li>
+<li>Trade-off: no pluralisation support (Polish has 3 grammatical forms); current 46 keys contain no plurals</li>
+<li>Trade-off: module-level <code>$state</code> persists across vitest suites — safe while no test calls <code>setLocale()</code></li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="004-single-admin-account.html">← ADR-004: Single Admin Account for POC</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="006-jsonb-ranking-rules.html">→ ADR-006: JSONB Bucket-Based Ranking Rules</a></nav>
+<footer class="foot">Generated from <code>005-svelte-state-i18n.md</code> · source SHA-256 <code>d84224557329f3009f2057d5c8a5e0571559e22a7f621e8e00487daec2f3f32e</code></footer>
+</div></body></html>

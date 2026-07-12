@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="026-cert-prod-promotion.md">
+<meta name="adr-source-sha256" content="37893b008b86cc72b04406531eb71d0fa9725cc460f2e426453eee4c515d396a">
+<title>ADR-026 · CERT → PROD Event Promotion via Python Script</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 026</p><h1>CERT → PROD Event Promotion via Python Script</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-04-20 — calendar promote mode added for the EVF scraper; see &quot;Calendar Promote Mode&quot; below)</dd></div><div><dt>Date</dt><dd class="">2026-04-05 <strong>Relates to:</strong> ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-011 (Three-Tier Release Pipeline), ADR-028 (EVF Calendar + Results Import) <strong>Companion implementation plan:</strong> <a href="../archive/evf_calendar_promote_plan.md">doc/archive/evf_calendar_promote_plan.md</a></dd></div><div><dt>Source</dt><dd class=""><code>026-cert-prod-promotion.md</code></dd></div><div><dt>Length</dt><dd class="">109 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (amended 2026-04-20 — calendar promote mode added for the EVF scraper; see &quot;Calendar Promote Mode&quot; below)
+<strong>Date:</strong> 2026-04-05
+<strong>Relates to:</strong> ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-011 (Three-Tier Release Pipeline), ADR-028 (EVF Calendar + Results Import)
+<strong>Companion implementation plan:</strong> <a href="../archive/evf_calendar_promote_plan.md">doc/archive/evf_calendar_promote_plan.md</a></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#positive">Positive</a></li><li class="depth-3"><a href="#negative">Negative</a></li><li class="depth-2"><a href="#calendar-promote-mode-amendment-2026-04-20">Calendar Promote Mode (amendment, 2026-04-20)</a></li><li class="depth-3"><a href="#motivation">Motivation</a></li><li class="depth-3"><a href="#decision-2">Decision</a></li><li class="depth-3"><a href="#concurrency-protection">Concurrency protection</a></li><li class="depth-3"><a href="#idempotency-backstop">Idempotency backstop</a></li><li class="depth-3"><a href="#alternatives-considered-for-calendar-mode-specifically">Alternatives considered (for calendar mode specifically)</a></li><li class="depth-3"><a href="#consequences-calendar-mode">Consequences (calendar mode)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>After ingesting XML results into CERT and validating them (via Telegram commands, admin UI, and ranklist review), the admin needs to push the event data to PROD. The <code>promote</code> Telegram command triggers a GitHub Actions workflow, but the actual data transfer mechanism needs to be defined.</p>
+<p>Event data includes: tournaments (auto-created during ingestion), results, match candidates, and scoring. A typical event has 20-30 tournaments and 50-100 results.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Use a <strong>Python promotion script</strong> (<code>python/pipeline/promote.py</code>) that:</p>
+<ol>
+<li>Reads all tournaments + results for an event from CERT via Supabase Management API SQL queries</li>
+<li>For each tournament on CERT:
+<ul>
+<li>Calls <code>fn_find_or_create_tournament()</code> on PROD to create the tournament if it doesn't exist</li>
+<li>Calls <code>fn_ingest_tournament_results()</code> on PROD with the results (atomic delete+insert+score)</li>
+</ul>
+</li>
+<li>Updates the PROD event status to <code>COMPLETED</code></li>
+<li>Sends a Telegram summary notification</li>
+<li>Handles errors per-tournament (continues on failure, reports which failed)</li>
+</ol>
+<p>Triggered by: <code>promote.yml</code> GitHub Actions workflow, dispatched from Telegram <code>promote &lt;event&gt;</code> command.</p>
+<p>Both CERT and PROD are accessed via the Supabase Management API (<code>POST /v1/projects/{ref}/database/query</code>), which requires the <code>SUPABASE_ACCESS_TOKEN</code> (org-level token). No direct database connections needed.</p>
+<p>After successful promotion, the script <strong>auto-exports seed SQL files</strong> to <code>supabase/data/{season}/</code> matching the existing seed file convention. The workflow commits these files to <code>main</code> with <code>[skip ci]</code> to prevent CI loops. This ensures <code>supabase db reset</code> always includes the latest promoted data.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li><strong>SQL-only (fn_export + fn_import):</strong> Single JSON blob transferred via bash curl. Rejected: JSON can be 50KB+, bash string handling is fragile, no per-tournament error recovery.</li>
+<li><strong>Direct database connection (psycopg2):</strong> Bypasses the Management API. Rejected: port 5432 is blocked on cloud Supabase, requires connection pooling setup.</li>
+<li><strong>Supabase REST API (PostgREST):</strong> Use the service_role key to call RPCs directly. Rejected: service_role key is blocked in browser-like contexts (discovered during GAS script testing).</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<h3 id="positive">Positive</h3>
+<ul>
+<li>Per-tournament error handling — one failed tournament doesn't block the rest</li>
+<li>Reuses existing <code>fn_find_or_create_tournament</code> and <code>fn_ingest_tournament_results</code> on PROD</li>
+<li>Telegram progress notification</li>
+<li>No new infrastructure — uses existing Management API access pattern</li>
+</ul>
+<h3 id="negative">Negative</h3>
+<ul>
+<li>Requires <code>SUPABASE_ACCESS_TOKEN</code> in GitHub Actions secrets (already configured)</li>
+<li>Sequential per-tournament processing (not parallel) — acceptable for 20-30 tournaments</li>
+<li>Management API has rate limits (unlikely to hit for this volume)</li>
+</ul>
+<hr />
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="calendar-promote-mode-amendment-2026-04-20">Calendar Promote Mode (amendment, 2026-04-20)</h2>
+<h3 id="motivation">Motivation</h3>
+<p>The EVF scraper (ADR-028, 3-day cron via <code>evf-sync.yml</code>) lands events in CERT as <code>PLANNED</code> with URL enrichment (event page, invitation PDF, registration link, venue address, fee). The original per-event promote described above <strong>skips tournaments with zero results</strong>, so upcoming / past-but-unreported EVF events never reach PROD. The PROD public calendar stays weeks behind CERT.</p>
+<h3 id="decision-2">Decision</h3>
+<p>Add a new <code>--mode calendar</code> to the same <code>promote.py</code> script. It is an <strong>additional</strong> mode, not a replacement: the original <code>--mode event</code> (default) contract above is untouched.</p>
+<p>Calendar mode:</p>
+<ul>
+<li>Reads active-season EVF events (<code>txt_code LIKE 'PEW%' OR 'MEW%'</code>) from CERT.</li>
+<li>Reads existing events on PROD for the same season.</li>
+<li>Diff by <code>txt_code</code>:
+<ul>
+<li><strong>On CERT, not on PROD</strong> → <code>SELECT fn_import_evf_events(payload, season_id)</code> on PROD.</li>
+<li><strong>On both</strong> → <code>SELECT fn_refresh_evf_event_urls(payload)</code> on PROD.</li>
+</ul>
+</li>
+<li><strong>Touches tournaments / results / enum_status on PROD never.</strong> The two RPCs are the only write surface.</li>
+<li>Sends a Telegram summary (imported N, refreshed M).</li>
+</ul>
+<p>Runs automatically as a second job (<code>promote-calendar</code>) in <code>evf-sync.yml</code>, <code>needs: sync</code>, same 3-day cron.</p>
+<h3 id="concurrency-protection">Concurrency protection</h3>
+<p>Both workflows (<code>promote.yml</code> + <code>evf-sync.yml::promote-calendar</code>) share a GitHub Actions concurrency group:</p>
+<pre><code class="language-yaml">concurrency:
+  group: prod-write
+  cancel-in-progress: false
+</code></pre>
+<p>If an admin dispatches <code>promote.yml</code> while the scheduled calendar-promote is running (or vice versa), GitHub queues the second one. <code>cancel-in-progress: false</code> because we never cancel a partial PROD write.</p>
+<h3 id="idempotency-backstop">Idempotency backstop</h3>
+<p>Even if the concurrency group is bypassed (e.g. local <code>python -m python.pipeline.promote --mode calendar</code> against PROD while the workflow is mid-flight), the RPCs are safe:</p>
+<ul>
+<li><code>fn_import_evf_events</code> skips events whose <code>txt_code</code> already exists.</li>
+<li><code>fn_refresh_evf_event_urls</code> only writes NULL / empty columns — never overwrites admin edits (invariant enforced by pgTAP 12.11).</li>
+</ul>
+<p>Worst-case concurrent race converges to the same state as a serial execution.</p>
+<h3 id="alternatives-considered-for-calendar-mode-specifically">Alternatives considered (for calendar mode specifically)</h3>
+<ol>
+<li><strong>Add a cron to <code>promote.yml</code> directly.</strong> Rejected: couples two separate concerns (per-event finalisation vs bulk calendar sync) into one workflow.</li>
+<li><strong>Make <code>evf-sync.yml</code> write to both CERT and PROD.</strong> Rejected: removes the CERT staging buffer that ADR-011 put there deliberately, and forces the scraper to know PROD credentials.</li>
+<li><strong>Postgres advisory locks inside the RPCs.</strong> Rejected as belt-and-braces — the GitHub concurrency group is the correct boundary for workflow-level serialisation; the RPCs' existing idempotency is already the cross-channel backstop.</li>
+</ol>
+<h3 id="consequences-calendar-mode">Consequences (calendar mode)</h3>
+<ul>
+<li><strong>PROD public calendar stays within 3 days of CERT.</strong> Registration URLs, invitations, fees, and venue addresses land on PROD as soon as the next scrape fires.</li>
+<li><strong>No new migrations or RPCs.</strong> The two RPCs were already deployed (ADR-028 rev 2).</li>
+<li><strong>No changes to event-promote.</strong> Existing <code>--event EVENT_CODE</code> contract and <code>promote.yml</code> body unchanged apart from the concurrency group.</li>
+<li><strong>Admin edits on PROD are protected.</strong> <code>fn_refresh_evf_event_urls</code> only fills NULL/empty columns.</li>
+<li><strong>pgTAP:</strong> coverage unchanged — 12.1–12.13 already verify both RPCs; same RPCs run on PROD via the Management API.</li>
+<li><strong>New pytest coverage:</strong> prom.5–prom.7 in <code>python/tests/test_promote.py</code> (mocked httpx, no live calls).</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="025-event-centric-ingestion-telegram.html">← ADR-025: Event-Centric Ingestion + Telegram Admin Interface</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="027-full-season-seed-export.html">→ ADR-027: Full-Season Seed Export</a></nav>
+<footer class="foot">Generated from <code>026-cert-prod-promotion.md</code> · source SHA-256 <code>37893b008b86cc72b04406531eb71d0fa9725cc460f2e426453eee4c515d396a</code></footer>
+</div></body></html>

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="064-asymmetric-gender-filter-matcher.md">
+<meta name="adr-source-sha256" content="a0922f684abf5b92ab06592fe11bdea73f207dfaff16e9df656b1d4fb6f9e8cd">
+<title>ADR-064 · Asymmetric gender filter at matcher time (domestic events only)</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 064</p><h1>Asymmetric gender filter at matcher time (domestic events only)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-05-10)</dd></div><div><dt>Date</dt><dd class="">2026-05-10</dd></div><div><dt>Source</dt><dd class=""><code>064-asymmetric-gender-filter-matcher.md</code></dd></div><div><dt>Length</dt><dd class="">79 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-05-10)
+<strong>Date:</strong> 2026-05-10
+<strong>Source:</strong> ADR-034 (parent rule), feedback_spws_includes_everyone.md, Phase 5 PPW3-2025-2026 halt incident.</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#implementation-surface">Implementation surface</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#related-adrs">Related ADRs</a></li><li class="depth-2"><a href="#tests">Tests</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>ADR-034 codifies cross-gender scoring rules but defers enforcement to ranking-query time via <code>fn_effective_gender</code>. Specifically: <strong>&quot;Man in women's tournament — Points never count for any ranklist. Dropped entirely, no exceptions.&quot;</strong></p>
+<p>The ingest-time matcher (<code>find_best_match</code>) was gender-blind: it scored name-distance only, with no <code>enum_gender</code> awareness. International women guests whose surnames share stems with Polish male fencers (e.g. BLR/LTU/CRC women in PPW3-2025-2026 Women's Épée vs. Polish male V-category epeeists) got wrong-matched onto male <code>tbl_fencer</code> rows. That produces a structural artifact at <code>s7_pool_round_check</code> (3M/8F mix → &quot;looks like pool round&quot;) which halts the bracket, blocks the draft write, and removes the bracket from FencerAliasManager UI reach (no draft rows → no pending pairs derivable from <code>tbl_result_draft</code>).</p>
+<p>The federation rule, confirmed 2026-05-10:</p>
+<ul>
+<li><strong>Men cannot legitimately appear in women's tournaments anywhere — no exceptions.</strong></li>
+<li><strong>Women may rarely appear in men's tournaments</strong> when no women's bracket exists at the event for that weapon/category.</li>
+</ul>
+<p>This is asymmetric. ADR-034 already encodes the asymmetry at scoring time. ADR-064 pulls the same asymmetric rule forward into the matcher for domestic events.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>At s6 identity resolution time, apply a <strong>one-sided</strong> gender filter to the matcher's candidate list, scoped to <strong>SPWS-organized domestic events only</strong> (<code>tournament_type ∈ {PPW, MPW}</code> — GP events are encoded as PPW):</p>
+<ul>
+<li><strong>When <code>parsed.gender == 'F'</code>:</strong> the matcher drops any <code>tbl_fencer</code> row with <code>enum_gender = 'M'</code> from the candidate set before name-distance scoring. F and NULL-gender rows remain eligible. If no eligible candidate remains, the FTL row falls through to NEW_FENCER → auto-created with <code>enum_gender = 'F'</code> (inherited from bracket).</li>
+<li><strong>When <code>parsed.gender == 'M'</code>:</strong> no filter. Current behavior preserved end-to-end. ADR-034's <code>fn_effective_gender</code> redirects legitimate F-in-M results at ranking time as designed.</li>
+<li><strong>When <code>parsed.gender</code> is <code>None</code>:</strong> no filter. Compound brackets handled by ADR-056 V-cat split do not yet have a gender at s6; safe default is current behavior.</li>
+<li><strong>For non-domestic events (PEW/MEW/MSW/EVF):</strong> no filter. International intake follows <code>feedback_international_no_pending.md</code> (AUTO_MATCHED-only); this ADR's federation rule applies to SPWS domestic events only.</li>
+</ul>
+<h3 id="implementation-surface">Implementation surface</h3>
+<ul>
+<li><code>python/matcher/fuzzy_match.py</code> — <code>find_best_match</code> gains <code>bracket_gender: str | None = None</code>. When <code>'F'</code>, filters <code>fencer_db</code> to drop rows with <code>enum_gender == 'M'</code> before scoring.</li>
+<li><code>python/matcher/pipeline.py</code> — <code>resolve_tournament_results</code> gains <code>bracket_gender: str | None = None</code>. Forwards to <code>find_best_match</code> only when <code>is_domestic</code>. <code>auto_create_fencer</code> gains <code>gender_default: str | None = None</code>; the NEW_FENCER auto-create path passes the bracket's gender.</li>
+<li><code>python/pipeline/stages.py</code> — <code>s6_resolve_identity</code> reads <code>ctx.parsed.gender</code> and threads it to all <code>find_best_match</code> call sites, gated on <code>_is_domestic(ctx.event)</code>.</li>
+<li><code>python/pipeline/orchestrator.py</code> — legacy <code>_process_category</code> path mirrors the change.</li>
+<li><code>python/pipeline/db_connector.py</code> — <code>fetch_fencer_db</code> selects <code>enum_gender</code> so the filter has data to work with.</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Per-fencer name-inferred gender filter</strong> — rejected: requires a Polish surname dictionary, first-name dictionary, and a fallback heuristic for international names. The very rows that surface this bug are the murkiest names; the heuristic is least reliable exactly where it's most needed. Bracket-level asymmetric filter sidesteps the inference problem entirely.</li>
+<li><strong>Pre-create international guest rows from orchestrator side</strong> — rejected as a structural fix: duplicates responsibility (the matcher already owns a NEW_FENCER fallback) and only moves the gender-inference problem one layer up.</li>
+<li><strong>Skip via override YAML</strong> — rejected: defers the problem; SPWS quality is non-negotiable per <code>project_evf_predominance.md</code> since errors propagate forever.</li>
+<li><strong>Symmetric filter (bracket=F drops M <em>and</em> bracket=M drops F)</strong> — rejected: would block legitimate ADR-034 women-in-men's-bracket scoring (the PPW5 case).</li>
+<li><strong>Extend ADR-034 to ingest time symmetrically</strong> — rejected: ADR-034 already filters at scoring time. The problem is that <code>s7_pool_round_check</code> halts the bracket <em>before</em> scoring is reachable. The fix has to land at s6, not at scoring.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>PPW3-2025-2026 Women's Épée unblocks:</strong> wrong-matched international women fall through to NEW_FENCER with bracket-inherited <code>enum_gender='F'</code>; s7 sees clean 11F; draft writes; remaining alias work flows through the UI normally.</li>
+<li><strong>Future SPWS domestic events with international women guests</strong> no longer halt at s7 due to matcher mis-routing. The class of bug is eliminated, not just one instance.</li>
+<li><strong>ADR-034 untouched:</strong> women-in-men's-bracket case (PPW5 example) still resolves correctly because no filter applies when bracket=M. The F fencer matches her F row, <code>fn_effective_gender</code> redirects her points at ranking time.</li>
+<li><strong>NEW_FENCER fallback semantics:</strong> when the matcher rejects all M candidates, the FTL row gets a fresh F fencer row. This is consistent with <code>feedback_spws_includes_everyone.md</code> (every domestic participant enters the ranklist; international guests get full rows).</li>
+<li><strong>Risk — an unintended new row:</strong> a real Polish woman who shares a surname with a Polish man <em>and</em> has no F row in <code>tbl_fencer</code> yet will get a fresh F row instead of being false-matched to the M row. This is the desired outcome (no false cross-gender match), and the operator can merge via the FencerAliasManager UI if a duplicate later surfaces.</li>
+<li><strong>Performance:</strong> filter is a list comprehension on already-loaded <code>fencer_db</code>, no extra queries.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="related-adrs">Related ADRs</h2>
+<ul>
+<li><strong>ADR-034</strong> (Cross-Gender Tournament Scoring) — parent rule; this ADR enforces the M-in-F prohibition at ingest time, complementing ADR-034's F-in-M scoring redirect at ranking time.</li>
+<li><strong>ADR-038</strong> (EVF intake Polish-only) — clarifies the domestic/international intake split. This ADR deliberately excludes EVF/PEW/MEW/MSW because international intake has its own rule.</li>
+<li><strong>ADR-003</strong> (Identity by FK) — fencer identity is still tracked by FK; this ADR adds a gender-eligibility constraint to the candidate set, not a name-resolution change.</li>
+<li><strong>ADR-056</strong> (post-match V-cat assignment) — same s6/s7 stage neighborhood; this ADR refines s6 candidate selection without changing V-cat split logic.</li>
+<li><strong>ADR-065</strong> (FTL per-fencer V-cat marker check) — orthogonal Phase 5 fix in the same s7 neighborhood (V-cat marker check vs. gender filter); both reduce false halts.</li>
+</ul>
+</section>
+<section class="section-card adr-section tests"><p class="kicker">tests</p><h2 id="tests">Tests</h2>
+<p><code>python/tests/test_matcher_gender_filter.py</code> — plan test IDs <strong>4.61–4.72</strong>:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Scenario</th>
+<th>Expected</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4.61</td>
+<td>F bracket + only-M candidate</td>
+<td>UNMATCHED (filter rejects M)</td>
+</tr>
+<tr>
+<td>4.62</td>
+<td>F bracket + F candidate</td>
+<td>matches F</td>
+</tr>
+<tr>
+<td>4.63</td>
+<td>F bracket + mixed F+M</td>
+<td>matches F (M filtered)</td>
+</tr>
+<tr>
+<td>4.64</td>
+<td>F bracket + NULL-gender</td>
+<td>matches NULL (eligible)</td>
+</tr>
+<tr>
+<td>4.65</td>
+<td>M bracket + F-only (PPW5-style)</td>
+<td>matches F (no filter)</td>
+</tr>
+<tr>
+<td>4.66</td>
+<td>M bracket + mixed</td>
+<td>matches best by name (no filter)</td>
+</tr>
+<tr>
+<td>4.67</td>
+<td>PEW + F bracket</td>
+<td>filter bypassed (international)</td>
+</tr>
+<tr>
+<td>4.68</td>
+<td>MEW + F bracket</td>
+<td>filter bypassed (international)</td>
+</tr>
+<tr>
+<td>4.69</td>
+<td>MSW + F bracket</td>
+<td>filter bypassed (international)</td>
+</tr>
+<tr>
+<td>4.70</td>
+<td>bracket_gender=None</td>
+<td>no filter (back-compat)</td>
+</tr>
+<tr>
+<td>4.71</td>
+<td>PPW + F + UNMATCHED</td>
+<td>NEW_FENCER w/ enum_gender='F'</td>
+</tr>
+<tr>
+<td>4.72</td>
+<td>auto_create_fencer(gender_default='F')</td>
+<td>dict has enum_gender='F'</td>
+</tr>
+</tbody>
+</table></div>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="063-polish-plural-and-grupy-zbiorcze.html">← ADR-063: Polish-plural-case + GRUPY ZBIORCZE pool-round recognition in FTL bracket parsing</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="065-ftl-per-fencer-vcat-marker-check.html">→ ADR-065: FTL per-fencer V-cat marker check at the splitter</a></nav>
+<footer class="foot">Generated from <code>064-asymmetric-gender-filter-matcher.md</code> · source SHA-256 <code>a0922f684abf5b92ab06592fe11bdea73f207dfaff16e9df656b1d4fb6f9e8cd</code></footer>
+</div></body></html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="020-seed-generator-domestic-auto-create.md">
+<meta name="adr-source-sha256" content="cecce6ae5a45fe16dc012e7d3ab4ab2c4d48943b8dd6874542828f566bd9deb7">
+<title>ADR-020 · Seed Generator Auto-Creates Fencers for Domestic Tournaments</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 020</p><h1>Seed Generator Auto-Creates Fencers for Domestic Tournaments</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="superseded">Superseded by ADR-036</dd></div><div><dt>Date</dt><dd class="">2026-04-04 (M9) · 2026-04-13 (superseded)</dd></div><div><dt>Source</dt><dd class=""><code>020-seed-generator-domestic-auto-create.md</code></dd></div><div><dt>Length</dt><dd class="">44 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Superseded by ADR-036
+<strong>Date:</strong> 2026-04-04 (M9) · 2026-04-13 (superseded)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#superseded-2026-04-13">Superseded (2026-04-13)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p><code>generate_season_seed.py</code> generates static SQL data files from Excel workbooks. When a scraped fencer name doesn't match the master fencer list (fuzzy score &lt; threshold), the tool writes an SQL comment and drops the result entirely — regardless of tournament type.</p>
+<p>This caused 5 fencers to be missing from the PPW3 2025-26 ranklist:</p>
+<ul>
+<li><strong>ODOLAK Jarosław</strong> — present in seed but data generated before his entry existed (timing bug; re-run fixes it)</li>
+<li><strong>LEAHEY John, GERTSMAN Alex, MCQUEEN Andy, GOLD Oleg</strong> — international fencers who participated in a domestic PPW tournament; not in master data, results silently dropped</li>
+</ul>
+<p>The live pipeline (<code>pipeline.py</code>, M9) already distinguishes domestic vs international: domestic PPW/MPW unmatched fencers are auto-created, international PEW/MEW/MSW unmatched fencers are skipped. The seed generator lacked this same logic, creating an asymmetry between the two intake paths.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p><code>generate_season_seed.py</code> applies the same domestic/international intake rules as the live pipeline:</p>
+<ol>
+<li>
+<p><strong>Domestic (PPW, MPW) unmatched:</strong> Auto-create fencer entry with estimated birth year. Emit <code>INSERT INTO tbl_fencer ... WHERE NOT EXISTS</code> at the top of the SQL file, and reference the new fencer by subquery in <code>tbl_result</code>.</p>
+</li>
+<li>
+<p><strong>International (PEW, MEW, PSW, MSW) unmatched:</strong> Skip with a <code>-- SKIPPED (international, no master data)</code> comment. No fencer creation, no result insertion.</p>
+</li>
+</ol>
+<p>Reuses <code>parse_scraped_name()</code> from <code>fuzzy_match.py</code> and <code>estimate_birth_year()</code> + <code>DOMESTIC_TYPES</code> from <code>pipeline.py</code> — no logic duplication.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li>
+<p><strong>Manual seed management only</strong> — require the operator to add missing fencers to <code>seed_tbl_fencer.sql</code> before re-running the generator. Brittle, error-prone, doesn't scale as new domestic participants appear each season.</p>
+</li>
+<li>
+<p><strong>Auto-create in data file without WHERE NOT EXISTS</strong> — risks duplicate fencer rows on re-runs. Rejected in favor of idempotent INSERT pattern.</p>
+</li>
+<li>
+<p><strong>Unify generate_season_seed.py with pipeline.py</strong> — the two systems serve different purposes (batch Excel import vs live scraper intake) and have different matching thresholds and interfaces. Unification would be a large refactor for marginal benefit.</p>
+</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Every domestic PPW/MPW participant gets a result in the ranklist, matching live pipeline behavior</li>
+<li>Auto-created fencers have <code>bool_birth_year_estimated = TRUE</code> and birth year derived from age category</li>
+<li>The operator should run <code>sort_and_clean_fencers.py</code> after generation to absorb auto-created fencers into the canonical seed</li>
+<li>International unmatched fencers are clearly labeled as <code>-- SKIPPED</code> rather than the ambiguous <code>-- UNMATCHED</code></li>
+<li>Same fencer appearing in multiple domestic tournaments gets only one <code>tbl_fencer</code> INSERT (deduplication by surname + first_name)</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="superseded-2026-04-13">Superseded (2026-04-13)</h2>
+<p>ADR-036 replaced per-category seed files with a monolithic PROD dump. <code>generate_season_seed.py</code> is no longer used to produce seed data. The domestic/international intake rules this ADR describes are still active in the <strong>live ingestion pipeline</strong> (<code>orchestrator.py</code>, <code>evf_sync.py</code>, <code>fn_ingest_tournament_results</code>) and documented in ADR-025.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="019-domestic-only-fencer-seed.html">← ADR-019: Domestic-Only Fencer Seed</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="021-imew-biennial-carry-over.html">→ ADR-021: IMEW Biennial Carry-Over</a></nav>
+<footer class="foot">Generated from <code>020-seed-generator-domestic-auto-create.md</code> · source SHA-256 <code>cecce6ae5a45fe16dc012e7d3ab4ab2c4d48943b8dd6874542828f566bd9deb7</code></footer>
+</div></body></html>

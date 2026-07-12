@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="022-ingestion-db-transaction.md">
+<meta name="adr-source-sha256" content="31d2192f73a97a3306f7685b37264e091d442c14261db87421093f93977456dd">
+<title>ADR-022 · Ingestion DB Transaction Strategy</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 022</p><h1>Ingestion DB Transaction Strategy</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-05 (Go-to-PROD)</dd></div><div><dt>Source</dt><dd class=""><code>022-ingestion-db-transaction.md</code></dd></div><div><dt>Length</dt><dd class="">47 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2026-04-05 (Go-to-PROD)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The ingestion pipeline needs to atomically: delete old results → insert new results → create match candidates → run scoring engine → update import status — all for a single tournament. This must happen in one database transaction so that a failure at any step rolls back everything (per ADR-014).</p>
+<p>The Python orchestrator handles XML parsing, combined-category splitting, and fuzzy matching (CPU-bound, already tested). The question is how to execute the DB operations transactionally.</p>
+<p>Key constraints:</p>
+<ul>
+<li>Supabase PostgREST does not support multi-statement transactions</li>
+<li><code>psycopg2</code> direct connections bypass RLS and the Supabase Auth security model</li>
+<li>The existing <code>fn_calc_tournament_scores</code> pattern uses server-side Postgres functions called via <code>.rpc()</code></li>
+</ul>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Use a <strong>server-side Postgres function</strong> <code>fn_ingest_tournament_results(p_tournament_id INT, p_results JSONB)</code> that performs the entire ingest atomically in one implicit transaction. Python calls this single RPC via the Supabase client after completing all parsing and matching in memory.</p>
+<p>The function:</p>
+<ol>
+<li>Deletes existing <code>tbl_match_candidate</code> rows for the tournament's results</li>
+<li>Deletes existing <code>tbl_result</code> rows for the tournament</li>
+<li>Inserts new <code>tbl_result</code> rows from the JSONB array</li>
+<li>Inserts <code>tbl_match_candidate</code> entries for each result</li>
+<li>Calls <code>fn_calc_tournament_scores(p_tournament_id)</code></li>
+<li>Updates <code>tbl_tournament.enum_import_status</code> to <code>'IMPORTED'</code> and <code>int_participant_count</code></li>
+<li>Returns a summary JSONB object</li>
+</ol>
+<p>Pattern: <code>SECURITY DEFINER</code> + <code>REVOKE EXECUTE FROM anon</code> + <code>GRANT EXECUTE TO authenticated</code> (same as all T9.1 CRUD functions).</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li>
+<p><strong><code>psycopg2</code> direct connection</strong> — Allows explicit <code>BEGIN</code>/<code>COMMIT</code> in Python. But bypasses RLS policies and Supabase Auth, breaking the security model. Would require maintaining a separate connection string and credential management.</p>
+</li>
+<li>
+<p><strong>Multiple PostgREST calls</strong> — Call <code>.insert()</code>, <code>.delete()</code>, <code>.rpc()</code> separately via the Supabase client. Each call is its own transaction — a failure partway through leaves the DB in an inconsistent state. No way to wrap multiple PostgREST calls in a single transaction.</p>
+</li>
+<li>
+<p><strong>Edge Function with <code>pg</code> client</strong> — A Supabase Edge Function (Deno) with direct Postgres access. Adds a deployment dependency, a new runtime (Deno), and moves logic away from the tested Python codebase.</p>
+</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Clean separation: Python does compute (parsing, matching), Postgres does data (insert, score, status)</li>
+<li>Single RPC call = single network round-trip = single transaction</li>
+<li>Rollback is automatic on any error (Postgres function = implicit transaction)</li>
+<li>Match candidates are created alongside results, enabling immediate admin review</li>
+<li>Scoring runs within the same transaction, so <code>num_final_score</code> is always consistent with results</li>
+<li>The function can be called from any client (CLI, GitHub Actions, future Admin UI) with the same guarantees</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="021-imew-biennial-carry-over.html">← ADR-021: IMEW Biennial Carry-Over</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="023-email-ingestion-gas-storage.html">→ ADR-023: Email Ingestion via Google Apps Script + Supabase Storage</a></nav>
+<footer class="foot">Generated from <code>022-ingestion-db-transaction.md</code> · source SHA-256 <code>31d2192f73a97a3306f7685b37264e091d442c14261db87421093f93977456dd</code></footer>
+</div></body></html>

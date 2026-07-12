@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="015-m8-ui-design-decisions.md">
+<meta name="adr-source-sha256" content="456a7f855663a08e1c6eea88deb357516764022fd822871d29f4fc0c4d69dadb">
+<title>ADR-015 · M8 UI Design Decisions</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 015</p><h1>M8 UI Design Decisions</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-03-26 (M8)</dd></div><div><dt>Source</dt><dd class=""><code>015-m8-ui-design-decisions.md</code></dd></div><div><dt>Length</dt><dd class="">100 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2026-03-26 (M8)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decisions">Decisions</a></li><li class="depth-3"><a href="#1-app-navigation-sidebar-drawer">1. App Navigation — Sidebar Drawer</a></li><li class="depth-3"><a href="#2-calendar-layout-vertical-timeline">2. Calendar Layout — Vertical Timeline</a></li><li class="depth-3"><a href="#3-admin-access-hidden-url-password-modal-floating-toolbar">3. Admin Access — Hidden URL + Password Modal + Floating Toolbar</a></li><li class="depth-3"><a href="#4-evf-calendar-import-calendar-button">4. EVF Calendar Import — Calendar Button</a></li><li class="depth-3"><a href="#5-tournament-management-accordion-with-dual-import">5. Tournament Management — Accordion with Dual Import</a></li><li class="depth-3"><a href="#6-identity-resolution-queue-table-with-actions">6. Identity Resolution — Queue Table with Actions</a></li><li class="depth-3"><a href="#7-scoring-config-editor-structured-form-approach-a">7. Scoring Config Editor — Structured Form (Approach A)</a></li><li class="depth-2"><a href="#cross-cutting-design-rules">Cross-Cutting Design Rules</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#mockup-registry">Mockup Registry</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>M8 is the first MVP milestone, introducing multiple new UI views: app shell with sidebar navigation, calendar view, admin password gate, EVF import, tournament management, identity resolution admin, and scoring config editor. Each view required choosing between 2-4 design approaches, prototyped as HTML mockups and reviewed interactively.</p>
+<p>All mockups live in <code>doc/mockups/</code> and follow the same design system.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decisions">Decisions</h2>
+<h3 id="1-app-navigation-sidebar-drawer">1. App Navigation — Sidebar Drawer</h3>
+<p><strong>Choice:</strong> Slide-in sidebar via ☰ hamburger (top-left), with &quot;SPWS&quot; branding, Ranklista + Kalendarz items, and admin section when authenticated.</p>
+<p><strong>Rejected:</strong> Tab bar (cluttered with admin items), top nav dropdown (poor mobile experience).</p>
+<p><strong>Mockup:</strong> <code>m8_app_shell.html</code></p>
+<h3 id="2-calendar-layout-vertical-timeline">2. Calendar Layout — Vertical Timeline</h3>
+<p><strong>Choice:</strong> Vertical timeline with connected dots, month headers (e.g., &quot;Wrzesień 2025&quot;), color-coded status dots, event cards with date/name/location/tournament count/status badge/&quot;Komunikat organizatora&quot; link.</p>
+<p><strong>Rejected:</strong> Table/grid (poor for sparse data), horizontal timeline (poor mobile), card grid without timeline (loses chronological context).</p>
+<p><strong>Mockup:</strong> <code>m8_calendar_view.html</code></p>
+<h3 id="3-admin-access-hidden-url-password-modal-floating-toolbar">3. Admin Access — Hidden URL + Password Modal + Floating Toolbar</h3>
+<p><strong>Choice:</strong> <code>?admin=1</code> URL parameter triggers password modal; on success, floating toolbar (bottom-left) shows ADMIN badge + session timer + Wyloguj; sidebar gains admin section (Sezony, Wydarzenia, Tożsamości, Punktacja). 120-minute inactivity timeout.</p>
+<p><strong>Rejected:</strong> Visible lock icon (exposes admin to end users), dedicated login page (over-engineered for single admin), header badge (clutters header).</p>
+<p><strong>Mockup:</strong> <code>m8_admin_gate_v2.html</code></p>
+<h3 id="4-evf-calendar-import-calendar-button">4. EVF Calendar Import — Calendar Button</h3>
+<p><strong>Choice:</strong> Gold &quot;🌍 Import EVF&quot; button below &quot;+ Dodaj wydarzenie&quot; on Calendar view (admin only). Opens modal fetching veteransfencing.eu/calendar with checklist and deduplication.</p>
+<p><strong>Rejected:</strong> Sidebar item (not frequent enough), separate page (breaks calendar context).</p>
+<p><strong>Mockup:</strong> <code>m8_evf_import.html</code></p>
+<h3 id="5-tournament-management-accordion-with-dual-import">5. Tournament Management — Accordion with Dual Import</h3>
+<p><strong>Choice:</strong> Accordion layout with events as expandable cards, tournaments nested inside. Two import paths: event-level batch (multi-select modal) + tournament-level single. Both modals have two tabs: URL scrape + file upload.</p>
+<p><strong>Rejected:</strong> Flat table (loses hierarchy), modal-only (can't see context).</p>
+<p><strong>Mockup:</strong> <code>m8_tournaments.html</code></p>
+<h3 id="6-identity-resolution-queue-table-with-actions">6. Identity Resolution — Queue Table with Actions</h3>
+<p><strong>Choice:</strong> Filterable table of <code>tbl_match_candidate</code> rows with stats bar, confidence color-coding, and three actions: Zatwierdź (approve), Nowy zawodnik (create new), Odrzuć (dismiss). Disambiguation modal for same-name fencers with age category fit indicator.</p>
+<p><strong>Rejected:</strong> Inline editing (too complex for disambiguation), wizard flow (too many clicks for bulk operations).</p>
+<p><strong>Mockup:</strong> <code>m8_identity_resolution.html</code></p>
+<h3 id="7-scoring-config-editor-structured-form-approach-a">7. Scoring Config Editor — Structured Form (Approach A)</h3>
+<p><strong>Choice:</strong> 5 collapsible sections: base params (MP value), podium bonuses, tournament multipliers (2×3 grid), intake rules, ranking rule bucket editor. Season-scoped via header dropdown.</p>
+<p><strong>Rejected:</strong> Visual tournament cards (B) — too abstract for editing numeric values; Split-pane JSON editor (C) — requires JSON literacy from admin.</p>
+<p><strong>Mockup:</strong> <code>m8_scoring_config_A_form.html</code></p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="cross-cutting-design-rules">Cross-Cutting Design Rules</h2>
+<p>These rules apply to ALL views and mockups:</p>
+<ul>
+<li><strong>Light theme:</strong> <code>#f0f2f5</code> background, <code>#fff</code> cards, <code>#4a90d9</code> accent blue, <code>#ff6b35</code> admin orange</li>
+<li><strong>Header pattern:</strong> <code>☰ | CT/PD env toggle | Title (h2) | Season Select | spacer | 🇬🇧/🇵🇱 lang toggle</code></li>
+<li><strong>Sidebar admin items:</strong> Sezony, Wydarzenia, Tożsamości, Punktacja (orange text, hidden when not admin)</li>
+<li><strong>Floating toolbar:</strong> <code>position: fixed; bottom: 60px; left: 20px</code> — ADMIN badge + timer + Wyloguj</li>
+<li><strong>Polish UI terminology:</strong> &quot;Ranklista&quot; (not &quot;Ranklist&quot;), &quot;Kalendarz&quot;, &quot;Komunikat organizatora&quot; (not &quot;Zaproszenie&quot;), &quot;Punktacja&quot;</li>
+<li><strong>All admin views scoped</strong> to the currently selected season in the header dropdown</li>
+<li><strong>No emoji icons</strong> in sidebar menu items</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>7 HTML mockups locked as design reference — implementation must match approved mockups</li>
+<li>Cross-cutting rules ensure visual consistency across all views</li>
+<li>Admin UI views (Sezony, Wydarzenia, Tożsamości) are sidebar placeholders in M8; implementation deferred to M9</li>
+<li>Scoring config editor (Punktacja) is the only admin CRUD view implemented in M8</li>
+<li>EVF import, tournament management, and identity resolution UI designed in M8 but implemented in M9</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="mockup-registry">Mockup Registry</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Mockup</th>
+<th>File</th>
+<th>Status</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>App Shell</td>
+<td><code>doc/mockups/m8_app_shell.html</code></td>
+<td>APPROVED</td>
+<td>M8 (T8.4)</td>
+</tr>
+<tr>
+<td>Calendar View</td>
+<td><code>doc/mockups/m8_calendar_view.html</code></td>
+<td>APPROVED</td>
+<td>M8 (T8.5)</td>
+</tr>
+<tr>
+<td>Admin Gate</td>
+<td><code>doc/mockups/m8_admin_gate_v2.html</code></td>
+<td>APPROVED</td>
+<td>M8 (T8.6)</td>
+</tr>
+<tr>
+<td>EVF Import</td>
+<td><code>doc/mockups/m8_evf_import.html</code></td>
+<td>APPROVED</td>
+<td>M9</td>
+</tr>
+<tr>
+<td>Tournament Mgmt</td>
+<td><code>doc/mockups/m8_tournaments.html</code></td>
+<td>APPROVED</td>
+<td>M9</td>
+</tr>
+<tr>
+<td>Identity Resolution</td>
+<td><code>doc/mockups/m8_identity_resolution.html</code></td>
+<td>APPROVED</td>
+<td>M9</td>
+</tr>
+<tr>
+<td>Scoring Config</td>
+<td><code>doc/mockups/m8_scoring_config_A_form.html</code></td>
+<td>APPROVED</td>
+<td>M8 (T8.8)</td>
+</tr>
+</tbody>
+</table></div>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="014-delete-reimport-strategy.html">← ADR-014: Delete + Re-import in Transaction</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="016-supabase-auth-totp-mfa.html">→ ADR-016: Supabase Auth with TOTP MFA for Admin Access</a></nav>
+<footer class="foot">Generated from <code>015-m8-ui-design-decisions.md</code> · source SHA-256 <code>456a7f855663a08e1c6eea88deb357516764022fd822871d29f4fc0c4d69dadb</code></footer>
+</div></body></html>

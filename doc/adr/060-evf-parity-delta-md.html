@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="060-evf-parity-delta-md.md">
+<meta name="adr-source-sha256" content="91f5e93116caeab13da24885a7c0f0b536c314f71e519448d39f12f278d76a7f">
+<title>ADR-060 · EVF parity sweep emits delta-only .md (no full.md overwrite)</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 060</p><h1>EVF parity sweep emits delta-only <code>.md</code> (no <code>full.md</code> overwrite)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Proposed</dd></div><div><dt>Date</dt><dd class="">2026-05-03</dd></div><div><dt>Source</dt><dd class=""><code>060-evf-parity-delta-md.md</code></dd></div><div><dt>Length</dt><dd class="">95 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed
+<strong>Date:</strong> 2026-05-03
+<strong>Amends:</strong> ADR-053 (EVF parity gate), ADR-058 (staging-reports bucket).</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-3"><a href="#a-overwrite-full-md-from-sweep">A. Overwrite `full.md` from sweep</a></li><li class="depth-3"><a href="#c-both-overwrite-full-md-and-emit-delta">C. Both — overwrite `full.md` AND emit delta</a></li><li class="depth-3"><a href="#d-skip-md-entirely-just-notify-in-telegram-text">D. Skip `.md` entirely; just notify in Telegram text</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#status-deliverables-proposed-not-yet-shipped">Status — deliverables (proposed, not yet shipped)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>ADR-053 introduced the daily EVF parity sweep (<code>evf-parity-sweep.yml</code> cron) that compares EVF API state against DB state for EVF-organized events. When drift is detected, the sweep applies corrections via existing parity RPCs and notifies via Telegram.</p>
+<p>ADR-058 introduced the <code>staging-reports</code> bucket where each event's verdict <code>.md</code> lives at <code>{event_code}/full.md</code>. The first ingestion (URL-based or email-based) writes <code>full.md</code> as the operator-validated baseline.</p>
+<p>Question: when the EVF parity sweep applies corrections, what should it do with <code>full.md</code>?</p>
+<p>Options:</p>
+<ul>
+<li>(A) Overwrite <code>full.md</code> with a freshly-rendered post-correction version.</li>
+<li>(B) Emit a separate delta <code>.md</code> showing only what changed; never touch <code>full.md</code>.</li>
+<li>(C) Both — overwrite <code>full.md</code> AND emit a delta.</li>
+<li>(D) Skip <code>.md</code> artefacts entirely; just notify in Telegram text.</li>
+</ul>
+<p>The operator's framing: &quot;the first vendor URL based ingestion creates the initial <code>.md</code> file, and later the EVF parity re-trigger would only add a 'delta' <code>.md</code> with the changes it made&quot;. The first-ingest verdict represents the operator's mental baseline; overwriting it from automated sweeps would erase the timeline of human decisions vs machine corrections.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p><strong>Option B.</strong> EVF parity sweep produces only delta <code>.md</code> files. <code>full.md</code> is never overwritten by automated sweeps. Silent (no <code>.md</code>, no Telegram) when sweep finds zero drift.</p>
+<p><strong>Path:</strong> <code>staging-reports/{event_code}/deltas/{yyyyMMdd_HHmmss}.md</code> (append-only).</p>
+<p><strong>Renderer:</strong> <code>python/pipeline/parity_delta.py</code>:</p>
+<pre><code class="language-python">def render(event_code: str, changes: list[ParityChange]) -&gt; bytes
+</code></pre>
+<p>The function reads from in-memory <code>ParityChange</code> records (already produced by <code>evf_parity_sweep.py</code> for its existing log path) — no new DB queries.</p>
+<p><strong>Format example:</strong></p>
+<pre><code class="language-markdown"># EVF parity delta — EVENT-A-2024-2025
+_Sweep: 2026-06-03 03:45:12 UTC · 2 changes applied_
+
+## Fencer corrections
+| Fencer | Field | Before | After |
+|---|---|---|---|
+| #1042 STARK Tony | int_birth_year | 1974 | 1975 |
+
+## Result corrections
+| Tournament | Fencer | Field | Before | After |
+|---|---|---|---|---|
+| t#412 / V2 / EPEE / M | #88 KOWAL Jan | int_place | 7 | 5 |
+
+_All changes auto-applied via fn_evf_apply_correction. Tournament scoring re-run for affected tournaments._
+</code></pre>
+<p><strong>Telegram delivery:</strong> delta <code>.md</code> is sent via <code>notifier.send_staging_report(event_code, md_bytes, kind='delta', extras={'changes': N})</code> (per ADR-059) only when <code>len(changes) &gt; 0</code>.</p>
+<p><strong><code>full.md</code> mutation policy</strong> (orthogonal to EVF):</p>
+<ul>
+<li>First ingestion (URL or email) writes <code>full.md</code>.</li>
+<li>Operator alias mutation (Create / Transfer / Discard) → <code>regen-report.yml</code> re-renders <code>full.md</code> from current DB state and overwrites in place.</li>
+<li>EVF parity sweep does NOT touch <code>full.md</code>.</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<h3 id="a-overwrite-full-md-from-sweep">A. Overwrite <code>full.md</code> from sweep</h3>
+<p>Rejected: erases operator-validated baseline. Operator no longer has a frozen reference of &quot;what the verdict looked like when I last reviewed this event&quot;.</p>
+<h3 id="c-both-overwrite-full-md-and-emit-delta">C. Both — overwrite <code>full.md</code> AND emit delta</h3>
+<p>Rejected: doubles <code>.md</code> files per drift event with no operator value (delta is the actionable artefact; the regenerated full would just be <code>full.md + delta</code> reapplied).</p>
+<h3 id="d-skip-md-entirely-just-notify-in-telegram-text">D. Skip <code>.md</code> entirely; just notify in Telegram text</h3>
+<p>Rejected: change records belong in <code>staging-reports/{event}/deltas/</code> for archival and future cross-event analysis. Telegram text alerts are too easy to lose.</p>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>Positive:</strong></p>
+<ul>
+<li><code>full.md</code> semantically means &quot;operator-validated state at last regen&quot; — a stable baseline.</li>
+<li>Telegram scrollback of delta <code>.md</code> files IS the EVF change log, organised per event.</li>
+<li>Cross-event cascades from operator alias mutations DO update <code>full.md</code> for all touched events (separate mechanism per ADR-059) — the EVF flow doesn't compete.</li>
+<li>Empty sweeps stay silent — no Telegram noise on no-op overnight runs.</li>
+</ul>
+<p><strong>Negative:</strong></p>
+<ul>
+<li>After many parity sweeps, <code>deltas/</code> may grow large per event. Manual cleanup eventually needed; per ADR-058 retention is &quot;keep forever, manual delete only&quot;.</li>
+<li>Operator mental model: &quot;to know current state, read <code>full.md</code> + apply each delta in <code>deltas/</code> chronologically&quot;. This is OK because <code>full.md</code> is updated whenever the operator triages aliases, so the delta backlog is bounded.</li>
+<li>Auto-rerun of EVF parity immediately after a cross-event alias cascade is NOT in scope (deferred to future ADR). Today's daily cron is the only trigger; the operator may see drift accumulate for up to 24 hours after they perform a cross-event mutation.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="status-deliverables-proposed-not-yet-shipped">Status — deliverables (proposed, not yet shipped)</h2>
+<ul>
+<li><code>python/pipeline/parity_delta.py</code> (renderer)</li>
+<li><code>python/tests/test_parity_delta.py</code> (empty → no-md, BY-only, mixed sections)</li>
+<li><code>python/pipeline/evf_parity_sweep.py</code> extension (call <code>parity_delta.render</code> + <code>notifier.send_staging_report</code>)</li>
+<li>Existing <code>evf-parity-sweep.yml</code> cron picks up the new behaviour automatically (no workflow YAML change needed)</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="059-telegram-document-delivery.html">← ADR-059: Telegram sendDocument as primary verdict read surface</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="061-local-parity-and-telegram-commands.html">→ ADR-061: LOCAL operator workflow preserved verbatim; Telegram-driven CERT command surface</a></nav>
+<footer class="foot">Generated from <code>060-evf-parity-delta-md.md</code> · source SHA-256 <code>91f5e93116caeab13da24885a7c0f0b536c314f71e519448d39f12f278d76a7f</code></footer>
+</div></body></html>

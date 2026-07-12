@@ -1,0 +1,1455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="doc-source" content="ingestion_pipeline_NEW_design.md">
+<meta name="doc-source-sha256" content="d4ec0a89f5df659d318b1ff0634d6553391e19e0efb86693a0f4072506ebeb01">
+<title>Ingestion Pipeline — NEW Design (proposed) · SPWS</title>
+<link rel="stylesheet" href="adr/assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Ingestion Pipeline — NEW Design (proposed)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>ingestion_pipeline_NEW_design.md</code></dd></div><div><dt>Length</dt><dd>779 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#0-legend-every-abbreviation-used-in-this-document">0. Legend — every abbreviation used in this document</a></li><li class="depth-3"><a href="#0-1-architecture-terms-new-design">0.1 Architecture terms (NEW design)</a></li><li class="depth-3"><a href="#0-2-domain-tournament-types-age-categories">0.2 Domain — tournament types &amp; age categories</a></li><li class="depth-3"><a href="#0-3-data-sources-external-systems">0.3 Data sources &amp; external systems</a></li><li class="depth-3"><a href="#0-4-architecture-formats-governance">0.4 Architecture, formats &amp; governance</a></li><li class="depth-2"><a href="#1-business-requirements-start-here">1. Business Requirements (start here)</a></li><li class="depth-2"><a href="#2-guiding-principles">2. Guiding Principles</a></li><li class="depth-2"><a href="#3-the-big-chart-three-layers-plugins-named-with-adrs">3. THE BIG CHART — three layers, plugins named, with ADRs</a></li><li class="depth-2"><a href="#4-architecture-core">4. Architecture core</a></li><li class="depth-3"><a href="#4-1-the-plugin-contract">4.1 The plugin contract</a></li><li class="depth-3"><a href="#4-1a-plugin-kinds-types">4.1a Plugin kinds (types)</a></li><li class="depth-3"><a href="#4-2-the-orchestrator-generic-domain-ignorant">4.2 The orchestrator (generic, domain-ignorant)</a></li><li class="depth-3"><a href="#4-3-the-rule-engine-sequence-resolved-before-execution">4.3 The rule engine (sequence resolved before execution)</a></li><li class="depth-3"><a href="#4-4-middleware-cross-cutting-keeps-plugins-pure">4.4 Middleware (cross-cutting, keeps plugins pure)</a></li><li class="depth-2"><a href="#5-plugin-catalog-execution-order">5. Plugin catalog (execution order)</a></li><li class="depth-3"><a href="#5-1-resolvefencers-the-heart-merged-s0-s6-runs-early">5.1 `ResolveFencers` — the heart (merged S0⊕S6, runs early)</a></li><li class="depth-3"><a href="#5-2-no-halt-fault-resolution-the-remediationbook-escalate">5.2 No-halt fault resolution — the `REMEDIATIONBOOK` + `Escalate`</a></li><li class="depth-3"><a href="#5-2a-staging-report-the-fifth-context-channel-terminal-formatter-adr-075">5.2a Staging report — the fifth Context channel + terminal formatter (ADR-075)</a></li><li class="depth-2"><a href="#6-the-rulebook-the-domestic-pipeline-4-flows">6. The RuleBook — the domestic pipeline (4 flows)</a></li><li class="depth-3"><a href="#6-1-two-registries-rulebook-plugin-list">6.1 Two registries (RuleBook ≠ plugin list)</a></li><li class="depth-3"><a href="#6-2-the-rulebook-the-domestic-pipeline-4-flows">6.2 The RuleBook — the domestic pipeline (4 flows)</a></li><li class="depth-3"><a href="#6-3-plan-time-vs-run-time-conditionality-two-levers-kept-apart">6.3 Plan-time vs run-time conditionality (two levers, kept apart)</a></li><li class="depth-3"><a href="#6-4-resolved-plans-engine-output-before-execution">6.4 Resolved plans (engine output, before execution)</a></li><li class="depth-3"><a href="#6-5-example-execution-traces">6.5 Example execution traces</a></li><li class="depth-2"><a href="#7-code-chunk-reference-proposed-file-layout">7. Code-chunk reference (proposed file layout)</a></li><li class="depth-2"><a href="#8-deployment-triggers-putting-the-chain-into-action">8. Deployment &amp; triggers — putting the chain into action</a></li><li class="depth-2"><a href="#9-adr-cross-reference">9. ADR cross-reference</a></li><li class="depth-2"><a href="#10-build-order-verification-tdd-red-first">10. Build order &amp; verification (TDD, RED first)</a></li><li class="depth-2"><a href="#11-open-knobs-decide-before-implementation">11. Open knobs (decide before implementation)</a></li><li class="depth-2"><a href="#12-deferred-international-only-not-needed-for-the-domestic-pipeline">12. Deferred — international only (NOT needed for the domestic pipeline)</a></li></ol></nav>
+  <main><section class="section-card detail"><p><strong>Status:</strong> ✅ <strong>IMPLEMENTED / CURRENT</strong> — built in milestones M1–M5 (2026-06-15); ADR-070–074 Accepted. See <a href="development_history.html">development_history</a> for the build log.
+<strong>Supersedes:</strong> the stage-based architecture mapped in <a href="ingestion-pipeline-design.html">ingestion-pipeline-design.md</a>. The plugins <em>wrap</em> those stage functions (the bridge in <code>python/pipeline/plugins/bridge.py</code>), so that document remains the reference for the underlying stage logic; this document is the current architecture of record.
+<strong>Shape:</strong> a <strong>rule-driven plugin pipeline</strong>. Three layers, one direction:</p>
+<blockquote>
+<p><strong>RuleBook + RuleEngine → ExecutionPlan → Orchestrator → Plugins (incl. ResolveFencers) → CDC-triggered Recompute / Dedup</strong></p>
+</blockquote>
+<p>The sequence of plugins for any scenario (a <strong>Flow</strong>) is resolved <strong>declaratively, before execution</strong>, by a rule
+engine. A generic orchestrator then runs that plan <strong>one direction only</strong>, plugin by plugin. Each plugin
+encapsulates one concern. Master-data governance + identity resolution is a single plugin — <strong><code>ResolveFencers</code></strong>
+— that runs <strong>early</strong>, so every downstream structural step operates on a governed roster, not raw scrape data.
+Corrections to master data <strong>auto-recompute</strong> the affected tournaments — re-deriving V-cats and re-scoring from stored data, no source re-fetch, no re-match.</p>
+<blockquote>
+<p><strong>DB schema is referenced, not detailed here</strong> — see <a href="Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.html">Project Specification §9</a> and schema ADRs (<a href="adr/049-joint-pool-split-flag.html">049</a>, <a href="adr/050-unified-ingestion-pipeline.html">050</a>, <a href="adr/055-ingest-traceability.html">055</a>). New objects (<code>tbl_recompute_queue</code>, <code>tbl_flow_rule</code>) are named; column detail is deferred to the implementing migration.</p>
+</blockquote>
+<blockquote>
+<p><strong>Markers:</strong> ⚑ = <strong>new</strong> · ◑ = <strong>changed</strong> (existing logic reshaped into a plugin) · (unmarked) = reused as-is.</p>
+</blockquote>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="0-legend-every-abbreviation-used-in-this-document">0. Legend — every abbreviation used in this document</h2>
+<h3 id="0-1-architecture-terms-new-design">0.1 Architecture terms (NEW design)</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Short description</th>
+<th>Read more</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Plugin</strong> ⚑</td>
+<td>unit of logic</td>
+<td>a self-contained step implementing the <code>IngestPlugin</code> contract</td>
+<td>§4.1, §5</td>
+</tr>
+<tr>
+<td><strong>Orchestrator</strong> ⚑</td>
+<td>the runner</td>
+<td>generic, domain-ignorant; executes a plan one-directionally</td>
+<td>§4.2</td>
+</tr>
+<tr>
+<td><strong>Flow</strong> ⚑</td>
+<td>named scenario</td>
+<td>the 4 domestic flows: <code>INGEST_DOMESTIC</code>, <code>RECOMPUTE_DOMESTIC</code>, <code>DEDUP_SWEEP</code>, <code>POST_COMMIT</code> (international <code>FRESH_INGEST_INTERNATIONAL</code>/<code>EVF_SYNC</code> deferred §12)</td>
+<td>§6</td>
+</tr>
+<tr>
+<td><strong>FlowParams</strong> ⚑</td>
+<td>pre-execution inputs</td>
+<td>everything knowable before running (flow, source, env, mode)</td>
+<td>§4.3</td>
+</tr>
+<tr>
+<td><strong>Rule / RuleBook</strong> ⚑</td>
+<td>declarative sequencing</td>
+<td>a Rule = a named flow = ordered <code>Step</code>s; the RuleBook = <code>dict[Flow → Rule]</code></td>
+<td>§4.3, §6</td>
+</tr>
+<tr>
+<td><strong>RuleEngine</strong> ⚑</td>
+<td>the planner</td>
+<td>resolves <code>FlowParams → ExecutionPlan</code> before execution</td>
+<td>§4.3</td>
+</tr>
+<tr>
+<td><strong>ExecutionPlan</strong> ⚑</td>
+<td>resolved sequence</td>
+<td>immutable, DAG-validated, inspectable ordered plugin list</td>
+<td>§4.3</td>
+</tr>
+<tr>
+<td><strong>Context</strong> ⚑</td>
+<td>forward payload</td>
+<td>the data that flows one direction through plugins</td>
+<td>§4.1</td>
+</tr>
+<tr>
+<td><strong>Services</strong> ⚑</td>
+<td>injected deps</td>
+<td><code>db</code>, <code>config</code>, <code>matcher</code>, <code>notifier</code> handed to each plugin</td>
+<td>§4.1</td>
+</tr>
+<tr>
+<td><strong>effects</strong> ⚑</td>
+<td>side-effect declaration</td>
+<td><code>{}</code> pure / <code>master_data</code> / <code>live</code> / <code>external</code></td>
+<td>§4.1</td>
+</tr>
+<tr>
+<td><strong>Middleware</strong> ⚑</td>
+<td>cross-cutting wrapper</td>
+<td>timing, logging, provenance, escalate→Telegram, around every plugin</td>
+<td>§4.4</td>
+</tr>
+<tr>
+<td><strong>Plugin kind</strong> ⚑</td>
+<td>plugin type</td>
+<td>one of Source / Gate / Transform / Mutator / Reactor</td>
+<td>§4.1a</td>
+</tr>
+<tr>
+<td><strong>Reactor</strong> ⚑</td>
+<td>event-driven plugin kind</td>
+<td>observes a signal → emits a Flow (e.g. <code>SelfHealing</code>)</td>
+<td>§4.1a</td>
+</tr>
+<tr>
+<td><strong>Signal</strong> ⚑</td>
+<td>domain event</td>
+<td>emitted by Mutators (<code>master_data.changed</code>, <code>live.committed</code>), observed by Reactors</td>
+<td>§4.1a</td>
+</tr>
+<tr>
+<td><strong>DAG validation</strong> ⚑</td>
+<td>plan-time check</td>
+<td>every <code>reads</code> key is produced by an earlier plugin's <code>writes</code></td>
+<td>§4.2</td>
+</tr>
+<tr>
+<td><strong>ResolveFencers</strong> ⚑</td>
+<td>the roster plugin</td>
+<td>owner of <em>name → governed fencer</em>; merged S0⊕S6; runs early</td>
+<td>§5.1</td>
+</tr>
+<tr>
+<td><strong>MDM</strong> ⚑</td>
+<td>Master Data Management</td>
+<td>governing <code>tbl_fencer</code> as a deduplicated entity store</td>
+<td>§5.1</td>
+</tr>
+<tr>
+<td><strong>CDC</strong> ⚑</td>
+<td>Change Data Capture</td>
+<td>trigger that records which events a master-data edit affects</td>
+<td>§8</td>
+</tr>
+<tr>
+<td><strong>Recompute</strong> ⚑</td>
+<td>re-derive from stored data</td>
+<td>after a master-data change: re-derive V-cats + re-score the affected <strong>event</strong> (<code>RECOMPUTE_DOMESTIC</code>); <strong>no source, no re-match</strong></td>
+<td><a href="adr/014-delete-reimport-strategy.html">014</a>, §8</td>
+</tr>
+<tr>
+<td><strong>Debounce / watermark</strong> ⚑</td>
+<td>coalescing</td>
+<td>wait N min after the last edit, then one recompute covers all queued events</td>
+<td>§8</td>
+</tr>
+<tr>
+<td><strong>Fixpoint</strong> ⚑</td>
+<td>convergence</td>
+<td>recompute settles (change-gated trigger + idempotent recompute)</td>
+<td>§8</td>
+</tr>
+<tr>
+<td><strong>Fault</strong> ⚑</td>
+<td>recoverable problem</td>
+<td><code>ctx.fault(kind)</code> — never a halt; auto-resolved inline so the flow reaches Commit</td>
+<td>§5.2, <a href="adr/074-no-halt-fault-resolution.html">074</a></td>
+</tr>
+<tr>
+<td><strong>REMEDIATIONBOOK</strong> ⚑</td>
+<td>fault policy</td>
+<td><code>dict[FaultKind → Remediation]</code> (RuleBook sibling): inline fix + escalation policy</td>
+<td>§5.2, <a href="adr/074-no-halt-fault-resolution.html">074</a></td>
+</tr>
+<tr>
+<td><strong>Escalate</strong> ⚑</td>
+<td>the error plugin</td>
+<td>post-commit Telegram, last resort, informational; never blocks</td>
+<td>§5.2, <a href="adr/074-no-halt-fault-resolution.html">074</a></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="0-2-domain-tournament-types-age-categories">0.2 Domain — tournament types &amp; age categories</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Abbr.</th>
+<th>Meaning</th>
+<th>Short description</th>
+<th>Read more</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SPWS</td>
+<td>Polish Veterans Fencing Association</td>
+<td>the org; its own data authority</td>
+<td><a href="../../CLAUDE.md">CLAUDE.md</a></td>
+</tr>
+<tr>
+<td>PPW / MPW</td>
+<td>Puchar / Mistrzostwa Polski Weteranów</td>
+<td>domestic individual cup / championship — admit <strong>everyone</strong></td>
+<td><a href="adr/066-min-participants-ingestion-gate.html">066</a></td>
+</tr>
+<tr>
+<td>PEW / MEW / MSW / PSW</td>
+<td>European / World / Masters / World-cup veterans</td>
+<td>international events — <strong>POL-only</strong> intake</td>
+<td><a href="adr/038-evf-intake-polish-only.html">038</a>, <a href="adr/008-psw-msw-international-pool.html">008</a></td>
+</tr>
+<tr>
+<td>V0–V4 / V-cat</td>
+<td>veteran age categories</td>
+<td>5 age bands, derived from birth year</td>
+<td><a href="adr/010-age-category-by-birth-year.html">010</a>, <a href="adr/056-vcat-from-birthyear.html">056</a></td>
+</tr>
+<tr>
+<td>EPEE/FOIL/SABRE · M/F</td>
+<td>weapons · genders</td>
+<td><code>enum_weapon_type</code> · <code>enum_gender_type</code></td>
+<td>Spec §9, <a href="adr/033-fencer-gender-identity-enhancements.html">033</a></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="0-3-data-sources-external-systems">0.3 Data sources &amp; external systems</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Abbr.</th>
+<th>Meaning</th>
+<th>Short description</th>
+<th>Read more</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FTL · FT XML</td>
+<td>FencingTimeLive · FencingTime XML</td>
+<td>live API/CSV · offline export; primary domestic</td>
+<td><a href="adr/065-ftl-per-fencer-vcat-marker-check.html">065</a>, <a href="adr/067-structural-pool-only-skip-unified-xml-ingest.html">067</a></td>
+</tr>
+<tr>
+<td>Engarde · 4Fence · Ophardt · Dartagnan</td>
+<td>HTML/JSON providers</td>
+<td>per-source scrapers</td>
+<td><a href="../../python/scrapers/">scrapers/</a></td>
+</tr>
+<tr>
+<td>EVF</td>
+<td>European Veterans Fencing</td>
+<td>calendar + API; <strong>backup</strong> source, parity-verified</td>
+<td><a href="adr/028-evf-calendar-results-import.html">028</a>, <a href="adr/053-evf-parity-gate.html">053</a></td>
+</tr>
+<tr>
+<td>cert_ref · GAS · POL · FIE</td>
+<td>snapshot · Google Apps Script · Poland · int'l federation</td>
+<td>fallback parser · email bridge · nationality filter</td>
+<td><a href="adr/050-unified-ingestion-pipeline.html">050</a>, <a href="adr/023-email-ingestion-gas-storage.html">023</a>, <a href="adr/038-evf-intake-polish-only.html">038</a></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="0-4-architecture-formats-governance">0.4 Architecture, formats &amp; governance</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Abbr.</th>
+<th>Meaning</th>
+<th>Short description</th>
+<th>Read more</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IR</td>
+<td>Intermediate Representation</td>
+<td>uniform <code>ParsedTournament</code>/<code>ParsedResult</code> every parser emits</td>
+<td><a href="../../python/pipeline/ir.py">ir.py</a>, <a href="adr/050-unified-ingestion-pipeline.html">050</a></td>
+</tr>
+<tr>
+<td>RPC · PL/pgSQL · FK</td>
+<td>callable DB function · Postgres proc language · Foreign Key</td>
+<td>identity by FK not name</td>
+<td><a href="adr/003-identity-by-fk-not-name.html">003</a></td>
+</tr>
+<tr>
+<td>CLI · UUID · DOB/BY · DE</td>
+<td>command line · unique id · birth date/year · double elimination</td>
+<td>entry points · <code>run_id</code> · drives V-cat · scoring bonus</td>
+<td>§7</td>
+</tr>
+<tr>
+<td>RapidFuzz · XML/CSV/XLSX/JSON/HTML</td>
+<td>fuzzy lib · data formats</td>
+<td>matcher · source artifact formats</td>
+<td><a href="../../python/matcher/">matcher/</a></td>
+</tr>
+<tr>
+<td>ADR · FR/NFR · UC · RTM</td>
+<td>decision record · requirements · use case · traceability</td>
+<td>the &quot;why&quot; + requirement map</td>
+<td><a href="adr/">doc/adr/</a>, Spec</td>
+</tr>
+<tr>
+<td>TDD · pgTAP/pytest/vitest</td>
+<td>test-first · test frameworks</td>
+<td>DB / Python / frontend suites</td>
+<td><a href="claude/testing.md">testing.md</a></td>
+</tr>
+<tr>
+<td>LOCAL/CERT/PROD · Telegram</td>
+<td>three environments · bot</td>
+<td>dev→cert→prod tiers · alerting (never Discord)</td>
+<td><a href="adr/011-artifact-release-pipeline.html">011</a>, <a href="adr/059-telegram-document-delivery.html">059</a></td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="1-business-requirements-start-here">1. Business Requirements (start here)</h2>
+<p>The pipeline keeps <strong>30 sub-rankings</strong> current from many incompatible sources, near-error-free because
+<strong>SPWS is its own authority</strong>. The NEW design adds: <strong>full automation</strong> (no human gate), <strong>master data as the
+foundation</strong>, and <strong>self-healing</strong> (a correction propagates automatically).</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Business rule</th>
+<th>Where in the architecture</th>
+<th>Why (ADR)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BR-1</td>
+<td>Ingest FTL, Engarde, 4Fence, Ophardt, FT XML, EVF API, CSV/XLSX/JSON, cert_ref</td>
+<td><code>ParseSource</code> plugin + <code>PARSERS</code></td>
+<td><a href="adr/050-unified-ingestion-pipeline.html">050</a></td>
+</tr>
+<tr>
+<td>BR-2</td>
+<td>Domestic (PPW/MPW) admit <strong>everyone</strong>; unmatched auto-created</td>
+<td><code>INGEST_DOMESTIC</code> → <code>ResolveFencers(intake=DOMESTIC)</code></td>
+<td><a href="adr/020-seed-generator-domestic-auto-create.html">020</a>, <strong>070</strong></td>
+</tr>
+<tr>
+<td>BR-3 <em>(deferred §12)</em></td>
+<td>International (PEW/MEW/MSW) admit <strong>POL-only</strong></td>
+<td><code>FRESH_INGEST_INTERNATIONAL</code> → <code>ResolveFencers(intake=INTERNATIONAL)</code></td>
+<td><a href="adr/038-evf-intake-polish-only.html">038</a></td>
+</tr>
+<tr>
+<td>BR-4</td>
+<td>Identity by durable <strong>FK</strong>, never name</td>
+<td><code>ResolveFencers</code>, <code>tbl_result.id_fencer</code></td>
+<td><a href="adr/003-identity-by-fk-not-name.html">003</a></td>
+</tr>
+<tr>
+<td>BR-5</td>
+<td>Age category from <strong>birth year</strong> + season</td>
+<td><code>ResolveFencers</code> governs BY; <code>SplitByAge</code>/<code>AssignFinalVcat</code> consume it</td>
+<td><a href="adr/010-age-category-by-birth-year.html">010</a>, <a href="adr/056-vcat-from-birthyear.html">056</a></td>
+</tr>
+<tr>
+<td>BR-6</td>
+<td>Re-import <strong>atomic &amp; idempotent</strong></td>
+<td><code>Commit</code> plugin (atomic <code>fn_write_event</code>)</td>
+<td><a href="adr/014-delete-reimport-strategy.html">014</a>, <a href="adr/022-ingestion-db-transaction.html">022</a></td>
+</tr>
+<tr>
+<td>BR-6′ ⚑</td>
+<td>Each tournament's <strong><code>url_results</code></strong> is populated during commit (drilldown link)</td>
+<td><code>Commit</code> writes the parsed WEB-source URL via <code>fn_find_or_create_tournament(p_url_results)</code> — gated on <code>_WEB_SOURCE_KINDS</code> (FTL/ENGARDE/FOURFENCE/DARTAGNAN/OPHARDT_HTML); XML/EVF-API/file preserve</td>
+<td><strong>073 (N14 amendment)</strong>, <a href="adr/068-ftl-www-host-normalization.md">068</a></td>
+</tr>
+<tr>
+<td>BR-7</td>
+<td>Combined pools split + counted per V-cat</td>
+<td><code>SplitByAge</code>/<code>DetectJointPool</code>/<code>AssignFinalVcat</code>, commit RPC</td>
+<td><a href="adr/024-combined-category-splitting.html">024</a>, <a href="adr/049-joint-pool-split-flag.html">049</a></td>
+</tr>
+<tr>
+<td>BR-8</td>
+<td>Min-participant check at <strong>ingestion</strong> — sub-min bracket <strong>auto-dropped</strong>, never halts</td>
+<td><code>ValidateCounts</code> plugin (fault <code>BELOW_MIN</code>)</td>
+<td><a href="adr/066-min-participants-ingestion-gate.html">066</a>, <strong>074</strong></td>
+</tr>
+<tr>
+<td>BR-9</td>
+<td>Every committed row carries <strong>provenance</strong></td>
+<td><code>StampProvenance</code> middleware + history</td>
+<td><a href="adr/050-unified-ingestion-pipeline.html">050</a>, <a href="adr/055-ingest-traceability.html">055</a></td>
+</tr>
+<tr>
+<td><strong>BR-10′</strong> ⚑</td>
+<td><strong>No human review gate</strong> — auto-decide by calibrated confidence; ties bias to create-then-dedup</td>
+<td><code>ResolveFencers</code> policy + auto-<code>Commit</code></td>
+<td><strong>ADR-070</strong></td>
+</tr>
+<tr>
+<td><strong>BR-11′</strong> ⚑</td>
+<td><strong>Master data is the foundation</strong> — clean, deduped, BY-coherent roster, resolved <strong>early</strong></td>
+<td><code>ResolveFencers</code> plugin + <code>DEDUP_SWEEP</code> flow</td>
+<td><strong>ADR-071</strong></td>
+</tr>
+<tr>
+<td><strong>BR-12</strong> ⚑</td>
+<td><strong>A master-data change auto-recomputes the affected event</strong>, debounced into one rerun</td>
+<td>CDC trigger → <code>RECOMPUTE_DOMESTIC</code> flow</td>
+<td><strong>ADR-072</strong></td>
+</tr>
+<tr>
+<td><strong>BR-13</strong> ⚑</td>
+<td><strong>Source retention</strong> — re-ingest can use retained bytes when the live URL is dead (<code>source=retained</code>)</td>
+<td><code>ParseSource</code> (<code>source_artifact_path</code>)</td>
+<td><a href="adr/050-unified-ingestion-pipeline.html">050</a>, <strong>ADR-072</strong></td>
+</tr>
+<tr>
+<td><strong>BR-14</strong> ⚑</td>
+<td><strong>Sequence is declarative &amp; inspectable before execution</strong></td>
+<td>RuleEngine → ExecutionPlan</td>
+<td><strong>ADR-073</strong></td>
+</tr>
+<tr>
+<td><strong>BR-15′</strong> ⚑</td>
+<td><strong>No hard halt</strong> — a domain problem auto-resolves inline (<code>REMEDIATIONBOOK</code>); flow always commits; Telegram escalation is informational last-resort</td>
+<td>gates <code>ctx.fault</code> + <code>Escalate</code> plugin</td>
+<td><strong>ADR-074</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>UC coverage: UC1–UC4, UC23–UC31 <strong>minus</strong> the manual-review gate (UC4 becomes an audit view, not a gate).</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="2-guiding-principles">2. Guiding Principles</h2>
+<ul>
+<li><strong>Rule-driven sequencing.</strong> What runs, and in what order, is resolved from declarative rules <strong>before</strong>
+execution — not hardcoded. Adding a scenario = adding rules. — <strong>ADR-073</strong></li>
+<li><strong>One direction.</strong> Data flows forward through <code>Context</code>; a plugin never calls another plugin or the
+orchestrator. A fault does <strong>not</strong> stop forward motion — it is recorded and auto-resolved inline (below).
+Post-commit is a <em>separate</em> forward pass.</li>
+<li><strong>One concern per plugin, dependencies injected.</strong> Single responsibility; all I/O via <code>Services</code>; testable
+in isolation. — <strong>ADR-073</strong></li>
+<li><strong>Master data first — resolved first.</strong> <code>ResolveFencers</code> runs <em>before</em> every structural step — even
+before <code>DetectCombinedPool</code> — so combined-pool detection, splitting, joint-pool detection, and V-cat
+assignment all operate on a <strong>governed</strong> roster (authoritative birth years), never raw scrape markers.
+Trust is established first, then consumed. — <strong>ADR-071</strong></li>
+<li><strong>Full automation, asymmetric safety.</strong> No human gate; bias every uncertain call toward the <em>recoverable</em>
+failure (create-new + later dedup) over the <em>unrecoverable</em> one (wrong link). — <strong>ADR-070/071</strong></li>
+<li><strong>No hard halt — resolve-and-converge.</strong> A domain problem is a <code>ctx.fault</code>, not a halt: the gate applies
+the explicit <code>REMEDIATIONBOOK</code> fix inline (drop a sub-min bracket, skip a pool round, accept-and-flag a
+count mismatch) and the flow <strong>runs on to a committed state</strong>. Telegram escalation is informational and
+last-resort, <em>after</em> commit. Only true infra <code>Abort</code> stops a run, and it is retried. — <strong>ADR-074</strong>, §5.2</li>
+<li><strong>Change-triggered idempotent recompute.</strong> Master-data edits are the trigger; <code>RECOMPUTE_DOMESTIC</code>
+re-derives V-cats and re-scores the affected <strong>event</strong> from stored data (no source, no re-match); the loop
+converges to a fixpoint. — <strong>ADR-072</strong>, <a href="adr/014-delete-reimport-strategy.html">014</a></li>
+<li><strong>One IR · structural-over-regex · full traceability.</strong> Unchanged. — <a href="adr/050-unified-ingestion-pipeline.html">050</a>/<a href="adr/057-pool-round-structural-detection.html">057</a>/<a href="adr/067-structural-pool-only-skip-unified-xml-ingest.html">067</a>/<a href="adr/055-ingest-traceability.html">055</a></li>
+</ul>
+<blockquote>
+<p>ADR-051/054 do not exist. New: <strong>ADR-070</strong> (ResolveFencers / auto-resolution, no gate), <strong>ADR-071</strong> (MDM + dedup), <strong>ADR-072</strong> (CDC recompute), <strong>ADR-073</strong> (plugin + rule-engine architecture), <strong>ADR-074</strong> (no hard halt — fault resolution + Escalate). Amends <a href="adr/050-unified-ingestion-pipeline.html">050</a> (stages → plugins; review gate removed) and <a href="adr/056-vcat-from-birthyear.html">056</a> (Stage-0 absorbed into <code>ResolveFencers</code>); ADR-074 reverses the halt-by-exception model of <a href="adr/050-unified-ingestion-pipeline.html">050</a>/<a href="adr/057-pool-round-structural-detection.html">057</a>/<a href="adr/067-structural-pool-only-skip-unified-xml-ingest.html">067</a> and amends <a href="adr/038-evf-intake-polish-only.html">038</a>/<a href="adr/066-min-participants-ingestion-gate.html">066</a>/<a href="adr/069-participant-count-url-validator.html">069</a>.</p>
+</blockquote>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="3-the-big-chart-three-layers-plugins-named-with-adrs">3. THE BIG CHART — three layers, plugins named, with ADRs</h2>
+<p>⚑ new · ◑ changed. <code>(ADR-NNN)</code> = why a node exists. Note <code>ResolveFencers</code> runs <strong>first of the core</strong>, even before <code>DetectCombinedPool</code>. The chart shows <code>INGEST_DOMESTIC</code>'s plugin order; <code>RECOMPUTE_DOMESTIC</code> reuses <code>AssignFinalVcat</code>+<code>Commit</code>, <code>DEDUP_SWEEP</code> runs <code>ResolveFencers</code> whole-roster, <code>POST_COMMIT</code> is the reactor-fired tail (§6). No node halts — faults auto-resolve inline (§5.2). International flows are deferred (§12).</p>
+<pre><code class="language-mermaid">flowchart TB
+    %% ===== LAYER 1: RULE ENGINE (plan time) =====
+    subgraph L1[&quot;1 · Rule Engine (plan time) — ADR-073&quot;]
+        direction TB
+        RB[&quot;⚑ RuleBook — 4 domestic FLOWS + REMEDIATIONBOOK&lt;br/&gt;INGEST_DOMESTIC · RECOMPUTE_DOMESTIC · DEDUP_SWEEP · POST_COMMIT&lt;br/&gt;code-defined, optionally tbl_flow_rule per ADR-006&quot;]
+        FP[&quot;⚑ FlowParams (flow · source · env · organizer)&quot;]
+        RE[&quot;⚑ RuleEngine.plan(FlowParams)&lt;br/&gt;look up flow → prune steps by predicate → validate DAG&quot;]
+        EP[&quot;⚑ ExecutionPlan (ordered · immutable · inspectable)&quot;]
+        RB --&gt; RE
+        FP --&gt; RE --&gt; EP
+    end
+
+    %% ===== LAYER 2: ORCHESTRATOR (run time) =====
+    subgraph L2[&quot;2 · Orchestrator (run time) — ADR-073&quot;]
+        ORC[&quot;⚑ execute(plan, ctx, svc)&lt;br/&gt;for each plugin: applies? → middleware(run) → trace&lt;br/&gt;faults auto-resolved inline · NEVER halts · ONE DIRECTION ONLY&quot;]
+        MW[&quot;⚑ middleware: Timing · Log ·&lt;br/&gt;StampProvenance (ADR-055) · EscalateToTelegram (ADR-059/074)&quot;]
+        MW -.wraps.-&gt; ORC
+    end
+
+    %% ===== LAYER 3: PLUGINS (logic) — execution order =====
+    subgraph L3[&quot;3 · Plugins (logic) — one concern each&quot;]
+        direction TB
+        P1[&quot;ParseSource ⚑◑ · Source&lt;br/&gt;PARSERS dispatch + retain bytes (ADR-050)&quot;]
+        P2[&quot;ValidateIR ◑ · Gate&lt;br/&gt;structural + pool-only skip (ADR-067)&quot;]
+        P3[&quot;ResolveEvent ◑ · Transform&lt;br/&gt;event/season/organizer/domestic (ADR-025)&quot;]
+        P4[&quot;⭐ ResolveFencers ⚑◑ · Mutator (MERGED S0⊕S6 — runs FIRST of the core)&lt;br/&gt;exact→fuzzy(policy)→create · reconcile BY · alias writeback · dedup&lt;br/&gt;intake=DOMESTIC: create unmatched, V0 ok · emits master_data changed (ADR-003/010/020/056/064/070)&quot;]
+        P5[&quot;DetectCombinedPool ◑ · Transform&lt;br/&gt;from GOVERNED birth years (ADR-024)&quot;]
+        P6[&quot;SplitByAge ◑ · Transform&lt;br/&gt;group by GOVERNED birth year (ADR-024/047)&quot;]
+        P7[&quot;DetectJointPool ◑ · Transform&lt;br/&gt;siblings (ADR-049)&quot;]
+        P8[&quot;ValidateCounts ◑ · Gate&lt;br/&gt;count + min · sub-min bracket auto-dropped (ADR-052/066)&quot;]
+        P9[&quot;DetectPoolRound ◑ · Gate&lt;br/&gt;gender-mix · auto-skips bracket (ADR-057/063)&quot;]
+        P10[&quot;AssignFinalVcat ◑ · Transform&lt;br/&gt;V-cat from reconciled BY (ADR-056)&quot;]
+        P12[&quot;Commit ◑ · Mutator&lt;br/&gt;atomic delete-old+insert+score → live; emits live committed (ADR-014/022/049/055)&quot;]
+        P1--&gt;P2--&gt;P3--&gt;P4--&gt;P5--&gt;P6--&gt;P7--&gt;P8--&gt;P9--&gt;P10--&gt;P12
+    end
+
+    %% ===== REACTORS (event-driven, OUTSIDE the forward plan) =====
+    subgraph RX[&quot;⚑ Reactors — observe a signal, emit a Flow (ADR-072)&quot;]
+        SH[&quot;⚑ SelfHealing (kind: Reactor)&lt;br/&gt;on master_data.changed → emits RECOMPUTE_DOMESTIC (debounced)&lt;br/&gt;impl: trg_fencer_change_enqueue → tbl_recompute_queue → worker&quot;]
+        PCR[&quot;PostCommit (kind: Reactor)&lt;br/&gt;on live.committed → emits POST_COMMIT&quot;]
+    end
+
+    %% ===== POST_COMMIT flow (domestic members) =====
+    subgraph PC[&quot;POST_COMMIT flow (domestic)&quot;]
+        PCx[&quot;ParticipantCount (ADR-069) →&lt;br/&gt;Notify + Escalate last resort (ADR-059/074)&quot;]
+        SFx[&quot;⚑ StagingFormatter (Mutator · effects=docs, ADR-075)&lt;br/&gt;event-scoped only: merge _bracket_reports →&lt;br/&gt;STAGING_TEMPLATE + three_way_diff&quot;]
+        PCx --&gt; SFx
+    end
+
+    %% ===== STATE =====
+    LIVE[(&quot;LIVE: tbl_tournament / tbl_result → ranking views (auto-reflect)&quot;)]
+    ROSTER[(&quot;tbl_fencer — governed roster&quot;)]
+    EDITM[&quot;manual tbl_fencer edit / DEDUP_SWEEP&quot;]
+    STAGE[/&quot;⚑ doc/staging/&amp;lt;EVENT&amp;gt;.&amp;lt;ts&amp;gt;.md + .diff.md (ADR-075)&quot;/]
+
+    EP --&gt; ORC --&gt; L3
+    ROSTER --&gt; P4
+    P4 -. mutates and emits master_data changed .-&gt; ROSTER
+    P4 -. governed BY .-&gt; P5
+    P12 --&gt; LIVE
+    P12 -. emits live committed .-&gt; PCR
+    PCR -. emits POST_COMMIT flow .-&gt; PC
+    L3 -. each plugin: ctx.add_report(fragment) .-&gt; SFx
+    SFx --&gt; STAGE
+    ROSTER -. master_data changed .-&gt; SH
+    EDITM -. master_data changed .-&gt; SH
+    SH -. emits RECOMPUTE_DOMESTIC per event .-&gt; EP
+</code></pre>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="4-architecture-core">4. Architecture core</h2>
+<h3 id="4-1-the-plugin-contract">4.1 The plugin contract</h3>
+<pre><code class="language-python">class IngestPlugin(Protocol):
+    name:    str
+    reads:   frozenset[str]    # Context keys consumed
+    writes:  frozenset[str]    # Context keys produced — and the ONLY keys it may write
+    effects: frozenset[str]    # side-effects: {} pure | {&quot;master_data&quot;} | {&quot;live&quot;} | {&quot;external&quot;}
+
+    def applies(self, ctx: Context) -&gt; bool: ...        # explicit &quot;if needed&quot; guard (data-derived)
+    def run(self, ctx: Context, svc: Services) -&gt; None: # forward-only; write only declared keys; idempotent
+        ...                                             # ctx.fault(kind, detail) → auto-resolve inline + keep going; ctx.warn(...) soft note
+</code></pre>
+<p><strong>Invariants (what makes it maintainable + safely re-runnable):</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Invariant</th>
+<th>Buys</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Forward-only (no plugin calls another / the orchestrator)</td>
+<td>one-directional flow; no hidden coupling</td>
+</tr>
+<tr>
+<td>Write-discipline (only keys in <code>writes</code>)</td>
+<td>plugins can't clobber each other; declarations stay honest</td>
+</tr>
+<tr>
+<td>Effects honesty (<code>effects</code> declared)</td>
+<td>recompute reasons about what re-runs; signals know which Mutator fired</td>
+</tr>
+<tr>
+<td>Idempotent / deterministic</td>
+<td>recompute &amp; re-ingest are safe; self-healing loop converges</td>
+</tr>
+<tr>
+<td>Dependency injection (I/O via <code>svc</code>)</td>
+<td>trivially mockable; swap matcher for a calibration variant</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Outcomes</strong> recorded in <code>ctx.trace</code>: <strong>RAN</strong> · <strong>SKIPPED</strong> (<code>applies()</code> false) · <strong>FAULT</strong> (<code>ctx.fault</code> — auto-resolved inline per the <code>REMEDIATIONBOOK</code> rule, <strong>flow continues</strong>). Plus <code>ctx.warn()</code> soft diagnostics. A flow aborts <strong>only</strong> on a true infra <code>Abort</code> (DB down), which is retried — never a human gate.</p>
+<p><code>Context</code> has <strong>five forward channels</strong>: <code>data</code> (the write-disciplined DAG currency), <code>trace</code> (what <em>ran</em>), <code>warnings</code> (soft diagnostics), <code>faults</code> (recoverable problems) and — since <strong>ADR-075</strong> — <code>report</code> (the &quot;what to tell the human&quot; channel). <code>ctx.add_report(section, **payload)</code> appends a <code>ReportFragment</code> tagged with the active plugin's name + kind; like <code>fault()</code>/<code>warn()</code> it is a forward signal, <strong>not</strong> a DAG key, so it bypasses write-discipline and is callable by <strong>every plugin kind</strong>. The terminal <code>StagingFormatter</code> plugin shapes the accumulated fragments into the per-event review files (§5.2a). <code>Services</code> = injected <code>db</code>, <code>config</code>, <code>matcher</code>, <code>calibration</code>, <code>notifier</code>.</p>
+<h3 id="4-1a-plugin-kinds-types">4.1a Plugin kinds (types)</h3>
+<p>Every plugin declares a <code>kind</code>. The kind determines its contract and where it runs.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Runs</th>
+<th>Contract</th>
+<th>Members</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Source</strong></td>
+<td>first, in the plan</td>
+<td>produces the initial Context</td>
+<td><code>ParseSource</code>, <code>LoadCommitted</code></td>
+</tr>
+<tr>
+<td><strong>Gate</strong></td>
+<td>in the plan</td>
+<td>pure check; records <code>ctx.fault</code>, <strong>never halts</strong> (ADR-074)</td>
+<td><code>ValidateIR</code>, <code>ValidateCounts</code>, <code>DetectPoolRound</code>, <code>ParticipantCount</code></td>
+</tr>
+<tr>
+<td><strong>Transform</strong></td>
+<td>in the plan</td>
+<td>pure; enriches Context; records <code>ctx.fault</code> if underivable</td>
+<td><code>ResolveEvent</code>, <code>DetectCombinedPool</code>, <code>SplitByAge</code>, <code>DetectJointPool</code>, <code>AssignFinalVcat</code></td>
+</tr>
+<tr>
+<td><strong>Mutator</strong></td>
+<td>in the plan</td>
+<td>persists state and <strong>emits a signal</strong></td>
+<td><code>ResolveFencers</code>, <code>Commit</code>, <code>Notify</code>, <code>Escalate</code>, <strong><code>StagingFormatter</code></strong> ⚑ (deferred §12: <code>PewCascade</code>, <code>EvfParity</code>)</td>
+</tr>
+<tr>
+<td><strong>Reactor</strong></td>
+<td><strong>outside</strong> the plan</td>
+<td><strong>observes a signal → emits a Flow</strong></td>
+<td><strong><code>SelfHealing</code></strong>, <code>PostCommit</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Every kind serializes its own report fragment (ADR-075).</strong> Regardless of kind, a plugin calls <code>self.report(ctx, section, **payload)</code> (→ <code>ctx.add_report</code>) to record its contribution to the staging report as it runs — Source emits the parsed bracket, Gates emit their checks, Transforms emit the structure, Mutators emit identity/commit. The terminal <strong><code>StagingFormatter</code></strong> (Mutator, <code>effects={&quot;docs&quot;}</code>) is the ONLY plugin that reads the accumulated fragments and writes files; it renders at <strong>event scope</strong> only (when the CLI seeds <code>_bracket_reports</code>), so the per-bracket POST_COMMIT the <code>PostCommit</code> reactor fires SKIPs it.</p>
+<p><strong>The event seam:</strong> <em>Mutators emit signals; Reactors turn signals into Flows.</em> This is how the loop closes
+with <strong>no back-edges</strong> in the forward pipeline — <code>ResolveFencers</code> (Mutator) emits <code>master_data.changed</code>;
+<code>SelfHealing</code> (Reactor) observes it and emits <code>Flow.RECOMPUTE_DOMESTIC</code>.</p>
+<p>Reactors use a different contract from forward-flow plugins (<code>on</code>/<code>emits</code>/<code>react</code> instead of <code>reads</code>/<code>writes</code>/<code>run</code>):</p>
+<pre><code class="language-python">class Reactor(Protocol):           # kind = REACTOR — event-driven, not in the forward plan
+    name:  str
+    on:    frozenset[str]          # signals observed, e.g. {&quot;master_data.changed&quot;}
+    emits: Flow                    # the flow it triggers, e.g. Flow.RECOMPUTE_DOMESTIC
+    def react(self, signal: Signal, svc: Services) -&gt; None: ...   # (debounced) → run_flow(emits, …)
+</code></pre>
+<p><code>SelfHealing.on = {&quot;master_data.changed&quot;}</code>, <code>emits = RECOMPUTE_DOMESTIC</code> — its implementation is the CDC trigger +
+<code>tbl_recompute_queue</code> + debounced worker (§8), exactly as <code>Commit</code>'s implementation is an RPC.
+<code>PostCommit.on = {&quot;live.committed&quot;}</code>, <code>emits = POST_COMMIT</code>.</p>
+<h3 id="4-2-the-orchestrator-generic-domain-ignorant">4.2 The orchestrator (generic, domain-ignorant)</h3>
+<pre><code class="language-python">class Orchestrator:
+    def execute(self, plan: ExecutionPlan, ctx: Context, svc: Services) -&gt; Context:
+        for plugin in plan.plugins:
+            if not plugin.applies(ctx):
+                ctx.trace.skipped(plugin.name); continue
+            try:
+                compose(self.middleware, plugin.run)(ctx, svc)   # cross-cutting wraps pure plugin
+                ctx.trace.ran(plugin.name)                       # plugins call ctx.fault() internally; never halts here
+            except Abort as a:
+                ctx.abort(plugin.name, a); break                 # ONLY genuine infra failure (retried, no human gate)
+        return ctx                                               # always reaches Commit; faults auto-resolved inline
+</code></pre>
+<p><code>ExecutionPlan.validate_dag()</code> (run at plan time, §4.3) guarantees every plugin's <code>reads</code> were produced by an earlier plugin's <code>writes</code> — <strong>mis-ordering fails before a single row is touched.</strong></p>
+<h3 id="4-3-the-rule-engine-sequence-resolved-before-execution">4.3 The rule engine (sequence resolved before execution)</h3>
+<pre><code class="language-python">class Flow(str, Enum):
+    # ── Full domestic automated pipeline (first-run scope) ──
+    INGEST_DOMESTIC=&quot;ingest_domestic&quot;; RECOMPUTE_DOMESTIC=&quot;recompute_domestic&quot;
+    DEDUP_SWEEP=&quot;dedup_sweep&quot;; POST_COMMIT=&quot;post_commit&quot;
+    # ── Deferred — international only (§12): FRESH_INGEST_INTERNATIONAL, EVF_SYNC ──
+
+@dataclass(frozen=True)
+class FlowParams:                       # everything knowable BEFORE execution
+    flow: Flow; source_kind: SourceKind | None = None
+    environment: str = &quot;LOCAL&quot;; organizer_hint: str | None = None
+
+# A RULE = a named FLOW = an ordered sequence of plugin calls (the RuleBook, §6).
+@dataclass(frozen=True)
+class Step:
+    plugin: str                                     # name → looked up in the PLUGINS registry
+    when:   Callable[[FlowParams], bool] = always   # PLAN-TIME gate on FlowParams
+    params: dict = field(default_factory=dict)      # plugin params, e.g. source=&quot;retained&quot;
+
+@dataclass(frozen=True)
+class Rule:
+    flow: Flow; description: str
+    steps: tuple[Step, ...]                          # ORDER = execution order
+
+class RuleEngine:                       # executes a RULE from the RuleBook
+    def plan(self, params: FlowParams) -&gt; ExecutionPlan:
+        rule  = self.rulebook[params.flow]                  # look up the named FLOW
+        steps = [s for s in rule.steps if s.when(params)]   # plan-time pruning
+        plan  = ExecutionPlan(params, rule.flow, steps, self.plugins)
+        plan.validate_dag(self.plugins)                     # reads ⊆ earlier writes; fail fast
+        return plan                                         # immutable · inspectable · loggable
+</code></pre>
+<p><code>plan.describe()</code> prints the resolved sequence without running anything — sequence is <em>determined before execution</em>, testable on its own (&quot;flow X with params Y ⇒ plugins Z&quot;).</p>
+<h3 id="4-4-middleware-cross-cutting-keeps-plugins-pure">4.4 Middleware (cross-cutting, keeps plugins pure)</h3>
+<p><code>Timing</code> · <code>StructuredLog</code> · <code>StampProvenance</code> (<a href="adr/055-ingest-traceability.html">055</a>) · <code>EscalateToTelegram</code> (<a href="adr/059-telegram-document-delivery.html">059</a>/<strong>074</strong>). Each wraps every <code>plugin.run</code>, so plugins stay pure domain logic.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="5-plugin-catalog-execution-order">5. Plugin catalog (execution order)</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Plugin</th>
+<th>Kind</th>
+<th><code>applies()</code></th>
+<th><code>effects</code></th>
+<th>Encapsulates</th>
+<th>Fault → auto-resolution (ADR-074)</th>
+<th>ADR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ParseSource</code> ⚑◑</td>
+<td>Source</td>
+<td>always</td>
+<td>pure (+retain)</td>
+<td><code>PARSERS</code> dispatch, source retention</td>
+<td>—</td>
+<td><a href="adr/050-unified-ingestion-pipeline.html">050</a></td>
+</tr>
+<tr>
+<td><code>ValidateIR</code> ◑</td>
+<td>Gate</td>
+<td>always</td>
+<td>pure</td>
+<td>structural checks, pool-only skip</td>
+<td><code>IR_INVALID</code> → skip artifact; <code>POOL_ROUND</code> → skip bracket</td>
+<td><a href="adr/067-structural-pool-only-skip-unified-xml-ingest.html">067</a></td>
+</tr>
+<tr>
+<td><code>ResolveEvent</code> ◑</td>
+<td>Transform</td>
+<td>always</td>
+<td>pure (db read)</td>
+<td>event/season/organizer/domestic</td>
+<td><code>EVENT_NOT_RESOLVED</code> → Abort + escalate (cannot ingest into a nonexistent event)</td>
+<td><a href="adr/025-event-centric-ingestion-telegram.html">025</a></td>
+</tr>
+<tr>
+<td><strong><code>ResolveFencers</code></strong> ⭐⚑◑</td>
+<td><strong>Mutator</strong></td>
+<td>always; <code>intake</code> param</td>
+<td><strong><code>master_data</code></strong></td>
+<td><strong>merged S0⊕S6</strong>, runs first of the core — owns <em>name → governed fencer</em> (see §5.1); obeys the flow's <strong><code>intake</code></strong> param (DOMESTIC; INTERNATIONAL deferred §12 — no internal organizer branch); <strong>emits <code>master_data.changed</code></strong></td>
+<td>none on domestic (V0 allowed); intl V0-exclusion deferred §12</td>
+<td><a href="adr/003-identity-by-fk-not-name.html">003</a>/<a href="adr/010-age-category-by-birth-year.html">010</a>/<a href="adr/020-seed-generator-domestic-auto-create.html">020</a>/<a href="adr/056-vcat-from-birthyear.html">056</a>/<a href="adr/064-asymmetric-gender-filter-matcher.html">064</a>/<strong>070</strong></td>
+</tr>
+<tr>
+<td><code>DetectCombinedPool</code> ◑</td>
+<td>Transform</td>
+<td>always</td>
+<td>pure</td>
+<td>multi-V-cat detection from <strong>governed</strong> BY spread</td>
+<td>—</td>
+<td><a href="adr/024-combined-category-splitting.html">024</a></td>
+</tr>
+<tr>
+<td><code>SplitByAge</code> ◑</td>
+<td>Transform</td>
+<td>combined only</td>
+<td>pure (db read)</td>
+<td>group rows by <strong>governed</strong> birth year (<code>fn_age_categories_batch</code>)</td>
+<td><code>SPLITTER_UNRESOLVED</code> → keep combined + escalate</td>
+<td><a href="adr/024-combined-category-splitting.html">024</a>/<a href="adr/047-vcat-invariant-trigger-and-splitter-consolidation.html">047</a></td>
+</tr>
+<tr>
+<td><code>DetectJointPool</code> ◑</td>
+<td>Transform</td>
+<td>siblings/override</td>
+<td>pure</td>
+<td>sibling grouping</td>
+<td>—</td>
+<td><a href="adr/049-joint-pool-split-flag.html">049</a></td>
+</tr>
+<tr>
+<td><code>ValidateCounts</code> ◑</td>
+<td>Gate</td>
+<td>always</td>
+<td>pure (url read)</td>
+<td>count + min-participants (from <code>event.is_domestic</code>) + URL→data</td>
+<td><code>BELOW_MIN</code> → drop bracket; <code>COUNT_MISMATCH</code>/<code>URL_DATA_MISMATCH</code> → accept + escalate</td>
+<td><a href="adr/052-url-data-validation.html">052</a>/<a href="adr/066-min-participants-ingestion-gate.html">066</a></td>
+</tr>
+<tr>
+<td><code>DetectPoolRound</code> ◑</td>
+<td>Gate</td>
+<td>always</td>
+<td>pure (db read)</td>
+<td>structural gender-mix</td>
+<td><code>POOL_ROUND</code> → skip bracket</td>
+<td><a href="adr/057-pool-round-structural-detection.html">057</a>/<a href="adr/063-polish-plural-and-grupy-zbiorcze.html">063</a></td>
+</tr>
+<tr>
+<td><code>AssignFinalVcat</code> ◑</td>
+<td>Transform</td>
+<td>always</td>
+<td>pure</td>
+<td>per-result V-cat from reconciled BY</td>
+<td>—</td>
+<td><a href="adr/056-vcat-from-birthyear.html">056</a></td>
+</tr>
+<tr>
+<td><code>Commit</code> ◑</td>
+<td><strong>Mutator</strong></td>
+<td>always</td>
+<td><code>live</code></td>
+<td><strong>atomic delete-old + insert + score → live</strong> (idempotent, no draft); <strong>emits <code>live.committed</code></strong></td>
+<td>—</td>
+<td><a href="adr/014-delete-reimport-strategy.html">014</a>/<a href="adr/022-ingestion-db-transaction.html">022</a>/<a href="adr/049-joint-pool-split-flag.html">049</a>/<a href="adr/055-ingest-traceability.html">055</a></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Reactors (kind: Reactor — event-driven, run <em>outside</em> the forward plan):</strong>
+<code>SelfHealing</code> — on <code>master_data.changed</code> → emits <code>Flow.RECOMPUTE_DOMESTIC</code> (debounced; impl = CDC trigger + <code>tbl_recompute_queue</code> + worker, §8). The trigger is <strong>column-aware</strong>: BY / merge / nationality → <code>RECOMPUTE_DOMESTIC</code>; name/alias edits → no historical action (FK is durable) — <strong>ADR-072</strong> ·
+<code>PostCommit</code> — on <code>live.committed</code> → emits <code>Flow.POST_COMMIT</code>.</p>
+<p><strong>POST_COMMIT flow plugins (domestic):</strong> <code>ParticipantCount</code> (Gate, <a href="adr/069-participant-count-url-validator.html">069</a> — now a <strong>fault</strong>, not a halt, per <strong>ADR-074</strong>) · <code>Notify</code> (Mutator/external, <a href="adr/059-telegram-document-delivery.html">059</a>) · <code>Escalate</code> (Mutator/external — Telegram last resort, <strong>ADR-074</strong>) · <strong><code>StagingFormatter</code></strong> ⚑ (Mutator/<code>docs</code> — the terminal staging-report shaper, <a href="adr/075-staging-report-fragment-channel.html">075</a>; <code>applies</code> only at event scope). Deferred (§12): <code>PewCascade</code> (<a href="adr/046-pew-weapon-suffix.html">046</a>), <code>EvfParity</code> (<a href="adr/053-evf-parity-gate.html">053</a>).</p>
+<p><strong><code>RECOMPUTE_DOMESTIC</code> source:</strong> <code>LoadCommitted</code> (Source) — loads the affected <strong>event's</strong> stored, FK-linked results across its V-cat brackets for re-derivation (no fetch, no re-match).</p>
+<h3 id="5-1-resolvefencers-the-heart-merged-s0-s6-runs-early">5.1 <code>ResolveFencers</code> — the heart (merged S0⊕S6, runs early)</h3>
+<p><code>ResolveFencers</code> owns the <code>tbl_fencer</code> entity store; resolving a result row to an FK is a side-output of
+governing that store. <strong>It runs first of the core steps — even before <code>DetectCombinedPool</code></strong> — so
+combined-pool detection, splitting, joint-pool detection, and V-cat assignment all consume <em>governed</em>
+birth years, not raw scrape markers. Because it precedes them, its own per-row V-cat comes from
+<code>category_hint</code> / per-fencer <code>raw_age_marker</code> / source birth year — <strong>not</strong> from <code>splits</code>. Two internal
+phases (still <em>one</em> plugin — all name→fencer logic in one maintainable place):</p>
+<pre><code>authoritative vcat(r) = category_hint  (single-cat bracket)
+                      || per-fencer raw_age_marker (combined-pool FTL markers)
+                      || vcat_of(source birth_year)            # NOT splits — SplitByAge runs later
+
+PHASE A — settle the roster (exact only, high precision):
+  id = exact_match(r)                         # post-fold equality (ADR-003) — ~0 false positives
+  if id: AUTO_MATCHED(exact); if vcat conflicts stored BY → reconcile to band midpoint (ADR-056)
+
+PHASE B — resolve the remainder (fuzzy, against the now-reconciled roster):
+  best = find_best_match(r, age=vcat, bracket_gender=parsed.gender)          # ADR-064 — domestic: gender-filter on
+  if best.conf ≥ AUTO_LINK_THRESHOLD and age-band+gender corroborate:
+      link; AUTO_MATCHED(fuzzy); fn_update_fencer_aliases(id, r.name)        # exact next run
+  else: create_fencer(by = midpoint(vcat)); AUTO_CREATED                     # ADR-020 — domestic admits everyone, V0 ok
+  # DEFERRED §12 (intake=INTERNATIONAL): bracket_gender=None; vcat==V0 → ctx.fault(V0_EXCLUDE) drops the row (ADR-038/074 — exclusion, NOT a halt); UNMATCHED → EXCLUDED
+→ writes ctx.matches (row → id_fencer + governed birth_year + method + confidence); effects: master_data
+</code></pre>
+<ul>
+<li><strong>Why first:</strong> every downstream structural decision (<code>DetectCombinedPool</code>, <code>SplitByAge</code>, <code>DetectJointPool</code>, <code>AssignFinalVcat</code>) then consumes the <strong>governed</strong> birth year <code>ResolveFencers</code> emits. In particular <code>DetectCombinedPool</code> detects combined-ness from the governed BY spread rather than from source age markers — more robust for events whose source omitted markers (the fencers' governed BYs are still known), and it removes the failure mode of splitting on a wrong scraped BY (which would otherwise need a human to fix → defeats full automation).</li>
+<li><strong>Why two phases:</strong> exact matches settle birth years <em>before</em> any fuzzy tiebreak relies on them.</li>
+<li><strong>Asymmetric safety:</strong> a wrong link is unrecoverable corruption (BR-9); a duplicate is recoverable by the dedup sweep. Bias to create-over-uncertain-link.</li>
+<li><strong>Same code, two entry points:</strong> the per-bracket <code>ResolveFencers</code> plugin and the whole-roster <code>DEDUP_SWEEP</code> flow run the <em>same</em> dedup/reconcile logic — there is <strong>no separate MDM subsystem</strong>.</li>
+<li><strong>Triggers self-healing:</strong> because its <code>effects</code> is <code>master_data</code>, every create/merge/reconcile fires the CDC trigger (§8).</li>
+</ul>
+<h3 id="5-2-no-halt-fault-resolution-the-remediationbook-escalate">5.2 No-halt fault resolution — the <code>REMEDIATIONBOOK</code> + <code>Escalate</code></h3>
+<p>The pipeline <strong>never hard-halts</strong> on a domain problem. A gate/transform that hits one calls
+<code>ctx.fault(kind, detail)</code>; the orchestrator does <strong>not</strong> stop. The fault is resolved by an explicit,
+declarative policy — the <strong><code>REMEDIATIONBOOK</code></strong> (a sibling of the RuleBook, so error policy stays out of
+hidden <code>if</code>s inside plugins) — applied <strong>inline</strong>, so the flow runs on to <code>Commit</code>. Only <code>Abort</code> (genuine
+infra failure, e.g. DB down) breaks a run, and it is retried — never gated by a human.</p>
+<pre><code class="language-python">class FaultKind(str, Enum):
+    BELOW_MIN; COUNT_MISMATCH; POOL_ROUND; SPLITTER_UNRESOLVED; IR_INVALID; URL_DATA_MISMATCH
+
+class Escalation(str, Enum):  NEVER; ON_LOSS; ALWAYS    # when to Telegram — informational, last resort
+
+@dataclass(frozen=True)
+class Remediation:
+    auto:     Callable        # deterministic inline fix: drop_bracket / skip_bracket / accept_parsed / ...
+    escalate: Escalation      # last-resort Telegram, AFTER the event has committed
+
+# Domestic policy — small and explicit. No V0 rule here: domestic admits V0 (V0-exclusion is international, §12).
+REMEDIATIONBOOK = {
+  FaultKind.BELOW_MIN:           Remediation(auto=drop_bracket,   escalate=ON_LOSS),  # ADR-066
+  FaultKind.POOL_ROUND:          Remediation(auto=skip_bracket,   escalate=ON_LOSS),  # ADR-057/063
+  FaultKind.COUNT_MISMATCH:      Remediation(auto=accept_parsed,  escalate=ALWAYS),   # ADR-052/069 — needs eyes
+  FaultKind.URL_DATA_MISMATCH:   Remediation(auto=accept_parsed,  escalate=ALWAYS),   # ADR-052
+  FaultKind.SPLITTER_UNRESOLVED: Remediation(auto=keep_combined,  escalate=ALWAYS),   # rare: governed BY should prevent it
+  FaultKind.IR_INVALID:          Remediation(auto=skip_artifact,  escalate=ALWAYS),   # ADR-067
+}
+</code></pre>
+<ul>
+<li><strong><code>Escalate</code></strong> — the &quot;error plugin&quot; (Mutator, <code>effects: external</code>). It runs <strong>last</strong>, as part of
+<code>POST_COMMIT</code>'s <code>Notify</code>, <em>after</em> the event is already committed in its best automatically-resolved state.
+It sends a Telegram message <strong>only</strong> for faults whose policy is <code>ALWAYS</code>, or <code>ON_LOSS</code> when the inline fix
+actually dropped data. It asks a human to look — it <strong>never blocks</strong> the pipeline.</li>
+<li><strong>Self-healing is the other half.</strong> A problem that needs a <em>different flow</em> (a master-data correction →
+re-derive an event) is <strong>not</strong> a fault — it travels the Mutator→signal→Reactor seam (<code>master_data.changed</code>
+→ <code>SelfHealing</code> → <code>RECOMPUTE_DOMESTIC</code>, §8). Faults fix the <em>current</em> run inline; self-healing fixes
+<em>other</em> events asynchronously. Together: full automation, no gate. — <strong>ADR-070/074</strong></li>
+</ul>
+<h3 id="5-2a-staging-report-the-fifth-context-channel-terminal-formatter-adr-075">5.2a Staging report — the fifth Context channel + terminal formatter (ADR-075)</h3>
+<p>ADR-074 removed the draft/review gate (auto-commit, no draft tables), which also removed the OLD
+pipeline's two <strong>human-review files</strong> per event. ADR-075 restores them as an <strong>informational,
+post-commit</strong> layer — no drafts, no blocking gate — so the operator can still audit a run (new fencers,
+birth-year reconciliations, match quality, NULL/estimated BY, committed tournaments, pool-rounds) and a
+3-way diff (Source / CERT / New LOCAL) + confidence histogram.</p>
+<p><strong>Option B — distributed emission, shaped once at the end.</strong> The files aggregate information produced
+<em>throughout</em> ingestion. Rather than one terminal plugin reverse-engineering that from the legacy pctx
+(Option A — rejected: brittle, couples to side-effects), <strong>every plugin serializes its own fragment</strong>
+to the <code>report</code> channel as it runs, and <strong>one terminal <code>StagingFormatter</code> shapes the accumulated
+fragments</strong> into the files from a template.</p>
+<ul>
+<li>
+<p><strong>The channel.</strong> <code>Context.report: list[ReportFragment]</code>; <code>ReportFragment(plugin, kind, section, payload)</code>.
+<code>ctx.add_report(section, **payload)</code> (and the <code>BasePlugin.report</code> convenience) tag the fragment with the
+active plugin name + kind. Bypasses write-discipline (not a DAG key), so every kind can emit.</p>
+</li>
+<li>
+<p><strong>Who emits what.</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Plugin (kind)</th>
+<th>Section</th>
+<th>Fragment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ParseSource</code> (Source)</td>
+<td><code>SOURCE</code></td>
+<td>weapon, gender, category_hint, date, n_rows, source_url</td>
+</tr>
+<tr>
+<td><code>ValidateIR</code> (Gate)</td>
+<td><code>VALIDATION</code></td>
+<td>check=ir, ok</td>
+</tr>
+<tr>
+<td><code>ResolveEvent</code> (Transform)</td>
+<td><code>EVENT</code></td>
+<td>id_event, txt_code, txt_name, dt_start</td>
+</tr>
+<tr>
+<td><code>ResolveFencers</code> (Mutator)</td>
+<td><code>IDENTITY</code></td>
+<td>matches[], created[], reconciled[], conflicts[]</td>
+</tr>
+<tr>
+<td><code>DetectCombinedPool</code>/<code>SplitByAge</code>/<code>DetectJointPool</code> (Transform)</td>
+<td><code>STRUCTURE</code></td>
+<td>combined, splits, joint_pool_siblings</td>
+</tr>
+<tr>
+<td><code>ValidateCounts</code> (Gate)</td>
+<td><code>VALIDATION</code></td>
+<td>check=count, below_min, count_mismatch</td>
+</tr>
+<tr>
+<td><code>DetectPoolRound</code> (Gate)</td>
+<td><code>VALIDATION</code></td>
+<td>check=pool_round, is_pool_round</td>
+</tr>
+<tr>
+<td><code>AssignFinalVcat</code> (Transform)</td>
+<td><code>STRUCTURE</code></td>
+<td>final_vcats</td>
+</tr>
+<tr>
+<td><code>Commit</code> (Mutator)</td>
+<td><code>COMMIT</code></td>
+<td>tournaments[], skipped, dropped, cleared</td>
+</tr>
+<tr>
+<td><code>ParticipantCount</code> (Gate)</td>
+<td><code>VALIDATION</code></td>
+<td>check=participant_count, expected, actual</td>
+</tr>
+<tr>
+<td><code>Notify</code> (Mutator)</td>
+<td><code>REACTION</code></td>
+<td>sent, escalated[]</td>
+</tr>
+</tbody>
+</table></div>
+</li>
+<li>
+<p><strong>The formatter.</strong> <code>StagingFormatter</code> (Mutator, <code>effects={&quot;docs&quot;}</code>) owns <code>STAGING_TEMPLATE</code> (an ordered
+<code>(heading, renderer)</code> spec — the &quot;template&quot;; no Jinja dep), merges all brackets' fragments
+(<code>_bracket_reports</code>), and writes both files. The <code>.md</code> is rendered from the template; the <code>.diff.md</code>
+reuses <code>three_way_diff</code> verbatim, fed from the <code>IDENTITY</code> matches + <code>db.fetch_cert_rows_for_event</code>.</p>
+</li>
+<li>
+<p><strong>Event scope + timestamp.</strong> The CLI fires ONE event-level <code>POST_COMMIT</code> after the bracket loop
+(<code>_fire_staging_report</code>), seeding <code>_bracket_reports</code> (and schedule-level skips). <code>StagingFormatter.applies</code>
+is True only then; the per-bracket reactor fire SKIPs it. One UTC stamp per run names both files —
+<code>doc/staging/&lt;EVENT&gt;.&lt;YYYYMMDD-HHMMSSZ&gt;.md</code> / <code>.diff.md</code> — so reruns of the same event are comparable.</p>
+</li>
+<li>
+<p><strong>Richness parity + &quot;automation report&quot; framing (ADR-075 rev, 2026-06-17).</strong> The <code>.md</code> is an
+<strong>automation report</strong>: it leads with <strong>Detected automation gaps</strong> (the things the fully-automated run
+could not resolve — pool-rounds omitted, created fencers with a close existing match, NULL/estimated
+birth years, suspected wrong alias links, dropped/below-min brackets) and there is <strong>no sign-off</strong>
+(full automation, ADR-074). The formatter iterates <strong>per bracket</strong> (so each match/fault carries its
+bracket label + place) and reaches content-parity with the OLD pipeline by <strong>reusing its pure
+DB-readers</strong> — <code>_fetch_event_meta</code> (full <code>tbl_event</code> row + URL slots), <code>_live_tournament_rows</code>
+(authoritative, deduped committed tournaments), <code>_check_pool_round_count</code> (conditional ⚠ only),
+<code>_classify_alias_pair</code> (alias verdicts) — with no <code>pctx</code>. Sections: full event header · automation
+gaps · created (+ fuzzy near-miss) · BY reconciliations (Fencer·BY·status·reason) · fencer matching
+(by-method · name-resolution paths · alias verdicts · BY-quality · NULL/estimated tables) · committed
+tournaments · brackets present-but-omitted · bracket parse status (+ skip/exception reasons).
+<code>url_results</code> stays <strong>blank unless an admin entered it</strong> (admin-managed URL rule — never scrape-filled).</p>
+</li>
+</ul>
+<pre><code class="language-mermaid">flowchart LR
+    subgraph BR[&quot;per-bracket INGEST_DOMESTIC runs&quot;]
+        direction TB
+        S[&quot;ParseSource → … → Commit&lt;br/&gt;each plugin: ctx.add_report(section, …)&quot;]
+    end
+    S --&gt;|ctx.report| AGG[&quot;CLI _fire_staging_report&lt;br/&gt;seeds _bracket_reports (all brackets)&quot;]
+    AGG --&gt;|event-scoped POST_COMMIT| SF[&quot;StagingFormatter (Mutator · effects=docs)&lt;br/&gt;merge fragments → STAGING_TEMPLATE + three_way_diff&quot;]
+    SF --&gt; MD[&quot;doc/staging/&amp;lt;EVENT&amp;gt;.&amp;lt;ts&amp;gt;.md&quot;]
+    SF --&gt; DIFF[&quot;doc/staging/&amp;lt;EVENT&amp;gt;.&amp;lt;ts&amp;gt;.diff.md&quot;]
+</code></pre>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="6-the-rulebook-the-domestic-pipeline-4-flows">6. The RuleBook — the domestic pipeline (4 flows)</h2>
+<p>A <strong>Rule</strong> is a named <strong>FLOW</strong>: an ordered sequence of plugin calls that encodes one piece of business
+logic. The <strong>RuleBook</strong> is the set of <em>all flows we support</em> — it is the executable statement of the
+business logic. It references plugins by name from a separate <strong>PLUGINS</strong> registry (the &quot;plugin list&quot; — each
+plugin defined once, §5). The RuleEngine executes a flow by looking up its Rule and running its steps.</p>
+<h3 id="6-1-two-registries-rulebook-plugin-list">6.1 Two registries (RuleBook ≠ plugin list)</h3>
+<pre><code class="language-python"># PLUGINS — each plugin defined ONCE (kind + contract). The &quot;plugin list&quot; = §5 catalog.
+PLUGINS: dict[str, PluginSpec] = { &quot;ParseSource&quot;: PluginSpec(&quot;ParseSource&quot;, kind=Source, ...), ... }
+
+# A RULE = a named FLOW = an ordered sequence of plugin calls.
+@dataclass(frozen=True)
+class Step:
+    plugin: str                                     # name → looked up in PLUGINS
+    when:   Callable[[FlowParams], bool] = always   # PLAN-TIME gate (FlowParams)
+    params: dict = field(default_factory=dict)      # plugin params, e.g. source=&quot;retained&quot;
+
+@dataclass(frozen=True)
+class Rule:
+    flow: Flow; description: str
+    steps: tuple[Step, ...]                          # ORDER = execution order
+
+RULEBOOK: dict[Flow, Rule] = { ... }                 # ALL supported flows (§6.2)
+</code></pre>
+<h3 id="6-2-the-rulebook-the-domestic-pipeline-4-flows">6.2 The RuleBook — the domestic pipeline (4 flows)</h3>
+<p>The full domestic automated pipeline is <strong>four flows + two reactors</strong>. No human gate anywhere; every
+gate auto-resolves inline (§5.2) so each flow always reaches <code>Commit</code>. The international flows are
+deferred (§12) — none of them can touch a domestic event.</p>
+<pre><code class="language-python">RULEBOOK = {
+
+  # ── 1. Keep the active season current ────────────────────────────────────
+  Flow.INGEST_DOMESTIC: Rule(Flow.INGEST_DOMESTIC,
+    &quot;Ingest an active-season SPWS (PPW/MPW) event: admit everyone, auto-create unmatched, V0 &quot;
+    &quot;allowed, combined pools split + counted per V-cat. Never halts — gates auto-resolve inline.&quot;,
+    steps=(
+      Step(&quot;ParseSource&quot;),          # Source — source=&quot;live&quot; (default) | &quot;retained&quot; (dead URL)
+      Step(&quot;ValidateIR&quot;),           # Gate  — structural; auto-skips a pool-only/unrankable bracket
+      Step(&quot;ResolveEvent&quot;),         # Transform — event/season/organizer; sets is_domestic
+      Step(&quot;ResolveFencers&quot;, params={&quot;intake&quot;: &quot;DOMESTIC&quot;}),  # Mutator — exact→fuzzy→create; reconcile BY; gender-filter on; emits master_data.changed
+      Step(&quot;DetectCombinedPool&quot;),   # Transform — from GOVERNED birth years
+      Step(&quot;SplitByAge&quot;),           # Transform — applies() only if combined
+      Step(&quot;DetectJointPool&quot;),      # Transform — sibling grouping (ADR-049)
+      Step(&quot;ValidateCounts&quot;),       # Gate  — min from event.is_domestic; sub-min bracket auto-dropped, never halts
+      Step(&quot;DetectPoolRound&quot;),      # Gate  — auto-skips a gender-mixed pool round, never halts
+      Step(&quot;AssignFinalVcat&quot;),      # Transform — per-result V-cat from reconciled BY
+      Step(&quot;Commit&quot;),               # Mutator — atomic delete-old + insert + score → live; emits live.committed
+    )),
+
+  # ── 2. Self-heal an event after a birth-year / identity correction ────────
+  Flow.RECOMPUTE_DOMESTIC: Rule(Flow.RECOMPUTE_DOMESTIC,
+    &quot;Re-derive + re-score an AFFECTED EVENT after a master-data change. Event-granular: a BY change &quot;
+    &quot;can relocate a result between the event's V-cat brackets, so the whole event is the unit (a &quot;
+    &quot;single bracket can't absorb a relocation — the moving result is stored under its OLD bracket). &quot;
+    &quot;Works from stored, FK-linked results — no source, no re-match. Never halts. Auto-fired by the &quot;
+    &quot;SelfHealing reactor on master_data.changed.&quot;,
+    steps=(
+      Step(&quot;LoadCommitted&quot;),        # Source — ALL of the event's FK-linked results across its V-cat brackets (+ stored joint-pool flags + is_domestic)
+      Step(&quot;AssignFinalVcat&quot;),      # Transform — re-derive each result's V-cat from the corrected BY (re-partitions the event)
+      Step(&quot;ValidateCounts&quot;),       # Gate  — sub-min bracket auto-dropped, never halts
+      Step(&quot;Commit&quot;),               # Mutator — re-partition into V-cat brackets (create/drop), recount, re-score; emits live.committed
+    )),
+
+  # ── 3. Whole-roster dedup + BY reconcile (the source of self-healing) ─────
+  Flow.DEDUP_SWEEP: Rule(Flow.DEDUP_SWEEP,
+    &quot;Whole-roster master-data maintenance: dedup duplicate fencers + reconcile conflicting birth &quot;
+    &quot;years. Each merge/reconcile emits master_data.changed, which the SelfHealing reactor turns into &quot;
+    &quot;RECOMPUTE_DOMESTIC for every affected event — the sort IS the rebuild.&quot;,
+    steps=(
+      Step(&quot;ResolveFencers&quot;, params={&quot;scope&quot;: &quot;whole_roster&quot;}),   # Mutator — fn_merge_fencers; emits master_data.changed
+      Step(&quot;Notify&quot;),                                             # Mutator/external
+    )),
+
+  # ── 4. Validate + notify after every commit (fired by PostCommit reactor) ─
+  Flow.POST_COMMIT: Rule(Flow.POST_COMMIT,
+    &quot;Fired by the PostCommit reactor on live.committed — from BOTH INGEST_DOMESTIC and &quot;
+    &quot;RECOMPUTE_DOMESTIC, so ParticipantCount re-validates after a recompute too. Validates and notifies.&quot;,
+    steps=(
+      Step(&quot;ParticipantCount&quot;),     # Gate  — URL participant-count validator (ADR-069); fault auto-flags, never halts
+      Step(&quot;Notify&quot;),               # Mutator/external — Telegram summary; Escalate if a fault needs eyes
+    )),
+}
+</code></pre>
+<h3 id="6-3-plan-time-vs-run-time-conditionality-two-levers-kept-apart">6.3 Plan-time vs run-time conditionality (two levers, kept apart)</h3>
+<ul>
+<li><strong><code>Step.when</code></strong> gates at <strong>plan time</strong> on <code>FlowParams</code> (knowable before execution) — e.g. a step that runs only <code>when organizer_hint == &quot;EVF&quot;</code> (used by the deferred international flows, §12). No domestic step is plan-time-gated; <code>when</code> exists for the deferred flows. The RuleEngine drops a non-matching step from the plan entirely.</li>
+<li><strong><code>plugin.applies(ctx)</code></strong> gates at <strong>run time</strong> on <code>Context</code> data (only knowable after parsing) — e.g. <code>SplitByAge</code> only when the resolved pool is combined. The step is in the plan; the orchestrator SKIPs it.</li>
+</ul>
+<p>The RuleBook lists every step that <em>could</em> run; <code>when</code> prunes before, <code>applies()</code> prunes during.</p>
+<h3 id="6-4-resolved-plans-engine-output-before-execution">6.4 Resolved plans (engine output, before execution)</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Flow</th>
+<th><code>RuleEngine.plan(...)</code> → ExecutionPlan</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>INGEST_DOMESTIC</code></td>
+<td>Parse → ValidateIR → ResolveEvent → <strong>ResolveFencers(DOMESTIC)</strong> → DetectCombinedPool → SplitByAge → DetectJointPool → ValidateCounts → DetectPoolRound → AssignFinalVcat → Commit</td>
+</tr>
+<tr>
+<td><code>RECOMPUTE_DOMESTIC</code></td>
+<td>LoadCommitted (whole event) → AssignFinalVcat → ValidateCounts → Commit (re-partition + recount + re-score affected event; no source, no re-match)</td>
+</tr>
+<tr>
+<td><code>DEDUP_SWEEP</code></td>
+<td>ResolveFencers (whole-roster) → Notify</td>
+</tr>
+<tr>
+<td><code>POST_COMMIT</code></td>
+<td>ParticipantCount → Notify (fired by PostCommit reactor on live.committed — from both INGEST_DOMESTIC and RECOMPUTE_DOMESTIC)</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p><strong>Self-healing loop:</strong> <code>DEDUP_SWEEP</code> (or a BY reconcile inside <code>INGEST_DOMESTIC</code>) emits <code>master_data.changed</code> → <code>SelfHealing</code> reactor → <code>RECOMPUTE_DOMESTIC</code> per affected event → its <code>Commit</code> emits <code>live.committed</code> → <code>PostCommit</code> reactor → <code>POST_COMMIT</code>. No back-edges; <code>Commit</code>'s <code>effects=live</code> (not <code>master_data</code>) is what makes the loop converge.
+Re-ingesting an existing event (corrected source, or new parse/match logic) is just <code>INGEST_DOMESTIC</code> run again — <code>Commit</code> is idempotent (delete-old + insert). Pass <code>source=retained</code> only when the live URL is dead.
+Deferred international flows (<code>FRESH_INGEST_INTERNATIONAL</code>, <code>EVF_SYNC</code>) — see §12.</p>
+</blockquote>
+<h3 id="6-5-example-execution-traces">6.5 Example execution traces</h3>
+<p><strong>Flow A — INGEST_DOMESTIC, single-cat PPW (FTL):</strong></p>
+<pre><code>FlowParams(INGEST_DOMESTIC, source=FTL, env=LOCAL, organizer=&quot;SPWS&quot;)
+ParseSource RAN · ValidateIR RAN · ResolveEvent RAN(domestic)
+ResolveFencers RAN(10 exact, 1 reconciled BY, 1 created → matches[] with governed BY)
+DetectCombinedPool RAN(False — governed BYs all V2) · SplitByAge SKIPPED(applies=False) · DetectJointPool RAN
+ValidateCounts RAN · DetectPoolRound RAN · AssignFinalVcat RAN · Commit RAN → live (atomic) → emits live.committed
+→ PostCommit reactor → POST_COMMIT: ParticipantCount RAN · Notify RAN(Telegram)
+</code></pre>
+<p><strong>Flow B — INGEST_DOMESTIC, a bracket falls below min (NO HALT):</strong></p>
+<pre><code>... ValidateCounts RAN → PPW3-V4-foil-F has 2 entries &lt; min → ctx.fault(BELOW_MIN)
+    → REMEDIATIONBOOK: auto-drop that bracket, escalate=ON_LOSS → CONTINUE
+AssignFinalVcat RAN(remaining brackets) · Commit RAN → live (atomic)
+→ POST_COMMIT: ParticipantCount RAN · Notify RAN(Telegram: &quot;PPW3-V4-foil-F dropped 2&lt;min — FYI, last resort&quot;)
+Flow COMPLETED. No halt, no sign-off, no human gate.
+</code></pre>
+<p><strong>Flow C — RECOMPUTE_DOMESTIC after a birth-year correction (self-healing):</strong></p>
+<pre><code>Edit tbl_fencer: 1 fencer BY moves V2→V3 → trg enqueues affected EVENT {PPW4} (dedup by id_event)
+→ DEBOUNCE_WINDOW quiet → worker claims batch
+run_flow(RECOMPUTE_DOMESTIC, event=PPW4) → LoadCommitted(ALL PPW4 results across its V-cat brackets)
+  → AssignFinalVcat(this fencer now V3) → ValidateCounts(no bracket below min) → Commit
+  → result re-partitioned out of V2-épée-M into V3-épée-M (bracket created if absent); both recounted + re-scored
+  → Commit effects=live (NOT master_data) ⇒ does not re-trigger SelfHealing ⇒ loop converges. No source, no re-match.
+→ POST_COMMIT: ParticipantCount RAN · Notify RAN(Telegram) → loop quiesces
+</code></pre>
+<p><strong>Flow D — DEDUP_SWEEP (bootstrap &amp; maintenance):</strong></p>
+<pre><code>FlowParams(DEDUP_SWEEP) → plan = ResolveFencers(whole_roster) → Notify
+ResolveFencers RAN(merges 4 dup pairs via fn_merge_fencers) → emits master_data.changed → SelfHealing enqueues affected events
+→ RECOMPUTE_DOMESTIC auto-runs per affected event. The sort IS the rebuild.
+</code></pre>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="7-code-chunk-reference-proposed-file-layout">7. Code-chunk reference (proposed file layout)</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Kind</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>python/pipeline/core/contract.py</code> ⚑</td>
+<td>new</td>
+<td><code>IngestPlugin</code>, <code>Context</code>, <code>Services</code>, <code>Halt</code>, <code>Middleware</code></td>
+</tr>
+<tr>
+<td><code>python/pipeline/core/orchestrator.py</code> ◑</td>
+<td>reshaped</td>
+<td><code>Orchestrator.execute</code>, <code>compose</code>, trace</td>
+</tr>
+<tr>
+<td><code>python/pipeline/engine/rulebook.py</code> ⚑</td>
+<td>new</td>
+<td><code>RULEBOOK</code> (<code>dict[Flow → Rule]</code>) + <code>PLUGINS</code> registry — the flows &amp; plugin specs</td>
+</tr>
+<tr>
+<td><code>python/pipeline/engine/rule_engine.py</code> ⚑</td>
+<td>new</td>
+<td><code>RuleEngine.plan</code>, <code>ExecutionPlan</code>, <code>validate_dag</code></td>
+</tr>
+<tr>
+<td><code>python/pipeline/engine/flows.py</code> ⚑</td>
+<td>new</td>
+<td><code>Flow</code>, <code>FlowParams</code></td>
+</tr>
+<tr>
+<td><code>python/pipeline/plugins/*.py</code> ⚑◑</td>
+<td>reshaped</td>
+<td>one module per plugin (<code>parse_source</code>, <code>validate_ir</code>, …, <code>resolve_fencers</code>, …, <code>commit</code>)</td>
+</tr>
+<tr>
+<td><code>python/pipeline/plugins/post_commit/*.py</code> ◑</td>
+<td>reshaped</td>
+<td><code>pew_cascade</code>, <code>evf_parity</code>, <code>participant_count</code>, <code>notify</code></td>
+</tr>
+<tr>
+<td><code>python/pipeline/middleware/*.py</code> ⚑</td>
+<td>new</td>
+<td><code>timing</code>, <code>structured_log</code>, <code>stamp_provenance</code>, <code>halt_to_telegram</code></td>
+</tr>
+<tr>
+<td><code>python/pipeline/run.py</code> ⚑</td>
+<td>new</td>
+<td><code>run_flow(params, ctx, svc)</code> — the single entry point</td>
+</tr>
+<tr>
+<td><code>python/pipeline/recompute/worker.py</code> ⚑</td>
+<td>new</td>
+<td>debounced queue drainer → <code>run_flow(RECOMPUTE_DOMESTIC)</code></td>
+</tr>
+<tr>
+<td><code>matcher/</code> · <code>scrapers/</code> · <code>db_connector.py</code></td>
+<td>reused</td>
+<td>matcher, parsers (+<code>source_artifact_path</code>), DB I/O — see <a href="ingestion-pipeline-design.html#6-code-chunk-reference-table">current §6/§6.1</a></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>New DB objects:</strong> <code>tbl_recompute_queue</code>, <code>trg_fencer_change_enqueue</code>, <code>fn_enqueue_affected_events</code>, <code>fn_merge_fencers</code>, optional <code>tbl_flow_rule</code>. <code>Commit</code> writes live atomically via <code>fn_write_event</code> (delete-old + insert + score in one transaction, ADR-022). <strong>The draft tables and the <code>fn_commit_event_draft</code> / <code>fn_discard_event_draft</code> / <code>fn_dry_run_event_draft</code> RPCs are removed — there is no review gate to stage for.</strong> Existing RPCs (<code>fn_calc_tournament_scores</code>, <code>fn_age_categories_batch</code>, <code>fn_update_fencer_aliases</code>) reused unchanged.</p>
+<p><strong>Data sources</strong> (acquisition + parser per source) are unchanged — see <a href="ingestion-pipeline-design.html#61-data-sources--what-they-are-how-they-are-sourced-and-which-code-implements-them">current design §6.1</a>. Only addition: <code>ParseSource</code> persists <code>source_artifact_path</code> so a dead-URL event can be re-ingested from retained bytes (<code>source=retained</code>, BR-13). <code>LoadCommitted</code> (<code>RECOMPUTE_DOMESTIC</code>'s source) reads stored results, not artifacts.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="8-deployment-triggers-putting-the-chain-into-action">8. Deployment &amp; triggers — putting the chain into action</h2>
+<p>Every scenario funnels through one entry point — <code>run_flow(params, ctx, svc)</code> (§4 → resolves a plan →
+executes it). Deployment is therefore mostly <strong>wiring triggers to flows</strong>, reusing existing infrastructure
+(GitHub Actions, pg_cron, Edge-Function dispatch <a href="adr/041-edge-function-dispatch.html">ADR-041</a>, Telegram, three-tier release <a href="adr/011-artifact-release-pipeline.html">ADR-011</a>).</p>
+<pre><code class="language-mermaid">flowchart TB
+    subgraph TRIG[&quot;What starts a flow&quot;]
+        CLI[&quot;CLI / admin UI&quot;]; EMAIL[&quot;Email (GAS→Storage, ADR-023)&quot;]
+        EDIT[&quot;tbl_fencer edit → trg_fencer_change_enqueue → tbl_recompute_queue&quot;]; CRON[&quot;pg_cron&quot;]
+    end
+    subgraph DISP[&quot;Dispatch (existing pattern)&quot;]
+        EDGE[&quot;Edge Function (ADR-041)&quot;]; GHA[&quot;GitHub Actions workflow&quot;]
+    end
+    RF[&quot;run_flow(FlowParams): RuleEngine.plan → Orchestrator.execute&quot;]
+    DBX[(&quot;Supabase: RPCs · live · queue · tbl_fencer&quot;)]; TG[&quot;Telegram&quot;]
+    STG[/&quot;doc/staging/&amp;lt;EVENT&amp;gt;.&amp;lt;ts&amp;gt;.md + .diff.md (ADR-075)&quot;/]
+    CLI--&gt;RF; EMAIL--&gt;GHA--&gt;RF; EDIT--&gt;CRON--&gt;EDGE--&gt;GHA; CRON--&gt;EDGE
+    RF--&gt;DBX; RF--&gt;TG; RF--&gt;STG
+</code></pre>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>Flow</th>
+<th>Mechanism</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Operator CLI / UI button</td>
+<td><code>INGEST_DOMESTIC</code></td>
+<td><code>python -m pipeline.run --flow ingest_domestic …</code></td>
+</tr>
+<tr>
+<td>Email with results (SPWS)</td>
+<td><code>INGEST_DOMESTIC</code></td>
+<td>GAS → Storage → <code>ingest</code> workflow → <code>run_flow</code> (<a href="adr/023-email-ingestion-gas-storage.html">023</a>)</td>
+</tr>
+<tr>
+<td><code>tbl_fencer</code> edited (BY / merge / nationality)</td>
+<td><code>RECOMPUTE_DOMESTIC</code> (per affected event)</td>
+<td>CDC trigger → queue → <strong>debounced</strong> worker via pg_cron → Edge Function (<a href="adr/041-edge-function-dispatch.html">041</a>)</td>
+</tr>
+<tr>
+<td>Scheduled</td>
+<td><code>DEDUP_SWEEP</code></td>
+<td>pg_cron / scheduled GitHub Action</td>
+</tr>
+<tr>
+<td>Every <code>live.committed</code></td>
+<td><code>POST_COMMIT</code></td>
+<td><code>PostCommit</code> reactor fires a separate post-commit run</td>
+</tr>
+<tr>
+<td><em>Deferred (§12)</em></td>
+<td><code>EVF_SYNC</code></td>
+<td>existing <code>evf-sync</code> workflow → <code>FRESH_INGEST_INTERNATIONAL</code> per discovered event</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Debounce / batching (several corrections → one rerun):</strong> edits land in <code>tbl_fencer</code> immediately and bump a
+<code>ts_last_master_change</code> watermark; only the recompute is deferred. The worker drains <strong>only when quiet ≥
+<code>DEBOUNCE_WINDOW</code></strong>, claims the PENDING set (edits during a drain queue for the next window), and recomputes
+each affected event <strong>once</strong> (queue dedups by <code>id_event</code>) — reading the fully-corrected roster. Optional Telegram
+<code>flush now</code> / <code>hold</code> move the watermark. <strong>Fixpoint:</strong> trigger fires only on real change + recompute is
+idempotent ⇒ the loop settles.</p>
+<p><strong>Environments:</strong> <code>FlowParams.environment</code> carries LOCAL/CERT/PROD; rules can gate by env (e.g. no auto
+<code>DEDUP_SWEEP</code> on PROD without a CERT pass). DB objects migrate LOCAL → CERT → PROD via the normal release.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="9-adr-cross-reference">9. ADR cross-reference</h2>
+<p>Existing ingestion ADRs unchanged (see <a href="ingestion-pipeline-design.html#7-adr-cross-reference-every-ingestion-relevant-decision">current §7</a>): 003, 010, 014, 020, 022, 023, 024, 025, 028, 029, 034, 038, 039, 046, 047, 048, 049, 050, 052, 053, 055, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069. (051/054 do not exist.)</p>
+<p><strong>New / amended:</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>ADR</th>
+<th>Title</th>
+<th>Status</th>
+<th>Touches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="adr/070-resolve-fencers-auto-resolution.html">ADR-070</a> ⚑</td>
+<td><code>ResolveFencers</code> auto-resolution (merged S0⊕S6, runs early), no human gate</td>
+<td>proposed</td>
+<td><code>ResolveFencers</code> plugin, auto-<code>Commit</code></td>
+</tr>
+<tr>
+<td><a href="adr/071-mdm-dedup-sweep.html">ADR-071</a> ⚑</td>
+<td>MDM + eventual-consistency dedup (<code>DEDUP_SWEEP</code>, <code>fn_merge_fencers</code>)</td>
+<td>proposed</td>
+<td><code>ResolveFencers</code> whole-roster mode</td>
+</tr>
+<tr>
+<td><a href="adr/072-cdc-recompute-debounce.html">ADR-072</a> ⚑</td>
+<td>Master-data-change-triggered idempotent recompute (CDC queue + debounce)</td>
+<td>proposed</td>
+<td>trigger, queue, worker, <code>RECOMPUTE_DOMESTIC</code> flow</td>
+</tr>
+<tr>
+<td><a href="adr/073-plugin-rule-engine-architecture.html">ADR-073</a> ⚑</td>
+<td>Plugin + rule-engine ingestion architecture</td>
+<td>proposed</td>
+<td>contract, orchestrator, RuleEngine, flows</td>
+</tr>
+<tr>
+<td><a href="adr/074-no-halt-fault-resolution.html">ADR-074</a> ⚑</td>
+<td>No hard halt — <code>REMEDIATIONBOOK</code> fault resolution + <code>Escalate</code> (Telegram last resort)</td>
+<td>proposed</td>
+<td>orchestrator, gates, <code>REMEDIATIONBOOK</code>, <code>Escalate</code></td>
+</tr>
+<tr>
+<td><a href="adr/075-staging-report-fragment-channel.html">ADR-075</a> ⚑</td>
+<td>Staging report — fifth Context channel (<code>report</code>) + per-plugin fragment emission + terminal <code>StagingFormatter</code> (template + 3-way diff, timestamped)</td>
+<td>proposed</td>
+<td><code>Context</code>, every plugin, <code>StagingFormatter</code>, <code>POST_COMMIT</code>, <code>ingest_cli</code>, <code>md_writer</code>/<code>three_way_diff</code></td>
+</tr>
+<tr>
+<td><a href="adr/076-pool-round-discard-and-listing-keep-rule.html">ADR-076</a> ⚑</td>
+<td>Overlapping FTL listings — drop pools-only rounds (no DE), keep one source per category (single &gt; BRACKET; else smaller), <code>commit_cats</code> so no double-write; set-aside duplicates flagged + UI-resolvable (event accordion toggle + <code>ingest-event.yml</code> re-ingest)</td>
+<td>proposed</td>
+<td>from-URL discovery (<code>ingest_event_from_url</code>/<code>_resolve_sources</code>), <code>Commit</code>, <code>tbl_event</code> JSONB + <code>vw_calendar</code>, <code>StagingFormatter</code>, EventManager accordion</td>
+</tr>
+<tr>
+<td><a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a></td>
+<td>Unified ingestion pipeline</td>
+<td><strong>amend</strong></td>
+<td>stages → plugins; <strong>draft-then-review removed</strong> — <code>Commit</code> writes live atomically (reverts to ADR-022); DRY_RUN dropped</td>
+</tr>
+<tr>
+<td><a href="adr/056-vcat-from-birthyear.html">ADR-056</a></td>
+<td>V-cat from birth year (Stage 0)</td>
+<td><strong>amend</strong></td>
+<td>Stage-0 absorbed into <code>ResolveFencers</code>; now runs early</td>
+</tr>
+<tr>
+<td><a href="adr/038-evf-intake-polish-only.html">ADR-038</a> / <a href="adr/057-pool-round-structural-detection.html">057</a> / <a href="adr/066-min-participants-ingestion-gate.html">066</a> / <a href="adr/067-structural-pool-only-skip-unified-xml-ingest.html">067</a> / <a href="adr/069-participant-count-url-validator.html">069</a></td>
+<td>(various halts)</td>
+<td><strong>amend (ADR-074)</strong></td>
+<td>halt → <code>ctx.fault</code>: V0-international → exclude; below-min → drop; pool-round/IR → skip; count-mismatch → accept + escalate. No hard halt.</td>
+</tr>
+<tr>
+<td><a href="adr/006-jsonb-ranking-rules.html">ADR-006</a></td>
+<td>JSONB rules in DB</td>
+<td><strong>precedent</strong></td>
+<td>optional <code>tbl_flow_rule</code> for configurable RuleBook</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="10-build-order-verification-tdd-red-first">10. Build order &amp; verification (TDD, RED first)</h2>
+<ol>
+<li><strong>Core + engine</strong> — <code>contract.py</code>, <code>orchestrator.py</code>, <code>rule_engine.py</code>, <code>rulebook.py</code>, <code>run.py</code>. Tests: planner (&quot;flow X ⇒ sequence Z&quot;, incl. <code>ResolveFencers</code> before <code>SplitByAge</code>), DAG-validation rejects mis-order, orchestrator skip/<strong>fault</strong>/trace (never halts; only infra <code>Abort</code> breaks a run).</li>
+<li><strong>Plugins from existing stages + no-halt</strong> — wrap current <code>stages.py</code> logic into plugins; RuleBook reproduces today's behaviour, but <strong>every former <code>Halt</code> becomes a <code>ctx.fault</code></strong> resolved inline via <code>REMEDIATIONBOOK</code>; <code>Escalate</code> fires per policy. <strong>Parity gate:</strong> old vs new produce byte-identical output on the same inputs. Tests: below-min → drop → commit; count-mismatch → accept + escalate; flow reaches <code>Commit</code> despite a fault; <code>Escalate</code> only per policy.</li>
+<li><strong>ResolveFencers merge + reorder</strong> — fold S0+S6 into <code>ResolveFencers</code>, move it before the split, switch <code>SplitByAge</code> to read governed BY; add auto-link policy + calibrate <code>AUTO_LINK_THRESHOLD</code>. Tests: exact-link / fuzzy-link / create / reconcile / two-phase BY settling / split-uses-governed-BY; calibration regression bounding false-link rate.</li>
+<li><strong>Recompute + re-ingest</strong> — <code>RECOMPUTE_DOMESTIC</code> flow (<code>LoadCommitted</code> whole event + re-score the affected event) + <code>source_artifact_path</code> retention so an <code>INGEST_DOMESTIC</code> flow can re-ingest a dead-URL event (<code>source=retained</code>). Tests: recompute twice == once (idempotence); boundary-crossing BY re-partitions to the correct bracket; re-ingest replaces cleanly.</li>
+<li><strong>CDC + dedup</strong> — <code>tbl_recompute_queue</code>, <code>trg_fencer_change_enqueue</code>, <code>fn_enqueue_affected_events</code>, <code>fn_merge_fencers</code>, debounced worker, dispatch. Tests: trigger fires only on real change + enqueues correct events (pgTAP); debounce/claim/coalesce + recompute-to-quiescence (pytest).</li>
+<li><strong>Docs:</strong> ADR-070/071/072/073/074; amend ADR-050/056/038/066/067/069; RTM rows (FR-112–117); spec Appendix C; fold this file into <a href="ingestion-pipeline-design.html">ingestion-pipeline-design.md</a> as the new current state.</li>
+</ol>
+<p><strong>End-to-end check:</strong> seed a roster with a known duplicate + a wrong BY → run <code>DEDUP_SWEEP</code> → confirm merge + reconcile + auto-<code>RECOMPUTE_DOMESTIC</code> of affected events; ingest two events → confirm exact-match + correct V-cats derived from governed BY; then correct one BY and merge two duplicates in quick succession → confirm <strong>one</strong> debounced recompute re-derives exactly the affected events and the ranklist matches the hand-computed expectation. Confirm a below-min bracket auto-drops (no halt) and surfaces in the Telegram escalation.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="11-open-knobs-decide-before-implementation">11. Open knobs (decide before implementation)</h2>
+<ul>
+<li><code>DEBOUNCE_WINDOW</code> (recommend ~2 min) and whether to ship <code>flush now</code> / <code>hold</code> (recommended).</li>
+<li><code>AUTO_LINK_THRESHOLD</code> — set by calibration, not by guess.</li>
+<li>RuleBook <strong>code-defined</strong> (ship first) vs <strong><code>tbl_flow_rule</code></strong> DB-backed (<a href="adr/006-jsonb-ranking-rules.html">ADR-006</a> pattern) for deploy-free flow changes.</li>
+<li>Recompute dispatch latency: pg_cron cadence (recommended) vs <code>LISTEN/NOTIFY</code> daemon (near-real-time).</li>
+<li><s>ADR-070/071/072/073 as four ADRs vs one umbrella</s> — <strong>resolved:</strong> shipped as five separate ADRs (070–074), 2026-06-14.</li>
+</ul>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="12-deferred-international-only-not-needed-for-the-domestic-pipeline">12. Deferred — international only (NOT needed for the domestic pipeline)</h2>
+<p>The domestic pipeline (§6) is complete and fully automated on its own — ingest, self-heal, validate,
+notify. The <strong>only</strong> deferred items are <strong>international-event</strong> machinery; none of it can touch an SPWS
+domestic (PPW/MPW) event. Each slots in later as a new RuleBook entry / plugin with <strong>no change</strong> to the
+orchestrator or the domestic plugins (that's the whole point of the rule engine). Full sketches live in
+git history <code>cfff30b</code>.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Deferred</th>
+<th>Why it is international, not domestic</th>
+<th>Slots in later as</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FRESH_INGEST_INTERNATIONAL</code></td>
+<td>EVF/FIE intake: POL-only, V0 <strong>excluded</strong> (not halted), min=5 — domestic admits <strong>everyone incl. V0</strong></td>
+<td>a Rule reusing the domestic plugins with <code>intake=INTERNATIONAL</code></td>
+</tr>
+<tr>
+<td><code>EVF_SYNC</code></td>
+<td>scrapes the <strong>EVF (European)</strong> calendar → one international ingest per discovered event</td>
+<td>a Rule + <code>EvfDiscover</code> source</td>
+</tr>
+<tr>
+<td><code>PewCascade</code> (<a href="adr/046-pew-weapon-suffix.html">046</a>)</td>
+<td><strong>PEW = European</strong> veterans events (weapon-suffix cascade); domestic events are PPW/MPW</td>
+<td>a <code>POST_COMMIT</code> step gated <code>when organizer == EVF</code></td>
+</tr>
+<tr>
+<td><code>EvfParity</code> (<a href="adr/053-evf-parity-gate.html">053</a>)</td>
+<td>parity-checks against the <strong>EVF API</strong> — moot for SPWS events, where SPWS <em>is</em> the authority</td>
+<td>a <code>POST_COMMIT</code> step gated <code>when organizer == EVF</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>In scope and required</strong> for the full domestic automated pipeline: the 4 flows (<code>INGEST_DOMESTIC</code>,
+<code>RECOMPUTE_DOMESTIC</code>, <code>DEDUP_SWEEP</code>, <code>POST_COMMIT</code>), the 2 reactors (<code>SelfHealing</code>, <code>PostCommit</code>), the CDC
+recompute queue + debounce, inline fault auto-resolution driven by the <code>REMEDIATIONBOOK</code> + <code>Escalate</code>
+(Telegram, last resort). Nothing here halts; the pipeline always runs to a committed, notified state.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="Documentation navigation"><a class="registry" href="index.html">← Documentation index</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
+<footer class="foot">Generated from <code>ingestion_pipeline_NEW_design.md</code> · source SHA-256 <code>d4ec0a89f5df659d318b1ff0634d6553391e19e0efb86693a0f4072506ebeb01</code></footer>
+</div></body></html>

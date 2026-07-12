@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="028-evf-calendar-results-import.md">
+<meta name="adr-source-sha256" content="4740df4759885fd31d47d63a496cef8fcf77f0db62f70d6c3d0511ee27155b64">
+<title>ADR-028 · EVF Calendar + Results Import</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 028</p><h1>EVF Calendar + Results Import</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-04-26 rev 3 — code allocator + EVF organizer fix per ADR-043)</dd></div><div><dt>Date</dt><dd class="">2026-04-06 <strong>Relates to:</strong> FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (<code>url_event</code>), ADR-030 (<code>url_registration</code>/<code>dt_registration_deadline</code>), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier)</dd></div><div><dt>Source</dt><dd class=""><code>028-evf-calendar-results-import.md</code></dd></div><div><dt>Length</dt><dd class="">116 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (revised 2026-04-26 rev 3 — code allocator + EVF organizer fix per ADR-043)
+<strong>Date:</strong> 2026-04-06
+<strong>Relates to:</strong> FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (<code>url_event</code>), ADR-030 (<code>url_registration</code>/<code>dt_registration_deadline</code>), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-04-26-rev-3">Amendment 2026-04-26 (rev 3)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#calendar-scraping-api-first-html-enrichment-revised-2026-04-20">Calendar Scraping (API-first + HTML enrichment — revised 2026-04-20)</a></li><li class="depth-3"><a href="#results-scraping-json-api">Results Scraping (JSON API)</a></li><li class="depth-3"><a href="#refresh-semantics-amendment-2026-04-20-rev-2">Refresh Semantics (amendment, 2026-04-20 rev 2)</a></li><li class="depth-3"><a href="#deadline-harvesting-disabled-2026-04-20-rev-2">Deadline Harvesting (disabled 2026-04-20 rev 2)</a></li><li class="depth-3"><a href="#rate-limiting">Rate Limiting</a></li><li class="depth-3"><a href="#telegram-commands">Telegram Commands</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-04-25-algorithm-rev-3-superseded-by-adr-039">Amendment 2026-04-25 — Algorithm rev 3 (superseded by ADR-039)</a></li><li class="depth-2"><a href="#amendment-2026-07-11-adr-081">Amendment (2026-07-11, ADR-081)</a></li></ol></nav>
+  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-04-26-rev-3">Amendment 2026-04-26 (rev 3)</h2>
+<p>The Python scraper no longer constructs venue-slug <code>code</code> values. Code allocation is delegated to <code>fn_import_evf_events_v2</code> (calendar path) and <code>fn_create_evf_event_from_results</code> (results path), both of which call the new allocator + classifier from ADR-043. <code>id_organizer</code> is set to <code>EVF</code> unconditionally (was incorrectly <code>SPWS</code> before). The bogus <code>MEW-{slug}-{year}</code> code pattern is gone — team events now go to the singleton <code>DMEW-{year}</code> and individual championships to <code>IMEW-{year}</code>. See ADR-043 for the allocator's three-step ladder + Telegram alert behaviour.</p>
+</section>
+<section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>PEW/MEW events (international) are currently added manually to the database. The European Veterans Fencing (EVF) website at veteransfencing.eu publishes:</p>
+<ul>
+<li><strong>Calendar:</strong> event names, dates, locations, weapons, entry fees</li>
+<li><strong>Results:</strong> full individual classification PDFs per weapon/category (Engarde format)</li>
+</ul>
+<p>Automating import saves admin effort and ensures timely data availability for carry-over scoring.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Two data sources from veteransfencing.eu. Current season only (2025-2026). Category mapping: EVF Cat 1-4 = SPWS V1-V4 (skip V0).</p>
+<h3 id="calendar-scraping-api-first-html-enrichment-revised-2026-04-20">Calendar Scraping (API-first + HTML enrichment — revised 2026-04-20)</h3>
+<ul>
+<li><strong>Primary source:</strong> EVF JSON API (<code>api.veteransfencing.eu/fe/events</code>, <code>/events/competitions</code>) via the shared <code>EvfApiClient</code> — the same authenticated endpoint results scraping already uses. Stable structured JSON (<code>id</code>, <code>name</code>, <code>opens</code>, <code>closes</code>, <code>location</code>, <code>country_abbr</code>; weapons derived from <code>/events/competitions.weaponId</code>).</li>
+<li><strong>Secondary enrichment (HTML list page):</strong> <code>veteransfencing.eu/calendar/</code> past + future pages are scraped only to supply fields the API does not expose: <code>num_entry_fee</code>, <code>txt_entry_fee_currency</code>, <code>url_event</code>, <code>txt_venue_address</code>. Merged into API rows by date (±3 days) + fuzzy name (RapidFuzz ≥ 80).</li>
+<li><strong>Tertiary enrichment (per-event detail page):</strong> each event's <code>url_event</code> is fetched and parsed for <code>url_invitation</code> (PDF link heuristic), <code>url_registration</code> (Engarde / Ophardt / Fencing Time / <code>Zgłoszenia</code> heuristic), and <code>dt_registration_deadline</code> (EN + PL regex patterns). Per-event failures are logged and swallowed so one broken page does not abort the batch.</li>
+<li><strong>Failure semantics:</strong> API ok + HTML fails → return API events (warn). HTML ok + API fails → return HTML events (warn, legacy path). Both fail → <strong>raise <code>RuntimeError</code></strong> which the workflow's <code>if: failure()</code> step converts into a Telegram alert. No more silent zero-event runs.</li>
+<li>Auto-scrape every 3 days via GitHub Actions cron (<code>evf-sync.yml</code>). Manual trigger via <code>evf-cal-import</code> GAS command.</li>
+<li>Dedup against <code>tbl_event</code> by date overlap (±7 days) + fuzzy name match (RapidFuzz ≥ 80).</li>
+<li>Creates <code>tbl_event</code> (now with <code>url_event</code>/<code>url_invitation</code>/<code>url_registration</code>/<code>dt_registration_deadline</code>/<code>txt_venue_address</code>/<code>num_entry_fee</code>/<code>txt_entry_fee_currency</code>/<code>arr_weapons</code> populated when harvested) + child <code>tbl_tournament</code> (type PEW/MEW) via <code>fn_import_evf_events</code>. The RPC's JSONB contract is additive — old payloads (without the new keys) still work.</li>
+</ul>
+<h3 id="results-scraping-json-api">Results Scraping (JSON API)</h3>
+<ul>
+<li><strong>Discovery:</strong> EVF has a Laravel-based API at <code>api.veteransfencing.eu/fe</code> that returns full individual results with fencer names, DOB, country, places, and EVF ranking points.</li>
+<li><strong>API pattern:</strong> POST with <code>{path, nonce, model}</code> body. Nonce extracted from WP page. Results model: <code>{offset: 0, pagesize: 10000, filter: &quot;&quot;, sort: &quot;pnc&quot;}</code>.</li>
+<li><strong>Endpoints:</strong> <code>/events</code> → event list, <code>/events/competitions</code> → weapon+category combos, <code>/results/{comp_id}</code> → full individual placements.</li>
+<li><strong>Team events excluded</strong> — only individual championships and circuit events trigger result scraping.</li>
+<li>2 days after event <code>dt_end</code>, start checking EVF API for results.</li>
+<li>If not found: retry next day (max 14 days), then stop.</li>
+<li>Once results appear: fetch all competitions for the event (24 requests with 1s delay = ~30s).</li>
+<li>Returns structured JSON with fencer_name, place, country, DOB, EVF points per competition.</li>
+<li>Only Polish fencers ingested via fuzzy matcher (international rules from ADR-025).</li>
+<li><strong>PDF fallback:</strong> Legacy <code>parse_evf_result_pdf()</code> retained for older championships that only have PDFs.</li>
+</ul>
+<h3 id="refresh-semantics-amendment-2026-04-20-rev-2">Refresh Semantics (amendment, 2026-04-20 rev 2)</h3>
+<p>The original &quot;create-only, idempotent-by-code&quot; import contract is <strong>preserved</strong> for <code>fn_import_evf_events</code>: a re-run with a payload whose <code>txt_code</code> already exists still skips the row. That contract remains for callers that rely on it (seeding, manual backfills, administrator imports).</p>
+<p>A companion RPC <code>fn_refresh_evf_event_urls(p_updates JSONB)</code> handles the case where the scraper re-discovers an event that was already imported (or seeded) and has fresh URL/enrichment data to contribute. The Python side pairs each scraped event with its matched <code>tbl_event</code> row via <code>match_scraped_to_existing()</code> (same date±7d + RapidFuzz ≥ 80 rule used for dedup) and sends the <code>id_event</code> list to the refresh RPC.</p>
+<p><strong>Invariant (enforced at the SQL layer):</strong> <code>fn_refresh_evf_event_urls</code> only writes a column whose current value is <code>NULL</code> or empty string. It never overwrites an existing value. This protects admin edits made via the Event CRUD UI (FR-60) — the scraper's heuristic must not stomp a manually-entered URL or deadline. Verified by pgTAP 12.11 and by a live sentinel check in the 2026-04-20 validation run.</p>
+<ul>
+<li><strong>Columns refreshed</strong> when currently NULL/empty: <code>url_event</code>, <code>url_invitation</code>, <code>url_registration</code>, <code>dt_registration_deadline</code>, <code>txt_venue_address</code>, <code>num_entry_fee</code>, <code>txt_entry_fee_currency</code>, <code>arr_weapons</code>.</li>
+<li><strong>Columns never refreshed:</strong> <code>txt_code</code>, <code>txt_name</code>, <code>id_season</code>, <code>id_organizer</code>, <code>enum_status</code>, <code>dt_start</code>, <code>dt_end</code>, <code>txt_location</code>, <code>txt_country</code>, <code>ts_updated</code> (trigger-maintained).</li>
+<li>Unknown <code>id_event</code> is a no-op, not an error. RPC return shape: <code>{touched: INT, refreshed: INT}</code>.</li>
+</ul>
+<h3 id="deadline-harvesting-disabled-2026-04-20-rev-2">Deadline Harvesting (disabled 2026-04-20 rev 2)</h3>
+<p>The <code>dt_registration_deadline</code> regex heuristic had a 0/13 hit rate on live EVF detail pages on 2026-04-20 — the detail pages either embed deadlines inside linked PDFs or use phrasings not covered by the initial patterns. The extraction is gated behind the module-level <code>HARVEST_DEADLINE = False</code> flag in <a href="../../python/scrapers/evf_calendar.py">python/scrapers/evf_calendar.py</a>; the regex list, fixtures, and column remain in place so re-enabling is a 1-line flip once we have observed real-world phrasings to add.</p>
+<h3 id="rate-limiting">Rate Limiting</h3>
+<ul>
+<li><strong>Calendar:</strong> 1 HTML fetch every 3 days (cron)</li>
+<li><strong>Results (probing):</strong> 1 API request/day per event until results appear</li>
+<li><strong>Results (burst):</strong> ~25 API requests per event (1 competitions list + 24 result fetches), 1s delay between. Total ~30s per event.</li>
+<li>Under 30 EVF API requests per burst — well below any reasonable rate limit.</li>
+</ul>
+<h3 id="telegram-commands">Telegram Commands</h3>
+<ul>
+<li><code>evf-cal-import</code> — manual calendar scrape (bypass 3-day schedule)</li>
+<li><code>evf-results-import &lt;event&gt;</code> — manual result fetch + import for specific event</li>
+<li><code>evf-status</code> — show past international events missing results (dt_end &lt; today, result_count = 0)</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li><strong>PDF-only approach</strong> — Original plan. EVF publishes Engarde PDFs for championships. Works but: truncated names, slower (1 PDF per 2 min), only championships not circuits. JSON API is superior.</li>
+<li><strong>Browser-side fetch</strong> — CORS blocks veteransfencing.eu (API requires <code>Origin: https://www.veteransfencing.eu</code>). Server-side only.</li>
+<li><strong>Supabase Edge Function</strong> — Python ecosystem not available in Deno. Rejected.</li>
+<li><strong>Historical data import</strong> — EVF has 35 years. Unnecessary. Current season only.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>HTML redesign no longer breaks calendar discovery silently.</strong> The API is primary; HTML failures are logged as warnings and the scrape still returns API events. Only a full (API + HTML) outage raises <code>RuntimeError</code>, and that raises a Telegram alert.</li>
+<li><strong>Event-level URL fields are now populated automatically</strong> (<code>url_event</code>, <code>url_invitation</code>, <code>url_registration</code>, <code>dt_registration_deadline</code>) from the detail-page scrape — previously all four were <code>NULL</code> on every EVF-sourced event.</li>
+<li>Per-event detail-page fetch adds ~30 HTTP requests per 3-day cron (0.5 s polite delay). One failing detail page does not abort the batch — it is logged and skipped.</li>
+<li>Integration smoke test (plan ID evf.12, <code>@pytest.mark.integration</code>) hits the live API + one live detail page; runnable via <code>pytest -m integration</code>, excluded from default CI run.</li>
+<li>PDF parsing still depends on Engarde format consistency.</li>
+<li>pypdf added as dependency (already installed for seed export).</li>
+<li>3 Telegram commands in GAS script unchanged. Calendar sync now sends a URL-enrichment summary line (<code>inv=... reg=... deadline=...</code>).</li>
+<li>Migration <code>20260420000001_evf_import_urls.sql</code> extends <code>fn_import_evf_events</code> — additive, idempotent, no breaking change. pgTAP grows by 5 (12.5–12.9) to 277 total.</li>
+<li>Migration <code>20260420000002_evf_refresh_urls.sql</code> introduces <code>fn_refresh_evf_event_urls</code> — new RPC, does not alter <code>fn_import_evf_events</code>. pgTAP grows by 4 (12.10–12.13) to 281 total.</li>
+<li>Admin edits via the Event CRUD UI (FR-60) are protected end-to-end: the refresh RPC is the only auto-write path that touches existing events, and it never overwrites a populated column.</li>
+<li>Deadline harvesting disabled pending real-world pattern data (<code>HARVEST_DEADLINE = False</code> in <a href="../../python/scrapers/evf_calendar.py">python/scrapers/evf_calendar.py</a>). The DB column, regex patterns, and test fixtures remain so re-enabling is a one-line flip.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-04-25-algorithm-rev-3-superseded-by-adr-039">Amendment 2026-04-25 — Algorithm rev 3 (superseded by ADR-039)</h2>
+<p>The original <code>(dt_start exact + canonical country)</code> primary / <code>±N day window + fuzzy-name ≥ threshold</code> fallback dedup design produced three duplicate event rows during the 2025-26 season when EVF mid-season-renamed three events. The fuzzy-name path scored Napoli↔Naples below the 80% threshold, allowing the rename to be inserted as a fresh row.</p>
+<p><strong>The algorithm is now defined by <a href="039-stale-event-gate.html">ADR-039</a> — read that as the canonical spec.</strong> Headline changes:</p>
+<ul>
+<li><strong>Name comparison removed entirely.</strong> EVF rename behaviour means name fuzz cannot be tuned to be both safe (no false negatives) and tight (no false positives).</li>
+<li><strong>Location step added</strong> as the fallback when country is missing (Step 4 in ADR-039).</li>
+<li><strong>Stale-event gate added</strong> (Step 1): the scraper does not auto-create or auto-update events with <code>(today − dt_end) ≥ 30 days</code> or <code>enum_status = 'COMPLETED'</code>. Admin handles those manually.</li>
+<li><strong>Logical-integrity guard added</strong> (Step 0): a future-COMPLETED row halts the sync via Telegram alert. The scraper refuses to operate on top of corrupted state.</li>
+<li><strong>Single matcher across calendar + results paths.</strong> The previous ad-hoc <code>BETWEEN ±3 days + EXISTS(tournament)</code> query in <code>_compare_and_ingest</code> is gone; both paths now go through <code>_find_existing_match</code>.</li>
+</ul>
+<p>The legacy duplicates that prompted the rev 3 design were cleaned up via existing <code>fn_delete_event</code> (no merge tooling needed — they were empty rows).</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-07-11-adr-081">Amendment (2026-07-11, ADR-081)</h2>
+<p>The CERT→PROD calendar-promotion mechanism described here is superseded by the <strong>event
+reconciler</strong> (ADR-081): <code>fn_import_evf_events</code> is retired and replaced by
+<code>fn_mirror_events_to_prod</code> (full Create/Update/Delete, organizer-agnostic, guarded DELETE).
+The CERT-side ingest RPC <code>fn_import_evf_events_v2</code> is renamed <strong><code>fn_ingest_evf_calendar</code></strong> and
+gains an <strong>identity-first pre-check</strong>: a current-season row already carrying the scrape's
+<code>id_evf_event</code>/<code>txt_evf_slug</code> is reused (CURRENT_SLOT_REUSE) <em>before</em> the location-gated
+<code>fn_allocate_evf_event_code</code> runs — closing that allocator's blank-location blind spot at the
+SQL layer (Steps A/B skip on blank location → Step C previously minted a fresh code every
+scrape). This mirrors the Python <code>id→slug</code> dedup ladder (ADR-039 rev 2) in SQL. See ADR-081.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="027-full-season-seed-export.html">← ADR-027: Full-Season Seed Export</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="029-tournament-url-auto-population.html">→ ADR-029: Tournament URL Auto-Population + Admin CRUD</a></nav>
+<footer class="foot">Generated from <code>028-evf-calendar-results-import.md</code> · source SHA-256 <code>4740df4759885fd31d47d63a496cef8fcf77f0db62f70d6c3d0511ee27155b64</code></footer>
+</div></body></html>

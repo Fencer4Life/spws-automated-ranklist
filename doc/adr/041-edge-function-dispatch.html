@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="041-edge-function-dispatch.md">
+<meta name="adr-source-sha256" content="a35a7ec4dc3fe45d0ce272e4551a9591cbe9b670227effb601173691b61f738b">
+<title>ADR-041 · Server-Side Workflow Dispatch via Supabase Edge Function</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 041</p><h1>Server-Side Workflow Dispatch via Supabase Edge Function</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-25 <strong>Relates to:</strong> ADR-029 (Tournament URL Auto-Population), ADR-025 (Event-Centric Ingestion + Telegram), ADR-026 (CERT→PROD Promotion).</dd></div><div><dt>Source</dt><dd class=""><code>041-edge-function-dispatch.md</code></dd></div><div><dt>Length</dt><dd class="">124 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2026-04-25
+<strong>Relates to:</strong> ADR-029 (Tournament URL Auto-Population), ADR-025 (Event-Centric Ingestion + Telegram), ADR-026 (CERT→PROD Promotion).</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#function-contract">Function contract</a></li><li class="depth-3"><a href="#allowed-workflows-allowlist">Allowed workflows (allowlist)</a></li><li class="depth-3"><a href="#auth">Auth</a></li><li class="depth-3"><a href="#secrets">Secrets</a></li><li class="depth-3"><a href="#synchronous-response">Synchronous response</a></li><li class="depth-3"><a href="#inline-ui-status">Inline UI status</a></li><li class="depth-3"><a href="#removed">Removed</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#positive">Positive</a></li><li class="depth-3"><a href="#negative">Negative</a></li><li class="depth-3"><a href="#outbound-surface-none-new">Outbound surface (none new)</a></li><li class="depth-2"><a href="#test-plan">Test plan</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The admin UI's ⬇ buttons (event-level &quot;populate-urls&quot; and tournament-level &quot;scrape-tournament&quot;) currently dispatch GitHub Actions workflows by reading a Personal Access Token from a <code>github-pat</code> HTML attribute on the <code>&lt;spws-ranklist&gt;</code> web component and calling the GitHub <code>workflow_dispatch</code> API directly from the browser. The deployed <code>index.html</code> is served by GitHub Pages at a public URL — embedding a PAT in that HTML means anyone visiting the page can read it via View Source and use it to trigger workflows or otherwise abuse the token's scopes.</p>
+<p>The existing <code>release.yml</code> deploy pipeline knows this is a problem: the four <code>sed</code> lines fill <code>supabase-cert-*</code> and <code>supabase-prod-*</code> attributes from secrets, but <strong>deliberately do not fill <code>github-pat</code> / <code>github-repo</code></strong>. Those attributes are left empty on the deployed page, the early-return <code>import_no_github</code> error fires, and admins are pushed to use the secure Telegram path instead.</p>
+<p>The Telegram path (<code>populate-urls &lt;event&gt;</code>, <code>scrape-tournament &lt;code&gt;</code>) routes through Google Apps Script which holds a PAT in script properties — server-side, never exposed to the browser. That works but is split across two surfaces (Telegram for cloud, button for local dev only). Admins want the in-page button to work too — securely, without leaking a PAT.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>The browser dispatches workflows by invoking a <strong>Supabase Edge Function</strong> (<code>dispatch-workflow</code>) that holds the PAT as a Supabase env secret and forwards the dispatch to GitHub on the caller's behalf. The PAT lives only inside the Edge Function's runtime — never in HTML, JavaScript bundles, or browser memory.</p>
+<h3 id="function-contract">Function contract</h3>
+<p><code>POST /functions/v1/dispatch-workflow</code></p>
+<p>Request body:</p>
+<pre><code class="language-json">{ &quot;workflow&quot;: &quot;populate-urls.yml&quot;, &quot;inputs&quot;: { &quot;event_code&quot;: &quot;PEW1-2025-2026&quot; } }
+</code></pre>
+<p>Response (200 on dispatch success):</p>
+<pre><code class="language-json">{ &quot;ok&quot;: true, &quot;workflow&quot;: &quot;populate-urls.yml&quot;, &quot;runs_url&quot;: &quot;https://github.com/.../actions/workflows/populate-urls.yml&quot; }
+</code></pre>
+<p>Response (4xx/5xx on failure):</p>
+<pre><code class="language-json">{ &quot;ok&quot;: false, &quot;code&quot;: &quot;invalid_workflow|config_missing|gh_dispatch_failed|...&quot;, &quot;message&quot;: &quot;...&quot; }
+</code></pre>
+<h3 id="allowed-workflows-allowlist">Allowed workflows (allowlist)</h3>
+<p>Hard-coded set in the function body: <code>populate-urls.yml</code>, <code>scrape-tournament.yml</code>. Any other value returns 400 <code>invalid_workflow</code>. This narrows the function's blast radius even if the caller's JWT is compromised — only those two workflows are ever dispatchable through it.</p>
+<h3 id="auth">Auth</h3>
+<p>Supabase Edge Functions verify the caller's JWT by default (<code>verify_jwt = true</code> in <code>config.toml</code>). The browser invokes via <code>supabase.functions.invoke()</code> which auto-attaches the admin's session JWT. Anonymous callers are rejected before reaching the handler.</p>
+<h3 id="secrets">Secrets</h3>
+<p>Two env secrets, set once per environment (CERT + PROD) via <code>supabase secrets set --project-ref &lt;ref&gt; GH_DISPATCH_PAT=… GH_REPO=Fencer4Life/spws-automated-ranklist</code>:</p>
+<ul>
+<li><code>GH_DISPATCH_PAT</code> — fine-grained PAT scoped to <strong>this repo only</strong> with <code>Actions: Read and write</code> permission. Nothing else.</li>
+<li><code>GH_REPO</code> — <code>&lt;owner&gt;/&lt;repo&gt;</code> string. Read by the function so the repo coordinate is server-side, not embedded in the function source.</li>
+</ul>
+<h3 id="synchronous-response">Synchronous response</h3>
+<p>The function calls GitHub's <code>workflow_dispatch</code> endpoint inline and returns the result on the same HTTP round-trip. Latency is ~200-500 ms (one GH API call). No queue, no polling, no <code>tbl_dispatch_request</code> table — the simpler architecture won out over the previously-considered cron-poller queue.</p>
+<h3 id="inline-ui-status">Inline UI status</h3>
+<p>The browser displays per-event-row status below the event-card (between the row and the tournament-list expansion). Three states:</p>
+<ul>
+<li>🟦 <code>⏳ Triggering populate-urls for PEW1-2025-2026…</code> (during the network call)</li>
+<li>🟩 <code>✓ Triggered: PEW1-2025-2026 — view run on GitHub Actions ↗</code> (auto-clears after 5 minutes)</li>
+<li>🟥 <code>✗ Dispatch failed: &lt;reason&gt;</code> (auto-clears after 5 minutes)</li>
+</ul>
+<p>Status is per-event so multiple in-flight dispatches across different events render independently. The global top-right toast banner from the previous round is preserved for non-dispatch errors (auth, RPC failures, etc.).</p>
+<h3 id="removed">Removed</h3>
+<ul>
+<li><code>github-pat</code> and <code>github-repo</code> attributes on <code>&lt;spws-ranklist&gt;</code> web component (App.svelte props).</li>
+<li><code>triggerGitHubWorkflow</code> calls in <code>App.svelte</code> for <code>handleImportEvent</code> / <code>handleImportTournament</code> (replaced by Edge Function invocation moved into <code>EventManager.svelte</code>).</li>
+<li>Unused <code>import_no_github</code> locale key (the configuration error is now a 500 from the function, not a frontend gate).</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li>
+<p><strong>Browser-direct dispatch with PAT in HTML</strong> (status quo). Rejected: leaks PAT publicly. Existing release.yml already declines to populate this attribute for the same reason — the design was admittedly broken from the start.</p>
+</li>
+<li>
+<p><strong>Request queue + GitHub Actions cron poller</strong> (drafted earlier). Rejected after re-evaluation:</p>
+<ul>
+<li>60s worst-case latency vs sub-second for Edge Function</li>
+<li>1440 cron runs/day even when idle (wasteful)</li>
+<li>Significantly more code (<code>tbl_dispatch_request</code> + RLS + 2 RPCs + workflow YAML + frontend polling logic) for no security advantage</li>
+<li>The framing &quot;uses zero PATs&quot; was rhetorical — the Edge Function's PAT in Supabase env secrets is not meaningfully less secure than <code>secrets.GITHUB_TOKEN</code> inside a GH runner; both are server-side secrets the platform manages.</li>
+</ul>
+</li>
+<li>
+<p><strong>Database webhook + pg_net + PAT in Supabase Vault</strong>. Rejected for higher implementation complexity (Vault setup, async response handling via <code>pg_net.http_response</code> callback table) at no UX or security advantage over an Edge Function.</p>
+</li>
+<li>
+<p><strong>Telegram-only on cloud, button local-dev-only</strong>. The simplest &quot;do nothing&quot; option. Rejected because the user explicitly wants the button to work on CERT/PROD without relying on Telegram for every operation.</p>
+</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<h3 id="positive">Positive</h3>
+<ul>
+<li><strong>No PAT in browser, ever.</strong> PAT lives only in Supabase env secrets, accessible only to the function runtime.</li>
+<li><strong>Sub-second click-to-dispatch latency.</strong> No queue, no polling.</li>
+<li><strong>Allowlisted dispatch surface.</strong> Even if the function's auth check is bypassed, only two workflows are reachable.</li>
+<li><strong>Inline per-event status.</strong> Each row shows its own dispatch progress; admin can scan the calendar and see which events are in-flight without scrolling to a global banner.</li>
+<li><strong>Telegram path untouched.</strong> GAS still holds its own PAT server-side; both paths coexist.</li>
+</ul>
+<h3 id="negative">Negative</h3>
+<ul>
+<li><strong>One-time setup per env:</strong> admin runs <code>supabase secrets set</code> for CERT and PROD on first deploy. Documented in <code>doc/cicd-operations-manual.md</code> (to be updated).</li>
+<li><strong>Edge Function deploy added to release pipeline.</strong> <code>release.yml</code> adds a <code>supabase functions deploy dispatch-workflow</code> step in <code>deploy-cert</code> and <code>deploy-prod</code> jobs.</li>
+<li><strong>Local testing of the function</strong> uses <code>supabase functions serve</code> (separate process, runs Deno locally) rather than the Docker <code>edge_runtime</code> container which is disabled in this project's local config. Frontend dev server invokes against the local function port. Documented in CLAUDE.md / operations manual.</li>
+</ul>
+<h3 id="outbound-surface-none-new">Outbound surface (none new)</h3>
+<p>No new Telegram messages, no new GitHub Actions workflows beyond the existing <code>populate-urls.yml</code> and <code>scrape-tournament.yml</code> (which the function dispatches).</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="test-plan">Test plan</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Assertion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>9.45a</code></td>
+<td><code>handleDispatchEvent</code> calls <code>functions.invoke('dispatch-workflow', { workflow: 'populate-urls.yml', inputs: { event_code: ... } })</code></td>
+</tr>
+<tr>
+<td><code>9.45b</code></td>
+<td>While the invoke promise is in-flight, status <code>⏳ Triggering…</code> renders inline below the event-row</td>
+</tr>
+<tr>
+<td><code>9.45c</code></td>
+<td>On <code>{ ok: true, runs_url }</code> response, status flips to <code>✓ Triggered…</code> with the run URL as a clickable link</td>
+</tr>
+<tr>
+<td><code>9.45d</code></td>
+<td>On <code>{ ok: false, message }</code> response (or thrown error), status flips to <code>✗ Dispatch failed: …</code> inline (not in the global toast)</td>
+</tr>
+<tr>
+<td><code>9.45e</code></td>
+<td>When <code>event.url_event</code> is empty, button is hidden so handler never runs (existing behaviour, regression guard)</td>
+</tr>
+<tr>
+<td><code>9.45f</code></td>
+<td>Multiple concurrent dispatches across different events render their own statuses independently</td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="references">References</h2>
+<ul>
+<li>Function: <a href="../../supabase/functions/dispatch-workflow/index.ts"><code>supabase/functions/dispatch-workflow/index.ts</code></a></li>
+<li>Frontend caller: <a href="../../frontend/src/lib/api.ts"><code>frontend/src/lib/api.ts</code></a> — <code>requestDispatch()</code></li>
+<li>Frontend handler + UI: <a href="../../frontend/src/components/EventManager.svelte"><code>frontend/src/components/EventManager.svelte</code></a></li>
+<li>Deploy step: <a href="../../.github/workflows/release.yml"><code>.github/workflows/release.yml</code></a></li>
+<li>Setup docs: <code>doc/cicd-operations-manual.md</code> §X (Edge Function secrets) — to be added.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="040-multi-slot-event-urls.html">← ADR-040: Multi-Slot Event Result URLs with Compact-on-Save</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="042-carryover-engine-dispatcher.html">→ ADR-042: Per-season carry-over engine selection via dispatcher pattern</a></nav>
+<footer class="foot">Generated from <code>041-edge-function-dispatch.md</code> · source SHA-256 <code>a35a7ec4dc3fe45d0ce272e4551a9591cbe9b670227effb601173691b61f738b</code></footer>
+</div></body></html>

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="066-min-participants-ingestion-gate.md">
+<meta name="adr-source-sha256" content="680ce30484de0fb457eddd699878792f7bbce99f642ee28e4daf1d94552fad3a">
+<title>ADR-066 · Min-participants threshold gates ingestion, not scoring</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 066</p><h1>Min-participants threshold gates ingestion, not scoring</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (drafted 2026-05-10) <strong>Related:</strong> ADR-018 (Rolling Score), ADR-046 (PEW weapon-letter suffix — naming-shape sibling), ADR-050 (unified ingestion pipeline), ADR-052 (URL→data validation) <strong>Phase:</strong> 5 (operational rebuild)</dd></div><div><dt>Date</dt><dd class="">Not recorded</dd></div><div><dt>Source</dt><dd class=""><code>066-min-participants-ingestion-gate.md</code></dd></div><div><dt>Length</dt><dd class="">97 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (drafted 2026-05-10)
+<strong>Related:</strong> ADR-018 (Rolling Score), ADR-046 (PEW weapon-letter suffix — naming-shape sibling), ADR-050 (unified ingestion pipeline), ADR-052 (URL→data validation)
+<strong>Phase:</strong> 5 (operational rebuild)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#walkover-semantics-in-the-ftl-parser">Walkover semantics in the FTL parser</a></li><li class="depth-3"><a href="#implementation-surface">Implementation surface</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#backwards-compatible">Backwards-compatible</a></li><li class="depth-3"><a href="#operationally-visible">Operationally visible</a></li><li class="depth-3"><a href="#schema-unchanged">Schema unchanged</a></li><li class="depth-3"><a href="#re-ingestion-required-for-active-season-ppw2">Re-ingestion required for active-season PPW2</a></li><li class="depth-2"><a href="#tests">Tests</a></li><li class="depth-3"><a href="#pytest">pytest</a></li><li class="depth-3"><a href="#pgtap">pgTAP</a></li><li class="depth-2"><a href="#originating-adr-rule">Originating ADR / Rule</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p><code>tbl_scoring_config.int_min_participants_ppw</code> (default 1) and <code>int_min_participants_evf</code> (default 5) have existed since the initial schema, surfaced through <code>fn_export_scoring_config</code> / <code>fn_import_scoring_config</code> and the admin UI's scoring-config editor. <strong>No code consumed them.</strong> They were declared-but-dead knobs.</p>
+<p>The dead-knob status hit reality during Phase 5 active-season rebuild on 2026-05-10:</p>
+<ul>
+<li>FTL eventSchedule for <code>PPW2-2025-2026</code> listed 7 FOIL brackets, 6 of which had <code>1 competitor</code> (a single registrant, no actual fencing).</li>
+<li>FTL's <code>/events/results/data/&lt;UUID&gt;</code> JSON returns <code>place: null</code> for those brackets — no rounds were played, no ranking computed.</li>
+<li><code>python/scrapers/ftl.py:parse_ftl_json</code> dropped every entry with unparseable place. Result: <code>n_results = 0</code> per bracket.</li>
+<li>The orchestrator's hardcoded <code>if n_results == 0: skip</code> then silently dropped the bracket entirely.</li>
+</ul>
+<p>Per SPWS rules (operator confirmation 2026-05-10), <strong>the lone competitor in a 1-competitor bracket DOES earn ranklist points</strong> by walkover. Scoring engine (<code>fn_calc_tournament_scores</code>) already handles <code>v_n=1</code> correctly: place_pts = <code>int_mp_value</code> = 50, no DE bonus, gold podium = <code>3*1^(1/3) = 3</code> → ~9 final points. The bug was purely at ingestion: brackets never made it to the DB so the scoring engine never saw them.</p>
+<p>The user requested the inclusion threshold be <strong>driven by <code>int_min_participants_ppw</code></strong> so that a future config change (e.g. <code>=2</code> to exclude 1-competitor brackets) takes effect without code changes. This is the explicit decision to make the dead config knob load-bearing.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p><strong>Tournaments with <code>n_competitors &lt; threshold</code> are skipped at ingestion</strong>, where <code>threshold</code> is <code>tbl_scoring_config.int_min_participants_{ppw,evf}</code> resolved per the event's <code>id_season</code> and per the tournament type. Strict less-than semantics:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Config value</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>1</code> (default)</td>
+<td>All brackets included; walkover (single-competitor) brackets count</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>1-competitor brackets dropped; ≥2 included</td>
+</tr>
+<tr>
+<td><code>5</code> (EVF default)</td>
+<td>&lt;5-competitor brackets dropped</td>
+</tr>
+</tbody>
+</table></div>
+<p>Type → column routing:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Tournament type</th>
+<th>Threshold column</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PPW, MPW, PSW (domestic SPWS)</td>
+<td><code>int_min_participants_ppw</code></td>
+</tr>
+<tr>
+<td>PEW, MEW, MSW (international classification)</td>
+<td><code>int_min_participants_evf</code></td>
+</tr>
+<tr>
+<td>IMEW → MEW; DMEW → MPW; IMSW → MSW</td>
+<td>(alternation pairs follow their non-prefixed sibling)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Skipped brackets generate <strong>NO</strong> <code>tbl_tournament</code> row, <strong>NO</strong> <code>tbl_result</code> row, <strong>NO</strong> scoring side-effect. They appear in the per-event staging summary's <em>&quot;Skipped — below min-participants threshold&quot;</em> section with bracket name, weapon, gender, V-cat, n, threshold (in the reason string), and source URL — so the operator can verify the threshold is set correctly before sign-off.</p>
+<h3 id="walkover-semantics-in-the-ftl-parser">Walkover semantics in the FTL parser</h3>
+<p>A prerequisite for <code>threshold=1</code> to do the right thing: the FTL parser must actually emit a result row for a 1-competitor bracket. The FTL JSON <code>place: null</code> shape is interpreted as <strong>walkover (place=1)</strong> when (and only when) there is exactly one non-<code>excluded</code> entry. Multi-entry-with-all-null-places stays as today (truly unranked data, drop them). This rule lives in <code>parse_ftl_json</code> and <code>parse_ftl_with_marker</code> (<code>python/scrapers/ftl.py</code>).</p>
+<h3 id="implementation-surface">Implementation surface</h3>
+<ol>
+<li><strong><code>python/scrapers/ftl.py</code></strong> — walkover patch in both <code>parse_ftl_json</code> and <code>parse_ftl_with_marker</code>.</li>
+<li><strong><code>python/pipeline/db_connector.py</code></strong> — three new functions:
+<ul>
+<li><code>get_min_participants(db, id_season, tourn_type) -&gt; int</code> — reads the column, defaults to 1 on missing config / unknown type.</li>
+<li><code>derive_tourn_type_from_event_code(event_code) -&gt; str | None</code> — maps event txt_code prefix to a tournament-type token.</li>
+<li><code>gate_below_min_participants(db, id_season, tourn_type, n_results) -&gt; (bool, str | None)</code> — returns <code>(True, &quot;BELOW_MIN_PARTICIPANTS (n=X, min=Y)&quot;)</code> when below threshold, else <code>(False, None)</code>.</li>
+</ul>
+</li>
+<li><strong><code>python/tools/recreate_active_season_2025_2026.py</code></strong> + <strong><code>python/tools/phase5_runner.py</code></strong> — replace the hardcoded <code>if n_results == 0:</code> skip with <code>gate_below_min_participants(...)</code>. Both runners reuse the same helper.</li>
+<li><strong><code>python/tools/phase5_runner.py:_multi_summary_md</code></strong> — adds the <em>&quot;Skipped — below min-participants threshold&quot;</em> section to the per-event .md output when at least one bracket was dropped by the gate.</li>
+</ol>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>Apply the threshold at scoring time</strong> (filter inside <code>fn_calc_tournament_scores</code>): Below-threshold tournaments would still get <code>tbl_tournament</code> + <code>tbl_result</code> rows. Rejected — drilldown views would show &quot;zero-score&quot; tournaments, polluting the UI, and the audit trail would suggest the tournament happened when it deliberately doesn't count.</li>
+<li><strong>Threshold per tournament type column</strong> (<code>int_min_participants_pew</code>, <code>_mew</code>, etc.): finer-grained but five times the schema surface and matching frontend churn. The current 2-column shape (domestic + international) covers all 6 active types with the same routing rule as the multiplier columns.</li>
+<li><strong>Drop walkover semantics, require explicit place=1</strong>: would dispatch to operator each time FTL emits a null-place bracket, defeating bulk ingestion. The walkover rule is unambiguous (n=1 ⇒ place=1) and the gate then decides whether to count it.</li>
+<li><strong>Hardcode <code>&lt; 1</code> (drop only n=0 brackets)</strong>: would solve today's bug but lock in the current &quot;include everything&quot; policy. Future seasons could not raise the threshold without code edits.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<h3 id="backwards-compatible">Backwards-compatible</h3>
+<ul>
+<li>Existing seasons all have <code>int_min_participants_ppw = 1</code> and <code>int_min_participants_evf = 5</code>. The gate's first activation drops nothing that wasn't already being dropped (FTL parser walkover patch is what restores the 1-competitor brackets — gate just keeps the door open).</li>
+<li>Existing scoring is untouched: <code>fn_calc_tournament_scores</code> already computes correctly for <code>v_n=1</code>.</li>
+</ul>
+<h3 id="operationally-visible">Operationally visible</h3>
+<ul>
+<li>Per-event staging summaries gain a new section when brackets are skipped. Operator now sees <code>(bracket name, weapon, gender, V-cat, n, threshold, URL)</code> for every drop.</li>
+<li>Cron / daily orchestrator runs use the same gate.</li>
+</ul>
+<h3 id="schema-unchanged">Schema unchanged</h3>
+<ul>
+<li>No DDL change. Columns and view exposure already existed since <code>20250301000001_enums_tables_indexes.sql</code>.</li>
+</ul>
+<h3 id="re-ingestion-required-for-active-season-ppw2">Re-ingestion required for active-season PPW2</h3>
+<ul>
+<li>The active-season PPW2-2025-2026 had 6 FOIL + 2 SABRE single-competitor brackets dropped pre-ADR-066. After the walkover patch + gate, re-running the orchestrator restores them. This is operational, not destructive — the orchestrator is idempotent against the cleared draft tables.</li>
+</ul>
+</section>
+<section class="section-card adr-section tests"><p class="kicker">tests</p><h2 id="tests">Tests</h2>
+<h3 id="pytest">pytest</h3>
+<ul>
+<li><code>test_ftl_walkover.py</code> (5.M3.1–5.M3.7): walkover semantics in both <code>parse_ftl_json</code> and <code>parse_ftl_with_marker</code>.</li>
+<li><code>test_min_participants_helper.py</code> (5.M4.1–5.M6.7): helpers + gate + event-code type derivation.</li>
+<li><code>test_min_participants_summary.py</code> (5.M7.1–5.M7.3): staging-summary section rendering.</li>
+</ul>
+<h3 id="pgtap">pgTAP</h3>
+<ul>
+<li><code>42_min_participants_threshold.sql</code> (5.M8.1–5.M8.4): schema invariants + JSONB round-trip via <code>fn_export_scoring_config</code>.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="originating-adr-rule">Originating ADR / Rule</h2>
+<ul>
+<li>Rule: <code>doc/rules/R013.md</code> — min-participant ingestion gate.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="065-ftl-per-fencer-vcat-marker-check.html">← ADR-065: FTL per-fencer V-cat marker check at the splitter</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="067-structural-pool-only-skip-unified-xml-ingest.html">→ ADR-067: Structural pool-only skip + unified XML ingest pipeline</a></nav>
+<footer class="foot">Generated from <code>066-min-participants-ingestion-gate.md</code> · source SHA-256 <code>680ce30484de0fb457eddd699878792f7bbce99f642ee28e4daf1d94552fad3a</code></footer>
+</div></body></html>

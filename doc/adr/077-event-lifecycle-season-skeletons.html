@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="077-event-lifecycle-season-skeletons.md">
+<meta name="adr-source-sha256" content="b696a2497b0b9d9c9f141cc75867998a456a8d2d67b16b036f1936d2a1cb7680">
+<title>ADR-077 · Event lifecycle, season-skeleton provisioning &amp; CERT→PROD calendar promotion</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 077</p><h1>Event lifecycle, season-skeleton provisioning &amp; CERT→PROD calendar promotion</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted ·</dd></div><div><dt>Date</dt><dd class="">2026-06-28</dd></div><div><dt>Source</dt><dd class=""><code>077-event-lifecycle-season-skeletons.md</code></dd></div><div><dt>Length</dt><dd class="">272 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted · <strong>Date:</strong> 2026-06-28</p>
+<p><strong>Relates to:</strong> <strong>narrows</strong> ADR-050's supersession of <strong>ADR-025</strong> to its <em>ingestion mechanism</em> only
+(the event-status lifecycle + Telegram admin surface live on <strong>here</strong>); <strong>ADR-044</strong> (wizard introduced
+<code>CREATED</code>), <strong>ADR-054</strong> (<code>CREATED</code>/<code>SCORED</code> enum values + validator extension), <strong>ADR-028</strong> (date-aware
+display &quot;Awaiting results&quot;), <strong>ADR-039</strong> (EVF-sync status flips), <strong>ADR-053</strong> (score-provenance is a
+<em>separate</em> axis), <strong>ADR-073/050</strong> (consuming ingest flows), <strong>ADR-076</strong> (re-ingest / keep-rule),
+<strong>ADR-036</strong> (env data-flow — <em>refined</em> here for empty-calendar promotion).</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-canonical-event-lifecycle-8-states-validator-backed">1 · The canonical event lifecycle (8 states, validator-backed)</a></li><li class="depth-3"><a href="#2-two-axes-not-one-evf-published-is-provenance-not-lifecycle">2 · Two axes, not one — `EVF_PUBLISHED` is provenance, not lifecycle</a></li><li class="depth-3"><a href="#3-season-skeleton-provisioning-multi-event">3 · Season-skeleton provisioning (multi-event)</a></li><li class="depth-3"><a href="#4-url-primary-ingestion-doctrine">4 · URL-primary ingestion doctrine</a></li><li class="depth-3"><a href="#5-environment-data-flow-cert-prod-calendar-promotion">5 · Environment data-flow &amp; CERT→PROD calendar promotion</a></li><li class="depth-3"><a href="#6-coherence-fixes-this-adr-mandates">6 · Coherence fixes this ADR mandates</a></li><li class="depth-3"><a href="#7-admin-ui-surface-cert-prod-season-skeleton-promotion">7 · Admin-UI surface — CERT→PROD season-skeleton promotion</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-07-11-adr-081">Amendment (2026-07-11, ADR-081)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Three drifts forced this ADR:</p>
+<ol>
+<li><strong>The lifecycle silently grew 3 → 8 states</strong> with no ADR of record. ADR-025 documented
+<code>PLANNED → IN_PROGRESS → COMPLETED</code>; the real <code>enum_event_status</code> is 8 states governed by a <strong>live
+trigger</strong> <code>fn_validate_event_transition</code>. The display layer and the admin dropdown both lag it.</li>
+<li><strong>Ingestion is now URL-primary</strong> (<code>ingest &lt;prefix&gt; &lt;url&gt;</code> → one authoritative, re-runnable fetch,
+ADR-076 keep-rule). ADR-025's whole model — <code>IN_PROGRESS</code> as multi-day, multi-email XML
+accumulation — is now the minority path.</li>
+<li><strong>Seasons are provisioned as childless skeletons</strong> and must be <strong>promoted CERT→PROD</strong> as an empty
+calendar, reversibly, with <strong>identical ids</strong> — a flow ADR-036 didn't contemplate.</li>
+</ol>
+<p>Bugs surfaced while writing this: the status <strong>display map omits <code>CREATED</code> + <code>SCORED</code></strong> (both render
+as &quot;Planned&quot;); the <strong>admin dropdown offers transitions the validator rejects</strong>; and <code>EVF_PUBLISHED</code>
+was being conflated with the lifecycle when it is a <em>different axis</em>.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-the-canonical-event-lifecycle-8-states-validator-backed">1 · The canonical event lifecycle (8 states, validator-backed)</h3>
+<p><code>fn_validate_event_transition</code> (trigger on <code>tbl_event</code>, [20250301000003] + extended [20260425000005])
+is the <strong>single source of truth</strong> for legal transitions. Every status exists because it is a node in
+this machine:</p>
+<pre><code class="language-mermaid">stateDiagram-v2
+    direction LR
+    [*] --&gt; CREATED : fn_init_season (skeleton)
+
+    CREATED   --&gt; PLANNED     : admin sets dt_start
+    CREATED   --&gt; CANCELLED
+
+    PLANNED   --&gt; SCHEDULED   : EVF schedule confirmed
+    PLANNED   --&gt; IN_PROGRESS : ingest (legacy XML)
+    PLANNED   --&gt; CANCELLED
+
+    SCHEDULED --&gt; CHANGED     : EVF date/venue changed
+    SCHEDULED --&gt; IN_PROGRESS
+    SCHEDULED --&gt; CANCELLED
+    CHANGED   --&gt; SCHEDULED
+    CHANGED   --&gt; IN_PROGRESS
+    CHANGED   --&gt; CANCELLED
+
+    IN_PROGRESS --&gt; SCORED    : engine scored
+    IN_PROGRESS --&gt; COMPLETED
+    IN_PROGRESS --&gt; CANCELLED
+    SCORED      --&gt; COMPLETED : admin confirms
+    COMPLETED   --&gt; [*]       : promote CERT→PROD
+
+    note right of CREATED
+      Universal rollback:
+      ANY state --&gt; CREATED
+      (admin reset / season-init reuse)
+    end note
+
+    note right of PLANNED
+      Display only (ADR-028):
+      PLANNED + past end + no data
+      =&gt; &quot;Awaiting results&quot;
+    end note
+</code></pre>
+<p><em>Rollback edges (omitted from the diagram for clarity, all validator-permitted):</em>
+<code>IN_PROGRESS→PLANNED</code>, <code>SCORED→IN_PROGRESS</code>, <code>COMPLETED→{SCORED,IN_PROGRESS,PLANNED}</code>, and the
+universal <code>* → CREATED</code>.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Regime</th>
+<th>Why it exists</th>
+<th>Set by</th>
+<th>Public calendar?</th>
+<th>Display badge</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CREATED</strong></td>
+<td>skeleton</td>
+<td>Childless, date-less calendar placeholder; the pre-existing event ingestion matches against (ADR-025 §1). Revertible reset target.</td>
+<td><code>fn_init_season</code> (ADR-044/054)</td>
+<td><strong>Hidden</strong> until dated</td>
+<td>⚠ <em>missing → &quot;Planned&quot;</em> — <strong>fix</strong></td>
+</tr>
+<tr>
+<td><strong>PLANNED</strong></td>
+<td>calendar</td>
+<td>Dated event, no results yet. The default working state.</td>
+<td>admin <code>CREATED→PLANNED</code>; original (ADR-025)</td>
+<td>Shown</td>
+<td>Planned / <strong>Awaiting results</strong> if past+empty</td>
+</tr>
+<tr>
+<td><strong>SCHEDULED</strong></td>
+<td>calendar</td>
+<td>EVF-calendar-confirmed date/venue — firmer than PLANNED.</td>
+<td>EVF sync (ADR-039)</td>
+<td>Shown</td>
+<td>Scheduled</td>
+</tr>
+<tr>
+<td><strong>CHANGED</strong></td>
+<td>calendar</td>
+<td>A SCHEDULED event whose date/venue changed on re-scrape — flags admin attention.</td>
+<td>EVF sync (ADR-039)</td>
+<td>Shown</td>
+<td>Changed</td>
+</tr>
+<tr>
+<td><strong>IN_PROGRESS</strong></td>
+<td>ingest</td>
+<td>≥1 tournament ingested; legacy multi-XML accumulation. <strong>Transient</strong> under URL ingestion.</td>
+<td><code>fn_ingest_tournament_results</code> (ADR-025)</td>
+<td>Shown</td>
+<td>In progress</td>
+</tr>
+<tr>
+<td><strong>SCORED</strong></td>
+<td>ingest</td>
+<td>Results ingested <strong>and</strong> engine-scored, pre-sign-off. Separates &quot;scored&quot; from &quot;admin-final&quot;.</td>
+<td>pipeline <code>Commit</code> (ADR-054/073)</td>
+<td>Shown</td>
+<td>⚠ <em>missing → &quot;Planned&quot;</em> — <strong>fix</strong></td>
+</tr>
+<tr>
+<td><strong>COMPLETED</strong></td>
+<td>final</td>
+<td>Admin-confirmed final; promotable.</td>
+<td>admin <code>complete</code> (Telegram)</td>
+<td>Shown</td>
+<td>Completed</td>
+</tr>
+<tr>
+<td><strong>CANCELLED</strong></td>
+<td>exit</td>
+<td>Event cancelled (EVF/admin).</td>
+<td>EVF sync / admin</td>
+<td>Shown</td>
+<td>Cancelled</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>State-transition matrix</strong> — every non-blank cell is a <code>WHEN OLD=… AND NEW=…</code> branch in
+<code>fn_validate_event_transition</code>; a <strong>blank cell is rejected</strong> at the trigger
+(<code>RAISE 'Invalid event status transition: X → Y'</code>). Legend: <strong>✓</strong> forward · <strong>↩</strong> rollback · <strong>—</strong> self.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>FROM ↓ \ TO →</th>
+<th style="text-align:center">CREATED</th>
+<th style="text-align:center">PLANNED</th>
+<th style="text-align:center">SCHEDULED</th>
+<th style="text-align:center">CHANGED</th>
+<th style="text-align:center">IN_PROGRESS</th>
+<th style="text-align:center">SCORED</th>
+<th style="text-align:center">COMPLETED</th>
+<th style="text-align:center">CANCELLED</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CREATED</strong></td>
+<td style="text-align:center">—</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td><strong>PLANNED</strong></td>
+<td style="text-align:center">↩</td>
+<td style="text-align:center">—</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td><strong>SCHEDULED</strong></td>
+<td style="text-align:center">↩</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">—</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td><strong>CHANGED</strong></td>
+<td style="text-align:center">↩</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">—</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td><strong>IN_PROGRESS</strong></td>
+<td style="text-align:center">↩</td>
+<td style="text-align:center">↩</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">—</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center">✓</td>
+</tr>
+<tr>
+<td><strong>SCORED</strong></td>
+<td style="text-align:center">↩</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">↩</td>
+<td style="text-align:center">—</td>
+<td style="text-align:center">✓</td>
+<td style="text-align:center"></td>
+</tr>
+<tr>
+<td><strong>COMPLETED</strong></td>
+<td style="text-align:center">↩</td>
+<td style="text-align:center">↩</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">↩</td>
+<td style="text-align:center">↩</td>
+<td style="text-align:center">—</td>
+<td style="text-align:center"></td>
+</tr>
+<tr>
+<td><strong>CANCELLED</strong></td>
+<td style="text-align:center">↩</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">—</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>The entire <strong><code>CREATED</code> column</strong> (the <code>↩</code> cells) is the <em>universal reset-to-skeleton</em> rule —
+<code>NEW='CREATED' AND OLD IN (every other state)</code> — used by admin reset and season-init reuse.</li>
+<li><strong>Forward spine:</strong> <code>CREATED → PLANNED → SCHEDULED ⇄ CHANGED → IN_PROGRESS → SCORED → COMPLETED</code>.</li>
+<li><strong>CANCELLED</strong> is reachable from every <em>pre-scoring</em> state and only exits via reset to CREATED.</li>
+<li><strong>Dropdown bug (see §6):</strong> the admin <code>&lt;select&gt;</code> currently offers all 7 other states from any row,
+but only the ticked cells save — every blank cell throws at the trigger.</li>
+</ul>
+<h3 id="2-two-axes-not-one-evf-published-is-provenance-not-lifecycle">2 · Two axes, not one — <code>EVF_PUBLISHED</code> is provenance, not lifecycle</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Axis</th>
+<th>Column · enum</th>
+<th>Values</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Lifecycle</strong></td>
+<td><code>enum_status</code> · <code>enum_event_status</code></td>
+<td>the 8 above</td>
+<td><em>where the event is in its life</em></td>
+</tr>
+<tr>
+<td><strong>Provenance</strong></td>
+<td><code>txt_source_status</code> · <code>enum_source_status</code> (ADR-053)</td>
+<td><code>ENGINE_COMPUTED</code>, <code>EVF_PUBLISHED</code></td>
+<td><em>whose numbers the scores are</em> (engine vs EVF-API verbatim, EVF events only)</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>fn_promote_evf_published</code> flips the <strong>provenance</strong> axis on EVF parity-pass — it never touches
+<code>enum_status</code>. Keep the two axes strictly separate.</p>
+<h3 id="3-season-skeleton-provisioning-multi-event">3 · Season-skeleton provisioning (multi-event)</h3>
+<p>A season is provisioned by <code>fn_init_season</code> as a <strong>set of childless <code>CREATED</code> events</strong> — PPW1-n, the
+PEW circuit, MPW, MSW, optional IMEW/DMEW — each <code>id_prior_event</code>-linked to its prior-season
+counterpart. This <strong>is</strong> the ADR-025/050 &quot;events must pre-exist before ingestion&quot; calendar; the event
+<strong>codes are the addressable handles</strong> for <code>ingest &lt;prefix&gt; &lt;url&gt;</code>. <strong>Childless is doctrine</strong>, not a new
+idea: ADR-025 §1 always said <em>tournaments are created on-the-fly at ingestion</em>; the old
+<code>_fn_create_skeleton_children</code> pre-creating 6 tournaments/event was the deviation, corrected by
+migration <code>20260627000003</code>. Season provisioning is a one-shot DB/admin action — <strong>not</strong> a pipeline flow.</p>
+<h3 id="4-url-primary-ingestion-doctrine">4 · URL-primary ingestion doctrine</h3>
+<p>One authoritative, fully re-runnable fetch (keep-rule ADR-076). Consequences:</p>
+<ul>
+<li><strong>&quot;Awaiting results&quot;</strong> (PLANNED + past end + no data) is the <em>canonical pre-ingest state</em>.</li>
+<li><strong><code>IN_PROGRESS</code> demoted</strong> to transient / legacy-XML.</li>
+<li><strong>Re-ingest-from-URL is the default correction path.</strong> <code>rollback</code> / <code>delete</code> and the full Telegram
+lifecycle surface (<code>status</code> <code>complete</code> <code>rollback</code> <code>delete</code> <code>promote</code> <code>ingest</code>) are <strong>retained as the
+escape hatch</strong> for genuine errors — demoted from &quot;the way&quot; to &quot;the exception,&quot; never removed.</li>
+</ul>
+<h3 id="5-environment-data-flow-cert-prod-calendar-promotion">5 · Environment data-flow &amp; CERT→PROD calendar promotion</h3>
+<p><strong>CERT is the sole allocator of new season/event ids — ingestion is always CERT-first, then promoted
+(this is the reason CERT and PROD exist).</strong> PROD and LOCAL only ever <em>receive</em> copies, so ids stay
+<strong>identical across all three</strong>, which makes <code>id_prior_event</code> (a numeric FK) valid everywhere and lets
+promotion be a verbatim <strong>row copy with explicit ids</strong>, not a re-run.</p>
+<pre><code class="language-mermaid">flowchart LR
+    subgraph BASE[&quot;① one-time baseline (ids aligned)&quot;]
+      direction LR
+      P0[(PROD)] --&gt;|seed-remote.sh| C0[(CERT)]
+      P0 --&gt;|mirror-prod.sh| L0[(LOCAL)]
+    end
+    subgraph FLOW[&quot;② steady-state flow  CERT → PROD → LOCAL&quot;]
+      direction LR
+      C[(CERT&lt;br/&gt;sole id-allocator&lt;br/&gt;ingestion CERT-first)]
+      P[(PROD&lt;br/&gt;source of truth&lt;br/&gt;receive-only)]
+      L[(LOCAL&lt;br/&gt;receive-only)]
+      C --&gt;|promote: copy season+events&lt;br/&gt;explicit ids + setval&lt;br/&gt;CHILDLESS only| P
+      P --&gt;|mirror-prod.sh| L
+    end
+    BASE -.-&gt;|then| FLOW
+    classDef no fill:#fee,stroke:#c33;
+    X1[&quot;LOCAL → CERT / PROD&quot;]:::no
+    X1 -. forbidden .-&gt; C
+</code></pre>
+<p><strong>Promotion contract (<code>fn_promote_season_skeleton</code>, CERT→PROD):</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Guard</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Childless</strong></td>
+<td>Refuse if <strong>any</strong> event in the season has ≥1 <code>tbl_tournament</code> child. (Empty calendar carries no results — the only thing ADR-036 protects — so promoting it up is safe.)</td>
+</tr>
+<tr>
+<td><strong>Schema parity</strong></td>
+<td>Target PROD must already have migration <code>20260627000003</code> (childless init) — else children get created. Verify fingerprint first.</td>
+</tr>
+<tr>
+<td><strong>Id identity</strong></td>
+<td>INSERT season + events + scoring_config <strong>with explicit ids</strong> (OVERRIDING SYSTEM VALUE) + <code>setval</code> PROD sequences past them.</td>
+</tr>
+<tr>
+<td><strong>Idempotency</strong></td>
+<td>Refuse if the season already exists on PROD (revert-then-repromote to retry).</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Reversibility (<code>fn_delete_season_skeleton</code>, symmetric on CERT <em>and</em> PROD):</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Guard</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Childless</strong></td>
+<td>Delete the whole season (events → scoring_config → season) only while <strong>no event has children</strong>. Once results land, refuse — that protects the live ranklist.</td>
+</tr>
+<tr>
+<td><strong>Not active</strong></td>
+<td>Refuse if it is the active season (deleting it would blank the live ranklist).</td>
+</tr>
+</tbody>
+</table></div>
+<p>This <strong>refines ADR-036</strong>: ADR-036's &quot;data flows PROD→down only / LOCAL→PROD never&quot; stands for
+<strong>results</strong>; <strong>empty-calendar provisioning flows CERT→PROD</strong> as the single sanctioned upward hop, and
+the <strong>childless guard is the regime boundary</strong> between the two.</p>
+<blockquote>
+<p><strong>Amendment (2026-06-28) — legacy id divergence vs forward id-identity.</strong> The one-time CERT→PROD→LOCAL
+baseline was executed with the <strong>natural-key</strong> monolithic dump (<code>export_seed.py</code> / <code>seed-remote.sh</code>),
+which reassigns serial ids in dump order. Result: <strong><code>tbl_season</code> ids match across all three envs, but
+legacy <code>tbl_event</code> ids (1–84) DIVERGE</strong> between CERT and PROD (same code → different id). The
+&quot;identical ids across all three&quot; invariant therefore holds for <strong>seasons</strong> and for <strong>newly-promoted</strong>
+rows (explicit-id copy keeps them aligned going forward, both sequences at the same max), but <strong>not</strong>
+for the legacy event backlog. This is harmless because <strong>code-identity</strong> is preserved and every
+self-referential FK is re-resolved by <code>txt_code</code>, not raw id: <code>export_seed.py</code> emits <code>id_prior_event</code>
+as a <code>txt_code</code> subquery (fixed 2026-06-28), and <code>promote_season.py</code> re-resolves both <code>id_prior_event</code>
+and <code>id_organizer</code> to the <strong>target</strong> id by code before sending the payload. Consequence for promotion:
+<strong>never copy a self/cross FK as a raw source id</strong> — always resolve by natural key. A future full
+re-alignment of legacy ids would require an explicit-id re-dump; not needed for correctness.</p>
+</blockquote>
+<h3 id="6-coherence-fixes-this-adr-mandates">6 · Coherence fixes this ADR mandates</h3>
+<ul>
+<li><strong>Display map:</strong> add <code>CREATED</code> (<code>status-created</code>) + <code>SCORED</code> (<code>status-scored</code>) to
+<code>eventStatus.ts</code> <code>BASE</code> so all 8 states render correctly (no silent &quot;Planned&quot; fallback).</li>
+<li><strong>Validator-aware dropdown:</strong> the EventManager status <code>&lt;select&gt;</code> must offer <strong>only</strong>
+<code>fn_validate_event_transition</code>-permitted targets for the current status — not all 7 others.</li>
+<li><strong>Revert guard:</strong> widen <code>fn_revert_season_init</code> from <code>status&lt;&gt;'CREATED'</code> to <strong>&quot;no child tournaments&quot;</strong>
+so a childless-but-PLANNED season is still revertible/deletable.</li>
+</ul>
+<h3 id="7-admin-ui-surface-cert-prod-season-skeleton-promotion">7 · Admin-UI surface — CERT→PROD season-skeleton promotion</h3>
+<p>Promotion is an <strong>explicit, state-derived button</strong> on the SeasonManager season row (rendered only
+when <code>dualEnv</code>). The button is <strong>computed from PROD presence + childless state</strong>, never a click-latch
+(a latch would lie after reload or after a Remove-from-PROD):</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Season condition</th>
+<th>Control shown</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>not on PROD <strong>and</strong> all events childless</td>
+<td><strong><code>⬆ Promote to PROD</code></strong> (active)</td>
+<td>dispatch <code>promote-season.yml</code></td>
+</tr>
+<tr>
+<td>already present on PROD</td>
+<td><strong><code>✓ On PROD</code></strong> (inactive) + <strong><code>Remove from PROD</code></strong></td>
+<td>dispatch reverse (childless+not-active guard)</td>
+</tr>
+<tr>
+<td>any event has ≥1 tournament child</td>
+<td>button <strong>disabled</strong> + hint <em>&quot;past skeleton — promote results per-event&quot;</em></td>
+<td>(use <code>promote.yml</code> per event)</td>
+</tr>
+<tr>
+<td>not <code>dualEnv</code> (single env)</td>
+<td>hidden</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
+<pre><code class="language-mermaid">sequenceDiagram
+    actor Admin
+    participant UI as SeasonManager (browser)
+    participant EF as dispatch-workflow (Edge Fn, ADR-041)
+    participant GH as promote-season.yml
+    participant CERT as CERT DB
+    participant PROD as PROD DB
+    Admin-&gt;&gt;UI: click ⬆ Promote to PROD
+    UI-&gt;&gt;EF: requestDispatch('promote-season.yml', {code})
+    EF-&gt;&gt;GH: workflow_dispatch (server-side, no browser PAT)
+    GH-&gt;&gt;CERT: read season + events + scoring_config (childless check)
+    GH-&gt;&gt;PROD: INSERT with EXPLICIT ids + setval (guards: childless, not-active, schema-parity)
+    GH--&gt;&gt;UI: runs_url (poll/derive status)
+    UI-&gt;&gt;PROD: re-read presence → button flips to ✓ On PROD
+</code></pre>
+<ul>
+<li><strong>No PROD write credentials in the browser</strong> — reuse the existing <code>requestDispatch</code> → <code>dispatch-workflow</code>
+Edge Function path (same as the Re-ingest + regen-report buttons).</li>
+<li><strong>Create-flow convenience (optional):</strong> after the wizard commits on CERT, surface the same
+<code>⬆ Promote to PROD</code> affordance inline — one-shot if the admin wants — but the <strong>default lands on CERT
+for review</strong>; never &quot;create on both by default&quot; (that would break id-identity + skip the review gate).</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>Reopen/amend ADR-025 in place</strong> — rejected: it's a superseded record; resurrecting it muddies the
+registry. ADR-077 carries the doctrine forward and <em>narrows</em> the supersession instead.</li>
+<li><strong>Promote by re-running <code>fn_init_season</code> on PROD</strong> (no id copy) — rejected: the user requires
+<strong>identical ids</strong> across envs; a re-run allocates fresh PROD ids. Copy-with-explicit-ids wins,
+enabled by the CERT-first / receive-only invariant.</li>
+<li><strong>Keep the email/XML lifecycle as primary</strong> — rejected: URL ingestion is now the main path.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>The lifecycle, display, and dropdown finally agree with the validator (single source of truth).</li>
+<li>A reviewed empty season ships CERT→PROD→LOCAL with byte-identical ids; <code>id_prior_event</code> survives.</li>
+<li>Re-ingest replaces destructive rollback as the default correction; Telegram escape hatch retained.</li>
+<li>Hard dependency: <strong>CERT-first ingestion discipline</strong> — no event may be created directly on
+PROD/LOCAL, or id-identity breaks. (Confirmed: this is the operating model.)</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-07-11-adr-081">Amendment (2026-07-11, ADR-081)</h2>
+<p><code>fn_promote_season_skeleton</code> is <strong>slimmed to promote the season row + scoring_config only</strong> —
+its event-copy block (and the event <code>id_prior_event</code> resolution in <code>promote_season.py</code>) is
+removed. Event Create/Update/Delete for a season is now owned entirely by the CERT→PROD
+<strong>reconciler</strong> (<code>fn_mirror_events_to_prod</code>, ADR-081). Rationale: &quot;one-time bulk event copy&quot;
+(this skeleton path) and &quot;incremental delta&quot; (calendar promote) were the same operation at two
+points in time; unifying them removes the duplicate event-copy logic. Season-shell creation
+stays a deliberate manual go-live act; events populate on the next reconcile. pgTAP 48.2 is
+reworked to assert the events array is ignored; 48.4 (event prior-link resolution) retired,
+its coverage migrated to <code>51_prod_event_reconcile.sql</code> 51.1c. See ADR-081.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="076-pool-round-discard-and-listing-keep-rule.html">← ADR-076: Overlapping FTL listings — discard pool-only rounds, keep one listing per category, flag duplicates (UI-resolvable)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="078-gdpr-data-handling.html">→ ADR-078: GDPR Data Handling &amp; Data-Subject Rights</a></nav>
+<footer class="foot">Generated from <code>077-event-lifecycle-season-skeletons.md</code> · source SHA-256 <code>b696a2497b0b9d9c9f141cc75867998a456a8d2d67b16b036f1936d2a1cb7680</code></footer>
+</div></body></html>

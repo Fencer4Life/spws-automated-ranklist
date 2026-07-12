@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="011-artifact-release-pipeline.md">
+<meta name="adr-source-sha256" content="179629a862f22773bb426a43cf946739f95b191e911a7fb79a8064e1ad66f3bf">
+<title>ADR-011 · Three-Tier Artifact Release Pipeline with Schema Fingerprinting</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 011</p><h1>Three-Tier Artifact Release Pipeline with Schema Fingerprinting</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2025-03-22 (M7)</dd></div><div><dt>Source</dt><dd class=""><code>011-artifact-release-pipeline.md</code></dd></div><div><dt>Length</dt><dd class="">37 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2025-03-22 (M7)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>SQL migrations were being applied manually via curl to the Supabase Management API. Frontend deploys were decoupled from database deploys. PROD had no migration tracking, and there was no proof that PROD schema matched CERT or LOCAL. The team needed a build-once-deploy-twice promotion pipeline with auditable tracking.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Implement a three-tier promotion pipeline: LOCAL (Docker) → CERT (Supabase cloud) → PROD (Supabase cloud). The same SQL migration files, same git SHA, and same schema fingerprint flow through all tiers.</p>
+<p>Key mechanisms:</p>
+<ul>
+<li><strong>Schema fingerprint:</strong> MD5 hash of function definitions + table/column structure in the <code>public</code> schema. Computed locally after pgTAP passes, then verified on CERT and PROD after migration apply. Hard fail on mismatch.</li>
+<li><strong><code>deployed_migrations.json</code>:</strong> Repo-committed tracking file recording which migrations are applied to each cloud environment, updated via <code>[skip ci]</code> commits after each deploy.</li>
+<li><strong><code>release-manifest.json</code>:</strong> Audit trail with version, SHA, schema fingerprint, test counts, and per-environment deployment timestamps.</li>
+<li><strong><code>release.yml</code> workflow:</strong> Triggered by CI success on <code>main</code>. Four jobs: build (frontend + fingerprint), deploy-pages, deploy-cert (auto), deploy-prod (manual approval via GitHub environment protection).</li>
+<li><strong>Coherence checks:</strong> CI gate verifying version sync (pyproject.toml ↔ package.json), ADR file/spec parity, pgTAP assertion count, and migration↔documentation sync.</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li><strong><code>supabase db push</code></strong> — requires direct PostgreSQL port 5432, which is firewalled on Supabase cloud. Not viable.</li>
+<li><strong>GitHub Actions artifacts only</strong> — expire after 90 days, no permanent audit trail. Tracking would be lost.</li>
+<li><strong>Separate branches per environment</strong> (cert/prod branches) — splits commit history, creates merge conflicts, loses single-SHA traceability.</li>
+<li><strong>Database-stored migration tracking table</strong> — creates a chicken-and-egg problem: need migrations applied to track migrations. Also unreachable without Management API.</li>
+<li><strong>Docker image promotion</strong> — Supabase cloud is managed, cannot receive Docker containers. Only SQL can be applied remotely.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Every release is traceable by git SHA — <code>deployed_migrations.json</code> shows exactly what's on each environment.</li>
+<li>PROD only receives CERT-validated migrations — the same SQL files that passed pgTAP locally and were applied to CERT.</li>
+<li>Schema fingerprint proves structural parity across all three tiers.</li>
+<li>Rollback is forward-only: push a new corrective migration through the full pipeline.</li>
+<li><code>[skip ci]</code> commits from tracking updates do not trigger infinite pipeline loops.</li>
+<li>Frontend is built once in CI and deployed to GitHub Pages — not promoted from local dev builds (local uses <code>127.0.0.1:54321</code>).</li>
+<li>PROD deployment requires manual approval from the <code>Fencer4Life</code> reviewer in the GitHub <code>production</code> environment.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="010-age-category-by-birth-year.html">← ADR-010: Age Category by Birth Year (Cross-Category Carryover)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="012-sql-pre-deploy-snapshots.html">→ ADR-012: SQL-Level Pre-Deploy Snapshots for PROD</a></nav>
+<footer class="foot">Generated from <code>011-artifact-release-pipeline.md</code> · source SHA-256 <code>179629a862f22773bb426a43cf946739f95b191e911a7fb79a8064e1ad66f3bf</code></footer>
+</div></body></html>

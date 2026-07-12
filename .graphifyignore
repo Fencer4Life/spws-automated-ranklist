@@ -1,1 +1,10 @@
 doc/archive/
+
+# Generated documentation HTML is a build artifact, not source. The Markdown
+# sources ARE the graph corpus; their rendered .html twins (produced by
+# scripts/render_adrs.py and scripts/render_docs.py) duplicate that content and
+# must not be re-extracted into the knowledge graph. See ADR-082.
+# NOTE: these files are still committed to git (the ADR-082 source→artifact
+# contract) — this only keeps them out of graphify, never out of version control.
+doc/*.html
+doc/adr/*.html

@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="080-clean-roster-ftl-seeding.md">
+<meta name="adr-source-sha256" content="463bb5a5fe3206d57fba309b0881736dfee5ac2838157c4eeb395facfb461180">
+<title>ADR-080 · Clean-Roster FTL Seeding</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 080</p><h1>Clean-Roster FTL Seeding</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Proposed (draft — pending implementation)</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>080-clean-roster-ftl-seeding.md</code></dd></div><div><dt>Length</dt><dd class="">191 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed (draft — pending implementation)
+<strong>Date:</strong> 2026-07-04
+<strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-079</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-seed-format">1. Seed format</a></li><li class="depth-3"><a href="#2-mix-all-pool-seeding-interleave-snake-by-rank-across-the-10-sub-rankings">2. Mix-all pool seeding — interleave (&quot;snake by rank&quot;) across the 10 sub-rankings</a></li><li class="depth-4"><a href="#implementation-note-population-vs-ordering-2026-07-05">Implementation note — population vs ordering (2026-07-05)</a></li><li class="depth-3"><a href="#3-predicted-combined-de-brackets-t-4">3. Predicted combined DE brackets (T = 4)</a></li><li class="depth-3"><a href="#4-file-naming">4. File naming</a></li><li class="depth-3"><a href="#5-delivery-on-demand-email-to-the-organizer">5. Delivery — on-demand email to the organizer</a></li><li class="depth-3"><a href="#6-ingestion-unchanged-writers">6. Ingestion (unchanged writers)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>&quot;FTL&quot; is <strong>Fencing Time</strong> (results at fencingtimelive.com), the software the
+organizer runs. A domestic SPWS event is run as, per weapon, one <strong>mix-all pool
+round</strong> (two pool rounds, all competitors together — the <code>ELIMINACJE</code> file) feeding
+per-category <strong>DE brackets</strong> seeded from the final pool table. The DE brackets are
+what we scrape and rank. Today the scraped results expose only
+<code>name · place · country</code> (plus an FTL-internal per-entry id) — <strong>no birth date, no
+gender, no stable key</strong> — so the only scrape-back join key is the <strong>name</strong>, and
+bracket naming/category-combining is wildly inconsistent between events (a co-equal
+cause of the ~90 % automation ceiling).</p>
+<p>Registration (ADR-079) lets us <strong>generate the event's competition set ourselves</strong>
+with clean, exact, unique names — closing the loop so scrape-back is an exact-name
+match and the operator no longer hand-names 27 brackets differently each event.</p>
+<p>Verified empirically (2026-07-03, FTL v4.5.4, real PZS files in
+<code>doc/external_files/</code>): the native format is FIE XML <code>&lt;BaseCompetitionIndividuelle&gt;</code>
+(one file = one competition), and a round-trip test confirmed our per-fencer
+category marker and synthetic birthdate survive import → pools → DE → export.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Generate <strong>FIE XML seed files</strong> from all <strong>declared</strong> registrations (this system does
+not track payment completion digitally — see ADR-079 §4) and deliver them to the
+organizer on demand.</p>
+<h3 id="1-seed-format">1. Seed format</h3>
+<ul>
+<li>One <code>&lt;BaseCompetitionIndividuelle&gt;</code> XML <strong>per competition</strong>: the mix-all pool per
+weapon + one per gender×category DE bracket (single or predicted-combined).</li>
+<li><code>&lt;Tireur&gt;</code> attributes: <code>Nom</code>, <code>Prenom</code>, <code>Sexe</code>, <code>Nation=&quot;POL&quot;</code>, <code>ID</code>, <code>Classement</code>
+(seed). <code>Club=&quot;&quot;</code> and <code>Licence=&quot;&quot;</code> (not collected). <code>Lateralite</code> omitted (FTL
+accepts import without it).</li>
+<li><strong>Canonical name form:</strong> <code>Nom</code> = surname in <strong>UPPERCASE</strong>, <code>Prenom</code> = given name in
+<strong>Title case</strong> (e.g. <code>Nom=&quot;KOWALSKI&quot; Prenom=&quot;Jan (2)&quot;</code>) — the same casing used in the
+entry list and the ranklist; normalised on export (fixes legacy all-caps given names).</li>
+<li><strong>Omit <code>DateNaissance</code>.</strong> With a birth date present, FTL infers/enforces an age
+category; without it FTL leaves the age unset for the operator. The authoritative
+BY lives only in our DB (ADR-079); the seed carries none.</li>
+<li><strong>Per-fencer category marker <code>(N)</code></strong> (digit 0–4) appended to <code>Prenom</code> → renders
+and scrapes back as <code>NOM Prenom (N)</code>; <code>python/scrapers/ftl.py</code> already strips it.
+<strong>Gender is NOT in the marker</strong> — it is the structural <code>Sexe</code> attribute and the
+bracket itself; the K/M prefix idea is dropped. Since DOB is omitted, <code>(N)</code> is the
+operator's only visible category cue when splitting the mix-all pool (gender read
+from FTL's <code>Sexe</code> column). The marker is a cross-check only — ingestion splits by
+the authoritative declared BY (<code>age_split.py</code>), so it is not load-bearing.</li>
+</ul>
+<h3 id="2-mix-all-pool-seeding-interleave-snake-by-rank-across-the-10-sub-rankings">2. Mix-all pool seeding — interleave (&quot;snake by rank&quot;) across the 10 sub-rankings</h3>
+<p>The mix-all pool file lists every competitor of one weapon (both genders, all
+categories). The seeding order — written to <code>Classement</code> (1..N) and used as the
+<code>&lt;Tireur&gt;</code> element order — is a <strong>round-robin by rank position</strong> across the ten
+domestic sub-rankings, in this <strong>fixed</strong> order:</p>
+<p><code>FV0, FV1, FV2, FV3, FV4, MV0, MV1, MV2, MV3, MV4</code></p>
+<p>Exact algorithm:</p>
+<pre><code>seed = 1
+for r in 1, 2, 3, …:                       # rank position within each sub-ranking
+    for sub in [FV0,FV1,FV2,FV3,FV4,MV0,MV1,MV2,MV3,MV4]:   # this fixed order
+        if sub has a fencer at rank r:      # empty / exhausted sub-rankings skipped
+            emit(fencer, Classement = seed)
+            seed = seed + 1
+</code></pre>
+<p>In words: lay down the <strong>1st-placed</strong> fencer of every live sub-ranking (all five
+women's categories first, then all five men's), then every <strong>2nd-placed</strong> fencer,
+and so on until all ten sub-rankings are exhausted — so category leaders are spread
+evenly across the pool seeding. The standings are the current-season domestic
+ranking <code>fn_ranking_ppw(weapon, gender, category, season)</code>, joined to <code>tbl_fencer</code>
+for the <strong>canonical name</strong> (§1) + birth year (birth year is used only to compute the
+<code>(N)</code> marker; it is <strong>not</strong> emitted as <code>DateNaissance</code>).</p>
+<p>Worked example — EPEE, season 2025-2026, real LOCAL data, first seeds:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Seed (<code>Classement</code>)</th>
+<th>Sub-ranking</th>
+<th>Fencer (canonical + <code>(N)</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>FV0 #1</td>
+<td><code>PĘCZEK Sandra (0)</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>FV1 #1</td>
+<td><code>KAMIŃSKA Gabriela (1)</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>FV2 #1</td>
+<td><code>WASILCZUK Beata (2)</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>FV4 #1</td>
+<td><code>BORKOWSKA Halina (4)</code>  ← FV3 empty, <strong>skipped</strong></td>
+</tr>
+<tr>
+<td>5</td>
+<td>MV0 #1</td>
+<td><code>SPŁAWA-NEYMAN Maciej (0)</code></td>
+</tr>
+<tr>
+<td>6–9</td>
+<td>MV1…MV4 #1</td>
+<td>first-placed men of each category</td>
+</tr>
+<tr>
+<td>10</td>
+<td>FV0 #2</td>
+<td><code>SZMAJDZIŃSKA Katarzyna (0)</code></td>
+</tr>
+<tr>
+<td>11</td>
+<td>FV1 #2</td>
+<td><code>SAMECKA-NACZYŃSKA Martyna (1)</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Validated end-to-end on LOCAL: the EPEE mix-all resolves to <strong>119 fencers, 0 NULL
+birth years, FV3 (empty) correctly skipped</strong>.</p>
+<h4 id="implementation-note-population-vs-ordering-2026-07-05">Implementation note — population vs ordering (2026-07-05)</h4>
+<p>The 119-fencer validation above used the <strong>full season ranking</strong> as the population
+(a pre-registration proof: registration data did not yet exist). In production the
+<strong>population is the event's declared registrations</strong> (<code>tbl_registration</code>, every row,
+no payment gate — ADR-079 §4 / user 2026-07-04: <em>&quot;the correct list of names which
+declared intent to participate&quot;</em>); the ranking supplies only the <strong>ordering</strong> inside
+each sub-ranking. So a registrant who is matched + ranked seeds in <code>fn_ranking_ppw</code>
+rank order; an unranked registrant (a brand-new fencer, or matched-but-never-scored)
+appends after the ranked ones, ordered by registration timestamp (<code>ts_created</code>) for
+a deterministic result. The <code>(N)</code> marker is derived from the registration's
+<strong>declared</strong> birth year (read-only invariant), not <code>tbl_fencer</code>'s. Built as
+<code>ftl_seed_export.assemble_mixall_subrankings</code> + <code>build_event_mixall_files</code> (pure) and
+<code>ftl_seed_export_db.FtlSeedExporter</code> (Supabase glue).</p>
+<p><strong>Reference artefacts — DO NOT LOSE.</strong> The validated, ready-to-import example files
+live in the repo at:</p>
+<ul>
+<li><code>doc/external_files/FTL_SRC/SPWS_ppw_epee_mixall.xml</code> — with <code>Categorie=&quot;V&quot;</code>;</li>
+<li><code>doc/external_files/FTL_SRC/SPWS_ppw_epee_mixall_noCat.xml</code> — <code>Categorie</code> omitted;</li>
+<li><code>doc/external_files/FTL_SRC/SPWS_ppw_epee_mixall_noBY.xml</code> — <strong>the chosen variant</strong>
+(no <code>DateNaissance</code>, §1), 119 <code>&lt;Tireur&gt;</code> in the interleave order above.</li>
+</ul>
+<p>The round-trip that proved the <code>(N)</code> marker + synthetic birthdate survive import →
+pools → DE → export is captured in <code>doc/external_files/FTL_OUT/</code> (FTL v4.5.4). The
+generator is the <code>fn_ranking_ppw</code> + <code>tbl_fencer</code> join implementing the algorithm
+above.</p>
+<h3 id="3-predicted-combined-de-brackets-t-4">3. Predicted combined DE brackets (T = 4)</h3>
+<p>Per weapon × gender (<strong>genders never merged</strong>), order V0→V4, skip empties,
+accumulate left-to-right; close a bracket once its running count ≥ <strong>T = 4</strong>; fold a
+trailing sub-T bracket into the previous one. Yields adjacent, ascending combined
+brackets matching the organizers' observed conventions (<code>v0v1</code>, <code>v3v4</code>). Combining
+is ultimately an on-the-day decision, so predictions may be overridden — but
+ingestion splits <em>any</em> combined bracket by BY regardless (<code>split_combined_results</code>,
+ADR-024), so a wrong prediction is self-correcting.</p>
+<h3 id="4-file-naming">4. File naming</h3>
+<p><code>&lt;season&gt;_&lt;eventcode&gt;_&lt;weapon&gt;_&lt;scope&gt;.xml</code> — <code>&lt;weapon&gt;</code> = <code>E|F|S</code> (FIE <code>Arme</code>);
+<code>&lt;scope&gt;</code> = <code>mixall</code> (both genders, all cats) or <code>&lt;G&gt;-&lt;cat&gt;</code> for a DE bracket
+(<code>M-V2</code>, combined <code>M-V0V1</code>, <code>F-V3V4</code>). Root <code>ID</code> = the filename stem. Examples:
+<code>SPWS-2025-2026_PPW5_E_mixall.xml</code>, <code>SPWS-2025-2026_PPW5_E_M-V0V1.xml</code>.</p>
+<h3 id="5-delivery-on-demand-email-to-the-organizer">5. Delivery — on-demand email to the organizer</h3>
+<p><code>tbl_event.txt_organizer_email</code> holds the address (from the invitation letter,
+admin-entered). A single action <strong><code>send_seed_to_organizer(event)</code></strong> — generate-at-
+send from all <strong>declared</strong> registrations (no payment gate — see ADR-079 §4) → email
+the zip → stamp <code>ts_ftl_sent</code> — is fired by three triggers (DRY, one implementation):</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>Actor</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Manual button in <code>EventManager.svelte</code> (&quot;Organizator&quot; section)</td>
+<td>Admin only (GoTrue+MFA; fn REVOKEd from <code>anon</code>)</td>
+<td>re-sendable any time</td>
+</tr>
+<tr>
+<td>Cron when <code>dt_registration_deadline</code> passes</td>
+<td>System</td>
+<td>closing roster; reuses daily-cron infra</td>
+</tr>
+<tr>
+<td>Telegram <code>send &lt;EVENT_CODE&gt; participants</code> (doc/gas/Code.gs)</td>
+<td>Allowlisted user (≈ admin)</td>
+<td>phone-friendly day-of trigger; renamed from an earlier <code>/seed</code> draft to avoid colliding with the existing DB-backup <code>export-seed</code> command</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Generate-at-send</strong> (never a pre-stored attachment) keeps every send fresh despite
+late/day-of entries. Requires a new email/SMTP capability (current outbound is
+Telegram alerts only). The roster is personal data sent to a recipient (organizer),
+recorded in the ADR-078 ROPA.</p>
+<p><strong>UI constraint (add-only).</strong> The manual button + the new event fields
+(<code>txt_organizer_email</code>, <code>ts_ftl_sent</code>, fee tiers, <code>url_entry_list</code>,
+<code>bool_use_spws_registration</code>) are added to the existing <code>EventManager.svelte</code> (the
+Event Edit Form) as an <strong>isolated new section</strong> — no existing field, binding, RPC
+call, or layout is altered, reordered, or removed; existing <code>vitest</code> + <code>svelte-check</code>
+stay green before and after.</p>
+<h3 id="6-ingestion-unchanged-writers">6. Ingestion (unchanged writers)</h3>
+<p>Scrape-back matches the exact seeded name → the registration's declared BY →
+existing reconciliation (ADR-079 §1). Per-category DE brackets give final places
+directly; the mix-all pool is pools-only and not ranked.</p>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>The seed exporter is a <strong>new</strong> <code>python/pipeline</code> module — <code>export_seed.py</code> is the
+unrelated ADR-036 whole-database backup exporter (confirmed 2026-07-04; also owns the
+<code>export-seed</code> Telegram command, hence the FTL-seed Telegram trigger is named
+<code>send &lt;code&gt; participants</code> instead). Reuses <code>age_split.py</code> splitting (<code>split_combined_results</code>,
+<code>birth_year_to_vcat</code>) and <code>fuzzy_match.py</code>'s <code>canonicalize_scraped_name</code>.</li>
+<li>Standardised naming removes the free-text bracket-parsing failure class; clean
+round-trip removes BY estimation for registered fencers.</li>
+<li>Roll out <strong>pilot-first</strong> (one upcoming PPW, validate register→seed→FTL→scrape→
+ranklist) before enabling the season; per-event <code>bool_use_spws_registration</code>
+allows event-by-event migration off competit.pl.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="references">References</h2>
+<ul>
+<li>ADR-078 (GDPR / organizer recipient), ADR-079 (registration/identity), ADR-024
+(combined-category splitting), ADR-056 (BY→V-cat), ADR-065 (FTL marker), ADR-066
+(min-participants/walkover), ADR-027/036 (seed export), ADR-030 (registration URL).</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="079-event-self-registration-identity.html">← ADR-079: Event Self-Registration &amp; Identity Resolution</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="081-cert-prod-event-reconciler.html">→ ADR-081: CERT→PROD Event Reconciler</a></nav>
+<footer class="foot">Generated from <code>080-clean-roster-ftl-seeding.md</code> · source SHA-256 <code>463bb5a5fe3206d57fba309b0881736dfee5ac2838157c4eeb395facfb461180</code></footer>
+</div></body></html>

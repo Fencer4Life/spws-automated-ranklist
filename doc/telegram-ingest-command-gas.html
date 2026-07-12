@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="doc-source" content="telegram-ingest-command-gas.md">
+<meta name="doc-source-sha256" content="c538906b0fb34f74d54456b734eaad1ec083d3358039f437c139ea5ae725c403">
+<title>Telegram `ingest` command — how to update the GAS script · SPWS</title>
+<link rel="stylesheet" href="adr/assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Telegram <code>ingest</code> command — how to update the GAS script</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>telegram-ingest-command-gas.md</code></dd></div><div><dt>Length</dt><dd>89 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#1-log-into-the-right-google-account">1. Log into the right Google account</a></li><li class="depth-2"><a href="#2-open-apps-script-find-the-project">2. Open Apps Script &amp; find the project</a></li><li class="depth-2"><a href="#3-replace-the-whole-code-gs">3. Replace the whole `Code.gs`</a></li><li class="depth-2"><a href="#4-test">4. Test</a></li><li class="depth-2"><a href="#what-changed-for-verification">What changed (for verification)</a></li><li class="depth-2"><a href="#troubleshooting">Troubleshooting</a></li></ol></nav>
+  <main><section class="section-card detail"><p>Adds <strong><code>ingest &lt;prefix&gt; &lt;url&gt; [cert|prod]</code></strong> to the Telegram bot: re-ingest one event from its FTL URL on
+CERT (or PROD), populate <code>url_results</code>, and get the staging report(s) back in the chat. Then review and
+<code>promote</code>. The bare <code>ingest</code> (no args) keeps its old &quot;process emailed staging files&quot; behaviour.</p>
+<p><strong>The full, ready-to-paste script is in the repo:</strong> <a href="gas/Code.gs"><code>doc/gas/Code.gs</code></a>. It is the <em>entire</em> GAS
+project with the change already applied — you replace your whole <code>Code.gs</code> with it. <strong>No new Script
+Properties</strong> are needed (it reuses <code>GITHUB_PAT</code>, <code>GITHUB_REPO</code>, <code>SUPABASE_ACCESS_TOKEN</code>/<code>SUPABASE_PROJECT_REF</code>,
+<code>SUPABASE_PROD_REF</code> that your existing commands already use), and <code>ingest-event.yml</code> is already on <code>main</code>.</p>
+<pre><code>ingest PPW5-2025-2026 https://www.fencingtimelive.com/tournaments/eventSchedule/&lt;uuid&gt;  cert
+       └─ full event code ─┘ └──────────────── FTL eventSchedule URL ──────────────┘  └target (opt, default cert)┘
+</code></pre>
+<p>Use the <strong>full event code</strong> (e.g. <code>PPW5-2025-2026</code>), not just <code>PPW5</code>. The command dispatches the workflow
+directly (like <code>promote</code>) and does <strong>not</strong> call the Supabase Management API, so it never depends on
+<code>SUPABASE_ACCESS_TOKEN</code>. Arguments may be on one line or split across lines (newlines count as spaces) — but
+keep it to <strong>one</strong> <code>ingest</code> per message.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="1-log-into-the-right-google-account">1. Log into the right Google account</h2>
+<ol>
+<li>Open <a href="https://accounts.google.com">accounts.google.com</a> on a <strong>desktop browser</strong> (the Apps Script editor
+barely works on mobile).</li>
+<li>Sign in with the Google account that runs the SPWS automation — the one that receives the result emails /
+owns the bot wiring (ADR-023 set the script up there, e.g. <code>spws.weterani@gmail.com</code>). Switch account via
+the top-right avatar if you have several.</li>
+</ol>
+</section>
+<section class="section-card detail"><h2 id="2-open-apps-script-find-the-project">2. Open Apps Script &amp; find the project</h2>
+<ol>
+<li>Go to <strong><a href="https://script.google.com">script.google.com</a></strong>.</li>
+<li>Left sidebar → <strong>My Projects</strong> — the list of all Apps Script projects this account owns.</li>
+<li>Identify the right one:
+<ul>
+<li>name like <strong>&quot;SPWS&quot; / &quot;Ranklist&quot; / &quot;Telegram&quot; / &quot;Ingestion&quot;</strong>;</li>
+<li>not sure? open a candidate and <strong>Ctrl-F</strong> for <code>checkTelegramCommands</code> or <code>promote</code> — the right project has them;</li>
+<li>or open <strong>⏰ Triggers</strong> (clock icon, left sidebar) — the right project has time-based triggers running
+<strong>every 5 minutes</strong> (<code>checkEmailForResults</code> + <code>checkTelegramCommands</code>).</li>
+<li>If <code>script.google.com</code> shows nothing, the script may be <strong>bound to a Google Sheet</strong>: open that Sheet →
+<strong>Extensions → Apps Script</strong>.</li>
+</ul>
+</li>
+</ol>
+</section>
+<section class="section-card detail"><h2 id="3-replace-the-whole-code-gs">3. Replace the whole <code>Code.gs</code></h2>
+<ol>
+<li>In the editor, open the file that holds <code>checkTelegramCommands</code> (usually <strong><code>Code.gs</code></strong>).</li>
+<li>Open <a href="gas/Code.gs"><code>doc/gas/Code.gs</code></a> from this repo → <strong>Select All (Ctrl-A) → Copy</strong>.</li>
+<li>Back in the Apps Script editor: click in the code, <strong>Select All (Ctrl-A) → Paste</strong> (overwrite everything).</li>
+<li><strong>Save</strong> (Ctrl-S, or the 💾 icon).</li>
+</ol>
+<p>No redeploy needed — the existing 5-minute trigger picks it up. (Only if your project is a <em>web-app</em>
+deployment: Deploy → Manage deployments → redeploy the head.)</p>
+</section>
+<section class="section-card detail"><h2 id="4-test">4. Test</h2>
+<p>From the Telegram chat:</p>
+<pre><code>ingest PPW4 https://fencingtimelive.com/tournaments/eventSchedule/D586C1250E8C41D3BB9B9E5772CB998F cert
+</code></pre>
+<p>You get <code>⏳ Event Re-ingest Triggered</code>, then ~1 min later the full <code>.md</code> + <code>.diff.md</code> staging documents.
+Review them, then <code>promote PPW4</code>.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="what-changed-for-verification">What changed (for verification)</h2>
+<p>Only two blocks differ from the previous script — everything else is byte-identical.</p>
+<p><strong>(a) <code>case 'ingest':</code></strong> is now overloaded — <code>ingest &lt;EVENT-CODE&gt; &lt;url&gt; [cert|prod]</code> derives the season-end
+year from the code and dispatches <code>ingest-event.yml</code> with <code>{event_code, season_end_year, target, url_event}</code>
+<strong>directly</strong> (no Management API call — independent of <code>SUPABASE_ACCESS_TOKEN</code>). A bare <code>ingest</code> still dispatches
+<code>ingest.yml</code> (emailed-staging path).</p>
+<p><strong>(b) Help → Pipeline</strong> — the <code>ingest</code> entry now documents <code>ingest &lt;prefix&gt; &lt;url&gt; [cert|prod]</code> plus the
+bare-<code>ingest</code> legacy line.</p>
+</section>
+<section class="section-card detail"><h2 id="troubleshooting">Troubleshooting</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Reply / symptom</th>
+<th>Cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Usage: ingest &lt;EVENT-CODE&gt; …</code></td>
+<td>you gave a bare prefix, not the full code</td>
+<td>use the full code, e.g. <code>PPW5-2025-2026</code></td>
+</tr>
+<tr>
+<td><code>Error: {&quot;message&quot;:&quot;Unauthorized&quot;}</code></td>
+<td><code>SUPABASE_ACCESS_TOKEN</code> Script Property expired/missing — breaks the <strong>data-read</strong> commands (<code>status</code>/<code>season</code>/…). <code>ingest</code>/<code>promote</code> don't need it.</td>
+<td>set a fresh token: supabase.com/dashboard/account/tokens → add to Script Properties</td>
+</tr>
+<tr>
+<td><code>GitHub dispatch failed: ... 401/403</code></td>
+<td><code>GITHUB_PAT</code> expired / missing Actions: read+write</td>
+<td>rotate per <a href="cicd-operations-manual.html">cicd-operations-manual §1.4</a></td>
+</tr>
+<tr>
+<td><code>... 404</code></td>
+<td><code>GITHUB_REPO</code> wrong</td>
+<td>must be <code>Fencer4Life/spws-automated-ranklist</code></td>
+</tr>
+<tr>
+<td><code>... 422</code></td>
+<td><code>ingest-event.yml</code> not on the default branch</td>
+<td>confirm the workflow is on <code>main</code></td>
+</tr>
+<tr>
+<td>No staging docs arrive</td>
+<td>the run failed, or <code>TELEGRAM_*</code> secrets unset on the runner</td>
+<td>open the Actions run; verify repo secrets <code>TELEGRAM_BOT_TOKEN</code>/<code>TELEGRAM_CHAT_ID</code></td>
+</tr>
+<tr>
+<td>Nothing happens</td>
+<td>command not reaching the handler</td>
+<td>the script overloads the existing <code>ingest</code> case — make sure you replaced the <strong>whole</strong> <code>Code.gs</code></td>
+</tr>
+</tbody>
+</table></div>
+</section></main>
+</div>
+<nav class="pager" aria-label="Documentation navigation"><a class="registry" href="index.html">← Documentation index</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
+<footer class="foot">Generated from <code>telegram-ingest-command-gas.md</code> · source SHA-256 <code>c538906b0fb34f74d54456b734eaad1ec083d3358039f437c139ea5ae725c403</code></footer>
+</div></body></html>

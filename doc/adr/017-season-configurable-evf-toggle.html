@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="017-season-configurable-evf-toggle.md">
+<meta name="adr-source-sha256" content="61ac5a6d243081c0262143c2f4bbb4d2a79a466063af98a705e4d6e61b6f68ff">
+<title>ADR-017 · Season-Configurable EVF Toggle</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 017</p><h1>Season-Configurable EVF Toggle</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-03-29 (M9)</dd></div><div><dt>Source</dt><dd class=""><code>017-season-configurable-evf-toggle.md</code></dd></div><div><dt>Length</dt><dd class="">130 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2026-03-29 (M9)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#ui-behavior-matrix">UI Behavior Matrix</a></li><li class="depth-3"><a href="#admin-control">Admin Control</a></li><li class="depth-3"><a href="#toggle-visibility-3-components">Toggle Visibility (3 components)</a></li><li class="depth-3"><a href="#default-mode-on-state-transitions">Default Mode on State Transitions</a></li><li class="depth-3"><a href="#calendarview-scope-filter-logic">CalendarView Scope Filter Logic</a></li><li class="depth-3"><a href="#v0-category-guard">V0 Category Guard</a></li><li class="depth-2"><a href="#db-schema">DB Schema</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#test-coverage">Test Coverage</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The web UI includes PPW/+EVF (Kadra) toggle buttons in three places:</p>
+<ol>
+<li><strong>FilterBar</strong> (Ranklist view) — switches between PPW-only and Kadra ranking modes</li>
+<li><strong>CalendarView</strong> — scope filter showing PPW-only or all (including international) events</li>
+<li><strong>DrilldownModal</strong> — fencer detail toggle between domestic and domestic+international results</li>
+</ol>
+<p>International ranking data (PEW, MEW, MSW, PSW tournaments) is not yet populated for any season. Showing the +EVF toggle when there is no international data is confusing for users. However, removing the toggle code entirely would require re-implementing it when international data becomes available.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Add a boolean flag <code>bool_show_evf_toggle</code> (DEFAULT FALSE) to <code>tbl_scoring_config</code>. This flag controls whether the PPW/+EVF toggle is visible in the web UI for the associated season.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="ui-behavior-matrix">UI Behavior Matrix</h2>
+<h3 id="admin-control">Admin Control</h3>
+<p>The <code>show_evf_toggle</code> flag is managed through the <strong>SeasonManager edit form</strong> (not ScoringConfigEditor):</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Checkbox visible?</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Create new season</td>
+<td>No</td>
+<td>Flag defaults to FALSE in DB via trigger-created <code>tbl_scoring_config</code> row</td>
+</tr>
+<tr>
+<td>Edit existing season</td>
+<td>Yes</td>
+<td>Checkbox reflects current DB value; saves via <code>fn_import_scoring_config</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Data flow:</strong> SeasonManager → <code>onfetchevf(seasonId)</code> fetches current value → checkbox bound to <code>draftShowEvf</code> → on save, <code>onupdate</code> passes value to App.svelte → <code>handleUpdateSeason</code> calls <code>saveScoringConfig</code> with updated flag → <code>refreshEvfToggle()</code> updates UI state.</p>
+<h3 id="toggle-visibility-3-components">Toggle Visibility (3 components)</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th><code>show_evf_toggle</code></th>
+<th>FilterBar</th>
+<th>CalendarView</th>
+<th>DrilldownModal</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FALSE</code> (default)</td>
+<td>PPW/Kadra toggle <strong>hidden</strong>; mode locked to PPW</td>
+<td>Scope filter buttons <strong>hidden</strong></td>
+<td>PPW/Kadra toggle <strong>hidden</strong>; mode locked to PPW</td>
+</tr>
+<tr>
+<td><code>TRUE</code></td>
+<td>PPW/Kadra toggle <strong>visible</strong>; PPW selected by default</td>
+<td>Scope filter buttons <strong>visible</strong>; PPW selected by default</td>
+<td>PPW/Kadra toggle <strong>visible</strong>; PPW selected by default</td>
+</tr>
+</tbody>
+</table></div>
+<p>Implementation: each component receives a <code>showEvfToggle</code> boolean prop; toggles wrapped in <code>{#if showEvfToggle}</code>.</p>
+<h3 id="default-mode-on-state-transitions">Default Mode on State Transitions</h3>
+<p>PPW is <strong>always</strong> the default mode. The mode resets to PPW on every state transition to prevent stale KADRA/+EVF views:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>What happens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Page load</td>
+<td><code>refreshEvfToggle()</code> → mode forced to PPW</td>
+</tr>
+<tr>
+<td>Season change</td>
+<td><code>handleSeasonChange()</code> → <code>refreshEvfToggle()</code> → mode forced to PPW</td>
+</tr>
+<tr>
+<td>Admin saves scoring config</td>
+<td><code>handleSaveScoringConfig()</code> → <code>refreshEvfToggle()</code> → mode forced to PPW</td>
+</tr>
+<tr>
+<td>Admin saves season (with toggle change)</td>
+<td><code>handleUpdateSeason()</code> → <code>refreshEvfToggle()</code> → mode forced to PPW</td>
+</tr>
+<tr>
+<td>Toggle disabled while user is on KADRA</td>
+<td><code>refreshEvfToggle()</code> → mode forced to PPW (toggle disappears)</td>
+</tr>
+<tr>
+<td>Toggle enabled while user is on PPW</td>
+<td>Toggle appears, PPW remains selected</td>
+</tr>
+</tbody>
+</table></div>
+<p>Implementation in <code>App.svelte</code>:</p>
+<pre><code class="language-typescript">async function refreshEvfToggle() {
+  // ... fetch config, set showEvfToggle ...
+  if (filters.mode === 'KADRA') {
+    filters = { ...filters, mode: 'PPW' }
+  }
+}
+</code></pre>
+<h3 id="calendarview-scope-filter-logic">CalendarView Scope Filter Logic</h3>
+<p>The CalendarView has its own local <code>scopeFilter</code> state (<code>'ppw' | 'all'</code>), independent of the Ranklist <code>filters.mode</code>. Filtering logic:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th><code>showEvfToggle</code></th>
+<th><code>scopeFilter</code></th>
+<th>Events shown</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FALSE</code></td>
+<td>(any — buttons hidden)</td>
+<td><strong>PPW-only</strong> — international events (<code>bool_has_international=true</code>) filtered out</td>
+</tr>
+<tr>
+<td><code>TRUE</code></td>
+<td><code>'ppw'</code> (default)</td>
+<td><strong>PPW-only</strong> — international events filtered out</td>
+</tr>
+<tr>
+<td><code>TRUE</code></td>
+<td><code>'all'</code> (user clicks +EVF)</td>
+<td><strong>All events</strong> — including international</td>
+</tr>
+</tbody>
+</table></div>
+<p>Implementation:</p>
+<pre><code class="language-typescript">if (!showEvfToggle || scopeFilter === 'ppw') {
+  result = result.filter((e) =&gt; !e.bool_has_international)
+}
+</code></pre>
+<p>Key: when the toggle is hidden, the calendar <strong>never</strong> shows international events regardless of internal state. This prevents data leakage when the admin has intentionally disabled the toggle.</p>
+<h3 id="v0-category-guard">V0 Category Guard</h3>
+<p>When <code>showEvfToggle=TRUE</code> and the user selects the V0 age category (youngest), the +EVF option is disabled in FilterBar and DrilldownModal because V0 has no international events. This guard is independent of the season config flag.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="db-schema">DB Schema</h2>
+<pre><code class="language-sql">ALTER TABLE tbl_scoring_config
+  ADD COLUMN bool_show_evf_toggle BOOLEAN NOT NULL DEFAULT FALSE;
+</code></pre>
+<p>Exposed via:</p>
+<ul>
+<li><code>fn_export_scoring_config(p_id_season)</code> → <code>{ ..., &quot;show_evf_toggle&quot;: false }</code></li>
+<li><code>fn_import_scoring_config(p_config)</code> → reads <code>show_evf_toggle</code> key, defaults to FALSE if absent</li>
+</ul>
+<p>Migration: <code>20260329000002_evf_toggle_config.sql</code></p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li><strong>Remove toggle code entirely</strong> — Simplifies UI but loses working code. Re-implementation required later. Reduces test coverage surface.</li>
+<li><strong>Environment variable / feature flag</strong> — Not per-season granular. A global flag would hide the toggle even for seasons that have international data.</li>
+<li><strong>Auto-detect from data</strong> — Show toggle when <code>bool_has_international = TRUE</code> exists for any event in the season. Elegant but fragile (depends on data state, not admin intent).</li>
+<li><strong>Checkbox in ScoringConfigEditor</strong> — Initially implemented there, but relocated to SeasonManager edit form because the toggle is a season-level visibility concern, not a scoring parameter. Keeps the scoring config editor focused on formula tuning.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>SQL backend (<code>fn_ranking_kadra</code>, <code>vw_ranking_kadra</code>) remains untouched — no scoring logic changes</li>
+<li>Frontend toggle rendering gated by <code>{#if showEvfToggle}</code> — minimal code change, all paths preserved</li>
+<li>Existing toggle tests adapted to pass <code>showEvfToggle: true</code> prop — coverage unchanged</li>
+<li>New pgTAP tests (9.37–9.39) verify column existence + export/import round-trip</li>
+<li>New vitest tests (8.79–8.83) verify toggle visibility gating + SeasonManager checkbox behavior</li>
+<li>CalendarView always defaults to PPW scope — international events never leak when toggle is disabled</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="test-coverage">Test Coverage</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Suite</th>
+<th>What it verifies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>9.37</td>
+<td>pgTAP</td>
+<td>Column exists, default is FALSE</td>
+</tr>
+<tr>
+<td>9.38</td>
+<td>pgTAP</td>
+<td><code>fn_export_scoring_config</code> includes <code>show_evf_toggle</code> key</td>
+</tr>
+<tr>
+<td>9.39</td>
+<td>pgTAP</td>
+<td><code>fn_import_scoring_config</code> round-trips <code>show_evf_toggle=true</code></td>
+</tr>
+<tr>
+<td>8.79</td>
+<td>vitest</td>
+<td>CalendarView: <code>showEvfToggle=false</code> → no scope filter buttons</td>
+</tr>
+<tr>
+<td>8.80</td>
+<td>vitest</td>
+<td>CalendarView: <code>showEvfToggle=true</code> → scope filter buttons present</td>
+</tr>
+<tr>
+<td>8.81</td>
+<td>vitest</td>
+<td>SeasonManager: checkbox in edit form only (not create), unchecked by default</td>
+</tr>
+<tr>
+<td>8.82</td>
+<td>vitest</td>
+<td>SeasonManager: checkbox checked when <code>onfetchevf</code> returns true</td>
+</tr>
+<tr>
+<td>8.83</td>
+<td>vitest</td>
+<td>SeasonManager: save calls <code>onupdate</code> with <code>showEvf=true</code> after toggle</td>
+</tr>
+<tr>
+<td>6.10</td>
+<td>vitest</td>
+<td>FilterBar: toggle hidden when <code>showEvfToggle=false</code>, visible when true</td>
+</tr>
+<tr>
+<td>6.12</td>
+<td>vitest</td>
+<td>DrilldownModal: toggle hidden when <code>showEvfToggle=false</code></td>
+</tr>
+</tbody>
+</table></div>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="016-supabase-auth-totp-mfa.html">← ADR-016: Supabase Auth with TOTP MFA for Admin Access</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="018-rolling-score.html">→ ADR-018: Rolling Score for Active Season</a></nav>
+<footer class="foot">Generated from <code>017-season-configurable-evf-toggle.md</code> · source SHA-256 <code>61ac5a6d243081c0262143c2f4bbb4d2a79a466063af98a705e4d6e61b6f68ff</code></footer>
+</div></body></html>

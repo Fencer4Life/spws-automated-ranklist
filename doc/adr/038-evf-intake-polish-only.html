@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="038-evf-intake-polish-only.md">
+<meta name="adr-source-sha256" content="db66f6ba037955af03d790d3b7cabce93df0ad88ef33f8ee20ecc71bf812b1bb">
+<title>ADR-038 · EVF-Organized Tournaments Ingest POL-Only Rows</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 038</p><h1>EVF-Organized Tournaments Ingest POL-Only Rows</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-20 <strong>Relates to:</strong> ADR-019 (Domestic-Only Fencer Seed), ADR-020 (Seed Generator Domestic Auto-Create), ADR-025 (Event-Centric Ingestion)</dd></div><div><dt>Source</dt><dd class=""><code>038-evf-intake-polish-only.md</code></dd></div><div><dt>Length</dt><dd class="">57 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2026-04-20
+<strong>Relates to:</strong> ADR-019 (Domestic-Only Fencer Seed), ADR-020 (Seed Generator Domestic Auto-Create), ADR-025 (Event-Centric Ingestion)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-06-13-stage-0-reconciliation-skips-international-events">Amendment (2026-06-13) — Stage-0 reconciliation skips international events</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>ADR-019 and ADR-020 established the principle that <code>tbl_fencer</code> is the SPWS domestic member pool: domestic (PPW/MPW) tournaments may auto-create unknown fencers, international (PEW/MEW/MSW) tournaments may not.</p>
+<p>The live pipeline (<code>python/matcher/pipeline.py:resolve_tournament_results</code>) implements this rule only for the <strong>UNMATCHED</strong> tier: international unmatched fencers are skipped, no fencer creation. But the pipeline still passes <strong>AUTO_MATCHED</strong> and <strong>PENDING</strong> tiers through for international tournaments — including non-Polish scraped names that fuzzy-glue to Polish SPWS fencers at sub-threshold scores.</p>
+<p>Real-world impact (EVF Circuit Salzburg, 2026-04-18, Dartagnan scrape):</p>
+<ul>
+<li>171 scraped rows across 16 single-category finals (mix of nationalities)</li>
+<li>After intake: 113 PENDING rows created linking foreign competitors to unrelated Polish SPWS fencers at 48–75 % confidence. Example garbage: Hungarian &quot;KOLCZONAY ERNŐNÉ Judit&quot; → Polish &quot;KOWALCZYK Piotr&quot; at 64 %, Austrian &quot;HINTERSEER Ursula&quot; → Polish &quot;KARMAN Irene&quot; at 48 %.</li>
+<li>The identity queue became unusable: every row required manual dismissal, with no signal separating legitimate low-confidence matches (same-name Poles) from accidental cross-nationality collisions.</li>
+</ul>
+<p>The PENDING tier was designed as an admin-review queue for legitimately ambiguous Polish same-name pairs. It was never intended to absorb every foreign competitor.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>For <strong>EVF-organized tournaments</strong> (<code>enum_type ∈ {PEW, MEW, MSW}</code>), ingestion filters scraped rows by country <strong>before</strong> the matching pipeline runs. Only rows with <code>country = &quot;POL&quot;</code> are considered for matching; all others are dismissed at the gate — no <code>tbl_result</code> row, no <code>tbl_fencer</code> entry, no identity-queue entry.</p>
+<p>For <strong>SPWS-organized tournaments</strong> (<code>enum_type ∈ {PPW, MPW}</code>), no country filter applies — every participant is scraped and ingested (existing behavior).</p>
+<p>Implementation:</p>
+<ol>
+<li><code>resolve_tournament_results(scraped_names, fencer_db, tournament_type, age_category, season_end_year, scraped_countries=None)</code> accepts a parallel <code>scraped_countries</code> list.</li>
+<li>When the tournament is international and <code>scraped_countries</code> is provided, rows with <code>country != &quot;POL&quot;</code> (or missing) are appended to <code>result.skipped</code> and excluded from all match tiers.</li>
+<li>Callers (orchestrator, scrape_tournament tool, one-shot ingestion scripts) must thread <code>country</code> from scraper output through to the matcher.</li>
+<li>Scrapers that don't emit country (legacy CSV) default to &quot;POL&quot; for domestic tournaments; for international tournaments without country data the filter treats missing as non-POL and drops the row (fail-closed).</li>
+</ol>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li><strong>Drop only PENDING for international; keep AUTO_MATCHED unconditional.</strong> Rejected: a high-confidence name collision across nationalities (e.g. &quot;Jan Kowalski&quot; both in SPWS DB and in a foreign delegation) would still wrongly link. Country is the authoritative signal, not name.</li>
+<li><strong>Filter post-match inside <code>resolve_tournament_results</code> instead of pre-match.</strong> Rejected: wastes fuzzy-match cycles on rows destined for the trash can; also risks leaking partial state into telemetry.</li>
+<li><strong>Require the scraper to filter non-POL rows.</strong> Rejected: the scraper's job is faithful platform → list-of-dicts translation; the filter is a business rule that belongs in the pipeline. A single policy point is easier to audit than per-scraper filters.</li>
+<li><strong>Configurable country set per season.</strong> Rejected: YAGNI — SPWS ranks Polish veterans. If this ever changes, add the column to <code>tbl_season</code> then.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Identity queue size for EVF events drops from ~100s to the legitimate Polish-same-name count (usually 0–2 per event).</li>
+<li><code>tbl_fencer</code> can no longer acquire foreign identities via PEW/MEW/MSW fuzzy collisions.</li>
+<li>Pre-existing pollution from earlier EVF imports is not automatically cleaned — each affected event needs <code>fn_rollback_event('&lt;code&gt;')</code> + re-ingest under the new rule.</li>
+<li>Scrapers without <code>country</code> output (plain text / legacy CSV) are effectively blocked from ingesting into EVF tournaments; operators must extend the scraper or manually add country before ingest.</li>
+<li>Superseding effect: ADR-020's &quot;International unmatched → skip&quot; rule still holds; this ADR <strong>widens</strong> the skip to also cover AUTO_MATCHED and PENDING for non-POL rows at EVF events.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-06-13-stage-0-reconciliation-skips-international-events">Amendment (2026-06-13) — Stage-0 reconciliation skips international events</h2>
+<p>The new first pipeline stage <code>s0_reconcile_roster</code> (ADR-056, 2026-06-13) creates
+new participants and reconciles conflicting birth years for SPWS-domestic events
+only. International/EXCLUDED events (PEW/MEW/MSW) are <strong>skipped entirely</strong> by
+Stage 0 — no creation, no reconciliation — consistent with this ADR's POL-only
+intake. Their <code>int_participant_count</code> is full-field (not per-V-cat) and their
+rosters are not SPWS master data, so Stage 0 must not touch them. The skip is
+keyed on the event-code organizer (EVF/FIE → skip), evaluated before any DB read.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="037-derived-display-status-awaiting-results.html">← ADR-037: Derived Display Status — &quot;Awaiting Results&quot;</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="039-stale-event-gate.html">→ ADR-039: EVF Scraper Dedup Algorithm + Stale-Event Gate</a></nav>
+<footer class="foot">Generated from <code>038-evf-intake-polish-only.md</code> · source SHA-256 <code>db66f6ba037955af03d790d3b7cabce93df0ad88ef33f8ee20ecc71bf812b1bb</code></footer>
+</div></body></html>

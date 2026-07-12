@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="070-resolve-fencers-auto-resolution.md">
+<meta name="adr-source-sha256" content="d4efccf3044f61b941dd2bbbdd4499f9d812e2b50fcb889ffad429d9ee225307">
+<title>ADR-070 · ResolveFencers auto-resolution (merged Stage-0 ⊕ Stage-6, runs early), no human review gate</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 070</p><h1><code>ResolveFencers</code> auto-resolution (merged Stage-0 ⊕ Stage-6, runs early), no human review gate</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §5.1. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> ADR-003 (identity by FK), ADR-010/056 (V-cat from birth year), ADR-020/038 (domestic auto-create / international POL-only), ADR-064 (asymmetric gender filter), ADR-071 (dedup sweep), ADR-073 (plugin architecture), ADR-074 (no-halt). <strong>Amends</strong> ADR-050 (review gate removed) and ADR-056 (Stage-0 absorbed into this plugin).</dd></div><div><dt>Source</dt><dd class=""><code>070-resolve-fencers-auto-resolution.md</code></dd></div><div><dt>Length</dt><dd class="">66 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
+<a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §5.1. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.
+<strong>Date:</strong> 2026-06-14
+<strong>Relates to:</strong> ADR-003 (identity by FK), ADR-010/056 (V-cat from birth year), ADR-020/038 (domestic
+auto-create / international POL-only), ADR-064 (asymmetric gender filter), ADR-071 (dedup sweep),
+ADR-073 (plugin architecture), ADR-074 (no-halt). <strong>Amends</strong> ADR-050 (review gate removed) and
+ADR-056 (Stage-0 absorbed into this plugin).</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The unified pipeline (ADR-050) split identity work across two stages — Stage-0 roster reconciliation
+(ADR-056 rev 2026-06-13: high-precision create + band-midpoint BY reconcile) and a later Stage-6 fuzzy
+matcher — and routed every uncertain match through a <strong>human review gate</strong> (draft tables +
+<code>fn_commit_event_draft</code> triage). For a <em>fully automated</em> domestic pipeline this is two problems:</p>
+<ol>
+<li>The two stages can disagree about a fencer's birth year — the matcher fuzzy-links before
+reconciliation has settled the roster, so a fuzzy tiebreak may rely on a BY that Stage-0 then changes.</li>
+<li>The human gate blocks automation entirely; it was the single largest source of operator toil.</li>
+</ol>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Merge Stage-0 and Stage-6 into a <strong>single plugin, <code>ResolveFencers</code></strong>, that owns <em>name → governed fencer</em>
+and runs <strong>first of the core</strong>, before <code>DetectCombinedPool</code>/<code>SplitByAge</code>. It is the sole writer of
+<code>tbl_fencer</code> during ingestion. Two internal phases (one plugin — all name→fencer logic in one place):</p>
+<ul>
+<li><strong>Phase A — settle the roster (exact, high precision):</strong> post-fold equality match (ADR-003, ~0 false
+positives); on hit, reconcile a conflicting stored BY to the V-cat <strong>band midpoint</strong> (ADR-056).</li>
+<li><strong>Phase B — resolve the remainder (fuzzy, against the now-reconciled roster):</strong> if
+<code>conf ≥ AUTO_LINK_THRESHOLD</code> and age-band + gender corroborate (ADR-064), link + alias-writeback
+(<code>fn_update_fencer_aliases</code>, exact next run); else <strong>(domestic)</strong> create a new fencer at band-midpoint
+BY (ADR-020); <strong>(international, deferred §12)</strong> exclude (ADR-038).</li>
+</ul>
+<p><strong>No human review gate.</strong> Every call is auto-decided by calibrated confidence; the result is committed
+atomically (ADR-014/022) with no draft/triage step. Uncertainty <strong>biases to the recoverable outcome</strong>
+(create-new, later deduped by ADR-071) over the unrecoverable one (a wrong link → corrupt FK, BR-9).
+<code>ResolveFencers</code> declares <code>effects: master_data</code> and emits <code>master_data.changed</code>, which drives
+self-healing recompute (ADR-072).</p>
+<p>Because it precedes the structural steps, every downstream V-cat decision consumes the <strong>governed</strong> birth
+year, not raw scrape markers — removing the &quot;split on a wrong scraped BY → needs a human&quot; failure mode and
+making full automation defensible.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>Keep the review gate</strong> (ADR-050). Rejected: incompatible with full automation.</li>
+<li><strong>Keep Stage-0 and Stage-6 separate.</strong> Rejected: they share all name→fencer logic; separation is exactly
+what let them disagree on BY. One plugin, two phases, settles BY before any fuzzy tiebreak relies on it.</li>
+<li><strong>Bias to link-over-create.</strong> Rejected: a wrong link is unrecoverable corruption; a duplicate is
+recoverable by the dedup sweep (ADR-071). Asymmetric safety mandates create-over-uncertain-link.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>One maintainable home for all identity logic; the <em>same</em> dedup/reconcile code serves both per-bracket
+ingest and the whole-roster <code>DEDUP_SWEEP</code> (ADR-071) — there is <strong>no separate MDM subsystem</strong>.</li>
+<li>Full automation: no operator triage on the domestic path.</li>
+<li>A calibrated <code>AUTO_LINK_THRESHOLD</code> (knob, design §11) bounds the false-link rate; duplicates are expected
+and swept.</li>
+<li>The draft tables + <code>fn_commit_event_draft</code> / <code>fn_discard_event_draft</code> / <code>fn_dry_run_event_draft</code> RPCs
+become dead and are removed (ADR-073).</li>
+</ul>
+</section>
+<section class="section-card adr-section tests"><p class="kicker">tests</p><h2 id="tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</h2>
+<p>exact-link / fuzzy-link / create / reconcile-BY / two-phase BY settling / split-uses-governed-BY;
+calibration regression bounding the false-link rate.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="069-participant-count-url-validator.html">← ADR-069: Per-tournament participant-count URL validator (HALT gate)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="071-mdm-dedup-sweep.html">→ ADR-071: Master-data management + eventual-consistency dedup (DEDUP_SWEEP)</a></nav>
+<footer class="foot">Generated from <code>070-resolve-fencers-auto-resolution.md</code> · source SHA-256 <code>d4efccf3044f61b941dd2bbbdd4499f9d812e2b50fcb889ffad429d9ee225307</code></footer>
+</div></body></html>

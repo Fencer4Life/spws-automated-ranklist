@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="049-joint-pool-split-flag.md">
+<meta name="adr-source-sha256" content="96bbfc3ac035487236c3ae3a7bd25119abcedb60b122826272683449174d1cb6">
+<title>ADR-049 · Joint-pool split flag on tbl_tournament</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 049</p><h1>Joint-pool split flag on tbl_tournament</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted; implemented LOCAL/CERT/PROD 2026-04-30. Backfill executed on all three; ingester contract enforced by pytest.</dd></div><div><dt>Date</dt><dd class="">2026-04-30 <strong>Relates to:</strong> ADR-024 (Combined Category Splitting), ADR-038 (per-cat field count), ADR-047 (V-cat invariant trigger), ADR-048 (Source-vs-DB audit). Supersedes the &quot;Joint-pool reference field — also deferred&quot; subsection of ADR-048.</dd></div><div><dt>Source</dt><dd class=""><code>049-joint-pool-split-flag.md</code></dd></div><div><dt>Length</dt><dd class="">172 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted; implemented LOCAL/CERT/PROD 2026-04-30. Backfill executed on all three; ingester contract enforced by pytest.
+<strong>Date:</strong> 2026-04-30
+<strong>Relates to:</strong> ADR-024 (Combined Category Splitting), ADR-038 (per-cat field count), ADR-047 (V-cat invariant trigger), ADR-048 (Source-vs-DB audit). Supersedes the &quot;Joint-pool reference field — also deferred&quot; subsection of ADR-048.</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#schema">Schema</a></li><li class="depth-3"><a href="#ingester-contract-scrape-tournament-py">Ingester contract (`scrape_tournament.py`)</a></li><li class="depth-3"><a href="#backfill-function-one-shot-remediation">Backfill function (one-shot remediation)</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests">Tests</a></li><li class="depth-2"><a href="#amendment-2026-06-04-count-is-per-v-cat-not-full-pool">Amendment 2026-06-04 — count is per-V-cat, not full pool</a></li><li class="depth-2"><a href="#amendment-2026-06-27-place-is-bracket-relative-the-numerator-twin-of-the-count-fix">Amendment 2026-06-27 — place is bracket-relative (the numerator twin of the count fix)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>A &quot;joint pool&quot; is a competition that physically runs N veteran fencers in one shared pool but is RANKED per V-cat. Each V-cat slice must be a separate <code>tbl_tournament</code> row because scoring and ranklists are per V-cat. Two related bugs surfaced 2026-04-30:</p>
+<ol>
+<li><strong>PPW4 women epee</strong> — V0 + V1 ran as one 7-fencer pool; both rows had the same <code>url_results</code>. The splitter ran but <code>int_participant_count</code> on each row stored the V-cat slice (4 and 3) instead of the full pool (7). Gabriela KAMIŃSKA's V1 ranking points came out 96.35 instead of 97.22.</li>
+<li><strong>PPW5 women epee</strong> — V0/V1/V2/V4 ran as one 11-fencer pool, but the source published separate FTL URLs per V-cat slice. The splitter never ran (no shared-URL signal) and counts were V-cat-slice only.</li>
+</ol>
+<p>Pre-this-ADR there was no explicit schema relationship saying &quot;these sibling rows are the same physical pool.&quot; Pool membership had to be inferred from URL equality — works for case 1, fails for case 2.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="schema">Schema</h3>
+<p><code>tbl_tournament.bool_joint_pool_split BOOLEAN NOT NULL DEFAULT FALSE</code></p>
+<ul>
+<li>TRUE on every sibling row that is one V-cat slice of a physically combined pool.</li>
+<li>Siblings are identified by the tuple <code>(id_event, enum_weapon, enum_gender, url_results)</code> — all four equal across all members of the pool.</li>
+<li><code>int_participant_count</code> on every sibling = full physical pool size (sum of <code>tbl_result</code> rows across all siblings of that pool).</li>
+<li>All siblings are equal — there is no parent row, no FK, no asymmetry.</li>
+</ul>
+<p>Partial index <code>idx_tbl_tournament_joint_split</code> on <code>(id_event, enum_weapon, enum_gender) WHERE bool_joint_pool_split = TRUE</code>.</p>
+<p>Migration: <code>supabase/migrations/20260430000003_joint_pool_split.sql</code>.</p>
+<h3 id="ingester-contract-scrape-tournament-py">Ingester contract (<code>scrape_tournament.py</code>)</h3>
+<p>When <code>len(siblings) &gt; 1</code> (joint pool):</p>
+<ol>
+<li>After the V-cat split, every sibling whose bucket is empty is <strong>DELETEd</strong> (admin-registration mistake — admin pasted the URL on a row that has zero fencers in the actual source). A Telegram alert is sent per delete.</li>
+<li>Each remaining sibling has the same <code>url_results</code> (already true at this stage — that's how siblings were identified) and is PATCHed to <code>bool_joint_pool_split = TRUE</code>.</li>
+<li><code>fn_ingest_tournament_results</code> is called per remaining sibling with <code>p_participant_count = len(parsed_rows)</code> (the full physical pool size, from the single source scrape).</li>
+</ol>
+<p>When <code>len(siblings) == 1</code> (solo tournament): legacy behaviour unchanged — <code>p_participant_count = len(bucket_rows)</code> (which equals <code>len(parsed_rows)</code> modulo unresolveds).</p>
+<p>The pure decision logic lives in <a href="../../python/tools/scrape_tournament.py"><code>plan_joint_pool_actions</code></a> so it is unit-testable independently of the HTTP layer.</p>
+<h3 id="backfill-function-one-shot-remediation">Backfill function (one-shot remediation)</h3>
+<p><code>fn_backfill_joint_pool_split()</code> flips the flag and recomputes the count on pre-existing PPW4-class rows that share <code>url_results</code> with a sibling under the same <code>(id_event, enum_weapon, enum_gender)</code>. Idempotent — the WHERE clauses skip rows already in the target state. Migration: <code>supabase/migrations/20260430000004_fn_backfill_joint_pool_split.sql</code>.</p>
+<p>PPW5-class rows (per-V-cat URLs, single physical pool) cannot be detected from existing DB state. They will be fixed naturally on the from-scratch re-scrape, where the ingester contract above sets the flag directly.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>Self-referential FK</strong> (<code>id_joint_pool_parent INT REFERENCES tbl_tournament</code>). Drafted and applied to LOCAL earlier in the same session; reverted. Reasons rejected: introduces parent/child asymmetry where none exists in the domain (every V-cat slice is equally a &quot;child&quot; of the physical pool); arbitrary &quot;lowest id_tournament wins&quot; tie-break; more complex backfill (requires regex on scraped names for marker detection); harder admin UI (which row is the parent?).</li>
+<li><strong>Separate join table</strong> <code>tbl_joint_pool (id_pool, id_tournament)</code>. Rejected as overkill — every tournament sits in at most one joint pool, so a 1-N relationship encoded with a flag + the existing <code>url_results</code> column is sufficient.</li>
+<li><strong>Inferring joint-ness at query time from <code>url_results</code> equality alone</strong> (no flag). Rejected: the flag is a positive intent signal recorded by the ingester at write time, distinguishing a real joint pool from a coincidental URL collision. It also simplifies admin UI predicates.</li>
+<li><strong>Keep empty siblings of a joint pool</strong> (Option B in the implementation discussion). Rejected: the row is a registration-time mistake (admin pasted the URL on a V-cat with zero entrants in the actual source); leaving it pollutes the calendar and ranklists with an empty sub-tournament. Auto-delete is the cleaner invariant (&quot;every sibling has fencers&quot;).</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>Backfill ran 2026-04-30 on all three envs.</strong> 86 PPW4-class joint-pool groups detected on each, 206 sibling rows flagged TRUE, 186 <code>int_participant_count</code> values rewritten on CERT/PROD (LOCAL was already at 0 net rewrites because the rejected FK-design backfill had already done the count fix earlier the same day). 206 affected tournaments re-scored on each via <code>fn_calc_tournament_scores</code>. Gabriela's PPW4-V1-F-EPEE-2025-2026 row: N=7, points=97.22 on LOCAL, CERT, PROD.</li>
+<li><strong>PPW5-class is NOT fixed by the backfill</strong> — those rows will be corrected on the from-scratch re-scrape next.</li>
+<li><strong>Empty-sibling auto-delete</strong> is a behaviour change relative to the prior ingester. It is gated on <code>len(siblings) &gt; 1</code> so solo tournaments are never affected. The Telegram alert per deletion ensures admin is notified.</li>
+<li><strong>Admin UI</strong> can surface a single read-only &quot;joint pool&quot; badge per tournament row from the boolean. No parent/child navigation needed.</li>
+<li><strong>Scoring engine</strong> (<code>fn_calc_tournament_scores</code>) is unchanged — it consumes <code>int_participant_count</code>, which is now correct on every sibling.</li>
+<li><strong>The deferred &quot;joint-pool reference field&quot; subsection of ADR-048 is superseded</strong> by this ADR; the FK design proposed there is rejected.</li>
+</ul>
+</section>
+<section class="section-card adr-section tests"><p class="kicker">tests</p><h2 id="tests">Tests</h2>
+<ul>
+<li>pgTAP <code>25_joint_pool_split.sql</code> — 7 tests:
+<ul>
+<li>25.1 column shape</li>
+<li>25.2 partial index</li>
+<li>25.3 backfill function exists</li>
+<li>25.4 siblings flagged</li>
+<li>25.5 counts rewritten to full pool size</li>
+<li>25.6 standalone with unique URL untouched</li>
+<li>25.7 backfill is idempotent</li>
+</ul>
+</li>
+<li>pytest <code>test_scrape_tournament_joint_pool.py</code> — 4 tests:
+<ul>
+<li>26.1 plan: joint, both buckets non-empty → flag both, delete none</li>
+<li>26.2 plan: joint, V2 bucket empty → V2 in to_delete, V0/V1 in to_flag</li>
+<li>26.3 plan: solo → is_joint=False, no actions</li>
+<li>26.4 main(): full integration on joint pool with empty sibling — DELETE on V2, PATCH <code>bool_joint_pool_split=TRUE</code> on V0/V1, POST <code>p_participant_count = len(parsed_rows)</code> on each non-empty sibling</li>
+</ul>
+</li>
+</ul>
+<p>Coverage updates: pgTAP totals +7; pytest totals +4 (354 passing, 9 skipped).</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-06-04-count-is-per-v-cat-not-full-pool">Amendment 2026-06-04 — count is per-V-cat, not full pool</h2>
+<p><strong>Status:</strong> Accepted (supersedes the count clause of the original Decision).
+<strong>Relates to:</strong> ADR-024 (Combined Category Splitting — per-category tournaments
+with independent placement), ADR-069 (participant-count URL validator).</p>
+<p>The original Decision set <code>int_participant_count</code> on every joint-pool sibling to
+the <strong>full physical pool size</strong> (sum of <code>tbl_result</code> rows across all siblings
+sharing one <code>url_results</code>). This is <strong>reversed</strong>: each V-cat sibling now stores
+its <strong>own</strong> result count.</p>
+<p><strong>Rationale (domain, SPWS):</strong> each V-cat is ranked and scored on its own field
+size, even when fencers physically share one pool. Counting the combined pool
+inflated <code>int_participant_count</code> and over-credited ranking points (e.g.
+<code>PPW3-V0-M-FOIL</code> and <code>PPW3-V1-M-FOIL</code> shared a 3-fencer pool and were both
+stored as 3; correct is 2 and 1). This is consistent with ADR-024, which
+already mandates separate per-category tournaments with independent re-ranking;
+the full-pool count was the outlier.</p>
+<p><strong>What changes:</strong></p>
+<ul>
+<li><code>bool_joint_pool_split</code> is retained as an <strong>informational badge only</strong> — it
+still flags siblings that share a <code>url_results</code>, but no longer drives the
+count.</li>
+<li>The count recompute in <code>fn_commit_event_draft</code> and the Step-2 recompute in
+<code>fn_backfill_joint_pool_split</code> both switch from <code>GROUP BY url_results</code> (sum)
+to <code>GROUP BY id_tournament</code> (each sibling's own result count). Migration
+<code>20260604000001_adr049_amend_per_vcat_count.sql</code>.</li>
+<li>The legacy <code>scrape_tournament.py</code> ingester contract (step 3) now passes
+<code>p_participant_count = len(bucket_rows)</code> (per-V-cat slice) for joint pools too.</li>
+</ul>
+<p><strong>Scoring consequence:</strong> joint-pool tournaments (the 14 combined-pool groups in
+PPW3/PPW4/PPW5) get smaller field sizes → fewer ranking points. <code>int_participant_count</code>
+is corrected on those events by re-scrape (also repairs result-row contamination)
+or by re-running <code>fn_backfill_joint_pool_split</code> (count only).</p>
+<p><strong>Tests:</strong> 25.5 now asserts per-V-cat <code>[4, 3]</code> (was <code>[7, 7]</code>); new 27.27 asserts
+<code>fn_commit_event_draft</code> writes per-V-cat counts on joint siblings; 26.4 (pytest)
+asserts the ingester posts per-V-cat slice sizes. The pgTAP invariant
+<code>int_participant_count == own result count</code> for joint rows is the durable guard.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-06-27-place-is-bracket-relative-the-numerator-twin-of-the-count-fix">Amendment 2026-06-27 — place is bracket-relative (the numerator twin of the count fix)</h2>
+<p><strong>Status:</strong> Accepted.
+<strong>Relates to:</strong> ADR-014/022 (delete-reimport / single-RPC commit), ADR-073 (plugin
+pipeline — the <code>Commit</code> mutator).</p>
+<p>The 2026-06-04 amendment made <code>int_participant_count</code> (the field-size
+<strong>denominator</strong>) per-V-cat. Its twin — the <strong>place numerator</strong> — was left
+unfixed: when a combined pool is split per V-cat, each fencer's <strong>whole-pool
+finishing place</strong> was stored in the slice's <code>tbl_result.int_place</code> while the
+count was the slice size. Result: nonsensical drilldown fractions (<code>4/3</code>, <code>7/3</code>)
+<strong>and</strong> silent point loss — the scoring engine zeroes any
+<code>int_place &gt; int_participant_count</code> (<code>02_scoring_engine.sql</code> 2.1c/2.3), so every
+fencer in a slice whose whole-pool place exceeded the slice size scored <strong>0</strong>
+(e.g. PPW4-V1-F-EPEE: places <code>{1,3,5,6}</code> with N=4 → the 5th/6th-placed fencers
+zeroed; first place survives only because <code>1 ≤ N</code> always holds).</p>
+<p><strong>Root cause:</strong> the legacy splitter (<code>python/pipeline/age_split.py</code>) reranked each
+slice to <code>1..N</code>; the NEW plugin pipeline's <code>Commit</code> mutator (ADR-073) dropped that
+step when it replaced the splitter, and the 2026-06-04 count amendment then made
+the mismatch actively wrong (smaller N below the whole-pool places). <code>int_place</code>
+in <code>tbl_result</code> is <strong>bracket-relative</strong> by contract — each V-cat slice is its own
+<code>tbl_tournament</code> — so the slice must be renumbered.</p>
+<p><strong>Decision:</strong> the <code>Commit</code> mutator reranks each V-cat slice to bracket-relative
+places <code>1..N</code> before persisting — <strong>dense rank</strong> by original place, so a genuine
+shared place inside a slice stays tied with no gaps (<code>{1,4,4,7}→{1,2,2,3}</code>).
+Applied in both the ingest loop and the <code>RECOMPUTE_DOMESTIC</code> self-heal loop, so
+re-running an event repairs stored places. Helper <code>_rerank_places</code> +
+<code>Commit._row(..., place=)</code> override in <code>python/pipeline/plugins/ingest.py</code>.</p>
+<p><strong>Scope:</strong> domestic only — <code>Commit</code> runs in the <code>INGEST_DOMESTIC</code> /
+<code>RECOMPUTE_DOMESTIC</code> flows only; international (PEW/MEW/MSW, deferred §12) never
+reaches it and keeps genuine international placings, where <code>place &gt; N → 0</code> is
+intended (the SPWS fencers placed beyond the ingested count). No gating needed —
+the flow routing isolates the two <code>int_place</code> semantics.</p>
+<p><strong>Data repair:</strong> <code>PPW4-2025-2026</code> + <code>PPW5-2025-2026</code> self-healed via
+<code>RECOMPUTE_DOMESTIC</code> (LOCAL) — 0 rows remain with <code>place &gt; N</code>, the previously
+zeroed fencers restored (PPW4-V1-F-EPEE now <code>1,2,3,4</code> with last place = 1.00
+floor). The 22 other domestic <code>place &gt; N</code> brackets are <strong>not</strong> this bug
+(<code>bool_joint_pool_split = FALSE</code>): participant-count errors with already-contiguous
+places, or genuine ties — left for separate investigation (see the tracked
+PPW3/4/5 DATA-fix item).</p>
+<p><strong>Tests:</strong> pytest <code>test_commit_persist.py</code> N7.9–N7.12 — ingest reranks to <code>1..N</code>,
+ties preserved, EXCLUDED rows skipped before numbering, RECOMPUTE self-heals. <strong>No
+pgTAP change</strong> — the scoring contract (<code>02_scoring_engine.sql</code> 2.1c last-place =
+1pt / 2.3 place &gt; N → 0) already pins the behaviour; this fix feeds it correct
+places. pytest 958→962.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="048-source-vs-db-audit-and-phantom-rows.html">← ADR-048: Source-vs-DB audit + phantom-row policy</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="050-unified-ingestion-pipeline.html">→ ADR-050: Unified Ingestion Pipeline (rebuild — Phases 0–6)</a></nav>
+<footer class="foot">Generated from <code>049-joint-pool-split-flag.md</code> · source SHA-256 <code>96bbfc3ac035487236c3ae3a7bd25119abcedb60b122826272683449174d1cb6</code></footer>
+</div></body></html>

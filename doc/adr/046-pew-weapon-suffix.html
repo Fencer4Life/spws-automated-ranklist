@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="046-pew-weapon-suffix.md">
+<meta name="adr-source-sha256" content="d3931ea4c9b8e0fc07d1b3ecd47e29222f8fc7c1b294d702ac85de079c44dd4f">
+<title>ADR-046 · PEW event codes carry weapon-letter suffix; one event = one physical weekend</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 046</p><h1>PEW event codes carry weapon-letter suffix; one event = one physical weekend</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (Phase 4 implemented 2026-04-27; amended 2026-06-25 — collision guard)</dd></div><div><dt>Date</dt><dd class="">2026-04-27 (amended 2026-06-25) <strong>Relates to:</strong> ADR-043 (EVF event allocator — amended by this ADR), ADR-044 (Phase 3 wizard — adapts skeleton iteration)</dd></div><div><dt>Source</dt><dd class=""><code>046-pew-weapon-suffix.md</code></dd></div><div><dt>Length</dt><dd class="">90 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (Phase 4 implemented 2026-04-27; amended 2026-06-25 — collision guard)
+<strong>Date:</strong> 2026-04-27 (amended 2026-06-25)
+<strong>Relates to:</strong> ADR-043 (EVF event allocator — amended by this ADR), ADR-044 (Phase 3 wizard — adapts skeleton iteration)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#allocator-changes-amends-adr-043">Allocator changes (amends ADR-043)</a></li><li class="depth-3"><a href="#skeleton-creator-phase-3a">Skeleton creator (Phase 3a)</a></li><li class="depth-3"><a href="#cascade-rename-phase-3a">Cascade rename (Phase 3a)</a></li><li class="depth-3"><a href="#one-shot-data-splitter">One-shot data splitter</a></li><li class="depth-3"><a href="#behavior-change-in-legacy-event-code-matching-engine">Behavior change in legacy `EVENT_CODE_MATCHING` engine</a></li><li class="depth-3"><a href="#frontend">Frontend</a></li><li class="depth-2"><a href="#out-of-scope">Out of scope</a></li><li class="depth-2"><a href="#amendment-2026-06-25-collision-resilient-splitter">Amendment (2026-06-25): collision-resilient splitter</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>PEW event codes were originally scraped from Excel under the assumption that the EVF circuit number <code>N</code> is shared across all weapons. Reality: EVF runs <strong>per-weapon circuits</strong>, and a single physical weekend can host one, two, or three weapons. Two concrete consequences in the seed data when this ADR was drafted:</p>
+<ul>
+<li>Bundled events (one <code>txt_code</code> covers two physical weekends): <code>PEW3-2024-2025</code> glued Munich Dec 7-8 (sabre + foil) with Guildford Jan 4 (epee); <code>PEW3-2025-2026</code> similarly glued Munich Dec 6 with Guildford Jan 10-11.</li>
+<li>Misleading event-level metadata: <code>txt_location</code>, <code>dt_start</code>/<code>dt_end</code> could only describe one of the two weekends.</li>
+</ul>
+<p>The DrilldownModal exposed this directly — fencer Marcin Ganszczyk's PEW3 row showed &quot;Guildford&quot; for what was really a Munich weekend, with corrupt <code>dt_start = 2024-01-04</code> (year typo).</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Each <code>tbl_event</code> row represents <strong>one physical weekend at one venue</strong>. The <code>txt_code</code> carries a weapon-letter suffix listing which weapons participated:</p>
+<pre><code>PEW{N}{letters}-{season}     where letters ∈ {e,f,s}+ alphabetical, length 1-3
+</code></pre>
+<ul>
+<li><code>PEW3fs-2024-2025</code> — foil + sabre weekend (Munich Dec 7-8 2024)</li>
+<li><code>PEW4efs-2024-2025</code> — all three weapons at one venue (hypothetical)</li>
+<li><code>PEW3s-2025-2026</code> — sabre-only weekend (e.g. partial seed)</li>
+</ul>
+<p>Letters are lowercase, alphabetical (<code>e</code> &lt; <code>f</code> &lt; <code>s</code>). A single-letter suffix is rare in practice — most EVF circuit weekends host 2-3 weapons. A <code>PEW{N}e-{season}</code> (epee-only) often signals an incomplete data import rather than a one-weapon event.</p>
+<p>Cascade-rebuilt child codes follow the same convention:</p>
+<pre><code>PEW{N}{letters}-V{age}-{gender}-{weapon}-{season}
+</code></pre>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<h3 id="allocator-changes-amends-adr-043">Allocator changes (amends ADR-043)</h3>
+<p><code>fn_allocate_evf_event_code</code> gains a new <code>p_letters TEXT DEFAULT ''</code> parameter. The regex matching existing PEW codes becomes <code>^PEW\d+[efs]*-</code> to accept both legacy (no suffix) and new shapes. Code generation interpolates <code>letters</code> between <code>N</code> and the season suffix.</p>
+<p><code>fn_import_evf_events_v2</code> derives the letter string from each event's <code>weapons[]</code> JSONB via the new helper <code>fn_pew_weapon_letters(enum_weapon_type[])</code> (alphabetical: epee → 'e', foil → 'f', sabre → 's', concat).</p>
+<h3 id="skeleton-creator-phase-3a">Skeleton creator (Phase 3a)</h3>
+<p><code>fn_init_season</code> regex updates from <code>^PEW\d+-</code> to <code>^PEW\d+[efs]*-</code> to match weapon-suffixed prior PEW events when iterating skeletons. The skeleton inherits the prior code verbatim except the season suffix swap.</p>
+<h3 id="cascade-rename-phase-3a">Cascade rename (Phase 3a)</h3>
+<p><code>fn_update_event</code> v2 already rebuilds child tournament codes from <code>(parent_kind, age, gender, weapon, season)</code> enum fields — no code change needed. The regex extracting <code>parent_kind</code> from <code>txt_code</code> (<code>regexp_replace(p_code, '-\d{4}-\d{4}$', '')</code>) yields <code>PEW3fs</code> correctly.</p>
+<h3 id="one-shot-data-splitter">One-shot data splitter</h3>
+<p>The Phase 4 migration includes <code>fn_split_pew_by_weapon()</code> which:</p>
+<ol>
+<li><strong>Splits bundled events.</strong> Detects child tournaments with date span &gt; 3 days; clusters by date (gap &gt; 3 days = boundary). The earliest cluster keeps the original <code>id_event</code>; later clusters get next-free <code>PEW{N}</code> codes for that season. Tournaments are reparented by date range. Secondary clusters get <code>txt_location = NULL</code> (their original parent's location described a different cluster).</li>
+<li><strong>Applies weapon-letter suffix to every PEW event.</strong> Computes distinct weapons in children, builds alphabetical letter string, renames event + cascade-renames children.</li>
+</ol>
+<p>Idempotent: re-running on already-suffixed events is a no-op when the child weapon set hasn't changed; new tournaments added later promote the suffix on the next run.</p>
+<h3 id="behavior-change-in-legacy-event-code-matching-engine">Behavior change in legacy <code>EVENT_CODE_MATCHING</code> engine</h3>
+<p><code>fn_event_position</code> (used by the legacy carryover engine) extracts the prefix via <code>split_part(code, '-', 1)</code>. With weapon-suffix codes, prior-season <code>PEW3fs</code> and current-season <code>PEW3s</code> (different weapon coverage) become <strong>different positions</strong> under prefix matching. This is the <em>intended</em> per-weapon semantics — but tests that asserted bundled cross-weapon carry-over now fail because the carry chain is correctly per-weapon.</p>
+<p>Existing tests (<code>09_rolling_score.sql</code> R.15/R.18, <code>19_phase3_wizard.sql</code> ph3.1/ph3.6/ph3.13) were updated to match the new per-weapon reality.</p>
+<h3 id="frontend">Frontend</h3>
+<p><code>App.svelte</code> skeleton-count regex updates from <code>/^PEW\d+-/</code> to <code>/^PEW\d+[efs]*-/</code>. <code>SeasonManager.svelte</code>'s <code>codeKindLabel</code> regex includes the suffix in the chip display so admin sees <code>PEW3fs</code> instead of just <code>PEW3</code>.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="out-of-scope">Out of scope</h2>
+<ul>
+<li><strong>PPW (domestic) restructuring.</strong> Polish domestic events run all weapons at one venue per round; the bundling problem doesn't manifest there.</li>
+<li><strong>Championship code changes.</strong> MEW/IMEW/DMEW/MSW/MPW are single-event-per-season; weapon distinction lives at the tournament level only.</li>
+<li><strong>Renumbering existing PEW events into strict chronological order.</strong> Splitter assigns next-free <code>N</code> for split-out clusters; chronological cleanup remains a manual admin task via the EventManager rename UI.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-06-25-collision-resilient-splitter">Amendment (2026-06-25): collision-resilient splitter</h2>
+<p>The Step-2 rename assumed the weapon-derived target code (<code>PEW{N}{letters}-{season}</code>) was always free. A malformed EVF placeholder export can violate that: the 2026-06-19 PROD export carried <code>PEW3s-2025-2026</code> (Munich, Dec 6) and <code>PEW5s-2025-2026</code> (Stockholm, Feb 7) — <strong>real EVF sabre weekends</strong> — but with empty EPEE/FOIL placeholder child slots. The splitter derived <code>efs</code> and tried to rename them onto the existing <code>PEW3efs</code> / <code>PEW5ef</code> → <code>idx_event_code</code> duplicate-key, which <strong>aborted the entire seed load</strong> (run from <code>seed_post_backfill.sql</code>), half-populating the DB and cascading into 14 pgTAP scoring failures.</p>
+<p>A first instinct — dropping the offending events — is wrong: it destroys real calendar data (URLs, invitations, venues) for events whose results simply hadn't all been ingested at export time. The correct fix preserves the events and never discards a result.</p>
+<p><strong>Decision:</strong> make the splitter self-healing with two additions, neither of which deletes a result row:</p>
+<ol>
+<li>
+<p><strong>Step 1.5 — prune spurious empty slots.</strong> Before computing suffixes, drop child tournaments that have <strong>no results</strong> AND whose weapon letter is absent from the event's <strong>explicit</strong> <code>[efs]+</code> code suffix. This trusts the admin-set code (a sabre-coded <code>PEW{N}s</code> keeps only its sabre children; the empty EPEE/FOIL slots are spurious). Legacy <code>PEW{N}-</code> codes without a letter suffix are untouched and fall through to the derive-from-children behaviour.</p>
+</li>
+<li>
+<p><strong>Step 2 — resolve collisions by provenance.</strong> If the weapon-derived target code already belongs to a <em>different</em> event:</p>
+<ul>
+<li><strong>empty (0-result) holder</strong> → a spurious duplicate of this event (same circuit number + weapon set + season); delete it so this (result-bearing) event takes the clean code (<code>NOTICE</code>).</li>
+<li><strong>result-bearing holder</strong> → a genuine conflict; skip this rename with a <code>WARNING</code> for operator review (no silent data change).</li>
+</ul>
+</li>
+</ol>
+<p>Genuinely distinct events are untouched — they derive different codes and never collide (e.g. <code>PEW3s</code> Munich vs <code>PEW3efs</code> Guildford both survive). The splitter stays idempotent and a malformed export can no longer break a seed load. Migration <code>20260625000001_phase4_pew_split_collision_guard.sql</code>; pgTAP <code>47_pew_split_collision.sql</code> (C.1–C.6, TDD). Result-row count is conserved across the seed load (verified: 2673 in = 2673 after).</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="045-engine-selector-default-flip.html">← ADR-045: Carry-over engine selectable per-season via admin UI; default flipped to FK</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="047-vcat-invariant-trigger-and-splitter-consolidation.html">→ ADR-047: V-cat invariant trigger + combined-pool splitter consolidation</a></nav>
+<footer class="foot">Generated from <code>046-pew-weapon-suffix.md</code> · source SHA-256 <code>d3931ea4c9b8e0fc07d1b3ecd47e29222f8fc7c1b294d702ac85de079c44dd4f</code></footer>
+</div></body></html>

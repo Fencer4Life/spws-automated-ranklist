@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="014-delete-reimport-strategy.md">
+<meta name="adr-source-sha256" content="3c9e0515de0dc8ecf9abd22fdf61914551a3cb7f533e220a5f34267182828364">
+<title>ADR-014 · Delete + Re-import in Transaction</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 014</p><h1>Delete + Re-import in Transaction</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-03-25 (M9)</dd></div><div><dt>Source</dt><dd class=""><code>014-delete-reimport-strategy.md</code></dd></div><div><dt>Length</dt><dd class="">46 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2026-03-25 (M9)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>When a tournament's results need re-importing — due to a scraper fix, source data correction, or admin request — the system must handle existing <code>tbl_result</code> rows for that tournament. The operation must also re-run identity resolution and scoring after the new data is imported.</p>
+<p>Key constraints:</p>
+<ul>
+<li><code>tbl_result</code> rows have <code>id_fencer</code> links established by identity resolution</li>
+<li><code>tbl_match_candidate</code> rows track the matching decisions</li>
+<li>Audit log must capture what happened</li>
+<li>The system is single-operator (one admin)</li>
+</ul>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Use <strong>delete + re-import in a single database transaction</strong>. The full sequence within one transaction:</p>
+<ol>
+<li>Delete all <code>tbl_match_candidate</code> rows for the tournament</li>
+<li>Delete all <code>tbl_result</code> rows for the tournament</li>
+<li>Re-run scraper for the tournament URL</li>
+<li>Insert new <code>tbl_result</code> rows</li>
+<li>Re-run identity resolution for the new results</li>
+<li>Re-run scoring engine</li>
+<li>Commit</li>
+</ol>
+<p>On any failure, the transaction rolls back — the original data is preserved unchanged.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li>
+<p><strong>Merge/upsert by scraped name</strong> — Match new results to existing rows by <code>txt_scraped_name</code>. Complex to implement correctly: doesn't handle removed results (fencer DQ'd), renamed fencers, or changed participant counts. Partial updates leave the dataset in an inconsistent state.</p>
+</li>
+<li>
+<p><strong>Soft-delete with versioning</strong> — Keep old rows with a <code>version</code> column, insert new rows as a new version. Preserves history but doubles storage, complicates queries (must always filter by latest version), and is over-engineered for a single-operator system where the admin can simply check the audit log.</p>
+</li>
+<li>
+<p><strong>Side-by-side comparison</strong> — Import new results into a staging table, show a diff UI, let admin approve changes. Requires a complex diff UI, staging table management, and merge logic. Significant implementation effort for a scenario that occurs rarely (re-imports are exceptional, not routine).</p>
+</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Simple, atomic, predictable — either the full re-import succeeds or nothing changes</li>
+<li>Identity resolution must re-run after re-import (existing <code>id_fencer</code> links are deleted with the old results)</li>
+<li>Previously AUTO_MATCHED fencers will likely re-match automatically (same names, same master data)</li>
+<li>PENDING matches will need re-review by admin</li>
+<li>Audit log captures the delete+reimport as a single timestamped operation</li>
+<li>No staging tables, versioning columns, or diff UI required</li>
+<li>Works identically for single-tournament and bulk re-import scenarios</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="013-poc-mvp-transition.html">← ADR-013: POC-to-MVP Transition</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="015-m8-ui-design-decisions.html">→ ADR-015: M8 UI Design Decisions</a></nav>
+<footer class="foot">Generated from <code>014-delete-reimport-strategy.md</code> · source SHA-256 <code>3c9e0515de0dc8ecf9abd22fdf61914551a3cb7f533e220a5f34267182828364</code></footer>
+</div></body></html>

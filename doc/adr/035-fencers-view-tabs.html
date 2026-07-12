@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="035-fencers-view-tabs.md">
+<meta name="adr-source-sha256" content="193743d3ca86c79f00c6f536509720a4563c8c6debe2469cc4cca087814dcd28">
+<title>ADR-035 · Fencers View with Tabs</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 035</p><h1>Fencers View with Tabs</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented</dd></div><div><dt>Date</dt><dd class="">2026-04-12</dd></div><div><dt>Source</dt><dd class=""><code>035-fencers-view-tabs.md</code></dd></div><div><dt>Length</dt><dd class="">85 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Implemented<br />
+<strong>Date:</strong> 2026-04-12<br />
+<strong>Source:</strong> FR-56, FR-93, UC4, UC16</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#related-adrs">Related ADRs</a></li><li class="depth-2"><a href="#alternatives">Alternatives</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#ui-flow-new-fencer-from-event-ingestion">UI Flow: New Fencer from Event Ingestion</a></li><li class="depth-3"><a href="#step-1-ingestion-automated">Step 1 — Ingestion (automated)</a></li><li class="depth-3"><a href="#step-2-admin-opens-fencers-identities-tab">Step 2 — Admin opens Fencers → Identities tab</a></li><li class="depth-3"><a href="#step-3-resolution">Step 3 — Resolution</a></li><li class="depth-3"><a href="#step-4-birth-year-confirmation-fencers-birth-year-review-tab">Step 4 — Birth year confirmation (Fencers → Birth year review tab)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The admin Identity Manager (<code>admin_identities</code>) was a single-purpose view for match resolution. UC16 (Fencer Master Table Update) requires birth year review and editing capabilities. Rather than adding a separate admin view, we consolidate all fencer-related admin work into a tabbed &quot;Fencers&quot; view.</p>
+<p>Additionally, many auto-created fencers have <code>bool_birth_year_estimated = TRUE</code> (estimated from tournament age category) or NULL birth years. Admins need a way to review, verify, and correct these birth years using tournament history as context.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<ol>
+<li><strong>Rename</strong> <code>admin_identities</code> → <code>admin_fencers</code> across the entire stack (types, sidebar, locale keys, navigation).</li>
+<li><strong>Tab bar inlined in <code>App.svelte</code></strong> (a separate <code>FencerView.svelte</code> wrapper was attempted but caused <code>state_unsafe_mutation</code> errors because Svelte 5 mounts both tab panels simultaneously and <code>$derived</code> blocks in BirthYearReview ran <code>Array.sort()</code> which mutates reactive state). The inline approach is simpler and proven:
+<ul>
+<li><strong>Tab 1: &quot;Identities&quot;</strong> — existing <code>IdentityManager.svelte</code> with zero logic changes</li>
+<li><strong>Tab 2: &quot;Birth year review&quot;</strong> — new <code>BirthYearReview.svelte</code></li>
+</ul>
+</li>
+<li><strong>Tab count badges</strong> show pending work: Identities (actionable candidates), Birth year review (estimated + missing).</li>
+<li><strong>Fencer count</strong> in header: &quot;Fencers (215)&quot; / &quot;Szermierze (215)&quot;.</li>
+<li><strong>Birth year review</strong> features:
+<ul>
+<li>Full fencer list with filters (birth year status, gender) and search</li>
+<li>Click to expand edit form with read-only fencer info + editable birth year/accuracy + gender dropdown</li>
+<li>Tournament history grouped by season (age category, weapon, place, score)</li>
+<li>Birth year range hint derived from tournament age categories</li>
+<li>Birth year auto-suggest (youngest boundary of youngest competed category)</li>
+<li>Age category inconsistency flag (confirmed birth year contradicts tournament categories)</li>
+<li>Sticky tab bar and filter row (anchored to top when scrolling)</li>
+<li>Form closes on Save or Cancel</li>
+</ul>
+</li>
+<li><strong>New RPC</strong> <code>fn_update_fencer_birth_year(p_fencer_id, p_birth_year, p_estimated)</code>.</li>
+<li><strong>All UI text</strong> uses <code>t()</code> for EN/PL internationalization.</li>
+</ol>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="related-adrs">Related ADRs</h2>
+<ul>
+<li><strong>ADR-010</strong> (Age Category by Birth Year) — birth year is authoritative for ranking; this ADR adds admin editing + auto-suggest using the same age thresholds in reverse</li>
+<li><strong>ADR-015</strong> (M8 UI Design) — sidebar nav design; rename from Identities to Fencers is safe refactor</li>
+<li><strong>ADR-016</strong> (Supabase Auth MFA) — <code>fn_update_fencer_birth_year</code> follows same SECURITY DEFINER + REVOKE/GRANT pattern</li>
+<li><strong>ADR-019</strong> (Domestic-Only Fencer Seed) — auto-created fencers have <code>bool_birth_year_estimated = TRUE</code>; the new tab lets admin confirm these</li>
+<li><strong>ADR-024</strong> (Combined Category Splitting) — age category inconsistency handling precedent; extended to birth year vs. category detection</li>
+<li><strong>ADR-031</strong> (Auto-Active Season by Date) — tournament history uses season scoping via auto-derived <code>bool_active</code></li>
+<li><strong>ADR-033</strong> (Fencer Gender + Identity Enhancements) — same pattern: wrappable IdentityManager, inline edit forms, gender mismatch warning; this ADR adds age category inconsistency warning analogously</li>
+<li><strong>ADR-034</strong> (Cross-Gender Tournament Scoring) — gender mismatch is informational; same principle for age category inconsistency</li>
+</ul>
+<p>Conflict scan: all 34 existing ADRs reviewed — zero conflicts.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives">Alternatives</h2>
+<ul>
+<li><strong>Separate &quot;Fencer Review&quot; admin view</strong> — rejected; muddies sidebar with too many admin items. Tabs keep related concerns together.</li>
+<li><strong>Quick confirm button for estimated rows</strong> — rejected per user preference (&quot;no rush&quot;).</li>
+<li><strong>Server-side fencer search</strong> — deferred; client-side filtering sufficient for current data volume.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><code>admin_identities</code> completely removed from codebase (replaced by <code>admin_fencers</code>)</li>
+<li>IdentityManager.svelte preserved with zero changes</li>
+<li>Tab bar inlined in App.svelte (FencerView.svelte wrapper removed due to Svelte 5 <code>state_unsafe_mutation</code> — <code>Array.sort()</code> in <code>$derived</code> mutates reactive state)</li>
+<li>New component: <code>BirthYearReview.svelte</code> with gender edit, sticky filters, form auto-close</li>
+<li>New RPC: <code>fn_update_fencer_birth_year</code> (migration <code>20260412000004</code>)</li>
+<li>Svelte 5 lesson: never call <code>.sort()</code> on reactive arrays inside <code>$derived</code> — use <code>[...array].sort()</code> instead</li>
+<li>UC16 partially implemented (birth year + gender editing done; club/nationality editing and fencer merge deferred)</li>
+<li>Test count: pgTAP 254→259 (+5), vitest 241→255 (+14)</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="ui-flow-new-fencer-from-event-ingestion">UI Flow: New Fencer from Event Ingestion</h2>
+<h3 id="step-1-ingestion-automated">Step 1 — Ingestion (automated)</h3>
+<p>GitHub Actions scrapes tournament results → Python fuzzy matcher assigns status:</p>
+<ul>
+<li><strong>AUTO_MATCHED</strong> (≥95%) — auto-linked, no action needed</li>
+<li><strong>PENDING</strong> (50–94%) — provisionally linked, needs review</li>
+<li><strong>UNMATCHED</strong> (&lt;50%) — domestic PPW/MPW: auto-creates; international: skipped</li>
+</ul>
+<h3 id="step-2-admin-opens-fencers-identities-tab">Step 2 — Admin opens Fencers → Identities tab</h3>
+<p>Default filter: PENDING. Each card shows scraped name, tournament, confidence, suggested match, status.</p>
+<h3 id="step-3-resolution">Step 3 — Resolution</h3>
+<ul>
+<li><strong>PENDING</strong>: expand → verify → Save (approve) or switch to Create new / Search</li>
+<li><strong>UNMATCHED</strong>: expand → Create new fencer (SURNAME ALL CAPS, gender, birth year)</li>
+<li><strong>AUTO_MATCHED</strong>: expand → confirm or override</li>
+<li><strong>DISMISSED</strong>: click Undo → back to PENDING</li>
+</ul>
+<h3 id="step-4-birth-year-confirmation-fencers-birth-year-review-tab">Step 4 — Birth year confirmation (Fencers → Birth year review tab)</h3>
+<ol>
+<li>Switch to &quot;Daty urodzenia&quot; tab</li>
+<li>Filter by &quot;Estimated&quot; or &quot;Missing&quot;</li>
+<li>Click fencer → review tournament history + hint</li>
+<li>Set correct birth year + accuracy &quot;Exact (verified)&quot;</li>
+<li>Save</li>
+</ol>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="034-cross-gender-tournament-scoring.html">← ADR-034: Cross-Gender Tournament Scoring</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="036-prod-export-local-mirror.html">→ ADR-036: PROD Export &amp; Local Mirror (Single Monolithic Dump)</a></nav>
+<footer class="foot">Generated from <code>035-fencers-view-tabs.md</code> · source SHA-256 <code>193743d3ca86c79f00c6f536509720a4563c8c6debe2469cc4cca087814dcd28</code></footer>
+</div></body></html>

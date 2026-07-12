@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="043-evf-event-allocator.md">
+<meta name="adr-source-sha256" content="2ed8c227953602a91659a62a8092c9c4a5f578a5e576e19b60500e0b9eebb119">
+<title>ADR-043 · EVF Event Code Allocator + Classifier (Phase 2)</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 043</p><h1>EVF Event Code Allocator + Classifier (Phase 2)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-04-26)</dd></div><div><dt>Date</dt><dd class="">2026-04-26 <strong>Relates to:</strong> ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)</dd></div><div><dt>Source</dt><dd class=""><code>043-evf-event-allocator.md</code></dd></div><div><dt>Length</dt><dd class="">101 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-04-26)
+<strong>Date:</strong> 2026-04-26
+<strong>Relates to:</strong> ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#classifier-fn-classify-evf-event-p-name-p-is-team-pew-imew-dmew">Classifier — `fn_classify_evf_event(p_name, p_is_team) → &#x27;PEW&#x27; | &#x27;IMEW&#x27; | &#x27;DMEW&#x27;`</a></li><li class="depth-3"><a href="#allocator-fn-allocate-evf-event-code-p-id-season-p-kind-p-location-p-country">Allocator — `fn_allocate_evf_event_code(p_id_season, p_kind, p_location, p_country)`</a></li><li class="depth-3"><a href="#pre-allocation-pathway">Pre-allocation pathway</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#migration-test-references">Migration &amp; test references</a></li><li class="depth-2"><a href="#cross-phase-coordination">Cross-phase coordination</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The Phase 1B FK-based carry-over engine (ADR-042) reads <code>tbl_event.id_prior_event</code> as the cross-season link. But the EVF scraper, untouched since ADR-028, was still emitting:</p>
+<ul>
+<li><strong>Venue-slug codes</strong> like <code>PEW-SALLEJEANZ-2025-2026</code>, <code>PEW-SPORTHALLE-2025-2026</code> — these collide with the FK engine's <code>^PEW\d+-</code> numbering scheme and never get linked, becoming permanent FK orphans the admin must hand-fix.</li>
+<li><strong>A bogus &quot;MEW&quot; kind</strong> for any team event (<code>MEW-COMPLEXESP-2025-2026</code> for the European Team Championships). There is no MEW kind. Team events are the singleton <code>DMEW-{year}</code> (Drużynowe Mistrzostwa Europy Weteranów); individual European championships are <code>IMEW-{year}</code> (singleton, biennial per ADR-021).</li>
+<li><strong>Wrong organizer.</strong> All PEW/IMEW/DMEW rows were being written with <code>id_organizer = SPWS</code>. They are organized by <strong>EVF</strong>.</li>
+</ul>
+<p>Until Phase 2, every new EVF scrape compounded the slug-event backlog and required admin SQL cleanup before the FK engine could be enabled for the season.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Move event-code generation server-side into a <strong>three-step allocator</strong> (<code>fn_allocate_evf_event_code</code>) plus a small <strong>classifier</strong> (<code>fn_classify_evf_event</code>). The Python scraper sends the raw scraped payload (<code>name</code>, <code>is_team</code>, <code>location</code>, <code>country</code>, …) but no <code>code</code>. The RPC computes the code, sets <code>id_prior_event</code>, picks the EVF organizer, and reports back per-row how it landed.</p>
+<h3 id="classifier-fn-classify-evf-event-p-name-p-is-team-pew-imew-dmew">Classifier — <code>fn_classify_evf_event(p_name, p_is_team) → 'PEW' | 'IMEW' | 'DMEW'</code></h3>
+<pre><code>is_team = TRUE                                 → DMEW   (team championship)
+is_team = FALSE AND name LIKE '%championship%' → IMEW   (individual championship)
+else                                            → PEW    (individual circuit)
+</code></pre>
+<p><code>MEW</code> is dead — never emitted. Its single existing seed row (<code>MEW-COMPLEXESP-2025-2026</code>) is renamed to <code>DMEW-2025-2026</code> by data migration <code>20260427000003_fix_slug_seed_row.sql</code>, which also reassigns any PEW/IMEW/DMEW row whose <code>id_organizer = SPWS</code> to <code>EVF</code>.</p>
+<h3 id="allocator-fn-allocate-evf-event-code-p-id-season-p-kind-p-location-p-country">Allocator — <code>fn_allocate_evf_event_code(p_id_season, p_kind, p_location, p_country)</code></h3>
+<p>Returns <code>(txt_code, id_prior_event, alloc_path)</code> where <code>alloc_path</code> is one of:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Path</th>
+<th>When</th>
+<th>Effect on the import RPC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CURRENT_SLOT_REUSE</code></td>
+<td>Admin pre-created an empty <code>CREATED</code>-status slot for this kind whose <code>(city, country)</code> matches</td>
+<td>RPC <code>UPDATE</code>s the slot in place → <code>PLANNED</code></td>
+</tr>
+<tr>
+<td><code>PRIOR_SEASON_MATCH</code></td>
+<td>Prior season has exactly one matching event of this kind; reuse its <code>PEWn</code> number for current season</td>
+<td>RPC <code>INSERT</code>s with <code>id_prior_event = prior.id_event</code></td>
+</tr>
+<tr>
+<td><code>NEXT_FREE_ALLOC</code></td>
+<td>Neither current nor prior matches</td>
+<td>RPC <code>INSERT</code>s with <code>id_prior_event = NULL</code> and adds an entry to the <code>alerts</code> array; Python fires one Telegram message per alert</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>City normalization</strong> (<code>fn_normalize_city_key</code>) folds diacritics via <code>translate()</code> (manual NFKD-equivalent for European scripts since <code>unaccent</code> is not installed), lowercases, strips non-alphanumerics for location, and resolves country aliases (<code>Polska→poland</code>, <code>Österreich→austria</code>, <code>Deutschland→germany</code>, etc.) — mirroring the Python <code>_COUNTRY_ALIASES</code> table from ADR-039 so the allocator's match agrees with the dedup matcher.</p>
+<p><strong>Slug events are skipped</strong> in <code>MAX(N)+1</code> computation: the Step C regex <code>'^PEW\d+-'</code> excludes legacy venue-slug codes from the candidate set. Existing slug events stay admin-managed (per ADR-042 Phase 1B status memo); they don't pollute new numbering and never participate in city-match.</p>
+<p><strong>Singletons (IMEW/DMEW)</strong>: same three-step ladder but no city match — there's at most one per season. DMEW alternates biennially with IMEW per ADR-021, so <code>PRIOR_SEASON_MATCH</code> is normally only meaningful for IMEW.</p>
+<p><strong>Multi-match raises.</strong> If two CREATED slots match the same city, or two prior-season events do, the allocator raises and the import aborts. Admin must disambiguate.</p>
+<p><strong>Race-safety.</strong> <code>fn_import_evf_events_v2</code> and <code>fn_create_evf_event_from_results</code> take <code>LOCK TABLE tbl_event IN SHARE ROW EXCLUSIVE MODE</code> before invoking the allocator, since <code>MAX(N)+1</code> is non-atomic without it.</p>
+<h3 id="pre-allocation-pathway">Pre-allocation pathway</h3>
+<p>The allocator's <code>CURRENT_SLOT_REUSE</code> step formalizes the &quot;admin pre-creates empty slots&quot; workflow:</p>
+<pre><code class="language-sql">INSERT INTO tbl_event (id_season, id_organizer, txt_code, txt_name,
+                       enum_status, txt_location, txt_country, id_prior_event)
+VALUES (
+  (SELECT id_season FROM tbl_season WHERE bool_active),
+  (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
+  'PEW7-2025-2026', 'PEW7 placeholder', 'CREATED',
+  'Salzburg', 'Austria',
+  (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW7-2024-2025')
+);
+</code></pre>
+<p>When the EVF scraper next finds a Salzburg event, the allocator hits Step A and <code>UPDATE</code>s the slot in place (status flips to <code>PLANNED</code>, name + dates fill in, child tournaments materialize). This same pre-creation is what Phase 3's <code>fn_init_season</code> will eventually automate; Phase 2's allocator is forward-compatible.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Keep code generation in Python.</strong> Rejected — Python has no transaction with the database, can't <code>MAX()+1</code> atomically, and would have to round-trip to look up prior-season events. SQL is the natural home.</li>
+<li><strong>Single allocator function with no classifier.</strong> Rejected — classification (PEW vs IMEW vs DMEW) is a separate concern and easier to test independently.</li>
+<li><strong>Backfill existing slug events automatically.</strong> Rejected — slug events have ambiguous mappings (which prior <code>PEWn</code> should <code>PEW-LIÈGE</code> be? Liège could be PEW3 or PEW7 historically). Phase 1B status memo explicitly leaves them as admin territory; this Phase doesn't change that. The single MEW slug row is fixed manually because it's unambiguous (only one DMEW per season).</li>
+<li><strong>Hard-fail on multi-match instead of raise.</strong> Same thing for our purposes — <code>RAISE EXCEPTION</code> aborts the transaction so partial state isn't committed.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>Positive:</strong></p>
+<ul>
+<li>New EVF scrapes auto-link <code>id_prior_event</code> whenever a city match exists; the FK engine works without admin intervention.</li>
+<li>Slug-event accumulation stops; existing slug events are orphaned but not multiplied.</li>
+<li>Admin gets a per-row Telegram alert only for genuinely new cities (<code>NEXT_FREE_ALLOC</code>); reuse and prior-match are summary-only — much less noise.</li>
+<li><code>fn_init_season</code> (Phase 3) just needs to pre-create CREATED slots; the allocator already understands them.</li>
+<li>All EVF events get the correct <code>EVF</code> organizer.</li>
+</ul>
+<p><strong>Negative / accepted costs:</strong></p>
+<ul>
+<li>Country-alias table now lives in two places (Python <code>_COUNTRY_ALIASES</code> + plpgsql <code>CASE</code> in <code>fn_normalize_city_key</code>). Drift would silently miss matches; covered by pgTAP test evf.25 + Python evf.15.</li>
+<li>Per-event detail-page enrichment fields (<code>url_event</code>, <code>url_invitation</code>, etc.) on <code>CURRENT_SLOT_REUSE</code> paths overwrite any value the admin manually set on the pre-created slot only when the new value is non-empty (<code>COALESCE(NULLIF(...), existing)</code> guard). Admin-edit policy is &quot;admin wins for non-empty fields&quot;; matches existing ADR-028 refresh semantics.</li>
+<li><code>fn_import_evf_events</code> (v1) is left in place for the existing 12_evf_import.sql tests (4 assertions still call it). Future cleanup task will deprecate v1 once nothing references it.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="migration-test-references">Migration &amp; test references</h2>
+<ul>
+<li>Migrations: <a href="../../supabase/migrations/20260427000001_event_code_allocator.sql"><code>20260427000001_event_code_allocator.sql</code></a>, <a href="../../supabase/migrations/20260427000002_fn_import_evf_events_v2.sql"><code>20260427000002_fn_import_evf_events_v2.sql</code></a>, <a href="../../supabase/migrations/20260427000003_fix_slug_seed_row.sql"><code>20260427000003_fix_slug_seed_row.sql</code></a></li>
+<li>Post-seed mirror (LOCAL only): <a href="../../supabase/seed_post_backfill.sql"><code>supabase/seed_post_backfill.sql</code></a> re-applies the slug-fix after seed loads (the migration ran against an empty schema in local).</li>
+<li>Tests: <a href="../../supabase/tests/18_evf_event_allocator.sql"><code>supabase/tests/18_evf_event_allocator.sql</code></a> — evf.25–evf.39 (15 assertions); <a href="../../python/tests/test_evf_calendar.py"><code>python/tests/test_evf_calendar.py</code></a> — evf.40–evf.42 (3 assertions in <code>TestEvfPhase2Allocator</code>).</li>
+<li>Python: <a href="../../python/scrapers/evf_sync.py"><code>python/scrapers/evf_sync.py</code></a> — <code>sync_calendar()</code> calls <code>fn_import_evf_events_v2</code> and emits per-alert Telegrams; <code>_create_cert_event()</code> calls <code>fn_create_evf_event_from_results</code>.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="cross-phase-coordination">Cross-phase coordination</h2>
+<ul>
+<li>ADR-028 amended (rev 3) — calendar import RPC is now <code>fn_import_evf_events_v2</code>; results path uses <code>fn_create_evf_event_from_results</code>; both go through the allocator and use EVF organizer.</li>
+<li>ADR-021 unchanged — biennial rule still expressed via the FK engine, now correctly populated by the allocator on import.</li>
+<li>Phase 3 (<code>fn_init_season</code> + admin UI) builds on the pre-creation pathway formalised here.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="042-carryover-engine-dispatcher.html">← ADR-042: Per-season carry-over engine selection via dispatcher pattern</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="044-phase3-wizard.html">→ ADR-044: Phase 3 Admin UI + Season-Init Wizard (atomic transaction model)</a></nav>
+<footer class="foot">Generated from <code>043-evf-event-allocator.md</code> · source SHA-256 <code>2ed8c227953602a91659a62a8092c9c4a5f578a5e576e19b60500e0b9eebb119</code></footer>
+</div></body></html>

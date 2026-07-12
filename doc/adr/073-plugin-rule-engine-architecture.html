@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="073-plugin-rule-engine-architecture.md">
+<meta name="adr-source-sha256" content="3994d18e5e321fae8d042e8a928769b9f8173d247ce8bb8d9bc158822b690029">
+<title>ADR-073 · Plugin + rule-engine ingestion architecture</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 073</p><h1>Plugin + rule-engine ingestion architecture</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §3–§7. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> <strong>amends</strong> ADR-050 (the stage-monolith becomes plugins; draft tables removed); ADR-006 (JSONB rules — precedent for an optional <code>tbl_flow_rule</code>); ADR-055 (provenance middleware); hosts the plugins/flows of ADR-070 / ADR-071 / ADR-072 / ADR-074.</dd></div><div><dt>Source</dt><dd class=""><code>073-plugin-rule-engine-architecture.md</code></dd></div><div><dt>Length</dt><dd class="">99 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
+<a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §3–§7. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.
+<strong>Date:</strong> 2026-06-14
+<strong>Relates to:</strong> <strong>amends</strong> ADR-050 (the stage-monolith becomes plugins; draft tables removed); ADR-006
+(JSONB rules — precedent for an optional <code>tbl_flow_rule</code>); ADR-055 (provenance middleware); hosts the
+plugins/flows of ADR-070 / ADR-071 / ADR-072 / ADR-074.</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</a></li><li class="depth-2"><a href="#amendment-n14-2026-06-18-the-commit-plugin-persists-tbl-tournament-url-results">Amendment (N14, 2026-06-18) — the Commit plugin persists `tbl_tournament.url_results`</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>ADR-050's unified pipeline is a fixed linear sequence of stages with branching <code>if</code>s inside stages
+(organizer / domestic / international forks, halt logic). Adding a scenario means editing orchestration
+code, and business branches are hidden inside stage functions. A fully automated, self-healing pipeline
+has <em>several</em> scenarios — ingest, recompute, dedup, post-commit — that share most steps; the linear
+monolith cannot express that without duplication.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Restructure into <strong>three one-directional layers</strong>:</p>
+<ol>
+<li><strong>RuleBook + RuleEngine (plan time).</strong> A <code>Rule</code> is a named <code>Flow</code> = an ordered tuple of <code>Step</code>s; the
+<code>RuleBook</code> is <code>dict[Flow → Rule]</code>. <code>RuleEngine.plan(FlowParams)</code> looks up the flow, prunes steps by a
+plan-time <code>when</code> predicate, and produces an immutable, <strong>DAG-validated</strong> <code>ExecutionPlan</code>
+(<code>reads ⊆ earlier writes</code>, so mis-ordering fails before any row is touched). Sequencing is
+<strong>declarative and inspectable before execution</strong> (<code>plan.describe()</code>).</li>
+<li><strong>Orchestrator (run time).</strong> Generic, domain-ignorant: for each plugin, <code>applies(ctx)?</code> →
+middleware-wrapped <code>run</code>. <strong>One direction only</strong> — a plugin never calls another plugin or the
+orchestrator.</li>
+<li><strong>Plugins (logic).</strong> Each implements the <code>IngestPlugin</code> contract (<code>reads</code> / <code>writes</code> / <code>effects</code> +
+<code>applies</code> + <code>run</code>), one concern each, all I/O via injected <code>Services</code>. Five <strong>kinds</strong>:
+<strong>Source · Gate · Transform · Mutator · Reactor</strong>. Mutators emit <strong>signals</strong>; <strong>Reactors</strong> observe a
+signal → emit a <strong>Flow</strong> — the only mechanism that closes loops, with <strong>no back-edges</strong> in the forward
+pipeline.</li>
+</ol>
+<p>Cross-cutting concerns (timing, structured log, provenance ADR-055, escalation ADR-074) are <strong>middleware</strong>
+wrapping every <code>run</code>, keeping plugins pure. The <code>RuleBook</code> ships <strong>code-defined</strong>; an optional
+<code>tbl_flow_rule</code> (ADR-006 JSONB precedent) is a future knob for deploy-free flow changes.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>Keep the linear stage pipeline (ADR-050).</strong> Rejected: cannot express multiple flows sharing steps
+without copy-paste; hides business branches inside code.</li>
+<li><strong>A workflow engine / DAG library (Airflow, Prefect, Dagster).</strong> Rejected: heavyweight for an in-process
+pipeline; we need a tiny, testable, inspectable planner — not a scheduler or a service.</li>
+<li><strong>Plugins calling plugins (free-form DAG).</strong> Rejected: re-introduces hidden coupling. The
+Mutator→signal→Reactor seam gives event-driven composition without back-edges.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>Adding a scenario = adding a <code>Rule</code></strong> (and maybe a plugin), with no change to the orchestrator or
+existing plugins — this is exactly what lets the domestic pipeline ship as 4 flows and defer the
+international flows (design §12) at zero cost.</li>
+<li>Sequence is unit-testable on its own (&quot;flow X with params Y ⇒ plugins Z&quot;).</li>
+<li>Write-discipline (<code>writes</code> only) + effects-honesty make recompute / re-ingest safely re-runnable.</li>
+<li>The draft tables + <code>DRY_RUN</code> RPCs from ADR-050 are removed (no review gate to stage for — ADR-070).</li>
+<li>New layout: <code>python/pipeline/core/</code> (contract, orchestrator), <code>engine/</code> (rulebook, rule_engine, flows),
+<code>plugins/</code>, <code>middleware/</code>, <code>run.py</code>.</li>
+</ul>
+</section>
+<section class="section-card adr-section tests"><p class="kicker">tests</p><h2 id="tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</h2>
+<p>planner resolves flow → sequence (incl. <code>ResolveFencers</code> before <code>SplitByAge</code>); DAG-validation rejects
+mis-order; orchestrator skip / fault / trace; <strong>parity gate</strong> — wrapped legacy stages produce
+byte-identical output on the same inputs.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-n14-2026-06-18-the-commit-plugin-persists-tbl-tournament-url-results">Amendment (N14, 2026-06-18) — the Commit plugin persists <code>tbl_tournament.url_results</code></h2>
+<p><strong>Context.</strong> The fencer Drilldown links each result to its official results page from
+<code>tbl_tournament.url_results</code> (via <code>vw_score</code>). Populating it relied on the admin pressing the event-level
+&quot;populate from event URL&quot; button, which dispatches <code>populate_tournament_urls.py</code> through a GitHub Actions
+<code>workflow_dispatch</code> — flaky (returns a 502 when the dispatch is rejected) and a separate manual step. But the
+from-URL ingest <strong>already</strong> holds each committed tournament's results-page URL (<code>parsed.source_url</code>, set per
+round by the ADR-076 keep-rule), so the link can be written inline at commit with no extra fetch.</p>
+<p><strong>Decision.</strong> The <strong><code>Commit</code> plugin</strong> (the sole writer of <code>tbl_tournament</code>) passes the parsed source URL into
+<code>fn_find_or_create_tournament</code> via a new trailing arg <code>p_url_results TEXT DEFAULT NULL</code>
+(migration <code>20260619000001</code>, which drops the prior 7-arg overload before recreating so 6-arg calls stay
+unambiguous). Population is <strong>gated on viewable WEB source kinds</strong> —
+<code>_WEB_SOURCE_KINDS = {FTL, ENGARDE, FOURFENCE, DARTAGNAN, OPHARDT_HTML}</code> + an <code>http(s)</code> <code>source_url</code>:</p>
+<ul>
+<li>a non-NULL URL <strong>sets/overwrites</strong> <code>url_results</code> (re-ingest refreshes to the page actually ingested);</li>
+<li><code>FENCINGTIME_XML</code> / <code>EVF_API</code> / <code>FILE_IMPORT</code> and non-http source_urls pass <strong>NULL → preserve</strong> the existing
+value (the EVF API URL is a JSON endpoint, not a page; <code>url_event</code> and admin-entered URLs are never wiped).</li>
+</ul>
+<p>Reuses the ADR-076 <code>source_decisions</code> category→source-URL map (also surfaced in the staging report's Committed
+section + a <code>Tournament URLs populated: N/M</code> summary) and brings the <strong>ADR-068</strong> <code>populate_tournament_urls</code>
+behaviour inline. The standalone button/tool remains as a manual fallback. Validation is inherent: the URL
+written is the exact page the results were just parsed from. Tests (RED first): pgTAP
+<code>46_tournament_url_on_ingest.sql</code> (46.1–46.5: insert/overwrite/preserve + <code>vw_score</code> exposure); pytest
+<code>test_url_results_on_ingest.py</code> (N14.4 connector forward, N14.5 gate matrix, N14.6 from-URL provenance,
+N14.8 staging mention).</p>
+<p><strong>NOT DONE (deferred):</strong> the standalone &quot;populate from event URL&quot; (⬇) button — <code>populate_tournament_urls.py</code> —
+does <strong>not</strong> support <strong>Ophardt</strong> (<code>fencingworldwide.com</code>): its event-index page has no parser/fixture and there
+are 0 Ophardt domestic events, so a tested discovery branch could not be written. The button raises a clear
+<code>NotImplementedError</code> for Ophardt URLs, and the staging report adds an <em>Ophardt — populate button NOT DONE</em>
+warning. This is button-only: Ophardt <code>url_results</code> <strong>is</strong> populated during full ingestion (the <code>OPHARDT_HTML</code>
+gate). Other platforms (FTL/Engarde/4fence/Dartagnan) work in the button as before.</p>
+<p>Cross-references: <strong>ADR-076</strong> (keep-rule + source decisions), <strong>ADR-068</strong> (FTL session / populate tool).</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="072-cdc-recompute-debounce.html">← ADR-072: Master-data-change-triggered idempotent recompute (CDC queue + debounce)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="074-no-halt-fault-resolution.html">→ ADR-074: No hard halt — declarative fault resolution + last-resort escalation</a></nav>
+<footer class="foot">Generated from <code>073-plugin-rule-engine-architecture.md</code> · source SHA-256 <code>3994d18e5e321fae8d042e8a928769b9f8173d247ce8bb8d9bc158822b690029</code></footer>
+</div></body></html>

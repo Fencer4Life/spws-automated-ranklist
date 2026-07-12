@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="048-source-vs-db-audit-and-phantom-rows.md">
+<meta name="adr-source-sha256" content="5f439e10ae0f128b86d4aef8acbd6da5b2c4fedeec156866678a79a4bb18ba99">
+<title>ADR-048 · Source-vs-DB audit + phantom-row policy</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 048</p><h1>Source-vs-DB audit + phantom-row policy</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted; tooling in place. Bulk phantom-row resolution deferred to the from-scratch re-scrape.</dd></div><div><dt>Date</dt><dd class="">2026-04-30 <strong>Relates to:</strong> ADR-024 (Combined Category Splitting), ADR-047 (V-cat invariant trigger)</dd></div><div><dt>Source</dt><dd class=""><code>048-source-vs-db-audit-and-phantom-rows.md</code></dd></div><div><dt>Length</dt><dd class="">67 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted; tooling in place. Bulk phantom-row resolution deferred to the from-scratch re-scrape.
+<strong>Date:</strong> 2026-04-30
+<strong>Relates to:</strong> ADR-024 (Combined Category Splitting), ADR-047 (V-cat invariant trigger)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#audit-tooling">Audit tooling</a></li><li class="depth-3"><a href="#verdict-policy">Verdict policy</a></li><li class="depth-3"><a href="#per-row-deletion-discipline">Per-row deletion discipline</a></li><li class="depth-3"><a href="#results-lost-event-flag-deferred">&quot;Results lost&quot; event flag — deferred</a></li><li class="depth-3"><a href="#joint-pool-reference-field-superseded-by-adr-049">Joint-pool reference field — superseded by ADR-049</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests">Tests</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The V-cat invariant guard from ADR-047 catches a specific class of bug — fencer placed in a tournament whose <code>enum_age_category</code> disagrees with <code>fn_age_category(BY, season_end_year)</code>. It does not catch a different, larger class: result rows for fencers who <strong>never appeared in the source</strong> at all.</p>
+<p>Discovered 2026-04-30 while resolving the last 9 V-cat orphan moves: GRODNER Michał had a <code>tbl_result</code> row in <code>PEW5ef-V4-M-EPEE-2025-2026</code> (Stockholm), but cross-checking against the live Engarde URL (<code>https://engarde-service.com/competition/sthlm/vet2026/me*</code>) showed no GRODNER in any V-cat fencer list. The row was fabricated by an earlier ingest. The same pattern was found for NOWAK Szymon (PEW6efs), KAZIK Martin (IMEW women's sabre), BORKOWSKI Andrzej (PEW10), BAZAK Jacek (PEW2) and others.</p>
+<p>A full vendor-source audit on LOCAL (2655 result rows, 538 unique URLs across FTL / Engarde / 4Fence / Dartagnan / EVF API) found:</p>
+<ul>
+<li>1948 OK matches (73 %)</li>
+<li>37 weak matches (low-confidence fuzzy hit, mostly diacritic noise)</li>
+<li>670 phantom rows (URL fetched + parsed but DB fencer not present, OR URL missing/broken)</li>
+</ul>
+<p>670 phantoms broke down further: 291 <code>name_not_in_source</code> (URL works, fencer simply isn't there), 221 <code>no_url</code> (no source to check), 158 URL/parse errors. Phantom rows are <strong>not</strong> an international-only problem — domestic events held 309 phantoms, international 317.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="audit-tooling">Audit tooling</h3>
+<p><strong><code>python/tools/audit_vcat_violations.py</code></strong> — read-only CLI surface for <code>vw_vcat_violation</code> (V-cat invariant violators).</p>
+<p><strong>Source-vs-DB audit script</strong> — kept at <code>/tmp/source_audit.py</code> for one-shot use; logic is to be folded into a permanent <code>python/tools/audit_phantom_rows.py</code> after the from-scratch re-scrape lands. The script:</p>
+<ol>
+<li>Pulls every <code>(id_result, fencer_name, tournament_code, url_results)</code> from LOCAL via docker exec psql.</li>
+<li>Groups by URL; loads the FTL audit cache (<code>/tmp/ppw_audit_ftl_data.json</code>); for each non-cached URL, fetches live (FTL with auth, Engarde / 4Fence / Dartagnan plain HTTP, EVF API).</li>
+<li>Parses each into a <code>[fencer_name]</code> list using the platform-specific parser already in <code>python/scrapers/</code>.</li>
+<li>For each DB row: diacritic-fold + uppercase + token-Jaccard + surname-prefix bonus. Threshold ≥ 85 = OK; 60–84 = WEAK_MATCH; &lt; 60 = PHANTOM.</li>
+</ol>
+<h3 id="verdict-policy">Verdict policy</h3>
+<p>Per user direction (2026-04-30): URL-error / no-URL / unsupported-platform / parse-error all collapse into <strong>PHANTOM</strong>. Reason captured separately for diagnostics. Rationale: any condition where the source can't confirm the fencer is the same evidence — no source backing.</p>
+<h3 id="per-row-deletion-discipline">Per-row deletion discipline</h3>
+<p>Phantom rows are not auto-deleted. The historical <code>feedback_no_delete_without_asking.md</code> memory rule (deleted 2026-05-02; will be reintroduced post-rebuild) required explicit per-row admin approval before any tournament/result/event delete. The 8 deletes applied 2026-04-30 (GRODNER 7913, NOWAK 8010, KAZIK 10096, BORKOWSKI 10410, BAZAK 10472, OWCZAREK 9217, LIPKOWSKA 9298, KOWALSKA 9299, plus PAWŁOWSKI's ineligible PEW6efs row 8014) were each individually authorised after the user verified against the source URL.</p>
+<h3 id="results-lost-event-flag-deferred">&quot;Results lost&quot; event flag — deferred</h3>
+<p>Some events have legitimate <code>no_url</code> (e.g. PPW1-2025-2026, where the original results were lost and the data was ingested from xlsx — ADR-024 § &quot;Standing exception&quot;). The audit currently treats every <code>no_url</code> as PHANTOM, producing false positives for these events.</p>
+<p>A future schema field <code>tbl_event.bool_results_lost</code> (or equivalent) would let the audit exclude legitimately-no-URL events. Deferred until after the from-scratch re-scrape, when the full set of events is known.</p>
+<h3 id="joint-pool-reference-field-superseded-by-adr-049">Joint-pool reference field — superseded by ADR-049</h3>
+<p>Original proposal here was a self-referential FK <code>tbl_tournament.id_joint_pool_parent</code>. That design was implemented and reverted on 2026-04-30 in favour of a simpler boolean <code>bool_joint_pool_split</code> recorded by the ingester at write time. See ADR-049 for the accepted design and rationale.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>Auto-delete phantoms</strong> — rejected; would have nuked legitimately-no-URL events (PPW1-2025-2026 etc.) and the user has explicitly forbidden auto-deletes.</li>
+<li><strong>Trust DB BY over source</strong> — rejected; the GRODNER / NOWAK / PAWŁOWSKI / KAZIK / BORKOWSKI / BAZAK / OWCZAREK / LIPKOWSKA / KOWALSKA cases prove BY math is not a reliable source-of-truth when individual fencer BYs are wrong. Source is the ground truth.</li>
+<li><strong>Round-2 of the V-cat replay (BY-derived &quot;move-to-correct-cat&quot; + create missing siblings)</strong> — implemented and reverted within the same session. The Stockholm verification proved the moves were fabricating rows where the source had nothing.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>LOCAL data state, post-cleanup: 0 V-cat invariant violators; 8 confirmed-fabricated rows deleted; 670 audit-flagged phantoms remaining (deferred to re-scrape).</li>
+<li>CERT and PROD seeded from LOCAL on 2026-04-30 — they hold the same intermediate state. The 670 phantoms are inherited.</li>
+<li>Layer 6 FATAL flip applied to LOCAL only. CERT/PROD still on NOTICE-only mode pending the re-scrape to clear phantoms first.</li>
+<li>The <code>replay_vcat_violations.py</code> tool is committed but flagged &quot;do NOT re-run without reading ADR-047&quot; in its docstring.</li>
+</ul>
+</section>
+<section class="section-card adr-section tests"><p class="kicker">tests</p><h2 id="tests">Tests</h2>
+<ul>
+<li>pytest <code>test_audit_vcat_violations.py</code> — 7 tests covering CLI summary shapes (counts by season, grouping by tournament).</li>
+<li>pgTAP <code>24_vw_vcat_violation.sql</code> — 4 tests for the admin view.</li>
+<li>No automated test for the source-vs-DB script itself; it's a one-shot CLI relying on live vendor URLs.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="047-vcat-invariant-trigger-and-splitter-consolidation.html">← ADR-047: V-cat invariant trigger + combined-pool splitter consolidation</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="049-joint-pool-split-flag.html">→ ADR-049: Joint-pool split flag on tbl_tournament</a></nav>
+<footer class="foot">Generated from <code>048-source-vs-db-audit-and-phantom-rows.md</code> · source SHA-256 <code>5f439e10ae0f128b86d4aef8acbd6da5b2c4fedeec156866678a79a4bb18ba99</code></footer>
+</div></body></html>

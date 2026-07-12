@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="056-vcat-from-birthyear.md">
+<meta name="adr-source-sha256" content="179411d52edbeae5925f4aca43283041ed5c3182015ed426151c36bb8ac060c2">
+<title>ADR-056 · V-cat resolution by post-match fencer birth year</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 056</p><h1>V-cat resolution by post-match fencer birth year</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-05-02) <strong>Related:</strong> ADR-047 (V-cat invariant + splitter consolidation), ADR-049 (joint-pool split flag), ADR-050 (unified ingestion pipeline), ADR-055 (ingest traceability) <strong>Phase:</strong> 5 (operational rebuild)</dd></div><div><dt>Date</dt><dd class="">Not recorded</dd></div><div><dt>Source</dt><dd class=""><code>056-vcat-from-birthyear.md</code></dd></div><div><dt>Length</dt><dd class="">327 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (2026-05-02)
+<strong>Related:</strong> ADR-047 (V-cat invariant + splitter consolidation), ADR-049 (joint-pool split flag), ADR-050 (unified ingestion pipeline), ADR-055 (ingest traceability)
+<strong>Phase:</strong> 5 (operational rebuild)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#implementation">Implementation</a></li><li class="depth-2"><a href="#test-scope-tdd">Test scope (TDD)</a></li><li class="depth-2"><a href="#revision-2026-05-03-bracket-label-v-cat-overrides-by-derivation-for-past-tournaments">Revision (2026-05-03) — Bracket-label V-cat overrides BY derivation for past tournaments</a></li><li class="depth-3"><a href="#context-revised">Context (revised)</a></li><li class="depth-3"><a href="#decision-revised">Decision (revised)</a></li><li class="depth-3"><a href="#implementation-impact">Implementation impact</a></li><li class="depth-3"><a href="#consequences-additional">Consequences (additional)</a></li><li class="depth-3"><a href="#test-scope-tdd-plan-ids-5-19-x">Test scope (TDD, plan IDs 5.19.x)</a></li><li class="depth-2"><a href="#revision-2026-06-13-stage-0-birth-year-reconciliation-midpoint-estimate">Revision (2026-06-13) — Stage-0 birth-year reconciliation + midpoint estimate</a></li><li class="depth-3"><a href="#context-revised-2">Context (revised)</a></li><li class="depth-3"><a href="#decision-revised-2">Decision (revised)</a></li><li class="depth-3"><a href="#midpoint-convention-replaces-youngest-edge">Midpoint convention (replaces youngest-edge)</a></li><li class="depth-3"><a href="#idempotence">Idempotence</a></li><li class="depth-3"><a href="#one-time-backfill-migration-20260613000002">One-time backfill (migration 20260613000002)</a></li><li class="depth-3"><a href="#reuse-no-new-db-objects">Reuse (no new DB objects)</a></li><li class="depth-3"><a href="#test-scope-tdd-plan-ids-10-x">Test scope (TDD, plan IDs 10.x)</a></li><li class="depth-2"><a href="#amendment-2026-06-26-reconcile-correction-target-promotion-band-youngest-edge">Amendment (2026-06-26) — reconcile correction target: promotion → band youngest edge</a></li><li class="depth-2"><a href="#amendment-2026-06-27-monotonic-mixed-gender-safe-reconcile-mixed-brackets-split-by-by">Amendment (2026-06-27) — monotonic + mixed-gender-safe reconcile; mixed brackets split by BY</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The unified pipeline's Stage 4 split combined-pool brackets into per-V-cat tournaments using <code>raw_age_marker</code> — a per-fencer marker the parser was supposed to extract from source data (e.g. FTL's &quot;(1)&quot; suffix on a fencer name, FT XML's <code>&lt;AgeCategory&gt;</code> attribute, etc.).</p>
+<p>In practice this is unreliable:</p>
+<ul>
+<li><strong>FTL JSON</strong> (<code>/events/results/data/&lt;UUID&gt;</code>) doesn't emit per-fencer age markers in the default <code>parse_json</code> path; markers only appear in some legacy combined-pool paths.</li>
+<li><strong>FTL eventSchedule names</strong> were doing parallel V-cat parsing in <code>python/tools/scrape_ftl_event_urls.parse_tournament_name</code> — splitting &quot;Vet-50 Men's Épée&quot; → V2 etc. — but this depends on the organizer's display-name conventions, which vary across events even within the same federation. This Phase-5 session hit four separate variants in one event (<code>Vet-50</code>, <code>Vet-60</code>, <code>Vet-70</code>, bare <code>Vet</code>, <code>Senior</code> = V0 in one organizer's convention).</li>
+<li><strong>EVF API</strong> is the only source that reliably tags each fencer's V-cat at the source.</li>
+<li><strong>Other parsers</strong> (Engarde, 4Fence, Dartagnan, Ophardt, FT XML) produce mixed marker quality.</li>
+</ul>
+<p>Phase 5 needs to ingest ~84 historical events spanning multiple sources. The Stage 4 marker-based split silently produced wrong V-cat assignments (everything stacked on V1 default) when markers were absent. This is the kind of hidden data error that propagates into the ranklist permanently — exactly what the rebuild is meant to fix.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p><strong>V-cat resolution moves to a post-match step, deriving V-cat from the matched fencer's <code>tbl_fencer.int_birth_year</code> against the event year.</strong></p>
+<p>Concretely:</p>
+<ol>
+<li>
+<p>After Stage 6 (matcher), each <code>StageMatchResult</code> carries <code>id_fencer</code> for matched rows.</p>
+</li>
+<li>
+<p>A new step (<code>s7_split_by_vcat</code>) batch-fetches <code>int_birth_year</code> for all matched fencers and computes <code>derived_vcat = vcat_for_age(event_year - birth_year)</code>:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Age (years on event_year)</th>
+<th>V-cat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>&lt; 40</td>
+<td>V0</td>
+</tr>
+<tr>
+<td>40–49</td>
+<td>V1</td>
+</tr>
+<tr>
+<td>50–59</td>
+<td>V2</td>
+</tr>
+<tr>
+<td>60–69</td>
+<td>V3</td>
+</tr>
+<tr>
+<td>≥ 70</td>
+<td>V4</td>
+</tr>
+</tbody>
+</table></div>
+</li>
+<li>
+<p>Matches are grouped by <code>derived_vcat</code>. Each group becomes one <code>tbl_tournament_draft</code> row with code <code>&lt;event&gt;-&lt;vcat&gt;-&lt;weapon&gt;-&lt;gender&gt;</code>.</p>
+</li>
+<li>
+<p><strong>Joint-pool flag</strong> (<code>bool_joint_pool_split</code>, ADR-049): set <code>true</code> on every tournament in the group iff <code>len(groups) &gt; 1</code> — i.e. the source bracket really did mix V-cats.</p>
+</li>
+<li>
+<p>Single-V-cat brackets (e.g. FTL's &quot;Vet-60 Men's Épée&quot;) still produce one tournament_draft (because all fencers fall in V3 by birth year), with <code>bool_joint_pool_split = false</code>.</p>
+</li>
+<li>
+<p>Result drafts get the correct <code>id_tournament_draft</code> linkage to their V-cat group's tournament (fixing the placeholder <code>=0</code> bug from Phase 3 that prevented <code>fn_commit_event_draft</code> from migrating result rows).</p>
+</li>
+</ol>
+<p>Stage 4's old marker-based split is retained as a fallback for source paths that DO carry reliable per-fencer markers (cert_ref, EVF API), but is no longer the primary V-cat assignment mechanism. PENDING/UNMATCHED rows (no <code>id_fencer</code> to derive birth year from) are surfaced for operator review and not auto-assigned to a V-cat.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>Keep marker-based Stage 4 + extend FTL splitter.</strong> Tried during Phase 5 day 1 and produced cascading bugs as each new organizer convention surfaced. Splitter became a moving target.</li>
+<li><strong>Require operator to manually tag V-cat per bracket via override YAML.</strong> Scales poorly across 84 events; fragile against organizer renames.</li>
+<li><strong>Trust the source's V-cat tag (when present) over birth year.</strong> Would re-introduce the same fragility; sources are sometimes wrong (e.g. <code>int_age_category</code> on EVF combined-pool tournaments was the entire bug behind the Goal-1 EVF re-fix in 2026-04). Birth year is canonical.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>Positive</strong></p>
+<ul>
+<li>One canonical V-cat source (<code>tbl_fencer.int_birth_year</code>) — same logic for every parser.</li>
+<li>Joint-pool detection becomes a derived property, not a per-source heuristic.</li>
+<li>FTL splitter (<code>parse_tournament_name</code>) becomes optional metadata, not load-bearing.</li>
+<li>The placeholder linkage bug (<code>id_tournament_draft = 0</code>) gets fixed in the same change.</li>
+</ul>
+<p><strong>Negative / risks</strong></p>
+<ul>
+<li>PENDING / UNMATCHED rows (no <code>id_fencer</code>) can't be V-cat-assigned. They appear in the staging diff for operator review and don't get committed until matched.</li>
+<li>Requires <code>int_birth_year</code> to be populated for every matched fencer. The existing <code>BY_ESTIMATED</code> provenance value (per ADR-050 schema) handles fencers with estimated birth years; estimated BYs are still load-bearing for V-cat — operator owns the BY-correction loop.</li>
+<li>Foreign fencers with unknown / nullable <code>int_birth_year</code> cannot be V-cat-assigned. They get tagged for operator review (consistent with ADR-050's &quot;POL-only intake for EVF/FIE; SPWS = all participants&quot;).</li>
+</ul>
+<p><strong>Neutral</strong></p>
+<ul>
+<li>Marker-based Stage 4 stays as a fast-path for reliable parsers. No regression for cert_ref / EVF API.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="implementation">Implementation</h2>
+<ul>
+<li>Add <code>db.fetch_birth_years_batch(id_fencers: list[int]) -&gt; dict[int, int | None]</code>.</li>
+<li>Add <code>python.pipeline.stages.s7_split_by_vcat(ctx, db)</code> invoked after <code>s6_matcher</code>.</li>
+<li><code>ctx.vcat_groups: dict[str, list[StageMatchResult]]</code> — populated by the new stage.</li>
+<li><code>ReviewSession._build_tournament_draft_rows</code>: emit one row per V-cat group; <code>bool_joint_pool_split</code> derived.</li>
+<li><code>ReviewSession._build_result_draft_rows</code>: emit one row per match; set <code>id_tournament_draft</code> to the matching V-cat tournament; replace the <code>=0</code> placeholder.</li>
+<li><code>DraftStore.write_tournament_drafts</code>: return assigned <code>id_tournament_draft</code> per row so the result-draft writer can link.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="test-scope-tdd">Test scope (TDD)</h2>
+<ul>
+<li>pgTAP — <code>fn_commit_event_draft</code> migrates results when result_drafts have proper <code>id_tournament_draft</code> linkage (regression for the placeholder bug).</li>
+<li>pytest — <code>s7_split_by_vcat</code>: single-V-cat group, joint-pool group (≥2 V-cats), unmatched-row carve-out, BY-NULL fencer carve-out.</li>
+<li>pytest — birth-year batch fetch wrapper.</li>
+<li>pytest — <code>_build_*_draft_rows</code>: correct linkage between tournament and result drafts.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="revision-2026-05-03-bracket-label-v-cat-overrides-by-derivation-for-past-tournaments">Revision (2026-05-03) — Bracket-label V-cat overrides BY derivation for past tournaments</h2>
+<h3 id="context-revised">Context (revised)</h3>
+<p>Phase 5 GP1-2023-2024 ingestion surfaced a routing inconsistency: a fencer
+born 1974, physically present in the FTL <code>Vet Men's Saber</code> bracket (V1),
+ended up in the V2-SABRE-M ranklist tournament because <code>s7_split_by_vcat</code>
+unconditionally derived V-cat from <code>BY + season_end_year</code> (50 in 2024 → V2).</p>
+<p>The original ADR treated source bracket labels as unreliable. In practice
+for SPWS-organized events, the FTL bracket label IS the organizer's
+explicit placement decision for that season — the source of truth. Applying
+canonical BY-math overrides it, retroactively reassigning fencers to
+ranklists they never competed in. A fencer who was V1 in the 2023-2024
+season (organizer placed him in V1 bracket on 2023-01-14) must STAY V1 in
+that season's ranklist forever, even though the same fencer becomes V2 in
+2024-2025 (next age tier).</p>
+<h3 id="decision-revised">Decision (revised)</h3>
+<p><strong>Single-V-cat bracket label wins.</strong> When the source bracket carries an
+unambiguous V-cat label (e.g. FTL's <code>Vet-50 Men's Épée</code> → V2,
+<code>Vet Men's Saber</code> → V1, parsed by <code>parse_tournament_name</code>), every matched
+fencer in that bracket is assigned to that V-cat — regardless of the
+<code>BY + season_end_year</code> canonical computation. The organizer's bracket
+placement is the source of truth for past tournaments.</p>
+<p><strong>BY derivation applies only to joint-pool brackets.</strong> When the bracket
+genuinely combines V-cats (parsed name returns a list, e.g. <code>kat.0-2</code>,
+<code>Vet Mixed</code>, <code>v0v1v2</code> combined-pool labels), no single label exists, and
+each fencer's V-cat must come from <code>BY + ctx.season_end_year</code>. ADR-049's
+<code>bool_joint_pool_split = True</code> continues to flag these tournaments.</p>
+<p><strong>Season-frozen V-cat rule.</strong> A fencer's V-cat for a given season's
+ranklist is frozen at ingestion time and never recomputed retroactively.
+ZAWROTNIAK Przemysław (BY=1974) was V1 in the 2023-2024 season (V1 bracket
+placement on 2023-01-14) and IS V2 in the 2024-2025 season (his age tier
+flipped). Re-running the rebuild in 2026 does not change his 2023-2024
+contributions.</p>
+<p><strong>EVF events are unaffected.</strong> EVF API tags each fencer's V-cat at the
+source; this revision changes only the FTL/Engarde/4Fence/Ophardt
+parser paths where bracket label is the strongest signal.</p>
+<h3 id="implementation-impact">Implementation impact</h3>
+<ul>
+<li><code>s7_split_by_vcat</code>: when <code>ctx.parsed.category_hint</code> is a single V-cat
+string, group every matched fencer under that V-cat. Skip BY-derivation
+entirely. Only when <code>category_hint is None</code> (joint-pool bracket) does
+the BY-derivation path apply.</li>
+<li><code>fn_assert_result_vcat</code>: relax the assertion to use bracket-derived V-cat
+(i.e. <code>enum_source_age_category</code>) as the expected V-cat when set; fall
+back to BY-derived V-cat when source is null (joint-pool path).</li>
+<li><code>_consolidate_duplicate_codes</code>: recompute <code>int_participant_count</code> from
+the merged result_drafts after consolidation (separate fix; previous
+behaviour kept the keeper's source-URL count, drifting from row count).</li>
+<li>Past-data rollback: any event committed under the pre-revision logic
+must be deleted from <code>tbl_tournament</code> + <code>tbl_result</code> and re-ingested.
+Phase-5 rebuild scope as of 2026-05-03: GP1-2023-2024 only.</li>
+</ul>
+<h3 id="consequences-additional">Consequences (additional)</h3>
+<p><strong>Positive</strong></p>
+<ul>
+<li>Tournament row count matches source bracket fencer count for non-joint
+brackets (modulo PENDING / UNMATCHED carve-outs).</li>
+<li>Operator's mental model (&quot;this tournament = this URL's fencers&quot;)
+matches the data for non-joint brackets.</li>
+<li>Past ranklists are deterministic across re-ingestion attempts —
+re-running the rebuild produces identical ranklist contributions.</li>
+</ul>
+<p><strong>Negative</strong></p>
+<ul>
+<li>A fencer mis-placed by the organizer (e.g. BY=1974 fencer wrongly
+entered in V0 bracket) gets their canonical V-cat ignored. Operator
+must catch this via the staging .md review (BY column flags the
+mismatch) before signing off.</li>
+<li>BY-fencer-data still required for joint-pool brackets — same constraint
+as the original ADR-056.</li>
+</ul>
+<h3 id="test-scope-tdd-plan-ids-5-19-x">Test scope (TDD, plan IDs 5.19.x)</h3>
+<ul>
+<li>pytest 5.19.1 — <code>s7_split_by_vcat</code> uses <code>category_hint</code> when single V-cat (no BY-derivation, even for fencers whose canonical V-cat would differ).</li>
+<li>pytest 5.19.2 — <code>s7_split_by_vcat</code> falls back to BY-derivation when <code>category_hint is None</code> (joint-pool).</li>
+<li>pytest 5.19.3 — <code>_consolidate_duplicate_codes</code> recomputes <code>int_participant_count</code> from merged result_drafts after consolidation.</li>
+<li>pgTAP 5.19.4 — <code>fn_assert_result_vcat</code> uses <code>enum_source_age_category</code> when set on the result row.</li>
+<li>pgTAP 5.19.5 — <code>fn_assert_result_vcat</code> falls back to BY-derived V-cat when <code>enum_source_age_category</code> is null (joint-pool path).</li>
+<li>pytest 5.19.6 — integration: V1-bracket fencer with V2-canonical BY routes to V1-SABRE-M tournament (regression test for the GP1 bug).</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="revision-2026-06-13-stage-0-birth-year-reconciliation-midpoint-estimate">Revision (2026-06-13) — Stage-0 birth-year reconciliation + midpoint estimate</h2>
+<h3 id="context-revised-2">Context (revised)</h3>
+<p>The bracket-label rule above keeps a fencer in the V-cat the organizer placed
+them in for past tournaments, and surfaces a BY/V-cat mismatch in the staging
+.md for the operator to catch. But two gaps remained:</p>
+<ol>
+<li><strong>Genuinely-new participants</strong> (foreign women in PPW3's combined women's
+épée pool <code>E81CEE6F</code> — RABAB, MITSKEVICH, KALECKA, …) had no <code>tbl_fencer</code>
+row, so the fuzzy matcher (s6) glued them onto the nearest existing Polish
+name (&quot;class-B&quot; contamination), spilling wrong rows into V-cat brackets.</li>
+<li><strong>Stored birth years drifted</strong> out of step with the brackets a fencer
+actually competed in (ADR-010: ranking category is BY-derived, so a wrong
+BY files a result under the wrong ranking).</li>
+</ol>
+<h3 id="decision-revised-2">Decision (revised)</h3>
+<p>A new FIRST pipeline stage <strong><code>s0_reconcile_roster</code></strong> (before <code>s1_validate_ir</code>,
+i.e. before the matcher) reconciles the master roster against each bracket's
+rows, keyed on the row's <strong>authoritative V-cat</strong> (bracket <code>category_hint</code> →
+else FTL <code>(N)</code> <code>raw_age_marker</code> → else unknown):</p>
+<ol>
+<li><strong>New fencer</strong> — high-precision EXACT check (normalized surname+first_name,
+diacritic-folded, plus alias membership; nationality folded so PL==POL but a
+<em>different</em> known nationality means a different person — NOT the fuzzy
+scorer). If absent, create with <code>int_birth_year</code> = <strong>band midpoint</strong> and
+<code>bool_birth_year_estimated = TRUE</code>. V-cat unknown (unmarked combined-pool
+row) → <code>int_birth_year = NULL</code>, parked for admin.</li>
+<li><strong>Matched fencer whose stored BY conflicts</strong> with the bracket V-cat
+(<code>vcat_for_age(season_end − stored_BY) ≠ bracket_vcat</code>) → correct to the
+band midpoint. Estimated keeps the flag; <strong>CONFIRMED is overwritten AND
+downgraded to estimated</strong> (surfaced loudly in the staging .md top block + the
+admin Birth-year review tab so an organizer-bracket error is catchable). The
+audit trigger preserves the prior value.</li>
+</ol>
+<p><strong>International events (PEW/MEW/MSW, ADR-038) are skipped entirely.</strong></p>
+<h3 id="midpoint-convention-replaces-youngest-edge">Midpoint convention (replaces youngest-edge)</h3>
+<p>The birth-year ESTIMATE is now the band <strong>midpoint anchor age</strong>, replacing the
+former youngest-edge. <code>int_birth_year = season_end_year − anchor</code>:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>V-cat</th>
+<th>band</th>
+<th>anchor age</th>
+<th>BY (season_end 2026)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>V0</td>
+<td>&lt; 40</td>
+<td>35</td>
+<td>1991</td>
+</tr>
+<tr>
+<td>V1</td>
+<td>40–49</td>
+<td>45</td>
+<td>1981</td>
+</tr>
+<tr>
+<td>V2</td>
+<td>50–59</td>
+<td>55</td>
+<td>1971</td>
+</tr>
+<tr>
+<td>V3</td>
+<td>60–69</td>
+<td>65</td>
+<td>1961</td>
+</tr>
+<tr>
+<td>V4</td>
+<td>≥ 70</td>
+<td>75</td>
+<td>1951</td>
+</tr>
+</tbody>
+</table></div>
+<p>Open-ended V0/V4 anchors (35/75) are a deliberate convention; bounded bands are
+true midpoints. <strong>Ranking-neutral</strong>: youngest-edge and midpoint map to the same
+band, so the convention change + the one-time backfill never move anyone between
+rankings — only the year within the band shifts. Single source of truth:
+<code>python.matcher.pipeline.estimate_birth_year</code> (<code>_CATEGORY_MIDPOINT_AGE</code>);
+mirrored in <code>frontend/src/lib/birthYearEstimate.ts</code> (vitest 5.1 keeps lockstep).</p>
+<h3 id="idempotence">Idempotence</h3>
+<p>The exact existence check prevents re-creation; once a BY equals its band
+midpoint, <code>vcat_for_age</code> returns the same band so no further conflict fires. A
+fencer appearing in two conflicting brackets in one run is written once and the
+conflict flagged (<code>ctx.reconcile_conflicts</code>), never thrashed.</p>
+<h3 id="one-time-backfill-migration-20260613000002">One-time backfill (migration 20260613000002)</h3>
+<p>Re-midpoints existing <code>bool_birth_year_estimated = TRUE</code> fencers. <strong>Neutral by
+construction</strong>: rewrites a BY only when <code>fn_age_category</code> is unchanged for EVERY
+season the fencer has a result in (the exact join <code>fn_ranking_ppw</code> uses), so no
+result can move between rankings; boundary fencers are skipped. Idempotent.</p>
+<h3 id="reuse-no-new-db-objects">Reuse (no new DB objects)</h3>
+<p>Creation uses the existing <code>db.insert_fencer</code> (plain INSERT; the high-precision
+dedup is in Python). Reconciliation uses the existing
+<code>fn_update_fencer_birth_year</code> RPC (audit-logged). No new RPC, no new column.</p>
+<h3 id="test-scope-tdd-plan-ids-10-x">Test scope (TDD, plan IDs 10.x)</h3>
+<ul>
+<li>pytest 10.1–10.9 — <code>python/tests/test_s0_reconcile_roster.py</code>: midpoint table;
+authoritative-V-cat precedence; high-precision create (incl. NULL-BY unknown
+V-cat, alias dedup, nationality-fold, same-name-diff-nationality split);
+reconcile estimated-keep-flag + confirmed-downgrade; no-conflict no-write;
+international skip; idempotence; cross-bracket conflict flagged; staging .md
+top blocks.</li>
+<li>pgTAP 43.1–43.9 — <code>supabase/tests/43_stage0_reconciliation.sql</code>:
+<code>fn_update_fencer_birth_year</code> re-estimate + downgrade transitions, audit-trigger
+old-value preservation, NULL-BY + midpoint-BY plain inserts.</li>
+<li>vitest 5.1 + 9.111b — midpoint estimate; inconsistency flag now fires for
+estimated (downgraded) BYs.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-06-26-reconcile-correction-target-promotion-band-youngest-edge">Amendment (2026-06-26) — reconcile correction target: promotion → band youngest edge</h2>
+<p>The Stage-0 reconcile (2026-06-13) corrected a conflicting stored BY to the band
+<strong>midpoint</strong>. That is <em>ranking-neutral within a season</em> but <strong>not across seasons</strong>: a
+fencer freshly promoted into an older band, anchored to the band centre, is over-aged
+and gets prematurely re-promoted a category the following season (V0→V1 @2026: midpoint
+1981 → V2 by 2031; youngest-edge 1986 → stays V1).</p>
+<p><strong>Decision:</strong> the reconcile correction <em>target</em> now depends on direction. A <strong>promotion</strong>
+(bracket V-cat older than the BY-derived V-cat) anchors to the new band's <strong>youngest age</strong>
+(<code>_CATEGORY_MIN_AGE</code>) — &quot;she just crossed the boundary&quot;, the minimal correction.
+<strong>Demotion / other</strong> keeps the midpoint (rare, usually an organizer marker error — the
+band centre is the safe fallback). <code>estimate_birth_year</code> (band midpoint) is <strong>unchanged
+for new-fencer creation</strong>, which has no prior age signal (frontend mirror
+<code>birthYearEstimate.ts</code> stays in lockstep). Confirmed→Estimated downgrade + loud staging
+surfacing are unchanged.</p>
+<p>New helper <code>reconciled_birth_year(target_vcat, season_end, current_vcat)</code> in
+<code>python/matcher/pipeline.py</code> is the single source of truth for the target. The whole
+reconcile operation is now one shared <code>reconcile_fencer_birth_year</code> (in
+<code>python/pipeline/stages.py</code>) that <strong>both</strong> <code>s0_reconcile_roster</code> (legacy) and
+<code>ResolveFencers._reconcile_by</code> (current plugin) delegate to — the policy can no longer
+fork between the two ingestion pipelines.</p>
+<p>Tests: <code>python/tests/test_resolve_fencers.py</code> (promotion→youngest-edge, demotion→midpoint,
+cross-season stability, Confirmed→Estimated flag) and <code>python/tests/test_s0_reconcile_roster.py</code>
+(10.4.1/10.4.2 promotion edge, 10.4.2b demotion midpoint).</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-06-27-monotonic-mixed-gender-safe-reconcile-mixed-brackets-split-by-by">Amendment (2026-06-27) — monotonic + mixed-gender-safe reconcile; mixed brackets split by BY</h2>
+<p>Symptom: a V1 woman competing as a <strong>cross-gender guest</strong> in a V0 men's sabre bracket
+(PPW5 &quot;Szabla kat. 0&quot;) had her stored BY <strong>demoted to the V0 midpoint (1991)</strong> on every
+reingest (the 2026-06-26 demotion-to-midpoint path), and — once the BY was correctly held
+at V1 — the single-cat V0 bracket could no longer commit her (<code>fn_assert_result_vcat</code>
+rejects a V1 fencer in a V0 tournament). Two failure layers: BY corruption, then result misfiling.</p>
+<p><strong>Decisions:</strong></p>
+<ol>
+<li><strong>Guard 1 — CONFIRMED BY is promote-only.</strong> A demotion conflict against a CONFIRMED
+stored BY is a logged no-op (admin-only); age is monotonic, a fencer cannot get younger.
+An <strong>Estimated</strong> BY may still demote (to the band midpoint — the bracket is then the only
+age signal, so the least-biased new-fencer estimate).</li>
+<li><strong>Guard 2 — mixed-gender brackets never calibrate BY.</strong> A bracket whose resolved fencers
+carry <strong>&gt;1 distinct gender</strong> is excluded from BY reconciliation entirely (its V-cat label
+is routinely wrong at low-turnout cross-gender events). New helper
+<code>_bracket_mixed_gender</code> in <code>stages.py</code>; both reconcile sites pass the flag.</li>
+<li><strong>Split by BY for mixed-gender brackets.</strong> <code>s7_split_by_vcat</code> now routes to the
+BY-derivation path when <code>category_hint is None</code> <strong>OR</strong> the bracket is mixed-gender
+(<code>db.fetch_genders_batch</code>, &gt;1 gender) — treating a mixed-gender bracket as a combined /
+mixed-age pool. Single-GENDER label brackets keep label-wins (reconcile already aligned
+their BY; the GP1 regression <code>5.19.x</code> depends on it). Gender itself is resolved at query
+time (ADR-034 <code>fn_effective_gender</code>); <code>fn_assert_result_vcat</code> is gender-agnostic, so the
+only storage invariant is V-cat == BY, which the split guarantees. This makes reingest an
+order-independent fixpoint for mixed-age <strong>and</strong> mixed-age+mixed-gender brackets.</li>
+<li><strong>Commit gender default.</strong> A fully-mixed (<code>Sexe=&quot;X&quot;</code>) bracket parses <code>gender=None</code>; <code>Commit</code>
+defaults it to <code>'M'</code> (enum_gender is NOT NULL), women reassigned at query (ADR-034).</li>
+</ol>
+<p>Known follow-up (not in this change): the from-URL keep-rule (<code>_resolve_sources</code>, ADR-076)
+computes per-listing <code>commit_cats</code> from parsed bracket names, so a cross-gender guest's
+split-out slice (e.g. SAMECKA → SABRE/V1 committed under the bracket gender M) can be <em>held</em>
+and dropped. Fully retaining guest results needs per-fencer-gender commit — tracked separately.</p>
+<p>Tests: <code>python/tests/test_resolve_fencers.py</code> (confirmed-demotion no-op, estimated-demotion
+allowed, mixed-gender skip, order-independence), <code>python/tests/test_s0_reconcile_roster.py</code>
+(10.4.2b confirmed no-op, 10.4.2c estimated midpoint), <code>python/tests/test_vcat_from_birthyear.py</code>
+(5.20.1 mixed-gender→BY split, 5.20.2 mixed-age+gender, 5.20.3 single-gender label preserved),
+<code>python/tests/test_pipeline_plugins.py</code> (N2.10 commit gender None→'M').</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="055-ingest-traceability.html">← ADR-055: Ingest Traceability — Per-Parser Provenance + Bounded History</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="057-pool-round-structural-detection.html">→ ADR-057: Pool-round detection by structural data signal, not bracket-name regex</a></nav>
+<footer class="foot">Generated from <code>056-vcat-from-birthyear.md</code> · source SHA-256 <code>179411d52edbeae5925f4aca43283041ed5c3182015ed426151c36bb8ac060c2</code></footer>
+</div></body></html>

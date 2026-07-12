@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="027-full-season-seed-export.md">
+<meta name="adr-source-sha256" content="7d18d95fff8a6502d99f377fd986f7f3d3c522abaacf44f6487560e487bd5e26">
+<title>ADR-027 · Full-Season Seed Export</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 027</p><h1>Full-Season Seed Export</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="superseded">Superseded by ADR-036</dd></div><div><dt>Date</dt><dd class="">2026-04-06 (original) · 2026-04-12 (superseded) <strong>Relates to:</strong> ADR-025 (Event-Centric Ingestion), ADR-026 (CERT→PROD Promotion), ADR-036 (PROD Export &amp; Local Mirror)</dd></div><div><dt>Source</dt><dd class=""><code>027-full-season-seed-export.md</code></dd></div><div><dt>Length</dt><dd class="">54 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Superseded by ADR-036<br />
+<strong>Date:</strong> 2026-04-06 (original) · 2026-04-12 (superseded)<br />
+<strong>Relates to:</strong> ADR-025 (Event-Centric Ingestion), ADR-026 (CERT→PROD Promotion), ADR-036 (PROD Export &amp; Local Mirror)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#original-decision-2026-04-06">Original Decision (2026-04-06)</a></li><li class="depth-2"><a href="#superseded-decision-2026-04-12-adr-036">Superseded Decision (2026-04-12, ADR-036)</a></li><li class="depth-3"><a href="#single-monolithic-prod-dump">Single monolithic PROD dump</a></li><li class="depth-3"><a href="#export-triggers-new-flow">Export triggers — NEW flow</a></li><li class="depth-3"><a href="#why-the-change">Why the change</a></li><li class="depth-3"><a href="#name-based-fencer-lookups-unchanged">Name-based fencer lookups (unchanged)</a></li><li class="depth-3"><a href="#auto-resume-email-polling-on-event-day-unchanged">Auto-resume email polling on event day (unchanged)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Seed files serve as disaster recovery — <code>supabase db reset</code> rebuilds the entire DB from them. After ingesting event data and promoting to PROD, the seed files must be updated to reflect the current state.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="original-decision-2026-04-06">Original Decision (2026-04-06)</h2>
+<p>Export from <strong>CERT</strong> on <code>/complete</code> and <code>/rollback</code> commands. Per-category SQL files overwrite existing seed data. CERT was the source of truth.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="superseded-decision-2026-04-12-adr-036">Superseded Decision (2026-04-12, ADR-036)</h2>
+<h3 id="single-monolithic-prod-dump">Single monolithic PROD dump</h3>
+<p>ADR-036 replaces the multi-file per-category approach with a single timestamped SQL file exported from <strong>PROD</strong> (not CERT). PROD is now the source of truth for seed data.</p>
+<h3 id="export-triggers-new-flow">Export triggers — NEW flow</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Action</th>
+<th>Seed export?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/complete &lt;event&gt;</code></td>
+<td>Mark event COMPLETED on CERT</td>
+<td><strong>No</strong> — CERT-only change</td>
+</tr>
+<tr>
+<td><code>/rollback &lt;event&gt;</code></td>
+<td>Delete event data on CERT, reset to PLANNED</td>
+<td><strong>No</strong> — CERT-only change</td>
+</tr>
+<tr>
+<td><code>/promote &lt;event&gt;</code></td>
+<td>Copy CERT → PROD</td>
+<td><strong>Yes</strong> — after PROD is updated, export PROD to git</td>
+</tr>
+<tr>
+<td><code>/export-seed</code></td>
+<td>Manual trigger</td>
+<td><strong>Yes</strong> — ad-hoc export from PROD</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="why-the-change">Why the change</h3>
+<ol>
+<li><strong>PROD is the source of truth</strong> — seed files should reflect what's deployed, not an intermediate CERT state</li>
+<li><strong>Monolithic dump is simpler</strong> — one file, no directory naming issues, no duplicate INSERTs</li>
+<li><strong>Schema-driven export</strong> — discovers columns at runtime, future-proof (ADR-036)</li>
+<li><strong>Fewer unnecessary exports</strong> — <code>/complete</code> and <code>/rollback</code> happen frequently during ingestion; only <code>/promote</code> changes PROD</li>
+</ol>
+<h3 id="name-based-fencer-lookups-unchanged">Name-based fencer lookups (unchanged)</h3>
+<p>Seed files use name-based subselect lookups (not hardcoded IDs):</p>
+<pre><code class="language-sql">(SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KOWALSKI' AND txt_first_name = 'Jan' LIMIT 1)
+</code></pre>
+<h3 id="auto-resume-email-polling-on-event-day-unchanged">Auto-resume email polling on event day (unchanged)</h3>
+<p>The GAS script's <code>checkEmailForResults()</code> checks if any event is scheduled today. If so, it auto-clears the <code>PAUSED</code> flag and notifies via Telegram.</p>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Seed export no longer fires on <code>/complete</code> or <code>/rollback</code></li>
+<li>Seed export fires after <code>/promote</code> completes (PROD updated)</li>
+<li>Seed file format: single <code>supabase/seed_prod_YYYY-MM-DD.sql</code> (ADR-036)</li>
+<li>Old per-category files (<code>supabase/data/</code>, <code>seed.sql</code>, <code>seed_tbl_fencer.sql</code>) removed</li>
+<li><code>config.toml</code> points to <code>seed_prod_latest.sql</code> symlink</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="026-cert-prod-promotion.html">← ADR-026: CERT → PROD Event Promotion via Python Script</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="028-evf-calendar-results-import.html">→ ADR-028: EVF Calendar + Results Import</a></nav>
+<footer class="foot">Generated from <code>027-full-season-seed-export.md</code> · source SHA-256 <code>7d18d95fff8a6502d99f377fd986f7f3d3c522abaacf44f6487560e487bd5e26</code></footer>
+</div></body></html>

@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="052-url-data-validation.md">
+<meta name="adr-source-sha256" content="61b4490e11bdc4835297e16b17e196c9d941094028d6ae93cdd48046c6d01644">
+<title>ADR-052 · URL→data validation enforcement at Stage 7</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 052</p><h1>URL→data validation enforcement at Stage 7</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-05-02 <strong>Relates to:</strong> ADR-029 (tournament URL auto-population — amended), ADR-046 (PEW weapon-letter suffix — interacts with weapon-mismatch handling), ADR-049 (joint-pool split flag — combined-pool detection), ADR-050 (unified ingestion pipeline — Stage 7 belongs to the 11-stage flow), ADR-053 (EVF parity gate — Stage 7 runs at commit; parity at post-commit)</dd></div><div><dt>Source</dt><dd class=""><code>052-url-data-validation.md</code></dd></div><div><dt>Length</dt><dd class="">165 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2026-05-02
+<strong>Relates to:</strong> ADR-029 (tournament URL auto-population — amended), ADR-046 (PEW weapon-letter suffix — interacts with weapon-mismatch handling), ADR-049 (joint-pool split flag — combined-pool detection), ADR-050 (unified ingestion pipeline — Stage 7 belongs to the 11-stage flow), ADR-053 (EVF parity gate — Stage 7 runs at commit; parity at post-commit)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#strategy-opportunistic-validation">Strategy — opportunistic validation</a></li><li class="depth-3"><a href="#field-list-and-per-field-behavior">Field list and per-field behavior</a></li><li class="depth-3"><a href="#source-path-stage-7-behavior-matrix">Source path × Stage 7 behavior matrix</a></li><li class="depth-3"><a href="#pew-weapon-letter-exception-adr-046-interaction">PEW weapon-letter exception (ADR-046 interaction)</a></li><li class="depth-3"><a href="#combined-pool-category-handling-adr-049-interaction">Combined-pool category handling (ADR-049 interaction)</a></li><li class="depth-3"><a href="#city-alias-normalization">City alias normalization</a></li><li class="depth-3"><a href="#override-yaml-escape-hatch">Override YAML escape hatch</a></li><li class="depth-3"><a href="#halt-diagnostic-output">Halt diagnostic output</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-3"><a href="#alt-1-strict-4-field-validation-date-weapon-gender-age-category-no-city-country">Alt 1 — Strict 4-field validation (date + weapon + gender + age category, no city/country)</a></li><li class="depth-3"><a href="#alt-2-halt-on-name-mismatch-with-fuzzy-comparison">Alt 2 — Halt on name mismatch with fuzzy comparison</a></li><li class="depth-3"><a href="#alt-3-city-as-warn-only-defer-halt-until-alias-table-mature">Alt 3 — City as warn-only (defer halt until alias table mature)</a></li><li class="depth-3"><a href="#alt-4-halt-only-on-fields-the-source-claims-to-be-authoritative-for">Alt 4 — Halt only on fields the source claims to be authoritative for</a></li><li class="depth-3"><a href="#alt-5-db-level-required-fields-constraint-force-vendors-to-expose-all-6-fields">Alt 5 — DB-level required-fields constraint (force vendors to expose all 6 fields)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#new-artifacts">New artifacts</a></li><li class="depth-3"><a href="#existing-code-touched">Existing code touched</a></li><li class="depth-3"><a href="#test-coverage">Test coverage</a></li><li class="depth-3"><a href="#schema-changes">Schema changes</a></li><li class="depth-3"><a href="#operator-workflow">Operator workflow</a></li><li class="depth-2"><a href="#out-of-scope">Out of scope</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Admin-managed URLs (<code>tbl_event.url_results</code> and <code>tbl_tournament.url_results</code>) are hand-entered for vendor systems (Fencingtimelive, Engarde, Ophardt, etc.). When the operator pastes a wrong URL — or pastes the right URL into the wrong event row — the ingestion pipeline silently associates wrong results with the event. Memory rule <a href="/Users/aleks/.claude/projects/-Users-aleks-coding-SPWSranklist/memory/feedback_validate_url_writes.md">feedback_validate_url_writes.md</a> documents that this has caused real data corruption.</p>
+<p>The agreed remediation: scrape the URL, compare metadata to the event row, REJECT on mismatch. Stage 7 of the unified pipeline is where this comparison runs.</p>
+<p>Open architectural questions answered by this ADR:</p>
+<ul>
+<li>Which fields are validated.</li>
+<li>The halt-vs-warn boundary per field.</li>
+<li>How to handle vendors with sparse metadata (some sources expose only date + weapon).</li>
+<li>How to handle combined-pool sources (one URL legitimately covers V1+V2+V3+V4).</li>
+<li>How the cert_ref backup-source path (<code>[5]</code> in review CLI) fits.</li>
+<li>How the EVF API source path (<code>[4]</code>) is validated (Stage 7 vs ADR-053's parity gate).</li>
+<li>How PEW events' weapon-letter suffix evolution (ADR-046) interacts with weapon-mismatch.</li>
+</ul>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="strategy-opportunistic-validation">Strategy — opportunistic validation</h3>
+<p>Each scraper extracts as much metadata as it can from a given URL. Stage 7 walks the field list, <strong>comparing only fields the scraper actually returned</strong>. Missing fields are skipped — not failures. As scrapers improve (or vendors expose more metadata), validation tightens automatically without an ADR change.</p>
+<h3 id="field-list-and-per-field-behavior">Field list and per-field behavior</h3>
+<p>Seven fields total. Six halt, one warns.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Behavior</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Date</td>
+<td>Halt</td>
+<td>±1 day tolerance for vendors reporting end-date of multi-day events</td>
+</tr>
+<tr>
+<td>Weapon</td>
+<td><strong>Halt for non-PEW; flag-for-rename for PEW</strong></td>
+<td>See ADR-046 interaction below</td>
+</tr>
+<tr>
+<td>Gender</td>
+<td>Halt</td>
+<td>Exact match; mixed-gender event halts unless override forces</td>
+</tr>
+<tr>
+<td>Age category</td>
+<td>Halt; skipped when source is combined-pool</td>
+<td>Combined-pool flag from <code>bool_joint_pool_split</code> (ADR-049)</td>
+</tr>
+<tr>
+<td>Country</td>
+<td>Halt</td>
+<td>Normalize to ISO-3 before compare</td>
+</tr>
+<tr>
+<td>City</td>
+<td>Halt</td>
+<td>Normalize via alias YAML (case-fold, ASCII-fold, alias map); operator can extend YAML</td>
+</tr>
+<tr>
+<td>Name</td>
+<td>Warn only</td>
+<td>Vendor naming too inconsistent for halt; finding lands in diff</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="source-path-stage-7-behavior-matrix">Source path × Stage 7 behavior matrix</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Source path</th>
+<th>Stage 7 behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[1]</code> Recorded URL</td>
+<td>Full six-field validation; halt on mismatch</td>
+</tr>
+<tr>
+<td><code>[2]</code> Paste URL</td>
+<td>Full six-field validation; halt on mismatch</td>
+</tr>
+<tr>
+<td><code>[3]</code> Paste XML path</td>
+<td>Full six-field validation; halt on mismatch</td>
+</tr>
+<tr>
+<td><code>[4]</code> EVF API</td>
+<td>Full six-field validation; halt on mismatch (complementary to parity gate at post-commit)</td>
+</tr>
+<tr>
+<td><code>[5]</code> cert_ref placements</td>
+<td>Stage 7 <strong>skipped entirely</strong> — no URL to validate; cert_ref is internal trusted data</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="pew-weapon-letter-exception-adr-046-interaction">PEW weapon-letter exception (ADR-046 interaction)</h3>
+<p>PEW events evolve their <code>txt_code</code> to reflect ingested weapon coverage (e.g., <code>PEW3fs</code> → <code>PEW3efs</code> when épée gets added later). A weapon &quot;mismatch&quot; between URL and event row for PEW codes is therefore not necessarily an error — it can be a legitimate addition.</p>
+<p>Stage 7 logic for weapon validation:</p>
+<ul>
+<li>If <code>tbl_event.txt_code</code> does not start with <code>PEW</code> → halt on weapon mismatch.</li>
+<li>If <code>tbl_event.txt_code</code> starts with <code>PEW</code> and the URL's weapon is not in the current letter suffix → <strong>do not halt</strong>. Instead, flag the event with a &quot;PEW cascade pending&quot; annotation. Stage 8b (added by ADR-050 amendment) reads this flag at commit and runs <code>fn_pew_weapon_letters</code> cascade-rename.</li>
+</ul>
+<h3 id="combined-pool-category-handling-adr-049-interaction">Combined-pool category handling (ADR-049 interaction)</h3>
+<p>When a URL legitimately covers multiple age categories in one combined-pool result page, the URL's metadata cannot be expected to match the event row's single age category. Stage 7 detects combined-pool from the source's reported metadata (or the operator's <code>bool_joint_pool_split</code> flag on the event row) and skips the age-category compare.</p>
+<p>The splitter at Stage 4 then handles per-category separation; each split bucket maps to its own event row downstream.</p>
+<h3 id="city-alias-normalization">City alias normalization</h3>
+<p>New artifact: <code>python/pipeline/city_aliases.yaml</code>. Maintained as a flat YAML file in version control. Format:</p>
+<pre><code class="language-yaml">Warszawa: [Warsaw, Warschau, Varsovie, Varšava]
+Kraków: [Krakow, Cracow, Krakau]
+Wrocław: [Wroclaw, Breslau]
+Poznań: [Poznan, Posen]
+München: [Munich, Munchen, Monachium]
+</code></pre>
+<p>Comparison process:</p>
+<ol>
+<li>Case-fold both sides.</li>
+<li>ASCII-fold (strip diacritics).</li>
+<li>Apply alias map: any alias → canonical.</li>
+<li>Strict equal.</li>
+</ol>
+<p>Mismatch after normalization → halt. Operator escape hatch: add the new alias to the YAML (1-line PR) or use the override YAML's city field for one-off events.</p>
+<h3 id="override-yaml-escape-hatch">Override YAML escape hatch</h3>
+<p>The Phase 3 override YAML schema (<code>doc/overrides/&lt;event_code&gt;.yaml</code>) gains city as a forced-override surface alongside identity/splitter/URL/match-method/joint-pool. Total 6 surfaces.</p>
+<pre><code class="language-yaml">url_overrides:
+  city: Wrocław   # force-skip Stage 7 city check
+  date: 2026-03-29   # force date if scraper misreports
+  ...
+</code></pre>
+<h3 id="halt-diagnostic-output">Halt diagnostic output</h3>
+<p>When Stage 7 halts, the operator must see exactly which field mismatched and what both sides saw. Halt produces:</p>
+<ul>
+<li>Telegram notification: <code>🚨 {event_code} ingestion halted - field mismatch: {field}</code> with both values.</li>
+<li><code>doc/staging/&lt;event_code&gt;.diff.md</code> is written with a Stage 7 section showing the comparison.</li>
+<li>Pipeline does not proceed to Stage 8; nothing written to draft tables.</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<h3 id="alt-1-strict-4-field-validation-date-weapon-gender-age-category-no-city-country">Alt 1 — Strict 4-field validation (date + weapon + gender + age category, no city/country)</h3>
+<p>Rejected. User experience with paste-wrong-URL errors includes cases where the wrong URL has the same date/weapon/gender/category but a different city/country (e.g., two events on the same weekend in different cities). Without city/country halt, those slip through.</p>
+<h3 id="alt-2-halt-on-name-mismatch-with-fuzzy-comparison">Alt 2 — Halt on name mismatch with fuzzy comparison</h3>
+<p>Rejected. Vendor naming is too inconsistent — &quot;European Championships Veterans 2026&quot;, &quot;EVF Vets EC 2026&quot;, &quot;EC Vet 2026 Foil M V2&quot; all describe the same event. Fuzzy matching would either be too strict (constant false-halts) or too loose (catches nothing). Warn-only via diff is sufficient signal for the operator.</p>
+<h3 id="alt-3-city-as-warn-only-defer-halt-until-alias-table-mature">Alt 3 — City as warn-only (defer halt until alias table mature)</h3>
+<p>Rejected. User explicitly chose halt for city, accepting the alias-table maintenance burden as a Phase 4 deliverable. Without halt, &quot;Budapest&quot; vs &quot;Kraków&quot; mismatches would silently pass — the exact error class halt is meant to catch.</p>
+<h3 id="alt-4-halt-only-on-fields-the-source-claims-to-be-authoritative-for">Alt 4 — Halt only on fields the source claims to be authoritative for</h3>
+<p>Rejected as too complex. Different vendors have different authoritativeness on different fields. Opportunistic validation (compare what's available) sidesteps the question — every field the vendor reports is treated as if the vendor stands behind it.</p>
+<h3 id="alt-5-db-level-required-fields-constraint-force-vendors-to-expose-all-6-fields">Alt 5 — DB-level required-fields constraint (force vendors to expose all 6 fields)</h3>
+<p>Rejected. We don't control vendors. Some vendors only expose date + weapon; that's reality. Treating their sparse output as a halt would block legitimate ingestion. Opportunistic validation is the only realistic path.</p>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<h3 id="new-artifacts">New artifacts</h3>
+<ul>
+<li><code>python/pipeline/url_validation.py</code> — Stage 7 implementation. Single function <code>validate_metadata(event_row, scraped_metadata) -&gt; ValidationResult</code> used by all source paths except cert_ref.</li>
+<li><code>python/pipeline/city_aliases.yaml</code> — alias map seeded with PL/EU veteran-fencing locales.</li>
+<li><code>python/pipeline/country_iso.yaml</code> (or hardcoded dict) — country-code ISO-3 normalization (POL ↔ PL ↔ Poland → POL).</li>
+</ul>
+<h3 id="existing-code-touched">Existing code touched</h3>
+<ul>
+<li><code>python/pipeline/stages.py</code> — Stage 7 logic dispatches to <code>url_validation.validate_metadata</code>. Cert_ref path bypasses.</li>
+<li><code>python/pipeline/overrides.py</code> — accepts <code>url_overrides.city</code> as a 6th surface.</li>
+<li><code>python/pipeline/notifications.py</code> — Stage 7 halt template added.</li>
+</ul>
+<h3 id="test-coverage">Test coverage</h3>
+<ul>
+<li>pgTAP — n/a (logic is Python; DB invariants are unrelated).</li>
+<li>pytest — <code>url_validation</code> per-field tests (halt, warn, skip on missing, alias normalize, ISO normalize, PEW exception, combined-pool skip).</li>
+<li>vitest — n/a (UI doesn't call Stage 7 directly).</li>
+</ul>
+<h3 id="schema-changes">Schema changes</h3>
+<p>None. All validation is in Python; no new columns or constraints.</p>
+<h3 id="operator-workflow">Operator workflow</h3>
+<p>When Stage 7 halts:</p>
+<ol>
+<li>Operator reads Telegram notification + <code>doc/staging/&lt;event_code&gt;.diff.md</code>.</li>
+<li>Decides: fix the URL (if pasted wrong), fix the event row (if metadata is wrong), extend <code>city_aliases.yaml</code> (if a new alias is needed), or use override YAML (one-off forced override).</li>
+<li>Re-runs the pipeline.</li>
+</ol>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="out-of-scope">Out of scope</h2>
+<ul>
+<li><strong>Fuzzy tournament-name matching as a halt.</strong> Warn-only is the locked decision; fuzzy halt is too noisy.</li>
+<li><strong>Validating internal consistency of vendor data.</strong> Stage 7 validates URL metadata vs event row only. Inconsistencies <em>within</em> the vendor data (e.g., contradictory placement claims) are caught at later stages or by parity gate.</li>
+<li><strong>Org-level validation.</strong> <code>txt_organizer</code> is not validated against URL — most vendors don't expose organizer reliably. Organizer is set on event-row creation and trusted thereafter.</li>
+<li><strong>Year-of-license or other fencer-level metadata.</strong> Stage 7 is event-level only. Fencer-level metadata is verified at Stage 6 (identity resolution).</li>
+<li><strong>Automatic alias-YAML extension on first halt.</strong> Operator must manually add new city aliases. Auto-extension would risk false positives masking real errors.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="050-unified-ingestion-pipeline.html">← ADR-050: Unified Ingestion Pipeline (rebuild — Phases 0–6)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="053-evf-parity-gate.html">→ ADR-053: EVF backup-source + parity gate + EVF_PUBLISHED promotion lifecycle</a></nav>
+<footer class="foot">Generated from <code>052-url-data-validation.md</code> · source SHA-256 <code>61b4490e11bdc4835297e16b17e196c9d941094028d6ae93cdd48046c6d01644</code></footer>
+</div></body></html>

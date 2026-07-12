@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="010-age-category-by-birth-year.md">
+<meta name="adr-source-sha256" content="52c88c31905d9d550aa3cf0ffcd3aa1fc251109cd62e9b820e09323fd03473de">
+<title>ADR-010 · Age Category by Birth Year (Cross-Category Carryover)</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 010</p><h1>Age Category by Birth Year (Cross-Category Carryover)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2025-03-03 (M5)</dd></div><div><dt>Source</dt><dd class=""><code>010-age-category-by-birth-year.md</code></dd></div><div><dt>Length</dt><dd class="">42 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2025-03-03 (M5)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-06-13-stage-0-keeps-stored-by-consistent-with-brackets">Amendment (2026-06-13) — Stage-0 keeps stored BY consistent with brackets</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Fencers compete in age categories (V0–V4) based on their age. A fencer may transition between categories across seasons (e.g., V2 → V3 when turning 60). Tournament results are tagged with the tournament's <code>enum_age_category</code>, but a fencer's &quot;home&quot; category for ranking purposes depends on their birth year relative to the season's end date.</p>
+<p>The ranking function <code>fn_ranking_ppw</code> must decide: rank fencers by the tournament's category, or by the fencer's birth-year-derived category?</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Rank fencers by their birth-year-derived category using <code>fn_age_category(birth_year, season_end_year)</code>, not by the tournament's <code>enum_age_category</code>. This enables cross-category carryover: a V3 fencer's results from V2 tournaments appear in the V3 ranking.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li><strong>Use tournament category as-is</strong> — simpler SQL (just filter <code>WHERE t.enum_age_category = p_category</code>), but a fencer who transitions from V2 to V3 mid-season would lose all their V2 results from the ranking. This contradicts SPWS rules where fencers carry results forward.</li>
+<li><strong>Dual ranking</strong> — show fencer in both V2 and V3 rankings. Rejected: inflates rankings and double-counts points.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><code>fn_age_category(birth_year, season_end_year)</code> — IMMUTABLE SQL helper computing V0–V4 from birth year and season end year.</li>
+<li>Migration: <code>20250303000002_age_category_by_season.sql</code>.</li>
+<li>NULL birth year fallback: <code>COALESCE(fn_age_category(...), t.enum_age_category)</code> — uses tournament category when birth year is unknown. This is a safe default since most fencers compete in their actual category.</li>
+<li>Cross-category carryover: BARAŃSKI (born 1964, V3 by birth year) with V2 tournament results appears in V3 ranking but NOT in V2 ranking (tests 5.14–5.15).</li>
+<li>Python matcher: <code>season_end_year</code> (not <code>tournament_year</code>) used throughout <code>fuzzy_match.py</code> and <code>pipeline.py</code> for consistency.</li>
+<li>Identity resolution: <code>birth_year_matches_category()</code> uses the same age ranges for duplicate name disambiguation (ADR cross-ref: no conflict with ADR-003 Identity by FK).</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-06-13-stage-0-keeps-stored-by-consistent-with-brackets">Amendment (2026-06-13) — Stage-0 keeps stored BY consistent with brackets</h2>
+<p>Because ranking category is BY-derived (<code>fn_age_category(birth_year, season_end)</code>),
+a wrong/estimated birth year files a result under the <em>wrong</em> ranking. The new
+Stage-0 reconciliation (ADR-056, 2026-06-13) makes this self-correcting at
+ingestion: when a matched fencer's stored BY implies a different V-cat than the
+bracket they actually competed in, Stage 0 corrects the BY to that band's
+midpoint (estimated kept; CONFIRMED downgraded + surfaced loudly). New
+participants are created up front with an estimated band-midpoint BY so they
+land in the correct ranking immediately. The estimate convention is the band
+midpoint (V0→35 … V4→75, season-relative), replacing the youngest-edge —
+ranking-neutral because both map to the same band. This ADR's BY-derived ranking
+is the justification for that reconciliation.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="009-cert-prod-runtime-toggle.html">← ADR-009: CERT/PROD Runtime Toggle (Single GitHub Pages Site)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="011-artifact-release-pipeline.html">→ ADR-011: Three-Tier Artifact Release Pipeline with Schema Fingerprinting</a></nav>
+<footer class="foot">Generated from <code>010-age-category-by-birth-year.md</code> · source SHA-256 <code>52c88c31905d9d550aa3cf0ffcd3aa1fc251109cd62e9b820e09323fd03473de</code></footer>
+</div></body></html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="062-spws-bracket-name-filter.md">
+<meta name="adr-source-sha256" content="3fc04e6471c76f71ee47098c893fea46afd4268e281eb53a5e219f3a64432e27">
+<title>ADR-062 · Skip non-SPWS bracket names at FTL event-schedule discovery</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 062</p><h1>Skip non-SPWS bracket names at FTL event-schedule discovery</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-05-03) <strong>Related:</strong> ADR-050 (unified ingestion pipeline), ADR-057 (pool-round structural detection) <strong>Phase:</strong> 5 (operational rebuild)</dd></div><div><dt>Date</dt><dd class="">Not recorded</dd></div><div><dt>Source</dt><dd class=""><code>062-spws-bracket-name-filter.md</code></dd></div><div><dt>Length</dt><dd class="">63 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (2026-05-03)
+<strong>Related:</strong> ADR-050 (unified ingestion pipeline), ADR-057 (pool-round structural detection)
+<strong>Phase:</strong> 5 (operational rebuild)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#implementation">Implementation</a></li><li class="depth-2"><a href="#test-scope-tdd">Test scope (TDD)</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>FTL event-schedule URLs sometimes list brackets from a <em>different</em> competition held back-to-back at the same venue. Discovered on PPW4-2024-2025: the &quot;Akademickie Mistrzostwa Warszawy i Mazowsza&quot; (Academic Championships of Warsaw and Mazovia) shared the FTL schedule page <code>E77EA15E4ACA4A23B1539C95B34E60EB</code> with PPW4. Two of its brackets — szabla mężczyzn (men's sabre) and szabla kobiety (women's sabre) — survived the existing skip filters and were ingested as if they were PPW4 sub-tournaments:</p>
+<ul>
+<li><strong>Men's bracket</strong> had 18 fencers with V-cat markers <code>(0)/(1)/(2)</code>. <code>s7_split_by_vcat</code> treated it as a joint pool and emitted V0/V1/V2 PPW4 drafts.</li>
+<li>The consolidator merged those drafts with the <em>real</em> PPW4 SABRE-M brackets by <code>txt_code</code>.</li>
+<li>5 fencers who competed in BOTH events (KOŃCZYŁO V2, MIKOŁAJCZUK V0, REDZIŃSKI V0, PRZYSTAJKO V1, TECŁAW V1) ended up with two <code>tbl_result_draft</code> rows sharing <code>(id_fencer, id_tournament_draft)</code>.</li>
+<li><code>uq_result_fencer_tournament</code> blocked the commit. Several days lost diagnosing the wrong layer (suspected pool/DE merge, then consolidator) before realizing the bug was at <em>bracket discovery</em> — the pipeline had no way to know &quot;this bracket isn't ours&quot;.</li>
+</ul>
+<p>The women's AKADEMICKIE bracket was halted by ADR-057's gender-mix structural check (8M/2F majority/minority anomaly), but only by accident — pure luck of how it matched against the master fencer table. The men's bracket was all-male, so ADR-057 didn't fire.</p>
+<p>ADR-057 introduced structural pool-round detection (post-matcher gender mix). That helps when a bracket is genuinely a pool round, but a guest event held by a different organization is not a pool round — it's a real tournament, just not OUR tournament. We need a complementary filter at <em>discovery</em> time.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p><strong>Add a third filter to <code>parse_event_schedule</code> (alongside <code>MIKST_PATTERN</code> and <code>SKIP_PATTERNS</code>)</strong> requiring the bracket name's first significant token to match <code>SPWS_BRACKET_FIRST_TOKEN</code>. Vocabulary covers:</p>
+<ul>
+<li>Polish weapons: <code>Szpada</code> / <code>Floret</code> / <code>Szabla</code></li>
+<li>English weapons: <code>Epee</code> / <code>Épée</code> / <code>Foil</code> / <code>Sabre</code> / <code>Saber</code></li>
+<li>Genders: <code>Men's</code> / <code>Women's</code> / <code>Men</code> / <code>Women</code> / <code>Mens</code> / <code>Womens</code> / <code>kobiet[ay]</code> / <code>mężczyzn[iy]</code></li>
+<li>V-cat / age / format markers: <code>Vet</code> / <code>Veteran[iy]</code> / <code>Senior</code> / <code>Mixed</code> / <code>Mikst</code> / <code>Cat[egory]</code> / <code>Kategori[aę]</code></li>
+</ul>
+<p>Names that don't match are added to the <code>skipped</code> list with reason <code>&quot;guest event (non-SPWS bracket name)&quot;</code> and surfaced in the per-event staging <code>.md</code>.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>Pure denylist regex</strong> (<code>Akademickie</code>, <code>Mistrzostwa Polski Senior</code>, etc.). Brittle as new guest events emerge — whack-a-mole.</li>
+<li><strong>Operator-driven YAML override</strong> (<code>bracket_skip:</code> per event). Tedious; requires the operator to know about the guest event before ingesting.</li>
+<li><strong>Compare bracket fencer-set against a known SPWS participant list.</strong> No reliable participant list exists pre-ingest.</li>
+<li><strong>Detect &quot;competition-name structure&quot;</strong> via dash-separated guest-event prefix. Fragile — the SPWS bracket <code>&quot;Szpada kobiet i mężczyzn - grupy&quot;</code> also has a dash.</li>
+<li><strong>Allowlist at first-token level</strong> (chosen). Minimal filter, declarative, reusable across past + future events, easy to widen by adding tokens to the regex if SPWS adopts new naming conventions.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>Positive</strong></p>
+<ul>
+<li>Closes a class of bug whose only signal was a downstream uniqueness violation. Self-explanatory: <code>&quot;guest event&quot;</code> reason in staging md tells the operator exactly why a bracket got skipped.</li>
+<li>Discovery-time filter is the cheapest possible layer; no downstream stage has to reason about cross-event ambiguity.</li>
+<li>Composes cleanly with ADR-057: name-based filters skip <em>obvious</em> non-SPWS brackets at discovery; structural detection catches what slips through.</li>
+</ul>
+<p><strong>Negative / risks</strong></p>
+<ul>
+<li>First-token vocabulary needs maintenance if SPWS adopts new naming conventions. The 5.21.x test suite locks in the current vocabulary; adding a new prefix requires both code + test update.</li>
+<li>Per-event staging md cosmetic: guest-event skips currently render under the existing <strong>&quot;Pool rounds detected&quot;</strong> header (they get the same <code>skipped</code> data shape). Future polish could split the section into &quot;Pool rounds&quot; + &quot;Guest events skipped&quot;. Low priority — operator visibility is unaffected.</li>
+</ul>
+<p><strong>Neutral</strong></p>
+<ul>
+<li>No retroactive effect on past committed events. Re-ingesting an event with this filter will produce fewer brackets if it previously included guest-event sub-tournaments; that's the desired behaviour but worth noting before bulk re-runs.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="implementation">Implementation</h2>
+<ul>
+<li><a href="../../python/tools/scrape_ftl_event_urls.py">python/tools/scrape_ftl_event_urls.py</a> — <code>SPWS_BRACKET_FIRST_TOKEN</code> regex + filter in <code>parse_event_schedule</code> after <code>MIKST_PATTERN</code> and <code>SKIP_PATTERNS</code>. Skipped entries carry reason <code>&quot;guest event (non-SPWS bracket name)&quot;</code>.</li>
+<li><a href="../../python/tests/test_scrapers.py">python/tests/test_scrapers.py</a> <code>TestFTLEventSchedule</code> — plan tests 5.21.1–5.21.4.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="test-scope-tdd">Test scope (TDD)</h2>
+<ul>
+<li>pytest 5.21.1 — Polish AKADEMICKIE-style guest event (&quot;Akademickie Mistrzostwa Warszawy i Mazowsza - szabla mężczyzn&quot;) skipped</li>
+<li>pytest 5.21.2 — Polish PPW-conventional bracket &quot;Szpada kobiet i mężczyzn - grupy&quot; kept (regression guard, weapon-first with dash)</li>
+<li>pytest 5.21.3 — skipped guest-event entry carries informative reason text mentioning &quot;guest&quot; or &quot;non-SPWS&quot;</li>
+<li>pytest 5.21.4 — English-language SPWS brackets (&quot;Men's Sabre Category 3 and 4&quot;, &quot;Women's Foil Category 1 and 2&quot;) kept (regression guard for gender-first names)</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="061-local-parity-and-telegram-commands.html">← ADR-061: LOCAL operator workflow preserved verbatim; Telegram-driven CERT command surface</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="063-polish-plural-and-grupy-zbiorcze.html">→ ADR-063: Polish-plural-case + GRUPY ZBIORCZE pool-round recognition in FTL bracket parsing</a></nav>
+<footer class="foot">Generated from <code>062-spws-bracket-name-filter.md</code> · source SHA-256 <code>3fc04e6471c76f71ee47098c893fea46afd4268e281eb53a5e219f3a64432e27</code></footer>
+</div></body></html>

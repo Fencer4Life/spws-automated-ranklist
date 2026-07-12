@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="013-poc-mvp-transition.md">
+<meta name="adr-source-sha256" content="efb6e5a7346089d267dc7b24fc5cee792796e9be82e66e96a3d25160177bc464">
+<title>ADR-013 · POC-to-MVP Transition</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 013</p><h1>POC-to-MVP Transition</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-03-25 (M6→M8)</dd></div><div><dt>Source</dt><dd class=""><code>013-poc-mvp-transition.md</code></dd></div><div><dt>Length</dt><dd class="">43 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2026-03-25 (M6→M8)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The POC (M0-M6) validated all four pillars of the system:</p>
+<ol>
+<li><strong>Core Math</strong> — Scoring engine matches reference Excel within 0.01 tolerance (M2, 24 pgTAP + 7 pytest).</li>
+<li><strong>Scraping Viability</strong> — Three platforms operational: FTL, Engarde, 4Fence (M3, 31 pytest).</li>
+<li><strong>Admin Workflow</strong> — Season setup, scoring config, identity resolution tested end-to-end (M1-M4).</li>
+<li><strong>UI Portability</strong> — Web Component with PPW/Kadra toggle, drilldown, ODS export, i18n (M6, 28 vitest).</li>
+</ol>
+<p>M7 (Ingestion Pipeline) was the final POC milestone. Its individual components (scrapers, matcher, scoring engine) are all implemented and tested, but the orchestration pipeline (<code>ingest.yml</code>), admin CRUD UI, and identity resolution admin UI were not yet wired together.</p>
+<p>The project needed to decide: complete M7 within POC scope (single category), or transition to MVP (all 30 categories) and build the pipeline alongside the broader admin UI.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Declare POC complete (M0-M6). Transition to MVP with two milestones:</p>
+<ul>
+<li><strong>M8:</strong> Multi-Category Data + Calendar UI + Schema Extensions</li>
+<li><strong>M9:</strong> Ingestion Pipeline + Admin CRUD + Identity Resolution Admin</li>
+</ul>
+<p>M7's orchestration pipeline is absorbed into M9. The M7 test plan (7.1-7.9) carries forward to M9 with expanded scope for multi-category support.</p>
+<p>Milestone numbering continues from POC (M8, M9) rather than restarting at M1 to preserve traceability — all existing test IDs, FR references, and ADR cross-references remain valid.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ol>
+<li>
+<p><strong>Complete M7 in POC before MVP</strong> — Rejected. The ingestion pipeline needs the admin CRUD UI (season/event/tournament management) to be useful in production. Building the pipeline for a single category, then rebuilding for 30 categories, would be wasted effort.</p>
+</li>
+<li>
+<p><strong>Start fresh MVP plan (M1-M2)</strong> — Rejected. Restarting numbering would break traceability. Existing test IDs (1.1-6.20), FR references (FR-01 to FR-42), and ADR cross-references all use the current numbering scheme.</p>
+</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>POC Development Plan (<code>archive/POC_development_plan.md</code>) is frozen — M6 marked COMPLETED, M7 marked DEFERRED</li>
+<li>New <code>archive/MVP_development_plan.md</code> created for M8-M9</li>
+<li>Project Specification §6.1 (POC) marked COMPLETED, §6.2 (MVP) rewritten with agreed scope</li>
+<li>RTM extended with FR-43 to FR-52 (all Planned status)</li>
+<li>236 existing test assertions (117 pgTAP + 91 pytest + 28 vitest) provide the foundation for MVP development</li>
+<li>POC Known Test Gaps (FR-10, FR-14, FR-23, FR-40, NFR-10, NFR-13) carry forward to MVP</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="012-sql-pre-deploy-snapshots.html">← ADR-012: SQL-Level Pre-Deploy Snapshots for PROD</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="014-delete-reimport-strategy.html">→ ADR-014: Delete + Re-import in Transaction</a></nav>
+<footer class="foot">Generated from <code>013-poc-mvp-transition.md</code> · source SHA-256 <code>efb6e5a7346089d267dc7b24fc5cee792796e9be82e66e96a3d25160177bc464</code></footer>
+</div></body></html>

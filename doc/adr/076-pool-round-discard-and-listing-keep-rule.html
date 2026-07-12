@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="076-pool-round-discard-and-listing-keep-rule.md">
+<meta name="adr-source-sha256" content="dd855d2fd7ec67757e6f76f2379b3cfd8abdd486ae90ca6c6ac9196e75ee1c6f">
+<title>ADR-076 · Overlapping FTL listings — discard pool-only rounds, keep one listing per category, flag duplicates (UI-resolvable)</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 076</p><h1>Overlapping FTL listings — discard pool-only rounds, keep one listing per category, flag duplicates (UI-resolvable)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-18, NEW pipeline build). Design in <a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §from-URL discovery.</dd></div><div><dt>Date</dt><dd class="">2026-06-18 <strong>Relates to:</strong> <strong>extends</strong> ADR-067 (pools-only <code>&lt;Poule&gt;</code>-no-<code>&lt;Tableau&gt;</code> skip) to the from-URL JSON path; ADR-014/022 (atomic delete-reimport <code>Commit</code>, the clobber mechanism); ADR-025 (event-centric tournament keyed on event·weapon·gender·age_category); ADR-006 (JSONB-in-DB config precedent); ADR-041 (UI → Edge-Function → GitHub-Actions dispatch); ADR-075 (the staging/automation report that surfaces this).</dd></div><div><dt>Source</dt><dd class=""><code>076-pool-round-discard-and-listing-keep-rule.md</code></dd></div><div><dt>Length</dt><dd class="">107 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-18, NEW pipeline build). Design in
+<a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §from-URL discovery.
+<strong>Date:</strong> 2026-06-18
+<strong>Relates to:</strong> <strong>extends</strong> ADR-067 (pools-only <code>&lt;Poule&gt;</code>-no-<code>&lt;Tableau&gt;</code> skip) to the from-URL JSON
+path; ADR-014/022 (atomic delete-reimport <code>Commit</code>, the clobber mechanism); ADR-025 (event-centric
+tournament keyed on event·weapon·gender·age_category); ADR-006 (JSONB-in-DB config precedent); ADR-041
+(UI → Edge-Function → GitHub-Actions dispatch); ADR-075 (the staging/automation report that surfaces this).</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#domain-logic-the-rules-worked-through-ppw3">Domain logic (the rules, worked through PPW3)</a></li><li class="depth-3"><a href="#mechanism-no-stall-no-scored-data-pollution">Mechanism (no stall, no scored-data pollution)</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests">Tests</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The from-URL ingest (<code>ingest_event_from_url</code>) committed <strong>wrong result counts</strong>. <code>fn_find_or_create_tournament</code>
+keys a tournament on <code>(id_event, weapon, gender, age_category)</code> and <code>fn_ingest_tournament_results</code> does
+<code>DELETE FROM tbl_result WHERE id_tournament = …; INSERT …</code>. The FTL event schedule exposes the <strong>same
+competition under several overlapping rounds</strong> — a combined &quot;kat. Veteran&quot; pools round (no DE), per-category
+&quot;kat. N&quot; results, and an English-language duplicate (&quot;Men's Épée&quot;) — and the pipeline ingested <strong>each</strong>
+independently. Every round that resolved into the same <code>EPEE·M·V0</code> hit the <strong>same</strong> tournament row and the
+<strong>last writer won</strong> (arbitrary, order-dependent). Verified live: <code>Szpada kat. Veteran</code>'s split V0 (17), the
+single <code>kat. 0</code> (12), and <code>Men's Épée</code>'s split V0 (7) all wrote <code>t20214</code>; the committed count flipped with
+schedule order.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p><strong>There is exactly one source per <code>gender·weapon·age_category</code>. The pipeline stays fully automated —
+it never stalls and never requires a hand-edited file.</strong></p>
+<h3 id="domain-logic-the-rules-worked-through-ppw3">Domain logic (the rules, worked through PPW3)</h3>
+<p>An FTL event lists several rounds. Each round either resolves to one <strong>category</strong> (a <strong>single listing</strong>)
+or covers several (a <strong>BRACKET</strong>, split by birth year). Some rounds are <strong>not the scored result</strong> and
+must not be ingested. The pipeline resolves every category to <strong>exactly one</strong> source, automatically:</p>
+<p><strong>Rule 1 — drop pools-only rounds.</strong> A round with pool results but <strong>no DE (no Tableau)</strong> is a
+qualification phase, never a scored tournament (ADR-067). The XML parser already detected this
+(<code>&lt;Poule&gt;</code> present &amp; <code>&lt;Tableau&gt;</code> absent); the from-URL JSON path gained the equivalent
+(<code>_ftl_has_direct_elimination</code> — fetch the results page, detect a DE/Tableau round). <em>PPW3:</em>
+<code>Szpada kat. Veteran</code> (76) has no Tableau → <strong>dropped</strong>; the per-age <code>kat. N</code> rounds each have one.</p>
+<p><strong>Rule 2 — one source per category</strong> (after Rule 1), in two levels:</p>
+<ul>
+<li><strong>2a — a dedicated single listing beats a BRACKET.</strong> If a <code>kat. N</code> round exists for the category, it is
+the real per-age tournament; keep it and set aside every BRACKET's slice of that category.</li>
+<li><strong>2b — else the smaller of competing BRACKETs wins.</strong> No single listing + two-or-more BRACKETs over the
+category → ages were combined only because each is small (&lt;5), so the genuine round is the <strong>smaller</strong>
+slice; the <strong>larger</strong> is the amateur/open round → set aside.</li>
+<li><em>(Two dedicated single listings for one category = a real anomaly → flagged, nothing auto-committed.)</em></li>
+</ul>
+<p>A set-aside round is <strong>never silently dropped</strong> — it's recorded with its stats so an admin can see it and,
+if the keep-rule guessed wrong, <strong>switch the choice in the event accordion and re-ingest</strong> (one click).</p>
+<p><strong>Worked — PPW3 <code>EPEE·M</code></strong> — event schedule:
+<a href="https://fencingtimelive.com/tournaments/eventSchedule/D099355BC4334343949BD91172023B49">fencingtimelive.com/…/eventSchedule/D099355B…</a></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>FTL round (click → results page)</th>
+<th>type</th>
+<th>fencers</th>
+<th>DE?</th>
+<th>outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://www.fencingtimelive.com/events/results/2D5F87282A204AA39BF0B97DB76A9075">Szpada kat. Veteran</a></td>
+<td>BRACKET V0–V4</td>
+<td>76</td>
+<td><strong>no</strong></td>
+<td><strong>dropped</strong> — Rule 1 (pools-only)</td>
+</tr>
+<tr>
+<td><a href="https://www.fencingtimelive.com/events/results/EE786DC009914DA2A4182A4632A91B8E">Szpada Mężczyzn kat. 0</a></td>
+<td>single V0</td>
+<td>12</td>
+<td>yes</td>
+<td><strong>kept</strong> → <code>EPEE·M·V0</code></td>
+</tr>
+<tr>
+<td><a href="https://www.fencingtimelive.com/events/results/248068163F6D48F49953B9589A9227D8">Szpada Mężczyzn kat. 1</a></td>
+<td>single V1</td>
+<td>11</td>
+<td>yes</td>
+<td><strong>kept</strong> → <code>EPEE·M·V1</code></td>
+</tr>
+<tr>
+<td><a href="https://www.fencingtimelive.com/events/results/2034F718AC554C8D89A639B0EC0984DD">Szpada Mężczyzn kat. 2</a></td>
+<td>single V2</td>
+<td>19</td>
+<td>yes</td>
+<td><strong>kept</strong> → <code>EPEE·M·V2</code></td>
+</tr>
+<tr>
+<td><a href="https://www.fencingtimelive.com/events/results/177F9E9257374C718E4A1C756F4079FC">Szpada Mężczyzn kat. 3</a></td>
+<td>single V3</td>
+<td>8</td>
+<td>yes</td>
+<td><strong>kept</strong> → <code>EPEE·M·V3</code></td>
+</tr>
+<tr>
+<td><a href="https://www.fencingtimelive.com/events/results/7D75E3CF201340FB84B1DAC6EA830212">Szpada Mężczyzn kat. 4</a></td>
+<td>single V4</td>
+<td>6</td>
+<td>yes</td>
+<td><strong>kept</strong> → <code>EPEE·M·V4</code></td>
+</tr>
+<tr>
+<td><a href="https://www.fencingtimelive.com/events/results/3CEEF04EF5264CAEB061E428B8B70AA5">Men's Épée</a></td>
+<td>BRACKET V0–V2</td>
+<td>18</td>
+<td>yes</td>
+<td><strong>set aside</strong> — Rule 2a (dedicated <code>kat.0/1/2</code> win); flagged duplicate on V0/V1/V2 (7/3/3)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Five clean categories, the pool phase dropped, the amateur <code>Men's Épée</code> set aside + flagged — <strong>no admin
+action needed</strong>. (Rule 2b is not exercised by PPW3, PPW4, or PPW5 — every contested category has a
+dedicated <code>kat. N</code>, or BRACKETs tile disjoint categories. It stays a safety rule for a rare case.)</p>
+<h3 id="mechanism-no-stall-no-scored-data-pollution">Mechanism (no stall, no scored-data pollution)</h3>
+<ul>
+<li>The keep-rule (<code>_resolve_sources</code>) computes, per round, the categories it <strong>owns</strong> (<code>commit_cats</code>).
+<code>Commit</code> writes only its owned categories (<code>commit_cats</code> allow-set; absent on the file/XML path ⇒ write
+all — unchanged). One writer per category ⇒ no clobber.</li>
+<li>The discovered rounds + their status (committed / dropped / skipped, with duplicate flags) are written to
+<strong><code>tbl_event.json_ingest_sources</code></strong> (display-only — <strong>never</strong> in <code>tbl_result</code> or any ranking view). The
+admin's skip/process choices live in <strong><code>tbl_event.json_source_overrides</code></strong> (<code>fn_set_event_source_override</code>),
+read by the next ingest. Both JSONB (ADR-006 pattern), exposed on <code>vw_calendar</code>.</li>
+<li>The <strong>event accordion</strong> renders the rounds as committed ✅ / dropped ⊘ / skipped ⚠ rows with a
+skip/process toggle; the <strong>Re-ingest</strong> button dispatches <code>ingest-event.yml</code> (ADR-041 allowlist). Loop:
+flag → toggle → re-ingest. No files, no CLI.</li>
+<li>The bogus bundled skip reasons are also fixed — an <code>ELIMINACJE</code> round is now reported as a <em>pools-only
+qualifier</em>, not &quot;DE / amateur / junior / U-age&quot;.</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ul>
+<li><strong>Auto most-specific-merge / union the rounds.</strong> Rejected: rounds use <strong>incomparable place numbers</strong> (a
+combined round ranks across ages, a single ranks within an age), so merging corrupts the re-rank.</li>
+<li><strong>Hold a conflicted category (commit nothing) until an admin decides.</strong> Rejected: breaks automation.</li>
+<li><strong>A separate <code>tbl_ingest_conflict</code> table / <code>SKIPPED</code> tournament rows.</strong> Rejected: pollutes scored data
+(every ranking view/export would have to exclude them).</li>
+<li><strong>File-based override + CLI rerun.</strong> Rejected: not automated; the resolution is a UI toggle + one click.</li>
+<li><strong>A language heuristic (&quot;prefer Polish&quot;).</strong> Rejected: arbitrary; size + DE structure decide.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>Each <code>(id_event, weapon, gender, age_category)</code> is written by exactly one source — the clobber is gone.</li>
+<li>Clean events (PPW4, PPW5) get <strong>zero intervention</strong>; the messy PPW3 gets the pool round dropped + the
+amateur duplicate flagged — and an admin can override + re-ingest if a default is ever wrong.</li>
+<li>The from-URL path fetches each round's results page (DE check) — a few extra requests per event.</li>
+<li><code>url_results</code> is still admin-managed (never scrape-filled); the accordion source rows are display only.</li>
+</ul>
+</section>
+<section class="section-card adr-section tests"><p class="kicker">tests</p><h2 id="tests">Tests</h2>
+<p>pytest: <code>_ftl_has_direct_elimination</code> (N13.1), accurate skip reasons (N13.1), <code>commit_cats</code> filter (N13.2),
+<code>_resolve_sources</code> keep-rule incl. Rule 2b + override (N13.3), staging duplicate flags + per-source split
+(N13.5). pgTAP 45.1–45.6 (N13.4): <code>tbl_event</code> JSONB columns + <code>fn_set_event_source_override</code> + <code>vw_calendar</code>
+exposure. vitest: accordion source rows + skip/process toggle (N13.6). Dry-run validated live on
+PPW3 (drop + flag) and PPW4 + PPW5 (clean, no intervention).</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="075-staging-report-fragment-channel.html">← ADR-075: Staging report — a fifth Context channel + per-plugin fragments + terminal formatter</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="077-event-lifecycle-season-skeletons.html">→ ADR-077: Event lifecycle, season-skeleton provisioning &amp; CERT→PROD calendar promotion</a></nav>
+<footer class="foot">Generated from <code>076-pool-round-discard-and-listing-keep-rule.md</code> · source SHA-256 <code>dd855d2fd7ec67757e6f76f2379b3cfd8abdd486ae90ca6c6ac9196e75ee1c6f</code></footer>
+</div></body></html>

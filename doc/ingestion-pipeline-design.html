@@ -1,0 +1,1391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="doc-source" content="ingestion-pipeline-design.md">
+<meta name="doc-source-sha256" content="41543307044a2971b3bd664fd39a17a4ce11aa5407e3239d692bf236dfa70a2b">
+<title>Ingestion Pipeline — Design &amp; Code Map · SPWS</title>
+<link rel="stylesheet" href="adr/assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Ingestion Pipeline — Design &amp; Code Map</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>ingestion-pipeline-design.md</code></dd></div><div><dt>Length</dt><dd>497 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#0-legend-every-abbreviation-used-in-this-document">0. Legend — every abbreviation used in this document</a></li><li class="depth-3"><a href="#0-1-domain-tournament-types-age-categories">0.1 Domain — tournament types &amp; age categories</a></li><li class="depth-3"><a href="#0-2-data-sources-external-systems">0.2 Data sources &amp; external systems</a></li><li class="depth-3"><a href="#0-3-architecture-code-data-formats">0.3 Architecture, code &amp; data formats</a></li><li class="depth-3"><a href="#0-4-pipeline-specific-terms">0.4 Pipeline-specific terms</a></li><li class="depth-3"><a href="#0-5-process-governance-environments">0.5 Process, governance &amp; environments</a></li><li class="depth-2"><a href="#1-business-requirements-start-here">1. Business Requirements (start here)</a></li><li class="depth-2"><a href="#2-guiding-principles-cross-cutting-adrs">2. Guiding Principles (cross-cutting ADRs)</a></li><li class="depth-2"><a href="#3-the-big-chart-every-code-chunk-named-with-its-adr">3. THE BIG CHART — every code chunk, named, with its ADR</a></li><li class="depth-2"><a href="#4-how-to-read-the-flow-one-paragraph">4. How to read the flow (one paragraph)</a></li><li class="depth-2"><a href="#5-stage-by-stage-detail-execution-order">5. Stage-by-stage detail (execution order)</a></li><li class="depth-2"><a href="#6-code-chunk-reference-table-file-paths">6. Code-chunk reference table (file paths)</a></li><li class="depth-3"><a href="#entry-orchestration">Entry &amp; orchestration</a></li><li class="depth-3"><a href="#parsers-registry-scrapers-init-py-parsers">Parsers (registry `scrapers/__init__.py :: PARSERS`)</a></li><li class="depth-3"><a href="#ir-context-overrides-matcher">IR, context, overrides, matcher</a></li><li class="depth-3"><a href="#draft-diff-commit-post-commit">Draft, diff, commit, post-commit</a></li><li class="depth-3"><a href="#commit-layer-rpcs-pl-pgsql-function-names-only-schema-adr-050-049-055">Commit-layer RPCs (PL/pgSQL — function names only; schema → ADR-050/049/055)</a></li><li class="depth-2"><a href="#6-1-data-sources-what-they-are-how-they-are-sourced-and-which-code-implements-them">6.1 Data sources — what they are, how they are sourced, and which code implements them</a></li><li class="depth-3"><a href="#acquisition-layer-shared-how-the-bytes-arrive">Acquisition layer (shared &quot;how the bytes arrive&quot;)</a></li><li class="depth-3"><a href="#source-by-source-map">Source-by-source map</a></li><li class="depth-2"><a href="#7-adr-cross-reference-every-ingestion-relevant-decision">7. ADR cross-reference (every ingestion-relevant decision)</a></li><li class="depth-2"><a href="#8-end-to-end-worked-example-ftl-ppw4">8. End-to-end worked example (FTL → PPW4)</a></li><li class="depth-2"><a href="#9-maintenance">9. Maintenance</a></li></ol></nav>
+  <main><section class="section-card detail"><blockquote>
+<p><strong>⚠️ ARCHITECTURE SUPERSEDED (2026-06-15).</strong> The current ingestion architecture is the
+<strong>rule-driven plugin pipeline</strong> in <a href="ingestion_pipeline_NEW_design.html">ingestion_pipeline_NEW_design.md</a>
+(built M1–M5, ADR-070–074). The stage functions mapped below still exist and are <em>wrapped</em> by the
+plugins (via <code>python/pipeline/plugins/bridge.py</code>), so this document remains the authoritative reference
+for the <strong>stage-layer logic</strong> (<code>stages.py</code> S0–S7c) the plugins delegate to — but the orchestration,
+the no-halt fault model, early <code>ResolveFencers</code>, self-healing recompute, and dedup live in the NEW doc.</p>
+</blockquote>
+<p><strong>Status:</strong> Living design document (stage-layer reference) · <strong>Scope:</strong> the end-to-end ingestion pipeline (sources → live ranked results)
+<strong>Audience:</strong> maintainers who need to see <em>every code chunk</em>, what it does, and <em>why</em> (ADR rationale).</p>
+<blockquote>
+<p><strong>DB schema is intentionally NOT detailed here.</strong> For the schema (tables, columns, enums,
+triggers, views) see the single source of truth — the
+<a href="Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.html">Project Specification §9</a> ER diagram —
+and the schema-bearing ADRs (<a href="adr/055-ingest-traceability.html">ADR-055</a> provenance/history columns,
+<a href="adr/049-joint-pool-split-flag.html">ADR-049</a> <code>bool_joint_pool_split</code>, <a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a>
+<code>tbl_*_draft</code> + <code>tbl_result</code> provenance). This document maps the <strong>code</strong>; it only <em>references</em> the schema.</p>
+</blockquote>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="0-legend-every-abbreviation-used-in-this-document">0. Legend — every abbreviation used in this document</h2>
+<p>Read this first if any token below is unfamiliar. Grouped for scanning.</p>
+<h3 id="0-1-domain-tournament-types-age-categories">0.1 Domain — tournament types &amp; age categories</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Abbr.</th>
+<th>Meaning</th>
+<th>Short description</th>
+<th>Read more</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SPWS</td>
+<td><em>Stowarzyszenie Polskich Weteranów Szermierzy</em></td>
+<td>Polish Veterans Fencing Association — the org this system serves; its own data authority</td>
+<td><a href="../../CLAUDE.md">CLAUDE.md</a></td>
+</tr>
+<tr>
+<td>PPW</td>
+<td>Puchar Polski Weteranów (individual)</td>
+<td>Domestic individual veterans' cup — admits <strong>everyone</strong></td>
+<td><a href="adr/066-min-participants-ingestion-gate.html">ADR-066</a></td>
+</tr>
+<tr>
+<td>MPW</td>
+<td>Mistrzostwa Polski Weteranów (individual)</td>
+<td>Polish veterans' individual championship (domestic)</td>
+<td>Spec §3</td>
+</tr>
+<tr>
+<td>PEW</td>
+<td>(Polish) European Veterans event</td>
+<td>International individual European event — <strong>POL-only</strong> intake</td>
+<td><a href="adr/038-evf-intake-polish-only.html">ADR-038</a></td>
+</tr>
+<tr>
+<td>MEW</td>
+<td>World/Masters European Veterans event</td>
+<td>International event — POL-only intake</td>
+<td><a href="adr/038-evf-intake-polish-only.html">ADR-038</a></td>
+</tr>
+<tr>
+<td>MSW</td>
+<td>Masters/World veterans event</td>
+<td>International event — POL-only intake</td>
+<td><a href="adr/008-psw-msw-international-pool.html">ADR-008</a></td>
+</tr>
+<tr>
+<td>PSW</td>
+<td>Puchar Świata Weteranów</td>
+<td>World-cup veterans event (international pool)</td>
+<td><a href="adr/008-psw-msw-international-pool.html">ADR-008</a></td>
+</tr>
+<tr>
+<td>IMEW / DMEW</td>
+<td>Individual / Team European Veterans</td>
+<td>Individual (scores) alternates yearly with Team (no scoring)</td>
+<td><a href="adr/021-imew-biennial-carry-over.html">ADR-021</a></td>
+</tr>
+<tr>
+<td>GP</td>
+<td>Grand Prix</td>
+<td>Domestic ranking-bearing series</td>
+<td>Spec §8</td>
+</tr>
+<tr>
+<td>Kadra</td>
+<td>National squad ranking</td>
+<td>Aggregate ranking (PPW + best international)</td>
+<td>Spec §8.3</td>
+</tr>
+<tr>
+<td>V0–V4</td>
+<td>Veteran age categories</td>
+<td>5 age bands (V0 youngest … V4 oldest), derived from birth year</td>
+<td><a href="adr/010-age-category-by-birth-year.html">ADR-010</a>, <a href="adr/056-vcat-from-birthyear.html">ADR-056</a></td>
+</tr>
+<tr>
+<td>V-cat</td>
+<td>Veteran category</td>
+<td>Shorthand for &quot;one of V0–V4&quot;</td>
+<td><a href="adr/056-vcat-from-birthyear.html">ADR-056</a></td>
+</tr>
+<tr>
+<td>EPEE / FOIL / SABRE</td>
+<td>The three weapons</td>
+<td><code>enum_weapon_type</code> values</td>
+<td>Spec §9</td>
+</tr>
+<tr>
+<td>M / F</td>
+<td>Male / Female</td>
+<td><code>enum_gender_type</code> values</td>
+<td><a href="adr/033-fencer-gender-identity-enhancements.html">ADR-033</a></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="0-2-data-sources-external-systems">0.2 Data sources &amp; external systems</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Abbr.</th>
+<th>Meaning</th>
+<th>Short description</th>
+<th>Read more</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FTL</td>
+<td>FencingTimeLive</td>
+<td>Live results API/site (JSON + CSV); a primary domestic source</td>
+<td><a href="adr/065-ftl-per-fencer-vcat-marker-check.html">ADR-065</a>, <a href="adr/068-ftl-www-host-and-session-cache.html">ADR-068</a></td>
+</tr>
+<tr>
+<td>FT XML</td>
+<td>FencingTime XML export</td>
+<td>Offline XML result file (FencingTime desktop)</td>
+<td><a href="adr/067-structural-pool-only-skip-unified-xml-ingest.html">ADR-067</a></td>
+</tr>
+<tr>
+<td>Engarde</td>
+<td>Engarde service</td>
+<td>HTML results provider</td>
+<td><a href="../../python/scrapers/engarde.py">scrapers/engarde.py</a></td>
+</tr>
+<tr>
+<td>4Fence / 4F</td>
+<td>4fence.com / 4fence.world</td>
+<td>HTML results provider</td>
+<td><a href="../../python/scrapers/fourfence.py">scrapers/fourfence.py</a></td>
+</tr>
+<tr>
+<td>Ophardt</td>
+<td>Ophardt / fencingworldwide</td>
+<td>HTML results provider with native athlete IDs</td>
+<td><a href="../../python/scrapers/ophardt.py">scrapers/ophardt.py</a></td>
+</tr>
+<tr>
+<td>Dartagnan</td>
+<td>dartagnan.org/com</td>
+<td>Legacy JSON results API (kept for re-ingest)</td>
+<td><a href="../../python/scrapers/dartagnan.py">scrapers/dartagnan.py</a></td>
+</tr>
+<tr>
+<td>EVF</td>
+<td>European Veterans Fencing</td>
+<td>veteransfencing.eu — calendar + results API; <strong>backup source</strong> verified by parity</td>
+<td><a href="adr/028-evf-calendar-results-import.html">ADR-028</a>, <a href="adr/053-evf-parity-gate.html">ADR-053</a></td>
+</tr>
+<tr>
+<td>FIE</td>
+<td>Fédération Internationale d'Escrime</td>
+<td>International fencing federation (context for international events)</td>
+<td>Spec §3</td>
+</tr>
+<tr>
+<td>cert_ref</td>
+<td>Certified reference snapshot</td>
+<td>Frozen DB snapshot used as a parser when no live URL exists</td>
+<td><a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a></td>
+</tr>
+<tr>
+<td>GAS</td>
+<td>Google Apps Script</td>
+<td>Gmail-polling email-ingestion bridge</td>
+<td><a href="adr/023-email-ingestion-gas-storage.html">ADR-023</a></td>
+</tr>
+<tr>
+<td>POL</td>
+<td>Poland / Polish nationality</td>
+<td>Nationality filter token for international intake</td>
+<td><a href="adr/038-evf-intake-polish-only.html">ADR-038</a></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="0-3-architecture-code-data-formats">0.3 Architecture, code &amp; data formats</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Abbr.</th>
+<th>Meaning</th>
+<th>Short description</th>
+<th>Read more</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IR</td>
+<td>Intermediate Representation</td>
+<td>The uniform <code>ParsedTournament</code>/<code>ParsedResult</code> every parser emits</td>
+<td><a href="../../python/pipeline/ir.py">ir.py</a>, <a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a></td>
+</tr>
+<tr>
+<td>RPC</td>
+<td>Remote Procedure Call</td>
+<td>A callable PL/pgSQL function exposed to the app (e.g. <code>fn_commit_event_draft</code>)</td>
+<td><a href="#6-code-chunk-reference-table">§6</a></td>
+</tr>
+<tr>
+<td>PL/pgSQL</td>
+<td>Procedural Language / PostgreSQL</td>
+<td>PostgreSQL's stored-procedure language</td>
+<td><a href="../../supabase/migrations/">supabase/migrations/</a></td>
+</tr>
+<tr>
+<td>FK</td>
+<td>Foreign Key</td>
+<td>DB reference; identity is by FK, not name</td>
+<td><a href="adr/003-identity-by-fk-not-name.html">ADR-003</a></td>
+</tr>
+<tr>
+<td>CLI</td>
+<td>Command-Line Interface</td>
+<td><code>ingest_cli.py</code> / <code>review_cli.py</code> entry points</td>
+<td><a href="#6-code-chunk-reference-table">§6</a></td>
+</tr>
+<tr>
+<td>UUID</td>
+<td>Universally Unique Identifier</td>
+<td>The <code>run_id</code> keying a draft batch</td>
+<td><a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a></td>
+</tr>
+<tr>
+<td>DOB / BY</td>
+<td>Date of Birth / Birth Year</td>
+<td>Drives V-cat derivation</td>
+<td><a href="adr/010-age-category-by-birth-year.html">ADR-010</a></td>
+</tr>
+<tr>
+<td>DE</td>
+<td>Direct Elimination</td>
+<td>Tableau bonus component in scoring</td>
+<td><a href="adr/001-hybrid-scoring-config.html">ADR-001</a></td>
+</tr>
+<tr>
+<td>RapidFuzz</td>
+<td>(library name)</td>
+<td>Fuzzy string-matching library used by the matcher</td>
+<td><a href="../../python/matcher/fuzzy_match.py">matcher/fuzzy_match.py</a></td>
+</tr>
+<tr>
+<td>TEE</td>
+<td>&quot;tee&quot; write pattern</td>
+<td>Phase-0 dual-write to new + legacy identity tables</td>
+<td><a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a></td>
+</tr>
+<tr>
+<td>XML / CSV / XLSX / JSON / HTML</td>
+<td>file/data formats</td>
+<td>Source artifact formats handled by parsers</td>
+<td><a href="../../python/scrapers/">scrapers/</a></td>
+</tr>
+<tr>
+<td>Telegram</td>
+<td>(product)</td>
+<td>Bot used for all operator alerting (never Discord)</td>
+<td><a href="adr/059-telegram-document-delivery.html">ADR-059</a></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="0-4-pipeline-specific-terms">0.4 Pipeline-specific terms</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Short description</th>
+<th>Read more</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Draft / <code>run_id</code></td>
+<td>Staged ingest batch</td>
+<td>Rows in <code>tbl_*_draft</code> not yet live, keyed by a UUID</td>
+<td><a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a></td>
+</tr>
+<tr>
+<td>Joint pool</td>
+<td>One physical pool, several V-cats</td>
+<td>Sibling tournaments sharing <code>url_results</code>; counted per-V-cat</td>
+<td><a href="adr/049-joint-pool-split-flag.html">ADR-049</a></td>
+</tr>
+<tr>
+<td>Pool-only / pool-round</td>
+<td>Qualifier without a tableau</td>
+<td>Structurally detected; not scored</td>
+<td><a href="adr/057-pool-round-structural-detection.html">ADR-057</a>, <a href="adr/067-structural-pool-only-skip-unified-xml-ingest.html">ADR-067</a></td>
+</tr>
+<tr>
+<td>Parity gate</td>
+<td>EVF cross-check</td>
+<td>POL count + placement + score ±0.5 after commit</td>
+<td><a href="adr/053-evf-parity-gate.html">ADR-053</a></td>
+</tr>
+<tr>
+<td>3-way diff</td>
+<td>Source vs CERT vs new-LOCAL</td>
+<td>Operator review buckets before commit</td>
+<td><a href="../../python/pipeline/three_way_diff.py">three_way_diff.py</a></td>
+</tr>
+<tr>
+<td>HaltError / halt reason</td>
+<td>Stage abort signal</td>
+<td>A stage raises it to stop the pipeline with a reason code</td>
+<td><a href="../../python/pipeline/types.py">types.py</a></td>
+</tr>
+<tr>
+<td>AUTO_MATCH / PENDING / UNMATCHED / AUTO_CREATED</td>
+<td>Match outcomes</td>
+<td>Matcher classification by confidence + intake rules</td>
+<td><a href="../../python/matcher/pipeline.py">matcher/pipeline.py</a></td>
+</tr>
+<tr>
+<td>Stage 8b / cascade</td>
+<td>PEW event-code recompute</td>
+<td>Post-commit rename when weapon assignment shifts</td>
+<td><a href="adr/046-pew-weapon-suffix.html">ADR-046</a></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="0-5-process-governance-environments">0.5 Process, governance &amp; environments</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Abbr.</th>
+<th>Meaning</th>
+<th>Short description</th>
+<th>Read more</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ADR</td>
+<td>Architecture Decision Record</td>
+<td>A numbered decision doc; the &quot;why&quot; behind each chunk</td>
+<td><a href="adr/">doc/adr/</a>, Spec Appendix C</td>
+</tr>
+<tr>
+<td>FR / NFR</td>
+<td>Functional / Non-Functional Requirement</td>
+<td>Numbered requirements in the spec</td>
+<td>Spec §3, RTM</td>
+</tr>
+<tr>
+<td>UC</td>
+<td>Use Case</td>
+<td>Numbered user scenario</td>
+<td>Spec §3</td>
+</tr>
+<tr>
+<td>RTM</td>
+<td>Requirements Traceability Matrix</td>
+<td>FR ↔ ADR ↔ test ↔ code mapping</td>
+<td><a href="requirements-traceability-matrix.html">requirements-traceability-matrix.md</a> / Spec</td>
+</tr>
+<tr>
+<td>Spec</td>
+<td>Project Specification</td>
+<td>The single source of truth</td>
+<td><a href="Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.html">Project Specification</a></td>
+</tr>
+<tr>
+<td>TDD</td>
+<td>Test-Driven Development</td>
+<td>Acceptance tests written before code</td>
+<td><a href="claude/testing.md">doc/claude/testing.md</a></td>
+</tr>
+<tr>
+<td>pgTAP / pytest / vitest</td>
+<td>test frameworks</td>
+<td>DB / Python / frontend test suites</td>
+<td><a href="claude/testing.md">doc/claude/testing.md</a></td>
+</tr>
+<tr>
+<td>POC / MVP</td>
+<td>Proof of Concept / Minimum Viable Product</td>
+<td>Completed early build phases</td>
+<td><a href="development_history.html">development_history.md</a></td>
+</tr>
+<tr>
+<td>LOCAL / CERT / PROD</td>
+<td>the three environments</td>
+<td>Dev → certification → production deploy tiers</td>
+<td><a href="adr/011-artifact-release-pipeline.html">ADR-011</a>, <a href="../../CLAUDE.md">cert-prod-environments</a></td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="1-business-requirements-start-here">1. Business Requirements (start here)</h2>
+<p>The pipeline exists to keep <strong>30 sub-rankings</strong> (3 weapons × 2 genders × 5 age categories V0–V4) up to
+date automatically, from many incompatible external result sources, with near-zero data error because
+<strong>SPWS is its own authority</strong> — a wrong domestic result propagates into the ranklist permanently with no
+upstream to correct it ([memory: EVF predominance / SPWS near-perfect]).</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Business rule</th>
+<th>Where it lives in code</th>
+<th>Why (ADR)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BR-1</td>
+<td>Ingest results from FTL, Engarde, 4Fence, Ophardt, FencingTime XML, EVF API, CSV/XLSX/JSON, and a cert_ref snapshot</td>
+<td><code>python/scrapers/*</code> + <code>PARSERS</code> registry</td>
+<td><a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a></td>
+</tr>
+<tr>
+<td>BR-2</td>
+<td><strong>Domestic</strong> events (PPW/MPW) admit <strong>everyone</strong>, incl. foreign guests; unmatched names are auto-created</td>
+<td><code>s6_resolve_identity</code> + <code>matcher/pipeline.py</code></td>
+<td><a href="adr/020-seed-generator-domestic-auto-create.html">ADR-020</a>, <a href="adr/038-evf-intake-polish-only.html">ADR-038</a></td>
+</tr>
+<tr>
+<td>BR-3</td>
+<td><strong>International</strong> events (PEW/MEW/MSW) admit <strong>POL-only</strong>; non-Polish rows dropped before matching</td>
+<td><code>s6_resolve_identity</code> (domestic/international branch)</td>
+<td><a href="adr/038-evf-intake-polish-only.html">ADR-038</a></td>
+</tr>
+<tr>
+<td>BR-4</td>
+<td>Identity is by durable <strong>FK</strong>, never by mutable name</td>
+<td><code>tbl_result.id_fencer</code>, matcher</td>
+<td><a href="adr/003-identity-by-fk-not-name.html">ADR-003</a></td>
+</tr>
+<tr>
+<td>BR-5</td>
+<td>Age category derives from <strong>birth year</strong> and season end year</td>
+<td><code>s0</code>, <code>s7_split_by_vcat</code>, <code>fn_age_categories_batch</code></td>
+<td><a href="adr/010-age-category-by-birth-year.html">ADR-010</a>, <a href="adr/056-vcat-from-birthyear.html">ADR-056</a></td>
+</tr>
+<tr>
+<td>BR-6</td>
+<td>Re-import is <strong>atomic</strong> (delete-old + insert-new + re-score in one transaction)</td>
+<td><code>fn_ingest_tournament_results</code>, <code>fn_commit_event_draft</code></td>
+<td><a href="adr/014-delete-reimport-strategy.html">ADR-014</a>, <a href="adr/022-ingestion-db-transaction.html">ADR-022</a></td>
+</tr>
+<tr>
+<td>BR-7</td>
+<td>Combined physical pools must be <strong>split per V-cat</strong>, but counted per V-cat</td>
+<td><code>s3</code>/<code>s4</code>/<code>s5</code>/<code>s7_split_by_vcat</code>, commit RPC</td>
+<td><a href="adr/024-combined-category-splitting.html">ADR-024</a>, <a href="adr/049-joint-pool-split-flag.html">ADR-049</a></td>
+</tr>
+<tr>
+<td>BR-8</td>
+<td>Minimum-participant gate applies <strong>at ingestion</strong>, not scoring</td>
+<td><code>s7_validate</code></td>
+<td><a href="adr/066-min-participants-ingestion-gate.html">ADR-066</a></td>
+</tr>
+<tr>
+<td>BR-9</td>
+<td>Every committed row carries <strong>provenance</strong> (scraped name, confidence, method, parser, source URL)</td>
+<td><code>tbl_result</code> provenance cols + history tables</td>
+<td><a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a>, <a href="adr/055-ingest-traceability.html">ADR-055</a></td>
+</tr>
+<tr>
+<td>BR-10</td>
+<td>A human reviews a <strong>diff</strong> before anything goes live (draft-then-commit)</td>
+<td><code>review_cli.py</code>, <code>three_way_diff.py</code>, draft tables</td>
+<td><a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a></td>
+</tr>
+<tr>
+<td>BR-11</td>
+<td>EVF is a <strong>backup source</strong>, verified by a post-commit parity gate</td>
+<td><code>evf_parity.py</code>, <code>commit_lifecycle.py</code></td>
+<td><a href="adr/053-evf-parity-gate.html">ADR-053</a></td>
+</tr>
+</tbody>
+</table></div>
+<p>Use-case coverage: UC1–UC4 (ingest, manual upload, identity resolution, manual review), UC23 (re-import),
+UC24–UC31 (orchestration, EVF sync, email, Telegram, URL auto-population). FRs: FR-53/54, FR-58,
+FR-71/72/73, FR-75/76/77, FR-79–85, FR-92, FR-96/97.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="2-guiding-principles-cross-cutting-adrs">2. Guiding Principles (cross-cutting ADRs)</h2>
+<p>These shape <em>every</em> chunk below; stated once so the detail reads coherently.</p>
+<ul>
+<li><strong>Draft-then-commit.</strong> Nothing touches live tables until an operator commits a <code>run_id</code>. — <a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a></li>
+<li><strong>One IR contract.</strong> All 9 parsers emit the same <code>ParsedTournament</code>/<code>ParsedResult</code>. — <a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a></li>
+<li><strong>Halt-by-exception.</strong> A stage raises <code>HaltError</code>; the orchestrator records <code>halt_reason</code> and stops. Non-halt exceptions are bugs and propagate. — <code>orchestrator.run_pipeline</code></li>
+<li><strong>Structural detection over name-regex.</strong> Pool-only / pool-round / bracket detection use data structure, not name matching. — <a href="adr/057-pool-round-structural-detection.html">ADR-057</a>, <a href="adr/067-structural-pool-only-skip-unified-xml-ingest.html">ADR-067</a></li>
+<li><strong>Atomicity &amp; idempotency.</strong> Delete+reload in one transaction; re-running a source is safe. — <a href="adr/014-delete-reimport-strategy.html">ADR-014</a>, <a href="adr/022-ingestion-db-transaction.html">ADR-022</a></li>
+<li><strong>Full traceability.</strong> Per-row provenance + bounded (cap-6) per-parent history. — <a href="adr/055-ingest-traceability.html">ADR-055</a></li>
+</ul>
+<blockquote>
+<p><strong>ADR registry note:</strong> ADR-051 and ADR-054 do <strong>not</strong> exist (reserved/skipped). The ingestion-relevant
+ADRs are listed in full in <a href="#7-adr-cross-reference-every-ingestion-relevant-decision">§7</a>.</p>
+</blockquote>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="3-the-big-chart-every-code-chunk-named-with-its-adr">3. THE BIG CHART — every code chunk, named, with its ADR</h2>
+<p>Read top-to-bottom. Each node is a real module/class/function (file path in <a href="#6-code-chunk-reference-table">§6</a>).
+<code>(ADR-NNN)</code> on a node is the decision that explains <em>why it exists</em>.</p>
+<pre><code class="language-mermaid">flowchart TB
+    %% ============ ENTRY ============
+    subgraph ENTRY[&quot;Entry points (CLI / review)&quot;]
+        CLI[&quot;ingest_cli.py&lt;br/&gt;--event-code · --commit-draft · --discard-draft&lt;br/&gt;--list-drafts · --resume-run-id&quot;]
+        REVIEW[&quot;review_cli.py :: ReviewSession&lt;br/&gt;interactive source-of-truth choice + run_iteration()&lt;br/&gt;(ADR-050 Phase 4)&quot;]
+    end
+
+    %% ============ SOURCES + PARSERS ============
+    subgraph SRC[&quot;Source layer — scrapers/ (one IR per source) (ADR-050)&quot;]
+        direction LR
+        P_FTX[&quot;fencingtime_xml.parse()&lt;br/&gt;FT XML; Poule-no-Tableau = pool-only (ADR-067)&quot;]
+        P_FTL[&quot;ftl.parse_json() / parse_csv()&lt;br/&gt;per-fencer V-cat marker (ADR-065)&lt;br/&gt;www-host + session cache (ADR-068)&quot;]
+        P_ENG[&quot;engarde.parse_html()&quot;]
+        P_4F[&quot;fourfence.parse_html()&quot;]
+        P_OPH[&quot;ophardt.parse_results()&quot;]
+        P_DAR[&quot;dartagnan.parse_rankings()&quot;]
+        P_EVF[&quot;evf_results.parse_results()&lt;br/&gt;POL-only + parity payload (ADR-038/053)&quot;]
+        P_FILE[&quot;file_import.parse()&lt;br/&gt;CSV/XLSX/JSON&quot;]
+        P_CERT[&quot;cert_ref.parse()&lt;br/&gt;snapshot fallback, skips URL checks (ADR-050)&quot;]
+        REG[&quot;scrapers/__init__.py :: PARSERS{}&lt;br/&gt;SourceKind → parser (registry, ADR-050)&quot;]
+    end
+
+    %% ============ IR ============
+    subgraph IR[&quot;Intermediate Representation — pipeline/ir.py&quot;]
+        IR_T[&quot;ParsedTournament&lt;br/&gt;results[], weapon, gender, category_hint,&lt;br/&gt;raw_pool_size, is_pool_only_qualifier&quot;]
+        IR_R[&quot;ParsedResult&lt;br/&gt;source_row_id, fencer_name, place,&lt;br/&gt;fencer_country, birth_year, raw_age_marker&quot;]
+        IR_ID[&quot;make_synthetic_id()&lt;br/&gt;stable id for source-less parsers&quot;]
+        IR_SK[&quot;SourceKind enum (9 sources)&quot;]
+    end
+
+    %% ============ EVF SYNC (discovery) ============
+    subgraph EVFSYNC[&quot;EVF calendar/results sync (scheduled discovery)&quot;]
+        EVF_CAL[&quot;evf_calendar.py&lt;br/&gt;scrape calendar; self-heal stale COMPLETED (ADR-039)&quot;]
+        EVF_SYNC[&quot;evf_sync.py&lt;br/&gt;2-phase: discover events → fetch results (ADR-028)&quot;]
+    end
+
+    %% ============ PIPELINE STAGES ============
+    subgraph PIPE[&quot;Stage machine — pipeline/orchestrator.run_pipeline() over stages.py&quot;]
+        direction TB
+        S0[&quot;s0_reconcile_roster&lt;br/&gt;create NEW fencers (exact match) + reconcile&lt;br/&gt;birth-year conflicts to band midpoint&lt;br/&gt;(ADR-056/010/038/050)&quot;]
+        S1[&quot;s1_validate_ir&lt;br/&gt;IR schema checks; pool-only skip&lt;br/&gt;HALT: IR_INVALID / POOL_ROUND_DETECTED (ADR-067)&quot;]
+        S2[&quot;s2_resolve_event&lt;br/&gt;map to active-season event by code/date&lt;br/&gt;HALT: EVENT_NOT_RESOLVED / EVENT_AMBIGUOUS (ADR-025)&quot;]
+        S3[&quot;s3_detect_combined_pool&lt;br/&gt;flag multi-V-cat from raw_age_marker (ADR-024)&quot;]
+        S4[&quot;s4_split_via_batch&lt;br/&gt;V-cat split by DOB via fn_age_categories_batch&lt;br/&gt;HALT: SPLITTER_UNRESOLVED (ADR-024/047)&quot;]
+        S5[&quot;s5_detect_joint_pool&lt;br/&gt;flag siblings sharing url_results (ADR-049)&quot;]
+        S6[&quot;s6_resolve_identity&lt;br/&gt;fuzzy match → AUTO_MATCH/PENDING/UNMATCHED;&lt;br/&gt;domestic auto-create vs intl POL-only&lt;br/&gt;HALT: V0_PROHIBITED_ON_INTERNATIONAL&lt;br/&gt;(ADR-003/020/038/064/034)&quot;]
+        S7[&quot;s7_validate&lt;br/&gt;count + min-participants + URL→data 6-field check&lt;br/&gt;HALT: COUNT_MISMATCH / URL_DATA_MISMATCH&lt;br/&gt;(ADR-052/066)&quot;]
+        S7P[&quot;s7_pool_round_check&lt;br/&gt;structural gender-mix detection&lt;br/&gt;HALT: POOL_ROUND_DETECTED (ADR-057/063)&quot;]
+        S7V[&quot;s7_split_by_vcat&lt;br/&gt;final V-cat from birth_year / bracket label (ADR-056)&quot;]
+        S0 --&gt; S1 --&gt; S2 --&gt; S3 --&gt; S4 --&gt; S5 --&gt; S6 --&gt; S7 --&gt; S7P --&gt; S7V
+    end
+
+    %% ============ MATCHER ============
+    subgraph MATCH[&quot;Identity matcher — matcher/&quot;]
+        FUZZ[&quot;fuzzy_match.find_best_match()&lt;br/&gt;RapidFuzz + diacritic fold + age tiebreak&lt;br/&gt;≥95 AUTO · 50-95 PENDING · &amp;lt;50 UNMATCHED&quot;]
+        MPIPE[&quot;pipeline.resolve_tournament_results()&lt;br/&gt;domestic vs international intake rules&lt;br/&gt;estimate_birth_year() midpoint anchors (ADR-056)&quot;]
+        FGENDER[&quot;asymmetric F-bracket gender filter (ADR-064)&quot;]
+    end
+
+    %% ============ CONTEXT + OVERRIDES ============
+    subgraph CTX[&quot;Shared state — pipeline/types.py + overrides.py&quot;]
+        PCTX[&quot;PipelineContext&lt;br/&gt;carries stage outputs + halt state&quot;]
+        HALT[&quot;HaltReason enum&quot;]
+        OVR[&quot;Overrides (5 YAML surfaces):&lt;br/&gt;identity · splitter · url · match_method · joint_pool&quot;]
+    end
+
+    %% ============ DRAFT LAYER ============
+    subgraph DRAFT[&quot;Draft staging — pipeline/draft_store.py (ADR-050 Phase 2)&quot;]
+        DS[&quot;DraftStore&lt;br/&gt;write_tournament_drafts / write_result_drafts&lt;br/&gt;read · list · commit · discard · dry_run&quot;]
+        DD[&quot;draft_diff.py&lt;br/&gt;dry-run markdown formatter&quot;]
+        TWD[&quot;three_way_diff.py&lt;br/&gt;Source vs CERT vs new-LOCAL → 4 buckets&lt;br/&gt;+ confidence histogram&quot;]
+        ALIAS[&quot;alias_writeback.py&lt;br/&gt;pending alias capture (ADR-050 Phase 3)&quot;]
+        DTBL[(&quot;tbl_tournament_draft / tbl_result_draft&lt;br/&gt;keyed by run_id — schema: see ADR-050&quot;)]
+    end
+
+    %% ============ COMMIT RPCs ============
+    subgraph COMMIT[&quot;Commit layer — PL/pgSQL RPCs&quot;]
+        F_DRY[&quot;fn_dry_run_event_draft(jsonb)&lt;br/&gt;stateless validate + count (no writes)&quot;]
+        F_DISC[&quot;fn_discard_event_draft(run_id)&lt;br/&gt;delete drafts + audit row&quot;]
+        F_COMMIT[&quot;fn_commit_event_draft(run_id)&lt;br/&gt;drafts→live; flag joint-pool siblings;&lt;br/&gt;per-V-cat count (ADR-049 amend);&lt;br/&gt;append cap-6 history (ADR-055); run scoring&quot;]
+        F_INGEST[&quot;fn_ingest_tournament_results()&lt;br/&gt;legacy atomic delete+insert+score (ADR-014/022)&quot;]
+        F_SCORE[&quot;fn_calc_tournament_scores()&lt;br/&gt;place pts + DE bonus + podium (ADR-001/002)&quot;]
+        F_AGE[&quot;fn_age_categories_batch()&lt;br/&gt;birth years → V-cats (ADR-010/056)&quot;]
+    end
+
+    %% ============ POST-COMMIT ============
+    subgraph POST[&quot;Post-commit hooks — pipeline/commit_lifecycle.run_post_commit_hooks()&quot;]
+        H_PEW[&quot;Stage 8b: pew_recompute_event_code()&lt;br/&gt;cascade rename on weapon mismatch (ADR-046)&quot;]
+        H_PAR[&quot;evf_parity.check_parity()&lt;br/&gt;POL count + placement + score ±0.5 (ADR-053)&quot;]
+        H_PROM[&quot;promote_evf_published() / annotate_parity_fail()&lt;br/&gt;PASS→EVF_PUBLISHED · FAIL→annotate (ADR-053)&quot;]
+        H_PCNT[&quot;participant_count_validation.py&lt;br/&gt;post-commit URL re-count HALT (ADR-069)&quot;]
+        H_TG[&quot;notifications.py → Telegram&lt;br/&gt;(ADR-059 doc delivery; Telegram not Discord)&quot;]
+    end
+
+    %% ============ LIVE ============
+    LIVE[(&quot;LIVE: tbl_tournament / tbl_result / tbl_fencer&lt;br/&gt;+ ingest_history + audit_log&lt;br/&gt;schema → Spec §9 / ADR-055&quot;)]
+    DBC[&quot;db_connector.py :: DbConnector&lt;br/&gt;all DB I/O for the Python side&quot;]
+
+    %% ---- EDGES ----
+    CLI --&gt; REVIEW
+    EVF_CAL --&gt; EVF_SYNC --&gt; P_EVF
+    P_FTX &amp; P_FTL &amp; P_ENG &amp; P_4F &amp; P_OPH &amp; P_DAR &amp; P_EVF &amp; P_FILE &amp; P_CERT --&gt; REG
+    REG --&gt; IR_T
+    IR_T -.contains.-&gt; IR_R
+    IR_SK -.tags.-&gt; IR_T
+    IR_ID -.fills.-&gt; IR_R
+    REVIEW --&gt; S0
+    IR_T --&gt; S0
+    OVR -.feeds.-&gt; S0
+    PCTX -.threads through.-&gt; PIPE
+    HALT -.raised by.-&gt; PIPE
+    S6 --&gt; FUZZ
+    FUZZ --&gt; MPIPE
+    FGENDER -.filters.-&gt; FUZZ
+    S4 -.calls.-&gt; F_AGE
+    S7V --&gt; DS
+    DS --&gt; DTBL
+    DS -.preview.-&gt; DD
+    REVIEW -.renders.-&gt; TWD
+    S6 -.captures.-&gt; ALIAS
+    DS --&gt;|commit| F_COMMIT
+    DS --&gt;|dry_run| F_DRY
+    DS --&gt;|discard| F_DISC
+    F_COMMIT --&gt; F_SCORE
+    F_INGEST --&gt; F_SCORE
+    F_COMMIT --&gt; LIVE
+    F_COMMIT --&gt; POST
+    H_PEW --&gt; H_PAR --&gt; H_PROM
+    POST -.notifies.-&gt; H_TG
+    H_PCNT -.guards.-&gt; LIVE
+    DBC -.executes.-&gt; COMMIT
+    DBC -.reads/writes.-&gt; LIVE
+</code></pre>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="4-how-to-read-the-flow-one-paragraph">4. How to read the flow (one paragraph)</h2>
+<p>A <strong>source</strong> is fetched (or discovered via EVF sync) and handed to its <strong>parser</strong>, which emits a uniform
+<code>ParsedTournament</code> <strong>IR</strong>. <code>run_pipeline()</code> threads a <code>PipelineContext</code> through stages <strong>S0→S7_split_by_vcat</strong>,
+each either enriching the context or raising <code>HaltError</code>. Surviving results are written to <strong>draft tables</strong>
+under a <code>run_id</code>; an operator inspects the <strong>3-way diff</strong> and runs <code>--commit-draft</code>. <code>fn_commit_event_draft</code>
+atomically promotes drafts to <strong>live tables</strong>, flags joint-pool siblings, appends history, and re-scores.
+<strong>Post-commit hooks</strong> then handle the PEW cascade rename, the EVF parity gate, the participant-count
+re-check, and Telegram notification.</p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="5-stage-by-stage-detail-execution-order">5. Stage-by-stage detail (execution order)</h2>
+<p>Order is the literal <code>_STAGE_NAMES</code> tuple in <code>orchestrator.py</code>.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Function (<code>stages.py</code>)</th>
+<th>What it does</th>
+<th>Halts with</th>
+<th>Why (ADR)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S0</td>
+<td><code>s0_reconcile_roster</code></td>
+<td>Creates new fencers by <strong>exact</strong> match (not fuzzy); reconciles conflicting birth years to band midpoint (estimate kept, CONFIRMED downgraded) — <strong>before</strong> matching</td>
+<td>— (never halts)</td>
+<td><a href="adr/050-unified-ingestion-pipeline.html">050</a>/<a href="adr/056-vcat-from-birthyear.html">056</a>/<a href="adr/010-age-category-by-birth-year.html">010</a>/<a href="adr/038-evf-intake-polish-only.html">038</a></td>
+</tr>
+<tr>
+<td>S1</td>
+<td><code>s1_validate_ir</code></td>
+<td>IR structural validation; structural pool-only skip</td>
+<td><code>IR_INVALID</code>, <code>POOL_ROUND_DETECTED</code></td>
+<td><a href="adr/067-structural-pool-only-skip-unified-xml-ingest.html">067</a></td>
+</tr>
+<tr>
+<td>S2</td>
+<td><code>s2_resolve_event</code></td>
+<td>Resolve to an active-season event by code or date</td>
+<td><code>EVENT_NOT_RESOLVED</code>, <code>EVENT_AMBIGUOUS</code></td>
+<td><a href="adr/025-event-centric-ingestion-telegram.html">025</a></td>
+</tr>
+<tr>
+<td>S3</td>
+<td><code>s3_detect_combined_pool</code></td>
+<td>Detect multi-V-cat physical pool from <code>raw_age_marker</code></td>
+<td>—</td>
+<td><a href="adr/024-combined-category-splitting.html">024</a></td>
+</tr>
+<tr>
+<td>S4</td>
+<td><code>s4_split_via_batch</code></td>
+<td>Split combined pool by DOB via <code>fn_age_categories_batch</code></td>
+<td><code>SPLITTER_UNRESOLVED</code></td>
+<td><a href="adr/024-combined-category-splitting.html">024</a>/<a href="adr/047-vcat-invariant-trigger-and-splitter-consolidation.html">047</a></td>
+</tr>
+<tr>
+<td>S5</td>
+<td><code>s5_detect_joint_pool</code></td>
+<td>Flag siblings sharing <code>url_results</code> as a joint pool</td>
+<td>—</td>
+<td><a href="adr/049-joint-pool-split-flag.html">049</a></td>
+</tr>
+<tr>
+<td>S6</td>
+<td><code>s6_resolve_identity</code></td>
+<td>Fuzzy match; domestic auto-create vs international POL-only</td>
+<td><code>V0_PROHIBITED_ON_INTERNATIONAL</code></td>
+<td><a href="adr/003-identity-by-fk-not-name.html">003</a>/<a href="adr/020-seed-generator-domestic-auto-create.html">020</a>/<a href="adr/038-evf-intake-polish-only.html">038</a>/<a href="adr/064-asymmetric-gender-filter-matcher.html">064</a>/<a href="adr/034-cross-gender-tournament-scoring.html">034</a></td>
+</tr>
+<tr>
+<td>S7</td>
+<td><code>s7_validate</code></td>
+<td>Count check, min-participants gate, URL→data 6-field validation</td>
+<td><code>COUNT_MISMATCH</code>, <code>URL_DATA_MISMATCH</code>, <code>PARTICIPANT_COUNT_MISMATCH</code></td>
+<td><a href="adr/052-url-data-validation.html">052</a>/<a href="adr/066-min-participants-ingestion-gate.html">066</a></td>
+</tr>
+<tr>
+<td>S7b</td>
+<td><code>s7_pool_round_check</code></td>
+<td>Structural pool-round detection via gender-mix signal</td>
+<td><code>POOL_ROUND_DETECTED</code></td>
+<td><a href="adr/057-pool-round-structural-detection.html">057</a>/<a href="adr/063-polish-plural-and-grupy-zbiorcze.html">063</a></td>
+</tr>
+<tr>
+<td>S7c</td>
+<td><code>s7_split_by_vcat</code></td>
+<td>Final per-result V-cat from birth year / bracket label</td>
+<td>—</td>
+<td><a href="adr/056-vcat-from-birthyear.html">056</a></td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="6-code-chunk-reference-table-file-paths">6. Code-chunk reference table (file paths)</h2>
+<h3 id="entry-orchestration">Entry &amp; orchestration</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Chunk</th>
+<th>Path</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ingest_cli.py</code></td>
+<td><a href="../../python/pipeline/ingest_cli.py">python/pipeline/ingest_cli.py</a></td>
+<td>CLI: ingest files, commit/discard/list/resume drafts</td>
+</tr>
+<tr>
+<td><code>review_cli.py :: ReviewSession</code></td>
+<td><a href="../../python/pipeline/review_cli.py">python/pipeline/review_cli.py</a></td>
+<td>Interactive review + <code>run_iteration()</code></td>
+</tr>
+<tr>
+<td><code>orchestrator.run_pipeline</code></td>
+<td><a href="../../python/pipeline/orchestrator.py">python/pipeline/orchestrator.py</a></td>
+<td>Stage dispatcher (halt-by-exception)</td>
+</tr>
+<tr>
+<td><code>orchestrator.process_xml_file</code></td>
+<td><a href="../../python/pipeline/orchestrator.py">python/pipeline/orchestrator.py</a></td>
+<td><strong>Deprecated</strong> legacy direct-write path</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="parsers-registry-scrapers-init-py-parsers">Parsers (registry <code>scrapers/__init__.py :: PARSERS</code>)</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>SourceKind</th>
+<th>Function</th>
+<th>Path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FENCINGTIME_XML</td>
+<td><code>parse</code></td>
+<td><a href="../../python/scrapers/fencingtime_xml.py">python/scrapers/fencingtime_xml.py</a></td>
+</tr>
+<tr>
+<td>FTL</td>
+<td><code>parse_json</code> / <code>parse_csv</code></td>
+<td><a href="../../python/scrapers/ftl.py">python/scrapers/ftl.py</a> (auth: <a href="../../python/scrapers/ftl_auth.py">ftl_auth.py</a>)</td>
+</tr>
+<tr>
+<td>ENGARDE</td>
+<td><code>parse_html</code></td>
+<td><a href="../../python/scrapers/engarde.py">python/scrapers/engarde.py</a></td>
+</tr>
+<tr>
+<td>FOURFENCE</td>
+<td><code>parse_html</code></td>
+<td><a href="../../python/scrapers/fourfence.py">python/scrapers/fourfence.py</a></td>
+</tr>
+<tr>
+<td>OPHARDT_HTML</td>
+<td><code>parse_results</code></td>
+<td><a href="../../python/scrapers/ophardt.py">python/scrapers/ophardt.py</a></td>
+</tr>
+<tr>
+<td>DARTAGNAN</td>
+<td><code>parse_rankings</code></td>
+<td><a href="../../python/scrapers/dartagnan.py">python/scrapers/dartagnan.py</a></td>
+</tr>
+<tr>
+<td>EVF_API</td>
+<td><code>parse_results</code></td>
+<td><a href="../../python/scrapers/evf_results.py">python/scrapers/evf_results.py</a></td>
+</tr>
+<tr>
+<td>FILE_IMPORT</td>
+<td><code>parse</code></td>
+<td><a href="../../python/scrapers/file_import.py">python/scrapers/file_import.py</a></td>
+</tr>
+<tr>
+<td>CERT_REF</td>
+<td><code>parse</code></td>
+<td><a href="../../python/scrapers/cert_ref.py">python/scrapers/cert_ref.py</a></td>
+</tr>
+<tr>
+<td>(EVF discovery)</td>
+<td>calendar/sync</td>
+<td><a href="../../python/scrapers/evf_calendar.py">evf_calendar.py</a>, <a href="../../python/scrapers/evf_sync.py">evf_sync.py</a></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="ir-context-overrides-matcher">IR, context, overrides, matcher</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Chunk</th>
+<th>Path</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ParsedTournament</code> / <code>ParsedResult</code> / <code>SourceKind</code> / <code>make_synthetic_id</code></td>
+<td><a href="../../python/pipeline/ir.py">python/pipeline/ir.py</a></td>
+<td>The uniform IR contract</td>
+</tr>
+<tr>
+<td><code>PipelineContext</code> / <code>HaltReason</code> / <code>Overrides</code></td>
+<td><a href="../../python/pipeline/types.py">python/pipeline/types.py</a></td>
+<td>Threaded state + 5 override surfaces</td>
+</tr>
+<tr>
+<td><code>overrides.py</code></td>
+<td><a href="../../python/pipeline/overrides.py">python/pipeline/overrides.py</a></td>
+<td>YAML override loader/validator</td>
+</tr>
+<tr>
+<td><code>fuzzy_match.find_best_match</code></td>
+<td><a href="../../python/matcher/fuzzy_match.py">python/matcher/fuzzy_match.py</a></td>
+<td>RapidFuzz scoring + tiebreak</td>
+</tr>
+<tr>
+<td><code>pipeline.resolve_tournament_results</code> / <code>estimate_birth_year</code></td>
+<td><a href="../../python/matcher/pipeline.py">python/matcher/pipeline.py</a></td>
+<td>Intake rules + BY estimate</td>
+</tr>
+<tr>
+<td><code>name_classify.py</code> / <code>age_split.py</code></td>
+<td><a href="../../python/pipeline/name_classify.py">python/pipeline/name_classify.py</a>, <a href="../../python/pipeline/age_split.py">age_split.py</a></td>
+<td>Name pairing, DOB→V-cat banding</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="draft-diff-commit-post-commit">Draft, diff, commit, post-commit</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Chunk</th>
+<th>Path</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DraftStore</code></td>
+<td><a href="../../python/pipeline/draft_store.py">python/pipeline/draft_store.py</a></td>
+<td>Draft I/O + RPC wrappers</td>
+</tr>
+<tr>
+<td><code>three_way_diff.py</code> / <code>draft_diff.py</code> / <code>parity_delta.py</code></td>
+<td><a href="../../python/pipeline/three_way_diff.py">three_way_diff.py</a>, <a href="../../python/pipeline/draft_diff.py">draft_diff.py</a>, <a href="../../python/pipeline/parity_delta.py">parity_delta.py</a></td>
+<td>Operator-facing diffs</td>
+</tr>
+<tr>
+<td><code>alias_writeback.py</code></td>
+<td><a href="../../python/pipeline/alias_writeback.py">python/pipeline/alias_writeback.py</a></td>
+<td>Pending alias capture/writeback</td>
+</tr>
+<tr>
+<td><code>commit_lifecycle.run_post_commit_hooks</code></td>
+<td><a href="../../python/pipeline/commit_lifecycle.py">python/pipeline/commit_lifecycle.py</a></td>
+<td>Stage 8b + parity gate + notify</td>
+</tr>
+<tr>
+<td><code>evf_parity.py</code> / <code>evf_parity_sweep.py</code></td>
+<td><a href="../../python/pipeline/evf_parity.py">evf_parity.py</a>, <a href="../../python/pipeline/evf_parity_sweep.py">evf_parity_sweep.py</a></td>
+<td>Parity check + scheduled sweep</td>
+</tr>
+<tr>
+<td><code>participant_count_validation.py</code></td>
+<td><a href="../../python/pipeline/participant_count_validation.py">python/pipeline/participant_count_validation.py</a></td>
+<td>Post-commit URL re-count gate</td>
+</tr>
+<tr>
+<td><code>url_validation.py</code> / <code>url_reachability.py</code></td>
+<td><a href="../../python/pipeline/url_validation.py">url_validation.py</a>, <a href="../../python/pipeline/url_reachability.py">url_reachability.py</a></td>
+<td>URL→data + liveness checks</td>
+</tr>
+<tr>
+<td><code>notifications.py</code></td>
+<td><a href="../../python/pipeline/notifications.py">python/pipeline/notifications.py</a></td>
+<td>Telegram delivery</td>
+</tr>
+<tr>
+<td><code>db_connector.DbConnector</code></td>
+<td><a href="../../python/pipeline/db_connector.py">python/pipeline/db_connector.py</a></td>
+<td>All Python↔DB I/O</td>
+</tr>
+<tr>
+<td><code>promote.py</code></td>
+<td><a href="../../python/pipeline/promote.py">python/pipeline/promote.py</a></td>
+<td>CERT→PROD / EVF promotion</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="commit-layer-rpcs-pl-pgsql-function-names-only-schema-adr-050-049-055">Commit-layer RPCs (PL/pgSQL — function names only; schema → ADR-050/049/055)</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Defining migration</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fn_commit_event_draft(run_id)</code></td>
+<td><a href="../../supabase/migrations/20260604000001_adr049_amend_per_vcat_count.sql">20260604000001</a> (latest)</td>
+<td>drafts→live, joint-pool flag, per-V-cat count, history, scoring</td>
+</tr>
+<tr>
+<td><code>fn_discard_event_draft(run_id)</code></td>
+<td><a href="../../supabase/migrations/20260501000004_phase2_draft_tables.sql">20260501000004</a></td>
+<td>delete drafts + audit</td>
+</tr>
+<tr>
+<td><code>fn_dry_run_event_draft(jsonb)</code></td>
+<td><a href="../../supabase/migrations/20260501000004_phase2_draft_tables.sql">20260501000004</a></td>
+<td>stateless validate/count</td>
+</tr>
+<tr>
+<td><code>fn_ingest_tournament_results()</code></td>
+<td><a href="../../supabase/migrations/20260501000001_phase0_schema_prep.sql">20260501000001</a></td>
+<td>legacy atomic delete+insert+score</td>
+</tr>
+<tr>
+<td><code>fn_calc_tournament_scores()</code></td>
+<td><a href="../../supabase/migrations/20250301000004_scoring_engine.sql">20250301000004</a></td>
+<td>scoring engine</td>
+</tr>
+<tr>
+<td><code>fn_age_categories_batch()</code></td>
+<td><a href="../../supabase/migrations/20260501000001_phase0_schema_prep.sql">20260501000001</a></td>
+<td>birth years → V-cats</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="6-1-data-sources-what-they-are-how-they-are-sourced-and-which-code-implements-them">6.1 Data sources — what they are, how they are sourced, and which code implements them</h2>
+<p>A &quot;source&quot; has <strong>two code chunks</strong>: an <strong>acquisition</strong> chunk that <em>gets the bytes</em> (HTTP fetch, authenticated
+session, local file read, or Supabase Storage download) and a <strong>parser</strong> chunk that turns those bytes into the
+uniform IR. The acquisition layer is shared; the parser is per-source (the <code>PARSERS</code> registry).</p>
+<h3 id="acquisition-layer-shared-how-the-bytes-arrive">Acquisition layer (shared &quot;how the bytes arrive&quot;)</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Chunk</th>
+<th>Path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>base.fetch_with_retry()</code> (async, httpx)</td>
+<td><a href="../../python/scrapers/base.py">scrapers/base.py</a></td>
+<td>Generic HTTP GET with retry/back-off for HTML/JSON sources</td>
+</tr>
+<tr>
+<td><code>base.detect_platform()</code></td>
+<td><a href="../../python/scrapers/base.py">scrapers/base.py</a></td>
+<td>Infers which source a URL belongs to (FTL/Engarde/4Fence/…)</td>
+</tr>
+<tr>
+<td><code>ftl_auth.get_authed_ftl_client()</code></td>
+<td><a href="../../python/scrapers/ftl_auth.py">scrapers/ftl_auth.py</a></td>
+<td>Logs in to FTL, returns an authenticated <code>httpx.Client</code>; CSRF + login-redirect handling</td>
+</tr>
+<tr>
+<td><code>ftl_auth.normalize_ftl_url()</code> + session cache (<code>reset_session_cache</code>, <code>_connect_sid_expiry</code>)</td>
+<td><a href="../../python/scrapers/ftl_auth.py">scrapers/ftl_auth.py</a></td>
+<td>apex→<code>www</code> host rewrite; expiry-based shared session cache (<a href="adr/068-ftl-www-host-and-session-cache.html">ADR-068</a>)</td>
+</tr>
+<tr>
+<td><code>evf_calendar.py</code></td>
+<td><a href="../../python/scrapers/evf_calendar.py">scrapers/evf_calendar.py</a></td>
+<td>Scrapes veteransfencing.eu calendar; self-heals stale COMPLETED rows (<a href="adr/039-stale-event-gate.html">ADR-039</a>)</td>
+</tr>
+<tr>
+<td><code>evf_sync.py</code></td>
+<td><a href="../../python/scrapers/evf_sync.py">scrapers/evf_sync.py</a></td>
+<td>2-phase orchestrator: discover events → fetch results per competition (<a href="adr/028-evf-calendar-results-import.html">ADR-028</a>)</td>
+</tr>
+<tr>
+<td><code>StorageHandler</code> + <code>unzip_in_memory()</code></td>
+<td><a href="../../python/pipeline/storage_handler.py">pipeline/storage_handler.py</a></td>
+<td>Lists/downloads the Supabase <code>staging/</code> bucket and unzips email-delivered <code>.zip</code>/<code>.xml</code> (<a href="adr/023-email-ingestion-gas-storage.html">ADR-023</a>)</td>
+</tr>
+<tr>
+<td>local file read (<code>Path.read_bytes</code>) in <code>ingest_cli</code></td>
+<td><a href="../../python/pipeline/ingest_cli.py">pipeline/ingest_cli.py</a></td>
+<td>Reads on-disk source artifacts passed on the CLI</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="source-by-source-map">Source-by-source map</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Source</th>
+<th>What it is</th>
+<th>Acquisition chunk</th>
+<th>Parser chunk (→ IR)</th>
+<th>Source kind / notes (ADR)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>FencingTimeLive (FTL)</strong></td>
+<td>Live results API (JSON) + CSV download; primary domestic source</td>
+<td><code>ftl_auth.get_authed_ftl_client</code> + <code>base.fetch_with_retry</code></td>
+<td><code>ftl.parse_json</code> / <code>ftl.parse_csv</code></td>
+<td><code>FTL</code> — per-fencer V-cat marker <a href="adr/065-ftl-per-fencer-vcat-marker-check.html">ADR-065</a>; host/cache <a href="adr/068-ftl-www-host-and-session-cache.html">ADR-068</a>; bracket filter <a href="adr/062-spws-bracket-name-filter.html">ADR-062</a></td>
+</tr>
+<tr>
+<td><strong>FencingTime XML</strong></td>
+<td>Offline XML export from FencingTime desktop</td>
+<td>local file read / Storage</td>
+<td><code>fencingtime_xml.parse</code></td>
+<td><code>FENCINGTIME_XML</code> — structural pool-only skip <a href="adr/067-structural-pool-only-skip-unified-xml-ingest.html">ADR-067</a></td>
+</tr>
+<tr>
+<td><strong>Engarde</strong></td>
+<td>engarde-service HTML result pages</td>
+<td><code>base.fetch_with_retry</code></td>
+<td><code>engarde.parse_html</code></td>
+<td><code>ENGARDE</code></td>
+</tr>
+<tr>
+<td><strong>4Fence</strong></td>
+<td>4fence.com / 4fence.world HTML results</td>
+<td><code>base.fetch_with_retry</code></td>
+<td><code>fourfence.parse_html</code></td>
+<td><code>FOURFENCE</code> — URL auto-population <a href="adr/029-tournament-url-auto-population.html">ADR-029</a></td>
+</tr>
+<tr>
+<td><strong>Ophardt</strong></td>
+<td>fencingworldwide / ophardt.online HTML; native athlete IDs</td>
+<td><code>base.fetch_with_retry</code></td>
+<td><code>ophardt.parse_results</code></td>
+<td><code>OPHARDT_HTML</code></td>
+</tr>
+<tr>
+<td><strong>Dartagnan</strong></td>
+<td>dartagnan.org/com JSON API (legacy)</td>
+<td>httpx in module</td>
+<td><code>dartagnan.parse_rankings</code></td>
+<td><code>DARTAGNAN</code> — kept for historical re-ingest</td>
+</tr>
+<tr>
+<td><strong>EVF API</strong></td>
+<td>veteransfencing.eu results API; <strong>backup</strong> source</td>
+<td><code>evf_sync.py</code> → <code>evf_results</code> fetch</td>
+<td><code>evf_results.parse_results</code></td>
+<td><code>EVF_API</code> — POL-only <a href="adr/038-evf-intake-polish-only.html">ADR-038</a>; parity gate <a href="adr/053-evf-parity-gate.html">ADR-053</a></td>
+</tr>
+<tr>
+<td><strong>File import (CSV/XLSX/JSON)</strong></td>
+<td>Operator-uploaded local files</td>
+<td>local file read / Storage</td>
+<td><code>file_import.parse</code> (delegates to <code>csv_upload.py</code>, <code>xlsx_parser.py</code>, <code>json_parser.py</code>)</td>
+<td><code>FILE_IMPORT</code></td>
+</tr>
+<tr>
+<td><strong>cert_ref snapshot</strong></td>
+<td>Frozen certified-DB snapshot used when no live URL exists</td>
+<td>DB read via <code>DbConnector</code></td>
+<td><code>cert_ref.parse</code></td>
+<td><code>CERT_REF</code> — skips URL→data checks <a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a></td>
+</tr>
+<tr>
+<td><strong>Email (GAS) intake</strong></td>
+<td>Gmail → Apps Script → Supabase Storage <code>.zip</code>/<code>.xml</code></td>
+<td><code>StorageHandler</code> + <code>unzip_in_memory</code> (<code>--from-storage</code>)</td>
+<td>routes to the matching parser above</td>
+<td>feeds the above <a href="adr/023-email-ingestion-gas-storage.html">ADR-023</a></td>
+</tr>
+</tbody>
+</table></div>
+<pre><code class="language-mermaid">flowchart LR
+    subgraph ACQ[&quot;Acquisition (get the bytes)&quot;]
+        HTTP[&quot;base.fetch_with_retry (httpx)&quot;]
+        FAUTH[&quot;ftl_auth.get_authed_ftl_client&lt;br/&gt;+ session cache (ADR-068)&quot;]
+        ESYNC[&quot;evf_sync / evf_calendar (ADR-028/039)&quot;]
+        STORE[&quot;StorageHandler + unzip_in_memory&lt;br/&gt;email/Storage (ADR-023)&quot;]
+        DISK[&quot;ingest_cli Path.read_bytes (local files)&quot;]
+    end
+    subgraph PARSE[&quot;Parsers (bytes → IR, registry: PARSERS)&quot;]
+        direction TB
+        PR[&quot;ftl · fencingtime_xml · engarde · fourfence ·&lt;br/&gt;ophardt · dartagnan · evf_results ·&lt;br/&gt;file_import (csv/xlsx/json) · cert_ref&quot;]
+    end
+    FAUTH --&gt; PR
+    HTTP --&gt; PR
+    ESYNC --&gt; PR
+    STORE --&gt; PR
+    DISK --&gt; PR
+    PR --&gt; IRX[&quot;ParsedTournament IR → run_pipeline()&quot;]
+</code></pre>
+<blockquote>
+<p><strong>Helpers that every source shares</strong> (in <a href="../../python/scrapers/base.py">scrapers/base.py</a>):
+<code>prepare_result_rows</code>, <code>filter_existing_results</code>, <code>check_min_participants</code> (<a href="adr/066-min-participants-ingestion-gate.html">ADR-066</a>),
+<code>validate_parse_results</code>, and <code>send_telegram_alert</code>.</p>
+</blockquote>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="7-adr-cross-reference-every-ingestion-relevant-decision">7. ADR cross-reference (every ingestion-relevant decision)</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>ADR</th>
+<th>Title</th>
+<th>Touches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="adr/003-identity-by-fk-not-name.html">003</a></td>
+<td>Identity by FK, not name</td>
+<td>matcher, <code>tbl_result.id_fencer</code></td>
+</tr>
+<tr>
+<td><a href="adr/010-age-category-by-birth-year.html">010</a></td>
+<td>Age category by birth year</td>
+<td>S0, S7c, <code>fn_age_categories_batch</code></td>
+</tr>
+<tr>
+<td><a href="adr/014-delete-reimport-strategy.html">014</a></td>
+<td>Delete + re-import</td>
+<td>commit RPC, <code>fn_ingest_tournament_results</code></td>
+</tr>
+<tr>
+<td><a href="adr/020-seed-generator-domestic-auto-create.html">020</a></td>
+<td>Domestic auto-create</td>
+<td>S6, matcher</td>
+</tr>
+<tr>
+<td><a href="adr/022-ingestion-db-transaction.html">022</a></td>
+<td>Atomic ingest transaction</td>
+<td>commit RPC</td>
+</tr>
+<tr>
+<td><a href="adr/023-email-ingestion-gas-storage.html">023</a></td>
+<td>Email ingestion (GAS + Storage)</td>
+<td>upstream intake</td>
+</tr>
+<tr>
+<td><a href="adr/024-combined-category-splitting.html">024</a></td>
+<td>Combined-category splitting</td>
+<td>S3, S4</td>
+</tr>
+<tr>
+<td><a href="adr/025-event-centric-ingestion-telegram.html">025</a></td>
+<td>Event-centric ingestion + Telegram</td>
+<td>S2, CLI, notifications</td>
+</tr>
+<tr>
+<td><a href="adr/028-evf-calendar-results-import.html">028</a></td>
+<td>EVF calendar + results import</td>
+<td>evf_calendar/evf_sync</td>
+</tr>
+<tr>
+<td><a href="adr/029-tournament-url-auto-population.html">029</a></td>
+<td>Tournament URL auto-population</td>
+<td>URL handling</td>
+</tr>
+<tr>
+<td><a href="adr/034-cross-gender-tournament-scoring.html">034</a></td>
+<td>Cross-gender tournament scoring</td>
+<td>S6, pool-round</td>
+</tr>
+<tr>
+<td><a href="adr/038-evf-intake-polish-only.html">038</a></td>
+<td>EVF intake POL-only</td>
+<td>S0, S6</td>
+</tr>
+<tr>
+<td><a href="adr/039-stale-event-gate.html">039</a></td>
+<td>Stale-event gate / self-heal</td>
+<td>evf_calendar</td>
+</tr>
+<tr>
+<td><a href="adr/046-pew-weapon-suffix.html">046</a></td>
+<td>PEW weapon-letter suffix / cascade</td>
+<td>post-commit Stage 8b</td>
+</tr>
+<tr>
+<td><a href="adr/047-vcat-invariant-trigger-and-splitter-consolidation.html">047</a></td>
+<td>V-cat invariant + splitter consolidation</td>
+<td>S4, V-cat trigger</td>
+</tr>
+<tr>
+<td><a href="adr/048-source-vs-db-audit-and-phantom-rows.html">048</a></td>
+<td>Source-vs-DB audit / phantom rows</td>
+<td>audit</td>
+</tr>
+<tr>
+<td><a href="adr/049-joint-pool-split-flag.html">049</a></td>
+<td>Joint-pool split flag (per-V-cat count)</td>
+<td>S5, commit RPC</td>
+</tr>
+<tr>
+<td><a href="adr/050-unified-ingestion-pipeline.html">050</a></td>
+<td><strong>Unified ingestion pipeline (master)</strong></td>
+<td>whole pipeline</td>
+</tr>
+<tr>
+<td><a href="adr/052-url-data-validation.html">052</a></td>
+<td>URL→data validation</td>
+<td>S7</td>
+</tr>
+<tr>
+<td><a href="adr/053-evf-parity-gate.html">053</a></td>
+<td>EVF backup-source + parity gate</td>
+<td>post-commit</td>
+</tr>
+<tr>
+<td><a href="adr/055-ingest-traceability.html">055</a></td>
+<td>Ingest traceability (provenance + history)</td>
+<td>commit RPC, schema</td>
+</tr>
+<tr>
+<td><a href="adr/056-vcat-from-birthyear.html">056</a></td>
+<td>V-cat from birth year (+ Stage 0)</td>
+<td>S0, S7c, matcher</td>
+</tr>
+<tr>
+<td><a href="adr/057-pool-round-structural-detection.html">057</a></td>
+<td>Pool-round structural detection</td>
+<td>S7b</td>
+</tr>
+<tr>
+<td><a href="adr/058-staging-reports-storage-bucket.html">058</a></td>
+<td>Staging-reports storage bucket</td>
+<td>diff/md output</td>
+</tr>
+<tr>
+<td><a href="adr/059-telegram-document-delivery.html">059</a></td>
+<td>Telegram document delivery</td>
+<td>notifications</td>
+</tr>
+<tr>
+<td><a href="adr/060-evf-parity-delta-md.html">060</a></td>
+<td>EVF parity delta MD</td>
+<td>parity_delta</td>
+</tr>
+<tr>
+<td><a href="adr/061-local-parity-and-telegram-commands.html">061</a></td>
+<td>LOCAL parity + Telegram commands</td>
+<td>review/notify</td>
+</tr>
+<tr>
+<td><a href="adr/062-spws-bracket-name-filter.html">062</a></td>
+<td>SPWS bracket name filter</td>
+<td>FTL discovery</td>
+</tr>
+<tr>
+<td><a href="adr/063-polish-plural-and-grupy-zbiorcze.html">063</a></td>
+<td>Polish plural + GRUPY ZBIORCZE</td>
+<td>S7b</td>
+</tr>
+<tr>
+<td><a href="adr/064-asymmetric-gender-filter-matcher.html">064</a></td>
+<td>Asymmetric gender filter (matcher)</td>
+<td>S6/matcher</td>
+</tr>
+<tr>
+<td><a href="adr/065-ftl-per-fencer-vcat-marker-check.html">065</a></td>
+<td>FTL per-fencer V-cat marker check</td>
+<td>ftl parser</td>
+</tr>
+<tr>
+<td><a href="adr/066-min-participants-ingestion-gate.html">066</a></td>
+<td>Min-participants ingestion gate</td>
+<td>S7</td>
+</tr>
+<tr>
+<td><a href="adr/067-structural-pool-only-skip-unified-xml-ingest.html">067</a></td>
+<td>Structural pool-only skip + unified XML</td>
+<td>S1, FT XML parser</td>
+</tr>
+<tr>
+<td><a href="adr/068-ftl-www-host-and-session-cache.html">068</a></td>
+<td>FTL www-host + session cache</td>
+<td>ftl parser</td>
+</tr>
+<tr>
+<td><a href="adr/069-participant-count-url-validator.html">069</a></td>
+<td>Participant-count URL validator</td>
+<td>post-commit</td>
+</tr>
+</tbody>
+</table></div>
+<p><em>Scoring/config ADRs that the commit step triggers:</em> <a href="adr/001-hybrid-scoring-config.html">001</a> (hybrid scoring config), <a href="adr/002-calculate-once-store-forever.html">002</a> (calculate-once). <em>(ADR-051 and ADR-054 do not exist.)</em></p>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="8-end-to-end-worked-example-ftl-ppw4">8. End-to-end worked example (FTL → PPW4)</h2>
+<ol>
+<li><code>ingest_cli --event-code PPW4-SPWS-2025-2026 results.xml --season-end-year 2026</code></li>
+<li><code>ftl.parse_json</code> → <code>ParsedTournament</code> IR (via <code>PARSERS</code>).</li>
+<li><code>run_pipeline</code>: S0 reconciles roster → S1–S5 validate/resolve/split → S6 matches identities → S7 validates count + URL → S7b pool-round → S7c assigns V-cats.</li>
+<li><code>DraftStore.write_*</code> stages rows under a <code>run_id</code>; operator reviews the <strong>3-way diff</strong>.</li>
+<li><code>ingest_cli --commit-draft &lt;run_id&gt;</code> → <code>fn_commit_event_draft</code>: drafts→live, joint-pool flag, <strong>per-V-cat count</strong> (ADR-049 amend), cap-6 history, <code>fn_calc_tournament_scores</code>.</li>
+<li>Post-commit: PEW cascade (if needed) → EVF parity gate (EVF events) → participant-count re-check → Telegram.</li>
+</ol>
+<hr />
+</section>
+<section class="section-card detail"><h2 id="9-maintenance">9. Maintenance</h2>
+<p>This is a <strong>code map</strong>, not the source of truth for schema or decisions. When the pipeline changes:</p>
+<ul>
+<li>update the relevant ADR (and Spec Appendix C) first — see <a href="claude/documenting.md">doc/claude/documenting.md</a>;</li>
+<li>then refresh §3 (chart), §5 (stage table), §6 (paths), §7 (ADR list) here.
+Verify chunk names against source before editing (this project requires verify-before-claim).</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="Documentation navigation"><a class="registry" href="index.html">← Documentation index</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
+<footer class="foot">Generated from <code>ingestion-pipeline-design.md</code> · source SHA-256 <code>41543307044a2971b3bd664fd39a17a4ce11aa5407e3239d692bf236dfa70a2b</code></footer>
+</div></body></html>

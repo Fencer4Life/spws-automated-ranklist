@@ -30,6 +30,7 @@ dev = [
     "psycopg2-binary>=2.9",
     "basedpyright>=1.21",
     "ruff>=0.6",
+    "markdown-it-py>=3.0",
 ]
 
 [tool.pytest.ini_options]

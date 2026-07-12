@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="067-structural-pool-only-skip-unified-xml-ingest.md">
+<meta name="adr-source-sha256" content="18b17a4a1cd4509b682d38bf72a3782b9ee22ce028deb1b340d249e700839fa3">
+<title>ADR-067 · Structural pool-only skip + unified XML ingest pipeline</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 067</p><h1>Structural pool-only skip + unified XML ingest pipeline</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented</dd></div><div><dt>Date</dt><dd class="">2026-05-27</dd></div><div><dt>Source</dt><dd class=""><code>067-structural-pool-only-skip-unified-xml-ingest.md</code></dd></div><div><dt>Length</dt><dd class="">55 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Implemented
+<strong>Date:</strong> 2026-05-27
+<strong>Source:</strong> User bug report 2026-05-27 (PPW4-V1-M-EPEE-2025-2026 / PPW5-V1-M-EPEE-2025-2026 showing 35 / 36 phantom participant counts)
+<strong>Related ADRs:</strong> ADR-024 (Combined Category Splitting), ADR-034 (Cross-Gender Tournament Scoring), ADR-049 (Joint-pool split flag), ADR-050 (Phase 0 rebuild), ADR-055 (Ingest traceability), ADR-056 (V-cat assignment from birth year)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#implementation">Implementation</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The SPWS ingest pipeline had two parallel XML-ingestion paths that diverged in behaviour:</p>
+<ol>
+<li><strong>URL-scrape path</strong> (<code>review_cli.py</code> → <code>run_pipeline</code> → <code>DraftStore</code> → <code>fn_commit_event_draft</code>) — runs the full S1-S7 pipeline, materializes drafts, and commits via the joint-pool-aware RPC.</li>
+<li><strong>Legacy direct-write path</strong> (<code>ingest_cli.run_ingest</code> → <code>orchestrator.process_xml_file</code>) — writes straight to <code>tbl_tournament</code> and <code>tbl_result</code>, bypassing <code>fn_commit_event_draft</code> entirely.</li>
+</ol>
+<p>The legacy path was self-documented as &quot;Phase 6 deletes this function entirely once review_cli.py + run_pipeline own the operational rebuild.&quot; Phase 6 never happened.</p>
+<p>Independent of the two-path problem, SPWS FT-XML exports include two file kinds that look superficially identical:</p>
+<ul>
+<li><strong>ELIMINACJE qualifier files</strong> (<code>&lt;Poule&gt;</code> elements only, no <code>&lt;Tableau&gt;</code>) — pool-round results that determine V-cat bracket seeding, not ranklist-relevant placements.</li>
+<li><strong>Per-V-cat DE bracket files</strong> (<code>&lt;Tableau&gt;</code> elements present) — the actual ranking-relevant placements.</li>
+</ul>
+<p>Both kinds were being ingested as if they contributed to scoring, with the splitter carving 47-fencer eliminacje pools into phantom V0-V4 buckets that did not correspond to any real bracket. On PPW4-V1-M-EPEE-2025-2026 and PPW5-V1-M-EPEE-2025-2026, this surfaced as <code>int_participant_count = 35 / 36</code> (POL-only sum across phantom siblings via the joint-pool re-sum logic).</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Three coordinated changes:</p>
+<ol>
+<li>
+<p><strong>Retire <code>process_xml_file</code> as the operational path.</strong> Add <code>ingest_xml_unified(path, event_code, season_end_year, …)</code> to <code>python/pipeline/ingest_cli.py</code> which builds a <code>ParsedTournament</code> IR, runs the S1-S7 pipeline via <code>run_pipeline</code>, and materializes drafts via <code>DraftStore</code>. The caller commits via the existing <code>--commit-draft &lt;run_id&gt;</code> flag. The legacy <code>process_xml_file</code> is marked <code>@deprecated</code> with a runtime <code>DeprecationWarning</code> pointing at the replacement; deletion in a follow-up cycle.</p>
+</li>
+<li>
+<p><strong>Structural pool-only skip.</strong> Add <code>is_pool_only_qualifier: bool</code> to the <code>ParsedTournament</code> IR. The FT XML parser sets it based purely on data structure: <strong><code>&lt;Poule&gt;</code> present AND <code>&lt;Tableau&gt;</code> absent</strong> (i.e. <em>has-pool-no-tableau</em>). <code>s1_validate_ir</code> halts with <code>HaltReason.POOL_ROUND_DETECTED</code> when set. Detection never relies on <code>AltName</code>, <code>Sexe</code>, or filename — those vary across organizers and years.</p>
+</li>
+<li>
+<p><strong>Per-file URL fragments + Polish <code>kat. N</code> regex + ADR-34 gender default.</strong> The unified XML ingest sets <code>source_url = &quot;&lt;url_event&gt;#&lt;filename&gt;&quot;</code> so each XML's draft rows share <code>url_results</code> only with siblings <em>from the same file</em> (legitimate combined-bracket joint pools), never across files (standalone V-cat brackets). The FT XML AltName regex recognizes both <code>vN</code> and the newer <code>kat. N</code> Polish convention. Per ADR-34, brackets where the parser cannot determine gender (e.g. <code>Sexe=&quot;X&quot;</code> with no Polish gender keyword in AltName) are NOT halted; <code>s1_validate_ir</code> allows <code>gender=None</code> and the draft writer defaults to <code>'M'</code> (the <code>enum_gender</code> NOT NULL column accepts it; <code>fn_effective_gender</code> reassigns women's points at query time).</p>
+</li>
+</ol>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
+<ul>
+<li><strong>Name-based skip (filename or AltName)</strong> — rejected per user instruction 2026-05-27: organizer naming conventions are unreliable across events and years. Structural detection on the actual data is the only durable signal.</li>
+<li><strong>Patch <code>process_xml_file</code> in place instead of retiring it</strong> — rejected because keeping two parallel paths has been the source of every divergence bug since Phase 3. One ingestion machine, two entry points.</li>
+<li><strong>Add a new <code>enum_gender</code> value (<code>'X'</code> or <code>'MIXED'</code>)</strong> — rejected because ADR-34 already specifies the cross-gender semantics at ranking-query time. Adding an enum value would require migrating every ranking function; defaulting to <code>'M'</code> keeps the schema stable.</li>
+<li><strong>Use a per-V-cat FTL URL where available, file:// otherwise</strong> — deferred. For PPW5 we have per-V-cat FTL URLs from the event-schedule scrape; for PPW4 we have only the event URL. A follow-up can refine <code>url_results</code> to per-V-cat FTL URLs where the event-schedule provides them.</li>
+</ul>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>Positive:</strong></p>
+<ul>
+<li>PPW4 / PPW5 2025-26 participant counts now reflect the real DE bracket pool size (10 / 8 for V1 M-Epee instead of phantom 35 / 36) and match FTL per-V-cat brackets exactly where FTL data is available.</li>
+<li>The bug class is structurally impossible to reproduce: any future eliminacje file gets skipped at the parser level regardless of filename, and any future legacy-path caller gets a clear migration warning.</li>
+<li>One ingestion machine; new parsers extend the IR contract, no parallel &quot;legacy&quot; branches.</li>
+</ul>
+<p><strong>Negative / trade-offs:</strong></p>
+<ul>
+<li>The default-to-<code>'M'</code> for gender-undetermined brackets relies on ADR-34's query-time reassignment. If <code>fn_effective_gender</code> has bugs or is bypassed by a custom report query, women's points in gender-ambiguous brackets could be miscounted. Mitigation: existing fn_effective_gender tests, plus the draft writer logs <code>txt_source_url_used</code> to the ingest history for audit.</li>
+<li>The <code>url_event#filename</code> URL pattern leaks the source-file structure into a user-visible column. Acceptable trade-off because the URL is still clickable to the event page (browsers honour only the first <code>#</code>), but a follow-up can replace <code>#filename</code> with the per-V-cat FTL UUID where available.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="implementation">Implementation</h2>
+<ul>
+<li>Commits: <code>b4dc173</code>, <code>93a2771</code>, <code>347eb19</code> on branch <code>fix/xml-ingest-unified-pipeline</code>.</li>
+<li>Tests: <code>python/tests/test_ingest_cli_unified.py</code> (4 assertions), <code>python/tests/test_pool_only_skip.py</code> (8 assertions), updated <code>python/tests/test_ir.py</code> (contract).</li>
+<li>LOCAL re-ingest verified: PPW4 24 tournaments / 87 results, PPW5 22 tournaments / 81 results. CERT/PROD promotion is operator-driven and out of scope for this ADR.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="066-min-participants-ingestion-gate.html">← ADR-066: Min-participants threshold gates ingestion, not scoring</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="068-ftl-www-host-and-session-cache.html">→ ADR-068: FTL www-host normalization + cached non-rolling session</a></nav>
+<footer class="foot">Generated from <code>067-structural-pool-only-skip-unified-xml-ingest.md</code> · source SHA-256 <code>18b17a4a1cd4509b682d38bf72a3782b9ee22ce028deb1b340d249e700839fa3</code></footer>
+</div></body></html>
