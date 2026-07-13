@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="071-mdm-dedup-sweep.md">
-<meta name="adr-source-sha256" content="5ca0152c6e777ff482e2d1fee2ba30e734fdcab6c00a453353abf49d1b531593">
+<meta name="adr-source-sha256" content="0c09c3aa044ed4de119828b78e9940b5126d0c6ce29210f2d5c8be940413913a">
 <title>ADR-071 · Master-data management + eventual-consistency dedup (DEDUP_SWEEP)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 071</p><h1>Master-data management + eventual-consistency dedup (<code>DEDUP_SWEEP</code>)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §5.1 / §6. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> ADR-070 (<code>ResolveFencers</code>), ADR-072 (recompute / self-healing), ADR-003 (FK identity), ADR-056 (band-midpoint BY reconcile), ADR-055 (provenance).</dd></div><div><dt>Source</dt><dd class=""><code>071-mdm-dedup-sweep.md</code></dd></div><div><dt>Length</dt><dd class="">66 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §5.1 / §6. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> ADR-070 (<code>ResolveFencers</code>), ADR-072 (recompute / self-healing), ADR-003 (FK identity), ADR-056 (band-midpoint BY reconcile), ADR-055 (provenance).</dd></div><div><dt>Source</dt><dd class=""><code>071-mdm-dedup-sweep.md</code></dd></div><div><dt>Length</dt><dd class="">66 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
-<a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §5.1 / §6. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.
+<a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §5.1 / §6. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.
 <strong>Date:</strong> 2026-06-14
 <strong>Relates to:</strong> ADR-070 (<code>ResolveFencers</code>), ADR-072 (recompute / self-healing), ADR-003 (FK identity),
 ADR-056 (band-midpoint BY reconcile), ADR-055 (provenance).</p>
@@ -79,5 +79,5 @@ survivor before deleting the dup (the audit follows the re-pointed result). Migr
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="070-resolve-fencers-auto-resolution.html">← ADR-070: ResolveFencers auto-resolution (merged Stage-0 ⊕ Stage-6, runs early), no human review gate</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="072-cdc-recompute-debounce.html">→ ADR-072: Master-data-change-triggered idempotent recompute (CDC queue + debounce)</a></nav>
-<footer class="foot">Generated from <code>071-mdm-dedup-sweep.md</code> · source SHA-256 <code>5ca0152c6e777ff482e2d1fee2ba30e734fdcab6c00a453353abf49d1b531593</code></footer>
+<footer class="foot">Generated from <code>071-mdm-dedup-sweep.md</code> · source SHA-256 <code>0c09c3aa044ed4de119828b78e9940b5126d0c6ce29210f2d5c8be940413913a</code></footer>
 </div></body></html>

@@ -1,4 +1,4 @@
-> **ARCHIVED** — This document is superseded by [Development History](../development_history.md) and the [Project Specification](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). Kept for git history reference only.
+> **ARCHIVED** — This document is superseded by [Development History](../archive/legacy-2026-07/development_history.md) and the [Project Specification](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). Kept for git history reference only.
 
 # POC Development Plan — SPWS Automated Ranklist System
 
@@ -645,7 +645,7 @@ The spec originally called for a Svelte custom element with Shadow DOM for CSS i
 - Manual test: open `index.html` in browser with `demo` attribute, verify ranklist loads with mock data, drilldown modal shows score breakdown with markers and summary rows.
 
 **CERT/PROD Deployment (infrastructure — not a plan test):** See [ADR-009](../adr/009-cert-prod-runtime-toggle.md) for architectural rationale, [ADR-011](../adr/011-artifact-release-pipeline.md) for release pipeline design.
-- Three-tier release pipeline: LOCAL (Docker) → CERT (cloud) → PROD (cloud). See [CI/CD Operations Manual](../cicd-operations-manual.md).
+- Three-tier release pipeline: LOCAL (Docker) → CERT (cloud) → PROD (cloud). See [CI/CD Operations Manual](../archive/legacy-2026-07/cicd-operations-manual.md).
 - `.github/workflows/release.yml` replaces `deploy.yml` — triggered by CI success, deploys Pages + CERT (auto) + PROD (manual approval).
 - Schema fingerprint verification ensures LOCAL/CERT/PROD parity after each deployment.
 - `deployed_migrations.json` tracks applied migrations per environment. `release-manifest.json` provides audit trail.

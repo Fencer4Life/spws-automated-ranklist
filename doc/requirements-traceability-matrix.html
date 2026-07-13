@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="a0d73348e66f11951fe98b93b8f83eb84b5339188516e8d5755356d6aba279fb">
+<meta name="doc-source-sha256" content="565f00e68ecb451892a00150e5bc3b3fb115d0b526bc7bc8a556de609a9c45fb">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -712,7 +712,7 @@
 </tr>
 <tr>
 <td>FR-99</td>
-<td>Server-side workflow dispatch: admin UI ⬇ buttons invoke a Supabase Edge Function (<code>dispatch-workflow</code>) that holds the GitHub PAT as a Supabase env secret and forwards <code>workflow_dispatch</code> calls. PAT never appears in HTML/JS bundles. Function uses an allowlist (<code>populate-urls.yml</code>, <code>scrape-tournament.yml</code>), verifies caller JWT (built-in Supabase auth), and returns sync <code>{ok, runs_url}</code>. Per-event inline status renders below the event-row in the admin accordion (pending → success-with-link → error). <code>github-pat</code> / <code>github-repo</code> HTML attributes removed from <code>&lt;spws-ranklist&gt;</code>. Telegram path (GAS server-side PAT) untouched. <strong>N15 (2026-06-19):</strong> new Telegram lifecycle command <code>ingest &lt;prefix&gt; &lt;url&gt; [cert|prod]</code> dispatches <code>ingest-event.yml</code> via the same GAS→<code>workflow_dispatch</code> path as <code>promote</code>; the from-URL ingest sets <code>tbl_event.url_event</code> (admin), re-ingests (keep-rule + N14 <code>url_results</code>), and sends the staging <code>full.md</code>+<code>.diff.md</code> back to Telegram (reuses ADR-059 <code>send_staging_report</code>/<code>send_document</code>; <code>ingest_cli --send-telegram --md-target storage</code>). GAS snippet: <a href="telegram-ingest-command-gas.html">telegram-ingest-command-gas.md</a>.</td>
+<td>Server-side workflow dispatch: admin UI ⬇ buttons invoke a Supabase Edge Function (<code>dispatch-workflow</code>) that holds the GitHub PAT as a Supabase env secret and forwards <code>workflow_dispatch</code> calls. PAT never appears in HTML/JS bundles. Function uses an allowlist (<code>populate-urls.yml</code>, <code>scrape-tournament.yml</code>), verifies caller JWT (built-in Supabase auth), and returns sync <code>{ok, runs_url}</code>. Per-event inline status renders below the event-row in the admin accordion (pending → success-with-link → error). <code>github-pat</code> / <code>github-repo</code> HTML attributes removed from <code>&lt;spws-ranklist&gt;</code>. Telegram path (GAS server-side PAT) untouched. <strong>N15 (2026-06-19):</strong> new Telegram lifecycle command <code>ingest &lt;prefix&gt; &lt;url&gt; [cert|prod]</code> dispatches <code>ingest-event.yml</code> via the same GAS→<code>workflow_dispatch</code> path as <code>promote</code>; the from-URL ingest sets <code>tbl_event.url_event</code> (admin), re-ingests (keep-rule + N14 <code>url_results</code>), and sends the staging <code>full.md</code>+<code>.diff.md</code> back to Telegram (reuses ADR-059 <code>send_staging_report</code>/<code>send_document</code>; <code>ingest_cli --send-telegram --md-target storage</code>). GAS snippet: <a href="archive/legacy-2026-07/telegram-ingest-command-gas.html">archive/legacy-2026-07/telegram-ingest-command-gas.md</a>.</td>
 <td>UC22(c), UC27, ADR-041, ADR-025, ADR-059</td>
 <td>9.45a–9.45f, N15.1–N15.4</td>
 <td>Covered</td>
@@ -803,7 +803,7 @@
 </tr>
 <tr>
 <td>FR-112</td>
-<td><strong>Rule-driven plugin ingestion architecture</strong> (NEW design, <a href="ingestion_pipeline_NEW_design.html">ingestion_pipeline_NEW_design.md</a>): three one-directional layers — RuleBook+RuleEngine resolve a named <code>Flow</code> into a DAG-validated <code>ExecutionPlan</code> <em>before</em> execution → generic Orchestrator runs it → Plugins (<code>IngestPlugin</code> contract reads/writes/effects + applies + run; kinds Source/Gate/Transform/Mutator/Reactor). Mutators emit signals; Reactors observe a signal → emit a Flow (no back-edges). Adding a scenario = adding a Rule, no orchestrator/plugin change.</td>
+<td><strong>Rule-driven plugin ingestion architecture</strong> (NEW design, <a href="archive/legacy-2026-07/ingestion_pipeline_NEW_design.html">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a>): three one-directional layers — RuleBook+RuleEngine resolve a named <code>Flow</code> into a DAG-validated <code>ExecutionPlan</code> <em>before</em> execution → generic Orchestrator runs it → Plugins (<code>IngestPlugin</code> contract reads/writes/effects + applies + run; kinds Source/Gate/Transform/Mutator/Reactor). Mutators emit signals; Reactors observe a signal → emit a Flow (no back-edges). Adding a scenario = adding a Rule, no orchestrator/plugin change.</td>
 <td>ADR-073 (amends ADR-050)</td>
 <td>N1.1–N1.18 (test_rule_engine.py, test_pipeline_core.py): planner flow→sequence, DAG-validation rejects mis-order, orchestrator skip/fault/abort/trace; N2.1 parity (new path == run_pipeline pctx); N7.1–N7.8 (test_commit_persist.py): Commit persists per V-cat bracket via fn_find_or_create_tournament + fn_ingest_tournament_results, per-V-cat own count (ADR-049 amend), method→legacy enum_match_status map, _skip_commit short-circuit, RECOMPUTE write-back deferred; live LOCAL end-to-end ingest writes tbl_result + scores; N8.1–N8.6 (test_ingest_cli_flow.py): ingest_cli <code>--flow ingest_domestic</code> parses via PARSERS + runs run_flow per file (no draft gate), per-file source_url, pool-only skip, unknown-event ValueError; live LOCAL parity (NEW run_flow vs OLD draft-commit) byte-matches scores on single-cat + combined pool</td>
 <td>Covered</td>
@@ -1095,7 +1095,7 @@
 </table></div>
 </section>
 <section class="section-card detail"><h2 id="rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</h2>
-<p>The rebuild introduces infrastructure tests that don't map to user-facing FRs. They are catalogued here for traceability against the architecture decisions that introduced them. For the rebuild's per-sub-phase status, see <a href="development_history.html">doc/development_history.md</a> §Phase 2b.</p>
+<p>The rebuild introduces infrastructure tests that don't map to user-facing FRs. They are catalogued here for traceability against the architecture decisions that introduced them. For the rebuild's per-sub-phase status, see <a href="archive/legacy-2026-07/development_history.html">doc/archive/legacy-2026-07/development_history.md</a> §Phase 2b.</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -1134,10 +1134,10 @@
 <li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
 <li>Test baseline (counts per suite): Project Specification Appendix D</li>
 <li>Use cases: Project Specification §3</li>
-<li>Functional scope: Project Specification §6 (Implementation Phasing) → externalized to <a href="development_history.html">doc/development_history.md</a></li>
+<li>Functional scope: Project Specification §6 (Implementation Phasing) → externalized to <a href="archive/legacy-2026-07/development_history.html">doc/archive/legacy-2026-07/development_history.md</a></li>
 </ul>
 </section></main>
 </div>
-<nav class="pager" aria-label="Documentation navigation"><a class="registry" href="index.html">← Documentation index</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a0d73348e66f11951fe98b93b8f83eb84b5339188516e8d5755356d6aba279fb</code></footer>
+<nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>565f00e68ecb451892a00150e5bc3b3fb115d0b526bc7bc8a556de609a9c45fb</code></footer>
 </div></body></html>

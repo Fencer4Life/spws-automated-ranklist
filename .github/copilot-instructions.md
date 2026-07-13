@@ -1,10 +1,20 @@
-## GitHub Operations
+## Repository authority
 
-When performing any GitHub operations (creating repos, pushing code, managing issues, pull requests, branches, or files on GitHub):
+- Use `doc/handbook/index.html` for current-system behavior and `doc/handbook/documentation-map.html` to identify the owning page for a change.
+- Use `doc/adr/index.html` for decision rationale, `doc/governance/index.html` for requirements, and `doc/archive/legacy-2026-07/` only for history.
+- Human-facing documents and development plans are HTML. Every plan includes the documentation coherence gate from `doc/handbook/reference/documentation-standard.html`.
 
-- **Always use the GitHub MCP server** configured in `.vscode/mcp.json`. The PAT is stored there — do not ask the user for credentials or suggest `gh auth login`.
-- The MCP server is available at `https://api.githubcopilot.com/mcp/` and is pre-authenticated.
-- The GitHub account is **Fencer4Life** and the primary repository is **spws-automated-ranklist** (private).
-- Prefer MCP tools (`mcp_github_*`) over terminal `git` or `gh` CLI commands for all GitHub API interactions.
-- For local git operations (commit, status, diff) use the terminal as normal.
-- When pushing, use the token from `.vscode/mcp.json` embedded in the remote URL rather than interactive credential prompts.
+## GitHub operations
+
+- Use the configured GitHub integration for API operations and normal terminal Git commands for local status, diff, staging and commits.
+- Never read, quote, copy, log or embed a token from `.vscode/mcp.json`, environment files, local settings or git remotes.
+- Never place credentials in a remote URL. Use the configured credential/OAuth flow.
+- Stage explicit intended paths and preserve unrelated worktree changes.
+- Do not push, run workflows, or mutate CERT/PROD unless the user explicitly authorizes that operation.
+
+## Completion
+
+- Run affected tests and repository coherence checks.
+- Update current handbook/runbook pages in present tense when their owned behavior changes.
+- Run `python scripts/check_docs.py --changed-from <base>` and the applicable HTML render checks.
+- Run `scripts/refresh-graph.sh` before committing.

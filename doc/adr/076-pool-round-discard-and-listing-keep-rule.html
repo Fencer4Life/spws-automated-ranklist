@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="076-pool-round-discard-and-listing-keep-rule.md">
-<meta name="adr-source-sha256" content="dd855d2fd7ec67757e6f76f2379b3cfd8abdd486ae90ca6c6ac9196e75ee1c6f">
+<meta name="adr-source-sha256" content="2c0d8d36100e5d22a78b75b43f097dd0e8ff7660a673e7cf3979f1a54b3ddb7f">
 <title>ADR-076 · Overlapping FTL listings — discard pool-only rounds, keep one listing per category, flag duplicates (UI-resolvable)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 076</p><h1>Overlapping FTL listings — discard pool-only rounds, keep one listing per category, flag duplicates (UI-resolvable)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-18, NEW pipeline build). Design in <a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §from-URL discovery.</dd></div><div><dt>Date</dt><dd class="">2026-06-18 <strong>Relates to:</strong> <strong>extends</strong> ADR-067 (pools-only <code>&lt;Poule&gt;</code>-no-<code>&lt;Tableau&gt;</code> skip) to the from-URL JSON path; ADR-014/022 (atomic delete-reimport <code>Commit</code>, the clobber mechanism); ADR-025 (event-centric tournament keyed on event·weapon·gender·age_category); ADR-006 (JSONB-in-DB config precedent); ADR-041 (UI → Edge-Function → GitHub-Actions dispatch); ADR-075 (the staging/automation report that surfaces this).</dd></div><div><dt>Source</dt><dd class=""><code>076-pool-round-discard-and-listing-keep-rule.md</code></dd></div><div><dt>Length</dt><dd class="">107 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-18, NEW pipeline build). Design in <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §from-URL discovery.</dd></div><div><dt>Date</dt><dd class="">2026-06-18 <strong>Relates to:</strong> <strong>extends</strong> ADR-067 (pools-only <code>&lt;Poule&gt;</code>-no-<code>&lt;Tableau&gt;</code> skip) to the from-URL JSON path; ADR-014/022 (atomic delete-reimport <code>Commit</code>, the clobber mechanism); ADR-025 (event-centric tournament keyed on event·weapon·gender·age_category); ADR-006 (JSONB-in-DB config precedent); ADR-041 (UI → Edge-Function → GitHub-Actions dispatch); ADR-075 (the staging/automation report that surfaces this).</dd></div><div><dt>Source</dt><dd class=""><code>076-pool-round-discard-and-listing-keep-rule.md</code></dd></div><div><dt>Length</dt><dd class="">107 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-18, NEW pipeline build). Design in
-<a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §from-URL discovery.
+<a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §from-URL discovery.
 <strong>Date:</strong> 2026-06-18
 <strong>Relates to:</strong> <strong>extends</strong> ADR-067 (pools-only <code>&lt;Poule&gt;</code>-no-<code>&lt;Tableau&gt;</code> skip) to the from-URL JSON
 path; ADR-014/022 (atomic delete-reimport <code>Commit</code>, the clobber mechanism); ADR-025 (event-centric
@@ -169,5 +169,5 @@ PPW3 (drop + flag) and PPW4 + PPW5 (clean, no intervention).</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="075-staging-report-fragment-channel.html">← ADR-075: Staging report — a fifth Context channel + per-plugin fragments + terminal formatter</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="077-event-lifecycle-season-skeletons.html">→ ADR-077: Event lifecycle, season-skeleton provisioning &amp; CERT→PROD calendar promotion</a></nav>
-<footer class="foot">Generated from <code>076-pool-round-discard-and-listing-keep-rule.md</code> · source SHA-256 <code>dd855d2fd7ec67757e6f76f2379b3cfd8abdd486ae90ca6c6ac9196e75ee1c6f</code></footer>
+<footer class="foot">Generated from <code>076-pool-round-discard-and-listing-keep-rule.md</code> · source SHA-256 <code>2c0d8d36100e5d22a78b75b43f097dd0e8ff7660a673e7cf3979f1a54b3ddb7f</code></footer>
 </div></body></html>

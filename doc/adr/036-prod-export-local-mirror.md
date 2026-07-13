@@ -136,7 +136,7 @@ cd frontend && npm test
 
 ## Full Operations Guide
 
-See **`doc/cicd-operations-manual.md` §11 (Environment Sync)** for complete step-by-step procedures for all sync operations (PROD → local, PROD → CERT, data audit).
+See **`doc/archive/legacy-2026-07/cicd-operations-manual.md` §11 (Environment Sync)** for complete step-by-step procedures for all sync operations (PROD → local, PROD → CERT, data audit).
 
 ## Related ADRs
 

@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="doc-id" content="PLAN-DOCS-REBUILD-2026-07">
+<meta name="doc-status" content="approved">
+<meta name="doc-type" content="implementation-plan">
+<meta name="last-verified" content="2026-07-12">
+<title>Rebuild the SPWS Project Documentation</title>
+<link rel="stylesheet" href="../adr/assets/adr.css">
+<style>
+.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:42px;align-items:end}.status-card{background:var(--card);border:1px solid var(--line);border-top:5px solid var(--amber);padding:20px}.status-card dl{margin:0}.status-card div+div{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}.status-card dt{font:750 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}.status-card dd{margin:4px 0 0;font-weight:700}.diagnosis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.diagnosis article,.principle,.journey,.phase{background:var(--card);border:1px solid var(--line);padding:20px}.diagnosis strong{display:block;color:var(--coral);font:800 13px var(--mono);letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px}.architecture{font:14px/1.75 var(--mono);white-space:pre;overflow:auto;background:#101827;color:#e7eef8;border-left:5px solid var(--navy);border-radius:10px;padding:20px}.tree{font:14px/1.7 var(--mono);white-space:pre;overflow:auto;background:var(--card);border:1px solid var(--line);padding:20px}.read-paths{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.journey .time{color:var(--navy);font:800 13px var(--mono);text-transform:uppercase}.journey h3{margin-top:8px}.matrix td:first-child{font-weight:800}.keep{color:var(--green);font-weight:800}.migrate{color:var(--navy);font-weight:800}.archive{color:var(--coral);font-weight:800}.evidence{color:var(--amber);font-weight:800}.contract{background:var(--blue);border:1px solid var(--line-strong);border-left:6px solid var(--navy);padding:22px}.gate{background:var(--green-soft);border:2px solid var(--green);border-radius:12px;padding:24px}.gate-head{display:flex;gap:14px;align-items:flex-start}.gate-box{width:24px;height:24px;flex:0 0 24px;border:3px solid var(--green);background:var(--card);margin-top:2px}.gate h3{margin:0;color:var(--green)}.binary{font:700 13px/1.65 var(--mono);background:var(--card);border:1px solid var(--line);padding:16px;overflow:auto}.phases{counter-reset:phase}.phase{position:relative;padding-left:74px;margin-bottom:14px}.phase:before{counter-increment:phase;content:counter(phase);position:absolute;left:20px;top:20px;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--navy);color:var(--paper);font:800 15px var(--mono)}.phase h3{margin-top:0}.decision-box{border-left:6px solid var(--amber);background:var(--amber-soft);padding:20px}.decision-box h3{color:var(--amber);margin-top:0}.acceptance li{margin:10px 0}.note{color:var(--muted);font-size:15px}@media(max-width:900px){.hero-grid,.diagnosis,.read-paths{grid-template-columns:1fr}.phase{padding-left:20px;padding-top:72px}.phase:before{top:20px}.architecture,.tree{font-size:12px}}
+</style>
+</head>
+<body><div class="page">
+<header class="mast hero-grid">
+  <div><p class="eyebrow">Documentation architecture · Discussion plan</p><h1>Rebuild the project documentation around the system that exists now</h1><p class="dek">Create a calm top-down learning path, a verified drill-down architecture map, and a maintenance contract that keeps current truth separate from decisions, evidence and history.</p></div>
+  <aside class="status-card"><dl><div><dt>Status</dt><dd>Complete · validation passed</dd></div><div><dt>Scope</dt><dd>Documentation information architecture and migration</dd></div><div><dt>Outcome</dt><dd>21-page canonical handbook and governed archive cutover</dd></div><div><dt>Completed</dt><dd>12 July 2026</dd></div></dl></aside>
+</header>
+
+<div class="layout">
+<nav class="toc" aria-label="Plan contents"><p class="kicker">Read in order</p><ol>
+  <li><a href="#diagnosis">1 · Diagnosis</a></li><li><a href="#principles">2 · Design principles</a></li><li><a href="#architecture">3 · Current architecture map</a></li><li><a href="#structure">4 · Proposed structure</a></li><li><a href="#journeys">5 · New-developer journeys</a></li><li><a href="#archive">6 · Archive strategy</a></li><li><a href="#contract">7 · Document contract</a></li><li><a href="#gate">8 · Plan checkbox</a></li><li><a href="#automation">9 · Machine checks</a></li><li><a href="#phases">10 · Migration phases</a></li><li><a href="#decisions">11 · Decisions to confirm</a></li>
+</ol></nav>
+
+<main>
+<section class="section-card context" id="diagnosis"><p class="kicker">Why the current set feels chaotic</p><h2>Diagnosis</h2>
+<div class="diagnosis">
+  <article><strong>No reader journey</strong>The landing page lists seven large files but does not tell a newcomer what to read first, what can be skipped, or where to drill down.</article>
+  <article><strong>Time layers mixed</strong>Current behavior, proposed redesigns, rebuild milestones and chronological history appear beside one another without a clear authority boundary.</article>
+  <article><strong>One giant “source of truth”</strong>The specification carries requirements, traceability, ADR registry and test baselines, making it authoritative but difficult to learn from or maintain.</article>
+  <article><strong>Agent rules look like architecture</strong><code>doc/claude/</code> contains useful facts, but they are optimized as session instructions rather than stable developer documentation.</article>
+  <article><strong>Evidence sits in the reading tree</strong>Staging reports, audits, spreadsheets, external exports and run logs are valuable evidence, but they overwhelm the human documentation surface.</article>
+  <article><strong>Current summaries are stale</strong>The README still describes 8 workflows, 29 ADRs and much older test/migration counts while the repository now has 14 workflows and 79 ADRs.</article>
+  <article><strong>Transition is described as history</strong>The code actively uses a plugin/rule engine with a bridge to stage functions. Existing documents describe this through milestone language instead of one explicit present-tense architecture.</article>
+  <article><strong>Duplication has no ownership rule</strong>Architecture, pipeline, CI and operational facts recur in the README, specification, Claude guidance, designs and history without declaring which copy owns the fact.</article>
+</div>
+</section>
+
+<section class="section-card" id="completion"><p class="kicker">Implementation outcome</p><h2>Rebuild completed</h2>
+<ul class="acceptance">
+  <li>The pre-cutover estate is recorded in a frozen HTML inventory.</li>
+  <li>The current-system path now begins at <code>doc/handbook/index.html</code> and contains 21 metadata-governed pages.</li>
+  <li>Domain, product, architecture, subsystem, operations and reference pages form a progressive drill-down path.</li>
+  <li><code>scripts/check_docs.py</code> validates metadata, IDs, links, required subsystem sections, ownership-map coverage and changed-source ownership.</li>
+  <li>CI enforces structural documentation validation and reports ownership findings in warning mode.</li>
+  <li>The repository README and <code>doc/index.html</code> are concise gateways without volatile hand-maintained counts.</li>
+  <li>Five legacy narrative Markdown/HTML pairs are physically archived after inbound-link migration. Runtime-owned evidence directories remain in place to preserve tool contracts.</li>
+  <li>Claude and Codex repository guidance now points to the handbook and its documentation coherence gate.</li>
+</ul>
+</section>
+
+<section class="section-card decision" id="principles"><p class="kicker">Documentation design</p><h2>Seven principles for the replacement</h2>
+<div class="diagnosis">
+  <article class="principle"><strong>1 · Present tense first</strong>Canonical pages explain what the system does now. Evolution belongs in ADRs and the archive.</article>
+  <article class="principle"><strong>2 · Top down, then sideways</strong>Every page starts with purpose and boundaries before code, schema or operational detail.</article>
+  <article class="principle"><strong>3 · One fact, one owner</strong>Other pages link to the owning document rather than copying mutable facts.</article>
+  <article class="principle"><strong>4 · Progressive disclosure</strong>A newcomer can stop after the domain tour; maintainers can continue into subsystem contracts and reference.</article>
+  <article class="principle"><strong>5 · History is reachable, not intrusive</strong>Archived material remains searchable and linked, but never participates in the default read path.</article>
+  <article class="principle"><strong>6 · Source-linked truth</strong>Architecture claims name the current source files, database objects, workflows and tests that prove them.</article>
+  <article class="principle"><strong>7 · Validation is part of delivery</strong>Broken links, missing metadata, stale source maps and unindexed canonical pages fail a documentation check.</article>
+  <article class="principle"><strong>HTML as the human surface</strong>Every new human-facing document is HTML, responsive and printable, with stable anchors and embedded machine metadata.</article>
+</div>
+</section>
+
+<section class="section-card" id="architecture"><p class="kicker">Verified provisional baseline</p><h2>Map of the current working architecture</h2>
+<p>This is the map the new documentation should explain. It is intentionally free of milestone names; transitional implementation details are stated as current facts.</p>
+<pre class="architecture">People and external systems
+├── Public visitors and fencers
+├── Event registrants
+├── Authenticated SPWS administrators / operators
+├── Result providers: FencingTime XML, FTL, Engarde, 4Fence,
+│   Dartagnan, EVF API, file import, Ophardt and CERT reference data
+└── Gmail, Telegram and the SPWS host website
+
+Experience layer
+├── Svelte 5 SPA for CERT/admin use
+├── Shadow-DOM web components embedded by the SPWS website
+│   ├── ranklist
+│   ├── calendar
+│   ├── registration
+│   └── entry list
+└── Public views + authenticated TOTP-protected admin surfaces
+
+Application and automation layer
+├── Python source parsers → ParsedTournament intermediate representation
+├── Declarative rule engine and plugin orchestrator
+│   ├── domestic ingest
+│   ├── domestic recompute
+│   ├── master-data dedup sweep
+│   └── post-commit validation / notification
+├── Transitional bridge to proven stage-level domain logic
+├── Draft review, three-way comparison and transactional commit path
+├── EVF calendar/results synchronization and parity checks
+├── CERT→PROD event reconciliation and results/season promotion
+├── GitHub Actions workflows (CI, release, ingest, sync, promote, reports)
+└── Google Apps Script + Telegram operational command surface
+
+Data and policy layer — Supabase
+├── PostgreSQL domain model
+│   ├── seasons and scoring configuration
+│   ├── events and tournament slots
+│   ├── fencers, aliases, registrations and results
+│   ├── drafts, ingest history and recompute queue
+│   └── stored scores / ranking views
+├── SECURITY DEFINER RPC boundary and public read views
+├── Supabase Auth + TOTP MFA
+├── Storage for ingestion/report artifacts
+└── Edge Functions for trusted workflow dispatch
+
+Environments and delivery
+LOCAL → CERT → PROD
+├── schema migrations and pgTAP
+├── Python, frontend and documentation CI
+├── environment-scoped release and promotion
+└── Telegram/report feedback to the operator</pre>
+<p class="note">The implementation stocktake must verify each arrow against source, database definitions, workflow YAML and tests before the corresponding architecture page is marked Current.</p>
+</section>
+
+<section class="section-card" id="structure"><p class="kicker">Information architecture</p><h2>Proposed canonical documentation tree</h2>
+<pre class="tree">doc/
+├── index.html                         Start here; audience-based navigation
+├── handbook/                          CURRENT SYSTEM — canonical human docs
+│   ├── index.html                     15-minute system tour and read paths
+│   ├── domain/
+│   │   ├── business-overview.html     Association, actors, value and boundaries
+│   │   ├── glossary.html              PPW/MPW/PEW/IMEW, V0–V4, seasons, slots
+│   │   ├── competition-model.html     Season → event → tournament → result
+│   │   └── ranking-model.html         Ranking modes, eligibility, carry-over
+│   ├── product/
+│   │   ├── public-experience.html     Ranklist, calendar, drilldown, entry list
+│   │   ├── registration.html          Identity, consent and entry lifecycle
+│   │   └── administration.html        Admin capabilities and operator journeys
+│   ├── architecture/
+│   │   ├── index.html                 Clickable architecture map
+│   │   ├── system-context.html        People, external systems, trust boundaries
+│   │   ├── containers.html            Frontend, Python, Supabase, automation, GAS
+│   │   ├── domain-data-model.html      Owned data and invariants
+│   │   └── end-to-end-flows.html       Canonical sequence maps
+│   ├── subsystems/
+│   │   ├── ingestion.html             Sources, IR, plugins, bridge, drafts, commit
+│   │   ├── identity-and-recompute.html Matching, aliases, dedup, self-healing
+│   │   ├── scoring-and-ranking.html    SQL engines and ranking read models
+│   │   ├── events-and-seasons.html     Lifecycle, skeletons and reconciliation
+│   │   ├── registration-and-privacy.html
+│   │   ├── frontend.html               SPA, web components, auth and i18n
+│   │   └── automation.html             Workflows, GAS, Telegram and edge functions
+│   ├── operations/
+│   │   ├── local-development.html      Setup, safe reset, tools and test loops
+│   │   ├── environments.html           LOCAL/CERT/PROD contracts
+│   │   ├── release-and-promotion.html  Deploy, verify, rollback and recovery
+│   │   ├── ingestion-runbook.html      Normal operator procedures
+│   │   └── incident-runbook.html       Failure diagnosis and safe recovery
+│   ├── reference/
+│   │   ├── codebase-map.html           Directories, entrypoints and owners
+│   │   ├── database-contracts.html     Tables/views/RPCs by capability
+│   │   ├── workflow-catalog.html       All current workflows and triggers
+│   │   ├── configuration.html          Config, secrets and environment variables
+│   │   ├── test-and-traceability.html  Test suites, RTM and quality gates
+│   │   └── documentation-standard.html The maintenance contract in this plan
+│   └── assets/                         Shared styles and diagrams
+├── adr/                               WHY decisions were made; current registry
+├── rules/                             Formal business-rule reference
+├── governance/                        Requirements, RTM and contributor policy
+├── work/                              Active plans only; excluded from read path
+├── evidence/                          Audits, staging reports and external artifacts
+└── archive/
+    └── legacy-2026-07/                Frozen historical narrative and old designs</pre>
+<div class="contract"><strong>Boundary rule:</strong> <code>handbook/</code> answers “how it works now”; <code>adr/</code> answers “why this choice”; <code>governance/</code> answers “what must be true”; <code>operations/</code> answers “how to run it”; <code>evidence/</code> proves particular runs; <code>archive/</code> answers “how we got here.”</div>
+</section>
+
+<section class="section-card" id="journeys"><p class="kicker">Progressive disclosure</p><h2>Human reading paths</h2>
+<div class="read-paths">
+  <article class="journey"><div class="time">15 minutes</div><h3>Orientation</h3><ol><li>Start here</li><li>Business overview</li><li>Glossary</li><li>System-context map</li></ol><p>A new developer understands who the system serves, the vocabulary and the major boundaries.</p></article>
+  <article class="journey"><div class="time">60 minutes</div><h3>Working model</h3><ol><li>Competition model</li><li>Product surfaces</li><li>Containers</li><li>End-to-end flows</li><li>Local development</li></ol><p>The developer can run the system and explain one complete user-to-data journey.</p></article>
+  <article class="journey"><div class="time">Task driven</div><h3>Deep dive</h3><ol><li>Choose a subsystem</li><li>Read its contract and invariants</li><li>Follow source links</li><li>Read related ADRs</li><li>Open the runbook and tests</li></ol><p>The developer reaches implementation detail without reading unrelated history.</p></article>
+</div>
+</section>
+
+<section class="section-card alternatives" id="archive"><p class="kicker">Preserve without polluting</p><h2>Archive and migration strategy</h2>
+<div class="tablewrap matrix"><table><thead><tr><th>Existing material</th><th>Disposition</th><th>Rule</th></tr></thead><tbody>
+  <tr><td>Project specification</td><td class="migrate">Decompose</td><td>Extract domain/product truth and keep requirements/traceability under governance. Freeze the monolith after parity is proven.</td></tr>
+  <tr><td>Development history</td><td class="archive">Archive</td><td>Retain as a chronological record, remove it from the newcomer path, and never append history to current-system pages.</td></tr>
+  <tr><td>Old and “NEW” ingestion designs</td><td class="migrate">Reconcile then archive</td><td>Write one present-tense ingestion deep dive from source; preserve both designs as historical rationale.</td></tr>
+  <tr><td>CI/CD operations manual</td><td class="migrate">Split</td><td>Move architecture facts to automation, routine procedures to runbooks, and secrets/configuration to reference.</td></tr>
+  <tr><td><code>doc/claude/</code></td><td class="migrate">Consolidate</td><td>Keep agent rules in AGENTS/skills; move developer-relevant rules into contributor and documentation standards; archive duplicated prose.</td></tr>
+  <tr><td>ADRs</td><td class="keep">Keep canonical</td><td>Continue the HTML registry. ADRs explain decisions but do not replace current architecture documentation.</td></tr>
+  <tr><td>Formal rules</td><td class="keep">Keep canonical</td><td>Link them from the domain model; do not duplicate rule text in subsystem pages.</td></tr>
+  <tr><td>Completed plans and rebuild phases</td><td class="archive">Archive</td><td>Move from active work after close-out. Plans are implementation evidence, never current architecture.</td></tr>
+  <tr><td>Staging reports, audits, external files</td><td class="evidence">Move to evidence</td><td>Preserve exact artifacts but exclude them from navigation and architecture search by default.</td></tr>
+  <tr><td>Mockups and design assets</td><td class="evidence">Curate as product evidence</td><td>Link only approved/current mockups from product pages; archive superseded alternatives.</td></tr>
+  <tr><td>README</td><td class="migrate">Rewrite last</td><td>Make it a short repository gateway that links to the handbook; do not repeat volatile counts or architecture details.</td></tr>
+</tbody></table></div>
+<ol>
+  <li><strong>Inventory before moving:</strong> record every file, owner, freshness, inbound links and proposed disposition in an HTML migration manifest.</li>
+  <li><strong>Extract current truth:</strong> write replacement pages from code, schema, workflows and tests—not by merely rearranging old prose.</li>
+  <li><strong>Prove coverage:</strong> map each current-system claim in the old canonical documents to a replacement page or an explicit archive decision.</li>
+  <li><strong>Move with Git history:</strong> use renames, preserve artifacts byte-for-byte, and leave HTML redirect/index pages at high-value old locations.</li>
+  <li><strong>Switch navigation only after parity:</strong> the new handbook becomes canonical when links, coverage and newcomer walkthroughs pass.</li>
+</ol>
+</section>
+
+<section class="section-card" id="contract"><p class="kicker">One shape for every current page</p><h2>Canonical document contract</h2>
+<p>Every page under <code>doc/handbook/</code> should carry machine-readable metadata in HTML and follow a predictable human structure.</p>
+<pre class="binary">Required metadata
+doc-id · title · status=current · doc-type · owner
+last-verified · source-globs · related-docs · review-triggers
+
+Required human sections
+1. Purpose — why this subsystem exists
+2. Scope and boundaries — what it owns and explicitly does not own
+3. Mental model — the smallest useful explanation
+4. Current flow — present-tense sequence with failure path
+5. Invariants — rules that implementation must preserve
+6. Implementation map — source files, database objects, workflows, UI surfaces
+7. Operations — how to observe, validate and recover it
+8. Tests and evidence — checks that prove the description
+9. Related decisions — ADR links, without copying ADR narratives
+10. Change triggers — exactly which code/config changes require review</pre>
+<p>History is prohibited inside these sections except for a short link such as “Decision rationale: ADR-073.” Superseded behavior belongs only in the ADR or archive.</p>
+</section>
+
+<section class="section-card validation" id="gate"><p class="kicker">The rule added to every development plan</p><h2>Documentation coherence gate</h2>
+<div class="gate"><div class="gate-head"><span class="gate-box" aria-hidden="true"></span><div><h3>Documentation coherence gate complete</h3><p>This single box may be checked only when every binary condition below is satisfied.</p></div></div>
+<ol>
+  <li><strong>Impact classified:</strong> the plan says whether domain behavior, product behavior, architecture, operations, configuration or reference contracts change.</li>
+  <li><strong>Owners named:</strong> every affected canonical HTML document is listed by path—or “no documentation impact” is justified with evidence.</li>
+  <li><strong>Current truth updated:</strong> affected handbook pages describe the post-change system in present tense; no implementation diary is appended.</li>
+  <li><strong>Maps synchronized:</strong> architecture flows, source paths, database objects, workflow catalog and <code>last-verified</code> metadata are updated where relevant.</li>
+  <li><strong>Decision trail updated:</strong> a new/superseding ADR is linked when the change introduces a tradeoff, constraint, deferral or pattern.</li>
+  <li><strong>Operations synchronized:</strong> commands, secrets, environment behavior, release steps, observability and recovery are updated when affected.</li>
+  <li><strong>Validation passed:</strong> the documentation checker passes links, metadata, index coverage, source references and changed-area ownership.</li>
+  <li><strong>Archive discipline applied:</strong> superseded prose is moved to archive/evidence, not left beside the new current description.</li>
+</ol></div>
+<h3>Exact plan block</h3>
+<pre class="binary">☐ Documentation coherence gate complete
+  Impact: [domain | product | architecture | operations | configuration | reference | none]
+  Canonical docs affected: [exact .html paths, or justified “none”]
+  ADR impact: [new | amend | supersede | none]
+  Operational impact: [exact runbooks/catalogs, or none]
+  Source-map / last-verified updated: [yes | not applicable]
+  Validation: python scripts/check_docs.py --changed-from &lt;base&gt; [PASS]
+  Superseded prose archived rather than appended: [yes | not applicable]</pre>
+</section>
+
+<section class="section-card" id="automation"><p class="kicker">Machine-development practical</p><h2>Checks that make the structure sustainable</h2>
+<ul>
+  <li><strong>Canonical index coverage:</strong> every current handbook page appears exactly once in the documentation map.</li>
+  <li><strong>Metadata contract:</strong> required <code>meta</code> fields exist, status is valid, IDs are unique and dates parse.</li>
+  <li><strong>Link integrity:</strong> relative pages, anchors, source files, database references and workflow links resolve.</li>
+  <li><strong>Required-section contract:</strong> subsystem pages contain boundaries, invariants, implementation map, operations, tests and change triggers.</li>
+  <li><strong>Ownership map:</strong> source globs embedded in the documentation map identify which pages must be assessed when code changes.</li>
+  <li><strong>Changed-area report:</strong> CI reports watched source areas whose owning documents did not change; enforcement can begin as warning and graduate to hard fail after tuning.</li>
+  <li><strong>Archive isolation:</strong> archived/evidence pages cannot be linked as the canonical target from the handbook index.</li>
+  <li><strong>Freshness report, not fake freshness:</strong> <code>last-verified</code> is updated only after inspecting the named source paths, never automatically on render.</li>
+</ul>
+<p>The machine-readable map should be embedded as <code>&lt;script type="application/json"&gt;</code> inside the HTML documentation map. Humans see one document; tooling reads the same ownership data without creating a second documentation format.</p>
+</section>
+
+<section class="section-card" id="phases"><p class="kicker">Safe migration order</p><h2>Implementation phases</h2>
+<div class="phases">
+  <article class="phase"><h3>Inventory and freeze</h3><p>Create the migration manifest, inbound-link report and disposition for every existing documentation area. Do not move files yet.</p><p><strong>Exit:</strong> every existing top-level/current-looking document has an explicit owner and destination.</p></article>
+  <article class="phase"><h3>Foundation and templates</h3><p>Create the handbook shell, documentation map, page contract, shared styles and <code>check_docs.py</code> in warning mode.</p><p><strong>Exit:</strong> empty navigation and validation work without changing canonical links.</p></article>
+  <article class="phase"><h3>Domain and newcomer path</h3><p>Write business overview, glossary, competition model, ranking model and system context from verified rules and current schema.</p><p><strong>Exit:</strong> a new developer can complete the 15-minute orientation without opening legacy docs.</p></article>
+  <article class="phase"><h3>Architecture and core flows</h3><p>Document containers, trust boundaries, data model and the canonical browse, registration, ingest, recompute, EVF and promotion flows.</p><p><strong>Exit:</strong> each arrow links to a subsystem page, source, workflow and test evidence.</p></article>
+  <article class="phase"><h3>Subsystem and operations deep dives</h3><p>Write the implementation maps and runbooks; reconcile the plugin engine/bridge, draft review path and environment behavior explicitly.</p><p><strong>Exit:</strong> normal operations and failure recovery no longer require development history.</p></article>
+  <article class="phase"><h3>Governance, archive and cutover</h3><p>Decompose the monolithic specification, move historical/evidence material, add redirects, rewrite README and make the changed-area documentation gate enforceable.</p><p><strong>Exit:</strong> the handbook is canonical, legacy material is frozen, and CI protects the contract.</p></article>
+</div>
+</section>
+
+<section class="section-card alternatives" id="decisions"><p class="kicker">Approved decisions</p><h2>Decisions locked for implementation</h2>
+<div class="decision-box"><h3>1 · Canonical location</h3><p><strong>Recommendation:</strong> use <code>doc/handbook/</code> for current-system documentation. It communicates durable guidance better than <code>current/</code> and leaves <code>doc/</code> available for decisions, governance, work, evidence and archive.</p></div>
+<div class="decision-box"><h3>2 · Language</h3><p><strong>Recommendation:</strong> author the developer handbook in English, retain Polish domain terms in the glossary, and add Polish summaries only where operators—not developers—are the primary audience.</p></div>
+<div class="decision-box"><h3>3 · Archive depth</h3><p><strong>Recommendation:</strong> physically move clear history/plans and reclassify staging/audits as evidence, but keep source Markdown beside generated HTML until the new handbook has passed parity and link checks.</p></div>
+<div class="decision-box"><h3>4 · Documentation-change enforcement</h3><p><strong>Recommendation:</strong> launch source-ownership checks as CI warnings for two development cycles, measure false positives, then promote reliable mappings to hard failures.</p></div>
+<div class="decision-box"><h3>5 · First vertical slice</h3><p><strong>Recommendation:</strong> build the newcomer path plus one complete subsystem—ingestion—as the template. It exercises domain terminology, architecture, source mapping, workflows, database contracts, operations, tests and the legacy bridge.</p></div>
+</section>
+
+<section class="section-card consequences"><p class="kicker">Definition of success</p><h2>Acceptance criteria for the documentation rebuild</h2>
+<ul class="acceptance">
+  <li>A developer unfamiliar with fencing can explain the business entities and ranking purpose after the orientation path.</li>
+  <li>A developer can trace each canonical user/system flow from actor to UI, Python/workflow, Supabase objects and observable result.</li>
+  <li>No current-system page requires reading development history or a milestone plan to understand present behavior.</li>
+  <li>Every canonical fact has one owning page, and duplicate pages link rather than copy.</li>
+  <li>Every subsystem page names boundaries, invariants, source paths, operations, tests, related ADRs and review triggers.</li>
+  <li>Historical designs and evidence remain reachable but are absent from the default newcomer path.</li>
+  <li>The plan checkbox is present in the standard development-plan template and documentation CI passes.</li>
+  <li>README becomes a short gateway and contains no manually maintained volatile counts.</li>
+</ul>
+</section>
+</main>
+</div>
+
+<footer class="foot">Completed from Graphify inspection, current Python pipeline contracts, Svelte surfaces, Supabase migrations, GitHub Actions workflows and a frozen documentation inventory. Legacy narratives were relocated after link migration; runtime-owned evidence paths remain stable.</footer>
+</div></body>
+</html>

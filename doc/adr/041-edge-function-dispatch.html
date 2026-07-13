@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="041-edge-function-dispatch.md">
-<meta name="adr-source-sha256" content="a35a7ec4dc3fe45d0ce272e4551a9591cbe9b670227effb601173691b61f738b">
+<meta name="adr-source-sha256" content="aaf02a1d29446d6b74b7be90ee428e72e5a15f478aa3a027aea80d08f2b4e1e7">
 <title>ADR-041 · Server-Side Workflow Dispatch via Supabase Edge Function</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -97,7 +97,7 @@
 </ul>
 <h3 id="negative">Negative</h3>
 <ul>
-<li><strong>One-time setup per env:</strong> admin runs <code>supabase secrets set</code> for CERT and PROD on first deploy. Documented in <code>doc/cicd-operations-manual.md</code> (to be updated).</li>
+<li><strong>One-time setup per env:</strong> admin runs <code>supabase secrets set</code> for CERT and PROD on first deploy. Documented in <code>doc/archive/legacy-2026-07/cicd-operations-manual.md</code> (to be updated).</li>
 <li><strong>Edge Function deploy added to release pipeline.</strong> <code>release.yml</code> adds a <code>supabase functions deploy dispatch-workflow</code> step in <code>deploy-cert</code> and <code>deploy-prod</code> jobs.</li>
 <li><strong>Local testing of the function</strong> uses <code>supabase functions serve</code> (separate process, runs Deno locally) rather than the Docker <code>edge_runtime</code> container which is disabled in this project's local config. Frontend dev server invokes against the local function port. Documented in CLAUDE.md / operations manual.</li>
 </ul>
@@ -146,10 +146,10 @@
 <li>Frontend caller: <a href="../../frontend/src/lib/api.ts"><code>frontend/src/lib/api.ts</code></a> — <code>requestDispatch()</code></li>
 <li>Frontend handler + UI: <a href="../../frontend/src/components/EventManager.svelte"><code>frontend/src/components/EventManager.svelte</code></a></li>
 <li>Deploy step: <a href="../../.github/workflows/release.yml"><code>.github/workflows/release.yml</code></a></li>
-<li>Setup docs: <code>doc/cicd-operations-manual.md</code> §X (Edge Function secrets) — to be added.</li>
+<li>Setup docs: <code>doc/archive/legacy-2026-07/cicd-operations-manual.md</code> §X (Edge Function secrets) — to be added.</li>
 </ul>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="040-multi-slot-event-urls.html">← ADR-040: Multi-Slot Event Result URLs with Compact-on-Save</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="042-carryover-engine-dispatcher.html">→ ADR-042: Per-season carry-over engine selection via dispatcher pattern</a></nav>
-<footer class="foot">Generated from <code>041-edge-function-dispatch.md</code> · source SHA-256 <code>a35a7ec4dc3fe45d0ce272e4551a9591cbe9b670227effb601173691b61f738b</code></footer>
+<footer class="foot">Generated from <code>041-edge-function-dispatch.md</code> · source SHA-256 <code>aaf02a1d29446d6b74b7be90ee428e72e5a15f478aa3a027aea80d08f2b4e1e7</code></footer>
 </div></body></html>

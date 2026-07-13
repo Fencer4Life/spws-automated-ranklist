@@ -1,5 +1,7 @@
 # CI/CD Operations Manual
 
+> **ARCHIVED.** Preserved for historical procedures. Use the current [environment and release guide](../../handbook/operations/environments-and-release.html) and [workflow catalog](../../handbook/reference/workflow-catalog.html) for operations.
+
 This guide covers the three-tier release pipeline for the SPWS Automated Ranklist System.
 
 ## Architecture Overview
@@ -88,9 +90,9 @@ NO service-role / PAT      forwards workflow_dispatch   NO browser exposure
 ### Zone A — the UI (browser)
 
 - The `<spws-ranklist>` web component receives the Supabase **URL + anon key** (and a soft `admin-password`)
-  as **HTML attributes** ([frontend/src/main.ts](../frontend/src/main.ts): `supabase-cert-url/-key`,
+  as **HTML attributes** ([frontend/src/main.ts](../../../frontend/src/main.ts): `supabase-cert-url/-key`,
   `supabase-prod-url/-key`, `admin-password`). `App.svelte` picks the CERT or PROD pair by
-  `VITE_DEPLOY_ENV` and calls `initClient(url, key)` → `createClient` ([frontend/src/lib/api.ts](../frontend/src/lib/api.ts)).
+  `VITE_DEPLOY_ENV` and calls `initClient(url, key)` → `createClient` ([frontend/src/lib/api.ts](../../../frontend/src/lib/api.ts)).
 - The key is always the **anon (public) key** — safe to ship in HTML; every read/write is gated by
   Postgres **RLS**. The service-role key is **never** in the bundle.
 - **Admin authorization** is Supabase **Auth (GoTrue): email + password + TOTP MFA** → a JWT
@@ -103,7 +105,7 @@ NO service-role / PAT      forwards workflow_dispatch   NO browser exposure
 ### Zone B — the Edge Function (`supabase/functions/dispatch-workflow`)
 
 - Holds `GH_DISPATCH_PAT` (fine-grained, this repo, Actions read+write) and `GH_REPO` as **Supabase
-  function secrets** (`Deno.env.get`, [index.ts](../supabase/functions/dispatch-workflow/index.ts)).
+  function secrets** (`Deno.env.get`, [index.ts](../../../supabase/functions/dispatch-workflow/index.ts)).
 - Verifies the caller's Supabase JWT, checks the workflow against an **allowlist**
   (`populate-urls.yml`, `scrape-tournament.yml`, `phase5-event-runner.yml`, `regen-report.yml`,
   `ingest-event.yml`), then POSTs `workflow_dispatch` with `Authorization: Bearer <PAT>`.
@@ -120,7 +122,7 @@ All pipeline credentials are read from **`os.environ`** — there is **no `load_
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | `TelegramNotifier` | operator alerts (never Discord) |
 
 - **CI:** GitHub **repository secrets** are injected per-step via the workflow `env:` block, e.g.
-  [ingest-event.yml](../.github/workflows/ingest-event.yml) maps `SUPABASE_KEY` ←
+  [ingest-event.yml](../../../.github/workflows/ingest-event.yml) maps `SUPABASE_KEY` ←
   `secrets.SUPABASE_{CERT,PROD}_SERVICE_ROLE_KEY` (chosen by the `target` input), plus `FTL_USERNAME`/
   `FTL_PASSWORD` and the Telegram pair. Add these to the GitHub secrets in §1.2.
 - **LOCAL:** the same names live in the repo-root **`.env`** (git-ignored). Because nothing auto-loads it,
@@ -319,7 +321,7 @@ Rollback is **forward-only** — you push a new corrective migration through the
 
 The Supabase Management API only supports running SQL queries — there is no `DROP MIGRATION` or `ROLLBACK` command. And since migrations may have already modified data (not just schema), reversing them safely requires explicit corrective SQL.
 
-A SQL-level snapshot mechanism (automated pre-deploy backups in a `_backup` schema) was designed and evaluated but deferred — the complexity outweighed the practical value given that most migrations change the schema, which would block rollback. See [ADR-012](../doc/adr/012-sql-pre-deploy-snapshots.md) for the full analysis and preserved design.
+A SQL-level snapshot mechanism (automated pre-deploy backups in a `_backup` schema) was designed and evaluated but deferred — the complexity outweighed the practical value given that most migrations change the schema, which would block rollback. See [ADR-012](../../../doc/adr/012-sql-pre-deploy-snapshots.md) for the full analysis and preserved design.
 
 ### Can I skip a release that has a bug?
 

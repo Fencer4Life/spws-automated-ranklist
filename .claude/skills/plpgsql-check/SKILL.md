@@ -41,6 +41,7 @@ at repo root, already pointed at `127.0.0.1:54322`.
 - This runs **in addition to**, not instead of, pgTAP (`supabase test db`)
   and the mandatory TDD workflow in `doc/claude/testing.md` — postgrestools
   catches schema/lock/type issues pgTAP assertions don't, and vice versa.
+- If the SQL changes behavior, data ownership, RPC contracts or operations, update the owning current HTML page from `doc/handbook/documentation-map.html` and complete the documentation coherence gate.
 
 ## If the check itself is broken
 

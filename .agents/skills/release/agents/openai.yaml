@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release"
+  short_description: "Validate and operate SPWS releases safely"
+  default_prompt: "Use $release to diagnose and complete this repository release."

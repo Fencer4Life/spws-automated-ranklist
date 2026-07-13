@@ -1,6 +1,6 @@
 # Development History — SPWS Automated Ranklist System
 
-**This is a read-only archive.** For the living specification, see [Project Specification](Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md).
+**This is a read-only archive.** For present behavior, use the [developer handbook](../../handbook/index.html). For normative requirements, see the [Project Specification](../../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md).
 
 ---
 
@@ -414,7 +414,7 @@ The PAT should be **fine-grained, scoped to this repo only, with `Actions: read 
 1. **Auto-refresh ~40s after dispatch success.** `setTimeout(onrefresh, 40_000)` scheduled in `dispatchAndTrack`'s success branch, per-event timer ID tracked so a second dispatch on the same event resets the clock (latest wins, no double-fire).
 2. **Refetch on every accordion expand (▶ → ▼).** `toggleExpand` calls `runRefreshFor(eventId)` on the collapsed→expanded transition; collapsing is a no-op for refresh. Maps to natural admin intent ("show me this event's tournaments now"). Always fires regardless of whether a dispatch happened — consistent semantics, no stale-tracking state.
 
-**Spinner UX (clever, not generic — see [`doc/archive/adr041_refresh_ux_plan.md`](archive/adr041_refresh_ux_plan.md)):**
+**Spinner UX (clever, not generic — see [`doc/archive/adr041_refresh_ux_plan.md`](../../archive/adr041_refresh_ux_plan.md)):**
 
 - **Delayed-show ≥200 ms** — sub-200ms refreshes (the 95% case on CERT) render zero spinner. No flicker on fast networks.
 - **Per-event `Map<id_event, RefreshPhase>`** — no global overlay. A slow refresh on one event doesn't blank-out the rest of the calendar.
@@ -625,7 +625,7 @@ Phase 3c (commit 29afa4b) finishes the trilogy. The EventManager admin page gain
 
 **Ephemeral tooling** (not committed, regenerate from project memory): `/tmp/phase_b_unify_fencer.py`, `/tmp/phase_b2_sync_aliases.py`, `/tmp/phase_c_resync_spws_history.py`, `/tmp/run_event_cycle.sh`.
 
-**Memory.** [project_local_cert_prod_unification_2026-05-17.md](../doc-redacted-path).
+**Historical Claude memory reference:** `project_local_cert_prod_unification_2026-05-17.md`.
 
 ---
 
@@ -647,7 +647,7 @@ Phase 3c (commit 29afa4b) finishes the trilogy. The EventManager admin page gain
 
 **Test additions.** `python/tests/test_ingest_cli_unified.py` (4 assertions: 67.U1–67.U4) + `python/tests/test_pool_only_skip.py` (8 assertions: 67.P1–67.P8) + `python/tests/test_ir.py` contract update. Three-suite GREEN: pgTAP 566, pytest 753, vitest 371.
 
-**Memory.** [project_ppw4_ppw5_xml_redo_2026-05-27.md](../doc-redacted-path).
+**Historical Claude memory reference:** `project_ppw4_ppw5_xml_redo_2026-05-27.md`.
 
 ---
 
@@ -683,7 +683,7 @@ LOCAL values and re-scored. 2 empty 0-result tournaments left out per operator.
 (09_rolling_score R.4/R.6/R.8/R.10/R.11; 14_cross_gender CG.8 retargeted to
 PPW5-V0-M-SABRE). +1 pytest (3.15g2). Three-suite GREEN: pgTAP 566, pytest 754, vitest 371.
 
-**Memory.** [project_ppw4_ppw5_url_reingest_2026-06-03.md](../doc-redacted-path).
+**Historical Claude memory reference:** `project_ppw4_ppw5_url_reingest_2026-06-03.md`.
 
 ---
 
@@ -724,7 +724,7 @@ status flip, eventSchedule URL parsing. pytest 763, vitest 371.
 pgTAP `09_rolling_score` pre-existing harness/seed-drift failures unchanged by this work
 (verified by reverting the seed edit — identical failure set).
 
-**Memory.** [project_evf_sync_self_heal_2026-06-13.md](../doc-redacted-path).
+**Historical Claude memory reference:** `project_evf_sync_self_heal_2026-06-13.md`.
 
 ---
 
@@ -780,7 +780,7 @@ PAWŁOWSKI); constructed estimated-conflict reconciled to band midpoint.
 **ADRs.** Amended ADR-056 (Stage-0 rev + midpoint table), ADR-050 (s0 stage),
 ADR-010 (BY-derived justification), ADR-038 (skip international). No new ADRs.
 
-**Memory.** [project_stage0_reconciliation_done_2026-06-13.md](../doc-redacted-path).
+**Historical Claude memory reference:** `project_stage0_reconciliation_done_2026-06-13.md`.
 
 ---
 
@@ -941,7 +941,7 @@ logic was rewritten).
   sends the full `.md` + `.diff.md` to Telegram via ADR-059's `send_staging_report`/`send_document`
   (`StagingFormatter` now stashes the rendered bytes on ctx + honours `md_target` for Storage). `ingest-event.yml`
   gained an optional `url_event` input + `--send-telegram --md-target storage`. No webhook, no new ADR — pure
-  reuse. The external GAS snippet is delivered as `doc/telegram-ingest-command-gas.md` (manual paste). Tests
+  reuse. The external GAS snippet is preserved at `doc/archive/legacy-2026-07/telegram-ingest-command-gas.md` (manual paste). Tests
   N15.1–N15.4 (`test_ingest_telegram_staging.py`). `promote` unchanged.
 
 **Tests.** pgTAP 577 → 588 (unchanged in Step E — Python-only); pytest +49 (M1–M5) +8 (Step A, N7.1–N7.8)
@@ -961,7 +961,7 @@ ADR-038/066/067/069 (halts → faults), reversed halt-by-exception in ADR-050/05
 **Deferred (design §12, international only):** `FRESH_INGEST_INTERNATIONAL`, `EVF_SYNC`, `PewCascade`,
 `EvfParity`; real pg_cron wiring of the recompute worker; `LISTEN/NOTIFY` dispatch; `tbl_flow_rule`.
 
-**Memory.** [project_new_pipeline_build_2026-06-14.md](../doc-redacted-path).
+**Historical Claude memory reference:** `project_new_pipeline_build_2026-06-14.md`.
 
 ---
 
@@ -1184,7 +1184,7 @@ To manage complexity, the system was built iteratively, ensuring value was deliv
 
 - **Scope:** Male Epee V2 (50+) category only.
 
-- **Status:** All deliverables complete except automated ingestion pipeline (deferred to MVP M9). See [POC Development Plan](archive/POC_development_plan.md#poc-completion-summary) and [ADR-013](adr/013-poc-mvp-transition.md).
+- **Status:** All deliverables complete except automated ingestion pipeline (deferred to MVP M9). See [POC Development Plan](../../archive/POC_development_plan.md#poc-completion-summary) and [ADR-013](../../adr/013-poc-mvp-transition.md).
 
 - **Use Cases:** UC1–UC5 (ingestion, matching, scoring), UC7–UC11 (season/config management), UC12–UC13 (public ranklist + drill-down), UC18–UC20 (scoring config export/import/calibration).
 
@@ -1220,7 +1220,7 @@ To manage complexity, the system was built iteratively, ensuring value was deliv
 
 - **Scope:** All 30 sub-rankings (3 Weapons × 2 Genders × 5 Categories V0–V4; see spec §9.1.1a for age brackets). Combined V3+4-F category for women. V0 is domestic-only — no Kadra ranking (see spec §9.4).
 
-- **Status:** All 3 milestones complete. **544 test assertions** (189 pgTAP + 175 pytest + 173 vitest + 7 Playwright). See [MVP Development Plan](archive/MVP_development_plan.md).
+- **Status:** All 3 milestones complete. **544 test assertions** (189 pgTAP + 175 pytest + 173 vitest + 7 Playwright). See [MVP Development Plan](../../archive/MVP_development_plan.md).
 
 - **Milestones:**
 
@@ -1238,19 +1238,19 @@ To manage complexity, the system was built iteratively, ensuring value was deliv
 
     - **Schema extensions:** 6 columns on `tbl_event`: `txt_country`, `txt_venue_address`, `url_invitation`, `num_entry_fee`, `txt_entry_fee_currency`, `arr_weapons`.
 
-    - **Admin authentication:** Supabase Auth with email + password and mandatory TOTP MFA ([ADR-016](adr/016-supabase-auth-totp-mfa.md)). Write functions REVOKE'd from `anon`; require `authenticated` JWT. 59-minute inactivity timeout.
+    - **Admin authentication:** Supabase Auth with email + password and mandatory TOTP MFA ([ADR-016](../../adr/016-supabase-auth-totp-mfa.md)). Write functions REVOKE'd from `anon`; require `authenticated` JWT. 59-minute inactivity timeout.
 
     - **Admin CRUD UI:** Authenticated web interface for season, event, and tournament management. Delete cascades to child records. Two import paths: event-level batch (multi-select modal) and tournament-level single (file upload). Manual tournament creation via "+ Dodaj turniej". File import supports .xlsx/.xls/.json/.csv.
 
-    - **Identity resolution admin UI:** Web interface for match candidate queue with approve/dismiss/create-new actions and disambiguation modal ([ADR-016](adr/016-supabase-auth-totp-mfa.md)). Frontend complete; DB wiring deferred to Go-to-PROD.
+    - **Identity resolution admin UI:** Web interface for match candidate queue with approve/dismiss/create-new actions and disambiguation modal ([ADR-016](../../adr/016-supabase-auth-totp-mfa.md)). Frontend complete; DB wiring deferred to Go-to-PROD.
 
-    - **Rolling score for active season:** Position-matched carry-over from previous season with declared-counterpart constraint ([ADR-018](adr/018-rolling-score.md)). Visual distinction in DrilldownModal (striped bars, `↩` marker) and CalendarView (progress slots). Birth year range subtitle on ranklist view.
+    - **Rolling score for active season:** Position-matched carry-over from previous season with declared-counterpart constraint ([ADR-018](../../adr/018-rolling-score.md)). Visual distinction in DrilldownModal (striped bars, `↩` marker) and CalendarView (progress slots). Birth year range subtitle on ranklist view.
 
-    - **Season-configurable EVF toggle:** PPW/Kadra toggle visibility controlled by per-season `bool_show_evf_toggle` flag ([ADR-017](adr/017-season-configurable-evf-toggle.md)).
+    - **Season-configurable EVF toggle:** PPW/Kadra toggle visibility controlled by per-season `bool_show_evf_toggle` flag ([ADR-017](../../adr/017-season-configurable-evf-toggle.md)).
 
-    - **Shadow DOM isolation:** Both `<spws-ranklist>` and `<spws-calendar>` ship as custom elements with Shadow DOM encapsulation ([ADR-007](adr/007-shadow-dom-deferred.md)).
+    - **Shadow DOM isolation:** Both `<spws-ranklist>` and `<spws-calendar>` ship as custom elements with Shadow DOM encapsulation ([ADR-007](../../adr/007-shadow-dom-deferred.md)).
 
-    - **Seed generator tooling:** `generate_season_seed.py` with domestic auto-create ([ADR-020](adr/020-seed-generator-domestic-auto-create.md)), `sort_and_clean_fencers.py` for master fencer list maintenance ([ADR-019](adr/019-domestic-only-fencer-seed.md)).
+    - **Seed generator tooling:** `generate_season_seed.py` with domestic auto-create ([ADR-020](../../adr/020-seed-generator-domestic-auto-create.md)), `sort_and_clean_fencers.py` for master fencer list maintenance ([ADR-019](../../adr/019-domestic-only-fencer-seed.md)).
 
     - **Scoring config editor:** Structured form with 5 collapsible sections, per-season config, bucket editor for ranking rules.
 
@@ -1262,7 +1262,7 @@ To manage complexity, the system was built iteratively, ensuring value was deliv
 
 - **Goal:** Complete the automated ingestion pipeline and deploy the full system to production on the SPWS WordPress site.
 
-- **Status:** IN PROGRESS — active rebuild plan at `/Users/aleks/.claude/plans/now-we-have-a-precious-wren.md` (master) with phase subplans at [doc/plans/rebuild/](plans/rebuild/). Original archived plan: [Go-to-PROD Plan](archive/Go-to-PROD.md).
+- **Status:** IN PROGRESS — active rebuild plan at `/Users/aleks/.claude/plans/now-we-have-a-precious-wren.md` (master) with phase subplans at [doc/plans/rebuild/](../../plans/rebuild/). Original archived plan: [Go-to-PROD Plan](../../archive/Go-to-PROD.md).
 
 #### Rebuild progress (sub-phases of Phase 2b)
 
@@ -1280,7 +1280,7 @@ To manage complexity, the system was built iteratively, ensuring value was deliv
 | 6 — Drop tbl_match_candidate + remove old UI + finalize + LOCAL→CERT→PROD | ⏳ pending | — | Subplan: `doc/plans/rebuild/p6-finalize.md` |
 | 7 — Carry-over FK + 366-day cap + admin UI | ⏳ pending | — | Subplan: `doc/plans/rebuild/p7-carryover.md` |
 
-ADRs landed during the rebuild: [ADR-050](adr/050-unified-ingestion-pipeline.md) (umbrella), [ADR-052](adr/052-url-data-validation.md) (URL→data validation, 2026-05-02), [ADR-053](adr/053-evf-parity-gate.md) (EVF backup-source + parity gate + EVF_PUBLISHED promotion lifecycle, 2026-05-02), [ADR-055](adr/055-ingest-traceability.md) (parser provenance + cap-6 history). ADR-051 was reserved for a frozen-snapshot policy but the concept was retired 2026-05-02 (cert_ref fallback became just-another-parser); the number stays empty. ADR-054 reserved for carry-over FK + 366-day cap (Phase 7).
+ADRs landed during the rebuild: [ADR-050](../../adr/050-unified-ingestion-pipeline.md) (umbrella), [ADR-052](../../adr/052-url-data-validation.md) (URL→data validation, 2026-05-02), [ADR-053](../../adr/053-evf-parity-gate.md) (EVF backup-source + parity gate + EVF_PUBLISHED promotion lifecycle, 2026-05-02), [ADR-055](../../adr/055-ingest-traceability.md) (parser provenance + cap-6 history). ADR-051 was reserved for a frozen-snapshot policy but the concept was retired 2026-05-02 (cert_ref fallback became just-another-parser); the number stays empty. ADR-054 reserved for carry-over FK + 366-day cap (Phase 7).
 
 Test totals at end of Phase 1: pgTAP 427 (+23), pytest 402 (+48), vitest 332 (unchanged).
 Test totals at end of Phase 2: pgTAP 457 (+30), pytest 422 (+20, excl. pre-existing `test_prod_mirror` CI skip), vitest 332 (unchanged).
@@ -1291,8 +1291,8 @@ Test totals at end of Phase 4: pgTAP 508 (+43 — 12 parity-lifecycle, 16 alias-
 
 Closes the remaining gaps preventing CERT-only operation while preserving the in-progress LOCAL rebuild verbatim. Five workstreams + planning canonicalisation:
 
-- **Planning canonicalisation:** [doc/claude/planning.md](claude/planning.md) written and referenced from CLAUDE.md. Promotes 16 planning rules from user-MEMORY (verify-before-claim, walk-through scenarios, LOCAL parity, TDD strict order, ADR draft sign-off, doc completeness, CI/CD + Telegram operational hooks, per-event sign-off) to project-canonical instructions every Claude session sees.
-- **4 ADRs proposed:** [ADR-058](adr/058-staging-reports-storage-bucket.md) (`staging-reports` bucket), [ADR-059](adr/059-telegram-document-delivery.md) (Telegram `sendDocument` as primary verdict surface), [ADR-060](adr/060-evf-parity-delta-md.md) (EVF delta-only `.md`), [ADR-061](adr/061-local-parity-and-telegram-commands.md) (LOCAL preserved + 4 new GAS commands).
+- **Planning canonicalisation:** [doc/claude/planning.md](../../claude/planning.md) written and referenced from CLAUDE.md. Promotes 16 planning rules from user-MEMORY (verify-before-claim, walk-through scenarios, LOCAL parity, TDD strict order, ADR draft sign-off, doc completeness, CI/CD + Telegram operational hooks, per-event sign-off) to project-canonical instructions every Claude session sees.
+- **4 ADRs proposed:** [ADR-058](../../adr/058-staging-reports-storage-bucket.md) (`staging-reports` bucket), [ADR-059](../../adr/059-telegram-document-delivery.md) (Telegram `sendDocument` as primary verdict surface), [ADR-060](../../adr/060-evf-parity-delta-md.md) (EVF delta-only `.md`), [ADR-061](../../adr/061-local-parity-and-telegram-commands.md) (LOCAL preserved + 4 new GAS commands).
 - **3 SQL migrations + 3 pgTAP suites GREEN:**
     - `20260503000001` extends `vw_fencer_aliases` + `fn_list_fencer_aliases` with `latest_category_hint`, `latest_season_end_year`, `json_user_confirmed_aliases` passthrough, `int_unreviewed_alias_count`. Default order is unreviewed-first DESC. (8 pgTAP, 5.10).
     - `20260503000002` extends `fn_transfer_fencer_alias` + `fn_discard_fencer_alias_and_results` to return `id_tournaments INT[]` + `tournament_labels TEXT[]` alongside the existing `tournaments_recomputed` count. Cross-event cascades become visible to UI. (8 pgTAP, 5.11).

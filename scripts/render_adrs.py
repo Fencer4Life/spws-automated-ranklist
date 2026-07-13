@@ -161,13 +161,13 @@ def section_kind(title: str) -> str:
     return "detail"
 
 
-def rewrite_adr_href(href: str, adr_markdown_names: set[str]) -> str:
+def rewrite_adr_href(href: str, adr_markdown_names: set[str], link_base: Path) -> str:
     parts = urlsplit(href)
     decoded_path = unquote(parts.path)
     if Path(decoded_path).name in adr_markdown_names:
         new_path = str(Path(parts.path).with_suffix(".html"))
         return urlunsplit((parts.scheme, parts.netloc, new_path, parts.query, parts.fragment))
-    if parts.path.startswith("../") and not (ADR_DIR / unquote(parts.path)).resolve().exists():
+    if parts.path.startswith("../") and not (link_base / unquote(parts.path)).resolve().exists():
         root_relative = (ROOT / unquote(parts.path[3:])).resolve()
         if root_relative.exists():
             return urlunsplit(
@@ -176,14 +176,14 @@ def rewrite_adr_href(href: str, adr_markdown_names: set[str]) -> str:
     return href
 
 
-def configured_markdown(adr_markdown_names: set[str]) -> MarkdownIt:
+def configured_markdown(adr_markdown_names: set[str], link_base: Path = ADR_DIR) -> MarkdownIt:
     md = MarkdownIt("commonmark", {"html": True}).enable("table").enable("strikethrough")
     renderer = cast(Any, md.renderer)
 
     def link_open(tokens: list[Token], idx: int, options, env) -> str:
         href = tokens[idx].attrGet("href")
         if isinstance(href, str):
-            tokens[idx].attrSet("href", rewrite_adr_href(href, adr_markdown_names))
+            tokens[idx].attrSet("href", rewrite_adr_href(href, adr_markdown_names, link_base))
         return renderer.renderToken(tokens, idx, options, env)
 
     def table_open(tokens: list[Token], idx: int, options, env) -> str:

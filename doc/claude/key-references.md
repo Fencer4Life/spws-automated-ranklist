@@ -1,24 +1,21 @@
-# Key references
+# Key references for Claude
 
-| File | Purpose |
+Use references by authority. Do not substitute a historical document for the current owner.
+
+| Question | Authoritative reference |
 |---|---|
-| [doc/Project Specification. SPWS Automated Ranklist System.md](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md) | FRs, RTM, ADR registry, test baseline |
-| [doc/development_history.md](../development_history.md) | Chronological archive of POC/MVP/Go-to-PROD |
-| [doc/adr/](../adr/) | 49 ADRs |
-| [doc/cicd-operations-manual.md](../cicd-operations-manual.md) | Deployment + release pipeline; **§1.3 Credentials & secrets — the three trust zones** (UI anon key, Edge-Function PAT, pipeline service-role/FTL/Telegram) |
-| [scripts/reset-dev.sh](../../scripts/reset-dev.sh) | Local DB reset (recreates admin@spws.local) |
-| [scripts/check-coherence.sh](../../scripts/check-coherence.sh) | Four CI gates: version sync, ADR count, pgTAP plan sum, migration↔spec |
-| [.github/copilot-instructions.md](../../.github/copilot-instructions.md) | GitHub MCP server is the path for GitHub API ops; PAT is in `.vscode/mcp.json` |
-| [doc/claude/architecture.md](architecture.md) | Data flow, DB, Python, frontend, CI/CD |
-| [doc/claude/testing.md](testing.md) | Commands, TDD workflow, test ID traceability |
-| [doc/claude/documenting.md](documenting.md) | Scope-change pass, RTM check, ADR workflow |
-| [doc/claude/conventions.md](conventions.md) | Documentation rules, data-integrity hard rules, working style |
-| [doc/requirements-traceability-matrix.md](../requirements-traceability-matrix.md) | Externalized RTM (FRs + NFRs + Coverage Summary) — Phase 0.5 |
-| [doc/backlog/superfive-phase-3.md](../backlog/superfive-phase-3.md) | SuperFive Phase 3 backlog (extracted from spec §9.8 + Appendix B) |
-| [scripts/check-spec-sync.sh](../../scripts/check-spec-sync.sh) | Phase 0.5 spec-sync invariants (5 gates) |
-| /Users/aleks/.claude/plans/now-we-have-a-precious-wren.md | Active rebuild plan (REBUILD-ACTIVE through Phase 6) |
-| [doc/plans/rebuild/](../plans/rebuild/) | Per-phase rebuild subplans (p0-0, p0, p1..p7) |
-| [doc/rules/](../rules/) | Rules registry (R001-R012, Pandoc-built HTML) — REBUILD-ACTIVE |
-| [doc/overrides/](../overrides/) | Per-event override YAML files — REBUILD-ACTIVE |
-| [scripts/load-cert-ref.sh](../../scripts/load-cert-ref.sh) | Loads PROD seed into cert_ref schema — REBUILD-ACTIVE |
-| [python/matcher/config.yaml](../../python/matcher/config.yaml) | Matcher thresholds + Polish normalizations + nicknames (single tuning surface) |
+| How does the system work now? | [Developer handbook](../handbook/index.html) |
+| Which page owns a changing implementation area? | [Documentation ownership map](../handbook/documentation-map.html) |
+| What must be true? | [Governance](../governance/index.html), including specification, RTM and [formal rules](../rules/index.html) |
+| Why was a durable choice made? | [ADR registry](../adr/index.html) |
+| How is the repository organized? | [Codebase map](../handbook/reference/codebase-map.html) |
+| Which workflows exist? | [Workflow catalog](../handbook/reference/workflow-catalog.html) |
+| How do I run LOCAL safely? | [Local development](../handbook/operations/local-development.html) and [scripts/reset-dev.sh](../../scripts/reset-dev.sh) |
+| How do releases and environments work? | [Environments and release](../handbook/operations/environments-and-release.html) |
+| How do operators diagnose/recover? | [Operator runbooks](../handbook/operations/operator-runbooks.html) |
+| Which validation and traceability rules apply? | [Test and traceability](../handbook/reference/test-and-traceability.html), [testing.md](testing.md), [scripts/check-coherence.sh](../../scripts/check-coherence.sh) and [scripts/check-spec-sync.sh](../../scripts/check-spec-sync.sh) |
+| How must documentation be maintained? | [Documentation standard](../handbook/reference/documentation-standard.html) and [documenting.md](documenting.md) |
+| Where is run/design evidence? | [Evidence catalog](../evidence/index.html) |
+| Where is superseded history? | [Legacy archive](../archive/legacy-2026-07/index.html)—historical use only |
+
+Credentials are never documentation. Do not read, quote or embed tokens from MCP configuration, environment files, git remotes or local settings. Use configured authentication surfaces without exposing their values.

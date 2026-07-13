@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="039-stale-event-gate.md">
-<meta name="adr-source-sha256" content="4df38902c118dd3638bc76552a698663c81ef65b4a92d70b89974339facb1ef1">
+<meta name="adr-source-sha256" content="6243f0dff9e4eef2def924a3753fb60d6195ac8332c144f90b418c9b85584751">
 <title>ADR-039 · EVF Scraper Dedup Algorithm + Stale-Event Gate</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -100,7 +100,7 @@ The event URL (FTL <code>eventSchedule</code> or <code>events/results</code>) is
 <h3 id="negative">Negative</h3>
 <ul>
 <li><strong>Stale events require manual creation.</strong> If EVF publishes an event into the API &gt; 30 days after it ran, the admin must manually create the CERT row before the next cron will sync results. Acceptable because such retroactive publishes are rare and admin-flagged is safer than auto-create-and-hope.</li>
-<li><strong>Two new outbound Telegram messages</strong> (one new failure mode + one informational summary). Documented in <a href="../cicd-operations-manual.md"><code>doc/cicd-operations-manual.md</code></a> §10.</li>
+<li><strong>Two new outbound Telegram messages</strong> (one new failure mode + one informational summary). Documented in <a href="../archive/legacy-2026-07/cicd-operations-manual.md"><code>doc/archive/legacy-2026-07/cicd-operations-manual.md</code></a> §10.</li>
 </ul>
 <h3 id="outbound-telegram-surface-new-this-adr">Outbound Telegram surface (new, this ADR)</h3>
 <div class="tablewrap"><table>
@@ -210,5 +210,5 @@ so a venue-less repeat scrape can never mint a second row even if the Python ded
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="038-evf-intake-polish-only.html">← ADR-038: EVF-Organized Tournaments Ingest POL-Only Rows</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="040-multi-slot-event-urls.html">→ ADR-040: Multi-Slot Event Result URLs with Compact-on-Save</a></nav>
-<footer class="foot">Generated from <code>039-stale-event-gate.md</code> · source SHA-256 <code>4df38902c118dd3638bc76552a698663c81ef65b4a92d70b89974339facb1ef1</code></footer>
+<footer class="foot">Generated from <code>039-stale-event-gate.md</code> · source SHA-256 <code>6243f0dff9e4eef2def924a3753fb60d6195ac8332c144f90b418c9b85584751</code></footer>
 </div></body></html>

@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="doc-id" content="HB-OPS-LOCAL"><meta name="doc-status" content="current"><meta name="doc-type" content="operations"><meta name="doc-owner" content="Development environment"><meta name="last-verified" content="2026-07-12"><meta name="source-globs" content="pyproject.toml; frontend/package*.json; supabase/config.toml; scripts/reset-dev.sh; .vscode/**"><meta name="review-triggers" content="Prerequisite, install, database reset, test, lint, type-check, dev-server, or tool configuration changes"><title>Local Development · SPWS Handbook</title><link rel="stylesheet" href="../assets/handbook.css"></head><body><div class="page"><header class="handbook-header"><nav class="breadcrumb"><a href="../index.html">Handbook</a><span>Operations</span></nav><p class="eyebrow">Operations · Developer setup</p><h1>Local development</h1><p class="dek">Bring up the database, Python and Svelte surfaces safely, then use the same narrow-to-broad validation discipline as CI.</p><div class="doc-meta"><span>LOCAL only</span><span>Safe reset required</span><span>Verified 12 July 2026</span></div></header><main>
+<section id="prerequisites"><p class="kicker">Before starting</p><h2>Prerequisites</h2><ul><li>Python 3.11+ and repository virtual environment</li><li>Node/npm compatible with the frontend lockfile</li><li>Docker and Supabase CLI</li><li>Ruff and BasedPyright through development dependencies/tooling</li><li>Postgrestools for SQL semantic/safety checks</li><li>Graphify for architecture/impact analysis</li></ul></section>
+<section id="setup"><p class="kicker">First run</p><h2>Install and start</h2><pre><code class="language-bash">source .venv/bin/activate
+pip install -e ".[dev]"
+
+cd frontend
+npm ci
+cd ..
+
+supabase start
+./scripts/reset-dev.sh
+
+cd frontend
+npm run dev</code></pre><div class="danger"><strong>Never run bare <code>supabase db reset</code>.</strong> Use <code>./scripts/reset-dev.sh</code>; it resets LOCAL and recreates the expected admin account.</div></section>
+<section id="loops"><p class="kicker">Daily work</p><h2>Validation loops</h2><div class="tablewrap"><table><thead><tr><th>Changed area</th><th>Immediate check</th></tr></thead><tbody><tr><td>Python</td><td><code>ruff check python/</code>, <code>ruff format --check python/</code>, targeted pytest, BasedPyright</td></tr><tr><td>Svelte/TypeScript</td><td><code>cd frontend &amp;&amp; npm run check</code> plus targeted Vitest</td></tr><tr><td>SQL/PLpgSQL</td><td><code>postgrestools check &lt;file.sql&gt;</code> with LOCAL Supabase running, then targeted pgTAP/full DB suite</td></tr><tr><td>Documentation</td><td><code>python scripts/check_docs.py</code> and relevant renderer <code>--check</code></td></tr><tr><td>Architecture-affecting code</td><td>Graphify query/affected before change; <code>scripts/refresh-graph.sh</code> before commit</td></tr></tbody></table></div></section>
+<section id="tests"><p class="kicker">Broad confidence</p><h2>Full suites</h2><pre><code class="language-bash">supabase test db
+source .venv/bin/activate &amp;&amp; python -m pytest python/tests/ -v
+cd frontend &amp;&amp; npm test
+cd frontend &amp;&amp; npm run check
+cd frontend &amp;&amp; npm run test:e2e
+bash scripts/check-coherence.sh
+bash scripts/check-spec-sync.sh</code></pre><p>Run the smallest relevant test first. Before completion, run all suites applicable to the changed behavior. Record anything intentionally not run.</p></section>
+<section id="tdd"><p class="kicker">Implementation discipline</p><h2>TDD order</h2><ol class="sequence"><li>Define acceptance assertions and plan-test IDs.</li><li>Write tests.</li><li>Run and prove RED.</li><li>Implement the minimum behavior.</li><li>Run and prove GREEN.</li><li>Refactor while remaining green.</li></ol></section>
+<section id="troubleshooting"><p class="kicker">Common boundaries</p><h2>Troubleshooting</h2><ul><li>Database semantic checks require the configured LOCAL instance on port 54322.</li><li>Svelte files are checked through <code>svelte-check</code>; generic TypeScript LSP alone is insufficient.</li><li>Integration tests may require live external APIs; distinguish them from deterministic unit tests.</li><li>Do not install Python packages into the system interpreter; use the virtual environment.</li></ul></section></main><nav class="page-links"><a href="../subsystems/frontend-and-automation.html">← Frontend and automation</a><a href="environments-and-release.html">Environments and release →</a></nav><footer class="freshness">Review triggers: prerequisites, setup, safe reset, checks or local tool wiring.</footer></div></body></html>

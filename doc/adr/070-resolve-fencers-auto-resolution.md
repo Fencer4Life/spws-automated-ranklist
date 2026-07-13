@@ -1,7 +1,7 @@
 # ADR-070: `ResolveFencers` auto-resolution (merged Stage-0 ⊕ Stage-6, runs early), no human review gate
 
 **Status:** Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
-[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §5.1. **Implemented** — see [development_history](../development_history.md).
+[archive/legacy-2026-07/ingestion_pipeline_NEW_design.md](../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md) §5.1. **Implemented** — see [development_history](../archive/legacy-2026-07/development_history.md).
 **Date:** 2026-06-14
 **Relates to:** ADR-003 (identity by FK), ADR-010/056 (V-cat from birth year), ADR-020/038 (domestic
 auto-create / international POL-only), ADR-064 (asymmetric gender filter), ADR-071 (dedup sweep),

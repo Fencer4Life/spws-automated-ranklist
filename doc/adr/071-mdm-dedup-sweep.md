@@ -1,7 +1,7 @@
 # ADR-071: Master-data management + eventual-consistency dedup (`DEDUP_SWEEP`)
 
 **Status:** Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
-[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §5.1 / §6. **Implemented** — see [development_history](../development_history.md).
+[archive/legacy-2026-07/ingestion_pipeline_NEW_design.md](../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md) §5.1 / §6. **Implemented** — see [development_history](../archive/legacy-2026-07/development_history.md).
 **Date:** 2026-06-14
 **Relates to:** ADR-070 (`ResolveFencers`), ADR-072 (recompute / self-healing), ADR-003 (FK identity),
 ADR-056 (band-midpoint BY reconcile), ADR-055 (provenance).

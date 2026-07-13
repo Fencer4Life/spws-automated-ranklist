@@ -72,7 +72,7 @@ bash scripts/check-coherence.sh
 | `frontend/src/App.svelte` | One-line: pass `onrefresh={reloadAdminEvents}` |
 | `frontend/tests/EventManager.test.ts` | Replace 2 stubs (`9.45g`, `9.45h`) with 4 new tests (`9.45g`–`9.45j`) |
 | `doc/adr/041-edge-function-dispatch.md` | New "Amendment 2026-04-25 — Refresh UX" section folding this plan in once shipped |
-| `doc/development_history.md` | One-line entry under the ADR-041 block referencing this followup |
+| `doc/archive/legacy-2026-07/development_history.md` | One-line entry under the ADR-041 block referencing this followup |
 | `doc/Project Specification...md` Appendix D | vitest 279 → 287 (+8: 9.45g–j refresh triggers, 9.45k–n spinner UX); total 893 → 901 |
 
 ## Edge cases

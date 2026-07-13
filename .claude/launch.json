@@ -17,6 +17,13 @@
       "autoPort": false
     },
     {
+      "name": "documentation",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8100"],
+      "port": 8100,
+      "autoPort": false
+    },
+    {
       "name": "frontend-ce-dev",
       "runtimeExecutable": "npx",
       "runtimeArgs": ["vite", "--config", "vite.config.ce.ts", "--port", "5299", "--strictPort"],

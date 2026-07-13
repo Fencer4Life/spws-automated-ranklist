@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ADR HTML Standard Conversion</title>
+<link rel="stylesheet" href="../adr/assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Documentation · Implementation Plan</p><h1>Make the ADR registry an editorial HTML system</h1><p class="dek">Adopt the selected Editorial Blueprint, preserve every Markdown source, and generate a validated, navigable HTML record for each architecture decision.</p></div>
+  <aside class="facts"><dl><div><dt>Status</dt><dd class="accepted">Complete</dd></div><div><dt>Scope</dt><dd>79 ADR sources</dd></div><div><dt>Source policy</dt><dd>Markdown retained</dd></div></dl></aside>
+</header>
+<div class="layout">
+  <nav class="toc"><p class="kicker">Workstreams</p><ol><li><a href="#standard">Official standard</a></li><li><a href="#conversion">Conversion</a></li><li><a href="#validation">Validation</a></li></ol></nav>
+  <main>
+    <section class="section-card decision" id="standard"><p class="kicker">Workstream 1</p><h2>Official standard</h2><p>Publish one reusable template and shared responsive, dark-mode and print stylesheet derived from the accepted Editorial Blueprint.</p></section>
+    <section class="section-card" id="conversion"><p class="kicker">Workstream 2</p><h2>Deterministic conversion</h2><p>Render tables, links, code fences, Mermaid source, blockquotes and raw HTML without editing source ADRs. Rewrite cross-ADR links to HTML and add registry navigation.</p></section>
+    <section class="section-card validation" id="validation"><p class="kicker">Workstream 3</p><h2>Prove currency and integrity</h2><p>Embed each source path and SHA-256 digest, validate all generated documents, internal links, counts and navigation, and fail whenever HTML is stale against Markdown.</p></section>
+  </main>
+</div>
+</div></body>
+</html>

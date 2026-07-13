@@ -1,6 +1,6 @@
 # ADR-080: Clean-Roster FTL Seeding
 
-**Status:** Proposed (draft — pending implementation)
+**Status:** Accepted (target design — committed direction for domestic SPWS events; rollout in progress. Phase 3 seed export partial; organizer delivery and scrape-back wiring pending — see spec §5.2 for phase status.)
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-079
 
@@ -21,15 +21,16 @@ with clean, exact, unique names — closing the loop so scrape-back is an exact-
 match and the operator no longer hand-names 27 brackets differently each event.
 
 Verified empirically (2026-07-03, FTL v4.5.4, real PZS files in
-`doc/external_files/`): the native format is FIE XML `<BaseCompetitionIndividuelle>`
-(one file = one competition), and a round-trip test confirmed our per-fencer
+`doc/external_files/`): the native format is **FIE-XML** `<BaseCompetitionIndividuelle>`
+— the FIE-standard interchange XML that FTL imports — (one file = one competition),
+and a round-trip test confirmed our per-fencer
 category marker and synthetic birthdate survive import → pools → DE → export.
 
 ## Decision
 
-Generate **FIE XML seed files** from all **declared** registrations (this system does
-not track payment completion digitally — see ADR-079 §4) and deliver them to the
-organizer on demand.
+Generate **FIE-XML seed files** (the FIE-standard XML imported by FTL) from all
+**declared** registrations (this system does not track payment completion digitally —
+see ADR-079 §4) and deliver them to the organizer on demand.
 
 ### 1. Seed format
 

@@ -1,7 +1,7 @@
 # ADR-074: No hard halt — declarative fault resolution + last-resort escalation
 
 **Status:** Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
-[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §2 / §5.2. **Implemented** — see [development_history](../development_history.md).
+[archive/legacy-2026-07/ingestion_pipeline_NEW_design.md](../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md) §2 / §5.2. **Implemented** — see [development_history](../archive/legacy-2026-07/development_history.md).
 **Date:** 2026-06-14
 **Relates to:** **reverses** the halt-by-exception model of ADR-050 / ADR-057 / ADR-067; **amends**
 ADR-038 (V0), ADR-066 (min-participants), ADR-069 (participant-count "HALT gate"); ADR-073 (orchestrator),

@@ -35,7 +35,7 @@ don't silently fall back to grep.
 
 ## Rule 2 — Refresh the graph before every commit
 
-After finishing **and documenting** new work, and **always before committing**,
+After finishing new work, updating the owning current handbook pages, and **always before committing**,
 run the refresh command and act on its exit code:
 
 ```bash
@@ -65,8 +65,7 @@ Skip the refresh only for pure-formatting / no-op commits (or pass
   rather than attempting it headlessly.
 
 ### Notes
-- `doc/archive/` is excluded from the graph via `.graphifyignore` (superseded
-  plans; matches the "do not consult for planning" rule).
+- `doc/archive/` is excluded from the graph via `.graphifyignore`; archived narratives are never current architecture evidence.
 - There is intentionally **no git pre-commit hook**: semantic extraction needs
   the agent, so a headless hook would silently skip doc re-extraction and give a
   false sense of freshness. This is an agent-run command.

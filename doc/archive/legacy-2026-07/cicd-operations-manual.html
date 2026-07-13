@@ -4,18 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="cicd-operations-manual.md">
-<meta name="doc-source-sha256" content="27dfbce9c8f1734fc07b60e8f0b8afd3b735f332914fa85182347a7eeb72e326">
+<meta name="doc-source-sha256" content="1db0f00340e8ae3aa66aa777f2b618aec5e88fce7d6013baa8de647495910d11">
 <title>CI/CD Operations Manual · SPWS</title>
-<link rel="stylesheet" href="adr/assets/adr.css">
+<link rel="stylesheet" href="../../adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>CI/CD Operations Manual</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>cicd-operations-manual.md</code></dd></div><div><dt>Length</dt><dd>807 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>cicd-operations-manual.md</code></dd></div><div><dt>Length</dt><dd>809 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#architecture-overview">Architecture Overview</a></li><li class="depth-2"><a href="#1-one-time-github-setup">1. One-Time GitHub Setup</a></li><li class="depth-3"><a href="#1-1-create-environments">1.1 Create Environments</a></li><li class="depth-3"><a href="#1-2-add-repository-secrets">1.2 Add Repository Secrets</a></li><li class="depth-2"><a href="#1-3-credentials-secrets-the-three-trust-zones">1.3 Credentials &amp; secrets — the three trust zones</a></li><li class="depth-3"><a href="#zone-a-the-ui-browser">Zone A — the UI (browser)</a></li><li class="depth-3"><a href="#zone-b-the-edge-function-supabase-functions-dispatch-workflow">Zone B — the Edge Function (`supabase/functions/dispatch-workflow`)</a></li><li class="depth-3"><a href="#zone-c-the-pipeline-python-ci-runner-or-local">Zone C — the pipeline (Python, CI runner or LOCAL)</a></li><li class="depth-2"><a href="#1-4-rotating-a-credential-when-it-stops-working">1.4 Rotating a credential when it stops working</a></li><li class="depth-3"><a href="#symptom-which-credential">Symptom → which credential</a></li><li class="depth-3"><a href="#step-by-step-per-credential">Step-by-step per credential</a></li><li class="depth-2"><a href="#2-day-to-day-workflow">2. Day-to-Day Workflow</a></li><li class="depth-3"><a href="#what-happens-when-you-push-to-main">What happens when you push to main</a></li><li class="depth-3"><a href="#step-by-step">Step by step</a></li><li class="depth-2"><a href="#3-how-to-approve-prod-deployment">3. How to Approve PROD Deployment</a></li><li class="depth-3"><a href="#step-by-step-2">Step by step</a></li><li class="depth-3"><a href="#to-reject-a-deployment">To reject a deployment</a></li><li class="depth-3"><a href="#how-long-do-you-have-to-approve">How long do you have to approve?</a></li><li class="depth-3"><a href="#quick-reference">Quick reference</a></li><li class="depth-2"><a href="#4-rollback-skipping-releases">4. Rollback &amp; Skipping Releases</a></li><li class="depth-3"><a href="#why-forward-only">Why forward-only?</a></li><li class="depth-3"><a href="#can-i-skip-a-release-that-has-a-bug">Can I skip a release that has a bug?</a></li><li class="depth-3"><a href="#how-to-write-a-corrective-migration">How to write a corrective migration</a></li><li class="depth-3"><a href="#what-you-cannot-do">What you cannot do</a></li><li class="depth-2"><a href="#5-checking-deployment-status">5. Checking Deployment Status</a></li><li class="depth-3"><a href="#quick-what-s-deployed-where">Quick: What&#x27;s deployed where?</a></li><li class="depth-3"><a href="#detailed-release-manifest">Detailed: Release manifest</a></li><li class="depth-3"><a href="#terminal-commands">Terminal commands</a></li><li class="depth-3"><a href="#live-github-actions">Live: GitHub Actions</a></li><li class="depth-2"><a href="#6-what-to-do-when-things-go-wrong">6. What To Do When Things Go Wrong</a></li><li class="depth-3"><a href="#re-running-failed-jobs">Re-running failed jobs</a></li><li class="depth-2"><a href="#7-how-to-add-a-new-database-migration">7. How to Add a New Database Migration</a></li><li class="depth-2"><a href="#8-coherence-checks-explained">8. Coherence Checks Explained</a></li><li class="depth-2"><a href="#9-schema-fingerprint">9. Schema Fingerprint</a></li><li class="depth-2"><a href="#10-telegram-admin-commands">10. Telegram Admin Commands</a></li><li class="depth-3"><a href="#event-lifecycle-flow">Event lifecycle flow</a></li><li class="depth-3"><a href="#command-reference">Command reference</a></li><li class="depth-3"><a href="#rollback-vs-delete-which-to-use">rollback vs delete — which to use</a></li><li class="depth-3"><a href="#seed-export-adr-036">Seed export (ADR-036)</a></li><li class="depth-3"><a href="#outbound-notifications-from-evf-sync-yml-adr-028-adr-039">Outbound notifications from `evf-sync.yml` (ADR-028 / ADR-039)</a></li><li class="depth-2"><a href="#11-environment-sync-adr-036">11. Environment Sync (ADR-036)</a></li><li class="depth-3"><a href="#prerequisites">Prerequisites</a></li><li class="depth-3"><a href="#operation-a-mirror-prod-local">Operation A: Mirror PROD → LOCAL</a></li><li class="depth-3"><a href="#operation-b-sync-cert-from-prod">Operation B: Sync CERT from PROD</a></li><li class="depth-3"><a href="#operation-c-force-sync-prod-from-local-dangerous">Operation C: Force-sync PROD from LOCAL (DANGEROUS)</a></li><li class="depth-3"><a href="#data-audit">Data audit</a></li><li class="depth-3"><a href="#troubleshooting">Troubleshooting</a></li><li class="depth-2"><a href="#12-files-reference">12. Files Reference</a></li><li class="depth-2"><a href="#13-phase-5-5-verdict-md-persistence-telegram-delivery-adr-058-059-060-061">13. Phase 5.5 — Verdict `.md` Persistence + Telegram Delivery (ADR-058 / 059 / 060 / 061)</a></li><li class="depth-3"><a href="#architecture">Architecture</a></li><li class="depth-3"><a href="#one-time-cert-prod-setup">One-time CERT/PROD setup</a></li><li class="depth-3"><a href="#telegram-operator-commands-cheat-sheet">Telegram operator commands cheat-sheet</a></li><li class="depth-3"><a href="#disaster-recovery">Disaster recovery</a></li><li class="depth-3"><a href="#local-operator-workflow-unchanged">LOCAL operator workflow (unchanged)</a></li></ol></nav>
-  <main><section class="section-card detail"><p>This guide covers the three-tier release pipeline for the SPWS Automated Ranklist System.</p>
+  <main><section class="section-card detail"><blockquote>
+<p><strong>ARCHIVED.</strong> Preserved for historical procedures. Use the current <a href="../../handbook/operations/environments-and-release.html">environment and release guide</a> and <a href="../../handbook/reference/workflow-catalog.html">workflow catalog</a> for operations.</p>
+</blockquote>
+<p>This guide covers the three-tier release pipeline for the SPWS Automated Ranklist System.</p>
 </section>
 <section class="section-card detail"><h2 id="architecture-overview">Architecture Overview</h2>
 <pre><code class="language-mermaid">graph LR
@@ -136,9 +139,9 @@ NO service-role / PAT      forwards workflow_dispatch   NO browser exposure
 <h3 id="zone-a-the-ui-browser">Zone A — the UI (browser)</h3>
 <ul>
 <li>The <code>&lt;spws-ranklist&gt;</code> web component receives the Supabase <strong>URL + anon key</strong> (and a soft <code>admin-password</code>)
-as <strong>HTML attributes</strong> (<a href="../../frontend/src/main.ts">frontend/src/main.ts</a>: <code>supabase-cert-url/-key</code>,
+as <strong>HTML attributes</strong> (<a href="../../../frontend/src/main.ts">frontend/src/main.ts</a>: <code>supabase-cert-url/-key</code>,
 <code>supabase-prod-url/-key</code>, <code>admin-password</code>). <code>App.svelte</code> picks the CERT or PROD pair by
-<code>VITE_DEPLOY_ENV</code> and calls <code>initClient(url, key)</code> → <code>createClient</code> (<a href="../../frontend/src/lib/api.ts">frontend/src/lib/api.ts</a>).</li>
+<code>VITE_DEPLOY_ENV</code> and calls <code>initClient(url, key)</code> → <code>createClient</code> (<a href="../../../frontend/src/lib/api.ts">frontend/src/lib/api.ts</a>).</li>
 <li>The key is always the <strong>anon (public) key</strong> — safe to ship in HTML; every read/write is gated by
 Postgres <strong>RLS</strong>. The service-role key is <strong>never</strong> in the bundle.</li>
 <li><strong>Admin authorization</strong> is Supabase <strong>Auth (GoTrue): email + password + TOTP MFA</strong> → a JWT
@@ -151,7 +154,7 @@ carry a PAT. It calls the <code>dispatch-workflow</code> Edge Function (Zone B) 
 <h3 id="zone-b-the-edge-function-supabase-functions-dispatch-workflow">Zone B — the Edge Function (<code>supabase/functions/dispatch-workflow</code>)</h3>
 <ul>
 <li>Holds <code>GH_DISPATCH_PAT</code> (fine-grained, this repo, Actions read+write) and <code>GH_REPO</code> as <strong>Supabase
-function secrets</strong> (<code>Deno.env.get</code>, <a href="../../supabase/functions/dispatch-workflow/index.ts">index.ts</a>).</li>
+function secrets</strong> (<code>Deno.env.get</code>, <a href="../../../supabase/functions/dispatch-workflow/index.ts">index.ts</a>).</li>
 <li>Verifies the caller's Supabase JWT, checks the workflow against an <strong>allowlist</strong>
 (<code>populate-urls.yml</code>, <code>scrape-tournament.yml</code>, <code>phase5-event-runner.yml</code>, <code>regen-report.yml</code>,
 <code>ingest-event.yml</code>), then POSTs <code>workflow_dispatch</code> with <code>Authorization: Bearer &lt;PAT&gt;</code>.</li>
@@ -187,7 +190,7 @@ function secrets</strong> (<code>Deno.env.get</code>, <a href="../../supabase/fu
 </table></div>
 <ul>
 <li><strong>CI:</strong> GitHub <strong>repository secrets</strong> are injected per-step via the workflow <code>env:</code> block, e.g.
-<a href="../../.github/workflows/ingest-event.yml">ingest-event.yml</a> maps <code>SUPABASE_KEY</code> ←
+<a href="../../../.github/workflows/ingest-event.yml">ingest-event.yml</a> maps <code>SUPABASE_KEY</code> ←
 <code>secrets.SUPABASE_{CERT,PROD}_SERVICE_ROLE_KEY</code> (chosen by the <code>target</code> input), plus <code>FTL_USERNAME</code>/
 <code>FTL_PASSWORD</code> and the Telegram pair. Add these to the GitHub secrets in §1.2.</li>
 <li><strong>LOCAL:</strong> the same names live in the repo-root <strong><code>.env</code></strong> (git-ignored). Because nothing auto-loads it,
@@ -444,7 +447,7 @@ This workflow is awaiting review. 1 environment needs approval.</p>
 <p>Rollback is <strong>forward-only</strong> — you push a new corrective migration through the full pipeline. There is no &quot;undo&quot; button.</p>
 <h3 id="why-forward-only">Why forward-only?</h3>
 <p>The Supabase Management API only supports running SQL queries — there is no <code>DROP MIGRATION</code> or <code>ROLLBACK</code> command. And since migrations may have already modified data (not just schema), reversing them safely requires explicit corrective SQL.</p>
-<p>A SQL-level snapshot mechanism (automated pre-deploy backups in a <code>_backup</code> schema) was designed and evaluated but deferred — the complexity outweighed the practical value given that most migrations change the schema, which would block rollback. See <a href="../doc/adr/012-sql-pre-deploy-snapshots.html">ADR-012</a> for the full analysis and preserved design.</p>
+<p>A SQL-level snapshot mechanism (automated pre-deploy backups in a <code>_backup</code> schema) was designed and evaluated but deferred — the complexity outweighed the practical value given that most migrations change the schema, which would block rollback. See <a href="../../../doc/adr/012-sql-pre-deploy-snapshots.html">ADR-012</a> for the full analysis and preserved design.</p>
 <h3 id="can-i-skip-a-release-that-has-a-bug">Can I skip a release that has a bug?</h3>
 <p>You can skip the <strong>PROD promotion</strong> — just don't approve it. Click <strong>&quot;Reject&quot;</strong> in the GitHub Actions UI and PROD stays untouched. But you cannot skip a migration once it's applied to CERT, because CERT auto-deploys.</p>
 <p><strong>Typical bug-fix flow:</strong></p>
@@ -1206,6 +1209,6 @@ Daily 03:00 UTC cron:
 </ul>
 </section></main>
 </div>
-<nav class="pager" aria-label="Documentation navigation"><a class="registry" href="index.html">← Documentation index</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>cicd-operations-manual.md</code> · source SHA-256 <code>27dfbce9c8f1734fc07b60e8f0b8afd3b735f332914fa85182347a7eeb72e326</code></footer>
+<nav class="pager" aria-label="Documentation navigation"><a class="registry" href="../../handbook/index.html">← Current handbook</a><a class="next" href="../../adr/index.html">ADR registry →</a></nav>
+<footer class="foot">Generated from <code>cicd-operations-manual.md</code> · source SHA-256 <code>1db0f00340e8ae3aa66aa777f2b618aec5e88fce7d6013baa8de647495910d11</code></footer>
 </div></body></html>

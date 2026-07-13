@@ -104,7 +104,7 @@ EVF actively renames events mid-season (the Napoli↔Naples incident). Date + co
 ### Negative
 
 - **Stale events require manual creation.** If EVF publishes an event into the API > 30 days after it ran, the admin must manually create the CERT row before the next cron will sync results. Acceptable because such retroactive publishes are rare and admin-flagged is safer than auto-create-and-hope.
-- **Two new outbound Telegram messages** (one new failure mode + one informational summary). Documented in [`doc/cicd-operations-manual.md`](../cicd-operations-manual.md) §10.
+- **Two new outbound Telegram messages** (one new failure mode + one informational summary). Documented in [`doc/archive/legacy-2026-07/cicd-operations-manual.md`](../archive/legacy-2026-07/cicd-operations-manual.md) §10.
 
 ### Outbound Telegram surface (new, this ADR)
 

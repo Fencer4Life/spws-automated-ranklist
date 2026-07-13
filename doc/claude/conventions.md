@@ -1,49 +1,23 @@
 # Conventions
 
 ## Documentation
-See [documenting.md](documenting.md) for the scope-change pass, RTM post-implementation
-check, ADR maintenance workflow, and diagram rules. Mandatory before marking any task complete.
 
-## Active rebuild - read first
+Follow [documenting.md](documenting.md) and the [documentation standard](../handbook/reference/documentation-standard.html). Human-facing documents and plans are HTML. The handbook owns present behavior; ADRs own rationale; governance owns obligations; evidence owns run artifacts; archive owns superseded narratives.
 
-A LOCAL DB rebuild is in progress per
-/Users/aleks/.claude/plans/now-we-have-a-precious-wren.md.
+## Data integrity hard rules
 
-Rules below carry REBUILD-NEW markers where behavior differs from steady-state.
-
-## Data integrity (hard rules — user has been burned)
-
-- **URLs are admin-managed only.** `url_event` / `url_results` are hand-entered
-  (FTL/Engarde/4Fence/Ophardt). Never auto-fill from EVF site / WP API.
-- **Validate URL→data match on every write**: scrape the URL, compare
-  date/name/weapon/category/city/country, REJECT on mismatch. ADR-052 + pgTAP/pytest.
-- **Adding a column to `tbl_event`?** Rebuild `vw_calendar` in the same migration —
-  admin form round-trip silently breaks otherwise.
-- **`seed_tbl_fencer.sql` contains only PPW/MPW participants** — never PEW/IMSW/PS fencers.
-
-## Identity resolution (REBUILD-NEW)
-
-- [ADR-050] tbl_match_candidate removed in Phase 6.
-  Provenance: tbl_result.{txt_scraped_name, num_match_confidence, enum_match_method}.
-  Audit via tbl_audit_log.
-- [R006, ADR-050] Cross-event match memory: tbl_fencer.json_name_aliases.
-  Append on every USER_CONFIRMED match decision.
-- [ADR-050] Matcher tuning via python/matcher/config.yaml only.
-- [ADR-050] Per-event source-of-truth selected at runtime via ingest_cli.py review-event.
-
-## Rebuild reference data (REBUILD-NEW, removed Phase 6)
-
-- [ADR-050] 3-way diff: Source / cert_ref.* / draft tables.
-- [ADR-050] cert_ref schema read-only, loaded from PROD seed once.
-- [ADR-050] Draft tables tbl_*_draft scratch state by txt_run_id.
+- URLs are admin-managed unless a current formal rule or ADR explicitly assigns another owner.
+- Validate URL-to-data identity on every policy-controlled write: compare date, name, weapon, category, city and country; reject mismatches. See ADR-052 and R009.
+- When adding a column to `tbl_event`, review and rebuild `vw_calendar` in the same migration when its row contract is affected.
+- Preserve the documented participant scope of `seed_tbl_fencer.sql`; never broaden it implicitly.
+- Identity decisions, aliases, source priority, draft review and commit behavior must follow the current subsystem contracts in the handbook and formal rules—not an old rebuild phase description.
 
 ## Working style
 
-- **No parallel task execution** — sequential only. **No autoapprove** — explicit per-step
-  permission. **The user calls the shots**: diagnose, propose, stop. Do not chain steps
-  without authorization.
-- **UI debug never console**: surface diagnostics in the UI (banner / inline form), never
-  push DevTools / console.log.
-- **Telegram, not Discord**, for all alerting.
-- **Never read .xlsx/.xlsm/.xls files without explicit per-file authorization.**
-- **Use full names, not shorthand** ("Phase 1A: …" not "Layer 6").
+- Check the worktree and active user scope before edits; preserve unrelated changes.
+- Use full feature/plan names rather than ambiguous phase shorthand.
+- Surface user-facing diagnostics in the UI rather than requiring browser console access.
+- Use Telegram, not Discord, for the established operational alerting surface.
+- Never read spreadsheet files without explicit authorization for the named file.
+- Never run a bare `supabase db reset`; use `./scripts/reset-dev.sh` for LOCAL.
+- Never put credentials or secret values in documentation, plans, logs or commits.

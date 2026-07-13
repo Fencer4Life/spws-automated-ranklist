@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="074-no-halt-fault-resolution.md">
-<meta name="adr-source-sha256" content="627caf9428fb4b48bbc0443a9214cdd271b041dadac1e63b90daae232d9b4b00">
+<meta name="adr-source-sha256" content="761560e6807ee18f287b5410da8f3cb56983ea816150ea09d1e066fab5a1c87f">
 <title>ADR-074 · No hard halt — declarative fault resolution + last-resort escalation</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 074</p><h1>No hard halt — declarative fault resolution + last-resort escalation</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §2 / §5.2. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> <strong>reverses</strong> the halt-by-exception model of ADR-050 / ADR-057 / ADR-067; <strong>amends</strong> ADR-038 (V0), ADR-066 (min-participants), ADR-069 (participant-count &quot;HALT gate&quot;); ADR-073 (orchestrator), ADR-059 (Telegram), ADR-072 (self-healing).</dd></div><div><dt>Source</dt><dd class=""><code>074-no-halt-fault-resolution.md</code></dd></div><div><dt>Length</dt><dd class="">68 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §2 / §5.2. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> <strong>reverses</strong> the halt-by-exception model of ADR-050 / ADR-057 / ADR-067; <strong>amends</strong> ADR-038 (V0), ADR-066 (min-participants), ADR-069 (participant-count &quot;HALT gate&quot;); ADR-073 (orchestrator), ADR-059 (Telegram), ADR-072 (self-healing).</dd></div><div><dt>Source</dt><dd class=""><code>074-no-halt-fault-resolution.md</code></dd></div><div><dt>Length</dt><dd class="">68 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
-<a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §2 / §5.2. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.
+<a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §2 / §5.2. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.
 <strong>Date:</strong> 2026-06-14
 <strong>Relates to:</strong> <strong>reverses</strong> the halt-by-exception model of ADR-050 / ADR-057 / ADR-067; <strong>amends</strong>
 ADR-038 (V0), ADR-066 (min-participants), ADR-069 (participant-count &quot;HALT gate&quot;); ADR-073 (orchestrator),
@@ -81,5 +81,5 @@ fault; <code>Escalate</code> fires only per policy; infra <code>Abort</code> is 
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="073-plugin-rule-engine-architecture.html">← ADR-073: Plugin + rule-engine ingestion architecture</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="075-staging-report-fragment-channel.html">→ ADR-075: Staging report — a fifth Context channel + per-plugin fragments + terminal formatter</a></nav>
-<footer class="foot">Generated from <code>074-no-halt-fault-resolution.md</code> · source SHA-256 <code>627caf9428fb4b48bbc0443a9214cdd271b041dadac1e63b90daae232d9b4b00</code></footer>
+<footer class="foot">Generated from <code>074-no-halt-fault-resolution.md</code> · source SHA-256 <code>761560e6807ee18f287b5410da8f3cb56983ea816150ea09d1e066fab5a1c87f</code></footer>
 </div></body></html>

@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="075-staging-report-fragment-channel.md">
-<meta name="adr-source-sha256" content="ed9357c9e125784c9b8ddfe44abbc77c80894add0d86039f8adcf604444c389a">
+<meta name="adr-source-sha256" content="8962a4b59cf18db56619aaa49787e8a7a3928a463d881e33ea987123e22f5062">
 <title>ADR-075 · Staging report — a fifth Context channel + per-plugin fragments + terminal formatter</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 075</p><h1>Staging report — a fifth Context channel + per-plugin fragments + terminal formatter</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-16, NEW pipeline build). Design in <a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §4.1 / §4.1a / §5.2a. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-16 <strong>Relates to:</strong> ADR-073 (plugin/rule-engine contract — adds the <code>report</code> channel + per-kind emit), ADR-074 (no-halt / no-draft — this restores the lost staging artifact <em>without</em> reintroducing drafts), ADR-058/061 (verdict <code>.md</code> target router — reuses <code>md_writer.write_for_event</code>), ADR-050 (the OLD draft-then-review pipeline whose <code>.md</code>/<code>.diff.md</code> this replaces).</dd></div><div><dt>Source</dt><dd class=""><code>075-staging-report-fragment-channel.md</code></dd></div><div><dt>Length</dt><dd class="">86 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-16, NEW pipeline build). Design in <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §4.1 / §4.1a / §5.2a. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-16 <strong>Relates to:</strong> ADR-073 (plugin/rule-engine contract — adds the <code>report</code> channel + per-kind emit), ADR-074 (no-halt / no-draft — this restores the lost staging artifact <em>without</em> reintroducing drafts), ADR-058/061 (verdict <code>.md</code> target router — reuses <code>md_writer.write_for_event</code>), ADR-050 (the OLD draft-then-review pipeline whose <code>.md</code>/<code>.diff.md</code> this replaces).</dd></div><div><dt>Source</dt><dd class=""><code>075-staging-report-fragment-channel.md</code></dd></div><div><dt>Length</dt><dd class="">86 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-16, NEW pipeline build). Design in
-<a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §4.1 / §4.1a / §5.2a.
-<strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.
+<a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §4.1 / §4.1a / §5.2a.
+<strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.
 <strong>Date:</strong> 2026-06-16
 <strong>Relates to:</strong> ADR-073 (plugin/rule-engine contract — adds the <code>report</code> channel + per-kind emit),
 ADR-074 (no-halt / no-draft — this restores the lost staging artifact <em>without</em> reintroducing drafts),
@@ -95,5 +95,5 @@ one event-scoped POST_COMMIT seeded with all bracket reports; timestamped filena
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="074-no-halt-fault-resolution.html">← ADR-074: No hard halt — declarative fault resolution + last-resort escalation</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="076-pool-round-discard-and-listing-keep-rule.html">→ ADR-076: Overlapping FTL listings — discard pool-only rounds, keep one listing per category, flag duplicates (UI-resolvable)</a></nav>
-<footer class="foot">Generated from <code>075-staging-report-fragment-channel.md</code> · source SHA-256 <code>ed9357c9e125784c9b8ddfe44abbc77c80894add0d86039f8adcf604444c389a</code></footer>
+<footer class="foot">Generated from <code>075-staging-report-fragment-channel.md</code> · source SHA-256 <code>8962a4b59cf18db56619aaa49787e8a7a3928a463d881e33ea987123e22f5062</code></footer>
 </div></body></html>

@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="development_history.md">
-<meta name="doc-source-sha256" content="fcd2a048cf5f23847e79d14669cb2e1fa46c3177e0c587f37d546db592ca11d2">
+<meta name="doc-source-sha256" content="2d6cffa22cb332d55edce32ee4a09398650180f7576506c62f02996931c6a352">
 <title>Development History — SPWS Automated Ranklist System · SPWS</title>
-<link rel="stylesheet" href="adr/assets/adr.css">
+<link rel="stylesheet" href="../../adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
@@ -15,7 +15,7 @@
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#phase-1-proof-of-concept-m0-m6">Phase 1: Proof of Concept (M0–M6)</a></li><li class="depth-3"><a href="#milestones">Milestones</a></li><li class="depth-3"><a href="#key-decisions-poc">Key Decisions (POC)</a></li><li class="depth-2"><a href="#phase-2-minimum-viable-product-m8-m10">Phase 2: Minimum Viable Product (M8–M10)</a></li><li class="depth-3"><a href="#milestones-2">Milestones</a></li><li class="depth-3"><a href="#key-decisions-mvp">Key Decisions (MVP)</a></li><li class="depth-2"><a href="#phase-3-go-to-production">Phase 3: Go-to-Production</a></li><li class="depth-3"><a href="#deliverables">Deliverables</a></li><li class="depth-3"><a href="#key-decisions-go-to-prod">Key Decisions (Go-to-PROD)</a></li><li class="depth-2"><a href="#infrastructure">Infrastructure</a></li><li class="depth-3"><a href="#github-actions-workflows">GitHub Actions Workflows</a></li><li class="depth-3"><a href="#telegram-commands-20">Telegram Commands (20+)</a></li><li class="depth-3"><a href="#environments">Environments</a></li><li class="depth-2"><a href="#post-mvp-enhancements">Post-MVP Enhancements</a></li><li class="depth-3"><a href="#date-aware-event-status-transitions-implementation-plan">Date-Aware Event Status Transitions — Implementation Plan</a></li><li class="depth-4"><a href="#tests-tdd-red-phase-first">Tests (TDD — RED phase first)</a></li><li class="depth-4"><a href="#implementation-green-phase">Implementation (GREEN phase)</a></li><li class="depth-4"><a href="#documentation">Documentation</a></li><li class="depth-4"><a href="#execution-order">Execution Order</a></li><li class="depth-4"><a href="#implementation-notes-2026-04-11">Implementation Notes (2026-04-11)</a></li><li class="depth-3"><a href="#bug-fix-season-scoring-config-inheritance-2026-04-11">Bug Fix: Season scoring config inheritance (2026-04-11)</a></li><li class="depth-3"><a href="#auto-active-season-by-date-overlap-constraint-punktacja-relocation-2026-04-11">Auto-Active Season by Date + Overlap Constraint + Punktacja Relocation (2026-04-11)</a></li><li class="depth-3"><a href="#drilldown-mobile-card-layout-adr-032-2026-04-11">Drilldown Mobile Card Layout (ADR-032) — 2026-04-11</a></li><li class="depth-3"><a href="#fencer-gender-identity-manager-enhancement-adr-033-adr-034-2026-04-11">Fencer Gender + Identity Manager Enhancement (ADR-033, ADR-034) — 2026-04-11</a></li><li class="depth-3"><a href="#fencers-view-with-tabs-adr-035-2026-04-12">Fencers View with Tabs (ADR-035) — 2026-04-12</a></li><li class="depth-3"><a href="#cross-gender-scoring-enforcement-adr-034-2026-04-12">Cross-Gender Scoring Enforcement (ADR-034) — 2026-04-12</a></li><li class="depth-3"><a href="#multi-slot-event-result-urls-adr-040-2026-04-25">Multi-Slot Event Result URLs (ADR-040) — 2026-04-25</a></li><li class="depth-3"><a href="#server-side-workflow-dispatch-via-edge-function-adr-041-2026-04-25">Server-Side Workflow Dispatch via Edge Function (ADR-041) — 2026-04-25</a></li><li class="depth-4"><a href="#amendment-2026-04-25-refresh-on-dispatch-ux-8-tests">Amendment 2026-04-25 — Refresh-on-dispatch UX (8 tests)</a></li><li class="depth-4"><a href="#amendment-2026-04-25-banner-clears-after-refresh-prod-target">Amendment 2026-04-25 — Banner clears after refresh + PROD target</a></li><li class="depth-4"><a href="#amendment-2026-04-26-phase-3a-carry-over-admin-rpcs-25-new-pgtap">Amendment 2026-04-26 — Phase 3a carry-over admin RPCs (25 new pgTAP)</a></li><li class="depth-4"><a href="#amendment-2026-04-26-phase-3b-carry-over-admin-ui-24-new-vitest">Amendment 2026-04-26 — Phase 3b carry-over admin UI (24 new vitest)</a></li><li class="depth-4"><a href="#amendment-2026-04-26-phase-3c-eventmanager-extensions-14-new-vitest">Amendment 2026-04-26 — Phase 3c EventManager extensions (14 new vitest)</a></li><li class="depth-3"><a href="#v-cat-invariant-trigger-combined-pool-splitter-consolidation-adr-047-2026-04-29-2026-04-30">V-cat Invariant Trigger + Combined-Pool Splitter Consolidation (ADR-047) — 2026-04-29 → 2026-04-30</a></li><li class="depth-3"><a href="#source-vs-db-audit-phantom-row-discovery-adr-048-2026-04-30">Source-vs-DB Audit + Phantom-Row Discovery (ADR-048) — 2026-04-30</a></li><li class="depth-3"><a href="#local-cert-prod-replication-2026-04-30">LOCAL → CERT → PROD Replication (2026-04-30)</a></li><li class="depth-3"><a href="#joint-pool-split-flag-adr-049-2026-04-30">Joint-Pool Split Flag (ADR-049) — 2026-04-30</a></li><li class="depth-3"><a href="#local-cert-prod-unification-active-2025-26-promote-2026-05-17">LOCAL/CERT/PROD unification + active 2025-26 promote (2026-05-17)</a></li><li class="depth-3"><a href="#ppw4-ppw5-xml-ingest-re-do-structural-pool-only-skip-unified-pipeline-2026-05-27">PPW4/PPW5 XML ingest re-do — structural pool-only skip + unified pipeline (2026-05-27)</a></li><li class="depth-3"><a href="#ppw4-ppw5-url-re-ingest-to-cert-prod-participant-count-fix-2026-06-03">PPW4/PPW5 URL re-ingest to CERT/PROD + participant-count fix (2026-06-03)</a></li><li class="depth-3"><a href="#evf-sync-self-heal-of-future-completed-rows-adr-039-rev-2-2026-06-13">EVF sync self-heal of future-COMPLETED rows (ADR-039 rev 2) — 2026-06-13</a></li><li class="depth-3"><a href="#stage-0-roster-reconciliation-in-the-unified-pipeline-adr-056-rev-2026-06-13">Stage 0 — roster reconciliation in the unified pipeline (ADR-056 rev) — 2026-06-13</a></li><li class="depth-3"><a href="#new-ingestion-pipeline-rule-driven-plugin-rebuild-adr-070-074-2026-06-15">NEW ingestion pipeline — rule-driven plugin rebuild (ADR-070–074) — 2026-06-15</a></li><li class="depth-3"><a href="#ci-seed-load-fix-collision-resilient-pew-splitter-adr-046-amendment-2026-06-25">CI seed-load fix + collision-resilient PEW splitter (ADR-046 amendment) — 2026-06-25</a></li><li class="depth-3"><a href="#duplicate-fencer-fix-deterministic-recompute-recovery-adr-056-065-071-072-amendments-2026-06-26">Duplicate-fencer fix + deterministic recompute recovery (ADR-056/065/071/072 amendments) — 2026-06-26</a></li><li class="depth-2"><a href="#results-based-carry-stop-never-both-seasons-of-one-event-2026-06-26">Results-based carry-stop — never both seasons of one event (2026-06-26)</a></li><li class="depth-2"><a href="#joint-pool-split-place-numerator-reranked-per-v-cat-adr-049-amendment-2026-06-27">Joint-pool split — place numerator reranked per V-cat (ADR-049 amendment) — 2026-06-27</a></li><li class="depth-2"><a href="#carry-over-picker-round-trip-explicit-unlink-adr-044-amendment-2026-06-27">Carry-over picker round-trip + explicit unlink (ADR-044 amendment) — 2026-06-27</a></li><li class="depth-2"><a href="#cross-gender-guest-reconcile-fixpoint-adr-056-amendment-2026-06-27">Cross-gender-guest reconcile fixpoint (ADR-056 amendment) — 2026-06-27</a></li><li class="depth-2"><a href="#archived-documents">Archived Documents</a></li><li class="depth-2"><a href="#appendix-implementation-phasing-solution-approach">Appendix: Implementation Phasing &amp; Solution Approach</a></li><li class="depth-3"><a href="#phase-1-proof-of-concept-poc-completed-2026-03-25">Phase 1: Proof of Concept (POC) — COMPLETED (2026-03-25)</a></li><li class="depth-3"><a href="#phase-2-minimum-viable-product-mvp-completed-2026-04-04">Phase 2: Minimum Viable Product (MVP) — COMPLETED (2026-04-04)</a></li><li class="depth-3"><a href="#phase-2b-go-to-prod">Phase 2b: Go-to-PROD</a></li><li class="depth-4"><a href="#rebuild-progress-sub-phases-of-phase-2b">Rebuild progress (sub-phases of Phase 2b)</a></li><li class="depth-4"><a href="#phase-5-5-unified-ingestion-storage-verdicts-telegram-delivery-alias-triage-ux-in-progress-started-2026-05-03">Phase 5.5 — Unified ingestion + Storage verdicts + Telegram delivery + alias triage UX (in progress, started 2026-05-03)</a></li><li class="depth-3"><a href="#phase-3-advanced-integrations-no-longer-planned">Phase 3: Advanced Integrations - No Longer planned.</a></li><li class="depth-3"><a href="#self-contained-carry-stop-cross-gender-pgtap-fixtures-2026-06-28">Self-contained carry-stop / cross-gender pgTAP fixtures (2026-06-28)</a></li><li class="depth-3"><a href="#event-self-registration-phase-2-public-registration-ui-2026-07-05">Event self-registration — Phase 2 public registration UI (2026-07-05)</a></li><li class="depth-3"><a href="#2026-07-05-adr-079-amend-spws-registration-url-auto-fill-calendar-link-fix">2026-07-05 — ADR-079 amend: SPWS-registration URL auto-fill (calendar link fix)</a></li><li class="depth-3"><a href="#2026-07-05-adr-079-7-amend-in-app-registration-modal-register-html-build-correction">2026-07-05 — ADR-079 §7 amend: in-app registration modal + register.html build correction</a></li><li class="depth-3"><a href="#2026-07-05-adr-079-7-d-fix-register-html-unstyled-on-npm-run-dev-post-deploy-user-report">2026-07-05 — ADR-079 §7(d): fix register.html unstyled on `npm run dev` (post-deploy user report)</a></li><li class="depth-3"><a href="#2026-07-05-fr-123-entry-list-age-category-calendar-multi-weapon-fee-display">2026-07-05 — FR-123 entry-list age category + calendar multi-weapon fee display</a></li><li class="depth-3"><a href="#2026-07-05-mobile-gdpr-checkbox-entry-list-layout-fixes-same-day-follow-up">2026-07-05 — Mobile GDPR checkbox + entry-list layout fixes (same-day follow-up)</a></li></ol></nav>
-  <main><section class="section-card detail"><p><strong>This is a read-only archive.</strong> For the living specification, see <a href="Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.html">Project Specification</a>.</p>
+  <main><section class="section-card detail"><p><strong>This is a read-only archive.</strong> For present behavior, use the <a href="../../handbook/index.html">developer handbook</a>. For normative requirements, see the <a href="../../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.html">Project Specification</a>.</p>
 <hr />
 </section>
 <section class="section-card detail"><h2 id="phase-1-proof-of-concept-m0-m6">Phase 1: Proof of Concept (M0–M6)</h2>
@@ -806,7 +806,7 @@ supabase secrets set --project-ref &lt;PROD_REF&gt; GH_DISPATCH_PAT=&lt;fine-gra
 <li><strong>Auto-refresh ~40s after dispatch success.</strong> <code>setTimeout(onrefresh, 40_000)</code> scheduled in <code>dispatchAndTrack</code>'s success branch, per-event timer ID tracked so a second dispatch on the same event resets the clock (latest wins, no double-fire).</li>
 <li><strong>Refetch on every accordion expand (▶ → ▼).</strong> <code>toggleExpand</code> calls <code>runRefreshFor(eventId)</code> on the collapsed→expanded transition; collapsing is a no-op for refresh. Maps to natural admin intent (&quot;show me this event's tournaments now&quot;). Always fires regardless of whether a dispatch happened — consistent semantics, no stale-tracking state.</li>
 </ol>
-<p><strong>Spinner UX (clever, not generic — see <a href="archive/adr041_refresh_ux_plan.md"><code>doc/archive/adr041_refresh_ux_plan.md</code></a>):</strong></p>
+<p><strong>Spinner UX (clever, not generic — see <a href="../../archive/adr041_refresh_ux_plan.md"><code>doc/archive/adr041_refresh_ux_plan.md</code></a>):</strong></p>
 <ul>
 <li><strong>Delayed-show ≥200 ms</strong> — sub-200ms refreshes (the 95% case on CERT) render zero spinner. No flicker on fast networks.</li>
 <li><strong>Per-event <code>Map&lt;id_event, RefreshPhase&gt;</code></strong> — no global overlay. A slow refresh on one event doesn't blank-out the rest of the calendar.</li>
@@ -990,7 +990,7 @@ supabase secrets set --project-ref &lt;PROD_REF&gt; GH_DISPATCH_PAT=&lt;fine-gra
 </ul>
 <p><strong>Known cosmetic divergence (deferred).</strong> <code>enum_match_method</code> on PROD for the 287 active-2025-26 results: 287 AUTO_MATCH vs LOCAL/CERT 274 AUTO_MATCH + 13 NULL. The 13 NULL rows are V-cat-marker-downgrade fencers whose pipeline path leaves the column NULL; <code>fn_ingest_tournament_results</code> defaults them to AUTO_MATCH via the legacy enum_match_status mapping. Fix would require another migration; impact is presentational only.</p>
 <p><strong>Ephemeral tooling</strong> (not committed, regenerate from project memory): <code>/tmp/phase_b_unify_fencer.py</code>, <code>/tmp/phase_b2_sync_aliases.py</code>, <code>/tmp/phase_c_resync_spws_history.py</code>, <code>/tmp/run_event_cycle.sh</code>.</p>
-<p><strong>Memory.</strong> <a href="../doc-redacted-path">project_local_cert_prod_unification_2026-05-17.md</a>.</p>
+<p><strong>Historical Claude memory reference:</strong> <code>project_local_cert_prod_unification_2026-05-17.md</code>.</p>
 <hr />
 <h3 id="ppw4-ppw5-xml-ingest-re-do-structural-pool-only-skip-unified-pipeline-2026-05-27">PPW4/PPW5 XML ingest re-do — structural pool-only skip + unified pipeline (2026-05-27)</h3>
 <p><strong>Goal.</strong> Resolve user-reported bug: PPW4-V1-M-EPEE-2025-2026 and PPW5-V1-M-EPEE-2025-2026 showed <code>int_participant_count = 35 / 36</code> (phantom values) and dead <code>file://</code> URLs on <code>tbl_tournament.url_results</code>. The Maciej Sękowski drill-down made the symptom visible.</p>
@@ -1004,7 +1004,7 @@ supabase secrets set --project-ref &lt;PROD_REF&gt; GH_DISPATCH_PAT=&lt;fine-gra
 <p><strong>Cross-verification.</strong> PPW5 has live FTL per-V-cat brackets (<code>2F7708500E2F4F199D4FC25A7B74D0D0</code>). PPW5 M-Epee per-V-cat counts after re-ingest = 5 / 8 / 11 / 6 / 6 — exact match to FTL bracket sizes. PPW4 FTL event-schedule page returns empty (event not published live); only the local XML serves as source.</p>
 <p><strong>LOCAL outcome.</strong> PPW4 24 tournaments / 87 results, PPW5 22 tournaments / 81 results. Maciej Sękowski V1 M-Epee: PPW4 35/139.4 → 10/109.39 (real V0+V1 joint pool from <code>VABCME</code> combined bracket), PPW5 36/139.7 → 8/98.00 (real V1 standalone bracket). CERT/PROD promotion was deferred (no LOCAL→CERT path exists; promote.py is CERT→PROD only).</p>
 <p><strong>Test additions.</strong> <code>python/tests/test_ingest_cli_unified.py</code> (4 assertions: 67.U1–67.U4) + <code>python/tests/test_pool_only_skip.py</code> (8 assertions: 67.P1–67.P8) + <code>python/tests/test_ir.py</code> contract update. Three-suite GREEN: pgTAP 566, pytest 753, vitest 371.</p>
-<p><strong>Memory.</strong> <a href="../doc-redacted-path">project_ppw4_ppw5_xml_redo_2026-05-27.md</a>.</p>
+<p><strong>Historical Claude memory reference:</strong> <code>project_ppw4_ppw5_xml_redo_2026-05-27.md</code>.</p>
 <hr />
 <h3 id="ppw4-ppw5-url-re-ingest-to-cert-prod-participant-count-fix-2026-06-03">PPW4/PPW5 URL re-ingest to CERT/PROD + participant-count fix (2026-06-03)</h3>
 <p><strong>Goal.</strong> Propagate the 2026-05-27 correction to CERT/PROD (which still carried the
@@ -1032,7 +1032,7 @@ LOCAL values and re-scored. 2 empty 0-result tournaments left out per operator.<
 (symlink repointed). 6 pgTAP magic numbers recalibrated after the count correction
 (09_rolling_score R.4/R.6/R.8/R.10/R.11; 14_cross_gender CG.8 retargeted to
 PPW5-V0-M-SABRE). +1 pytest (3.15g2). Three-suite GREEN: pgTAP 566, pytest 754, vitest 371.</p>
-<p><strong>Memory.</strong> <a href="../doc-redacted-path">project_ppw4_ppw5_url_reingest_2026-06-03.md</a>.</p>
+<p><strong>Historical Claude memory reference:</strong> <code>project_ppw4_ppw5_url_reingest_2026-06-03.md</code>.</p>
 <hr />
 <h3 id="evf-sync-self-heal-of-future-completed-rows-adr-039-rev-2-2026-06-13">EVF sync self-heal of future-COMPLETED rows (ADR-039 rev 2) — 2026-06-13</h3>
 <p><strong>Problem.</strong> The daily <strong>EVF Calendar + Results Sync</strong> GitHub Action had failed every run
@@ -1064,7 +1064,7 @@ FTL URL with <code>PEW62-V1-M-SABRE</code> — a likely double-count to reconcil
 status flip, eventSchedule URL parsing. pytest 763, vitest 371.
 pgTAP <code>09_rolling_score</code> pre-existing harness/seed-drift failures unchanged by this work
 (verified by reverting the seed edit — identical failure set).</p>
-<p><strong>Memory.</strong> <a href="../doc-redacted-path">project_evf_sync_self_heal_2026-06-13.md</a>.</p>
+<p><strong>Historical Claude memory reference:</strong> <code>project_evf_sync_self_heal_2026-06-13.md</code>.</p>
 <hr />
 <h3 id="stage-0-roster-reconciliation-in-the-unified-pipeline-adr-056-rev-2026-06-13">Stage 0 — roster reconciliation in the unified pipeline (ADR-056 rev) — 2026-06-13</h3>
 <p><strong>Goal.</strong> Stop &quot;class-B&quot; contamination: genuinely-new participants (e.g. the
@@ -1110,7 +1110,7 @@ fencers); two real CONFIRMED→downgraded reconciliations surfaced (POKRYWA,
 PAWŁOWSKI); constructed estimated-conflict reconciled to band midpoint.</p>
 <p><strong>ADRs.</strong> Amended ADR-056 (Stage-0 rev + midpoint table), ADR-050 (s0 stage),
 ADR-010 (BY-derived justification), ADR-038 (skip international). No new ADRs.</p>
-<p><strong>Memory.</strong> <a href="../doc-redacted-path">project_stage0_reconciliation_done_2026-06-13.md</a>.</p>
+<p><strong>Historical Claude memory reference:</strong> <code>project_stage0_reconciliation_done_2026-06-13.md</code>.</p>
 <hr />
 <h3 id="new-ingestion-pipeline-rule-driven-plugin-rebuild-adr-070-074-2026-06-15">NEW ingestion pipeline — rule-driven plugin rebuild (ADR-070–074) — 2026-06-15</h3>
 <p>Rebuilt the ingestion pipeline from a fixed stage monolith into a <strong>rule-driven plugin
@@ -1293,7 +1293,7 @@ from-URL ingest gained <code>url_event_override</code> (admin-managed write of <
 sends the full <code>.md</code> + <code>.diff.md</code> to Telegram via ADR-059's <code>send_staging_report</code>/<code>send_document</code>
 (<code>StagingFormatter</code> now stashes the rendered bytes on ctx + honours <code>md_target</code> for Storage). <code>ingest-event.yml</code>
 gained an optional <code>url_event</code> input + <code>--send-telegram --md-target storage</code>. No webhook, no new ADR — pure
-reuse. The external GAS snippet is delivered as <code>doc/telegram-ingest-command-gas.md</code> (manual paste). Tests
+reuse. The external GAS snippet is preserved at <code>doc/archive/legacy-2026-07/telegram-ingest-command-gas.md</code> (manual paste). Tests
 N15.1–N15.4 (<code>test_ingest_telegram_staging.py</code>). <code>promote</code> unchanged.</p>
 </li>
 </ul>
@@ -1311,7 +1311,7 @@ ADR-075), ADR-056 (Stage-0 absorbed), ADR-067 (extended to FTL JSON by ADR-076),
 ADR-038/066/067/069 (halts → faults), reversed halt-by-exception in ADR-050/057/067. RTM FR-112–119 Covered.</p>
 <p><strong>Deferred (design §12, international only):</strong> <code>FRESH_INGEST_INTERNATIONAL</code>, <code>EVF_SYNC</code>, <code>PewCascade</code>,
 <code>EvfParity</code>; real pg_cron wiring of the recompute worker; <code>LISTEN/NOTIFY</code> dispatch; <code>tbl_flow_rule</code>.</p>
-<p><strong>Memory.</strong> <a href="../doc-redacted-path">project_new_pipeline_build_2026-06-14.md</a>.</p>
+<p><strong>Historical Claude memory reference:</strong> <code>project_new_pipeline_build_2026-06-14.md</code>.</p>
 <hr />
 <h3 id="ci-seed-load-fix-collision-resilient-pew-splitter-adr-046-amendment-2026-06-25">CI seed-load fix + collision-resilient PEW splitter (ADR-046 amendment) — 2026-06-25</h3>
 <p>The <code>auto-export seed from PROD after promote PPW3</code> commit (63a2401, <code>[skip ci]</code>) bumped
@@ -1503,7 +1503,7 @@ demote, mixed-gender skip, order-independence), <code>test_s0_reconcile_roster.p
 <p><strong>Scope:</strong> Male Epee V2 (50+) category only.</p>
 </li>
 <li>
-<p><strong>Status:</strong> All deliverables complete except automated ingestion pipeline (deferred to MVP M9). See <a href="archive/POC_development_plan.md#poc-completion-summary">POC Development Plan</a> and <a href="adr/013-poc-mvp-transition.html">ADR-013</a>.</p>
+<p><strong>Status:</strong> All deliverables complete except automated ingestion pipeline (deferred to MVP M9). See <a href="../../archive/POC_development_plan.md#poc-completion-summary">POC Development Plan</a> and <a href="../../adr/013-poc-mvp-transition.html">ADR-013</a>.</p>
 </li>
 <li>
 <p><strong>Use Cases:</strong> UC1–UC5 (ingestion, matching, scoring), UC7–UC11 (season/config management), UC12–UC13 (public ranklist + drill-down), UC18–UC20 (scoring config export/import/calibration).</p>
@@ -1561,7 +1561,7 @@ demote, mixed-gender skip, order-independence), <code>test_s0_reconcile_roster.p
 <p><strong>Scope:</strong> All 30 sub-rankings (3 Weapons × 2 Genders × 5 Categories V0–V4; see spec §9.1.1a for age brackets). Combined V3+4-F category for women. V0 is domestic-only — no Kadra ranking (see spec §9.4).</p>
 </li>
 <li>
-<p><strong>Status:</strong> All 3 milestones complete. <strong>544 test assertions</strong> (189 pgTAP + 175 pytest + 173 vitest + 7 Playwright). See <a href="archive/MVP_development_plan.md">MVP Development Plan</a>.</p>
+<p><strong>Status:</strong> All 3 milestones complete. <strong>544 test assertions</strong> (189 pgTAP + 175 pytest + 173 vitest + 7 Playwright). See <a href="../../archive/MVP_development_plan.md">MVP Development Plan</a>.</p>
 </li>
 <li>
 <p><strong>Milestones:</strong></p>
@@ -1609,25 +1609,25 @@ demote, mixed-gender skip, order-independence), <code>test_s0_reconcile_roster.p
 <p><strong>Schema extensions:</strong> 6 columns on <code>tbl_event</code>: <code>txt_country</code>, <code>txt_venue_address</code>, <code>url_invitation</code>, <code>num_entry_fee</code>, <code>txt_entry_fee_currency</code>, <code>arr_weapons</code>.</p>
 </li>
 <li>
-<p><strong>Admin authentication:</strong> Supabase Auth with email + password and mandatory TOTP MFA (<a href="adr/016-supabase-auth-totp-mfa.html">ADR-016</a>). Write functions REVOKE'd from <code>anon</code>; require <code>authenticated</code> JWT. 59-minute inactivity timeout.</p>
+<p><strong>Admin authentication:</strong> Supabase Auth with email + password and mandatory TOTP MFA (<a href="../../adr/016-supabase-auth-totp-mfa.html">ADR-016</a>). Write functions REVOKE'd from <code>anon</code>; require <code>authenticated</code> JWT. 59-minute inactivity timeout.</p>
 </li>
 <li>
 <p><strong>Admin CRUD UI:</strong> Authenticated web interface for season, event, and tournament management. Delete cascades to child records. Two import paths: event-level batch (multi-select modal) and tournament-level single (file upload). Manual tournament creation via &quot;+ Dodaj turniej&quot;. File import supports .xlsx/.xls/.json/.csv.</p>
 </li>
 <li>
-<p><strong>Identity resolution admin UI:</strong> Web interface for match candidate queue with approve/dismiss/create-new actions and disambiguation modal (<a href="adr/016-supabase-auth-totp-mfa.html">ADR-016</a>). Frontend complete; DB wiring deferred to Go-to-PROD.</p>
+<p><strong>Identity resolution admin UI:</strong> Web interface for match candidate queue with approve/dismiss/create-new actions and disambiguation modal (<a href="../../adr/016-supabase-auth-totp-mfa.html">ADR-016</a>). Frontend complete; DB wiring deferred to Go-to-PROD.</p>
 </li>
 <li>
-<p><strong>Rolling score for active season:</strong> Position-matched carry-over from previous season with declared-counterpart constraint (<a href="adr/018-rolling-score.html">ADR-018</a>). Visual distinction in DrilldownModal (striped bars, <code>↩</code> marker) and CalendarView (progress slots). Birth year range subtitle on ranklist view.</p>
+<p><strong>Rolling score for active season:</strong> Position-matched carry-over from previous season with declared-counterpart constraint (<a href="../../adr/018-rolling-score.html">ADR-018</a>). Visual distinction in DrilldownModal (striped bars, <code>↩</code> marker) and CalendarView (progress slots). Birth year range subtitle on ranklist view.</p>
 </li>
 <li>
-<p><strong>Season-configurable EVF toggle:</strong> PPW/Kadra toggle visibility controlled by per-season <code>bool_show_evf_toggle</code> flag (<a href="adr/017-season-configurable-evf-toggle.html">ADR-017</a>).</p>
+<p><strong>Season-configurable EVF toggle:</strong> PPW/Kadra toggle visibility controlled by per-season <code>bool_show_evf_toggle</code> flag (<a href="../../adr/017-season-configurable-evf-toggle.html">ADR-017</a>).</p>
 </li>
 <li>
-<p><strong>Shadow DOM isolation:</strong> Both <code>&lt;spws-ranklist&gt;</code> and <code>&lt;spws-calendar&gt;</code> ship as custom elements with Shadow DOM encapsulation (<a href="adr/007-shadow-dom-deferred.html">ADR-007</a>).</p>
+<p><strong>Shadow DOM isolation:</strong> Both <code>&lt;spws-ranklist&gt;</code> and <code>&lt;spws-calendar&gt;</code> ship as custom elements with Shadow DOM encapsulation (<a href="../../adr/007-shadow-dom-deferred.html">ADR-007</a>).</p>
 </li>
 <li>
-<p><strong>Seed generator tooling:</strong> <code>generate_season_seed.py</code> with domestic auto-create (<a href="adr/020-seed-generator-domestic-auto-create.html">ADR-020</a>), <code>sort_and_clean_fencers.py</code> for master fencer list maintenance (<a href="adr/019-domestic-only-fencer-seed.html">ADR-019</a>).</p>
+<p><strong>Seed generator tooling:</strong> <code>generate_season_seed.py</code> with domestic auto-create (<a href="../../adr/020-seed-generator-domestic-auto-create.html">ADR-020</a>), <code>sort_and_clean_fencers.py</code> for master fencer list maintenance (<a href="../../adr/019-domestic-only-fencer-seed.html">ADR-019</a>).</p>
 </li>
 <li>
 <p><strong>Scoring config editor:</strong> Structured form with 5 collapsible sections, per-season config, bucket editor for ranking rules.</p>
@@ -1647,7 +1647,7 @@ demote, mixed-gender skip, order-independence), <code>test_s0_reconcile_roster.p
 <p><strong>Goal:</strong> Complete the automated ingestion pipeline and deploy the full system to production on the SPWS WordPress site.</p>
 </li>
 <li>
-<p><strong>Status:</strong> IN PROGRESS — active rebuild plan at <code>/Users/aleks/.claude/plans/now-we-have-a-precious-wren.md</code> (master) with phase subplans at <a href="plans/rebuild/">doc/plans/rebuild/</a>. Original archived plan: <a href="archive/Go-to-PROD.md">Go-to-PROD Plan</a>.</p>
+<p><strong>Status:</strong> IN PROGRESS — active rebuild plan at <code>/Users/aleks/.claude/plans/now-we-have-a-precious-wren.md</code> (master) with phase subplans at <a href="../../plans/rebuild/">doc/plans/rebuild/</a>. Original archived plan: <a href="../../archive/Go-to-PROD.md">Go-to-PROD Plan</a>.</p>
 </li>
 </ul>
 <h4 id="rebuild-progress-sub-phases-of-phase-2b">Rebuild progress (sub-phases of Phase 2b)</h4>
@@ -1729,7 +1729,7 @@ demote, mixed-gender skip, order-independence), <code>test_s0_reconcile_roster.p
 </tr>
 </tbody>
 </table></div>
-<p>ADRs landed during the rebuild: <a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a> (umbrella), <a href="adr/052-url-data-validation.html">ADR-052</a> (URL→data validation, 2026-05-02), <a href="adr/053-evf-parity-gate.html">ADR-053</a> (EVF backup-source + parity gate + EVF_PUBLISHED promotion lifecycle, 2026-05-02), <a href="adr/055-ingest-traceability.html">ADR-055</a> (parser provenance + cap-6 history). ADR-051 was reserved for a frozen-snapshot policy but the concept was retired 2026-05-02 (cert_ref fallback became just-another-parser); the number stays empty. ADR-054 reserved for carry-over FK + 366-day cap (Phase 7).</p>
+<p>ADRs landed during the rebuild: <a href="../../adr/050-unified-ingestion-pipeline.html">ADR-050</a> (umbrella), <a href="../../adr/052-url-data-validation.html">ADR-052</a> (URL→data validation, 2026-05-02), <a href="../../adr/053-evf-parity-gate.html">ADR-053</a> (EVF backup-source + parity gate + EVF_PUBLISHED promotion lifecycle, 2026-05-02), <a href="../../adr/055-ingest-traceability.html">ADR-055</a> (parser provenance + cap-6 history). ADR-051 was reserved for a frozen-snapshot policy but the concept was retired 2026-05-02 (cert_ref fallback became just-another-parser); the number stays empty. ADR-054 reserved for carry-over FK + 366-day cap (Phase 7).</p>
 <p>Test totals at end of Phase 1: pgTAP 427 (+23), pytest 402 (+48), vitest 332 (unchanged).
 Test totals at end of Phase 2: pgTAP 457 (+30), pytest 422 (+20, excl. pre-existing <code>test_prod_mirror</code> CI skip), vitest 332 (unchanged).
 Test totals at end of Phase 3: pgTAP 465 (+8), pytest 505 (+83 across 6 new test modules; integration tests skip when LOCAL DB unreachable in CI), vitest 332 (unchanged).
@@ -1737,8 +1737,8 @@ Test totals at end of Phase 4: pgTAP 508 (+43 — 12 parity-lifecycle, 16 alias-
 <h4 id="phase-5-5-unified-ingestion-storage-verdicts-telegram-delivery-alias-triage-ux-in-progress-started-2026-05-03">Phase 5.5 — Unified ingestion + Storage verdicts + Telegram delivery + alias triage UX (in progress, started 2026-05-03)</h4>
 <p>Closes the remaining gaps preventing CERT-only operation while preserving the in-progress LOCAL rebuild verbatim. Five workstreams + planning canonicalisation:</p>
 <ul>
-<li><strong>Planning canonicalisation:</strong> <a href="claude/planning.md">doc/claude/planning.md</a> written and referenced from CLAUDE.md. Promotes 16 planning rules from user-MEMORY (verify-before-claim, walk-through scenarios, LOCAL parity, TDD strict order, ADR draft sign-off, doc completeness, CI/CD + Telegram operational hooks, per-event sign-off) to project-canonical instructions every Claude session sees.</li>
-<li><strong>4 ADRs proposed:</strong> <a href="adr/058-staging-reports-storage-bucket.html">ADR-058</a> (<code>staging-reports</code> bucket), <a href="adr/059-telegram-document-delivery.html">ADR-059</a> (Telegram <code>sendDocument</code> as primary verdict surface), <a href="adr/060-evf-parity-delta-md.html">ADR-060</a> (EVF delta-only <code>.md</code>), <a href="adr/061-local-parity-and-telegram-commands.html">ADR-061</a> (LOCAL preserved + 4 new GAS commands).</li>
+<li><strong>Planning canonicalisation:</strong> <a href="../../claude/planning.md">doc/claude/planning.md</a> written and referenced from CLAUDE.md. Promotes 16 planning rules from user-MEMORY (verify-before-claim, walk-through scenarios, LOCAL parity, TDD strict order, ADR draft sign-off, doc completeness, CI/CD + Telegram operational hooks, per-event sign-off) to project-canonical instructions every Claude session sees.</li>
+<li><strong>4 ADRs proposed:</strong> <a href="../../adr/058-staging-reports-storage-bucket.html">ADR-058</a> (<code>staging-reports</code> bucket), <a href="../../adr/059-telegram-document-delivery.html">ADR-059</a> (Telegram <code>sendDocument</code> as primary verdict surface), <a href="../../adr/060-evf-parity-delta-md.html">ADR-060</a> (EVF delta-only <code>.md</code>), <a href="../../adr/061-local-parity-and-telegram-commands.html">ADR-061</a> (LOCAL preserved + 4 new GAS commands).</li>
 <li><strong>3 SQL migrations + 3 pgTAP suites GREEN:</strong>
 <ul>
 <li><code>20260503000001</code> extends <code>vw_fencer_aliases</code> + <code>fn_list_fencer_aliases</code> with <code>latest_category_hint</code>, <code>latest_season_end_year</code>, <code>json_user_confirmed_aliases</code> passthrough, <code>int_unreviewed_alias_count</code>. Default order is unreviewed-first DESC. (8 pgTAP, 5.10).</li>
@@ -2081,6 +2081,6 @@ infra faults unrelated to this change — GitHub Pages' <code>Deployment failed,
 on retry, full <code>build</code>→<code>deploy-pages</code>→<code>deploy-cert</code>→<code>deploy-prod</code> cascade green.</p>
 </section></main>
 </div>
-<nav class="pager" aria-label="Documentation navigation"><a class="registry" href="index.html">← Documentation index</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>development_history.md</code> · source SHA-256 <code>fcd2a048cf5f23847e79d14669cb2e1fa46c3177e0c587f37d546db592ca11d2</code></footer>
+<nav class="pager" aria-label="Documentation navigation"><a class="registry" href="../../handbook/index.html">← Current handbook</a><a class="next" href="../../adr/index.html">ADR registry →</a></nav>
+<footer class="foot">Generated from <code>development_history.md</code> · source SHA-256 <code>2d6cffa22cb332d55edce32ee4a09398650180f7576506c62f02996931c6a352</code></footer>
 </div></body></html>
