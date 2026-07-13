@@ -50,7 +50,7 @@ Migration `20260430000001_vw_vcat_violation.sql` adds the view `vw_vcat_violatio
 - The trigger blocks any future write that would create a V-cat-vs-BY mismatch, once flipped to FATAL.
 - Test files require explicit trigger-disable for legacy fixtures using arbitrary V-cats. New tests should use V-cat-consistent BYs.
 - LOCAL data state: 0 V-cat invariant violators after Layers 1–6 + 8 row-level deletes. Per-season counts: 23/290/1086 (2023-24); 17/237/843 (2024-25); 20/229/720 (2025-26).
-- CERT/PROD still hold the original violators; replication via seed-remote.sh is the chosen path (see development_history.md 2026-04-30 entry).
+- CERT/PROD still hold the original violators; replication via seed-remote.sh is the chosen path (see archive/legacy-2026-07/development_history.md 2026-04-30 entry).
 
 ## Tests
 

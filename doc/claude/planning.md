@@ -4,12 +4,15 @@ This file canonicalises the planning discipline. Any session asked to plan a
 feature, architectural change, or operational extension MUST follow these
 rules. They supersede defaults.
 
+Every human-facing plan is a standalone `.html` file using the repository's approved Editorial template and includes the exact documentation coherence gate from [the documentation standard](../handbook/reference/documentation-standard.html).
+
 ## 1. Planning gate — always before any plan
 
-1. Read [doc/Project Specification. SPWS Automated Ranklist System.md](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md) §3 RTM to identify in-scope FRs.
-2. Read the relevant UC acceptance criteria in spec §3.
+1. Open [governance](../governance/index.html), then read the relevant rows in the requirements traceability matrix to identify in-scope FRs/NFRs.
+2. Read the relevant use-case acceptance criteria in the specification.
 3. Cross-check approved mockups in [doc/mockups/](../mockups/).
-4. Write acceptance tests in the plan FIRST — every FR needs ≥1 plan-test-ID
+4. Use the [documentation map](../handbook/documentation-map.html) to name current pages affected by the proposed change.
+5. Write acceptance tests in the plan FIRST — every FR needs ≥1 plan-test-ID
    before implementation starts.
 
 ## 2. Verify before claim — never confabulate
@@ -68,7 +71,7 @@ Process:
 4. THEN write [doc/adr/](../adr/)`NNN-slug.md`.
 5. Update spec Appendix C registry. NEVER put the ADR registry in RTM —
    registry lives ONLY in spec Appendix C.
-6. Cross-reference in [doc/development_history.md](../development_history.md).
+6. Link the decision from affected current handbook pages; preserve implementation evidence in the plan rather than appending to development history.
 
 ## 7. Documentation completeness — every shipped feature
 
@@ -77,10 +80,11 @@ Required artefacts:
 - ADR registry rows in spec Appendix C
 - FR rows in spec §3 RTM with `Covered` status
 - Test count updates in spec Appendix D + [doc/claude/testing.md](testing.md) — **see rule 7a below; this is a CI-enforced hard gate**
-- [doc/development_history.md](../development_history.md) close-out section
-- MEMORY entry under `~/.claude/projects/.../memory/`
-- [doc/cicd-operations-manual.md](../cicd-operations-manual.md) updates for any new workflow / env var
-  / runbook step
+- Documentation coherence gate completed using [the canonical standard](../handbook/reference/documentation-standard.html)
+- Affected pages in [doc/handbook/](../handbook/) updated in present tense, with ownership-map review
+- ADR links and governance records updated when applicable
+- [workflow catalog](../handbook/reference/workflow-catalog.html), [environment/release guide](../handbook/operations/environments-and-release.html) and [operator runbooks](../handbook/operations/operator-runbooks.html) updated for workflow, environment or operator changes
+- Superseded narratives archived; no implementation diary appended to current pages
 
 ## 7a. CI coherence gates — NEVER forget to update these (hard CI fail otherwise)
 
@@ -116,9 +120,9 @@ documentation suite, and the user explicitly asked it be canonicalised
 ## 8. Operational hooks — CI/CD and Telegram
 
 When the plan touches:
-- A new GH workflow → add to [doc/cicd-operations-manual.md](../cicd-operations-manual.md) AND to the
+- A new GH workflow → add to the [workflow catalog](../handbook/reference/workflow-catalog.html) and [operator runbooks](../handbook/operations/operator-runbooks.html) AND to the
   `dispatch-workflow` edge-fn allowlist if UI-triggerable.
-- A new env var or secret → add to ops manual secrets matrix.
+- A new env var or secret → add to the environment/release reference without recording the secret value.
 - A new Telegram-fired event → update GAS `/help` command in
   [scripts/gas_email_ingestion.js](../../scripts/gas_email_ingestion.js).
 - A new operator command → add Telegram command case in GAS + document in
@@ -127,6 +131,7 @@ When the plan touches:
 ## 9. Plan file readability for future sessions
 
 Every plan file should be:
+- HTML — standalone, responsive and based on the approved Editorial template.
 - Standalone — readable cold by a fresh session with no prior context.
 - TOC / read-order at top.
 - Scenario walk-throughs explicit.

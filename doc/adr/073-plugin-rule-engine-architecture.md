@@ -1,7 +1,7 @@
 # ADR-073: Plugin + rule-engine ingestion architecture
 
 **Status:** Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
-[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §3–§7. **Implemented** — see [development_history](../development_history.md).
+[archive/legacy-2026-07/ingestion_pipeline_NEW_design.md](../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md) §3–§7. **Implemented** — see [development_history](../archive/legacy-2026-07/development_history.md).
 **Date:** 2026-06-14
 **Relates to:** **amends** ADR-050 (the stage-monolith becomes plugins; draft tables removed); ADR-006
 (JSONB rules — precedent for an optional `tbl_flow_rule`); ADR-055 (provenance middleware); hosts the

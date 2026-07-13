@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="072-cdc-recompute-debounce.md">
-<meta name="adr-source-sha256" content="c9d51a1c652990c4309c2da4a65441bd95a6afe2919c2597841987540eb7f0da">
+<meta name="adr-source-sha256" content="ce4128b224e489b2d2e3f565da52790f6d68af0502abd3bbe6d705c7949556e4">
 <title>ADR-072 · Master-data-change-triggered idempotent recompute (CDC queue + debounce)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 072</p><h1>Master-data-change-triggered idempotent recompute (CDC queue + debounce)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §6 / §8. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY), ADR-070 (identity) / ADR-071 (dedup) — the change <em>sources</em>; ADR-041 (edge-function dispatch), ADR-074 (no-halt recompute). This ADR builds the <strong>self-healing</strong> half of the pipeline.</dd></div><div><dt>Source</dt><dd class=""><code>072-cdc-recompute-debounce.md</code></dd></div><div><dt>Length</dt><dd class="">98 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §6 / §8. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY), ADR-070 (identity) / ADR-071 (dedup) — the change <em>sources</em>; ADR-041 (edge-function dispatch), ADR-074 (no-halt recompute). This ADR builds the <strong>self-healing</strong> half of the pipeline.</dd></div><div><dt>Source</dt><dd class=""><code>072-cdc-recompute-debounce.md</code></dd></div><div><dt>Length</dt><dd class="">98 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
-<a href="../ingestion_pipeline_NEW_design.md">ingestion_pipeline_NEW_design.md</a> §6 / §8. <strong>Implemented</strong> — see <a href="../development_history.md">development_history</a>.
+<a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §6 / §8. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.
 <strong>Date:</strong> 2026-06-14
 <strong>Relates to:</strong> ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY),
 ADR-070 (identity) / ADR-071 (dedup) — the change <em>sources</em>; ADR-041 (edge-function dispatch),
@@ -109,5 +109,5 @@ recomputed) → queue all DONE. Test: <code>python/tests/test_db_connector.py</c
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="071-mdm-dedup-sweep.html">← ADR-071: Master-data management + eventual-consistency dedup (DEDUP_SWEEP)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="073-plugin-rule-engine-architecture.html">→ ADR-073: Plugin + rule-engine ingestion architecture</a></nav>
-<footer class="foot">Generated from <code>072-cdc-recompute-debounce.md</code> · source SHA-256 <code>c9d51a1c652990c4309c2da4a65441bd95a6afe2919c2597841987540eb7f0da</code></footer>
+<footer class="foot">Generated from <code>072-cdc-recompute-debounce.md</code> · source SHA-256 <code>ce4128b224e489b2d2e3f565da52790f6d68af0502abd3bbe6d705c7949556e4</code></footer>
 </div></body></html>

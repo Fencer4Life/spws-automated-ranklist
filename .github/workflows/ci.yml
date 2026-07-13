@@ -28,6 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v6
         with:
@@ -39,20 +41,25 @@ jobs:
 
       # Ruff baseline is clean (lint + format) — these steps now ENFORCE (block CI).
       - name: Ruff lint
-        run: ruff check python/ scripts/render_adrs.py scripts/render_docs.py
+        run: ruff check python/ scripts/render_adrs.py scripts/render_docs.py scripts/check_docs.py scripts/build_doc_inventory.py
 
       - name: Ruff format check
-        run: ruff format --check python/ scripts/render_adrs.py scripts/render_docs.py
+        run: ruff format --check python/ scripts/render_adrs.py scripts/render_docs.py scripts/check_docs.py scripts/build_doc_inventory.py
 
       # basedpyright baseline is clean — enforces (blocks CI), same as ruff above.
       - name: basedpyright type-check
-        run: basedpyright python/ scripts/render_adrs.py scripts/render_docs.py
+        run: basedpyright python/ scripts/render_adrs.py scripts/render_docs.py scripts/check_docs.py scripts/build_doc_inventory.py
 
       - name: Validate generated ADR HTML
         run: python scripts/render_adrs.py --check
 
       - name: Validate generated Docs HTML
         run: python scripts/render_docs.py --check
+
+      - name: Validate current documentation
+        env:
+          DOC_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python scripts/check_docs.py --changed-from "$DOC_BASE"
 
       - name: Run pytest
         run: pytest

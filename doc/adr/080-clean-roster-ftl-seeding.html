@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="080-clean-roster-ftl-seeding.md">
-<meta name="adr-source-sha256" content="463bb5a5fe3206d57fba309b0881736dfee5ac2838157c4eeb395facfb461180">
+<meta name="adr-source-sha256" content="321fae82554ec8aa4b85881123d8dbbc9246d143bd31d4bd711d935d419433bf">
 <title>ADR-080 · Clean-Roster FTL Seeding</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 080</p><h1>Clean-Roster FTL Seeding</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Proposed (draft — pending implementation)</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>080-clean-roster-ftl-seeding.md</code></dd></div><div><dt>Length</dt><dd class="">191 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Proposed (draft — pending implementation)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (target design — committed direction for domestic SPWS events; rollout in progress. Phase 3 seed export partial; organizer delivery and scrape-back wiring pending — see spec §5.2 for phase status.)</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>080-clean-roster-ftl-seeding.md</code></dd></div><div><dt>Length</dt><dd class="">192 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (target design — committed direction for domestic SPWS events; rollout in progress. Phase 3 seed export partial; organizer delivery and scrape-back wiring pending — see spec §5.2 for phase status.)
 <strong>Date:</strong> 2026-07-04
 <strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-079</p>
 </div>
@@ -33,14 +33,15 @@ cause of the ~90 % automation ceiling).</p>
 with clean, exact, unique names — closing the loop so scrape-back is an exact-name
 match and the operator no longer hand-names 27 brackets differently each event.</p>
 <p>Verified empirically (2026-07-03, FTL v4.5.4, real PZS files in
-<code>doc/external_files/</code>): the native format is FIE XML <code>&lt;BaseCompetitionIndividuelle&gt;</code>
-(one file = one competition), and a round-trip test confirmed our per-fencer
+<code>doc/external_files/</code>): the native format is <strong>FIE-XML</strong> <code>&lt;BaseCompetitionIndividuelle&gt;</code>
+— the FIE-standard interchange XML that FTL imports — (one file = one competition),
+and a round-trip test confirmed our per-fencer
 category marker and synthetic birthdate survive import → pools → DE → export.</p>
 </section>
 <section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
-<p>Generate <strong>FIE XML seed files</strong> from all <strong>declared</strong> registrations (this system does
-not track payment completion digitally — see ADR-079 §4) and deliver them to the
-organizer on demand.</p>
+<p>Generate <strong>FIE-XML seed files</strong> (the FIE-standard XML imported by FTL) from all
+<strong>declared</strong> registrations (this system does not track payment completion digitally —
+see ADR-079 §4) and deliver them to the organizer on demand.</p>
 <h3 id="1-seed-format">1. Seed format</h3>
 <ul>
 <li>One <code>&lt;BaseCompetitionIndividuelle&gt;</code> XML <strong>per competition</strong>: the mix-all pool per
@@ -244,5 +245,5 @@ allows event-by-event migration off competit.pl.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="079-event-self-registration-identity.html">← ADR-079: Event Self-Registration &amp; Identity Resolution</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="081-cert-prod-event-reconciler.html">→ ADR-081: CERT→PROD Event Reconciler</a></nav>
-<footer class="foot">Generated from <code>080-clean-roster-ftl-seeding.md</code> · source SHA-256 <code>463bb5a5fe3206d57fba309b0881736dfee5ac2838157c4eeb395facfb461180</code></footer>
+<footer class="foot">Generated from <code>080-clean-roster-ftl-seeding.md</code> · source SHA-256 <code>321fae82554ec8aa4b85881123d8dbbc9246d143bd31d4bd711d935d419433bf</code></footer>
 </div></body></html>

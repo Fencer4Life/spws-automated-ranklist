@@ -1,0 +1,336 @@
+<meta charset="utf-8">
+<title>Kill the PROD duplicate-and-mistag bug with a real reconciler</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">CERT ingest · CERT → PROD · PROD data · Implementation Plan</p>
+  <h1>Kill the PROD duplicate-and-mistag bug with a real reconciler</h1>
+  <p class="dek">Promotion only ever <b>adds</b> — divergence from CERT is permanent and the organizer is guessed. Rewrite it as <b>Create / Update / Delete</b> over the whole active-season set, <b>harden the CERT ingest</b> that mints the duplicates, and <b>repair the live PROD rows</b> — end to end.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Plan — not started</span>
+    <span class="pill">migration <code>20260711000001</code></span>
+    <span class="pill danger"><span class="dot"></span>retires <code>fn_import_evf_events</code></span>
+    <span class="pill warn"><span class="dot"></span>repairs 6 PROD rows</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Why</p>
+    <h2>The same "it's always EVF" mistake, in two layers</h2>
+    <p>Two code paths carry the duplicate-and-mistag disease. The CERT <em>ingest</em> mints duplicate rows; the CERT→PROD <em>promotion</em> faithfully mirrors them and mis-tags the organizer. This plan fixes both, then cleans the rows already on PROD.</p>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">1 ×</span> Promotion hardcodes the organizer</p>
+      <p><code>WHERE txt_code = 'SPWS'</code>, never verified — every promoted EVF event is mis-tagged SPWS on PROD. Confirmed on 7 Samorin rows.</p>
+    </div>
+    <div class="note danger">
+      <p class="lede"><span class="tick">2 ×</span> Promotion is insert-or-refresh — no DELETE</p>
+      <p>It can add divergence from CERT but never remove it. CERT minted 7 Samorin rows, they promoted, CERT collapsed to 1 — and the 6 PROD orphans had <b>no route to removal</b>. Manual surgery was the only option.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">3 ~</span> Promotion filters to PEW/MEW</p>
+      <p>The only incremental CERT→PROD path excludes domestic PPW/MPW. An event added after go-live has no route to PROD at all.</p>
+    </div>
+    <div class="note danger">
+      <p class="lede"><span class="tick">4 ×</span> Ingest mints on blank location <span style="font-weight:600;color:var(--muted)">— the upstream source</span></p>
+      <p><code>fn_allocate_evf_event_code</code> matches by physical location; a venue-less future event skips every match step and gets a brand-new code each run. This is the engine that produced the 7 CERT duplicates in the first place.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Workstream 1 · the core fix</p>
+    <h2>The CERT→PROD reconciler</h2>
+    <p><code>promote.py :: promote_calendar()</code> becomes a diff engine: read <b>all</b> active-season events on both sides, resolve FKs to PROD ids <b>by <code>txt_code</code></b> (reuse <code>promote_season._prod_code_to_id</code> — never raw ids), diff, apply one RPC <code>fn_mirror_events_to_prod(p_events, p_deletes)</code>. <code>_read_cert_evf_events</code> → <code>_read_cert_promotable_events</code>: drops the PEW/MEW filter, joins <code>tbl_organizer</code> to carry each event's real <code>org_code</code>.</p>
+
+    <div class="op">
+      <span class="op-tag c">CREATE</span><span class="set">CERT ∖ PROD</span>
+      <ul>
+        <li>Faithful whole-row copy — column-agnostic <code>jsonb_populate_recordset</code>, the style <code>fn_promote_season_skeleton</code> already uses.</li>
+        <li><code>id_organizer</code> / <code>id_prior_event</code> pre-resolved by code. <b>No organizer literal anywhere</b>; <code>RAISE EXCEPTION</code> if a code won't resolve — fail loud, never guess.</li>
+        <li><b>Childless</b> — results-promotion creates tournaments on demand.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag u">UPDATE</span><span class="set">CERT ∩ PROD — split by who owns the field</span>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Field group</th><th>Policy</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>Identity — <code>txt_name, dt_start/end, txt_location, txt_country, id_organizer, arr_weapons, id_evf_event, txt_evf_slug</code></td><td>Overwrite from CERT. Reuse <code>fn_sync_evf_event_fields</code>. <b>This is what re-tags the surviving Samorin row to EVF.</b></td><td><span class="chip over">overwrite</span></td></tr>
+          <tr><td>Admin URLs — <code>url_event*, url_invitation, url_registration, deadline, fee</code></td><td>Fill-blank-only — never clobber a hand entry (<code>feedback_urls_admin_managed</code>). Reuse <code>fn_refresh_evf_event_urls</code> <b>as-is</b> (its locked fill-blank contract, pgTAP 15.6, is exactly right — reused, not modified).</td><td><span class="chip fill">fill-blank</span></td></tr>
+          <tr><td><code>enum_status</code>, tournaments, results</td><td>Owned by the results lifecycle.</td><td><span class="chip never">never touch</span></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="op">
+      <span class="op-tag d">DELETE</span><span class="set">PROD ∖ CERT</span>
+      <div class="note danger">
+        <p class="lede"><span class="tick">!</span> The one operation that can destroy data</p>
+        <p><b>Guard:</b> delete only if <code>enum_status = 'PLANNED'</code> <b>and</b> zero <code>tbl_result</code> rows across its tournaments. Transactional — empty PLANNED tournaments first, then the event.</p>
+        <p style="margin-bottom:0">A results-bearing event absent from CERT is a <em>CERT anomaly to alert on</em> (Telegram), never erased. Once an event has results its status leaves PLANNED, so it is structurally untouchable here.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Workstream 2 · in scope — the live PROD mess</p>
+    <h2>Delete the 6 dead Samorin rows &amp; fix the survivor — as reconciler CRUD, then prove it</h2>
+    <p>This is <b>not</b> a manual side-quest — it is the reconciler's first PROD run, exercised and verified. No hand-run DELETE.</p>
+    <ul>
+      <li><b>The 6 orphans</b> (PROD <code>id_event</code> 114–120 minus the survivor; PLANNED, zero results, absent from CERT's now-deduped set) fall into the DELETE branch → removed with their empty PLANNED tournament children, transactionally.</li>
+      <li><b>The survivor</b> (CERT's single Samorin, matched by <code>txt_code</code>) lands in the UPDATE branch → its <code>id_organizer</code> is overwritten <code>SPWS → EVF</code> from CERT. The mis-tag is fixed by the same pass, no special-case.</li>
+    </ul>
+    <div class="note good">
+      <p class="lede"><span class="tick">▸</span> Validity test, after</p>
+      <p style="margin-bottom:0">A verification step (below, step 5) asserts on live PROD: exactly one Samorin event remains, it is EVF-tagged, its child tournaments are consistent, and the 6 orphan codes + their tournaments are gone. Self-heal, proven — not assumed.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Workstream 3 · in scope — get to the bottom of it</p>
+    <h2>Close the ingest blank-location blind spot at the SQL layer</h2>
+    <p>Root cause, traced through <code>fn_allocate_evf_event_code</code> (migration <code>20260429000001</code>) for a venue-less Samorin scrape:</p>
+    <pre class="trace">fn_normalize_city_key('', country) → loc_key = ''
+  Step A  current-season slot reuse   <b>IF v_loc_key &lt;&gt; '' → SKIPPED</b>
+  Step B  prior-season city carry     <b>IF v_loc_key &lt;&gt; '' → SKIPPED</b>
+  Step C  next-free PEW{N+1}          → <b>fresh code, every single run</b></pre>
+    <p>So each daily scrape of a blank-location event minted a new <code>PEW</code> code → a new row. That is the engine behind the original 7 CERT duplicates. The shipped Python <code>_find_existing_match</code> slug-dedup stops the re-send, so the allocator is no longer re-hit — but the SQL layer still has the hole: if Python ever misses, <code>fn_ingest_evf_calendar</code> mints again.</p>
+    <div class="note accent">
+      <p class="lede">Fix — mirror the Python ladder in SQL: identity before location</p>
+      <p style="margin-bottom:0">In <code>fn_ingest_evf_calendar</code>, <b>before</b> calling the allocator: if a current-season event already carries this <code>id_evf_event</code> or <code>txt_evf_slug</code>, reuse its code and UPDATE in place (<code>CURRENT_SLOT_REUSE</code>). Only on no identity match → the location-based allocator. Same order both layers now enforce — <code>evf_id → slug → location</code>. The allocator's location-gating becomes a safe backstop that only runs when identity genuinely can't decide; a blank-location re-scrape never reaches Step C.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Workstream 4 · consolidation (Option B)</p>
+    <h2>Slim the season bootstrap to what only it can do</h2>
+    <ul>
+      <li><code>fn_promote_season_skeleton</code> (migration <code>20260628000002</code>): remove the event-INSERT block (~88–98) + event sequence advance. Keep <b>season row + scoring_config</b> — <code>scoring_config</code> travels with the season (mid-season config edits stay manual on PROD).</li>
+      <li><code>promote_season.py</code>: drop <code>_read_cert_events</code> + event FK-resolution; keep the season + config path.</li>
+      <li>Go-live: bootstrap season+config (manual) → reconciler populates events on next run. Season must be <code>bool_active</code> on both envs.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Workstream 5 · names that mean something</p>
+    <h2>Rename for intent</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Old</th><th>New</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><span class="strike mono">fn_import_evf_events</span></td><td><code>fn_mirror_events_to_prod</code></td><td>organizer-agnostic reconcile, idempotent by code</td></tr>
+        <tr><td><span class="strike mono">fn_import_evf_events_v2</span></td><td><code>fn_ingest_evf_calendar</code></td><td>the EVF-scrape entry point that classifies + allocates codes</td></tr>
+        <tr><td><span class="strike mono">_read_cert_evf_events</span></td><td><code>_read_cert_promotable_events</code></td><td>reads the promotable set, not EVF-tied</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Tests first · RED before GREEN</p>
+    <h2>Test strategy</h2>
+    <p>The blast radius is four functions across five test files. Legend: <span class="chip over">retire</span> delete the case (behavior gone) · <span class="chip warn">rename</span> same assert, new function name · <span class="chip fill">port / rewrite</span> re-target to the new contract · <span class="chip plain">migrate</span> move to another file · <span class="chip never">keep</span> untouched.</p>
+
+    <h3>Impacted existing tests</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Test(s)</th><th>What it covers</th><th>Impact</th></tr></thead>
+      <tbody>
+        <tr><td><code>12_evf_import</code> · 12.1, 12.4–12.9, 12.14</td><td><code>fn_import_evf_events</code> create / idempotent / URLs / empty-date sentinel</td><td><span class="chip fill">port / rewrite</span> → <code>fn_mirror_events_to_prod</code>, payloads gain <code>org_code</code></td></tr>
+        <tr><td><code>12_evf_import</code> · 12.2, 12.3</td><td>child tournaments created at import time</td><td><span class="chip over">retire</span> — reconciler CREATE is childless</td></tr>
+        <tr><td><code>12_evf_import</code> · 12.10–12.13</td><td><code>fn_refresh_evf_event_urls</code> fill-blank / preserve admin edits</td><td><span class="chip never">keep</span> — reused unchanged</td></tr>
+        <tr><td><code>18_evf_event_allocator</code> · evf.37, evf.38</td><td>v2 CREATED-slot UPDATE + EVF-organizer INSERT</td><td><span class="chip warn">rename</span> → <code>fn_ingest_evf_calendar</code>; add identity-pre-check assert</td></tr>
+        <tr><td><code>18_evf_event_allocator</code> · evf.25–evf.36</td><td>normalize / classify / allocate ladder</td><td><span class="chip never">keep</span> — allocator signature &amp; behavior unchanged (pre-check sits upstream in ingest)</td></tr>
+        <tr><td><code>22_evf_fk_ingestion</code> · 22.1, 22.2, 22.5</td><td>v2 writes <code>id_evf_event</code> / <code>txt_evf_slug</code></td><td><span class="chip warn">rename</span> → <code>fn_ingest_evf_calendar</code> (behavior identical)</td></tr>
+        <tr><td><code>48_season_skeleton_promotion</code> · 48.2, 48.4</td><td>skeleton copies events + target-resolves <code>id_prior_event</code></td><td><span class="chip over">retire</span> + <span class="chip plain">migrate</span> — skeleton stops promoting events; prior-event resolution moves to the reconciler CREATE cases</td></tr>
+        <tr><td><code>48_season_skeleton_promotion</code> · 48.1, 48.3, 48.5–48.9</td><td>season row, scoring_config re-key, guards, delete</td><td><span class="chip never">keep</span> — 48.9 childless-guard rationale re-noted only</td></tr>
+        <tr><td><code>test_promote.py</code> · prom.5</td><td>calendar mode calls <code>fn_import_evf_events</code></td><td><span class="chip fill">port / rewrite</span> → C/U/D via <code>fn_mirror_events_to_prod</code></td></tr>
+        <tr><td><code>test_promote.py</code> · prom.6, prom.8</td><td>refresh existing + <code>url_event_2..5</code> fill-blank propagation</td><td><span class="chip warn">rename</span>/adjust — now the UPDATE branch (refresh reused)</td></tr>
+        <tr><td><code>test_promote.py</code> · prom.7 + PromoteEvent suite</td><td>CLI guard + results path</td><td><span class="chip never">keep</span> — untouched</td></tr>
+        <tr><td><code>test_promote_season.py</code> · S77.1</td><td>promote_season reads + promotes 2 events</td><td><span class="chip fill">port / rewrite</span> → season+config only, asserts events NOT read/promoted</td></tr>
+        <tr><td><code>test_promote_season.py</code> · S77.2</td><td>event <code>id_prior_event</code> resolved to PROD id by code</td><td><span class="chip plain">migrate</span> → reconciler CREATE test</td></tr>
+        <tr><td><code>test_evf_calendar.py</code> · TestEvfPhase2Allocator (evf.40–42, 54, 55)</td><td>v2 invocation + <code>evf_slug</code> payload</td><td><span class="chip warn">rename</span> string → <code>fn_ingest_evf_calendar</code></td></tr>
+        <tr><td><code>test_evf_calendar.py</code> · TestDedupIdSlugPriority, TestEvfSlugExtraction</td><td>Python <code>_find_existing_match</code> id→slug→fuzzy ladder</td><td><span class="chip never">keep</span> — the already-shipped layer</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>New test cases in scope</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>New case</th><th>Layer</th><th>Guards what</th></tr></thead>
+      <tbody>
+        <tr><td>CREATE resolves organizer by code, faithful copy, childless</td><td>pgTAP <code>51_*</code></td><td>the reconciler CREATE contract</td></tr>
+        <tr><td>CREATE <code>RAISE</code>s on an unknown organizer code</td><td>pgTAP <code>51_*</code></td><td>the no-guess / fail-loud invariant</td></tr>
+        <tr><td>UPDATE overwrites identity incl. <code>id_organizer</code> <code>SPWS→EVF</code></td><td>pgTAP <code>51_*</code></td><td>the mis-tag repair</td></tr>
+        <tr><td>UPDATE is fill-blank on URLs &amp; leaves <code>enum_status</code> alone</td><td>pgTAP <code>51_*</code></td><td>field-ownership split</td></tr>
+        <tr><td>DELETE removes a PLANNED zero-result event + empty tournaments</td><td>pgTAP <code>51_*</code></td><td>the D branch</td></tr>
+        <tr><td>DELETE <b>refuses</b> a results-bearing event (alerts instead)</td><td>pgTAP <code>51_*</code></td><td>the destroy-nothing guard</td></tr>
+        <tr><td>7-row Samorin fixture → 1 EVF-tagged survivor, 6 gone</td><td>pgTAP <code>51_*</code></td><td>orphan-cleanup regression (the live bug)</td></tr>
+        <tr><td>Ingest same blank-location event twice (same slug) → no 2nd row</td><td>pgTAP <code>18</code>/new</td><td>allocator blind-spot regression</td></tr>
+        <tr><td>Reconciler computes correct C/U/D sets by <code>txt_code</code></td><td>pytest <code>test_promote</code></td><td>diff correctness</td></tr>
+        <tr><td><code>_read_cert_promotable_events</code>: no filter, emits <code>org_code</code></td><td>pytest <code>test_promote</code></td><td>scope widening + reuse</td></tr>
+        <tr><td>Delete-guard excludes non-PLANNED / results-bearing in the diff</td><td>pytest <code>test_promote</code></td><td>guard enforced Python-side too</td></tr>
+        <tr><td>promote_season promotes season+config only, no events</td><td>pytest <code>test_promote_season</code></td><td>the skeleton slimming</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note accent">
+      <p class="lede">Coherence · CI Gate 3</p>
+      <p style="margin-bottom:0">Recompute &amp; update the documented pgTAP total in spec Appendix D (currently <b>665</b>). Net delta ≈ new <code>51_*</code> (~8) + ingest regression (~1–2) − retired 12.2/12.3 (−2); renames &amp; ports don't change counts. Set the number to the actual observed run, not the estimate (<code>feedback_coherence_check</code>).</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Ship it — CERT then PROD</p>
+    <h2>Migration &amp; rollout</h2>
+    <p><code>supabase/migrations/20260711000001_prod_event_reconciler.sql</code>: <code>CREATE fn_mirror_events_to_prod</code>; <code>DROP fn_import_evf_events(JSONB,INT)</code>; <code>CREATE OR REPLACE fn_ingest_evf_calendar</code> (identity-first pre-check); <code>CREATE OR REPLACE fn_promote_season_skeleton</code> (event-copy removed). <code>plpgsql-check</code> after write is mandatory — <code>scripts/reset-dev.sh</code> first.</p>
+    <ol class="steps">
+      <li>pgTAP + pytest green · ruff <code>check</code> <b>and</b> <code>format --check</code> clean · postgrestools clean.</li>
+      <li>Dry-run reconcile CERT→PROD (<code>--dry-run</code>): assert the DELETE set = exactly the 6 Samorin orphans; CREATE/UPDATE sane.</li>
+      <li>Ship LOCAL→CERT→PROD via <code>release.yml</code>; CI green <b>and</b> CERT+PROD fingerprints match (<code>feedback_task_not_done_until_ci_green_cert_deployed</code>).</li>
+      <li>Live reconcile runs on PROD (cron or manual trigger).</li>
+      <li><b>Validity check on live PROD:</b> one Samorin event, EVF-tagged, children consistent; 6 orphan codes + tournaments gone.</li>
+      <li>Update <code>deployed_migrations.json</code> + fingerprints.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">Close-out · non-negotiable, in scope</p>
+    <h2>Docs &amp; ADRs</h2>
+    <div class="note accent">
+      <p class="lede">Documentation (<code>feedback_always_document</code>)</p>
+      <ul style="margin-bottom:0">
+        <li><b>ADR drafts — signed off before disk</b> (<code>feedback_be_the_architect</code>): <b>(a)</b> new ADR for the reconciler pattern, superseding the calendar-delta half of <b>ADR-026</b>; <b>(b) ADR-039 rev 3 / ADR-028 amendment</b> for the identity-first ingest (allocator blind-spot close); <b>(c)</b> amend <b>ADR-077</b> for the skeleton slimming. Registry = spec Appendix C only.</li>
+        <li>RTM post-impl check · Appendix D baseline · <code>development_history.md</code> · update memory <code>project_evf_slug_dedup_fix_2026-07-10</code> + add a reconciler memory.</li>
+        <li><code>scripts/refresh-graph.sh</code> before commit · straight to <code>main</code> (<code>feedback_push_straight_to_main</code>).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Boundaries — deliberately separate paths, not deferrals</p>
+    <h2>What this plan does not touch, and why</h2>
+    <ul>
+      <li><b>Results / tournament promotion</b> — the manual per-event <code>promote_event</code> / <code>promote.yml</code> path. A different job (moves <code>tbl_result</code> + status transitions), correctly unchanged. The reconciler's PLANNED-only guard keeps the two from colliding.</li>
+      <li><b>Mid-season <code>scoring_config</code> edits</b> — rare; done manually on PROD (your call).</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · piped-wishing-leaf · CERT ingest + CERT→PROD reconciler + PROD repair</p>
+</div>

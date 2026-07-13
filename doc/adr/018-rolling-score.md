@@ -179,4 +179,4 @@ then `ROLLBACK`s. Expected values are engine-derived or structural — no named 
 no seed-state assumptions, no production magic-number scores. This removes the recalibration
 treadmill (the tests previously broke on every reingest/season rollover). Carry-stop behaviour
 itself (ADR-018/021, results-based amendment `20260626120000`) is unchanged. See the 2026-06-28
-entry in `doc/development_history.md`.
+entry in `doc/archive/legacy-2026-07/development_history.md`.

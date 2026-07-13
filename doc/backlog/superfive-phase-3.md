@@ -39,4 +39,4 @@ SuperFive scraping requires different parsing logic than DE/placement results. S
 ## Cross-references
 
 - Project Specification §9.8 (placeholder pointing here)
-- Project Specification Phase 3 backlog (Implementation Phasing in `doc/development_history.md`)
+- Project Specification Phase 3 backlog (Implementation Phasing in `doc/archive/legacy-2026-07/development_history.md`)

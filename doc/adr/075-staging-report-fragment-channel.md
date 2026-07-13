@@ -1,8 +1,8 @@
 # ADR-075: Staging report — a fifth Context channel + per-plugin fragments + terminal formatter
 
 **Status:** Accepted (implemented 2026-06-16, NEW pipeline build). Design in
-[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §4.1 / §4.1a / §5.2a.
-**Implemented** — see [development_history](../development_history.md).
+[archive/legacy-2026-07/ingestion_pipeline_NEW_design.md](../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md) §4.1 / §4.1a / §5.2a.
+**Implemented** — see [development_history](../archive/legacy-2026-07/development_history.md).
 **Date:** 2026-06-16
 **Relates to:** ADR-073 (plugin/rule-engine contract — adds the `report` channel + per-kind emit),
 ADR-074 (no-halt / no-draft — this restores the lost staging artifact *without* reintroducing drafts),

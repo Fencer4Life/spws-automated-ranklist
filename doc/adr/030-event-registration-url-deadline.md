@@ -267,7 +267,7 @@ Wire into `openCreateForm()`, `openEditForm()`, `handleSave()`.
 
 ### 10. Development History
 
-**File:** `doc/development_history.md` — add Post-MVP enhancement entry with ADR-030 reference.
+**File:** `doc/archive/legacy-2026-07/development_history.md` — add Post-MVP enhancement entry with ADR-030 reference.
 
 ### 11. MEMORY.md
 
@@ -283,7 +283,7 @@ Update ADR registry line to include ADR-030.
 4. **Implementation:** migration → types → api → locales → CalendarView (+ color coding) → EventManager
 5. **Run tests → confirm GREEN**
 6. **Update test baseline** (pgTAP 239, vitest 212, total 727)
-7. **Update development_history.md + MEMORY.md**
+7. **Update archive/legacy-2026-07/development_history.md + MEMORY.md**
 
 ## Files Modified (Summary)
 
@@ -291,7 +291,7 @@ Update ADR registry line to include ADR-030.
 |------|--------|
 | `doc/adr/030-event-registration-url-deadline.md` | NEW — this ADR |
 | `doc/Project Specification. SPWS Automated Ranklist System.md` | FR-90, FR-91 in RTM; FR-48 update; Appendix C+D |
-| `doc/development_history.md` | Post-MVP enhancement entry |
+| `doc/archive/legacy-2026-07/development_history.md` | Post-MVP enhancement entry |
 | `supabase/migrations/20260411000001_event_registration.sql` | NEW — schema + view + CRUD (drops old overloads) |
 | `supabase/tests/05_calendar_view.sql` | +3 assertions (8.18–8.20) |
 | `frontend/src/lib/types.ts` | CalendarEvent + Create/UpdateEventParams |

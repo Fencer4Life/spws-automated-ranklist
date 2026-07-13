@@ -4,21 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="telegram-ingest-command-gas.md">
-<meta name="doc-source-sha256" content="c538906b0fb34f74d54456b734eaad1ec083d3358039f437c139ea5ae725c403">
+<meta name="doc-source-sha256" content="1ae2a716af67ac0be9ad3f231fa83efeff54ae320ba4642eac1e43dd358a5a28">
 <title>Telegram `ingest` command — how to update the GAS script · SPWS</title>
-<link rel="stylesheet" href="adr/assets/adr.css">
+<link rel="stylesheet" href="../../adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Telegram <code>ingest</code> command — how to update the GAS script</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>telegram-ingest-command-gas.md</code></dd></div><div><dt>Length</dt><dd>89 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>telegram-ingest-command-gas.md</code></dd></div><div><dt>Length</dt><dd>91 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#1-log-into-the-right-google-account">1. Log into the right Google account</a></li><li class="depth-2"><a href="#2-open-apps-script-find-the-project">2. Open Apps Script &amp; find the project</a></li><li class="depth-2"><a href="#3-replace-the-whole-code-gs">3. Replace the whole `Code.gs`</a></li><li class="depth-2"><a href="#4-test">4. Test</a></li><li class="depth-2"><a href="#what-changed-for-verification">What changed (for verification)</a></li><li class="depth-2"><a href="#troubleshooting">Troubleshooting</a></li></ol></nav>
-  <main><section class="section-card detail"><p>Adds <strong><code>ingest &lt;prefix&gt; &lt;url&gt; [cert|prod]</code></strong> to the Telegram bot: re-ingest one event from its FTL URL on
+  <main><section class="section-card detail"><blockquote>
+<p><strong>ARCHIVED.</strong> Preserved as integration history. Use the current <a href="../../handbook/operations/operator-runbooks.html">operator runbooks</a> for supported commands and procedures.</p>
+</blockquote>
+<p>Adds <strong><code>ingest &lt;prefix&gt; &lt;url&gt; [cert|prod]</code></strong> to the Telegram bot: re-ingest one event from its FTL URL on
 CERT (or PROD), populate <code>url_results</code>, and get the staging report(s) back in the chat. Then review and
 <code>promote</code>. The bare <code>ingest</code> (no args) keeps its old &quot;process emailed staging files&quot; behaviour.</p>
-<p><strong>The full, ready-to-paste script is in the repo:</strong> <a href="gas/Code.gs"><code>doc/gas/Code.gs</code></a>. It is the <em>entire</em> GAS
+<p><strong>The full, ready-to-paste script is in the repo:</strong> <a href="../../gas/Code.gs"><code>doc/gas/Code.gs</code></a>. It is the <em>entire</em> GAS
 project with the change already applied — you replace your whole <code>Code.gs</code> with it. <strong>No new Script
 Properties</strong> are needed (it reuses <code>GITHUB_PAT</code>, <code>GITHUB_REPO</code>, <code>SUPABASE_ACCESS_TOKEN</code>/<code>SUPABASE_PROJECT_REF</code>,
 <code>SUPABASE_PROD_REF</code> that your existing commands already use), and <code>ingest-event.yml</code> is already on <code>main</code>.</p>
@@ -59,7 +62,7 @@ the top-right avatar if you have several.</li>
 <section class="section-card detail"><h2 id="3-replace-the-whole-code-gs">3. Replace the whole <code>Code.gs</code></h2>
 <ol>
 <li>In the editor, open the file that holds <code>checkTelegramCommands</code> (usually <strong><code>Code.gs</code></strong>).</li>
-<li>Open <a href="gas/Code.gs"><code>doc/gas/Code.gs</code></a> from this repo → <strong>Select All (Ctrl-A) → Copy</strong>.</li>
+<li>Open <a href="../../gas/Code.gs"><code>doc/gas/Code.gs</code></a> from this repo → <strong>Select All (Ctrl-A) → Copy</strong>.</li>
 <li>Back in the Apps Script editor: click in the code, <strong>Select All (Ctrl-A) → Paste</strong> (overwrite everything).</li>
 <li><strong>Save</strong> (Ctrl-S, or the 💾 icon).</li>
 </ol>
@@ -132,6 +135,6 @@ bare-<code>ingest</code> legacy line.</p>
 </table></div>
 </section></main>
 </div>
-<nav class="pager" aria-label="Documentation navigation"><a class="registry" href="index.html">← Documentation index</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>telegram-ingest-command-gas.md</code> · source SHA-256 <code>c538906b0fb34f74d54456b734eaad1ec083d3358039f437c139ea5ae725c403</code></footer>
+<nav class="pager" aria-label="Documentation navigation"><a class="registry" href="../../handbook/index.html">← Current handbook</a><a class="next" href="../../adr/index.html">ADR registry →</a></nav>
+<footer class="foot">Generated from <code>telegram-ingest-command-gas.md</code> · source SHA-256 <code>1ae2a716af67ac0be9ad3f231fa83efeff54ae320ba4642eac1e43dd358a5a28</code></footer>
 </div></body></html>

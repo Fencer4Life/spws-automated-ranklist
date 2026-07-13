@@ -89,5 +89,5 @@ Rejected: GAS already uses the existing `triggerGitHubWorkflow` helper which cal
 
 - `supabase/functions/dispatch-workflow/index.ts` ALLOWED_WORKFLOWS extension
 - `scripts/gas_email_ingestion.js` — 4 new command cases + `downloadFromSupabaseStorage` helper + extended `/help` text
-- `doc/cicd-operations-manual.md` updates: command cheat-sheet, runbook for fresh CERT/PROD setup, disaster recovery section
+- `doc/archive/legacy-2026-07/cicd-operations-manual.md` updates: command cheat-sheet, runbook for fresh CERT/PROD setup, disaster recovery section
 - CERT smoke test C16: end-to-end Telegram command verification

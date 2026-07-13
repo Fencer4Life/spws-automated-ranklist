@@ -1,51 +1,44 @@
 # Documenting
 
-Documentation steps are mandatory before marking any task complete.
+Documentation steps are mandatory before marking any task complete. Human-facing project documents and plans use `.html`; fixed-name framework guidance such as this file is an exception.
 
-## Single source of truth
+## Documentation authority
 
-- [doc/Project Specification. SPWS Automated Ranklist System.md](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md) — FRs, RTM, ADR registry, test baseline.
-- [doc/development_history.md](../development_history.md) — chronological POC/MVP/Go-to-PROD archive. Active plan files in [doc/](../) are archived; do not consult for planning.
+- [Current handbook](../handbook/index.html) — present-tense domain, product, architecture, subsystem and operations truth.
+- [Documentation map](../handbook/documentation-map.html) — canonical page ownership and implementation review triggers.
+- [Governance](../governance/index.html) — specification, RTM and formal business rules.
+- [ADR registry](../adr/index.html) — durable decision rationale.
+- [Evidence catalog](../evidence/index.html) — point-in-time run, audit and design artifacts.
+- [Legacy archive](../archive/legacy-2026-07/index.html) — superseded narratives; never use as current truth.
 
-## Scope-change pass
+## Documentation coherence gate
 
-When **any** FR is added, removed, or modified, walk the full chain — in order — before writing code:
+Every development plan must include the exact checkbox block from the [documentation standard](../handbook/reference/documentation-standard.html). Before completion:
 
-1. **Scope sections** — update relevant scope/deliverables documentation
-2. **RTM** — mark affected FR/NFR rows as added/dropped/modified
-3. **Plan test IDs** — identify affected plan test numbers; update milestone test tables
-4. **Test code** — locate via plan test ID comments (`// 6.5`, `-- 2.19`, docstring `4.25`); remove or update assertions
-5. **Known test gaps** — update if coverage changes
+1. Classify domain, product, architecture, operations, configuration and reference impact.
+2. Name affected canonical HTML pages, or justify `none` with inspected sources.
+3. Update pages in present tense, including implementation maps and `last-verified`.
+4. Update ADRs, governance records and operational material when their contracts change.
+5. Archive superseded prose instead of appending implementation history to current pages.
+6. Run `python scripts/check_docs.py --changed-from <base>` and resolve errors; ownership findings begin as warnings.
 
-Traceability chain: **FR/NFR (spec) ↔ RTM ↔ plan test ID (milestone table) ↔ test code (comment).**
+## Scope and traceability changes
 
-## RTM post-implementation check
+When an FR or NFR is added, removed or modified, walk this chain before code:
 
-Before marking any task complete, verify:
+1. specification scope and acceptance criteria;
+2. RTM status and test references;
+3. plan test IDs;
+4. test code comments and assertions;
+5. documented coverage gaps and test totals;
+6. affected handbook pages and formal rules.
 
-1. Every new test assertion is referenced by an FR/NFR in the RTM Tests column
-2. If test IDs changed, RTM Tests column updated accordingly
-3. Every new test is listed in the correct milestone test table
-4. Implementation-notes pgTAP total matches `plan(N)` sum across all test files
-5. FR/NFR Status column reflects actual coverage (Covered / Partial / Gap)
+Traceability remains **FR/NFR ↔ RTM ↔ plan test ID ↔ test code**. The handbook explains the behavior; it does not duplicate the matrix.
 
 ## ADR maintenance
 
-An ADR is required when a change involves any of:
-
-- choosing between alternatives
-- deferring functionality
-- changing an established pattern
-- constraining future architecture
-
-Workflow:
-
-1. **Trigger check** — does this change match one of the four triggers? → ADR required
-2. **Conflict scan** — scan the registry in auto-memory `MEMORY.md`; if the new ADR contradicts/supersedes an existing one, update the old ADR (Status: Superseded by …) **first**
-3. **Create ADR file** — `doc/adr/NNN-slug.md` with Context · Decision · Alternatives · Consequences · Status
-4. **Update Appendix C** in the spec
-5. **Cross-reference** in the development plan implementation notes
+Create or supersede an ADR for a tradeoff, alternative, deferral, changed established pattern or future architectural constraint. Draft it in the HTML development plan, obtain approval, then add the retained `doc/adr/NNN-slug.md` source and generate its `.html` representation with `python scripts/render_adrs.py`. Update the specification ADR registry and link the decision from affected handbook pages.
 
 ## Diagrams
 
-Always use ` ```mermaid ` fenced code blocks. No inline Mermaid, no other diagram formats.
+Use accessible HTML/CSS diagrams for human-facing HTML pages. Retained Markdown sources may use fenced Mermaid when the renderer supports and validates it.

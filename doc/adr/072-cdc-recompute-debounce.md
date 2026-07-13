@@ -1,7 +1,7 @@
 # ADR-072: Master-data-change-triggered idempotent recompute (CDC queue + debounce)
 
 **Status:** Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
-[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §6 / §8. **Implemented** — see [development_history](../development_history.md).
+[archive/legacy-2026-07/ingestion_pipeline_NEW_design.md](../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md) §6 / §8. **Implemented** — see [development_history](../archive/legacy-2026-07/development_history.md).
 **Date:** 2026-06-14
 **Relates to:** ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY),
 ADR-070 (identity) / ADR-071 (dedup) — the change *sources*; ADR-041 (edge-function dispatch),

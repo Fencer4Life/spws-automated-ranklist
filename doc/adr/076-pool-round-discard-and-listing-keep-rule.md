@@ -1,7 +1,7 @@
 # ADR-076: Overlapping FTL listings — discard pool-only rounds, keep one listing per category, flag duplicates (UI-resolvable)
 
 **Status:** Accepted (implemented 2026-06-18, NEW pipeline build). Design in
-[ingestion_pipeline_NEW_design.md](../ingestion_pipeline_NEW_design.md) §from-URL discovery.
+[archive/legacy-2026-07/ingestion_pipeline_NEW_design.md](../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md) §from-URL discovery.
 **Date:** 2026-06-18
 **Relates to:** **extends** ADR-067 (pools-only `<Poule>`-no-`<Tableau>` skip) to the from-URL JSON
 path; ADR-014/022 (atomic delete-reimport `Commit`, the clobber mechanism); ADR-025 (event-centric

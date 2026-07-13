@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="047-vcat-invariant-trigger-and-splitter-consolidation.md">
-<meta name="adr-source-sha256" content="e8217f1a77cdef0136b3175d13b7b8efc6b9c6ee9783bfad070b10997ed57366">
+<meta name="adr-source-sha256" content="99dccdc55317d42d8f89c3e622ca15569d66e8915a477dfcc6302cff9ea1ea69">
 <title>ADR-047 · V-cat invariant trigger + combined-pool splitter consolidation</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -64,7 +64,7 @@
 <li>The trigger blocks any future write that would create a V-cat-vs-BY mismatch, once flipped to FATAL.</li>
 <li>Test files require explicit trigger-disable for legacy fixtures using arbitrary V-cats. New tests should use V-cat-consistent BYs.</li>
 <li>LOCAL data state: 0 V-cat invariant violators after Layers 1–6 + 8 row-level deletes. Per-season counts: 23/290/1086 (2023-24); 17/237/843 (2024-25); 20/229/720 (2025-26).</li>
-<li>CERT/PROD still hold the original violators; replication via seed-remote.sh is the chosen path (see development_history.md 2026-04-30 entry).</li>
+<li>CERT/PROD still hold the original violators; replication via seed-remote.sh is the chosen path (see archive/legacy-2026-07/development_history.md 2026-04-30 entry).</li>
 </ul>
 </section>
 <section class="section-card adr-section tests"><p class="kicker">tests</p><h2 id="tests">Tests</h2>
@@ -79,5 +79,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="046-pew-weapon-suffix.html">← ADR-046: PEW event codes carry weapon-letter suffix; one event = one physical weekend</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="048-source-vs-db-audit-and-phantom-rows.html">→ ADR-048: Source-vs-DB audit + phantom-row policy</a></nav>
-<footer class="foot">Generated from <code>047-vcat-invariant-trigger-and-splitter-consolidation.md</code> · source SHA-256 <code>e8217f1a77cdef0136b3175d13b7b8efc6b9c6ee9783bfad070b10997ed57366</code></footer>
+<footer class="foot">Generated from <code>047-vcat-invariant-trigger-and-splitter-consolidation.md</code> · source SHA-256 <code>99dccdc55317d42d8f89c3e622ca15569d66e8915a477dfcc6302cff9ea1ea69</code></footer>
 </div></body></html>

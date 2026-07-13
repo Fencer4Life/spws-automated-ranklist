@@ -96,7 +96,7 @@ Status is per-event so multiple in-flight dispatches across different events ren
 
 ### Negative
 
-- **One-time setup per env:** admin runs `supabase secrets set` for CERT and PROD on first deploy. Documented in `doc/cicd-operations-manual.md` (to be updated).
+- **One-time setup per env:** admin runs `supabase secrets set` for CERT and PROD on first deploy. Documented in `doc/archive/legacy-2026-07/cicd-operations-manual.md` (to be updated).
 - **Edge Function deploy added to release pipeline.** `release.yml` adds a `supabase functions deploy dispatch-workflow` step in `deploy-cert` and `deploy-prod` jobs.
 - **Local testing of the function** uses `supabase functions serve` (separate process, runs Deno locally) rather than the Docker `edge_runtime` container which is disabled in this project's local config. Frontend dev server invokes against the local function port. Documented in CLAUDE.md / operations manual.
 
@@ -121,4 +121,4 @@ No new Telegram messages, no new GitHub Actions workflows beyond the existing `p
 - Frontend caller: [`frontend/src/lib/api.ts`](../../frontend/src/lib/api.ts) — `requestDispatch()`
 - Frontend handler + UI: [`frontend/src/components/EventManager.svelte`](../../frontend/src/components/EventManager.svelte)
 - Deploy step: [`.github/workflows/release.yml`](../../.github/workflows/release.yml)
-- Setup docs: `doc/cicd-operations-manual.md` §X (Edge Function secrets) — to be added.
+- Setup docs: `doc/archive/legacy-2026-07/cicd-operations-manual.md` §X (Edge Function secrets) — to be added.

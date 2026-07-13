@@ -11,7 +11,7 @@ no types, no call-graph, and no ranking of what actually matters. Grep is the
 **last** resort, not the first.
 
 Do NOT respond to a code-analysis or planning request — and do NOT enter Plan
-mode — until both steps below have been done for the symbols/files in scope.
+mode — until both steps below have been done for the symbols/files in scope. Then identify the owning current page in `doc/handbook/documentation-map.html`; plans are standalone HTML and must include the documentation coherence gate.
 
 ## Step 1 — graphify (structure, relationships, architecture)
 

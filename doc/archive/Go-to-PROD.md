@@ -1,4 +1,4 @@
-> **ARCHIVED** — This document is superseded by [Development History](../development_history.md) and the [Project Specification](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). Kept for git history reference only.
+> **ARCHIVED** — This document is superseded by [Development History](../archive/legacy-2026-07/development_history.md) and the [Project Specification](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). Kept for git history reference only.
 
 # Go-to-PROD Plan — SPWS Automated Ranklist System
 

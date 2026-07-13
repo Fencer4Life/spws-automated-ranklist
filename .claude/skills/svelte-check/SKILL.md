@@ -47,6 +47,7 @@ go-to-definition, find-references) the harness's `LSP` tool works directly —
   warnings, 29 files) for what's already-known legacy debt.
 - This runs **in addition to**, not instead of, vitest and the mandatory TDD
   workflow in `doc/claude/testing.md`.
+- If the frontend change alters product behavior, navigation, authentication, embedding or operations, update the owning current HTML page from `doc/handbook/documentation-map.html` and complete the documentation coherence gate.
 
 ## If the check itself is broken
 

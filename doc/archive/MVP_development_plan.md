@@ -1,4 +1,4 @@
-> **ARCHIVED** — This document is superseded by [Development History](../development_history.md) and the [Project Specification](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). Kept for git history reference only.
+> **ARCHIVED** — This document is superseded by [Development History](../archive/legacy-2026-07/development_history.md) and the [Project Specification](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md). Kept for git history reference only.
 
 # MVP Development Plan — SPWS Automated Ranklist System
 
@@ -450,7 +450,7 @@ Quick reference — full details in [RTM (Appendix C)](../Project%20Specificatio
 ## 4. Cross-References
 
 - [Project Specification](../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.md) — Full spec (§6.2 = MVP scope, Appendix C = RTM with FR-01 to FR-67)
-- [CI/CD Operations Manual](../cicd-operations-manual.md) — Release pipeline (LOCAL→CERT→PROD)
+- [CI/CD Operations Manual](../archive/legacy-2026-07/cicd-operations-manual.md) — Release pipeline (LOCAL→CERT→PROD)
 - [POC Development Plan](POC_development_plan.md) — Historical reference only (M0-M6 archived)
 - [Go-to-PROD Plan](Go-to-PROD.md) — Deferred scope from M9b (pipeline, orchestration, EVF import, identity DB wiring)
 - `doc/mockups/` — 10 approved HTML mockups (see §2 M8 + M10 mockup tables)

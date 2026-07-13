@@ -6,5 +6,9 @@ doc/archive/
 # must not be re-extracted into the knowledge graph. See ADR-082.
 # NOTE: these files are still committed to git (the ADR-082 source→artifact
 # contract) — this only keeps them out of graphify, never out of version control.
-doc/*.html
+# Only these two top-level HTML files are generated from retained Markdown.
+# Do not use `doc/*.html`: Graphify's matcher treats `*` as recursive and would
+# incorrectly exclude authored pages under doc/handbook/, governance/, etc.
+doc/Project Specification. SPWS Automated Ranklist System.html
+doc/requirements-traceability-matrix.html
 doc/adr/*.html
