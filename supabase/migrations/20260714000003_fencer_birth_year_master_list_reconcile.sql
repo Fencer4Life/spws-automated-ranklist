@@ -23,47 +23,49 @@
 -- (recompute-drain-prod.yml) before this migration ships to PROD.
 --
 -- Every change is preserved in tbl_audit_log via trg_audit_fencer.
+--
+-- Guarded lookup, not a bare fn_update_fencer_birth_year(subquery, ...) call:
+-- that RPC RAISE EXCEPTIONs when the id resolves to NULL (ADR-035, correct
+-- for its normal admin-UI caller). On LOCAL/CERT/PROD -- long-running,
+-- already-seeded databases -- every name below resolves and the guard is a
+-- no-op. A from-scratch bootstrap (CI's `supabase start`) runs migrations
+-- BEFORE `[db.seed] sql_paths` loads (supabase/config.toml), so tbl_fencer is
+-- still empty when this file runs there; skip-with-NOTICE instead of
+-- crashing the whole migration sequence over an ordering artifact that
+-- doesn't apply to any real deployed environment.
 -- ============================================================================
 
-SELECT fn_update_fencer_birth_year(
-  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'BOBUSIA' AND txt_first_name = 'Dariusz'),
-  1984, FALSE);
+DO $$
+DECLARE
+  v_id  INT;
+  v_row RECORD;
+BEGIN
+  FOR v_row IN
+    SELECT * FROM (VALUES
+      ('BOBUSIA',            'Dariusz',  1984),
+      ('FRYDRYCKI',          'Mariusz',  1980),
+      ('FUHRMANN',           'Ulrike',   1963),
+      ('GAJDA',              'Krzysztof',1993),
+      ('KULKA',               'Dawid',   1979),
+      ('MŁYNEK',              'Janusz',  1951),
+      ('NOWICKI',            'Robert',   1970),
+      ('SAMECKA-NACZYŃSKA',  'Martyna',  1985),
+      ('WOJTAS',             'Bogusław', 1969),
+      ('WYLĘGAŁA',           'Jerzy',    1949)
+    ) AS t(surname, first_name, new_by)
+  LOOP
+    SELECT id_fencer INTO v_id FROM tbl_fencer
+     WHERE txt_surname = v_row.surname AND txt_first_name = v_row.first_name;
 
-SELECT fn_update_fencer_birth_year(
-  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FRYDRYCKI' AND txt_first_name = 'Mariusz'),
-  1980, FALSE);
-
-SELECT fn_update_fencer_birth_year(
-  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FUHRMANN' AND txt_first_name = 'Ulrike'),
-  1963, FALSE);
-
-SELECT fn_update_fencer_birth_year(
-  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'GAJDA' AND txt_first_name = 'Krzysztof'),
-  1993, FALSE);
-
-SELECT fn_update_fencer_birth_year(
-  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KULKA' AND txt_first_name = 'Dawid'),
-  1979, FALSE);
-
-SELECT fn_update_fencer_birth_year(
-  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MŁYNEK' AND txt_first_name = 'Janusz'),
-  1951, FALSE);
-
-SELECT fn_update_fencer_birth_year(
-  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWICKI' AND txt_first_name = 'Robert'),
-  1970, FALSE);
-
-SELECT fn_update_fencer_birth_year(
-  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SAMECKA-NACZYŃSKA' AND txt_first_name = 'Martyna'),
-  1985, FALSE);
-
-SELECT fn_update_fencer_birth_year(
-  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WOJTAS' AND txt_first_name = 'Bogusław'),
-  1969, FALSE);
-
-SELECT fn_update_fencer_birth_year(
-  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WYLĘGAŁA' AND txt_first_name = 'Jerzy'),
-  1949, FALSE);
+    IF v_id IS NOT NULL THEN
+      PERFORM fn_update_fencer_birth_year(v_id, v_row.new_by, FALSE);
+    ELSE
+      RAISE NOTICE 'fencer_birth_year_master_list_reconcile: % % not found -- skipped (expected pre-seed in a from-scratch bootstrap)',
+        v_row.surname, v_row.first_name;
+    END IF;
+  END LOOP;
+END;
+$$;
 
 -- ============================================================================
 -- New fencer roster entries — 15 master-list names with no existing
