@@ -20,8 +20,70 @@ on:
         default: false
 
 jobs:
+  promote-calendar-pre:
+    name: Promote EVF calendar → PROD (pre-scrape)
+    # Converge PROD to CERT's current state BEFORE the scraper writes new
+    # rows, so a scrape failure never leaves PROD further behind than it
+    # needs to be, and any admin edits already sitting in CERT land on PROD
+    # even if the scrape step itself fails downstream. fn_mirror_events_to_prod
+    # is a full Create/Update/Delete converge keyed on txt_code -- a no-op
+    # when CERT and PROD already agree, so running it twice per workflow
+    # (pre and post) is safe.
+    if: ${{ github.event.inputs.mode != 'results' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: prod-write
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install httpx supabase
+
+      - name: Promote calendar CERT → PROD (pre-scrape)
+        run: python -m python.pipeline.promote --mode calendar
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_CERT_REF: ${{ secrets.SUPABASE_CERT_REF }}
+          SUPABASE_PROD_REF: ${{ secrets.SUPABASE_PROD_REF }}
+          SUPABASE_CERT_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      - name: Commit reconcile run log
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add doc/staging/reconcile/*.md 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No reconcile report to commit"
+          else
+            git commit -m "chore: CERT→PROD reconcile run log (pre-scrape) [skip ci]"
+            git push
+          fi
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d text="EVF pre-scrape calendar promote FAILED. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
   sync:
     name: EVF Sync
+    needs: promote-calendar-pre
+    # Run regardless of promote-calendar-pre's outcome (skipped on
+    # mode=results, or even if it failed) -- a broken PROD promote must not
+    # block getting new events into CERT. Only a cancelled workflow run
+    # skips this job.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
