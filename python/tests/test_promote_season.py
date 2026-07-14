@@ -11,6 +11,9 @@ Plan test IDs S77.1, S77.3–S77.5:
   S77.3  childless guard — refuse when CERT season has tournament children
   S77.4  idempotency — refuse when the season already exists on PROD
   S77.5  dry_run reads but never writes PROD
+  S77.6  force_late_bootstrap skips the childless check and still succeeds,
+         sending source_childless=True regardless (2026-07-14 live incident:
+         PROD stuck behind an already-active CERT season)
 """
 
 from __future__ import annotations
@@ -98,6 +101,20 @@ def test_idempotency_refuses_when_present_on_prod():
             cert_query_fn=_cert_query(),
             prod_query_fn=_prod_query({}, season_present=True),
         )
+
+
+def test_force_late_bootstrap_skips_childless_check():
+    """S77.6"""
+    captured: dict = {}
+    out = promote_season(
+        "SPWS-2026-2027",
+        cert_query_fn=_cert_query(childless=False),
+        prod_query_fn=_prod_query(captured),
+        force_late_bootstrap=True,
+    )
+    assert out["season_code"] == "SPWS-2026-2027"
+    assert captured["payload"]["source_childless"] is True
+    assert "events" not in captured["payload"]
 
 
 def test_dry_run_does_not_write_prod():

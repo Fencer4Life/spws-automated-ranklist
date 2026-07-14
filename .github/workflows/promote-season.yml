@@ -18,6 +18,10 @@ on:
         description: 'delete target env: PROD or CERT'
         required: false
         default: 'PROD'
+      force_late_bootstrap:
+        description: 'Skip the childless check (late-bootstrap a season onto PROD after CERT has real tournament children -- events are never part of this payload, see promote_season.py)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -45,14 +49,20 @@ jobs:
         # Inputs are passed via env (never interpolated into the shell) to avoid
         # command injection; promote_season.py validates the season code shape.
         run: |
+          FORCE_FLAG=""
+          if [ "$SEASON_FORCE_LATE_BOOTSTRAP" = "true" ]; then
+            FORCE_FLAG="--force-late-bootstrap"
+          fi
           python -m python.pipeline.promote_season \
             --season "$SEASON_CODE" \
             --action "$SEASON_ACTION" \
-            --target "$SEASON_TARGET"
+            --target "$SEASON_TARGET" \
+            $FORCE_FLAG
         env:
           SEASON_CODE: ${{ github.event.inputs.season_code }}
           SEASON_ACTION: ${{ github.event.inputs.action || 'promote' }}
           SEASON_TARGET: ${{ github.event.inputs.target || 'PROD' }}
+          SEASON_FORCE_LATE_BOOTSTRAP: ${{ github.event.inputs.force_late_bootstrap || 'false' }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_CERT_REF: ${{ secrets.SUPABASE_CERT_REF }}
           SUPABASE_PROD_REF: ${{ secrets.SUPABASE_PROD_REF }}

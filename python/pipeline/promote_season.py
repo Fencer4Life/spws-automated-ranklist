@@ -79,8 +79,28 @@ def promote_season(
     prod_ref: str | None = None,
     access_token: str | None = None,
     dry_run: bool = False,
+    force_late_bootstrap: bool = False,
 ) -> dict:
-    """Promote a childless season skeleton CERT → PROD. Returns a summary dict."""
+    """Promote a childless season skeleton CERT → PROD. Returns a summary dict.
+
+    ``force_late_bootstrap`` skips the childless check (``_assert_childless``).
+    Use only for the late-bootstrap case: PROD was never given this season's
+    row (e.g. the sync pipeline was broken across the rollover), CERT has
+    since accumulated real tournament children, and event data itself is
+    NOT part of this payload -- ``fn_promote_season_skeleton`` only ever
+    writes the season + scoring_config rows; events are always owned
+    separately by ``promote.py``'s ``promote_calendar`` reconciler
+    (``fn_mirror_events_to_prod``), which will populate them on its next run
+    once this season row exists on both envs. The childless check exists to
+    catch an operator naming a season as a childless FIRST-time bootstrap
+    when it isn't one; it is not itself protecting event data, since this
+    function never touches events regardless. Live use: 2026-07-14, PROD
+    stuck on SPWS-2025-2026 while CERT had already rolled to
+    SPWS-2026-2027 with 62 tournament children, because the EVF sync
+    workflow's calendar-promote guard (correctly) refuses to reconcile
+    events across an active-season mismatch -- this is the one sanctioned
+    way to clear that mismatch after the fact.
+    """
     _validate_season_code(season_code)
     if cert_query_fn is None:
         assert cert_ref is not None and access_token is not None, (
@@ -96,7 +116,14 @@ def promote_season(
     season = _read_cert_season(cert_query_fn, season_code)
     id_season = int(season["id_season"])
 
-    _assert_childless(cert_query_fn, id_season, season_code)
+    if force_late_bootstrap:
+        print(
+            f"  WARNING: --force-late-bootstrap set -- skipping childless check for "
+            f"{season_code}. Only the season + scoring_config rows are copied; "
+            f"events are never part of this payload."
+        )
+    else:
+        _assert_childless(cert_query_fn, id_season, season_code)
 
     # Idempotency: refuse if the season already exists on PROD.
     existing = prod_query_fn(f"SELECT 1 AS x FROM tbl_season WHERE txt_code = '{season_code}'")
@@ -120,6 +147,16 @@ def promote_season(
     # promote.py's promote_calendar reconciler, run separately (and it will
     # populate this season's events on its next run, since bool_active on
     # both envs is what puts a season in its scope).
+    #
+    # source_childless is always True here, including under
+    # force_late_bootstrap: fn_promote_season_skeleton (SQL) hard-requires it
+    # to proceed at all and has NO other behavior keyed on it -- its own
+    # events-insert branch is driven solely by whether this payload contains
+    # an "events" key, which it never does. So the flag is accurate about
+    # THIS PAYLOAD's content (no events, always), even under
+    # force_late_bootstrap where it is not accurate about CERT's actual
+    # tbl_tournament child count. Do not "fix" this to reflect real
+    # childless-ness -- False makes the RPC refuse unconditionally.
     payload = {
         "source_childless": True,
         "season": season,
@@ -174,6 +211,16 @@ def main() -> None:
         help="delete target env (default PROD).",
     )
     parser.add_argument("--dry-run", action="store_true", help="Read but don't write")
+    parser.add_argument(
+        "--force-late-bootstrap",
+        action="store_true",
+        help=(
+            "Skip the childless check. Only for late-bootstrapping a season "
+            "onto PROD after CERT has already accumulated real tournament "
+            "children -- events are never part of this payload, see "
+            "promote_season()'s docstring."
+        ),
+    )
     args = parser.parse_args()
 
     access_token = os.environ["SUPABASE_ACCESS_TOKEN"]
@@ -201,6 +248,7 @@ def main() -> None:
             prod_ref=prod_ref,
             access_token=access_token,
             dry_run=args.dry_run,
+            force_late_bootstrap=args.force_late_bootstrap,
         )
         print(json.dumps(result, indent=2))
         if not args.dry_run:
