@@ -131,8 +131,14 @@ jobs:
   promote-calendar:
     name: Promote EVF calendar → PROD
     needs: sync
-    # Run when mode ∈ {calendar, both} (default 'both' on cron). Skip on results-only dispatch.
-    if: ${{ github.event.inputs.mode != 'results' }}
+    # Run when mode ∈ {calendar, both} (default 'both' on cron), skip on
+    # results-only dispatch. !cancelled() is required, not cosmetic: GitHub
+    # Actions' default "needs" gate looks at the WHOLE ancestor chain, not
+    # just the direct need. Without it, a promote-calendar-pre failure
+    # (upstream of sync) silently skips this job too even though sync itself
+    # succeeded -- observed live 2026-07-14 (run 29309139092): sync landed
+    # 13 new CERT events but this job never ran to promote them to PROD.
+    if: ${{ !cancelled() && github.event.inputs.mode != 'results' }}
     runs-on: ubuntu-latest
     # contents: write so the run-report .md can be committed back to doc/staging.
     permissions:
