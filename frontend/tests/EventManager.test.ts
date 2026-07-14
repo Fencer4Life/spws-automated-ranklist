@@ -60,6 +60,8 @@ const MOCK_EVENTS: CalendarEvent[] = [
     bool_use_spws_registration: true,
     num_entry_fee_2w: 130,
     num_entry_fee_3w: 180,
+    txt_organizer_email: 'organizer@example.org',
+    ts_ftl_sent: '2026-07-13T20:00:00+00:00',
   },
   {
     id_event: 11,
@@ -613,6 +615,53 @@ describe('EventManager Accordion (Phase 6)', () => {
       registration: `${base}?event=PPW-WRO-2025-01`,
       urlEntryList: `${base}?event=PPW-WRO-2025-01&view=list`,
     }))
+  })
+
+  it('FTLDEL-UI-01: organizer email and read-only sent timestamp render and save', async () => {
+    const onupdate = vi.fn()
+    const { container } = render(EventManager, { props: { ...propsWithTournaments, onupdate } })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+
+    const email = container.querySelector('[data-field="form-organizer-email"]') as HTMLInputElement
+    const sent = container.querySelector('[data-field="form-ftl-sent-at"]') as HTMLElement
+    expect(email.value).toBe('organizer@example.org')
+    expect(sent.textContent).toContain('2026-07-13')
+    await fireEvent.input(email, { target: { value: 'new-organizer@example.org' } })
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+
+    expect(onupdate).toHaveBeenCalledWith(10, expect.objectContaining({
+      organizerEmail: 'new-organizer@example.org',
+    }))
+  })
+
+  it('FTLDEL-UI-02: send button dispatches ftl-seed workflow with event and target', async () => {
+    mockRequestDispatch.mockReset()
+    mockRequestDispatch.mockResolvedValue({
+      ok: true,
+      workflow: 'ftl-seed.yml',
+      inputs: {},
+      runs_url: 'https://github.com/example/actions/workflows/ftl-seed.yml',
+    })
+    const { container } = render(EventManager, {
+      props: { ...propsWithTournaments, activeEnv: 'PROD' },
+    })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+    const send = container.querySelector('[data-field="form-send-ftl-seed"]') as HTMLButtonElement
+    expect(send.disabled).toBe(false)
+    await fireEvent.click(send)
+
+    expect(mockRequestDispatch).toHaveBeenCalledWith('ftl-seed.yml', {
+      event_code: 'PPW-WRO-2025-01',
+      target: 'prod',
+    })
+  })
+
+  it('FTLDEL-UI-02: send button is disabled when organizer email is empty', async () => {
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    const editButtons = container.querySelectorAll('[data-field="edit-btn"]')
+    await fireEvent.click(editButtons[1])
+    const send = container.querySelector('[data-field="form-send-ftl-seed"]') as HTMLButtonElement
+    expect(send.disabled).toBe(true)
   })
 
   // 9.85 — Tournament edit save calls onedittournament with params

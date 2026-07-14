@@ -113,6 +113,22 @@
                 <label>{t('event_entry_list_url_label')}
                   <input data-field="form-entry-list-url" type="text" bind:value={draftUrlEntryList} readonly />
                 </label>
+                <label>{t('event_organizer_email_label')}
+                  <input data-field="form-organizer-email" type="email" bind:value={draftOrganizerEmail} />
+                </label>
+                <div class="read-only-field"><span>{t('event_ftl_sent_at_label')}</span>
+                  <span data-field="form-ftl-sent-at" class="read-only-value">
+                    {draftFtlSentAt || t('event_ftl_not_sent')}
+                  </span>
+                </div>
+                <button
+                  data-field="form-send-ftl-seed"
+                  class="action-btn"
+                  type="button"
+                  disabled={!event.txt_organizer_email?.trim() || draftOrganizerEmail.trim() !== event.txt_organizer_email.trim()}
+                  title={draftOrganizerEmail.trim() !== (event.txt_organizer_email ?? '').trim() ? t('event_ftl_save_email_first') : t('event_ftl_send_title')}
+                  onclick={() => { handleDispatchSeed(event) }}
+                >{t('event_ftl_send_button')}</button>
               </div>
               <label>{t('event_organizer_label')}
                 <select data-field="form-organizer" bind:value={draftOrganizerId}>
@@ -479,7 +495,7 @@
 
   async function dispatchAndTrack(
     statusId: number,
-    workflow: 'populate-urls.yml' | 'scrape-tournament.yml',
+    workflow: 'populate-urls.yml' | 'scrape-tournament.yml' | 'ftl-seed.yml',
     inputs: Record<string, string>,
     label: string,
   ) {
@@ -526,6 +542,15 @@
       'populate-urls.yml',
       { event_code: event.txt_code, target: activeEnv.toLowerCase() },
       event.txt_code,
+    )
+  }
+
+  function handleDispatchSeed(event: CalendarEvent) {
+    return dispatchAndTrack(
+      event.id_event,
+      'ftl-seed.yml',
+      { event_code: event.txt_code, target: activeEnv.toLowerCase() },
+      `${event.txt_code} → FTL`,
     )
   }
 
@@ -632,6 +657,8 @@
   // ADR-079 amend — entry-list URL, derived alongside draftRegistration when the
   // SPWS-registration toggle is on (see onToggleSpwsRegistration).
   let draftUrlEntryList = $state('')
+  let draftOrganizerEmail = $state('')
+  let draftFtlSentAt = $state('')
 
   // ADR-079 amend — ticking the toggle derives self-contained absolute
   // register.html URLs (form + entry list) from the admin app's own origin +
@@ -850,6 +877,8 @@
     draftInvitation = ''
     draftRegistration = ''
     draftUrlEntryList = ''
+    draftOrganizerEmail = ''
+    draftFtlSentAt = ''
     draftRegistrationDeadline = ''
     draftEntryFee = null
     draftCurrency = 'PLN'
@@ -880,6 +909,8 @@
     draftInvitation = event.url_invitation ?? ''
     draftRegistration = event.url_registration ?? ''
     draftUrlEntryList = event.url_entry_list ?? ''
+    draftOrganizerEmail = event.txt_organizer_email ?? ''
+    draftFtlSentAt = event.ts_ftl_sent ?? ''
     draftRegistrationDeadline = event.dt_registration_deadline ?? ''
     draftEntryFee = event.num_entry_fee
     draftCurrency = event.txt_entry_fee_currency ?? 'PLN'
@@ -945,6 +976,8 @@
       // ADR-079 amend — entry-list URL, always sent with the form (like
       // `registration`); '' when the toggle is off so the RPC clears it.
       urlEntryList: draftUrlEntryList || undefined,
+      // FR-131: always send the trimmed value; '' explicitly clears in SQL.
+      organizerEmail: draftOrganizerEmail.trim(),
       organizerId: draftOrganizerId || undefined,
       weapons: [...draftWeapons],
       urlEvent2: compact[1],

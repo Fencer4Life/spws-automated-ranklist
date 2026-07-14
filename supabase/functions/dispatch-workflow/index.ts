@@ -33,6 +33,8 @@ const ALLOWED_WORKFLOWS = new Set([
   // ADR-077: SeasonManager "⬆ Promote to PROD" / "Remove from PROD" — promote a
   // childless season skeleton CERT→PROD (or delete it), server-side, no PROD PAT.
   "promote-season.yml",
+  // ADR-080 §5: EventManager organizer delivery button.
+  "ftl-seed.yml",
 ])
 
 Deno.serve(async (req) => {

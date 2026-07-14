@@ -287,6 +287,19 @@ function handleCommand(props, command, arg) {
         'ingest.yml', { source: 'telegram' });
       return '<b>Ingestion Triggered</b>\n<i>Processing staging files. Watch for completion notification.</i>';
 
+    case 'send':
+      // ADR-080 §5 — send <EVENT-CODE> participants (PROD, allowlisted admin).
+      var sendParts = arg ? arg.trim().split(/\s+/) : [];
+      var sendEvent = (sendParts[0] || '').toUpperCase();
+      if (sendParts.length !== 2 || sendParts[1].toLowerCase() !== 'participants'
+          || !/^[A-Z0-9_-]+$/.test(sendEvent)) {
+        return '<b>Usage</b>\n<pre>send &lt;EVENT-CODE&gt; participants</pre>';
+      }
+      triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'),
+        'ftl-seed.yml', { event_code: sendEvent, target: 'prod' });
+      return '<b>FTL Seed Delivery Triggered</b>\n<pre>' + sendEvent + '</pre>\n'
+        + '<i>The current declared roster will be generated and sent to the saved organizer email.</i>';
+
     case 'export-seed':
       var githubPatS = props.getProperty('GITHUB_PAT');
       var githubRepoS = props.getProperty('GITHUB_REPO');
@@ -442,6 +455,9 @@ function handleCommand(props, command, arg) {
         '',
         '<pre>ingest</pre>',
         '(no args) Trigger ingestion from emailed staging files',
+        '',
+        '<pre>send &lt;EVENT-CODE&gt; participants</pre>',
+        'Generate the current FTL roster bundle and send it to the saved organizer email (PROD)',
         '',
         '<pre>export-seed</pre>',
         'Regenerate seed files from CERT',

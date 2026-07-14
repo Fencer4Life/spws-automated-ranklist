@@ -6,7 +6,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(14);
+SELECT plan(15);
 
 -- ===== SETUP: Create test data for calendar view =====
 DO $setup$
@@ -362,6 +362,38 @@ BEGIN
 END;
 $t824$;
 SELECT pass('8.24: fn_update_event persists url_entry_list (set + clear); vw_calendar exposes it');
+
+-- FTLDEL-DB-03 — the EXISTING fn_update_event is the organizer-email write
+-- path. NULL means legacy caller/no-change; a trimmed value sets; '' clears.
+DO $ftldel_db03$
+DECLARE
+  v_eid INT := (SELECT id_event FROM tbl_event WHERE txt_code = 'CAL-TEST-1');
+BEGIN
+  PERFORM fn_update_event(
+    v_eid, 'Calendar Test Event 1', 'Warszawa', '2024-11-15'::DATE, '2024-11-16'::DATE,
+    NULL, 'POL', NULL, NULL, NULL::NUMERIC, NULL, NULL, NULL::enum_weapon_type[],
+    NULL, NULL::DATE, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL,
+    '  organizer@example.org  '
+  );
+  IF (SELECT txt_organizer_email FROM tbl_event WHERE id_event = v_eid)
+       IS DISTINCT FROM 'organizer@example.org' THEN
+    RAISE EXCEPTION 'organizer email was not trimmed/persisted';
+  END IF;
+
+  PERFORM fn_update_event(
+    v_eid, 'Calendar Test Event 1', 'Warszawa', '2024-11-15'::DATE, '2024-11-16'::DATE,
+    NULL, 'POL', NULL, NULL, NULL::NUMERIC, NULL, NULL, NULL::enum_weapon_type[],
+    NULL, NULL::DATE, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL,
+    ''
+  );
+  IF (SELECT txt_organizer_email FROM tbl_event WHERE id_event = v_eid) IS NOT NULL THEN
+    RAISE EXCEPTION 'empty organizer email must clear the column';
+  END IF;
+END;
+$ftldel_db03$;
+SELECT pass('FTLDEL-DB-03: fn_update_event trims, persists and clears organizer email');
 
 SELECT * FROM finish();
 ROLLBACK;

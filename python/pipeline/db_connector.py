@@ -55,9 +55,7 @@ class DbConnector:
     def find_event_by_code(self, event_code: str) -> dict | None:
         """Find an event by txt_code (Phase 3 ADR-050 — review_cli lookup).
 
-        Returns dict with id_event, txt_code, txt_name, url_results,
-        dt_start, dt_end, enum_status, id_season, id_organizer, txt_location
-        — or None if not found.
+        Returns event metadata used by ingestion and FTL seed delivery, or None.
 
         Phase 5: id_season is included so Stage 2 can resolve the correct
         season (not assume the active one).
@@ -68,7 +66,9 @@ class DbConnector:
                 "id_event, txt_code, txt_name, "
                 "url_event, url_event_2, url_event_3, url_event_4, url_event_5, "
                 "dt_start, dt_end, enum_status, id_season, "
-                "id_organizer, txt_location, json_source_overrides"
+                "id_organizer, txt_location, json_source_overrides, "
+                "arr_weapons, txt_organizer_email, ts_ftl_sent, "
+                "dt_registration_deadline, bool_use_spws_registration"
             )
             .eq("txt_code", event_code)
             .execute()
@@ -76,6 +76,25 @@ class DbConnector:
         if resp.data:
             return resp.data[0]
         return None
+
+    def mark_ftl_sent(self, event_code: str) -> str:
+        """Stamp and return tbl_event.ts_ftl_sent after SMTP acceptance (FR-131)."""
+        resp = self._sb.rpc("fn_mark_ftl_sent", {"p_event_code": event_code}).execute()
+        return str(resp.data)
+
+    def list_ftl_delivery_candidates(self) -> list[dict]:
+        """Return unstamped SPWS-registration events for Python eligibility filtering."""
+        resp = (
+            self._sb.table("tbl_event")
+            .select(
+                "txt_code, dt_registration_deadline, dt_start, dt_end, enum_status, "
+                "txt_organizer_email"
+            )
+            .eq("bool_use_spws_registration", True)
+            .is_("ts_ftl_sent", "null")
+            .execute()
+        )
+        return resp.data or []
 
     def set_event_url_event(self, id_event: int, url_event: str) -> None:
         """Persist an admin-supplied event URL to tbl_event.url_event (N15 — the

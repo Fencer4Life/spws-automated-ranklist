@@ -9,7 +9,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(29);
+SELECT plan(35);
 
 -- 49.1 — tbl_registration exists
 SELECT has_table('tbl_registration', '49.1 tbl_registration exists');
@@ -259,6 +259,47 @@ SELECT throws_ok(
   'P0001',
   NULL,
   '49.24 fn_create_registration rejects a write past the registration window (D10)'
+);
+
+-- FTLDEL-DB-01/02 — organizer delivery stamp and privilege boundary.
+SELECT has_function(
+  'fn_mark_ftl_sent', ARRAY['text'],
+  'FTLDEL-DB-01a: fn_mark_ftl_sent(text) exists'
+);
+
+DO $ftldel_stamp_roundtrip$
+DECLARE
+  v_returned  TIMESTAMPTZ;
+  v_persisted TIMESTAMPTZ;
+BEGIN
+  v_returned := fn_mark_ftl_sent('REG49EVT');
+  SELECT ts_ftl_sent INTO v_persisted
+    FROM tbl_event WHERE txt_code = 'REG49EVT';
+  IF v_returned IS DISTINCT FROM v_persisted THEN
+    RAISE EXCEPTION 'returned timestamp % differs from persisted %', v_returned, v_persisted;
+  END IF;
+END;
+$ftldel_stamp_roundtrip$;
+SELECT pass('FTLDEL-DB-01b: fn_mark_ftl_sent returns the persisted timestamp');
+
+SELECT throws_ok(
+  $$SELECT fn_mark_ftl_sent('REG49-NOT-FOUND')$$,
+  'P0001',
+  NULL,
+  'FTLDEL-DB-01c: fn_mark_ftl_sent raises for an unknown event'
+);
+
+SELECT is(
+  has_function_privilege('anon', 'fn_mark_ftl_sent(text)', 'EXECUTE'), FALSE,
+  'FTLDEL-DB-02a: anon cannot execute fn_mark_ftl_sent'
+);
+SELECT is(
+  has_function_privilege('authenticated', 'fn_mark_ftl_sent(text)', 'EXECUTE'), FALSE,
+  'FTLDEL-DB-02b: authenticated cannot execute fn_mark_ftl_sent directly'
+);
+SELECT is(
+  has_function_privilege('service_role', 'fn_mark_ftl_sent(text)', 'EXECUTE'), TRUE,
+  'FTLDEL-DB-02c: service_role can execute fn_mark_ftl_sent'
 );
 
 SELECT * FROM finish();

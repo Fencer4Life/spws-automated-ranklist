@@ -218,6 +218,9 @@ export interface CalendarEvent {
   num_entry_fee_2w?: number | null
   num_entry_fee_3w?: number | null
   url_entry_list?: string | null
+  // FR-131 / ADR-080 §5 — organizer delivery configuration and last accepted send.
+  txt_organizer_email?: string | null
+  ts_ftl_sent?: string | null
 }
 
 // N13.4 — a discovered FTL round + the keep-rule's verdict, shown in the event accordion.
@@ -370,6 +373,8 @@ export interface UpdateEventParams {
   // (url_registration) when the SPWS-registration toggle is on. Direct-assign
   // in fn_update_event (value sets, null clears) — always sent with the form.
   urlEntryList?: string | null
+  // FR-131: empty string explicitly clears; undefined leaves unchanged.
+  organizerEmail?: string
 }
 
 export type MatchStatus = 'PENDING' | 'AUTO_MATCHED' | 'UNMATCHED' | 'APPROVED' | 'NEW_FENCER' | 'DISMISSED'

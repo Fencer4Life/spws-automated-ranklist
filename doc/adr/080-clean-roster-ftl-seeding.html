@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="080-clean-roster-ftl-seeding.md">
-<meta name="adr-source-sha256" content="321fae82554ec8aa4b85881123d8dbbc9246d143bd31d4bd711d935d419433bf">
+<meta name="adr-source-sha256" content="0b8456b7698286777e87fb7597ca8a3554fb9b25d030131b362e3285ed5b3530">
 <title>ADR-080 · Clean-Roster FTL Seeding</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 080</p><h1>Clean-Roster FTL Seeding</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (target design — committed direction for domestic SPWS events; rollout in progress. Phase 3 seed export partial; organizer delivery and scrape-back wiring pending — see spec §5.2 for phase status.)</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>080-clean-roster-ftl-seeding.md</code></dd></div><div><dt>Length</dt><dd class="">192 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (target design — committed direction for domestic SPWS events; rollout in progress. Phase 3 seed export partial; organizer delivery and scrape-back wiring pending — see spec §5.2 for phase status.)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2.)</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>080-clean-roster-ftl-seeding.md</code></dd></div><div><dt>Length</dt><dd class="">227 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2.)
 <strong>Date:</strong> 2026-07-04
 <strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-079</p>
 </div>
@@ -208,9 +208,38 @@ the zip → stamp <code>ts_ftl_sent</code> — is fired by three triggers (DRY, 
 </tbody>
 </table></div>
 <p><strong>Generate-at-send</strong> (never a pre-stored attachment) keeps every send fresh despite
-late/day-of entries. Requires a new email/SMTP capability (current outbound is
-Telegram alerts only). The roster is personal data sent to a recipient (organizer),
+late/day-of entries. The roster is personal data sent to a recipient (organizer),
 recorded in the ADR-078 ROPA.</p>
+<p><strong>Implemented delivery contract (2026-07-13).</strong> <code>ftl-seed.yml</code> invokes
+<code>python.pipeline.ftl_feed_seed_send</code>, builds the current mix-all bundle entirely in
+memory, and sends it as the SPWS Gmail account over <code>SMTP_SSL</code> to
+<code>smtp.gmail.com:465</code> with certificate and hostname verification. It stamps
+<code>ts_ftl_sent</code> through service-role-only <code>fn_mark_ftl_sent</code> only after SMTP accepts
+the recipient. SMTP failure therefore never stamps. If SMTP succeeds but the stamp
+fails, the run fails visibly and a retry may duplicate the message: delivery is
+deliberately <strong>at-least-once</strong>, not exactly-once. Manual UI/Telegram triggers are
+explicit re-sends; the daily sweep selects only unstamped, live events whose cutoff
+has passed and skips empty bundles. The scheduled PROD job ships disabled and runs
+only when repository variable <code>ENABLE_FTL_DEADLINE_SEND=true</code> after the CERT pilot.</p>
+<svg viewBox="0 0 760 190" role="img" aria-label="FTL organizer delivery flow" style="width:100%;height:auto;color:var(--ink,#17202a)">
+  <defs><marker id="ftl-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent,#b64b32)"/></marker></defs>
+  <g fill="var(--surface,#fff)" stroke="var(--line,#cad0d8)" stroke-width="2">
+    <rect x="10" y="18" width="135" height="42" rx="9"/><rect x="10" y="74" width="135" height="42" rx="9"/><rect x="10" y="130" width="135" height="42" rx="9"/>
+    <rect x="205" y="62" width="145" height="66" rx="9"/><rect x="410" y="62" width="145" height="66" rx="9"/><rect x="615" y="62" width="135" height="66" rx="9"/>
+  </g>
+  <g fill="currentColor" font-family="system-ui,sans-serif" font-size="13" text-anchor="middle">
+    <text x="77" y="44">Admin button</text><text x="77" y="100">Telegram command</text><text x="77" y="156">Gated daily sweep</text>
+    <text x="277" y="88">ftl-seed.yml</text><text x="277" y="108">CERT / PROD</text>
+    <text x="482" y="83">Fresh in-memory ZIP</text><text x="482" y="103">Gmail SMTP_SSL</text><text x="482" y="119">then success stamp</text>
+    <text x="682" y="88">Organizer inbox</text><text x="682" y="108">+ Telegram status</text>
+  </g>
+  <g fill="none" stroke="var(--accent,#b64b32)" stroke-width="2" marker-end="url(#ftl-arrow)"><path d="M145 39 L205 82"/><path d="M145 95 L205 95"/><path d="M145 151 L205 108"/><path d="M350 95 L410 95"/><path d="M555 95 L615 95"/></g>
+</svg>
+<p>Credentials remain server-side in GitHub Actions secrets. The Gmail App Password is
+independently revocable but is still a high-value account credential: never log or
+persist it, and rotate it on suspected exposure. This solves organizer delivery
+only; ADR-079's public OTP-email problem is a distinct, higher-volume capability and
+remains out of scope.</p>
 <p><strong>UI constraint (add-only).</strong> The manual button + the new event fields
 (<code>txt_organizer_email</code>, <code>ts_ftl_sent</code>, fee tiers, <code>url_entry_list</code>,
 <code>bool_use_spws_registration</code>) are added to the existing <code>EventManager.svelte</code> (the
@@ -234,6 +263,9 @@ round-trip removes BY estimation for registered fencers.</li>
 <li>Roll out <strong>pilot-first</strong> (one upcoming PPW, validate register→seed→FTL→scrape→
 ranklist) before enabling the season; per-event <code>bool_use_spws_registration</code>
 allows event-by-event migration off competit.pl.</li>
+<li>Delivery is intentionally at-least-once. An SMTP-accepted/stamp-failed run can
+duplicate on retry; exact-once delivery would require a durable attempt/lease
+model and is not justified for the current one-recipient operational volume.</li>
 </ul>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="references">References</h2>
@@ -245,5 +277,5 @@ allows event-by-event migration off competit.pl.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="079-event-self-registration-identity.html">← ADR-079: Event Self-Registration &amp; Identity Resolution</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="081-cert-prod-event-reconciler.html">→ ADR-081: CERT→PROD Event Reconciler</a></nav>
-<footer class="foot">Generated from <code>080-clean-roster-ftl-seeding.md</code> · source SHA-256 <code>321fae82554ec8aa4b85881123d8dbbc9246d143bd31d4bd711d935d419433bf</code></footer>
+<footer class="foot">Generated from <code>080-clean-roster-ftl-seeding.md</code> · source SHA-256 <code>0b8456b7698286777e87fb7597ca8a3554fb9b25d030131b362e3285ed5b3530</code></footer>
 </div></body></html>
