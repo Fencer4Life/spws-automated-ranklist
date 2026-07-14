@@ -10,7 +10,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(7);
+SELECT plan(8);
 
 -- ===== SETUP =====
 DO $setup$
@@ -294,6 +294,50 @@ SELECT results_eq(
       ('EVFSLUG-EV-50-7-6'::TEXT, FALSE),
       ('EVFSLUG-EV-50-7-7'::TEXT, FALSE)$$,
   '50.7: backfill tie-break — only the lowest id_event per url_event group gets txt_evf_slug'
+);
+
+
+-- =========================================================================
+-- 50.8 — idx_tbl_event_evf_slug allows the SAME txt_evf_slug to recur on a
+--        row in a DIFFERENT season (live bug, 2026-07-14): EVF reuses one
+--        detail-page slug ("evf-circuit-munich") for every yearly edition
+--        of a recurring circuit stop. A prior-season COMPLETED row already
+--        carries that slug; the next season's calendar scrape must be able
+--        to create/claim its own row with the same slug without violating
+--        uniqueness. Only same-season collisions (50.5) must stay rejected.
+-- =========================================================================
+DO $t508_setup$
+DECLARE
+  v_season_a INT;
+  v_season_b INT;
+  v_org      INT;
+  v_id_a     INT;
+BEGIN
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'EVF';
+
+  UPDATE tbl_season SET bool_active = FALSE;
+  v_season_a := fn_create_season('EVFSLUG-TEST-A', '2036-09-01', '2037-06-30');
+  v_season_b := fn_create_season('EVFSLUG-TEST-B', '2037-09-01', '2038-06-30');
+  UPDATE tbl_season SET bool_active = TRUE WHERE id_season = v_season_b;
+
+  v_id_a := fn_create_event(
+    'EVFSLUG-EV-50-8A', 'Cross-season slug A', v_season_a, v_org,
+    'Munich', '2036-11-28'::DATE, '2036-11-28'::DATE
+  );
+  UPDATE tbl_event SET txt_evf_slug = 'evf-circuit-munich-508'
+   WHERE id_event = v_id_a;
+
+  PERFORM fn_create_event(
+    'EVFSLUG-EV-50-8B', 'Cross-season slug B', v_season_b, v_org,
+    'Munich', '2037-11-28'::DATE, '2037-11-28'::DATE
+  );
+END;
+$t508_setup$;
+
+SELECT lives_ok(
+  $$UPDATE tbl_event SET txt_evf_slug = 'evf-circuit-munich-508'
+     WHERE txt_code = 'EVFSLUG-EV-50-8B'$$,
+  '50.8: idx_tbl_event_evf_slug allows the same slug to recur in a different season'
 );
 
 
