@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="doc-id" content="HB-OPS-FTL-GMAIL-SETUP">
+  <meta name="doc-status" content="current">
+  <meta name="doc-type" content="operations">
+  <meta name="doc-owner" content="Release operations">
+  <meta name="last-verified" content="2026-07-14">
+  <meta name="source-globs" content=".github/workflows/ftl-seed.yml; python/pipeline/ftl_feed_seed_send.py; python/pipeline/db_connector.py; frontend/src/components/EventManager.svelte">
+  <meta name="review-triggers" content="Gmail sender, App Password, GitHub Actions secret, FTL workflow input, CERT pilot, SMTP delivery, delivery stamp, or Telegram notification changes">
+  <title>Set up Gmail delivery for FTL seed bundles</title>
+  <style>
+    :root{
+      --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+      --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+      --line:#c9d1dc; --line-strong:#b3bdcc;
+      --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+      --danger:#9e2418; --danger-soft:#f7ddd9;
+      --good:#0f5f37; --good-soft:#d8eede;
+      --warn:#7a4d02; --warn-soft:#f4e6c8;
+      --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+      --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+    }
+    @media (prefers-color-scheme:dark){
+      :root{
+        --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+        --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+        --line:#2c333f; --line-strong:#3c4552;
+        --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+        --danger:#f59a90; --danger-soft:#331d1a;
+        --good:#6cdc98; --good-soft:#15271b;
+        --warn:#e6bd6f; --warn-soft:#282011;
+      }
+    }
+    *{box-sizing:border-box}
+    html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:19px;line-height:1.62;-webkit-font-smoothing:antialiased}
+    .wrap{max-width:58rem;margin:0 auto;padding:60px 30px 110px}
+    code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+    code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.84em;font-weight:600;border:1px solid var(--line)}
+    a{color:var(--accent);font-weight:650}
+    a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+    .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+    h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:20ch;color:var(--ink)}
+    .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:60ch}
+    .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+    .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+    .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+    .pill.warn .dot{background:var(--warn)}
+    .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+    section{margin-top:52px}
+    .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+    h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+    h3{font-size:20px;font-weight:800;margin:28px 0 10px;color:var(--ink)}
+    p{margin:0 0 16px;max-width:68ch}
+    ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:68ch}
+    li{margin:9px 0}
+    li::marker{color:var(--accent)}
+    strong{font-weight:750;color:var(--ink)}
+    .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+    .note>:last-child{margin-bottom:0}
+    .note .lede{font-weight:800;font-size:19px;margin:0 0 8px}
+    .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+    .note.danger .lede{color:var(--danger)}
+    .note.good{border-left-color:var(--good);background:var(--good-soft)}
+    .note.good .lede{color:var(--good)}
+    .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+    .note.warn .lede{color:var(--warn)}
+    .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+    .note.accent .lede{color:var(--accent-ink)}
+    .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+    table{border-collapse:collapse;width:100%;font-size:17px;min-width:600px}
+    th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+    tr:last-child td{border-bottom:0}
+    thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+    tbody tr:hover{background:var(--surface-2)}
+    td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+    pre{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink);white-space:pre-wrap}
+    ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:72ch}
+    ol.steps>li{position:relative;padding-left:50px;margin:19px 0;min-height:34px}
+    ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff}
+    .checklist{list-style:none;padding-left:0}
+    .checklist li{padding-left:31px;position:relative}
+    .checklist li::before{content:"☐";position:absolute;left:0;color:var(--good);font-weight:900}
+    nav.toc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 22px;margin:28px 0}
+    nav.toc p{font-family:var(--mono);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;color:var(--muted)}
+    nav.toc ol{columns:2;column-gap:34px;margin-bottom:0}
+    .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+    @media (max-width:650px){nav.toc ol{columns:1}.wrap{padding:40px 20px 80px}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Operations · Gmail SMTP · GitHub Actions · CERT pilot</p>
+  <h1>Set up Gmail delivery for FTL seed bundles</h1>
+  <p class="dek">Configure the SPWS Gmail identity and two GitHub Actions secrets, then prove the complete manual path on <strong>CERT</strong> before any production automation is enabled.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Repository: Fencer4Life/spws-automated-ranklist</span>
+    <span class="pill">Workflow: <code>ftl-seed.yml</code></span>
+    <span class="pill warn"><span class="dot"></span>CERT first</span>
+  </div>
+
+  <nav class="toc" aria-label="Contents">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#outcome">Outcome and boundaries</a></li>
+      <li><a href="#prerequisites">Prerequisites</a></li>
+      <li><a href="#google-security">Secure the Google account</a></li>
+      <li><a href="#app-password">Create the App Password</a></li>
+      <li><a href="#github-secrets">Add GitHub secrets</a></li>
+      <li><a href="#preflight">Prepare the CERT event</a></li>
+      <li><a href="#trigger">Run the manual trigger</a></li>
+      <li><a href="#acceptance">Verify end to end</a></li>
+      <li><a href="#troubleshooting">Troubleshoot safely</a></li>
+      <li><a href="#rotation">Rotate or disable access</a></li>
+    </ol>
+  </nav>
+
+  <hr class="rule">
+
+  <section id="outcome">
+    <p class="kicker">Start here</p>
+    <h2>What this setup enables</h2>
+    <p>The manual workflow reads an event from CERT, generates the current mix-all FTL seed ZIP in memory, sends it through Gmail over certificate-verifying TLS, and stamps <code>tbl_event.ts_ftl_sent</code> only after Gmail accepts the message.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Item</th><th>Stored where</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>SPWS Gmail address</td><td>GitHub repository secret <code>SPWS_GMAIL_USER</code></td><td>SMTP login and exact From address.</td></tr>
+        <tr><td>Google App Password</td><td>GitHub repository secret <code>SPWS_GMAIL_APP_PASSWORD</code></td><td>Revocable SMTP credential; not the normal Google password.</td></tr>
+        <tr><td>Organizer email</td><td>CERT <code>tbl_event.txt_organizer_email</code>, edited through EventManager</td><td>Recipient for the selected event.</td></tr>
+        <tr><td>Send evidence</td><td>GitHub Actions run, organizer inbox, Telegram, and <code>ts_ftl_sent</code></td><td>End-to-end acceptance evidence.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note danger">
+      <p class="lede">Never use the normal Google password</p>
+      <p>Only the generated App Password belongs in <code>SPWS_GMAIL_APP_PASSWORD</code>. Never put either password in source files, <code>.env</code>, shell history, screenshots, issues, chat, or workflow logs.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede">The manual run sends a real email</p>
+      <p>Use an approved test inbox saved on an exact CERT event. Do not use the example event code as an assumption. Do not select PROD during the pilot.</p>
+    </div>
+  </section>
+
+  <section id="prerequisites">
+    <p class="kicker">Before touching credentials</p>
+    <h2>Confirm access and choose the pilot</h2>
+    <ul class="checklist">
+      <li>You can sign in to the exact SPWS Gmail account that should appear in the message's From header.</li>
+      <li>You can administer Actions secrets for <code>Fencer4Life/spws-automated-ranklist</code>.</li>
+      <li>You have an approved test inbox controlled by the project team.</li>
+      <li>You have selected one exact event in CERT with registrations suitable for an FTL import test.</li>
+      <li>The release containing <code>20260713000001_ftl_seed_organizer_delivery.sql</code> and <code>ftl-seed.yml</code> is green.</li>
+      <li>The repository variable <code>ENABLE_FTL_DEADLINE_SEND</code> remains absent or not equal to <code>true</code>.</li>
+    </ul>
+    <p>The scheduled PROD sender is separately gated. Completing this guide does not authorize enabling it.</p>
+  </section>
+
+  <section id="google-security">
+    <p class="kicker">Phase 1 · Google account</p>
+    <h2>Turn on strong account protection</h2>
+    <ol class="steps">
+      <li>Open <a href="https://myaccount.google.com/security">Google Account → Security</a> in a private or clearly identified browser profile.</li>
+      <li>Confirm the avatar and email are the SPWS sender account. Stop if another Google account is active.</li>
+      <li>Review recovery email and recovery phone details. They must belong to an authorized operator, not a temporary personal contact.</li>
+      <li>Open <strong>2-Step Verification</strong> and turn it on if it is not already enabled.</li>
+      <li>Prefer a passkey, hardware security key, or Google Prompt for the operator's normal login. Keep backup access in a project-approved secure location.</li>
+      <li>Run Google's <a href="https://myaccount.google.com/security-checkup">Security Checkup</a> and resolve unfamiliar sessions, devices, or third-party access before creating an SMTP credential.</li>
+    </ol>
+    <p>Google requires 2-Step Verification before an App Password can be created. Google also recommends stronger login methods such as security keys or Google Prompt over SMS for normal account access.</p>
+  </section>
+
+  <section id="app-password">
+    <p class="kicker">Phase 2 · one-purpose SMTP credential</p>
+    <h2>Create the App Password once</h2>
+    <ol class="steps">
+      <li>While signed in as the SPWS sender, open <a href="https://myaccount.google.com/apppasswords">Google App Passwords</a>. Re-authenticate if Google asks.</li>
+      <li>Create a new App Password with a descriptive label such as <code>SPWS GitHub Actions FTL seed sender</code>.</li>
+      <li>Generate the password. Google displays the generated credential only once.</li>
+      <li>Keep that page open temporarily. Do not save the value to a text file, password note, clipboard manager, screenshot, or chat.</li>
+      <li>Proceed directly to the GitHub secret entry below. After GitHub confirms the secret was saved, close the Google page.</li>
+    </ol>
+    <div class="note accent">
+      <p class="lede">If “App Passwords” is missing</p>
+      <p>First confirm 2-Step Verification is on. Google says the option can also be unavailable for accounts configured only with security keys, organization-managed work/school accounts, or accounts enrolled in Advanced Protection. Do not weaken account policy blindly; confirm the account type and choose an approved SMTP identity.</p>
+    </div>
+  </section>
+
+  <section id="github-secrets">
+    <p class="kicker">Phase 3 · GitHub Actions</p>
+    <h2>Add exactly two repository secrets</h2>
+    <h3>Preferred: GitHub web interface</h3>
+    <ol class="steps">
+      <li>Open the repository's <a href="https://github.com/Fencer4Life/spws-automated-ranklist/settings/secrets/actions">Actions secrets settings</a>.</li>
+      <li>Select <strong>New repository secret</strong>.</li>
+      <li>Set the name to <code>SPWS_GMAIL_USER</code>. Set the value to the full SPWS Gmail address used to create the App Password. Save it.</li>
+      <li>Select <strong>New repository secret</strong> again.</li>
+      <li>Set the name to <code>SPWS_GMAIL_APP_PASSWORD</code>. Paste the generated App Password directly from Google. Save it.</li>
+      <li>Confirm both names appear in the repository secret list. GitHub will not reveal their values after saving.</li>
+    </ol>
+
+    <h3>Alternative: GitHub CLI interactive input</h3>
+    <p>Run these commands separately from the repository. At each prompt, paste only the requested value. Do not append the value to the command and do not use <code>--body</code> with a literal credential.</p>
+    <pre>gh secret set SPWS_GMAIL_USER \
+  --repo Fencer4Life/spws-automated-ranklist
+
+gh secret set SPWS_GMAIL_APP_PASSWORD \
+  --repo Fencer4Life/spws-automated-ranklist</pre>
+    <p>The GitHub CLI encrypts secret values locally before sending them to GitHub. Repository secrets are read when a workflow run is queued, so update them before starting the pilot run.</p>
+
+    <h3>Verify names without retrieving values</h3>
+    <pre>gh secret list \
+  --repo Fencer4Life/spws-automated-ranklist \
+  | rg 'SPWS_GMAIL_(USER|APP_PASSWORD)'</pre>
+    <p>Expected: exactly two matching names. This command cannot display either stored value.</p>
+  </section>
+
+  <section id="preflight">
+    <p class="kicker">Phase 4 · event preparation</p>
+    <h2>Prepare one exact CERT event</h2>
+    <ol class="steps">
+      <li>Open the admin application in <strong>CERT</strong>. Confirm the environment indicator before editing.</li>
+      <li>Open EventManager and locate the pilot by its full, exact <code>txt_code</code>. Record the code for the workflow input.</li>
+      <li>Confirm SPWS registration is enabled and the event has the expected weapon list.</li>
+      <li>Review the current entry list. The pilot should contain only data approved for the test and enough registrations to produce a non-empty mix-all bundle.</li>
+      <li>Set <strong>Organizer email</strong> to the approved test inbox and save the event.</li>
+      <li>Close and reopen the event to prove the email persisted. Confirm the displayed value character-for-character.</li>
+      <li>Record the existing <strong>FTL bundle last sent</strong> value. It may be “Not sent yet” or an earlier timestamp; a deliberate manual resend is allowed.</li>
+    </ol>
+    <div class="note danger">
+      <p class="lede">Stop on any identity doubt</p>
+      <p>Do not trigger if the environment, event code, recipient, weapon list, or entries are uncertain. The workflow sends whatever is currently persisted for that CERT event.</p>
+    </div>
+  </section>
+
+  <section id="trigger">
+    <p class="kicker">Phase 5 · manual CERT run</p>
+    <h2>Trigger the workflow once</h2>
+    <h3>GitHub web interface</h3>
+    <ol class="steps">
+      <li>Open <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/workflows/ftl-seed.yml">Actions → FTL Seed Organizer Delivery</a>.</li>
+      <li>Select <strong>Run workflow</strong>.</li>
+      <li>Select branch <code>main</code>.</li>
+      <li>Enter the exact CERT event code from the preflight.</li>
+      <li>Set target to <code>cert</code>. Read it again before continuing.</li>
+      <li>Select the final <strong>Run workflow</strong> button once. Do not click again while the run is queued or active.</li>
+    </ol>
+
+    <h3>GitHub CLI alternative</h3>
+    <p>Replace the sentinel value before running. Leaving the sentinel unchanged should fail event lookup rather than email anyone.</p>
+    <pre>EVENT_CODE='REPLACE_WITH_APPROVED_CERT_EVENT_CODE'
+
+gh workflow run ftl-seed.yml \
+  --repo Fencer4Life/spws-automated-ranklist \
+  --ref main \
+  -f "event_code=${EVENT_CODE}" \
+  -f target=cert</pre>
+    <p>Find and watch the dispatched run:</p>
+    <pre>gh run list \
+  --repo Fencer4Life/spws-automated-ranklist \
+  --workflow ftl-seed.yml \
+  --event workflow_dispatch \
+  --limit 5
+
+gh run watch RUN_ID \
+  --repo Fencer4Life/spws-automated-ranklist \
+  --exit-status</pre>
+    <p>Replace <code>RUN_ID</code> with the numeric id shown by <code>gh run list</code>.</p>
+  </section>
+
+  <section id="acceptance">
+    <p class="kicker">Phase 6 · end-to-end proof</p>
+    <h2>Accept the pilot only when every boundary agrees</h2>
+    <ul class="checklist">
+      <li>The workflow run is tied to <code>main</code>, the exact event code, and target <code>cert</code>.</li>
+      <li><strong>Validate inputs</strong> passed.</li>
+      <li><strong>Generate, deliver and stamp</strong> passed.</li>
+      <li>The approved test inbox received one message from the expected SPWS Gmail address.</li>
+      <li>The subject contains <code>SPWS – pliki startowe FTL</code> and the exact event code.</li>
+      <li>The message has one ZIP attachment; filenames inside match the intended event/weapons and contain no unrelated event.</li>
+      <li>Every XML file in the ZIP imports successfully into an FTL test installation.</li>
+      <li>EventManager in CERT shows a new <code>ts_ftl_sent</code> value after refresh.</li>
+      <li>The Telegram operations channel received the success confirmation.</li>
+      <li>The GitHub run URL, event code, timestamp, inbox result, ZIP manifest, and FTL import result are recorded as pilot evidence without secret values or participant data.</li>
+    </ul>
+    <div class="note good">
+      <p class="lede">Pilot definition of done</p>
+      <p>GitHub success alone is not enough. The organizer-side inbox, ZIP contents, FTL import, database timestamp, and Telegram confirmation must all be checked.</p>
+    </div>
+    <p>Keep <code>ENABLE_FTL_DEADLINE_SEND</code> disabled until the pilot is explicitly signed off. Manual PROD delivery and scheduled PROD delivery are separate approval decisions.</p>
+  </section>
+
+  <section id="troubleshooting">
+    <p class="kicker">Failure handling</p>
+    <h2>Diagnose by the failed boundary</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Symptom</th><th>Likely boundary</th><th>Safe action</th></tr></thead>
+      <tbody>
+        <tr><td>Secret name missing from <code>gh secret list</code></td><td>GitHub configuration</td><td>Create the exact repository secret. Queue a new run only after both names exist.</td></tr>
+        <tr><td>Missing <code>SPWS_GMAIL_USER</code> or <code>SPWS_GMAIL_APP_PASSWORD</code></td><td>GitHub workflow environment</td><td>Confirm spelling and repository scope. Never print the values.</td></tr>
+        <tr><td>Gmail authentication rejected</td><td>Google App Password</td><td>Confirm sender account, 2-Step Verification, and App Password status. Revoke and regenerate if uncertain.</td></tr>
+        <tr><td><code>message From must match SMTP user</code></td><td>Sender identity mismatch</td><td>Make <code>SPWS_GMAIL_USER</code> exactly match the Google account that issued the App Password.</td></tr>
+        <tr><td>Event not found</td><td>Event code or target</td><td>Reconfirm exact code in CERT and confirm target is <code>cert</code>.</td></tr>
+        <tr><td>No organizer email</td><td>CERT event configuration</td><td>Save the approved test inbox in EventManager, reopen the event, then retry.</td></tr>
+        <tr><td>No declared weapons or empty bundle</td><td>Event/registration data</td><td>Review weapons and current entries. Do not bypass the guard with fabricated production data.</td></tr>
+        <tr><td>SMTP failed</td><td>Provider, network, or recipient rejection</td><td>Verify <code>ts_ftl_sent</code> did not change, correct the cause, then retry once.</td></tr>
+        <tr><td>Email arrived but workflow failed while stamping</td><td>Supabase service-role/RPC after SMTP</td><td><strong>Do not immediately retry.</strong> A retry can duplicate the email. Tell the test recipient and repair/verify the stamp boundary first.</td></tr>
+        <tr><td>Workflow succeeded but inbox is empty</td><td>Mailbox delivery</td><td>Check spam/quarantine and sender account activity; verify the saved recipient. Do not expose addresses in public logs.</td></tr>
+        <tr><td>Telegram missing but email and stamp succeeded</td><td>Notification-only boundary</td><td>Treat delivery as successful; inspect Telegram configuration separately. Do not resend solely for a missing notification.</td></tr>
+      </tbody>
+    </table></div>
+    <p>For a failed run, inspect only failed logs:</p>
+    <pre>gh run view RUN_ID \
+  --repo Fencer4Life/spws-automated-ranklist \
+  --log-failed</pre>
+    <p>If a log accidentally reveals a credential, revoke it immediately before any other debugging.</p>
+  </section>
+
+  <section id="rotation">
+    <p class="kicker">Lifecycle</p>
+    <h2>Rotate, revoke, or stop delivery</h2>
+    <h3>Routine or incident rotation</h3>
+    <ol class="steps">
+      <li>Create a new App Password from the exact SPWS Gmail account.</li>
+      <li>Replace <code>SPWS_GMAIL_APP_PASSWORD</code> in GitHub Actions secrets.</li>
+      <li>Run one approved CERT pilot and complete the acceptance checklist.</li>
+      <li>Revoke the old App Password in Google.</li>
+    </ol>
+    <p>Google revokes App Passwords after the Google Account password changes. If that happens, generate a new App Password and update GitHub before the next run.</p>
+
+    <h3>Emergency stop</h3>
+    <ol class="steps">
+      <li>Confirm <code>ENABLE_FTL_DEADLINE_SEND</code> is absent or not <code>true</code>.</li>
+      <li>Revoke the App Password in Google to stop SMTP authentication immediately.</li>
+      <li>Delete <code>SPWS_GMAIL_APP_PASSWORD</code> from GitHub if the integration is being retired.</li>
+      <li>Record the incident/retirement without recording the old value.</li>
+    </ol>
+    <pre>gh secret delete SPWS_GMAIL_APP_PASSWORD \
+  --repo Fencer4Life/spws-automated-ranklist</pre>
+  </section>
+
+  <section id="references">
+    <p class="kicker">Authoritative references</p>
+    <h2>Official setup documentation</h2>
+    <ul>
+      <li><a href="https://support.google.com/accounts/answer/185833">Google Account Help — Sign in with App Passwords</a></li>
+      <li><a href="https://support.google.com/accounts/answer/46526">Google Account Help — Make your account more secure</a></li>
+      <li><a href="https://docs.github.com/en/actions/reference/security/secrets">GitHub Actions — Secrets reference</a></li>
+      <li><a href="https://cli.github.com/manual/gh_secret_set">GitHub CLI — <code>gh secret set</code></a></li>
+      <li><a href="operator-runbooks.html#ftl-seed">SPWS operator runbook — Send an FTL seed bundle</a></li>
+      <li><a href="environments-and-release.html#secrets">SPWS environment and release secret contract</a></li>
+    </ul>
+  </section>
+
+  <p class="foot">operations · ftl-gmail-actions-setup · verified 2026-07-14 · CERT pilot before PROD automation</p>
+</div>
+</body>
+</html>
