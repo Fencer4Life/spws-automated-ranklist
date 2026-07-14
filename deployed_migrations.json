@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-07-14T05:35:12Z",
-    "last_sha": "3f49d0d9f5970690c48a7dc327ee7c7a10e77bff",
+    "last_updated": "2026-07-14T06:17:15Z",
+    "last_sha": "07eebea5d6bc0f7f66b29804f8e11540a6b61974",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -130,7 +130,8 @@
       "20260710000001_evf_slug_dedup.sql",
       "20260711000001_prod_event_reconciler.sql",
       "20260711000002_reconciler_update_nullif.sql",
-      "20260714000001_evf_slug_dedup_scope_season.sql"
+      "20260714000001_evf_slug_dedup_scope_season.sql",
+      "20260714000002_season_2026_2027_dt_start_sync.sql"
     ],
     "schema_fingerprint": "640411320f26e930d1a2bc903bf759d3"
   },
