@@ -138,8 +138,8 @@
     "schema_fingerprint": "2012753ff886f491d4cb8c3a0a8ad91d"
   },
   "prod": {
-    "last_updated": "2026-07-14T07:09:56Z",
-    "last_sha": "2a329e86aff3604ac8bc7ae3b87773d701448898",
+    "last_updated": "2026-07-14T18:23:50Z",
+    "last_sha": "57655a46ea9f813d4593d4639545e80c7b4b3082",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -270,7 +270,8 @@
       "20260711000002_reconciler_update_nullif.sql",
       "20260713000001_ftl_seed_organizer_delivery.sql",
       "20260714000001_evf_slug_dedup_scope_season.sql",
-      "20260714000002_season_2026_2027_dt_start_sync.sql"
+      "20260714000002_season_2026_2027_dt_start_sync.sql",
+      "20260714000003_fencer_birth_year_master_list_reconcile.sql"
     ],
     "schema_fingerprint": "2012753ff886f491d4cb8c3a0a8ad91d"
   }
