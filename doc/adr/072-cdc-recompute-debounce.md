@@ -96,3 +96,66 @@ the same event; recompute is idempotent, so the queue converges to DONE.
 Verified live: re-draining CERT reclaimed the 39 stranded rows (20 distinct events
 recomputed) → queue all DONE. Test: `python/tests/test_db_connector.py`
 (`test_claim_recompute_batch_reclaims_orphaned_claimed`).
+
+## Amendment (2026-07-14) — extend the scheduled drain to PROD
+
+**Context.** Every prior drain of this loop ran against CERT only (Step C, 2026-06-16); PROD
+carried the trigger and the queue table (same schema, same migrations) but nothing ever
+invoked the worker there — `recompute-drain.yml`'s own header says so: "CERT only. LOCAL
+stays manual." That gap was survivable while master-data corrections originated on CERT and
+reached PROD only through the normal event/results promotion path (environments doc,
+promotion-contracts table — no "fencer master data" row). The organizer master-list birth-year
+reconciliation (`doc/plans/fencer-birth-year-master-list-2026-07.html`) changes that: it writes
+`int_birth_year` corrections directly to `tbl_fencer` on LOCAL, CERT, **and** PROD in one
+migration, per the organizer's explicit ask, rather than staging the correction on CERT and
+waiting for a later promotion cycle to carry it over. One correction in that batch
+(SAMECKA-NACZYŃSKA Martyna, BY 1986→1985) genuinely re-brackets a past season
+(SPWS-2024-2025, V0→V1) — a real `RECOMPUTE_DOMESTIC` case, not a formality — so a PROD queue
+entry that never drains is no longer a theoretical gap; see the investigation record,
+[`doc/audits/prod-recompute-drain-gap-2026-07-14.html`](../audits/prod-recompute-drain-gap-2026-07-14.html).
+
+**Decision.** Add `recompute-drain-prod.yml`, structurally identical to `recompute-drain.yml`
+(same 15-minute cron, same `--drain` worker invocation, same manual-dispatch `debounce` input,
+same Telegram-on-failure step) but pointed at `secrets.SUPABASE_PROD_URL` /
+`secrets.SUPABASE_PROD_SERVICE_ROLE_KEY` (both already-provisioned secrets — no new credential).
+CERT's dedicated job, cadence and concurrency group are untouched.
+
+- **Concurrency group is `prod-write`, not a new `prod-recompute` group.** CERT's job owns its
+  own `cert-recompute` group because nothing else writes to CERT on a schedule that would
+  collide with it. PROD is different: `promote-season.yml`, `evf-sync.yml` and `promote.yml`
+  already share one group, `prod-write`, precisely so season/calendar/event-result promotion
+  never runs concurrently with itself. The recompute drain is one more PROD writer and joins
+  the same group — a dedicated group would let a recompute run mid-write during a season or
+  results promotion touching the same rows, which `prod-write` exists to prevent.
+- **No new escalation path needed.** A below-minimum-bracket auto-drop during recompute
+  (ADR-074, no-halt) already surfaces via the `POST_COMMIT` reactor's `ON_LOSS` Telegram
+  escalation whenever `RECOMPUTE_DOMESTIC` reaches `Commit` — this fires identically regardless
+  of which environment's database the flow ran against, so PROD gets the same "a bracket was
+  dropped" alert CERT already gets, with no additional code.
+- **Same cadence, same debounce.** 15-minute cron, worker's existing 120s `DEBOUNCE_WINDOW` —
+  consistent with CERT rather than inventing a different rhythm for PROD.
+
+**Alternatives considered.**
+- **Hold PROD's queue undrained, rely on a human to notice.** Rejected: defeats the entire
+  point of "self-healing" for the one environment operators and the public actually see;
+  already-known to bite (this exact batch has a real re-bracket, not a hypothetical one).
+- **A dedicated `prod-recompute` concurrency group, mirroring CERT's `cert-recompute`.**
+  Rejected: PROD already has a shared-writer serialization point (`prod-write`); a second,
+  independent group would not actually prevent a recompute from racing a live promotion job,
+  since two different concurrency groups run concurrently with each other by definition.
+- **Fold PROD's drain into the existing `recompute-drain.yml` as a second job in the same
+  file.** Considered for brevity; rejected in favor of a separate file to keep one
+  workflow = one concurrency domain = one catalog row, matching how `promote.yml` /
+  `promote-season.yml` / `evf-sync.yml` are already split rather than combined.
+
+**Consequences.**
+- PROD is now a second automated drain target; LOCAL remains manual, unchanged.
+- New workflow `recompute-drain-prod.yml`, cataloged in
+  [workflow catalog](../handbook/reference/workflow-catalog.html) and
+  [operator runbooks](../handbook/operations/operator-runbooks.html).
+- No new secrets, no schema change, no new pgTAP surface — this amendment is entirely a
+  scheduling/operational change reusing existing, already-tested mechanics.
+- Direct-to-PROD master-data edits (rather than CERT-then-promote) are now operationally
+  supported by the self-heal loop, not just schema-permitted — worth naming so future sessions
+  don't assume the CERT-centric framing in the original 2026-06-14 Decision is still the whole
+  story.

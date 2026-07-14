@@ -1,0 +1,412 @@
+<meta charset="utf-8">
+<title>Reconcile 216 fencer birth years against the organizer's master list</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:16px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:12px 15px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:14.5px;line-height:1.7;color:var(--ink)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">LOCAL → CERT → PROD · Data correction · Fencer identity</p>
+  <h1>Reconcile 216 fencer birth years against the organizer's master list</h1>
+  <p class="dek">The organizer supplied a fresh birth-year list for 216 named fencers. <b>188 match</b> an existing <code>tbl_fencer</code> row; <b>178 of those are already correct and confirmed</b> (no-op); <b>10 are genuine corrections</b>. <b>15 names had no matching row and become new confirmed roster entries.</b> Judgment calls confirmed 2026-07-14 — status below.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Confirmed — ready to implement</span>
+    <span class="pill warn"><span class="dot"></span>10 rows updated + 15 rows created, LOCAL/CERT/PROD</span>
+    <span class="pill good"><span class="dot"></span>PROD recompute-drain gap closed (ADR-072 amended, 2026-07-14)</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Is the task clear? · What "master table" and "BY status" mean here</p>
+    <h2>Confirmed against the actual schema, not assumed</h2>
+    <p><code>tbl_fencer</code> (<code>supabase/migrations/20250301000001_enums_tables_indexes.sql:60</code>) is the fencer master table. Birth year lives in <code>int_birth_year</code>; "BY status" is <code>bool_birth_year_estimated</code> — <code>TRUE</code> = Estimated, <code>FALSE</code> = confirmed/Exact (ADR-035, the Birth-Year Review tab mockup at <code>doc/mockups/fencer-birth-year-review.html</code>). Setting a birth year and marking it confirmed is <em>exactly</em> the contract of the existing, already-tested RPC <code>fn_update_fencer_birth_year(p_fencer_id, p_birth_year, p_estimated := FALSE)</code> (<code>supabase/migrations/20260412000004_fn_update_fencer_birth_year.sql</code>, pgTAP <code>13_fencer_birth_year.sql</code> 13.1–13.4). This plan reuses that RPC rather than a raw <code>UPDATE</code> — no new SQL surface, no new pgTAP required.</p>
+    <p>Age category (V0–V4) is derived, never stored: <code>fn_age_category(int_birth_year, season_end_year)</code> (<code>20250303000002_age_category_by_season.sql</code>). "Category before/after" in the summary table below is this function evaluated at the current active season's end year, <b>2026</b> (<code>SPWS-2025-2026</code>, <code>dt_end = 2026-07-15</code>), against the old and new birth years.</p>
+  </section>
+
+  <section>
+    <p class="kicker">How matching was done</p>
+    <h2>Name matching against LOCAL's 349-row roster, three passes</h2>
+    <ol class="steps">
+      <li><b>Exact match</b> on normalized <code>txt_surname txt_first_name</code> (case-folded, whitespace-collapsed). Resolved <b>185</b> of 216 names outright, all already-correct or with a simple year change.</li>
+      <li><b>Qualifier-stripped match</b> for master-list entries carrying a disambiguator in parentheses — <code>KRAWCZYK Paweł</code> (source qualifier: "GLIWICE"), <code>MŁYNEK Janusz</code> (source qualifier: "szabla") — matched with the qualifier removed, then verified the qualifier actually fits (see below).</li>
+      <li><b>Alias and typo review</b> for anything left unmatched: checked <code>tbl_fencer.json_name_aliases</code> (the identity subsystem's existing alias mechanism, <code>doc/handbook/subsystems/identity-and-recompute.html</code>) and manually reviewed every candidate a naive fuzzy-string match surfaced — <b>rejecting</b> the ones that were same-shape-different-person coincidences rather than trusting the string similarity score.</li>
+    </ol>
+    <p>All matching ran against a live dump of LOCAL's <code>tbl_fencer</code> (349 rows, queried directly, not assumed). The generated SQL below resolves each fencer <b>by name at execution time</b> (a subquery on <code>txt_surname</code>/<code>txt_first_name</code>), never by LOCAL's numeric <code>id_fencer</code> — those ids are per-environment <code>SERIAL</code> values and are <b>not</b> guaranteed to line up across LOCAL/CERT/PROD (the same principle the environments doc states for event/season promotion: resolve by stable identity, never assume ids match).</p>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Naive fuzzy matching produced 3 false positives — rejected, not applied</p>
+      <p>A string-similarity pass over unmatched names surfaced 6 "close" candidates. Three were genuine (typos in the source list, confirmed below). Three were <b>wrong people</b> who merely share a first name and letter shape with an existing fencer — accepting them would have overwritten a real person's birth year with someone else's:</p>
+      <ul style="margin-bottom:0">
+        <li><code>Burlikowski Bartosz</code> (1972) ≠ DB's <code>KOWALSKI Bartosz</code> (1995) — different surname entirely.</li>
+        <li><code>Koler Jarosław</code> (1989) ≠ DB's <code>KORNAŚ Jarosław</code> (1985) — different surname entirely.</li>
+        <li><code>Mroczyk Ireneusz</code> (1957) ≠ DB's <code>TOMCZAK Ireneusz</code> (1968) — different surname entirely.</li>
+      </ul>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">✓</span> Three real matches recovered by looking past exact strings</p>
+      <ul style="margin-bottom:0">
+        <li><code>Dynarek Aleksadner</code> → DB <code>DYNAREK Aleksander</code> — first-name typo in the source list. Both say 1990; no-op.</li>
+        <li><code>Fuhrmann Urlike</code> → DB <code>FUHRMANN Ulrike</code> — first-name typo (letter transposition). BY changes 1960 → 1963.</li>
+        <li><code>Wojtas Bogdan</code> → DB <code>WOJTAS Bogusław</code> (<code>id_fencer</code> 330) — matched via the fencer's <b>existing recorded alias</b> <code>json_name_aliases = ['WOJTAS Bogdan']</code>, not a guess. BY changes 1970 → 1969.</li>
+      </ul>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">?</span> Two master-list rows collide on one DB fencer — resolved by tournament history, needs your confirmation</p>
+      <p>The list has <b>two</b> <code>MŁYNEK Janusz</code> entries — source years 1984 and 1951 ("szabla") — but LOCAL has only <b>one</b> matching row (<code>id_fencer 197</code>, currently BY 1954, confirmed). I queried that fencer's full tournament history: every one of his 19 results is <code>enum_weapon = SABRE</code>. That is the "szabla" fencer, so <code>id_fencer 197</code> is matched to the <b>BY 1951</b> entry.</p>
+      <p style="margin-bottom:0">The unqualified <code>MŁYNEK Janusz</code> BY <b>1984</b> entry then has no DB row left to attach to — it names a <b>second person</b> not currently registered in <code>tbl_fencer</code>, so it becomes a new row (see "New fencer records" below) — two <code>MŁYNEK Janusz</code> rows will now exist, distinguished only by BY (1951 vs 1984).</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Summary table · exactly what changes</p>
+    <h2>10 fencers get a real birth-year or status correction</h2>
+    <p>178 of the 188 matched fencers already carry the exact birth year the master list supplies, already marked confirmed — applying the RPC to them would be a pure no-op (same values, only <code>ts_updated</code> bumps and an audit-log row is written for no reason). Following the precedent in <code>20260613000002_adr056_backfill_estimated_midpoint.sql</code> — which skips fencers where its own correction is a no-op — <b>this migration only touches the 10 rows that actually change.</b></p>
+    <p><b>Category before/after below is checked across <em>every</em> season each fencer has a result in</b> (SPWS-2023-2024, SPWS-2024-2025, SPWS-2025-2026 — LOCAL's full result history), not only the current season. That distinction matters: a birth-year shift is a constant number of years, but a fencer's age at a given season is not — checking only the current (largest) age understates risk in earlier seasons, and understates it in the other direction too depending on where each season's age happens to sit relative to a 30/40/50/60/70 boundary. One fencer below crosses a boundary in a season that <em>isn't</em> the current one.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Fencer</th><th>Master-list source name</th><th>BY before</th><th>BY status before</th><th>BY now</th><th>Category, every season w/ results</th></tr></thead>
+      <tbody>
+        <tr><td><code>BOBUSIA Dariusz</code></td><td>Bobusia Dariusz</td><td>1981</td><td>Estimated</td><td>1984</td><td>2026: V1→V1</td></tr>
+        <tr><td><code>FRYDRYCKI Mariusz</code></td><td>Frydrycki Mariusz</td><td>1979</td><td>Estimated</td><td>1980</td><td>2024: V1→V1</td></tr>
+        <tr><td><code>FUHRMANN Ulrike</code></td><td>Fuhrmann Urlike <span class="chip plain">typo</span></td><td>1960</td><td>Confirmed</td><td>1963</td><td>2024: V3→V3 · 2025: V3→V3 · 2026: V3→V3</td></tr>
+        <tr><td><code>GAJDA Krzysztof</code></td><td>Gajda Krzysztof</td><td>1989</td><td>Estimated</td><td>1993</td><td>2024: V0→V0</td></tr>
+        <tr><td><code>KULKA Dawid</code></td><td>Kulka Dawid</td><td>1978</td><td>Confirmed</td><td>1979</td><td>2024: V1→V1 · 2025: V1→V1 · 2026: V1→V1</td></tr>
+        <tr><td><code>MŁYNEK Janusz</code></td><td>Młynek Janusz (szabla) <span class="chip warn">disambiguated</span></td><td>1954</td><td>Confirmed</td><td>1951</td><td>2024: V4→V4 · 2025: V4→V4 · 2026: V4→V4</td></tr>
+        <tr><td><code>NOWICKI Robert</code></td><td>Nowicki Robert</td><td>1974</td><td>Confirmed</td><td>1970</td><td>2024: V2→V2 · 2025: V2→V2 · 2026: V2→V2</td></tr>
+        <tr><td><code>SAMECKA-NACZYŃSKA Martyna</code></td><td>Samecka-Naczyńska Martyna</td><td>1986</td><td>Estimated</td><td>1985</td><td>2024: V0→V0 · <b class="chip warn" style="padding:3px 9px;border-radius:6px">2025: V0→V1</b> · 2026: V1→V1</td></tr>
+        <tr><td><code>WOJTAS Bogusław</code></td><td>Wojtas Bogdan <span class="chip plain">alias</span></td><td>1970</td><td>Confirmed</td><td>1969</td><td>2024: V2→V2 · 2025: V2→V2</td></tr>
+        <tr><td><code>WYLĘGAŁA Jerzy</code></td><td>Wylęgała Jerzy</td><td>1954</td><td>Confirmed</td><td>1949</td><td>2024: V4→V4</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note danger">
+      <p class="lede"><span class="tick">!</span> Not ranking-neutral — one real re-bracket, in a past season</p>
+      <p><b>SAMECKA-NACZYŃSKA Martyna</b> was V0 in <b>SPWS-2024-2025</b> under the old birth year (age 39 at that season's end) and becomes <b>V1</b> under the corrected one (age 40) — the current SPWS-2025-2026 season is unaffected (she's already V1 there either way), which is exactly why checking only the current season missed this. 8 of her 2024-2025 results sit in <code>*-V0-F-*-2024-2025</code> tournament brackets today, including <code>IMEW-V0-F-EPEE-2024-2025</code> (European Veterans Championships 2025) — all of them need to move to the V1 bracket for that season, which re-partitions and re-scores <em>both</em> brackets (she leaves V0, V1 gains a competitor) for every one of those 8 tournaments. This is precisely the case <code>RECOMPUTE_DOMESTIC</code> exists for — it is <b>not</b> a no-op for this fencer, on any environment.</p>
+      <p style="margin-bottom:0">The other 9 corrections check out clean across every season they have results in (2024/2025/2026 as applicable) — a recompute for them would touch the same bracket they're already in and produce byte-identical output. See <a href="../audits/prod-recompute-drain-gap-2026-07-14.html">the recompute-gap investigation record</a> for the full analysis — this specific finding is what turned the PROD drain question from theoretical to concrete, and is why it's now resolved (ADR-072 amended, <code>recompute-drain-prod.yml</code> shipped) rather than left open.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">New fencer records</p>
+    <h2>15 supplied names had no matching row — created as new, confirmed roster entries</h2>
+    <p>None of these resolved to an existing fencer (checked by exact name, alias, and manual review of every plausible fuzzy candidate). There is no existing RPC for creating a bare fencer record — <code>fn_create_fencer_from_match</code> requires an unmatched tournament result to attach to, and none of these 15 have one in this batch — so these are plain <code>INSERT</code>s, confirmed birth year, in the same migration. <b>Gender is inferred from the Polish given name</b> (not supplied by the source) and <b>nationality defaults to <code>PL</code></b> (the schema default; all 15 names read as Polish) — both noted as inferred, not organizer-confirmed, in the migration comments. No club is recorded for any of them, including the Gliwice one — confirmed 2026-07-14: Gliwice is his home town, not a club, so it is dropped rather than stored as <code>txt_club</code>.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>New fencer</th><th>Master-list source name</th><th>BY</th><th>Gender <span class="chip plain">inferred</span></th><th>Category (2026)</th></tr></thead>
+      <tbody>
+        <tr><td><code>BURLIKOWSKI Bartosz</code></td><td>Burlikowski Bartosz</td><td>1972</td><td>M</td><td>V2</td></tr>
+        <tr><td><code>DĄBROWSKA-MANDRELA Diana</code></td><td>Dąbrowska - Mandrela Diana</td><td>1982</td><td>F</td><td>V1</td></tr>
+        <tr><td><code>GOLA Maciej</code></td><td>Gola Maciej</td><td>1981</td><td>M</td><td>V1</td></tr>
+        <tr><td><code>KOLER Jarosław</code></td><td>Koler Jarosław</td><td>1989</td><td>M</td><td>V0</td></tr>
+        <tr><td><code>KRAWCZYK Paweł</code></td><td>Krawczyk (GLIWICE) Paweł <span class="chip warn">hometown dropped</span></td><td>1989</td><td>M</td><td>V0</td></tr>
+        <tr><td><code>KRAWCZYK Paweł</code></td><td>Krawczyk Paweł</td><td>1954</td><td>M</td><td>V4</td></tr>
+        <tr><td><code>MŁYNEK Janusz</code></td><td>Młynek Janusz <span class="chip warn">2nd person, see below</span></td><td>1984</td><td>M</td><td>V1</td></tr>
+        <tr><td><code>MROCZYK Ireneusz</code></td><td>Mroczyk Ireneusz</td><td>1957</td><td>M</td><td>V3</td></tr>
+        <tr><td><code>PELIŃSKA Beata</code></td><td>Pelińska Beata</td><td>1979</td><td>F</td><td>V1</td></tr>
+        <tr><td><code>PIGUŁA Dariusz</code></td><td>Piguła Dariusz</td><td>1977</td><td>M</td><td>V1</td></tr>
+        <tr><td><code>RUDZIŃSKI Piotr</code></td><td>Rudziński Piotr</td><td>1975</td><td>M</td><td>V2</td></tr>
+        <tr><td><code>SERAFIN Marek</code></td><td>Serafin Marek</td><td>1967</td><td>M</td><td>V2</td></tr>
+        <tr><td><code>SZTUBA Mariusz</code></td><td>Sztuba Mariusz</td><td>1968</td><td>M</td><td>V2</td></tr>
+        <tr><td><code>TUSZYŃSKI Piotr</code></td><td>Tuszyński Piotr</td><td>1986</td><td>M</td><td>V1</td></tr>
+        <tr><td><code>WĘCŁAWSKI Mirosław</code></td><td>Węcławski Mirosław</td><td>1970</td><td>M</td><td>V2</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Two same-name pairs are, per the organizer, genuinely different people</p>
+      <p>Nothing in <code>tbl_fencer</code> disambiguates them beyond birth year — no club/alias is being stored to tell them apart (the Gliwice qualifier was explicitly dropped as a hometown, not an identifier):</p>
+      <ul style="margin-bottom:0">
+        <li><b><code>KRAWCZYK Paweł</code></b> — two new rows, BY 1989 and BY 1954.</li>
+        <li><b><code>MŁYNEK Janusz</code></b> — this new row (BY 1984) alongside the <em>existing</em>, separately-matched <code>id_fencer</code> 197 (BY 1951, SABRE-only, updated above).</li>
+      </ul>
+      <p style="margin-bottom:0">A future scraped result for either name will surface as an ambiguous multi-candidate match for a human to resolve (the identity subsystem's normal fuzzy-review path) rather than auto-matching — expected behavior, not a defect, but worth knowing going in.</p>
+    </div>
+
+    <h3>Also worth flagging</h3>
+    <ul>
+      <li><b>12 supplied names carry no birth year at all</b> (blank in the source list) — <code>Dworakowska-Banaś Agnieszka, Frydrych Aleksander, Graczykowski Mateusz, Guenther Grzegorz, Kieroński Tomasz, Mikulicki Arkadiusz, Pawłowski Łukasz, Szymkowiak Krzysztof, Walczewski Konrad, Walenciuk Urszula, Witosławski Przemysław</code> all exist in <code>tbl_fencer</code> already but are left untouched (nothing to confirm). <code>Pojmańska Katarzyna</code> has neither a year nor a matching DB row, and is not created (no year to create her with).</li>
+      <li><b><code>Gręzikiewicz Marcin</code></b> in the source list is an alternate transliteration of <b><code>Gęzikiewicz Marcin</code></b> (<code>id_fencer</code> 77) — both rows in the source point to the same already-matched, already-correct person. Counted once, not applied twice.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Judgment calls — confirmed 2026-07-14</p>
+    <h2>All four resolved as recommended; new-fencer scope added by request</h2>
+    <ol>
+      <li><b>Confirmed:</b> <code>Wojtas Bogdan</code> (source) is the existing alias of <code>WOJTAS Bogusław</code> — update that row (BY 1970 → 1969).</li>
+      <li><b>Confirmed:</b> <code>MŁYNEK Janusz</code> BY 1951 ("szabla" source entry) is the existing SABRE-only <code>id_fencer</code> 197 row (BY 1954 → 1951); the unqualified <code>MŁYNEK Janusz</code> BY 1984 entry is a different, previously-unregistered person — now created as a new row (above). Two <code>MŁYNEK Janusz</code> rows will exist, distinguished only by BY.</li>
+      <li><b>Confirmed:</b> both typo-corrected matches apply — <code>Dynarek Aleksadner</code> → <code>DYNAREK Aleksander</code> (no-op) and <code>Fuhrmann Urlike</code> → <code>FUHRMANN Ulrike</code> (BY 1960 → 1963).</li>
+      <li><b>Confirmed:</b> the three rejected fuzzy candidates (<code>Burlikowski Bartosz</code>, <code>Koler Jarosław</code>, <code>Mroczyk Ireneusz</code>) are different people from the similarly-named DB fencers — left unmatched, and (per the new-fencer decision) created as new rows in their own right rather than merged into someone else's record.</li>
+      <li><b>Added:</b> all 15 not-present names are created as new <code>tbl_fencer</code> rows rather than left as a report-only list — see "New fencer records" above.</li>
+    </ol>
+    <p><b>Resolved 2026-07-14:</b> PROD now drains automatically too — <code>recompute-drain-prod.yml</code>, ADR-072 amendment (see the Recompute section) — no manual PROD drain step should be needed, though the validation plan below still checks the queue explicitly rather than assuming it.</p>
+  </section>
+
+  <section>
+    <p class="kicker">The migration</p>
+    <h2><code>supabase/migrations/20260714000003_fencer_birth_year_master_list_reconcile.sql</code></h2>
+    <p>Two parts. Part 1 reuses <code>fn_update_fencer_birth_year</code> (no new function, no new pgTAP surface) for the 10 corrections — every fencer resolved <b>by name</b>, so the identical file applies unchanged on LOCAL, CERT and PROD regardless of each environment's own <code>id_fencer</code> numbering; a name that resolves to zero or more-than-one row on a given environment fails loudly (<code>RAISE EXCEPTION</code> or "more than one row" error) rather than silently touching the wrong fencer. Part 2 is a plain <code>INSERT</code> for the 15 new roster entries — no existing row to resolve, so no name lookup is needed there, and a fresh <code>INSERT</code> does not fire <code>trg_fencer_change_enqueue</code> (that trigger is <code>AFTER UPDATE</code> only) — appropriate, since a brand-new fencer has no existing results to recompute.</p>
+    <pre class="trace">-- ============================================================================
+-- Fencer birth-year master-list reconciliation (2026-07 batch)
+-- ============================================================================
+-- Source: organizer-supplied master list, 216 names, matched against
+-- tbl_fencer by (txt_surname, txt_first_name) + json_name_aliases.
+-- 188 names matched; 178 already carried the correct confirmed birth year
+-- (no-op, intentionally not touched here, per the ADR-056 precedent of
+-- skipping true no-ops). These 10 are the genuine corrections. All become
+-- bool_birth_year_estimated = FALSE ("confirmed") via the existing
+-- fn_update_fencer_birth_year RPC (ADR-035). Resolved by name, not id_fencer,
+-- so this file is portable across LOCAL/CERT/PROD.
+--
+-- MŁYNEK Janusz (id_fencer 197): the DB's one SABRE-only MŁYNEK Janusz row
+-- is the "szabla" master-list entry (BY 1951) per full tournament-history
+-- review, not the unqualified BY 1984 entry (a second, unregistered person,
+-- inserted separately below -- two MŁYNEK Janusz rows now exist, BY-only
+-- disambiguated).
+-- WOJTAS Bogusław: matched via existing json_name_aliases = ['WOJTAS Bogdan'].
+--
+-- Every change is preserved in tbl_audit_log via trg_audit_fencer.
+-- ============================================================================
+
+SELECT fn_update_fencer_birth_year(
+  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'BOBUSIA' AND txt_first_name = 'Dariusz'),
+  1984, FALSE);
+
+SELECT fn_update_fencer_birth_year(
+  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FRYDRYCKI' AND txt_first_name = 'Mariusz'),
+  1980, FALSE);
+
+SELECT fn_update_fencer_birth_year(
+  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'FUHRMANN' AND txt_first_name = 'Ulrike'),
+  1963, FALSE);
+
+SELECT fn_update_fencer_birth_year(
+  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'GAJDA' AND txt_first_name = 'Krzysztof'),
+  1993, FALSE);
+
+SELECT fn_update_fencer_birth_year(
+  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'KULKA' AND txt_first_name = 'Dawid'),
+  1979, FALSE);
+
+SELECT fn_update_fencer_birth_year(
+  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'MŁYNEK' AND txt_first_name = 'Janusz'),
+  1951, FALSE);
+
+SELECT fn_update_fencer_birth_year(
+  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'NOWICKI' AND txt_first_name = 'Robert'),
+  1970, FALSE);
+
+SELECT fn_update_fencer_birth_year(
+  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'SAMECKA-NACZYŃSKA' AND txt_first_name = 'Martyna'),
+  1985, FALSE);
+
+SELECT fn_update_fencer_birth_year(
+  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WOJTAS' AND txt_first_name = 'Bogusław'),
+  1969, FALSE);
+
+SELECT fn_update_fencer_birth_year(
+  (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'WYLĘGAŁA' AND txt_first_name = 'Jerzy'),
+  1949, FALSE);
+
+-- ============================================================================
+-- New fencer roster entries — 15 master-list names with no existing
+-- tbl_fencer row. No tournament result to attach in this batch, so
+-- fn_create_fencer_from_match (which requires one) does not apply — plain
+-- INSERTs, confirmed birth year, same organizer master list.
+--
+-- Gender is INFERRED from the Polish given name (not supplied by the
+-- source) -- 13 male, 2 female (Diana Dąbrowska-Mandrela, Beata Pelińska).
+-- Nationality defaults to 'PL' (schema default; all 15 names read as Polish).
+-- Neither is organizer-confirmed the way the birth year is.
+--
+-- Confirmed 2026-07-14: "Krawczyk (GLIWICE) Paweł" -- Gliwice is his home
+-- town, not a club; dropped rather than stored in txt_club. Inserted as
+-- plain KRAWCZYK Paweł.
+--
+-- Two same-name pairs are, per the organizer, different people -- nothing
+-- here disambiguates them beyond birth year:
+--   KRAWCZYK Paweł   -- BY 1989 (this batch) and BY 1954 (this batch)
+--   MŁYNEK Janusz    -- BY 1984 (this row) vs the EXISTING id_fencer 197,
+--                        BY 1951, SABRE-only, updated above
+-- A future scraped result for either name will need human review to pick
+-- the right candidate -- expected, not a defect.
+--
+-- No trg_fencer_change_enqueue firing here: that trigger is AFTER UPDATE
+-- only, and a brand-new fencer has no existing results to recompute.
+-- ============================================================================
+
+INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, bool_birth_year_estimated, enum_gender, txt_nationality) VALUES
+  ('BURLIKOWSKI', 'Bartosz', 1972, FALSE, 'M', 'PL'),
+  ('DĄBROWSKA-MANDRELA', 'Diana', 1982, FALSE, 'F', 'PL'),
+  ('GOLA', 'Maciej', 1981, FALSE, 'M', 'PL'),
+  ('KOLER', 'Jarosław', 1989, FALSE, 'M', 'PL'),
+  ('KRAWCZYK', 'Paweł', 1989, FALSE, 'M', 'PL'),
+  ('KRAWCZYK', 'Paweł', 1954, FALSE, 'M', 'PL'),
+  ('MŁYNEK', 'Janusz', 1984, FALSE, 'M', 'PL'),
+  ('MROCZYK', 'Ireneusz', 1957, FALSE, 'M', 'PL'),
+  ('PELIŃSKA', 'Beata', 1979, FALSE, 'F', 'PL'),
+  ('PIGUŁA', 'Dariusz', 1977, FALSE, 'M', 'PL'),
+  ('RUDZIŃSKI', 'Piotr', 1975, FALSE, 'M', 'PL'),
+  ('SERAFIN', 'Marek', 1967, FALSE, 'M', 'PL'),
+  ('SZTUBA', 'Mariusz', 1968, FALSE, 'M', 'PL'),
+  ('TUSZYŃSKI', 'Piotr', 1986, FALSE, 'M', 'PL'),
+  ('WĘCŁAWSKI', 'Mirosław', 1970, FALSE, 'M', 'PL');</pre>
+  </section>
+
+  <section>
+    <p class="kicker">Corrected after checking the graph + the actual identity-subsystem docs</p>
+    <h2>A birth-year change is not just an UPDATE — it must recompute</h2>
+    <p>The owning handbook page (<code>doc/handbook/subsystems/identity-and-recompute.html</code>) states an invariant my first draft of this plan missed: <b>"Birth-year or merge corrections recompute all affected events, not only the currently viewed ranking."</b> This is real machinery (ADR-072), not a suggestion:</p>
+    <ul>
+      <li><code>trg_fencer_change_enqueue</code> (<code>20260615000001_cdc_recompute_dedup.sql</code>) — a column-aware <code>AFTER UPDATE ON tbl_fencer</code> trigger. It fires whenever <code>int_birth_year</code> (or <code>txt_nationality</code>) actually changes and enqueues every event that fencer has a result in, into <code>tbl_recompute_queue</code>. <b>This fires no matter how the UPDATE happens</b> — RPC call from the admin UI, or <code>fn_update_fencer_birth_year</code> called from a migration script, identically. So the SQL in this plan does trigger the self-heal correctly; the gap is entirely on the <em>drain</em> side, below.</li>
+      <li>A debounced worker (<code>python/pipeline/recompute/worker.py</code>) drains the queue and re-derives V-cat/score per affected event (<code>RECOMPUTE_DOMESTIC</code>). It does <b>not</b> run itself — something has to invoke it.</li>
+    </ul>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Resolved 2026-07-14 — the drain now runs on PROD too</p>
+      <p>This was a real gap when first found: <code>.github/workflows/recompute-drain.yml</code>'s own header said <b>"CERT only. LOCAL stays manual"</b>, and nothing drained a PROD <code>tbl_recompute_queue</code>. It mattered concretely, not just theoretically — the per-season category check below found that <b>SAMECKA-NACZYŃSKA Martyna's</b> correction genuinely re-brackets her SPWS-2024-2025 results (V0→V1), so a never-drained PROD queue entry would <em>not</em> have been harmless for this batch.</p>
+      <p style="margin-bottom:0">Amended as <a href="../adr/072-cdc-recompute-debounce.html#amendment-2026-07-14-extend-the-scheduled-drain-to-prod">ADR-072's 2026-07-14 amendment</a>: <code>.github/workflows/recompute-drain-prod.yml</code> now drains PROD every 15 minutes, joining the existing <code>prod-write</code> concurrency group so it never races a season/event-result promotion. Full investigation and resolution record: <a href="../audits/prod-recompute-drain-gap-2026-07-14.html">doc/audits/prod-recompute-drain-gap-2026-07-14.html</a>. CERT's job is unchanged.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Validation plan</p>
+    <h2>How this gets checked at every stage, LOCAL through PROD</h2>
+    <ol class="steps">
+      <li><span class="chip never">done</span> <code>postgrestools check</code> against the new migration file — zero findings.</li>
+      <li><span class="chip never">done</span> Applied to LOCAL with <code>supabase migration up</code> (incremental, no reset).</li>
+      <li><span class="chip never">done</span> Verified: all 10 <code>tbl_fencer</code> rows show the "BY now" values with <code>bool_birth_year_estimated = FALSE</code>; all 15 new rows exist with the expected name/BY/gender/nationality and no <code>txt_club</code>; fencer count 349 → 364.</li>
+      <li><span class="chip never">done</span> <code>trg_fencer_change_enqueue</code> enqueued <b>46 affected events</b> across the 10 corrections into <code>tbl_recompute_queue</code>.</li>
+      <li><span class="chip over">found a real bug — fixed, RED→GREEN</span> The first drain attempt crashed: <code>_commit_recompute</code> passed <code>ttype=NULL</code> into <code>tbl_tournament</code>'s <code>NOT NULL enum_type</code> column for events using the pre-ADR-046 legacy "GP{N}" code convention (2023-2024 season) — <code>derive_tourn_type_from_event_code</code> correctly returns <code>None</code> for an unrecognized prefix, and <code>_tournament_type</code>'s fallback (<code>event.get('enum_type')</code>) can never work because <code>tbl_event</code> has no such column. Fixed in <code>python/pipeline/plugins/ingest.py</code> (new <code>_existing_type</code> fallback reading a tournament type off an already-committed bracket for the event) + <code>python/pipeline/db_connector.py</code> (<code>fetch_event_tournaments</code> now also selects <code>enum_type</code>). New pgTAP-adjacent unit test <code>test_recompute_persist.py::test_derives_type_from_existing_when_code_unrecognized</code> (N9.8), RED confirmed before the fix, GREEN after. Full pytest (1056 passed) and pgTAP (685 assertions) re-run clean afterward.</li>
+      <li><span class="chip never">done</span> Re-ran the drain after the fix: all 46 events recomputed successfully, queue fully <code>DONE</code>. Confirmed directly: <b>SAMECKA-NACZYŃSKA Martyna's</b> 8 SPWS-2024-2025 results — including <code>IMEW-V1-F-EPEE-2024-2025</code> (European Veterans Championships 2025) — now show <code>V1</code>, not <code>V0</code>.</li>
+      <li><span class="chip never">done</span> Full pgTAP suite: 685/685 assertions pass (matches the documented Appendix D total — no drift, no Gate 3 change needed since no new pgTAP was added, only a Python unit test).</li>
+      <li><span class="chip never">done</span> <code>tbl_audit_log</code> (LOCAL): exactly 10 new <code>UPDATE</code> rows for <code>tbl_fencer</code>, each with the expected old/new <code>int_birth_year</code> and <code>bool_birth_year_estimated</code> values.</li>
+      <li><span class="chip warn">next</span> Commit the migration + the ingest.py/db_connector.py fix + this documentation, push to <code>main</code>. CI runs; on green, <code>release.yml</code> auto-deploys to CERT (<code>apply-migrations.sh cert</code>) and verifies the CERT schema fingerprint.</li>
+      <li><span class="chip warn">next</span> Query CERT's <code>tbl_fencer</code> for the same 10 names post-deploy — same assertion as above, now against CERT. Confirm <code>tbl_recompute_queue</code> on CERT drains on its own within 15 minutes (or dispatch <code>recompute-drain.yml</code> manually with <code>debounce: 0</code> to check immediately).</li>
+      <li><span class="chip warn">next</span> Only after CERT verification passes does <code>release.yml</code> continue to PROD (<code>apply-migrations.sh prod</code>) — this gate is enforced by the existing workflow, not something this plan adds.</li>
+      <li><span class="chip warn">next</span> Query PROD's <code>tbl_fencer</code> for the same 10 names post-deploy — same assertion, against PROD. Spot-check at least one row (e.g. <code>MŁYNEK Janusz</code>, <code>id_fencer</code> 197, BY 1951 — not the new BY 1984 row) in the admin Birth-Year Review UI (<code>BirthYearReview.svelte</code>) to confirm the "Confirmed" badge renders. Check PROD's <code>tbl_recompute_queue</code>: <code>recompute-drain-prod.yml</code> should claim and drain any <code>PENDING</code> rows within 15 minutes automatically — specifically confirm <b>SAMECKA-NACZYŃSKA Martyna's</b> SPWS-2024-2025 results flip from <code>V0</code> to <code>V1</code> without manual intervention. If a row is still <code>PENDING</code> after 15 minutes, dispatch <code>recompute-drain-prod.yml</code> manually with <code>debounce: 0</code> before escalating.</li>
+    </ol>
+    <div class="note accent">
+      <p class="lede">Documentation coherence gate</p>
+      <p>Impact: <b>domain</b> (fencer data correction) — no product, architecture, or operations surface changes. Owning current page: <code>doc/handbook/subsystems/identity-and-recompute.html</code> (no prose change needed — this migration doesn't alter how matching/aliasing works, it applies data already conforming to the existing alias/recompute contract). No new ADR — this follows the established correction pattern (ADR-056) rather than introducing a new one. No RTM/Appendix-D change — no new FR, no new test count. <code>deployed_migrations.json</code> updates automatically via <code>scripts/update-tracking.sh</code> as part of the normal release flow.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Boundaries — deliberately out of scope</p>
+    <h2>What this plan does not do</h2>
+    <ul>
+      <li><b>Does not attach tournament results</b> to the 15 new fencers — they have none in this batch, so they won't appear in any ranking output until they actually compete (correct: rankings join through <code>tbl_result</code>).</li>
+      <li><b>Does not resolve the KRAWCZYK/MŁYNEK same-name ambiguity</b> beyond birth year — flagged above as expected behavior for future ingestion, not fixed here.</li>
+      <li><b>Does not touch the 12 no-year-supplied names</b> — nothing to confirm without a year.</li>
+      <li><b>Does not re-run the ADR-056 midpoint backfill</b> — unrelated, already shipped.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · fencer-birth-year-master-list-2026-07 · reconcile 10 rows via fn_update_fencer_birth_year, LOCAL → CERT → PROD</p>
+</div>

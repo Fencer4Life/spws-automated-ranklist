@@ -1,0 +1,68 @@
+name: Recompute Self-Heal Drain (PROD)
+
+# ADR-072 amendment (2026-07-14): extend the self-healing recompute worker to PROD.
+# A master-data correction (birth year / nationality / a DEDUP_SWEEP merge) enqueues
+# the affected events via the CDC trigger `trg_fencer_change_enqueue`; this scheduled
+# job drains PROD's queue and re-derives V-cats + re-scores each affected event from
+# stored, FK-linked results (no source fetch, no re-match) — identical mechanics to
+# `recompute-drain.yml` (CERT), pointed at PROD instead.
+#
+# Concurrency group is `prod-write`, NOT a dedicated `prod-recompute` group: PROD
+# already has one shared-writer serialization point used by promote-season.yml,
+# evf-sync.yml and promote.yml specifically so season/calendar/event-result
+# promotion never overlaps. Joining that same group is what actually prevents a
+# recompute from racing a live promotion write to the same rows — a separate group
+# would not (two different concurrency groups run concurrently with each other).
+#
+# CERT's job, cadence and concurrency group are unchanged by this file.
+
+on:
+  schedule:
+    # Same cadence as the CERT drain. Combined with the worker's 120s debounce, a
+    # single edit or a multi-fencer DEDUP_SWEEP coalesces into one rerun per event.
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      debounce:
+        description: 'Seconds of roster quiet required before draining (0 = drain now)'
+        required: false
+        default: '120'
+
+jobs:
+  drain:
+    name: Drain recompute queue (PROD)
+    runs-on: ubuntu-latest
+    # Serialise with every other PROD writer (season/calendar/event-result
+    # promotion) so a recompute never races a live promotion write.
+    concurrency:
+      group: prod-write
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        # The recompute worker imports the full pipeline (run_flow → rulebook →
+        # plugins → stages → matcher/fuzzy_match), so it needs the same runtime
+        # deps as the other pipeline-runner workflows — not just supabase.
+        run: pip install supabase httpx rapidfuzz beautifulsoup4 pyyaml
+
+      - name: Drain the recompute queue
+        run: |
+          python -m python.pipeline.recompute.worker --drain --debounce "$DEBOUNCE"
+        env:
+          # Via env (not inline ${{ }}) so the operator-supplied input is never
+          # interpolated into the shell command — workflow-injection safe.
+          DEBOUNCE: ${{ github.event.inputs.debounce || '120' }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_PROD_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_PROD_SERVICE_ROLE_KEY }}
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d text="Recompute self-heal drain FAILED (PROD). Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

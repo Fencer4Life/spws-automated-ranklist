@@ -1,0 +1,242 @@
+<meta charset="utf-8">
+<title>The PROD recompute-drain gap, explained (resolved 2026-07-14)</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:16px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:12px 15px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:14.5px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+
+  .timeline{border-left:3px solid var(--line-strong);margin:20px 0 20px 10px;padding-left:0}
+  .tl-row{position:relative;padding:0 0 22px 30px;margin:0}
+  .tl-row::before{content:"";position:absolute;left:-8px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--surface);border:3px solid var(--accent)}
+  .tl-row.danger::before{border-color:var(--danger)}
+  .tl-row.good::before{border-color:var(--good)}
+  .tl-row .tl-env{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+  .tl-row.danger .tl-env{color:var(--danger)}
+  .tl-row.good .tl-env{color:var(--good)}
+  .tl-row p{margin:0 0 6px;max-width:60ch}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Investigation record · ADR-072 amendment (2026-07-14) · CERT vs PROD</p>
+  <h1>The PROD recompute-drain gap, explained</h1>
+  <p class="dek">A birth-year edit doesn't just change a number — it can move a fencer's result into a different age-category bracket, which has to be re-scored. That re-scoring was automatic on CERT and not on PROD. This is the investigation that found the gap, sized the actual risk, and the amendment that closed it.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>Resolved 2026-07-14 — recompute-drain-prod.yml shipped</span>
+    <span class="pill"><span class="dot"></span>See <a href="../adr/072-cdc-recompute-debounce.html">ADR-072 amendment</a></span>
+    <span class="pill warn"><span class="dot"></span>Verified against live workflow/migration source</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">The three moving parts</p>
+    <h2>Trigger → queue → worker</h2>
+    <p>The self-heal loop (ADR-072, built 2026-06-15) has three pieces, and they live at three different layers. Understanding the gap meant understanding that only two of the three were guaranteed to exist everywhere — the third was the one missing on PROD.</p>
+
+    <h3>1. The trigger — fires everywhere, automatically, by construction</h3>
+    <p><code>trg_fencer_change_enqueue</code> (<code>supabase/migrations/20260615000001_cdc_recompute_dedup.sql:84-88</code>) is a Postgres trigger:</p>
+    <pre class="trace">CREATE TRIGGER trg_fencer_change_enqueue
+    AFTER UPDATE ON tbl_fencer
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_fencer_change_enqueue();</pre>
+    <p>It's <b>column-aware</b> — it only acts if <code>int_birth_year</code> or <code>txt_nationality</code> actually changed (a name/alias edit enqueues nothing, since identity is the durable foreign key, not the display name, per ADR-003). When it fires, it calls <code>fn_enqueue_affected_events(id_fencer)</code>, which inserts one row into <code>tbl_recompute_queue</code> for every distinct <code>id_event</code> that fencer has a result in.</p>
+    <p>This trigger is defined once, in a migration. Once that migration is deployed to an environment, the trigger exists in that environment's database and fires on every UPDATE to that environment's <code>tbl_fencer</code>, unconditionally — regardless of whether the UPDATE came from a human clicking "Save" in the admin Birth-Year Review screen, a background script, or a hand-written SQL migration. The trigger was never the gap.</p>
+
+    <h3>2. The queue — a table, not a process</h3>
+    <p><code>tbl_recompute_queue</code> just holds rows: <code>id_event</code>, <code>enum_status</code> (<code>PENDING → CLAIMED → DONE</code>), timestamps. A partial unique index keeps at most one <code>PENDING</code> row per event. A row landing in this table does not, by itself, cause anything to happen — it sits <code>PENDING</code> until something claims it.</p>
+
+    <h3>3. The worker — the only thing that actually acts, and it did not run itself on PROD</h3>
+    <p><code>python/pipeline/recompute/worker.py</code>'s <code>drain_recompute_queue()</code> checks a debounce watermark (only proceeds once quiet ≥120s), claims every non-<code>DONE</code> row, runs <code>RECOMPUTE_DOMESTIC</code> (re-derive V-cat, re-partition results across brackets, re-score, re-count) for each affected event, marks them <code>DONE</code>. Real, working logic — but inert until its <code>main()</code> is invoked from a shell. As of this investigation, nothing invoked it against PROD.</p>
+  </section>
+
+  <section>
+    <p class="kicker">What "automated" meant, per environment, before the amendment</p>
+    <h2>Only one of the three environments had a scheduler pointed at it</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Environment</th><th>What invoked the worker</th><th>How often</th><th>Credentials</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>LOCAL</code></td>
+          <td>Nothing automatic. A developer runs <code>python -m python.pipeline.recompute.worker --drain</code> from a terminal.</td>
+          <td>Whenever a human remembers to</td>
+          <td><code>SUPABASE_URL</code>/<code>SUPABASE_KEY</code> from the shell environment — on a dev machine these come from <code>.env</code> and point at LOCAL by default (<code>python/pipeline/db_connector.py:678-679</code>).</td>
+        </tr>
+        <tr>
+          <td><code>CERT</code></td>
+          <td><code>.github/workflows/recompute-drain.yml</code> — scheduled GitHub Actions job, plus manual <code>workflow_dispatch</code>.</td>
+          <td>Every 15 minutes (<code>cron: '*/15 * * * *'</code>)</td>
+          <td><code>secrets.SUPABASE_CERT_URL</code> / <code>secrets.SUPABASE_CERT_SERVICE_ROLE_KEY</code> — hardcoded to CERT.</td>
+        </tr>
+        <tr>
+          <td><code>PROD</code> <span class="chip warn">before 2026-07-14</span></td>
+          <td>Nothing. No workflow file referenced PROD + recompute anywhere in <code>.github/workflows/</code>. No documented manual runbook step either.</td>
+          <td>Never, unless someone built this by hand</td>
+          <td>Would have required exporting PROD's URL and service-role key by hand and running the CLI locally — not automated or written down anywhere.</td>
+        </tr>
+      </tbody>
+    </table></div>
+    <p>The CERT workflow said this about itself, verbatim (<code>recompute-drain.yml:10-12</code>, unchanged by this amendment): <em>"CERT only. LOCAL stays manual."</em> That matched ADR-072's own original framing (<em>"the drain runs as a GitHub Actions cron... every 15 min against CERT"</em>) — PROD was never in scope for the original 2026-06-16 scheduler realization.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Walking it through — the same edit, three environments, before the fix</p>
+    <h2>What would have happened correcting the same fencer's birth year</h2>
+    <div class="timeline">
+      <div class="tl-row good">
+        <div class="tl-env">LOCAL</div>
+        <p><code>UPDATE tbl_fencer</code> runs → <code>trg_fencer_change_enqueue</code> fires → the affected event lands in LOCAL's <code>tbl_recompute_queue</code> as <code>PENDING</code> → it sits there until a developer runs the worker CLI by hand. Accepted as normal for a dev sandbox.</p>
+      </div>
+      <div class="tl-row good">
+        <div class="tl-env">CERT</div>
+        <p>Same trigger fires; within at most 15 minutes <code>recompute-drain.yml</code> claims the row, recomputes, marks it <code>DONE</code>. The scenario ADR-072 was built for.</p>
+      </div>
+      <div class="tl-row danger">
+        <div class="tl-env">PROD <span style="font-weight:600">(before this amendment)</span></div>
+        <p>Same trigger fires — PROD has the identical schema. The affected event lands in PROD's <code>tbl_recompute_queue</code> as <code>PENDING</code>, and then nothing drains it. The raw <code>int_birth_year</code> column would be correct; the event's derived V-cat bracket, counts and scores would stay stale on the live public ranklist until someone noticed and ran a recompute by hand.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Why the asymmetry existed — a design choice, not an oversight</p>
+    <h2>PROD wasn't originally meant to be where master-data corrections originate</h2>
+    <ul>
+      <li><b>ADR-072</b> framed the self-heal loop as solving a CERT problem: "Birth years will be wrong on first ingest and corrected repeatedly during cleanup" — cleanup is a CERT-side activity (identity resolution, alias review, dedup sweeps against CERT's live roster during ingestion review).</li>
+      <li><b>The environments-and-release handbook page's promotion-contracts table</b> lists exactly three things that move CERT→PROD: season skeleton/config, calendar events, event results. No "fencer master data" row. The implied original model: identity gets corrected and self-healed on CERT, and PROD receives already-recomputed event results through normal promotion — not an independent copy of <code>tbl_fencer</code> corrections plus its own recompute cycle.</li>
+    </ul>
+    <p>Directly editing PROD's <code>tbl_fencer</code> — which the organizer's 2026-07 master-list reconciliation does, writing confirmed birth years to LOCAL, CERT and PROD in one migration rather than staging on CERT and waiting for a later promotion cycle — was a genuinely different shape of operation than the original architecture assumed. Schema-permitted (the trigger doesn't care which environment or how the UPDATE arrives); not, until this amendment, operationally supported (nothing drained what it enqueued on PROD).</p>
+  </section>
+
+  <section>
+    <p class="kicker">Why this mattered concretely, not just in theory</p>
+    <h2>9 of 10 birth-year corrections are neutral; 1 genuinely re-brackets, in a past season</h2>
+    <p><code>RECOMPUTE_DOMESTIC</code>'s entire reason for existing is re-bracketing: moving a result from one V-cat bracket to another when a corrected birth year crosses a threshold (V0↔V1↔V2↔V3↔V4 at ages 30/40/50/60/70). Checking each of the 10 real corrections in the birth-year batch against every season the fencer actually has a result in — not only the current season — surfaced one real case:</p>
+    <div class="note danger">
+      <p class="lede"><span class="tick">!</span> SAMECKA-NACZYŃSKA Martyna — V0 → V1 in SPWS-2024-2025, invisible in the current season</p>
+      <p>BY 1986 → 1985. At SPWS-2024-2025's season end (2025) that's age 39 (old, V0) → age 40 (new, V1) — a genuine boundary crossing. At the current SPWS-2025-2026 season she's already V1 either way, which is exactly why a current-season-only check would have missed it. 8 of her SPWS-2024-2025 results — including <code>IMEW-V0-F-EPEE-2024-2025</code> (European Veterans Championships 2025) — sit in <code>V0</code> brackets and move to <code>V1</code>. Recompute is not a no-op for this fencer, on any environment.</p>
+    </div>
+    <p>The other 9 corrections check out clean across every season they have results in — a recompute for them touches the same bracket they're already in. But Martyna's case alone was enough to make "PROD queue entries that never drain are harmless" false for this exact batch, not just as a hypothetical future risk.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Resolution — what was actually built</p>
+    <h2>ADR-072 amended; <code>recompute-drain-prod.yml</code> shipped 2026-07-14</h2>
+    <p>Rather than holding PROD's birth-year corrections back or leaving a manual-drain contingency, the self-heal loop was extended to PROD as an amendment to ADR-072 — see the <a href="../adr/072-cdc-recompute-debounce.html#amendment-2026-07-14-extend-the-scheduled-drain-to-prod">full amendment text</a>. In short:</p>
+    <ul>
+      <li>New workflow <code>.github/workflows/recompute-drain-prod.yml</code> — structurally identical to CERT's (same 15-minute cron, same worker invocation, same manual-dispatch debounce input, same Telegram-on-failure step), pointed at <code>secrets.SUPABASE_PROD_URL</code> / <code>secrets.SUPABASE_PROD_SERVICE_ROLE_KEY</code> (both already-provisioned — no new credential).</li>
+      <li><b>Concurrency group is the existing <code>prod-write</code>, not a new dedicated group.</b> <code>promote-season.yml</code>, <code>evf-sync.yml</code> and <code>promote.yml</code> already share <code>prod-write</code> so PROD writers never overlap; the recompute drain joins that same group rather than getting its own, which is what actually prevents it from racing a live season/event-result promotion.</li>
+      <li><b>No new escalation code needed.</b> A below-minimum-bracket auto-drop (ADR-074, no-halt) already surfaces via the <code>POST_COMMIT</code> reactor's <code>ON_LOSS</code> Telegram escalation whenever <code>RECOMPUTE_DOMESTIC</code> reaches <code>Commit</code> — verified to fire identically regardless of which environment's database the flow ran against, so a dropped bracket on PROD alerts exactly like one on CERT does today.</li>
+      <li>CERT's job, cadence and concurrency group are unchanged.</li>
+      <li>Cataloged in the <a href="../handbook/reference/workflow-catalog.html">workflow catalog</a> and the <a href="../handbook/operations/operator-runbooks.html">operator runbooks</a>' "Repair after identity/master-data change" procedure.</li>
+    </ul>
+  </section>
+
+  <p class="foot">investigation + resolution record · prod-recompute-drain-gap · verified against .github/workflows/recompute-drain.yml, .github/workflows/recompute-drain-prod.yml, doc/adr/072-cdc-recompute-debounce.md, supabase/migrations/20260615000001_cdc_recompute_dedup.sql, python/pipeline/recompute/worker.py, python/pipeline/db_connector.py · referenced from ADR-072, the workflow catalog and operator runbooks · supports <a href="../plans/fencer-birth-year-master-list-2026-07.html">fencer-birth-year-master-list-2026-07.html</a></p>
+</div>

@@ -167,3 +167,27 @@ class TestRecomputePersist:
         # only the BY-known fencer's bracket is written
         assert db.find_or_create_tournament.call_count == 1
         assert ctx.get("committed")["persisted"] is True
+
+    def test_derives_type_from_existing_when_code_unrecognized(self):
+        """N9.8 a legacy event code (pre-ADR-046 'GP{N}', 2023-2024 season) does
+        not match any known prefix, so derive_tourn_type_from_event_code returns
+        None -- and tbl_event has no enum_type column, so _tournament_type's
+        `event.get('enum_type')` fallback can never succeed for these events.
+        Recompute must read the type off an already-committed tournament for
+        this event instead of passing ttype=None to find_or_create_tournament
+        (which fails tbl_tournament's enum_type NOT NULL constraint live)."""
+        matches = [_m(1, 1, 1993, weapon="EPEE")]  # -> V0
+        db = _db(
+            existing_tournaments=[
+                {
+                    "id_tournament": 55,
+                    "enum_weapon": "SABRE",
+                    "enum_gender": "M",
+                    "enum_age_category": "V0",
+                    "enum_type": "PPW",
+                },
+            ]
+        )
+        _run(_ctx(matches, event_code="GP3-2023-2024"), db)
+        ttypes = {c.args[5] for c in db.find_or_create_tournament.call_args_list}
+        assert ttypes == {"PPW"}
