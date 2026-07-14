@@ -182,16 +182,40 @@ jobs:
 
       - name: Commit tracking update
         if: steps.check.outputs.has_new_migrations == 'true'
+        # Retry-and-regenerate instead of stash/rebase/stash-pop: the old
+        # sequence stashed a locally-computed JSON diff, pulled, then tried
+        # to 3-way-merge that stash back in -- guaranteed to CONFLICT
+        # whenever two Release runs land close together, since both compute
+        # independent diffs of the same auto-generated file (observed live
+        # 2026-07-14: a manual dispatch and the CI-triggered run collided,
+        # the second's tracking commit failed outright). update-tracking.sh
+        # is idempotent -- it re-derives the file from whatever's on disk --
+        # so on a push race we just re-fetch, reset to the new tip (safe:
+        # this is a disposable checkout, no other local work exists), and
+        # regenerate + recommit against that fresh base instead of merging.
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add deployed_migrations.json release-manifest.json
-          git stash
-          git pull --rebase origin main
-          git stash pop
-          git add deployed_migrations.json release-manifest.json
-          git commit -m "chore: update CERT tracking [skip ci]"
-          git push
+          for attempt in 1 2 3 4 5; do
+            bash scripts/update-tracking.sh cert \
+              "${{ github.sha }}" \
+              "${{ needs.build.outputs.schema_fingerprint }}" \
+              '${{ steps.check.outputs.new_migrations }}'
+            git add deployed_migrations.json release-manifest.json
+            git commit -m "chore: update CERT tracking [skip ci]"
+            if git push; then
+              echo "Pushed on attempt $attempt"
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              echo "::error::Failed to push CERT tracking update after 5 attempts" >&2
+              exit 1
+            fi
+            echo "Push rejected (race with a concurrent release run) -- refetching and retrying ($attempt/5)"
+            sleep $(( (RANDOM % 5) + 1 ))
+            git fetch origin main
+            git reset --hard origin/main
+          done
 
   # ─── Deploy PROD ──────────────────────────────────────────────────
   deploy-prod:
@@ -257,13 +281,28 @@ jobs:
 
       - name: Commit tracking update
         if: steps.check.outputs.has_new_migrations == 'true'
+        # See the matching comment on deploy-cert's "Commit tracking update"
+        # -- same retry-and-regenerate fix, same race it closes.
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add deployed_migrations.json release-manifest.json
-          git stash
-          git pull --rebase origin main
-          git stash pop
-          git add deployed_migrations.json release-manifest.json
-          git commit -m "chore: update PROD tracking [skip ci]"
-          git push
+          for attempt in 1 2 3 4 5; do
+            bash scripts/update-tracking.sh prod \
+              "${{ github.sha }}" \
+              "${{ needs.build.outputs.schema_fingerprint }}" \
+              '${{ steps.check.outputs.new_migrations }}'
+            git add deployed_migrations.json release-manifest.json
+            git commit -m "chore: update PROD tracking [skip ci]"
+            if git push; then
+              echo "Pushed on attempt $attempt"
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              echo "::error::Failed to push PROD tracking update after 5 attempts" >&2
+              exit 1
+            fi
+            echo "Push rejected (race with a concurrent release run) -- refetching and retrying ($attempt/5)"
+            sleep $(( (RANDOM % 5) + 1 ))
+            git fetch origin main
+            git reset --hard origin/main
+          done
