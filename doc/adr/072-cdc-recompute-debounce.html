@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="072-cdc-recompute-debounce.md">
-<meta name="adr-source-sha256" content="ce4128b224e489b2d2e3f565da52790f6d68af0502abd3bbe6d705c7949556e4">
+<meta name="adr-source-sha256" content="23ae3af5fcab3981d442cdaa01618b277d4143581e5a2cae878bbd4807e518bd">
 <title>ADR-072 · Master-data-change-triggered idempotent recompute (CDC queue + debounce)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 072</p><h1>Master-data-change-triggered idempotent recompute (CDC queue + debounce)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §6 / §8. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY), ADR-070 (identity) / ADR-071 (dedup) — the change <em>sources</em>; ADR-041 (edge-function dispatch), ADR-074 (no-halt recompute). This ADR builds the <strong>self-healing</strong> half of the pipeline.</dd></div><div><dt>Source</dt><dd class=""><code>072-cdc-recompute-debounce.md</code></dd></div><div><dt>Length</dt><dd class="">98 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §6 / §8. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY), ADR-070 (identity) / ADR-071 (dedup) — the change <em>sources</em>; ADR-041 (edge-function dispatch), ADR-074 (no-halt recompute). This ADR builds the <strong>self-healing</strong> half of the pipeline.</dd></div><div><dt>Source</dt><dd class=""><code>072-cdc-recompute-debounce.md</code></dd></div><div><dt>Length</dt><dd class="">161 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
 <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §6 / §8. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.
 <strong>Date:</strong> 2026-06-14
@@ -21,7 +21,7 @@ ADR-074 (no-halt recompute). This ADR builds the <strong>self-healing</strong> h
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</a></li><li class="depth-2"><a href="#amendment-2026-06-26-deterministic-claimed-recovery-no-time-heuristic">Amendment (2026-06-26) — deterministic CLAIMED recovery (no time heuristic)</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</a></li><li class="depth-2"><a href="#amendment-2026-06-26-deterministic-claimed-recovery-no-time-heuristic">Amendment (2026-06-26) — deterministic CLAIMED recovery (no time heuristic)</a></li><li class="depth-2"><a href="#amendment-2026-07-14-extend-the-scheduled-drain-to-prod">Amendment (2026-07-14) — extend the scheduled drain to PROD</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>Birth years will be wrong on first ingest and corrected repeatedly during cleanup; merges (ADR-071) move
 results between fencers. A correction must propagate to the live ranking <strong>automatically</strong>, or
@@ -106,8 +106,72 @@ the same event; recompute is idempotent, so the queue converges to DONE.</p>
 <p>Verified live: re-draining CERT reclaimed the 39 stranded rows (20 distinct events
 recomputed) → queue all DONE. Test: <code>python/tests/test_db_connector.py</code>
 (<code>test_claim_recompute_batch_reclaims_orphaned_claimed</code>).</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-07-14-extend-the-scheduled-drain-to-prod">Amendment (2026-07-14) — extend the scheduled drain to PROD</h2>
+<p><strong>Context.</strong> Every prior drain of this loop ran against CERT only (Step C, 2026-06-16); PROD
+carried the trigger and the queue table (same schema, same migrations) but nothing ever
+invoked the worker there — <code>recompute-drain.yml</code>'s own header says so: &quot;CERT only. LOCAL
+stays manual.&quot; That gap was survivable while master-data corrections originated on CERT and
+reached PROD only through the normal event/results promotion path (environments doc,
+promotion-contracts table — no &quot;fencer master data&quot; row). The organizer master-list birth-year
+reconciliation (<code>doc/plans/fencer-birth-year-master-list-2026-07.html</code>) changes that: it writes
+<code>int_birth_year</code> corrections directly to <code>tbl_fencer</code> on LOCAL, CERT, <strong>and</strong> PROD in one
+migration, per the organizer's explicit ask, rather than staging the correction on CERT and
+waiting for a later promotion cycle to carry it over. One correction in that batch
+(SAMECKA-NACZYŃSKA Martyna, BY 1986→1985) genuinely re-brackets a past season
+(SPWS-2024-2025, V0→V1) — a real <code>RECOMPUTE_DOMESTIC</code> case, not a formality — so a PROD queue
+entry that never drains is no longer a theoretical gap; see the investigation record,
+<a href="../audits/prod-recompute-drain-gap-2026-07-14.html"><code>doc/audits/prod-recompute-drain-gap-2026-07-14.html</code></a>.</p>
+<p><strong>Decision.</strong> Add <code>recompute-drain-prod.yml</code>, structurally identical to <code>recompute-drain.yml</code>
+(same 15-minute cron, same <code>--drain</code> worker invocation, same manual-dispatch <code>debounce</code> input,
+same Telegram-on-failure step) but pointed at <code>secrets.SUPABASE_PROD_URL</code> /
+<code>secrets.SUPABASE_PROD_SERVICE_ROLE_KEY</code> (both already-provisioned secrets — no new credential).
+CERT's dedicated job, cadence and concurrency group are untouched.</p>
+<ul>
+<li><strong>Concurrency group is <code>prod-write</code>, not a new <code>prod-recompute</code> group.</strong> CERT's job owns its
+own <code>cert-recompute</code> group because nothing else writes to CERT on a schedule that would
+collide with it. PROD is different: <code>promote-season.yml</code>, <code>evf-sync.yml</code> and <code>promote.yml</code>
+already share one group, <code>prod-write</code>, precisely so season/calendar/event-result promotion
+never runs concurrently with itself. The recompute drain is one more PROD writer and joins
+the same group — a dedicated group would let a recompute run mid-write during a season or
+results promotion touching the same rows, which <code>prod-write</code> exists to prevent.</li>
+<li><strong>No new escalation path needed.</strong> A below-minimum-bracket auto-drop during recompute
+(ADR-074, no-halt) already surfaces via the <code>POST_COMMIT</code> reactor's <code>ON_LOSS</code> Telegram
+escalation whenever <code>RECOMPUTE_DOMESTIC</code> reaches <code>Commit</code> — this fires identically regardless
+of which environment's database the flow ran against, so PROD gets the same &quot;a bracket was
+dropped&quot; alert CERT already gets, with no additional code.</li>
+<li><strong>Same cadence, same debounce.</strong> 15-minute cron, worker's existing 120s <code>DEBOUNCE_WINDOW</code> —
+consistent with CERT rather than inventing a different rhythm for PROD.</li>
+</ul>
+<p><strong>Alternatives considered.</strong></p>
+<ul>
+<li><strong>Hold PROD's queue undrained, rely on a human to notice.</strong> Rejected: defeats the entire
+point of &quot;self-healing&quot; for the one environment operators and the public actually see;
+already-known to bite (this exact batch has a real re-bracket, not a hypothetical one).</li>
+<li><strong>A dedicated <code>prod-recompute</code> concurrency group, mirroring CERT's <code>cert-recompute</code>.</strong>
+Rejected: PROD already has a shared-writer serialization point (<code>prod-write</code>); a second,
+independent group would not actually prevent a recompute from racing a live promotion job,
+since two different concurrency groups run concurrently with each other by definition.</li>
+<li><strong>Fold PROD's drain into the existing <code>recompute-drain.yml</code> as a second job in the same
+file.</strong> Considered for brevity; rejected in favor of a separate file to keep one
+workflow = one concurrency domain = one catalog row, matching how <code>promote.yml</code> /
+<code>promote-season.yml</code> / <code>evf-sync.yml</code> are already split rather than combined.</li>
+</ul>
+<p><strong>Consequences.</strong></p>
+<ul>
+<li>PROD is now a second automated drain target; LOCAL remains manual, unchanged.</li>
+<li>New workflow <code>recompute-drain-prod.yml</code>, cataloged in
+<a href="../handbook/reference/workflow-catalog.html">workflow catalog</a> and
+<a href="../handbook/operations/operator-runbooks.html">operator runbooks</a>.</li>
+<li>No new secrets, no schema change, no new pgTAP surface — this amendment is entirely a
+scheduling/operational change reusing existing, already-tested mechanics.</li>
+<li>Direct-to-PROD master-data edits (rather than CERT-then-promote) are now operationally
+supported by the self-heal loop, not just schema-permitted — worth naming so future sessions
+don't assume the CERT-centric framing in the original 2026-06-14 Decision is still the whole
+story.</li>
+</ul>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="071-mdm-dedup-sweep.html">← ADR-071: Master-data management + eventual-consistency dedup (DEDUP_SWEEP)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="073-plugin-rule-engine-architecture.html">→ ADR-073: Plugin + rule-engine ingestion architecture</a></nav>
-<footer class="foot">Generated from <code>072-cdc-recompute-debounce.md</code> · source SHA-256 <code>ce4128b224e489b2d2e3f565da52790f6d68af0502abd3bbe6d705c7949556e4</code></footer>
+<footer class="foot">Generated from <code>072-cdc-recompute-debounce.md</code> · source SHA-256 <code>23ae3af5fcab3981d442cdaa01618b277d4143581e5a2cae878bbd4807e518bd</code></footer>
 </div></body></html>

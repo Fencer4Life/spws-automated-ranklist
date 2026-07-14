@@ -249,15 +249,19 @@ class DbConnector:
         ]
 
     def fetch_event_tournaments(self, id_event: int) -> list[dict]:
-        """Return an event's committed tournaments (id + weapon/gender/V-cat).
+        """Return an event's committed tournaments (id + weapon/gender/V-cat/type).
 
         ADR-072 (Step C) — RECOMPUTE_DOMESTIC uses this to detect brackets that
         a birth-year relocation has *emptied*: a tournament present here but not
         rewritten by the re-partition must be cleared (`clear_tournament_results`).
+        `enum_type` is also read here so recompute can recover a tournament type
+        for events whose code predates the derivable PPW{N}/MPW/PEW{N}/etc.
+        prefix convention (ADR-046) — `tbl_event` itself has no `enum_type`
+        column, so an existing tournament row is the only source of truth left.
         """
         resp = (
             self._sb.table("tbl_tournament")
-            .select("id_tournament,enum_weapon,enum_gender,enum_age_category")
+            .select("id_tournament,enum_weapon,enum_gender,enum_age_category,enum_type")
             .eq("id_event", id_event)
             .execute()
         )

@@ -444,7 +444,13 @@ class Commit(BasePlugin):
         db = svc.db
         event_id = event["id_event"]
         season_end = pctx.season_end_year if pctx else None
-        ttype = self._tournament_type(pctx, event)
+        existing = self._existing_tournaments(db, event_id)
+        # Legacy event codes (pre-ADR-046, e.g. 2023-2024 season "GP{N}") don't
+        # match any derivable prefix, and tbl_event carries no enum_type column
+        # for _tournament_type's own fallback to read -- so when derivation
+        # fails, recover the type from a tournament this event already has
+        # rather than pass ttype=None into tbl_tournament's NOT NULL column.
+        ttype = self._tournament_type(pctx, event) or self._existing_type(existing)
         matches = ctx.get("matches") or []
 
         groups: dict[tuple, list] = {}
@@ -482,7 +488,6 @@ class Commit(BasePlugin):
 
         # Drop: clear pre-existing brackets the re-partition no longer fills.
         cleared: list[int] = []
-        existing = self._existing_tournaments(db, event_id)
         rewritten_keys = {(w, g, v) for (w, g, v) in groups}
         for t in existing:
             key = (t.get("enum_weapon"), t.get("enum_gender"), t.get("enum_age_category"))
@@ -511,6 +516,19 @@ class Commit(BasePlugin):
             return []
         res = fn(event_id)
         return res if isinstance(res, list) else []
+
+    @staticmethod
+    def _existing_type(existing: list) -> str | None:
+        """Recompute-only fallback for `_tournament_type`: when an event's code
+        doesn't derive a type (legacy pre-ADR-046 codes, e.g. 2023-2024 season
+        "GP{N}"), `tbl_event` has no `enum_type` column for `_tournament_type`'s
+        own fallback to read -- but every tournament already committed under an
+        event shares one type, so read it off any existing row instead of
+        passing `None` into `tbl_tournament`'s `NOT NULL enum_type` column."""
+        for t in existing:
+            if t.get("enum_type"):
+                return t["enum_type"]
+        return None
 
     def _row(self, m, place=None) -> dict:
         # `place` overrides m.place with the BRACKET-relative rank (1..N) computed
