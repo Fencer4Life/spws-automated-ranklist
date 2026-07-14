@@ -1,6 +1,6 @@
 # ADR-080: Clean-Roster FTL Seeding
 
-**Status:** Accepted (target design — committed direction for domestic SPWS events; rollout in progress. Phase 3 seed export partial; organizer delivery and scrape-back wiring pending — see spec §5.2 for phase status.)
+**Status:** Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2.)
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-079
 
@@ -155,9 +155,41 @@ the zip → stamp `ts_ftl_sent` — is fired by three triggers (DRY, one impleme
 | Telegram `send <EVENT_CODE> participants` (doc/gas/Code.gs) | Allowlisted user (≈ admin) | phone-friendly day-of trigger; renamed from an earlier `/seed` draft to avoid colliding with the existing DB-backup `export-seed` command |
 
 **Generate-at-send** (never a pre-stored attachment) keeps every send fresh despite
-late/day-of entries. Requires a new email/SMTP capability (current outbound is
-Telegram alerts only). The roster is personal data sent to a recipient (organizer),
+late/day-of entries. The roster is personal data sent to a recipient (organizer),
 recorded in the ADR-078 ROPA.
+
+**Implemented delivery contract (2026-07-13).** `ftl-seed.yml` invokes
+`python.pipeline.ftl_feed_seed_send`, builds the current mix-all bundle entirely in
+memory, and sends it as the SPWS Gmail account over `SMTP_SSL` to
+`smtp.gmail.com:465` with certificate and hostname verification. It stamps
+`ts_ftl_sent` through service-role-only `fn_mark_ftl_sent` only after SMTP accepts
+the recipient. SMTP failure therefore never stamps. If SMTP succeeds but the stamp
+fails, the run fails visibly and a retry may duplicate the message: delivery is
+deliberately **at-least-once**, not exactly-once. Manual UI/Telegram triggers are
+explicit re-sends; the daily sweep selects only unstamped, live events whose cutoff
+has passed and skips empty bundles. The scheduled PROD job ships disabled and runs
+only when repository variable `ENABLE_FTL_DEADLINE_SEND=true` after the CERT pilot.
+
+<svg viewBox="0 0 760 190" role="img" aria-label="FTL organizer delivery flow" style="width:100%;height:auto;color:var(--ink,#17202a)">
+  <defs><marker id="ftl-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent,#b64b32)"/></marker></defs>
+  <g fill="var(--surface,#fff)" stroke="var(--line,#cad0d8)" stroke-width="2">
+    <rect x="10" y="18" width="135" height="42" rx="9"/><rect x="10" y="74" width="135" height="42" rx="9"/><rect x="10" y="130" width="135" height="42" rx="9"/>
+    <rect x="205" y="62" width="145" height="66" rx="9"/><rect x="410" y="62" width="145" height="66" rx="9"/><rect x="615" y="62" width="135" height="66" rx="9"/>
+  </g>
+  <g fill="currentColor" font-family="system-ui,sans-serif" font-size="13" text-anchor="middle">
+    <text x="77" y="44">Admin button</text><text x="77" y="100">Telegram command</text><text x="77" y="156">Gated daily sweep</text>
+    <text x="277" y="88">ftl-seed.yml</text><text x="277" y="108">CERT / PROD</text>
+    <text x="482" y="83">Fresh in-memory ZIP</text><text x="482" y="103">Gmail SMTP_SSL</text><text x="482" y="119">then success stamp</text>
+    <text x="682" y="88">Organizer inbox</text><text x="682" y="108">+ Telegram status</text>
+  </g>
+  <g fill="none" stroke="var(--accent,#b64b32)" stroke-width="2" marker-end="url(#ftl-arrow)"><path d="M145 39 L205 82"/><path d="M145 95 L205 95"/><path d="M145 151 L205 108"/><path d="M350 95 L410 95"/><path d="M555 95 L615 95"/></g>
+</svg>
+
+Credentials remain server-side in GitHub Actions secrets. The Gmail App Password is
+independently revocable but is still a high-value account credential: never log or
+persist it, and rotate it on suspected exposure. This solves organizer delivery
+only; ADR-079's public OTP-email problem is a distinct, higher-volume capability and
+remains out of scope.
 
 **UI constraint (add-only).** The manual button + the new event fields
 (`txt_organizer_email`, `ts_ftl_sent`, fee tiers, `url_entry_list`,
@@ -184,6 +216,9 @@ directly; the mix-all pool is pools-only and not ranked.
 - Roll out **pilot-first** (one upcoming PPW, validate register→seed→FTL→scrape→
   ranklist) before enabling the season; per-event `bool_use_spws_registration`
   allows event-by-event migration off competit.pl.
+- Delivery is intentionally at-least-once. An SMTP-accepted/stamp-failed run can
+  duplicate on retry; exact-once delivery would require a durable attempt/lease
+  model and is not justified for the current one-recipient operational volume.
 
 ## References
 

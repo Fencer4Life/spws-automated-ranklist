@@ -517,6 +517,8 @@ export async function updateEvent(id: number, params: UpdateEventParams): Promis
     // no SPWS registration) so the column is cleared, not stored as an empty
     // string that CalendarView would render as a link with an empty href.
     p_url_entry_list: params.urlEntryList || null,
+    // FR-131 — NULL means unchanged; '' is the RPC's explicit clear sentinel.
+    p_txt_organizer_email: params.organizerEmail,
   })
   if (error) throw error
 }

@@ -1,0 +1,515 @@
+<meta charset="utf-8">
+<title>Email the FTL seed files to the organizer — as the SPWS Gmail, no domain</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.good .dot{background:var(--good)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note ul{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.done{color:var(--good);background:var(--good-soft)}
+  .chip.build{color:var(--accent);background:var(--accent-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.code{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.code b{color:var(--accent-ink)}
+  pre.code .cm{color:var(--faint)}
+
+  .figure{margin:20px 0}
+  .figure svg{width:100%;height:auto;display:block;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px}
+  figcaption{font-size:15px;color:var(--faint);font-style:italic;margin-top:10px;max-width:64ch}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">FTL seed delivery · ADR-080 §5 · Implementation Plan</p>
+  <h1>Email the seed files to the organizer — as the SPWS Gmail, no domain</h1>
+  <p class="dek">The "deliver" arrow of the §5 pipeline was logged as <b>blocked on a new SMTP capability / Resend + an <code>eu.org</code> domain</b>. It never needed any of that. SPWS already runs a dedicated Gmail — the one that scrapes results back in. We send <b>as that same account</b> over verified TLS, straight from the Python pipeline. No domain, no Resend, no eu.org.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Implementation built · environment gates pending</span>
+    <span class="pill">new <code>ftl_feed_seed_send.py</code></span>
+    <span class="pill">new <code>fn_mark_ftl_sent</code></span>
+    <span class="pill good"><span class="dot"></span>SMTP_SSL 465 · verified TLS</span>
+    <span class="pill warn"><span class="dot"></span>1 app-password secret (yours)</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Read order · locked decisions</p>
+    <h2>Implement the edges, not only the SMTP call</h2>
+    <ol>
+      <li>Read the locked delivery semantics and scenarios below.</li>
+      <li>Implement the Python and SQL contracts test-first.</li>
+      <li>Wire the workflow boundary, EventManager and Telegram adapter.</li>
+      <li>Pilot manually on CERT; PROD automation remains gated until sign-off.</li>
+      <li>Complete the documentation coherence gate and operational references.</li>
+    </ol>
+    <div class="note accent">
+      <p class="lede">Locked for this implementation</p>
+      <ul>
+        <li><b>Payload:</b> the current exporter emits mix-all files only. Predicted DE-bracket generation remains deferred and is never represented as complete.</li>
+        <li><b>Reliability:</b> delivery is <b>at-least-once</b>. Manual UI/Telegram runs are deliberate re-sends and replace <code>ts_ftl_sent</code>; the deadline sweep selects only unstamped events.</li>
+        <li><b>Partial failure:</b> SMTP acceptance precedes the stamp. A stamp failure may cause a duplicate retry; exact-once delivery would require a durable delivery-attempt/lease model and is out of scope.</li>
+        <li><b>Rollout:</b> manual CERT first. The PROD schedule is present but disabled unless repository variable <code>ENABLE_FTL_DEADLINE_SEND=true</code>.</li>
+        <li><b>Secrets:</b> app-password authentication is accepted as a pragmatic mailbox credential, without claiming protocol-limited account scope. Logs never print credentials or full recipient addresses.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Scenario walk-throughs</p>
+    <h2>Happy path, retry path and adjacent failure</h2>
+    <h3>Manual CERT pilot</h3>
+    <p>The admin saves the organizer address, clicks send, the trusted Edge Function dispatches <code>ftl-seed.yml</code> to CERT, Python resolves event + season metadata, generates a non-empty mix-all ZIP in memory, Gmail accepts the message, <code>fn_mark_ftl_sent</code> stamps the event, and the UI refresh exposes the timestamp.</p>
+    <h3>Deliberate resend</h3>
+    <p>The same UI or Telegram action may run again after a late registration. It regenerates the ZIP from current declarations and updates <code>ts_ftl_sent</code>. This is intentional, not deduplicated.</p>
+    <h3>Deadline sweep</h3>
+    <p>The gated PROD schedule considers only SPWS-registration events whose cutoff date has passed, whose event has not ended or been cancelled/completed, whose organizer address exists, and whose <code>ts_ftl_sent</code> is NULL. Empty registration bundles are skipped safely.</p>
+    <h3>SMTP accepted, stamp fails</h3>
+    <p>The workflow fails and reports the ambiguity without logging the recipient or secret. A later retry can duplicate the email; the operator-facing runbook names that at-least-once boundary.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Environment parity</p>
+    <h2>LOCAL rehearses; CERT proves; PROD stays gated</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Environment</th><th>Supported behavior</th><th>Guard</th></tr></thead>
+      <tbody>
+        <tr><td>LOCAL</td><td>Unit/contract tests and <code>--dry-run</code>; generate manifest without SMTP or stamp.</td><td>No credential required; never run bare <code>supabase db reset</code>.</td></tr>
+        <tr><td>CERT</td><td>Manual UI/workflow pilot, deliberate resend, test inbox and FTL import validation.</td><td>CERT Supabase service role; explicit target.</td></tr>
+        <tr><td>PROD</td><td>Manual/Telegram delivery; deadline sweep after pilot.</td><td>Schedule job requires <code>ENABLE_FTL_DEADLINE_SEND=true</code>.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Why</p>
+    <h2>The blocker was the sender identity, not the email</h2>
+    <p>ADR-080 §5 defines <code>send_seed_to_organizer(event)</code>: generate FIE-XML seed files from an event's declared registrations, email the zip to <code>tbl_event.txt_organizer_email</code>, stamp <code>ts_ftl_sent</code>. The recorded blocker was &ldquo;a new email/SMTP capability&rdquo; that spiralled into a free <code>eu.org</code> domain + Cloudflare + Resend + a multi-day manual approval — heavy machinery bolted onto &ldquo;send one email.&rdquo;</p>
+    <div class="note danger">
+      <p class="lede"><span class="tick">✗</span> The over-engineering</p>
+      <p style="margin-bottom:0">Resend's <em>only</em> verification mode is full-domain DNS — so a provider choice forced a domain-acquisition project. The eu.org request <code>20260704215524-arf-56662</code> is <b>not needed</b> for organizer delivery and can be dropped for this purpose.</p>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> The account already exists in the stack</p>
+      <p style="margin-bottom:0">The SPWS Gmail is already bound to <code>doc/gas/Code.gs</code>, which reads FTL results <em>back in</em> via <code>GmailApp.search(...)</code> (<code>checkEmailForResults</code>). Sending <b>as that same address</b> means the organizer's reply-with-results lands exactly where ingestion already watches — send-loop and receive-loop share one identity.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede">Decision — send from Python via Gmail SMTP (your call, this session)</p>
+      <p style="margin-bottom:0">Not Apps Script <code>GmailApp</code>. Rationale: one synchronous run; the zip is <b>never stored</b> (honors ADR-080 &ldquo;generate-at-send, never a pre-stored attachment&rdquo;); it matches the existing <em>&ldquo;Python does the work in a workflow, the UI/Telegram just dispatch&rdquo;</em> pattern (<code>phase5-event-runner.yml</code>, <code>ingest-event.yml</code>). Cost: one app-password GitHub secret, created by you — Claude never handles the credential.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">The flow</p>
+    <h2>Three triggers, one workflow, one email</h2>
+    <div class="figure">
+      <svg viewBox="0 0 760 452" role="img" aria-label="Send-seed flow. Three triggers — the EventManager button, the Telegram 'send CODE participants' command, and a deadline cron — all dispatch the ftl-seed.yml GitHub Actions workflow. That workflow runs ftl_feed_seed_send.py, which builds the FIE-XML seed zip in memory, fetches the organizer email, sends it over verified TLS as the SPWS Gmail, stamps ts_ftl_sent, and confirms on Telegram. The email is delivered to the organizer's inbox — the same inbox ingestion scrapes.">
+        <style>
+          .d text{font-family:var(--sans)}
+          .d .mono{font-family:var(--mono)}
+          .d .mk{fill:var(--line-strong)} .d .mkA{fill:var(--accent)}
+          .d .bx{fill:var(--surface);stroke:var(--line-strong);stroke-width:1}
+          .d .stripe{fill:var(--accent)}
+          .d .ink{fill:var(--ink)} .d .mut{fill:var(--muted)} .d .white{fill:#fff}
+          .d .accink{fill:var(--accent-ink)} .d .gd{fill:var(--good)}
+          .d .ln{fill:none;stroke:var(--line-strong);stroke-width:1.6}
+          .d .lns{fill:none;stroke:var(--line-strong);stroke-width:1.5}
+          .d .dnode{fill:var(--surface);stroke:var(--accent);stroke-width:1.6}
+          .d .wbox{fill:var(--surface-2);stroke:var(--line-strong)}
+          .d .tbar{fill:var(--accent-soft)}
+          .d .badge{fill:var(--accent)} .d .badgeg{fill:var(--good)}
+          .d .org{fill:var(--good-soft);stroke:var(--good);stroke-width:1.5}
+          .d .env{fill:none;stroke:var(--good);stroke-width:1.6}
+          .d .deliver{fill:none;stroke:var(--accent);stroke-width:1.8;stroke-dasharray:5 4}
+        </style>
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk"/></marker>
+          <marker id="ahA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mkA"/></marker>
+        </defs>
+
+        <g class="d">
+        <!-- ===== Triggers ===== -->
+        <rect x="14" y="14" width="234" height="58" rx="10" class="bx"/>
+        <rect x="14" y="14" width="5" height="58" rx="2.5" class="stripe"/>
+        <text x="34" y="40" font-size="15" font-weight="700" class="ink">Manual button</text>
+        <text x="34" y="59" font-size="12" class="mut mono">EventManager.svelte</text>
+
+        <rect x="263" y="14" width="234" height="58" rx="10" class="bx"/>
+        <rect x="263" y="14" width="5" height="58" rx="2.5" class="stripe"/>
+        <text x="283" y="40" font-size="15" font-weight="700" class="ink">Telegram command</text>
+        <text x="283" y="59" font-size="12" class="mut mono">send &lt;CODE&gt; participants</text>
+
+        <rect x="512" y="14" width="234" height="58" rx="10" class="bx"/>
+        <rect x="512" y="14" width="5" height="58" rx="2.5" class="stripe"/>
+        <text x="532" y="40" font-size="15" font-weight="700" class="ink">Deadline cron</text>
+        <text x="532" y="59" font-size="12" class="mut mono">dt_registration_deadline</text>
+
+        <!-- merge into dispatch -->
+        <path d="M131 72 V92 H380" class="ln"/>
+        <path d="M629 72 V92 H380" class="ln"/>
+        <path d="M380 72 V92" class="ln"/>
+        <path d="M380 92 V108" class="ln" marker-end="url(#ah)"/>
+
+        <!-- ===== Dispatch node ===== -->
+        <rect x="286" y="110" width="188" height="52" rx="10" class="dnode"/>
+        <text x="380" y="134" font-size="14.5" font-weight="800" text-anchor="middle" class="ink mono">dispatch ftl-seed.yml</text>
+        <text x="380" y="152" font-size="12" text-anchor="middle" class="mut mono">GitHub Actions · dispatch + schedule</text>
+
+        <path d="M380 162 V192" class="ln" marker-end="url(#ah)"/>
+
+        <!-- ===== Workflow box ===== -->
+        <rect x="40" y="194" width="466" height="240" rx="12" class="wbox"/>
+        <path d="M52 194 H494 a12 12 0 0 1 12 12 V226 H40 V206 a12 12 0 0 1 12 -12 z" class="tbar"/>
+        <text x="60" y="215" font-size="13" font-weight="800" class="accink mono">Python · ftl_feed_seed_send.py — generate-at-send</text>
+
+        <!-- step 1 -->
+        <circle cx="70" cy="256" r="12" class="badge"/><text x="70" y="261" font-size="13" font-weight="800" text-anchor="middle" class="white mono">1</text>
+        <text x="92" y="253" font-size="14" font-weight="700" class="ink">build_bundle_zip()</text>
+        <text x="92" y="270" font-size="12" class="mut mono">FIE-XML seed zip · in memory</text>
+        <path d="M70 269 V287" class="lns" marker-end="url(#ah)"/>
+        <!-- step 2 -->
+        <circle cx="70" cy="300" r="12" class="badge"/><text x="70" y="305" font-size="13" font-weight="800" text-anchor="middle" class="white mono">2</text>
+        <text x="92" y="297" font-size="14" font-weight="700" class="ink">fetch txt_organizer_email</text>
+        <text x="92" y="314" font-size="12" class="mut mono">tbl_event · guard if empty</text>
+        <path d="M70 313 V331" class="lns" marker-end="url(#ah)"/>
+        <!-- step 3 -->
+        <circle cx="70" cy="344" r="12" class="badgeg"/><text x="70" y="349" font-size="13" font-weight="800" text-anchor="middle" class="white mono">3</text>
+        <text x="92" y="341" font-size="14" font-weight="700" class="ink">SMTP_SSL smtp.gmail.com:465</text>
+        <text x="92" y="358" font-size="12" class="mut mono">verified TLS · send as SPWS Gmail</text>
+        <path d="M70 357 V375" class="lns" marker-end="url(#ah)"/>
+        <!-- step 4 -->
+        <circle cx="70" cy="388" r="12" class="badge"/><text x="70" y="393" font-size="13" font-weight="800" text-anchor="middle" class="white mono">4</text>
+        <text x="92" y="385" font-size="14" font-weight="700" class="ink">fn_mark_ftl_sent</text>
+        <text x="92" y="402" font-size="12" class="mut mono">stamp ts_ftl_sent · Telegram confirm</text>
+
+        <!-- deliver arrow (dashed accent — echoes the §5 dashed loop) -->
+        <path d="M506 344 H556" class="deliver" marker-end="url(#ahA)"/>
+
+        <!-- ===== Organizer ===== -->
+        <rect x="558" y="308" width="188" height="74" rx="12" class="org"/>
+        <rect x="578" y="326" width="34" height="24" rx="3" class="env"/>
+        <path d="M578 328 L595 340 L612 328" class="env"/>
+        <text x="626" y="334" font-size="15" font-weight="800" class="ink">Organizer</text>
+        <text x="626" y="351" font-size="11.5" class="mut mono">seed .zip → inbox</text>
+        <text x="578" y="372" font-size="11" class="gd mono">reply lands where ingestion scrapes</text>
+        </g>
+      </svg>
+      <figcaption>Figure — the organizer-delivery path (ADR-080 §5). Any of three triggers dispatches one workflow; the zip is generated at send-time and never stored; the dashed arrow is the delivery to the organizer, whose reply-with-results returns to the same SPWS inbox ingestion already watches.</figcaption>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Ground truth — what exploration found</p>
+    <h2>Most of it is already built. This is a delivery layer, not a rebuild.</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Surface</th><th>State</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>6 <code>tbl_event</code> cols incl. <code>txt_organizer_email</code>, <code>ts_ftl_sent</code></td><td><span class="chip done">built</span></td><td><code>20260704000001_event_registration_schema.sql</code></td></tr>
+        <tr><td><code>tbl_registration</code> (no payment gate)</td><td><span class="chip done">built</span></td><td>same migration</td></tr>
+        <tr><td><code>vw_calendar</code> projects the new columns</td><td><span class="chip done">built</span></td><td>latest <code>20260710000001_evf_slug_dedup.sql</code></td></tr>
+        <tr><td>Pure generator + in-memory zip <code>build_bundle_zip() → bytes</code></td><td><span class="chip done">built</span></td><td><code>ftl_seed_export.py</code> / <code>ftl_seed_export_db.py</code></td></tr>
+        <tr><td>EventManager isolated &ldquo;Rejestracja SPWS&rdquo; section</td><td><span class="chip done">built</span></td><td><code>EventManager.svelte:95–116</code></td></tr>
+        <tr><td>The send/stamp action, CLI, workflow, cron, button, Telegram cmd</td><td><span class="chip done">built</span></td><td>implemented 2026-07-13</td></tr>
+        <tr><td>Docs describe Gmail delivery and rollout boundary</td><td><span class="chip done">amended</span></td><td>ADR-080 §5, spec §5.2, RTM, handbook</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Workstream 1 · the core</p>
+    <h2>The Python send module &amp; CLI</h2>
+    <p>New module <code>python/pipeline/ftl_feed_seed_send.py</code> — kept separate from the ADR-036 backup <code>export_seed.py</code> (per ADR-080 Consequences). Standard-library email only (<code>smtplib</code> + <code>ssl</code> + <code>email.message</code>) — <b>no new dependency</b>. Generate-at-send; the zip never touches disk or Storage.</p>
+    <div class="op">
+      <span class="op-tag u">PURE</span><span class="set">the RED-testable seam</span>
+      <ul>
+        <li><code>build_seed_email(from_addr, to_addr, event_code, zip_bytes, filename) → EmailMessage</code> — stdlib <code>EmailMessage</code>; <code>add_attachment(zip_bytes, maintype="application", subtype="zip", filename=…)</code>.</li>
+      </ul>
+    </div>
+    <div class="op">
+      <span class="op-tag c">I/O</span><span class="set">orchestration</span>
+      <ul>
+        <li><code>resolve_event_meta(db, event_code, target) → dict</code> — event row by code (<code>id_event</code>, season, weapons, <code>txt_organizer_email</code>) from <code>tbl_event</code>/<code>vw_calendar</code>; <b>reuse the existing event-by-code lookup</b> in <code>db_connector</code>/<code>phase5_runner</code> — don't invent one.</li>
+        <li><code>send_via_gmail_smtp(msg, smtp_user, app_password)</code> — <b>TLS from byte 0</b>: <code>SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context())</code> (verifies cert + hostname) → <code>login()</code> → <code>send_message()</code>, in a <code>with</code> block. The password is only ever transmitted over an already-encrypted channel, and is never logged or echoed in an exception.</li>
+        <li><code>send_seed_to_organizer(db, event_code, target, *, dry_run, send_telegram)</code> — resolve → guard missing organizer email → <code>FtlSeedExporter(db._sb).build_bundle_zip(…)</code> fresh → build → send (skip on <code>dry_run</code>) → stamp <code>ts_ftl_sent</code> (WS-2) → optional Telegram confirm via <code>scrapers/base.py:send_telegram_alert</code>.</li>
+        <li><code>sweep_deadlines(db, target)</code> — events past <code>dt_registration_deadline</code> with <code>ts_ftl_sent IS NULL</code>; idempotent (the null-guard prevents re-sends).</li>
+        <li><code>__main__</code> argparse (model <code>phase5_runner</code>/<code>ingest_cli</code>): <code>python -m python.pipeline.ftl_feed_seed_send --event-code &lt;CODE&gt; --target cert|prod [--sweep-deadlines] [--dry-run] [--send-telegram]</code>; reads <code>SPWS_GMAIL_USER</code> / <code>SPWS_GMAIL_APP_PASSWORD</code> from env.</li>
+      </ul>
+    </div>
+
+    <h3>Credential &amp; transport security — the one place a secret flows</h3>
+    <div class="note danger">
+      <p class="lede"><span class="tick">🔐</span> Four layers of protection</p>
+      <ul style="margin:0 0 0 0">
+        <li><b>At rest:</b> the app password lives only as the GitHub Actions encrypted secret <code>SPWS_GMAIL_APP_PASSWORD</code> (libsodium sealed-box, decrypted into the runner only at job time) — never committed, never in a tracked <code>.env</code>, never in this plan, the docs, or memory. Only its <em>name</em> ever appears.</li>
+        <li><b>In the runner:</b> injected as an env var; GitHub auto-masks any registered secret in Actions logs (<code>***</code>). Read once via <code>os.environ[...]</code> at the entrypoint; lives in process memory only for the run.</li>
+        <li><b>On the wire:</b> SMTP AUTH only base64-encodes credentials — <b>base64 is not encryption</b>, so TLS is the real protection. <code>SMTP_SSL</code>/465 is encrypted from the first byte, closing the STARTTLS-stripping window. If 587+STARTTLS is ever used instead, <code>login()</code> MUST run <em>after</em> <code>starttls(context=ssl.create_default_context())</code>. An explicit default context verifies the server cert + hostname (blocks MITM).</li>
+        <li><b>Blast radius:</b> a Gmail App Password is independently revocable and does not expose the primary account password, but it is still a high-value account credential. Keep it only in GitHub Actions secrets, scope repository access tightly, redact failures, and rotate it on suspected exposure.</li>
+      </ul>
+    </div>
+    <pre class="code">import ssl, smtplib
+from email.message import EmailMessage
+
+def send_via_gmail_smtp(msg: EmailMessage, smtp_user: str, app_password: str) -&gt; None:
+    ctx = ssl.create_default_context()          <span class="cm"># verifies cert + hostname</span>
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ctx) as s:
+        s.login(smtp_user, app_password)         <span class="cm"># only over an encrypted channel</span>
+        s.send_message(msg)
+    <span class="cm"># never log app_password; never echo it in an exception</span></pre>
+  </section>
+
+  <section>
+    <p class="kicker">Workstream 2 · the stamp</p>
+    <h2>SQL — <code>fn_mark_ftl_sent</code></h2>
+    <p>New migration <code>20260713000001_ftl_seed_organizer_delivery.sql</code>: <code>fn_mark_ftl_sent(p_event_code text) RETURNS timestamptz</code> sets <code>tbl_event.ts_ftl_sent = now()</code> and returns it. <code>SECURITY DEFINER</code>, executable by <code>service_role</code> only — matching the migration comment that <code>ts_ftl_sent</code> is &ldquo;stamped by <code>send_seed_to_organizer()</code>, not admin-editable via <code>fn_update_event</code>.&rdquo; Extend the existing <code>fn_update_event</code> RPC with trailing <code>p_txt_organizer_email</code> so the admin can persist, replace, or clear the address from the form (WS-4).</p>
+    <div class="note accent">
+      <p class="lede"><code>plpgsql-check</code> is mandatory after any SQL edit</p>
+      <p style="margin-bottom:0">Run postgrestools on the changed migration before the item counts as done. <code>./scripts/reset-dev.sh</code> for LOCAL — never a bare <code>supabase db reset</code>.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Workstream 3 · the triggers</p>
+    <h2>One workflow, three ways to fire it</h2>
+    <p>New <code>.github/workflows/ftl-seed.yml</code>, modelled on <code>phase5-event-runner.yml</code>. <code>workflow_dispatch</code> inputs <code>event_code</code> (validate <code>^[A-Z0-9_-]+$</code> before shell interpolation) + <code>target</code> (default <code>cert</code>), plus a daily <code>schedule</code> (<code>0 4 * * *</code>, like <code>evf-parity-sweep.yml</code>) running <code>--sweep-deadlines --target prod</code>. Secrets: target-selected <code>SUPABASE_URL/KEY</code>, <code>TELEGRAM_*</code>, and the two new <code>SPWS_GMAIL_*</code>. (See the flow diagram above.)</p>
+    <div class="op">
+      <span class="op-tag u">UI</span><span class="set">EventManager.svelte — add-only</span>
+      <ul>
+        <li>Inside the <b>existing</b> <code>.spws-registration-section</code> (<code>:95–116</code>) — alter nothing above it: a <code>txt_organizer_email</code> input saved via the extended registration-fields RPC; a read-only <code>ts_ftl_sent</code> display; and a <b>&ldquo;Wyślij do organizatora&rdquo;</b> button following the existing <code>handleDispatchEvent</code> / <code>dispatchAndTrack</code> pattern (<code>:480–530</code>) → <code>requestDispatch('ftl-seed.yml', { event_code, target })</code>, disabled when the email is empty.</li>
+        <li><code>svelte-check</code> + <code>vitest</code> stay green before and after (ADR-080 §5 UI constraint).</li>
+      </ul>
+    </div>
+    <div class="op">
+      <span class="op-tag u">GAS</span><span class="set">doc/gas/Code.gs — Telegram command</span>
+      <ul>
+        <li>Add <code>case 'send':</code> to <code>handleCommand</code> (parse <code>arg</code> → <code>&lt;CODE&gt;</code> + literal <code>participants</code>, validate the code regex; model the <code>ingest</code> branch at <code>:256–288</code>) → <code>triggerGitHubWorkflow(…, 'ftl-seed.yml', { event_code, target:'prod' })</code>; add a <code>help</code> line.</li>
+      </ul>
+    </div>
+    <div class="note danger">
+      <p class="lede"><span class="tick">!</span> Name collision guard</p>
+      <p style="margin-bottom:0">The command is <code>send &lt;CODE&gt; participants</code> — <b>never</b> <code>export-seed</code>. That case (<code>Code.gs:290–293</code>) is the unrelated ADR-036 DB backup, also fired by <code>complete</code>/<code>rollback</code>. Do not reuse or alter it.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Workstream 4 · non-negotiable · in scope</p>
+    <h2>Documentation coherence gate</h2>
+    <p>Edit Markdown source, regenerate HTML twins via <code>scripts/render_docs.py</code>, validate with <code>scripts/check_docs.py</code>.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Page</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><b>ADR-080 §5</b> <code>doc/adr/080-…md:158–160</code></td><td>Replace &ldquo;Requires a new email/SMTP capability&rdquo; → &ldquo;Delivered via Gmail SMTP (<code>SMTP_SSL</code>/465, verified TLS) from the Python pipeline (<code>ftl_feed_seed_send.py</code>) as the SPWS Gmail account; no external ESP or custom domain.&rdquo; <b>Embed the flow SVG above</b> and the <b>credential-security</b> summary. Update the Status/phase note.</td></tr>
+        <tr><td><b>Spec §5.2</b> <code>Project Specification…md:160</code></td><td>Replace &ldquo;not started — blocked on Resend/eu.org email infra&rdquo; with the implemented Gmail-SMTP delivery + phase status.</td></tr>
+        <tr><td><b>RTM</b> <code>requirements-traceability-matrix.md</code></td><td>Add <b>FR-131</b> (organizer delivery + <code>ts_ftl_sent</code> stamp) mapped to <code>ftl_feed_seed_send.py</code>, <code>ftl-seed.yml</code>, <code>fn_mark_ftl_sent</code>, new tests.</td></tr>
+        <tr><td><b>Handbook subsystem</b> <code>subsystems/events-and-registration.html</code></td><td>Name the Gmail-SMTP delivery path, <b>embed the same flow SVG diagram</b>, and note the credential/TLS handling (hand-maintained HTML; <code>check_docs.py</code>).</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">~</span> Leave ADR-079's blocker alone</p>
+      <p style="margin-bottom:0">ADR-079's &ldquo;blocked on Resend/eu.org&rdquo; is the <b>public OTP</b> email — a distinct, higher-volume problem, out of scope here. Note the distinction in the ADR-080 amendment so the two are never conflated.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Tests first · RED before GREEN</p>
+    <h2>Test strategy</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Case</th><th>Layer</th><th>Guards</th></tr></thead>
+      <tbody>
+        <tr><td><code>FTLDEL-PY-01</code></td><td><code>build_seed_email</code> — recipient / subject / From / attachment name+type+bytes</td><td>pytest <code>test_ftl_feed_seed_send</code></td><td>the pure email contract</td></tr>
+        <tr><td><code>FTLDEL-PY-02</code></td><td>SMTP SSL context/login/send; refused recipient is a failure</td><td>pytest</td><td>transport-security + acceptance invariant</td></tr>
+        <tr><td><code>FTLDEL-PY-03</code></td><td>Live orchestration generates a non-empty bundle, sends once, then stamps</td><td>pytest</td><td>first production caller of <code>build_bundle</code></td></tr>
+        <tr><td><code>FTLDEL-PY-04</code></td><td><code>--dry-run</code> builds but sends nothing, does not stamp, masks recipient</td><td>pytest</td><td>safe LOCAL rehearsal</td></tr>
+        <tr><td><code>FTLDEL-PY-05</code></td><td>Missing/invalid organizer email or empty bundle → guarded, no send</td><td>pytest</td><td>fail-safe + data-leak prevention</td></tr>
+        <tr><td><code>FTLDEL-PY-06</code></td><td>Sweep selects only eligible due events; stamped/past/cancelled/empty events skip</td><td>pytest</td><td>gated cron semantics</td></tr>
+        <tr><td><code>FTLDEL-PY-07</code></td><td>Generated suffix marker normalizes back to the exact canonical name</td><td>pytest</td><td>seed→scrape contract absent from the graph</td></tr>
+        <tr><td><code>FTLDEL-DB-01</code></td><td><code>fn_mark_ftl_sent</code> stamps, returns timestamp, and raises for unknown event</td><td>pgTAP <code>49_*</code></td><td>stamp contract</td></tr>
+        <tr><td><code>FTLDEL-DB-02</code></td><td><code>fn_mark_ftl_sent</code> executable by service role, not anon/authenticated</td><td>pgTAP <code>49_*</code></td><td>privilege boundary</td></tr>
+        <tr><td><code>FTLDEL-DB-03</code></td><td>The existing <code>fn_update_event</code> persists, trims and clears organizer email</td><td>pgTAP <code>05_*</code></td><td>actual admin write path</td></tr>
+        <tr><td><code>FTLDEL-UI-01</code></td><td>Organizer field renders/save carries it; timestamp is read-only</td><td>vitest <code>EventManager.test</code></td><td>UI persistence</td></tr>
+        <tr><td><code>FTLDEL-UI-02</code></td><td>Button disabled without email and dispatches <code>ftl-seed.yml</code> with event + target when valid</td><td>vitest</td><td>UI→workflow contract</td></tr>
+        <tr><td><code>FTLDEL-OPS-01</code></td><td>Edge allowlist, workflow inputs and Telegram command use the same workflow/input contract</td><td>static/coherence checks</td><td>runtime boundaries Graphify cannot connect</td></tr>
+      </tbody>
+    </table></div>
+    <p>Mock-client convention: copy <code>test_ftl_seed_orchestration.py:222</code> (<code>MagicMock</code> with chained <code>.table().…execute().data</code> / <code>.rpc()</code>).</p>
+  </section>
+
+  <section>
+    <p class="kicker">Ship it</p>
+    <h2>Order &amp; verification</h2>
+    <ol class="steps">
+      <li>Python tests RED → <code>ftl_feed_seed_send.py</code> → GREEN. Ruff <code>check</code> + <code>format --check</code>, BasedPyright clean.</li>
+      <li>SQL migration + pgTAP RED → GREEN. <code>plpgsql-check</code> (postgrestools) clean; <code>./scripts/reset-dev.sh</code> for LOCAL.</li>
+      <li><code>ftl-seed.yml</code>; then <code>api.ts</code> + EventManager section + vitest RED→GREEN; <code>svelte-check</code>.</li>
+      <li>GAS <code>send</code> command.</li>
+      <li>Doc coherence pass (incl. embedding the flow SVG in ADR-080 §5 + the handbook subsystem) · <code>scripts/render_docs.py</code> · <code>scripts/check_docs.py</code> green — no &ldquo;SMTP/Resend/eu.org&rdquo; left in ADR-080 §5 / spec §5.2.</li>
+      <li><b>Dry run (no email):</b> <code>python -m python.pipeline.ftl_feed_seed_send --event-code &lt;PPW&gt; --target cert --dry-run</code> → prints the masked recipient + zip manifest, sends nothing, doesn't stamp.</li>
+      <li><b>Live CERT send:</b> set <code>txt_organizer_email</code> to a test inbox → run without <code>--dry-run</code> → email arrives with the <code>.zip</code>, XML imports into FTL, <code>ts_ftl_sent</code> stamped once; re-run confirms manual re-send + sweep skips stamped events.</li>
+      <li><b>UI + Telegram:</b> the &ldquo;Organizator&rdquo; button dispatches with its inline banner; <code>send &lt;CODE&gt; participants</code> delivers.</li>
+      <li><code>scripts/refresh-graph.sh</code> before commit.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">Binary handoff</p>
+    <h2>Definition of done</h2>
+    <ul>
+      <li>All <code>FTLDEL-*</code> acceptance tests have demonstrated RED before implementation and GREEN after it.</li>
+      <li>Manual CERT dry run and live test-inbox send are recorded; FTL imports every XML in the mix-all-only ZIP.</li>
+      <li>SMTP failure never stamps; successful SMTP acceptance stamps once per run; manual resend updates the timestamp.</li>
+      <li>The PROD scheduled job cannot execute unless <code>ENABLE_FTL_DEADLINE_SEND=true</code>.</li>
+      <li>Workflow catalog, operator runbook, environment/release guide, frontend automation and events/registration handbook pages describe the shipped system.</li>
+      <li>All applicable Python, frontend, database and documentation gates pass with no skipped tests introduced.</li>
+    </ul>
+    <div class="note good">
+      <p class="lede">✓ Documentation coherence gate complete</p>
+      <pre class="code">Impact: domain | product | architecture | operations | configuration | reference
+Canonical docs affected: doc/handbook/subsystems/events-and-registration.html;
+  doc/handbook/subsystems/frontend-and-automation.html;
+  doc/handbook/operations/environments-and-release.html;
+  doc/handbook/operations/operator-runbooks.html;
+  doc/handbook/reference/workflow-catalog.html
+ADR impact: amend ADR-080
+Operational impact: workflow catalog + environment/release + operator runbooks
+Source-map / last-verified updated: yes
+Validation: render_adrs --check; render_docs --check; check_docs --changed-from HEAD;
+  check-coherence.sh; check-spec-sync.sh [PASS]
+Superseded prose archived rather than appended: not applicable</pre>
+    </div>
+    <div class="note warn">
+      <p class="lede">Environment-gated verification still open</p>
+      <ul>
+        <li><b>LOCAL pgTAP:</b> the new SQL is statically valid (<code>postgrestools check</code> passes), but the 7 assertions cannot execute while the local Docker daemon is stopped.</li>
+        <li><b>CERT pilot:</b> dry-run, live test-inbox delivery and FTL import require the migration/workflow to be deployed plus user-managed GitHub/Gmail secrets and an approved test recipient.</li>
+        <li><b>Completed locally:</b> 59 focused Python tests; 944-test offline Python suite; 473 Vitest tests; 7 Playwright tests; Svelte check; narrow Ruff/type checks; workflow YAML parse; generated-doc and coherence/spec-sync gates.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Yours to do — Claude does not touch credentials</p>
+    <h2>One-time setup on the SPWS Google account</h2>
+    <div class="note good">
+      <p class="lede"><span class="tick">→</span> App password, then GitHub secrets</p>
+      <p style="margin-bottom:0">Enable 2-Step Verification on the SPWS Gmail, create a <b>Gmail App Password</b>, and add <code>SPWS_GMAIL_USER</code> + <code>SPWS_GMAIL_APP_PASSWORD</code> to the repo's GitHub Actions secrets (CERT + PROD). I never see or store the value. Gmail's documented sending limits still apply; this path sends to one organizer per event and is intentionally low-volume.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Boundaries — separate paths, not deferrals</p>
+    <h2>What this plan does not touch</h2>
+    <ul>
+      <li><b>Public OTP email (ADR-079)</b> — the fencer-facing registration OTP. Higher volume, its own deliverability question; the only case where an ESP/single-sender path still has merit. Untouched here.</li>
+      <li><b>The eu.org domain request</b> — droppable for organizer delivery; if you still want a branded From for OTP later, that's a separate decision.</li>
+      <li><b>Combined DE-bracket seed files</b> — <code>predict_combined_brackets</code> exists but isn't yet wired into file-building; the mix-all files are the current delivery. Bracket files are a later increment.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · ftl-seed-organizer-delivery · ADR-080 §5 organizer seed delivery · Gmail SMTP (SMTP_SSL/465) from the SPWS account</p>
+</div>

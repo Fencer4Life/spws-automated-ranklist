@@ -75,8 +75,8 @@ echo "--- Gate E: RTM FR count ---"
 
 if [ -f "$RTM" ]; then
   RTM_FR_COUNT=$({ grep -E '^\| FR-[0-9]' "$RTM" 2>/dev/null || true; } | wc -l | tr -d ' ')
-  # Expected: 129 FRs (FR-01..FR-130 minus FR-69 which was retired before assignment)
-  EXPECTED=129
+  # Expected: 130 FRs (FR-01..FR-131 minus FR-69 which was retired before assignment)
+  EXPECTED=130
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else
