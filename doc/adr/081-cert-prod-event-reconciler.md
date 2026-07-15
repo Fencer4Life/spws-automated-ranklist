@@ -107,3 +107,10 @@ lifecycle status, or an UNMAPPED new column) — plus a Summary (RPC counts + co
 
 Tests: pgTAP `51_prod_event_reconcile.sql` (51.1–51.8), `18` evf.56 (ingest pre-check);
 pytest `test_promote.py`, `test_promote_season.py`, `test_reconcile_report.py`.
+
+## See also
+
+- **System explainer:** `doc/plans/evf-calendar-sync-how-it-works.html` — end-to-end
+  walkthrough of how EVF calendar sync works now (architecture diagram, the three-job
+  `evf-sync.yml` bracket, the reconciler's create/update/delete diff, the active-season
+  guard, and the 2026-07-14 incident that hardened both).
