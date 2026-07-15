@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="036-prod-export-local-mirror.md">
-<meta name="adr-source-sha256" content="4d09a52cf8259a209bd7be42735ecfeba82669bf214a7a23d8904cc7a8ef955a">
+<meta name="adr-source-sha256" content="e64cc771beaeea152c15368fffea6e5faab1f4d0733547d8e79d12ee5914dda3">
 <title>ADR-036 · PROD Export &amp; Local Mirror (Single Monolithic Dump)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 036</p><h1>PROD Export &amp; Local Mirror (Single Monolithic Dump)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented</dd></div><div><dt>Date</dt><dd class="">2026-04-12</dd></div><div><dt>Source</dt><dd class=""><code>036-prod-export-local-mirror.md</code></dd></div><div><dt>Length</dt><dd class="">145 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented</dd></div><div><dt>Date</dt><dd class="">2026-04-12</dd></div><div><dt>Source</dt><dd class=""><code>036-prod-export-local-mirror.md</code></dd></div><div><dt>Length</dt><dd class="">188 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Implemented<br />
 <strong>Date:</strong> 2026-04-12<br />
 <strong>Source:</strong> ADR-027 (Full-Season Seed Export), ADR-026 (CERT→PROD Promotion)</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#schema-driven-export-future-proof">Schema-driven export (future-proof)</a></li><li class="depth-3"><a href="#tables-exported-in-fk-safe-order">Tables exported (in FK-safe order)</a></li><li class="depth-3"><a href="#what-s-not-exported-by-design">What&#x27;s NOT exported (by design)</a></li><li class="depth-3"><a href="#output">Output</a></li><li class="depth-2"><a href="#scripts">Scripts</a></li><li class="depth-2"><a href="#operations-manual">Operations Manual</a></li><li class="depth-3"><a href="#quick-one-command-mirror">Quick: One-command mirror</a></li><li class="depth-3"><a href="#step-by-step">Step-by-step</a></li><li class="depth-4"><a href="#prerequisites">Prerequisites</a></li><li class="depth-4"><a href="#step-1-export-prod">Step 1: Export PROD</a></li><li class="depth-4"><a href="#step-2-reset-local-db">Step 2: Reset local DB</a></li><li class="depth-4"><a href="#step-3-verify">Step 3: Verify</a></li><li class="depth-4"><a href="#step-4-run-all-test-suites">Step 4: Run all test suites</a></li><li class="depth-3"><a href="#troubleshooting">Troubleshooting</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#full-operations-guide">Full Operations Guide</a></li><li class="depth-2"><a href="#related-adrs">Related ADRs</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#schema-driven-export-future-proof">Schema-driven export (future-proof)</a></li><li class="depth-3"><a href="#tables-exported-in-fk-safe-order">Tables exported (in FK-safe order)</a></li><li class="depth-3"><a href="#what-s-not-exported-by-design">What&#x27;s NOT exported (by design)</a></li><li class="depth-3"><a href="#output">Output</a></li><li class="depth-2"><a href="#scripts">Scripts</a></li><li class="depth-2"><a href="#operations-manual">Operations Manual</a></li><li class="depth-3"><a href="#quick-one-command-mirror">Quick: One-command mirror</a></li><li class="depth-3"><a href="#step-by-step">Step-by-step</a></li><li class="depth-4"><a href="#prerequisites">Prerequisites</a></li><li class="depth-4"><a href="#step-1-export-prod">Step 1: Export PROD</a></li><li class="depth-4"><a href="#step-2-reset-local-db">Step 2: Reset local DB</a></li><li class="depth-4"><a href="#step-3-verify">Step 3: Verify</a></li><li class="depth-4"><a href="#step-4-run-all-test-suites">Step 4: Run all test suites</a></li><li class="depth-3"><a href="#troubleshooting">Troubleshooting</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#full-operations-guide">Full Operations Guide</a></li><li class="depth-2"><a href="#amendment-2026-07-14-name-lookup-reconstruction-fresh-bootstrap-migration-ordering">Amendment (2026-07-14) — name-lookup reconstruction &amp; fresh-bootstrap migration ordering</a></li><li class="depth-3"><a href="#1-name-based-fk-reconstruction-must-disambiguate-duplicate-names">1. Name-based FK reconstruction must disambiguate duplicate names</a></li><li class="depth-3"><a href="#2-data-migrations-that-reference-seeded-rows-must-no-op-safely-on-a-fresh-bootstrap">2. Data migrations that reference seeded rows must no-op safely on a fresh bootstrap</a></li><li class="depth-2"><a href="#related-adrs">Related ADRs</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>After the CERT/PROD data integrity audit (2026-04-12), we needed local DB to be an exact mirror of PROD. The original multi-file approach (per-category SQL files loaded via config.toml glob) was fragile — directory naming mismatches, duplicate INSERTs across files, and complex ordering dependencies.</p>
 </section>
@@ -208,14 +208,50 @@ cd frontend &amp;&amp; npm test
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="full-operations-guide">Full Operations Guide</h2>
 <p>See <strong><code>doc/archive/legacy-2026-07/cicd-operations-manual.md</code> §11 (Environment Sync)</strong> for complete step-by-step procedures for all sync operations (PROD → local, PROD → CERT, data audit).</p>
 </section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-07-14-name-lookup-reconstruction-fresh-bootstrap-migration-ordering">Amendment (2026-07-14) — name-lookup reconstruction &amp; fresh-bootstrap migration ordering</h2>
+<p>Two latent constraints on this dump surfaced during the 2026-07 fencer birth-year
+reconciliation (worked example and evidence: <code>doc/plans/fencer-birth-year-master-list-2026-07.html</code>).
+Neither changes the export design; both make explicit a property it always had.</p>
+<h3 id="1-name-based-fk-reconstruction-must-disambiguate-duplicate-names">1. Name-based FK reconstruction must disambiguate duplicate names</h3>
+<p>The dump resolves <code>tbl_result</code> (and <code>tbl_match_candidate</code>) fencer FKs by name lookup —
+<code>(SELECT id_fencer FROM tbl_fencer WHERE txt_surname = … AND txt_first_name = … LIMIT 1)</code>
+— see <em>Tables exported</em> (rows 7–8). This is safe only while <code>(surname, first_name)</code> is
+unique. When master data legitimately contains two different people who share both —
+e.g. <code>MŁYNEK Janusz</code> born 1951 (SABRE veteran) and <code>MŁYNEK Janusz</code> born 1984, or the two
+<code>KRAWCZYK Paweł</code> (1954 / 1989) — that <code>LIMIT 1</code> has no <code>ORDER BY</code> and resolves to an
+<strong>arbitrary</strong> one of them. On a fresh <code>supabase db reset</code> the wrong pick lands a historical
+result in a bracket its birth year does not support, and the fail-loud <code>fn_assert_result_vcat</code>
+trigger (ADR-047) correctly aborts the seed load.</p>
+<p><strong>Rule:</strong> whenever the roster contains a duplicate <code>surname+first_name</code> pair, every
+name-based lookup for those fencers in the dump must carry a disambiguating
+<code>AND int_birth_year = &lt;year&gt;</code> qualifier. <code>export_seed_local</code> must emit the qualified form
+for any name it detects more than once. (Applied 2026-07-14: 38 <code>MŁYNEK Janusz</code> lookups in
+<code>seed_prod_2026-06-28.sql</code> were birth-year-qualified.)</p>
+<h3 id="2-data-migrations-that-reference-seeded-rows-must-no-op-safely-on-a-fresh-bootstrap">2. Data migrations that reference seeded rows must no-op safely on a fresh bootstrap</h3>
+<p><em>Step 2</em> records the ordering: <code>supabase db reset</code> <strong>applies all migrations first, then loads
+this dump.</strong> So a migration timestamped <em>after</em> the dump runs against <strong>empty</strong> tables on a
+from-scratch build — which is exactly what CI's <code>supabase start</code> does — even though every
+referenced row exists on the long-running LOCAL/CERT/PROD tiers (those apply migrations
+incrementally <em>onto</em> already-seeded data and never rebuild from zero).</p>
+<p><strong>Rule:</strong> a data migration that resolves pre-existing rows by name (or otherwise assumes
+seeded data) must <strong>guard the lookup and skip with a <code>NOTICE</code></strong> when the row is absent, rather
+than call a fail-loud RPC (e.g. <code>fn_update_fencer_birth_year</code>, which <code>RAISE EXCEPTION</code>s on a
+NULL id) directly. On the seeded tiers the guard is a harmless no-op; on the fresh-bootstrap
+build it lets the migration sequence complete. (Applied 2026-07-14: the 10 birth-year
+corrections were wrapped in a guarded <code>DO</code> block — commit <code>57655a4</code>.)</p>
+</section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="related-adrs">Related ADRs</h2>
 <ul>
 <li><strong>ADR-027</strong> (Full-Season Seed Export) — superseded by this ADR for local mirroring</li>
 <li><strong>ADR-026</strong> (CERT→PROD Promotion) — data promotion workflow this export complements</li>
 <li><strong>ADR-014</strong> (Delete-Reimport Strategy) — idempotent INSERT patterns reused</li>
+<li><strong>ADR-047</strong> (V-cat invariant trigger) — the fail-loud <code>fn_assert_result_vcat</code> that the
+amendment's disambiguation rule keeps satisfiable on a fresh reset</li>
+<li><strong>ADR-056</strong> (correction-migration pattern) — the guarded no-op rule extends its
+skip-true-no-ops precedent to fresh-bootstrap absence</li>
 </ul>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="035-fencers-view-tabs.html">← ADR-035: Fencers View with Tabs</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="037-derived-display-status-awaiting-results.html">→ ADR-037: Derived Display Status — &quot;Awaiting Results&quot;</a></nav>
-<footer class="foot">Generated from <code>036-prod-export-local-mirror.md</code> · source SHA-256 <code>4d09a52cf8259a209bd7be42735ecfeba82669bf214a7a23d8904cc7a8ef955a</code></footer>
+<footer class="foot">Generated from <code>036-prod-export-local-mirror.md</code> · source SHA-256 <code>e64cc771beaeea152c15368fffea6e5faab1f4d0733547d8e79d12ee5914dda3</code></footer>
 </div></body></html>

@@ -138,8 +138,51 @@ cd frontend && npm test
 
 See **`doc/archive/legacy-2026-07/cicd-operations-manual.md` §11 (Environment Sync)** for complete step-by-step procedures for all sync operations (PROD → local, PROD → CERT, data audit).
 
+## Amendment (2026-07-14) — name-lookup reconstruction & fresh-bootstrap migration ordering
+
+Two latent constraints on this dump surfaced during the 2026-07 fencer birth-year
+reconciliation (worked example and evidence: `doc/plans/fencer-birth-year-master-list-2026-07.html`).
+Neither changes the export design; both make explicit a property it always had.
+
+### 1. Name-based FK reconstruction must disambiguate duplicate names
+
+The dump resolves `tbl_result` (and `tbl_match_candidate`) fencer FKs by name lookup —
+`(SELECT id_fencer FROM tbl_fencer WHERE txt_surname = … AND txt_first_name = … LIMIT 1)`
+— see *Tables exported* (rows 7–8). This is safe only while `(surname, first_name)` is
+unique. When master data legitimately contains two different people who share both —
+e.g. `MŁYNEK Janusz` born 1951 (SABRE veteran) and `MŁYNEK Janusz` born 1984, or the two
+`KRAWCZYK Paweł` (1954 / 1989) — that `LIMIT 1` has no `ORDER BY` and resolves to an
+**arbitrary** one of them. On a fresh `supabase db reset` the wrong pick lands a historical
+result in a bracket its birth year does not support, and the fail-loud `fn_assert_result_vcat`
+trigger (ADR-047) correctly aborts the seed load.
+
+**Rule:** whenever the roster contains a duplicate `surname+first_name` pair, every
+name-based lookup for those fencers in the dump must carry a disambiguating
+`AND int_birth_year = <year>` qualifier. `export_seed_local` must emit the qualified form
+for any name it detects more than once. (Applied 2026-07-14: 38 `MŁYNEK Janusz` lookups in
+`seed_prod_2026-06-28.sql` were birth-year-qualified.)
+
+### 2. Data migrations that reference seeded rows must no-op safely on a fresh bootstrap
+
+*Step 2* records the ordering: `supabase db reset` **applies all migrations first, then loads
+this dump.** So a migration timestamped *after* the dump runs against **empty** tables on a
+from-scratch build — which is exactly what CI's `supabase start` does — even though every
+referenced row exists on the long-running LOCAL/CERT/PROD tiers (those apply migrations
+incrementally *onto* already-seeded data and never rebuild from zero).
+
+**Rule:** a data migration that resolves pre-existing rows by name (or otherwise assumes
+seeded data) must **guard the lookup and skip with a `NOTICE`** when the row is absent, rather
+than call a fail-loud RPC (e.g. `fn_update_fencer_birth_year`, which `RAISE EXCEPTION`s on a
+NULL id) directly. On the seeded tiers the guard is a harmless no-op; on the fresh-bootstrap
+build it lets the migration sequence complete. (Applied 2026-07-14: the 10 birth-year
+corrections were wrapped in a guarded `DO` block — commit `57655a4`.)
+
 ## Related ADRs
 
 - **ADR-027** (Full-Season Seed Export) — superseded by this ADR for local mirroring
 - **ADR-026** (CERT→PROD Promotion) — data promotion workflow this export complements
 - **ADR-014** (Delete-Reimport Strategy) — idempotent INSERT patterns reused
+- **ADR-047** (V-cat invariant trigger) — the fail-loud `fn_assert_result_vcat` that the
+  amendment's disambiguation rule keeps satisfiable on a fresh reset
+- **ADR-056** (correction-migration pattern) — the guarded no-op rule extends its
+  skip-true-no-ops precedent to fresh-bootstrap absence

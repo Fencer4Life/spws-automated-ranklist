@@ -1,0 +1,392 @@
+<meta charset="utf-8">
+<title>How EVF calendar sync works now</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:58ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.good .dot{background:var(--good)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:28px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:66ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:66ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:64ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  /* ── Architecture figure ─────────────────────────────────────── */
+  figure.arch{margin:26px 0 10px;padding:0}
+  .archcard{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:22px 20px 10px}
+  svg.diagram{width:100%;height:auto;display:block;overflow:visible}
+  svg.diagram .node{fill:var(--surface);stroke:var(--line-strong);stroke-width:1.5}
+  svg.diagram .node.evf{fill:var(--surface-2)}
+  svg.diagram .node.cert{fill:var(--accent-soft)}
+  svg.diagram .node.prod{fill:var(--good-soft)}
+  svg.diagram .recon{fill:var(--surface);stroke:var(--accent);stroke-width:2}
+  svg.diagram .card{fill:var(--surface);stroke:var(--line-strong);stroke-width:1.4}
+  svg.diagram .guard{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.6}
+  svg.diagram .title{fill:var(--ink);font-family:var(--sans);font-weight:800;font-size:17px}
+  svg.diagram .sub{fill:var(--muted);font-family:var(--sans);font-weight:500;font-size:12.5px}
+  svg.diagram .tag{fill:var(--accent-ink);font-family:var(--mono);font-weight:800;font-size:11px;letter-spacing:.08em}
+  svg.diagram .guardtxt{fill:var(--warn);font-family:var(--mono);font-weight:800;font-size:12px}
+  svg.diagram .edge{fill:none;stroke:var(--accent);stroke-width:2.5}
+  svg.diagram .edgelbl{fill:var(--accent-ink);font-family:var(--mono);font-weight:700;font-size:12px}
+  svg.diagram .hint{stroke:var(--faint);stroke-width:1.4;stroke-dasharray:4 4;fill:none}
+  svg.diagram .arrowhead{fill:var(--accent)}
+  svg.diagram .strip{fill:var(--surface-2);stroke:var(--line)}
+  svg.diagram .striptxt{fill:var(--muted);font-family:var(--mono);font-weight:700;font-size:12.5px;letter-spacing:.04em}
+  figcaption{font-size:15px;color:var(--faint);margin-top:12px;font-family:var(--sans);max-width:none}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+  @media (max-width:720px){.cols{grid-template-columns:1fr}}
+  .mini{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:16px 18px}
+  .mini h4{margin:0 0 6px;font-size:16px;font-weight:800}
+  .mini p{margin:0;font-size:15.5px;color:var(--muted);max-width:none}
+  .mini .tagline{font-family:var(--mono);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">EVF → CERT → PROD · System explainer · 2026-07-14</p>
+  <h1>How EVF calendar sync works now</h1>
+  <p class="dek">The European Veterans Fencing calendar is scraped into CERT, and a season-scoped reconciler mirrors CERT's active-season events onto PROD's public calendar. As of the 2026-07-14 incident it converges PROD to CERT <b>twice</b> per run — once before the scrape and once after — and refuses to run at all when the two environments disagree about which season is active.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>3 jobs · 1 scheduled run</span>
+    <span class="pill good"><span class="dot"></span>idempotent · code-keyed CUD diff</span>
+    <span class="pill warn"><span class="dot"></span>fail-loud season guard</span>
+  </div>
+
+  <hr class="rule">
+
+  <!-- ══════════════════ ARCHITECTURE ══════════════════ -->
+  <section>
+    <p class="kicker">The whole thing on one page</p>
+    <h2>High-level architecture</h2>
+    <p>Three tiers, one direction of flow. <strong>EVF</strong> is the outside world's record of which veteran tournaments exist. <strong>CERT</strong> is SPWS's own source of truth — the scraper writes there and only there. <strong>PROD</strong> is a read replica of CERT's calendar that the public sees; nothing writes to PROD's event set directly. A single scheduled workflow drives all of it, and a reconciler — not a copy script — keeps PROD converged to CERT.</p>
+
+    <figure class="arch">
+      <div class="archcard">
+        <svg class="diagram" viewBox="0 0 900 600" role="img" aria-labelledby="dgT dgD" xmlns="http://www.w3.org/2000/svg">
+          <title id="dgT">EVF calendar sync architecture</title>
+          <desc id="dgD">The EVF calendar is scraped into CERT by job 2. A season-scoped reconciler, fn_mirror_events_to_prod, mirrors CERT's active-season events to PROD and is invoked twice — by job 1 before the scrape and job 3 after. A fail-loud active-season guard blocks the reconciler when CERT and PROD disagree on the active season.</desc>
+
+          <defs>
+            <marker id="ah" markerWidth="11" markerHeight="11" refX="8" refY="5" orient="auto-start-reverse">
+              <path class="arrowhead" d="M0,0 L9,5 L0,10 Z"/>
+            </marker>
+          </defs>
+
+          <!-- top strip: the workflow that drives everything -->
+          <rect class="strip" x="30" y="10" width="840" height="30" rx="8"/>
+          <text class="striptxt" x="450" y="30" text-anchor="middle">evf-sync.yml — one scheduled run · promote → scrape → promote</text>
+
+          <!-- ── central spine: EVF → CERT → PROD ── -->
+          <!-- EVF -->
+          <rect class="node evf" x="310" y="66" width="280" height="82" rx="13"/>
+          <text class="tag"   x="450" y="92"  text-anchor="middle">EXTERNAL SOURCE</text>
+          <text class="title" x="450" y="115" text-anchor="middle">EVF / Ophardt calendar</text>
+          <text class="sub"   x="450" y="135" text-anchor="middle">what tournaments exist, in the outside world</text>
+
+          <!-- CERT cylinder -->
+          <ellipse class="node cert" cx="450" cy="266" rx="118" ry="19"/>
+          <path class="node cert" d="M332 266 V320 A118 19 0 0 0 568 320 V266" />
+          <ellipse class="node cert" cx="450" cy="266" rx="118" ry="19"/>
+          <text class="title" x="450" y="298" text-anchor="middle">CERT</text>
+          <text class="sub"   x="450" y="316" text-anchor="middle">SPWS source of truth (scraper writes here)</text>
+
+          <!-- Reconciler node (sits on the CERT→PROD edge) -->
+          <rect class="recon" x="350" y="392" width="200" height="66" rx="12"/>
+          <text class="tag"   x="450" y="415" text-anchor="middle">RECONCILER</text>
+          <text class="title" x="450" y="435" text-anchor="middle" style="font-size:14px">fn_mirror_events_to_prod</text>
+          <text class="sub"   x="450" y="451" text-anchor="middle" style="font-size:11.5px">season-scoped create · update · delete diff</text>
+
+          <!-- PROD cylinder -->
+          <ellipse class="node prod" cx="450" cy="506" rx="118" ry="19"/>
+          <path class="node prod" d="M332 506 V554 A118 19 0 0 0 568 554 V506" />
+          <ellipse class="node prod" cx="450" cy="506" rx="118" ry="19"/>
+          <text class="title" x="450" y="536" text-anchor="middle">PROD</text>
+          <text class="sub"   x="450" y="553" text-anchor="middle">public calendar (read replica of CERT)</text>
+
+          <!-- spine edges -->
+          <path class="edge" d="M450 148 L450 240" marker-end="url(#ah)"/>
+          <text class="edgelbl" x="462" y="198" text-anchor="start">scrape → CERT</text>
+
+          <path class="edge" d="M450 339 L450 386" marker-end="url(#ah)"/>
+          <path class="edge" d="M450 458 L450 484" marker-end="url(#ah)"/>
+          <text class="edgelbl" x="462" y="478" text-anchor="start">mirror → PROD</text>
+
+          <!-- ── left: scrape job feeds the EVF→CERT edge ── -->
+          <rect class="card" x="36" y="150" width="236" height="96" rx="11"/>
+          <text class="tag"   x="54" y="174">JOB 2 · EVF SYNC</text>
+          <text class="sub"   x="54" y="196" style="fill:var(--ink);font-weight:700;font-size:13.5px">Scrape the EVF calendar</text>
+          <text class="sub"   x="54" y="214">Dedupe id → slug → fuzzy match;</text>
+          <text class="sub"   x="54" y="230">write new / changed events</text>
+          <text class="sub"   x="54" y="246" style="font-weight:700">into CERT only.</text>
+          <path class="hint" d="M272 195 L448 194"/>
+
+          <!-- ── left-lower: the guard on the reconciler ── -->
+          <rect class="guard" x="70" y="405" width="200" height="42" rx="9"/>
+          <text class="guardtxt" x="170" y="423" text-anchor="middle">⛨ active-season match</text>
+          <text class="guardtxt" x="170" y="439" text-anchor="middle" style="font-weight:700">required — else fail loud</text>
+          <path class="hint" d="M270 426 L348 425"/>
+
+          <!-- ── right: the two promote jobs bracket the reconciler ── -->
+          <rect class="card" x="628" y="348" width="240" height="52" rx="11"/>
+          <text class="tag"  x="646" y="371">JOB 1 · PROMOTE (PRE-SCRAPE)</text>
+          <text class="sub"  x="646" y="390">converge PROD before anything new is written</text>
+          <path class="hint" d="M628 374 L552 402"/>
+
+          <rect class="card" x="628" y="450" width="240" height="52" rx="11"/>
+          <text class="tag"  x="646" y="473">JOB 3 · PROMOTE (POST-SCRAPE)</text>
+          <text class="sub"  x="646" y="492">converge PROD again, picking up the scrape</text>
+          <path class="hint" d="M628 476 L552 448"/>
+        </svg>
+      </div>
+      <figcaption>Data flows top-to-bottom on the central spine (EVF → CERT → PROD). The workflow drives it left-to-right in time: <b>job&nbsp;2</b> scrapes EVF into CERT; <b>jobs&nbsp;1&nbsp;and&nbsp;3</b> both invoke the same reconciler, before and after the scrape. The reconciler will not run across an active-season mismatch.</figcaption>
+    </figure>
+
+    <div class="cols">
+      <div class="mini">
+        <p class="tagline">Reads down, never up</p>
+        <h4>One-way convergence</h4>
+        <p>EVF is never written. CERT is written only by the scraper. PROD's event set is written only by the reconciler. No step ever pushes data back up a tier.</p>
+      </div>
+      <div class="mini">
+        <p class="tagline">A diff, not a copy</p>
+        <h4>Reconciler, not export</h4>
+        <p><code>fn_mirror_events_to_prod</code> compares CERT and PROD for the active season and applies the <em>difference</em> — so running it twice, or a hundred times, converges to the same state.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ THE TIERS ══════════════════ -->
+  <section>
+    <p class="kicker">Who owns what</p>
+    <h2>Three tiers, one source of truth each</h2>
+    <p>The whole design rests on each tier having exactly one writer, so there is never a question of which copy is authoritative.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Tier</th><th>Authoritative for</th><th>Written by</th></tr></thead>
+      <tbody>
+        <tr><td><strong>EVF / Ophardt</strong></td><td>Which veteran tournaments exist in the world, and their detail-page slugs</td><td>Nobody here — it is the external source we read</td></tr>
+        <tr><td><strong>CERT</strong></td><td>The SPWS calendar: event codes, seasons, organizers, dates, status</td><td>The EVF scraper (<code>fn_ingest_evf_calendar</code>), plus admins editing directly in CERT</td></tr>
+        <tr><td><strong>PROD</strong></td><td>Nothing of its own — it is the public mirror of CERT's active season</td><td>The reconciler (<code>fn_mirror_events_to_prod</code>) only</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">▸</span> Why PROD owns nothing</p>
+      <p style="margin-bottom:0">Because PROD is defined as "whatever CERT's active season currently holds", the reconciler is free to <em>delete</em> a PROD event that no longer exists on CERT without losing information — the truth was always on CERT. That is only safe because nothing writes event data straight into PROD; the single-writer rule is what makes convergence, and deletion, sound.</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════ THE WORKFLOW ══════════════════ -->
+  <section>
+    <p class="kicker">The scheduled run, job by job</p>
+    <h2>Promote runs twice — before <em>and</em> after the scrape</h2>
+    <p>The older <code>evf-sync.yml</code> reconciled CERT→PROD only <em>after</em> scraping. That left a gap: if the scrape step failed, or an admin had edited CERT by hand, PROD had no way to catch up until the next fully-successful scrape. The workflow now brackets the scrape with the same reconciler on both sides, as three jobs in one run:</p>
+
+    <h3>Job 1 — <code>promote-calendar-pre</code></h3>
+    <p>Runs the reconciler first, converging PROD to whatever CERT already holds, <em>before</em> anything new is written. This is what makes a manual CERT edit — or a season-row fix — reach PROD on the very next scheduled run, even on a day the scrape itself later errors out.</p>
+
+    <h3>Job 2 — <code>sync</code></h3>
+    <p>Scrapes the EVF calendar and writes new or changed events into <strong>CERT only</strong>. It dedupes each incoming event in three escalating passes — exact EVF id, then detail-page slug (scoped to the season), then a fuzzy name/location match — before allocating a fresh SPWS event code. It <code>needs</code> job 1 but runs regardless of job 1's outcome: a broken PROD promote must never block fresh events from being scraped into CERT.</p>
+
+    <h3>Job 3 — <code>promote-calendar</code></h3>
+    <p>Runs the reconciler again <em>after</em> the scrape, this time picking up whatever job 2 just wrote into CERT. This is the job that actually delivers the new events to the public calendar. It is wired so that an earlier job's failure cannot strand it — if the scrape produced new CERT events, this promote still runs to push them to PROD.</p>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">▸</span> Why bracket instead of promoting once, at the end</p>
+      <p style="margin-bottom:0">A pre-scrape promote means CERT-side changes that did <em>not</em> come from a scrape — an admin edit, a season fix — converge to PROD on the next run no matter what the scrape does. The post-scrape promote keeps its original job: deliver whatever was just scraped. Because <code>fn_mirror_events_to_prod</code> is a full create/update/delete diff keyed on the event code, running it twice in one workflow is a no-op whenever CERT and PROD already agree — never a duplicate.</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════ THE RECONCILER ══════════════════ -->
+  <section>
+    <p class="kicker">The engine in the middle</p>
+    <h2>How the reconciler converges PROD to CERT</h2>
+    <p>Both promote jobs call the same Python entry point — <code>promote --mode calendar</code> — which reads the two environments, computes a difference, and applies it through one atomic RPC on PROD. Four properties make it safe to run on a schedule, unattended:</p>
+
+    <h3>1 · Season-scoped</h3>
+    <p>It only ever reconciles the <strong>active season</strong>. It reads the <code>bool_active = TRUE</code> season on both CERT and PROD and works entirely within it. Events in past or future seasons are never touched by calendar sync — those move only through explicit season promotion.</p>
+
+    <h3>2 · Keyed by event code, never by raw id</h3>
+    <p>CERT and PROD assign their own serial ids, so they diverge. The reconciler matches events by <code>txt_code</code> (the SPWS event code) and resolves every foreign key — organizer, prior-event carry-over link — by <em>code</em> on the PROD side, never by copying a CERT id across the boundary. This is the same cross-environment-id discipline the per-event promoter uses.</p>
+
+    <h3>3 · A create / update / delete diff</h3>
+    <p>Having read both sides, it partitions the active season's events into three sets and hands them to <code>fn_mirror_events_to_prod</code> in one call:</p>
+    <ul>
+      <li><strong>Create</strong> — codes present on CERT but missing on PROD.</li>
+      <li><strong>Update</strong> — codes on both sides. Updates are <em>fill-blank-only</em>: they populate empty PROD fields from CERT but do not clobber a value PROD already has, so a deliberate PROD-side value is preserved.</li>
+      <li><strong>Delete</strong> — codes on PROD but no longer on CERT. Deletes are guarded: an event PROD still has children or results for is reported as skipped rather than force-removed.</li>
+    </ul>
+
+    <h3>4 · Idempotent by construction</h3>
+    <p>Because every action is derived from the current difference between the two environments, applying it moves PROD exactly onto CERT and no further. A second run finds no difference and does nothing. That is what lets both promote jobs — and any number of retries — run without fear of duplication.</p>
+  </section>
+
+  <!-- ══════════════════ THE GUARD ══════════════════ -->
+  <section>
+    <p class="kicker">The refusal that protects PROD</p>
+    <h2>Why it fails loud on a season mismatch</h2>
+    <p>Before computing any diff, the reconciler checks that CERT's active season and PROD's active season are the <strong>same season code</strong>. If they differ, it raises and stops — it does not guess.</p>
+    <pre class="trace">promote_calendar: active season mismatch — CERT is on
+  <b>'SPWS-2026-2027'</b>, PROD is on <b>'SPWS-2025-2026'</b>.
+Bootstrap the new season on PROD via promote_season.py first.</pre>
+    <p>The reason is subtle but important: the diff is computed <em>within one season's id</em>. If CERT had already rolled onto a new season that PROD was never bootstrapped onto, then comparing CERT's new-season events against PROD's old-season events would file every create under the wrong season <em>and</em> propose deleting PROD's entire outgoing season as "not on CERT". The guard turns that catastrophe into a clean, loud stop.</p>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> The fix is always "make the seasons agree", never "override the guard"</p>
+      <p style="margin-bottom:0">This is the same guard that prevented an earlier cross-season duplication bug. When it fired on 2026-07-14 it was doing its job — the correct response was to bootstrap / sync PROD's season row so the two environments agreed, after which the guard passed on its own and the events flowed.</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════ THE 2026-07-14 INCIDENT ══════════════════ -->
+  <section>
+    <p class="kicker">Why nothing showed up — 2026-07-14</p>
+    <h2>Two bugs, each hiding the other</h2>
+    <p>The symptom was simple: EVF published 14 new circuit stops, the scraper ran on schedule, and PROD's public calendar never changed. Investigation found two <em>unrelated</em> defects stacked on top of each other — fixing only one would not have been enough.</p>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">1&nbsp;×</span> A uniqueness index that should have been per-season</p>
+      <p><code>idx_tbl_event_evf_slug</code> enforced one EVF detail-page slug <em>ever</em>, across all seasons. But EVF reuses a stop's slug for its next yearly edition (Munich 2026 and Munich 2027 share a slug). Every batch insert of new events collided on this constraint and rolled back <em>as a whole</em> — so even events with no real conflict were silently discarded, every run.</p>
+    </div>
+    <div class="note danger">
+      <p class="lede"><span class="tick">2&nbsp;×</span> PROD's active season had quietly fallen behind CERT's</p>
+      <p>An admin edited <code>SPWS-2026-2027</code>'s <code>dt_start</code> on CERT (and shrank the prior season's <code>dt_end</code> to keep the ranges non-overlapping), which activated CERT's new season early. PROD's copy never got the same edit, so PROD still had the old season marked active — and the reconciler's own active-season guard correctly refused to promote across the mismatch.</p>
+    </div>
+    <p>Fixing #1 let CERT accumulate the events correctly. Fixing #2 let PROD's guard stand down and actually receive them. Neither fix alone would have produced a working pipeline.</p>
+
+    <h3>What actually changed</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Problem</th><th>Fix</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>Slug uniqueness spanned seasons</td><td>Rescoped the unique index to <code>(id_season, txt_evf_slug)</code> — one slug per season, not one slug forever</td><td><code>20260714000001_evf_slug_dedup_scope_season.sql</code></td></tr>
+        <tr><td>PROD's active season lagged CERT's edit</td><td>Idempotent <code>UPDATE</code> syncing the shrunk prior-season <code>dt_end</code> then the new season's <code>dt_start</code>, in that order, in one transaction — so the date-range exclusion constraint never sees an overlapping intermediate state</td><td><code>20260714000002_season_2026_2027_dt_start_sync.sql</code></td></tr>
+        <tr><td>PROD had never received the new season row at all, in an earlier related incident</td><td>Added <code>--force-late-bootstrap</code> to <code>promote_season.py</code>: skips the childless-season check for the specific case where PROD is missing a season row entirely while CERT has since grown real tournament children — safe because season promotion never carries event data regardless</td><td><code>python/pipeline/promote_season.py</code></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ══════════════════ PUSH RACE ══════════════════ -->
+  <section>
+    <p class="kicker">Also fixed while in there</p>
+    <h2>A push race in the bookkeeping commits</h2>
+    <p>Both <code>release.yml</code> (its tracking-file commits) and <code>evf-sync.yml</code> (its reconcile-report commits) end with a plain <code>git commit &amp;&amp; git push</code> against <code>main</code>. Two runs landing close together — plausible when a season fix triggers Release <em>and</em> a manual EVF sync in the same few minutes — would both diff <code>origin</code> at the same instant, and one push would be rejected.</p>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Non-critical, but real</p>
+      <p style="margin-bottom:0">This never rolled back actual data — only the trailing bookkeeping commit failed, after the real CERT→PROD reconcile had already succeeded. Both workflows now retry the push up to five times, re-fetching and rebasing onto <code>origin/main</code> between attempts. The committed file is always freshly generated and uniquely named, so a rebase here is never a real conflict — just a replay onto a moved tip.</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════ PROOF ══════════════════ -->
+  <section>
+    <p class="kicker">Proof it is stable at rest</p>
+    <h2>Two consecutive runs, back to back</h2>
+    <p>Idempotency was verified directly, not assumed — the same workflow dispatched twice in a row, immediately after the season fix landed on PROD:</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Run</th><th>Pre-scrape promote</th><th>Scrape</th><th>Post-scrape promote</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Run 1</strong> — first after the season fix</td><td><span class="chip warn">Created: 13</span> <span class="chip fill">Updated: 26</span></td><td>0 new (CERT already complete)</td><td><span class="chip never">Created: 0</span> <span class="chip fill">Updated: 39</span></td></tr>
+        <tr><td><strong>Run 2</strong> — immediately after, no changes between</td><td><span class="chip never">Created: 0</span> <span class="chip fill">Updated: 39</span></td><td>0 new</td><td><span class="chip never">Created: 0</span> <span class="chip fill">Updated: 39</span></td></tr>
+      </tbody>
+    </table></div>
+    <p>The 13 events created in Run 1's pre-scrape step were exactly the ones missing from PROD since the season mismatch began. Run 2 created zero — proof the pipeline is stable at rest and running it repeatedly never produces duplicates.</p>
+  </section>
+
+  <hr class="rule">
+  <p style="color:var(--faint);font-size:16px">Source of truth for the mechanics described here: <code>python/pipeline/promote.py</code> (<code>promote_calendar</code>, the season guard), <code>.github/workflows/evf-sync.yml</code> (the three-job bracket), <code>supabase/migrations/20260711000001_prod_event_reconciler.sql</code> (<code>fn_mirror_events_to_prod</code>), and the two 2026-07-14 fix migrations. Decision rationale: <a href="../adr/081-cert-prod-event-reconciler.html">ADR-081 (CERT→PROD Event Reconciler)</a>.</p>
+
+  <p class="foot">explainer · evf-calendar-sync · how it works now · doc/plans/evf-calendar-sync-how-it-works.html</p>
+</div>

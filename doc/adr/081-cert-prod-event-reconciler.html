@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="081-cert-prod-event-reconciler.md">
-<meta name="adr-source-sha256" content="3339ee4fafb51e9aaed0f2b37793136fd68e1c4048bb360fd2637fadefd294f6">
+<meta name="adr-source-sha256" content="425d27dfc6a13be2202ee9f9f29fccc06b3c425ca493bcde685347f3012503f9">
 <title>ADR-081 · CERT→PROD Event Reconciler</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 081</p><h1>CERT→PROD Event Reconciler</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-07-11, shipped to CERT+PROD)</dd></div><div><dt>Date</dt><dd class="">2026-07-11</dd></div><div><dt>Source</dt><dd class=""><code>081-cert-prod-event-reconciler.md</code></dd></div><div><dt>Length</dt><dd class="">109 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-07-11, shipped to CERT+PROD)</dd></div><div><dt>Date</dt><dd class="">2026-07-11</dd></div><div><dt>Source</dt><dd class=""><code>081-cert-prod-event-reconciler.md</code></dd></div><div><dt>Length</dt><dd class="">116 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (2026-07-11, shipped to CERT+PROD)
 <strong>Date:</strong> 2026-07-11
 <strong>Source:</strong> CERT→PROD calendar promotion (spec §; migrations <code>20260711000001</code>, <code>20260711000002</code>). Supersedes the calendar-delta half of ADR-026; amends ADR-028, ADR-039 (rev 3), ADR-077.</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-organizer-agnostic-verified-from-source">1. Organizer-agnostic, verified from source</a></li><li class="depth-3"><a href="#2-whole-set-diff-no-code-filter">2. Whole-set diff, no code filter</a></li><li class="depth-3"><a href="#3-field-ownership-split-update">3. Field-ownership split (UPDATE)</a></li><li class="depth-3"><a href="#4-guarded-delete">4. Guarded DELETE</a></li><li class="depth-3"><a href="#5-create-is-childless">5. CREATE is childless</a></li><li class="depth-3"><a href="#6-active-season-mismatch-guard">6. Active-season-mismatch guard</a></li><li class="depth-3"><a href="#7-run-log">7. Run log</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-organizer-agnostic-verified-from-source">1. Organizer-agnostic, verified from source</a></li><li class="depth-3"><a href="#2-whole-set-diff-no-code-filter">2. Whole-set diff, no code filter</a></li><li class="depth-3"><a href="#3-field-ownership-split-update">3. Field-ownership split (UPDATE)</a></li><li class="depth-3"><a href="#4-guarded-delete">4. Guarded DELETE</a></li><li class="depth-3"><a href="#5-create-is-childless">5. CREATE is childless</a></li><li class="depth-3"><a href="#6-active-season-mismatch-guard">6. Active-season-mismatch guard</a></li><li class="depth-3"><a href="#7-run-log">7. Run log</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#see-also">See also</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The CERT→PROD calendar-promotion path (<code>python/pipeline/promote.py::promote_calendar</code> →
 <code>fn_import_evf_events</code>, the ADR-026 amendment) was written as an <strong>EVF special-case</strong>
@@ -106,8 +106,16 @@ PROD snapshots for the run log; the tables are small (tens of rows).</li>
 </ul>
 <p>Tests: pgTAP <code>51_prod_event_reconcile.sql</code> (51.1–51.8), <code>18</code> evf.56 (ingest pre-check);
 pytest <code>test_promote.py</code>, <code>test_promote_season.py</code>, <code>test_reconcile_report.py</code>.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="see-also">See also</h2>
+<ul>
+<li><strong>System explainer:</strong> <code>doc/plans/evf-calendar-sync-how-it-works.html</code> — end-to-end
+walkthrough of how EVF calendar sync works now (architecture diagram, the three-job
+<code>evf-sync.yml</code> bracket, the reconciler's create/update/delete diff, the active-season
+guard, and the 2026-07-14 incident that hardened both).</li>
+</ul>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="080-clean-roster-ftl-seeding.html">← ADR-080: Clean-Roster FTL Seeding</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="082-markdown-source-generated-html-docs.html">→ ADR-082: Markdown-Source, Generated-HTML Documentation Standard</a></nav>
-<footer class="foot">Generated from <code>081-cert-prod-event-reconciler.md</code> · source SHA-256 <code>3339ee4fafb51e9aaed0f2b37793136fd68e1c4048bb360fd2637fadefd294f6</code></footer>
+<footer class="foot">Generated from <code>081-cert-prod-event-reconciler.md</code> · source SHA-256 <code>425d27dfc6a13be2202ee9f9f29fccc06b3c425ca493bcde685347f3012503f9</code></footer>
 </div></body></html>
