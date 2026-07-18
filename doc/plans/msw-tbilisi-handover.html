@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — handover</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1020px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--coral);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,33px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:68ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:-.01em;
+ margin:36px 0 6px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:24px 0 8px;font-weight:600}
+p{margin:0 0 12px;max-width:80ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 16px;max-width:84ch}
+ul,ol{margin:0 0 14px;padding-left:20px;max-width:80ch}
+li{margin-bottom:6px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+b.k{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:84ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10px;color:var(--navy);white-space:nowrap;font-weight:600}
+td.f{font-family:var(--mono);font-size:10.5px;white-space:nowrap}
+.st{font-family:var(--mono);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.s-no{background:var(--grey-bg);color:var(--grey)}
+.err{border-left:3px solid var(--coral);padding:2px 0 2px 14px;margin-bottom:14px;max-width:82ch}
+.err b{color:var(--coral)}
+footer{margin:40px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:84ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Handover · read before doing anything</div>
+  <h1>MŚW Tbilisi 2026 — handover</h1>
+  <p class="dek">Written for the next session. State of the campaign, where every file
+  lives, what is decided, and — most importantly — the mistakes I made in this session so
+  they are not repeated or trusted.</p>
+  <div class="chips">
+    <span class="chip">2026-07-18</span>
+    <span class="chip">branch: docs/msw-tbilisi-report-mockup</span>
+    <span class="chip ok">content closed</span>
+    <span class="chip bad">nothing built</span>
+    <span class="chip">next: build the Google Form</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">00</span>Read this part first</h2>
+
+<div class="call stop">
+  <span class="lb">The user does not trust my output, and has cause</span>
+  He said so directly at the end of this session. In one working day I shipped six
+  substantive errors, each caught by him or by a later check rather than by me — they are
+  listed in section 05. Consequences for how the next session should behave:
+  <ul style="margin:8px 0 0">
+    <li><b class="k">Verify before asserting.</b> Every number in these documents came
+    from a script; re-run the script rather than quoting the document.</li>
+    <li><b class="k">Do not gold-plate.</b> He said it explicitly. The goal is the
+    declaration of intent, nothing more. Long documents and elaborate options irritate
+    him.</li>
+    <li><b class="k">All output is HTML.</b> No Markdown, no inline tables, no questions
+    in chat. Questions go in the document as a numbered decision sheet. The chat reply is
+    a bare pointer to the file.</li>
+    <li><b class="k">He reads carefully and catches things.</b> Do not paper over an
+    uncertainty; name it.</li>
+  </ul>
+</div>
+
+<h2><span class="num">01</span>What this is</h2>
+<p>A <b class="k">one-off information campaign</b> to find out which Polish veteran fencers
+intend to compete at the FIE Veteran World Championships in Tbilisi, 9–17 October 2026.
+It is deliberately <b class="k">outside the ranking system</b>: no ADR, no migrations, no
+handbook page, no repo integration. It exists to get a job done faster with automation.</p>
+
+<p>Final nomination is made by <b class="k">PZSz</b>, not SPWS — SPWS only proposes.
+That framing is in the email and matters.</p>
+
+<h3>The numbers, all script-derived</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Quantity</th><th>Value</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td class="d">Ranked fencers</td><td>144</td><td>173 starts across 24 categories</td></tr>
+<tr><td class="d">Multi-weapon</td><td>21 + 4</td><td>21 fence two weapons, 4 fence three</td></tr>
+<tr><td class="d">Reachable</td><td>103</td><td>96 have both email and phone</td></tr>
+<tr><td class="d">Email only / phone only</td><td>6 / 1</td>
+  <td>Only <b>one</b> person is phone-only — SMS is a nudge channel, not a reach channel</td></tr>
+<tr><td class="d">No contact at all</td><td><b class="k">41</b></td>
+  <td><b class="k">8 of them sit in a top five</b> — this is the campaign's real blocker</td></tr>
+<tr><td class="d">Categories below 5</td><td>11 of 24</td>
+  <td>Szpada K 60+ has zero ranked fencers at all</td></tr>
+<tr><td class="d">Contact-request sends</td><td>34</td><td>covers all 41 unreachable</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">02</span>Where everything lives</h2>
+
+<div class="call warn">
+  <span class="lb">Half of this campaign is not in git and never will be</span>
+  Everything under <code>doc/external_files/</code> is gitignored, deliberately — it holds
+  270 people's emails and phone numbers. <b class="k">A fresh clone on another machine will
+  not have the data or the scripts.</b> They exist only on this Mac. Do not assume they are
+  recoverable from the repo.
+</div>
+
+<h3>In the repo — <code>doc/plans/</code></h3>
+<div class="tw">
+<table>
+<thead><tr><th>File</th><th>Status</th><th>What it is</th></tr></thead>
+<tbody>
+<tr><td class="f">msw-tbilisi-handover.html</td><td><span class="st s-ok">current</span></td>
+  <td>This file.</td></tr>
+<tr><td class="f">msw-tbilisi-email-wave1.html</td><td><span class="st s-ok">final</span></td>
+  <td><b class="k">The wave-1 email, closed.</b> User-authored, seven corrections applied,
+  signed SPWS — Ranking Weteranów, sender <code>spws.weterani@gmail.com</code>.</td></tr>
+<tr><td class="f">msw-tbilisi-formularz-final.html</td><td><span class="st s-ok">final</span></td>
+  <td><b class="k">The buildable form spec.</b> This is what the next session works
+  from.</td></tr>
+<tr><td class="f">msw-tbilisi-email-kontakty.html</td><td><span class="st s-ok">final</span></td>
+  <td>Peer-sourcing email asking fencers for missing contacts.</td></tr>
+<tr><td class="f">msw-tbilisi-wersja-minimalna.html</td><td><span class="st s-wip">partial</span></td>
+  <td>Form spec + privacy clause. Its email section is retired — points to wave1.</td></tr>
+<tr><td class="f">msw-tbilisi-automatyzacja.html</td><td><span class="st s-ok">current</span></td>
+  <td>Pipeline, hosting decision, throwaway schema design.</td></tr>
+<tr><td class="f">msw-tbilisi-kanaly-i-struktura.html</td><td><span class="st s-ok">current</span></td>
+  <td>Channel analysis (Messenger vs SMS), escalation ladder, peer-sourcing design.</td></tr>
+<tr><td class="f">msw-tbilisi-jeszcze-nie-wiem.html</td><td><span class="st s-ok">decided</span></td>
+  <td>Why "jeszcze nie wiem" exists only on team questions.</td></tr>
+<tr><td class="f">msw-tbilisi-formularz-przyklady.html</td>
+  <td><span class="st s-no">superseded</span></td>
+  <td><b class="k">Its form mock-ups are wrong</b> — they show per-person text inside form
+  questions, which Forms cannot do. Kept for the FIE-letter facts and cost table only.</td></tr>
+<tr><td class="f">msw-tbilisi-formularz-i-email.html</td>
+  <td><span class="st s-no">superseded</span></td>
+  <td>Superseded by formularz-final and email-wave1. Still the source of the three
+  privacy-clause variants.</td></tr>
+<tr><td class="f">msw-tbilisi-decyzje-otwarte.html</td><td><span class="st s-no">answered</span></td>
+  <td>The nine questions; all answered. Historical.</td></tr>
+<tr><td class="f">msw-tbilisi-decyzje-projektowe.html<br>msw-tbilisi-raport-mockup.html</td>
+  <td><span class="st s-ok">current</span></td>
+  <td>From the previous session: board-report design and layout mock-up.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Not in the repo — <code>doc/external_files/MSW-Tbilisi-2026/</code></h3>
+<div class="tw">
+<table>
+<thead><tr><th>File</th><th>What it is</th></tr></thead>
+<tbody>
+<tr><td class="f">kontakty.md</td><td>Contact list 1 — <b class="k">authoritative</b>.
+  270 entries, hand-supplied.</td></tr>
+<tr><td class="f">kontakty-lista2.tsv</td><td>Contact list 2, deduplicated from ~100 pasted
+  rows to 38. <b class="k">Loses every conflict to list 1</b> by the user's decision; fills
+  empty fields only.</td></tr>
+<tr><td class="f">kontakty-scalenie.html</td><td>Merge report: 10 conflicts (all resolved in
+  list 1's favour), 3 gap-fills, 2 new people.</td></tr>
+<tr><td class="f">uczestnicy.html</td><td>All 144 candidates with contact coverage,
+  filterable. Regenerate with <code>scripts/gen_uczestnicy.py</code>.</td></tr>
+<tr><td class="f">prosba-o-kontakty.html</td><td>The 34-message send list for peer-sourcing.
+  Regenerate with <code>scripts/gen_prosba.py</code>.</td></tr>
+<tr><td class="f">scripts/*.py</td><td><b class="k">Rescued from the session scratchpad
+  at handover time</b> — they would otherwise have been lost. Run from the repo root with
+  the venv active.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="sub">Source workbooks: <code>doc/external_files/Sezon_2025-2026/XLS/</code> —
+24 files, tab <code>Kadra - indywidualnie</code>, category label in C3, header row 4, data
+from row 6 to the first blank name. The user overwrote these with end-of-season data on
+2026-07-18.</p>
+
+<h2><span class="num">03</span>Decided — do not reopen</h2>
+<div class="tw">
+<table>
+<thead><tr><th>Decision</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td class="d">Runtime</td><td>LOCAL Supabase stack, <b class="k">separate database
+  <code>msw_tbilisi</code></b> on port 54322 — not a schema in the ranking DB.
+  <code>db reset</code> must not be able to destroy declarations. Nightly
+  <code>pg_dump</code> into the campaign folder.</td></tr>
+<tr><td class="d">Collection</td><td>Google Forms → Sheet → pulled into Postgres. The user
+  will not expose his machine to the internet; no tunnel, no self-hosted form.</td></tr>
+<tr><td class="d">Sender</td><td><code>spws.weterani@gmail.com</code>, display name
+  <b>SPWS — Ranking Weteranów</b>. Signature is fixed text, not a merge field.</td></tr>
+<tr><td class="d">Deadline</td><td>1 August 2026 for declarations. FIE needs the participant
+  list and passport scans by 20 August — that gap is why 1 August was chosen.</td></tr>
+<tr><td class="d">Individual question</td><td><b class="k">tak / nie only.</b> No third
+  option.</td></tr>
+<tr><td class="d">Team question</td><td>tak / nie / <i>jeszcze nie wiem</i>. The third is
+  <b class="k">conditional yes</b> — renders as hatched green, counts toward readiness,
+  <b class="k">never triggers a reminder</b>.</td></tr>
+<tr><td class="d">Irrelevant weapons</td><td>Left <b class="k">blank</b>; weapon questions
+  are optional. "Nie dotyczy" was dropped. Blank on a weapon they don't fence is correct;
+  blank on their own weapon is a non-response.</td></tr>
+<tr><td class="d">Amounts</td><td><b class="k">Visible at every question</b>, quoted as the
+  FIE letter states them — 90 EUR "Individual Entry", 185 EUR "Team Entry". No visa fee:
+  Poles enter Georgia visa-free.</td></tr>
+<tr><td class="d">Ranking positions</td><td><b class="k">Not shown to fencers.</b> The email
+  lists weapon + category + start date only. PZSz nominates, so this is candidacy, not a
+  place awarded.</td></tr>
+<tr><td class="d">Backfill</td><td>Script proposes and queues; <b class="k">the user
+  sends</b>. Never auto-send an invitation.</td></tr>
+<tr><td class="d">Storage</td><td><code>kandydat</code>/<code>start</code>/<code>kontakt</code>
+  derived and truncatable; <code>zaproszenie</code>/<code>odpowiedz</code> append-only,
+  never rewritten. A changed mind is a new row.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">04</span>Open — the next session's work</h2>
+<ol>
+  <li><b class="k">Build the Google Form.</b> This is the agreed next topic. Spec is
+  <i>msw-tbilisi-formularz-final.html</i> section 03. Needs: the form built, prefill
+  parameter names captured for each field, and a tokenless variant URL
+  (<code>{link_ogolny}</code>) for the peer-sourcing email.</li>
+  <li><b class="k">Channels and waves</b> — parked deliberately until content was done.
+  Draft ladder is in <i>msw-tbilisi-kanaly-i-struktura.html</i>: day 0 email + Facebook
+  post, day 1 contact requests, day 3 resend, day 6 SMS, day 8 phone/Messenger, day 10
+  final warning, day 12 close.</li>
+  <li><b class="k">Two fee ambiguities</b> — is 90 EUR per weapon or per fencer; is 185 EUR
+  per team or per person. Deliberately <b class="k">not blocking</b>, because we quote the
+  letter rather than compute a total.</li>
+  <li><b class="k">Privacy clause variant</b> — A (three sentences, recommended), B (one
+  sentence), or C (full RODO). Never answered. All three are in
+  <i>msw-tbilisi-formularz-i-email.html</i> section 03.</li>
+  <li><b class="k">SMS gateway</b> — account not created. ~12 PLN for the whole list.</li>
+  <li><b class="k">Nothing is built.</b> No database, no schema, no scripts beyond the
+  three report generators. No message has been sent to anyone.</li>
+</ol>
+
+<h2><span class="num">05</span>Mistakes I made — do not repeat, do not trust</h2>
+<p class="sub">Listed because the next session will otherwise inherit the same blind spots,
+and because the user is right to be sceptical of anything here he has not checked.</p>
+
+<div class="err"><b>1. Invented a form capability that does not exist.</b> I designed and
+drew four detailed form mock-ups in which each question shows the fencer's own ranking
+position, start date and cost. Google Forms cannot vary question text per respondent —
+only prefilled answers. Caught only when I sat down to write the build spec. The affected
+document is <i>msw-tbilisi-formularz-przyklady.html</i>; its mock-ups are wrong.
+<b>Lesson: check what the tool can do before designing around it.</b></div>
+
+<div class="err"><b>2. Name matching silently dropped Polish characters.</b>
+<code>unicodedata.normalize("NFKD")</code> plus ASCII-encode deletes <code>ł</code>
+entirely, so "Paweł" became "pawe" while "Pawel" became "pawel" — different keys.
+Harmless while both sources spelled names identically, then broke the moment the second
+contact list mixed spellings. All scripts now translate Polish letters first via
+<code>str.maketrans</code>. <b>Lesson: normalisation that happens to work is not
+normalisation that works.</b></div>
+
+<div class="err"><b>3. Duplicate-name merge took the wrong row.</b>
+<code>contacts.setdefault(key, …)</code> kept the <i>first</i> entry for a name, and for
+both "Krawczyk Paweł" and "Młynek Janusz" the first entry was the empty one — so two
+reachable fencers were reported as unreachable. Unreachable count was wrong at 43 for
+several turns; it is <b>41</b>. Fixed by preferring the populated row.
+<b>Lesson: when collapsing duplicates, prefer data over position.</b></div>
+
+<div class="err"><b>4. Carried a fee the user had already cancelled.</b> He told me Polish
+citizens need no visa and there is no 55 EUR fee. It nonetheless survived in several
+documents and reappeared in a draft. Purged now — the phrase appears nowhere. <b>Lesson:
+when a fact is retracted, grep the whole corpus, not the document in front of you.</b></div>
+
+<div class="err"><b>5. Nearly committed personal data to the repository.</b> The four
+form mock-ups in <i>msw-tbilisi-formularz-przyklady.html</i> used real fencers with their
+real email addresses and phone numbers. That file is tracked. Caught by a scan of the
+staged diff seconds before the commit, not by design. Contact fields there now read
+<code>—— e-mail ——</code>. <b>Lesson: scan every tracked document for addresses and phone
+numbers before staging — the gitignore protects the data directory, not documents that
+quote from it.</b></div>
+
+<div class="err"><b>6. Repeatedly ignored a stated format rule.</b> The user told me more
+than once that he reads HTML and that questions belong in the document, not the chat. I
+kept producing long chat prose and inline tables anyway. This is now recorded in memory as
+<code>feedback_all_output_html</code>. <b>Lesson: a stated preference is a constraint, not
+a suggestion.</b></div>
+
+<div class="call warn">
+  <span class="lb">One thing I got right that is worth keeping</span>
+  Every count in these documents is produced by a script over the source workbooks, not
+  typed by hand. That is why errors 2 and 3 were findable at all. Keep that property:
+  <b class="k">if a number appears in a document, a script must have produced it.</b>
+</div>
+
+<h2><span class="num">06</span>How to restart</h2>
+<ol>
+  <li>Read this file, then <i>msw-tbilisi-formularz-final.html</i> and
+  <i>msw-tbilisi-email-wave1.html</i>. Ignore the superseded documents in section 02.</li>
+  <li>Re-run the three generators from the repo root with the venv active to confirm the
+  data still reproduces: 144 / 173 / 41 / 8 / 34.</li>
+  <li>Ask the user only what section 04 leaves open — <b class="k">in HTML, as a numbered
+  decision sheet</b>.</li>
+  <li>Do not rebuild what is already decided in section 03.</li>
+</ol>
+
+</div>
+
+<footer>
+Written 2026-07-18 at the end of the session, on branch
+<code>docs/msw-tbilisi-report-mockup</code>. Nothing has been sent to any fencer and no
+campaign infrastructure exists. Data and scripts live outside the repository in
+<code>doc/external_files/MSW-Tbilisi-2026/</code> and exist on this machine only.
+</footer>
+
+</div>
+</body>
+</html>

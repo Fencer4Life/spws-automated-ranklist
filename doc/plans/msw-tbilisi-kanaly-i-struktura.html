@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — channels, cadence and message structure</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1060px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,34px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:68ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:22px;font-weight:600;letter-spacing:-.01em;
+ margin:38px 0 4px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:6px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:26px 0 6px;font-weight:600}
+p{margin:0 0 12px;max-width:80ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 18px;max-width:84ch}
+ul,ol.n{margin:0 0 14px;padding-left:19px;max-width:80ch}
+li{margin-bottom:6px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+b.k{color:var(--navy)}
+
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:10px;margin:8px 0 18px}
+.opt{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:14px 16px}
+.opt.pick{border-left:4px solid var(--green);background:linear-gradient(180deg,var(--green-bg) 0 3px,var(--card) 3px)}
+.opt.no{opacity:.75;border-left:4px solid var(--grey)}
+.opt h4{margin:0 0 3px;font-size:14px;font-weight:600}
+.opt .verd{font-family:var(--mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;display:inline-block;margin-bottom:8px}
+.v-yes{background:var(--green-bg);color:var(--green)}
+.v-no{background:var(--grey-bg);color:var(--grey)}
+.v-maybe{background:var(--amber-bg);color:var(--amber)}
+.opt p{font-size:12.5px;margin:0 0 8px}
+.opt ul{font-size:12px;padding-left:17px;margin-bottom:0}
+
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:82ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:540px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10px;color:var(--navy);white-space:nowrap;font-weight:600}
+td.y{color:var(--green);font-weight:600}
+td.n{color:var(--grey)}
+
+.tl{border-left:2px solid var(--line);margin:8px 0 20px}
+.tl .ev{position:relative;padding:0 0 16px 20px}
+.tl .ev::before{content:"";position:absolute;left:-6px;top:5px;width:10px;height:10px;
+ border-radius:50%;background:var(--green);border:2px solid var(--paper)}
+.tl .ev.m::before{background:var(--amber)}
+.tl .when{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.tl .what{font-weight:600;font-size:13px;margin:1px 0 2px}
+.tl .why{font-size:12px;color:var(--muted);max-width:76ch}
+
+pre{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--navy);
+ border-radius:5px;padding:13px 16px;overflow-x:auto;font-family:var(--mono);font-size:11.5px;
+ line-height:1.6;margin:0 0 16px}
+pre .c{color:var(--muted)}
+pre .v{color:var(--violet);font-weight:600}
+
+footer{margin:40px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:84ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}
+ h2{font-size:19px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Working document · round 2</div>
+  <h1>Channels, cadence and message structure</h1>
+  <p class="dek">Your answers locked in, the Messenger question worked through properly,
+  the escalation ladder redrawn on a three-day rhythm, and the technical skeleton the
+  message has to fit so the automation can carry it.</p>
+  <div class="chips">
+    <span class="chip ok">7 decisions locked</span>
+    <span class="chip">Messenger: analysed</span>
+    <span class="chip">cadence: 3 days</span>
+    <span class="chip">nothing built yet</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">LOCKED</span>What is now decided</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>#</th><th>Decision</th><th>Consequence</th></tr></thead>
+<tbody>
+<tr><td class="d">1</td><td>Facebook group exists and you can post</td>
+  <td>The 43 unreachable are recoverable. Group post goes out on day 0, not last.</td></tr>
+<tr><td class="d">2</td><td>Sender: <code>spws.weterani</code> Gmail</td>
+  <td>Institutional identity without new infrastructure. Set the display name to
+  <b class="k">SPWS — Ranking Weteranów</b> so the sender line reads as the federation,
+  not an address.</td></tr>
+<tr><td class="d">3</td><td>Google Forms → Sheet, pulled into Postgres</td>
+  <td>Nothing of yours is exposed to the internet. Costs the prefill workaround for
+  multi-weapon fencers, which is solved below.</td></tr>
+<tr><td class="d">4</td><td>You write content, I define structure, we iterate</td>
+  <td>Section 04 is the skeleton to pour content into.</td></tr>
+<tr><td class="d">5</td><td>Three days, then resend, then escalate</td>
+  <td>Fast campaign. Ladder redrawn in section 02.</td></tr>
+<tr><td class="d">7</td><td>Team fee amount will be stated</td>
+  <td>Form needs a slot for it; the number arrives from you later.</td></tr>
+<tr><td class="d">9</td><td>Fuhrmann and Sadowińska matches confirmed</td>
+  <td>Two contacts recovered. <b class="k">43</b> unreachable stands.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call warn">
+  <span class="lb">Your point 10 came through empty</span>
+  If there was a tenth item you meant to add, it did not arrive. Nothing is blocked on it —
+  but if it was the "one more list of contacts" from point 8, that is expected separately
+  and I will re-run the coverage the moment it lands.
+</div>
+
+<h2><span class="num">01</span>Messenger instead of SMS — worked through</h2>
+<p class="sub">Short answer: Messenger is the better channel and the worse mechanism. It
+should be in the campaign, but not in the place SMS occupies.</p>
+
+<div class="call stop">
+  <span class="lb">The hard constraint</span>
+  There is <b class="k">no legitimate way to automate outbound Messenger messages to a list
+  of people.</b> Meta's Messenger Platform lets a Page reply to someone who messaged it
+  first, inside a 24-hour window — it cannot initiate. The only way to send 93 messages
+  from your personal account is browser automation driving messenger.com, which is against
+  Meta's terms and routinely ends in a locked account. That is <i>your</i> Facebook account,
+  the same one you need for the group post that rescues the 43 unreachable. The downside
+  isn't a failed send — it's losing the channel that the rest of the plan depends on.
+</div>
+
+<h3>And the part that has nothing to do with terms of service</h3>
+<p>A Messenger message from someone who is not your friend does not arrive in the inbox. It
+lands in <b class="k">Message Requests</b>, a folder most people over fifty have never
+opened. For cold outreach the delivery rate is not 98% — it is closer to unknowable. Where
+you <i>are</i> already connected, it is excellent: read within minutes, in a place people
+actually look, and conversational in a way email is not.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th></th><th>SMS</th><th>Messenger</th></tr></thead>
+<tbody>
+<tr><td class="d">Automatable</td><td class="y">yes, gateway API</td><td class="n">no, not legitimately</td></tr>
+<tr><td class="d">Reaches non-contacts</td><td class="y">yes, any number</td><td class="n">Message Requests — usually unseen</td></tr>
+<tr><td class="d">Reaches your friends</td><td class="y">yes</td><td class="y">excellently</td></tr>
+<tr><td class="d">Addressable from your data</td><td class="y">93 numbers on file</td><td class="n">no phone→profile mapping; manual search by name</td></tr>
+<tr><td class="d">Logged automatically</td><td class="y">yes, into <code>zaproszenie</code></td><td class="n">manual entry</td></tr>
+<tr><td class="d">Risk to you</td><td class="y">none</td><td class="n">account lock if automated</td></tr>
+<tr><td class="d">Cost</td><td>~12 PLN total</td><td class="y">free</td></tr>
+<tr><td class="d">Two-way conversation</td><td class="n">awkward</td><td class="y">natural</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>So use both, in different roles</h3>
+<div class="opts">
+  <div class="opt pick">
+    <h4>SMS — the automated nudge</h4>
+    <span class="verd v-yes">keep</span>
+    <p>Stays exactly where it was in the ladder: the scheduled escalation to everyone who
+    has not answered and has a number on file.</p>
+    <ul>
+      <li>93 recipients, one script, logged, repeatable.</li>
+      <li>No dependency on whether you happen to be Facebook friends with someone.</li>
+    </ul>
+  </div>
+  <div class="opt pick">
+    <h4>Messenger — the human channel</h4>
+    <span class="verd v-yes">add</span>
+    <p>Manual, conversational, and pointed at the two jobs SMS is bad at.</p>
+    <ul>
+      <li><b class="k">The 43 with no contact data</b> — Messenger is often the only way to
+      reach them at all, and searching 43 names by hand is a finite afternoon.</li>
+      <li><b class="k">Asking teammates for missing contacts</b> (your point 8) — this is a
+      favour being asked, and a favour asked by SMS reads as spam.</li>
+    </ul>
+  </div>
+  <div class="opt no">
+    <h4>Messenger as a bulk replacement for SMS</h4>
+    <span class="verd v-no">reject</span>
+    <p>Would mean automating your personal account against 93 people, most of whom would
+    receive it in a folder they never check.</p>
+    <ul><li>Worst of both: higher risk, lower delivery, no logging.</li></ul>
+  </div>
+</div>
+
+<div class="call">
+  <span class="lb">One legitimate automated Messenger path, and why I still say no</span>
+  You could invert the flow: the group post and the email say <i>"message the SPWS page on
+  Messenger and it will send you your form link"</i>. Because the fencer initiates, a Page
+  may legitimately reply automatically inside 24 hours. It works — but it adds a step
+  before the step, and every added step costs responses. The form link in the email is
+  already one click. Not worth it.
+</div>
+
+<h2><span class="num">02</span>The ladder, redrawn on three days</h2>
+<p class="sub">Green dots are automatic, amber are yours. Assumes a 12-day total window;
+say the word if you want it shorter still.</p>
+
+<div class="tl">
+  <div class="ev"><div class="when">Day 0 · automatic</div>
+    <div class="what">Personalised email — 98 recipients</div>
+    <div class="why">From <code>spws.weterani</code>, staggered sending, deadline stated in
+    both the body and the form header.</div></div>
+  <div class="ev m"><div class="when">Day 0 · you</div>
+    <div class="what">Facebook group post</div>
+    <div class="why">Same day, not last. Carries the generic form link and asks people to
+    tag anyone in a top five who has not heard. This is what starts closing the 43.</div></div>
+  <div class="ev m"><div class="when">Day 1 · you</div>
+    <div class="what">Messenger — contact-hunt requests to teammates</div>
+    <div class="why">Batched by recipient, not by missing person. Design in section 03.</div></div>
+  <div class="ev"><div class="when">Day 3 · automatic</div>
+    <div class="what">Resend to non-responders</div>
+    <div class="why">Same thread, short body, deadline restated. Your decision — and the
+    right one: three days is long enough that it is not nagging, short enough that the
+    first mail is still in recent memory.</div></div>
+  <div class="ev"><div class="when">Day 6 · automatic</div>
+    <div class="what">SMS to non-responders with a number</div>
+    <div class="why">Channel change beats a third email. One sentence, the bare form link,
+    no shortener.</div></div>
+  <div class="ev m"><div class="when">Day 8 · you</div>
+    <div class="what">Messenger and phone — top five only, still silent</div>
+    <div class="why">By now this should be 10–20 people, not 100. Answers go into
+    <code>odpowiedz</code> with <code>zrodlo = 'messenger'</code> or
+    <code>'telefon'</code>.</div></div>
+  <div class="ev"><div class="when">Day 10 · automatic</div>
+    <div class="what">48-hour deadline warning — every channel</div>
+    <div class="why">Highest-yield single message in the sequence.</div></div>
+  <div class="ev m"><div class="when">Day 12 · you</div>
+    <div class="what">Close, freeze, report to the board</div>
+    <div class="why">Late answers still land in the ledger; the report regenerates.</div></div>
+</div>
+
+<div class="call">
+  <span class="lb">Backfill runs continuously, not at the end</span>
+  A refusal on day 2 should put the next fencer into the approval queue on day 2 — with
+  their own 3/6/10 ladder starting from when <i>they</i> were invited, not from day 0.
+  Otherwise a late-drawn replacement gets a fraction of the response time and the category
+  fails for a scheduling reason rather than a real one.
+</div>
+
+<h2><span class="num">03</span>Point 8 — peer-sourcing the missing contacts</h2>
+<p>Your idea: ask the age-category teammates of an unreachable fencer to help find their
+phone or email. It is the right instinct — in a federation this size the social graph
+is far denser than any list you hold. Two things make or break it.</p>
+
+<div class="call">
+  <span class="lb">Batch by recipient, never by missing person</span>
+  The naive version loops over the 43 missing and messages everyone in their category — so
+  an active szpada V1 fencer gets five separate messages asking about five different
+  people, and stops reading at the second. Invert it: for each <i>reachable</i> person,
+  collect every missing name in their weapon-gender-category, and send <b class="k">one
+  message listing all of them</b>. Roughly 40 messages instead of 200, and each one reads
+  like a real request rather than a mail-merge.
+</div>
+
+<h3>What the script produces</h3>
+<ol class="n">
+  <li>For each of the 43 unreachable, find everyone in the same weapon + gender +
+  V-category who <i>is</i> reachable — these are the people who train and compete against
+  them.</li>
+  <li>Invert into one row per helper, with the list of names they are being asked about.</li>
+  <li>Render a ready-to-paste Messenger message per helper, and an HTML worksheet you work
+  down: helper, names, channel, answer.</li>
+  <li>New contacts you enter go into <code>kontakt</code>, and the person immediately
+  becomes eligible for the normal invitation flow — their ladder starting that day.</li>
+</ol>
+
+<h3>Two failure modes worth designing against</h3>
+<ul>
+  <li><b class="k">A category where nobody is reachable.</b> If all five in a short category
+  are missing, there is no peer to ask — the fallback is the club, or the Facebook post.
+  The worksheet should mark those separately rather than showing an empty helper list.</li>
+  <li><b class="k">Passing on someone's number.</b> Normal in a small federation, but the
+  message should say what it is for and that the data is used for this campaign only. One
+  sentence, and it makes the request easy to say yes to.</li>
+</ul>
+
+<h2><span class="num">04</span>Point 4 — the structure your content has to fit</h2>
+<p>You write the words; this is the frame they sit in. Everything below exists so the
+automation can personalise, send, resend and reconcile without you touching anything twice.</p>
+
+<h3>Merge fields available to the email</h3>
+<pre><span class="c">-- identity</span>
+<span class="v">{imie}</span>              Gabriela
+<span class="v">{nazwisko}</span>           KAMIŃSKA
+<span class="v">{zwrot}</span>              Pani Gabrielo / Panie Marku   <span class="c">-- gendered salutation, from the ranking file</span>
+
+<span class="c">-- their standing, the part that makes it not-spam</span>
+<span class="v">{kategoria}</span>          V1
+<span class="v">{lista_broni}</span>        szpada (1. miejsce), floret (4. miejsce)
+<span class="v">{liczba_broni}</span>       2
+
+<span class="c">-- the ask</span>
+<span class="v">{link}</span>              prefilled form URL, carries {token}
+<span class="v">{termin}</span>             21 lipca 2026
+<span class="v">{oplata_druzyna}</span>     the team fee, once you provide it
+
+<span class="c">-- plumbing</span>
+<span class="v">{token}</span>             opaque per-person id, also the reconcile key
+<span class="v">{wersja}</span>             template version, recorded on every send</pre>
+
+<div class="call">
+  <span class="lb">Why <code>{lista_broni}</code> matters more than it looks</span>
+  It is the single line that proves the message was written for that person. A veteran
+  reading <i>"szpada — 1. miejsce, floret — 4. miejsce"</i> knows instantly this is real,
+  that the federation has their results, and that the invitation is earned. It is also the
+  cheapest spam-filter defence available: 98 genuinely different messages.
+</div>
+
+<h3>Form structure — fixed, with prefill doing the work</h3>
+<pre><span class="c">0.</span> token                      <span class="c">prefilled, short answer</span>
+<span class="c">0b.</span> imię i nazwisko           <span class="c">prefilled, editable — the human check</span>
+
+<span class="c">1.</span> SZPADA   indywidualnie    tak / nie / <span class="v">nie dotyczy</span>
+<span class="c">2.</span> SZPADA   drużyna          tak / nie / <span class="v">nie dotyczy</span>
+<span class="c">3.</span> FLORET   indywidualnie    tak / nie / <span class="v">nie dotyczy</span>
+<span class="c">4.</span> FLORET   drużyna          tak / nie / <span class="v">nie dotyczy</span>
+<span class="c">5.</span> SZABLA   indywidualnie    tak / nie / <span class="v">nie dotyczy</span>
+<span class="c">6.</span> SZABLA   drużyna          tak / nie / <span class="v">nie dotyczy</span>
+
+<span class="c">7.</span> e-mail / telefon           <span class="c">prefilled with what we hold — free contact-list repair</span>
+<span class="c">8.</span> uwagi                      <span class="c">free text, optional</span></pre>
+
+<p>Six fixed questions, and <span class="v">nie dotyczy</span> prefilled for every weapon
+the person is not ranked in. A one-weapon fencer sees two live questions and four already
+answered; a three-weapon fencer sees six. No branching, no per-person form, one response
+row per person — which is what makes the reconcile trivial.</p>
+
+<div class="call">
+  <span class="lb">Question 7 is worth more than it costs</span>
+  Prefilling the contact data you hold and letting people correct it turns every response
+  into a free repair of the contact list — and the list you are working from is visibly
+  imperfect (an Excel-mangled phone number, an eight-digit mobile, two probable duplicates).
+  One extra field, and by the end of the campaign you own a clean list for next time.
+</div>
+
+<h3>Templates are versioned, and every send records which one went</h3>
+<ul>
+  <li>Four templates: <code>wave1_email</code>, <code>wave2_resend</code>,
+  <code>wave3_sms</code>, <code>wave4_final</code>, plus
+  <code>messenger_kontakt</code> for the peer-sourcing request.</li>
+  <li>Each send writes the template version into <code>zaproszenie</code>. When you iterate
+  on the wording mid-campaign — and you will — you can still tell which version each person
+  received, and whether the new one performed better.</li>
+  <li>The SMS template has a hard 160-character budget including the link. Worth writing to
+  that limit deliberately rather than discovering it at send time.</li>
+</ul>
+
+<h2><span class="num">05</span>Still open</h2>
+<ul>
+  <li><b class="k">Total window.</b> You set the resend at 3 days; I inferred 12 days total
+  from that rhythm. Confirm or shorten.</li>
+  <li><b class="k">Team fee amount.</b> You are looking it up.</li>
+  <li><b class="k">The second contact list.</b> Expected from you; coverage gets re-run the
+  moment it arrives.</li>
+  <li><b class="k">The content itself.</b> Yours to write into the frame above — that is the
+  next piece of work and the only one that is purely writing.</li>
+  <li><b class="k">SMS gateway account.</b> Still needs signing up for if SMS stays in the
+  ladder, which I recommend it does.</li>
+</ul>
+
+</div>
+
+<footer>
+Working document, round 2. Nothing built. Campaign runs against the LOCAL Supabase stack in
+a separate <code>msw_tbilisi</code> database; code and data live in the gitignored
+<code>doc/external_files/MSW-Tbilisi-2026/</code>. Companion documents:
+<i>msw-tbilisi-automatyzacja.html</i> (pipeline and hosting),
+<i>msw-tbilisi-decyzje-otwarte.html</i> (the questions these answers close),
+<i>msw-tbilisi-decyzje-projektowe.html</i> and <i>msw-tbilisi-raport-mockup.html</i>
+(report design and layout).
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — e-mail z prośbą o kontakty</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:900px;margin:0 auto;padding:0 0 60px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--green);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,32px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:66ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:20px;font-weight:600;letter-spacing:-.01em;
+ margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:10.5px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:5px;font-weight:600}
+p{margin:0 0 11px;max-width:78ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 14px;max-width:82ch}
+ul{margin:0 0 12px;padding-left:19px;max-width:78ch}
+li{margin-bottom:6px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+b.k{color:var(--navy)}
+.v{color:var(--violet);font-weight:600;font-family:var(--mono);font-size:.9em}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:12px 15px;margin:12px 0 16px;font-size:13px;max-width:82ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:4px}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.draft{border:1px solid var(--line);border-left:4px solid var(--green);border-radius:6px;
+ background:var(--card);margin:0 0 18px;overflow:hidden;max-width:690px}
+.draft .dh{background:var(--paper);border-bottom:1px solid var(--line);padding:8px 16px;
+ font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.draft .dc{padding:16px 18px;font-size:13.5px;line-height:1.62}
+.draft .dc p{margin:0 0 11px;max-width:none}
+.draft .dc p:last-child{margin-bottom:0}
+.ex{margin-left:16px;color:var(--muted);font-size:12.5px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:16px}
+table{border-collapse:collapse;width:100%;min-width:500px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10px;color:var(--navy);white-space:nowrap;font-weight:600}
+td.num{font-family:var(--mono);text-align:right}
+footer{margin:34px 22px 0;padding-top:14px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:82ch}
+@media(max-width:680px){.hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Treść · prośba o kontakty</div>
+  <h1>E-mail do zawodników — prośba o kontakty</h1>
+  <p class="dek">Krótka wiadomość do kolegów z kategorii tych zawodników, do których nie
+  mamy jak dotrzeć. Jedna wiadomość na adresata, nie jedna na szukanego.</p>
+  <div class="chips">
+    <span class="chip ok">34 wiadomości</span>
+    <span class="chip">41 osób do odnalezienia</span>
+    <span class="chip">wysyłka: dzień 1</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">01</span>Treść</h2>
+
+<div class="draft">
+  <div class="dh">kontakty_email · szablon</div>
+  <div class="dc">
+    <p><b>Temat:</b> MŚW Tbilisi 2026 — pomożesz nam dotrzeć do kilku osób?</p>
+    <hr style="border:none;border-top:1px solid var(--line);margin:12px 0">
+
+    <p><span class="v">{zwrot}</span>,</p>
+
+    <p>Zbieramy deklaracje startu na Mistrzostwa Świata Weteranów w Tbilisi
+    (9–17 października 2026). Do części zawodników z rankingu SPWS nie mamy jak się
+    odezwać — nie mamy ani adresu e-mail, ani numeru telefonu.</p>
+
+    <p><b>W Twoich kategoriach są to:</b><br>
+    <span class="v">{lista_brakujacych}</span></p>
+    <p class="ex">np.&nbsp; <b>szpada mężczyźni 50+</b><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Marek Biskupski, Jarosław Odolak, Mikołaj Olszewski,
+    Artur Skoczek</p>
+
+    <p>Jeśli masz do kogokolwiek z nich kontakt, pomoże nam jedno z dwóch — obojętne
+    które:</p>
+    <ul>
+      <li>prześlij nam jego adres e-mail lub telefon na
+      <a href="mailto:spws.weterani@gmail.com">spws.weterani@gmail.com</a>,</li>
+      <li>albo po prostu przekaż mu tę wiadomość razem z linkiem poniżej.</li>
+    </ul>
+
+    <p style="text-align:center;margin:15px 0">
+      <a href="#" style="background:var(--navy);color:#fff;padding:10px 22px;border-radius:4px;
+      text-decoration:none;font-weight:600;display:inline-block">Formularz deklaracji</a><br>
+      <span style="font-size:11px;color:var(--muted)"><span class="v">{link_ogolny}</span></span>
+    </p>
+
+    <p>Termin zbierania deklaracji mija <b>1 sierpnia 2026</b> — potem lista idzie do PZSz.
+    Dane posłużą wyłącznie do tego zapytania i zostaną usunięte po zamknięciu zgłoszeń.</p>
+
+    <p>Z góry dziękujemy,<br><b>SPWS — Ranking Weteranów</b></p>
+  </div>
+</div>
+
+<h2><span class="num">02</span>Dwie decyzje w tej treści</h2>
+
+<div class="call">
+  <span class="lb">Dwie drogi zamiast jednej</span>
+  Prośba o cudzy numer telefonu bywa niezręczna — nie każdy chce go przekazywać bez
+  pytania. Dlatego druga opcja: <i>przekaż mu tę wiadomość</i>. Adresat nie musi wtedy
+  ujawniać niczyich danych, a my i tak osiągamy cel. Bez tej furtki część osób
+  po prostu nie odpowie, zamiast odmówić.
+</div>
+
+<div class="call">
+  <span class="lb">Link ogólny, nie osobisty</span>
+  <span class="v">{link_ogolny}</span> to formularz <b class="k">bez tokenu</b> —
+  ta sama treść, ale bez wypełnionego z góry nazwiska, bo nie wiemy, kto ostatecznie
+  go wypełni. Odpowiedzi z tego linku wymagają ręcznego dopasowania do rankingu, ale
+  jest ich z definicji mało, a alternatywa — brak jakiegokolwiek linku — oznacza, że
+  przekazanie wiadomości dalej nic nie daje.
+</div>
+
+<h2><span class="num">03</span>Do kogo i o kogo</h2>
+<p class="sub">Pełna lista wysyłkowa z adresami:
+<code>doc/external_files/MSW-Tbilisi-2026/prosba-o-kontakty.html</code></p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Wielkość</th><th>Wartość</th><th>Uwaga</th></tr></thead>
+<tbody>
+<tr><td class="d">Wiadomości</td><td class="num">34</td>
+  <td>Po trzech najwyżej sklasyfikowanych osiągalnych z każdej kategorii z luką.</td></tr>
+<tr><td class="d">Szukanych osób</td><td class="num">41</td>
+  <td>Wszyscy bez kontaktu — pokrycie pełne.</td></tr>
+<tr><td class="d">Kategorii z lukami</td><td class="num">13</td>
+  <td>Żadna nie jest bez wyjścia — wszędzie jest kogo zapytać.</td></tr>
+<tr><td class="d">Mediana nazwisk na wiadomość</td><td class="num">2</td>
+  <td>Najwięcej 14 — szpada mężczyźni 40+, kategoria z największą luką.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call warn">
+  <span class="lb">Dlaczego nie 86 wiadomości</span>
+  Pytanie <i>wszystkich</i> osiągalnych w każdej kategorii dałoby 86 wysyłek, w tym
+  jedenaście identycznych list po czternaście nazwisk. Pokrycie byłoby takie samo.
+  Zaczynamy od trzech na kategorię; jeśli po kilku dniach nikt z nich nie odpowie,
+  kolejni w rankingu są następni w kolejce.
+</div>
+
+<h2><span class="num">04</span>Kiedy to wysłać</h2>
+<p>Dzień po fali 1, nie razem z nią. Dwie wiadomości tego samego dnia do tej samej osoby
+konkurują ze sobą, a prośba o przysługę wygrywa z prośbą o deklarację — czyli dokładnie
+odwrotnie, niż chcemy. Dzień odstępu wystarcza.</p>
+
+<p class="sub">Adres nadawcy i zwrotny: <code>spws.weterani@gmail.com</code>.
+Brakuje wyłącznie adresu formularza w wersji bez tokenu
+(<span class="v">{link_ogolny}</span>) — powstanie razem z formularzem.</p>
+
+</div>
+
+<footer>
+Lista wysyłkowa z danymi osobowymi:
+<i>doc/external_files/MSW-Tbilisi-2026/prosba-o-kontakty.html</i> (katalog wyłączony
+z repozytorium). Treść fali 1: <i>msw-tbilisi-email-wave1.html</i>.
+Kanały i fale — następny temat.
+</footer>
+
+</div>
+</body>
+</html>

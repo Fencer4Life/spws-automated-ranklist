@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — e-mail fali 1, wersja zatwierdzona</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:900px;margin:0 auto;padding:0 0 60px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--green);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,32px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:66ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:20px;font-weight:600;letter-spacing:-.01em;
+ margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:10.5px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:5px;font-weight:600}
+p{margin:0 0 11px;max-width:78ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 14px;max-width:82ch}
+ul{margin:0 0 12px;padding-left:19px;max-width:78ch}
+li{margin-bottom:6px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+b.k{color:var(--navy)}
+.v{color:var(--violet);font-weight:600;font-family:var(--mono);font-size:.9em}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:12px 15px;margin:12px 0 16px;font-size:13px;max-width:82ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:4px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.ok{background:var(--green-bg);border-left-color:var(--green)}
+.call.ok .lb{color:var(--green)}
+.draft{border:1px solid var(--line);border-left:4px solid var(--green);border-radius:6px;
+ background:var(--card);margin:0 0 18px;overflow:hidden;max-width:690px}
+.draft .dh{background:var(--paper);border-bottom:1px solid var(--line);padding:8px 16px;
+ font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.draft .dc{padding:16px 18px;font-size:13.5px;line-height:1.62}
+.draft .dc p{margin:0 0 11px;max-width:none}
+.draft .dc p:last-child{margin-bottom:0}
+.ex{margin-left:16px;color:var(--muted);font-size:12.5px}
+.chg{background:var(--green-bg);padding:0 3px;border-radius:2px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:16px}
+table{border-collapse:collapse;width:100%;min-width:520px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10px;color:var(--navy);white-space:nowrap;font-weight:600}
+footer{margin:34px 22px 0;padding-top:14px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:82ch}
+@media(max-width:680px){.hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Treść zatwierdzona · fala 1</div>
+  <h1>E-mail fali 1 — Twoja wersja</h1>
+  <p class="dek">Twoje zmiany wprowadzone: bez pozycji rankingowych, ze ścieżką przez
+  PZSz, z opłatą startową i drużynową w treści. Redakcja domknięta, podpis ustawiony.</p>
+  <div class="chips">
+    <span class="chip ok">treść zatwierdzona</span>
+    <span class="chip ok">opłaty: 90 / 185 EUR</span>
+    <span class="chip">termin: 1 sierpnia 2026</span>
+    <span class="chip ok">podpis: SPWS — Ranking Weteranów</span>
+    <span class="chip ok">nadawca: spws.weterani@gmail.com</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">01</span>Wersja do wysyłki</h2>
+
+<div class="draft">
+  <div class="dh">wave1_email · zielonym — moje zmiany wobec Twojego tekstu</div>
+  <div class="dc">
+    <p><b>Temat:</b> MŚW Tbilisi 2026 — czy planujesz start? Prosimy o szybką odpowiedź</p>
+    <hr style="border:none;border-top:1px solid var(--line);margin:12px 0">
+
+    <p><span class="v">{zwrot}</span>,</p>
+
+    <p>Mistrzostwa Świata Weteranów odbędą się w Tbilisi w dniach <b>9–17 października
+    2026</b>. Na podstawie rankingu SPWS za sezon 2025/2026 jesteś w gronie szermierzy,
+    których możemy zgłosić do startu — w każdej kategorii startuje
+    czterech zawodników plus jeden rezerwowy. Ostateczną decyzję
+    o nominacji podejmie PZSz na podstawie naszych
+    propozycji.</p>
+
+    <p><b>Twoja pozycja w rankingu daje nam podstawy do rozpatrzenia
+    kandydatury do startu w:</b><br>
+    <span class="v">{wykaz_broni}</span></p>
+    <p class="ex">np.&nbsp; szpada, kat. 70+ · start 10 października<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; floret, kat. 70+ · start 13 października</p>
+
+    <p><b>Koszty według listu zapraszającego FIE:</b><br>
+    opłata startowa <b>90 EUR</b> za każdą broń · opłata drużynowa <b>185 EUR</b> od
+    drużyny. Do tego dojazd i hotel we własnym zakresie. Pełny list zapraszający:
+    <a href="https://static.fie.org/uploads/40/202646-FIE_InvitationLetter_WorldChamp_Tbilisi2026.pdf">
+    FIE Invitation Letter — Tbilisi 2026</a>.</p>
+
+    <p><b>Prosimy o wypełnienie deklaracji poniżej, jak najszybciej i nie później niż
+    1 sierpnia 2026</b> — musimy zamknąć listę, by móc ją
+    przedstawić PZSz, który z kolei dokona zgłoszeń do FIE
+    (z terminem do 20 sierpnia).</p>
+
+    <p style="text-align:center;margin:15px 0">
+      <a href="#" style="background:var(--navy);color:#fff;padding:10px 22px;border-radius:4px;
+      text-decoration:none;font-weight:600;display:inline-block">Wypełnij deklarację</a><br>
+      <span style="font-size:11px;color:var(--muted)"><span class="v">{link}</span></span>
+    </p>
+
+    <p>Formularz zajmuje minutę. Deklaracja nie jest zobowiązaniem finansowym ani
+    powołaniem do składu — pytamy o zamiar, żeby wiedzieć, na kogo możemy liczyć.</p>
+
+    <p>Z pozdrowieniami,<br><b>SPWS — Ranking Weteranów</b></p>
+  </div>
+</div>
+
+<h2><span class="num">02</span>Opłaty w e-mailu</h2>
+
+<div class="call ok">
+  <span class="lb">Opłaty w treści</span>
+  Dwie pozycje, obie cytowane za listem FIE: <b>90 EUR</b> za start indywidualny
+  i <b>185 EUR</b> za start drużynowy. Nic poza tym.
+</div>
+
+<h2><span class="num">03</span>Poprawki redakcyjne — wprowadzone</h2>
+<div class="tw">
+<table>
+<thead><tr><th>Było</th><th>Jest</th><th>Dlaczego</th></tr></thead>
+<tbody>
+<tr><td class="d">prpopozycji</td><td class="d">propozycji</td><td>literówka</td></tr>
+<tr><td class="d">decyzje nominacji</td><td class="d">decyzję o nominacji</td>
+  <td>biernik; „decyzja o czymś”, nie „decyzja czegoś”</td></tr>
+<tr><td class="d">których SPWS może zgłosić</td><td class="d">których możemy zgłosić</td>
+  <td>SPWS padało dwa razy w jednym zdaniu</td></tr>
+<tr><td class="d">rozpatrzenia twojej kandydatury</td><td class="d">rozpatrzenia kandydatury</td>
+  <td>„Twoja pozycja… Twojej kandydatury” — powtórzenie, drugie zbędne</td></tr>
+<tr><td class="d">przedstawić do PZSz</td><td class="d">przedstawić PZSz</td>
+  <td>przedstawić komu, nie do kogo</td></tr>
+<tr><td class="d">potrzebujemy zamknąć listę</td><td class="d">musimy zamknąć listę</td>
+  <td>kalka z angielskiego <i>we need to</i></td></tr>
+<tr><td class="d">zrobi zgłoszenia do FIE</td><td class="d">dokona zgłoszeń do FIE</td>
+  <td>rejestr — reszta listu jest formalna</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">04</span>Co pociąga za sobą rezygnacja z pozycji</h2>
+
+<div class="call ok">
+  <span class="lb">Dobra zmiana, i to z powodu, którego wcześniej nie widziałem</span>
+  Bez pozycji rankingowej wiadomość przestaje wyglądać jak ranking miejsc, a zaczyna jak
+  zaproszenie do rozpatrzenia kandydatury — co jest zgodne z prawdą, skoro nominuje PZSz,
+  nie SPWS. Zdanie o PZSz w pierwszym akapicie jest tu ważniejsze niż się wydaje: ustawia
+  oczekiwania i chroni Cię przed pretensjami, gdyby PZSz zdecydował inaczej niż wynika
+  z rankingu.
+</div>
+
+<p>Dwie konsekwencje techniczne:</p>
+<ul>
+  <li><b class="k"><span class="v">{wykaz_broni}</span> zmienia zawartość.</b> Teraz
+  generuje <i>broń, kategoria · data startu</i> zamiast <i>broń, kategoria — miejsce</i>.
+  Daty pochodzą z harmonogramu FIE i są różne dla każdej konkurencji — data drużynowa
+  dochodzi tylko wtedy, gdy zawodnik jest w kategorii z drużyną.</li>
+  <li><b class="k">Wiadomość dla zawodnika dobieranego po odmowie</b> traciła sens
+  w wariancie „zapraszamy Cię jako kolejnego w rankingu”, bo nie podajemy już pozycji.
+  Zastąpię to neutralnym <i>„zwolniło się miejsce w Twojej kategorii”</i> — bez liczb,
+  spójnie z falą 1.</li>
+</ul>
+
+<h2><span class="num">05</span>Do wysyłki brakuje</h2>
+<ul>
+  <li>Pełny adres <code>spws.weterani@gmail.com</code> — jako nadawca, adres zwrotny i w klauzuli
+  o danych.</li>
+</ul>
+<p class="sub">Poza tym treść jest zamknięta. Pole <span class="v">{nadawca}</span>
+zniknęło — podpis jest stały: <b>SPWS — Ranking Weteranów</b>.</p>
+
+</div>
+
+<footer>
+Zastępuje sekcję 01 dokumentu <i>msw-tbilisi-formularz-i-email.html</i> oraz e-mail
+z <i>msw-tbilisi-wersja-minimalna.html</i>. Struktura formularza bez zmian —
+obowiązuje <i>msw-tbilisi-formularz-final.html</i>. Kanały i fale — następny temat.
+</footer>
+
+</div>
+</body>
+</html>

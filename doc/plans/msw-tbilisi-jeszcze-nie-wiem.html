@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — „jeszcze nie wiem” jako odpowiedź</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:960px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,32px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:68ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:-.01em;
+ margin:36px 0 4px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:6px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+p{margin:0 0 12px;max-width:80ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 18px;max-width:84ch}
+ul{margin:0 0 14px;padding-left:19px;max-width:80ch}
+li{margin-bottom:7px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+b.k{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:84ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin:8px 0 18px}
+.opt{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:14px 16px}
+.opt.pick{border-left:4px solid var(--green);background:linear-gradient(180deg,var(--green-bg) 0 3px,var(--card) 3px)}
+.opt.no{opacity:.75;border-left:4px solid var(--grey)}
+.opt h4{margin:0 0 3px;font-size:14px;font-weight:600}
+.opt .verd{font-family:var(--mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;display:inline-block;margin-bottom:8px}
+.v-yes{background:var(--green-bg);color:var(--green)}
+.v-no{background:var(--grey-bg);color:var(--grey)}
+.v-maybe{background:var(--amber-bg);color:var(--amber)}
+.opt p{font-size:12.5px;margin:0 0 8px}
+.opt ul{font-size:12px;padding-left:17px;margin-bottom:0}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:520px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+.sw{width:13px;height:13px;border-radius:3px;display:inline-block;border:1px solid var(--line);
+ vertical-align:-2px;margin-right:6px}
+.s-ok{background:var(--green-bg);border-color:var(--green)}
+.s-pd{background:var(--amber-bg);border-color:var(--amber)}
+.s-no{background:var(--coral-bg);border-color:var(--coral)}
+.s-q{background:repeating-linear-gradient(45deg,var(--amber-bg) 0 4px,var(--card) 4px 8px);border-color:var(--amber)}
+footer{margin:38px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:84ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}
+ h2{font-size:19px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Dokument roboczy · pojedyncza decyzja</div>
+  <h1>„Jeszcze nie wiem” — gdzie wolno jej być</h1>
+  <p class="dek">Wyciągnąłem tę odpowiedź tylko przy pytaniu drużynowym. Poniżej co ta
+  decyzja naprawdę oznacza, bo dotyka nie formularza, tylko trzech kolorów w raporcie
+  dla zarządu.</p>
+  <div class="chips">
+    <span class="chip">do rozstrzygnięcia</span>
+    <span class="chip">dotyka podpisanej makiety</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">01</span>Dlaczego to nie jest pytanie o formularz</h2>
+<p>Podpisany schemat raportu ma trzy stany i każdy ma jasne znaczenie:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Kolor</th><th>Znaczenie</th><th>Co robimy</th></tr></thead>
+<tbody>
+<tr><td><span class="sw s-ok"></span>zielony</td><td>potwierdził start</td>
+  <td>liczy się do piątki, nic nie robimy</td></tr>
+<tr><td><span class="sw s-pd"></span>żółty</td><td>oczekuje na odpowiedź</td>
+  <td><b class="k">ponaglamy</b> — 3 dni, SMS, telefon</td></tr>
+<tr><td><span class="sw s-no"></span>czerwony</td><td>odmówił</td>
+  <td>wchodzi kolejny z rankingu</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call warn">
+  <span class="lb">Tu jest problem</span>
+  „Jeszcze nie wiem” to <b>odpowiedź</b>, ale nie <b>decyzja</b>. Nie mieści się w żadnym
+  z trzech stanów. Jeśli wpadnie do żółtego, staje się nieodróżnialna od milczenia — czyli
+  system będzie ponaglał człowieka, który już odpowiedział, i to co trzy dni. To najszybszy
+  sposób, żeby zirytować kogoś, kto był wobec nas uczciwy. Jeśli dostanie własny kolor,
+  łamiemy podpisany schemat trzech stanów.
+</div>
+
+<h2><span class="num">02</span>Trzy wyjścia</h2>
+
+<div class="opts">
+  <div class="opt pick">
+    <h4>A · Tylko przy drużynie, ale jako stan „warunkowo tak”</h4>
+    <span class="verd v-yes">rekomendacja</span>
+    <p>Zostaje tam, gdzie jest, ale przestaje być czwartym kolorem. W raporcie liczy się
+    jako <b>zielony z zastrzeżeniem</b> — kreskowany, nie osobny kolor.</p>
+    <ul>
+      <li>Gotowość drużyny i tak nie jest binarna: liczy się, ilu ludzi da się zebrać.</li>
+      <li>Nie ponaglamy takiej osoby automatycznie — trafia na listę do rozmowy przy
+      domykaniu składów, nie do pętli SMS-owej.</li>
+      <li>Schemat trzech kolorów zostaje nienaruszony; kreskowanie to wariant zieleni,
+      nie nowy stan.</li>
+    </ul>
+  </div>
+  <div class="opt">
+    <h4>B · Także przy starcie indywidualnym</h4>
+    <span class="verd v-maybe">obrona tej opcji</span>
+    <p>Moje uzasadnienie („indywidualny zależy tylko od zawodnika”) jest słabsze, niż
+    napisałem. Przy koszcie 90–362 EUR plus przelot i hotel, przy siedemdziesięciolatku
+    i przy sześciu dniach startowych w ciągu ośmiu — „nie wiem” jest odpowiedzią uczciwą,
+    a nie wykrętem.</p>
+    <ul>
+      <li>Zysk: mniej fałszywych „tak” składanych na wszelki wypadek.</li>
+      <li>Koszt: nie wiemy, czy kategoria ma komplet, dopóki się nie rozstrzygnie —
+      a przy terminie 1 sierpnia nie ma na to miejsca.</li>
+      <li>Ryzyko realne: przy 41 osobach bez kontaktu i 8 z nich w pierwszej piątce
+      i tak walczymy o każdą pewną deklarację.</li>
+    </ul>
+  </div>
+  <div class="opt no">
+    <h4>C · Usunąć zupełnie</h4>
+    <span class="verd v-no">odradzam</span>
+    <p>Tylko tak/nie wszędzie. Najprostsze w obsłudze i najczystsze w raporcie.</p>
+    <ul>
+      <li>Ale niepewność nie znika przez to, że nie damy jej pola — wyleje się do rubryki
+      „uwagi” albo do telefonu do Ciebie.</li>
+      <li>Przy drużynie, gdzie dochodzi osobna opłata i zależność od innych, wymuszone
+      „tak” jest wprost szkodliwe: zawyża gotowość składu.</li>
+    </ul>
+  </div>
+</div>
+
+<h2><span class="num">03</span>Co proponuję konkretnie</h2>
+<ul>
+  <li>Przy <b class="k">drużynie</b> — zostaje, jako „warunkowo tak”, kreskowana zieleń.
+  Nie uruchamia ponaglania.</li>
+  <li>Przy <b class="k">starcie indywidualnym</b> — zostaje tak/nie, ale z jednym
+  zdaniem w formularzu: <i>„Jeśli jeszcze nie masz pewności, zaznacz «nie» — będziemy
+  pytać ponownie, jeśli zwolni się miejsce.”</i> To daje ujście niepewności bez tworzenia
+  czwartego stanu i bez zawyżania liczby potwierdzeń.</li>
+  <li>W <code>odpowiedz</code> zapisujemy trzy wartości (<code>tak</code>,
+  <code>nie</code>, <code>warunkowo</code>) niezależnie od tego, co pokazuje formularz —
+  bo odpowiedzi z telefonu i z Messengera i tak będą zawierały „chyba tak, muszę
+  sprawdzić”. Baza musi to umieć zapisać, nawet jeśli formularz tego nie oferuje.</li>
+</ul>
+
+<div class="call">
+  <span class="lb">Jedno zdanie, jeśli nie chcesz czytać całości</span>
+  Zostawiam „jeszcze nie wiem” tylko przy drużynie, ale przestaje to być czwarty kolor —
+  liczy się jako zieleń z zastrzeżeniem i nie wywołuje ponaglania. Jeśli uważasz, że przy
+  indywidualnym też powinno być, powiedz — argument za jest mocniejszy, niż początkowo
+  napisałem, a kosztem jest niepewność co do kompletu przy krótkim terminie.
+</div>
+
+</div>
+
+<footer>
+Dotyczy sekcji 07 dokumentu <i>msw-tbilisi-formularz-przyklady.html</i> oraz schematu
+kolorów z <i>msw-tbilisi-decyzje-projektowe.html</i> i makiety
+<i>msw-tbilisi-raport-mockup.html</i>. Zmiana statusu wymaga aktualizacji obu.
+</footer>
+
+</div>
+</body>
+</html>
