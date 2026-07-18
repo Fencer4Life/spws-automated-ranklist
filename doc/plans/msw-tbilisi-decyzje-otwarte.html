@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — open decisions</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1000px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,34px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:68ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.body{padding:26px 22px 0}
+.howto{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:0 0 26px;font-size:13px;max-width:82ch}
+.howto .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+
+.q{background:var(--card);border:1px solid var(--line);border-radius:6px;
+ margin-bottom:16px;overflow:hidden}
+.q.block{border-left:4px solid var(--coral)}
+.q.struct{border-left:4px solid var(--navy)}
+.q.detail{border-left:4px solid var(--grey)}
+.qh{padding:14px 18px 12px;border-bottom:1px solid var(--line)}
+.qn{font-family:var(--mono);font-size:10px;letter-spacing:.11em;color:var(--navy);
+ font-weight:700;display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.pill{font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;
+ border-radius:2px;font-weight:600}
+.p-block{background:var(--coral-bg);color:var(--coral)}
+.p-struct{background:var(--navy-soft);color:var(--navy)}
+.p-detail{background:var(--grey-bg);color:var(--grey)}
+.qt{font-family:var(--serif);font-size:18px;font-weight:600;line-height:1.25;letter-spacing:-.01em}
+.qw{font-size:12.5px;color:var(--muted);margin-top:6px;max-width:82ch}
+.qw b{color:var(--ink)}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:0}
+.o{padding:13px 18px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.o:last-child{border-right:none}
+.o.rec{background:linear-gradient(180deg,var(--green-bg) 0 3px,var(--card) 3px)}
+.ol{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--navy);
+ display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.ol .tick{font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;padding:1px 6px;
+ border-radius:2px;background:var(--green-bg);color:var(--green);font-weight:600}
+.on{font-weight:600;font-size:13px;margin-bottom:4px}
+.od{font-size:12px;color:var(--muted)}
+.qr{padding:11px 18px;font-size:12.5px;background:var(--paper)}
+.qr .lb{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);font-weight:600;margin-right:8px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+h2{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;
+ color:var(--navy);margin:32px 0 10px;font-weight:600}
+footer{margin:40px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:84ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}
+ .o{border-right:none}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Working document · decision sheet</div>
+  <h1>MŚW Tbilisi 2026 — open decisions</h1>
+  <p class="dek">Everything still unanswered, with the options and my recommendation for
+  each. Nine questions; four of them block building, five can be settled later.</p>
+  <div class="chips">
+    <span class="chip">2026-07-18</span>
+    <span class="chip">9 open</span>
+    <span class="chip">4 blocking</span>
+    <span class="chip">nothing built yet</span>
+  </div>
+</div>
+
+<div class="body">
+
+<div class="howto">
+  <span class="lb">How to answer</span>
+  Reply by reference — <code>1b, 2a, 3a…</code> — or just name the ones you want to change
+  and I take the recommendation on the rest. Recommendations are marked in green.
+</div>
+
+<h2>Blocking — needed before anything gets built</h2>
+
+<div class="q block">
+  <div class="qh">
+    <div class="qn"><span>Q1</span><span class="pill p-block">blocking</span></div>
+    <div class="qt">Is there an SPWS Facebook group you can post in?</div>
+    <div class="qw">Asked twice, still open. <b>43 of 144 fencers have no email and no
+    phone, 9 of them inside a top 5.</b> No automation reaches them. If the group exists
+    and you can post, that gap closes cheaply and the campaign works as designed. If not,
+    those 26–43 names have to be chased individually through club officials, which is days
+    of manual work and changes what "full automation" can mean.</div>
+  </div>
+  <div class="opts">
+    <div class="o"><div class="ol">A</div><div class="on">Yes, I can post</div>
+      <div class="od">Group post carries a generic form link; peers tag the missing.</div></div>
+    <div class="o"><div class="ol">B</div><div class="on">Exists, but I can't post</div>
+      <div class="od">Someone else posts on your behalf — needs a person and a lead time.</div></div>
+    <div class="o"><div class="ol">C</div><div class="on">No group</div>
+      <div class="od">Club officials become the only route. Plan for manual chasing.</div></div>
+  </div>
+  <div class="qr"><span class="lb">Note</span>No recommendation possible — this is a fact
+  about the world, not a choice.</div>
+</div>
+
+<div class="q block">
+  <div class="qh">
+    <div class="qn"><span>Q2</span><span class="pill p-block">blocking</span></div>
+    <div class="qt">Which address sends the mail?</div>
+    <div class="qw">Highest-leverage single choice in the campaign, and the most expensive
+    to change after 98 people have already received the first message. Affects open rate,
+    spam placement, and whether the request reads as official.</div>
+  </div>
+  <div class="opts">
+    <div class="o rec"><div class="ol">A <span class="tick">recommended</span></div>
+      <div class="on">SPWS-branded address</div>
+      <div class="od">An invitation to represent Poland should not arrive from a private
+      Gmail. Materially better open rate and far less likely to be ignored as a mistake.
+      Worth the setup even if it takes a day.</div></div>
+    <div class="o"><div class="ol">B</div><div class="on">Your personal Gmail</div>
+      <div class="od">Works today, zero setup. Fine if fencers already know you as the
+      person who runs the ranking — reads as personal rather than institutional.</div></div>
+  </div>
+  <div class="qr"><span class="lb">Either way</span>Reply-to should be an address you
+  actually read — a meaningful share of answers will arrive as plain replies rather than
+  through the form.</div>
+</div>
+
+<div class="q block">
+  <div class="qh">
+    <div class="qn"><span>Q3</span><span class="pill p-block">blocking</span></div>
+    <div class="qt">Google Forms, or your own page served from the local stack?</div>
+    <div class="qw">The last structural choice. Determines whether the multi-weapon prefill
+    workaround is needed at all, and where answers land.</div>
+  </div>
+  <div class="opts">
+    <div class="o rec"><div class="ol">A <span class="tick">recommended</span></div>
+      <div class="on">Google Forms → Sheet</div>
+      <div class="od">Always up, no dependency on your machine, an interface people
+      recognise and trust. Costs the prefill trick for multi-weapon fencers and a
+      reconcile step into Postgres.</div></div>
+    <div class="o"><div class="ol">B</div><div class="on">Own page via tunnel</div>
+      <div class="od">Full control, per-person tokens, no prefill hack, answers land
+      straight in <code>odpowiedz</code>. Costs a stranger-looking URL and puts campaign
+      uptime on your machine for four weeks.</div></div>
+  </div>
+  <div class="qr"><span class="lb">Why A</span>The audience skews 50+ and the difference
+  between a recognised Google form and an unfamiliar domain is response rate, which matters
+  more here than elegance.</div>
+</div>
+
+<div class="q block">
+  <div class="qh">
+    <div class="qn"><span>Q4</span><span class="pill p-block">blocking</span></div>
+    <div class="qt">The message itself — never designed.</div>
+    <div class="qw">Flagged as "the next brainstorming topic" in the original design doc and
+    still untouched. Nothing can be sent without it. What is asked, in what order, how the
+    team question and its fee are framed, and how a three-weapon fencer answers without a
+    wall of checkboxes.</div>
+  </div>
+  <div class="opts">
+    <div class="o rec"><div class="ol">A <span class="tick">recommended</span></div>
+      <div class="on">I draft it, you edit</div>
+      <div class="od">I write the Polish email and the form questions as a working
+      document; you correct tone and terminology. Fastest path to something concrete to
+      react to.</div></div>
+    <div class="o"><div class="ol">B</div><div class="on">Brainstorm it first</div>
+      <div class="od">Work through the question set before any drafting. Slower, but right
+      if you already have strong views on what must and must not be asked.</div></div>
+  </div>
+  <div class="qr"><span class="lb">Note</span>This is the largest remaining piece of work
+  and the only one that is purely writing.</div>
+</div>
+
+<h2>Structural — decide before the first send, not before building</h2>
+
+<div class="q struct">
+  <div class="qh">
+    <div class="qn"><span>Q5</span><span class="pill p-struct">structural</span></div>
+    <div class="qt">How long is the response window?</div>
+    <div class="qw">Drives the whole escalation ladder — reminder, SMS, calls, deadline
+    warning. I assumed 14 days when drawing the timeline; that was my assumption, not your
+    decision.</div>
+  </div>
+  <div class="opts">
+    <div class="o"><div class="ol">A</div><div class="on">10 days</div>
+      <div class="od">Tight. Works only if the Tbilisi entry deadline forces it.</div></div>
+    <div class="o rec"><div class="ol">B <span class="tick">recommended</span></div>
+      <div class="on">14 days</div>
+      <div class="od">Room for two reminders and a phone round without feeling
+      leisurely. Holidays absorb one lost week.</div></div>
+    <div class="o"><div class="ol">C</div><div class="on">21 days</div>
+      <div class="od">Safer for reaching the unreachable via clubs, but long enough that
+      early responders forget they answered.</div></div>
+  </div>
+  <div class="qr"><span class="lb">Depends on</span>The actual entry deadline for Tbilisi —
+  if you know it, that decides this rather than preference.</div>
+</div>
+
+<div class="q struct">
+  <div class="qh">
+    <div class="qn"><span>Q6</span><span class="pill p-struct">structural</span></div>
+    <div class="qt">SMS — gateway, or by hand from the phone?</div>
+    <div class="qw">93 fencers have a number. SMS is the highest-open-rate second touch and
+    the only channel for the one fencer with a phone but no email.</div>
+  </div>
+  <div class="opts">
+    <div class="o rec"><div class="ol">A <span class="tick">recommended</span></div>
+      <div class="on">Gateway (SMSAPI / SerwerSMS)</div>
+      <div class="od">Under 15 PLN for the whole list, scriptable, logged in
+      <code>zaproszenie</code> like everything else. Costs an account signup.</div></div>
+    <div class="o"><div class="ol">B</div><div class="on">By hand from the phone</div>
+      <div class="od">Free and immediate, but 93 messages typed by hand, unlogged, and
+      impossible to schedule — the escalation step stops being automatic.</div></div>
+    <div class="o"><div class="ol">C</div><div class="on">Skip SMS entirely</div>
+      <div class="od">Email plus Facebook only. Simpler, and you lose the single most
+      effective nudge.</div></div>
+  </div>
+</div>
+
+<div class="q struct">
+  <div class="qh">
+    <div class="qn"><span>Q7</span><span class="pill p-struct">structural</span></div>
+    <div class="qt">Does the form state the team fee amount?</div>
+    <div class="qw">A team start carries an extra cost. A yes given without knowing the
+    amount is a yes you may have to re-ask — and re-asking after someone has been counted
+    into a team is the worst moment to discover it.</div>
+  </div>
+  <div class="opts">
+    <div class="o rec"><div class="ol">A <span class="tick">recommended</span></div>
+      <div class="on">State the amount</div>
+      <div class="od">Even approximate, marked as such. A declaration made with the cost
+      visible is one you can rely on.</div></div>
+    <div class="o"><div class="ol">B</div><div class="on">Willingness in principle</div>
+      <div class="od">Correct only if the amount genuinely is not known yet — then say
+      exactly that in the form rather than staying silent.</div></div>
+  </div>
+</div>
+
+<h2>Detail — can be settled at any point</h2>
+
+<div class="q detail">
+  <div class="qh">
+    <div class="qn"><span>Q8</span><span class="pill p-detail">detail</span></div>
+    <div class="qt">The 9 unreachable top-5 fencers — separate chase list?</div>
+    <div class="qw">Asked earlier, unanswered. They are the ones whose absence actually
+    blocks a category from fielding a full team.</div>
+  </div>
+  <div class="opts">
+    <div class="o rec"><div class="ol">A <span class="tick">recommended</span></div>
+      <div class="on">Yes, own page</div>
+      <div class="od">Nine names with their categories and clubs, printable, to work
+      through by phone and Facebook. Cheap to generate and it is the highest-value manual
+      work in the campaign.</div></div>
+    <div class="o"><div class="ol">B</div><div class="on">No, filter the existing page</div>
+      <div class="od">The candidate list already filters to "bez kontaktu". Sufficient if
+      you would rather not carry another file.</div></div>
+  </div>
+</div>
+
+<div class="q detail">
+  <div class="qh">
+    <div class="qn"><span>Q9</span><span class="pill p-detail">detail</span></div>
+    <div class="qt">Two name-matching corrections — confirm or reject.</div>
+    <div class="qw">The ranking workbooks and the contact list disagree on two spellings. I
+    matched them by hand to recover two otherwise-unreachable fencers. You know these
+    people; I am guessing from string similarity.</div>
+  </div>
+  <div class="opts">
+    <div class="o rec"><div class="ol">A <span class="tick">recommended</span></div>
+      <div class="on">Both are the same person</div>
+      <div class="od"><b>FUHRMANN Ulrike</b> = "Fuhrmann Urlike" (typo in contacts) and
+      <b>SADOWIŃSKA Adriana</b> = "Sadowińska Adrianna". Recovers two contacts.</div></div>
+    <div class="o"><div class="ol">B</div><div class="on">One or both are wrong</div>
+      <div class="od">Tell me which and I will unmatch them — they return to the
+      unreachable list rather than being mailed as someone else.</div></div>
+  </div>
+  <div class="qr"><span class="lb">Also worth your eye</span><b>Damian Mateusz</b> and
+  <b>Dziubiński Mateusz</b> in the contact list share a near-identical email
+  (<code>dziubek2_88@</code> / <code>dziubek28@</code>) and phone. Possibly one person
+  entered twice. Not currently merged.</div>
+</div>
+
+</div>
+
+<footer>
+Decision sheet, not a plan of record. Companion documents:
+<i>msw-tbilisi-automatyzacja.html</i> (pipeline and hosting),
+<i>msw-tbilisi-decyzje-projektowe.html</i> (report design),
+<i>msw-tbilisi-raport-mockup.html</i> (board report layout). Candidate list and contact
+coverage live in the gitignored campaign folder as <i>uczestnicy.html</i>.
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — campaign automation options</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1080px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,34px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:68ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:22px;font-weight:600;letter-spacing:-.01em;
+ margin:38px 0 4px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:6px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:26px 0 6px;font-weight:600}
+p{margin:0 0 12px;max-width:80ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 18px;max-width:84ch}
+ul{margin:0 0 14px;padding-left:19px;max-width:80ch}
+li{margin-bottom:6px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+b.k{color:var(--navy)}
+
+/* pipeline */
+.pipe{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:6px 0 22px}
+.pstep{flex:1 1 150px;background:var(--card);border:1px solid var(--line);border-radius:5px;
+ padding:11px 13px;position:relative}
+.pstep .t{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);margin-bottom:5px}
+.pstep .n{font-weight:600;font-size:13px;line-height:1.3}
+.pstep .d{font-size:11.5px;color:var(--muted);margin-top:4px}
+.pstep.auto{border-left:3px solid var(--green)}
+.pstep.man{border-left:3px solid var(--amber)}
+
+/* option cards */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:10px;margin:8px 0 18px}
+.opt{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:14px 16px}
+.opt.pick{border-left:4px solid var(--green);background:linear-gradient(180deg,var(--green-bg) 0 3px,var(--card) 3px)}
+.opt.no{opacity:.72}
+.opt h4{margin:0 0 3px;font-size:14px;font-weight:600}
+.opt .verd{font-family:var(--mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;display:inline-block;margin-bottom:8px}
+.v-yes{background:var(--green-bg);color:var(--green)}
+.v-no{background:var(--grey-bg);color:var(--grey)}
+.v-maybe{background:var(--amber-bg);color:var(--amber)}
+.opt p{font-size:12.5px;margin:0 0 8px}
+.opt ul{font-size:12px;padding-left:17px;margin-bottom:0}
+
+/* callout */
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:82ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+
+/* table */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:520px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10px;color:var(--navy);white-space:nowrap;font-weight:600}
+
+/* timeline */
+.tl{border-left:2px solid var(--line);margin:8px 0 20px;padding-left:0}
+.tl .ev{position:relative;padding:0 0 16px 20px}
+.tl .ev::before{content:"";position:absolute;left:-6px;top:5px;width:10px;height:10px;
+ border-radius:50%;background:var(--navy);border:2px solid var(--paper)}
+.tl .ev.m::before{background:var(--amber)}
+.tl .when{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.tl .what{font-weight:600;font-size:13px;margin:1px 0 2px}
+.tl .why{font-size:12px;color:var(--muted);max-width:76ch}
+
+footer{margin:40px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:84ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}
+ h2{font-size:19px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Working document · brainstorm</div>
+  <h1>MŚW Tbilisi 2026 — campaign automation</h1>
+  <p class="dek">Options for running the declaration campaign end to end: sending,
+  collecting, cascading on refusals, and escalating silence. Assessment of the proposed
+  design, plus the four places where I think something different is better.</p>
+  <div class="chips">
+    <span class="chip">2026-07-18</span>
+    <span class="chip">144 fencers · 99 reachable</span>
+    <span class="chip">not started</span>
+    <span class="chip">LOCAL stack · own database</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">SHAPE</span>The pipeline you described</h2>
+<p>Restated as steps, with green marking what can genuinely run unattended and amber
+what should stay in your hands.</p>
+
+<div class="pipe">
+  <div class="pstep auto"><div class="t">1 · extract</div><div class="n">Workbooks → candidate list</div>
+    <div class="d">Done. 144 fencers, regenerable.</div></div>
+  <div class="pstep man"><div class="t">2 · compose</div><div class="n">Message + form</div>
+    <div class="d">One-time human design.</div></div>
+  <div class="pstep auto"><div class="t">3 · send</div><div class="n">Personalised mail merge</div>
+    <div class="d">Gmail, unique link per person.</div></div>
+  <div class="pstep auto"><div class="t">4 · collect</div><div class="n">Form → Sheet</div>
+    <div class="d">Always-on, no machine needed.</div></div>
+  <div class="pstep auto"><div class="t">5 · reconcile</div><div class="n">Sheet → Postgres → HTML</div>
+    <div class="d">Scheduled, idempotent.</div></div>
+  <div class="pstep man"><div class="t">6 · cascade</div><div class="n">Backfill on refusal</div>
+    <div class="d">Proposed by script, sent by you.</div></div>
+  <div class="pstep auto"><div class="t">7 · escalate</div><div class="n">Reminders, SMS</div>
+    <div class="d">Time-driven, capped.</div></div>
+</div>
+
+<div class="call">
+  <span class="lb">The honest ceiling on automation</span>
+  Steps 1, 3, 4, 5 and 7 can be fully automatic. Step 6 should not be, and step 2 cannot be.
+  Beyond that there is a hard floor: <b class="k">43 of 144 fencers have no email and no
+  phone</b>, 9 of them inside a top 5. No amount of scripting reaches them — that part of
+  the campaign is a human working the Facebook group and club contacts.
+</div>
+
+<h2><span class="num">01</span>Where it runs — the LOCAL Ranklist environment</h2>
+<p class="sub">Decided: the campaign runs against the local Supabase stack, in throwaway
+tables with throwaway code. That is a good call — it buys real queries, transactions and a
+mail catcher for free. It also introduces exactly one serious hazard, which the rest of
+this section is about.</p>
+
+<div class="call warn">
+  <span class="lb">The hazard: your local database is designed to be destroyed</span>
+  <code>./scripts/reset-dev.sh</code> runs <code>supabase db reset</code>, which drops and
+  rebuilds the database from 131 migrations and the seed dump. You run it routinely. The
+  ranking tables survive that because they are <i>regenerable</i> — the campaign's
+  declarations are not. <b class="k">A fencer's answer, once destroyed, cannot be
+  recovered.</b> So the whole question of "where do the throwaway tables live" is really the
+  question of how far they sit from the blast radius of a reset.
+</div>
+
+<h3>Three levels of isolation</h3>
+
+<div class="opts">
+  <div class="opt no">
+    <h4>Tables in <code>public</code></h4>
+    <span class="verd v-no">rejected</span>
+    <p>Alongside <code>tbl_fencer</code> and friends. Superficially the easiest.</p>
+    <ul>
+      <li>Wiped by every <code>db reset</code>.</li>
+      <li><code>supabase db diff</code> would see them and try to generate migrations.</li>
+      <li>Worst: they could be captured into a <b class="k">seed dump</b> — putting 99
+      people's phone numbers into a committed file. That alone disqualifies it.</li>
+    </ul>
+  </div>
+  <div class="opt">
+    <h4>Separate schema <code>msw</code></h4>
+    <span class="verd v-maybe">workable</span>
+    <p>Same database, own namespace. Clean separation of names, and PostgREST would expose
+    it if you granted it — so a self-hosted response form becomes possible.</p>
+    <ul>
+      <li>Still inside the database that <code>db reset</code> drops.</li>
+      <li>Still visible to diff and dump tooling; safety now depends on you remembering to
+      exclude it.</li>
+      <li>Choose this only if you want the free API.</li>
+    </ul>
+  </div>
+  <div class="opt pick">
+    <h4>Separate database <code>msw_tbilisi</code></h4>
+    <span class="verd v-yes">recommended</span>
+    <p>Same Postgres 17 container on <code>127.0.0.1:54322</code>, different database.
+    One <code>CREATE DATABASE</code> away.</p>
+    <ul>
+      <li><code>supabase db reset</code> targets the <code>postgres</code> database only —
+      it does not touch this one. Reset as often as you like.</li>
+      <li>Invisible to migrations, to <code>db diff</code>, and to seed dumps. The
+      personal-data leak path is closed by construction, not by discipline.</li>
+      <li>Same server, same <code>psql</code>, same connection habits, same Python driver.</li>
+      <li>Cost: no PostgREST, so no free API. You do not need one — Google Forms is the
+      collection layer.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="call">
+  <span class="lb">The remaining hole, and the one line that closes it</span>
+  A separate database survives <code>db reset</code>, but it does <b class="k">not</b>
+  survive the Docker volume being pruned — <code>supabase stop --no-backup</code>, a Docker
+  Desktop cleanup, a machine rebuild. So: a nightly <code>pg_dump</code> of
+  <code>msw_tbilisi</code> into the gitignored campaign folder, kept for the four weeks the
+  campaign runs. It is one cron line and it is the difference between an inconvenience and
+  phoning 98 people to ask what they already told you.
+</div>
+
+<h3>What using the LOCAL stack actually buys you</h3>
+<ul>
+  <li><b class="k">Inbucket on <code>localhost:54324</code>.</b> The Supabase stack already
+  runs a mail catcher. You can execute the entire send — real templates, real personalised
+  links, all 98 recipients — into Inbucket and read the messages exactly as they would
+  arrive, without a single byte reaching a real person. This is a materially better dry run
+  than printing to stdout, and it is the single strongest argument for the local
+  environment over plain files.</li>
+  <li><b class="k">Queries instead of loops.</b> "Which categories have fewer than five
+  confirmations, and who is next in rank" is one SQL statement against a view, not
+  bookkeeping in Python.</li>
+  <li><b class="k">Transactions.</b> Recording a send and its ledger entry either both
+  happen or neither does.</li>
+  <li><b class="k">Studio on <code>localhost:54323</code></b> for eyeballing and hand-fixing
+  a row when a phone answer needs correcting — better than editing a JSONL file.</li>
+</ul>
+
+<h3>Rules for the throwaway code</h3>
+<ul>
+  <li>Schema lives in a single re-runnable <code>schema.sql</code> in the campaign folder.
+  <b class="k">Never</b> in <code>supabase/migrations/</code> — a file there becomes part of
+  the product and would run on CERT and PROD.</li>
+  <li>Scripts refuse to start unless the connection string names
+  <code>msw_tbilisi</code>. A guard clause, three lines, prevents the entire class of
+  accident where a campaign script points at the ranklist database.</li>
+  <li>No ADR, no RTM entry, no handbook page, no tests beyond what you need to trust a
+  send. This is deliberately outside the documented system.</li>
+  <li>Code lives in the gitignored campaign folder with the data, so the whole campaign is
+  one directory you delete when it is over.</li>
+</ul>
+
+<h2><span class="num">02</span>Sending</h2>
+
+<h3>Transport</h3>
+<p>Gmail SMTP with an app password is the shortest path and matches what
+<code>python/pipeline/ftl_feed_seed_send.py</code> already does. The Gmail API is cleaner
+but costs you an OAuth consent flow for no benefit at this volume. Consumer Gmail allows
+about 500 recipients per day; you need 98, so the cap is irrelevant — but the
+<i>similarity</i> of 98 near-identical messages is not.</p>
+
+<div class="call warn">
+  <span class="lb">Deliverability, the actual risk</span>
+  98 near-identical mails sent in a burst from a personal Gmail is the classic spam-filter
+  signature. Mitigations, all cheap: genuinely personalise the body (name, their weapons,
+  their ranking positions), send with a randomised 20–60&nbsp;second gap rather than a
+  loop, use a plain-text or very simple HTML body, no images, no tracking pixel, and
+  <b class="k">no URL shortener</b> — a bare Google Forms link is trusted, a
+  <code>bit.ly</code> link is not. Send yourself and two friendly fencers a test first and
+  check it lands in the inbox, not Promotions.
+</div>
+
+<h3>The link</h3>
+<p>Google Forms supports pre-filled links: you build one from the form's "Get pre-filled
+link" and swap in per-person values as URL parameters. That gives each fencer a link that
+already knows who they are.</p>
+<p>Prefill an opaque token as well as the name — a short random string per person, stored
+in your local ledger. The name alone is a weak key (you already have two Janusz Młynek and
+a Gęzikiewicz/Gręzikiewicz pair), and a token makes attribution exact even if someone
+edits the name field.</p>
+
+<div class="call">
+  <span class="lb">The multi-weapon problem, solved by prefill</span>
+  29 fencers qualify in more than one weapon, and Google Forms cannot vary its answer
+  options per respondent. The trick: give the form <b class="k">three fixed question
+  groups</b> — szpada, floret, szabla — each offering <i>indywidualnie: tak / nie</i> and
+  <i>drużyna: tak / nie</i>, plus a <i>nie dotyczy</i> option. Then prefill
+  <i>nie dotyczy</i> for every weapon the person is not ranked in. A one-weapon fencer sees
+  two real questions and four already-answered ones; a three-weapon fencer sees six real
+  questions. No branching logic, no wall of checkboxes, one response row per person.
+</div>
+
+<h2><span class="num">03</span>Collecting</h2>
+<p>Google Form writing to a Sheet is the right choice and I would not change it. It is
+always available, it needs no server, and people trust the interface.</p>
+<p>Read it from Python with <code>gspread</code> and a cached OAuth token. Do <b class="k">not</b>
+use the "publish to web as CSV" shortcut — that puts declarations behind an unlisted but
+unauthenticated URL, and this is personal data.</p>
+
+<div class="call">
+  <span class="lb">The Sheet is an inbox, not the source of truth</span>
+  Treat form responses as append-only incoming mail that the script reads and never writes
+  to. The campaign's real state lives in a local ledger, because a large share of answers
+  will arrive by <i>phone</i>, by Messenger, or via a club official — and those have no
+  form row. If the Sheet is the source of truth, every phone answer forces you to fake a
+  form submission. With <code>odpowiedz</code> as the ledger, a phone answer is just
+  another row with <code>zrodlo = 'telefon'</code>.
+</div>
+
+<h2><span class="num">04</span>The throwaway schema</h2>
+<p>Moving into Postgres answers your earlier objection to CSV cleanly: nothing you read is
+a data file any more. The tables are machine storage, and the only human artifact is
+generated HTML.</p>
+<p class="sub">The organising principle is the split between tables that can be rebuilt
+from source at any time, and tables that hold answers which exist nowhere else.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Table</th><th>Class</th><th>Holds</th><th>Rebuild policy</th></tr></thead>
+<tbody>
+<tr><td class="d">kandydat</td><td>derived</td>
+  <td>144 fencers: name, gender, V-category, match key.</td>
+  <td><b class="k">Truncate and reload</b> from the 24 workbooks whenever the ranking
+  changes.</td></tr>
+<tr><td class="d">start</td><td>derived</td>
+  <td>173 rows: fencer × weapon × category × ranking position.</td>
+  <td>Truncate and reload. This is what "top 5" is computed from.</td></tr>
+<tr><td class="d">kontakt</td><td>derived</td>
+  <td>Email and phone, plus which source they came from.</td>
+  <td>Truncate and reload from the contact list.</td></tr>
+<tr><td class="d">zaproszenie</td><td><b class="k">append-only</b></td>
+  <td>Every invitation actually sent: person, wave, channel, token, timestamp.</td>
+  <td><b class="k">Never truncated.</b> This is what makes re-running a send safe — the
+  sender skips anyone already present for that wave.</td></tr>
+<tr><td class="d">odpowiedz</td><td><b class="k">append-only</b></td>
+  <td>Every answer: individual and team intent per weapon, plus the source —
+  <code>formularz</code>, <code>telefon</code>, <code>facebook</code>,
+  <code>klub</code>.</td>
+  <td><b class="k">Never truncated, never updated.</b> A changed mind is a new row, not an
+  edit. The irreplaceable table.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Two views carry the whole campaign</h3>
+<ul>
+  <li><code>v_status</code> — current declaration per fencer per start, taking the latest
+  <code>odpowiedz</code> row. Everything the report renders reads from here.</li>
+  <li><code>v_kategoria</code> — per category: confirmations, whether it is below five,
+  whether anyone is left to invite, and who is next by ranking position. This one query
+  drives both the backfill queue and the board report's readiness line.</li>
+</ul>
+
+<div class="call">
+  <span class="lb">Why append-only rather than a status column</span>
+  A single <code>status</code> column updated in place looks simpler and is a trap. Answers
+  arrive through four channels, sometimes contradict each other, sometimes arrive twice,
+  and occasionally get entered against the wrong person and need unwinding. An event log
+  makes all of that recoverable and makes "what did we actually know on the day the board
+  met" answerable. It costs one view.
+</div>
+
+<p>The only file that stays a file is <b class="k">status.html</b> — generated from the
+views, disposable, regenerated after every reconcile.</p>
+
+<h2><span class="num">05</span>Cascading on a refusal</h2>
+<p>Your proposal was: refusal confirmed → next fencer drawn in → email initiated
+automatically. I would change one word in that.</p>
+
+<div class="call warn">
+  <span class="lb">Propose, don't send</span>
+  Let the script detect the refusal, work out whether the category is actually short, pick
+  the next eligible fencer and <b class="k">write the drafted invitation into a queue</b> —
+  then stop. You approve the queue with one command. Two reasons: an invitation to compete
+  for Poland is not a message you want a cron job sending on a name-matching bug at
+  03:00, and it is irreversible in a way nothing else in this pipeline is. The automation
+  still does all the work; you keep the send button. This is the same per-event sign-off
+  rule you already apply to ingestion.
+</div>
+
+<h3>When a refusal actually triggers a backfill</h3>
+<ul>
+  <li>Only if confirmations in that category have dropped below <b class="k">5</b> — four
+  starters plus the reserve. A refusal in a category that still has 5 green needs nothing.</li>
+  <li>Only if there is anyone left. 11 of 24 categories have fewer than 5 ranked fencers,
+  and szpada K3 has none at all — for those, the pool is exhausted from the start and the
+  report should say so rather than silently show a short list.</li>
+  <li>Next by ranking position, never renumbered — the design doc already locked that.</li>
+</ul>
+
+<h2><span class="num">06</span>Escalation</h2>
+<p class="sub">Assuming a 14-day window. Amber dots are the points where you act rather
+than the script.</p>
+
+<div class="tl">
+  <div class="ev"><div class="when">Day 0 · automatic</div>
+    <div class="what">Personalised email, 98 recipients</div>
+    <div class="why">Deadline stated explicitly and repeated in the form header.</div></div>
+  <div class="ev m"><div class="when">Day 0–2 · manual</div>
+    <div class="what">Facebook group post + club contacts</div>
+    <div class="why">The only route to the 43 unreachable, and it needs the most lead
+    time, so it starts immediately rather than last.</div></div>
+  <div class="ev"><div class="when">Day 4 · automatic</div>
+    <div class="what">Email reminder to non-responders</div>
+    <div class="why">Same thread, short body. Typically recovers 15–20%.</div></div>
+  <div class="ev"><div class="when">Day 7 · automatic</div>
+    <div class="what">SMS to non-responders who have a number</div>
+    <div class="why">Different channel beats a third email. One sentence and the link.
+    93 numbers at ~0.12&nbsp;PLN is under 12&nbsp;PLN for the whole list.</div></div>
+  <div class="ev m"><div class="when">Day 10 · manual</div>
+    <div class="what">Phone calls — top 5 only, still silent</div>
+    <div class="why">Should be 10–20 calls by this point, not 100. Answers go straight
+    into the ledger as <code>źródło: telefon</code>.</div></div>
+  <div class="ev"><div class="when">Day 12 · automatic</div>
+    <div class="what">48-hour deadline warning</div>
+    <div class="why">The single highest-yield message in the sequence. Everyone still
+    silent, every channel available.</div></div>
+  <div class="ev m"><div class="when">Day 14 · manual</div>
+    <div class="what">Close, freeze, report to the board</div>
+    <div class="why">Late answers still accepted into the ledger; the report simply
+    regenerates.</div></div>
+</div>
+
+<div class="call">
+  <span class="lb">Escalate on silence, not on opens</span>
+  There is no reliable way to know whether a Gmail message was opened, and the only way to
+  approximate it — a tracking pixel — is both unreliable behind image proxies and a bad
+  look for a federation writing to its own members. Trigger every escalation off the
+  absence of a form response, which is the signal you actually care about.
+</div>
+
+<h2><span class="num">07</span>Four things I would add</h2>
+
+<div class="opts">
+  <div class="opt">
+    <h4>Idempotent by construction</h4>
+    <p>Every sender checks <code>zaproszenie</code> before sending and skips anyone
+    already invited at that wave — a unique constraint on
+    <code>(fencer, wave)</code> makes it impossible rather than merely unlikely. A scheduled job that can double-send is a job that
+    eventually will — and 98 people receiving the same invitation twice is the failure mode
+    that costs you credibility.</p>
+  </div>
+  <div class="opt">
+    <h4>Dry run as the default</h4>
+    <p>The send script targets <b class="k">Inbucket</b> unless given an explicit
+    <code>--live</code>. Every rehearsal is a complete, realistic run you can read in a
+    browser — and every schedule mistake is harmless until the day you mean it.</p>
+  </div>
+  <div class="opt">
+    <h4>Daily digest to Telegram</h4>
+    <p>You already run Telegram as the alerting surface. A one-line nightly summary —
+    replies today, categories now short, backfills waiting for approval — means you never
+    have to remember to open the HTML to find out whether something needs you.</p>
+  </div>
+  <div class="opt">
+    <h4>Regenerate on read, not on a timer</h4>
+    <p>The status page is cheap to build, so rebuild it after every reconcile rather than
+    keeping a stale file and a separate refresh job. Fewer moving parts, and the page is
+    never lying about how fresh it is.</p>
+  </div>
+</div>
+
+<h2><span class="num">08</span>Open questions</h2>
+<ul>
+  <li><b class="k">Sending identity.</b> Your personal Gmail, or an SPWS-branded address?
+  A federation address materially improves both open rate and deliverability, and it
+  matters more than any other single choice here.</li>
+  <li><b class="k">Deadline.</b> 14 days is my assumption, not a decision. It drives the
+  whole escalation ladder.</li>
+  <li><b class="k">Facebook group.</b> Still unanswered from before, and it decides whether
+  the 43 unreachable are recoverable.</li>
+  <li><b class="k">Response form.</b> Google Forms, or your own page served from the local
+  stack through a tunnel? The tunnel removes the prefill workaround entirely and lands
+  answers straight in <code>odpowiedz</code> — but a stranger-looking URL and an uptime
+  dependency on your machine are real costs with this audience. I lean Forms.</li>
+  <li><b class="k">SMS gateway.</b> Worth ~12&nbsp;PLN and an account, or do you want to
+  send those by hand from the phone?</li>
+  <li><b class="k">Team fee.</b> The team question carries a cost the fencer must accept.
+  Does the form state the amount, or only ask about willingness in principle?</li>
+</ul>
+
+</div>
+
+<footer>
+Working document, not a plan of record. Nothing here is built. The campaign is a one-off
+outside the ranking system: no ADR, no migrations, no handbook page. Code and data live in
+the gitignored <code>doc/external_files/MSW-Tbilisi-2026/</code>, and the tables live in a
+separate <code>msw_tbilisi</code> database on the local Postgres instance. Companion
+documents: <i>msw-tbilisi-decyzje-projektowe.html</i> (report design) and
+<i>msw-tbilisi-raport-mockup.html</i> (board report layout).
+</footer>
+
+</div>
+</body>
+</html>

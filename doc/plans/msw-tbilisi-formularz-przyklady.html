@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — formularz, przykłady dla różnych przypadków</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.56;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1080px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,34px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:68ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:22px;font-weight:600;letter-spacing:-.01em;
+ margin:38px 0 4px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:6px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:26px 0 8px;font-weight:600}
+p{margin:0 0 12px;max-width:80ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 18px;max-width:86ch}
+ul{margin:0 0 14px;padding-left:19px;max-width:80ch}
+li{margin-bottom:6px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+b.k{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:84ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:520px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10px;color:var(--navy);white-space:nowrap;font-weight:600}
+td.num{font-family:var(--mono);text-align:right;white-space:nowrap}
+td.tot{font-weight:700}
+
+/* form mock */
+.fm{border:1px solid var(--line);border-radius:7px;background:var(--card);
+ margin:0 0 22px;overflow:hidden;max-width:660px}
+.fm .top{background:var(--navy);color:#fff;padding:14px 18px}
+.fm .top .t{font-family:var(--serif);font-size:17px;font-weight:600}
+.fm .top .s{font-size:11.5px;opacity:.85;margin-top:3px}
+.fm .case{background:var(--paper);border-bottom:1px solid var(--line);padding:9px 18px;
+ font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.fq{padding:13px 18px;border-bottom:1px solid var(--line)}
+.fq:last-child{border-bottom:none}
+.fq .lab{font-weight:600;font-size:13px;margin-bottom:3px}
+.fq .hint{font-size:11.5px;color:var(--muted);margin-bottom:8px}
+.fq .opt{display:flex;gap:8px;flex-wrap:wrap}
+.rb{font-size:12px;padding:5px 12px;border:1px solid var(--line);border-radius:14px;
+ background:var(--paper);color:var(--muted)}
+.rb.sel{background:var(--navy-soft);border-color:var(--navy);color:var(--navy);font-weight:600}
+.rb.pre{background:var(--grey-bg);border-color:var(--grey);color:var(--grey);font-style:italic}
+.fq.pref{background:var(--grey-bg)}
+.fq.pref .lab{color:var(--grey)}
+.txt{border:1px solid var(--line);border-bottom:2px solid var(--navy);background:var(--paper);
+ padding:6px 10px;font-size:12px;border-radius:3px 3px 0 0;display:inline-block;min-width:210px;
+ font-family:var(--mono)}
+.txt.dim{color:var(--muted);border-bottom-color:var(--line)}
+.fee{background:var(--amber-bg);border-left:3px solid var(--amber);padding:10px 14px;
+ margin:0;font-size:12.5px;color:var(--amber)}
+.fee b{color:var(--amber)}
+pre{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--navy);
+ border-radius:5px;padding:14px 17px;overflow-x:auto;font-family:var(--mono);font-size:11.5px;
+ line-height:1.65;margin:0 0 16px;white-space:pre-wrap}
+pre .v{color:var(--violet);font-weight:600}
+pre .c{color:var(--muted)}
+footer{margin:40px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:84ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}
+ h2{font-size:19px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Dokument roboczy · projekt treści</div>
+  <h1>Formularz — przykłady dla różnych przypadków</h1>
+  <p class="dek">Co dokładnie zobaczy zawodnik z jedną, dwiema i trzema broniami, oraz
+  zawodnik dobierany po odmowie. Plus to, co udało się potwierdzić w liście zapraszającym
+  FIE — i dwie rzeczy, których potwierdzić się nie da.</p>
+  <div class="chips">
+    <span class="chip ok">list FIE zweryfikowany</span>
+    <span class="chip">termin: 1 sierpnia 2026</span>
+    <span class="chip bad">2 niejasności w opłatach</span>
+    <span class="chip">projekt, nie do wysyłki</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">01</span>Co mówi list zapraszający FIE</h2>
+<p class="sub">Przeczytany bezpośrednio, 16 stron. Poniżej fakty, które wchodzą do
+formularza.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Fakt</th><th>Wartość</th><th>Znaczenie dla nas</th></tr></thead>
+<tbody>
+<tr><td class="d">Termin zawodów</td><td>9–17 października 2026, Tbilisi</td>
+  <td>Harmonogram jest dzienny i podany co do konkurencji — możemy podać każdemu jego
+  własną datę startu.</td></tr>
+<tr><td class="d">Opłata startowa</td><td>90 EUR — indywidualnie</td>
+  <td>Zob. niejasność nr 1 poniżej.</td></tr>
+<tr><td class="d">Opłata drużynowa</td><td>185 EUR</td>
+  <td>Zob. niejasność nr 2.</td></tr>
+<tr><td class="d">Płatność</td><td>przelew bankowy lub gotówka</td><td>Podajemy w treści.</td></tr>
+<tr><td class="d">Lista uczestników + skany paszportów</td><td>do 20 sierpnia 2026</td>
+  <td><b class="k">To jest prawdziwy termin, nie 1 sierpnia.</b> Nasz termin 1 sierpnia
+  daje 19 dni zapasu na zebranie paszportów — dobrze dobrany.</td></tr>
+<tr><td class="d">Zdjęcia do akredytacji</td><td>do 20 września 2026</td>
+  <td>Późniejszy etap, poza tą kampanią.</td></tr>
+<tr><td class="d">Kategorie</td><td>40+, 50+, 60+, 70+</td>
+  <td>Zgadza się z V1–V4 z arkuszy.</td></tr>
+<tr><td class="d">Drużyny</td><td>Veteran i Grand Veteran, wszystkie 6 kombinacji broń–płeć</td>
+  <td>Potwierdza 12 konkurencji drużynowych z makiety raportu.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call stop">
+  <span class="lb">Trzy rzeczy, których list nie rozstrzyga — a formularz ich dotyka wprost</span>
+  <b class="k">1. Czy 90 EUR to opłata od zawodnika, czy od broni?</b> List pisze tylko
+  „Individual Entry: EUR 90”. Dla Adamczewskiego z trzema broniami to różnica między
+  90 a 270 EUR. Nie możemy podać kwoty, której nie znamy.<br><br>
+  <b class="k">2. Czy 185 EUR to opłata od drużyny, czy od zawodnika?</b> Jeśli od drużyny,
+  na czterech zawodników wypada ok. 46 EUR na osobę — zupełnie inna decyzja niż 185.<br><br>
+  <b class="k">Uwaga o paszportach.</b> Niezależnie od opłat, list wymaga przesłania listy
+  wszystkich uczestników i skanów paszportów do 20 sierpnia — także dla obywateli
+  wjeżdżających bezwizowo. To ustawia harmonogram całej kampanii.
+</div>
+
+<p>Do czasu wyjaśnienia formularz podaje widełki i zaznacza, że kwota jest do potwierdzenia.
+Zawyżona kwota odstrasza, zaniżona wywoła telefon do Ciebie od każdego, kto się później
+zorientuje — więc jawna niepewność jest tu bezpieczniejsza niż jedno i drugie.</p>
+
+<h2><span class="num">02</span>Ile to kosztuje w każdym przypadku</h2>
+<p class="sub">Przy założeniu, które musi zostać potwierdzone: 90 EUR za każdą broń,
+185 EUR od drużyny (46 EUR na zawodnika).</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Przypadek</th><th>Indywidualnie</th><th>Drużyna</th><th>Razem</th></tr></thead>
+<tbody>
+<tr><td>1 broń, bez drużyny</td><td class="num">90</td><td class="num">—</td>
+  <td class="num tot">90 EUR</td></tr>
+<tr><td>1 broń + drużyna</td><td class="num">90</td><td class="num">~46</td>
+  <td class="num tot">~136 EUR</td></tr>
+<tr><td>2 bronie + 1 drużyna</td><td class="num">180</td><td class="num">~46</td>
+  <td class="num tot">~226 EUR</td></tr>
+<tr><td>3 bronie + 2 drużyny</td><td class="num">270</td><td class="num">~92</td>
+  <td class="num tot">~362 EUR</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call warn">
+  <span class="lb">To jest argument za pytaniem o każdą broń osobno</span>
+  Różnica między jedną a trzema broniami to 90 wobec ok. 362 EUR, plus przelot i hotel. Zawodnik,
+  który potwierdzi „tak” hurtem, a potem zobaczy rachunek, wycofa się w najgorszym możliwym
+  momencie — po zgłoszeniu do FIE. Pytanie o każdą broń z kwotą przy niej jest jedyną
+  wersją, która daje deklaracje warte czegokolwiek.
+</div>
+
+<div class="call">
+  <span class="lb">Dane kontaktowe w przykładach są zamaskowane</span>
+  Ten dokument jest w repozytorium, więc pola e-mail i telefon pokazują
+  <code>—— e-mail ——</code> zamiast prawdziwych wartości. Nazwiska i pozycje rankingowe
+  pochodzą z opublikowanych rankingów SPWS i pozostają. Pełne dane:
+  <code>doc/external_files/MSW-Tbilisi-2026/uczestnicy.html</code>.
+</div>
+
+<h2><span class="num">03</span>Przypadek A — jedna broń</h2>
+<p class="sub">Przykład rzeczywisty: <b>SOSNOWSKA Aniela</b>, szabla kobiet V4, pozycja 1.
+Jedyna sklasyfikowana w swojej kategorii — cały ranking to zbiór zaproszeń.</p>
+
+<div class="fm">
+  <div class="top"><div class="t">MŚW Tbilisi 2026 — deklaracja chęci startu</div>
+    <div class="s">Tbilisi, 9–17 października 2026 · odpowiedź do 1 sierpnia 2026</div></div>
+  <div class="case">Przypadek A · 1 broń · 4 pytania ukryte jako „nie dotyczy”</div>
+
+  <div class="fq"><div class="lab">Imię i nazwisko</div>
+    <div class="hint">Wypełnione automatycznie — popraw, jeśli się nie zgadza.</div>
+    <span class="txt">SOSNOWSKA Aniela</span></div>
+
+  <div class="fq"><div class="lab">Szabla — start indywidualny (70+)</div>
+    <div class="hint">Twoja pozycja w rankingu SPWS: <b>1</b>. Start 15 lub 16 października.
+    Koszt: 90 EUR opłaty startowej.</div>
+    <div class="opt"><span class="rb sel">tak</span><span class="rb">nie</span></div></div>
+
+  <div class="fq"><div class="lab">Szabla — start drużynowy (Grand Veteran, 60+/70+)</div>
+    <div class="hint">Drużyna kobiet, 17 października. Osobna opłata ok. 46 EUR na
+    zawodniczkę. Deklaracja nie oznacza jeszcze powołania do składu.</div>
+    <div class="opt"><span class="rb">tak</span><span class="rb sel">nie</span>
+      <span class="rb">jeszcze nie wiem</span></div></div>
+
+  <div class="fq pref"><div class="lab">Szpada — indywidualnie / drużyna</div>
+    <div class="hint">Nie jesteś sklasyfikowana w tej broni.</div>
+    <div class="opt"><span class="rb pre">nie dotyczy</span></div></div>
+
+  <div class="fq pref"><div class="lab">Floret — indywidualnie / drużyna</div>
+    <div class="hint">Nie jesteś sklasyfikowana w tej broni.</div>
+    <div class="opt"><span class="rb pre">nie dotyczy</span></div></div>
+
+  <div class="fq"><div class="lab">Dane kontaktowe</div>
+    <div class="hint">Sprawdź i popraw — będziemy ich używać przy zgłoszeniu.</div>
+    <span class="txt">—— e-mail ——</span> &nbsp; <span class="txt">—— telefon ——</span></div>
+
+  <div class="fq"><div class="lab">Uwagi (opcjonalnie)</div>
+    <span class="txt dim">&nbsp;</span></div>
+
+  <div class="fee"><b>Szacowany koszt przy Twoich odpowiedziach: 90 EUR</b>
+    (sama opłata startowa — wizy Polacy nie potrzebują). Kwota według listu zapraszającego
+    FIE, do potwierdzenia przez SPWS.</div>
+</div>
+
+<h2><span class="num">04</span>Przypadek B — dwie bronie</h2>
+<p class="sub">Przykład rzeczywisty: <b>BORKOWSKA Halina</b>, floret V4 poz. 1 i szpada V4
+poz. 1. Pierwsza w obu.</p>
+
+<div class="fm">
+  <div class="top"><div class="t">MŚW Tbilisi 2026 — deklaracja chęci startu</div>
+    <div class="s">Tbilisi, 9–17 października 2026 · odpowiedź do 1 sierpnia 2026</div></div>
+  <div class="case">Przypadek B · 2 bronie · 2 pytania ukryte</div>
+
+  <div class="fq"><div class="lab">Imię i nazwisko</div>
+    <span class="txt">BORKOWSKA Halina</span></div>
+
+  <div class="fq"><div class="lab">Szpada — start indywidualny (70+)</div>
+    <div class="hint">Pozycja w rankingu: <b>1</b>. Start 12 października. 90 EUR.</div>
+    <div class="opt"><span class="rb sel">tak</span><span class="rb">nie</span></div></div>
+
+  <div class="fq"><div class="lab">Szpada — drużyna (Grand Veteran)</div>
+    <div class="hint">14 października. Ok. 46 EUR dodatkowo.</div>
+    <div class="opt"><span class="rb sel">tak</span><span class="rb">nie</span>
+      <span class="rb">jeszcze nie wiem</span></div></div>
+
+  <div class="fq"><div class="lab">Floret — start indywidualny (70+)</div>
+    <div class="hint">Pozycja w rankingu: <b>1</b>. Start 15 października. Kolejne 90 EUR.</div>
+    <div class="opt"><span class="rb sel">tak</span><span class="rb">nie</span></div></div>
+
+  <div class="fq"><div class="lab">Floret — drużyna (Grand Veteran)</div>
+    <div class="hint">17 października. Ok. 46 EUR dodatkowo.</div>
+    <div class="opt"><span class="rb">tak</span><span class="rb sel">nie</span>
+      <span class="rb">jeszcze nie wiem</span></div></div>
+
+  <div class="fq pref"><div class="lab">Szabla — indywidualnie / drużyna</div>
+    <div class="hint">Nie jesteś sklasyfikowana w tej broni.</div>
+    <div class="opt"><span class="rb pre">nie dotyczy</span></div></div>
+
+  <div class="fq"><div class="lab">Dane kontaktowe</div>
+    <span class="txt">—— e-mail ——</span> &nbsp; <span class="txt">—— telefon ——</span></div>
+
+  <div class="fee"><b>Szacowany koszt: ~226 EUR</b> (2 × 90 startowe + 46 drużynowe).</div>
+</div>
+
+<h2><span class="num">05</span>Przypadek C — trzy bronie</h2>
+<p class="sub">Przykład rzeczywisty: <b>ADAMCZEWSKI Wojciech</b> — szpada V4 poz. 3,
+floret V4 poz. 3, szabla V4 poz. 7. Takich osób jest w rankingu <b>cztery</b>: on,
+Juszkiewicz, Kiersznicki i Samecka-Naczyńska. Wszystkie sześć pytań jest u nich aktywne.</p>
+
+<div class="fm">
+  <div class="top"><div class="t">MŚW Tbilisi 2026 — deklaracja chęci startu</div>
+    <div class="s">Tbilisi, 9–17 października 2026 · odpowiedź do 1 sierpnia 2026</div></div>
+  <div class="case">Przypadek C · 3 bronie · żadne pytanie nie jest ukryte</div>
+
+  <div class="fq"><div class="lab">Imię i nazwisko</div>
+    <span class="txt">ADAMCZEWSKI Wojciech</span></div>
+
+  <div class="fq"><div class="lab">Szpada — indywidualnie (70+)</div>
+    <div class="hint">Pozycja <b>3</b>. Start 10 października. 90 EUR.</div>
+    <div class="opt"><span class="rb sel">tak</span><span class="rb">nie</span></div></div>
+  <div class="fq"><div class="lab">Szpada — drużyna (Grand Veteran)</div>
+    <div class="hint">11 października. Ok. 46 EUR.</div>
+    <div class="opt"><span class="rb sel">tak</span><span class="rb">nie</span>
+      <span class="rb">jeszcze nie wiem</span></div></div>
+
+  <div class="fq"><div class="lab">Floret — indywidualnie (70+)</div>
+    <div class="hint">Pozycja <b>3</b>. Start 13 października. 90 EUR.</div>
+    <div class="opt"><span class="rb sel">tak</span><span class="rb">nie</span></div></div>
+  <div class="fq"><div class="lab">Floret — drużyna (Grand Veteran)</div>
+    <div class="hint">14 października. Ok. 46 EUR.</div>
+    <div class="opt"><span class="rb">tak</span><span class="rb sel">nie</span>
+      <span class="rb">jeszcze nie wiem</span></div></div>
+
+  <div class="fq"><div class="lab">Szabla — indywidualnie (70+)</div>
+    <div class="hint">Pozycja <b>7</b>. Start 16 października. 90 EUR.
+    <b>Zapraszamy Cię jako kolejnego w rankingu</b> — w tej kategorii mamy mniej niż
+    pięć potwierdzeń.</div>
+    <div class="opt"><span class="rb">tak</span><span class="rb">nie</span></div></div>
+  <div class="fq"><div class="lab">Szabla — drużyna (Grand Veteran)</div>
+    <div class="hint">17 października. Ok. 46 EUR.</div>
+    <div class="opt"><span class="rb">tak</span><span class="rb">nie</span>
+      <span class="rb">jeszcze nie wiem</span></div></div>
+
+  <div class="fq"><div class="lab">Dane kontaktowe</div>
+    <span class="txt">—— e-mail ——</span> &nbsp; <span class="txt">—— telefon ——</span></div>
+
+  <div class="fee"><b>Przy trzech broniach i dwóch drużynach: ~362 EUR</b> plus przelot i
+    hotel. Dlatego pytamy o każdą konkurencję osobno.</div>
+</div>
+
+<div class="call">
+  <span class="lb">Kolizja terminów, o której warto wiedzieć</span>
+  Przy trzech broniach starty indywidualne wypadają 10, 13 i 16 października, a drużynowe
+  11, 14 i 17 — czyli sześć dni startowych w ciągu ośmiu. To realne obciążenie dla
+  siedemdziesięciolatka i sam harmonogram może być powodem odmowy. Podanie dat przy każdym
+  pytaniu pozwala zawodnikowi zobaczyć to od razu, zamiast odkryć po zgłoszeniu.
+</div>
+
+<h2><span class="num">06</span>Przypadek D — zawodnik dobierany po odmowie</h2>
+<p class="sub">Ten sam formularz, inny nagłówek i inne zdanie wyjaśniające. Bez tego
+zdania dobierany zawodnik nie wie, dlaczego dostał zaproszenie dwa tygodnie po innych, i
+łatwo odbiera to jako miejsce z drugiego rozdania.</p>
+
+<div class="fm">
+  <div class="top"><div class="t">MŚW Tbilisi 2026 — deklaracja chęci startu</div>
+    <div class="s">Zwolniło się miejsce w Twojej kategorii · odpowiedź do 1 sierpnia 2026</div></div>
+  <div class="case">Przypadek D · dobór · nagłówek i wyjaśnienie różnią się</div>
+
+  <div class="fq"><div class="lab">Imię i nazwisko</div>
+    <span class="txt">PYZIK Zdzisław</span></div>
+
+  <div class="fq"><div class="lab">Floret — indywidualnie (60+)</div>
+    <div class="hint">Twoja pozycja w rankingu: <b>3</b>. W kategorii mamy mniej niż pięć
+    potwierdzeń, więc zapraszamy kolejne osoby zgodnie z kolejnością rankingową.
+    Start 13 października. 90 EUR.</div>
+    <div class="opt"><span class="rb">tak</span><span class="rb">nie</span></div></div>
+
+  <div class="fq"><div class="lab">Floret — drużyna (Veteran)</div>
+    <div class="hint">14 października. Ok. 46 EUR.</div>
+    <div class="opt"><span class="rb">tak</span><span class="rb">nie</span>
+      <span class="rb">jeszcze nie wiem</span></div></div>
+
+  <div class="fq pref"><div class="lab">Szpada, szabla</div>
+    <div class="opt"><span class="rb pre">nie dotyczy</span></div></div>
+</div>
+
+<h2><span class="num">07</span>Trzy decyzje projektowe widoczne w powyższych</h2>
+<ul>
+  <li><b class="k">„Jeszcze nie wiem” tylko przy drużynie.</b> Start indywidualny zależy
+  wyłącznie od zawodnika, więc dopuszczamy tylko tak/nie. Skład drużyny zależy od innych i
+  od kosztu, więc tam trzecia odpowiedź jest uczciwa — a bez niej ludzie zaznaczą „tak” na
+  wszelki wypadek i zafałszują nam obraz gotowości drużyn.</li>
+  <li><b class="k">Data startu przy każdym pytaniu.</b> Pochodzi z harmonogramu FIE i jest
+  różna dla każdej konkurencji. Kosztuje jedną linijkę, a odpowiada na pierwsze pytanie,
+  które i tak każdy zada.</li>
+  <li><b class="k">Kwota przy każdym pytaniu, nie tylko na końcu.</b> Deklaracja podjęta
+  bez świadomości kosztu jest deklaracją, którą trzeba będzie zweryfikować drugi raz.</li>
+</ul>
+
+<h2><span class="num">08</span>Co jest potrzebne, zanim to pójdzie w świat</h2>
+<ul>
+  <li><b class="k">Rozstrzygnięcie dwóch niejasności w opłatach</b> — sekcja 01. Do tego
+  czasu kwoty w formularzu są szacunkowe i tak są opisane.</li>
+  <li><b class="k">Kanał dla każdej fali</b> — nadal nierozstrzygnięty. Formularz jest
+  niezależny od kanału, więc to nie blokuje treści, ale blokuje wysyłkę.</li>
+  <li><b class="k">Treść e-maila</b>, który niesie link — projekt przygotuję, gdy
+  zaakceptujesz kształt formularza.</li>
+  <li><b class="k">Zdanie o danych osobowych</b> — jedno, na końcu formularza: skąd mamy
+  dane, do czego posłużą, że są usuwane po kampanii.</li>
+</ul>
+
+</div>
+
+<footer>
+Projekt roboczy. Nic nie zostało wysłane ani opublikowane. Fakty z listu zapraszającego FIE
+odczytane bezpośrednio z pliku
+<i>202646-FIE_InvitationLetter_WorldChamp_Tbilisi2026.pdf</i>; pozycje rankingowe i daty
+startów z arkuszy sezonu 2025/2026 i harmonogramu FIE. Dokumenty towarzyszące:
+<i>msw-tbilisi-kanaly-i-struktura.html</i>, <i>msw-tbilisi-automatyzacja.html</i>,
+<i>msw-tbilisi-decyzje-otwarte.html</i>.
+</footer>
+
+</div>
+</body>
+</html>

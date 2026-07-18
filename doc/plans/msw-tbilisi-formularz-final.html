@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — formularz, wersja zatwierdzona</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1000px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--green);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,33px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:68ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.chip.bad{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:-.01em;
+ margin:36px 0 4px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:6px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:24px 0 8px;font-weight:600}
+p{margin:0 0 12px;max-width:80ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 18px;max-width:84ch}
+ul{margin:0 0 14px;padding-left:19px;max-width:80ch}
+li{margin-bottom:6px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+b.k{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:84ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.ok{background:var(--green-bg);border-left-color:var(--green)}
+.call.ok .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:540px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10px;color:var(--navy);white-space:nowrap;font-weight:600}
+.fq{border:1px solid var(--line);border-radius:5px;background:var(--card);
+ padding:12px 15px;margin-bottom:8px;max-width:700px}
+.fq.pre{background:var(--grey-bg)}
+.fq.sec{background:var(--navy-soft);border-color:var(--navy)}
+.fq .n{font-family:var(--mono);font-size:9.5px;color:var(--navy);font-weight:700;margin-bottom:4px}
+.fq .lab{font-weight:600;font-size:13.5px}
+.fq .hint{font-size:12px;color:var(--muted);margin-top:3px}
+.fq .ans{margin-top:7px;display:flex;gap:7px;flex-wrap:wrap}
+.rb{font-size:11.5px;padding:4px 11px;border:1px solid var(--line);border-radius:14px;
+ background:var(--paper);color:var(--muted)}
+.rb.cond{background:repeating-linear-gradient(45deg,var(--green-bg) 0 4px,var(--card) 4px 8px);
+ border-color:var(--green);color:var(--green);font-weight:600}
+.meta{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px;
+ letter-spacing:.05em;text-transform:uppercase}
+.sw{width:13px;height:13px;border-radius:3px;display:inline-block;border:1px solid var(--line);
+ vertical-align:-2px;margin-right:6px}
+.s-ok{background:var(--green-bg);border-color:var(--green)}
+.s-cond{background:repeating-linear-gradient(45deg,var(--green-bg) 0 4px,var(--card) 4px 8px);border-color:var(--green)}
+.s-pd{background:var(--amber-bg);border-color:var(--amber)}
+.s-no{background:var(--coral-bg);border-color:var(--coral)}
+footer{margin:38px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:84ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}
+ h2{font-size:19px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Specyfikacja · wersja zatwierdzona</div>
+  <h1>Formularz — wersja zatwierdzona</h1>
+  <p class="dek">Wszystkie decyzje wprowadzone. Start indywidualny: tylko tak/nie.
+  Drużyna: z „jeszcze nie wiem” jako warunkowe tak, liczone jako zieleń. Bronie, których
+  zawodnik nie uprawia: pozostają puste. Formularz jest gotowy do zbudowania.</p>
+  <div class="chips">
+    <span class="chip ok">e-mail — przyjęty</span>
+    <span class="chip ok">formularz — przyjęty</span>
+    <span class="chip ok">warunkowe tak — przyjęte</span>
+    <span class="chip ok">puste pola — zatwierdzone</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">01</span>Decyzje wprowadzone</h2>
+<div class="tw">
+<table>
+<thead><tr><th>Decyzja</th><th>Skutek</th></tr></thead>
+<tbody>
+<tr><td class="d">E-mail (sekcja 01)</td><td>Przyjęty bez zmian. Personalizacja — pozycje,
+  daty startów, koszty — żyje w e-mailu, nie w formularzu.</td></tr>
+<tr><td class="d">Formularz (sekcja 02)</td><td>Przyjęty, z korektą opcji poniżej.</td></tr>
+<tr><td class="d">Indywidualnie: tak/nie</td>
+  <td>Dwie opcje. Bez „jeszcze nie wiem”, bez „nie dotyczy”.</td></tr>
+<tr><td class="d">Drużyna: warunkowe tak</td>
+  <td>„Jeszcze nie wiem” zostaje, ale nie jest czwartym stanem — w raporcie liczy się
+  jako zieleń kreskowana i <b class="k">nie uruchamia ponaglania</b>.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call ok">
+  <span class="lb">Kolory w raporcie — bez zmian w schemacie</span>
+  <span class="sw s-ok"></span><b>zielony</b> — potwierdził &nbsp;·&nbsp;
+  <span class="sw s-cond"></span><b>zieleń kreskowana</b> — warunkowo tak, tylko drużyna &nbsp;·&nbsp;
+  <span class="sw s-pd"></span><b>żółty</b> — brak odpowiedzi &nbsp;·&nbsp;
+  <span class="sw s-no"></span><b>czerwony</b> — odmówił.<br>
+  Nadal trzy stany. Kreskowanie to wariant zieleni, nie nowy kolor — makieta raportu nie
+  wymaga przeprojektowania.
+</div>
+
+<h2><span class="num">02</span>Bronie nieistotne — puste pola</h2>
+
+<div class="call ok">
+  <span class="lb">Zatwierdzone</span>
+  Mechanizm „nie dotyczy” odpada. <b class="k">Pytania o bronie są nieobowiązkowe, a te,
+  których zawodnik nie uprawia, zostają puste.</b> Z góry wypełniamy wyłącznie kod
+  zgłoszenia, imię i nazwisko oraz dane kontaktowe. E-mail mówi wprost, których broni
+  dotyczy pytanie.
+</div>
+
+<p>Pustka nie jest tu dwuznaczna, bo <b class="k">my wiemy z rankingu, które bronie
+dotyczą kogo</b>. Puste pole przy broni, w której zawodnik nie jest sklasyfikowany, to
+poprawna odpowiedź. Puste pole przy jego własnej broni to brak odpowiedzi — i tylko to
+uruchamia ponaglanie. Dwuznaczność rozstrzyga się o nasze własne dane, nie o domysł.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Sytuacja</th><th>Co widzi zawodnik</th><th>Jak czytamy</th></tr></thead>
+<tbody>
+<tr><td>Broń, w której jest sklasyfikowany — odpowiedział</td><td>tak / nie</td>
+  <td>Deklaracja. Zielony lub czerwony.</td></tr>
+<tr><td>Broń, w której jest sklasyfikowany — pominął</td><td>puste</td>
+  <td>Brak odpowiedzi. Żółty, ponaglamy.</td></tr>
+<tr><td>Broń, w której nie jest sklasyfikowany</td><td>puste</td>
+  <td>Nie dotyczy. Nie pokazujemy w raporcie.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call">
+  <span class="lb">Odczytanie Twojej odpowiedzi</span>
+  Twoje „Agree” dotyczyło wprost rozwiązania z pustymi polami i tak to wprowadziłem.
+  Pierwsze zdanie Twojej wiadomości — <i>„we leave the «Nie dotyczy» mechanism… Yes”</i> —
+  odczytałem jako rezygnację z tego mechanizmu, bo tylko przy takim odczytaniu obie części
+  wiadomości się zgadzają. Gdyby chodziło o zachowanie „nie dotyczy” przy pytaniach
+  indywidualnych, to zmiana na kwadrans: trzecia opcja w pytaniach 2, 4 i 6 plus prefill.
+  Nic innego w specyfikacji się nie rusza.
+</div>
+
+<h2><span class="num">03</span>Formularz — wersja do zbudowania</h2>
+<p class="sub">Komplet pól. Kolejność jak niżej.</p>
+
+<div class="fq pre"><div class="n">0 · krótka odpowiedź · obowiązkowe · wypełnione</div>
+  <div class="lab">Kod zgłoszenia</div>
+  <div class="hint">Nie zmieniaj — służy do powiązania odpowiedzi z rankingiem.</div>
+  <div class="meta">prefill: {token}</div></div>
+
+<div class="fq pre"><div class="n">1 · krótka odpowiedź · obowiązkowe · wypełnione</div>
+  <div class="lab">Imię i nazwisko</div>
+  <div class="hint">Popraw, jeśli się nie zgadza.</div>
+  <div class="meta">prefill: {imie_nazwisko}</div></div>
+
+<div class="fq sec"><div class="n">nagłówek sekcji</div>
+  <div class="lab">Twoje konkurencje</div>
+  <div class="hint">Wypełnij tylko te bronie, które wymieniono w Twoim e-mailu. Pozostałe
+  zostaw puste.</div></div>
+
+<div class="fq"><div class="n">2 · jednokrotny wybór · nieobowiązkowe</div>
+  <div class="lab">Szpada — start indywidualny</div>
+  <div class="hint">Opłata startowa <b>90 EUR</b> („Individual Entry” wg listu FIE).</div>
+  <div class="ans"><span class="rb">tak</span><span class="rb">nie</span></div></div>
+
+<div class="fq"><div class="n">3 · jednokrotny wybór · nieobowiązkowe</div>
+  <div class="lab">Szpada — start drużynowy</div>
+  <div class="hint">Drużyna Veteran (40+/50+) lub Grand Veteran (60+/70+), zależnie od
+  Twojej kategorii. Opłata <b>185 EUR</b> („Team Entry” wg listu FIE). Deklaracja nie
+  oznacza powołania do składu.</div>
+  <div class="ans"><span class="rb">tak</span><span class="rb">nie</span>
+    <span class="rb cond">jeszcze nie wiem</span></div>
+  <div class="meta">„jeszcze nie wiem” = warunkowo tak · zieleń kreskowana · bez ponaglania</div></div>
+
+<div class="fq"><div class="n">4 · jednokrotny wybór · nieobowiązkowe</div>
+  <div class="lab">Floret — start indywidualny</div>
+  <div class="hint">Opłata startowa <b>90 EUR</b> („Individual Entry” wg listu FIE).</div>
+  <div class="ans"><span class="rb">tak</span><span class="rb">nie</span></div></div>
+
+<div class="fq"><div class="n">5 · jednokrotny wybór · nieobowiązkowe</div>
+  <div class="lab">Floret — start drużynowy</div>
+  <div class="hint">Jak wyżej. Opłata <b>185 EUR</b> („Team Entry” wg listu FIE).</div>
+  <div class="ans"><span class="rb">tak</span><span class="rb">nie</span>
+    <span class="rb cond">jeszcze nie wiem</span></div></div>
+
+<div class="fq"><div class="n">6 · jednokrotny wybór · nieobowiązkowe</div>
+  <div class="lab">Szabla — start indywidualny</div>
+  <div class="hint">Opłata startowa <b>90 EUR</b> („Individual Entry” wg listu FIE).</div>
+  <div class="ans"><span class="rb">tak</span><span class="rb">nie</span></div></div>
+
+<div class="fq"><div class="n">7 · jednokrotny wybór · nieobowiązkowe</div>
+  <div class="lab">Szabla — start drużynowy</div>
+  <div class="hint">Jak wyżej. Opłata <b>185 EUR</b> („Team Entry” wg listu FIE).</div>
+  <div class="ans"><span class="rb">tak</span><span class="rb">nie</span>
+    <span class="rb cond">jeszcze nie wiem</span></div></div>
+
+<div class="fq sec"><div class="n">nagłówek sekcji</div>
+  <div class="lab">Dane kontaktowe</div>
+  <div class="hint">Sprawdź i popraw — będziemy ich używać przy zgłoszeniu do FIE.</div></div>
+
+<div class="fq pre"><div class="n">8 · krótka odpowiedź · wypełnione</div>
+  <div class="lab">Adres e-mail</div><div class="meta">prefill: {email}</div></div>
+
+<div class="fq pre"><div class="n">9 · krótka odpowiedź · wypełnione</div>
+  <div class="lab">Telefon</div><div class="meta">prefill: {telefon}</div></div>
+
+<div class="fq"><div class="n">10 · długa odpowiedź · nieobowiązkowe</div>
+  <div class="lab">Uwagi</div>
+  <div class="hint">Jeśli coś wymaga wyjaśnienia — napisz tutaj.</div></div>
+
+<h2><span class="num">04</span>Zapis w bazie</h2>
+<p class="sub">Formularz oferuje dwie lub trzy opcje; tabela <code>odpowiedz</code>
+przechowuje cztery stany, bo odpowiedzi z telefonu i Messengera będą zawierały
+„chyba tak, muszę sprawdzić” niezależnie od tego, co daje formularz.</p>
+<div class="tw">
+<table>
+<thead><tr><th>Wartość</th><th>Skąd</th><th>Raport</th><th>Ponaglanie</th></tr></thead>
+<tbody>
+<tr><td class="d">tak</td><td>formularz, telefon, Messenger</td>
+  <td><span class="sw s-ok"></span>zielony</td><td>nie</td></tr>
+<tr><td class="d">warunkowo</td><td>tylko drużyna; formularz lub rozmowa</td>
+  <td><span class="sw s-cond"></span>zieleń kreskowana</td><td>nie — lista do rozmowy</td></tr>
+<tr><td class="d">nie</td><td>formularz, telefon, Messenger</td>
+  <td><span class="sw s-no"></span>czerwony</td><td>nie — uruchamia dobór</td></tr>
+<tr><td class="d">brak wiersza</td><td>—</td>
+  <td><span class="sw s-pd"></span>żółty</td><td><b class="k">tak</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">05</span>Nadal otwarte w treści</h2>
+<ul>
+  <li><b class="k">Klauzula o danych</b> — A, B czy C. Rekomendacja: A.</li>
+  <li><b class="k">Pełny adres</b> <code>spws.weterani@gmail.com</code> do podstawienia.</li>
+  <li><b class="k">Podpis</b> — Ty imiennie, zarząd SPWS, czy Komisja Rankingowa.</li>
+  <li><b class="k">Dwie niejasności w opłatach</b> — 90 EUR za broń czy za zawodnika,
+  185 EUR od drużyny czy od osoby.</li>
+
+</ul>
+
+</div>
+
+<footer>
+Zastępuje sekcję 02 dokumentu <i>msw-tbilisi-formularz-i-email.html</i> i sekcję 07
+dokumentu <i>msw-tbilisi-formularz-przyklady.html</i>. Treść e-maila bez zmian —
+obowiązuje wersja z <i>msw-tbilisi-formularz-i-email.html</i>. Kanały i fale do ustalenia
+po zamknięciu treści.
+</footer>
+
+</div>
+</body>
+</html>

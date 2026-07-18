@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — wersja minimalna</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:880px;margin:0 auto;padding:0 0 60px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--green);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,32px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:66ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:20px;font-weight:600;letter-spacing:-.01em;
+ margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:10.5px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:5px;font-weight:600}
+p{margin:0 0 11px;max-width:78ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 14px;max-width:82ch}
+ul{margin:0 0 12px;padding-left:19px;max-width:78ch}
+li{margin-bottom:5px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+b.k{color:var(--navy)}
+.v{color:var(--violet);font-weight:600;font-family:var(--mono);font-size:.9em}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:12px 15px;margin:12px 0 16px;font-size:13px;max-width:82ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:4px}
+.draft{border:1px solid var(--line);border-left:4px solid var(--green);border-radius:6px;
+ background:var(--card);margin:0 0 18px;overflow:hidden;max-width:680px}
+.draft .dh{background:var(--paper);border-bottom:1px solid var(--line);padding:8px 16px;
+ font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.draft .dc{padding:15px 17px;font-size:13.5px;line-height:1.6}
+.draft .dc p{margin:0 0 10px;max-width:none}
+.draft .dc p:last-child{margin-bottom:0}
+.fq{border:1px solid var(--line);border-radius:5px;background:var(--card);
+ padding:10px 14px;margin-bottom:6px;max-width:680px}
+.fq.pre{background:var(--grey-bg)}
+.fq .n{font-family:var(--mono);font-size:9px;color:var(--navy);font-weight:700;margin-bottom:3px}
+.fq .lab{font-weight:600;font-size:13px}
+.fq .hint{font-size:11.5px;color:var(--muted);margin-top:2px}
+.fq .ans{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
+.rb{font-size:11px;padding:3px 10px;border:1px solid var(--line);border-radius:13px;
+ background:var(--paper);color:var(--muted)}
+.rb.cond{background:repeating-linear-gradient(45deg,var(--green-bg) 0 4px,var(--card) 4px 8px);
+ border-color:var(--green);color:var(--green);font-weight:600}
+.cut{border-left:3px solid var(--grey);padding-left:14px;margin-bottom:14px;max-width:80ch}
+.cut b{color:var(--grey)}
+footer{margin:34px 22px 0;padding-top:14px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:82ch}
+@media(max-width:680px){.hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Specyfikacja · wersja minimalna</div>
+  <h1>Wersja minimalna — sam zamiar startu</h1>
+  <p class="dek">Wycięte wszystko, co nie służy jednemu celowi: ustaleniu, kto chce
+  jechać. Kwoty widoczne przy każdym pytaniu, cytowane za listem FIE — bez rozstrzygania,
+  co się od czego liczy.</p>
+  <div class="chips">
+    <span class="chip ok">gotowe do zbudowania</span>
+    <span class="chip">termin: 1 sierpnia 2026</span>
+    <span class="chip">kwoty przy każdym pytaniu</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">01</span>E-mail</h2>
+
+<div class="call">
+  <span class="lb">Nieaktualne — obowiązuje osobny dokument</span>
+  Wersja e-maila z tego dokumentu została zastąpiona Twoją własną redakcją, wraz ze
+  ścieżką przez PZSz i bez pozycji rankingowych. Obowiązuje
+  <b class="k">msw-tbilisi-email-wave1.html</b>. Poniżej pozostaje wyłącznie specyfikacja
+  formularza.
+</div>
+
+<h2><span class="num">02</span>Formularz</h2>
+<p class="sub">Nagłówek: <b>MŚW Tbilisi 2026 — deklaracja chęci startu</b> ·
+Opis: <i>„Tbilisi, 9–17 października 2026. Odpowiedź do 1 sierpnia. Pytamy o zamiar
+startu — to nie jest zobowiązanie ani powołanie do składu. Kwoty podajemy za listem
+zapraszającym FIE. Wypełnij tylko te bronie, które wymieniono w Twoim e-mailu.”</i></p>
+
+<div class="fq pre"><div class="n">0–1 · wypełnione</div>
+  <div class="lab">Kod zgłoszenia · Imię i nazwisko</div>
+  <div class="hint">prefill: {token}, {imie_nazwisko}</div></div>
+
+<div class="fq"><div class="n">2, 4, 6 · nieobowiązkowe</div>
+  <div class="lab">Szpada / Floret / Szabla — start indywidualny</div>
+  <div class="hint">Opłata startowa <b>90 EUR</b> („Individual Entry” wg listu FIE).</div>
+  <div class="ans"><span class="rb">tak</span><span class="rb">nie</span></div></div>
+
+<div class="fq"><div class="n">3, 5, 7 · nieobowiązkowe</div>
+  <div class="lab">Szpada / Floret / Szabla — start drużynowy</div>
+  <div class="hint">Opłata <b>185 EUR</b> („Team Entry” wg listu FIE) — poza opłatą
+  indywidualną. Deklaracja nie oznacza powołania do składu.</div>
+  <div class="ans"><span class="rb">tak</span><span class="rb">nie</span>
+    <span class="rb cond">jeszcze nie wiem</span></div></div>
+
+<div class="fq pre"><div class="n">8–9 · wypełnione</div>
+  <div class="lab">E-mail · Telefon</div>
+  <div class="hint">Sprawdź i popraw.</div></div>
+
+<div class="fq"><div class="n">10 · nieobowiązkowe</div>
+  <div class="lab">Uwagi</div></div>
+
+<p style="font-size:12.5px;color:var(--muted);max-width:78ch">Na końcu, drobnym drukiem:
+<i>„Dane pochodzą z listy członków i rankingów SPWS, służą wyłącznie do zgłoszenia na MŚW
+Tbilisi 2026 i zostaną usunięte po zakończeniu zgłoszeń. Kontakt:
+<a href="mailto:spws.weterani@gmail.com">spws.weterani@gmail.com</a>.”</i> — to wariant B, najkrótszy.</p>
+
+<h2><span class="num">03</span>Co wyciąłem</h2>
+
+<div class="cut"><b>Daty startów przy każdej konkurencji.</b> Ładny detal, ale kto chce
+sprawdzić, znajdzie w liście FIE. Wracają w drugiej turze, przy potwierdzaniu zgłoszeń.</div>
+
+<div class="cut"><b>Tabela kosztów i akapit o opłatach.</b> Jedno zdanie plus link.</div>
+
+<div class="cut"><b>Zdanie „deklaracja nie jest zobowiązaniem finansowym”</b> — zostało,
+skrócone. To jedyny fragment perswazyjny, który zarabia na siebie: zdejmuje główny powód
+milczenia.</div>
+
+<div class="call">
+  <span class="lb">Kwoty zostają — cytujemy list, nie interpretujemy go</span>
+  Kwoty wracają przy każdym pytaniu, ale zapisane dokładnie tak, jak w liście FIE:
+  <i>Individual Entry 90 EUR</i>, <i>Team Entry 185 EUR</i>. Dzięki temu nie musimy
+  rozstrzygać, czy 90 EUR liczy się za broń czy za zawodnika i czy 185 EUR obciąża drużynę
+  czy osobę — nie twierdzimy ani jednego, ani drugiego. Zawodnik widzi rząd wielkości,
+  a my nie podajemy liczby, za którą później trzeba by przepraszać.
+</div>
+
+<div class="call">
+  <span class="lb">Paszporty — zostawiam poza wysyłką, ale nie poza planem</span>
+  Obowiązek przesłania listy uczestników i skanów paszportów do <b>20 sierpnia</b> dotyczy
+  nas mimo braku wizy. W tej wiadomości nie ma po nim śladu i słusznie — nie prosimy o
+  paszporty od ludzi, którzy jeszcze nie powiedzieli „tak”. Ale to on ustawia harmonogram:
+  <b class="k">1 sierpnia zostawia 19 dni na zebranie skanów od tych, którzy potwierdzą.</b>
+  To będzie osobna, druga wysyłka — do wąskiej grupy i dopiero po zamknięciu deklaracji.
+</div>
+
+<h2><span class="num">04</span>Co jeszcze potrzebne, żeby wysłać</h2>
+<ul>
+  <li>Pełny adres <code>spws.weterani@gmail.com</code> — do podpisu i do klauzuli.</li>
+  <li>Kto podpisuje: Ty imiennie czy „SPWS — Ranking Weteranów”.</li>
+</ul>
+<p class="sub">To wszystko. Opłaty, daty startów i paszporty nie blokują już niczego.</p>
+
+</div>
+
+<footer>
+Zastępuje treść z <i>msw-tbilisi-formularz-i-email.html</i> i <i>msw-tbilisi-formularz-final.html</i>
+w zakresie tekstu wiadomości i opisów pytań. Struktura formularza, stany odpowiedzi i
+kolory raportu — bez zmian, obowiązuje <i>msw-tbilisi-formularz-final.html</i>.
+Kanały i fale — następny temat.
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — treść formularza i e-maila</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1000px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,33px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:68ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:-.01em;
+ margin:36px 0 4px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:6px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:26px 0 8px;font-weight:600}
+p{margin:0 0 12px;max-width:80ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 18px;max-width:84ch}
+ul{margin:0 0 14px;padding-left:19px;max-width:80ch}
+li{margin-bottom:6px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+b.k{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:84ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+
+/* draft block */
+.draft{border:1px solid var(--line);border-radius:6px;background:var(--card);
+ margin:0 0 20px;overflow:hidden;max-width:720px}
+.draft .dh{background:var(--paper);border-bottom:1px solid var(--line);padding:9px 16px;
+ font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.draft .dh b{color:var(--navy)}
+.draft .dc{padding:16px 18px;font-size:13.5px;line-height:1.62}
+.draft .dc p{margin:0 0 11px;max-width:none}
+.draft .dc p:last-child{margin-bottom:0}
+.v{color:var(--violet);font-weight:600;font-family:var(--mono);font-size:.9em}
+.opt-pick{border-left:4px solid var(--green)}
+.opt-alt{border-left:4px solid var(--line)}
+.opt-no{border-left:4px solid var(--grey);opacity:.8}
+.tag{font-family:var(--mono);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600}
+.t-yes{background:var(--green-bg);color:var(--green)}
+.t-alt{background:var(--paper);color:var(--muted);border:1px solid var(--line)}
+.t-no{background:var(--grey-bg);color:var(--grey)}
+
+.fq{border:1px solid var(--line);border-radius:5px;background:var(--card);
+ padding:12px 15px;margin-bottom:8px;max-width:720px}
+.fq .n{font-family:var(--mono);font-size:9.5px;color:var(--navy);font-weight:700;margin-bottom:4px}
+.fq .lab{font-weight:600;font-size:13.5px}
+.fq .hint{font-size:12px;color:var(--muted);margin-top:3px}
+.fq .ans{margin-top:7px;display:flex;gap:7px;flex-wrap:wrap}
+.rb{font-size:11.5px;padding:4px 11px;border:1px solid var(--line);border-radius:14px;
+ background:var(--paper);color:var(--muted)}
+.fq.pre{background:var(--grey-bg)}
+.meta{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px;
+ letter-spacing:.05em;text-transform:uppercase}
+footer{margin:38px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:84ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}
+ h2{font-size:19px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Dokument roboczy · projekt treści</div>
+  <h1>Treść formularza i e-maila</h1>
+  <p class="dek">Gotowe do wklejenia teksty: e-mail zapraszający, wszystkie stałe napisy
+  formularza i trzy warianty klauzuli o danych osobowych. Plus ograniczenie Google Forms,
+  które unieważnia część moich wcześniejszych przykładów.</p>
+  <div class="chips">
+    <span class="chip">termin: 1 sierpnia 2026</span>
+    <span class="chip bad">korekta wcześniejszego projektu</span>
+    <span class="chip">do akceptacji</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">00</span>Korekta — czego Google Forms nie potrafi</h2>
+
+<div class="call stop">
+  <span class="lb">Moje wcześniejsze przykłady były w tym punkcie błędne</span>
+  W <i>msw-tbilisi-formularz-przyklady.html</i> pokazałem formularz, w którym przy każdym
+  pytaniu widnieje pozycja rankingowa zawodnika, data jego startu i kwota. <b class="k">Google
+  Forms tego nie potrafi.</b> Opisy pytań są stałe dla wszystkich odpowiadających —
+  personalizować można wyłącznie <i>wypełnione odpowiedzi</i>, nie treść.
+</div>
+
+<p>Konsekwencja jest prosta i wcale nie zła: <b class="k">personalizacja przenosi się do
+e-maila</b>, a formularz zostaje stałą kartą odpowiedzi. E-mail mówi „jesteś trzeci w
+szpadzie V4, start 10 października, 90 EUR”, formularz pyta tylko „szpada — indywidualnie:
+tak czy nie”. Bronie, w których zawodnik nie jest sklasyfikowany, zostają puste —
+patrz <i>msw-tbilisi-formularz-final.html</i>, sekcja 02.</p>
+
+<div class="call">
+  <span class="lb">Skutek uboczny, który jest zaletą</span>
+  E-mail staje się dokumentem, a formularz kwitem. To dobry podział: e-mail można
+  przeczytać spokojnie, przemyśleć, pokazać żonie i wrócić do niego za trzy dni — a
+  formularz wypełnia się w minutę. Odwrotny układ zmuszałby ludzi do czytania warunków
+  w oknie przeglądarki z kursorem migającym nad „Wyślij”.
+</div>
+
+<h2><span class="num">01</span>E-mail — fala 1</h2>
+<p class="sub">Wersja spersonalizowana. Pola <span class="v">{…}</span> podstawia skrypt.
+Poniżej wariant dla zawodnika z dwiema broniami; jedno- i trzybroniowy różnią się tylko
+liczbą wierszy w wykazie.</p>
+
+<div class="draft opt-pick">
+  <div class="dh"><span><b>E-mail · fala 1</b> · szablon <code>wave1_email</code></span>
+    <span class="tag t-yes">propozycja</span></div>
+  <div class="dc">
+    <p><b>Temat:</b> MŚW Tbilisi 2026 — czy planujesz start? Odpowiedź do 1 sierpnia</p>
+    <hr style="border:none;border-top:1px solid var(--line);margin:12px 0">
+    <p><span class="v">{zwrot}</span>,</p>
+
+    <p>Mistrzostwa Świata Weteranów odbędą się w Tbilisi w dniach <b>9–17 października
+    2026</b>. Na podstawie rankingu SPWS za sezon 2025/2026 jesteś w gronie zawodników,
+    których Polska może zgłosić — w każdej kategorii startuje czterech zawodników plus
+    jeden rezerwowy.</p>
+
+    <p><b>Twoja pozycja w rankingu:</b><br>
+    <span class="v">{wykaz_broni}</span></p>
+    <p style="margin-left:14px;color:var(--muted);font-size:12.5px">
+    np.&nbsp; szpada, kat. 70+ — <b>3. miejsce</b> · start 10 października<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; floret, kat. 70+ — <b>3. miejsce</b> · start 13 października</p>
+
+    <p><b>Koszty według listu zapraszającego FIE:</b><br>
+    opłata startowa <b>90 EUR</b> za każdą broń · opłata drużynowa <b>185 EUR</b> od
+    drużyny. Do tego dojazd i hotel we własnym zakresie. Pełny list zapraszający:
+    <a href="https://static.fie.org/uploads/40/202646-FIE_InvitationLetter_WorldChamp_Tbilisi2026.pdf">
+    FIE Invitation Letter — Tbilisi 2026</a>.</p>
+
+    <p><b>Prosimy o odpowiedź do 1 sierpnia 2026</b> — potrzebujemy jej, żeby zdążyć
+    ze zgłoszeniem i skanami paszportów, które FIE przyjmuje do 20 sierpnia.</p>
+
+    <p style="text-align:center;margin:16px 0">
+      <a href="#" style="background:var(--navy);color:#fff;padding:11px 22px;border-radius:4px;
+      text-decoration:none;font-weight:600;display:inline-block">Wypełnij deklarację</a><br>
+      <span style="font-size:11px;color:var(--muted)"><span class="v">{link}</span></span>
+    </p>
+
+    <p>Formularz zajmuje minutę. Deklaracja nie jest zobowiązaniem finansowym ani
+    powołaniem do składu — pytamy o zamiar, żeby wiedzieć, na kogo możemy liczyć.
+    Jeśli coś się zmieni, po prostu daj znać.</p>
+
+    <p>Z pozdrowieniami,<br>
+    <b><span class="v">{nadawca}</span></b><br>
+    <span style="color:var(--muted);font-size:12.5px">SPWS — Ranking Weteranów<br>
+    <a href="mailto:spws.weterani@gmail.com">spws.weterani@gmail.com</a></span></p>
+  </div>
+</div>
+
+<div class="call warn">
+  <span class="lb">Trzy świadome decyzje w tym tekście</span>
+  <b>Pozycja rankingowa jest w drugim akapicie</b>, nie na końcu — to jest powód, dla
+  którego ktoś czyta dalej, i jednocześnie dowód, że wiadomość nie jest masowa.
+  <b>Koszty są w treści, nie w załączniku</b> — ukrycie ich za linkiem daje wyższą liczbę
+  „tak” i niższą wiarygodność tych „tak”.
+  <b>Zdanie „deklaracja nie jest zobowiązaniem”</b> zdejmuje główny powód milczenia:
+  obawę, że kliknięcie „tak” oznacza 400 EUR i bilet.
+</div>
+
+<h2><span class="num">02</span>Formularz — wszystkie stałe napisy</h2>
+<p class="sub">To jest komplet tekstu do wklejenia w Google Forms. Nic tu nie jest
+personalizowane poza wypełnionymi odpowiedziami.</p>
+
+<h3>Tytuł i opis formularza</h3>
+<div class="draft opt-pick">
+  <div class="dh"><span><b>Nagłówek formularza</b></span></div>
+  <div class="dc">
+    <p style="font-family:var(--serif);font-size:17px;font-weight:600;margin-bottom:8px">
+    MŚW Tbilisi 2026 — deklaracja chęci startu</p>
+    <p>Mistrzostwa Świata Weteranów, Tbilisi, 9–17 października 2026.
+    <b>Prosimy o odpowiedź do 1 sierpnia 2026.</b></p>
+    <p>Szczegóły dotyczące Twoich konkurencji, terminów startów i kosztów znajdziesz
+    w wiadomości e-mail, z której trafiłeś tutaj. Opłaty według listu zapraszającego FIE:
+    90 EUR za start indywidualny w jednej broni, 185 EUR od drużyny.</p>
+    <p>Wypełnienie formularza <b>nie jest zobowiązaniem finansowym ani powołaniem do
+    składu</b>. Pytamy o zamiar startu, żeby wiedzieć, ilu zawodników możemy zgłosić.</p>
+  </div>
+</div>
+
+<h3>Pytania</h3>
+
+<div class="fq pre"><div class="n">0 · krótka odpowiedź · wypełnione, ukryte przed wzrokiem</div>
+  <div class="lab">Kod zgłoszenia</div>
+  <div class="hint">Nie zmieniaj — służy do powiązania odpowiedzi z rankingiem.</div>
+  <div class="meta">prefill: {token}</div></div>
+
+<div class="fq pre"><div class="n">1 · krótka odpowiedź · wypełnione</div>
+  <div class="lab">Imię i nazwisko</div>
+  <div class="hint">Popraw, jeśli się nie zgadza.</div>
+  <div class="meta">prefill: {imie_nazwisko}</div></div>
+
+<div class="fq"><div class="n">2 · jednokrotny wybór</div>
+  <div class="lab">Szpada — start indywidualny</div>
+  <div class="hint">Opłata startowa 90 EUR.</div>
+  <div class="ans"><span class="rb">tak</span><span class="rb">nie</span>
+    <span class="rb">nie dotyczy</span></div>
+  <div class="meta">prefill „nie dotyczy”, jeśli niesklasyfikowany</div></div>
+
+<div class="fq"><div class="n">3 · jednokrotny wybór</div>
+  <div class="lab">Szpada — start drużynowy</div>
+  <div class="hint">Drużyna Veteran (40+/50+) lub Grand Veteran (60+/70+), zależnie od
+  Twojej kategorii. Opłata 185 EUR od drużyny. Deklaracja nie oznacza powołania do składu.</div>
+  <div class="ans"><span class="rb">tak</span><span class="rb">nie</span>
+    <span class="rb">jeszcze nie wiem</span><span class="rb">nie dotyczy</span></div>
+  <div class="meta">„jeszcze nie wiem” = warunkowo tak; nie uruchamia ponaglania</div></div>
+
+<div class="fq"><div class="n">4–5 · jak wyżej</div>
+  <div class="lab">Floret — start indywidualny / start drużynowy</div></div>
+
+<div class="fq"><div class="n">6–7 · jak wyżej</div>
+  <div class="lab">Szabla — start indywidualny / start drużynowy</div></div>
+
+<div class="fq pre"><div class="n">8 · krótka odpowiedź · wypełnione</div>
+  <div class="lab">Adres e-mail</div>
+  <div class="hint">Sprawdź i popraw — będziemy go używać przy zgłoszeniu.</div>
+  <div class="meta">prefill: {email}</div></div>
+
+<div class="fq pre"><div class="n">9 · krótka odpowiedź · wypełnione</div>
+  <div class="lab">Telefon</div>
+  <div class="hint">Sprawdź i popraw.</div>
+  <div class="meta">prefill: {telefon}</div></div>
+
+<div class="fq"><div class="n">10 · długa odpowiedź · nieobowiązkowe</div>
+  <div class="lab">Uwagi</div>
+  <div class="hint">Jeśli coś wymaga wyjaśnienia — napisz tutaj.</div></div>
+
+<h2><span class="num">03</span>Klauzula o danych osobowych — trzy warianty</h2>
+<p class="sub">Do wyboru. Wszystkie mówią to samo: skąd mamy dane, po co, jak długo.
+Różnią się wyłącznie długością i tonem.</p>
+
+<div class="draft opt-pick">
+  <div class="dh"><span><b>Wariant A</b> · trzy zdania, język zwykły</span>
+    <span class="tag t-yes">rekomendacja</span></div>
+  <div class="dc">
+    <p>Twoje dane kontaktowe pochodzą z listy członków SPWS, a pozycje rankingowe
+    z oficjalnych rankingów SPWS za sezon 2025/2026. Używamy ich wyłącznie do zapytania
+    o start w MŚW Tbilisi 2026 i do zgłoszenia zawodników do FIE. Po zakończeniu zgłoszeń
+    listę kontaktową usuwamy; w każdej chwili możesz poprosić o wgląd, poprawienie lub
+    usunięcie swoich danych, pisząc na <a href="mailto:spws.weterani@gmail.com">spws.weterani@gmail.com</a>.</p>
+  </div>
+</div>
+
+<div class="draft opt-alt">
+  <div class="dh"><span><b>Wariant B</b> · jedno zdanie</span>
+    <span class="tag t-alt">jeśli chcesz maksymalnie krótko</span></div>
+  <div class="dc">
+    <p>Dane pochodzą z listy członków i rankingów SPWS, służą wyłącznie do zgłoszenia
+    na MŚW Tbilisi 2026 i zostaną usunięte po zakończeniu zgłoszeń —
+    pytania i wnioski: <a href="mailto:spws.weterani@gmail.com">spws.weterani@gmail.com</a>.</p>
+  </div>
+</div>
+
+<div class="draft opt-no">
+  <div class="dh"><span><b>Wariant C</b> · pełna klauzula RODO</span>
+    <span class="tag t-no">odradzam w formularzu</span></div>
+  <div class="dc">
+    <p>Administratorem danych jest Stowarzyszenie Polskich Weteranów Szermierki.
+    Dane osobowe (imię, nazwisko, rok urodzenia, adres e-mail, numer telefonu, pozycja
+    rankingowa) przetwarzane są na podstawie art. 6 ust. 1 lit. f RODO — prawnie
+    uzasadnionego interesu polegającego na organizacji udziału reprezentacji w zawodach —
+    w celu ustalenia składu i zgłoszenia zawodników do Międzynarodowej Federacji
+    Szermierczej. Dane pochodzą z listy członków SPWS oraz oficjalnych rankingów SPWS.
+    Odpowiedzi zbierane są przez formularz Google i przechowywane na serwerach Google LLC.
+    Dane będą przechowywane do zakończenia procesu zgłoszeń, nie dłużej niż do
+    31 grudnia 2026. Przysługuje Ci prawo dostępu do danych, ich sprostowania, usunięcia,
+    ograniczenia przetwarzania, wniesienia sprzeciwu oraz skargi do Prezesa UODO.
+    Kontakt: <a href="mailto:spws.weterani@gmail.com">spws.weterani@gmail.com</a>.</p>
+    <p style="color:var(--muted);font-size:12px">Odradzam nie dlatego, że jest zła —
+    tylko dlatego, że umieszczona pod formularzem na dwie minuty wypełniania działa
+    odstraszająco. Jeśli SPWS chce mieć ją opublikowaną, jej miejscem jest osobna strona
+    z linkiem <i>„Informacja o przetwarzaniu danych”</i> pod wariantem A.</p>
+  </div>
+</div>
+
+<div class="call warn">
+  <span class="lb">Dwie rzeczy, które muszę powiedzieć wprost</span>
+  Nie jestem prawnikiem i to nie jest porada prawna — to propozycja tekstu w zwykłym
+  języku. Administratorem danych jest SPWS i to zarząd powinien zaakceptować brzmienie.<br><br>
+  Druga: wariant A mówi, że listę usuwamy po zgłoszeniach. <b class="k">To musi być
+  prawda.</b> Kampania działa na plikach w katalogu wyłączonym z repozytorium i w osobnej
+  bazie <code>msw_tbilisi</code> — usunięcie jednego katalogu i jednej bazy faktycznie
+  kończy sprawę. Warto, żeby to zostało zrobione, a nie tylko obiecane.
+</div>
+
+<h2><span class="num">04</span>Co jeszcze trzeba rozstrzygnąć w treści</h2>
+<ul>
+  <li><b class="k">Dwie niejasności w opłatach</b> — czy 90 EUR jest za broń czy za
+  zawodnika i czy 185 EUR to drużyna czy osoba.
+  E-mail powyżej cytuje list FIE dosłownie, więc jest bezpieczny — ale jeśli chcesz podać
+  sumę dla konkretnego zawodnika, to bez tych odpowiedzi się nie da.</li>
+  <li><b class="k">Podpis</b> — kto podpisuje: Ty imiennie, zarząd SPWS, czy „Komisja
+  Rankingowa”? Wpływa na ton całości.</li>
+  <li><b class="k">Adres zwrotny</b> — pełna postać <code>spws.weterani@gmail.com</code>
+  do podstawienia w <a href="mailto:spws.weterani@gmail.com">spws.weterani@gmail.com</a>.</li>
+  <li><b class="k">Wariant klauzuli</b> — A, B czy C.</li>
+</ul>
+
+</div>
+
+<footer>
+Projekt roboczy, nic nie zostało wysłane. Koryguje sekcje 03–06 dokumentu
+<i>msw-tbilisi-formularz-przyklady.html</i> w zakresie personalizacji opisów pytań.
+Kanały i fale — do ustalenia po zamknięciu treści, zgodnie z ustaleniem.
+Fakty o opłatach i terminach odczytane z listu zapraszającego FIE.
+</footer>
+
+</div>
+</body>
+</html>
