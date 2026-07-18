@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — Deklarowana chęć udziału (makieta)</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.5;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1240px;margin:0 auto;padding:0 0 60px 8px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,34px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:66ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+
+.body{padding:22px 22px 0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:10px;margin-bottom:30px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:13px 15px}
+.kpi.key{border-left:4px solid var(--navy)}
+.kpi .n{font-family:var(--serif);font-size:28px;font-weight:600;line-height:1}
+.kpi .n small{font-size:17px;opacity:.45;font-weight:400}
+.kpi .l{font-family:var(--mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+.kpi .s{font-size:11.5px;color:var(--muted);margin-top:3px}
+
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;
+ color:var(--navy);margin:0 0 5px;font-weight:600}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 16px;max-width:84ch}
+
+/* ---- Section A: weapon/gender group -> auto-fitting grid of category boxes ---- */
+.group{margin-bottom:20px}
+.group > h4{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--ink);margin:0 0 7px;font-weight:600;padding-bottom:5px;border-bottom:1px solid var(--line)}
+.group > h4 span{color:var(--muted);font-weight:500}
+/* 4 across on desktop, 2+2 on tablet, 1 on phone — always a symmetric wrap */
+.catgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;align-items:start}
+@media(max-width:1000px){.catgrid{grid-template-columns:repeat(2,1fr)}}
+
+.cell{border:1px solid var(--line);background:var(--card);border-radius:5px;padding:6px}
+.cell .cat{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);padding:1px 3px 6px}
+
+ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+li{font-size:11.5px;line-height:1.35;border-radius:3px;padding:5px 8px;font-weight:500;
+ overflow-wrap:anywhere}
+li.ok{background:var(--green-bg);color:var(--green)}
+li.no{background:var(--coral-bg);color:var(--coral)}
+li.pd{background:var(--amber-bg);color:var(--amber)}
+li .r{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--violet);margin-left:3px}
+
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11.5px;color:var(--muted);
+ margin-bottom:32px;align-items:center}
+.legend span{display:flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:3px;display:inline-block;flex-shrink:0}
+
+/* ---- Section B ---- */
+.teams{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:10px;
+ margin-bottom:14px;align-items:start}
+.tcard{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:10px 11px 11px}
+.tcard .ttl{font-size:12.5px;font-weight:600;margin-bottom:1px}
+.tcard .band{font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;
+ color:var(--muted);margin-bottom:8px}
+
+/* ---- Section C ---- */
+.tc{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);
+ border-radius:5px;overflow:hidden;font-size:12.5px}
+.tc th{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--navy-soft);
+ color:var(--navy);font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase}
+.tc td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.tc tbody tr:last-child td{border-bottom:none}
+.pname{font-weight:600;font-size:13px}
+.pmeta{font-size:10.5px;color:var(--muted);margin-top:3px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.kat{font-family:var(--mono);font-size:9.5px;background:var(--navy-soft);color:var(--navy);
+ padding:2px 6px;border-radius:3px;white-space:nowrap}
+.by{font-family:var(--mono);font-size:10px}
+.decl{width:100%;border-collapse:collapse;font-size:11.5px}
+.decl td{padding:3px 10px 3px 0;border:none;white-space:nowrap}
+.decl td.br{font-family:var(--mono);font-size:9.5px;color:var(--muted);text-transform:uppercase}
+.decl td.pos{font-family:var(--mono);font-size:9.5px}
+.y{color:var(--green);font-weight:600}
+.dash{color:var(--muted);opacity:.45}
+
+.mocknote{margin:26px 22px 0;padding:11px 14px;border-left:3px solid var(--amber);
+ background:var(--amber-bg);color:var(--amber);font-size:12px;border-radius:0 4px 4px 0}
+
+/* ---- narrow screens ---- */
+@media(max-width:680px){
+ .page{padding-bottom:44px}
+ .hd{margin:16px 12px 0;padding:17px 16px 15px}
+ .mocknote{margin:16px 12px 0}
+ .body{padding:16px 12px 0}
+ .kpis{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:24px}
+ .kpi{padding:11px 12px}
+ .kpi .n{font-size:24px}
+ .catgrid{grid-template-columns:1fr}
+ .teams{grid-template-columns:1fr}
+ li{font-size:12.5px;padding:7px 9px}
+ .decl td{white-space:normal}
+
+ /* Section C stacks: header hidden, each fencer becomes a card ... */
+ .tc{border:none;background:transparent}
+ .tc thead{display:none}
+ .tc > tbody,
+ .tc > tbody > tr,
+ .tc > tbody > tr > td{display:block;width:100%}
+ .tc > tbody > tr{background:var(--card);border:1px solid var(--line);border-radius:5px;margin-bottom:8px}
+ .tc > tbody > tr > td{border-bottom:none;padding:10px 12px 4px}
+ .tc > tbody > tr > td + td{padding:0 12px 10px}
+
+ /* ... and each weapon's declarations become their own labelled block */
+ .decl,.decl tbody,.decl tr,.decl td{display:block;width:100%}
+ .decl tr{border:1px solid var(--line);border-radius:4px;padding:7px 9px;margin-top:6px}
+ .decl td{padding:1px 0}
+}
+@media(max-width:400px){
+ .kpis{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h2 class="sr-only">Makieta raportu SPWS na MŚW Tbilisi 2026: potwierdzone starty indywidualne w dwudziestu czterech konkurencjach, deklaracje startu w dwunastu drużynach oraz zestawienie deklaracji zawodników według broni.</h2>
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Podsumowanie kampanii</div>
+  <h1>MŚW Tbilisi 2026 — Deklarowana chęć udziału</h1>
+  <p class="dek">Kto potwierdził start indywidualny oraz gotowość do startu w drużynie.</p>
+  <div class="chips">
+    <span class="chip">24 KONK. INDYWIDUALNE · 12 DRUŻYNOWYCH</span>
+    <span class="chip">TERMIN 2026-08-15</span>
+    <span class="chip">STAN NA 2026-07-18 09:14</span>
+  </div>
+</div>
+
+<div class="mocknote"><strong>Makieta.</strong> Wszystkie nazwiska i liczby są fikcyjne — służą wyłącznie do zatwierdzenia układu i kolorystyki raportu.</div>
+
+<div class="body">
+
+<div class="kpis">
+  <div class="kpi"><div class="n">97</div><div class="l">Zawodników zaproszonych</div><div class="s">top 5 rankingu KADRA</div></div>
+  <div class="kpi"><div class="n" style="color:var(--green)">54</div><div class="l">Potwierdziło start indywidualny</div><div class="s">w 20 z 24 konkurencji</div></div>
+  <div class="kpi"><div class="n" style="color:var(--green)">38</div><div class="l">Zadeklarowało drużynę</div><div class="s">dodatkowa opłata</div></div>
+  <div class="kpi key"><div class="n" style="color:var(--navy)">5<small>/12</small></div><div class="l">Drużyn możliwych do wystawienia</div><div class="s">4 kolejne w zasięgu</div></div>
+</div>
+
+<h3>A · Proponowana reprezentacja Polski z ramienia SPWS — start indywidualny</h3>
+<p class="sub">Zawodnicy z pierwszych pięciu miejsc rankingu KADRA sezonu 2025–2026. Startuje czterech pierwszych potwierdzonych; piąty potwierdzony pełni rolę rezerwowego (R).
+<br><strong>Kolor oznacza status odpowiedzi zawodnika:</strong> zielony — potwierdził start indywidualny, czerwony — odmówił, żółty — oczekujemy na odpowiedź. Po każdej odmowie do konkurencji zapraszany jest kolejny zawodnik z rankingu — dopisujemy go na końcu listy.</p>
+
+<div class="group">
+<h4>Szpada <span>kobiety</span></h4>
+<div class="catgrid">
+<div class="cell"><div class="cat">V1</div><ol>
+<li class="ok">NOWAK Maria</li><li class="ok">WÓJCIK Agata</li><li class="ok">KRAWCZYK Iwona</li><li class="pd">OLSZEWSKA Dorota</li><li class="ok">BARAN Katarzyna <span class="r">(R)</span></li></ol></div>
+<div class="cell"><div class="cat">V2</div><ol>
+<li class="ok">WRÓBEL Halina</li><li class="ok">CZARNECKA Beata</li><li class="ok">JASIŃSKA Magdalena</li><li class="ok">SADOWSKA Ewa</li><li class="ok">URBAN Klaudia <span class="r">(R)</span></li></ol></div>
+<div class="cell"><div class="cat">V3</div><ol>
+<li class="ok">MAKOWSKA Zofia</li><li class="pd">SZULC Agnieszka</li><li class="ok">BRZOZOWSKA Wanda</li><li class="ok">LIS Grażyna</li><li class="pd">CIEŚLAK Natalia</li></ol></div>
+<div class="cell"><div class="cat">V4</div><ol>
+<li class="ok">ZIELIŃSKA Anna</li><li class="no">MARCINIAK Urszula</li><li class="pd">WILK Joanna</li></ol></div>
+</div></div>
+
+<div class="group">
+<h4>Szpada <span>mężczyźni</span></h4>
+<div class="catgrid">
+<div class="cell"><div class="cat">V1</div><ol>
+<li class="ok">KOWALSKI Andrzej</li><li class="ok">MAZUR Tomasz</li><li class="ok">DĄBROWSKI Jan</li><li class="ok">SZYMAŃSKI Rafał</li><li class="ok">WOŹNIAK Paweł <span class="r">(R)</span></li></ol></div>
+<div class="cell"><div class="cat">V2</div><ol>
+<li class="ok">NOWAK Marek</li><li class="ok">KOWALCZYK Sławomir</li><li class="no">JANKOWSKI Wiesław</li><li class="ok">KAMIŃSKI Zbigniew</li><li class="ok">ZAJĄC Adam <span class="r">(R)</span></li><li class="pd">LIS Tomasz</li></ol></div>
+<div class="cell"><div class="cat">V3</div><ol>
+<li class="ok">PIOTROWSKI Krzysztof</li><li class="ok">GRABOWSKI Leszek</li><li class="pd">PAWŁOWSKI Henryk</li><li class="ok">LEWANDOWSKI Marek</li><li class="no">MICHALSKI Bogdan</li><li class="ok">OSTROWSKI Adam <span class="r">(R)</span></li></ol></div>
+<div class="cell"><div class="cat">V4</div><ol>
+<li class="ok">ADAMCZYK Edward</li><li class="no">DUDEK Czesław</li><li class="ok">STĘPIEŃ Witold</li><li class="pd">SIKORA Tadeusz</li></ol></div>
+</div></div>
+
+<div class="group">
+<h4>Floret <span>kobiety</span></h4>
+<div class="catgrid">
+<div class="cell"><div class="cat">V1</div><ol>
+<li class="ok">NOWAK Maria</li><li class="ok">KACZMAREK Lidia</li><li class="ok">PIĄTEK Renata</li><li class="ok">ZAWADZKA Hanna</li><li class="no">BIAŁEK Monika</li><li class="ok">SOBIERAJ Anna <span class="r">(R)</span></li></ol></div>
+<div class="cell"><div class="cat">V2</div><ol>
+<li class="ok">SIKORSKA Teresa</li><li class="ok">ADAMSKA Justyna</li><li class="pd">KOŁODZIEJ Alicja</li><li class="ok">WRONA Izabela</li><li class="pd">DUDA Karolina</li></ol></div>
+<div class="cell"><div class="cat">V3</div><ol>
+<li class="ok">SZEWCZYK Barbara</li><li class="no">KUCHARSKA Elżbieta</li><li class="ok">WIERZBICKA Aldona</li><li class="no">MRÓZ Danuta</li></ol></div>
+<div class="cell"><div class="cat">V4</div><ol>
+<li class="no">ZIELIŃSKA Anna</li><li class="pd">GAJEWSKA Sylwia</li></ol></div>
+</div></div>
+
+<div class="group">
+<h4>Floret <span>mężczyźni</span></h4>
+<div class="catgrid">
+<div class="cell"><div class="cat">V1</div><ol>
+<li class="ok">KRÓL Sławomir</li><li class="ok">WIECZOREK Dariusz</li><li class="no">JAKUBOWSKI Piotr</li><li class="ok">KOWALSKI Andrzej</li><li class="ok">MAJEWSKI Robert <span class="r">(R)</span></li><li class="pd">SZAFRAŃSKI Bartosz</li></ol></div>
+<div class="cell"><div class="cat">V2</div><ol>
+<li class="ok">OLSZEWSKI Filip</li><li class="ok">NOWICKI Grzegorz</li><li class="ok">KUBIAK Michał</li><li class="pd">BARANOWSKI Tomasz</li><li class="ok">SOKOŁOWSKI Jerzy <span class="r">(R)</span></li></ol></div>
+<div class="cell"><div class="cat">V3</div><ol>
+<li class="ok">RUTKOWSKI Andrzej</li><li class="ok">WALCZAK Zenon</li><li class="pd">CHMIELEWSKI Lech</li><li class="ok">BORKOWSKI Emil</li><li class="no">PAWLAK Olgierd</li></ol></div>
+<div class="cell"><div class="cat">V4</div><ol>
+<li class="ok">GÓRSKI Wojciech</li><li class="no">ZALEWSKI Kazimierz</li><li class="ok">WITKOWSKI Stefan</li><li class="no">SIENKIEWICZ Marian</li><li class="no">MAZURKIEWICZ Piotr</li></ol></div>
+</div></div>
+
+<div class="group">
+<h4>Szabla <span>kobiety</span></h4>
+<div class="catgrid">
+<div class="cell"><div class="cat">V1</div><ol>
+<li class="ok">PAWLAK Małgorzata</li><li class="ok">GÓRECKA Anna</li><li class="pd">MICHALSKA Kinga</li><li class="ok">SZYMCZAK Dorota</li><li class="no">BŁASZCZYK Ewa</li><li class="pd">WOJTASIK Klara</li></ol></div>
+<div class="cell"><div class="cat">V2</div><ol>
+<li class="ok">WALCZAK Hanna</li><li class="ok">KRUPA Irena</li><li class="ok">SOKOŁOWSKA Bożena</li><li class="ok">ZIĘBA Aneta</li><li class="pd">NOWACKA Teresa</li></ol></div>
+<div class="cell"><div class="cat">V3</div><ol>
+<li class="ok">LIPIŃSKA Wiesława</li><li class="ok">CHOJNACKA Renata</li><li class="no">SZULC Grażyna</li></ol></div>
+<div class="cell"><div class="cat">V4</div><ol>
+<li class="pd">KOWALCZYK Zuzanna</li></ol></div>
+</div></div>
+
+<div class="group">
+<h4>Szabla <span>mężczyźni</span></h4>
+<div class="catgrid">
+<div class="cell"><div class="cat">V1</div><ol>
+<li class="ok">CZERWIŃSKI Marcin</li><li class="ok">SOBCZAK Artur</li><li class="ok">MALINOWSKI Jacek</li><li class="ok">STASIAK Przemysław</li><li class="ok">GŁOWACKI Radosław <span class="r">(R)</span></li></ol></div>
+<div class="cell"><div class="cat">V2</div><ol>
+<li class="ok">TOMASZEWSKI Karol</li><li class="ok">KOWALSKI Andrzej</li><li class="ok">JAWORSKI Zdzisław</li><li class="no">ZIÓŁKOWSKI Henryk</li><li class="ok">WRÓBLEWSKI Tomasz <span class="r">(R)</span></li><li class="pd">PAWLICKI Damian</li></ol></div>
+<div class="cell"><div class="cat">V3</div><ol>
+<li class="ok">WIŚNIEWSKI Piotr</li><li class="ok">KOZŁOWSKI Grzegorz</li><li class="pd">BĄK Waldemar</li><li class="ok">SZCZEPAŃSKI Lech</li><li class="no">KRUPA Franciszek</li></ol></div>
+<div class="cell"><div class="cat">V4</div><ol>
+<li class="ok">LASKOWSKI Janusz</li><li class="no">SZEWCZYK Olgierd</li><li class="no">WÓJTOWICZ Norbert</li></ol></div>
+</div></div>
+
+<div class="legend">
+  <span><b style="font-family:var(--mono);font-size:10px;color:var(--violet)">(R)</b> rezerwowy / rezerwowa</span>
+  <span>Kolejność nazwisk = pozycja w rankingu KADRA</span>
+</div>
+
+<h3>B · Potwierdzili chęć startu w drużynie</h3>
+<p class="sub">Do każdej drużyny staramy się wyłonić 5 szermierzy + 1 rezerwowy. O proponowanym składzie decyduje regulamin SPWS.
+<br><strong>Kolor oznacza status odpowiedzi zawodnika:</strong> zielony — potwierdził gotowość do startu drużynowego, czerwony — odmówił, żółty — oczekujemy na odpowiedź. Drużynę można wystawić, gdy jest co najmniej sześć zielonych pozycji.</p>
+
+<div class="teams">
+
+<div class="tcard"><div class="ttl">Szpada kobiet</div><div class="band">drużyna Veteran · V1+V2</div><ol>
+<li class="ok">NOWAK Maria</li><li class="ok">WÓJCIK Agata</li><li class="ok">KRAWCZYK Iwona</li><li class="ok">BARAN Katarzyna</li><li class="ok">WRÓBEL Halina</li><li class="ok">CZARNECKA Beata</li><li class="ok">JASIŃSKA Magdalena</li><li class="ok">URBAN Klaudia</li><li class="pd">OLSZEWSKA Dorota</li><li class="no">SADOWSKA Ewa</li></ol></div>
+
+<div class="tcard"><div class="ttl">Szpada kobiet</div><div class="band">drużyna Grand Veteran · V3+V4</div><ol>
+<li class="ok">MAKOWSKA Zofia</li><li class="ok">BRZOZOWSKA Wanda</li><li class="ok">ZIELIŃSKA Anna</li><li class="pd">SZULC Agnieszka</li><li class="pd">CIEŚLAK Natalia</li><li class="pd">WILK Joanna</li><li class="no">LIS Grażyna</li></ol></div>
+
+<div class="tcard"><div class="ttl">Szpada mężczyzn</div><div class="band">drużyna Veteran · V1+V2</div><ol>
+<li class="ok">KOWALSKI Andrzej</li><li class="ok">MAZUR Tomasz</li><li class="ok">DĄBROWSKI Jan</li><li class="ok">SZYMAŃSKI Rafał</li><li class="ok">NOWAK Marek</li><li class="ok">KOWALCZYK Sławomir</li><li class="ok">ZAJĄC Adam</li><li class="no">WOŹNIAK Paweł</li><li class="no">KAMIŃSKI Zbigniew</li></ol></div>
+
+<div class="tcard"><div class="ttl">Szpada mężczyzn</div><div class="band">drużyna Grand Veteran · V3+V4</div><ol>
+<li class="ok">PIOTROWSKI Krzysztof</li><li class="ok">GRABOWSKI Leszek</li><li class="ok">LEWANDOWSKI Marek</li><li class="ok">ADAMCZYK Edward</li><li class="pd">PAWŁOWSKI Henryk</li><li class="pd">SIKORA Tadeusz</li><li class="no">STĘPIEŃ Witold</li></ol></div>
+
+<div class="tcard"><div class="ttl">Floret kobiet</div><div class="band">drużyna Veteran · V1+V2</div><ol>
+<li class="ok">NOWAK Maria</li><li class="ok">KACZMAREK Lidia</li><li class="ok">PIĄTEK Renata</li><li class="ok">SIKORSKA Teresa</li><li class="ok">ADAMSKA Justyna</li><li class="pd">KOŁODZIEJ Alicja</li><li class="pd">DUDA Karolina</li><li class="no">ZAWADZKA Hanna</li><li class="no">WRONA Izabela</li></ol></div>
+
+<div class="tcard"><div class="ttl">Floret kobiet</div><div class="band">drużyna Grand Veteran · V3+V4</div><ol>
+<li class="ok">SZEWCZYK Barbara</li><li class="ok">WIERZBICKA Aldona</li><li class="pd">GAJEWSKA Sylwia</li></ol></div>
+
+<div class="tcard"><div class="ttl">Floret mężczyzn</div><div class="band">drużyna Veteran · V1+V2</div><ol>
+<li class="ok">KRÓL Sławomir</li><li class="ok">WIECZOREK Dariusz</li><li class="ok">KOWALSKI Andrzej</li><li class="ok">OLSZEWSKI Filip</li><li class="ok">NOWICKI Grzegorz</li><li class="ok">KUBIAK Michał</li><li class="pd">BARANOWSKI Tomasz</li><li class="no">MAJEWSKI Robert</li><li class="no">SOKOŁOWSKI Jerzy</li></ol></div>
+
+<div class="tcard"><div class="ttl">Floret mężczyzn</div><div class="band">drużyna Grand Veteran · V3+V4</div><ol>
+<li class="ok">RUTKOWSKI Andrzej</li><li class="ok">WALCZAK Zenon</li><li class="ok">BORKOWSKI Emil</li><li class="ok">GÓRSKI Wojciech</li><li class="pd">CHMIELEWSKI Lech</li><li class="no">WITKOWSKI Stefan</li></ol></div>
+
+<div class="tcard"><div class="ttl">Szabla kobiet</div><div class="band">drużyna Veteran · V1+V2</div><ol>
+<li class="ok">PAWLAK Małgorzata</li><li class="ok">GÓRECKA Anna</li><li class="ok">SZYMCZAK Dorota</li><li class="ok">WALCZAK Hanna</li><li class="ok">KRUPA Irena</li><li class="ok">SOKOŁOWSKA Bożena</li><li class="pd">MICHALSKA Kinga</li><li class="pd">NOWACKA Teresa</li><li class="no">ZIĘBA Aneta</li></ol></div>
+
+<div class="tcard"><div class="ttl">Szabla kobiet</div><div class="band">drużyna Grand Veteran · V3+V4</div><ol>
+<li class="ok">LIPIŃSKA Wiesława</li><li class="ok">CHOJNACKA Renata</li><li class="pd">KOWALCZYK Zuzanna</li></ol></div>
+
+<div class="tcard"><div class="ttl">Szabla mężczyzn</div><div class="band">drużyna Veteran · V1+V2</div><ol>
+<li class="ok">CZERWIŃSKI Marcin</li><li class="ok">SOBCZAK Artur</li><li class="ok">MALINOWSKI Jacek</li><li class="ok">STASIAK Przemysław</li><li class="ok">TOMASZEWSKI Karol</li><li class="ok">KOWALSKI Andrzej</li><li class="ok">JAWORSKI Zdzisław</li><li class="ok">WRÓBLEWSKI Tomasz</li><li class="no">GŁOWACKI Radosław</li></ol></div>
+
+<div class="tcard"><div class="ttl">Szabla mężczyzn</div><div class="band">drużyna Grand Veteran · V3+V4</div><ol>
+<li class="ok">WIŚNIEWSKI Piotr</li><li class="ok">KOZŁOWSKI Grzegorz</li><li class="ok">SZCZEPAŃSKI Lech</li><li class="ok">LASKOWSKI Janusz</li><li class="pd">BĄK Waldemar</li></ol></div>
+
+</div>
+
+<h3 style="margin-top:30px">C · Zestawienie deklaracji zawodników</h3>
+<p class="sub">Poniżej podsumowanie deklaracji, zagregowane według broni</p>
+
+<table class="tc">
+<thead>
+<tr><th style="width:30%">Zawodnik</th><th style="width:70%">Deklaracje wg broni</th></tr>
+</thead>
+<tbody>
+
+<tr><td><div class="pname">NOWAK Maria</div><div class="pmeta"><span class="by">ur. 1975</span><span class="kat">V1 · Veteran</span></div></td>
+<td><table class="decl">
+<tr><td class="br">Szpada</td><td class="pos">poz. 1</td><td>indyw. <span class="y">TAK</span></td><td>druż. <span class="y">TAK</span></td></tr>
+<tr><td class="br">Floret</td><td class="pos">poz. 1</td><td>indyw. <span class="y">TAK</span></td><td>druż. <span class="y">TAK</span></td></tr>
+</table></td></tr>
+
+<tr><td><div class="pname">WÓJCIK Agata</div><div class="pmeta"><span class="by">ur. 1972</span><span class="kat">V1 · Veteran</span></div></td>
+<td><table class="decl">
+<tr><td class="br">Szpada</td><td class="pos">poz. 2</td><td>indyw. <span class="y">TAK</span></td><td>druż. <span class="y">TAK</span></td></tr>
+</table></td></tr>
+
+<tr><td><div class="pname">ZIELIŃSKA Anna</div><div class="pmeta"><span class="by">ur. 1958</span><span class="kat">V4 · Grand Veteran</span></div></td>
+<td><table class="decl">
+<tr><td class="br">Szpada</td><td class="pos">poz. 1</td><td>indyw. <span class="y">TAK</span></td><td>druż. <span class="y">TAK</span></td></tr>
+<tr><td class="br">Floret</td><td class="pos">poz. 1</td><td class="dash">indyw. —</td><td class="dash">druż. —</td></tr>
+</table></td></tr>
+
+<tr><td><div class="pname">KOWALSKI Andrzej</div><div class="pmeta"><span class="by">ur. 1968</span><span class="kat">V2 · Veteran</span></div></td>
+<td><table class="decl">
+<tr><td class="br">Szpada</td><td class="pos">poz. 2</td><td>indyw. <span class="y">TAK</span></td><td>druż. <span class="y">TAK</span></td></tr>
+<tr><td class="br">Floret</td><td class="pos">poz. 4</td><td>indyw. <span class="y">TAK</span></td><td>druż. <span class="y">TAK</span></td></tr>
+<tr><td class="br">Szabla</td><td class="pos">poz. 2</td><td>indyw. <span class="y">TAK</span></td><td>druż. <span class="y">TAK</span></td></tr>
+</table></td></tr>
+
+<tr><td><div class="pname">WIŚNIEWSKI Piotr</div><div class="pmeta"><span class="by">ur. 1961</span><span class="kat">V3 · Grand Veteran</span></div></td>
+<td><table class="decl">
+<tr><td class="br">Szabla</td><td class="pos">poz. 1</td><td>indyw. <span class="y">TAK</span></td><td>druż. <span class="y">TAK</span></td></tr>
+</table></td></tr>
+
+<tr><td><div class="pname">LEWANDOWSKI Marek</div><div class="pmeta"><span class="by">ur. 1970</span><span class="kat">V3 · Grand Veteran</span></div></td>
+<td><table class="decl">
+<tr><td class="br">Szpada</td><td class="pos">poz. 4</td><td>indyw. <span class="y">TAK</span></td><td>druż. <span class="y">TAK</span></td></tr>
+</table></td></tr>
+
+<tr><td><div class="pname">GÓRSKI Wojciech</div><div class="pmeta"><span class="by">ur. 1955</span><span class="kat">V4 · Grand Veteran</span></div></td>
+<td><table class="decl">
+<tr><td class="br">Floret</td><td class="pos">poz. 1</td><td>indyw. <span class="y">TAK</span></td><td>druż. <span class="y">TAK</span></td></tr>
+</table></td></tr>
+
+</tbody>
+</table>
+
+</div>
+</div>
+</body>
+</html>

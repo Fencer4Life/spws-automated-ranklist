@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — report design decisions</title>
+<link rel="stylesheet" href="../adr/assets/adr.css">
+<style>
+.page{max-width:1000px}
+.locked{border-left:4px solid var(--green,#216346);background:var(--green-soft,#e3f0e9);
+ padding:14px 18px;border-radius:0 5px 5px 0;margin:18px 0}
+.open{border-left:4px solid var(--amber,#875a0a);background:var(--amber-soft,#faefd8);
+ padding:14px 18px;border-radius:0 5px 5px 0;margin:18px 0}
+.settled{border-left:4px solid var(--navy,#173f70);background:var(--navy-soft,#e4ecf7);
+ padding:14px 18px;border-radius:0 5px 5px 0;margin:18px 0}
+.locked h3,.open h3,.settled h3{margin-top:0}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line,#d5dfeb);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+code{font-family:var(--mono);font-size:.92em}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+<div class="eyebrow">SPWS · Working document</div>
+<h1>MŚW Tbilisi 2026 — report design decisions</h1>
+<p class="dek">What is locked about the board report, what was deliberately rejected, and
+what still has to be brainstormed. Written so a later session can resume without re-deriving
+any of it.</p>
+<p><strong>Status:</strong> report layout signed off. Campaign design not started.<br>
+<strong>Artifact:</strong> <a href="msw-tbilisi-raport-mockup.html">msw-tbilisi-raport-mockup.html</a>
+(sample data, marked <em>Makieta</em>).<br>
+<strong>Date:</strong> 2026-07-18</p>
+</header>
+
+<section>
+<h2>Domain facts established</h2>
+
+<p>These came out of discussion and are not derivable from the codebase — the ranklist
+system does not model any of them today.</p>
+
+<table>
+<tr><th>Fact</th><th>Consequence</th></tr>
+<tr><td>Four fencers may start per country per category, plus one nominated reserve.</td>
+    <td>Top 5 of each ranking is the invitation set. 5 is not arbitrary.</td></tr>
+<tr><td>A fencer sits in exactly one V-category (from birth year) but may qualify in up to
+    three weapons.</td>
+    <td>One person, one message, several declarations. Individual events in different
+    weapons do not collide, so there is no allocation problem for individual starts.</td></tr>
+<tr><td>Teams combine categories: <strong>Veteran</strong> = V1+V2,
+    <strong>Grand Veteran</strong> = V3+V4, per weapon-gender pair.</td>
+    <td>12 team events, not 24. Team readiness cannot be reported per V-category.</td></tr>
+<tr><td>Team composition is <em>not</em> algorithmic — the fencers self-organise, and the
+    final roster follows SPWS regulations.</td>
+    <td>The report must stop at declared readiness. It must never propose a line-up.</td></tr>
+<tr><td>Team start carries an additional fee.</td>
+    <td>Team willingness is a separate question from individual willingness, and a fencer
+    may legitimately say yes to one and no to the other.</td></tr>
+<tr><td>The official SPWS <code>.xlsx</code> ranklists remain the source of truth; this
+    system is in shadow mode.</td>
+    <td>Eligibility comes from the published workbooks, not from
+    <code>fn_ranking_ppw</code>. See "Naming collision" below.</td></tr>
+</table>
+
+<div class="settled">
+<h3>Naming collision — read before writing any code</h3>
+<p>In the <code>.xlsx</code> workbooks, <strong>KADRA</strong> means the national-team
+ranking sheet. In <em>this codebase</em> <code>KADRA</code> already means something
+different: the combined domestic + international (+EVF) ranking mode —
+<code>RankingMode = 'PPW' | 'KADRA'</code> in
+<code>frontend/src/lib/types.ts</code>, the <code>fn_ranking_kadra</code> SQL function, and
+the i18n key <code>kadra_title</code> ("Ranking +EVF"). Reusing the name for this campaign
+will collide. Pick a distinct identifier.</p>
+</div>
+</section>
+
+<section>
+<h2>Locked report design</h2>
+
+<p>Three sections, Polish only. Title: <em>MŚW Tbilisi 2026 — Deklarowana chęć udziału</em>.
+Header chips are limited to competition counts, deadline, and generation timestamp.</p>
+
+<div class="locked">
+<h3>A · Proponowana reprezentacja Polski z ramienia SPWS — start indywidualny</h3>
+<ul>
+<li>Six weapon-gender groups × four categories = 24 boxes.
+    <strong>Women's category always precedes men's.</strong></li>
+<li>Boxes top-aligned; a short list differs at the bottom, never the top.</li>
+<li>One coloured row per fencer, in ranking order. No numbering, no box header,
+    no footer line.</li>
+<li>Green = confirmed, red = declined, amber = awaiting reply. Explained in the section
+    intro, not in a swatch legend.</li>
+<li><code>(R)</code> marks the reserve — the fifth <em>confirmed</em> fencer, not rank #5.
+    A category with only four confirmations therefore shows no reserve, which is the
+    point.</li>
+<li>Rank order alone carries the justification for the invitation; positions are never
+    renumbered.</li>
+</ul>
+</div>
+
+<div class="locked">
+<h3>B · Potwierdzili chęć startu w drużynie</h3>
+<ul>
+<li>Twelve individually titled cards — <em>&lt;weapon&gt; &lt;gender&gt;</em> plus
+    <em>drużyna Veteran · V1+V2</em> or <em>drużyna Grand Veteran · V3+V4</em>.</li>
+<li>Identical row styling and colour semantics to Section A.</li>
+<li>No counts, no verdict lines, no proposed line-ups.</li>
+<li>A team is fieldable at six or more green rows (5 + reserve). Stated in the intro so
+    the summary KPI has a visible basis.</li>
+</ul>
+</div>
+
+<div class="locked">
+<h3>C · Zestawienie deklaracji zawodników</h3>
+<ul>
+<li>One row per person, deduplicated across weapons.</li>
+<li>Name, birth year, age category. <strong>No club, no response metadata.</strong></li>
+<li>Per-weapon breakdown: weapon, ranking position, individual intent, team intent.</li>
+</ul>
+</div>
+
+<h3>Responsive behaviour</h3>
+<p>Category boxes wrap symmetrically — four across above 1000px, 2+2 on tablet, single
+column below 680px. Section C collapses to per-fencer cards with each weapon as its own
+labelled block. Verified: no horizontal overflow at 375px.</p>
+</section>
+
+<section>
+<h2>Rejected — do not reintroduce</h2>
+<ul>
+<li><strong>Status footers in boxes</strong> ("komplet · rezerwowy obsadzony"). The colour
+    coding carries the message.</li>
+<li><strong>A separate <code>Następni w rankingu</code> footer.</strong> Superseded: a red
+    decline row plus an extra name appended at the bottom of the list explains backfill on
+    its own.</li>
+<li><strong>Counts and verdict lines on team cards.</strong></li>
+<li><strong>A "Wyjazd" (travel) column.</strong> Removed from the layout entirely.</li>
+<li><strong>Colour swatch legends</strong> for status, now that the section intros explain
+    the coding.</li>
+</ul>
+</section>
+
+<section>
+<h2>Decided but not yet built</h2>
+
+<div class="settled">
+<h3>Rolling waves with board-authorised backfill</h3>
+<p>Wave 1 goes to the top 5 of each ranking. Where a category falls short, lower-ranked
+fencers are contacted and appended to the bottom of the box. The report is a living
+document regenerated between waves, not a one-shot PDF — the underlying data needs a
+notion of invitation wave per person.</p>
+<p>Four V4 categories in the sample have no one left to invite. The report must be able to
+distinguish "we have not asked" from "there is nobody left".</p>
+</div>
+</section>
+
+<section>
+<h2>Open — to brainstorm next</h2>
+
+<div class="open">
+<h3>1 · The message and its questions</h3>
+<p>Not started. What exactly is asked, in what order, how a phone reply is captured, how a
+fencer qualifying in three weapons answers without a wall of checkboxes, and whether travel
+is asked explicitly or derived from having confirmed at least one start. <strong>This is
+the next brainstorming topic and nothing about it has been decided.</strong></p>
+</div>
+
+<div class="open">
+<h3>2 · Contact data — the hard blocker</h3>
+<p>The system holds <em>no</em> fencer contact data, deliberately.
+<a href="../adr/078-gdpr-data-handling.md">ADR-078</a> states there is no email column on
+<code>tbl_fencer</code>; <code>tbl_registration</code> stores only
+<code>txt_email_hash</code>. No phone numbers, no Telegram handles anywhere. This campaign
+requires creating the first fencer-contact store, which is a GDPR-consequential decision
+needing its own ADR.</p>
+<p>Possible starting point: <code>doc/external_files/Sezon_2025-2026/XLS/czlonkowie
+SPWS.xlsx</code> ("SPWS members") — not yet opened, and reading it needs explicit
+per-file authorisation.</p>
+</div>
+
+<div class="open">
+<h3>3 · Outbound channel</h3>
+<p>No bulk email capability exists. The only mailer,
+<code>python/pipeline/ftl_feed_seed_send.py</code>, is Gmail SMTP built for a single
+organizer recipient with one attachment.
+<a href="../adr/079-event-self-registration-identity.md">ADR-079</a> records bulk delivery
+as blocked on a provider decision. Telegram is currently the only general-purpose outbound
+channel, and fencers are not on it.</p>
+</div>
+
+<div class="open">
+<h3>4 · Extraction from the workbooks</h3>
+<p>Nothing in the repo fetches SPWS <code>.xlsx</code> files — they arrive by hand into
+<code>doc/external_files/</code>. Reusable: the filename pattern
+<code>^(SZPADA|FLORET|SZABLA)-(K?)(\d)-(\d{4}-\d{4})\.xlsx$</code> is already implemented in
+<code>python/tools/populate_staging.py</code>, and <code>python/scrapers/xlsx_parser.py</code>
+reads workbooks. Unknown: the exact layout of the KADRA sheet, and how many fencers qualify
+in more than one weapon — both answerable by parsing the 24 files, which has not been
+authorised yet.</p>
+</div>
+</section>
+
+<section>
+<h2>Working agreements</h2>
+<ul>
+<li>Ask one plain-text question at a time, with a recommendation and its justification.
+    Do not use the multiple-choice question UI.</li>
+<li>Do not read spreadsheet contents without explicit authorisation for the named file.</li>
+<li>Human-facing documents are HTML in project-local <code>doc/plans/</code>.</li>
+</ul>
+</section>
+
+</div>
+</body>
+</html>
