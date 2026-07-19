@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — live response tracker, design</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1060px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,33px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:70ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:-.01em;
+ margin:38px 0 6px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:26px 0 8px;font-weight:600}
+p{margin:0 0 12px;max-width:82ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 16px;max-width:86ch}
+ul,ol{margin:0 0 14px;padding-left:20px;max-width:82ch}
+li{margin-bottom:7px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:12px 14px;
+ overflow-x:auto;font-family:var(--mono);font-size:11.5px;line-height:1.55;margin:0 0 16px;
+ max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:580px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10.5px;white-space:nowrap;color:var(--navy);font-weight:600}
+.st{font-family:var(--mono);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-am{background:var(--amber-bg);color:var(--amber)}
+.s-no{background:var(--coral-bg);color:var(--coral)}
+.s-gr{background:var(--grey-bg);color:var(--grey)}
+.chk{border-left:3px solid var(--navy);padding:4px 0 4px 14px;margin-bottom:16px;max-width:84ch}
+.chk .n{font-family:var(--mono);font-size:10px;color:var(--navy);font-weight:600;
+ letter-spacing:.1em;display:block;margin-bottom:3px}
+.chk .exp{font-size:12.5px;color:var(--muted);margin-top:5px}
+footer{margin:42px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · MŚW Tbilisi 2026 · design / plan</div>
+  <h1>Live response tracker for the board report</h1>
+  <p class="dek">Turn <code>raport.html</code> into a dashboard that refreshes every five
+  minutes, started and stopped on request — and that can never quietly pretend nobody is
+  replying when it has actually stopped working.</p>
+  <div class="chips">
+    <span class="chip">2026-07-19</span>
+    <span class="chip">branch: docs/msw-tbilisi-report-mockup</span>
+    <span class="chip ok">option B · localhost, in-place swap</span>
+    <span class="chip">local only · 127.0.0.1</span>
+    <span class="chip warn">not yet built</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">01</span>Context</h2>
+
+<p>Once wave 1 goes out, about 103 fencers will reply over roughly two weeks. Today
+<code>raport.html</code> is a static file: seeing new replies means running two scripts by
+hand and reloading the tab.</p>
+
+<p>The data half already works and does not need redesigning.
+<code>read_responses.py</code> pulls declarations from all seven form variants;
+<code>gen_raport.py</code> renders the report from those plus <code>send_log.jsonl</code>.
+What is missing is a loop, a way for the page to update itself, and — the part that is
+easy to skip — <b class="k">a way for the page to say how old it is</b>.</p>
+
+<div class="call stop">
+  <span class="lb">The failure this design exists to prevent</span>
+  A tracker that silently stops <b class="k">does not look broken. It looks like nobody is
+  replying.</b> If the loop dies at 09:10 and you glance at the tab at 14:00, the honest
+  reading and the broken reading are the same picture. Every structural choice below
+  follows from refusing to let those two states render alike.
+</div>
+
+<h3>Decisions already closed</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Decision</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td class="d">audience</td><td><b class="k">You, this Mac, only.</b> Not shared with the
+  board. The report holds 144 fencers' names, addresses and ranking positions; anything the
+  board could open means hosting, authentication, and a deployment surface this one-off
+  campaign was scoped not to have. A snapshot sent at a moment you choose is the honest
+  substitute for a live link.</td></tr>
+<tr><td class="d">mechanism</td><td><b class="k">Option B</b> — the watcher also serves the
+  page on a localhost port, and content is swapped in place. No reload flash, no lost
+  scroll, and no <code>file://</code> caching inconsistencies.</td></tr>
+<tr><td class="d">granularity</td><td><b class="k">Whole-page swap, not per-cell patching.</b>
+  Per-cell updates would need a stable id on every fencer-weapon cell plus a second JSON
+  contract to keep in step with the renderer — the same duplication that was just removed
+  from the KPI counters.</td></tr>
+<tr><td class="d">alerting</td><td><b class="k">None.</b> The strip is the whole alerting
+  surface. A stalled tracker loses visibility, not data: responses accumulate in Google
+  regardless and the next good cycle catches up completely.</td></tr>
+<tr><td class="d">token expiry</td><td><b class="k">Show its age instead of alerting.</b>
+  The 7-day expiry is predictable, so it should be visible days out rather than discovered
+  afterwards.</td></tr>
+<tr><td class="d">separation</td><td>Own process, own port, own venv.
+  <b class="k">No contact with the ranklist LOCAL stack</b> — the campaign's
+  "no schema, no pipeline, no integration" rule holds.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">02</span>Two findings in the code that drive the design</h2>
+
+<div class="call stop">
+  <span class="lb">1 · gauth.creds() exits the process on every failure path</span>
+  <code>gauth.py</code> lines 47, 49, 52, 59 and 63 all call <code>sys.exit()</code> —
+  missing token, missing scope, refresh failure. That is exactly right for one-shot CLI
+  scripts and <b class="k">fatal for a long-running loop</b>. Worse,
+  <code>SystemExit</code> derives from <code>BaseException</code>, so a
+  <code>except Exception</code> around it would not catch it.
+</div>
+
+<div class="call stop">
+  <span class="lb">2 · gen_raport.py has no main()</span>
+  It is a top-to-bottom module script — the body runs once at import and never again.
+  <code>import gen_raport</code> inside a loop <b class="k">cannot work</b>, and
+  <code>importlib.reload()</code> on a module built entirely from module-level globals is
+  a trap rather than a fix.
+</div>
+
+<div class="call good">
+  <span class="lb">One decision solves both</span>
+  <b class="k">Run each refresh cycle as a subprocess.</b> A <code>sys.exit</code> becomes a
+  non-zero exit code the parent reads; the module-level script runs cleanly every time; and
+  a crash in one cycle cannot corrupt the watcher. Critically, <b class="k">no existing
+  script's control flow is modified</b> — which matters because <code>gauth.py</code> sits
+  on the send path and wave 1 has not gone out yet.
+</div>
+
+<h2><span class="num">03</span>Architecture</h2>
+
+<pre><code>tracker.py serve
+├── refresh thread — every 5 min
+│     subprocess: read_responses.py      → responses.json
+│     subprocess: gen_raport.py --live   → raport.html   (atomic replace)
+│     success → bump generation, stamp last_ok
+│     failure → capture stderr verbatim into state
+│
+├── state.json — rewritten every cycle, success or failure
+│
+└── HTTP server, 127.0.0.1:8765
+      GET /            → raport.html
+      GET /state.json  → liveness, generation, token age, last error</code></pre>
+
+<p>The page polls <code>/state.json</code> every 30 seconds — local, free, no Google calls —
+and swaps in fresh report content only when <code>generation</code> increases.</p>
+
+<div class="call">
+  <span class="lb">Why two channels rather than one</span>
+  If the only signal were "did the HTML change", <b class="k">a failed cycle would be
+  indistinguishable from a quiet one</b> — precisely the failure this design exists to
+  prevent. <code>state.json</code> is rewritten on <i>every</i> cycle including failures,
+  so the strip stays truthful even while the content is frozen. And if the tracker process
+  dies outright, the fetch itself fails and the page reports <b class="k">offline</b> —
+  the one case no server-side flag can ever cover, because nothing would be left running
+  to set it.
+</div>
+
+<h2><span class="num">04</span>Components</h2>
+
+<h3>scripts/tracker.py — new</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Command</th><th>Behaviour</th></tr></thead>
+<tbody>
+<tr><td class="d">start</td><td><b class="k">Refuses if a live PID is in
+  <code>tracker.pid</code></b> — two watchers writing the same file would interleave.
+  Otherwise spawns <code>serve</code> detached and prints the URL.</td></tr>
+<tr><td class="d">stop</td><td>SIGTERM, wait, clear the PID file. Succeeds quietly if it
+  was not running, so it is safe to call twice.</td></tr>
+<tr><td class="d">status</td><td>Running or not · last successful cycle · cycle count ·
+  last error · token age.</td></tr>
+<tr><td class="d">serve</td><td>The foreground process the other three manage.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call stop">
+  <span class="lb">Bound to 127.0.0.1 only</span>
+  The report carries 144 fencers' names, e-mail addresses and ranking positions.
+  <b class="k">It must not be reachable from the LAN.</b> Binding to <code>0.0.0.0</code>
+  would publish personal data to every device on the network. No-cache headers on both
+  routes.
+</div>
+
+<h3>scripts/gen_raport.py — modified</h3>
+<ol>
+  <li><b class="k">Atomic write.</b> Line 574 writes straight to <code>raport.html</code>.
+  Write <code>raport.html.tmp</code> then <code>os.replace()</code> — the server serves
+  this file while the renderer may be rewriting it, and a 90 KB page is not written
+  instantaneously.</li>
+  <li><b class="k">A <code>--live</code> flag.</b> Only when passed, emit the freshness
+  strip and its script, as siblings <i>outside</i> <code>&lt;div class="page"&gt;</code>.
+  Without the flag the output stays byte-for-byte what it is today, so
+  <b class="k">the static report remains clean for sending to the board</b>.</li>
+</ol>
+<p class="sub">The swap targets <code>.page</code> only, so the strip and its JS survive
+every update with their own state intact.</p>
+
+<h3>The freshness strip</h3>
+<p>Fixed top-right pill, always visible while scrolling — a dashboard you glance at must
+not require scrolling to the top to learn whether it is alive.</p>
+<div class="tw">
+<table>
+<thead><tr><th>State</th><th>Trigger</th><th>Shows</th></tr></thead>
+<tbody>
+<tr><td><span class="st s-ok">green</span></td><td>last cycle succeeded, under 2 cycles ago</td>
+  <td>time of last refresh · token age</td></tr>
+<tr><td><span class="st s-am">amber</span></td><td>no successful cycle in over 2 cycles</td>
+  <td>how long it has been stale</td></tr>
+<tr><td><span class="st s-no">red</span></td><td>last cycle failed</td>
+  <td><b class="k">the subprocess's own stderr, verbatim</b></td></tr>
+<tr><td><span class="st s-gr">grey</span></td><td><code>/state.json</code> fetch failed</td>
+  <td>tracker offline</td></tr>
+</tbody>
+</table>
+</div>
+<p class="sub"><code>gauth</code>'s messages are already actionable — <i>"Refresh failed
+(…) — re-run auth_setup.py."</i> — so the red state surfaces them rather than inventing
+its own wording on top.</p>
+
+<h3>Token age</h3>
+<p>The strip shows the refresh token's age and turns amber from day 6. The point is to
+<b class="k">see the expiry coming, not to discover it afterwards</b>.</p>
+<p><code>token.json</code>'s mtime is useless here — <code>gauth</code> rewrites the file
+on every hourly access-token refresh — and its <code>expiry</code> field describes only the
+one-hour access token, not the 7-day refresh token. Instead <code>tracker.py</code> keeps a
+sidecar <code>token_granted.json</code> holding a <b class="k">hash</b> of the refresh token
+plus when it was first seen. A changed hash means a new consent happened, so the clock
+resets. First run seeds from <code>token.json</code>'s <code>st_birthtime</code>.</p>
+
+<div class="call stop">
+  <span class="lb">Credential handling</span>
+  This is entirely contained in <code>tracker.py</code>; <code>auth_setup.py</code> is not
+  touched. <b class="k">The token itself is never logged, printed, or written anywhere —
+  only its hash.</b>
+</div>
+
+<h2><span class="num">05</span>Verification</h2>
+<p class="sub">The campaign scripts are throwaway and carry no test suite, so this is
+verified by driving it rather than by unit tests. Each step states its expected result; if
+one does not match, stop rather than continuing.</p>
+
+<div class="chk"><span class="n">1 · it starts</span>
+<code>tracker.py start</code>, open <code>http://127.0.0.1:8765/</code>.
+<div class="exp">Report renders, strip green, token age shown.</div></div>
+
+<div class="chk"><span class="n">2 · it refuses to double-start</span>
+<code>tracker.py start</code> again.
+<div class="exp">Refuses; no second watcher spawned; the original keeps running.</div></div>
+
+<div class="chk"><span class="n">3 · it is not on the network</span>
+Load the page on <code>127.0.0.1</code>, then try the Mac's LAN address.
+<div class="exp">Works on loopback, <b class="k">refused on the LAN address</b>.</div></div>
+
+<div class="chk"><span class="n">4 · new responses appear</span>
+Submit a test form response, wait one cycle.
+<div class="exp">Cells turn green with <b class="k">no page flash and no loss of scroll
+position</b>.</div></div>
+
+<div class="chk"><span class="n">5 · death is visible</span>
+Kill the tracker process outright.
+<div class="exp">Strip goes grey, <i>offline</i>, within 30 seconds. This is the test that
+matters most — it is the failure mode the whole design targets.</div></div>
+
+<div class="chk"><span class="n">6 · auth failure is legible</span>
+Temporarily move <code>token.json</code> aside.
+<div class="exp">Strip goes red carrying gauth's own message. Restore it; recovery on the
+next cycle without a restart.</div></div>
+
+<div class="chk"><span class="n">7 · it stops cleanly</span>
+<code>tracker.py stop</code>, then <code>status</code>.
+<div class="exp">Reports not running; port released; <code>tracker.pid</code> gone.</div></div>
+
+<div class="chk"><span class="n">8 · the static report is unchanged</span>
+Run <code>gen_raport.py</code> with no flag.
+<div class="exp">Output identical to today's static report — no strip, no script.</div></div>
+
+<p>Then Ruff, and delete any test submissions from every form before the real wave.</p>
+
+<h2><span class="num">06</span>Out of scope</h2>
+<ul>
+  <li><b class="k">No launchd or cron.</b> Start and stop stay manual, on request.</li>
+  <li><b class="k">No notifications.</b> The strip is the whole alerting surface.</li>
+  <li><b class="k">No change to send policy</b>, form content, or
+  <code>send_wave1.py</code>.</li>
+  <li><b class="k">The tracker is read-only against Google.</b> It must never be able to
+  reach "Delete all responses" — that stays a manual, pre-send-only action, and no
+  automated process should be in a position to perform it.</li>
+</ul>
+
+</div>
+
+<footer>
+Written 2026-07-19 on branch <code>docs/msw-tbilisi-report-mockup</code>. Design settled
+with the operator in session; not yet implemented. All code references verified against
+the files on this machine. Contains no personal data and no credentials. Scripts and data
+live outside the repository in <code>doc/external_files/MSW-Tbilisi-2026/</code>.
+</footer>
+
+</div>
+</body>
+</html>
