@@ -6,16 +6,31 @@
 -- vw_score, fn_ranking_ppw, and fn_ranking_kadra independently of the
 -- scoring engine.
 --
--- Category filtering uses fencer's birth-year-derived category (not tournament
--- category). Tests use the active season (SPWS-2025-2026, dt_end=2026-07-15,
--- end year=2026), which keeps test data isolated from real 2024-2025 results.
--- Fencer birth years → categories (end year 2026):
---   ATANASSOW (1969): age 57 → V2
---   BARAŃSKI  (1964): age 62 → V3  (cross-category: results in V2 tournaments)
---   BAZAK     (1974): age 52 → V2
---   DUDEK     (1973): age 53 → V2
---   HAŚKO     (1974): age 52 → V2
---   FORAJTER  (1977): age 49 → V1
+-- Category filtering uses the fencer's birth-year-derived category, not the
+-- tournament's: the ranking engines filter on
+--   COALESCE(fn_age_category(f.int_birth_year, <season end year>),
+--            t.enum_age_category) = p_category
+--
+-- SEED- AND CALENDAR-INDEPENDENCE (2026-07-19)
+-- -----------------------------------------------------------------------------
+-- This file used to borrow six real fencers out of the seed by surname
+-- (ATANASSOW, BARAŃSKI, BAZAK, DUDEK, HAŚKO, FORAJTER) and rely on their real
+-- birth years landing in specific categories. That coupled the fixture to both
+-- the seed contents and the wall calendar, and it broke on 2026-07-19 when the
+-- refreshed seed carried the corrected season boundaries from migration
+-- 20260714000002: the active season moved to SPWS-2026-2027 (end year 2027),
+-- which aged FORAJTER (b. 1977) from 49 to 50 and moved him V1 → V2. That
+-- emptied the V1 ranking and pushed the V2 count from 3 to 4.
+--
+-- The fixture now creates its own fencers with birth years derived from the
+-- ACTIVE season's end year, each placed mid-band rather than near a boundary:
+--   V1 = ages 40–49  → seeded at age 45
+--   V2 = ages 50–59  → seeded at age 55
+--   V3 = ages 60–69  → seeded at age 65
+-- The categories therefore hold for any active season, and no seed row is
+-- read. Do not reintroduce lookups by surname here — they are also ambiguous
+-- when PROD holds two fencers sharing a surname (see export_seed.py's
+-- fencer_lookup(), fixed for the same reason in f5b9764).
 -- =============================================================================
 
 BEGIN;
@@ -39,14 +54,16 @@ DECLARE
   v_v1_1 INT;
   v_pew1 INT; v_pew2 INT; v_pew3 INT; v_pew4 INT;
   v_mew1 INT;
-  v_fencer_a INT;  -- ATANASSOW (V2)
-  v_fencer_b INT;  -- BARAŃSKI  (V3 — cross-category test)
-  v_fencer_c INT;  -- BAZAK     (V2)
-  v_fencer_d INT;  -- DUDEK     (V2)
-  v_fencer_e INT;  -- HAŚKO     (V2 — unscored)
-  v_fencer_f INT;  -- FORAJTER  (V1)
-  v_fencer_g INT;  -- INTL-ONLY (V2 — international only, no domestic results)
-  v_fencer_h INT;  -- ZERO-DOM  (V2 — domestic result with 0 score)
+  v_end_year INT;  -- active season's end year — drives every fixture birth year
+  v_fencer_a INT;  -- VW-V2-ALPHA    (V2 — full PPW+MPW set)
+  v_fencer_b INT;  -- VW-V3-CROSSCAT (V3 — cross-category: results in V2 tournaments)
+  v_fencer_c INT;  -- VW-V2-SPARSE   (V2 — only 2 PPW results)
+  v_fencer_d INT;  -- VW-V2-BRAVO    (V2 — PPW+MPW+FOIL+PEW)
+  v_fencer_e INT;  -- VW-V2-UNSCORED (V2 — unscored result only)
+  v_fencer_f INT;  -- VW-V1-SOLO     (V1 — sole member of the V1 ranking)
+  v_fencer_g INT;  -- VW-INTL-ONLY   (V2 — international only, no domestic results)
+  v_fencer_h INT;  -- VW-ZERO-DOM    (V2 — domestic result with 0 score)
+  v_fencer_i INT;  -- VW-FEMALE      (V2 F — female filter test)
 BEGIN
   SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
@@ -143,15 +160,30 @@ BEGIN
   SELECT id_tournament INTO v_fem1  FROM tbl_tournament WHERE txt_code = 'VW-FEM1';
   SELECT id_tournament INTO v_v1_1  FROM tbl_tournament WHERE txt_code = 'VW-V1-1';
 
-  SELECT id_fencer INTO v_fencer_a FROM tbl_fencer WHERE txt_surname = 'ATANASSOW';
-  SELECT id_fencer INTO v_fencer_b FROM tbl_fencer WHERE txt_surname = 'BARAŃSKI' AND txt_first_name = 'Wacław';
-  SELECT id_fencer INTO v_fencer_c FROM tbl_fencer WHERE txt_surname = 'BAZAK';
-  SELECT id_fencer INTO v_fencer_d FROM tbl_fencer WHERE txt_surname = 'DUDEK';
-  SELECT id_fencer INTO v_fencer_e FROM tbl_fencer WHERE txt_surname = 'HAŚKO';
-  SELECT id_fencer INTO v_fencer_f FROM tbl_fencer WHERE txt_surname = 'FORAJTER';
+  -- Fixture fencers, owned by this file. Birth years are derived from the
+  -- active season's end year so the categories hold whatever season is active.
+  SELECT EXTRACT(YEAR FROM dt_end)::INT INTO v_end_year
+    FROM tbl_season WHERE id_season = v_season;
+
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality,
+                          int_birth_year, enum_gender)
+  VALUES
+    ('VW-V2-ALPHA',    'Tester', 'PL', v_end_year - 55, 'M'),
+    ('VW-V3-CROSSCAT', 'Tester', 'PL', v_end_year - 65, 'M'),
+    ('VW-V2-SPARSE',   'Tester', 'PL', v_end_year - 55, 'M'),
+    ('VW-V2-BRAVO',    'Tester', 'PL', v_end_year - 55, 'M'),
+    ('VW-V2-UNSCORED', 'Tester', 'PL', v_end_year - 55, 'M'),
+    ('VW-V1-SOLO',     'Tester', 'PL', v_end_year - 45, 'M');
+
+  SELECT id_fencer INTO v_fencer_a FROM tbl_fencer WHERE txt_surname = 'VW-V2-ALPHA';
+  SELECT id_fencer INTO v_fencer_b FROM tbl_fencer WHERE txt_surname = 'VW-V3-CROSSCAT';
+  SELECT id_fencer INTO v_fencer_c FROM tbl_fencer WHERE txt_surname = 'VW-V2-SPARSE';
+  SELECT id_fencer INTO v_fencer_d FROM tbl_fencer WHERE txt_surname = 'VW-V2-BRAVO';
+  SELECT id_fencer INTO v_fencer_e FROM tbl_fencer WHERE txt_surname = 'VW-V2-UNSCORED';
+  SELECT id_fencer INTO v_fencer_f FROM tbl_fencer WHERE txt_surname = 'VW-V1-SOLO';
 
   -- -----------------------------------------------------------------------
-  -- Fencer A (ATANASSOW, V2): PPW=[100,90,80,70,60], MPW=80
+  -- Fencer A (VW-V2-ALPHA, V2): PPW=[100,90,80,70,60], MPW=80
   -- Best 4 PPW = 100+90+80+70=340, worst=70, MPW=80≥70 → include
   -- Total = 340+80 = 420
   -- -----------------------------------------------------------------------
@@ -164,7 +196,7 @@ BEGIN
     (v_fencer_a, v_mpw1, 1, 80.00,  NOW());
 
   -- -----------------------------------------------------------------------
-  -- Fencer B (BARAŃSKI, V3 by birth year): PPW=[95,85,75,65,55], MPW=36
+  -- Fencer B (VW-V3-CROSSCAT, V3 by birth year): PPW=[95,85,75,65,55], MPW=36
   -- in V2 tournaments — cross-category carryover to V3 ranking
   -- JSONB: best 4 PPW=320 + always MPW=36 → total=356
   -- -----------------------------------------------------------------------
@@ -177,7 +209,7 @@ BEGIN
     (v_fencer_b, v_mpw1, 2, 36.00,  NOW());
 
   -- -----------------------------------------------------------------------
-  -- Fencer C (BAZAK, V2): only 2 PPW results, no MPW
+  -- Fencer C (VW-V2-SPARSE, V2): only 2 PPW results, no MPW
   -- Total = 50+40 = 90
   -- -----------------------------------------------------------------------
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
@@ -185,7 +217,7 @@ BEGIN
     (v_fencer_c, v_ppw2, 3, 40.00, NOW());
 
   -- -----------------------------------------------------------------------
-  -- Fencer D (DUDEK, V2): PPW=[95,85,75,65,55], MPW=36  (same pattern as B)
+  -- Fencer D (VW-V2-BRAVO, V2): PPW=[95,85,75,65,55], MPW=36  (same pattern as B)
   -- JSONB: best 4 PPW=320 + always MPW=36 → total=356
   -- Also has FOIL result for weapon filter test 5.8
   -- -----------------------------------------------------------------------
@@ -199,7 +231,7 @@ BEGIN
     (v_fencer_d, v_foil1, 1, 200.00, NOW());
 
   -- -----------------------------------------------------------------------
-  -- Fencer E (HAŚKO, V2): unscored result → should be excluded (5.11)
+  -- Fencer E (VW-V2-UNSCORED, V2): unscored result → should be excluded (5.11)
   -- -----------------------------------------------------------------------
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES
     (v_fencer_e, v_ppw1, 5);
@@ -215,13 +247,14 @@ BEGIN
   -- ADR-034: male fencers in F tournaments are dropped, so use a female fencer
   -- -----------------------------------------------------------------------
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES ('VIEWS-FEMALE', 'Tester', 'PL', 1970, 'F');
+  VALUES ('VW-FEMALE', 'Tester', 'PL', v_end_year - 55, 'F')
+  RETURNING id_fencer INTO v_fencer_i;
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
-    ((SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'VIEWS-FEMALE'), v_fem1, 1, 150.00, NOW());
+    (v_fencer_i, v_fem1, 1, 150.00, NOW());
 
   -- -----------------------------------------------------------------------
   -- V1 fencer result (for filter test 5.10)
-  -- FORAJTER (born 1977, age 48 → V1) in V1 tournament
+  -- VW-V1-SOLO (seeded at age 45 → V1) in the V1 tournament
   -- -----------------------------------------------------------------------
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
     (v_fencer_f, v_v1_1, 1, 180.00, NOW());
@@ -230,7 +263,7 @@ BEGIN
   -- International results for Kadra ranking tests
   -- -----------------------------------------------------------------------
 
-  -- Fencer A (ATANASSOW, V2): PEW=[120,100,90,65], MEW=80
+  -- Fencer A (VW-V2-ALPHA, V2): PEW=[120,100,90,65], MEW=80
   -- JSONB pool {PEW, MEW}: sorted [120,100,90,80,65] → best 3 = 120+100+90=310
   -- ppw_total=420, pew_total=310, kadra total=730
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
@@ -240,7 +273,7 @@ BEGIN
     (v_fencer_a, v_pew4, 15,  65.00, NOW()),
     (v_fencer_a, v_mew1, 3,   80.00, NOW());
 
-  -- Fencer D (DUDEK, V2): PEW=[110,85], no MEW — domestic-only comparison
+  -- Fencer D (VW-V2-BRAVO, V2): PEW=[110,85], no MEW — domestic-only comparison
   -- JSONB pool {PEW}: best 3 (only 2 available) = 110+85=195
   -- ppw_total=356, pew_total=195, kadra total=551
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
@@ -248,11 +281,12 @@ BEGIN
     (v_fencer_d, v_pew2, 10,  85.00, NOW());
 
   -- -----------------------------------------------------------------------
-  -- Fencer G (INTL-ONLY, V2): PEW only — no domestic results (5.25)
+  -- Fencer G (VW-INTL-ONLY, V2): PEW only — no domestic results (5.25)
   -- Should be excluded from both fn_ranking_ppw and fn_ranking_kadra
   -- -----------------------------------------------------------------------
-  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year)
-  VALUES ('INTL-ONLY', 'Tester', 'PL', 1970)
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality,
+                          int_birth_year, enum_gender)
+  VALUES ('VW-INTL-ONLY', 'Tester', 'PL', v_end_year - 55, 'M')
   RETURNING id_fencer INTO v_fencer_g;
 
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
@@ -260,11 +294,12 @@ BEGIN
     (v_fencer_g, v_pew2, 25,  90.00, NOW());
 
   -- -----------------------------------------------------------------------
-  -- Fencer H (ZERO-DOM, V2): PPW result with 0 score — edge case (5.24)
+  -- Fencer H (VW-ZERO-DOM, V2): PPW result with 0 score — edge case (5.24)
   -- Should be excluded from fn_ranking_ppw (total_score = 0)
   -- -----------------------------------------------------------------------
-  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year)
-  VALUES ('ZERO-DOM', 'Tester', 'PL', 1971)
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality,
+                          int_birth_year, enum_gender)
+  VALUES ('VW-ZERO-DOM', 'Tester', 'PL', v_end_year - 55, 'M')
   RETURNING id_fencer INTO v_fencer_h;
 
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
@@ -304,37 +339,44 @@ SELECT ok(
 -- ---------------------------------------------------------------------------
 -- 5.2  fn_ranking_ppw: V2 ranking by fencer birth-year category
 -- ---------------------------------------------------------------------------
--- V2 fencers: ATANASSOW(1969), DUDEK(1973), BAZAK(1974)
--- BARAŃSKI(1964) is V3 → excluded from V2 ranking
+-- V2 fencers: VW-V2-ALPHA, VW-V2-BRAVO, VW-V2-SPARSE (all seeded at age 55).
+-- VW-V3-CROSSCAT (age 65) is V3 → excluded from the V2 ranking.
+-- VW-V2-UNSCORED has no scored result; VW-ZERO-DOM scores 0; VW-INTL-ONLY has
+-- no domestic result — all three are correctly absent, so the count is 3.
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_ranking_ppw('EPEE', 'M', 'V2')),
   3,
-  '5.2a fn_ranking_ppw returns 3 V2 fencers (ATANASSOW, DUDEK, BAZAK) for active season'
+  '5.2a fn_ranking_ppw returns 3 V2 fencers (ALPHA, BRAVO, SPARSE) for active season'
 );
 
 -- ---------------------------------------------------------------------------
 -- 5.3  fn_ranking_ppw: explicit season returns same results
 -- ---------------------------------------------------------------------------
+-- Passing the active season explicitly must agree with letting the function
+-- default to it (5.2a). This previously named SPWS-2025-2026 literally, which
+-- stopped being the active season on the 2026-07-13 rollover — the setup block
+-- then no longer cleared it, so the assertion silently measured untouched seed
+-- data in a season running a different carryover engine.
 SELECT is(
   (SELECT COUNT(*)::INT
    FROM fn_ranking_ppw('EPEE', 'M', 'V2',
-     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'))),
+     (SELECT id_season FROM tbl_season WHERE bool_active = TRUE))),
   3,
-  '5.3 Explicit season parameter returns same 3 V2 fencers'
+  '5.3 Explicit active-season parameter returns the same 3 V2 fencers as the default'
 );
 
 -- ---------------------------------------------------------------------------
 -- 5.4  Best-K selection: with K=4 and 5 PPW scores, only top 4 are summed
 -- ---------------------------------------------------------------------------
--- Fencer D (DUDEK, V2): PPW=[95,85,75,65,55], MPW=36
+-- Fencer D (VW-V2-BRAVO, V2): PPW=[95,85,75,65,55], MPW=36
 -- JSONB: best 4 PPW bucket = 95+85+75+65=320, MPW always bucket = 36
 -- Total = 320+36 = 356 (PPW5=55 is dropped — only top 4 selected by bucket)
 SELECT is(
   (SELECT total_score
    FROM fn_ranking_ppw('EPEE', 'M', 'V2')
-   WHERE fencer_name = 'DUDEK Mariusz'),
+   WHERE fencer_name = 'VW-V2-BRAVO Tester'),
   356.00::NUMERIC,
-  '5.4 Best-K: DUDEK total=356 (best 4 PPW=320 + always MPW=36)'
+  '5.4 Best-K: VW-V2-BRAVO total=356 (best 4 PPW=320 + always MPW=36)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -343,9 +385,9 @@ SELECT is(
 SELECT is(
   (SELECT total_score
    FROM fn_ranking_ppw('EPEE', 'M', 'V2')
-   WHERE fencer_name = 'ATANASSOW Aleksander'),
+   WHERE fencer_name = 'VW-V2-ALPHA Tester'),
   420.00::NUMERIC,
-  '5.5 MPW always included (JSONB): ATANASSOW total=420 (best 4 PPW=340 + always MPW=80)'
+  '5.5 MPW always included (JSONB): VW-V2-ALPHA total=420 (best 4 PPW=340 + always MPW=80)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -354,8 +396,8 @@ SELECT is(
 SELECT ok(
   (SELECT total_score = 356.00
    FROM fn_ranking_ppw('EPEE', 'M', 'V2')
-   WHERE fencer_name = 'DUDEK Mariusz'),
-  '5.6 MPW always included (JSONB): DUDEK total=356 (MPW=36 always counted, PPW5=55 dropped)'
+   WHERE fencer_name = 'VW-V2-BRAVO Tester'),
+  '5.6 MPW always included (JSONB): VW-V2-BRAVO total=356 (MPW=36 always counted, PPW5=55 dropped)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -375,9 +417,9 @@ SELECT ok(
 -- Verify ordering: A (420) > D (375) > C (90)
 SELECT is(
   (SELECT rank FROM fn_ranking_ppw('EPEE', 'M', 'V2')
-   WHERE fencer_name = 'ATANASSOW Aleksander'),
+   WHERE fencer_name = 'VW-V2-ALPHA Tester'),
   1,
-  '5.7b ATANASSOW is rank 1'
+  '5.7b VW-V2-ALPHA is rank 1'
 );
 
 -- ---------------------------------------------------------------------------
@@ -386,7 +428,7 @@ SELECT is(
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_ranking_ppw('FOIL', 'M', 'V2')),
   1,
-  '5.8 Filter by weapon=FOIL returns only DUDEK (1 V2 fencer with FOIL results)'
+  '5.8 Filter by weapon=FOIL returns only VW-V2-BRAVO (1 V2 fencer with FOIL results)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -401,11 +443,11 @@ SELECT ok(
 -- ---------------------------------------------------------------------------
 -- 5.10  Filter by category: 'V1' returns fencers whose birth-year category is V1
 -- ---------------------------------------------------------------------------
--- FORAJTER (born 1977, age 48 → V1) has results in V1 tournament
+-- VW-V1-SOLO (seeded at age 45 → V1) has results in the V1 tournament
 SELECT ok(
   (SELECT COUNT(*)::INT >= 1
    FROM fn_ranking_ppw('EPEE', 'M', 'V1')),
-  '5.10 Filter by category=V1 returns V1 fencer (FORAJTER)'
+  '5.10 Filter by category=V1 returns the V1 fencer (VW-V1-SOLO)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -413,9 +455,9 @@ SELECT ok(
 -- ---------------------------------------------------------------------------
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_ranking_ppw('EPEE', 'M', 'V2')
-   WHERE fencer_name LIKE 'HAŚKO%'),
+   WHERE fencer_name LIKE 'VW-V2-UNSCORED%'),
   0,
-  '5.11 Unscored fencer (HAŚKO) excluded from ranking'
+  '5.11 Unscored fencer (VW-V2-UNSCORED) excluded from ranking'
 );
 
 -- ---------------------------------------------------------------------------
@@ -441,14 +483,14 @@ SELECT ok(
 -- ---------------------------------------------------------------------------
 -- 5.14  Cross-category carryover: V3 fencer's V2 tournament results in V3 ranking
 -- ---------------------------------------------------------------------------
--- BARAŃSKI (born 1964, age 61 → V3) has results in V2 tournaments.
+-- VW-V3-CROSSCAT (seeded at age 65 → V3) has results in V2 tournaments.
 -- These should appear in V3 ranking (his home category), not V2.
 SELECT is(
   (SELECT total_score
    FROM fn_ranking_ppw('EPEE', 'M', 'V3')
-   WHERE fencer_name = 'BARAŃSKI Wacław'),
+   WHERE fencer_name = 'VW-V3-CROSSCAT Tester'),
   356.00::NUMERIC,
-  '5.14 Cross-category: BARAŃSKI (V3) total=356 from V2 tournament results in V3 ranking'
+  '5.14 Cross-category: VW-V3-CROSSCAT (V3) total=356 from V2 tournament results in V3 ranking'
 );
 
 -- ---------------------------------------------------------------------------
@@ -456,9 +498,9 @@ SELECT is(
 -- ---------------------------------------------------------------------------
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_ranking_ppw('EPEE', 'M', 'V2')
-   WHERE fencer_name = 'BARAŃSKI Wacław'),
+   WHERE fencer_name = 'VW-V3-CROSSCAT Tester'),
   0,
-  '5.15 Cross-category: BARAŃSKI (V3 by birth year) does NOT appear in V2 ranking'
+  '5.15 Cross-category: VW-V3-CROSSCAT (V3 by birth year) does NOT appear in V2 ranking'
 );
 
 -- ---------------------------------------------------------------------------
@@ -468,22 +510,22 @@ SELECT ok(
   (SELECT ppw_score IS NOT NULL AND mpw_score IS NOT NULL AND total_score IS NOT NULL
    AND total_score = ppw_score + mpw_score
    FROM fn_ranking_ppw('EPEE', 'M', 'V2')
-   WHERE fencer_name = 'ATANASSOW Aleksander'),
+   WHERE fencer_name = 'VW-V2-ALPHA Tester'),
   '5.16 fn_ranking_ppw returns ppw_score + mpw_score = total_score'
 );
 
 -- ---------------------------------------------------------------------------
 -- 5.17  fn_ranking_kadra: correct total (JSONB pool logic) for V2
 -- ---------------------------------------------------------------------------
--- ATANASSOW: ppw_total=420, PEW=[120,100,90,65], MEW=80
+-- VW-V2-ALPHA: ppw_total=420, PEW=[120,100,90,65], MEW=80
 -- JSONB pool {PEW, MEW}: sorted [120,100,90,80,65] → best 3 = 120+100+90=310
 -- pew_total=310, kadra total = 420+310 = 730
 SELECT is(
   (SELECT total_score
    FROM fn_ranking_kadra('EPEE', 'M', 'V2')
-   WHERE fencer_name = 'ATANASSOW Aleksander'),
+   WHERE fencer_name = 'VW-V2-ALPHA Tester'),
   730.00::NUMERIC,
-  '5.17 fn_ranking_kadra: ATANASSOW total=730 (ppw_total=420 + pew_total=310)'
+  '5.17 fn_ranking_kadra: VW-V2-ALPHA total=730 (ppw_total=420 + pew_total=310)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -498,14 +540,14 @@ SELECT is(
 -- ---------------------------------------------------------------------------
 -- 5.19  fn_ranking_kadra: domestic-only fencer has pew_total=0
 -- ---------------------------------------------------------------------------
--- BAZAK has only domestic results (PPW), no PEW/MEW
+-- VW-V2-SPARSE has only domestic results (PPW), no PEW/MEW
 -- Kadra total should equal PPW total = 90
 SELECT is(
   (SELECT total_score
    FROM fn_ranking_kadra('EPEE', 'M', 'V2')
-   WHERE fencer_name = 'BAZAK Jacek'),
+   WHERE fencer_name = 'VW-V2-SPARSE Tester'),
   90.00::NUMERIC,
-  '5.19 fn_ranking_kadra: BAZAK (domestic only) total=90, pew_total=0'
+  '5.19 fn_ranking_kadra: VW-V2-SPARSE (domestic only) total=90, pew_total=0'
 );
 
 -- ---------------------------------------------------------------------------
@@ -514,33 +556,33 @@ SELECT is(
 SELECT is(
   (SELECT ppw_score
    FROM fn_ranking_ppw('EPEE', 'M', 'V2')
-   WHERE fencer_name = 'ATANASSOW Aleksander'),
+   WHERE fencer_name = 'VW-V2-ALPHA Tester'),
   340.00::NUMERIC,
-  '5.20 fn_ranking_ppw JSONB: ATANASSOW ppw_score=340 (best 4 PPW: 100+90+80+70)'
+  '5.20 fn_ranking_ppw JSONB: VW-V2-ALPHA ppw_score=340 (best 4 PPW: 100+90+80+70)'
 );
 
 -- ---------------------------------------------------------------------------
 -- 5.21  fn_ranking_ppw JSONB: MPW always-bucket included regardless of score
 -- ---------------------------------------------------------------------------
--- DUDEK MPW=36 < worst included PPW=65, but with JSONB "always" bucket it IS included
+-- VW-V2-BRAVO MPW=36 < worst included PPW=65, but with JSONB "always" bucket it IS included
 SELECT is(
   (SELECT mpw_score
    FROM fn_ranking_ppw('EPEE', 'M', 'V2')
-   WHERE fencer_name = 'DUDEK Mariusz'),
+   WHERE fencer_name = 'VW-V2-BRAVO Tester'),
   36.00::NUMERIC,
-  '5.21 fn_ranking_ppw JSONB: DUDEK mpw_score=36 (always-bucket, even though < worst PPW)'
+  '5.21 fn_ranking_ppw JSONB: VW-V2-BRAVO mpw_score=36 (always-bucket, even though < worst PPW)'
 );
 
 -- ---------------------------------------------------------------------------
 -- 5.22  fn_ranking_kadra JSONB: pew_total = best 3 from pooled {PEW, MEW}
 -- ---------------------------------------------------------------------------
--- ATANASSOW: pool [120,100,90,80,65], best 3 = 120+100+90 = 310
+-- VW-V2-ALPHA: pool [120,100,90,80,65], best 3 = 120+100+90 = 310
 SELECT is(
   (SELECT pew_total
    FROM fn_ranking_kadra('EPEE', 'M', 'V2')
-   WHERE fencer_name = 'ATANASSOW Aleksander'),
+   WHERE fencer_name = 'VW-V2-ALPHA Tester'),
   310.00::NUMERIC,
-  '5.22 fn_ranking_kadra JSONB: ATANASSOW pew_total=310 (best 3 from PEW+MEW pool)'
+  '5.22 fn_ranking_kadra JSONB: VW-V2-ALPHA pew_total=310 (best 3 from PEW+MEW pool)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -604,7 +646,7 @@ SELECT is(
 -- ---------------------------------------------------------------------------
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_ranking_ppw('EPEE', 'M', 'V2')
-   WHERE fencer_name = 'ZERO-DOM Tester'),
+   WHERE fencer_name = 'VW-ZERO-DOM Tester'),
   0,
   '5.24 fn_ranking_ppw: fencer with total_score=0 excluded from output'
 );
@@ -615,7 +657,7 @@ SELECT is(
 -- ---------------------------------------------------------------------------
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_ranking_kadra('EPEE', 'M', 'V2')
-   WHERE fencer_name = 'INTL-ONLY Tester'),
+   WHERE fencer_name = 'VW-INTL-ONLY Tester'),
   0,
   '5.25 fn_ranking_kadra: fencer with only PEW results (no domestic) excluded'
 );
