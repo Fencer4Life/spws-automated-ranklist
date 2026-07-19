@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — Gmail API setup</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1020px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--green);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,33px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:68ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:-.01em;
+ margin:36px 0 6px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:24px 0 8px;font-weight:600}
+p{margin:0 0 12px;max-width:80ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 16px;max-width:84ch}
+ul,ol{margin:0 0 14px;padding-left:20px;max-width:80ch}
+li{margin-bottom:8px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:12px 14px;
+ overflow-x:auto;font-family:var(--mono);font-size:11.5px;line-height:1.5;margin:0 0 16px;
+ max-width:84ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:84ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10px;color:var(--navy);white-space:nowrap;font-weight:600}
+td.f{font-family:var(--mono);font-size:10.5px}
+.st{font-family:var(--mono);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-you{background:var(--amber-bg);color:var(--amber)}
+.s-me{background:var(--green-bg);color:var(--green)}
+.step{border-left:3px solid var(--amber);padding:4px 0 4px 14px;margin-bottom:20px;max-width:82ch}
+.step .sn{font-family:var(--mono);font-size:10px;color:var(--amber);font-weight:600;
+ letter-spacing:.1em;display:block;margin-bottom:3px}
+footer{margin:40px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:84ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · MŚW Tbilisi 2026 · setup</div>
+  <h1>Gmail API — what I need from you</h1>
+  <p class="dek">Route agreed: Gmail API running locally on your Mac. Six clicks-and-forms
+  steps are yours because they need your account; everything else is mine.</p>
+  <div class="chips">
+    <span class="chip ok">option A agreed</span>
+    <span class="chip">~10 min of your time</span>
+    <span class="chip bad">no password to me, ever</span>
+    <span class="chip">ends with a test mail to yourself</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">00</span>The short version</h2>
+<div class="tw">
+<table>
+<thead><tr><th>What</th><th>Who</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td class="d">Google Cloud project</td><td><span class="st s-you">you</span></td>
+  <td>New project on the <code>spws.weterani@gmail.com</code> account</td></tr>
+<tr><td class="d">Enable 2 APIs</td><td><span class="st s-you">you</span></td>
+  <td>Gmail API, Google Sheets API</td></tr>
+<tr><td class="d">OAuth consent screen</td><td><span class="st s-you">you</span></td>
+  <td>External / Testing, yourself as the only test user</td></tr>
+<tr><td class="d">Desktop OAuth client</td><td><span class="st s-you">you</span></td>
+  <td>Download JSON → <code>doc/external_files/MSW-Tbilisi-2026/credentials.json</code></td></tr>
+<tr><td class="d">Campaign venv + libs</td><td><span class="st s-me">me</span></td>
+  <td>Separate from the repo venv — see section 02</td></tr>
+<tr><td class="d">Auth script</td><td><span class="st s-me">me</span></td>
+  <td>You run it once and click Allow; token written locally</td></tr>
+<tr><td class="d">Test send to yourself</td><td><span class="st s-me">me</span></td>
+  <td>Proves the pipeline before any fencer is touched</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call warn">
+  <span class="lb">Two things that stay true throughout</span>
+  <b class="k">Never paste the password, the JSON contents, or the token into chat.</b> The
+  script reads the file from disk; I never need to see any of it.
+  <p style="margin:8px 0 0"><b class="k">Nothing gets sent to a fencer without you saying
+  so</b> — handover section 03 fixes that, and the code will enforce it rather than rely on
+  my discipline.</p>
+</div>
+
+<h2><span class="num">01</span>Your six steps</h2>
+
+<div class="step">
+  <span class="sn">STEP 1 · project</span>
+  Sign in as <code>spws.weterani@gmail.com</code>, go to
+  <a href="https://console.cloud.google.com/projectcreate">console.cloud.google.com</a> and
+  create a project. Name it anything — <code>msw-tbilisi-2026</code> is fine. If it asks
+  about an organisation, "No organisation" is correct for a consumer account.
+</div>
+
+<div class="step">
+  <span class="sn">STEP 2 · enable the two APIs</span>
+  APIs &amp; Services → Library. Search <b class="k">Gmail API</b> → Enable. Then
+  <b class="k">Google Sheets API</b> → Enable.
+  <p style="margin:6px 0 0">Sheets isn't needed until the form exists, but enabling it now
+  avoids a second consent round-trip later.</p>
+</div>
+
+<div class="step">
+  <span class="sn">STEP 3 · consent screen — now under "Google Auth Platform"</span>
+  Google reorganised this in 2025; it is no longer "APIs &amp; Services → OAuth consent
+  screen". Menu → <b class="k">Google Auth Platform</b>, then:
+  <ul style="margin:6px 0 0">
+    <li><b class="k">Branding</b> — app name (e.g. <code>MŚW Tbilisi 2026</code>) and user
+    support email; your own address for both. Developer contact email too.</li>
+    <li><b class="k">Audience</b> — user type <b class="k">External</b>. Leave publishing
+    status <b class="k">Testing</b>. Under <i>Test users</i> → Add users →
+    <code>spws.weterani@gmail.com</code>.</li>
+    <li><b class="k">Data access</b> — optional. Scopes are requested by the script at
+    runtime, so they don't have to be registered here.</li>
+  </ul>
+  <p style="margin:6px 0 0">You do <b class="k">not</b> need to publish the app or go through
+  Google verification — the account is authorising itself. A Testing-mode token expires after
+  <b class="k">7 days</b>, which means re-running the auth script roughly weekly. That's the
+  one real cost of not publishing, and for a campaign closing on 1 August it's acceptable.</p>
+</div>
+
+<div class="step">
+  <span class="sn">STEP 4 · credentials</span>
+  APIs &amp; Services → Credentials → Create credentials → <b class="k">OAuth client ID</b> →
+  application type <b class="k">Desktop app</b>. Create, then download the JSON.
+</div>
+
+<div class="step">
+  <span class="sn">STEP 5 · put the file where the script expects it</span>
+  Save it as exactly:
+  <pre><code>doc/external_files/MSW-Tbilisi-2026/credentials.json</code></pre>
+  I verified that <code>.gitignore</code> line 23 ignores <code>doc/external_files/</code>
+  wholesale, so the file cannot reach the repo from there.
+</div>
+
+<div class="step">
+  <span class="sn">STEP 6 · tell me it's done</span>
+  Then I build the venv and the auth script, you run it once, click Allow, and we send one
+  test mail to yourself.
+</div>
+
+<h2><span class="num">02</span>My side — and one design call I'm making</h2>
+
+<div class="call good">
+  <span class="lb">Separate venv for the campaign, not the repo's</span>
+  The repo's <code>.venv</code> and <code>pyproject.toml</code> belong to the ranking system.
+  The campaign is explicitly outside it — no ADR, no integration. Adding
+  <code>google-api-python-client</code> and two auth libraries to the production dependency
+  set for a throwaway campaign is the wrong trade.
+  <p style="margin:8px 0 0">So: a venv inside
+  <code>doc/external_files/MSW-Tbilisi-2026/</code>, gitignored with everything else, holding
+  <code>openpyxl</code> plus the Google libraries. Disposable — delete the folder in
+  September and the ranking system never knew it existed.</p>
+  <p style="margin:8px 0 0"><b class="k">Cost, stated plainly:</b> the three existing
+  generators currently run on the repo venv. They'd move to the campaign venv, so there's one
+  environment for campaign work rather than two. Say if you'd rather I just add the libraries
+  to <code>pyproject.toml</code> instead.</p>
+</div>
+
+<h3>Scopes I'll request</h3>
+<pre><code>https://www.googleapis.com/auth/gmail.send
+https://www.googleapis.com/auth/spreadsheets.readonly</code></pre>
+<p class="sub">Send-only on Gmail — no read access to the mailbox — and read-only on Sheets.
+This was question 3 on the previous sheet; I'm proceeding with the minimal answer unless you
+say otherwise. Widening later means re-running the auth script, nothing worse.</p>
+
+<h3>What I'll write</h3>
+<ul>
+  <li><code>auth_setup.py</code> — one-time OAuth flow, writes <code>token.json</code> next
+  to the credentials. Prints which account it authorised, so a wrong-account mistake is
+  visible immediately rather than three hundred mails later.</li>
+  <li><code>send_test.py</code> — sends exactly one mail, to
+  <code>spws.weterani@gmail.com</code> itself, rendering the real wave-1 template. Proves
+  authentication, sender display name, Polish diacritics and formatting in one shot.</li>
+</ul>
+
+<div class="call">
+  <span class="lb">Why a test mail to yourself first</span>
+  Encoding is where this breaks quietly. A misconfigured MIME header turns "Paweł" into
+  "PaweÅ‚" in some clients and looks perfect in others — and diacritics have already caused
+  one silent bug in this campaign (handover mistake #2). Seeing it land in a real inbox
+  proves what no unit test proves.
+</div>
+
+<h2><span class="num">03</span>Still open, not blocking this</h2>
+<ol>
+  <li><b class="k">The numbers.</b> Whether 144 / 173 / 41 / 8 / 34 survived your
+  end-of-season overwrite. Needs your go-ahead to read the workbooks in
+  <code>doc/external_files/Sezon_2025-2026/XLS/</code>.</li>
+  <li><b class="k">The form.</b> Recommended build route is Apps Script, once, to get the
+  <code>entry.*</code> prefill IDs. Independent of this setup.</li>
+  <li><b class="k">Privacy clause variant</b> — A, B or C. Open since the last session.</li>
+</ol>
+
+</div>
+
+<footer>
+Written 2026-07-18 on branch <code>docs/msw-tbilisi-report-mockup</code>. Repo facts checked
+directly: <code>.venv</code> on Python 3.14.2, no Google libraries installed,
+<code>doc/external_files/</code> gitignored at line 23. Nothing built, nothing sent.
+</footer>
+
+</div>
+</body>
+</html>

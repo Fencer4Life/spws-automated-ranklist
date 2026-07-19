@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — handover, 19 July</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1060px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--green);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,33px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:70ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:-.01em;
+ margin:38px 0 6px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:26px 0 8px;font-weight:600}
+p{margin:0 0 12px;max-width:82ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 16px;max-width:86ch}
+ul,ol{margin:0 0 14px;padding-left:20px;max-width:82ch}
+li{margin-bottom:7px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:12px 14px;
+ overflow-x:auto;font-family:var(--mono);font-size:11.5px;line-height:1.55;margin:0 0 16px;
+ max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:600px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.f{font-family:var(--mono);font-size:10.5px;white-space:nowrap;color:var(--navy);font-weight:600}
+td.d{font-family:var(--mono);font-size:10px;white-space:nowrap;color:var(--navy);font-weight:600}
+.st{font-family:var(--mono);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.s-no{background:var(--grey-bg);color:var(--grey)}
+.chk{border-left:3px solid var(--navy);padding:4px 0 4px 14px;margin-bottom:16px;max-width:84ch}
+.chk .n{font-family:var(--mono);font-size:10px;color:var(--navy);font-weight:600;
+ letter-spacing:.1em;display:block;margin-bottom:3px}
+.chk .exp{font-size:12.5px;color:var(--muted);margin-top:5px}
+.trap{border-left:3px solid var(--amber);padding:3px 0 3px 14px;margin-bottom:16px;max-width:84ch}
+.trap b{color:var(--amber)}
+footer{margin:42px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Handover · supersedes msw-tbilisi-handover.html</div>
+  <h1>MŚW Tbilisi 2026 — handover, 19 July</h1>
+  <p class="dek">Everything is built and verified end to end. Nothing has been sent to
+  any fencer. This file exists so the next session can test confidently, send safely,
+  and not rediscover the traps the hard way.</p>
+  <div class="chips">
+    <span class="chip">2026-07-19</span>
+    <span class="chip">branch: docs/msw-tbilisi-report-mockup</span>
+    <span class="chip ok">pipeline complete</span>
+    <span class="chip ok">verified end to end</span>
+    <span class="chip warn">wave 1 not sent</span>
+    <span class="chip">103 recipients queued</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">00</span>Start here</h2>
+
+<div class="call stop">
+  <span class="lb">The old handover is wrong now — do not follow it</span>
+  <code>doc/plans/msw-tbilisi-handover.html</code> says “nothing built” and “next: build
+  the Google Form”. Both were true on 18 July and are false now. It remains useful for
+  <i>why</i> decisions were made and for the mistakes list. It is unreliable on
+  <i>what exists</i>. <b class="k">This file supersedes it.</b>
+</div>
+
+<div class="call good">
+  <span class="lb">What actually happened on 19 July</span>
+  Google Cloud project and OAuth set up on <code>spws.weterani@gmail.com</code>; seven
+  Google Forms built from code; wave-1 e-mail written in HTML and plain text; the FIE
+  invitation letter parsed for the real competition schedule; the board report populated
+  with real ranking data; a full send pipeline with logging and resume; and a response
+  reader that needs no spreadsheets. One real test message was sent, opened, submitted,
+  read back, and the test response deleted.
+</div>
+
+<h3>Current numbers — all script-derived, re-derivable</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Quantity</th><th>Value</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td class="d">Fencers</td><td>144</td><td>173 starts across 24 categories</td></tr>
+<tr><td class="d">In a top five</td><td>74</td><td>4 starters + 1 reserve per category</td></tr>
+<tr><td class="d">With e-mail</td><td><b class="k">103</b></td><td>the wave-1 ceiling</td></tr>
+<tr><td class="d">Unreachable</td><td>40</td><td><b class="k">7 of them in a top five</b></td></tr>
+<tr><td class="d">Thin categories</td><td>8 of 24</td><td>fewer than five ranked — no reserve exists</td></tr>
+<tr><td class="d">Teams possible</td><td>9 of 12</td><td>three cannot be fielded whatever fencers say</td></tr>
+</tbody>
+</table>
+</div>
+<p class="sub">Regenerate any of these with
+<code>doc/external_files/MSW-Tbilisi-2026/scripts/roster.py</code>. If a number in this
+file disagrees with the script, <b class="k">the script is right</b>.</p>
+
+<h2><span class="num">01</span>What exists, and where</h2>
+
+<div class="call warn">
+  <span class="lb">Half of this lives outside git and always will</span>
+  Everything under <code>doc/external_files/</code> is gitignored — it holds 270 people’s
+  e-mail addresses and phone numbers, plus OAuth credentials. <b class="k">A fresh clone
+  on another machine has none of it.</b> Scripts, data, tokens and generated reports
+  exist on this Mac only.
+</div>
+
+<h3>Scripts — <code>doc/external_files/MSW-Tbilisi-2026/scripts/</code></h3>
+<div class="tw">
+<table>
+<thead><tr><th>File</th><th>Does</th><th>State</th></tr></thead>
+<tbody>
+<tr><td class="f">gauth.py</td>
+  <td>Single source of scopes, paths, sender identity. Loads and auto-refreshes the token.
+  <b class="k">Every other script imports this.</b></td>
+  <td><span class="st s-ok">solid</span></td></tr>
+<tr><td class="f">auth_setup.py</td>
+  <td>One-time consent flow. Writes <code>token.json</code> mode 600. Refuses to save if
+  the wrong Google account authorised.</td>
+  <td><span class="st s-ok">solid</span></td></tr>
+<tr><td class="f">roster.py</td>
+  <td><b class="k">The only parser</b> of the 24 workbooks and both contact lists.
+  Everything derives from it. Run standalone to print the headline counts.</td>
+  <td><span class="st s-ok">solid</span></td></tr>
+<tr><td class="f">fie_schedule.py</td>
+  <td>The competition schedule transcribed from the FIE letter, page 6. 24 individual
+  events, 12 team events. Raises rather than guessing on an unknown category.</td>
+  <td><span class="st s-ok">solid</span></td></tr>
+<tr><td class="f">mail_body.py</td>
+  <td>Wave-1 message, HTML and plain text from one source so they cannot drift.
+  Placeholders: <code>{zwrot} {wykaz_broni} {link} {link_fie}</code>.</td>
+  <td><span class="st s-ok">final copy</span></td></tr>
+<tr><td class="f">build_variants.py</td>
+  <td>Creates the <b class="k">seven</b> form variants. Refuses to run if
+  <code>variants.json</code> exists.</td>
+  <td><span class="st s-ok">done, do not re-run</span></td></tr>
+<tr><td class="f">update_variants.py</td>
+  <td>Edits text across all seven live forms. Matches by title, idempotent, safe to
+  re-run. <b class="k">Use this for any wording change.</b></td>
+  <td><span class="st s-ok">solid</span></td></tr>
+<tr><td class="f">send_test.py</td>
+  <td>Sends one rendered message to the two operator addresses. Pulls the fencer from the
+  roster, so it exercises exactly the production path.</td>
+  <td><span class="st s-ok">solid</span></td></tr>
+<tr><td class="f">send_wave1.py</td>
+  <td>The real sender. <b class="k">Dry run unless <code>--send</code></b>. Append-only
+  log, resume, randomised pacing.</td>
+  <td><span class="st s-wip">never run for real</span></td></tr>
+<tr><td class="f">read_responses.py</td>
+  <td>Pulls declarations from all seven forms via the API. No spreadsheets. Records how
+  each response was matched.</td>
+  <td><span class="st s-ok">verified once</span></td></tr>
+<tr><td class="f">gen_raport.py</td>
+  <td>Board report. Reads responses and send log if present, otherwise renders the
+  neutral pre-send state.</td>
+  <td><span class="st s-ok">solid</span></td></tr>
+<tr><td class="f">gen_uczestnicy.py<br>gen_prosba.py<br>gen_merge.py</td>
+  <td>From the previous session. Still work. <b class="k">They have their own copy of the
+  parsing logic</b> — prefer roster.py for anything new.</td>
+  <td><span class="st s-wip">legacy</span></td></tr>
+<tr><td class="f">build_form.py<br>prefill_ids.py</td>
+  <td>Built the original single all-weapons form, now superseded.</td>
+  <td><span class="st s-no">obsolete</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Data and generated files — same directory</h3>
+<div class="tw">
+<table>
+<thead><tr><th>File</th><th>What it is</th></tr></thead>
+<tbody>
+<tr><td class="f">credentials.json</td><td>OAuth desktop client. <b class="k">Never paste its contents anywhere.</b></td></tr>
+<tr><td class="f">token.json</td><td>Access + refresh token, mode 600. Expires every 7 days.</td></tr>
+<tr><td class="f">variants.json</td><td>The seven forms: ids, responder URLs, edit URLs, prefill entry ids.</td></tr>
+<tr><td class="f">kontakty.md</td><td>Contact list 1 — authoritative. Edit here to add a fencer’s details.</td></tr>
+<tr><td class="f">kontakty-lista2.tsv</td><td>Contact list 2. Fills empty fields only; never overrides list 1.</td></tr>
+<tr><td class="f">send_log.jsonl</td><td>Append-only send record. <b class="k">Does not exist until the first real send.</b></td></tr>
+<tr><td class="f">responses.json</td><td>Declarations, keyed by roster key. Currently <code>{}</code>.</td></tr>
+<tr><td class="f">raport.html</td><td>The board report. Regenerate any time.</td></tr>
+<tr><td class="f">wysylka-podglad.html</td><td>Send preview: every recipient, variant, code and link.</td></tr>
+<tr><td class="f">.venv/</td><td>Campaign-only virtualenv. <b class="k">Not the repo venv</b> — the campaign’s Google libraries are deliberately kept out of the project’s dependencies.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">02</span>How to run things</h2>
+<p class="sub">Always from the repo root, always with the campaign venv. Paths in the
+scripts are relative to the repo root and they will exit with a clear message if run
+from elsewhere.</p>
+
+<pre><code>V=doc/external_files/MSW-Tbilisi-2026/.venv/bin/python
+S=doc/external_files/MSW-Tbilisi-2026/scripts
+
+$V $S/roster.py              # headline counts, reads nothing remote
+$V $S/auth_setup.py          # re-consent; opens a browser, needs one click
+$V $S/send_test.py           # one message to the two operator addresses
+$V $S/send_wave1.py          # DRY RUN — writes the preview, sends nothing
+$V $S/send_wave1.py --send   # the real thing
+$V $S/read_responses.py      # pull declarations from all seven forms
+$V $S/gen_raport.py          # rebuild the board report
+$V $S/update_variants.py     # push wording changes to all seven forms</code></pre>
+
+<h3>Useful flags on send_wave1.py</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Flag</th><th>Default</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td class="d">--send</td><td>off</td><td><b class="k">The only way anything is mailed.</b></td></tr>
+<tr><td class="d">--limit N</td><td>0</td><td>Send only the first N pending. <b class="k">Use this first.</b></td></tr>
+<tr><td class="d">--top5</td><td>off</td><td>Restrict to fencers in a top five (74 people, not 103).</td></tr>
+<tr><td class="d">--min-delay<br>--max-delay</td><td>4 / 17 s</td><td>Randomised gap between messages.</td></tr>
+<tr><td class="d">--batch<br>--pause</td><td>25 / 180 s</td><td>Longer rest after every N messages.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">03</span>Testing before wave 1 — the plan</h2>
+<p class="sub">The operator asked for a testing pass before the real send. This is the
+order that finds problems most cheaply. Each step has an expected result; if it does not
+match, stop and investigate rather than continuing.</p>
+
+<div class="chk">
+  <span class="n">TEST 1 · roster sanity</span>
+  <code>roster.py</code> — expect <b class="k">144 / 173 / 74 / 40 / 103</b>.
+  <div class="exp">If these moved without anyone editing <code>kontakty.md</code> or the
+  workbooks, something upstream changed and nothing else should be trusted until it is
+  understood.</div>
+</div>
+
+<div class="chk">
+  <span class="n">TEST 2 · token is alive and correctly scoped</span>
+  Run <code>read_responses.py</code>. Expect seven lines of <code>0 response(s)</code>.
+  <div class="exp">This exercises auth and all seven form ids in one cheap call. If it
+  complains about scopes, run <code>auth_setup.py</code>. <b class="k">Verify scopes
+  against Google’s tokeninfo endpoint, never against token.json</b> — see the traps
+  section.</div>
+</div>
+
+<div class="chk">
+  <span class="n">TEST 3 · dry run and read the preview</span>
+  <code>send_wave1.py</code> then open <code>wysylka-podglad.html</code>.
+  <div class="exp">Expect <b class="k">103 to send, 41 skipped</b>. Read the skipped list:
+  every entry should say “brak adresu e-mail”. Any other reason — a missing variant, a
+  category absent from the FIE schedule — is a real bug and must be fixed before sending.
+  Spot-check three or four rows: does the variant match the fencer’s weapons, and does the
+  link open a form showing only those weapons?</div>
+</div>
+
+<div class="chk">
+  <span class="n">TEST 4 · one live message to the operator</span>
+  <code>send_test.py</code> — arrives at both operator addresses.
+  <div class="exp">Check: sender shows as <b>SPWS — Ranking Weteranów</b>; Polish
+  diacritics intact; text reflows on a phone; the cost ladder appears above the weapon
+  questions; the button opens the form with code, name, e-mail and phone prefilled; and
+  <b class="k">it is not in spam</b>. On 19 July it landed in the inbox in both Gmail and
+  Proton.</div>
+</div>
+
+<div class="chk">
+  <span class="n">TEST 5 · submit and read back</span>
+  Fill in the form from that message, then run <code>read_responses.py</code>.
+  <div class="exp">Expect <code>1 submission -&gt; 1 fencer</code> and
+  <b class="k"><code>matched by kod</code></b>. If it says <code>nazwisko</code> or
+  <code>e-mail</code>, the token the sender issues does not match the token the reader
+  expects — that is a real defect, and it hid itself once already.</div>
+</div>
+
+<div class="chk">
+  <span class="n">TEST 6 · colours appear</span>
+  <code>gen_raport.py</code>, then open <code>raport.html</code>.
+  <div class="exp">The test fencer should be green (or hatched green on the team row).
+  Everyone else stays white. The banner should still say nothing was sent, because no
+  <code>send_log.jsonl</code> exists yet.</div>
+</div>
+
+<div class="chk">
+  <span class="n">TEST 7 · a real but tiny send</span>
+  <code>send_wave1.py --send --limit 1</code>, having temporarily put an operator address
+  at the top of the queue, or simply accept that one real fencer is mailed early.
+  <div class="exp">Confirms the log is written, the pacing works, and a resume skips the
+  person already sent. <b class="k">Re-run the same command</b> — it must report
+  <code>already sent 1</code> and mail nobody twice.</div>
+</div>
+
+<div class="call stop">
+  <span class="lb">Clean up after testing</span>
+  Delete any test submissions from each form’s Responses tab
+  (<b>⋮ → Delete all responses</b>) <b class="k">before</b> the real wave, and delete
+  <code>send_log.jsonl</code> if the test send should not count. After the real send,
+  <b class="k">never use “Delete all responses” again</b> — it destroys genuine
+  declarations with no undo.
+</div>
+
+<h2><span class="num">04</span>Decisions — closed, do not reopen</h2>
+<div class="tw">
+<table>
+<thead><tr><th>Decision</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td class="d">Individual fee</td><td><b class="k">90 EUR per weapon.</b> A fencer in
+  two weapons pays 180. The FIE letter says only “Individual Entry: EUR 90” and does not
+  disambiguate; the operator ruled per-weapon on 19 July. Cost ladders compute this.</td></tr>
+<tr><td class="d">Team fee</td><td><b class="k">185 EUR for the whole team, not per
+  fencer.</b> Wording in all seven forms says so explicitly.</td></tr>
+<tr><td class="d">No visa fee</td><td>The FIE letter lists 55 EUR per person. <b class="k">It
+  does not apply — Poles enter Georgia visa-free.</b> It must not appear anywhere. This has
+  been re-introduced by accident once before.</td></tr>
+<tr><td class="d">Privacy clause</td><td><b class="k">Variant A</b>, three sentences, live
+  in all seven form descriptions.</td></tr>
+<tr><td class="d">Signature</td><td><b class="k">SPWS — Ranking Weteranów.</b> Also the
+  sender display name.</td></tr>
+<tr><td class="d">Deadline</td><td>1 August 2026. FIE needs the participant list and
+  passport scans by 20 August.</td></tr>
+<tr><td class="d">Form shape</td><td><b class="k">Seven variants</b>, one per weapon
+  combination. A fencer sees only their own weapons.</td></tr>
+<tr><td class="d">Team question</td><td>tak / nie / <i>jeszcze nie wiem</i>. The third is a
+  <b class="k">conditional yes</b>: hatched green, counts toward readiness,
+  <b class="k">never triggers a reminder</b>.</td></tr>
+<tr><td class="d">Individual question</td><td><b class="k">tak / nie only.</b></td></tr>
+<tr><td class="d">Responses</td><td>Read from the <b class="k">Forms API</b>. No linked
+  spreadsheets anywhere in the design.</td></tr>
+<tr><td class="d">Sending</td><td>Gmail API from this Mac. Never Apps Script — its quota
+  on a consumer account is 100/day against Gmail’s 500.</td></tr>
+<tr><td class="d">Never auto-send</td><td>The operator authorises each wave.
+  <code>--send</code> exists precisely so nothing goes out by accident.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">05</span>Traps — each of these cost real time</h2>
+
+<div class="trap"><b>A scope check that validated itself.</b>
+<code>Credentials.from_authorized_user_file(path, SCOPES)</code> sets
+<code>.scopes</code> from the <i>argument</i>, not the file. Comparing that to
+<code>SCOPES</code> always passes, and <code>to_json()</code> then writes the false claim
+into the token file. <b>Always verify scopes against
+<code>https://oauth2.googleapis.com/tokeninfo</code></b> — an external authority with no
+stake in our assumptions. <code>gauth.stored_scopes()</code> now reads the JSON directly.</div>
+
+<div class="trap"><b>A token mismatch hidden by a fallback.</b> The test script hard-coded
+a name spelling that differed from the roster’s, so it generated a different hash. The
+join still worked — via name matching — and looked healthy. <b>This is why
+<code>read_responses.py</code> records <code>matched_by</code>.</b> A fallback that does
+not say it fired is a defect generator.</div>
+
+<div class="trap"><b>A superseded form left live.</b> The original all-weapons form stayed
+fillable after the seven variants replaced it, and an old e-mail pointed at it. Nothing
+reads that form, so a submission there would have vanished silently and the fencer would
+have been chased for not replying. It is now emptied and retitled
+<i>NIEAKTUALNY FORMULARZ</i>. <b>Superseding is finished only when the old thing cannot be
+used by accident.</b></div>
+
+<div class="trap"><b>Identical test subjects.</b> Six test messages with the same subject
+line meant the wrong one got opened, pointing at the wrong form. <code>send_test.py</code>
+now stamps the subject with the time and the variant key.</div>
+
+<div class="trap"><b>A per-team fee written as per-fencer.</b> The ladder said “każda
+drużyna — dodatkowe 185 EUR”, which reads as a personal charge and overstated an
+individual’s cost roughly fourfold. Corrected everywhere. <b>Compressing a quoted figure
+into computed arithmetic changes what it asserts.</b></div>
+
+<div class="trap"><b>A constraint inherited without checking its scope.</b> “Forms cannot
+vary questions per respondent” is true — but it does not follow that everyone gets the
+same form. That unexamined leap produced a form showing three weapons to a one-weapon
+fencer. <b>Check what a limitation actually forbids.</b></div>
+
+<div class="trap"><b>Diacritics in name matching.</b> <code>NFKD</code> plus ASCII-encode
+deletes <code>ł</code> entirely, so “Paweł” becomes “pawe”. Polish letters must be
+transliterated <i>first</i>, via <code>str.maketrans</code>. Preserved in
+<code>roster.key()</code> — do not simplify it.</div>
+
+<div class="trap"><b>Duplicate names collapsing to the wrong row.</b>
+<code>setdefault</code> keeps the <i>first</i> entry, which was the empty one for two
+fencers, reporting them unreachable. <code>roster._contacts()</code> prefers the populated
+row. <b>When collapsing duplicates, prefer data over position.</b></div>
+
+<h2><span class="num">06</span>Safety rails already in the code</h2>
+<p class="sub">These exist so a mistake is loud rather than silent. Do not remove them to
+make something more convenient.</p>
+<ul>
+  <li><b class="k">Dry run is the default.</b> <code>send_wave1.py</code> mails nobody
+  without <code>--send</code>.</li>
+  <li><b class="k">The log is written before the next send.</b> A crash mid-run loses no
+  record; re-running skips everyone already sent.</li>
+  <li><b class="k">One message per recipient.</b> No fencer ever sees another’s address.
+  Even the two-address test rehearses this shape.</li>
+  <li><b class="k">Deterministic tokens.</b> A resend reissues the same code, so a retry
+  never creates a second identity for one person.</li>
+  <li><b class="k">Wrong-account refusal.</b> <code>auth_setup.py</code> exits rather than
+  writing a token for any account other than the campaign one.</li>
+  <li><b class="k">Unknown schedule entries raise.</b> A fencer in a category Tbilisi does
+  not run fails loudly instead of being mailed an invented date.</li>
+  <li><b class="k">build_variants.py refuses to re-run.</b> A second set of forms would
+  split responses irrecoverably.</li>
+  <li><b class="k">Answers beat inferences.</b> In <code>gen_raport.state()</code>, a fencer
+  who replied is never amber and an unreachable fencer is never amber — so amber always
+  means real work.</li>
+</ul>
+
+<h2><span class="num">07</span>Still open</h2>
+<ol>
+  <li><b class="k">The 90 EUR reading is a ruling, not a confirmation.</b> Settled for now
+  by the operator. If certainty is wanted, one e-mail to
+  <code>fencinggeo@gmail.com</code> resolves it. 25 multi-weapon fencers are affected.</li>
+  <li><b class="k">Nothing implements the deletion promise.</b> Privacy variant A tells
+  fencers the contact list is deleted after entries close. That currently depends on
+  someone remembering. A <code>purge.py</code> covering the campaign folder, the seven
+  forms’ responses and any database copy would make it one command. Needed before the
+  campaign ends, not before it starts.</li>
+  <li><b class="k">Waves 2+ do not exist.</b> Only wave 1 is built. The reminder ladder —
+  resend, SMS, phone, Messenger — is still only a draft in
+  <i>msw-tbilisi-kanaly-i-struktura.html</i>. Amber in the report is the input to it.</li>
+  <li><b class="k">Peer-sourcing has not been sent.</b> 40 fencers have no contact at all,
+  7 of them in a top five. <code>gen_prosba.py</code> builds the ask list.</li>
+  <li><b class="k">Three teams cannot be fielded</b> regardless of declarations — fewer
+  than six ranked candidates exist. Worth telling the board early.</li>
+  <li><b class="k">Legacy parser duplication.</b> <code>gen_uczestnicy.py</code>,
+  <code>gen_prosba.py</code> and <code>gen_merge.py</code> each carry their own copy of the
+  workbook parsing. They agree with <code>roster.py</code> today. If one is edited, they
+  will not.</li>
+</ol>
+
+<h2><span class="num">08</span>Working style that the operator expects</h2>
+<ul>
+  <li><b class="k">English</b> for everything written to him — plans, analysis, chat.
+  <b class="k">Polish only</b> for what reaches fencers: e-mails, forms, the board report.</li>
+  <li><b class="k">HTML for deliverables.</b> Chat stays short: a pointer and one question,
+  never long prose or inline tables.</li>
+  <li><b class="k">Act, do not ask twice.</b> Asking a question already answered, or asking
+  permission for work that is plainly in scope, is worse than a wrong default that is
+  stated plainly and easy to reverse.</li>
+  <li><b class="k">Verify, then claim.</b> Read the state back from the source — Google,
+  the file, the script — rather than reporting what the code intended.</li>
+  <li><b class="k">Name uncertainty.</b> He reads carefully and catches things. An
+  unflagged guess costs far more trust than an admitted unknown.</li>
+</ul>
+
+</div>
+
+<footer>
+Written 2026-07-19 on branch <code>docs/msw-tbilisi-report-mockup</code>. Supersedes
+<code>msw-tbilisi-handover.html</code> on all matters of what exists. No message has been
+sent to any fencer; <code>send_log.jsonl</code> does not exist. Scripts, contact data,
+OAuth credentials and generated reports live outside the repository in
+<code>doc/external_files/MSW-Tbilisi-2026/</code> and exist on this machine only.
+This file deliberately contains no personal data.
+</footer>
+
+</div>
+</body>
+</html>
