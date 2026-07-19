@@ -2,7 +2,38 @@
 -- M2: Scoring Engine, Configuration & Calibration — Acceptance Tests
 -- =============================================================================
 -- Tests 2.1–2.19 from the POC development plan.
--- Relies on seed data from M1 + test data created within this file.
+--
+-- FOLLOWS THE ACTIVE SEASON (2026-07-19)
+-- -----------------------------------------------------------------------------
+-- This file used to pin itself to a hardcoded 'SPWS-2024-2025' and score against
+-- that season's tbl_scoring_config. Scoring config is per-season and had since
+-- diverged: SPWS-2024-2025 sets num_msw_multiplier = 2.0, while the active
+-- season sets 1.2. Test 9.85 therefore asserted a multiplier that had not been
+-- in force since SPWS-2025-2026, and no test in the repository guarded the live
+-- value. The suite was green for the wrong reason.
+--
+-- The fixture now resolves the ACTIVE season, so these tests always guard the
+-- rules actually in force. That deliberately trades one risk for another: a
+-- config-following test can silently change meaning when an admin edits scoring
+-- config. Two rules keep that from happening quietly:
+--
+--   1. Test 2.0 below is a CONFIG CONTRACT. It pins the exact active-season
+--      config values that this file's hand-derived arithmetic depends on. If an
+--      admin changes any of them, 2.0 fails first and by name, telling you which
+--      expectations below need recomputing — instead of leaving you to reverse
+--      engineer it from a wrong total.
+--   2. Multiplier assertions compare the engine's output ratio against the
+--      CONFIGURED multiplier rather than a literal. That checks the thing worth
+--      checking — that the engine honours config — and cannot drift. The literal
+--      values live in 2.0, in one place.
+--
+-- Fencers are created by this file (see the convention in
+-- doc/handbook/reference/test-and-traceability.html). Do not reintroduce
+-- lookups by surname: SELECT ... INTO silently binds the first row when two
+-- fencers share a surname, the defect fixed in export_seed.py::fencer_lookup().
+-- Scoring itself is placement- and participant-driven — fn_calc_tournament_scores
+-- reads no birth year and no season dates — so these fixtures need no particular
+-- age, unlike 03_views_api.
 -- =============================================================================
 
 BEGIN;
@@ -11,10 +42,10 @@ BEGIN;
 -- guard. Targeted (not session_replication_role) so audit + status-
 -- transition triggers stay live.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
-SELECT plan(28);
+SELECT plan(29);
 
 -- ===== SETUP: Create test data for scoring tests =====
--- We use the seed season (SPWS-2024-2025) and its scoring config.
+-- We use the ACTIVE season and its scoring config (see header).
 -- Create a test event + tournaments with known N values for formula verification.
 
 -- Helper: get season and organizer IDs
@@ -35,7 +66,7 @@ DECLARE
   v_fencer4 INT;
   v_fencer5 INT;
 BEGIN
-  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025';
+  SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
 
   -- Create test event for scoring
@@ -71,14 +102,14 @@ BEGIN
   VALUES (v_event, 'SCORE-PPW-N16', 'Test PPW N=16', 'PPW',
     'EPEE', 'M', 'V2', '2025-01-01', 16, 'IMPORTED');
 
-  -- Tournament E: PSW, N=24 (for PSW multiplier test — multiplier=2.0)
+  -- Tournament E: PSW, N=24 (multiplier read from the active season's config)
   INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count,
     enum_import_status)
   VALUES (v_event, 'SCORE-PSW-N24', 'Test PSW N=24', 'PSW',
     'EPEE', 'M', 'V2', '2025-02-01', 24, 'IMPORTED');
 
-  -- Tournament F: MSW, N=24 (for MSW multiplier test — multiplier=2.0)
+  -- Tournament F: MSW, N=24 (multiplier read from the active season's config)
   INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count,
     enum_import_status)
@@ -92,12 +123,22 @@ BEGIN
   SELECT id_tournament INTO v_tourn_psw FROM tbl_tournament WHERE txt_code = 'SCORE-PSW-N24';
   SELECT id_tournament INTO v_tourn_msw FROM tbl_tournament WHERE txt_code = 'SCORE-MSW-N24';
 
-  -- Get fencer IDs from seed data (master fencer list)
-  SELECT id_fencer INTO v_fencer1 FROM tbl_fencer WHERE txt_surname = 'ATANASSOW';
-  SELECT id_fencer INTO v_fencer2 FROM tbl_fencer WHERE txt_surname = 'BARAŃSKI';
-  SELECT id_fencer INTO v_fencer3 FROM tbl_fencer WHERE txt_surname = 'BAZAK';
-  SELECT id_fencer INTO v_fencer4 FROM tbl_fencer WHERE txt_surname = 'DUDEK';
-  SELECT id_fencer INTO v_fencer5 FROM tbl_fencer WHERE txt_surname = 'HAŚKO';
+  -- Fixture fencers, owned by this file. Scoring is placement-driven, so the
+  -- birth year is immaterial here; it is set from the active season's end year
+  -- anyway so the rows never sit near a category boundary if this file later
+  -- grows a category-aware assertion.
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality,
+                          int_birth_year, enum_gender)
+  SELECT 'SC-FENCER-' || i, 'Tester', 'PL',
+         EXTRACT(YEAR FROM (SELECT dt_end FROM tbl_season WHERE id_season = v_season))::INT - 55,
+         'M'
+  FROM generate_series(1, 5) AS i;
+
+  SELECT id_fencer INTO v_fencer1 FROM tbl_fencer WHERE txt_surname = 'SC-FENCER-1';
+  SELECT id_fencer INTO v_fencer2 FROM tbl_fencer WHERE txt_surname = 'SC-FENCER-2';
+  SELECT id_fencer INTO v_fencer3 FROM tbl_fencer WHERE txt_surname = 'SC-FENCER-3';
+  SELECT id_fencer INTO v_fencer4 FROM tbl_fencer WHERE txt_surname = 'SC-FENCER-4';
+  SELECT id_fencer INTO v_fencer5 FROM tbl_fencer WHERE txt_surname = 'SC-FENCER-5';
 
   -- Insert results for PPW N=24: places 1,2,3,4,24
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES
@@ -149,6 +190,33 @@ SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_co
 SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-MSW-N24';
 
 -- ---------------------------------------------------------------------------
+-- 2.0  CONFIG CONTRACT — the active season's scoring config is what the
+--      arithmetic below assumes.
+-- ---------------------------------------------------------------------------
+-- Every hand-derived expectation in this file (place points, DE rounds, podium
+-- bonus, multiplier ratios) is computed from these values. They are asserted
+-- together, once, so that a scoring-config change produces ONE named failure
+-- here rather than a scatter of unexplained arithmetic failures below.
+--
+-- If this test fails, an admin has changed the active season's scoring rules.
+-- That is not necessarily a bug — but every expectation in this file must then
+-- be recomputed deliberately, and the governance rule set re-checked.
+SELECT results_eq(
+  $$SELECT int_mp_value, int_podium_gold, int_podium_silver, int_podium_bronze,
+           num_ppw_multiplier::NUMERIC(10,4), num_mpw_multiplier::NUMERIC(10,4),
+           num_psw_multiplier::NUMERIC(10,4), num_msw_multiplier::NUMERIC(10,4),
+           int_ppw_total_rounds
+      FROM tbl_scoring_config c
+      JOIN tbl_season s ON s.id_season = c.id_season
+     WHERE s.bool_active$$,
+  $$VALUES (50, 3, 2, 1,
+            1.0000::NUMERIC(10,4), 1.2000::NUMERIC(10,4),
+            2.0000::NUMERIC(10,4), 1.2000::NUMERIC(10,4),
+            5)$$,
+  '2.0 Config contract: active season scoring config matches this file''s assumptions'
+);
+
+-- ---------------------------------------------------------------------------
 -- 2.1  fn_calc_tournament_scores: N=24 PPW → point columns populated
 -- ---------------------------------------------------------------------------
 -- For N=24, place=1, MP=50, PPW multiplier=1.0:
@@ -166,7 +234,7 @@ SELECT ok(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'ATANASSOW'),
+   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1'),
   '2.1 All four point columns populated for scored PPW N=24 tournament'
 );
 
@@ -176,7 +244,7 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'ATANASSOW'),
+   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1'),
   50.00::NUMERIC,
   '2.1b 1st place gets MP (50) place points for N=24'
 );
@@ -188,7 +256,7 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'HAŚKO'),
+   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-5'),
   1.00::NUMERIC,
   '2.1c Last place (24th of 24) gets 1.00 place points'
 );
@@ -257,7 +325,7 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N16' AND f.txt_surname = 'ATANASSOW'),
+   WHERE t.txt_code = 'SCORE-PPW-N16' AND f.txt_surname = 'SC-FENCER-1'),
   40.00::NUMERIC,
   '2.4 Power-of-2 N=16: 1st place DE bonus = 4 rounds × 10 = 40'
 );
@@ -272,7 +340,7 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'ATANASSOW'),
+   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1'),
   50.00::NUMERIC,
   '2.5 Non-power-of-2 N=24: 1st place DE bonus = 5 rounds × 10 = 50'
 );
@@ -287,7 +355,7 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'ATANASSOW'),
+   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1'),
   (SELECT ROUND(3 * (3 * POWER(24, 1.0/3)), 2))::NUMERIC,
   '2.6a 1st place podium bonus = gold(3) * bonus_per_round'
 );
@@ -297,7 +365,7 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'BARAŃSKI'),
+   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-2'),
   (SELECT ROUND(2 * (3 * POWER(24, 1.0/3)), 2))::NUMERIC,
   '2.6b 2nd place podium bonus = silver(2) * bonus_per_round'
 );
@@ -307,7 +375,7 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'BAZAK'),
+   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-3'),
   (SELECT ROUND(1 * (3 * POWER(24, 1.0/3)), 2))::NUMERIC,
   '2.6c 3rd place podium bonus = bronze(1) * bonus_per_round'
 );
@@ -317,7 +385,7 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'DUDEK'),
+   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-4'),
   0.00::NUMERIC,
   '2.6d 4th place gets 0 podium bonus'
 );
@@ -342,11 +410,11 @@ SELECT ok(
     (SELECT r.* FROM tbl_result r
      JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
      JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-     WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'ATANASSOW') ppw,
+     WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1') ppw,
     (SELECT r.* FROM tbl_result r
      JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
      JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-     WHERE t.txt_code = 'SCORE-MPW-N24' AND f.txt_surname = 'ATANASSOW') mpw
+     WHERE t.txt_code = 'SCORE-MPW-N24' AND f.txt_surname = 'SC-FENCER-1') mpw
   ),
   '2.7 MPW has same components as PPW but final_score scaled by 1.2 multiplier'
 );
@@ -360,7 +428,7 @@ SELECT ok(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'ATANASSOW'),
+   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1'),
   '2.8 ts_points_calc set to recent timestamp after scoring'
 );
 
@@ -390,7 +458,7 @@ SELECT ok(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'ATANASSOW'),
+   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1'),
   '2.10 Scoring uses multiplier from tbl_scoring_config (1.0), not tbl_tournament (999.0)'
 );
 
@@ -408,10 +476,10 @@ BEGIN
   FROM tbl_result r
   JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
   JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-  WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'ATANASSOW';
+  WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1';
 
   -- Change MP value in scoring config
-  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025';
+  SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
   UPDATE tbl_scoring_config SET int_mp_value = 100 WHERE id_season = v_season;
 
   -- Check the score is unchanged (no automatic recalculation)
@@ -419,7 +487,7 @@ BEGIN
   FROM tbl_result r
   JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
   JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-  WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'ATANASSOW';
+  WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1';
 
   IF v_score_before <> v_score_after THEN
     RAISE EXCEPTION 'Score changed from % to % after config update', v_score_before, v_score_after;
@@ -460,7 +528,7 @@ SELECT ok(
     AND result ? 'ranking_rules'
    FROM (
      SELECT fn_export_scoring_config(
-       (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025')
+       (SELECT id_season FROM tbl_season WHERE bool_active = TRUE)
      ) AS result
    ) sub),
   '2.12 fn_export_scoring_config returns JSON with all 19 parameters + id_season + season_code'
@@ -470,8 +538,8 @@ SELECT ok(
 -- 2.13  Export is idempotent
 -- ---------------------------------------------------------------------------
 SELECT is(
-  (SELECT fn_export_scoring_config(id_season) FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
-  (SELECT fn_export_scoring_config(id_season) FROM tbl_season WHERE txt_code = 'SPWS-2024-2025'),
+  (SELECT fn_export_scoring_config(id_season) FROM tbl_season WHERE bool_active = TRUE),
+  (SELECT fn_export_scoring_config(id_season) FROM tbl_season WHERE bool_active = TRUE),
   '2.13 Export is idempotent: two calls return identical JSON'
 );
 
@@ -485,7 +553,7 @@ SELECT lives_ok(
     v_ts_before TIMESTAMPTZ;
     v_ts_after TIMESTAMPTZ;
   BEGIN
-    SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025';
+    SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
     SELECT ts_updated INTO v_ts_before FROM tbl_scoring_config WHERE id_season = v_season;
 
     -- Wait a tiny bit to ensure timestamp differs
@@ -532,7 +600,7 @@ SELECT lives_ok(
     v_gold_before INT;
     v_gold_after INT;
   BEGIN
-    SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025';
+    SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
 
     SELECT int_podium_gold INTO v_gold_before
     FROM tbl_scoring_config WHERE id_season = v_season;
@@ -598,22 +666,26 @@ SELECT ok(
     AND ppw.num_de_bonus = psw.num_de_bonus
     AND ppw.num_podium_bonus = psw.num_podium_bonus
     AND psw.num_final_score > ppw.num_final_score
-    AND ABS(psw.num_final_score / ppw.num_final_score - 2.0) < 0.01
+    AND ABS(psw.num_final_score / ppw.num_final_score
+            - (SELECT num_psw_multiplier FROM tbl_scoring_config c
+                 JOIN tbl_season s ON s.id_season = c.id_season
+                WHERE s.bool_active)) < 0.01
    FROM
     (SELECT r.* FROM tbl_result r
      JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
      JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-     WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'ATANASSOW') ppw,
+     WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1') ppw,
     (SELECT r.* FROM tbl_result r
      JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
      JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-     WHERE t.txt_code = 'SCORE-PSW-N24' AND f.txt_surname = 'ATANASSOW') psw
+     WHERE t.txt_code = 'SCORE-PSW-N24' AND f.txt_surname = 'SC-FENCER-1') psw
   ),
-  '2.19 PSW has same components as PPW but final_score scaled by 2.0 multiplier'
+  '2.19 PSW has same components as PPW, final_score scaled by the configured PSW multiplier'
 );
 
 -- ---------------------------------------------------------------------------
--- 9.85  MSW tournament: multiplier = 2.0, final_score scaled correctly
+-- 9.85  MSW tournament: final_score scaled by the configured MSW multiplier
+--       (1.2 in the active season; was 2.0 in the retired SPWS-2024-2025 config)
 -- ---------------------------------------------------------------------------
 SELECT ok(
   (SELECT
@@ -621,18 +693,21 @@ SELECT ok(
     AND ppw.num_de_bonus = msw.num_de_bonus
     AND ppw.num_podium_bonus = msw.num_podium_bonus
     AND msw.num_final_score > ppw.num_final_score
-    AND ABS(msw.num_final_score / ppw.num_final_score - 2.0) < 0.01
+    AND ABS(msw.num_final_score / ppw.num_final_score
+            - (SELECT num_msw_multiplier FROM tbl_scoring_config c
+                 JOIN tbl_season s ON s.id_season = c.id_season
+                WHERE s.bool_active)) < 0.01
    FROM
     (SELECT r.* FROM tbl_result r
      JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
      JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-     WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'ATANASSOW') ppw,
+     WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1') ppw,
     (SELECT r.* FROM tbl_result r
      JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
      JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-     WHERE t.txt_code = 'SCORE-MSW-N24' AND f.txt_surname = 'ATANASSOW') msw
+     WHERE t.txt_code = 'SCORE-MSW-N24' AND f.txt_surname = 'SC-FENCER-1') msw
   ),
-  '9.85 MSW has same components as PPW but final_score scaled by 2.0 multiplier'
+  '9.85 MSW has same components as PPW, final_score scaled by the configured MSW multiplier'
 );
 
 -- ---------------------------------------------------------------------------
@@ -643,7 +718,7 @@ SELECT lives_ok(
   $test991$DO $body$
   DECLARE v_event INT; v_season INT; v_org INT;
   BEGIN
-    SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025';
+    SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
     SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
     SELECT id_event INTO v_event FROM tbl_event WHERE txt_code = 'SCORE-TEST-EVT';
     INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type,
