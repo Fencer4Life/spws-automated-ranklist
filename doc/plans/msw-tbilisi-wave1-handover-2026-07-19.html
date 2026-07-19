@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — wave-1 handover</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1060px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--green);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,33px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:70ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:-.01em;
+ margin:38px 0 6px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:26px 0 8px;font-weight:600}
+p{margin:0 0 12px;max-width:82ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 16px;max-width:86ch}
+ul,ol{margin:0 0 14px;padding-left:20px;max-width:82ch}
+li{margin-bottom:7px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:12px 14px;
+ overflow-x:auto;font-family:var(--mono);font-size:11.5px;line-height:1.55;margin:0 0 16px;
+ max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:580px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10.5px;white-space:nowrap;color:var(--navy);font-weight:600}
+td.n{font-family:var(--mono);font-size:13px;font-weight:600;text-align:right;white-space:nowrap}
+.st{font-family:var(--mono);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.chk{border-left:3px solid var(--navy);padding:4px 0 4px 14px;margin-bottom:16px;max-width:84ch}
+.chk .n{font-family:var(--mono);font-size:10px;color:var(--navy);font-weight:600;
+ letter-spacing:.1em;display:block;margin-bottom:3px}
+.chk .exp{font-size:12.5px;color:var(--muted);margin-top:5px}
+footer{margin:42px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Handover · supersedes msw-tbilisi-handover-2026-07-19.html</div>
+  <h1>MŚW Tbilisi 2026 — wave-1 handover</h1>
+  <p class="dek">Everything is built, tested end to end, and verified ready. Nothing has
+  been sent to any fencer. The next session starts the tracker, runs one command that
+  says READY or NOT READY, and — only on the operator's word — sends wave 1.</p>
+  <div class="chips">
+    <span class="chip">2026-07-19</span>
+    <span class="chip">branch: docs/msw-tbilisi-report-mockup</span>
+    <span class="chip ok">preflight: 10/10 pass</span>
+    <span class="chip ok">forms empty</span>
+    <span class="chip warn">wave 1 not sent</span>
+    <span class="chip">102 recipients</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">00</span>First five minutes of the next session</h2>
+
+<div class="call good">
+  <span class="lb">Do exactly this, in this order</span>
+  Start the tracker, then run preflight, then <b class="k">report READY or NOT READY to the
+  operator and stop</b>. Do not send anything until told to.
+</div>
+
+<pre><code>V=doc/external_files/MSW-Tbilisi-2026/.venv/bin/python
+S=doc/external_files/MSW-Tbilisi-2026/scripts
+
+$V $S/tracker.py start --interval 60   # dashboard on http://127.0.0.1:8765/
+$V $S/preflight.py                     # READY / NOT READY, exit 0 / 1</code></pre>
+
+<p><code>preflight.py</code> is read-only — it sends nothing, writes nothing, deletes
+nothing. It prints what it actually observed for each check rather than a bare "OK",
+because an unverifiable pass is exactly how the OAuth scope bug survived: it compared a
+value to itself and reported success for a permission Google had never granted.</p>
+
+<h3>What it checks</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Check</th><th>Blocking?</th><th>What good looks like</th></tr></thead>
+<tbody>
+<tr><td class="d">OAuth scopes</td><td>yes</td><td>6 granted, none missing —
+  <b class="k">asked of Google's tokeninfo endpoint</b>, never read from token.json</td></tr>
+<tr><td class="d">Token age</td><td>warn</td><td>under 7 days; warns inside 1.5 days of expiry</td></tr>
+<tr><td class="d">Form variants</td><td>yes</td><td>exactly 7</td></tr>
+<tr><td class="d">Forms reachable</td><td>yes</td><td>7/7 answer</td></tr>
+<tr><td class="d">Forms empty</td><td>yes</td><td>all zero — any leftover response would be
+  counted as a genuine declaration</td></tr>
+<tr><td class="d">Roster</td><td>yes</td><td>143 fencers, 172 starts, 1 excluded</td></tr>
+<tr><td class="d">Queue builds</td><td>yes</td><td>102 to send, 41 skipped, and
+  <b class="k">every skip reason is "brak adresu e-mail"</b>. Any other reason is a bug.</td></tr>
+<tr><td class="d">Salutations</td><td>warn</td><td>102 addressed by name, 0 bare</td></tr>
+<tr><td class="d">Send log</td><td>info</td><td>absent = nobody mailed; present = reports how
+  many remain</td></tr>
+<tr><td class="d">Tracker</td><td>warn</td><td>status ok</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">01</span>State as of the end of 19 July</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Quantity</th><th></th><th>Note</th></tr></thead>
+<tbody>
+<tr><td class="d">fencers</td><td class="n">143</td><td>172 starts; was 144/173 before the exclusion</td></tr>
+<tr><td class="d">in a top five</td><td class="n">74</td><td>unchanged — one left, one promoted in</td></tr>
+<tr><td class="d">wave-1 recipients</td><td class="n">102</td><td>everyone with an e-mail</td></tr>
+<tr><td class="d">skipped</td><td class="n">41</td><td>no e-mail, every one</td></tr>
+<tr><td class="d">squad pool</td><td class="n">67</td><td>top five <i>and</i> reachable — the KPI denominator</td></tr>
+<tr><td class="d">volunteers</td><td class="n">35</td><td>mailed but in no top five</td></tr>
+<tr><td class="d">top five, no contact</td><td class="n">7</td><td>the phone-call list</td></tr>
+<tr><td class="d">responses</td><td class="n">0</td><td>all test data deleted and verified</td></tr>
+<tr><td class="d">sent</td><td class="n">0</td><td><code>send_log.jsonl</code> does not exist</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>What changed on 19 July</h3>
+<div class="tw">
+<table>
+<thead><tr><th>File</th><th>Change</th><th>State</th></tr></thead>
+<tbody>
+<tr><td class="d">tracker.py</td><td><b class="k">New.</b> Serves the report on 127.0.0.1:8765 and
+  refreshes it on a cycle. <code>start</code> / <code>stop</code> / <code>status</code> /
+  <code>serve</code>, plus <code>--interval</code>.</td><td><span class="st s-ok">tested</span></td></tr>
+<tr><td class="d">preflight.py</td><td><b class="k">New.</b> Ten readiness checks, READY/NOT READY.</td>
+  <td><span class="st s-ok">10/10</span></td></tr>
+<tr><td class="d">gen_links.py</td><td><b class="k">New.</b> Form response-tab links with live
+  counts, for deleting test answers.</td><td><span class="st s-ok">used</span></td></tr>
+<tr><td class="d">mail_body.py</td><td><b class="k">Vocative salutations.</b> Explicit
+  first-name table; <code>zwrot(person)</code> is the single source for both senders.</td>
+  <td><span class="st s-ok">verified</span></td></tr>
+<tr><td class="d">roster.py</td><td><b class="k">INELIGIBLE.</b> Excluded fencers are dropped
+  <i>before</i> positions are assigned, so the category renumbers and a new reserve is pulled in.</td>
+  <td><span class="st s-ok">verified</span></td></tr>
+<tr><td class="d">gen_raport.py</td><td>Duplicate workbook parser <b class="k">deleted</b> — now
+  imports roster. KPI split into squad/volunteer. <code>--live</code> strip, atomic write.</td>
+  <td><span class="st s-ok">verified</span></td></tr>
+<tr><td class="d">send_wave1.py</td><td><code>--redirect ADDR</code> (rehearsal, writes no log)
+  and <code>--only NAMES</code>.</td><td><span class="st s-ok">7 sent</span></td></tr>
+<tr><td class="d">send_test.py</td><td>Hard-coded salutation removed — it now calls the same
+  function production does.</td><td><span class="st s-ok">fixed</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call stop">
+  <span class="lb">None of that code is in git, and it never will be</span>
+  It all lives under <code>doc/external_files/</code>, gitignored because the same directory
+  holds 270 people's contact details and the OAuth credentials. <b class="k">Today's work
+  exists on this Mac only, with no backup.</b> Only the design documents in
+  <code>doc/plans/</code> are committed. The operator was offered a narrowed gitignore that
+  would track <code>scripts/</code> alone; <b class="k">that decision is still open.</b>
+</div>
+
+<h2><span class="num">02</span>Sending wave 1</h2>
+
+<div class="call stop">
+  <span class="lb">Never without the operator saying so, in that session</span>
+  <code>--send</code> is the only thing that mails anyone. Approval given on 19 July does not
+  carry into the next session, and approval to rehearse is not approval to send.
+</div>
+
+<pre><code>$V $S/send_wave1.py                       # dry run, rewrites the preview, sends nothing
+$V $S/send_wave1.py --send --limit 1      # one real fencer, proves log + resume
+$V $S/send_wave1.py --send                # the remaining 101, ~29 min</code></pre>
+
+<p class="sub">Re-running is safe: everyone already in <code>send_log.jsonl</code> is skipped,
+so a crash mid-run costs nothing. Tokens are deterministic, so a resend reissues the same
+code and never creates a second identity for one person.</p>
+
+<h3>Rehearsing instead</h3>
+<pre><code>$V $S/send_wave1.py --send --redirect a.atanassow@protonmail.com --only "TK,PRZYSTAJKO Daniel"</code></pre>
+<p class="sub"><code>--redirect</code> delivers fully rendered production messages to one
+address and <b class="k">deliberately writes no send log</b> — a rehearsal that marked people
+as contacted would silently drop them from the real wave, and nothing downstream would ever
+reveal it. Subjects are stamped with fencer and variant so seven of them cannot be confused.</p>
+
+<h2><span class="num">03</span>Monitoring the wave</h2>
+
+<p>The tracker reads <code>send_log.jsonl</code> as well as the responses, so during the run
+the report shows the send itself progressing — amber for mailed-and-waiting — not just the
+replies. Start it before sending, and the 29 minutes are observable rather than opaque.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Strip</th><th>Means</th></tr></thead>
+<tbody>
+<tr><td class="d">green</td><td>refreshed recently; shows cycle count and token age</td></tr>
+<tr><td class="d">amber</td><td>no successful cycle for more than two cycles</td></tr>
+<tr><td class="d">red</td><td>last cycle failed — carries the subprocess's own stderr</td></tr>
+<tr><td class="d">grey</td><td><b class="k">tracker offline</b> — the process is gone</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call">
+  <span class="lb">Why the strip exists at all</span>
+  A tracker that silently stops does not look broken — <b class="k">it looks like nobody is
+  replying.</b> Liveness comes from <code>/state.json</code>, which is rewritten on every
+  cycle including failed ones; content is swapped only when the generation advances. If the
+  process dies outright the fetch itself fails and the page says so, which no server-side
+  flag could ever report.
+</div>
+
+<p class="sub">Interval: <b class="k">60s during the wave</b>, 300s afterwards. It was run at
+3s during testing — that is a test cadence only, roughly 4,300 Google reads a day.
+A cycle takes ~25s regardless, because it reads seven forms.</p>
+
+<h2><span class="num">04</span>Decisions closed on 19 July</h2>
+<div class="tw">
+<table>
+<thead><tr><th>Decision</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td class="d">Eligibility</td><td><b class="k">NIKALAICHUK Aliaksandr excluded</b> — no Polish
+  citizenship. Floret V3 men renumbered: ĆWIORO Krzysztof to #4,
+  <b class="k">POKRZYWA Mariusz</b> pulled in as #5 reserve. His e-mail was also blanked in
+  <code>kontakty.md</code>. <b class="k">The season workbooks were not touched</b> — ranking
+  data belongs to the ranking system; eligibility is a campaign concern.</td></tr>
+<tr><td class="d">Salutations</td><td><b class="k">Vocative, always.</b> "Szanowny Panie Danielu",
+  not "…Daniel". TK and Ulrike are mapped to themselves by explicit request.</td></tr>
+<tr><td class="d">KPI denominator</td><td><b class="k">67</b>, fixed by policy, not 103 derived
+  from the send log. Volunteers reported separately.</td></tr>
+<tr><td class="d">Dashboard</td><td>Local only, 127.0.0.1, no sharing, no notifications, token
+  age shown on the strip.</td></tr>
+<tr><td class="d">Fees</td><td>90 EUR <b class="k">per weapon</b>; 185 EUR <b class="k">per whole
+  team</b>; <b class="k">no visa fee</b> — Poles enter Georgia visa-free.</td></tr>
+<tr><td class="d">Deadline</td><td>1 August 2026. FIE needs lists and passport scans by 20 August.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">05</span>Traps — all of these have already bitten</h2>
+<ul>
+  <li><b class="k">A pass that validated itself.</b> Never check scopes against
+  <code>token.json</code>; ask Google's tokeninfo endpoint. <code>preflight.py</code> does.</li>
+  <li><b class="k">The one message a human proofread was hand-written.</b>
+  <code>send_test.py</code> hard-coded a correct vocative while production generated a wrong
+  one, so the test structurally could not reveal the bug. Both now call one function.</li>
+  <li><b class="k">Two parsers for one roster.</b> <code>gen_raport.py</code> had its own copy
+  and kept listing a fencer the sender had already dropped. Deleted. <code>gen_uczestnicy.py</code>,
+  <code>gen_prosba.py</code>, <code>gen_merge.py</code> still carry theirs — prefer
+  <code>roster.py</code> for anything new.</li>
+  <li><b class="k">A threshold built from the wrong quantity.</b> Staleness was measured against
+  the configured interval, but a cycle <i>takes</i> ~25s, so the strip called a healthy tracker
+  stale. Only a 3-second test exposed it; at 300s it was accidentally correct.</li>
+  <li><b class="k">innerHTML swaps lose scroll.</b> The document collapses for an instant and the
+  browser clamps scrollY to 0. Height is pinned across the swap.</li>
+  <li><b class="k">A fallback that does not announce itself.</b> <code>read_responses.py</code>
+  records <code>matched_by</code>; all 8 test submissions matched by <code>kod</code>. If it ever
+  says <code>nazwisko</code> or <code>e-mail</code>, that is a real defect.</li>
+</ul>
+
+<h2><span class="num">06</span>Still open</h2>
+<ol>
+  <li><b class="k">Message wording was never signed off.</b> Seven rehearsal messages were
+  delivered to the operator's Proton address; <b class="k">no feedback was given</b>. Ask before
+  sending to 102 people.</li>
+  <li><b class="k">Backup of the campaign scripts.</b> Untracked, this Mac only. See §01.</li>
+  <li><b class="k">The 90 EUR reading is a ruling, not a confirmation</b> from the FIE. One
+  e-mail to <code>fencinggeo@gmail.com</code> would settle it. 25 multi-weapon fencers affected.</li>
+  <li><b class="k">Nothing implements the deletion promise.</b> Privacy variant A tells fencers
+  the contact list is deleted after entries close. A <code>purge.py</code> would make that one
+  command. Needed before the campaign ends, not before it starts.</li>
+  <li><b class="k">Waves 2+ do not exist.</b> Amber in the report is the input to the reminder
+  ladder.</li>
+  <li><b class="k">Peer-sourcing not sent.</b> 40 fencers have no contact at all, 7 in a top
+  five. <code>gen_prosba.py</code> builds the ask list.</li>
+  <li><b class="k">Are there other non-citizens?</b> One was found by chance. If more exist, the
+  top fives are wrong and some invitations would go to the wrong people. Worth asking the board
+  once, rather than discovering it fencer by fencer.</li>
+</ol>
+
+<h2><span class="num">07</span>Working style the operator expects</h2>
+<ul>
+  <li><b class="k">Every deliverable is HTML</b> — including answers to direct questions,
+  analyses and ad-hoc lists. Chat is a pointer plus one question. This has been corrected
+  angrily more than once. Plan mode's <code>.md</code> scratch file does not override it.</li>
+  <li><b class="k">English</b> for everything written to him; <b class="k">Polish</b> only for
+  what reaches fencers.</li>
+  <li><b class="k">One plain-text question at a time</b>, with a recommendation and the reason.
+  Never the multiple-choice question UI.</li>
+  <li><b class="k">Test proactively; never idle-wait.</b> Drive a short interval rather than
+  sleeping through a real one. Wall-clock waiting has wasted his time and he said so.</li>
+  <li><b class="k">Verify, then claim.</b> Read the state back from Google, the file or the
+  script. Two defects on 19 July were found only because values were read back after being
+  called fixed.</li>
+</ul>
+
+</div>
+
+<footer>
+Written 2026-07-19 on branch <code>docs/msw-tbilisi-report-mockup</code>. Supersedes
+<code>msw-tbilisi-handover-2026-07-19.html</code> on all matters of what exists. No message
+has been sent to any fencer; <code>send_log.jsonl</code> does not exist; all seven forms hold
+zero responses. Scripts, contact data, OAuth credentials and generated reports live outside
+the repository in <code>doc/external_files/MSW-Tbilisi-2026/</code> and exist on this machine
+only. This file contains no personal data.
+</footer>
+
+</div>
+</body>
+</html>
