@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — knowledge check and a header defect</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1060px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--coral);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,33px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:70ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:-.01em;
+ margin:38px 0 6px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:26px 0 8px;font-weight:600}
+p{margin:0 0 12px;max-width:82ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 16px;max-width:86ch}
+ul,ol{margin:0 0 14px;padding-left:20px;max-width:82ch}
+li{margin-bottom:7px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:12px 14px;
+ overflow-x:auto;font-family:var(--mono);font-size:11.5px;line-height:1.55;margin:0 0 16px;
+ max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10.5px;white-space:nowrap;color:var(--navy);font-weight:600}
+td.n{font-family:var(--mono);font-size:13px;font-weight:600;text-align:right;white-space:nowrap}
+tr.tot td{background:var(--paper);font-weight:600}
+.big{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 20px}
+.b{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:12px 15px;
+ min-width:150px;flex:1}
+.b.key{border-left:4px solid var(--navy)}
+.b.bad{border-left:4px solid var(--coral)}
+.b .n{font-family:var(--serif);font-size:27px;font-weight:600;line-height:1}
+.b .l{font-family:var(--mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);margin-top:8px}
+footer{margin:42px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · MŚW Tbilisi 2026 · analysis</div>
+  <h1>Knowledge check — and a real defect in the report header</h1>
+  <p class="dek">Three questions answered from the code, not from the handover. Two are
+  simply how the system works. The third turned up a genuine reporting fault: the
+  headline ratio measures confirmations against a population we never invited.</p>
+  <div class="chips">
+    <span class="chip">2026-07-19</span>
+    <span class="chip">branch: docs/msw-tbilisi-report-mockup</span>
+    <span class="chip ok">Q1 · Q2 verified</span>
+    <span class="chip ok">Q3 · defect fixed</span>
+    <span class="chip bad">dashboard · does not exist</span>
+    <span class="chip">nothing sent</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">01</span>How responses are persisted</h2>
+
+<p><b class="k">Google Forms is the store of record. <code>responses.json</code> is a
+derived view.</b> No spreadsheet is linked anywhere in the design.</p>
+
+<p><code>read_responses.py</code> calls <code>forms.responses().list()</code> on each of the
+seven variants, paginating through <code>nextPageToken</code>. Answers arrive keyed by
+<code>questionId</code>, and <code>question_map()</code> maps each one back to the question
+<b class="k">title</b> — never a column index, because a one-weapon variant and a
+three-weapon variant have different layouts and position would silently mean different
+things per fencer.</p>
+
+<p>Each response is resolved to a fencer by <code>resolve()</code>, in descending order of
+reliability: <code>kod</code> → <code>nazwisko</code> → <code>e-mail</code>. The route taken
+is stored as <code>matched_by</code>. The prefilled code is a hint rather than a key —
+Forms has no read-only field property, so a fencer can clear or mangle it.</p>
+
+<div class="call good">
+  <span class="lb">Why the derived file is safe to delete</span>
+  A changed mind arrives as a second submission and collapses via
+  <code>rec["submitted"] &gt; prev["submitted"]</code> — latest wins. Only this local view
+  collapses; <b class="k">every submission remains in Google's response list</b>, so the
+  append-only history is intact and <code>responses.json</code> can be rebuilt from scratch
+  at any time by re-running the reader.
+</div>
+
+<h2><span class="num">02</span>Who we mail, and which starts they are eligible for</h2>
+
+<p><code>roster.py</code> is the only parser. It walks the season workbooks' tab
+<code>Kadra - indywidualnie</code> and, for each fencer, accumulates
+<code>starts[] = {weapon, vcat, pos}</code>. Contacts come from <code>kontakty.md</code>
+(authoritative) topped up by <code>kontakty-lista2.tsv</code>, joined on the transliterated
+<code>key()</code>.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Concept</th><th>Where</th><th>Rule</th></tr></thead>
+<tbody>
+<tr><td class="d">eligible start</td><td><code>roster.load()</code></td>
+  <td>every row where the fencer appears, with position and category</td></tr>
+<tr><td class="d">top5</td><td><code>roster.py:102</code></td>
+  <td><code>any(pos &lt;= 5)</code> across <i>all</i> the fencer's starts — 4 starters
+  plus one reserve</td></tr>
+<tr><td class="d">reach</td><td><code>roster.py:113</code></td>
+  <td><code>bool(email or tel)</code> — <b class="k">not</b> the same as having an e-mail</td></tr>
+<tr><td class="d">which form</td><td><code>roster.variant_key()</code></td>
+  <td>the one variant showing exactly this fencer's weapon set</td></tr>
+<tr><td class="d">which dates</td><td><code>roster.schedule_args()</code></td>
+  <td>fed to <code>fie_schedule</code>, deduplicated per weapon; raises on an unknown category</td></tr>
+<tr><td class="d">who is queued</td><td><code>send_wave1.build_queue()</code></td>
+  <td><b class="k">anyone with an e-mail.</b> <code>--top5</code> is opt-in, not the default</td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="sub">One e-mail per person, covering all of that person's starts. That
+aggregation is what makes the per-person counts correct — see below.</p>
+
+<h2><span class="num">03</span>The header defect</h2>
+
+<div class="call stop">
+  <span class="lb">Your hypothesis was wrong; your conclusion was right</span>
+  The suspicion was that aggregating the polls over-counts fencers. It does the opposite —
+  aggregation is precisely what removes the duplicates. <b class="k">But the header is
+  still wrong</b>, in the denominator rather than the dedupe.
+</div>
+
+<h3>The dedupe is correct</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Quantity</th><th></th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td class="d">top-five slots</td><td class="n">92</td>
+  <td>summed over the 23 populated categories, capped at 5 each</td></tr>
+<tr><td class="d">− duplicates</td><td class="n">18</td>
+  <td>the same fencer holding a slot in a second weapon or category</td></tr>
+<tr class="tot"><td class="d">distinct people</td><td class="n">74</td>
+  <td>what the report shows. <b class="k">Already deduplicated.</b></td></tr>
+</tbody>
+</table>
+</div>
+<p class="sub">8 of the 23 populated categories hold fewer than five ranked fencers, so no
+reserve exists there. A 24th category exists on paper with nobody ranked in it.</p>
+
+<h3>The denominator is not the invited population</h3>
+
+<p><code>gen_raport.py:475</code> renders <code>{n_confirmed}/{n_emailed or n_mail}</code>
+under the label <i>Potwierdziło start indywidualny</i>, immediately beside a card reading
+<i>W pierwszej piątce — 74 — zbiór zaproszeń: 4 + rezerwowy</i>. The board reads those two
+cards as one story. They are two different populations.</p>
+
+<div class="big">
+  <div class="b key"><div class="n">74</div><div class="l">invitation set (top five)</div></div>
+  <div class="b bad"><div class="n">103</div><div class="l">denominator actually shown</div></div>
+  <div class="b key"><div class="n">67</div><div class="l">in both</div></div>
+  <div class="b bad"><div class="n">36</div><div class="l">mailed, in no top five</div></div>
+  <div class="b bad"><div class="n">7</div><div class="l">top five, no e-mail</div></div>
+</div>
+
+<p>So the board is shown <b class="k">0 / 103</b> against a stated invitation set of 74.
+Two consequences:</p>
+<ul>
+  <li><b class="k">The ratio cannot be read as squad readiness.</b> 36 of the 103 were never
+  in any top five — they are not being invited to a place, and their answers dilute the
+  headline.</li>
+  <li><b class="k">The 7 who matter most vanish.</b> Fencers in a top five with no e-mail
+  are absent from both numerator and denominator, so the one group needing a phone call
+  is invisible in the number the board looks at.</li>
+</ul>
+
+<h3>A second-order fault in the same expression</h3>
+
+<div class="call stop">
+  <span class="lb">The population changes underneath the label</span>
+  <code>n_emailed or n_mail</code> evaluates to <b class="k">103</b> before the first send
+  ("everyone we hold an address for") and to <code>n_emailed</code> afterwards ("everyone
+  actually mailed"). If <code>--top5</code> is ever used it becomes roughly <b class="k">67</b>.
+  The same card silently means three different things depending on when it is generated and
+  which flags were passed. A KPI whose denominator is defined by history rather than by
+  policy cannot be compared against itself over time.
+</div>
+
+<h3>Proposed fix</h3>
+<ol>
+  <li>Denominator becomes <b class="k">67</b> — top five <i>and</i> has an e-mail — fixed
+  by policy, identical before and after the send.</li>
+  <li>The <b class="k">36</b> non-top-five respondents get their own card. They are not
+  noise: they are self-funding volunteers, and worth counting where they cannot dilute
+  squad readiness.</li>
+  <li><b class="k">7</b> stays visible beside the ratio, as unreachable-and-needed.</li>
+</ol>
+
+<h2><span class="num">04</span>Applied — <code>gen_raport.py</code>, 19 July</h2>
+
+<div class="call good">
+  <span class="lb">All three fixes are in, Ruff clean, report regenerated</span>
+  <code>raport.html</code> now carries six KPI cards instead of five. Nothing outside
+  <code>gen_raport.py</code> was touched — no form, no send path, no response handling.
+</div>
+
+<h3>The header, before and after</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Card</th><th>Was</th><th>Is</th></tr></thead>
+<tbody>
+<tr><td class="d">invitation set</td>
+  <td>74 · "zbiór zaproszeń: 4 + rezerwowy"</td>
+  <td>74 · <b class="k">"67 z adresem + 7 bez"</b></td></tr>
+<tr><td class="d">confirmations</td>
+  <td><b>0 / 103</b> · "Potwierdziło start indywidualny"</td>
+  <td><b class="k">0 / 67</b> · "Potwierdziło start — pierwsza piątka"</td></tr>
+<tr><td class="d">volunteers</td>
+  <td><i>did not exist</i></td>
+  <td><b class="k">0 / 36</b> · "Zgłoszenia spoza piątki — start własnym kosztem,
+  nie liczą się do składu"</td></tr>
+<tr><td class="d">teams</td><td>0 / 9</td><td>0 / 9 — unchanged</td></tr>
+<tr><td class="d">unreachable</td>
+  <td>40 · "Brak jakiegokolwiek kontaktu", 7 buried in the subtitle</td>
+  <td><b class="k">7</b> · "W pierwszej piątce bez kontaktu — trzymamy im miejsce,
+  nie mamy jak napisać · z 40 nieosiągalnych"</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>What changed in the code</h3>
+<ul>
+  <li><b class="k">Two named populations.</b> <code>squad = top5 ∧ email</code> and
+  <code>vol = ¬top5 ∧ email</code>, with <code>_confirmed/_declined/_waiting</code> now
+  taking a pool argument instead of iterating all 144.</li>
+  <li><b class="k">The denominator no longer depends on history.</b>
+  <code>n_emailed or n_mail</code> is gone from the KPI. <code>n_squad</code> is fixed by
+  policy, so the ratio is comparable against itself before the send, after it, and with
+  or without <code>--top5</code>.</li>
+  <li><b class="k">The gap is derived, not re-measured.</b>
+  <code>n_gap5 = n_top5 - n_squad</code>, so the card cannot drift out of agreement with
+  the invitation set it sits beside.</li>
+  <li><b class="k">A duplicate definition removed.</b> <code>n_mail5</code> computed the
+  same quantity as <code>n_squad</code> under a second name; it is deleted, with a comment
+  saying why it must not come back.</li>
+</ul>
+
+<div class="call">
+  <span class="lb">Why 74 = 67 + 7 holds exactly</span>
+  All seven top-five fencers without an e-mail turn out to have no phone either, and the
+  single phone-only fencer in the roster is outside every top five. The invitation set
+  therefore splits with no remainder, which is why the header can explain itself on its
+  face rather than in a footnote. <b class="k">This is a property of today's data, not an
+  invariant</b> — <code>n_gap5</code> is derived by subtraction precisely so that it stays
+  correct if a phone-only fencer ever enters a top five.
+</div>
+
+<h3>Left alone deliberately</h3>
+<p>The legend still reads <i>mamy adres e-mail — 103 z 144</i>. That is the <code>@</code>
+marker's own scope — every fencer in the table we hold an address for — and it is labelled
+precisely, so it is not the same claim the KPI was making. <b class="k">Also unchanged:
+<code>send_wave1.py</code> still queues all 103 by default.</b> The report now
+distinguishes the two groups; the send policy is a separate decision.</p>
+
+<h2><span class="num">05</span>Live dashboard — no, we do not have it</h2>
+
+<div class="call stop">
+  <span class="lb">Answer: nothing of this exists today</span>
+  <code>raport.html</code> is a <b class="k">static file, generated once, by hand</b>.
+  Checked on 19 July: no <code>&lt;meta http-equiv="refresh"&gt;</code>, no
+  <code>setInterval</code>, no <code>fetch</code>, no <code>EventSource</code> anywhere in
+  the output; no shell wrapper in <code>scripts/</code>; no <code>crontab</code> entry and
+  no <code>LaunchAgent</code>. Following progress today means running two commands and
+  reloading the tab yourself.
+</div>
+
+<h3>What is actually there</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Piece</th><th>Have it?</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td class="d">pull responses</td><td><b class="k">yes</b></td>
+  <td><code>read_responses.py</code>, one shot, writes <code>responses.json</code></td></tr>
+<tr><td class="d">render report</td><td><b class="k">yes</b></td>
+  <td><code>gen_raport.py</code>, one shot, reads responses <i>and</i>
+  <code>send_log.jsonl</code></td></tr>
+<tr><td class="d">run them on a timer</td><td>no</td><td>—</td></tr>
+<tr><td class="d">reload the page</td><td>no</td><td>—</td></tr>
+<tr><td class="d">show its own freshness</td><td><b class="k">no — and this is the risk</b></td>
+  <td>see below</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>So the data half is done and correct. What is missing is a loop, a page reload, and —
+the part that is easy to skip — <b class="k">a way for the page to say how old it is</b>.</p>
+
+<div class="call stop">
+  <span class="lb">The failure mode that makes this worth building carefully</span>
+  A dashboard that silently stops updating does not look broken. It looks like
+  <i>nobody is replying.</i> If the loop dies at 09:10 and you glance at the tab at 14:00,
+  the honest reading and the broken reading are the same picture. <b class="k">The page
+  must carry its own timestamp and turn visibly stale</b> when the last refresh is older
+  than a couple of cycles. Without that, the dashboard is worse than reloading by hand,
+  because manual reloading at least tells you it ran.
+</div>
+
+<h3>The specific thing that will kill the loop</h3>
+<p><b class="k">The OAuth token expires every 7 days</b> — the app is in Google's Testing
+mode. A background loop will hit <code>RefreshError</code> mid-campaign, and if it logs to
+stderr in a terminal nobody is watching, it is invisible. The refresh failure has to
+surface <i>in the report itself</i>, as a red banner, alongside the instruction to re-run
+<code>auth_setup.py</code>. The same applies to any API error: the loop must never exit
+quietly, and must never overwrite a good report with a half-rendered one.</p>
+
+<h3>What it would take</h3>
+<ol>
+  <li><b class="k">A <code>watch.py</code>:</b> read responses → regenerate report → sleep
+  300 → repeat. Both existing scripts are importable, so this is a loop around code that
+  already works, not new logic.</li>
+  <li><b class="k">Atomic writes.</b> Write to a temp file and <code>os.replace()</code>.
+  The browser will otherwise sometimes fetch a half-written file and render a broken page
+  — a 90 KB report is not written instantaneously.</li>
+  <li><b class="k">Self-refresh in the page.</b> A small script that reloads on a timer and
+  restores scroll position. A bare <code>&lt;meta refresh&gt;</code> jumps you back to the
+  top of a long report every cycle, which makes it unusable for reading the category
+  tables.</li>
+  <li><b class="k">A freshness strip.</b> Last-updated time, cycle count, and the loop's
+  health — green while refreshing, red on auth failure or repeated errors.</li>
+</ol>
+
+<h3>Cost — it is cheap</h3>
+<p>One cycle is roughly 14 Forms API calls: a <code>get</code> and a
+<code>responses.list</code> per variant, times seven. At a five-minute cadence that is
+about <b class="k">4 000 calls a day</b>, comfortably inside Google's per-minute read
+quota, and it touches a different API from the sender — so <b class="k">the watcher can run
+while <code>send_wave1.py</code> is still working through the queue</b>. That is actually
+the most useful window: because the report already reads <code>send_log.jsonl</code>, the
+dashboard would show the send itself progressing, not just the replies.</p>
+
+<div class="call">
+  <span class="lb">One rail must not be relaxed for this</span>
+  The watcher is read-only against Google. It must never call anything that deletes or
+  modifies form responses. <b class="k">"Delete all responses" stays a manual, pre-send-only
+  action</b> — no automated process should be in a position to reach it.
+</div>
+
+<h2><span class="num">06</span>Open questions</h2>
+<ol>
+  <li><b class="k">Should I build <code>watch.py</code> before wave 1 or after?</b> My
+  recommendation: <b>build it before, start it before the send.</b> It is perhaps an hour
+  of work, it needs no new API scopes, and starting it first means the send itself is
+  observable rather than opaque for 29 minutes. Building it afterwards means writing code
+  while responses are already arriving.</li>
+  <li><b class="k">Wave 1 to all 103, or the 67 first?</b> Still open from before. The
+  report is honest either way — this only affects who receives mail on the first pass.</li>
+</ol>
+
+</div>
+
+<footer>
+Written 2026-07-19 on branch <code>docs/msw-tbilisi-report-mockup</code>. All figures
+derived by running <code>roster.py</code> and reading <code>gen_raport.py</code>,
+<code>read_responses.py</code> and <code>send_wave1.py</code> on this machine; none are
+copied from the handover. Contains no personal data. Nothing has been sent to any fencer.
+</footer>
+
+</div>
+</body>
+</html>
