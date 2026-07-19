@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MŚW Tbilisi 2026 — Google account access</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1020px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,33px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:68ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:-.01em;
+ margin:36px 0 6px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:24px 0 8px;font-weight:600}
+p{margin:0 0 12px;max-width:80ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 16px;max-width:84ch}
+ul,ol{margin:0 0 14px;padding-left:20px;max-width:80ch}
+li{margin-bottom:6px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:84ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10px;color:var(--navy);white-space:nowrap;font-weight:600}
+td.f{font-family:var(--mono);font-size:10.5px}
+.st{font-family:var(--mono);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.s-no{background:var(--grey-bg);color:var(--grey)}
+.q{border-left:3px solid var(--navy);padding:4px 0 4px 14px;margin-bottom:18px;max-width:82ch}
+.q .qn{font-family:var(--mono);font-size:10px;color:var(--navy);font-weight:600;
+ letter-spacing:.1em;display:block;margin-bottom:3px}
+.q .rec{font-size:12.5px;color:var(--muted);margin-top:6px}
+.q .rec b{color:var(--green)}
+footer{margin:40px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:84ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · MŚW Tbilisi 2026 · decision sheet</div>
+  <h1>Google account access</h1>
+  <p class="dek">How to give me working access to <code>spws.weterani@gmail.com</code> for
+  sending mail and reading form responses — without handing me a password. Plus one limit
+  that changes the campaign design.</p>
+  <div class="chips">
+    <span class="chip">2026-07-18</span>
+    <span class="chip bad">Apps Script: 100 mails/day</span>
+    <span class="chip ok">Gmail API: 500 mails/day</span>
+    <span class="chip">4 questions at the end</span>
+  </div>
+</div>
+
+<div class="body">
+
+<div class="call">
+  <span class="lb">Language convention, so I stop getting this wrong</span>
+  Working documents for you — plans, decision sheets, analysis — are in
+  <b class="k">English</b>. Only campaign output that reaches fencers (emails, the form,
+  the board report) is in <b class="k">Polish</b>. I inferred Polish from the campaign
+  content and wrote the first version of this page in Polish; that was wrong.
+</div>
+
+<h2><span class="num">00</span>The limit I found — read first</h2>
+
+<div class="call stop">
+  <span class="lb">Apps Script cannot carry this campaign</span>
+  A <code>@gmail.com</code> account is a consumer account, not Google Workspace. The
+  <code>MailApp</code>/<code>GmailApp</code> quota for a consumer account is
+  <b class="k">100 recipients per day</b> — not the 1,500 that Workspace gets. Gmail proper
+  (the web UI, SMTP, the Gmail API) allows <b class="k">500 per day</b>.
+  <p style="margin:8px 0 0">Wave 1 is roughly <b class="k">103 mails</b>, and the
+  contact-sourcing requests are another <b class="k">34</b> — about 137 total. Through Apps
+  Script that <b class="k">does not fit in a single day</b>. Through the Gmail API it fits
+  with room to spare.</p>
+  <p style="margin:8px 0 0"><i>Caveat: 103 and 34 come from the previous session and I have
+  not verified them — see question 4.</i></p>
+</div>
+
+<p class="sub">Sources: <a href="https://developers.google.com/apps-script/guides/services/quotas">Apps Script — Quotas</a>
+(consumer 100/day, Workspace 1,500/day) and
+<a href="https://support.google.com/mail/answer/22839">Gmail sending limits</a> (500/day).
+Both checked today against Google's documentation rather than quoted from memory — quoting
+from memory was mistake #1 last session.</p>
+
+<h2><span class="num">01</span>What I will not do, whatever the instruction</h2>
+
+<div class="call warn">
+  <span class="lb">Passwords and credentials</span>
+  <b class="k">Do not give me the password to this account and do not paste it into chat.</b>
+  I don't enter passwords, 2FA codes or keys into any field, and I don't create accounts.
+  If a password lands in this conversation it will have to be rotated.
+  <p style="margin:8px 0 0">Every option below is built so that <b class="k">you authorise,
+  in Google's own consent screen</b>, and I get access indirectly — either through code
+  running on your Mac or through your already-logged-in browser. I never see the
+  credentials.</p>
+</div>
+
+<h2><span class="num">02</span>Four routes</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Option</th><th>How it works</th><th>Send limit</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr>
+  <td class="d">A · Gmail API<br>locally</td>
+  <td>An OAuth "Desktop app" client in Google Cloud. You run a script once, Google's consent
+  screen opens, a token is stored in a file on your Mac. After that, Python scripts send mail
+  and read the response sheet.</td>
+  <td class="f">500/day</td>
+  <td><span class="st s-ok">recommended</span></td>
+</tr>
+<tr>
+  <td class="d">B · Apps Script</td>
+  <td>A <code>.gs</code> script bound to the account; you paste it into script.google.com and
+  authorise it. Runs in Google's cloud.</td>
+  <td class="f">100/day</td>
+  <td><span class="st s-wip">form build only</span></td>
+</tr>
+<tr>
+  <td class="d">C · Claude<br>in Chrome</td>
+  <td>I drive your logged-in browser. I see and click what you see and click.</td>
+  <td class="f">manual</td>
+  <td><span class="st s-wip">setup only</span></td>
+</tr>
+<tr>
+  <td class="d">D · app password<br>+ SMTP</td>
+  <td>You generate an app password and put it in a <code>.env</code> file on your Mac. The
+  script reads it from the environment.</td>
+  <td class="f">500/day</td>
+  <td><span class="st s-no">unnecessary</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h3>Why A rather than B</h3>
+<ul>
+  <li><b class="k">The quota.</b> 500 a day instead of 100. Wave 1 goes out in one day.</li>
+  <li><b class="k">The data is on your Mac.</b> The 270-contact list lives in
+  <code>doc/external_files/</code>, outside git, deliberately. Apps Script would mean
+  uploading it to Google's cloud. Option A leaves the data where it already is.</li>
+  <li><b class="k">The database is local too.</b> Handover section 03 fixes a separate
+  <code>msw_tbilisi</code> database on port 54322. Python-side campaign logic sits next to
+  that database; Apps Script would be cut off from it.</li>
+  <li><b class="k">The code stays in the repo and under version control.</b> Apps Script
+  lives in someone else's editor.</li>
+</ul>
+
+<div class="call good">
+  <span class="lb">Option D is rejected, but not because it's bad</span>
+  An app password works and gives the same 500/day. It loses because A gives the same thing
+  <b class="k">without creating a durable secret</b> that could leak into the repo — and
+  mistake #5 last session was nearly committing personal data. Fewer secrets, less surface.
+</div>
+
+<h2><span class="num">03</span>What option A actually requires from you</h2>
+<p class="sub">One-off, about 10 minutes. You click all of it; I can walk you through it step
+by step, or — if you enable Claude in Chrome — point at where to click. I don't create
+accounts and I don't accept terms on your behalf.</p>
+<ol>
+  <li>Signed in as <code>spws.weterani@gmail.com</code>, create a new project in the Google
+  Cloud Console.</li>
+  <li>Enable two APIs: <b class="k">Gmail API</b> and <b class="k">Google Sheets API</b>.</li>
+  <li>OAuth consent screen: type <i>External</i>, status <i>Testing</i>, add
+  <code>spws.weterani@gmail.com</code> as a test user. Publishing the app and Google
+  verification are <b class="k">not needed</b> — the account authorises itself.</li>
+  <li>Create credentials of type <b class="k">OAuth client ID → Desktop app</b> and download
+  the JSON.</li>
+  <li>Put that file in <code>doc/external_files/MSW-Tbilisi-2026/</code> — the directory is
+  gitignored, so it cannot reach the repo. <b class="k">Do not paste its contents into
+  chat.</b> The script reads it from the path; I never need to see it.</li>
+  <li>Run my authorisation script once — it opens a browser, you click Allow, the token is
+  written locally.</li>
+</ol>
+
+<h2><span class="num">04</span>Decision sheet</h2>
+
+<div class="q">
+  <span class="qn">QUESTION 1 · access route</span>
+  Option A (Gmail API locally), B (Apps Script), C (Claude in Chrome) or D (app password)?
+  These combine: A for sending and reading responses, C for one-off setup and building the
+  form.
+  <div class="rec"><b>Recommendation: A as the backbone, C for setup.</b> Why: 500/day
+  instead of 100, the data stays on your Mac, the code stays in the repo.</div>
+</div>
+
+<div class="q">
+  <span class="qn">QUESTION 2 · building the form</span>
+  I can build the form via Apps Script (a script that creates it programmatically and prints
+  each field's <code>entry.*</code> prefill ID), or by clicking through it with you in Chrome.
+  <div class="rec"><b>Recommendation: Apps Script, once, for the build only.</b> Why: the
+  100-mail quota is irrelevant to form creation, and the script prints the prefill IDs that
+  are tedious and error-prone to harvest by hand. Apps Script does not come back for
+  sending.</div>
+</div>
+
+<div class="q">
+  <span class="qn">QUESTION 3 · scope of permissions</span>
+  Request <code>gmail.send</code> only (send, no read access to the mailbox), or also
+  <code>gmail.readonly</code> so bounces and replies can be detected automatically?
+  <div class="rec"><b>Recommendation: start with <code>gmail.send</code> +
+  <code>spreadsheets.readonly</code>.</b> Why: minimum scope, and bounces can be eyeballed
+  manually at this volume. Widen it later if it proves necessary.</div>
+</div>
+
+<div class="q">
+  <span class="qn">QUESTION 4 · the numbers</span>
+  The handover says you overwrote the workbooks with end-of-season data on 2026-07-18 — the
+  same day the figures 144 / 173 / 41 / 8 / 34 were produced. I can't tell whether they
+  predate or postdate the overwrite. Should I re-run the generators against
+  <code>doc/external_files/Sezon_2025-2026/XLS/</code> to confirm?
+  <div class="rec"><b>Recommendation: yes, before anything is sent.</b> Why: it's the only
+  way to know how many people are actually in the campaign — and whether 500/day is enough.
+  I need your explicit go-ahead to read those specific files.</div>
+</div>
+
+</div>
+
+<footer>
+Written 2026-07-18 on branch <code>docs/msw-tbilisi-report-mockup</code>. Nothing has been
+built and nothing sent. The Apps Script and Gmail quotas were checked against Google's
+documentation today, not quoted from memory.
+</footer>
+
+</div>
+</body>
+</html>
