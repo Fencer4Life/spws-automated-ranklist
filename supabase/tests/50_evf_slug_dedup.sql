@@ -253,10 +253,20 @@ BEGIN
 END;
 $t507_setup$;
 
--- Same statement shape as the migration's backfill (scoped implicitly to
--- this group since it's the only EVF row set sharing this url_event and
--- currently NULL txt_evf_slug; already-slugged rows from earlier tests are
--- untouched because their WHERE evf_slug IS NOT NULL rn=1 winner is stable).
+-- Same statement shape as the migration's backfill, explicitly scoped to this
+-- file's own EVFSLUG-TEST season.
+--
+-- This used to rely on an implicit scope — the comment claimed this was "the
+-- only EVF row set sharing this url_event and currently NULL txt_evf_slug".
+-- That held only for the seed of the day. On 2026-07-19 the refreshed seed
+-- brought in real EVF events that are still unslugged, and the statement
+-- swept them up: the ranked CTE de-duplicates only WITHIN the NULL-slug set
+-- and never checks rows that ALREADY carry a slug, so a seed row won rn=1 and
+-- collided with an existing slug, violating idx_tbl_event_evf_slug and
+-- aborting the whole file (reported as "planned 8, ran 6").
+--
+-- The unique index is (id_season, txt_evf_slug), so scoping by season isolates
+-- this completely while preserving the tie-break semantics under test.
 WITH slug_extract AS (
   SELECT
     e.id_event,
@@ -264,6 +274,7 @@ WITH slug_extract AS (
   FROM tbl_event e
   JOIN tbl_organizer o ON o.id_organizer = e.id_organizer
   WHERE o.txt_code = 'EVF'
+    AND e.id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'EVFSLUG-TEST')
     AND e.url_event IS NOT NULL
     AND e.url_event <> ''
     AND e.txt_evf_slug IS NULL

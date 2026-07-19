@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>main CI red — diagnosis, 19 July 2026</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1060px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--coral);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,33px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:70ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:-.01em;
+ margin:38px 0 6px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:26px 0 8px;font-weight:600}
+p{margin:0 0 12px;max-width:82ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 16px;max-width:86ch}
+ul,ol{margin:0 0 14px;padding-left:20px;max-width:82ch}
+li{margin-bottom:7px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:12px 14px;
+ overflow-x:auto;font-family:var(--mono);font-size:11.5px;line-height:1.55;margin:0 0 16px;
+ max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:600px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10.5px;white-space:nowrap;color:var(--navy);font-weight:600}
+td.n{font-family:var(--mono);font-size:13px;font-weight:600;text-align:right;white-space:nowrap}
+.st{font-family:var(--mono);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-grey{background:var(--grey-bg);color:var(--grey)}
+footer{margin:42px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · CI diagnosis · 19 July 2026 · corrects §02 of msw-tbilisi-handover-2026-07-19-evening.html</div>
+  <h1>Not three stale numbers. One season rollover, and a fixture that was always going to break.</h1>
+  <p class="dek">The four failing assertions have two root causes, neither of which is "the refreshed
+  seed carries more PROD data". Fixing them by editing the expected values would hide a defect that
+  recurs every July — and would have fired next season with or without the seed refresh.</p>
+  <div class="chips">
+    <span class="chip">2026-07-19</span>
+    <span class="chip bad">03_views_api · 3 failed</span>
+    <span class="chip bad">50_evf_slug_dedup · aborts</span>
+    <span class="chip ok">08_crud_functions now passes</span>
+    <span class="chip warn">1 decision needed</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">00</span>What the suite actually reports</h2>
+
+<p>Reproduced on LOCAL, <code>supabase test db</code>, commit <code>5df1949</code>. The handover
+predicted "<code>03_views_api</code> (3), <code>50_evf_slug_dedup</code> (2)". The counts are close;
+the <b class="k">stated reasons are wrong</b>.</p>
+
+<pre><code># Failed test 3:  "5.2a fn_ranking_ppw returns 3 V2 fencers … for active season"
+#         have: 4      want: 3
+# Failed test 4:  "5.3 Explicit season parameter returns same 3 V2 fencers"
+#         have: 24     want: 3
+# Failed test 12: "5.10 Filter by category=V1 returns V1 fencer (FORAJTER)"
+#         (returned 0 rows)
+
+50_evf_slug_dedup.sql:281: ERROR: duplicate key value violates unique constraint
+  "idx_tbl_event_evf_slug"
+  DETAIL: Key (id_season, txt_evf_slug)=(3, E2A7B077F2824DD8A7F2E413B4211296) already exists.</code></pre>
+
+<div class="call good">
+  <span class="lb">One thing improved on its own</span>
+  <code>08_crud_functions</code> — the "active season does not engulf today" failure that started
+  the whole investigation — <b class="k">now passes</b>. The seed refresh fixed it, as intended.
+  The remaining failures are its side effects.
+</div>
+
+<h2><span class="num">01</span>Cause A — the season rolled over</h2>
+
+<p>All three <code>03_views_api</code> failures reduce to a single fact. The seed of 2026-06-28
+predated the 14 July season-boundary incident fix (<code>20260714000002</code>). The refreshed seed
+carries the corrected boundaries, so <b class="k">the active season changed</b>:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Season</th><th>dt_start</th><th>dt_end</th><th>Active</th><th>End year</th></tr></thead>
+<tbody>
+<tr><td class="d">SPWS-2025-2026</td><td class="d">2025-08-01</td><td class="d">2026-07-11</td>
+  <td><span class="st s-grey">no</span></td><td class="n">2026</td></tr>
+<tr><td class="d">SPWS-2026-2027</td><td class="d">2026-07-13</td><td class="d">2027-07-15</td>
+  <td><span class="st s-ok">yes</span></td><td class="n">2027</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><code>fn_age_category</code> buckets on <code>season_end_year − birth_year</code>, with V1 at
+40–49 and V2 at 50–59. Moving the end year from 2026 to 2027 ages every fencer by one, and
+<b class="k">exactly one fixture fencer crosses a boundary</b>:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Fencer</th><th>Birth year</th><th>Category (end 2026)</th><th>Category (end 2027)</th><th></th></tr></thead>
+<tbody>
+<tr><td class="d">ATANASSOW Aleksander</td><td class="n">1969</td><td>V2</td><td>V2</td><td><span class="st s-ok">stable</span></td></tr>
+<tr><td class="d">BARAŃSKI Wacław</td><td class="n">1964</td><td>V3</td><td>V3</td><td><span class="st s-ok">stable</span></td></tr>
+<tr><td class="d">BAZAK Jacek</td><td class="n">1974</td><td>V2</td><td>V2</td><td><span class="st s-ok">stable</span></td></tr>
+<tr><td class="d">DUDEK Mariusz</td><td class="n">1973</td><td>V2</td><td>V2</td><td><span class="st s-ok">stable</span></td></tr>
+<tr><td class="d">HAŚKO Sergiusz</td><td class="n">1974</td><td>V2</td><td>V2</td><td><span class="st s-ok">stable</span></td></tr>
+<tr><td class="d">FORAJTER Roman</td><td class="n">1977</td><td>V1</td><td><b class="k">V2</b></td><td><span class="st s-bad">crossed</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>That single crossing explains two of the three failures, because
+<code>fn_ranking_ppw</code> filters by the <i>fencer's</i> birth-year category, not the tournament's:</p>
+
+<ul>
+  <li><b class="k">Test 3</b> — V2 gains FORAJTER, so the count is 4, not 3.</li>
+  <li><b class="k">Test 12</b> — V1 loses its only member, so the ranking is empty and the
+  <code>&gt;= 1</code> assertion fails.</li>
+</ul>
+
+<p><b class="k">Test 4 fails for a related but distinct reason.</b> It passes the literal season code
+<code>'SPWS-2025-2026'</code>. The setup block clears tournament data for
+<code>bool_active = TRUE</code> only — which is now the 2026-2027 season — so 2025-2026 is left
+holding real seed data and returns 24 fencers. The assertion's stated intent
+("explicit season parameter returns the same result as the implicit one") is no longer what it
+tests.</p>
+
+<div class="call warn">
+  <span class="lb">The defect underneath</span>
+  The fixture borrows <b class="k">six real seed fencers by surname</b>
+  (<code>SELECT id_fencer INTO … WHERE txt_surname = 'DUDEK'</code>) and depends on their real birth
+  years landing in specific categories. It is therefore hostage to <b class="k">both the seed and the
+  calendar</b>. This would have broken at the next season rollover regardless of any seed refresh —
+  the refresh only brought the date forward. Bumping <code>3</code> to <code>4</code> re-arms it for
+  next July.
+</div>
+
+<p class="sub">Secondary hazard, same lines: those lookups are unqualified by birth year, the exact
+pattern just fixed in <code>export_seed.py::fencer_lookup()</code>. If PROD ever holds two fencers
+sharing one of these six surnames, <code>SELECT … INTO</code> silently binds the first row.</p>
+
+<h2><span class="num">02</span>Cause B — an unscoped backfill in test 50.7</h2>
+
+<p>Subtest 50.7 mirrors the migration's slug-backfill statement to assert its tie-break rule
+(lowest <code>id_event</code> per URL group wins). Its <code>WHERE</code> clause selects
+<b class="k">every</b> EVF event in the database with a non-empty <code>url_event</code> and a NULL
+<code>txt_evf_slug</code> — not just the seven it created. An inline comment claims the statement is
+"scoped implicitly … since it's the only EVF row set sharing this url_event", which was true of the
+old seed and is <b class="k">no longer true</b>.</p>
+
+<p>The refreshed seed contains real EVF events that are still unslugged. The <code>ranked</code> CTE
+de-duplicates only <i>within</i> the NULL-slug set; it never checks against rows that
+<b class="k">already</b> carry a slug. A seed row therefore wins <code>rn = 1</code> and collides with
+an existing slug in season 3, violating <code>idx_tbl_event_evf_slug</code> and aborting the file —
+which is why it reports "planned 8, ran 6" rather than a clean failure.</p>
+
+<p class="sub">This is the only unscoped mutation in the file; subtests 50.1–50.6 and 50.8 all
+operate on explicitly captured <code>id_event</code> values and are unaffected.</p>
+
+<h2><span class="num">03</span>Proposed fixes</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Target</th><th>Change</th><th>Ambiguity</th></tr></thead>
+<tbody>
+<tr><td class="d">50_evf_slug_dedup 50.7</td>
+  <td>Add <code>AND e.id_season = &lt;EVFSLUG-TEST season&gt;</code> to the backfill's
+  <code>WHERE</code>. Preserves the statement shape and the tie-break semantics; the unique index is
+  <code>(id_season, txt_evf_slug)</code>, so season scoping isolates it completely. Correct the
+  stale inline comment.</td>
+  <td><span class="st s-ok">none</span></td></tr>
+<tr><td class="d">03_views_api test 4</td>
+  <td>Replace the literal <code>'SPWS-2025-2026'</code> with the active season, so the assertion
+  tests what its name claims.</td>
+  <td><span class="st s-ok">none</span></td></tr>
+<tr><td class="d">03_views_api tests 3, 12</td>
+  <td>Make the fixture's categories independent of the calendar — see the options below.</td>
+  <td><span class="st s-wip">decision</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>The one open decision</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th></th><th>Option</th><th>Effect</th><th>Cost</th></tr></thead>
+<tbody>
+<tr><td class="d">A · recommended</td>
+  <td><b class="k">Pin fixture birth years to the active season.</b> Inside the test transaction, set
+  each borrowed fencer's <code>int_birth_year</code> to
+  <code>&lt;active season end year&gt; − &lt;target age&gt;</code> — FORAJTER to end−45 (mid-V1),
+  ATANASSOW to end−52 (mid-V2), and so on, each landing mid-band rather than near a boundary.</td>
+  <td>Assertions stay literal (<code>3</code>, <code>V1</code>, <code>V2</code>). Immune to season
+  rollover <i>and</i> to seed birth-year drift. Fixture intent stays readable.</td>
+  <td>Mutates seed rows inside a <code>BEGIN…ROLLBACK</code>. ~10 lines.</td></tr>
+<tr><td class="d">B</td>
+  <td><b class="k">Insert dedicated synthetic fencers</b> and stop borrowing seed rows entirely.</td>
+  <td>Strongest isolation; also removes the unqualified-surname hazard.</td>
+  <td>Largest diff. Needs a check that no other test leans on these six rows.</td></tr>
+<tr><td class="d">C</td>
+  <td><b class="k">Derive the expected category at runtime</b> via <code>fn_age_category</code>.</td>
+  <td>Smallest diff.</td>
+  <td>The assertion restates the function under test — it would pass even if
+  <code>fn_age_category</code> were wrong. <b class="k">Weakens the test.</b></td></tr>
+<tr><td class="d">D</td>
+  <td>Edit the expected values to 4 and drop the V1 assertion.</td>
+  <td>Green today.</td>
+  <td><b class="k">Breaks again next July.</b> Not recommended.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">04</span>Method notes</h2>
+<ul>
+  <li>Every figure here was read back from LOCAL, not inferred: season rows from
+  <code>tbl_season</code>, categories from <code>fn_age_category(int_birth_year, 2026|2027)</code>
+  evaluated directly, failures from a real <code>supabase test db</code> run.</li>
+  <li><code>supabase test db</code> installs pgTAP transiently; the extension is
+  <b class="k">not</b> present in the LOCAL database, so these files cannot be run through
+  <code>psql</code> directly. Pass a single path to <code>supabase test db</code> to get per-assertion
+  output instead of the summary.</li>
+  <li>The graphify graph (built 2026-06-26) has no nodes for pgTAP SQL; it resolved
+  <code>vw_ranking</code>-shaped queries to frontend API modules. SQL literals fall under the
+  documented grep exception in <code>pre-analysis-check</code>.</li>
+</ul>
+
+</div>
+
+<footer>
+Written 2026-07-19 on branch <code>main</code> at <code>5df1949</code>. Corrects §02 of
+<code>msw-tbilisi-handover-2026-07-19-evening.html</code>, which attributed the
+<code>03_views_api</code> failures to "three more weeks of PROD data" and hardcoded counts; the
+actual cause is the active-season rollover introduced by migration <code>20260714000002</code> and
+surfaced by the seed refresh. No changes applied yet — this document is diagnosis only. Contains
+fencer surnames and birth years already present in the repository's test fixtures; no contact
+details and no credentials.
+</footer>
+
+</div>
+</body>
+</html>
