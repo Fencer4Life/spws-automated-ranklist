@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-07-14T18:17:54Z",
-    "last_sha": "57655a46ea9f813d4593d4639545e80c7b4b3082",
+    "last_updated": "2026-07-19T21:03:32Z",
+    "last_sha": "36e1e82a4040129a8cd3d030aafc2c4ab5b7aff7",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -133,7 +133,8 @@
       "20260713000001_ftl_seed_organizer_delivery.sql",
       "20260714000001_evf_slug_dedup_scope_season.sql",
       "20260714000002_season_2026_2027_dt_start_sync.sql",
-      "20260714000003_fencer_birth_year_master_list_reconcile.sql"
+      "20260714000003_fencer_birth_year_master_list_reconcile.sql",
+      "20260719000001_add_fencer_koszyk_agnieszka.sql"
     ],
     "schema_fingerprint": "2012753ff886f491d4cb8c3a0a8ad91d"
   },
