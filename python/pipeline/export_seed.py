@@ -122,6 +122,29 @@ def select_expr(cols: list[dict]) -> str:
 # ---------------------------------------------------------------------------
 # Export
 # ---------------------------------------------------------------------------
+def fencer_lookup(surname: str, first_name: str, birth_year: int | None) -> str:
+    """FK sub-SELECT resolving a fencer by SURNAME + Name + BIRTH YEAR.
+
+    Name alone is not an identity. PROD holds two same-name pairs that are
+    different people -- KRAWCZYK Paweł (1954 / 1989) and MŁYNEK Janusz
+    (1951 / 1984) -- so a bare `txt_surname = … AND txt_first_name = … LIMIT 1`
+    resolves arbitrarily. The seed then binds a result to the wrong person and
+    fn_assert_result_vcat (ADR-047) aborts the load on every fresh bootstrap.
+
+    A NULL birth year must compare with IS NULL: `int_birth_year = NULL` is
+    never true and would resolve to no row at all, turning a soft ambiguity
+    into a hard FK failure for the fencers who have no year on record.
+
+    Governed by the ADR-036 amendment (2026-07-14).
+    """
+    by = f"int_birth_year = {birth_year}" if birth_year is not None else "int_birth_year IS NULL"
+    return (
+        f"(SELECT id_fencer FROM tbl_fencer "
+        f"WHERE txt_surname = '{esc(surname)}' AND txt_first_name = '{esc(first_name)}' "
+        f"AND {by} LIMIT 1)"
+    )
+
+
 def export_monolithic(ref: str, token: str) -> str:
     """Generate complete monolithic SQL dump from remote DB."""
 
@@ -297,7 +320,7 @@ def export_monolithic(ref: str, token: str) -> str:
     )
     all_results = q(f"""
     SELECT t.txt_code AS tourn_code, r.int_place, r.num_final_score,
-           f.txt_surname, f.txt_first_name,
+           f.txt_surname, f.txt_first_name, f.int_birth_year,
            {r_data_select}
     FROM tbl_result r
     JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
@@ -345,12 +368,7 @@ def export_monolithic(ref: str, token: str) -> str:
         # data column (incl. enum_source_age_category for ADR-056 trigger).
         r_insert_cols = ["id_fencer", "id_tournament"] + [c["name"] for c in r_cols_data]
         for r in results_by_tourn.get(t_code, []):
-            surname = esc(r["txt_surname"])
-            first_name = esc(r["txt_first_name"])
-            fencer_sub = (
-                f"(SELECT id_fencer FROM tbl_fencer "
-                f"WHERE txt_surname = '{surname}' AND txt_first_name = '{first_name}' LIMIT 1)"
-            )
+            fencer_sub = fencer_lookup(r["txt_surname"], r["txt_first_name"], r["int_birth_year"])
             tournament_sub = (
                 f"(SELECT id_tournament FROM tbl_tournament WHERE txt_code = '{esc(t_code)}')"
             )
