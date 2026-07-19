@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02_scoring_engine — deep analysis, 19 July 2026</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1060px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--coral);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,33px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:70ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:-.01em;
+ margin:38px 0 6px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:26px 0 8px;font-weight:600}
+p{margin:0 0 12px;max-width:82ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 16px;max-width:86ch}
+ul,ol{margin:0 0 14px;padding-left:20px;max-width:82ch}
+li{margin-bottom:7px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:12px 14px;
+ overflow-x:auto;font-family:var(--mono);font-size:11.5px;line-height:1.55;margin:0 0 16px;
+ max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:600px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10.5px;white-space:nowrap;color:var(--navy);font-weight:600}
+td.n{font-family:var(--mono);font-size:13px;font-weight:600;text-align:right;white-space:nowrap}
+.st{font-family:var(--mono);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-grey{background:var(--grey-bg);color:var(--grey)}
+footer{margin:42px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Deep analysis · 19 July 2026 · supabase/tests/02_scoring_engine.sql</div>
+  <h1>The scoring-engine test was green while guarding a configuration that no longer exists. Fixed.</h1>
+  <p class="dek">I was wrong to put this on a chip. It was not "the same latent hazard, passing
+  today": it was pinned to a season two rollovers old and asserted a multiplier that contradicted
+  the active season. Now repointed at the active season with a config contract guarding the
+  arithmetic. Separately, and still open: the knowledge graph I am required to consult first
+  cannot see any of this — it holds zero nodes from any SQL file.</p>
+  <div class="chips">
+    <span class="chip">2026-07-19</span>
+    <span class="chip bad">config drift · MSW 2.0 vs 1.2</span>
+    <span class="chip bad">graph blind to SQL · 0/5592</span>
+    <span class="chip warn">1 near-tautological assertion</span>
+    <span class="chip ok">resolved · 29/29</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">00</span>The graph cannot answer questions about this file</h2>
+
+<p>You told me to use the graph. I did, and the result is itself the first finding. Every scoring
+query returned Svelte components whose names merely contain "scoring".
+<code>graphify explain "fn_calc_tournament_scores"</code> resolves not to the function but to a
+comment inside a Python test. The reason is structural:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Graph corpus</th><th>Nodes</th></tr></thead>
+<tbody>
+<tr><td class="d">python/</td><td class="n">4347</td></tr>
+<tr><td class="d">doc/</td><td class="n">659</td></tr>
+<tr><td class="d">frontend/</td><td class="n">389</td></tr>
+<tr><td class="d">scripts/</td><td class="n">114</td></tr>
+<tr><td class="d">supabase/functions (TypeScript)</td><td class="n">5</td></tr>
+<tr><td class="d"><b class="k">any .sql file</b></td><td class="n"><b class="k">0</b></td></tr>
+<tr><td class="d"><b class="k">supabase/migrations</b></td><td class="n"><b class="k">0</b></td></tr>
+<tr><td class="d"><b class="k">supabase/tests</b></td><td class="n"><b class="k">0</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>5592 nodes, <b class="k">none of them SQL</b>. The scoring engine, every migration, every
+PL/pgSQL function, all 52 pgTAP files — invisible. This is not a <code>.graphifyignore</code>
+choice; that file excludes only <code>doc/archive/</code> and generated HTML twins. The extractor
+simply has no SQL parser.</p>
+
+<p>The graph is also <b class="k">26 commits stale</b> — built at <code>151dd66</code>
+(2026-07-14 08:44), while <code>main</code> stood at <code>5df1949</code>.</p>
+
+<div class="call stop">
+  <span class="lb">Why this matters more than a missing feature</span>
+  <code>CLAUDE.md</code> and the <code>pre-analysis-check</code> gate both require the graph as the
+  <b class="k">first</b> step for architecture and impact analysis. For the SQL layer it does not
+  return "no results" — it returns confident, plausible, <b class="k">wrong</b> results: frontend
+  components that share a word with the query. That is worse than silence, and it is the exact
+  failure mode §05 of the evening handover warned about, one layer down.
+</div>
+
+<h2><span class="num">01</span>The real defect — the test validates a retired configuration</h2>
+
+<p><code>02_scoring_engine.sql:37</code> pins the fixture to a hardcoded season:</p>
+
+<pre><code>SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025';
+-- header: "We use the seed season (SPWS-2024-2025) and its scoring config."</code></pre>
+
+<p>Scoring configuration is <b class="k">per season</b>, and it has diverged. Read across:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Setting</th><th>SPWS-2024-2025 <span class="st s-grey">test pins here</span></th>
+<th>SPWS-2026-2027 <span class="st s-ok">active</span></th><th></th></tr></thead>
+<tbody>
+<tr><td class="d">num_msw_multiplier</td><td class="n">2.0</td><td class="n">1.2</td>
+  <td><span class="st s-bad">diverged</span></td></tr>
+<tr><td class="d">num_mew_multiplier</td><td class="n">1.2</td><td class="n">2.0</td>
+  <td><span class="st s-bad">diverged</span></td></tr>
+<tr><td class="d">json_ranking_rules (intl.)</td><td>PEW best 3, MEW always — separate buckets</td>
+  <td>PEW + MEW + MSW pooled, best 3</td><td><span class="st s-bad">diverged</span></td></tr>
+<tr><td class="d">int_mp_value</td><td class="n">50</td><td class="n">50</td>
+  <td><span class="st s-ok">same</span></td></tr>
+<tr><td class="d">num_ppw_multiplier</td><td class="n">1.0</td><td class="n">1.0</td>
+  <td><span class="st s-ok">same</span></td></tr>
+<tr><td class="d">int_ppw_best_count</td><td class="n">4</td><td class="n">4</td>
+  <td><span class="st s-ok">same</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>The MSW and MEW multipliers have effectively <b class="k">swapped</b>. And the test asserts the
+retired value explicitly:</p>
+
+<pre><code>-- Tournament F: MSW, N=24 (for MSW multiplier test — multiplier=2.0)
+...
+'9.85 MSW has same components as PPW but final_score scaled by 2.0 multiplier'</code></pre>
+
+<div class="call stop">
+  <span class="lb">State this plainly</span>
+  <b class="k">MSW is scaled by 1.2 in the active season, not 2.0.</b> The suite's only assertion on
+  the MSW multiplier proves a rule that has not been in force since SPWS-2025-2026. It is green
+  because it pins to a legacy season, not because the engine is right today. If someone changed
+  the active season's MSW handling, <b class="k">no test in this repository would fail.</b>
+</div>
+
+<p class="sub">The same applies to <code>json_ranking_rules</code>: the active season pools PEW, MEW
+and MSW into one best-3 bucket, while the pinned season keeps PEW and MEW in separate buckets. The
+scoring engine's behavior under the <i>current</i> pooling rule is unasserted here.</p>
+
+<h2><span class="num">02</span>Why it survived the rollover that broke 03_views_api</h2>
+
+<p>Verified rather than assumed: <code>fn_calc_tournament_scores</code> contains
+<b class="k">zero</b> references to <code>int_birth_year</code>, <code>fn_age_category</code>,
+<code>bool_active</code> or <code>dt_end</code>. Scoring is placement- and participant-count-driven,
+so the age-category boundary crossing that broke <code>03_views_api</code> could not reach it.</p>
+
+<p>That is genuinely why it stayed green — but it is also why the green is uninformative about the
+divergence in §01. The two failure modes are unrelated.</p>
+
+<h2><span class="num">03</span>The remaining findings, ranked honestly</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>#</th><th>Finding</th><th>Verified state</th><th>Severity</th></tr></thead>
+<tbody>
+<tr><td class="d">1</td><td>Test pins to <code>SPWS-2024-2025</code> and asserts MSW ×2.0, which the
+  active season sets to 1.2. Current scoring rules are unguarded.</td>
+  <td>Confirmed from <code>tbl_scoring_config</code></td><td><span class="st s-bad">high</span></td></tr>
+<tr><td class="d">2</td><td>Graph holds 0 SQL nodes and is 26 commits stale, while process mandates
+  it as the first analysis step for exactly this code.</td>
+  <td>Confirmed from <code>graph.json</code></td><td><span class="st s-bad">high</span></td></tr>
+<tr><td class="d">3</td><td>Test 2.13 is near-tautological:
+  <code>is(fn_export_scoring_config(s), fn_export_scoring_config(s))</code> — the same call compared
+  to itself, labelled "Export is idempotent". It would catch only a VOLATILE function; it does not
+  test an export→import→export round trip, which is what the label implies.</td>
+  <td>Confirmed by reading</td><td><span class="st s-wip">medium</span></td></tr>
+<tr><td class="d">4</td><td>Five fencers borrowed by unqualified surname
+  (<code>SELECT … INTO</code> silently takes the first row).</td>
+  <td><b class="k">Latent only</b> — no duplicates among these five today
+  (ATANASSOW, BARAŃSKI, BAZAK, DUDEK, HAŚKO all unique)</td>
+  <td><span class="st s-wip">medium</span></td></tr>
+<tr><td class="d">5</td><td>Fixture inserts into a season already holding 843 real results and,
+  unlike <code>03_views_api</code>, never clears it.</td>
+  <td><b class="k">Not currently harmful</b> — 20 of 27 assertions are scoped to
+  <code>SCORE-*</code> tournament codes; the 7 that aren't are config/exception tests that don't
+  read results</td><td><span class="st s-grey">low</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">04</span>What I got wrong earlier</h2>
+
+<p>I described this file as carrying "the same latent hazard" as <code>03_views_api</code> and
+deferred it to a background chip on the grounds that it passes. Two errors in that:</p>
+
+<ul>
+  <li>I reasoned about the <b class="k">surname lookup</b> because that was the pattern fresh in my
+  mind from the file I had just fixed, and stopped there. The surname issue is real but latent and
+  the least important thing in this file. <b class="k">The season pin is the actual defect</b>, and
+  I would have found it by reading line 37 — six lines above the lookups I did read.</li>
+  <li>I treated "passes" as "safe". For a test whose entire job is to guard the scoring formulas,
+  passing against a retired configuration is the <b class="k">specific way</b> it fails at its job.
+  Green was the thing that should have prompted the check, not ended it.</li>
+</ul>
+
+<h2><span class="num">05</span>Recommended order</h2>
+
+<ol>
+  <li><b class="k">Decide what the scoring test should pin to.</b> This is a genuine product
+  question, not a mechanical fix — see the single decision below.</li>
+  <li><b class="k">Add coverage for the active season's rules</b>: MSW ×1.2 and the pooled
+  PEW+MEW+MSW best-3 bucket. Today nothing asserts either.</li>
+  <li><b class="k">Make the fixture own its fencers</b>, per the convention now in
+  <code>test-and-traceability.html</code>. Mechanical once step 1 is settled.</li>
+  <li><b class="k">Replace 2.13</b> with a real round trip: export → import into a scratch season →
+  re-export → compare.</li>
+  <li><b class="k">Raise the graph's SQL blindness separately.</b> Either teach graphify to parse
+  SQL, or amend <code>pre-analysis-check</code> to state plainly that the graph does not cover
+  <code>supabase/**/*.sql</code> and that DB introspection is the authority there. Right now the
+  skill implies coverage it does not have.</li>
+</ol>
+
+<div class="call good">
+  <span class="lb">Resolved — decision taken 2026-07-19: follow the active season</span>
+  The fixture now resolves <code>bool_active</code> instead of naming
+  <code>SPWS-2024-2025</code>, so these tests always guard the rules actually in force.
+  Repointing it produced exactly one failure — test 9.85, the MSW multiplier — which is the
+  empirical proof of the finding above: that assertion had been guarding a retired 2.0 against a
+  live 1.2.
+</div>
+
+<h3>How the drift risk was handled</h3>
+<p>Following the active season reintroduces the hazard just fixed in <code>03_views_api</code>: a
+config-following test can silently change meaning when an admin edits scoring config. Two
+measures prevent that, and both were verified rather than assumed:</p>
+<ul>
+  <li><b class="k">New test 2.0 — a config contract.</b> It pins the exact active-season values
+  this file's hand-derived arithmetic depends on (MP 50, podium 3/2/1, PPW 1.0, MPW 1.2, PSW 2.0,
+  MSW 1.2, 5 rounds). A rule change fails here first, by name.</li>
+  <li><b class="k">Multiplier assertions read the configured value</b> rather than a literal, so
+  they test that the engine <i>honours</i> config — which cannot drift. The literals live in 2.0,
+  in one place.</li>
+</ul>
+<p><b class="k">Verified by simulation:</b> setting the active season's
+<code>num_msw_multiplier</code> to 1.75 produced <b class="k">one</b> failure — test 2.0, naming
+the cause — while test 9.85 still passed, correctly observing that the engine had applied 1.75.
+That is the intended behavior: engine correctness stays drift-proof, and the rule change surfaces
+loudly instead of silently. The multiplier was restored and the suite re-verified.</p>
+
+<h3>Still open</h3>
+<p>Findings 3 and 5 from the table above are <b class="k">not</b> addressed by this change.
+Test 2.13 remains the near-tautological <code>is(f(x), f(x))</code> — a real export → import →
+re-export round trip needs a scratch season and is its own piece of work. Finding 4, the surname
+hazard, <b class="k">is</b> fixed: the file now creates its own <code>SC-FENCER-1..5</code>.</p>
+
+<h2><span class="num">06</span>Method</h2>
+<ul>
+  <li>Graph coverage measured by counting <code>source_file</code> prefixes across all 5592 nodes in
+  <code>graphify-out/graph.json</code>; staleness from its <code>built_at_commit</code>.</li>
+  <li>Scoring config read directly from <code>tbl_scoring_config</code> joined to
+  <code>tbl_season</code> on LOCAL; per-season divergence is observed data, not inference.</li>
+  <li>Age/calendar independence of <code>fn_calc_tournament_scores</code> established by grepping
+  its live <code>pg_get_functiondef</code> output, not the migration files.</li>
+  <li>Assertion scoping measured by splitting the file into its 27 assertion blocks and testing each
+  for a <code>SCORE-*</code> reference.</li>
+  <li><b class="k">The fix is applied</b> on branch <code>fix/seed-independent-pgtap-fixtures</code>, alongside the earlier <code>03_views_api</code> / <code>50_evf_slug_dedup</code> work. Full suite: 52 files, 686 tests, PASS.</li>
+</ul>
+
+</div>
+
+<footer>
+Written 2026-07-19 on branch <code>fix/seed-independent-pgtap-fixtures</code>. Analysis, plus the fix that followed it. Supersedes my earlier characterisation of
+<code>supabase/tests/02_scoring_engine.sql</code> as carrying merely "the same latent hazard" as
+<code>03_views_api.sql</code>; the season pin and resulting scoring-config drift are a separate and
+more serious finding. Contains fencer surnames already present in the repository's committed test
+fixtures and seed; no contact details and no credentials.
+</footer>
+
+</div>
+</body>
+</html>
