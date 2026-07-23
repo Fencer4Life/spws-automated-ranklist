@@ -19,6 +19,11 @@ on:
         type: boolean
         default: false
 
+# ADR-083: least-privilege GITHUB_TOKEN. Default repo scope is far wider than
+# any job here needs; an injected step should not inherit write access.
+permissions:
+  contents: write   # commits + pushes the CERT->PROD reconcile run log
+
 jobs:
   promote-calendar-pre:
     name: Promote EVF calendar → PROD (pre-scrape)

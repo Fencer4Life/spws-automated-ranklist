@@ -7,6 +7,11 @@ on:
         description: 'Trigger source (gas/manual)'
         default: 'manual'
 
+# ADR-083: least-privilege GITHUB_TOKEN. Default repo scope is far wider than
+# any job here needs; an injected step should not inherit write access.
+permissions:
+  contents: read   # checkout only; all DB writes use SUPABASE_* service-role secrets
+
 jobs:
   ingest:
     name: Process XML from Storage

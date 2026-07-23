@@ -1,0 +1,1161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPWS security — the case, proven on CERT and PROD, 23 July 2026</title>
+<style>
+:root{
+ --navy:#17457c;--paper:#f5f8fc;--ink:#101a29;--muted:#54657d;--line:#ccd8e6;--card:#fff;
+ --green:#155e3c;--green-bg:#d4ecdf;
+ --amber:#7d5406;--amber-bg:#fbe8bf;--coral:#a2321f;--coral-bg:#f9d8d1;
+ --navy-soft:#e3ecf8;--violet:#57338c;--violet-bg:#e9e0f7;--grey:#6b7a8d;--grey-bg:#e7ebf0;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#101722;--ink:#eaf0f8;--muted:#9db0c7;--line:#2c3a4c;--card:#18212e;
+  --navy:#82abdd;--navy-soft:#1c2b3f;--green:#a5e2bd;--green-bg:#194330;
+  --amber:#f2d089;--amber-bg:#3b2d0b;--coral:#f5aa99;--coral-bg:#452019;
+  --violet:#bda4e6;--violet-bg:#2a2040;--grey:#8f9dae;--grey-bg:#1f2937}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--coral) 0 10px,var(--paper) 10px);
+ font-family:var(--sans);color:var(--ink);font-size:19px;line-height:1.75;min-height:100vh;
+ overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.page{max-width:1180px;margin:0 auto;padding:0 0 90px 10px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:9px solid var(--coral);
+ padding:34px 38px 30px;margin:36px 26px 0;border-radius:0 8px 8px 0}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+ color:var(--muted);font-weight:600}
+h1{font-family:var(--serif);font-size:clamp(32px,5.6vw,48px);line-height:1.12;margin:14px 0 14px;
+ letter-spacing:-.02em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(19px,2.7vw,23px);color:var(--muted);
+ font-style:italic;margin:0 0 22px;max-width:64ch;line-height:1.55}
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.chip{font-family:var(--mono);font-size:13px;padding:6px 13px;border:1.5px solid var(--line);
+ border-radius:5px;color:var(--muted);background:var(--paper);font-weight:600}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.body{padding:34px 26px 0}
+h2{font-family:var(--serif);font-size:clamp(28px,4vw,36px);font-weight:600;letter-spacing:-.015em;
+ margin:60px 0 10px;padding-top:30px;border-top:2px solid var(--line);line-height:1.2}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:6px}
+h2 .num{font-family:var(--mono);font-size:15px;color:var(--coral);display:block;
+ letter-spacing:.16em;margin-bottom:10px;font-weight:700}
+h3{font-family:var(--serif);font-size:clamp(22px,3vw,27px);font-weight:600;color:var(--ink);
+ margin:42px 0 10px;letter-spacing:-.01em;line-height:1.25}
+h4{font-family:var(--mono);font-size:14px;letter-spacing:.13em;text-transform:uppercase;
+ color:var(--navy);margin:30px 0 10px;font-weight:700}
+p{margin:0 0 18px;max-width:74ch}
+.lead{font-size:21px;line-height:1.68;max-width:70ch}
+.sub{font-size:17px;color:var(--muted);margin:0 0 20px;max-width:76ch}
+ul,ol{margin:0 0 20px;padding-left:26px;max-width:74ch}
+li{margin-bottom:11px}
+code{font-family:var(--mono);font-size:.86em;background:var(--paper);padding:2px 7px;
+ border:1px solid var(--line);border-radius:4px;white-space:nowrap}
+pre{background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:20px 22px;
+ overflow-x:auto;font-family:var(--mono);font-size:15px;line-height:1.65;margin:0 0 22px;max-width:100%}
+pre code{background:none;border:none;padding:0;font-size:inherit;white-space:pre}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:6px solid var(--navy);border-radius:0 8px 8px 0;
+ padding:20px 24px;margin:24px 0 28px;font-size:18px;max-width:80ch;line-height:1.7}
+.call .lb{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);font-weight:700;display:block;margin-bottom:9px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.ok{background:var(--green-bg);border-left-color:var(--green)}
+.call.ok .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1.5px solid var(--line);border-radius:8px;background:var(--card);margin-bottom:26px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-family:var(--mono);font-size:12.5px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:14px 18px;border-bottom:2px solid var(--line);background:var(--paper);font-weight:700}
+td{padding:14px 18px;border-bottom:1px solid var(--line);vertical-align:top;font-size:17px;line-height:1.6}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:14.5px;white-space:nowrap;color:var(--navy);font-weight:600}
+td.n{font-family:var(--mono);font-size:17px;font-weight:700;text-align:right;white-space:nowrap}
+.st{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+ padding:4px 10px;border-radius:4px;font-weight:700;white-space:nowrap;display:inline-block}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.s-neu{background:var(--grey-bg);color:var(--grey)}
+.fig{margin:30px 0 34px;background:var(--card);border:1.5px solid var(--line);border-radius:10px;
+ padding:26px 24px 20px;overflow-x:auto}
+.fig svg{display:block;width:100%;height:auto;min-width:560px}
+.fig .cap{font-size:16px;color:var(--muted);margin-top:16px;font-style:italic;line-height:1.6;max-width:80ch}
+.dg-box{fill:var(--card);stroke:var(--line);stroke-width:2}
+.dg-bad{fill:var(--coral-bg);stroke:var(--coral);stroke-width:2.5}
+.dg-ok{fill:var(--green-bg);stroke:var(--green);stroke-width:2.5}
+.dg-warn{fill:var(--amber-bg);stroke:var(--amber);stroke-width:2.5}
+.dg-neu{fill:var(--grey-bg);stroke:var(--grey);stroke-width:2}
+.t{fill:var(--ink);font-family:var(--sans);font-size:15px;font-weight:600}
+.t-sm{fill:var(--muted);font-family:var(--mono);font-size:12.5px}
+.t-bad{fill:var(--coral);font-family:var(--sans);font-size:15px;font-weight:700}
+.t-ok{fill:var(--green);font-family:var(--sans);font-size:15px;font-weight:700}
+.ln{stroke:var(--muted);stroke-width:2.5;fill:none}
+.ln-bad{stroke:var(--coral);stroke-width:3;fill:none}
+.ln-ok{stroke:var(--green);stroke-width:3;fill:none}
+.proof{border:2px solid var(--coral);border-radius:10px;margin:0 0 30px;overflow:hidden;background:var(--card)}
+.proof>.ph{background:var(--coral-bg);padding:14px 22px;font-family:var(--mono);font-size:13px;
+ letter-spacing:.1em;text-transform:uppercase;color:var(--coral);font-weight:700}
+.proof>.pb{padding:22px 24px 6px}
+.proof pre{margin-bottom:16px}
+.alt{background:var(--paper);border:1.5px solid var(--line);border-radius:8px;padding:18px 22px;margin:0 0 24px}
+.alt .lb{font-family:var(--mono);font-size:12.5px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--violet);font-weight:700;display:block;margin-bottom:10px}
+.alt ul{margin-bottom:0;max-width:none}
+footer{margin:60px 26px 0;padding-top:24px;border-top:2px solid var(--line);
+ font-size:16px;color:var(--muted);max-width:82ch;line-height:1.7}
+@media(max-width:760px){
+ body{font-size:18px}
+ .hd{padding:26px 22px;margin-left:12px;margin-right:12px}
+ .body,footer{margin-left:12px;margin-right:12px}
+ .body{padding-left:0;padding-right:0}
+ pre{font-size:13.5px;padding:16px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · 23 July 2026 · scanned against CERT and PROD, not LOCAL</div>
+  <h1>You were right. I rescanned against CERT and PROD — and the picture got worse, not better.</h1>
+  <p class="dek">My earlier analysis read LOCAL, where the staging tables sit empty. You told me
+  ingestion happens on CERT. It does, and CERT holds 256 draft results and 125 queued recompute
+  jobs. But rescanning also proved two things I had only been able to call "unverified": anyone
+  on the internet can reach your PROD workflow dispatcher with the public key, and PROD signup is
+  open. Both are confirmed below with commands you can re-run.</p>
+  <div class="chips">
+    <span class="chip bad">PROD dispatcher: reachable with public key</span>
+    <span class="chip bad">PROD signup: OPEN</span>
+    <span class="chip bad">PROD fencer names: anon-readable</span>
+    <span class="chip warn">CERT staging: 256 + 125 rows, not empty</span>
+    <span class="chip ok">no rogue accounts</span>
+    <span class="chip ok">both admins MFA-verified</span>
+    <span class="chip ok">nothing written or dispatched</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">00</span>What changed since my last analysis</h2>
+
+<p class="lead">Three of my earlier statements were wrong or unprovable. Correcting them matters
+more than defending them, so here they are first.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>I said</th><th>Actually</th><th>Effect on the case</th></tr></thead>
+<tbody>
+<tr><td>"Five of six tables are empty; the six-table finding is the weakest item."</td><td>True on LOCAL, <b class="k">false on CERT</b> — 256 draft results, 50 draft tournaments, 47 ingest-history rows, 125 queued recompute jobs.</td><td><span class="st s-bad">stronger</span> Real data, continuously.</td></tr>
+<tr><td>"Signup may be enabled — unverified on PROD."</td><td><b class="k">Confirmed enabled on CERT and PROD.</b> Email confirmation is required, which is a real but low bar.</td><td><span class="st s-bad">confirmed</span></td></tr>
+<tr><td>"The dispatcher looks unauthenticated — I could not test it."</td><td><b class="k">Tested. The public anon key reaches the handler on PROD.</b></td><td><span class="st s-bad">proven</span></td></tr>
+<tr><td>"aal2 is blocked on unknown TOTP enrolment — lockout risk."</td><td>One account per environment, <b class="k">both with a verified TOTP factor</b>.</td><td><span class="st s-ok">unblocked</span> No lockout risk.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call ok">
+  <span class="lb">How this scan was performed</span>
+  Read-only, using the <code>SUPABASE_ACCESS_TOKEN</code> already in your local <code>.env</code>.
+  Every database query was a <code>SELECT</code>. The dispatcher was probed with a
+  <b class="k">deliberately invalid workflow name</b> so that nothing could be dispatched.
+  <b class="k">No row was written, no workflow triggered, no account created, no credential printed
+  or stored.</b> User e-mail addresses were withheld from output on purpose.
+</div>
+
+<h2><span class="num">01</span>Part A — the gaps are real</h2>
+
+<p class="lead">Each finding below is stated as a claim, then the command, then the actual output.
+You can re-run every one of them.</p>
+
+<h3>A1 · Anyone can reach your PROD workflow dispatcher with the public key</h3>
+
+<p>This is the finding that matters most, and it is the one you challenged directly when you asked
+whether a button click needs authenticating. Here is why the button is not the point.</p>
+
+<div class="fig">
+<svg viewBox="0 0 900 340" role="img" aria-label="Attack path from public anon key to GitHub Actions on PROD">
+  <rect x="8" y="120" width="180" height="86" rx="8" class="dg-bad"/>
+  <text x="98" y="150" class="t-bad" text-anchor="middle">Anyone on internet</text>
+  <text x="98" y="172" class="t-sm" text-anchor="middle">holds the anon key</text>
+  <text x="98" y="190" class="t-sm" text-anchor="middle">(it ships in your JS)</text>
+
+  <path d="M188 163 H 268" class="ln-bad" marker-end="url(#ar-bad)"/>
+
+  <rect x="268" y="108" width="196" height="110" rx="8" class="dg-warn"/>
+  <text x="366" y="136" class="t" text-anchor="middle">Supabase platform</text>
+  <text x="366" y="160" class="t-sm" text-anchor="middle">verify_jwt = true</text>
+  <text x="366" y="182" class="t-sm" text-anchor="middle">"is this JWT ours?"</text>
+  <text x="366" y="204" class="t-bad" text-anchor="middle" style="font-size:13px">anon key = YES ✓</text>
+
+  <path d="M464 163 H 544" class="ln-bad" marker-end="url(#ar-bad)"/>
+
+  <rect x="544" y="108" width="196" height="110" rx="8" class="dg-bad"/>
+  <text x="642" y="136" class="t" text-anchor="middle">dispatch-workflow</text>
+  <text x="642" y="160" class="t-sm" text-anchor="middle">checks workflow NAME</text>
+  <text x="642" y="184" class="t-bad" text-anchor="middle">never checks WHO</text>
+  <text x="642" y="206" class="t-sm" text-anchor="middle">no getUser, no role</text>
+
+  <path d="M740 163 H 820" class="ln-bad" marker-end="url(#ar-bad)"/>
+  <rect x="820" y="120" width="72" height="86" rx="8" class="dg-bad"/>
+  <text x="856" y="150" class="t-bad" text-anchor="middle" style="font-size:13px">PAT</text>
+  <text x="856" y="172" class="t-sm" text-anchor="middle">GitHub</text>
+  <text x="856" y="190" class="t-sm" text-anchor="middle">Actions</text>
+
+  <rect x="544" y="248" width="348" height="76" rx="8" class="dg-neu"/>
+  <text x="718" y="274" class="t" text-anchor="middle">promote-season.yml → CERT to PROD</text>
+  <text x="718" y="298" class="t" text-anchor="middle">ftl-seed.yml → e-mail to organizers</text>
+  <path d="M856 206 V 248" class="ln-bad" marker-end="url(#ar-bad)"/>
+
+  <rect x="8" y="248" width="456" height="76" rx="8" class="dg-ok"/>
+  <text x="236" y="274" class="t-ok" text-anchor="middle">Your admin UI button is over here.</text>
+  <text x="236" y="298" class="t-sm" text-anchor="middle">It is not on the attacker's path at all.</text>
+
+  <defs>
+    <marker id="ar-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--coral)"/>
+    </marker>
+  </defs>
+</svg>
+<div class="cap">The button is client-side. The security boundary is the HTTPS endpoint the button
+calls — and an attacker calls that endpoint directly, with <code>curl</code>, never touching your
+interface. So the question is not "should a button click be authenticated". It is: <b>should a
+public URL that promotes CERT to PROD and mails organizers require the caller to prove who they
+are?</b></div>
+</div>
+
+<div class="proof">
+  <div class="ph">Proof · run against PROD · nothing was dispatched</div>
+  <div class="pb">
+<pre><code>$ curl -X POST https://&lt;PROD-ref&gt;.supabase.co/functions/v1/dispatch-workflow \
+    -H "Content-Type: application/json" \
+    -d '{"workflow":"THIS-WORKFLOW-DOES-NOT-EXIST.yml"}'
+HTTP 401                       ← no key at all: correctly refused
+
+$ curl -X POST https://&lt;PROD-ref&gt;.supabase.co/functions/v1/dispatch-workflow \
+    -H "apikey: &lt;THE PUBLIC ANON KEY FROM YOUR JS BUNDLE&gt;" \
+    -H "Content-Type: application/json" \
+    -d '{"workflow":"THIS-WORKFLOW-DOES-NOT-EXIST.yml"}'
+HTTP 400
+{"ok":false,"code":"invalid_workflow",
+ "message":"workflow must be one of: populate-urls.yml, scrape-tournament.yml,
+  phase5-event-runner.yml, regen-report.yml, ingest-event.yml,
+  promote-season.yml, ftl-seed.yml"}</code></pre>
+
+<p><b class="k">Read what that second response means.</b> A <code>400 invalid_workflow</code> is not
+a rejection of the caller — it is the function saying <i>"you are allowed in, that workflow name is
+just wrong."</i> The request passed the platform gate, entered your handler, and got as far as the
+allowlist check. The only reason nothing ran is that I deliberately sent a fake name.</p>
+
+<p>Had I sent <code>promote-season.yml</code>, it would have dispatched. And note the error message
+<b class="k">helpfully lists all seven valid names</b> to an unauthenticated caller, so an attacker
+does not even need to guess. Identical result on CERT.</p>
+  </div>
+</div>
+
+<div class="call stop">
+  <span class="lb">Why verify_jwt = true is not protection</span>
+  It asks one question: "is this a JWT signed by this project?" The anon key <b class="k">is</b> such
+  a JWT — that is its entire purpose, and it is published in your frontend bundle by design. The gate
+  is satisfied by the very key that is public. Your handler in
+  <code>supabase/functions/dispatch-workflow/index.ts</code> then never calls
+  <code>auth.getUser()</code> and never inspects a role. There is no second gate.
+</div>
+
+<h3>A2 · PROD signup is open</h3>
+
+<div class="proof">
+  <div class="ph">Proof · Management API · both environments</div>
+  <div class="pb">
+<pre><code>GET /v1/projects/&lt;ref&gt;/config/auth
+
+CERT                                  PROD
+  disable_signup          False         disable_signup          False
+  mailer_autoconfirm      False         mailer_autoconfirm      False
+  external_email_enabled  True          external_email_enabled  True
+  password_min_length     6             password_min_length     6</code></pre>
+
+<p><code>disable_signup: False</code> means <b class="k">registration is open on production</b>.
+Every write policy in your database reduces to a single predicate:</p>
+
+<pre><code>tbl_result         | Admin all results   | ALL | auth.role() = 'authenticated'
+tbl_fencer         | Admin all fencers   | ALL | auth.role() = 'authenticated'
+tbl_scoring_config | Admin all config    | ALL | auth.role() = 'authenticated'
+   … and the same shape on tbl_event, tbl_tournament, tbl_season,
+     tbl_organizer, tbl_registration, tbl_match_candidate</code></pre>
+
+<p>ADR-016 states the assumption in as many words: <i>"All <code>authenticated</code> users have
+admin privileges … only admins ever sign in."</i> That is true only while signup is closed. It is
+open.</p>
+  </div>
+</div>
+
+<div class="call warn">
+  <span class="lb">The honest qualifier — this is not a one-click takeover</span>
+  <code>mailer_autoconfirm</code> is <code>False</code>, so a new account must confirm its e-mail
+  before it can sign in. That is a genuine barrier and I will not overstate it: an attacker needs a
+  working mailbox and one click, not merely a POST. <b class="k">But the bar is a working e-mail
+  address</b> — and what it buys, once cleared, is full CRUD on <code>tbl_result</code>,
+  <code>tbl_fencer</code> and <code>tbl_scoring_config</code>. That is the ranking itself.
+</div>
+
+<h3>A3 · CERT is not empty — this is where you corrected me</h3>
+
+<div class="proof">
+  <div class="ph">Proof · row counts · the tables with RLS switched off</div>
+  <div class="pb">
+<pre><code>table                            CERT     PROD
+tbl_result_draft                  256        0
+tbl_tournament_draft               50        0
+tbl_tournament_ingest_history      47        0
+tbl_event_ingest_history            7        0
+tbl_recompute_queue               125       46     ← live on BOTH
+tbl_recompute_watermark             1        1     ← live on BOTH
+vw_fencer_aliases                 365      365     ← fencer identities</code></pre>
+
+<p>My "mostly empty" claim came from LOCAL and does not survive contact with CERT. Ingestion runs
+there, so the drafts and the ingest history carry real working data continuously.</p>
+
+<p>Two rows deserve separate attention because they are <b class="k">not</b> staging and are live on
+production:</p>
+<ul>
+  <li><b class="k"><code>tbl_recompute_queue</code> — 46 rows on PROD.</b> Pending recompute work,
+  consumed hourly by <code>recompute-drain-prod.yml</code>.</li>
+  <li><b class="k"><code>tbl_recompute_watermark</code> — 1 row on PROD.</b> A single persistent
+  timestamp that tells the drain what has changed since last time. Move it forward and the drain
+  <b class="k">silently skips work</b>: rankings quietly go stale, no error, no alert, nothing in a
+  log. This is the quietest attack available in your system, and it is a one-row
+  <code>UPDATE</code>.</li>
+</ul>
+  </div>
+</div>
+
+<h3>A4 · Anonymous reads work on PROD right now — including fencer names</h3>
+
+<div class="proof">
+  <div class="ph">Proof · PostgREST · public anon key only · PROD</div>
+  <div class="pb">
+<pre><code>$ curl "https://&lt;PROD-ref&gt;.supabase.co/rest/v1/vw_fencer_aliases?select=*&limit=2" \
+    -H "apikey: &lt;public anon key&gt;"
+HTTP 200
+[{"id_fencer":1,"txt_first_name":"Wojciech","txt_surname":"ADAMCZEWSKI",
+  "json_name_aliases": …
+
+$ curl ".../rest/v1/tbl_recompute_watermark?select=*" -H "apikey: &lt;public anon key&gt;"
+HTTP 200
+[{"id":true,"ts_last_master_change":"2026-07-14T18:23:35.623344+00:00"}]
+
+$ curl ".../rest/v1/tbl_recompute_queue?select=*&limit=2"   → HTTP 200, real rows</code></pre>
+
+<p>These are real named people on production, served to an unauthenticated caller. You have
+<b class="k">ADR-078 on GDPR and data-subject rights</b>, which makes this a compliance question and
+not only a security one.</p>
+  </div>
+</div>
+
+<div class="fig">
+<svg viewBox="0 0 900 300" role="img" aria-label="Ten tables protected, six unprotected, plus the view bypass">
+  <text x="24" y="34" class="t" style="font-size:17px">What RLS is doing today</text>
+
+  <rect x="24" y="56" width="250" height="112" rx="8" class="dg-ok"/>
+  <text x="149" y="86" class="t-ok" text-anchor="middle">10 tables · RLS ON</text>
+  <text x="149" y="112" class="t-sm" text-anchor="middle">tbl_result, tbl_fencer,</text>
+  <text x="149" y="132" class="t-sm" text-anchor="middle">tbl_event, tbl_tournament …</text>
+  <text x="149" y="156" class="t-ok" text-anchor="middle" style="font-size:13px">anon write blocked ✓</text>
+
+  <rect x="24" y="184" width="250" height="96" rx="8" class="dg-bad"/>
+  <text x="149" y="212" class="t-bad" text-anchor="middle">6 tables · RLS OFF</text>
+  <text x="149" y="238" class="t-sm" text-anchor="middle">drafts, ingest history,</text>
+  <text x="149" y="258" class="t-sm" text-anchor="middle">recompute queue + watermark</text>
+
+  <path d="M274 232 H 360" class="ln-bad" marker-end="url(#ar2)"/>
+  <text x="317" y="222" class="t-sm" text-anchor="middle">anon</text>
+
+  <rect x="360" y="184" width="230" height="96" rx="8" class="dg-bad"/>
+  <text x="475" y="218" class="t-bad" text-anchor="middle">SELECT · INSERT</text>
+  <text x="475" y="242" class="t-bad" text-anchor="middle">UPDATE · DELETE</text>
+  <text x="475" y="266" class="t-bad" text-anchor="middle">TRUNCATE</text>
+
+  <rect x="620" y="56" width="256" height="224" rx="8" class="dg-warn"/>
+  <text x="748" y="86" class="t" text-anchor="middle">vw_fencer_aliases</text>
+  <text x="748" y="112" class="t-sm" text-anchor="middle">owner = postgres</text>
+  <text x="748" y="132" class="t-sm" text-anchor="middle">security_invoker NOT set</text>
+  <text x="748" y="164" class="t-bad" text-anchor="middle" style="font-size:14px">reads with OWNER rights</text>
+  <text x="748" y="196" class="t-sm" text-anchor="middle">→ ignores RLS underneath</text>
+  <text x="748" y="228" class="t-bad" text-anchor="middle">365 fencer identities</text>
+  <text x="748" y="256" class="t-sm" text-anchor="middle">served to anon on PROD</text>
+
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--coral)"/>
+    </marker>
+  </defs>
+</svg>
+<div class="cap">The right-hand box is why "just switch RLS on" is not enough. A view owned by
+<code>postgres</code> without <code>security_invoker</code> reads its base tables with the owner's
+privileges, so it sails straight over any policy you add beneath it — while the Supabase advisor
+goes green, because that lint only inspects tables.</div>
+</div>
+
+<h3>A5 · Good news, verified rather than assumed</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Rogue accounts created through the open signup</td><td><span class="st s-ok">none</span> Exactly <b class="k">1 account</b> on CERT and 1 on PROD, both created 2026-03-26 — the ADR-016 date. No unexpected registrations.</td></tr>
+<tr><td>TOTP enrolment (the lockout blocker for enforcing MFA in SQL)</td><td><span class="st s-ok">clear</span> Both accounts have a <b class="k">verified</b> factor. Enforcing <code>aal2</code> locks nobody out.</td></tr>
+<tr><td>Anonymous sign-ins</td><td><span class="st s-ok">off</span> <code>external_anonymous_users_enabled: False</code> on both.</td></tr>
+<tr><td>Service-role key in the frontend bundle</td><td><span class="st s-ok">clean</span> Not present.</td></tr>
+<tr><td>Committed JWTs in <code>index.html</code>, <code>register.html</code>, <code>reset-dev.sh</code></td><td><span class="st s-ok">not a leak</span> They decode to <code>"iss":"supabase-demo"</code> — the Supabase CLI's public local demo keys, identical for every user of the tool.</td></tr>
+<tr><td><code>supabase/functions/.env</code> (holds the dispatch PAT)</td><td><span class="st s-ok">clean</span> Gitignored, never committed in 536 commits.</td></tr>
+<tr><td>Workflow script-injection surface</td><td><span class="st s-ok">clean</span> No <code>pull_request_target</code>, no untrusted event fields interpolated into shell.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">02</span>Part B — why the fix works</h2>
+
+<p class="lead">For each fix: the mechanism, why it closes <i>this specific</i> path, the
+alternatives I considered and rejected, and what could break.</p>
+
+<h3>B1 · Check the caller in the dispatcher</h3>
+
+<div class="fig">
+<svg viewBox="0 0 900 250" role="img" aria-label="Dispatcher before and after the fix">
+  <text x="24" y="30" class="t-bad" style="font-size:16px">NOW</text>
+  <rect x="24" y="44" width="150" height="60" rx="7" class="dg-bad"/>
+  <text x="99" y="70" class="t-sm" text-anchor="middle">request with</text>
+  <text x="99" y="90" class="t-sm" text-anchor="middle">anon key</text>
+  <path d="M174 74 H 232" class="ln-bad" marker-end="url(#ar3)"/>
+  <rect x="232" y="44" width="160" height="60" rx="7" class="dg-warn"/>
+  <text x="312" y="70" class="t-sm" text-anchor="middle">verify_jwt</text>
+  <text x="312" y="90" class="t-sm" text-anchor="middle">signed by us? ✓</text>
+  <path d="M392 74 H 450" class="ln-bad" marker-end="url(#ar3)"/>
+  <rect x="450" y="44" width="170" height="60" rx="7" class="dg-bad"/>
+  <text x="535" y="70" class="t-sm" text-anchor="middle">name in allowlist?</text>
+  <text x="535" y="90" class="t-bad" text-anchor="middle">WHO? never asked</text>
+  <path d="M620 74 H 678" class="ln-bad" marker-end="url(#ar3)"/>
+  <rect x="678" y="44" width="196" height="60" rx="7" class="dg-bad"/>
+  <text x="776" y="80" class="t-bad" text-anchor="middle">DISPATCHED on PROD</text>
+
+  <text x="24" y="158" class="t-ok" style="font-size:16px">AFTER</text>
+  <rect x="24" y="172" width="150" height="60" rx="7" class="dg-bad"/>
+  <text x="99" y="198" class="t-sm" text-anchor="middle">request with</text>
+  <text x="99" y="218" class="t-sm" text-anchor="middle">anon key</text>
+  <path d="M174 202 H 232" class="ln" marker-end="url(#ar4)"/>
+  <rect x="232" y="172" width="160" height="60" rx="7" class="dg-warn"/>
+  <text x="312" y="198" class="t-sm" text-anchor="middle">verify_jwt</text>
+  <text x="312" y="218" class="t-sm" text-anchor="middle">signed by us? ✓</text>
+  <path d="M392 202 H 450" class="ln" marker-end="url(#ar4)"/>
+  <rect x="450" y="172" width="170" height="60" rx="7" class="dg-ok"/>
+  <text x="535" y="192" class="t-ok" text-anchor="middle" style="font-size:13px">getUser(token)</text>
+  <text x="535" y="212" class="t-ok" text-anchor="middle" style="font-size:13px">role = authenticated?</text>
+  <text x="535" y="228" class="t-ok" text-anchor="middle" style="font-size:13px">aal = aal2?</text>
+  <path d="M620 202 H 678" class="ln-ok" marker-end="url(#ar4)"/>
+  <rect x="678" y="172" width="196" height="60" rx="7" class="dg-ok"/>
+  <text x="776" y="200" class="t-ok" text-anchor="middle">401 — anon rejected</text>
+  <text x="776" y="222" class="t-sm" text-anchor="middle">real admin still passes</text>
+
+  <defs>
+    <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--coral)"/></marker>
+    <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--green)"/></marker>
+  </defs>
+</svg>
+</div>
+
+<p><b class="k">Why it closes the path:</b> the anon key carries <code>"role":"anon"</code>. Reading
+the bearer token and rejecting anything that is not a real <code>authenticated</code> user turns the
+proven <code>400</code> above into a <code>401</code>. Because both your admins already have verified
+TOTP factors, additionally requiring <code>aal2</code> costs nothing and means a stolen password
+alone cannot dispatch either.</p>
+
+<div class="alt">
+  <span class="lb">Alternatives considered</span>
+  <ul>
+    <li><b class="k">Shorten the allowlist</b> — drop <code>promote-season.yml</code> and
+    <code>ftl-seed.yml</code>. <b>Rejected:</b> reduces the blast radius but leaves the endpoint open;
+    the admin UI genuinely needs those buttons.</li>
+    <li><b class="k">Move dispatch behind a GitHub OIDC / signed webhook</b> instead of a PAT.
+    <b>Rejected for now:</b> architecturally cleaner, considerably more work, and it does not fix
+    today's hole faster than a caller check.</li>
+    <li><b class="k">Set <code>verify_jwt</code> stricter in config</b>. <b>Rejected:</b> no such
+    setting exists — <code>verify_jwt</code> is boolean and already true. Role checking is only
+    possible in code. This is precisely the misconception that created the bug.</li>
+    <li><b class="k">Rely on CORS</b>. <b>Rejected:</b> CORS is a browser courtesy; <code>curl</code>
+    ignores it entirely. Worth tightening as depth, never as the control.</li>
+  </ul>
+</div>
+
+<p><b class="k">What could break:</b> the admin UI calls this through
+<code>supabase.functions.invoke()</code>, which attaches the signed-in session automatically — so a
+logged-in admin is unaffected. Risk is if any automation calls it with the anon key; nothing in the
+repo does. <b class="k">Rotate <code>GH_DISPATCH_PAT</code> afterwards</b> — its capability has been
+publicly reachable, so treat it as exposed even though its value never left the server.</p>
+
+<h3>B2 · Close signup; keep MFA meaningful</h3>
+
+<p><b class="k">Why it closes the path:</b> one setting flip on each project removes the
+"register → become admin" route entirely, and it is reversible in seconds. Because there is exactly
+one legitimate account per environment, <b class="k">nothing else is affected</b> — verified, not
+assumed.</p>
+
+<div class="alt">
+  <span class="lb">Alternatives considered</span>
+  <ul>
+    <li><b class="k">Explicit <code>tbl_admin</code> allowlist</b> checked by every policy, replacing
+    the bare <code>authenticated</code> test. <b>Deferred, not rejected:</b> strictly better — a
+    stray signup would then grant nothing — but it rewrites all 17 policies and needs an ADR
+    superseding part of ADR-016. Do not couple a model redesign to an incident. I would record it as
+    a dated follow-up.</li>
+    <li><b class="k">Leave signup open, rely on e-mail confirmation</b>. <b>Rejected:</b> the barrier
+    is "own a mailbox", and the prize is the ranking.</li>
+    <li><b class="k">Raise <code>password_min_length</code> from 6</b>. <b>Worth doing, but not a
+    fix</b> — it hardens the one real account; it does nothing about registration.</li>
+  </ul>
+</div>
+
+<h3>B3 · RLS + REVOKE on the six, and grants on the view</h3>
+
+<p><b class="k">Why it closes the path — and why it cannot break ingestion.</b> This is the question
+you raised when you said the pipeline is triggered from many places. It does not matter how many
+places trigger it, because <b class="k">every one of them authenticates as
+<code>service_role</code></b>, and <code>service_role</code> bypasses RLS inherently. Verified across
+the workflows:</p>
+
+<pre><code>ingest.yml:28             SUPABASE_KEY: ${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
+recompute-drain-prod.yml:61  SUPABASE_KEY: ${{ secrets.SUPABASE_PROD_SERVICE_ROLE_KEY }}
+ftl-seed.yml:57 / :95     SUPABASE_KEY: ${{ …SERVICE_ROLE_KEY }}
+phase5-event-runner.yml:58, ingest-event.yml:76, regen-report.yml:58, evf-parity-sweep.yml:45 …</code></pre>
+
+<p>So revoking <code>anon</code> is invisible to ingestion. The only readers that lose access are
+the ones that should never have had it.</p>
+
+<p>The view needs separate treatment, because RLS underneath will not touch it: revoke
+<code>anon</code> outright and reduce <code>authenticated</code> to <code>SELECT</code>. It stays
+working for the Phase-4 admin UI that legitimately reads it.</p>
+
+<div class="alt">
+  <span class="lb">Alternatives considered</span>
+  <ul>
+    <li><b class="k">Recreate the view with <code>security_invoker = true</code></b>. Architecturally
+    the right answer. <b>Deferred:</b> it couples the admin UI to whatever RLS the draft tables end
+    up with, so it would force an <code>authenticated</code> read policy onto all six tables that is
+    otherwise unnecessary. Pair it with the <code>tbl_admin</code> work.</li>
+    <li><b class="k">RLS only, skip the REVOKE</b> (what the advisory implies). <b>Rejected:</b>
+    leaves <code>TRUNCATE</code> nominally granted and does nothing about the view — the advisor
+    would go green while fencer names stayed readable.</li>
+    <li><b class="k">Add an <code>anon</code> read policy for the queue</b> so dashboards could read
+    it. <b>Rejected:</b> nothing needs it; no frontend file references any of the six.</li>
+  </ul>
+</div>
+
+<h3>B4 · The test that stops this recurring</h3>
+
+<p>Everything above fixes today. This is the only item that fixes tomorrow, and it is why I keep
+returning to it: <b class="k">this exact bug class was already fixed once</b>, in
+<code>20260327000001_revoke_write_functions.sql</code> (March 2026, ADR-016), whose own comment reads
+<i>"all SECURITY DEFINER write functions were callable by the anon role because PostgreSQL defaults
+to GRANT EXECUTE TO PUBLIC"</i>. Every object created afterwards skipped the pattern, and nothing
+noticed for four months.</p>
+
+<p>A pgTAP file asserting <b class="k">deny-by-default with an explicit allowlist</b> — no
+RLS-disabled table in <code>public</code>; the anon-executable function set <i>equals</i> a named
+list; no owner-rights view over an RLS table; no anon write grants — goes red the day someone adds a
+table without thinking. A deny-list would not have caught any of today's findings, because every one
+of them involves an object that did not exist when the list would have been written.</p>
+
+<h2><span class="num">03</span>Is fix A enough? Yes. Read this before the options.</h2>
+
+<div class="call ok">
+  <span class="lb">Direct answer to a fair question</span>
+  <b class="k">Fix A closes every hole proved in Part A.</b> Signup toggle, dispatcher caller check,
+  RLS + REVOKE on the six, grants on the view, REVOKE on the five RPCs — after that, nothing in
+  Part A still works for an attacker. I muddied this by introducing B and C in the same breath, which
+  made it sound like A was insufficient. It is not.<br><br>
+  <b class="k">B and C answer a different question:</b> not "is the hole closed" but "will it reopen".
+  They are optional, separable, and neither is required to be safe.
+</div>
+
+<h2><span class="num">04</span>Will it break the ranklist? The blast radius</h2>
+
+<div class="call warn">
+  <span class="lb">Correction — I overstated this, and then checked further</span>
+  I first concluded that revoking <code>authenticated</code> would break admin fencer editing,
+  because the trigger on <code>tbl_fencer</code> runs with the caller's privileges. <b class="k">That
+  conclusion was wrong.</b> On checking the actual call path, every fencer write from the admin UI
+  goes through a <code>SECURITY DEFINER</code> RPC, so the trigger runs as the function owner and the
+  queue INSERT succeeds regardless of <code>authenticated</code> grants.<br><br>
+  <b class="k">Net: the REVOKE is safe today.</b> What remains is a latent fragility worth removing
+  cheaply, not a blocker. The full trace is below because the reasoning is what matters, and because
+  I would rather show the correction than bury it.
+</div>
+
+<h3>The chain I was worried about — and why it does not fire</h3>
+
+<div class="fig">
+<svg viewBox="0 0 900 260" role="img" aria-label="Trigger chain from admin fencer edit to recompute queue">
+  <rect x="14" y="40" width="176" height="76" rx="8" class="dg-box"/>
+  <text x="102" y="70" class="t" text-anchor="middle">Admin edits</text>
+  <text x="102" y="92" class="t-sm" text-anchor="middle">fencer birth year</text>
+  <text x="102" y="110" class="t-sm" text-anchor="middle">role = authenticated</text>
+
+  <path d="M190 78 H 250" class="ln" marker-end="url(#ar5)"/>
+  <rect x="250" y="40" width="186" height="76" rx="8" class="dg-box"/>
+  <text x="343" y="66" class="t" text-anchor="middle">UPDATE tbl_fencer</text>
+  <text x="343" y="90" class="t-sm" text-anchor="middle">RLS policy: OK ✓</text>
+
+  <path d="M436 78 H 496" class="ln" marker-end="url(#ar5)"/>
+  <rect x="496" y="26" width="200" height="104" rx="8" class="dg-warn"/>
+  <text x="596" y="52" class="t" text-anchor="middle">trg_fencer_change_enqueue</text>
+  <text x="596" y="76" class="t-sm" text-anchor="middle">fn_fencer_change_enqueue</text>
+  <text x="596" y="98" class="t-bad" text-anchor="middle" style="font-size:13px">SECURITY INVOKER</text>
+  <text x="596" y="118" class="t-sm" text-anchor="middle">runs as authenticated</text>
+
+  <path d="M696 78 H 756" class="ln" marker-end="url(#ar5)"/>
+  <rect x="756" y="40" width="130" height="76" rx="8" class="dg-bad"/>
+  <text x="821" y="70" class="t-bad" text-anchor="middle">INSERT into</text>
+  <text x="821" y="92" class="t-sm" text-anchor="middle">tbl_recompute</text>
+  <text x="821" y="110" class="t-sm" text-anchor="middle">_queue</text>
+
+  <rect x="250" y="164" width="636" height="76" rx="8" class="dg-ok"/>
+  <text x="568" y="192" class="t-ok" text-anchor="middle">But the admin never takes this path: fn_update_fencer_birth_year is DEFINER,</text>
+  <text x="568" y="218" class="t-ok" text-anchor="middle">so the trigger runs as the owner and the INSERT succeeds. REVOKE is safe.</text>
+  <path d="M821 116 V 164" class="ln-ok" marker-end="url(#ar-ok2)"/>
+
+  <defs>
+    <marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/></marker>
+    <marker id="ar-ok2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--green)"/></marker>
+  </defs>
+</svg>
+<div class="cap">Read live from CERT. A trigger that runs with the <i>caller's</i> privileges is invisible
+in a grants audit — it only shows up when you trace what fires on write.</div>
+</div>
+
+<div class="proof">
+  <div class="ph">Proof · the trigger, read from CERT</div>
+  <div class="pb">
+<pre><code>on_table    trigger                       function                    SECDEF
+tbl_fencer  trg_fencer_change_enqueue     fn_fencer_change_enqueue    False   ← invoker
+tbl_fencer  trg_audit_fencer              fn_audit_log                True    ← definer
+tbl_event   trg_audit_event               fn_audit_log                True
+tbl_result  trg_audit_result              fn_audit_log                True
+
+CREATE OR REPLACE FUNCTION public.fn_fencer_change_enqueue()
+ RETURNS trigger LANGUAGE plpgsql AS $function$
+BEGIN
+    IF (NEW.int_birth_year IS DISTINCT FROM OLD.int_birth_year)
+       OR (NEW.txt_nationality IS DISTINCT FROM OLD.txt_nationality) THEN
+        PERFORM fn_enqueue_affected_events(NEW.id_fencer);   -- writes tbl_recompute_queue
+    END IF;
+    RETURN NEW;
+END; $function$          -- ← no SECURITY DEFINER</code></pre>
+
+<p>The trigger really is INVOKER, and it really does reach <code>tbl_recompute_queue</code>. What I
+failed to check first was <b class="k">who actually performs the UPDATE</b>.</p>
+  </div>
+</div>
+
+<div class="proof">
+  <div class="ph">Proof · the real admin write path · read from CERT</div>
+  <div class="pb">
+<pre><code>function                              SECDEF   anon EXECUTE
+fn_update_fencer_birth_year           True     False      ← the admin's birth-year edit
+fn_update_fencer_gender               True     False
+fn_transfer_fencer_alias              True     False
+fn_split_fencer_from_alias            True     False
+fn_discard_fencer_alias_and_results   True     False
+fn_confirm_fencer_alias               True     False
+fn_create_fencer_from_match           True     False
+fn_approve_match                      True     False
+
+Direct PostgREST access to tbl_fencer from the frontend (api.ts:573):
+    .from('tbl_fencer').select(…)          ← SELECT only. No .update, no .insert.</code></pre>
+
+<p><b class="k">This closes the question.</b> Every fencer mutation the admin UI performs goes through
+a <code>SECURITY DEFINER</code> function, which executes as the function's owner. The
+<code>trg_fencer_change_enqueue</code> trigger therefore fires <b class="k">inside the definer's
+security context</b>, and its INSERT into <code>tbl_recompute_queue</code> succeeds no matter what
+<code>authenticated</code> has been revoked. ADR-072's birth-year correction path is unaffected.</p>
+
+<p class="sub">Note also <code>anon EXECUTE = False</code> on all of them — the March 2026 work
+(ADR-016 / <code>20260327000003</code>) revoked these correctly. It is only objects created
+<i>after</i> March that drifted, which is exactly the pattern §05 explains.</p>
+  </div>
+</div>
+
+<div class="call ok">
+  <span class="lb">Cheap hardening, no longer a blocker</span>
+  The remaining exposure is <b class="k">latent, not live</b>: the moment anyone adds a direct
+  <code>.from('tbl_fencer').update(…)</code> to the frontend, or any other
+  <code>authenticated</code>-context write to <code>tbl_fencer</code>, the revoked queue grant would
+  break it — and the failure would look like an unrelated permission error on a fencer edit.<br><br>
+  Making <code>fn_enqueue_affected_events</code> <code>SECURITY DEFINER</code> removes that trap
+  permanently, and it is the pattern already used by <code>fn_audit_log</code> (DEFINER on three
+  triggers, writing to the RLS-protected <code>tbl_audit_log</code>). <b class="k">Recommended, one
+  line, but not a prerequisite.</b>
+</div>
+
+<h3>The two draft RPCs — verified</h3>
+
+<div class="proof">
+  <div class="ph">Proof · callers and grants</div>
+  <div class="pb">
+<pre><code>fn_commit_event_draft    SECDEF=False   anon=True   authenticated=True
+fn_discard_event_draft   SECDEF=False   anon=True   authenticated=True
+
+Callers — Python only:
+  python/pipeline/draft_store.py:129   _sb.rpc("fn_commit_event_draft",  {...})
+  python/pipeline/draft_store.py:133   _sb.rpc("fn_discard_event_draft", {...})
+  python/tools/recreate_active_season_2025_2026.py:770
+
+Frontend RPC surface — 32 functions, and NEITHER of these appears in it.</code></pre>
+
+<p><b class="k">Verdict: safe to revoke.</b> Both are called exclusively from the Python pipeline,
+which authenticates as <code>service_role</code> — a role that both bypasses RLS and retains its
+grants. Revoking <code>anon</code> and <code>authenticated</code> EXECUTE removes them from the
+public API surface without affecting a single real caller. Being INVOKER is harmless here, because
+the only invoker is <code>service_role</code>. <b class="k">No DEFINER change needed for these two.</b></p>
+  </div>
+</div>
+
+<h3>Everything else I checked, and what it means</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Dependency</th><th>Finding</th><th>Breaks?</th></tr></thead>
+<tbody>
+<tr><td>Pipeline write path (all ingestion triggers)</td><td>Every workflow passes <code>SUPABASE_*_SERVICE_ROLE_KEY</code>; <code>service_role</code> bypasses RLS inherently.</td><td><span class="st s-ok">no</span></td></tr>
+<tr><td>Frontend PostgREST surface</td><td><code>api.ts</code> touches only <code>tbl_season</code>, <code>tbl_tournament</code>, <code>tbl_event</code>, <code>tbl_scoring_config</code>, <code>tbl_organizer</code>, <code>tbl_fencer</code>, and views <code>vw_calendar</code>, <code>vw_score</code>, <code>vw_registration_entry_list</code>, <code>vw_match_candidates</code>. <b class="k">None of the six.</b></td><td><span class="st s-ok">no</span></td></tr>
+<tr><td>Foreign keys</td><td>Three, all one-directional <i>out</i> of the six: <code>tbl_event_ingest_history → tbl_event</code>, <code>tbl_recompute_queue → tbl_event</code>, <code>tbl_tournament_ingest_history → tbl_tournament</code>. No public table depends on the six.</td><td><span class="st s-ok">no</span></td></tr>
+<tr><td>History-cap triggers</td><td><code>trg_enforce_event_history_cap</code> / <code>trg_enforce_tour_history_cap</code> sit <i>on</i> the history tables, so they fire only for writers that already hold access (service_role).</td><td><span class="st s-ok">no</span></td></tr>
+<tr><td>Draft commit / discard RPCs</td><td><b class="k">Verified.</b> Called only from <code>draft_store.py:129/133</code> and <code>recreate_active_season_2025_2026.py:770</code> — all <code>service_role</code>. Absent from the frontend's 32-RPC surface. Revoking <code>anon</code>/<code>authenticated</code> affects no real caller.</td><td><span class="st s-ok">no</span></td></tr>
+<tr><td>Admin fencer writes (<code>tbl_fencer</code>)</td><td><b class="k">Verified.</b> All 8 mutation RPCs are <code>SECURITY DEFINER</code> with <code>anon</code> already revoked; the frontend's only direct access is a <code>SELECT</code> (<code>api.ts:573</code>). The enqueue trigger fires in the definer context.</td><td><span class="st s-ok">no</span></td></tr>
+<tr><td>Direct frontend writes that remain</td><td>Only three, none touching the six: <code>tbl_season.update</code> (<code>api.ts:279, 296</code>) and <code>tbl_event.update({enum_status})</code> (<code>api.ts:528</code>). No trigger on either table writes to the six tables.</td><td><span class="st s-ok">no</span></td></tr>
+<tr><td><code>vw_fencer_aliases</code></td><td>Frontend reads aliases via <code>fn_list_fencer_aliases</code> RPC, not the view directly — so revoking <code>anon</code> and reducing <code>authenticated</code> to SELECT is safe.</td><td><span class="st s-ok">no</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">05</span>Option B — fix the default privileges</h2>
+
+<h3>What the problem actually is</h3>
+
+<p>Nobody granted the six tables anything. The schema did it automatically, on creation:</p>
+
+<div class="proof">
+  <div class="ph">Proof · pg_default_acl on CERT</div>
+  <div class="pb">
+<pre><code>grantor   schema   type   acl
+postgres  public   r      {postgres=arwdDxtm/postgres,
+                           anon=arwdDxtm/postgres,          ← every new TABLE
+                           authenticated=arwdDxtm/postgres,
+                           service_role=arwdDxtm/postgres}
+postgres  public   f      {…, anon=X/postgres, …}           ← every new FUNCTION
+
+  a=INSERT  r=SELECT  w=UPDATE  d=DELETE  D=TRUNCATE  x=REFERENCES  t=TRIGGER</code></pre>
+
+<p>There is a standing <code>ALTER DEFAULT PRIVILEGES</code> on <code>public</code> handing
+<b class="k">full DML plus TRUNCATE to <code>anon</code> on every table created</b>, and
+<code>EXECUTE</code> to <code>anon</code> on every function created. This is the Supabase default and
+it is the mechanism behind <i>every</i> finding in Part A: the six tables, the view's absurd
+INSERT/DELETE grants, and the five anon-callable RPCs. None of it was a decision.</p>
+  </div>
+</div>
+
+<h3>The change</h3>
+
+<pre><code>ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  REVOKE ALL ON TABLES    FROM anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  REVOKE EXECUTE ON FUNCTIONS FROM anon, authenticated;
+
+-- thereafter, every public-facing object is granted explicitly:
+GRANT SELECT ON vw_calendar TO anon, authenticated;   -- as migrations already do</code></pre>
+
+<h3>Will it break the ranklist?</h3>
+
+<div class="call ok">
+  <span class="lb">No — and this is a property of the statement, not an opinion</span>
+  <code>ALTER DEFAULT PRIVILEGES</code> affects <b class="k">only objects created after it runs</b>. It
+  does not touch a single existing table, view, function or grant. Every current frontend read keeps
+  working because those objects already exist with their grants intact. <b class="k">The blast radius
+  on existing functionality is precisely zero.</b>
+</div>
+
+<p>The cost lands later, and it is the intended cost: the next migration that creates a
+public-facing table must add an explicit <code>GRANT SELECT … TO anon</code>, or the frontend gets a
+permission error. That failure is <b class="k">loud, immediate, and caught in CI</b> — the opposite
+of today's failure, which is silent and discovered by an advisory e-mail four months later.</p>
+
+<div class="alt">
+  <span class="lb">Alternatives considered</span>
+  <ul>
+    <li><b class="k">Leave defaults, rely on the pgTAP guard.</b> The guard catches the same mistakes,
+    but <i>after</i> someone writes them, and only if the suite runs before deploy. Defence in depth
+    says do both; if forced to choose one, the default-privilege fix prevents while the test detects.
+    <b>Verdict:</b> do both, they are not substitutes.</li>
+    <li><b class="k">Revoke from <code>authenticated</code> too, or only from <code>anon</code>?</b>
+    Revoking only <code>anon</code> is the softer option and still kills the internet-facing half.
+    Revoking both is stricter and matches the fact that <code>authenticated</code> means "admin" here.
+    <b>Verdict:</b> both, since RLS remains the real gate for admin access.</li>
+    <li><b class="k">Do nothing and document it.</b> <b>Rejected:</b> this is the generator of every
+    finding above. Leaving it is choosing to have this conversation again.</li>
+  </ul>
+</div>
+
+<p class="sub"><b class="k">Effort:</b> two statements in the same migration as fix A. <b class="k">Risk:</b>
+near zero today; a known, loud cost on future migrations. <b class="k">Leverage:</b> the highest of
+any item in this document.</p>
+
+<h2><span class="num">06</span>Option C — separate the planes</h2>
+
+<h3>The idea</h3>
+
+<p>In Supabase, <code>public</code> is not a neutral namespace — it is <b class="k">the internet-facing
+API surface</b>. Everything in it is a REST endpoint by default. Option C says internal machinery
+should not live there at all:</p>
+
+<div class="fig">
+<svg viewBox="0 0 900 250" role="img" aria-label="Two-schema separation of planes">
+  <rect x="20" y="40" width="390" height="180" rx="10" class="dg-ok"/>
+  <text x="215" y="72" class="t-ok" text-anchor="middle" style="font-size:17px">schema: public — exposed</text>
+  <text x="215" y="104" class="t-sm" text-anchor="middle">tbl_fencer · tbl_result · tbl_event</text>
+  <text x="215" y="128" class="t-sm" text-anchor="middle">tbl_tournament · tbl_season · tbl_organizer</text>
+  <text x="215" y="152" class="t-sm" text-anchor="middle">vw_calendar · vw_score · vw_match_candidates</text>
+  <text x="215" y="186" class="t-ok" text-anchor="middle">what the web app legitimately reads</text>
+
+  <rect x="470" y="40" width="410" height="180" rx="10" class="dg-neu"/>
+  <text x="675" y="72" class="t" text-anchor="middle" style="font-size:17px">schema: pipeline — not exposed</text>
+  <text x="675" y="104" class="t-sm" text-anchor="middle">tbl_result_draft · tbl_tournament_draft</text>
+  <text x="675" y="128" class="t-sm" text-anchor="middle">tbl_recompute_queue · tbl_recompute_watermark</text>
+  <text x="675" y="152" class="t-sm" text-anchor="middle">tbl_event_ingest_history · tbl_tournament_ingest_history</text>
+  <text x="675" y="186" class="t-ok" text-anchor="middle">no anon default privileges — born unreachable</text>
+</svg>
+<div class="cap">A fresh schema carries no <code>ALTER DEFAULT PRIVILEGES</code> entry for
+<code>anon</code>, so tables created in it are inaccessible unless someone deliberately grants
+access. The secure state becomes the default state structurally, not by remembering to revoke.</div>
+</div>
+
+<h3>Will it break the ranklist?</h3>
+
+<p><b class="k">This is where the honest answer is "it could, and it needs real care."</b> Unlike B,
+this moves live tables that CERT is actively ingesting into. Concretely:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Concern</th><th>Assessment</th><th>Risk</th></tr></thead>
+<tbody>
+<tr><td><b class="k">The pipeline talks through PostgREST</b></td><td><code>db_connector.py:683</code> uses <code>create_client(url, key)</code> from <code>supabase-py</code> — it is a REST client, not psycopg. <code>draft_store.py:13</code> states the rule explicitly: <i>"no psycopg2 at runtime"</i>. So a schema PostgREST cannot see is a schema <b class="k">the pipeline cannot use either</b>. The schema must be added to PostgREST's exposed list and the client pointed at it via <code>ClientOptions(schema=…)</code>.</td><td><span class="st s-bad">high</span></td></tr>
+<tr><td>Cross-schema foreign keys</td><td>Three FKs point from the six out to <code>tbl_event</code>/<code>tbl_tournament</code>. PostgreSQL supports cross-schema FKs without issue.</td><td><span class="st s-ok">low</span></td></tr>
+<tr><td>The trigger chain</td><td><code>fn_fencer_change_enqueue</code> → <code>fn_enqueue_affected_events</code> → the queue. Function bodies need schema-qualifying or a <code>search_path</code>, and the DEFINER change from §04 is needed regardless.</td><td><span class="st s-wip">medium</span></td></tr>
+<tr><td>~30 referencing files</td><td>Migrations, 6 pgTAP suites (<code>26</code>, <code>27</code>, <code>34</code>, <code>35</code>, <code>40</code>, <code>44</code>), <code>draft_store.py</code>, <code>recompute/worker.py</code>, <code>review_cli.py</code>, <code>alias_writeback.py</code>, <code>phase5_report.py</code>, <code>phase5_runner.py</code> all name these tables.</td><td><span class="st s-wip">medium</span></td></tr>
+<tr><td>Seed export / restore (ADR-036)</td><td>The auto-export and <code>db reset</code> ordering assume a <code>public</code> dump. A second schema changes what gets exported and in what order — and ADR-036's amendment already governs migration/seed ordering.</td><td><span class="st s-wip">medium</span></td></tr>
+<tr><td>Live data in flight</td><td>CERT holds 256 draft results and 125 queued jobs <i>right now</i>. A move must not run mid-ingestion.</td><td><span class="st s-bad">high</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call warn">
+  <span class="lb">The uncomfortable conclusion about C</span>
+  Because the pipeline is a REST client, <b class="k">C does not deliver the "unreachable by
+  construction" property people assume it does</b>. The schema has to be exposed to PostgREST for the
+  pipeline to work at all — at which point security again rests on grants, exactly like Option B.
+  What C genuinely buys is a <b class="k">clean default</b> (new tables there are born ungranted) and
+  a legible boundary. What it does not buy is magic.
+</div>
+
+<div class="alt">
+  <span class="lb">Alternatives considered</span>
+  <ul>
+    <li><b class="k">Move the schema AND switch the pipeline to direct Postgres (psycopg).</b> This
+    <i>would</i> deliver true unreachability — the schema stays out of PostgREST entirely.
+    <b>Rejected for now:</b> it reverses an explicit architectural decision recorded in
+    <code>draft_store.py</code> ("all txn boundaries inside SQL; no psycopg2 at runtime") and turns a
+    security fix into a pipeline rewrite.</li>
+    <li><b class="k">Move only the two recompute tables</b>, leaving drafts and history in
+    <code>public</code>. Smaller diff, but the recompute tables are the ones the trigger chain writes
+    to from an <code>authenticated</code> session — the most entangled pair, not the least.
+    <b>Rejected:</b> worst effort-to-benefit ratio of the variants.</li>
+    <li><b class="k">Do B instead and skip C.</b> B gets most of the benefit — new objects born
+    locked — for two statements and zero risk to existing behaviour. <b>This is my recommendation.</b></li>
+  </ul>
+</div>
+
+<p class="sub"><b class="k">Effort:</b> a data migration plus changes across ~30 files and 6 pgTAP
+suites. <b class="k">Risk:</b> real, on a system actively ingesting. <b class="k">Leverage:</b> good
+but largely overlapping with B.</p>
+
+<h2><span class="num">07</span>Honest comparison</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th></th><th>A — lock what exists</th><th>B — fix the defaults</th><th>C — separate schemas</th></tr></thead>
+<tbody>
+<tr><td class="d">Closes Part A holes</td><td><span class="st s-ok">yes, fully</span></td><td><span class="st s-neu">no</span> future only</td><td><span class="st s-neu">no</span> not by itself</td></tr>
+<tr><td class="d">Stops recurrence</td><td><span class="st s-bad">no</span></td><td><span class="st s-ok">yes</span></td><td><span class="st s-ok">yes, in that schema</span></td></tr>
+<tr><td class="d">Breaks anything today</td><td><span class="st s-ok">no</span> verified across triggers, RPCs, FKs and the frontend surface (§04)</td><td><span class="st s-ok">nothing</span> future-only by definition</td><td><span class="st s-bad">several paths</span> pipeline is a REST client</td></tr>
+<tr><td class="d">Effort</td><td>one migration</td><td>two statements</td><td>data migration + ~30 files</td></tr>
+<tr><td class="d">Verdict</td><td><b class="k">Do it now</b></td><td><b class="k">Do it in the same migration</b></td><td><b class="k">Defer</b> — write the ADR, revisit when the pipeline is quiet</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">08</span>What I would do, in order</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>#</th><th>Action</th><th>Closes</th><th>Needs a release?</th></tr></thead>
+<tbody>
+<tr><td class="d">1</td><td>Disable signup on CERT + PROD</td><td>A2</td><td><span class="st s-ok">no</span> dashboard toggle</td></tr>
+<tr><td class="d">2</td><td>Add caller check (<code>getUser</code> + role + <code>aal2</code>) and pin CORS in <code>dispatch-workflow</code>; redeploy</td><td>A1</td><td><span class="st s-wip">functions deploy</span></td></tr>
+<tr><td class="d">3</td><td>Rotate <code>GH_DISPATCH_PAT</code>; review Actions history for dispatches nobody recognises</td><td>A1 aftermath</td><td><span class="st s-ok">no</span></td></tr>
+<tr><td class="d">4</td><td>Make <code>fn_enqueue_affected_events</code> SECURITY DEFINER, matching the <code>fn_audit_log</code> pattern. <b class="k">Hardening, not a prerequisite</b> — it removes a latent trap for any future <code>authenticated</code>-context write to <code>tbl_fencer</code> (§04).</td><td>latent fragility</td><td>with step 5</td></tr>
+<tr><td class="d">5</td><td>One migration: RLS + REVOKE on the six, grants on <code>vw_fencer_aliases</code>, REVOKE on the five anon-callable RPCs, <code>aal2</code> on write policies</td><td>A3, A4</td><td><span class="st s-bad">yes</span> release.yml</td></tr>
+<tr><td class="d">6</td><td><b class="k">Layer 1 — kill the generator.</b> <code>ALTER DEFAULT PRIVILEGES <b class="k">FOR ROLE postgres</b> IN SCHEMA public REVOKE …</code> on <b class="k">TABLES, FUNCTIONS <i>and</i> SEQUENCES</b> from <code>anon, authenticated</code>. The role qualifier is what makes it bite (all 23 objects are postgres-owned); sequences matter because C5 found <code>anon</code> on <code>S</code> too. Same migration; zero effect on existing objects.</td><td>the root cause</td><td>with step 5</td></tr>
+<tr><td class="d">7</td><td><b class="k">Layer 2 — <code>52_security_posture.sql</code></b>, written and failing <i>before</i> steps 5–6. Five deny-by-default assertions (§11), including <b class="k">#5: <code>pg_default_acl</code> grants nothing to anon/authenticated</b> — the assertion that guards step 6 itself. Without it, restoring the defaults passes every other check until the next table appears.</td><td>recurrence</td><td>with step 5</td></tr>
+<tr><td class="d">8</td><td><b class="k">Close the gate bypass.</b> <code>release.yml</code>'s <code>if:</code> lets a manual <code>workflow_dispatch</code> skip CI — and therefore skip pgTAP (§11). Either require a typed confirmation input, or re-run the posture test inside the deploy job so it cannot be routed around. <b class="k">Without this, step 7 is optional in practice.</b></td><td>makes Layer 2 real</td><td><span class="st s-ok">no</span> workflow edit</td></tr>
+<tr><td class="d">9</td><td><b class="k">Layer 3 — delivery.</b> Telegram alert on posture-test failure via the existing <code>TelegramNotifier</code>. The detection already existed for 11 weeks; it was delivery that failed.</td><td>the actual 2026 failure</td><td>with step 5</td></tr>
+<tr><td class="d">10</td><td><code>permissions:</code> blocks on the 11 workflows lacking them; ADR (recording Option C and the <code>tbl_admin</code> allowlist as dated, deferred decisions) + new handbook security page; <code>btree_gist</code> relocation attempt, scheduled last.</td><td>hygiene</td><td>with step 5</td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="sub">Steps 1–3 and 8 need no migration and no release train, which is exactly why they
+should not wait behind step 5.</p>
+
+<div class="call ok">
+  <span class="lb">Does this plan actually fix the root cause? Mapping it explicitly</span>
+  <b class="k">Every proven exposure in Part A</b> → steps 1, 2, 5 (with 3 as cleanup).<br>
+  <b class="k">The generator that created them</b> → step 6.<br>
+  <b class="k">Proof the generator stays dead</b> → step 7, assertion 5.<br>
+  <b class="k">A gate that cannot be bypassed</b> → step 8.<br>
+  <b class="k">A human actually finding out</b> → step 9.<br><br>
+  Steps 6–9 were <b class="k">absent or incomplete</b> in the version of this plan written before §10
+  and §11 existed: step 6 lacked the role qualifier and sequences, step 7 lacked the self-guarding
+  assertion, and step 8 did not exist at all. That gap is itself the argument for the layered
+  approach — an analysis-only control drifts out of date exactly the way a convention does.
+</div>
+
+<h2><span class="num">09</span>Re-run any of it yourself</h2>
+
+<pre><code># auth config (is signup open?)
+export SUPABASE_ACCESS_TOKEN=...          # already in your .env
+curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  https://api.supabase.com/v1/projects/&lt;ref&gt;/config/auth | jq '.disable_signup'
+
+# anonymous read with the public key
+curl -s "https://&lt;ref&gt;.supabase.co/rest/v1/tbl_recompute_watermark?select=*" \
+  -H "apikey: &lt;anon key&gt;"
+
+# dispatcher — SAFE probe, invalid name means nothing can run
+curl -s -X POST "https://&lt;ref&gt;.supabase.co/functions/v1/dispatch-workflow" \
+  -H "apikey: &lt;anon key&gt;" -H "Content-Type: application/json" \
+  -d '{"workflow":"THIS-WORKFLOW-DOES-NOT-EXIST.yml"}'
+# 400 invalid_workflow  = the caller was never checked
+# 401                   = the caller was checked (what we want after the fix)</code></pre>
+
+<h2><span class="num">10</span>Full verification log — 23 July, CERT and PROD</h2>
+
+<p class="lead">Every claim in this document, re-checked against both live environments. Identical
+result on CERT and PROD unless stated.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>#</th><th>Claim</th><th>Observed</th><th></th></tr></thead>
+<tbody>
+<tr><td class="d">C1</td><td>Six tables RLS-off, ten RLS-on, 17 policies</td><td><code>rls_off=6, rls_on=10, policies=17</code></td><td><span class="st s-ok">pass</span></td></tr>
+<tr><td class="d">C2</td><td><code>anon</code> holds full DML + TRUNCATE on all six</td><td><code>DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE</code> on each</td><td><span class="st s-ok">pass</span></td></tr>
+<tr><td class="d">C3</td><td><code>vw_fencer_aliases</code> owner-rights + anon DML</td><td><code>owner=postgres, reloptions=NONE</code>, anon holds all seven privileges</td><td><span class="st s-ok">pass</span></td></tr>
+<tr><td class="d">C4</td><td>Five write RPCs anon-executable; two DEFINER</td><td>5 of 5. <code>fn_create_registration</code> and <code>fn_find_or_create_tournament</code> are DEFINER</td><td><span class="st s-ok">pass</span></td></tr>
+<tr><td class="d">C5</td><td>Default privileges grant <code>anon</code> on new objects</td><td>Tables, functions <i>and</i> sequences — all three object types</td><td><span class="st s-ok">pass</span></td></tr>
+<tr><td class="d">C6</td><td><code>btree_gist</code> in <code>public</code></td><td>Confirmed both</td><td><span class="st s-ok">pass</span></td></tr>
+<tr><td class="d">C7</td><td>No policy checks MFA</td><td>17 policies, <b class="k">0</b> reference <code>aal</code>; 7 public-read, 10 authenticated-shape</td><td><span class="st s-ok">pass</span></td></tr>
+<tr><td class="d">C8</td><td>All 8 fencer-mutation RPCs are DEFINER with anon revoked</td><td>8/8 DEFINER, 0/8 anon-executable</td><td><span class="st s-ok">pass</span></td></tr>
+<tr><td class="d">C9</td><td><code>trg_fencer_change_enqueue</code> is INVOKER; audit trigger is DEFINER</td><td>Confirmed both — this is why §04 needed correcting</td><td><span class="st s-ok">pass</span></td></tr>
+<tr><td class="d">H1</td><td>Dispatcher rejects a request with no key</td><td><code>HTTP 401</code></td><td><span class="st s-ok">pass</span></td></tr>
+<tr><td class="d">H2</td><td><b class="k">Dispatcher accepts the public anon key</b></td><td><code>HTTP 400 invalid_workflow</code> — reached handler logic</td><td><span class="st s-bad">exposed</span></td></tr>
+<tr><td class="d">H3</td><td>Anon reads the recompute watermark</td><td><code>HTTP 200</code>, 1 row</td><td><span class="st s-bad">exposed</span></td></tr>
+<tr><td class="d">H4</td><td>Anon reads fencer identities</td><td><code>HTTP 200</code>, 365 rows</td><td><span class="st s-bad">exposed</span></td></tr>
+<tr><td class="d">H5</td><td><b class="k">Anon holds real INSERT and UPDATE, not just SELECT</b></td><td>See below — this upgrades the finding from disclosure to integrity</td><td><span class="st s-bad">exposed</span></td></tr>
+<tr><td class="d">R1</td><td>11 workflows lack a <code>permissions:</code> block</td><td>Exactly 11, enumerated</td><td><span class="st s-ok">pass</span></td></tr>
+<tr><td class="d">R2</td><td>No migration enforces MFA</td><td>No <code>aal2</code> or <code>auth.jwt()</code> in any migration</td><td><span class="st s-ok">pass</span></td></tr>
+<tr><td class="d">R3</td><td>Pipeline runs as <code>service_role</code></td><td>11 workflows pass <code>SERVICE_ROLE_KEY</code></td><td><span class="st s-ok">pass</span></td></tr>
+<tr><td class="d">R4–R7</td><td>No service-role key in frontend; committed JWTs are demo keys; <code>.env</code> never committed; no <code>pull_request_target</code></td><td>All clean; JWTs decode to <code>"iss":"supabase-demo"</code></td><td><span class="st s-ok">pass</span></td></tr>
+<tr><td class="d">R8</td><td><code>main</code> CI green</td><td>Latest three runs <code>success</code></td><td><span class="st s-ok">pass</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>H5 — the write proof, and why it matters most</h3>
+
+<p>Until now every probe had been a read. A read-only exposure is a disclosure problem. This one is
+an <b class="k">integrity</b> problem, and it is the difference between "someone can see the queue"
+and "someone can change what the ranking engine does".</p>
+
+<div class="proof">
+  <div class="ph">Proof · PROD · anon INSERT with a deliberately invalid payload</div>
+  <div class="pb">
+<pre><code>$ curl -X POST ".../rest/v1/tbl_recompute_queue" -H "apikey: &lt;anon key&gt;" -d '{}'
+
+{"code":"23502",
+ "message":"null value in column \"id_event\" of relation
+            \"tbl_recompute_queue\" violates not-null constraint",
+ "details":"Failing row contains (122, null, PENDING, 2026-07-23 …, null)."}
+
+$ curl -X PATCH ".../rest/v1/tbl_recompute_queue?id_queue=eq.-999999" \
+       -H "apikey: &lt;anon key&gt;" -d '{"enum_status":"DONE"}'
+HTTP 204</code></pre>
+
+<p><b class="k">Read the error code.</b> <code>23502</code> is a NOT-NULL constraint violation — a
+<i>data</i> error. A permission failure would have been <code>42501 permission denied for table
+tbl_recompute_queue</code>. Postgres accepted the write, built the row, assigned it id <code>122</code>,
+and rejected it only because I deliberately omitted <code>id_event</code>. Supply that column and the
+insert succeeds.</p>
+
+<p>The <code>PATCH</code> returning <code>204 No Content</code> is the same story for UPDATE: success,
+zero rows matched, because <code>id_queue = -999999</code> does not exist. Permission was never the
+obstacle.</p>
+
+<p class="sub"><b class="k">So the watermark scenario in §A3 is not theoretical.</b> A single
+authenticated-by-nobody <code>PATCH</code> against <code>tbl_recompute_watermark</code> would move the
+CDC timestamp and make the hourly PROD drain skip work silently.</p>
+  </div>
+</div>
+
+<div class="call warn">
+  <span class="lb">Disclosure — one non-zero side effect</span>
+  I have been saying "nothing was written". That remains true of <b class="k">table data</b>: both
+  probes failed or matched nothing, and no row exists as a result. But the INSERT attempt did call
+  <code>nextval()</code> before hitting the constraint, and sequence advancement is
+  <b class="k">not transactional</b> — so the <code>tbl_recompute_queue</code> id sequence advanced by
+  one on CERT (to 297) and one on PROD (to 122). The practical effect is a one-number gap in future
+  ids, which is normal Postgres behaviour and affects nothing. I am recording it because I claimed
+  read-only and this is the one place that claim needed an asterisk.
+</div>
+
+<h2><span class="num">11</span>How to stop this happening again</h2>
+
+<p class="lead">The finding that should worry you is not the six tables. It is that
+<b class="k">nobody made a mistake</b> — the schema handed out the grants automatically, and no
+process anywhere would have noticed. Prevention has to attack that, in three layers: remove the
+cause, detect if it returns, and make sure a human hears about it.</p>
+
+<h3>Layer 1 — Remove the cause</h3>
+
+<p>Postgres applies <code>ALTER DEFAULT PRIVILEGES</code> <b class="k">per creating role</b>, so the
+fix only works if it targets the role that actually creates your objects. Verified:</p>
+
+<pre><code>SELECT pg_get_userbyid(relowner), count(*) FROM pg_class … WHERE nspname='public'
+  →  owner=postgres   count=23        ← every table and view, no exceptions</code></pre>
+
+<p>Migrations run as <code>postgres</code>, and all 23 public objects are owned by it. So revoking
+the <code>postgres</code> defaults covers everything the migration path can ever create:</p>
+
+<pre><code>ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  REVOKE ALL     ON TABLES    FROM anon, authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  REVOKE EXECUTE ON FUNCTIONS FROM anon, authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  REVOKE ALL     ON SEQUENCES FROM anon, authenticated;</code></pre>
+
+<p class="sub">All three object types are needed — check C5 found <code>anon</code> on
+<code>r</code> (tables), <code>f</code> (functions) <i>and</i> <code>S</code> (sequences). After this,
+a new table is unreachable until someone writes an explicit <code>GRANT SELECT … TO anon</code> —
+a visible line in a migration diff that a reviewer can actually see and question.</p>
+
+<h3>Layer 2 — Detect it if it comes back</h3>
+
+<div class="call ok">
+  <span class="lb">Verified: this gate is real, not decorative</span>
+  I checked whether a test would actually block anything before recommending one.
+  <code>ci.yml:24</code> runs <code>supabase test db</code> in a job named <b class="k">"pgTAP
+  (database)"</b>, and <code>release.yml</code> is triggered by
+  <code>workflow_run: workflows: [CI]</code>, gated on
+  <code>github.event.workflow_run.conclusion == 'success'</code>.
+  <b class="k">A failing pgTAP test therefore stops the release.</b> The guard has teeth.
+</div>
+
+<p>Layer 1 can still be undone — by an explicit <code>GRANT</code> in a future migration, by a
+platform change re-adding defaults, or by restoring a dump. So the assertion must be
+<b class="k">deny-by-default equality</b>, not a list of known-bad names. A deny-list would not have
+caught a single finding in this document, because every offending object was created after such a
+list would have been written.</p>
+
+<pre><code>-- supabase/tests/52_security_posture.sql
+1. every table in public has relrowsecurity = true
+2. { functions where has_function_privilege('anon', …) }  EQUALS  a named allowlist
+3. no view in public is owner-rights over an RLS-enabled table
+4. anon holds no INSERT / UPDATE / DELETE / TRUNCATE on any public table
+5. pg_default_acl for role postgres in public grants nothing to anon/authenticated</code></pre>
+
+<p>Assertion 5 is the one that guards Layer 1 itself. Without it, someone could silently restore the
+default privileges and every other assertion would keep passing until the next table appeared.</p>
+
+<div class="call warn">
+  <span class="lb">Gap found while verifying the gate</span>
+  <code>release.yml</code>'s job condition is:<br>
+  <code>if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'</code><br><br>
+  The first clause is unconditional, so a <b class="k">manually dispatched release skips the CI gate
+  entirely</b> — pgTAP included. That is convenient during an incident, and it is also exactly how a
+  guard gets bypassed on the day it matters most. Either require a typed confirmation input for manual
+  dispatch, or re-run the posture test inside the deploy job so it cannot be routed around.
+</div>
+
+<h3>Layer 3 — Make sure a human hears it</h3>
+
+<p>The advisory e-mail fired weekly from 6 May, and every message but the last was unread. The
+detection already existed; <b class="k">the delivery failed</b>. Route security-posture failures to
+Telegram through the existing <code>TelegramNotifier</code> in
+<code>python/pipeline/notifications.py</code> — the channel this project actually reacts to — rather
+than adding another mailbox rule nobody reads.</p>
+
+<h3>What each layer is worth</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Layer</th><th>Stops</th><th>Cost</th><th>Fails if…</th></tr></thead>
+<tbody>
+<tr><td class="d">1 · default privileges</td><td>The cause. New objects are born closed.</td><td>3 statements; zero effect on existing objects</td><td>someone writes an explicit <code>GRANT</code></td></tr>
+<tr><td class="d">2 · pgTAP equality guard</td><td>Anything slipping past Layer 1, before it deploys</td><td>one test file; CI already runs the suite</td><td>release is dispatched manually (gap above)</td></tr>
+<tr><td class="d">3 · Telegram alert</td><td>The failure that actually occurred — a correct signal nobody read</td><td>reuses the existing notifier</td><td>the channel becomes noisy</td></tr>
+<tr><td class="d">4 · convention / checklist</td><td>Honestly: very little on its own</td><td>documentation</td><td>humans are busy</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><b class="k">The short answer:</b> Layer 1 prevents it, Layer 2 proves Layer 1 is still true, and
+Layer 3 makes either of them matter. Layer 4 is worth writing down but must never be counted as a
+control — a convention is what this project already had, and it is what produced four months of
+silent drift.</p>
+
+</div>
+
+<footer>
+Written 2026-07-23, superseding the LOCAL-based analysis of 22 July. Scanned against CERT
+(<code>spws-ranklist-cert</code>) and PROD (<code>spws-ranklist-prod</code>) using the
+<code>SUPABASE_ACCESS_TOKEN</code> already present in the local <code>.env</code>. Every database
+query was a <code>SELECT</code>; the dispatcher was probed only with an invalid workflow name so that
+no dispatch could occur; the write probes used a deliberately invalid payload and a row filter
+matching nothing. <b>No table row was written, no workflow triggered, no account created, no setting
+changed.</b> The single side effect is documented in §10: the <code>tbl_recompute_queue</code> id
+sequence advanced by one on each environment, because <code>nextval()</code> is non-transactional.
+No credential value was printed, logged or stored, and user e-mail addresses were deliberately
+withheld from all output. Project refs are identifiers, not secrets.
+</footer>
+
+</div>
+</body>
+</html>

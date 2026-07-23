@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPWS security hardening — plan, 22 July 2026</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;--violet-bg:#e8e0f5;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;
+  --violet:#b49ae0;--violet-bg:#2b2140;--grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--coral) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1060px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--coral);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,33px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:74ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:-.01em;
+ margin:38px 0 6px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:26px 0 8px;font-weight:600}
+h4{font-family:var(--sans);font-size:13.5px;font-weight:600;margin:18px 0 6px;color:var(--ink)}
+p{margin:0 0 12px;max-width:84ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 16px;max-width:88ch}
+ul,ol{margin:0 0 14px;padding-left:20px;max-width:84ch}
+li{margin-bottom:7px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:12px 14px;
+ overflow-x:auto;font-family:var(--mono);font-size:11.5px;line-height:1.55;margin:0 0 16px;max-width:88ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:88ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.ok{background:var(--green-bg);border-left-color:var(--green)}
+.call.ok .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10.5px;white-space:nowrap;color:var(--navy);font-weight:600}
+td.n{font-family:var(--mono);font-size:12px;font-weight:600;text-align:right;white-space:nowrap}
+.st{font-family:var(--mono);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap;display:inline-block}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.s-neu{background:var(--grey-bg);color:var(--grey)}
+.s-rec{background:var(--violet-bg);color:var(--violet)}
+.q{border:1px solid var(--line);border-radius:6px;background:var(--card);
+ padding:0;margin:0 0 22px;overflow:hidden}
+.q>.qh{background:var(--paper);border-bottom:1px solid var(--line);padding:12px 16px}
+.q>.qh .qn{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--violet);font-weight:600;display:block;margin-bottom:4px}
+.q>.qh .qt{font-family:var(--serif);font-size:16px;font-weight:600;line-height:1.3}
+.q>.qb{padding:14px 16px 4px}
+.opt{border-left:3px solid var(--line);padding:2px 0 2px 13px;margin:0 0 16px}
+.opt.rec{border-left-color:var(--violet)}
+.opt .on{font-weight:600;font-size:13.5px;margin-bottom:4px;display:flex;gap:8px;
+ align-items:baseline;flex-wrap:wrap}
+.pc{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;margin-top:6px}
+.pc>div{font-size:12.5px}
+.pc .lbl{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;
+ font-weight:600;margin-bottom:3px}
+.pc .pro .lbl{color:var(--green)}
+.pc .con .lbl{color:var(--coral)}
+.pc ul{margin:0;padding-left:16px}
+.pc li{margin-bottom:4px}
+.verdict{background:var(--violet-bg);border-radius:4px;padding:10px 13px;margin:4px 0 6px;
+ font-size:12.5px}
+.verdict .lb{font-family:var(--mono);font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--violet);font-weight:600;display:block;margin-bottom:4px}
+footer{margin:42px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:88ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:19px}
+ .pc{grid-template-columns:1fr;gap:10px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Implementation plan · 22 July 2026 · security hardening</div>
+  <h1>Securing the project: the advisory is the smallest of the three holes.</h1>
+  <p class="dek">Asked to go deeper than the RLS advisory, I swept auth configuration, the Edge
+  Function, CI/CD and secret hygiene. Three findings are more severe than the six tables Supabase
+  reported, and all three are the same failure mode the project already diagnosed once in ADR-016:
+  a control that exists in the user interface and is never enforced by the server. This plan closes
+  all of them in four waves. Nothing has been changed yet.</p>
+  <div class="chips">
+    <span class="chip bad">3 critical · PROD-reachable</span>
+    <span class="chip bad">anon key → GitHub Actions dispatch</span>
+    <span class="chip bad">self-signup → full admin</span>
+    <span class="chip warn">MFA not enforced in SQL</span>
+    <span class="chip warn">6 tables + 1 view + 5 RPCs</span>
+    <span class="chip ok">4 areas verified clear</span>
+    <span class="chip ok">nothing changed</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">00</span>Context — why this plan exists</h2>
+
+<p>A Supabase advisory arrived on 21 July reporting <code>rls_disabled_in_public</code> on CERT and
+PROD. The 21 July handover traced it to six pipeline tables. My 22 July follow-up showed that the
+fix proposed there would not actually close the exposure, because an owner-rights view and five
+anonymously-callable RPCs sit outside its scope.</p>
+
+<p>You then asked how to secure <b class="k">the project</b>, not just the advisory. That sweep
+found something worse. The advisory describes six staging tables that an attacker could corrupt.
+It does not describe the two paths by which an anonymous caller can reach production behaviour
+directly: the workflow-dispatch Edge Function, and self-service account creation. Those are ranked
+first below because they are live today and neither requires a database migration to close.</p>
+
+<div class="call stop">
+  <span class="lb">Read before acting</span>
+  <b class="k">1.</b> Every claim here was read back from live LOCAL state, from source, or from
+  <code>gh</code>. Nothing was inferred from the advisory text.<br>
+  <b class="k">2.</b> <b class="k">PROD was not queried.</b> The <code>plugin:supabase</code> MCP
+  server is unauthorised and this session is non-interactive, so the OAuth flow cannot run here.
+  Authorise it via <code>claude mcp</code> or <code>/mcp</code> in an interactive session to inspect
+  CERT/PROD directly.<br>
+  <b class="k">3.</b> The only probes performed against live systems were <code>SELECT</code>s inside
+  a rolled-back transaction on LOCAL, and one unauthenticated <code>GET</code> to the hosted
+  <code>/auth/v1/settings</code> endpoints, which correctly returned <code>401</code>. No account was
+  created, no write attempted, no credential handled.
+</div>
+
+<h2><span class="num">01</span>Findings, ranked</h2>
+
+<h3>S1 — Critical, reachable on PROD today</h3>
+
+<h4>S1-1 · The workflow-dispatch Edge Function performs no caller authorization</h4>
+
+<p><a href="supabase/functions/dispatch-workflow/index.ts">supabase/functions/dispatch-workflow/index.ts</a>
+reads <code>GH_DISPATCH_PAT</code>, validates the requested workflow against a hard-coded allowlist,
+and dispatches it. It <b class="k">never inspects who is calling</b>. Its own header comment states
+the intent — <i>"Authenticated callers POST { workflow, inputs }"</i> — that the code does not
+implement. There is no <code>Authorization</code> header read, no <code>auth.getUser()</code>, no
+role check anywhere in the handler.</p>
+
+<p>The platform setting at <code>supabase/config.toml:379-380</code> is
+<code>verify_jwt = true</code>, which looks like protection and is not:</p>
+
+<pre><code>[functions.dispatch-workflow]
+verify_jwt = true</code></pre>
+
+<p><code>verify_jwt</code> asserts only that the request carries <b class="k">a</b> JWT signed by the
+project's secret. <b class="k">The anon key is precisely such a JWT</b> — it is a signed token with
+<code>"role":"anon"</code>, and it ships in the frontend bundle by design. The gate is satisfied by
+the very key that is public.</p>
+
+<p>Consequence: anyone holding the anon key can <code>POST</code> to
+<code>https://&lt;ref&gt;.supabase.co/functions/v1/dispatch-workflow</code> and trigger any of seven
+workflows on <code>main</code>, with arbitrary <code>inputs</code>, using a PAT scoped to Actions
+read+write. The allowlist is:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Workflow</th><th>What an anonymous caller gains</th></tr></thead>
+<tbody>
+<tr><td class="d">promote-season.yml</td><td><b class="k">CERT → PROD promotion</b>, or deletion of a season skeleton on PROD (ADR-077).</td></tr>
+<tr><td class="d">ftl-seed.yml</td><td><b class="k">Outbound organizer delivery</b> (ADR-080 §5) — an action that leaves the system and reaches real people.</td></tr>
+<tr><td class="d">ingest-event.yml</td><td>Re-ingest an event from a URL with attacker-chosen source overrides and keep-rules.</td></tr>
+<tr><td class="d">phase5-event-runner.yml</td><td>Drive the staging/consolidation runner for an arbitrary event.</td></tr>
+<tr><td class="d">scrape-tournament.yml</td><td>Force scrapes — outbound requests from your runners, attacker-chosen target.</td></tr>
+<tr><td class="d">populate-urls.yml</td><td>Rewrite tournament URL population.</td></tr>
+<tr><td class="d">regen-report.yml</td><td>Regenerate verdict reports; cheapest of the set, still unauthorised compute.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>CORS is <code>Access-Control-Allow-Origin: "*"</code>, so this is also callable cross-origin from
+any web page a signed-in admin happens to visit. This is the single largest hole in the system: it
+converts a deliberately public key into remote execution against production.</p>
+
+<h4>S1-2 · Self-service signup grants full administrative privilege</h4>
+
+<p>LOCAL GoTrue, read directly:</p>
+
+<pre><code>GET http://127.0.0.1:54321/auth/v1/settings
+{ "external": { "email": true, ... },
+  "disable_signup": false,
+  "mailer_autoconfirm": true, ... }</code></pre>
+
+<p>matching <code>supabase/config.toml:174</code> (<code>enable_signup = true</code>) and
+<code>:209</code> (<code>[auth.email] enable_signup = true</code>,
+<code>enable_confirmations = false</code>). Account creation is self-service and instantly
+confirmed.</p>
+
+<p>Now pair that with the authorization model. All seventeen policies across the ten
+"healthy" tables reduce to one predicate:</p>
+
+<pre><code>tbl_fencer         | Admin all fencers   | ALL    | auth.role() = 'authenticated'
+tbl_result         | Admin all results   | ALL    | auth.role() = 'authenticated'
+tbl_scoring_config | Admin all config    | ALL    | auth.role() = 'authenticated'
+tbl_event, tbl_tournament, tbl_season, tbl_organizer, tbl_registration,
+tbl_match_candidate, tbl_audit_log      — same shape</code></pre>
+
+<p>ADR-016 states the assumption in as many words: <i>"All <code>authenticated</code> users have
+admin privileges (no role table needed — only admins ever sign in)."</i> That assumption holds only
+while signup is closed. Nothing in the repository enforces or tests it; it is a dashboard toggle,
+and Supabase's hosted default is <b class="k">enabled</b>.</p>
+
+<div class="call stop">
+  <span class="lb">Unverified on PROD — this is step zero</span>
+  I could not check the hosted projects: <code>GET /auth/v1/settings</code> on both refs returned
+  <code>401 "No API key found in request"</code>, and I will not handle project keys. <b class="k">If
+  CERT or PROD matches LOCAL, then anyone can register an account and immediately hold full CRUD on
+  <code>tbl_result</code>, <code>tbl_fencer</code> and <code>tbl_scoring_config</code></b> — which is
+  total control of the ranking. Check the dashboard under Authentication → Sign In / Providers →
+  "Allow new users to sign up" before anything else in this plan.
+</div>
+
+<h4>S1-3 · TOTP is never enforced server-side</h4>
+
+<p>A grep for <code>aal2</code>, <code>aal</code> or <code>auth.jwt()</code> across every file in
+<code>supabase/migrations/</code> returns <b class="k">nothing</b>. MFA lives entirely in
+<a href="frontend/src/lib/admin-auth.svelte.ts">frontend/src/lib/admin-auth.svelte.ts</a> —
+<code>mfa.enroll</code>, <code>mfa.challenge</code>, <code>mfa.verify</code>, driving an
+<code>AuthStep</code> state machine that gates the Svelte UI.</p>
+
+<p>The consequence is that a session which completed only email + password (assurance level
+<code>aal1</code>) already carries <code>auth.role() = 'authenticated'</code>, and therefore already
+satisfies every write policy and every <code>authenticated</code> function grant. The TOTP modal
+stops a person using the browser UI. It stops nothing using <code>curl</code>.</p>
+
+<p>This is worth naming precisely: it is <b class="k">structurally the same defect as the one ADR-016
+was written to eliminate</b>. That ADR replaced a client-side password gate because "client-side
+gate provides no real protection". The replacement moved authentication server-side but left
+<em>MFA</em> client-side, so the same sentence is true again one layer up.</p>
+
+<h3>S2 — High (the advisory, and what it misses)</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>#</th><th>Finding</th><th>Evidence</th></tr></thead>
+<tbody>
+<tr><td class="d">S2-1</td><td>Six tables with RLS off; <code>anon</code> holds <code>DELETE, INSERT, SELECT, TRUNCATE, UPDATE</code> — <code>tbl_event_ingest_history</code>, <code>tbl_tournament_ingest_history</code>, <code>tbl_result_draft</code>, <code>tbl_tournament_draft</code>, <code>tbl_recompute_queue</code>, <code>tbl_recompute_watermark</code>.</td><td><code>relrowsecurity = f</code>, zero policies. <code>SET LOCAL ROLE anon; SELECT</code> succeeds.</td></tr>
+<tr><td class="d">S2-2</td><td><code>vw_fencer_aliases</code> is owned by <code>postgres</code> with empty <code>reloptions</code> — no <code>security_invoker</code> — and all three API roles hold full DML on it. It reads the draft tables with <b class="k">owner</b> rights, so RLS underneath does not apply. <b class="k">The advisory's fix leaves this open while the advisor turns green.</b></td><td>Anon reads 380 rows through it today.</td></tr>
+<tr><td class="d">S2-3</td><td>Five write RPCs executable by <code>anon</code>. Two are <code>SECURITY DEFINER</code> and so bypass RLS on tables the advisory calls healthy: <code>fn_find_or_create_tournament</code> (writes <code>tbl_tournament</code>) and <code>fn_create_registration</code> (writes <code>tbl_registration</code>). Also <code>fn_commit_event_draft</code>, <code>fn_discard_event_draft</code>, <code>fn_enqueue_affected_events</code>.</td><td><code>proacl</code> shows the bare <code>=X/postgres</code> entry — Postgres's default <code>GRANT EXECUTE TO PUBLIC</code>, never revoked.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>S3 — Systemic; these are the reason S1 and S2 exist</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>#</th><th>Finding</th><th>Why it matters</th></tr></thead>
+<tbody>
+<tr><td class="d">S3-1</td><td>No test asserts any security property. <code>supabase/tests/</code> has 52 files and none checks RLS state, anon grants, or the anon-executable function set.</td><td>Migration <code>20260327000001_revoke_write_functions.sql</code> fixed this exact bug class in March 2026. The pattern was never carried into the May/June work and nothing noticed. <b class="k">This is the finding that matters most long-term.</b></td></tr>
+<tr><td class="d">S3-2</td><td>11 of 16 workflows carry no <code>permissions:</code> block, so <code>GITHUB_TOKEN</code> takes the repository default scope: <code>ci.yml</code>, <code>evf-parity-sweep.yml</code>, <code>evf-sync.yml</code> (job-level only), <code>ingest-event.yml</code>, <code>ingest.yml</code>, <code>phase5-event-runner.yml</code>, <code>populate-urls.yml</code>, <code>recompute-drain.yml</code>, <code>recompute-drain-prod.yml</code>, <code>regen-report.yml</code>, <code>scrape-tournament.yml</code>.</td><td>Least-privilege gap. <code>release.yml</code>, <code>promote.yml</code>, <code>export-seed.yml</code>, <code>promote-season.yml</code> and <code>ftl-seed.yml</code> already do this correctly — the pattern exists, it is just unevenly applied.</td></tr>
+<tr><td class="d">S3-3</td><td><code>btree_gist</code> is installed in the <code>public</code> schema.</td><td>Supabase advisor lint <code>extension_in_public</code>. Low severity; include or formally accept.</td></tr>
+<tr><td class="d">S3-4</td><td><b class="k">No security documentation owner exists.</b> Neither <code>doc/handbook/</code> nor <code>doc/governance/</code> contains a security or auth page, and <code>documentation-map.html</code> assigns the topic to nobody.</td><td>Drift had no home to be recorded in. This is why an ADR-016 regression could go three months without being written down anywhere.</td></tr>
+<tr><td class="d">S3-5</td><td>The advisory has arrived weekly since 6 May and every message except the latest is still <code>UNREAD</code>.</td><td>Roughly eleven weeks of open window. Telegram is the established alert surface for this project and is not wired to security signals.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Verified clear — explicitly no action needed</h3>
+<ul>
+  <li>No <code>service_role</code> key appears anywhere under <code>frontend/</code>.</li>
+  <li>The JWTs committed in <code>frontend/index.html</code>, <code>frontend/register.html</code> and
+  <code>scripts/reset-dev.sh</code> decode to <code>"iss":"supabase-demo"</code> — the Supabase CLI's
+  public local demo keys, byte-identical for every user of the tool. <b class="k">Not a leak.</b></li>
+  <li><code>supabase/functions/.env</code> is gitignored (<code>.gitignore:1</code>) and has never
+  appeared in any commit across the full history.</li>
+  <li>No workflow uses <code>pull_request_target</code>, and none interpolates untrusted event fields
+  (<code>issue</code>, <code>comment</code>, PR title/body) into a shell — no script-injection surface.</li>
+  <li><code>main</code> CI is green; the worktree is clean apart from untracked plans,
+  <code>doc/reports/</code> and <code>python/tools/xls_ranking_compare.py</code>.
+  <b class="k">This corrects the 21 July handover's "CI is red" blocker</b>, which is stale.</li>
+</ul>
+
+<h2><span class="num">02</span>Decisions — recommendation, pros and cons</h2>
+
+<p class="sub">Nine decisions shape this plan. Each carries my recommendation and the honest case
+against it. Where I cannot verify something from this session, I say so rather than assuming.</p>
+
+<!-- Q1 -->
+<div class="q">
+ <div class="qh"><span class="qn">Decision 1 · sequencing</span>
+ <span class="qt">One consolidated release, or a fast wave that closes the criticals first?</span></div>
+ <div class="qb">
+  <div class="opt rec">
+   <div class="on">A · Hotfix wave first, then the migration, then the guards
+   <span class="st s-rec">recommended</span></div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul>
+     <li>Two of the three critical items are <b class="k">configuration, not code</b> — disabling signup is a dashboard toggle, and the Edge Function ships via <code>supabase functions deploy</code>, not <code>release.yml</code>. Neither needs a migration, a pgTAP cycle, or a documentation gate.</li>
+     <li>Closes the largest hole in hours instead of days.</li>
+     <li>Keeps the SQL migration small, reviewable and properly test-driven rather than rushed under pressure.</li>
+    </ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>Three changesets instead of one; the ADR and the coherence gate land after the fix rather than with it, so for a short period the handbook is behind reality.</li>
+     <li>Requires discipline to actually complete waves 2 and 3 once the alarm has stopped ringing.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="opt">
+   <div class="on">B · One consolidated campaign</div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul>
+     <li>Single migration, single release, single ADR, one coherence gate — cleanest possible history.</li>
+     <li>Nothing can be forgotten halfway.</li>
+    </ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li><b class="k">PROD stays open for the whole duration</b>, including for the two items that could have been closed with a toggle on day one. That is the decisive objection.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="opt">
+   <div class="on">C · Criticals only, defer the rest</div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul><li>Minimum effort to remove the worst risk.</li></ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>Leaves the advisory unresolved, so the weekly e-mail keeps firing and the signal keeps being ignored — the exact dynamic that produced eleven unread warnings.</li>
+     <li>Leaves S3-1 in place, so the next new table repeats the whole story.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="verdict"><span class="lb">Recommendation</span><b class="k">A.</b> The deciding factor is
+  that the two biggest holes do not need a release train at all. Making them wait behind one buys
+  nothing and costs exposure days.</div>
+ </div>
+</div>
+
+<!-- Q2 -->
+<div class="q">
+ <div class="qh"><span class="qn">Decision 2 · MFA depth</span>
+ <span class="qt">Should TOTP become a real server-side control by requiring an <code>aal2</code> JWT?</span></div>
+ <div class="qb">
+  <div class="opt rec">
+   <div class="on">A · Require <code>aal2</code> for all writes and for workflow dispatch
+   <span class="st s-rec">recommended, with a precondition</span></div>
+   <p class="sub" style="margin:6px 0 8px">Add
+   <code>(SELECT auth.jwt()-&gt;&gt;'aal') = 'aal2'</code> to the seven <code>Admin all …</code>
+   policies and to the Edge Function's caller check.</p>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul>
+     <li>Makes ADR-016's central promise true. Today "MFA-protected admin" and "anyone with a password" are the same privilege level.</li>
+     <li>Defends against the realistic attack — a leaked or reused admin password — which is exactly what TOTP was adopted to stop.</li>
+     <li>Costs nothing at runtime; it is a claim comparison.</li>
+    </ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li><b class="k">Lockout risk.</b> An admin who never enrolled a TOTP factor can only ever hold <code>aal1</code>, and loses all write access the moment the migration lands, with no self-service recovery.</li>
+     <li>I <b class="k">cannot verify enrolment from this session</b> — it requires the dashboard under Authentication → Users → MFA, or an authorised MCP connection.</li>
+     <li>Any future service that authenticates as a user rather than <code>service_role</code> would need MFA too.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="opt">
+   <div class="on">B · <code>aal2</code> on the Edge Function only</div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul>
+     <li>Protects the highest-consequence surface — the PAT-backed path that reaches PROD and sends outbound organizer mail.</li>
+     <li>Zero lockout risk for the admin UI; a stale-enrolment admin still edits data, just cannot dispatch.</li>
+     <li>No migration needed; ships in Wave 0.</li>
+    </ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>Direct PostgREST writes stay MFA-free, so a stolen password still rewrites the ranking.</li>
+     <li>Two different assurance standards in one system is a thing people forget.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="opt">
+   <div class="on">C · Keep <code>authenticated</code> only, rely on closed signup</div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul><li>Least work, no lockout risk at all.</li></ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>The entire security of the ranking rests on one dashboard toggle that no test can see. That is precisely how the current situation arose.</li>
+     <li>TOTP remains a ceremony that any scripted caller skips.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="verdict"><span class="lb">Recommendation</span><b class="k">A, gated on B.</b> Ship the
+  Edge Function <code>aal2</code> check in Wave 0 immediately — it has no lockout risk. Add the
+  policy-level <code>aal2</code> in Wave 1 <b class="k">only after</b> confirming in the dashboard
+  that every existing admin account has an enrolled TOTP factor. If any admin is unenrolled, enrol
+  them first; do not ship the policy change until that is true.</div>
+ </div>
+</div>
+
+<!-- Q3 -->
+<div class="q">
+ <div class="qh"><span class="qn">Decision 3 · admin model</span>
+ <span class="qt">Does <code>authenticated</code> keep meaning "admin", or do we add an explicit allowlist?</span></div>
+ <div class="qb">
+  <div class="opt rec">
+   <div class="on">A · Disable signup; keep <code>authenticated</code> = admin
+   <span class="st s-rec">recommended</span></div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul>
+     <li>Smallest possible diff — no policy rewrites, no new table, no ADR supersession.</li>
+     <li>Matches the decision already recorded in ADR-016; accounts stay dashboard-created.</li>
+     <li>Combined with Decision 2A, an attacker needs a password <em>and</em> a TOTP secret, so the single-toggle dependency stops being the only line of defence.</li>
+    </ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>The security of every table still depends on a dashboard setting that <b class="k">nothing in the repository can test, assert, or alert on</b>. If someone re-enables signup in two years, nothing goes red.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="opt">
+   <div class="on">B · Explicit <code>tbl_admin</code> allowlist checked by every policy</div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul>
+     <li>Removes the dashboard dependency entirely — a stray or re-enabled signup grants a JWT that authorises nothing.</li>
+     <li>Defence in depth, and testable in pgTAP.</li>
+     <li>Opens the door to real roles later (read-only auditor, per-weapon delegate).</li>
+    </ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>Touches all seventeen existing policies plus every <code>authenticated</code> function grant — a large, risky diff in the same change as a security fix.</li>
+     <li>Needs a new ADR partially superseding ADR-016, and a bootstrap story for the first row.</li>
+     <li>Real risk of locking out the admin UI during CERT rollout.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="opt">
+   <div class="on">C · Allowlist for writes, <code>authenticated</code> for reads</div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul>
+     <li>Confines the rewrite to the seven <code>Admin all …</code> policies.</li>
+     <li>Most of B's benefit at roughly half the blast radius.</li>
+    </ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>Still a substantial diff riding along with an urgent fix.</li>
+     <li>Two authorization concepts coexisting invites mistakes in the next migration.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="verdict"><span class="lb">Recommendation</span><b class="k">A now, B as a follow-up
+  ADR.</b> Do not couple an authorization-model redesign to an incident response. But record B as a
+  named, dated follow-up in the ADR — because A's weakness is real, and "we meant to" is how the
+  first regression happened.</div>
+ </div>
+</div>
+
+<!-- Q4 -->
+<div class="q">
+ <div class="qh"><span class="qn">Decision 4 · credential exposure</span>
+ <span class="qt">Rotate <code>GH_DISPATCH_PAT</code>?</span></div>
+ <div class="qb">
+  <div class="opt rec">
+   <div class="on">A · Rotate it, immediately after the Edge Function fix deploys
+   <span class="st s-rec">recommended</span></div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul>
+     <li>The PAT has been usable by anyone holding the anon key for as long as the function has been deployed. Treat it as exposed, because functionally it was.</li>
+     <li>Rotation is cheap: one fine-grained PAT, one <code>supabase secrets set</code>, no code change.</li>
+     <li>Rotating <em>after</em> the fix avoids a window where a new PAT sits behind the old open door.</li>
+    </ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>Brief dispatch outage during the swap; the admin UI buttons fail until the secret is set on both CERT and PROD.</li>
+     <li>The PAT was never transmitted to callers — only <em>used</em> on their behalf — so strictly it is unproven to have leaked.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="opt">
+   <div class="on">B · Leave it; the value never left the server</div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul><li>No outage, no work.</li></ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>Confuses "the secret was not disclosed" with "the secret was not abused". Its <em>capability</em> was fully available to the public.</li>
+     <li>While auditing GitHub Actions history for unexpected dispatches, you would rather be looking at a token you have already retired.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="verdict"><span class="lb">Recommendation</span><b class="k">A.</b> Also review the
+  Actions run history for the seven allowlisted workflows for dispatches that no admin remembers
+  making — that is the cheapest available tamper signal, and it needs no PROD database access.</div>
+ </div>
+</div>
+
+<!-- Q5 -->
+<div class="q">
+ <div class="qh"><span class="qn">Decision 5 · the alias view</span>
+ <span class="qt">Fix <code>vw_fencer_aliases</code> by grants alone, or recreate it with <code>security_invoker</code>?</span></div>
+ <div class="qb">
+  <div class="opt rec">
+   <div class="on">A · Grants only — <code>REVOKE ALL FROM anon</code>, reduce
+   <code>authenticated</code> to <code>SELECT</code>
+   <span class="st s-rec">recommended</span></div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul>
+     <li>Two statements, no behaviour change for the Phase-4 admin UI that reads it (ADR-050 / ADR-058).</li>
+     <li>Closes the anon read immediately and completely.</li>
+     <li>Also removes the nonsensical <code>INSERT/UPDATE/DELETE/TRUNCATE</code> grants that exist on a view today.</li>
+    </ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>The view still runs with owner rights, so it remains a standing RLS bypass for any role that <em>can</em> read it. If the admin model changes later, this is a place the change silently will not reach.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="opt">
+   <div class="on">B · Recreate with <code>security_invoker = true</code></div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul>
+     <li>Architecturally correct: the view stops being a privilege-escalation primitive and simply inherits whatever RLS sits beneath it.</li>
+     <li>Future-proof against Decision 3B.</li>
+    </ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>Couples the admin UI's behaviour to the draft tables' RLS, which this same migration is locking to service-role-only — so it needs an <code>authenticated</code> read policy added to all six tables that would otherwise be unnecessary.</li>
+     <li>Larger diff and a real chance of breaking the identity-manager screen on CERT.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="verdict"><span class="lb">Recommendation</span><b class="k">A</b>, with the
+  <code>security_invoker</code> conversion recorded as a follow-up alongside Decision 3B — they want
+  to land together, because both are about making the authorization model uniform rather than
+  patching its edges.</div>
+ </div>
+</div>
+
+<!-- Q6 -->
+<div class="q">
+ <div class="qh"><span class="qn">Decision 6 · tamper audit</span>
+ <span class="qt">Audit PROD for evidence of abuse before locking, or after?</span></div>
+ <div class="qb">
+  <div class="opt rec">
+   <div class="on">A · Lock first, audit immediately after
+   <span class="st s-rec">recommended</span></div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul>
+     <li>The window has been open roughly eleven weeks; another day spent auditing before closing it is a poor trade.</li>
+     <li>Locking does not destroy evidence — it freezes it. Row counts and <code>ts_created</code> distributions survive intact.</li>
+     <li>An audit conducted while the door is still open can be invalidated by activity mid-audit.</li>
+    </ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>If an attacker is actively present, locking tips them off before you have characterised what they did.</li>
+     <li><code>tbl_*_ingest_history</code> is itself falsifiable, so some evidence may already be unreliable — a point in favour of gathering it sooner.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="opt">
+   <div class="on">B · Audit first, lock after</div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul>
+     <li>Captures the environment exactly as the attacker left it, including any live session.</li>
+    </ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>Extends a known-critical exposure for the convenience of forensics on a system with no attacker-independent audit trail.</li>
+    </ul></div>
+   </div>
+   </div>
+  <div class="verdict"><span class="lb">Recommendation</span><b class="k">A.</b> Widen the audit
+  scope beyond the six tables, though: <code>tbl_tournament</code> and <code>tbl_registration</code>
+  were writable through the two <code>SECURITY DEFINER</code> RPCs, and the GitHub Actions run
+  history is a third, independent surface worth reading.</div>
+ </div>
+</div>
+
+<!-- Q7 -->
+<div class="q">
+ <div class="qh"><span class="qn">Decision 7 · the standing guard</span>
+ <span class="qt">How strict should the new pgTAP security-posture test be?</span></div>
+ <div class="qb">
+  <div class="opt rec">
+   <div class="on">A · Deny-by-default with an explicit allowlist
+   <span class="st s-rec">recommended</span></div>
+   <p class="sub" style="margin:6px 0 8px">Assert the anon-executable function set <b class="k">equals</b>
+   a named list, rather than merely excluding known-bad names.</p>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul>
+     <li>This is the single change that makes the fix permanent. A deny-list only catches what you already knew about; an equality assertion catches the <em>next</em> mistake.</li>
+     <li>Fails loudly the day someone adds a table or an RPC without thinking about grants — which is exactly the event that produced every finding in this document.</li>
+     <li>Cheap: catalog queries, milliseconds.</li>
+    </ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>Every legitimate new public function requires an intentional edit to the allowlist. Some people find that friction annoying.</li>
+     <li>That friction is the entire point, so this is a cost to accept rather than mitigate.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="opt">
+   <div class="on">B · Assert only the specific objects fixed here</div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul><li>No ongoing maintenance.</li></ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>Would not have caught any of today's findings had it existed in March, because every one of them involves an object that did not exist yet.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="verdict"><span class="lb">Recommendation</span><b class="k">A</b>, and treat it as the
+  most important deliverable in the plan. The migration fixes today; this prevents the next three
+  years.</div>
+ </div>
+</div>
+
+<!-- Q8 -->
+<div class="q">
+ <div class="qh"><span class="qn">Decision 8 · CORS</span>
+ <span class="qt">Lock the Edge Function's <code>Access-Control-Allow-Origin</code> to the deployed origin?</span></div>
+ <div class="qb">
+  <div class="opt rec">
+   <div class="on">A · Restrict to the known frontend origins
+   <span class="st s-rec">recommended</span></div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul>
+     <li>With <code>*</code>, any page an authenticated admin visits can invoke the function using their live session — a cross-site request forgery path onto workflow dispatch.</li>
+     <li>The set of legitimate origins is small and already known per environment.</li>
+    </ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>Needs the CERT and PROD origins to be correct, or the admin UI breaks — a config value that must move with any future domain change.</li>
+     <li>CORS is a browser control only; it does not stop <code>curl</code>. It is defence in depth behind Decision 2, never a substitute for it.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="opt">
+   <div class="on">B · Keep <code>*</code>, rely on the new caller check alone</div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul><li>One less environment-specific value to get wrong.</li></ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>Leaves the CSRF-shaped path open against a logged-in admin, which the <code>aal2</code> check narrows but does not fully close if the session is already <code>aal2</code>.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="verdict"><span class="lb">Recommendation</span><b class="k">A.</b> Read the allowed
+  origin from an environment secret rather than hard-coding it, so CERT and PROD differ without a
+  code change.</div>
+ </div>
+</div>
+
+<!-- Q9 -->
+<div class="q">
+ <div class="qh"><span class="qn">Decision 9 · the extension lint</span>
+ <span class="qt">Move <code>btree_gist</code> out of <code>public</code>, or accept it?</span></div>
+ <div class="qb">
+  <div class="opt rec">
+   <div class="on">A · Attempt the move; accept formally if the dependent indexes block it
+   <span class="st s-rec">recommended</span></div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul>
+     <li>Clears the last advisor lint, so a green advisor genuinely means "nothing outstanding" and the weekly e-mail regains signal value.</li>
+     <li>If it cannot move cleanly, a written, dated exception is still better than a permanent unexplained warning.</li>
+    </ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li><code>ALTER EXTENSION … SET SCHEMA</code> can fail or require dropping dependent objects; the real-world risk here is genuinely low but non-zero.</li>
+     <li>Lowest-value item in the plan — do not let it delay anything else.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="opt">
+   <div class="on">B · Accept and document, do not touch</div>
+   <div class="pc">
+    <div class="pro"><div class="lbl">For</div><ul><li>Zero risk to working indexes.</li></ul></div>
+    <div class="con"><div class="lbl">Against</div><ul>
+     <li>A permanently non-empty advisor is an advisor people stop reading — the documented root cause of the eleven unread e-mails.</li>
+    </ul></div>
+   </div>
+  </div>
+  <div class="verdict"><span class="lb">Recommendation</span><b class="k">A</b>, scheduled last in
+  Wave 2 so it can be abandoned without affecting anything else.</div>
+ </div>
+</div>
+
+<h2><span class="num">03</span>The plan</h2>
+
+<h3>Wave 0 — Stop the bleeding · no migration, no release train</h3>
+<ol>
+  <li><b class="k">Verify signup on CERT and PROD</b> (operator action; I have no dashboard or MCP
+  access). Authentication → Sign In / Providers → "Allow new users to sign up". <b class="k">If this
+  is on, it is the most urgent item in the document</b> and everything else is secondary.</li>
+  <li><b class="k">Disable signup</b> on both projects. Confirm existing admins still sign in.</li>
+  <li><b class="k">Confirm TOTP enrolment</b> for every account under Authentication → Users → MFA.
+  This is the precondition for Decision 2A and the gate on Wave 1's policy change.</li>
+  <li><b class="k">Fix <code>dispatch-workflow</code></b> — the one code change in this wave, deployed
+  with <code>supabase functions deploy dispatch-workflow</code>:
+   <ul>
+     <li>Read the bearer token; call <code>auth.getUser(token)</code>; reject when absent or invalid.</li>
+     <li>Reject when the resolved role is not <code>authenticated</code> — <b class="k">this is what
+     closes the anon-key hole</b>.</li>
+     <li>Require <code>aal2</code> (Decision 2, no lockout risk at this layer).</li>
+     <li>Replace <code>Access-Control-Allow-Origin: "*"</code> with an origin read from an env secret
+     (Decision 8).</li>
+     <li>Keep <code>ALLOWED_WORKFLOWS</code> exactly as it is — that part is sound.</li>
+     <li>Tests asserting: anon key → 401; valid <code>aal1</code> session → 403; <code>aal2</code>
+     admin → 200; non-allowlisted workflow → 400.</li>
+   </ul>
+  </li>
+  <li><b class="k">Rotate <code>GH_DISPATCH_PAT</code></b> on both projects (Decision 4), then read the
+  Actions run history of the seven allowlisted workflows for dispatches nobody recognises.</li>
+</ol>
+
+<h3>Wave 1 — One SQL migration for the data plane</h3>
+
+<p>Single migration, following the house pattern and comment style of
+<a href="supabase/migrations/20260327000001_revoke_write_functions.sql">20260327000001_revoke_write_functions.sql</a>:</p>
+
+<ul>
+  <li><b class="k">The six tables</b> — <code>ENABLE ROW LEVEL SECURITY</code>, then
+  <code>REVOKE ALL … FROM anon, authenticated</code>. No <code>anon</code> policy. Safe because
+  <b class="k">nothing under <code>frontend/src</code> or <code>supabase/functions</code> references
+  any of them</b> — verified — and the Python consumers (<code>draft_store.py</code>,
+  <code>recompute/worker.py</code>, <code>review_cli.py</code>, <code>alias_writeback.py</code>,
+  <code>db_connector.py</code>, three tools) run as <code>service_role</code>, which bypasses RLS
+  inherently.</li>
+  <li><b class="k"><code>vw_fencer_aliases</code></b> — <code>REVOKE ALL FROM anon</code>; reduce
+  <code>authenticated</code> to <code>SELECT</code> (Decision 5A).</li>
+  <li><b class="k">The five RPCs</b> — <code>REVOKE EXECUTE … FROM anon, PUBLIC</code>, re-granting to
+  <code>authenticated</code> where the admin UI calls them. <b class="k">Leave the intentional public
+  read-only RPCs alone</b>: <code>fn_ranking_ppw</code>, <code>fn_ranking_kadra</code>,
+  <code>fn_season_summary</code>, <code>fn_export_scoring_config</code>,
+  <code>fn_fencer_scores_rolling</code> and their variants are documented as anon-accessible in
+  <code>20260327000001</code> and the public ranking depends on them.</li>
+  <li><b class="k"><code>aal2</code> on the seven write policies</b> — <b class="k">only if Wave 0
+  step 3 confirmed universal enrolment</b> (Decision 2).</li>
+</ul>
+
+<div class="call warn">
+  <span class="lb">Order is not negotiable</span>
+  Strict RED→GREEN: the Wave 2 guard tests are written and <b class="k">observed failing</b> before
+  this migration exists. <code>postgrestools</code> (the <code>plpgsql-check</code> skill) runs on the
+  migration before it counts as done. LOCAL verification is by <b class="k">attempting an anon write
+  and being refused</b>, never by reading the catalog — the catalog is what said everything was fine
+  for eleven weeks.
+</div>
+
+<h3>Wave 2 — Make recurrence impossible</h3>
+<ul>
+  <li><b class="k"><code>supabase/tests/52_security_posture.sql</code></b> — the deliverable that
+  matters most (Decision 7A):
+   <ol>
+     <li>no table in <code>public</code> has <code>relrowsecurity = false</code>;</li>
+     <li>the set of functions where <code>has_function_privilege('anon', …, 'EXECUTE')</code> holds
+     <b class="k">equals</b> a named allowlist;</li>
+     <li>no view in <code>public</code> runs with owner rights over a table that has RLS enabled;</li>
+     <li><code>anon</code> holds no <code>INSERT/UPDATE/DELETE/TRUNCATE</code> on any
+     <code>public</code> table.</li>
+   </ol>
+   Bump the pgTAP total in the specification (currently 686).</li>
+  <li><b class="k">Least-privilege <code>permissions:</code> blocks</b> on the eleven workflows lacking
+  them (S3-2), copying the pattern already used in <code>release.yml</code>.</li>
+  <li><b class="k">Telegram alerting</b> on security-posture test failure, reusing
+  <code>TelegramNotifier</code> in <a href="python/pipeline/notifications.py">python/pipeline/notifications.py</a>
+  — Telegram is the established surface, and S3-5 shows e-mail alone does not reach anyone.</li>
+  <li><b class="k">ADR</b> — "Server-enforced authorization: pipeline objects are service-role only;
+  new objects are revoked by default; MFA is enforced in SQL." Amends rather than supersedes ADR-016.
+  Registry entry in specification Appendix C. <b class="k">Record Decisions 3B and 5B as named,
+  dated follow-ups</b> so they are not quietly dropped.</li>
+  <li><b class="k">New handbook page</b> <code>doc/handbook/reference/security-posture.html</code> —
+  the missing owner from S3-4 — registered in <code>documentation-map.html</code> with its change
+  triggers, plus the standard coherence pass across affected subsystem pages and the RTM.</li>
+  <li><b class="k"><code>btree_gist</code></b> relocation attempt, scheduled last (Decision 9).</li>
+</ul>
+
+<h3>Wave 3 — Tamper audit · operator-gated, runs in parallel</h3>
+<p>Needs PROD access I do not have. Compare row counts and <code>ts_created</code> distributions on
+the six tables, and on <code>tbl_tournament</code> and <code>tbl_registration</code> (reachable via
+the two <code>SECURITY DEFINER</code> RPCs), against what the pipeline's own ingest history claims it
+wrote. Read the GitHub Actions run history as an independent third surface —
+<code>tbl_*_ingest_history</code> was itself writable, so it cannot corroborate itself.</p>
+
+<h2><span class="num">04</span>Verification</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Wave</th><th>Proof required before it is called done</th></tr></thead>
+<tbody>
+<tr><td class="d">0</td><td><code>curl</code> the deployed function with the anon key → <code>401</code>; with an <code>aal1</code> session → <code>403</code>; with an <code>aal2</code> admin session → <code>200</code>. Dashboard shows signup disabled on both projects and a TOTP factor on every account.</td></tr>
+<tr><td class="d">1</td><td>On LOCAL, as <code>anon</code>: <code>INSERT</code> and <code>DELETE</code> on each of the six → <code>permission denied</code>; <code>SELECT</code> on <code>vw_fencer_aliases</code> → denied; each of the five RPCs → denied. As <code>service_role</code>: the pipeline still runs end to end.</td></tr>
+<tr><td class="d">2</td><td><code>supabase test db</code> green including <code>52_security_posture.sql</code>. Then deliberately create a scratch RLS-less table on LOCAL and confirm the suite goes <b class="k">red</b> — an untested guard is not a guard.</td></tr>
+<tr><td class="d">all</td><td><code>release.yml</code> green through CERT → PROD; the Supabase advisor reports zero findings; the next weekly advisory e-mail arrives clean.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Full obligations before ship: <code>supabase test db</code>; Ruff and BasedPyright plus pytest for
+Python; <code>npm run check</code> for the frontend and Edge Function changes;
+<code>postgrestools</code> on the migration; <code>scripts/check_docs.py</code>; and
+<code>scripts/refresh-graph.sh</code> before the commit.</p>
+
+<h2><span class="num">05</span>What I need from you</h2>
+<p>Confirm or overrule the nine recommendations above. The two that genuinely cannot be settled from
+inside this session are <b class="k">Decision 2</b> — because I cannot see whether your admins have
+TOTP factors enrolled, and shipping <code>aal2</code> without that check locks someone out — and
+<b class="k">Wave 0 step 1</b>, because I cannot read the hosted signup setting without a project key,
+which I will not handle.</p>
+
+</div>
+
+<footer>
+Written 2026-07-22. Extends <code>doc/plans/supabase-rls-advisory-handover-2026-07-21.html</code> and
+<code>doc/plans/supabase-rls-deep-analysis-2026-07-22.html</code>. Every finding was read back from
+live LOCAL state, from repository source, or from <code>gh</code>. The only probes against live
+systems were <code>SELECT</code>s inside a rolled-back transaction on LOCAL and one unauthenticated
+<code>GET</code> to the hosted <code>/auth/v1/settings</code> endpoints, which returned
+<code>401</code>. No account was created, no write attempted, no migration, grant, policy, view,
+function, secret or remote state modified, and no credential read, quoted or stored. PROD was not
+queried.
+</footer>
+
+</div>
+</body>
+</html>
