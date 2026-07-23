@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to create a fully-enabled SPWS admin user — step-by-step runbook</title>
+<style>
+:root{
+ --navy:#17457c;--paper:#f5f8fc;--ink:#101a29;--muted:#54657d;--line:#ccd8e6;--card:#fff;
+ --green:#155e3c;--green-bg:#d4ecdf;--amber:#7d5406;--amber-bg:#fbe8bf;
+ --coral:#a2321f;--coral-bg:#f9d8d1;--navy-soft:#e3ecf8;--violet:#57338c;--violet-bg:#e9e0f7;
+ --grey:#6b7a8d;--grey-bg:#e7ebf0;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#101722;--ink:#eaf0f8;--muted:#9db0c7;--line:#2c3a4c;--card:#18212e;
+  --navy:#82abdd;--navy-soft:#1c2b3f;--green:#a5e2bd;--green-bg:#194330;
+  --amber:#f2d089;--amber-bg:#3b2d0b;--coral:#f5aa99;--coral-bg:#452019;
+  --violet:#bda4e6;--violet-bg:#2a2040;--grey:#8f9dae;--grey-bg:#1f2937}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 10px,var(--paper) 10px);
+ font-family:var(--sans);color:var(--ink);font-size:19px;line-height:1.75;min-height:100vh;
+ overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.page{max-width:1160px;margin:0 auto;padding:0 0 90px 10px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:9px solid var(--navy);
+ padding:34px 38px 30px;margin:36px 26px 0;border-radius:0 8px 8px 0}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+ color:var(--muted);font-weight:600}
+h1{font-family:var(--serif);font-size:clamp(30px,5.2vw,44px);line-height:1.14;margin:14px 0 14px;
+ letter-spacing:-.02em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(18px,2.6vw,22px);color:var(--muted);
+ font-style:italic;margin:0 0 22px;max-width:66ch;line-height:1.55}
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.chip{font-family:var(--mono);font-size:13px;padding:6px 13px;border:1.5px solid var(--line);
+ border-radius:5px;color:var(--muted);background:var(--paper);font-weight:600}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.body{padding:34px 26px 0}
+h2{font-family:var(--serif);font-size:clamp(27px,3.8vw,34px);font-weight:600;letter-spacing:-.015em;
+ margin:58px 0 10px;padding-top:30px;border-top:2px solid var(--line);line-height:1.2}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:6px}
+h2 .num{font-family:var(--mono);font-size:15px;color:var(--navy);display:block;
+ letter-spacing:.16em;margin-bottom:10px;font-weight:700}
+h3{font-family:var(--serif);font-size:clamp(21px,2.8vw,26px);font-weight:600;color:var(--ink);
+ margin:40px 0 10px;letter-spacing:-.01em;line-height:1.25}
+h4{font-family:var(--mono);font-size:14px;letter-spacing:.13em;text-transform:uppercase;
+ color:var(--navy);margin:28px 0 10px;font-weight:700}
+p{margin:0 0 18px;max-width:76ch}
+.lead{font-size:20.5px;line-height:1.68;max-width:72ch}
+.sub{font-size:17px;color:var(--muted);margin:0 0 20px;max-width:78ch}
+ul,ol{margin:0 0 20px;padding-left:26px;max-width:76ch}
+li{margin-bottom:11px}
+code{font-family:var(--mono);font-size:.86em;background:var(--paper);padding:2px 7px;
+ border:1px solid var(--line);border-radius:4px;word-break:break-word}
+pre{background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:20px 22px;
+ overflow-x:auto;font-family:var(--mono);font-size:14.5px;line-height:1.66;margin:0 0 22px}
+pre code{background:none;border:none;padding:0;font-size:inherit;white-space:pre}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:6px solid var(--navy);border-radius:0 8px 8px 0;
+ padding:20px 24px;margin:24px 0 28px;font-size:18px;max-width:82ch;line-height:1.7}
+.call .lb{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);font-weight:700;display:block;margin-bottom:9px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.ok{background:var(--green-bg);border-left-color:var(--green)}
+.call.ok .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1.5px solid var(--line);border-radius:8px;background:var(--card);margin-bottom:26px}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th{font-family:var(--mono);font-size:12.5px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:14px 18px;border-bottom:2px solid var(--line);background:var(--paper);font-weight:700}
+td{padding:14px 18px;border-bottom:1px solid var(--line);vertical-align:top;font-size:17px;line-height:1.6}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:14px;white-space:nowrap;color:var(--navy);font-weight:600}
+.st{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+ padding:4px 10px;border-radius:4px;font-weight:700;white-space:nowrap;display:inline-block}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-neu{background:var(--grey-bg);color:var(--grey)}
+
+/* step cards */
+.step{border:1.5px solid var(--line);border-radius:9px;background:var(--card);margin:0 0 24px;overflow:hidden}
+.step>.sh{background:var(--paper);border-bottom:1.5px solid var(--line);padding:14px 22px;
+ display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.step>.sh .n{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--navy);
+ background:var(--navy-soft);padding:3px 11px;border-radius:5px;white-space:nowrap}
+.step>.sh .t{font-family:var(--serif);font-size:20px;font-weight:600}
+.step>.sb{padding:20px 24px 6px}
+.step>.sb p:last-child{margin-bottom:14px}
+
+/* "what you should see" box */
+.see{background:var(--paper);border:1.5px dashed var(--line);border-radius:8px;padding:14px 18px;
+ margin:0 0 18px;font-size:16.5px;max-width:80ch}
+.see .lb{font-family:var(--mono);font-size:11.5px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--muted);font-weight:700;display:block;margin-bottom:6px}
+
+/* UI mock — imitates a form/field without pretending to be a screenshot */
+.ui{border:1.5px solid var(--line);border-radius:8px;background:var(--paper);padding:16px 18px;
+ margin:0 0 18px;max-width:60ch;font-size:16px}
+.ui .uilab{font-size:13px;color:var(--muted);display:block;margin:0 0 4px;font-weight:600}
+.ui .uifield{background:var(--card);border:1.5px solid var(--line);border-radius:5px;
+ padding:9px 12px;font-family:var(--mono);font-size:14px;margin:0 0 14px;color:var(--muted)}
+.ui .uicheck{display:flex;gap:10px;align-items:flex-start;margin:0 0 10px;font-size:15.5px}
+.ui .box{width:18px;height:18px;border:2px solid var(--green);border-radius:4px;flex:0 0 auto;
+ background:var(--green-bg);position:relative;margin-top:3px}
+.ui .box::after{content:"✓";position:absolute;inset:-4px 0 0 2px;color:var(--green);font-size:15px;font-weight:700}
+.ui .box.off{border-color:var(--line);background:var(--card)}
+.ui .box.off::after{content:""}
+.ui .uibtn{display:inline-block;background:var(--green);color:var(--card);border-radius:5px;
+ padding:8px 18px;font-size:15px;font-weight:600;font-family:var(--sans)}
+@media (prefers-color-scheme:dark){.ui .uibtn{color:#0d1520}}
+
+figure{margin:0 0 26px}
+figure svg{max-width:100%;height:auto;display:block;border:1.5px solid var(--line);
+ border-radius:8px;background:var(--card)}
+figcaption{font-size:15.5px;color:var(--muted);margin-top:9px;max-width:78ch;font-style:italic}
+
+.toc{background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:18px 24px;margin:0 0 30px;max-width:70ch}
+.toc ol{margin:0;padding-left:22px}
+.toc li{margin-bottom:6px;font-size:17px}
+
+footer{margin:60px 26px 0;padding-top:24px;border-top:2px solid var(--line);
+ font-size:16px;color:var(--muted);max-width:82ch;line-height:1.7}
+@media(max-width:760px){
+ body{font-size:18px}
+ .hd{padding:26px 22px;margin-left:12px;margin-right:12px}
+ .body,footer{margin-left:12px;margin-right:12px}
+ .body{padding-left:0;padding-right:0}
+ pre{font-size:13px;padding:16px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Operator runbook · 23 July 2026 · admin account creation</div>
+  <h1>How to create a fully-enabled admin user — and why it takes four accounts to add two people.</h1>
+  <p class="dek">Written to be followed top to bottom without prior knowledge. Every place you can go
+  wrong is flagged at the moment you would go wrong, not in a footnote afterwards.</p>
+  <div class="chips">
+    <span class="chip">2 people → <b>4</b> accounts</span>
+    <span class="chip warn">Dashboard only — signup is closed</span>
+    <span class="chip bad">"Auto Confirm User" MUST be ticked</span>
+    <span class="chip">TOTP enrolled in the app, not the Dashboard</span>
+    <span class="chip">~10 min per person</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">00</span>Read this page first — it will save you an hour</h2>
+
+<p class="lead">Three facts about this system are not obvious, and each one has caused a wasted
+half-hour for somebody. If you read nothing else, read these.</p>
+
+<div class="call stop">
+  <span class="lb">Fact 1 — CERT and PROD are two completely separate systems</span>
+  They are two different Supabase projects with two different user databases. An account created on
+  CERT <b class="k">does not exist</b> on PROD. There is no sync, no copy, no "promote user" button.<br><br>
+  <b class="k">So: two new people means four accounts.</b> You will do the same procedure four times.
+  This is the single most common source of "it works for me but not in production".
+</div>
+
+<div class="call stop">
+  <span class="lb">Fact 2 — there is no "admin" role to assign. The account IS the admin.</span>
+  This system has no roles table and no permission levels. Per
+  <a href="../adr/016-supabase-auth-totp-mfa.html">ADR-016</a>, <b class="k">every account that can log
+  in has full administrative power</b> — edit fencers, edit results, change scoring config, promote to
+  production, trigger workflows.<br><br>
+  There is nothing to tick to "make them an admin", and nothing to tick to limit them. Creating the
+  account is the whole grant. Only create accounts for people you trust with production data.
+</div>
+
+<div class="call stop">
+  <span class="lb">Fact 3 — you must tick "Auto Confirm User", or the account will not work</span>
+  This project has <b class="k">no custom email server configured</b> (<code>smtp_host</code> is unset),
+  so it falls back to Supabase's built-in sender, which is heavily rate-limited and frequently does not
+  arrive. The account also requires email confirmation before login
+  (<code>mailer_autoconfirm: false</code>).<br><br>
+  Put together: if you do not tick <b class="k">Auto Confirm User</b> when creating the account, the
+  new admin will be unable to log in and will be waiting for an email that may never come. Step 3
+  covers exactly where this tickbox is.
+</div>
+
+<h3>What you will do, visually</h3>
+
+<figure>
+<svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="Two people each need an account on CERT and on PROD, giving four accounts; each account needs a password step and a TOTP step.">
+  <defs>
+    <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+      <path d="M0,0 L7,3.2 L0,6.4 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <g style="color:var(--muted)" fill="none" stroke="currentColor" stroke-width="1.6">
+    <path d="M215,105 L280,105" marker-end="url(#ar)"/>
+    <path d="M215,235 L280,235" marker-end="url(#ar)"/>
+    <path d="M470,105 L535,105" marker-end="url(#ar)"/>
+    <path d="M470,235 L535,235" marker-end="url(#ar)"/>
+    <path d="M725,105 L790,105" marker-end="url(#ar)"/>
+    <path d="M725,235 L790,235" marker-end="url(#ar)"/>
+  </g>
+
+  <text x="30" y="42" font-family="ui-monospace,monospace" font-size="13"
+        letter-spacing="1.6" fill="var(--muted)" font-weight="700">FOR EACH NEW PERSON</text>
+
+  <!-- CERT row -->
+  <rect x="30" y="70" width="185" height="70" rx="8" fill="var(--navy-soft)" stroke="var(--navy)" stroke-width="1.6"/>
+  <text x="48" y="98" font-family="ui-monospace,monospace" font-size="14" font-weight="700" fill="var(--navy)">CERT project</text>
+  <text x="48" y="120" font-family="Inter,sans-serif" font-size="14" fill="var(--ink)">Dashboard → Add user</text>
+
+  <rect x="285" y="70" width="185" height="70" rx="8" fill="var(--card)" stroke="var(--line)" stroke-width="1.6"/>
+  <text x="303" y="98" font-family="ui-monospace,monospace" font-size="14" font-weight="700" fill="var(--ink)">Auto Confirm ✓</text>
+  <text x="303" y="120" font-family="Inter,sans-serif" font-size="14" fill="var(--muted)">set a password</text>
+
+  <rect x="540" y="70" width="185" height="70" rx="8" fill="var(--card)" stroke="var(--line)" stroke-width="1.6"/>
+  <text x="558" y="98" font-family="ui-monospace,monospace" font-size="14" font-weight="700" fill="var(--ink)">First login</text>
+  <text x="558" y="120" font-family="Inter,sans-serif" font-size="14" fill="var(--muted)">app shows QR code</text>
+
+  <rect x="795" y="70" width="75" height="70" rx="8" fill="var(--green-bg)" stroke="var(--green)" stroke-width="1.6"/>
+  <text x="812" y="105" font-family="ui-monospace,monospace" font-size="13" font-weight="700" fill="var(--green)">aal2</text>
+  <text x="808" y="124" font-family="Inter,sans-serif" font-size="12" fill="var(--green)">ready</text>
+
+  <!-- PROD row -->
+  <rect x="30" y="200" width="185" height="70" rx="8" fill="var(--violet-bg)" stroke="var(--violet)" stroke-width="1.6"/>
+  <text x="48" y="228" font-family="ui-monospace,monospace" font-size="14" font-weight="700" fill="var(--violet)">PROD project</text>
+  <text x="48" y="250" font-family="Inter,sans-serif" font-size="14" fill="var(--ink)">Dashboard → Add user</text>
+
+  <rect x="285" y="200" width="185" height="70" rx="8" fill="var(--card)" stroke="var(--line)" stroke-width="1.6"/>
+  <text x="303" y="228" font-family="ui-monospace,monospace" font-size="14" font-weight="700" fill="var(--ink)">Auto Confirm ✓</text>
+  <text x="303" y="250" font-family="Inter,sans-serif" font-size="14" fill="var(--muted)">set a password</text>
+
+  <rect x="540" y="200" width="185" height="70" rx="8" fill="var(--card)" stroke="var(--line)" stroke-width="1.6"/>
+  <text x="558" y="228" font-family="ui-monospace,monospace" font-size="14" font-weight="700" fill="var(--ink)">First login</text>
+  <text x="558" y="250" font-family="Inter,sans-serif" font-size="14" fill="var(--muted)">app shows QR code</text>
+
+  <rect x="795" y="200" width="75" height="70" rx="8" fill="var(--green-bg)" stroke="var(--green)" stroke-width="1.6"/>
+  <text x="812" y="235" font-family="ui-monospace,monospace" font-size="13" font-weight="700" fill="var(--green)">aal2</text>
+  <text x="808" y="254" font-family="Inter,sans-serif" font-size="12" fill="var(--green)">ready</text>
+
+  <text x="30" y="310" font-family="Inter,sans-serif" font-size="14" fill="var(--muted)">
+    Two independent tracks. Finishing CERT does nothing for PROD — you run the whole row again.
+  </text>
+</svg>
+<figcaption>One person = one row per environment. Two people = four rows in total. The QR-code step
+happens inside the SPWS app itself, never in the Supabase Dashboard.</figcaption>
+</figure>
+
+<div class="toc">
+<b class="k">The procedure</b>
+<ol>
+  <li>Gather what you need (5 min)</li>
+  <li>Open the right project — and be certain which one it is</li>
+  <li>Create the account (this is where the tickbox is)</li>
+  <li>The new admin logs in and enrolls TOTP</li>
+  <li>Verify it actually worked</li>
+  <li>Repeat for the other environment, then the other person</li>
+</ol>
+</div>
+
+<h2><span class="num">01</span>Before you start</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>You need</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Supabase Dashboard access</td><td>Logged in as the owner of the <code>Fencer4Life</code> organisation.</td></tr>
+<tr><td>An e-mail address per person</td><td>A real, working address they control. It becomes their login. It does <b class="k">not</b> need to receive anything if you follow Step 3 correctly, but it must be unique per environment.</td></tr>
+<tr><td>A password per person</td><td>You will set an initial one. The system's minimum is only <b class="k">6 characters</b>, which is far too weak for an account that holds full production power — use 16+ characters from a password manager.</td></tr>
+<tr><td>The new admin, available</td><td>Step 4 has to be done <b class="k">by them, on their own device</b>, because it pairs their authenticator app. You cannot do it for them and hand it over.</td></tr>
+<tr><td>An authenticator app on their phone</td><td>Google Authenticator, Microsoft Authenticator, 1Password, Authy, Bitwarden — any TOTP app.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call warn">
+  <span class="lb">Decide this before you create anything</span>
+  <b class="k">Does this person need PROD, or only CERT?</b> CERT is the staging environment — mistakes
+  there are cheap and recoverable. PROD is the live ranking that fencers see.<br><br>
+  If someone only needs to practise, prepare events, or learn the system, <b class="k">give them CERT
+  only</b> and skip the PROD half entirely. You can always add PROD later using the same steps. Adding
+  it now because it feels tidier is how a training account ends up able to overwrite the live ranking.
+</div>
+
+<h2><span class="num">02</span>Open the right project</h2>
+
+<p>Both projects look almost identical in the Dashboard, and the project switcher remembers where you
+were last. <b class="k">Check the project reference in the URL every single time</b> — it is the only
+reliable indicator.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Environment</th><th>Project ref</th><th>Direct link to the user list</th></tr></thead>
+<tbody>
+<tr><td><span class="st s-neu">CERT</span> staging</td><td><code>sdomfjncmfydlkygzpgw</code></td>
+    <td><a href="https://supabase.com/dashboard/project/sdomfjncmfydlkygzpgw/auth/users">supabase.com/dashboard/project/<b>sdomfjncmfydlkygzpgw</b>/auth/users</a></td></tr>
+<tr><td><span class="st s-bad">PROD</span> live</td><td><code>ywgymtgcyturldazcpmw</code></td>
+    <td><a href="https://supabase.com/dashboard/project/ywgymtgcyturldazcpmw/auth/users">supabase.com/dashboard/project/<b>ywgymtgcyturldazcpmw</b>/auth/users</a></td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="sub">A memory aid that actually works: <b class="k">CERT starts with S</b> (<code>s</code>domfjncmfydlkygzpgw
+— <b class="k">S</b>taging). <b class="k">PROD starts with Y</b>. If the ref in your address bar starts
+with <code>y</code>, you are touching the live system.</p>
+
+<div class="see">
+  <span class="lb">What you should see</span>
+  A table headed <b>Users</b> with exactly <b class="k">one</b> existing row — an account created
+  <b class="k">26 March 2026</b>, e-mail beginning <code>sp…@gmail.com</code>. If you see zero rows or
+  several, stop and re-check which project you are in.
+</div>
+
+<h2><span class="num">03</span>Create the account</h2>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 3.1</span><span class="t">Start the "Add user" flow</span></div>
+ <div class="sb">
+  <p>Top-right of the Users table, click the green <b class="k">Add user</b> button, then choose
+  <b class="k">Create new user</b> from the small dropdown.</p>
+  <div class="call warn">
+    <span class="lb">Do not choose "Send invitation"</span>
+    The other option in that dropdown sends an invite e-mail. <b class="k">It will not work here</b> —
+    this project has no mail server configured, so the invite depends on Supabase's built-in sender,
+    which is rate-limited to a handful of messages per hour and frequently never arrives. Always use
+    <b class="k">Create new user</b>.
+  </div>
+ </div>
+</div>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 3.2</span><span class="t">Fill the form — and tick the box</span></div>
+ <div class="sb">
+  <p>A small dialog appears with three controls. This is the part that goes wrong:</p>
+
+  <div class="ui">
+    <span class="uilab">Email address</span>
+    <div class="uifield">newadmin@example.com</div>
+    <span class="uilab">Password</span>
+    <div class="uifield">••••••••••••••••</div>
+    <div class="uicheck"><span class="box"></span>
+      <span><b>Auto Confirm User?</b><br>
+      <span style="color:var(--muted);font-size:14px">Creates the user without sending a confirmation email</span></span></div>
+    <div style="margin-top:14px"><span class="uibtn">Create user</span></div>
+  </div>
+
+  <div class="call stop">
+    <span class="lb">This tickbox is the whole ballgame</span>
+    <b class="k">"Auto Confirm User" must be ON.</b> It is off by default.<br><br>
+    Leave it off and Supabase marks the account as unconfirmed and tries to e-mail a confirmation link.
+    With no mail server configured that message is unreliable at best, and until it is clicked
+    <b class="k">the new admin simply cannot log in</b> — they will get an error that looks like a wrong
+    password, and you will both spend twenty minutes resetting a password that was never the problem.
+  </div>
+
+  <p>Enter the person's e-mail, set a strong password, tick the box, click <b class="k">Create user</b>.</p>
+
+  <div class="see">
+    <span class="lb">What you should see</span>
+    The dialog closes and a <b class="k">second row</b> appears in the Users table. Its
+    <b>Last sign in</b> column reads <b class="k">never</b> — that is correct and expected at this
+    stage.
+  </div>
+
+  <div class="call warn">
+    <span class="lb">Hand the password over safely</span>
+    Send it through a password manager's share feature, or a signal/whatsapp message you both delete —
+    <b class="k">not</b> e-mail, and not in a document. Ask them to change it after first login. Anyone
+    holding this password holds the whole production database.
+  </div>
+ </div>
+</div>
+
+<h2><span class="num">04</span>The new admin logs in and enrols TOTP</h2>
+
+<div class="call stop">
+  <span class="lb">This step is NOT in the Supabase Dashboard</span>
+  This is the part people hunt for and cannot find. There is <b class="k">no MFA screen in the
+  Dashboard</b>. Two-factor enrolment happens <b class="k">inside the SPWS app itself</b>, automatically,
+  the first time the new account signs in. You do not configure it anywhere in advance.
+</div>
+
+<figure>
+<svg viewBox="0 0 900 240" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="First login flow: enter email and password, the app detects no TOTP factor, shows a QR code, the user scans it and enters a six digit code, and the session reaches aal2.">
+  <defs>
+    <marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+      <path d="M0,0 L7,3.2 L0,6.4 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <g style="color:var(--muted)" fill="none" stroke="currentColor" stroke-width="1.6">
+    <path d="M195,95 L235,95" marker-end="url(#ar2)"/>
+    <path d="M400,95 L440,95" marker-end="url(#ar2)"/>
+    <path d="M605,95 L645,95" marker-end="url(#ar2)"/>
+  </g>
+
+  <rect x="20" y="55" width="175" height="80" rx="8" fill="var(--card)" stroke="var(--line)" stroke-width="1.6"/>
+  <text x="36" y="83" font-family="ui-monospace,monospace" font-size="13" font-weight="700" fill="var(--ink)">1 · Sign in</text>
+  <text x="36" y="104" font-family="Inter,sans-serif" font-size="13.5" fill="var(--muted)">e-mail + password</text>
+  <text x="36" y="123" font-family="Inter,sans-serif" font-size="13.5" fill="var(--muted)">at <tspan font-family="ui-monospace,monospace">?admin=1</tspan></text>
+
+  <rect x="240" y="55" width="160" height="80" rx="8" fill="var(--amber-bg)" stroke="var(--amber)" stroke-width="1.6"/>
+  <text x="256" y="83" font-family="ui-monospace,monospace" font-size="13" font-weight="700" fill="var(--amber)">2 · QR appears</text>
+  <text x="256" y="104" font-family="Inter,sans-serif" font-size="13.5" fill="var(--ink)">app sees no TOTP</text>
+  <text x="256" y="123" font-family="Inter,sans-serif" font-size="13.5" fill="var(--ink)">factor → enrols one</text>
+
+  <rect x="445" y="55" width="160" height="80" rx="8" fill="var(--card)" stroke="var(--line)" stroke-width="1.6"/>
+  <text x="461" y="83" font-family="ui-monospace,monospace" font-size="13" font-weight="700" fill="var(--ink)">3 · Scan + confirm</text>
+  <text x="461" y="104" font-family="Inter,sans-serif" font-size="13.5" fill="var(--muted)">authenticator app,</text>
+  <text x="461" y="123" font-family="Inter,sans-serif" font-size="13.5" fill="var(--muted)">then 6-digit code</text>
+
+  <rect x="650" y="55" width="230" height="80" rx="8" fill="var(--green-bg)" stroke="var(--green)" stroke-width="1.6"/>
+  <text x="666" y="83" font-family="ui-monospace,monospace" font-size="13" font-weight="700" fill="var(--green)">4 · Session is aal2</text>
+  <text x="666" y="104" font-family="Inter,sans-serif" font-size="13.5" fill="var(--ink)">full admin, including</text>
+  <text x="666" y="123" font-family="Inter,sans-serif" font-size="13.5" fill="var(--ink)">workflow dispatch</text>
+
+  <text x="20" y="185" font-family="Inter,sans-serif" font-size="14" fill="var(--muted)">
+    Every later login repeats step 3 only — password, then the current 6-digit code. The QR is shown once.
+  </text>
+  <text x="20" y="212" font-family="Inter,sans-serif" font-size="14" fill="var(--coral)">
+    Stop before step 4 and the account can read, but cannot dispatch workflows (ADR-083 requires aal2).
+  </text>
+</svg>
+<figcaption>The enrolment is one-time and self-service. Nobody can complete it on the new admin's
+behalf, because it pairs a secret with the authenticator app on their phone.</figcaption>
+</figure>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 4.1</span><span class="t">Send them the right URL</span></div>
+ <div class="sb">
+  <p>The admin interface is the normal public site with <code>?admin=1</code> appended:</p>
+<pre><code>https://fencer4life.github.io/spws-automated-ranklist/?admin=1</code></pre>
+  <p>Without <code>?admin=1</code> they will only see the public ranking and will report that "there is
+  no login button" — because there isn't one. The sign-in modal only appears when that parameter is
+  present.</p>
+  <div class="call warn">
+    <span class="lb">Which environment does this URL hit?</span>
+    The deployed app can point at either project. Look at the small <b class="k">CT / PD</b> toggle at
+    the bottom of the ranking view — <b class="k">CT = CERT, PD = PROD</b>. Whichever is highlighted is
+    the database being used, and therefore the account list being checked. If they are logging in to
+    CERT, that toggle must read <b class="k">CT</b>.
+  </div>
+ </div>
+</div>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 4.2</span><span class="t">They sign in and scan the QR code</span></div>
+ <div class="sb">
+  <p>They enter the e-mail and password you created. The app checks for an existing authenticator and
+  finds none, so it immediately shows an <b class="k">enrolment screen with a QR code and a text
+  secret</b>.</p>
+  <p>They open their authenticator app, add a new entry, scan the QR (or type the text secret if the
+  camera is awkward), then enter the <b class="k">6-digit code</b> the app displays to confirm the
+  pairing.</p>
+  <div class="call stop">
+    <span class="lb">Tell them to save the recovery information NOW</span>
+    Have them store the <b class="k">text secret</b> in a password manager before clicking confirm, or
+    keep the authenticator entry backed up (1Password, Bitwarden and Authy all sync; Google
+    Authenticator historically did not).<br><br>
+    <b class="k">There is no self-service recovery.</b> If they lose the phone and the secret, the only
+    fix is manual deletion of the factor from the database by you — Step 7. Thirty seconds of care here
+    saves that entirely.
+  </div>
+  <div class="see">
+    <span class="lb">What they should see</span>
+    The modal closes and the admin interface unlocks — the ranking view gains admin controls and the
+    hamburger menu shows management screens (Seasons, Events, Identity). If the screen simply
+    reappears, the 6-digit code was entered too late; codes rotate every 30 seconds. Wait for a fresh
+    one and retry.
+  </div>
+ </div>
+</div>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 4.3</span><span class="t">Every login afterwards</span></div>
+ <div class="sb">
+  <p>From now on their login is: e-mail + password, then the current 6-digit code. No QR, no
+  enrolment. Sessions last <b class="k">1 hour</b>, and the app signs them out after
+  <b class="k">59 minutes</b> of inactivity — that is deliberate
+  (<a href="../adr/016-supabase-auth-totp-mfa.html">ADR-016</a>), not a fault.</p>
+ </div>
+</div>
+
+<h2><span class="num">05</span>Verify it actually worked</h2>
+
+<p class="lead">Do not take "I logged in fine" as proof. Logging in is possible at
+<code>aal1</code> — one factor — and an account stuck there can read everything but cannot dispatch
+workflows. Check the factor exists.</p>
+
+<h4>The quick visual check — have them try a real action</h4>
+<p>Ask them to open the Events screen and click a dispatch button such as <b class="k">Re-ingest
+event</b> or <b class="k">Stage event</b> on CERT.</p>
+<div class="tw">
+<table>
+<thead><tr><th>Result</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><span class="st s-ok">✓ Triggered</span></td><td>Fully enabled. TOTP enrolment completed and the session reached <code>aal2</code>. Done.</td></tr>
+<tr><td><span class="st s-bad">403 / mfa_required</span></td><td>They are signed in but at <code>aal1</code> — enrolment never completed. Have them sign out fully and sign in again; the enrolment screen will reappear.</td></tr>
+<tr><td><span class="st s-bad">401</span></td><td>Not recognised as a signed-in user at all. Session expired, or they are on the wrong environment (CT/PD toggle).</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>The definitive check — query the database</h4>
+<p>Run this from the repository root. It reads only; it changes nothing.</p>
+<pre><code>export SUPABASE_ACCESS_TOKEN=$(grep -E '^SUPABASE_ACCESS_TOKEN=' .env | cut -d= -f2- | tr -d '"'"' ')
+
+for pair in sdomfjncmfydlkygzpgw:CERT ywgymtgcyturldazcpmw:PROD; do
+  ref="${pair%%:*}"; label="${pair##*:}"
+  echo "===== $label ====="
+  curl -s -X POST \
+    -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"query":"SELECT u.email, u.created_at::date AS created, (u.email_confirmed_at IS NOT NULL) AS confirmed, COALESCE(u.last_sign_in_at::date::text,''never'') AS last_sign_in, (SELECT count(*) FROM auth.mfa_factors f WHERE f.user_id=u.id AND f.status=''verified'') AS totp FROM auth.users u ORDER BY u.created_at;"}' \
+    "https://api.supabase.com/v1/projects/$ref/database/query"
+  echo
+done</code></pre>
+
+<div class="see">
+  <span class="lb">What a fully-enabled admin looks like</span>
+  <code>confirmed: true</code> &nbsp;·&nbsp; <code>totp: 1</code> &nbsp;·&nbsp;
+  <code>last_sign_in</code> showing a real date.<br><br>
+  <b class="k">Any account showing <code>totp: 0</code> is not finished</b> — it can sign in and read,
+  but cannot dispatch workflows. <code>confirmed: false</code> means Step 3.2's tickbox was missed.
+</div>
+
+<h2><span class="num">06</span>Repeat — and tick these off</h2>
+
+<p>The whole procedure again, per environment, per person. Copy this list and mark it as you go, so
+you do not lose your place:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Person</th><th>Env</th><th>Account created + confirmed</th><th>TOTP enrolled (<code>totp: 1</code>)</th><th>Dispatch tested</th></tr></thead>
+<tbody>
+<tr><td>Person 1</td><td><span class="st s-neu">CERT</span></td><td>☐</td><td>☐</td><td>☐</td></tr>
+<tr><td>Person 1</td><td><span class="st s-bad">PROD</span></td><td>☐</td><td>☐</td><td>☐</td></tr>
+<tr><td>Person 2</td><td><span class="st s-neu">CERT</span></td><td>☐</td><td>☐</td><td>☐</td></tr>
+<tr><td>Person 2</td><td><span class="st s-bad">PROD</span></td><td>☐</td><td>☐</td><td>☐</td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="sub">Suggested order: do <b class="k">both CERT accounts first</b> and let both people work in
+staging for a while. Only add PROD once you have seen them use the system. Nothing is lost by adding
+PROD later — it is the same five minutes.</p>
+
+<h2><span class="num">07</span>When something goes wrong</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Symptom</th><th>Actual cause</th><th>Fix</th></tr></thead>
+<tbody>
+<tr><td>"Invalid login credentials" and the password is definitely right</td><td><b class="k">Almost always</b> the unticked "Auto Confirm User" box — the account exists but is unconfirmed.</td><td>Dashboard → Users → click the user → confirm the e-mail manually; or delete the row and recreate it with the box ticked.</td></tr>
+<tr><td>Works on CERT, "no such user" on PROD</td><td>Fact 1 — you only created the account on one project.</td><td>Repeat Steps 2–4 against the other project ref.</td></tr>
+<tr><td>Dispatch buttons return <code>403 mfa_required</code></td><td>Signed in at <code>aal1</code>; TOTP enrolment was abandoned partway.</td><td>Sign out completely, sign in again — enrolment reappears. Confirm with the Step 5 query showing <code>totp: 1</code>.</td></tr>
+<tr><td>Lost the phone / authenticator wiped</td><td>The TOTP factor still exists server-side but nothing can generate its codes.</td><td>Delete the factor so enrolment restarts on next login — see below. This is the only recovery path.</td></tr>
+<tr><td>"There's no login button"</td><td><code>?admin=1</code> missing from the URL.</td><td>Send the full URL from Step 4.1.</td></tr>
+<tr><td>Works on their laptop, not on <code>localhost</code></td><td>Not a fault. MFA is deliberately skipped on localhost, so a LOCAL session never reaches <code>aal2</code> and cannot dispatch. Recorded in <a href="../adr/083-server-enforced-authorization.html">ADR-083</a>.</td><td>Test dispatch on CERT, never on LOCAL.</td></tr>
+<tr><td>Confirmation e-mail never arrived</td><td>No SMTP server is configured; the built-in sender is rate-limited.</td><td>Do not wait for it. Use "Auto Confirm User" instead — that is the supported path here.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>Resetting a lost authenticator</h4>
+<p>Deleting the verified factor makes the app treat the next login as a first login, so enrolment starts
+over with a fresh QR code. Replace the e-mail and the project ref before running it.</p>
+<pre><code># CERT ref: sdomfjncmfydlkygzpgw   ·   PROD ref: ywgymtgcyturldazcpmw
+curl -s -X POST \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"DELETE FROM auth.mfa_factors WHERE user_id = (SELECT id FROM auth.users WHERE email = ''person@example.com'');"}' \
+  "https://api.supabase.com/v1/projects/&lt;ref&gt;/database/query"</code></pre>
+<p class="sub">Then have them sign in again and re-enrol. Verify with the Step 5 query that
+<code>totp</code> is back to <code>1</code>.</p>
+
+<h4>Removing an admin entirely</h4>
+<p>Dashboard → Users → the row's <b class="k">⋯</b> menu → <b class="k">Delete user</b>. Do it in
+<b class="k">both</b> projects — deleting on CERT leaves their PROD access fully intact, which is
+exactly the failure you do not want when someone leaves.</p>
+
+<h2><span class="num">08</span>Why it is built this way</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Constraint</th><th>Reason</th><th>Decision</th></tr></thead>
+<tbody>
+<tr><td>Self-signup is disabled</td><td>Any account that registers is a full administrator, so an open signup form is an open admin door. Closed on both environments on 23 July 2026.</td><td><a href="../adr/083-server-enforced-authorization.html">ADR-083</a></td></tr>
+<tr><td>TOTP is mandatory</td><td>A password alone protects the entire ranking and every fencer's personal data.</td><td><a href="../adr/016-supabase-auth-totp-mfa.html">ADR-016</a></td></tr>
+<tr><td>Workflow dispatch requires <code>aal2</code></td><td>The dispatcher can trigger production promotion. It now verifies the caller and requires completed MFA.</td><td><a href="../adr/083-server-enforced-authorization.html">ADR-083</a></td></tr>
+<tr><td>Every account is a full admin</td><td>A known limitation, not a design goal — <code>authenticated</code> currently means "any account holder". An explicit admin allowlist is a recorded follow-up; closed signup is what bounds the risk today.</td><td><a href="../adr/016-supabase-auth-totp-mfa.html">ADR-016</a>, <a href="../adr/083-server-enforced-authorization.html">ADR-083</a></td></tr>
+</tbody>
+</table>
+</div>
+
+<p><b class="k">Further reading:</b>
+<a href="../handbook/reference/security-posture.html">Security posture</a> (who may reach what, and how it is enforced) ·
+<a href="../handbook/operations/environments-and-release.html">Environments and release</a> ·
+<a href="../handbook/operations/operator-runbooks.html">Operator runbooks</a> ·
+<a href="../adr/016-supabase-auth-totp-mfa.html">ADR-016 — Supabase Auth with TOTP MFA</a> ·
+<a href="../adr/083-server-enforced-authorization.html">ADR-083 — Server-enforced authorization</a></p>
+
+<div class="call ok">
+  <span class="lb">The two-line version, if you have done this before</span>
+  Dashboard → correct project ref → Users → Add user → <b class="k">Create new user</b> → e-mail,
+  strong password, <b class="k">tick Auto Confirm User</b> → Create.<br>
+  Then they log in at <code>?admin=1</code>, scan the QR, enter the 6-digit code, and you confirm
+  <code>totp: 1</code> with the Step 5 query. Repeat per environment.
+</div>
+
+</div>
+
+<footer>
+Written 2026-07-23. Every configuration value quoted here was read from the live CERT and PROD auth
+configuration on that date, not assumed: <code>disable_signup: true</code>,
+<code>mailer_autoconfirm: false</code>, <code>smtp_host</code> unset, <code>password_min_length: 6</code>,
+TOTP enrol and verify both enabled, <code>jwt_exp: 3600</code>. Each environment held exactly one
+account at the time of writing, created 2026-03-26, confirmed, with one verified TOTP factor.
+If the auth configuration changes — particularly if an SMTP server is ever configured, which would make
+the invitation flow usable — this page needs revisiting.
+</footer>
+
+</div>
+</body>
+</html>
