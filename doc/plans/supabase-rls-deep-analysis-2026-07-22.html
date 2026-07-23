@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supabase RLS advisory — deep analysis, 22 July 2026</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--coral) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.58;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1060px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--coral);
+ padding:22px 24px 18px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,5.2vw,33px);line-height:1.14;margin:8px 0 7px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,15.5px);color:var(--muted);
+ font-style:italic;margin:0 0 14px;max-width:72ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:-.01em;
+ margin:38px 0 6px;padding-top:20px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:24px 0 8px;font-weight:600}
+p{margin:0 0 12px;max-width:82ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 16px;max-width:86ch}
+ul,ol{margin:0 0 14px;padding-left:20px;max-width:82ch}
+li{margin-bottom:7px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:12px 14px;
+ overflow-x:auto;font-family:var(--mono);font-size:11.5px;line-height:1.55;margin:0 0 16px;max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin:14px 0 18px;font-size:13px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:5px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.ok{background:var(--green-bg);border-left-color:var(--green)}
+.call.ok .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10.5px;white-space:nowrap;color:var(--navy);font-weight:600}
+td.n{font-family:var(--mono);font-size:12px;font-weight:600;text-align:right;white-space:nowrap}
+.st{font-family:var(--mono);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.s-neu{background:var(--grey-bg);color:var(--grey)}
+footer{margin:42px 22px 0;padding-top:16px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){
+ .hd,.body,footer{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Deep analysis · 22 July 2026 · follow-up to the 21 July handover</div>
+  <h1>The advisory understates it. Six tables is the visible part; the real defect is a hardening pattern that was never re-applied.</h1>
+  <p class="dek">I verified every claim in the 21 July handover against the live LOCAL schema — all six are correct.
+  Then I went one layer further, into views, RPC grants and the migration history, and found three things the
+  Supabase advisor does not report and the handover did not reach: an anon-readable view that will survive the
+  proposed fix, five anon-executable write RPCs (two of them <code>SECURITY DEFINER</code>, which bypass RLS
+  entirely), and a March 2026 migration that fixed this exact bug class and was never carried forward.
+  Nothing has been changed.</p>
+  <div class="chips">
+    <span class="chip ok">handover claims: all verified</span>
+    <span class="chip bad">+1 view bypasses the planned fix</span>
+    <span class="chip bad">+5 anon-executable write RPCs</span>
+    <span class="chip warn">recurrence of ADR-016</span>
+    <span class="chip ok">nothing changed</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">00</span>Verdict in one paragraph</h2>
+
+<p>The handover is <b class="k">accurate and safe to act on</b> — I re-ran its queries and reproduced every
+number. But its §04 fix plan (“enable RLS on the six tables, optionally revoke grants”) would <b class="k">not
+close the exposure</b>. Draft data is also reachable through <code>vw_fencer_aliases</code>, which is owned by
+<code>postgres</code> and not <code>security_invoker</code>, so it reads the draft tables with the owner’s
+rights and ignores whatever RLS you put underneath. Separately, five RPCs are callable by <code>anon</code>,
+and two of them are <code>SECURITY DEFINER</code>, meaning they bypass RLS on tables that <em>are</em>
+protected — including <code>tbl_tournament</code> and <code>tbl_registration</code>. The scope of the fix has
+to be “the anon attack surface of the <code>public</code> schema”, not “six tables”.</p>
+
+<div class="call ok">
+  <span class="lb">One correction to the handover, in its favour</span>
+  Its §06 open question 1 — “service-role-only, or does the admin UI need these?” — is <b class="k">answered</b>.
+  Nothing under <code>frontend/src</code> or <code>supabase/functions</code> references any of the six tables.
+  The only frontend mentions are two comments naming <code>vw_fencer_aliases</code> in
+  <a href="frontend/src/lib/types.ts">types.ts</a> and
+  <a href="frontend/src/lib/birthYearEstimate.ts">birthYearEstimate.ts</a>. The consumers are all Python:
+  <code>draft_store.py</code>, <code>recompute/worker.py</code>, <code>review_cli.py</code>,
+  <code>alias_writeback.py</code>, <code>db_connector.py</code> and three tools. A service-role-only lock on the
+  base tables breaks nothing — <b class="k">but only if the alias view is handled at the same time</b>, because
+  that is what the admin UI actually reads.
+</div>
+
+<h2><span class="num">01</span>Verification of the handover, claim by claim</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Handover claim</th><th>Status</th><th>Evidence</th></tr></thead>
+<tbody>
+<tr><td>Six <code>public</code> tables, RLS off, 0 policies</td><td><span class="st s-ok">confirmed</span></td><td>Re-ran the <code>pg_class</code>/<code>pg_policies</code> query: 6 of 16 with <code>relrowsecurity=f</code>, exactly the named six.</td></tr>
+<tr><td>Other ten have RLS on with 1–2 policies</td><td><span class="st s-ok">confirmed</span></td><td>17 policies across 10 tables.</td></tr>
+<tr><td><code>anon</code> holds full DML + TRUNCATE on the six</td><td><span class="st s-ok">confirmed</span></td><td>Identical grant string for <code>anon</code>, <code>authenticated</code>, <code>service_role</code>.</td></tr>
+<tr><td>Reachable in practice, not just on paper</td><td><span class="st s-ok">confirmed</span></td><td><code>SET LOCAL ROLE anon</code> in a rolled-back transaction: <code>SELECT</code> succeeded on <code>tbl_recompute_queue</code> and <code>tbl_result_draft</code>. Read-only; no writes attempted.</td></tr>
+<tr><td>Drift, not a decision — none of the six in any RLS migration</td><td><span class="st s-ok">confirmed</span></td><td>RLS established once in <code>20250301000002_rls_policies.sql</code>; the six arrive in May/June migrations that never mention <code>ROW LEVEL SECURITY</code>.</td></tr>
+<tr><td>“Nothing is wrong with the original design”</td><td><span class="st s-wip">partly</span></td><td>The table policies are sound. The <em>function</em> grant posture is not — see §03.</td></tr>
+<tr><td>“<code>main</code> CI was red — check before shipping”</td><td><span class="st s-neu">stale</span></td><td>Recent <code>main</code> runs are green (scheduled self-heal drains, latest 2026‑07‑22 04:36 UTC). Worktree is clean apart from untracked plans, <code>doc/reports/</code> and <code>python/tools/xls_ranking_compare.py</code>. No blocker.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">02</span>New finding A — the fix as written does not close the hole</h2>
+
+<p>One view is built on the draft tables:</p>
+
+<pre><code>view              relkind  reloptions  owner
+vw_fencer_aliases   v          -       postgres
+
+grants: anon | authenticated | service_role
+        → DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE  (all three)</code></pre>
+
+<p>Postgres views execute with the <b class="k">view owner’s</b> privileges unless created with
+<code>security_invoker = true</code>. <code>reloptions</code> is empty, so this view runs as
+<code>postgres</code> and <b class="k">RLS on the underlying draft tables will not apply to reads through
+it</b>. Proven, not inferred:</p>
+
+<pre><code>BEGIN; SET LOCAL ROLE anon;
+SELECT count(*) FROM vw_fencer_aliases;   -- 380 rows returned to anon
+ROLLBACK;</code></pre>
+
+<p>So if the handover’s §04 migration ships as described, an anonymous caller loses <code>tbl_result_draft</code>
+but keeps a 380-row window onto the same alias/draft data through <code>rest/v1/vw_fencer_aliases</code>. The
+Supabase advisor will still go green, because <code>rls_disabled_in_public</code> only inspects tables — this is
+a separate lint (<code>security_definer_view</code>) that either was not included in the mail or was filtered out
+of the condensed body.</p>
+
+<div class="call warn">
+  <span class="lb">Why this one needs a decision, not just a REVOKE</span>
+  The alias view is what the Phase‑4 admin UI reads (ADR‑050 / ADR‑058, per the comments in
+  <code>types.ts</code> and <code>birthYearEstimate.ts</code>). Revoking <code>anon</code> is safe; revoking
+  <code>authenticated</code> would break the identity-manager screen. The correct shape is
+  <b class="k">SELECT to <code>authenticated</code> only</b>, plus dropping the nonsensical
+  <code>INSERT/UPDATE/DELETE/TRUNCATE</code> grants on a view. Recreating it with
+  <code>security_invoker = true</code> is the more thorough option but changes its behaviour for the admin
+  session too, so it needs the RLS policies underneath to allow <code>authenticated</code> reads.
+</div>
+
+<h2><span class="num">03</span>New finding B — five write RPCs are callable by <code>anon</code></h2>
+
+<p>Every function in <code>public</code> that touches the six tables, plus the <code>SECURITY DEFINER</code>
+functions <code>anon</code> can execute:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Function</th><th>SECURITY</th><th>anon EXECUTE</th><th>What it does / why it matters</th></tr></thead>
+<tbody>
+<tr><td class="d">fn_find_or_create_tournament</td><td><span class="st s-bad">definer</span></td><td><span class="st s-bad">yes</span></td><td><b class="k">Worst of the set.</b> DEFINER means it bypasses RLS on <code>tbl_tournament</code> — a table the advisory considers safe. Migration <code>20260406000001</code> granted it to <code>authenticated</code> but never revoked the PUBLIC default.</td></tr>
+<tr><td class="d">fn_create_registration</td><td><span class="st s-bad">definer</span></td><td><span class="st s-bad">yes</span></td><td>Writes <code>tbl_registration</code> bypassing its <code>authenticated</code>-only policy.</td></tr>
+<tr><td class="d">fn_commit_event_draft</td><td><span class="st s-wip">invoker</span></td><td><span class="st s-bad">yes</span></td><td>Promotes a draft toward real results. Invoker rights, so the final write into <code>tbl_result</code> is still refused by RLS for <code>anon</code> — but the draft-side effects land.</td></tr>
+<tr><td class="d">fn_discard_event_draft</td><td><span class="st s-wip">invoker</span></td><td><span class="st s-bad">yes</span></td><td>Anon can discard pending drafts — destructive, and it succeeds because anon already has DML on the draft tables.</td></tr>
+<tr><td class="d">fn_enqueue_affected_events</td><td><span class="st s-wip">invoker</span></td><td><span class="st s-bad">yes</span></td><td>Anon can push arbitrary work into <code>tbl_recompute_queue</code>. Note the scheduled <b class="k">Recompute Self-Heal Drain (PROD)</b> workflow runs hourly and consumes that queue.</td></tr>
+<tr><td class="d">fn_refresh_active_season</td><td><span class="st s-bad">definer</span></td><td><span class="st s-bad">yes</span></td><td>Not draft-related, but same class: a DEFINER state-changing function open to anon.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="sub">Read-only DEFINER functions also open to anon — <code>fn_ranking_ppw</code>,
+<code>fn_ranking_kadra</code>, <code>fn_season_summary</code>, <code>fn_export_scoring_config</code>,
+<code>fn_fencer_scores_rolling</code> and variants — are <b class="k">intentional</b> and documented as such in
+<code>20260327000001</code>. Leave them alone.</p>
+
+<h3>The ACL proves the mechanism</h3>
+<pre><code>fn_find_or_create_tournament | acl={=X/postgres, postgres=X/postgres,
+                                    anon=X/postgres, authenticated=X/postgres, service_role=X/postgres}
+                                    ^^^^^^^^^^^
+                                    the bare "=X" entry is the PUBLIC default grant</code></pre>
+<p>Postgres grants <code>EXECUTE</code> to <code>PUBLIC</code> on every new function. Unless a migration says
+<code>REVOKE … FROM anon, PUBLIC</code>, the function is world-callable the moment it exists.</p>
+
+<h2><span class="num">04</span>New finding C — this is a recurrence, and that is the real defect</h2>
+
+<p>This exact bug class was found and fixed in March 2026. From
+<code>supabase/migrations/20260327000001_revoke_write_functions.sql</code>:</p>
+
+<pre><code>-- ADR-016: Supabase Auth + TOTP MFA for Admin Access
+-- Security fix: all SECURITY DEFINER write functions were callable by anon
+-- because PostgreSQL defaults GRANT EXECUTE TO PUBLIC.</code></pre>
+
+<p>The comment describes today’s finding word for word. That migration, and
+<code>20260327000003_delete_cascade.sql</code> after it, established the house pattern:
+<code>REVOKE … FROM anon, PUBLIC</code> then <code>GRANT … TO authenticated</code>. Every table and RPC created
+<b class="k">after</b> March — the Phase‑1/2 ingest tables (May), the Phase‑5 alias RPCs (May), the CDC recompute
+tables (June) — skipped it. Nothing in CI or pgTAP enforces it, so the regression was silent.</p>
+
+<div class="call stop">
+  <span class="lb">The conclusion that changes the plan</span>
+  A migration that locks these six tables fixes <b class="k">this</b> advisory and leaves the mechanism intact.
+  The next new table or RPC will be born world-writable exactly the same way. The deliverable has to include a
+  <b class="k">standing pgTAP assertion</b> — “no table in <code>public</code> has RLS disabled; no
+  non-allowlisted function is executable by <code>anon</code>” — with the read-only ranking functions as an
+  explicit allowlist. That test is what makes the fix permanent, and it is cheap: it is a catalog query, and it
+  will fail loudly the day someone adds a table.
+</div>
+
+<h2><span class="num">05</span>Revised blast radius</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Vector</th><th>Reachable by</th><th>Effect</th><th>Closed by handover §04?</th></tr></thead>
+<tbody>
+<tr><td class="d">tbl_recompute_queue / _watermark</td><td>anon, direct DML</td><td>Stall or silently skip incremental recompute; the hourly PROD self-heal drain consumes whatever is there.</td><td><span class="st s-ok">yes</span></td></tr>
+<tr><td class="d">tbl_result_draft / tbl_tournament_draft</td><td>anon, direct DML</td><td>Inject or destroy staging rows on the path to real results.</td><td><span class="st s-ok">yes</span></td></tr>
+<tr><td class="d">tbl_*_ingest_history</td><td>anon, direct DML</td><td>Erase the traceability record that would evidence the above.</td><td><span class="st s-ok">yes</span></td></tr>
+<tr><td class="d">vw_fencer_aliases</td><td>anon, SELECT</td><td>380 rows of alias/draft data — fencer identity linkage — readable regardless of base-table RLS.</td><td><span class="st s-bad">no</span></td></tr>
+<tr><td class="d">fn_find_or_create_tournament</td><td>anon, RPC</td><td>DEFINER write into <code>tbl_tournament</code>, bypassing its policy.</td><td><span class="st s-bad">no</span></td></tr>
+<tr><td class="d">fn_create_registration</td><td>anon, RPC</td><td>DEFINER write into <code>tbl_registration</code>.</td><td><span class="st s-bad">no</span></td></tr>
+<tr><td class="d">fn_discard_event_draft / fn_enqueue_affected_events</td><td>anon, RPC</td><td>Destroy drafts / flood the recompute queue.</td><td><span class="st s-wip">partly</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="sub">Still <b class="k">not</b> established, and unchanged from the handover: whether anything has been
+tampered with on PROD. I did not query PROD — the <code>plugin:supabase</code> MCP server is unauthorised in
+this session, and this session is non-interactive, so the OAuth flow cannot run here. The tamper audit needs
+row counts and <code>ts_created</code> distributions on the six tables in PROD, compared against what the
+pipeline’s own ingest history says it wrote.</p>
+
+<h2><span class="num">06</span>What I would change about the fix plan</h2>
+
+<p>Keep the handover’s §04 sequence — TDD-first, one migration, <code>postgrestools</code>, LOCAL proof by
+attempted anon write, LOCAL→CERT→PROD, coherence gate. Widen its content:</p>
+
+<ol>
+  <li><b class="k">Six tables:</b> <code>ENABLE ROW LEVEL SECURITY</code>, and
+  <code>REVOKE ALL … FROM anon, authenticated</code>. No policy for <code>anon</code>. <code>service_role</code>
+  bypasses RLS inherently, so the Python pipeline is unaffected. An <code>authenticated</code> read policy is
+  only needed if the admin UI later reads them directly — today it does not.</li>
+  <li><b class="k">vw_fencer_aliases:</b> <code>REVOKE ALL FROM anon</code>; reduce
+  <code>authenticated</code> to <code>SELECT</code>.</li>
+  <li><b class="k">Five RPCs:</b> <code>REVOKE EXECUTE … FROM anon, PUBLIC</code>, keep
+  <code>authenticated</code> where the admin UI calls them — following <code>20260327000001</code> verbatim,
+  including its comment style.</li>
+  <li><b class="k">Standing pgTAP guard</b> (the part that prevents recurrence) — one test asserting no
+  RLS-disabled table in <code>public</code>, one asserting the anon-executable function set equals a named
+  allowlist. Bump the pgTAP total in the specification.</li>
+  <li><b class="k">ADR</b> — “pipeline and staging objects are service-role only; new objects must be revoked
+  by default”. This amends rather than repeats ADR‑016; the registry entry belongs in specification Appendix C.</li>
+  <li><b class="k">Coherence gate</b> — the handbook security/subsystem pages, the RTM, and the workflow catalog
+  entry for the self-heal drain if the queue’s access contract is now stated explicitly.</li>
+</ol>
+
+<h2><span class="num">07</span>Reproduce this analysis</h2>
+<pre><code># views over the six tables, and whether they are security_invoker
+docker exec supabase_db_SPWSranklist psql -U postgres -d postgres -c "
+SELECT c.relname, coalesce(c.reloptions::text,'-'), pg_get_userbyid(c.relowner)
+FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+WHERE n.nspname='public' AND c.relkind IN ('v','m')
+  AND EXISTS (SELECT 1 FROM pg_depend d JOIN pg_rewrite r ON r.oid=d.objid
+              JOIN pg_class t ON t.oid=d.refobjid
+              WHERE r.ev_class=c.oid AND t.relname LIKE 'tbl_%draft%');"
+
+# every SECURITY DEFINER function anon may execute
+docker exec supabase_db_SPWSranklist psql -U postgres -d postgres -c "
+SELECT p.proname, p.prosecdef, p.proacl
+FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+WHERE n.nspname='public' AND p.prokind='f' AND p.prosecdef
+  AND has_function_privilege('anon', p.oid, 'EXECUTE') ORDER BY 1;"
+
+# read-only proof that anon really reaches the data (rolled back, no writes)
+docker exec supabase_db_SPWSranklist psql -U postgres -d postgres -c "
+BEGIN; SET LOCAL ROLE anon;
+SELECT count(*) FROM vw_fencer_aliases; SELECT count(*) FROM tbl_recompute_queue;
+ROLLBACK;"</code></pre>
+
+<h2><span class="num">08</span>Open questions, revised</h2>
+<ol>
+  <li><b class="k">Scope of the migration:</b> the six tables only, or the full anon surface — tables, the alias
+  view and the five RPCs — in one change? <b class="k">Recommendation: one change.</b> They share a root cause
+  and a test, and splitting means shipping a security migration you already know is incomplete.</li>
+  <li><b class="k">Audit PROD before or after locking?</b> Unchanged from the handover, and it is now more
+  pressing: <code>tbl_tournament</code> and <code>tbl_registration</code> were writable through DEFINER RPCs, so
+  the audit surface is larger than the six tables. Locking first is still the safer order.</li>
+  <li><b class="k">Recreate <code>vw_fencer_aliases</code> with <code>security_invoker = true</code></b>, or
+  just fix its grants? Grants alone are the small, safe diff; <code>security_invoker</code> is correct but
+  couples the view to whatever RLS the draft tables end up with.</li>
+</ol>
+
+</div>
+
+<footer>
+Written 2026-07-22, extending <code>doc/plans/supabase-rls-advisory-handover-2026-07-21.html</code>.
+Every statement was read back from the live LOCAL schema, from the migration sources, or from
+<code>gh run list</code>; the only anon probes performed were <code>SELECT</code>s inside a rolled-back
+transaction. No migration, grant, policy, view, function or remote state was modified, and PROD was not queried.
+No key, token or credential appears in this file.
+</footer>
+
+</div>
+</body>
+</html>
