@@ -105,18 +105,18 @@ footer{margin:60px 26px 0;padding-top:24px;border-top:2px solid var(--line);
 <div class="page">
 
 <div class="hd">
-  <div class="eyebrow">SPWS · Implementation progress · 23 July 2026 · steps 1–12 of 13 complete</div>
-  <h1>Everything but the release is built, proven, and gated. It required five corrections to the plan.</h1>
-  <p class="dek">Migration, standing guard, dispatcher hardening, release gates, ADR, RTM and handbook
-  are all done and green. One correction matters a great deal: the plan instructed a REVOKE that would
-  have taken the public registration form offline.</p>
+  <div class="eyebrow">SPWS · COMPLETE · 23 July 2026 · all 13 steps · released to PROD</div>
+  <h1>Shipped. Every proven exposure is closed on CERT and PROD, and the generator that produced them is gone.</h1>
+  <p class="dek">Released as <code>63e3105</code>. The dispatcher answers 401 to the anon key where it
+  answered 400 this morning. Five corrections to the plan were needed along the way — one of them
+  would otherwise have taken the public registration form offline.</p>
   <div class="chips">
-    <span class="chip ok">steps 1–12 complete</span>
-    <span class="chip ok">698 pgTAP · 482 vitest · all gates PASS</span>
-    <span class="chip ok">signup CLOSED on CERT + PROD</span>
+    <span class="chip ok">all 13 steps done</span>
+    <span class="chip ok">CERT + PROD verified</span>
+    <span class="chip ok">dispatcher 400 → 401</span>
+    <span class="chip ok">signup CLOSED</span>
     <span class="chip warn">5 plan corrections</span>
-    <span class="chip bad">step 13 — release — needs your go</span>
-    <span class="chip bad">PAT rotation still owed</span>
+    <span class="chip">PAT rotation — skipped, deliberately</span>
   </div>
 </div>
 
@@ -139,8 +139,8 @@ footer{margin:60px 26px 0;padding-top:24px;border-top:2px solid var(--line);
 <tr><td class="d">10</td><td>ADR-083 + Appendix C + regenerate</td><td><span class="st s-ok">done</span> Gate 2: 81 files = 81 rows</td></tr>
 <tr><td class="d">11</td><td>RTM FR-132/133, NFR-14, <code>EXPECTED=132</code></td><td><span class="st s-ok">done</span> Gate E PASS</td></tr>
 <tr><td class="d">12</td><td>Handbook <code>security-posture.html</code> + 5 pages</td><td><span class="st s-ok">done</span> 23 pages, 0 ownership warnings</td></tr>
-<tr><td class="d">2</td><td>Rotate <code>GH_DISPATCH_PAT</code></td><td><span class="st s-bad">owed</span> operator-only; after the dispatcher ships</td></tr>
-<tr><td class="d">13</td><td>Commit, release, verify CERT + PROD</td><td><span class="st s-bad">needs your go</span> nothing committed yet</td></tr>
+<tr><td class="d">2</td><td>Rotate <code>GH_DISPATCH_PAT</code></td><td><span class="st s-neu">skipped</span> operator decision, and defensible — see §07</td></tr>
+<tr><td class="d">13</td><td>Commit, release, verify CERT + PROD</td><td><span class="st s-ok">DONE</span> <code>63e3105</code>; CI green, release green, both environments verified</td></tr>
 </tbody>
 </table>
 </div>
@@ -366,18 +366,97 @@ npm run check                  0 errors (14 pre-existing warnings, untouched fil
 postgrestools                  migration 0 errors; 20 lock warnings == the repo's own
                                20250301000002_rls_policies.sql baseline</code></pre>
 
-<h2><span class="num">06</span>What remains</h2>
+<h2><span class="num">06</span>Released — post-deploy verification</h2>
+
+<p class="lead">Commit <code>63e3105</code>. CI green; <code>release.yml</code> green through build →
+deploy-cert → deploy-prod, including both new <b class="k">Verify security posture</b> steps. The
+checks below were then re-run independently, because a gate passing is the pipeline's claim, not
+evidence.</p>
+
+<pre><code>                                              CERT   PROD    want
+anon READ  tbl_recompute_watermark             401    401    401/403
+anon READ  vw_fencer_aliases                   401    401    401/403
+anon WRITE tbl_recompute_queue                 401    401    401/403, NOT 23502
+anon DISPATCH (invalid workflow name)          401    401    401, NOT 400   ← the finding
+anon READ  vw_calendar (public ranklist)       200    200    200, MUST work</code></pre>
+
+<div class="tw">
+<table>
+<thead><tr><th>Posture check</th><th>CERT</th><th>PROD</th></tr></thead>
+<tbody>
+<tr><td>Tables with RLS disabled</td><td>6 → <b class="k">0</b></td><td>6 → <b class="k">0</b></td></tr>
+<tr><td>Tables where anon holds INSERT/UPDATE/DELETE/TRUNCATE</td><td>16 → <b class="k">0</b></td><td>16 → <b class="k">0</b></td></tr>
+<tr><td>anon SELECT on <code>vw_fencer_aliases</code></td><td>1 → <b class="k">0</b></td><td>1 → <b class="k">0</b></td></tr>
+<tr><td>Default privileges to anon/authenticated</td><td>24 → <b class="k">0</b></td><td>24 → <b class="k">0</b></td></tr>
+<tr><td>anon-EXECUTEable functions outside the allowlist</td><td>13 → <b class="k">none</b></td><td>13 → <b class="k">none</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>What must still work — confirmed on both</h3>
+<pre><code>fn_create_registration   anon-executable: TRUE   ← Correction 1, validated in production
+fn_match_registration_fencer                TRUE
+fn_ranking_ppw                              TRUE   ← public ranklist
+fn_merge_fencers         anon-executable: FALSE   ← Correction 2, the destructive one
+fn_enqueue_affected_events   SECURITY DEFINER: TRUE
+
+service_role  bypassrls TRUE · all 6 staging tables writable · all 6 pipeline RPCs executable
+queue depth   CERT 125 · PROD 46   (unchanged — no data disturbed)</code></pre>
+
+<div class="call warn">
+  <span class="lb">One check is grant-level, not behavioural — stated plainly</span>
+  The most recent recompute drains on both environments ran at <b class="k">11:57 and 11:21, before the
+  12:24 deploy</b>. So the pipeline's continued operation is proven at the level of grants and
+  <code>BYPASSRLS</code>, and behaviourally on LOCAL, but <b class="k">not yet by a real post-deploy
+  run</b>. The next scheduled drain closes that gap. It is expected to pass — <code>service_role</code>
+  bypasses RLS inherently and its grants are untouched — but it has not happened yet, and this document
+  will not claim otherwise.
+</div>
+
+<h2><span class="num">07</span>PAT rotation — skipped, with reasoning</h2>
+
+<p>The plan and handover both treated rotating <code>GH_DISPATCH_PAT</code> as required. On inspection
+that is weaker than it sounds, and the operator's decision to skip it is sound.</p>
+<p><b class="k">What was exposed was the PAT's capability, not its value.</b> The token appears exactly
+once in the function — the <code>Authorization</code> header of a server-side <code>fetch</code> to
+<code>api.github.com</code>. It is never in a response body: the success path returns only
+workflow/inputs/runs_url, and <code>gh_dispatch_failed</code> returns <i>GitHub's</i> response text.
+An attacker could make the PAT act; there was no path by which they could read it. Rotation defeats
+someone who holds a secret, and nobody could have obtained this one this way.</p>
+<p><b class="k">The question that actually mattered was whether the open door was used</b> — and that
+has been answered. All <b class="k">48</b> <code>workflow_dispatch</code> runs across all seven
+allowlisted workflows were triggered by <code>Fencer4Life</code>. Zero unrecognised dispatches,
+including both <code>promote-season.yml</code> runs (14 July, both failed). No evidence of
+exploitation.</p>
+<p>Rotation becomes worth doing if the PAT is ever pasted elsewhere, logged or shared, or on ordinary
+short-expiry hygiene — not because of this finding.</p>
+
+<h2><span class="num">08</span>What remains</h2>
 
 <ol>
-  <li><b class="k">Step 13 — the release.</b> Nothing is committed yet. This needs your go: it commits,
-  pushes, and travels LOCAL → CERT → PROD via <code>release.yml</code>, which applies the migration and
-  deploys the hardened dispatcher to both environments.</li>
-  <li><b class="k">Step 2 — rotate <code>GH_DISPATCH_PAT</code>.</b> Operator-only, and correctly
-  ordered <i>after</i> the release: rotating first would put a fresh PAT behind a door that is still
-  open. Treat the current one as exposed for as long as the unauthenticated function was deployed.</li>
-  <li><b class="k">Post-deploy verification</b> — the five checks per environment, most of which
-  <code>scripts/check-security-posture.sh</code> now performs automatically inside the deploy job.</li>
+  <li><b class="k">Watch the next scheduled recompute drain</b> on both environments — the one
+  behavioural check the release timing did not permit (§06).</li>
+  <li><b class="k">Confirm next week's Supabase advisory arrives clean.</b> It has reported
+  <code>rls_disabled_in_public</code> weekly since 6 May; that finding should now be absent. Its
+  disappearance is independent third-party confirmation.</li>
+  <li><b class="k">Follow-ups recorded in ADR-083</b>, deliberately not done here: <code>aal2</code>
+  checks inside the eight <code>SECURITY DEFINER</code> admin RPCs, and an explicit
+  <code>tbl_admin</code> allowlist replacing bare <code>authenticated</code> — the durable fix for
+  "<code>authenticated</code> means any account holder", currently bounded by closed signup.</li>
 </ol>
+
+<div class="call ok">
+  <span class="lb">Residual risks, on the record</span>
+  <b class="k">·</b> <code>authenticated</code> still means "any account". Bounded by closed signup;
+  <code>tbl_admin</code> is the durable fix.<br>
+  <b class="k">·</b> <code>supabase_admin</code>'s default privileges remain — unreachable from the
+  migration path, and <code>postgres</code> cannot alter them on hosted Supabase.<br>
+  <b class="k">·</b> The allowlist is duplicated between pgTAP 52.7 and
+  <code>check-security-posture.sh</code> and must be kept in sync; the test file is the source of
+  truth and the script points at it.<br>
+  <b class="k">·</b> Admins on live <code>aal1</code> sessions must re-authenticate before dispatch
+  buttons work. LOCAL cannot dispatch at all (MFA is skipped on localhost).
+</div>
 
 <div class="call warn">
   <span class="lb">Two consequences to expect after the release</span>
@@ -392,14 +471,14 @@ postgrestools                  migration 0 errors; 20 lock warnings == the repo'
 </div>
 
 <footer>
-Written 2026-07-23 after completing steps 1 and 3–12. <b>Nothing has been committed or pushed</b>, and
-no database or secret state outside LOCAL has been changed. <b>One remote configuration change was
-made, on explicit authorisation:</b> signup was closed on CERT and PROD
-(<code>disable_signup: False → True</code>). Everything else is local worktree changes: 8 files added
-(migration, pgTAP 52, <code>authorize.ts</code>, its vitest suite,
-<code>check-security-posture.sh</code>, ADR-083 <code>.md</code>/<code>.html</code>,
-<code>security-posture.html</code>) and 25 modified (12 workflows, spec, RTM, ADR index, 6 handbook
-pages, <code>check-spec-sync.sh</code>, <code>dispatch-workflow/index.ts</code>, generated twins).
+Written 2026-07-23, updated at completion. <b>Released to PROD as <code>63e3105</code></b> (40 files:
+13 added, 27 modified) via <code>release.yml</code>, after CI green. Remote state changed, all on
+explicit authorisation: signup closed on CERT and PROD
+(<code>disable_signup: False → True</code>); migration <code>20260723000001</code> applied to both;
+the hardened <code>dispatch-workflow</code> deployed to both. <code>GH_DISPATCH_PAT</code> was
+<b>not</b> rotated — operator decision, reasoning in §07. Unrelated worktree content was preserved and
+not staged: the MŚW Tbilisi and XLS plan documents, <code>doc/reports/</code>, and
+<code>python/tools/xls_ranking_compare.py</code>.
 Companion documents: <code>doc/plans/security-implementation-plan-2026-07-23.html</code> (the 13-step
 plan), <code>doc/plans/security-handover-2026-07-23.html</code> (the handover) and
 <code>doc/plans/security-case-cert-prod-2026-07-23.html</code> (the evidence base).
