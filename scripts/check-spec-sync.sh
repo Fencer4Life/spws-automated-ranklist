@@ -75,8 +75,10 @@ echo "--- Gate E: RTM FR count ---"
 
 if [ -f "$RTM" ]; then
   RTM_FR_COUNT=$({ grep -E '^\| FR-[0-9]' "$RTM" 2>/dev/null || true; } | wc -l | tr -d ' ')
-  # Expected: 130 FRs (FR-01..FR-131 minus FR-69 which was retired before assignment)
-  EXPECTED=130
+  # Expected: 132 FRs (FR-01..FR-133 minus FR-69 which was retired before assignment)
+  # 2026-07-23: +FR-132 (dispatcher authenticates its caller, requires aal2)
+  #             +FR-133 (deny-by-default grants; anon surface is an allowlist) — ADR-083
+  EXPECTED=132
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

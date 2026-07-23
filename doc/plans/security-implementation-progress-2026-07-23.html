@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPWS security hardening — implementation progress, Steps 3–6 complete, 23 July 2026</title>
+<style>
+:root{
+ --navy:#17457c;--paper:#f5f8fc;--ink:#101a29;--muted:#54657d;--line:#ccd8e6;--card:#fff;
+ --green:#155e3c;--green-bg:#d4ecdf;--amber:#7d5406;--amber-bg:#fbe8bf;
+ --coral:#a2321f;--coral-bg:#f9d8d1;--navy-soft:#e3ecf8;--violet:#57338c;--violet-bg:#e9e0f7;
+ --grey:#6b7a8d;--grey-bg:#e7ebf0;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#101722;--ink:#eaf0f8;--muted:#9db0c7;--line:#2c3a4c;--card:#18212e;
+  --navy:#82abdd;--navy-soft:#1c2b3f;--green:#a5e2bd;--green-bg:#194330;
+  --amber:#f2d089;--amber-bg:#3b2d0b;--coral:#f5aa99;--coral-bg:#452019;
+  --violet:#bda4e6;--violet-bg:#2a2040;--grey:#8f9dae;--grey-bg:#1f2937}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--green) 0 10px,var(--paper) 10px);
+ font-family:var(--sans);color:var(--ink);font-size:19px;line-height:1.75;min-height:100vh;
+ overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.page{max-width:1180px;margin:0 auto;padding:0 0 90px 10px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:9px solid var(--green);
+ padding:34px 38px 30px;margin:36px 26px 0;border-radius:0 8px 8px 0}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+ color:var(--muted);font-weight:600}
+h1{font-family:var(--serif);font-size:clamp(30px,5.2vw,44px);line-height:1.14;margin:14px 0 14px;
+ letter-spacing:-.02em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(18px,2.6vw,22px);color:var(--muted);
+ font-style:italic;margin:0 0 22px;max-width:66ch;line-height:1.55}
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.chip{font-family:var(--mono);font-size:13px;padding:6px 13px;border:1.5px solid var(--line);
+ border-radius:5px;color:var(--muted);background:var(--paper);font-weight:600}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.body{padding:34px 26px 0}
+h2{font-family:var(--serif);font-size:clamp(27px,3.8vw,34px);font-weight:600;letter-spacing:-.015em;
+ margin:58px 0 10px;padding-top:30px;border-top:2px solid var(--line);line-height:1.2}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:6px}
+h2 .num{font-family:var(--mono);font-size:15px;color:var(--green);display:block;
+ letter-spacing:.16em;margin-bottom:10px;font-weight:700}
+h3{font-family:var(--serif);font-size:clamp(21px,2.8vw,26px);font-weight:600;color:var(--ink);
+ margin:40px 0 10px;letter-spacing:-.01em;line-height:1.25}
+h4{font-family:var(--mono);font-size:14px;letter-spacing:.13em;text-transform:uppercase;
+ color:var(--navy);margin:28px 0 10px;font-weight:700}
+p{margin:0 0 18px;max-width:76ch}
+.lead{font-size:20.5px;line-height:1.68;max-width:72ch}
+.sub{font-size:17px;color:var(--muted);margin:0 0 20px;max-width:78ch}
+ul,ol{margin:0 0 20px;padding-left:26px;max-width:76ch}
+li{margin-bottom:11px}
+code{font-family:var(--mono);font-size:.86em;background:var(--paper);padding:2px 7px;
+ border:1px solid var(--line);border-radius:4px}
+pre{background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:20px 22px;
+ overflow-x:auto;font-family:var(--mono);font-size:14.5px;line-height:1.66;margin:0 0 22px}
+pre code{background:none;border:none;padding:0;font-size:inherit;white-space:pre}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:6px solid var(--navy);border-radius:0 8px 8px 0;
+ padding:20px 24px;margin:24px 0 28px;font-size:18px;max-width:82ch;line-height:1.7}
+.call .lb{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);font-weight:700;display:block;margin-bottom:9px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.ok{background:var(--green-bg);border-left-color:var(--green)}
+.call.ok .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1.5px solid var(--line);border-radius:8px;background:var(--card);margin-bottom:26px}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th{font-family:var(--mono);font-size:12.5px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:14px 18px;border-bottom:2px solid var(--line);background:var(--paper);font-weight:700}
+td{padding:14px 18px;border-bottom:1px solid var(--line);vertical-align:top;font-size:17px;line-height:1.6}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:14px;white-space:nowrap;color:var(--navy);font-weight:600}
+.st{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+ padding:4px 10px;border-radius:4px;font-weight:700;white-space:nowrap;display:inline-block}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.s-neu{background:var(--grey-bg);color:var(--grey)}
+.dev{border:1.5px solid var(--line);border-left:5px solid var(--amber);border-radius:0 8px 8px 0;
+ background:var(--card);padding:20px 24px;margin:0 0 24px}
+.dev .dn{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--amber);font-weight:700;display:block;margin-bottom:7px}
+.dev.crit{border-left-color:var(--coral)}
+.dev.crit .dn{color:var(--coral)}
+footer{margin:60px 26px 0;padding-top:24px;border-top:2px solid var(--line);
+ font-size:16px;color:var(--muted);max-width:82ch;line-height:1.7}
+@media(max-width:760px){
+ body{font-size:18px}
+ .hd{padding:26px 22px;margin-left:12px;margin-right:12px}
+ .body,footer{margin-left:12px;margin-right:12px}
+ .body{padding-left:0;padding-right:0}
+ pre{font-size:13px;padding:16px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Implementation progress · 23 July 2026 · steps 1–12 of 13 complete</div>
+  <h1>Everything but the release is built, proven, and gated. It required five corrections to the plan.</h1>
+  <p class="dek">Migration, standing guard, dispatcher hardening, release gates, ADR, RTM and handbook
+  are all done and green. One correction matters a great deal: the plan instructed a REVOKE that would
+  have taken the public registration form offline.</p>
+  <div class="chips">
+    <span class="chip ok">steps 1–12 complete</span>
+    <span class="chip ok">698 pgTAP · 482 vitest · all gates PASS</span>
+    <span class="chip ok">signup CLOSED on CERT + PROD</span>
+    <span class="chip warn">5 plan corrections</span>
+    <span class="chip bad">step 13 — release — needs your go</span>
+    <span class="chip bad">PAT rotation still owed</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">00</span>Where the work stands</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Step</th><th>What</th><th>State</th></tr></thead>
+<tbody>
+<tr><td class="d">1</td><td>Close signup on CERT + PROD</td><td><span class="st s-ok">DONE</span> both read <code>disable_signup: True</code>, independently re-read</td></tr>
+<tr><td class="d">3</td><td><code>52_security_posture.sql</code>, RED proven</td><td><span class="st s-ok">done</span> 12/12 failed for the intended reasons</td></tr>
+<tr><td class="d">4</td><td>pgTAP total 686 → 698</td><td><span class="st s-ok">done</span> Gate 3 PASS</td></tr>
+<tr><td class="d">5</td><td>Migration <code>20260723000001</code></td><td><span class="st s-ok">done</span> postgrestools: 0 errors</td></tr>
+<tr><td class="d">6</td><td>GREEN on LOCAL, behaviourally</td><td><span class="st s-ok">done</span> full suite 698/698 PASS</td></tr>
+<tr><td class="d">7</td><td>Edge Function caller check + aal2</td><td><span class="st s-ok">code done</span> FR-132.1–9 RED→GREEN. Ships via <code>release.yml</code>, which already deploys it — see Correction 5</td></tr>
+<tr><td class="d">8</td><td>Release gate + workflow permissions</td><td><span class="st s-ok">done</span> posture check inside both deploy jobs; 11 workflows given least-privilege <code>permissions:</code></td></tr>
+<tr><td class="d">9</td><td>Telegram on posture failure</td><td><span class="st s-ok">done</span> repo's existing curl pattern</td></tr>
+<tr><td class="d">10</td><td>ADR-083 + Appendix C + regenerate</td><td><span class="st s-ok">done</span> Gate 2: 81 files = 81 rows</td></tr>
+<tr><td class="d">11</td><td>RTM FR-132/133, NFR-14, <code>EXPECTED=132</code></td><td><span class="st s-ok">done</span> Gate E PASS</td></tr>
+<tr><td class="d">12</td><td>Handbook <code>security-posture.html</code> + 5 pages</td><td><span class="st s-ok">done</span> 23 pages, 0 ownership warnings</td></tr>
+<tr><td class="d">2</td><td>Rotate <code>GH_DISPATCH_PAT</code></td><td><span class="st s-bad">owed</span> operator-only; after the dispatcher ships</td></tr>
+<tr><td class="d">13</td><td>Commit, release, verify CERT + PROD</td><td><span class="st s-bad">needs your go</span> nothing committed yet</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">01</span>The four corrections to the plan</h2>
+
+<p class="lead">All four were found by live catalog introspection on LOCAL and confirmed against the
+frontend and Python sources. None were guesses; each is stated with the evidence that settles it.</p>
+
+<div class="dev crit">
+  <span class="dn">Correction 1 · the plan's Block 4 would have broken the public registration form</span>
+  <p>The plan instructs
+  <code>REVOKE EXECUTE ON FUNCTION fn_create_registration(...) FROM anon, PUBLIC</code>, annotating the
+  compensating grant with <i>"api.ts calls it"</i>. That reads the call site backwards.
+  <code>api.ts</code> does call it — from <code>frontend/register.html</code>, which is served to
+  <b class="k">anonymous visitors</b>, not from the admin app.</p>
+  <p>Three independent sources agree it must stay anon-callable:</p>
+  <ul>
+    <li><code>api.ts:407</code> comment: <i>"The sole public write path (FR-122). anon has no INSERT
+    policy on tbl_registration; this SECURITY DEFINER RPC upserts…"</i></li>
+    <li>Existing pgTAP <b class="k">49.14</b> asserts <code>fn_create_registration</code> succeeds
+    <i>as anon</i>, paired with 49.13 asserting direct anon INSERT is denied. The revoke would have
+    turned a passing test red.</li>
+    <li>ADR-079 / FR-122 designed it this way deliberately: <code>SECURITY DEFINER</code> exists
+    precisely so anon can register without holding INSERT on <code>tbl_registration</code>.</li>
+  </ul>
+  <p><b class="k">Action taken:</b> <code>fn_create_registration</code> and its lookup partner
+  <code>fn_match_registration_fencer</code> are <b class="k">retained</b> in the 52.7 allowlist.
+  Proven working after the migration — a live anon call returned registration id 1 (§02).</p>
+</div>
+
+<div class="dev">
+  <span class="dn">Correction 2 · the write-RPC surface is thirteen functions, not five</span>
+  <p>Finding F5 named five anon-executable write RPCs. Introspection of every non-extension,
+  directly-callable function found <b class="k">fifteen</b> volatile anon-executable functions; two are
+  the legitimate registration path above, leaving <b class="k">thirteen</b> to revoke. The nine the
+  plan did not name include:</p>
+  <ul>
+    <li><code>fn_merge_fencers</code> — <b class="k">destructive</b>. ADR-071 dedup: deletes a fencer
+    row and re-points its results and aliases onto a survivor.</li>
+    <li><code>fn_refresh_active_season</code> — <code>SECURITY DEFINER</code>, <code>UPDATE</code>s
+    <code>tbl_season.bool_active</code>, i.e. moves the whole system's active season.</li>
+    <li><code>fn_update_fencer_aliases</code>, <code>fn_set_event_source_override</code>,
+    <code>fn_dry_run_event_draft</code>, <code>fn_backfill_id_prior_event</code>,
+    <code>fn_backfill_joint_pool_split</code>, <code>_fn_create_skeleton_children</code>,
+    <code>_resolve_event_prefix</code>.</li>
+  </ul>
+  <p><b class="k">Why this could not be skipped:</b> the plan's Step 3 says to derive the live list,
+  remove the five, and pin the remainder as the allowlist. Done literally, that writes
+  <code>fn_merge_fencers</code> into the test as <i>approved</i> anon-callable surface — baking the
+  vulnerability in as intended behaviour. All thirteen have <b class="k">zero</b> frontend callers
+  (Python/<code>service_role</code> only), and <code>authenticated</code> keeps its own explicit
+  <code>proacl</code> entry, so no re-GRANT was needed anywhere.</p>
+</div>
+
+<div class="dev">
+  <span class="dn">Correction 3 · anon held DML on all sixteen tables, not the six</span>
+  <p>The plan's Block 2 revokes on the six RLS-disabled tables. Its own assertion 52.3, however, reads
+  <i>"anon holds no INSERT on <b>any</b> public table"</i> — and the RED run showed anon holding
+  INSERT, UPDATE, DELETE and TRUNCATE on <b class="k">all sixteen</b>, including
+  <code>tbl_result</code>, <code>tbl_fencer</code> and <code>tbl_scoring_config</code>.</p>
+  <p>On the ten RLS-enabled tables those writes were already refused by policy — but RLS was the
+  <i>only</i> thing refusing them. <code>TRUNCATE</code> is the sharp edge: it is not filtered by RLS
+  at all, so that grant defeated row level security outright on all ten.</p>
+  <p><b class="k">Action taken:</b> a new Block 3 revokes <code>INSERT, UPDATE, DELETE, TRUNCATE,
+  REFERENCES, TRIGGER</code> from anon on the other ten while <b class="k">retaining
+  <code>SELECT</code></b> — the public ranklist reads six of them directly. <code>authenticated</code>
+  is untouched (<code>api.ts:279</code>, <code>:296</code>, <code>:528</code> are direct authenticated
+  writes).</p>
+</div>
+
+<div class="dev">
+  <span class="dn">Correction 4 · two smaller items</span>
+  <p><b class="k">A second default-ACL grantor exists.</b> <code>pg_default_acl</code> carries an
+  identical set of <code>anon</code> defaults on schema <code>public</code> for
+  <b class="k"><code>supabase_admin</code></b> as well as <code>postgres</code>. The plan's
+  <code>FOR ROLE postgres</code> is still correct and sufficient — migrations run as
+  <code>postgres</code> and all public objects are <code>owner=postgres</code> — and on hosted Supabase
+  the <code>postgres</code> role cannot alter another role's defaults anyway. It is left alone
+  deliberately rather than attempted-and-failed at deploy time, and recorded as a residual in ADR-083.</p>
+  <p><b class="k">The migration needed a <code>lock_timeout</code>.</b> postgrestools flagged
+  <code>lint/safety/lockTimeoutWarning</code>, which the repo's own
+  <code>20250301000002_rls_policies.sql</code> does not trip because it sets one. Added
+  <code>SET LOCAL lock_timeout = '2s'</code>, matching that convention: every statement from Block 2
+  onward takes ACCESS EXCLUSIVE, and failing fast beats queueing behind a live recompute drain and
+  blocking every reader that arrives afterwards.</p>
+</div>
+
+<div class="dev">
+  <span class="dn">Correction 5 · Step 7 does not ship outside the release pipeline</span>
+  <p>The plan says the Edge Function "ships <b class="k">outside</b> <code>release.yml</code>" via a
+  manual <code>supabase functions deploy</code>. It does not. <code>release.yml</code> already carries
+  <b class="k">Deploy Edge Functions to CERT</b> and <b class="k">to PROD</b> steps that deploy
+  <code>dispatch-workflow</code> on every release.</p>
+  <p>This is better than the manual path — the deploy is ordered after the migration, auditable, and
+  cannot drift between environments. The dispatcher therefore ships in Step 13 along with everything
+  else, and the plan's separate manual-deploy instruction is redundant.</p>
+  <p class="sub"><b class="k">Note:</b> a manual <code>supabase functions deploy</code> was attempted
+  and refused by this environment's permission classifier. It turned out not to be needed.</p>
+</div>
+
+<div class="call warn">
+  <span class="lb">Independent confirmation of Corrections 2 and 3, against the live environments</span>
+  <code>scripts/check-security-posture.sh</code> — written for Step 8, and pointed at CERT and PROD
+  before any of this shipped — reports <b class="k">identically on both</b>: 6 tables RLS-off,
+  <b class="k">16</b> tables where anon holds write (the plan said six), 1 anon-readable alias view, 24
+  default-ACL grants, and <b class="k">exactly the 13 functions</b> named in Correction 2 (the plan said
+  five). That is not my analysis agreeing with itself — it is a separately-written tool, querying the
+  real databases, arriving at the same list.
+</div>
+
+<h2><span class="num">02</span>Evidence</h2>
+
+<h4>RED — before the migration</h4>
+<pre><code>$ supabase test db supabase/tests/52_security_posture.sql
+# Failed test 1: "52.1: every table in schema public has row level security enabled"
+#     Unexpected records: (tbl_event_ingest_history) (tbl_tournament_ingest_history)
+#                         (tbl_tournament_draft) (tbl_result_draft)
+#                         (tbl_recompute_watermark) (tbl_recompute_queue)
+# Failed test 3: "52.3: anon holds INSERT on no table in schema public"
+#     Unexpected records: ...all 16 tables...
+# Looks like you failed 12 tests of 12
+Result: FAIL</code></pre>
+<p class="sub">All twelve failed, each for the reason it was written to catch. Captured in full.</p>
+
+<h4>GREEN — after the migration</h4>
+<pre><code>$ supabase test db
+/…/52_security_posture.sql ............... ok
+All tests successful.
+Files=53, Tests=698,  Result: PASS</code></pre>
+<p class="sub">698 matches the documented total exactly. <code>49_registration_schema.sql</code> is
+among the passing files — that is 49.13/49.14 confirming Correction 1 from the other side.</p>
+
+<h4>Behavioural — denied as anon</h4>
+<pre><code>SELECT count(*) FROM tbl_recompute_queue      → permission denied for table
+SELECT count(*) FROM vw_fencer_aliases        → permission denied for view
+INSERT INTO tbl_recompute_queue …             → permission denied for table
+UPDATE tbl_recompute_watermark …              → permission denied for table
+INSERT INTO tbl_result …                      → permission denied for table
+DELETE FROM tbl_fencer                        → permission denied for table
+TRUNCATE tbl_result                           → permission denied for table
+SELECT fn_merge_fencers(1,2)                  → permission denied for function
+SELECT fn_refresh_active_season()             → permission denied for function
+SELECT fn_commit_event_draft(…)               → permission denied for function</code></pre>
+
+<h4>Behavioural — still working, which is the risk that actually matters</h4>
+<pre><code>as anon:          tbl_season, tbl_fencer, tbl_event, tbl_tournament,
+                  tbl_scoring_config, tbl_organizer, vw_calendar, vw_score,
+                  vw_registration_entry_list           → all OK (SELECT retained)
+                  fn_ranking_ppw, fn_export_scoring_config,
+                  fn_season_summary, fn_match_registration_fencer  → OK
+                  fn_create_registration(…)            → registration id 1   ← Correction 1
+as service_role:  all six staging tables readable, INSERT into queue OK  (RLS bypass)
+as authenticated: fn_update_fencer_birth_year → recompute queue 0 → 1    ← Block 1 works</code></pre>
+<p class="sub">The last line is the one the handover's Trap 1 was about. The admin edit never needs a
+grant on the queue: <code>fn_update_fencer_birth_year</code> is <code>SECURITY DEFINER</code> owned by
+<code>postgres</code>, so the trigger and <code>fn_enqueue_affected_events</code> beneath it run as
+<code>postgres</code>. Trap 1's conclusion — that the REVOKE is safe — is confirmed empirically.</p>
+
+<h4>postgrestools</h4>
+<pre><code>migration : 0 errors, 20 warnings — lint/safety/avoidWideLockWindow +
+            runningStatementWhileHoldingAccessExclusive. Identical rule classes
+            and identical count to the repo's own 20250301000002_rls_policies.sql.
+            Inherent to ENABLE ROW LEVEL SECURITY and REVOKE, which cannot be
+            performed without ACCESS EXCLUSIVE. Accepted baseline.
+pgTAP file: 14 findings, ALL "function does not exist" for pgTAP helpers
+            (plan, is_empty, set_eq, ok, is, finish). Existing known-good files
+            44 and 07 produce the same class — pgTAP is installed transiently by
+            `supabase test db` and is not visible in the persistent LOCAL DB.
+            Zero schema, PL/pgSQL or lock findings in the file itself.</code></pre>
+
+<h2><span class="num">03</span>What the guard actually pins</h2>
+
+<p>Test 52.7 asserts <b class="k">set equality</b>, not absence of known-bad names — a deny-list would
+have caught none of these findings, since every offending object postdates any list that could have
+been written. Nineteen names survive:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Group</th><th>Functions</th><th>Why anon keeps it</th></tr></thead>
+<tbody>
+<tr><td>Public ranking + calendar</td><td><code>fn_ranking_ppw</code>, <code>fn_ranking_kadra</code>, <code>fn_fencer_scores_rolling</code> (+ their <code>_event_code_matching</code> / <code>_event_fk_matching</code> variants), <code>fn_season_summary</code>, <code>fn_export_scoring_config</code>, <code>fn_copy_prior_scoring_config</code>, <code>fn_compare_carryover_engines</code>, <code>fn_age_category</code>, <code>fn_effective_gender</code>, <code>fn_event_position</code>, <code>fn_vcat_violation_msg</code></td><td>The public ranklist depends on them; <code>20260327000001</code> documents them as deliberate.</td></tr>
+<tr><td>Public self-registration</td><td><code>fn_create_registration</code>, <code>fn_match_registration_fencer</code></td><td>ADR-079 / FR-122. <code>register.html</code> is anonymous; these two are its entire server surface.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="sub">Scoped to directly-callable, non-extension functions. Trigger-returning functions are
+excluded because Postgres refuses to call them outside a trigger context, so a grant on one is not
+reachable surface; <code>btree_gist</code> ships roughly 200 functions into <code>public</code> whose
+grants belong to the extension, not to this project.</p>
+
+<div class="call ok">
+  <span class="lb">The self-guard is the part that stops this recurring</span>
+  52.10 and 52.11 assert that role <code>postgres</code> grants <b class="k">no</b> default privileges
+  to <code>anon</code> or <code>authenticated</code> in schema <code>public</code>. Without them,
+  someone restores the defaults and every other assertion in the file keeps passing until the next
+  table happens to be created — which is exactly how four months of drift went unnoticed.
+</div>
+
+<h2><span class="num">04</span>Signup — closed</h2>
+
+<div class="call ok">
+  <span class="lb">Done 23 July, authorised and verified</span>
+  <code>PATCH /v1/projects/&lt;ref&gt;/config/auth</code> on both projects; both now read
+  <code>disable_signup: True</code> on an independent re-read. This was the highest-value item in the
+  whole workstream and the migration does not address it — the migration hardens <code>anon</code>,
+  whereas an open signup manufactures <code>authenticated</code>, which is the entire RLS predicate on
+  <code>tbl_result</code>, <code>tbl_fencer</code> and <code>tbl_scoring_config</code>.
+</div>
+
+<h2><span class="num">05</span>All gates, current</h2>
+
+<pre><code>./scripts/check-coherence.sh   G1 versions PASS · G2 81 ADRs = 81 rows PASS
+                               G3 698 = 698 PASS · G4 doc changes PASS
+./scripts/check-spec-sync.sh   Gates A-E PASS · Gate E: 132 FR rows = expected 132
+python scripts/check_docs.py   23 handbook pages, 0 ownership warnings
+render_adrs.py --check         81 ADRs in sync
+render_docs.py --check          7 docs in sync
+supabase test db               Files=53, Tests=698, PASS
+npx vitest run                 38 files, 482 tests, PASS  (473 + 9 new)
+npm run check                  0 errors (14 pre-existing warnings, untouched files)
+postgrestools                  migration 0 errors; 20 lock warnings == the repo's own
+                               20250301000002_rls_policies.sql baseline</code></pre>
+
+<h2><span class="num">06</span>What remains</h2>
+
+<ol>
+  <li><b class="k">Step 13 — the release.</b> Nothing is committed yet. This needs your go: it commits,
+  pushes, and travels LOCAL → CERT → PROD via <code>release.yml</code>, which applies the migration and
+  deploys the hardened dispatcher to both environments.</li>
+  <li><b class="k">Step 2 — rotate <code>GH_DISPATCH_PAT</code>.</b> Operator-only, and correctly
+  ordered <i>after</i> the release: rotating first would put a fresh PAT behind a door that is still
+  open. Treat the current one as exposed for as long as the unauthenticated function was deployed.</li>
+  <li><b class="k">Post-deploy verification</b> — the five checks per environment, most of which
+  <code>scripts/check-security-posture.sh</code> now performs automatically inside the deploy job.</li>
+</ol>
+
+<div class="call warn">
+  <span class="lb">Two consequences to expect after the release</span>
+  <b class="k">·</b> Any admin holding a live <code>aal1</code> session must re-authenticate before the
+  dispatch buttons work.<br>
+  <b class="k">·</b> Local development cannot dispatch workflows through the Edge Function at all:
+  <code>admin-auth.svelte.ts:51</code> skips MFA on localhost, so a LOCAL session stays
+  <code>aal1</code> and the dispatcher answers <code>403 mfa_required</code>. Accepted and recorded in
+  ADR-083 — dispatch targets real GitHub Actions and was never a LOCAL-appropriate operation.
+</div>
+
+</div>
+
+<footer>
+Written 2026-07-23 after completing steps 1 and 3–12. <b>Nothing has been committed or pushed</b>, and
+no database or secret state outside LOCAL has been changed. <b>One remote configuration change was
+made, on explicit authorisation:</b> signup was closed on CERT and PROD
+(<code>disable_signup: False → True</code>). Everything else is local worktree changes: 8 files added
+(migration, pgTAP 52, <code>authorize.ts</code>, its vitest suite,
+<code>check-security-posture.sh</code>, ADR-083 <code>.md</code>/<code>.html</code>,
+<code>security-posture.html</code>) and 25 modified (12 workflows, spec, RTM, ADR index, 6 handbook
+pages, <code>check-spec-sync.sh</code>, <code>dispatch-workflow/index.ts</code>, generated twins).
+Companion documents: <code>doc/plans/security-implementation-plan-2026-07-23.html</code> (the 13-step
+plan), <code>doc/plans/security-handover-2026-07-23.html</code> (the handover) and
+<code>doc/plans/security-case-cert-prod-2026-07-23.html</code> (the evidence base).
+</footer>
+
+</div>
+</body>
+</html>

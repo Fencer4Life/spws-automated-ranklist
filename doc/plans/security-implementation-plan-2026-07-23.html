@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPWS security hardening — implementation plan (fixes A + B), 23 July 2026</title>
+<style>
+:root{
+ --navy:#17457c;--paper:#f5f8fc;--ink:#101a29;--muted:#54657d;--line:#ccd8e6;--card:#fff;
+ --green:#155e3c;--green-bg:#d4ecdf;--amber:#7d5406;--amber-bg:#fbe8bf;
+ --coral:#a2321f;--coral-bg:#f9d8d1;--navy-soft:#e3ecf8;--violet:#57338c;--violet-bg:#e9e0f7;
+ --grey:#6b7a8d;--grey-bg:#e7ebf0;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#101722;--ink:#eaf0f8;--muted:#9db0c7;--line:#2c3a4c;--card:#18212e;
+  --navy:#82abdd;--navy-soft:#1c2b3f;--green:#a5e2bd;--green-bg:#194330;
+  --amber:#f2d089;--amber-bg:#3b2d0b;--coral:#f5aa99;--coral-bg:#452019;
+  --violet:#bda4e6;--violet-bg:#2a2040;--grey:#8f9dae;--grey-bg:#1f2937}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--green) 0 10px,var(--paper) 10px);
+ font-family:var(--sans);color:var(--ink);font-size:19px;line-height:1.75;min-height:100vh;
+ overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.page{max-width:1180px;margin:0 auto;padding:0 0 90px 10px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:9px solid var(--green);
+ padding:34px 38px 30px;margin:36px 26px 0;border-radius:0 8px 8px 0}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+ color:var(--muted);font-weight:600}
+h1{font-family:var(--serif);font-size:clamp(30px,5.2vw,44px);line-height:1.14;margin:14px 0 14px;
+ letter-spacing:-.02em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(18px,2.6vw,22px);color:var(--muted);
+ font-style:italic;margin:0 0 22px;max-width:66ch;line-height:1.55}
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.chip{font-family:var(--mono);font-size:13px;padding:6px 13px;border:1.5px solid var(--line);
+ border-radius:5px;color:var(--muted);background:var(--paper);font-weight:600}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.body{padding:34px 26px 0}
+h2{font-family:var(--serif);font-size:clamp(27px,3.8vw,34px);font-weight:600;letter-spacing:-.015em;
+ margin:58px 0 10px;padding-top:30px;border-top:2px solid var(--line);line-height:1.2}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:6px}
+h2 .num{font-family:var(--mono);font-size:15px;color:var(--green);display:block;
+ letter-spacing:.16em;margin-bottom:10px;font-weight:700}
+h3{font-family:var(--serif);font-size:clamp(21px,2.8vw,26px);font-weight:600;color:var(--ink);
+ margin:40px 0 10px;letter-spacing:-.01em;line-height:1.25}
+h4{font-family:var(--mono);font-size:14px;letter-spacing:.13em;text-transform:uppercase;
+ color:var(--navy);margin:28px 0 10px;font-weight:700}
+p{margin:0 0 18px;max-width:76ch}
+.lead{font-size:20.5px;line-height:1.68;max-width:72ch}
+.sub{font-size:17px;color:var(--muted);margin:0 0 20px;max-width:78ch}
+ul,ol{margin:0 0 20px;padding-left:26px;max-width:76ch}
+li{margin-bottom:11px}
+code{font-family:var(--mono);font-size:.86em;background:var(--paper);padding:2px 7px;
+ border:1px solid var(--line);border-radius:4px}
+pre{background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:20px 22px;
+ overflow-x:auto;font-family:var(--mono);font-size:14.5px;line-height:1.66;margin:0 0 22px}
+pre code{background:none;border:none;padding:0;font-size:inherit;white-space:pre}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:6px solid var(--navy);border-radius:0 8px 8px 0;
+ padding:20px 24px;margin:24px 0 28px;font-size:18px;max-width:82ch;line-height:1.7}
+.call .lb{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);font-weight:700;display:block;margin-bottom:9px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.ok{background:var(--green-bg);border-left-color:var(--green)}
+.call.ok .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1.5px solid var(--line);border-radius:8px;background:var(--card);margin-bottom:26px}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th{font-family:var(--mono);font-size:12.5px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:14px 18px;border-bottom:2px solid var(--line);background:var(--paper);font-weight:700}
+td{padding:14px 18px;border-bottom:1px solid var(--line);vertical-align:top;font-size:17px;line-height:1.6}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:14px;white-space:nowrap;color:var(--navy);font-weight:600}
+.st{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+ padding:4px 10px;border-radius:4px;font-weight:700;white-space:nowrap;display:inline-block}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.s-neu{background:var(--grey-bg);color:var(--grey)}
+.step{border:1.5px solid var(--line);border-radius:9px;background:var(--card);margin:0 0 26px;overflow:hidden}
+.step>.sh{background:var(--paper);border-bottom:1.5px solid var(--line);padding:14px 22px;
+ display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.step>.sh .n{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--green);
+ background:var(--green-bg);padding:3px 11px;border-radius:5px}
+.step>.sh .t{font-family:var(--serif);font-size:20px;font-weight:600}
+.step>.sb{padding:20px 24px 4px}
+.step>.sb pre{margin-bottom:18px}
+.gate{background:var(--violet-bg);border-radius:6px;padding:14px 18px;margin:6px 0 18px;font-size:16.5px}
+.gate .lb{font-family:var(--mono);font-size:12px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--violet);font-weight:700;display:block;margin-bottom:6px}
+footer{margin:60px 26px 0;padding-top:24px;border-top:2px solid var(--line);
+ font-size:16px;color:var(--muted);max-width:82ch;line-height:1.7}
+@media(max-width:760px){
+ body{font-size:18px}
+ .hd{padding:26px 22px;margin-left:12px;margin-right:12px}
+ .body,footer{margin-left:12px;margin-right:12px}
+ .body{padding-left:0;padding-right:0}
+ pre{font-size:13px;padding:16px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · Implementation plan · 23 July 2026 · fixes A + B (C explicitly out of scope)</div>
+  <h1>Security hardening: lock what exists, then stop new objects being born open.</h1>
+  <p class="dek">Executable from a cold start in a new session. Every command, file path, assertion
+  count and gate is named. Follows the project's mandatory order: RED before GREEN, ADR before
+  migration merge, RTM and documentation in the same change, coherence gates before release.</p>
+  <div class="chips">
+    <span class="chip ok">scope: A + B</span>
+    <span class="chip bad">C — schema split — NOT in scope</span>
+    <span class="chip">ADR-083</span>
+    <span class="chip">pgTAP 52 · 686 → 698</span>
+    <span class="chip">RTM FR-132/133 · NFR-14</span>
+    <span class="chip warn">2 operator-only steps</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">00</span>Cold-start briefing — read this first</h2>
+
+<p class="lead">If you are a new session with no memory of the investigation, this section is enough
+to execute the rest safely.</p>
+
+<h3>What is wrong, in four sentences</h3>
+<ol>
+  <li>Six <code>public</code> tables have RLS disabled and <code>anon</code> holds full DML plus
+  <code>TRUNCATE</code>. Verified on CERT <b class="k">and</b> PROD; anon INSERT/UPDATE proven live
+  (error <code>23502</code>, a data error — not <code>42501</code> permission denied).</li>
+  <li><code>vw_fencer_aliases</code> is an owner-rights view (<code>owner=postgres</code>,
+  <code>reloptions=NONE</code>) serving <b class="k">365 fencer identities to <code>anon</code> on
+  PROD</b>, and RLS on the base tables will not stop it.</li>
+  <li>The <code>dispatch-workflow</code> Edge Function never checks its caller;
+  <code>verify_jwt=true</code> is satisfied by the public anon key, so anyone can dispatch
+  <code>promote-season.yml</code> or <code>ftl-seed.yml</code> against PROD.</li>
+  <li><b class="k">Root cause:</b> <code>ALTER DEFAULT PRIVILEGES</code> on <code>public</code> grants
+  <code>anon</code> everything on every new table, function and sequence. Nobody made a mistake —
+  the schema did it automatically.</li>
+</ol>
+
+<p>Full evidence, with re-runnable commands:
+<a href="doc/plans/security-case-cert-prod-2026-07-23.html">security-case-cert-prod-2026-07-23.html</a>.
+Read it if any claim below needs justifying.</p>
+
+<h3>Scope decision — A and B, not C</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Fix</th><th>What it is</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td class="d">A</td><td>Lock what exists: RLS + REVOKE on the six, grants on the alias view, REVOKE on five anon-callable RPCs, caller check in the Edge Function, close signup.</td><td><span class="st s-ok">in scope</span></td></tr>
+<tr><td class="d">B</td><td>Kill the generator: <code>ALTER DEFAULT PRIVILEGES FOR ROLE postgres … REVOKE</code> on tables, functions and sequences.</td><td><span class="st s-ok">in scope</span></td></tr>
+<tr><td class="d">C</td><td>Move pipeline tables to a separate schema.</td><td><span class="st s-bad">out of scope</span> Recorded in ADR-083 as a rejected-for-now alternative with reasoning; do not implement.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call warn">
+  <span class="lb">One scope refinement you must understand before starting</span>
+  Earlier drafts put <b class="k">aal2 (MFA) on the RLS write policies</b> inside fix A.
+  <b class="k">It is removed, deliberately.</b> Reason: all eight admin fencer-mutation RPCs are
+  <code>SECURITY DEFINER</code> and therefore <b class="k">bypass RLS entirely</b>, so an aal2 policy
+  predicate would protect only three direct-write call sites
+  (<code>api.ts:279</code>, <code>296</code>, <code>528</code> — season and event status) while adding
+  a lockout surface. Low value, non-zero risk. <b class="k">aal2 is applied where it does work: the
+  Edge Function (Step 7).</b> Applying aal2 inside the DEFINER RPCs is recorded in ADR-083 as a
+  follow-up.
+</div>
+
+<h3>Environment and conventions you will need</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Thing</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Next ADR number</td><td><code>083</code> (highest existing is 082)</td></tr>
+<tr><td>Next pgTAP file</td><td><code>supabase/tests/52_security_posture.sql</code></td></tr>
+<tr><td>Documented pgTAP total</td><td><code>686</code> → <code>698</code>, in <code>doc/Project Specification. SPWS Automated Ranklist System.md</code>, string <code>pgTAP total: N assertions</code></td></tr>
+<tr><td>RTM</td><td><code>doc/requirements-traceability-matrix.md</code> — 130 FR rows today; gate <code>scripts/check-spec-sync.sh:79</code> has <code>EXPECTED=130</code></td></tr>
+<tr><td>ADR registry</td><td>Appendix C of the specification (<code>## Appendix C — Architecture Decision Registry</code>)</td></tr>
+<tr><td>Doc model (ADR-082)</td><td><code>.md</code> is source, <code>.html</code> is generated. <b class="k">Never hand-edit generated HTML.</b> <code>scripts/render_adrs.py</code> for ADRs, <code>scripts/render_docs.py</code> for top-level docs. Commit both files.</td></tr>
+<tr><td>Handbook</td><td>Hand-maintained HTML under <code>doc/handbook/</code>, validated by <code>scripts/check_docs.py</code>, ownership in <code>doc/handbook/documentation-map.html</code></td></tr>
+<tr><td>Coherence gates</td><td><code>scripts/check-coherence.sh</code> — G1 versions, G2 ADR count == Appendix C, G3 pgTAP sum == documented total, G4 new migration needs doc change</td></tr>
+<tr><td>Mandatory after SQL edit</td><td><code>plpgsql-check</code> skill (postgrestools)</td></tr>
+<tr><td>Mandatory before commit</td><td><code>scripts/refresh-graph.sh</code></td></tr>
+<tr><td>LOCAL reset</td><td><code>./scripts/reset-dev.sh</code> — <b class="k">never bare <code>supabase db reset</code></b></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">01</span>Phase 0 — Operator actions (no code, do these first)</h2>
+
+<p class="lead">Two steps only you can perform. They close the highest-severity item and cost minutes.
+Do not let them queue behind the migration.</p>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 1</span><span class="t">Close signup on CERT and PROD</span></div>
+ <div class="sb">
+  <p>Supabase Dashboard → each project → <b class="k">Authentication → Sign In / Providers</b> →
+  disable <i>"Allow new users to sign up"</i>.</p>
+  <p>Confirmed current state: <code>disable_signup: False</code> on both. Confirmed safe: exactly
+  <b class="k">one</b> account exists per environment (created 2026-03-26), each with a verified TOTP
+  factor. Closing signup affects nobody.</p>
+  <p><b class="k">Verify:</b></p>
+<pre><code>export SUPABASE_ACCESS_TOKEN=...   # already in your .env
+for ref in sdomfjncmfydlkygzpgw ywgymtgcyturldazcpmw; do
+  curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+    "https://api.supabase.com/v1/projects/$ref/config/auth" \
+    | python3 -c 'import sys,json;print(json.load(sys.stdin)["disable_signup"])'
+done
+# expect: True   True</code></pre>
+  <div class="gate"><span class="lb">Gate</span>Both return <code>True</code> before continuing.</div>
+ </div>
+</div>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 2</span><span class="t">Rotate <code>GH_DISPATCH_PAT</code> — after Step 7 deploys</span></div>
+ <div class="sb">
+  <p>The PAT's capability has been publicly reachable for as long as the Edge Function has been
+  deployed. Treat it as exposed even though its value never left the server.</p>
+  <p><b class="k">Order matters:</b> rotate <i>after</i> the caller check ships (Step 7), otherwise a
+  fresh PAT sits behind an open door.</p>
+  <ol>
+    <li>GitHub → Settings → Developer settings → Fine-grained PAT → create new: this repo only,
+    <b class="k">Actions: read + write</b>, short expiry.</li>
+    <li><code>supabase secrets set GH_DISPATCH_PAT=&lt;new&gt; --project-ref &lt;cert-ref&gt;</code>,
+    then the same for prod.</li>
+    <li>Revoke the old PAT.</li>
+    <li>Review Actions run history for the seven allowlisted workflows for dispatches nobody
+    recognises — the cheapest available tamper signal.</li>
+  </ol>
+ </div>
+</div>
+
+<h2><span class="num">02</span>Phase 1 — RED: write the failing tests first</h2>
+
+<div class="call stop">
+  <span class="lb">Non-negotiable order</span>
+  The handbook's mandatory TDD rule: <i>"Define acceptance tests and IDs before implementation. Write
+  the test. Run it and prove RED for the intended reason."</i> Do not write the migration first and
+  back-fill the test. The RED run is evidence and must be captured for the completion report.
+</div>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 3</span><span class="t">Create <code>supabase/tests/52_security_posture.sql</code></span></div>
+ <div class="sb">
+  <p><b class="k">12 assertions</b>, deny-by-default. Follow the house format of
+  <code>44_cdc_recompute_dedup.sql</code>: header comment naming the ADR, <code>BEGIN;</code>,
+  <code>SELECT plan(12);</code>, assertions, <code>SELECT * FROM finish();</code>,
+  <code>ROLLBACK;</code>.</p>
+
+<pre><code>-- =============================================================================
+-- ADR-083 (server-enforced authorization; deny-by-default grants)
+--
+-- Tests 52.1–52.12: the standing security posture of the public schema.
+-- These are CATALOG assertions, not behavioural ones: they fail the moment a
+-- new table, view or function is created without explicit, deliberate grants.
+-- =============================================================================
+
+BEGIN;
+SELECT plan(12);
+
+-- 52.1  no table in public may have RLS disabled
+-- 52.2  the six pipeline tables specifically have RLS enabled
+-- 52.3  anon holds no INSERT on any public table
+-- 52.4  anon holds no UPDATE on any public table
+-- 52.5  anon holds no DELETE on any public table
+-- 52.6  anon holds no TRUNCATE on any public table
+-- 52.7  the set of anon-EXECUTEable functions EQUALS the documented allowlist
+-- 52.8  vw_fencer_aliases grants nothing to anon
+-- 52.9  vw_fencer_aliases grants only SELECT to authenticated
+-- 52.10 pg_default_acl (role postgres, schema public) grants nothing to anon
+-- 52.11 pg_default_acl (role postgres, schema public) grants nothing to authenticated
+-- 52.12 fn_enqueue_affected_events is SECURITY DEFINER
+
+SELECT * FROM finish();
+ROLLBACK;</code></pre>
+
+  <h4>Assertion 52.7 — the allowlist, and why equality</h4>
+  <p>A deny-list would have caught <b class="k">none</b> of the findings, because every offending
+  object was created after such a list would have been written. Assert set <i>equality</i> against
+  the intentionally-public read-only functions. From <code>20260327000001</code>, these stay
+  anon-callable:</p>
+<pre><code>fn_ranking_ppw, fn_ranking_kadra, fn_season_summary, fn_export_scoring_config,
+fn_fencer_scores_rolling, fn_age_category, and their _event_code_matching /
+_event_fk_matching variants, plus trigger functions and fn_compare_carryover_engines.
+
+-- Derive the exact live list on LOCAL before writing the test:
+docker exec supabase_db_SPWSranklist psql -U postgres -d postgres -At -c "
+SELECT p.proname FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+WHERE n.nspname='public' AND p.prokind='f'
+  AND has_function_privilege('anon', p.oid, 'EXECUTE') ORDER BY 1;"
+-- then REMOVE the five to be revoked, and pin the remainder as the allowlist.</code></pre>
+
+  <p class="sub"><b class="k">The five removed:</b> <code>fn_find_or_create_tournament</code>,
+  <code>fn_create_registration</code>, <code>fn_commit_event_draft</code>,
+  <code>fn_discard_event_draft</code>, <code>fn_enqueue_affected_events</code>.</p>
+
+  <h4>Assertion 52.10/52.11 — the self-guard</h4>
+  <p>These are the reason the whole exercise does not silently rot. Without them, someone restores
+  the default privileges and every other assertion keeps passing until the next table appears.</p>
+<pre><code>-- shape of the check
+SELECT is_empty($$
+  SELECT 1 FROM pg_default_acl d
+  JOIN pg_namespace n ON n.oid = d.defaclnamespace
+  WHERE n.nspname = 'public'
+    AND pg_get_userbyid(d.defaclrole) = 'postgres'
+    AND d.defaclacl::text LIKE '%anon=%'
+$$, '52.10: no default privileges granted to anon in public');</code></pre>
+
+  <div class="gate"><span class="lb">Gate — prove RED</span>
+<pre><code>supabase test db 2&gt;&amp;1 | tee /tmp/red-52.txt
+# EXPECT: 52.1–52.12 FAIL. Capture this output — it is completion-report evidence.
+# If any assertion PASSES now, it is wrong: re-read it before continuing.</code></pre>
+  </div>
+
+  <p><b class="k">Also run now:</b> the <code>plpgsql-check</code> skill (postgrestools) against the
+  new <code>.sql</code>. It is mandatory after any SQL edit in this repo, tests included.</p>
+ </div>
+</div>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 4</span><span class="t">Update the documented pgTAP total — or Gate 3 fails</span></div>
+ <div class="sb">
+  <p><code>scripts/check-coherence.sh</code> Gate 3 sums every <code>SELECT plan(N)</code> across
+  <code>supabase/tests/*.sql</code> and compares it to the string <code>pgTAP total: N assertions</code>
+  in the specification. Adding 12 assertions makes the sum <b class="k">698</b>.</p>
+<pre><code># doc/Project Specification. SPWS Automated Ranklist System.md  (~line 1497)
+- pgTAP total: 686 assertions (...)
++ pgTAP total: 698 assertions (+12 security posture (52 in `52_security_posture.sql`):
+  deny-by-default catalog assertions for ADR-083 ...)</code></pre>
+  <p>Follow the existing style in that line — it carries a parenthetical explaining each increment.
+  Say <i>why</i> the assertions exist, not just that they were added.</p>
+  <div class="gate"><span class="lb">Gate</span><code>./scripts/check-coherence.sh</code> — Gate 3
+  must report <code>PASS</code>. It will still be RED on the test run itself; that is correct at this
+  stage.</div>
+ </div>
+</div>
+
+<h2><span class="num">03</span>Phase 2 — GREEN: the migration</h2>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 5</span><span class="t">Write the migration (fix A + fix B in one file)</span></div>
+ <div class="sb">
+  <p>File: <code>supabase/migrations/20260723000001_adr083_deny_by_default_grants.sql</code>
+  (match the existing <code>YYYYMMDD######_snake_name.sql</code> convention). Comment header in the
+  house style of <code>20260327000001_revoke_write_functions.sql</code> — that migration fixed this
+  exact bug class in March 2026 and its comment explains the mechanism; mirror it.</p>
+
+  <h4>Block 1 — the DEFINER hardening (must come before the REVOKEs)</h4>
+<pre><code>-- fn_enqueue_affected_events runs from trg_fencer_change_enqueue on tbl_fencer.
+-- Today the admin path reaches it only via SECURITY DEFINER RPCs, so the queue
+-- INSERT succeeds. Making it DEFINER removes the latent trap: any future
+-- authenticated-context write to tbl_fencer would otherwise fail after the
+-- REVOKE below, surfacing as a confusing permission error on a fencer edit.
+-- Mirrors fn_audit_log, which is DEFINER on three triggers for the same reason.
+CREATE OR REPLACE FUNCTION fn_enqueue_affected_events(...)
+  ... SECURITY DEFINER SET search_path = public ...;</code></pre>
+  <p class="sub"><b class="k">Always pair <code>SECURITY DEFINER</code> with an explicit
+  <code>SET search_path</code></b> — a DEFINER function without it is a privilege-escalation vector.
+  postgrestools will flag this; do not suppress it.</p>
+
+  <h4>Block 2 — fix A: the six tables</h4>
+<pre><code>ALTER TABLE tbl_result_draft              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tbl_tournament_draft          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tbl_event_ingest_history      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tbl_tournament_ingest_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tbl_recompute_queue           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tbl_recompute_watermark       ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON tbl_result_draft, tbl_tournament_draft,
+              tbl_event_ingest_history, tbl_tournament_ingest_history,
+              tbl_recompute_queue, tbl_recompute_watermark
+  FROM anon, authenticated;</code></pre>
+  <p><b class="k">No policy is created.</b> RLS with zero policies denies everything, and
+  <code>service_role</code> bypasses RLS inherently — which is how the entire Python pipeline reaches
+  these tables. Verified: 11 workflows pass <code>SUPABASE_*_SERVICE_ROLE_KEY</code>, and no file
+  under <code>frontend/src</code> or <code>supabase/functions</code> references any of the six.</p>
+
+  <h4>Block 3 — fix A: the alias view</h4>
+<pre><code>REVOKE ALL ON vw_fencer_aliases FROM anon;
+REVOKE ALL ON vw_fencer_aliases FROM authenticated;
+GRANT SELECT ON vw_fencer_aliases TO authenticated;</code></pre>
+  <p>The view is owner-rights, so RLS beneath it does nothing — grants are the only control. The
+  admin UI reads aliases through <code>fn_list_fencer_aliases</code>, and <code>SELECT</code> for
+  <code>authenticated</code> preserves any direct read.</p>
+
+  <h4>Block 4 — fix A: the five RPCs</h4>
+<pre><code>REVOKE EXECUTE ON FUNCTION fn_find_or_create_tournament(...) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION fn_create_registration(...)        FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION fn_commit_event_draft(UUID)        FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION fn_discard_event_draft(UUID)       FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION fn_enqueue_affected_events(...)    FROM anon, PUBLIC;
+
+GRANT EXECUTE ON FUNCTION fn_create_registration(...) TO authenticated;   -- api.ts calls it</code></pre>
+  <div class="call warn">
+    <span class="lb">Two traps here</span>
+    <b class="k">1.</b> <code>REVOKE … FROM anon</code> alone is not enough — the grant comes from the
+    <code>PUBLIC</code> default (the bare <code>=X/postgres</code> ACL entry). You must revoke from
+    <code>PUBLIC</code> too.<br>
+    <b class="k">2.</b> Get the exact argument signatures from the catalog first; several of these are
+    overloaded. Use <code>\df+ fn_name</code> or query <code>pg_get_function_identity_arguments</code>.
+  </div>
+  <p class="sub"><b class="k">Do not touch</b> the intentionally-public read-only functions
+  (<code>fn_ranking_ppw</code>, <code>fn_ranking_kadra</code>, <code>fn_season_summary</code>,
+  <code>fn_export_scoring_config</code>, <code>fn_fencer_scores_rolling</code> and variants) — the
+  public ranking depends on them and <code>20260327000001</code> documents them as deliberate.</p>
+
+  <h4>Block 5 — fix B: kill the generator</h4>
+<pre><code>-- Root cause. Every object created in public was auto-granted to anon:
+--   pg_default_acl → {anon=arwdDxtm/postgres, authenticated=arwdDxtm/postgres, ...}
+-- Verified: all 23 public tables/views are owned by postgres, so targeting
+-- FOR ROLE postgres covers everything the migration path can create.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  REVOKE ALL     ON TABLES    FROM anon, authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  REVOKE EXECUTE ON FUNCTIONS FROM anon, authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  REVOKE ALL     ON SEQUENCES FROM anon, authenticated;</code></pre>
+  <p><b class="k">All three object types are required</b> — the live check found <code>anon</code> on
+  <code>r</code> (tables), <code>f</code> (functions) <i>and</i> <code>S</code> (sequences).
+  <code>FOR ROLE postgres</code> is what makes it bite; without the qualifier it targets the
+  executing role's defaults and silently does nothing useful.</p>
+  <p class="sub"><b class="k">Blast radius: zero on existing objects.</b>
+  <code>ALTER DEFAULT PRIVILEGES</code> affects only objects created after it runs. This is why B is
+  safe to ship alongside A.</p>
+
+  <div class="gate"><span class="lb">Gate</span>Run the <code>plpgsql-check</code> skill
+  (postgrestools) on the migration. Mandatory; the task is not done without it.</div>
+ </div>
+</div>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 6</span><span class="t">Prove GREEN on LOCAL — by behaviour, not by catalog</span></div>
+ <div class="sb">
+<pre><code>./scripts/reset-dev.sh          # NEVER a bare `supabase db reset`
+supabase test db                # 52.1–52.12 must now PASS; full suite must stay green</code></pre>
+  <p><b class="k">Then prove it behaviourally.</b> The catalog is what said everything was fine for
+  eleven weeks — do not trust it alone:</p>
+<pre><code>docker exec supabase_db_SPWSranklist psql -U postgres -d postgres -c "
+BEGIN;
+SET LOCAL ROLE anon;
+-- each of these MUST raise 'permission denied':
+SELECT count(*) FROM tbl_recompute_queue;
+SELECT count(*) FROM vw_fencer_aliases;
+INSERT INTO tbl_recompute_queue (id_event) VALUES (1);
+UPDATE tbl_recompute_watermark SET ts_last_master_change = now();
+ROLLBACK;"</code></pre>
+  <p>And prove the pipeline still works, which is the risk that actually matters:</p>
+<pre><code># service_role must be unaffected — run a real ingestion or recompute drain on LOCAL
+python -m python.pipeline.recompute.worker      # or the project's usual LOCAL drain entrypoint
+# plus: exercise an admin fencer birth-year edit through the UI/RPC path and
+# confirm the recompute queue still receives a row.</code></pre>
+  <div class="gate"><span class="lb">Gate</span>All four anon statements denied; full pgTAP suite
+  green; pipeline and fencer-edit paths verified working.</div>
+ </div>
+</div>
+
+<h2><span class="num">04</span>Phase 3 — the Edge Function</h2>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 7</span><span class="t">Add a caller check to <code>dispatch-workflow</code></span></div>
+ <div class="sb">
+  <p>File: <code>supabase/functions/dispatch-workflow/index.ts</code>. Keep
+  <code>ALLOWED_WORKFLOWS</code> exactly as-is — that part is sound. Add, before any dispatch:</p>
+  <ol>
+    <li>Read the <code>Authorization</code> bearer token; reject when absent.</li>
+    <li><code>createClient(SUPABASE_URL, SUPABASE_ANON_KEY).auth.getUser(token)</code>; reject when
+    the user cannot be resolved.</li>
+    <li>Reject when the resolved role is not <code>authenticated</code> — <b class="k">this is the
+    line that closes the hole</b>, because the anon key resolves to <code>role: "anon"</code>.</li>
+    <li>Require <code>aal2</code> from the JWT's <code>aal</code> claim. Safe: both admins have
+    verified TOTP factors (checked in <code>auth.mfa_factors</code>).</li>
+    <li>Replace <code>Access-Control-Allow-Origin: "*"</code> with an origin read from an env secret
+    so CERT and PROD differ without a code change.</li>
+  </ol>
+  <p><b class="k">Update the header comment.</b> It currently claims "Authenticated callers POST…",
+  which the code did not implement — that stale comment is part of how this survived review.</p>
+
+  <h4>Tests (write these before the implementation too)</h4>
+<pre><code>anon key            → 401
+valid aal1 session  → 403
+valid aal2 admin    → 200 (or 400 for a non-allowlisted workflow name)
+no key              → 401 (platform, unchanged)</code></pre>
+  <p>Place alongside the existing frontend tests; run <code>npm run check</code> and the
+  <code>svelte-check</code> skill for the TypeScript.</p>
+
+  <div class="gate"><span class="lb">Gate — the definitive check, safe by construction</span>
+<pre><code># Uses an INVALID workflow name, so nothing can ever be dispatched.
+curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+  "https://&lt;ref&gt;.supabase.co/functions/v1/dispatch-workflow" \
+  -H "apikey: &lt;anon key&gt;" -H "Content-Type: application/json" \
+  -d '{"workflow":"THIS-DOES-NOT-EXIST.yml"}'
+
+# BEFORE fix: 400  (invalid_workflow — proves the caller was never checked)
+# AFTER  fix: 401  (rejected before reaching allowlist logic)   ← required</code></pre>
+  </div>
+  <p>Deploy with <code>supabase functions deploy dispatch-workflow --project-ref &lt;ref&gt;</code> for
+  each environment. This ships <b class="k">outside</b> <code>release.yml</code>. Then perform Step 2
+  (PAT rotation).</p>
+ </div>
+</div>
+
+<h2><span class="num">05</span>Phase 4 — close the gate bypass</h2>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 8</span><span class="t">Make the pgTAP guard un-routable</span></div>
+ <div class="sb">
+  <p><code>.github/workflows/release.yml</code> currently reads:</p>
+<pre><code>if: ${{ github.event_name == 'workflow_dispatch'
+        || github.event.workflow_run.conclusion == 'success' }}</code></pre>
+  <p>The first clause is unconditional, so <b class="k">a manually dispatched release skips CI
+  entirely</b> — pgTAP included. Without fixing this, Step 3's guard is optional in practice.</p>
+  <p><b class="k">Recommended:</b> re-run the posture test inside the deploy job so it cannot be
+  routed around, rather than relying on the trigger condition. A typed confirmation input is the
+  weaker alternative — it gates a human, not the pipeline.</p>
+  <p>Separately, add least-privilege <code>permissions:</code> blocks to the <b class="k">11</b>
+  workflows lacking them (<code>ci.yml</code>, <code>evf-parity-sweep.yml</code>,
+  <code>evf-sync.yml</code>, <code>ingest-event.yml</code>, <code>ingest.yml</code>,
+  <code>phase5-event-runner.yml</code>, <code>populate-urls.yml</code>,
+  <code>recompute-drain-prod.yml</code>, <code>recompute-drain.yml</code>,
+  <code>regen-report.yml</code>, <code>scrape-tournament.yml</code>), copying the pattern already in
+  <code>release.yml</code>.</p>
+ </div>
+</div>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 9</span><span class="t">Telegram alert on posture failure</span></div>
+ <div class="sb">
+  <p>The advisory fired weekly from 6 May and every message but the last went unread. Detection
+  already existed; <b class="k">delivery</b> failed. Wire posture-test failure to the existing
+  <code>TelegramNotifier</code> in <code>python/pipeline/notifications.py</code> — the channel this
+  project actually reacts to. Do not add a mailbox rule.</p>
+ </div>
+</div>
+
+<h2><span class="num">06</span>Phase 5 — ADR, RTM and documentation</h2>
+
+<div class="call stop">
+  <span class="lb">This phase is not optional paperwork</span>
+  Coherence Gate 2 fails if the ADR count does not match Appendix C. Gate 4 warns when a migration
+  ships without a documentation change. <code>check-spec-sync.sh</code> hard-fails if the RTM FR row
+  count drifts from its <code>EXPECTED</code>. The build enforces this phase.
+</div>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 10</span><span class="t">ADR-083 (Markdown source, generated HTML)</span></div>
+ <div class="sb">
+  <p>Create <code>doc/adr/083-server-enforced-authorization.md</code>. Follow the structure of
+  <code>doc/adr/016-supabase-auth-totp-mfa.md</code> — that ADR is this one's direct ancestor.</p>
+  <p><b class="k">Title:</b> "Server-enforced authorization: deny-by-default grants and a standing
+  posture gate".<br>
+  <b class="k">Status:</b> Accepted. <b class="k">Date:</b> 2026-07-23.
+  <b class="k">Relates to:</b> ADR-016 (which this amends, not supersedes), ADR-004, ADR-041
+  (edge-function dispatch), ADR-072 (the recompute queue), ADR-078 (GDPR — anon could read fencer
+  identities).</p>
+  <p><b class="k">Context</b> must state the finding plainly: the March 2026 REVOKE pattern
+  (<code>20260327000001</code>) was never carried into the May/June work, because
+  <code>ALTER DEFAULT PRIVILEGES</code> grants <code>anon</code> everything on every new object.
+  Nobody made a mistake — which is exactly why a convention could not have caught it.</p>
+  <p><b class="k">Decision:</b> (1) pipeline/staging objects are service-role only; (2) new objects
+  are ungranted by default; (3) the anon-executable surface is an explicit allowlist enforced by
+  pgTAP; (4) the workflow dispatcher authenticates its caller and requires aal2.</p>
+  <p><b class="k">Alternatives considered</b> — record all of these with reasoning, because they were
+  genuinely evaluated:</p>
+  <ul>
+    <li><b class="k">Option C, separate <code>pipeline</code> schema.</b> Rejected for now: the
+    pipeline is a PostgREST client (<code>db_connector.py:683</code> uses <code>create_client</code>;
+    <code>draft_store.py:13</code> forbids psycopg at runtime), so the schema would have to be exposed
+    to PostgREST anyway and security would fall back to grants — the same place Option B already
+    puts it, for a fraction of the risk.</li>
+    <li><b class="k">aal2 on RLS write policies.</b> Rejected: the eight admin fencer RPCs are
+    <code>SECURITY DEFINER</code> and bypass RLS, so it would protect three low-risk direct-write call
+    sites while adding a lockout surface. <b class="k">Follow-up:</b> aal2 checks inside the DEFINER
+    RPCs.</li>
+    <li><b class="k">Explicit <code>tbl_admin</code> allowlist</b> replacing bare
+    <code>authenticated</code>. Deferred: strictly better, but rewrites all 17 policies and belongs in
+    its own change, not an incident response. Record as a dated follow-up.</li>
+    <li><b class="k">Recreating <code>vw_fencer_aliases</code> with <code>security_invoker</code>.</b>
+    Deferred: correct, but couples the admin UI to the draft tables' RLS and would force an otherwise
+    unnecessary <code>authenticated</code> read policy onto all six.</li>
+    <li><b class="k">Deny-list instead of allowlist</b> in the pgTAP guard. Rejected: would have
+    caught none of these findings.</li>
+  </ul>
+  <p><b class="k">Then, in order:</b></p>
+<pre><code>python scripts/render_adrs.py                    # generates 083-*.html + adr/index.html
+# add the ADR-083 row to Appendix C of the specification .md
+python scripts/render_docs.py                    # regenerates spec + RTM HTML twins
+./scripts/check-coherence.sh                     # Gate 2 must PASS</code></pre>
+  <div class="gate"><span class="lb">Gate</span><b class="k">Never hand-edit the generated
+  <code>.html</code></b> (ADR-082). Edit the <code>.md</code>, regenerate, commit both. CI's "Validate
+  generated ADR HTML" / "Validate generated Docs HTML" steps run <code>--check</code> and fail on any
+  stale twin.</div>
+ </div>
+</div>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 11</span><span class="t">RTM rows — and the gate they trip</span></div>
+ <div class="sb">
+  <p>Add to <code>doc/requirements-traceability-matrix.md</code>, matching the existing pipe-table
+  format <code>| FR-NN | Description | UC | Tests | Status |</code>:</p>
+<pre><code>| FR-132 | Workflow dispatch endpoint authenticates the caller and requires MFA (aal2) | — | edge fn tests | Covered |
+| FR-133 | Public-schema objects grant no access to anon by default; anon surface is an explicit allowlist | — | 52.1–52.12 | Covered |
+| NFR-14 | Security posture is machine-verified on every CI run and blocks release on regression | — | 52.1–52.12 | Covered |</code></pre>
+  <div class="call warn">
+    <span class="lb">Do not miss this</span>
+    <code>scripts/check-spec-sync.sh:79</code> hard-codes <code>EXPECTED=130</code> and counts rows
+    matching <code>^\| FR-[0-9]</code>. Adding two FR rows makes it <b class="k">132</b>. <b class="k">You
+    must bump <code>EXPECTED</code> to 132 in that script</b> or the gate fails. The NFR row does not
+    affect the count. The handbook states the rule directly: <i>"If requirements or test IDs change,
+    update the RTM, the explicit roster sentinel in <code>scripts/check-spec-sync.sh</code> and
+    documented suite totals in the same change."</i>
+  </div>
+ </div>
+</div>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 12</span><span class="t">Handbook — the missing owner</span></div>
+ <div class="sb">
+  <p>There is currently <b class="k">no security page anywhere</b> in <code>doc/handbook/</code> or
+  <code>doc/governance/</code>, and <code>documentation-map.html</code> assigns the topic to nobody.
+  That absence is why four months of drift had no home to be recorded in.</p>
+  <p><b class="k">Create</b> <code>doc/handbook/reference/security-posture.html</code>, hand-authored
+  HTML from <code>doc/handbook/PAGE_TEMPLATE.html</code>, present tense, describing the system as it
+  is <i>after</i> this change:</p>
+  <ul>
+    <li>The three roles and what each may reach.</li>
+    <li>Deny-by-default grants; how to add a new public-facing table correctly.</li>
+    <li>The anon-executable allowlist and where it is enforced (test 52.7).</li>
+    <li>The dispatcher's authorization contract.</li>
+    <li>Change triggers, per the documentation standard.</li>
+  </ul>
+  <p><b class="k">Register it</b> in <code>doc/handbook/documentation-map.html</code> with ownership
+  and change triggers. <b class="k">Update</b> the pages whose behaviour changed:
+  <code>doc/handbook/subsystems/ingestion.html</code>,
+  <code>doc/handbook/subsystems/identity-and-recompute.html</code>,
+  <code>doc/handbook/subsystems/frontend-and-automation.html</code>,
+  <code>doc/handbook/reference/test-and-traceability.html</code> (new suite + totals) and
+  <code>doc/handbook/reference/workflow-catalog.html</code> (dispatcher contract).</p>
+  <div class="gate"><span class="lb">Gate</span><code>python scripts/check_docs.py</code> — metadata,
+  links, map coverage and ownership must all validate.</div>
+ </div>
+</div>
+
+<h2><span class="num">07</span>Phase 6 — ship and verify</h2>
+
+<div class="step">
+ <div class="sh"><span class="n">STEP 13</span><span class="t">Commit, release, verify on CERT then PROD</span></div>
+ <div class="sb">
+<pre><code>./scripts/refresh-graph.sh        # mandatory before every commit
+./scripts/check-coherence.sh      # G1–G4
+./scripts/check-spec-sync.sh      # FR roster == 132
+python scripts/check_docs.py
+supabase test db                  # full suite green, 698 assertions
+# Python + frontend suites if touched: ruff, basedpyright, pytest, npm run check</code></pre>
+  <p><b class="k">Stage explicit paths only</b> — the worktree carries unrelated untracked plans and
+  <code>doc/reports/</code>. Never <code>git add -A</code>.</p>
+  <p>Release travels LOCAL → CERT → PROD via <code>release.yml</code>. <b class="k">The task is not
+  complete until the workflow is green and PROD is verified.</b></p>
+
+  <h4>Post-deploy verification, per environment</h4>
+<pre><code># 1. anon can no longer read  → expect 401/403, NOT 200
+curl -s -o /dev/null -w "%{http_code}\n" \
+  "https://&lt;ref&gt;.supabase.co/rest/v1/tbl_recompute_watermark?select=*" -H "apikey: &lt;anon&gt;"
+curl -s -o /dev/null -w "%{http_code}\n" \
+  "https://&lt;ref&gt;.supabase.co/rest/v1/vw_fencer_aliases?select=id_fencer" -H "apikey: &lt;anon&gt;"
+
+# 2. anon can no longer write → expect 401/403, NOT 23502
+curl -s -X POST "https://&lt;ref&gt;.supabase.co/rest/v1/tbl_recompute_queue" \
+  -H "apikey: &lt;anon&gt;" -H "Content-Type: application/json" -d '{}'
+
+# 3. dispatcher rejects the anon key → expect 401, NOT 400
+curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+  "https://&lt;ref&gt;.supabase.co/functions/v1/dispatch-workflow" \
+  -H "apikey: &lt;anon&gt;" -H "Content-Type: application/json" \
+  -d '{"workflow":"THIS-DOES-NOT-EXIST.yml"}'
+
+# 4. the pipeline still works — watch the next scheduled
+#    "Recompute Self-Heal Drain (PROD)" run succeed, and confirm
+#    tbl_recompute_queue still drains.
+
+# 5. Supabase advisor reports zero rls_disabled_in_public findings.
+#    Confirm next week's advisory e-mail arrives clean.</code></pre>
+  <div class="gate"><span class="lb">Definition of done</span>
+  All five checks pass on <b class="k">both</b> CERT and PROD; <code>release.yml</code> green; advisor
+  clear; <b class="k">completion report</b> written per the handbook — exact commands, outcomes,
+  anything skipped, and remaining risks. Never report "tests pass" when only a narrow test ran.</div>
+ </div>
+</div>
+
+<h2><span class="num">08</span>Rollback</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>If this breaks…</th><th>Symptom</th><th>Undo</th></tr></thead>
+<tbody>
+<tr><td class="d">Pipeline ingestion</td><td>Workflow fails with <code>permission denied</code> on a draft/queue table</td><td>Should be impossible — <code>service_role</code> bypasses RLS. If seen, the workflow is using the wrong key. Check <code>SUPABASE_KEY</code>, do not revert the migration.</td></tr>
+<tr><td class="d">Admin fencer edit</td><td>Permission error on birth-year change</td><td>Confirms an <code>authenticated</code>-context write exists that the analysis missed. <code>GRANT INSERT ON tbl_recompute_queue TO authenticated</code> as an immediate unblock; the Block-1 DEFINER change is the durable fix.</td></tr>
+<tr><td class="d">Admin UI alias screen</td><td>Aliases fail to load</td><td><code>GRANT SELECT ON vw_fencer_aliases TO authenticated</code> — already in Block 3; verify it applied.</td></tr>
+<tr><td class="d">Dispatcher buttons</td><td>All dispatch actions 401 for a signed-in admin</td><td>Session is aal1. Complete TOTP. If systemic, drop the aal2 clause and keep the role check — the role check alone still closes the hole.</td></tr>
+<tr><td class="d">A future migration</td><td>New table unreachable from the frontend</td><td><b class="k">Working as designed</b> (fix B). Add the explicit <code>GRANT SELECT … TO anon</code>.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="sub">A full migration revert is available via a compensating migration, but note that
+reverting Block 5 restores the generator. Prefer targeted <code>GRANT</code>s over reverting.</p>
+
+<h2><span class="num">09</span>Execution order at a glance</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>#</th><th>Step</th><th>Phase</th><th>Release?</th></tr></thead>
+<tbody>
+<tr><td class="d">1</td><td>Close signup (operator)</td><td>0</td><td><span class="st s-ok">no</span></td></tr>
+<tr><td class="d">3</td><td>Write <code>52_security_posture.sql</code>, prove RED</td><td>1</td><td><span class="st s-ok">no</span></td></tr>
+<tr><td class="d">4</td><td>Bump pgTAP total 686 → 698</td><td>1</td><td><span class="st s-ok">no</span></td></tr>
+<tr><td class="d">5</td><td>Migration: DEFINER + fix A + fix B</td><td>2</td><td><span class="st s-bad">yes</span></td></tr>
+<tr><td class="d">6</td><td>Prove GREEN behaviourally on LOCAL</td><td>2</td><td><span class="st s-ok">no</span></td></tr>
+<tr><td class="d">7</td><td>Edge Function caller check + deploy</td><td>3</td><td><span class="st s-wip">functions deploy</span></td></tr>
+<tr><td class="d">2</td><td>Rotate PAT (after step 7)</td><td>0</td><td><span class="st s-ok">no</span></td></tr>
+<tr><td class="d">8</td><td>Close release gate bypass; workflow permissions</td><td>4</td><td><span class="st s-ok">no</span></td></tr>
+<tr><td class="d">9</td><td>Telegram alert</td><td>4</td><td>with 5</td></tr>
+<tr><td class="d">10</td><td>ADR-083 + Appendix C + regenerate</td><td>5</td><td>with 5</td></tr>
+<tr><td class="d">11</td><td>RTM rows + bump <code>EXPECTED=132</code></td><td>5</td><td>with 5</td></tr>
+<tr><td class="d">12</td><td>Handbook security page + coherence pass</td><td>5</td><td>with 5</td></tr>
+<tr><td class="d">13</td><td>Gates, release, verify CERT + PROD</td><td>6</td><td><span class="st s-bad">yes</span></td></tr>
+</tbody>
+</table>
+</div>
+
+</div>
+
+<footer>
+Written 2026-07-23. Scope: fixes A and B; Option C explicitly excluded and recorded in ADR-083 as a
+rejected-for-now alternative. Evidence base:
+<code>doc/plans/security-case-cert-prod-2026-07-23.html</code>, whose findings were verified against
+live CERT and PROD. All conventions in §00 were read from the repository
+(<code>scripts/check-coherence.sh</code>, <code>scripts/check-spec-sync.sh</code>,
+<code>doc/handbook/reference/test-and-traceability.html</code>, ADR-082) rather than assumed. No
+implementation has been performed; this document is a plan.
+</footer>
+
+</div>
+</body>
+</html>

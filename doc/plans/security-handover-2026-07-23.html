@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HANDOVER — SPWS security hardening, ready to implement, 23 July 2026</title>
+<style>
+:root{
+ --navy:#17457c;--paper:#f5f8fc;--ink:#101a29;--muted:#54657d;--line:#ccd8e6;--card:#fff;
+ --green:#155e3c;--green-bg:#d4ecdf;--amber:#7d5406;--amber-bg:#fbe8bf;
+ --coral:#a2321f;--coral-bg:#f9d8d1;--navy-soft:#e3ecf8;--violet:#57338c;--violet-bg:#e9e0f7;
+ --grey:#6b7a8d;--grey-bg:#e7ebf0;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#101722;--ink:#eaf0f8;--muted:#9db0c7;--line:#2c3a4c;--card:#18212e;
+  --navy:#82abdd;--navy-soft:#1c2b3f;--green:#a5e2bd;--green-bg:#194330;
+  --amber:#f2d089;--amber-bg:#3b2d0b;--coral:#f5aa99;--coral-bg:#452019;
+  --violet:#bda4e6;--violet-bg:#2a2040;--grey:#8f9dae;--grey-bg:#1f2937}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(90deg,var(--violet) 0 10px,var(--paper) 10px);
+ font-family:var(--sans);color:var(--ink);font-size:19px;line-height:1.75;min-height:100vh;
+ overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.page{max-width:1160px;margin:0 auto;padding:0 0 90px 10px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:9px solid var(--violet);
+ padding:34px 38px 30px;margin:36px 26px 0;border-radius:0 8px 8px 0}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+ color:var(--muted);font-weight:600}
+h1{font-family:var(--serif);font-size:clamp(30px,5.2vw,44px);line-height:1.14;margin:14px 0 14px;
+ letter-spacing:-.02em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(18px,2.6vw,22px);color:var(--muted);
+ font-style:italic;margin:0 0 22px;max-width:66ch;line-height:1.55}
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.chip{font-family:var(--mono);font-size:13px;padding:6px 13px;border:1.5px solid var(--line);
+ border-radius:5px;color:var(--muted);background:var(--paper);font-weight:600}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.body{padding:34px 26px 0}
+h2{font-family:var(--serif);font-size:clamp(27px,3.8vw,34px);font-weight:600;letter-spacing:-.015em;
+ margin:56px 0 10px;padding-top:28px;border-top:2px solid var(--line);line-height:1.2}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:6px}
+h2 .num{font-family:var(--mono);font-size:15px;color:var(--violet);display:block;
+ letter-spacing:.16em;margin-bottom:10px;font-weight:700}
+h3{font-family:var(--serif);font-size:clamp(21px,2.8vw,26px);font-weight:600;color:var(--ink);
+ margin:38px 0 10px;letter-spacing:-.01em;line-height:1.25}
+p{margin:0 0 18px;max-width:76ch}
+.lead{font-size:20.5px;line-height:1.68;max-width:72ch}
+.sub{font-size:17px;color:var(--muted);margin:0 0 20px;max-width:78ch}
+ul,ol{margin:0 0 20px;padding-left:26px;max-width:76ch}
+li{margin-bottom:11px}
+code{font-family:var(--mono);font-size:.86em;background:var(--paper);padding:2px 7px;
+ border:1px solid var(--line);border-radius:4px}
+pre{background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:20px 22px;
+ overflow-x:auto;font-family:var(--mono);font-size:14.5px;line-height:1.66;margin:0 0 22px}
+pre code{background:none;border:none;padding:0;font-size:inherit;white-space:pre}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:6px solid var(--navy);border-radius:0 8px 8px 0;
+ padding:20px 24px;margin:24px 0 28px;font-size:18px;max-width:82ch;line-height:1.7}
+.call .lb{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);font-weight:700;display:block;margin-bottom:9px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.ok{background:var(--green-bg);border-left-color:var(--green)}
+.call.ok .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1.5px solid var(--line);border-radius:8px;background:var(--card);margin-bottom:26px}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th{font-family:var(--mono);font-size:12.5px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:14px 18px;border-bottom:2px solid var(--line);background:var(--paper);font-weight:700}
+td{padding:14px 18px;border-bottom:1px solid var(--line);vertical-align:top;font-size:17px;line-height:1.6}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:14px;white-space:nowrap;color:var(--navy);font-weight:600}
+td.n{font-family:var(--mono);font-size:16px;font-weight:700;text-align:right;white-space:nowrap}
+.st{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+ padding:4px 10px;border-radius:4px;font-weight:700;white-space:nowrap;display:inline-block}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.s-neu{background:var(--grey-bg);color:var(--grey)}
+.trap{border-left:5px solid var(--coral);background:var(--card);border:1.5px solid var(--line);
+ border-left-width:5px;border-radius:0 8px 8px 0;padding:18px 22px;margin:0 0 20px}
+.trap .tn{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--coral);font-weight:700;display:block;margin-bottom:7px}
+footer{margin:60px 26px 0;padding-top:24px;border-top:2px solid var(--line);
+ font-size:16px;color:var(--muted);max-width:82ch;line-height:1.7}
+@media(max-width:760px){
+ body{font-size:18px}
+ .hd{padding:26px 22px;margin-left:12px;margin-right:12px}
+ .body,footer{margin-left:12px;margin-right:12px}
+ .body{padding-left:0;padding-right:0}
+ pre{font-size:13px;padding:16px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · HANDOVER · 23 July 2026 · security hardening, fixes A + B</div>
+  <h1>Nothing has been implemented. The analysis is finished, verified against PROD, and the plan is ready to execute.</h1>
+  <p class="dek">Give this file to a new session to begin implementation. It carries the verified
+  findings, the exact scope, the conventions the build enforces, and — most usefully — the five traps
+  that already caught the previous session, so you do not pay for them twice.</p>
+  <div class="chips">
+    <span class="chip bad">PROD signup still OPEN</span>
+    <span class="chip bad">PROD dispatcher still unauthenticated</span>
+    <span class="chip ok">zero changes made</span>
+    <span class="chip">scope: A + B · not C</span>
+    <span class="chip">ADR-083 · pgTAP 52 · 686→698</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2><span class="num">00</span>First five minutes</h2>
+
+<ol>
+  <li><b class="k">Read the plan:</b>
+  <a href="doc/plans/security-implementation-plan-2026-07-23.html">security-implementation-plan-2026-07-23.html</a>
+  — 13 steps, every command and gate named. That is your working document.</li>
+  <li><b class="k">Skim the evidence:</b>
+  <a href="doc/plans/security-case-cert-prod-2026-07-23.html">security-case-cert-prod-2026-07-23.html</a>
+  — only if a finding needs justifying. Do not re-derive it.</li>
+  <li><b class="k">Read §04 of this file (Traps).</b> Non-optional. It contains a wrong conclusion the
+  previous session reached and corrected; re-reaching it costs an hour.</li>
+  <li><b class="k">Re-verify before acting</b> with the one-command sweep in §03. State may have moved
+  since 23 July.</li>
+</ol>
+
+<div class="call stop">
+  <span class="lb">Current risk state — unchanged since the investigation</span>
+  <b class="k">Signup is open on PROD</b> (<code>disable_signup: False</code>), and any account that
+  registers satisfies <code>auth.role() = 'authenticated'</code>, which is the entire predicate on
+  <code>tbl_result</code>, <code>tbl_fencer</code> and <code>tbl_scoring_config</code>.<br>
+  <b class="k">The PROD dispatcher still accepts the public anon key</b>, so anyone can trigger
+  <code>promote-season.yml</code> or <code>ftl-seed.yml</code>.<br><br>
+  The operator was asked to close signup and has not yet authorised it. <b class="k">Ask again at the
+  start of the session</b> — it is one API call and the single highest-value minute available.
+</div>
+
+<h2><span class="num">01</span>What was done, and what was not</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Item</th><th>State</th></tr></thead>
+<tbody>
+<tr><td>Investigation and verification against CERT + PROD</td><td><span class="st s-ok">complete</span> 24 checks, both environments</td></tr>
+<tr><td>Implementation plan</td><td><span class="st s-ok">complete</span> <code>security-implementation-plan-2026-07-23.html</code></td></tr>
+<tr><td>Migration</td><td><span class="st s-bad">not written</span></td></tr>
+<tr><td>pgTAP <code>52_security_posture.sql</code></td><td><span class="st s-bad">not written</span></td></tr>
+<tr><td>Edge Function caller check</td><td><span class="st s-bad">not written</span></td></tr>
+<tr><td>ADR-083, RTM rows, handbook page</td><td><span class="st s-bad">not written</span></td></tr>
+<tr><td>Signup closed on CERT/PROD</td><td><span class="st s-bad">NO</span> awaiting operator authorisation</td></tr>
+<tr><td><code>GH_DISPATCH_PAT</code> rotation</td><td><span class="st s-neu">deferred</span> operator decision: <b class="k">happens after everything else is finished</b></td></tr>
+<tr><td>Any database, config, secret or remote change</td><td><span class="st s-ok">none</span> see the side-effect note in §05</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">02</span>The findings, compressed</h2>
+
+<p class="lead">All verified on CERT <b class="k">and</b> PROD on 23 July. Do not re-investigate;
+re-verify with §03 and move.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>#</th><th>Finding</th><th>Evidence</th></tr></thead>
+<tbody>
+<tr><td class="d">F1</td><td><b class="k">Dispatcher never checks its caller.</b> <code>verify_jwt=true</code> is satisfied by the public anon key. Worst finding.</td><td>anon key → <code>400 invalid_workflow</code> (reached handler logic). No key → <code>401</code>.</td></tr>
+<tr><td class="d">F2</td><td><b class="k">Signup open on CERT and PROD.</b> <code>authenticated</code> = full admin per ADR-016.</td><td><code>disable_signup: False</code>; e-mail confirmation required (<code>mailer_autoconfirm: False</code>) — a real but low bar.</td></tr>
+<tr><td class="d">F3</td><td><b class="k">Six tables: RLS off, anon holds full DML + TRUNCATE.</b></td><td>Both envs: <code>rls_off=6, rls_on=10, policies=17</code>. <b class="k">Write proven:</b> INSERT returned <code>23502</code> (not-null violation — a <i>data</i> error), not <code>42501</code> permission denied. PATCH returned <code>204</code>.</td></tr>
+<tr><td class="d">F4</td><td><b class="k"><code>vw_fencer_aliases</code> is owner-rights</b> — RLS beneath it does nothing. 365 fencer identities readable by anon on PROD. Touches ADR-078 (GDPR).</td><td><code>owner=postgres, reloptions=NONE</code>, anon holds all seven privileges.</td></tr>
+<tr><td class="d">F5</td><td><b class="k">Five write RPCs anon-executable</b>, two of them <code>SECURITY DEFINER</code> (so they bypass RLS on healthy tables).</td><td><code>fn_find_or_create_tournament</code>, <code>fn_create_registration</code> (both DEFINER), <code>fn_commit_event_draft</code>, <code>fn_discard_event_draft</code>, <code>fn_enqueue_affected_events</code>.</td></tr>
+<tr><td class="d">F6</td><td><b class="k">ROOT CAUSE — nobody made a mistake.</b> <code>ALTER DEFAULT PRIVILEGES</code> auto-grants <code>anon</code> everything on every new object.</td><td><code>pg_default_acl</code> → <code>anon=arwdDxtm/postgres</code> on tables, functions <i>and</i> sequences.</td></tr>
+<tr><td class="d">F7</td><td><b class="k">Release gate is bypassable.</b> A manual <code>workflow_dispatch</code> skips CI, and therefore skips pgTAP.</td><td><code>if: github.event_name == 'workflow_dispatch' || …</code> — first clause unconditional.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Verified clear — do not spend time here</h3>
+<p>No service-role key in the frontend. Committed JWTs decode to <code>"iss":"supabase-demo"</code>
+(the CLI's public demo keys — not a leak). <code>.env</code> and
+<code>supabase/functions/.env</code> never committed in 536 commits. No
+<code>pull_request_target</code>, no untrusted event interpolation. <code>main</code> CI green. Only
+<b class="k">one</b> account per environment (created 2026-03-26), each with a
+<b class="k">verified TOTP factor</b> — so no rogue signups occurred and enforcing <code>aal2</code>
+locks nobody out.</p>
+
+<h2><span class="num">03</span>Re-verify in one command</h2>
+
+<pre><code>export SUPABASE_ACCESS_TOKEN=$(grep -E '^SUPABASE_ACCESS_TOKEN=' .env | cut -d= -f2- | tr -d '"'"'"' ')
+# CERT = sdomfjncmfydlkygzpgw   PROD = ywgymtgcyturldazcpmw
+
+# signup still open?
+curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  https://api.supabase.com/v1/projects/&lt;ref&gt;/config/auth \
+  | python3 -c 'import sys,json;print(json.load(sys.stdin)["disable_signup"])'
+# False = still open
+
+# dispatcher still unauthenticated?  (invalid name — nothing can be dispatched)
+curl -s -X POST "https://&lt;ref&gt;.supabase.co/functions/v1/dispatch-workflow" \
+  -H "apikey: &lt;anon key&gt;" -H "Content-Type: application/json" \
+  -d '{"workflow":"THIS-DOES-NOT-EXIST.yml"}'
+# 400 invalid_workflow = caller still not checked | 401 = already fixed
+
+# RLS state
+curl -s -X POST "https://api.supabase.com/v1/projects/&lt;ref&gt;/database/query" \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" \
+  -d '{"query":"SELECT count(*) FILTER (WHERE NOT relrowsecurity) AS off FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='"'"'public'"'"' AND c.relkind='"'"'r'"'"';"}'
+# off=6 = unchanged</code></pre>
+
+<p class="sub">The anon key is retrievable read-only from
+<code>GET /v1/projects/&lt;ref&gt;/api-keys</code>. It is public by design — it ships in the frontend
+bundle — but still do not print it into documents or logs.</p>
+
+<h2><span class="num">04</span>Traps — read before writing any code</h2>
+
+<div class="trap">
+  <span class="tn">Trap 1 · the wrong conclusion the last session reached</span>
+  <p>It concluded that <code>REVOKE … FROM authenticated</code> would <b class="k">break admin fencer
+  editing</b>, because <code>trg_fencer_change_enqueue</code> on <code>tbl_fencer</code> is
+  <code>SECURITY INVOKER</code> and inserts into <code>tbl_recompute_queue</code>.</p>
+  <p><b class="k">That conclusion is WRONG.</b> All eight admin fencer-mutation RPCs
+  (<code>fn_update_fencer_birth_year</code> and friends) are <code>SECURITY DEFINER</code>, so the
+  trigger fires in the definer's context and the queue INSERT succeeds regardless of grants. The
+  frontend's only direct <code>tbl_fencer</code> access is a <code>SELECT</code>
+  (<code>api.ts:573</code>). <b class="k">The REVOKE is safe.</b> Making
+  <code>fn_enqueue_affected_events</code> DEFINER is cheap hardening against a future direct write,
+  not a prerequisite.</p>
+</div>
+
+<div class="trap">
+  <span class="tn">Trap 2 · REVOKE FROM anon is not enough</span>
+  <p>The grant on those functions comes from the <code>PUBLIC</code> default — the bare
+  <code>=X/postgres</code> entry in <code>proacl</code>. You must
+  <code>REVOKE EXECUTE … FROM anon, PUBLIC</code>. Revoking from <code>anon</code> alone leaves the
+  function callable.</p>
+</div>
+
+<div class="trap">
+  <span class="tn">Trap 3 · ALTER DEFAULT PRIVILEGES needs the role qualifier</span>
+  <p>It applies <b class="k">per creating role</b>. Without <code>FOR ROLE postgres</code> it targets
+  the executing role's defaults and silently achieves nothing. All 23 public tables/views are
+  <code>owner=postgres</code>, so <code>postgres</code> is the correct target. And you need
+  <b class="k">all three object types</b> — TABLES, FUNCTIONS <i>and</i> SEQUENCES; anon was granted
+  on all three.</p>
+</div>
+
+<div class="trap">
+  <span class="tn">Trap 4 · LOCAL lies about this problem</span>
+  <p>On LOCAL the staging tables are empty, which makes the whole finding look trivial.
+  <b class="k">CERT is the staging environment and it is populated</b> — 256 draft results, 50 draft
+  tournaments, 125 queued recompute jobs. PROD's <code>tbl_recompute_queue</code> holds 46 rows and
+  the watermark is a single live row. Never reason about severity from LOCAL.</p>
+</div>
+
+<div class="trap">
+  <span class="tn">Trap 5 · graphify does not cover this area</span>
+  <p><code>graphify affected python/pipeline/draft_store.py</code> returns "No affected nodes found";
+  <code>recompute/worker.py</code> has no node match. Do not waste turns there, and do not claim the
+  graph corroborated anything. <b class="k">Live catalog introspection</b> (triggers, FKs,
+  <code>proacl</code>, <code>pg_default_acl</code>) is the tool that actually works here, and it is
+  what every finding above rests on.</p>
+</div>
+
+<div class="call warn">
+  <span class="lb">Two more, smaller</span>
+  <b class="k">·</b> Every <code>SECURITY DEFINER</code> function must carry an explicit
+  <code>SET search_path</code>, or it becomes a privilege-escalation vector. postgrestools flags this;
+  do not suppress it.<br>
+  <b class="k">·</b> Several of the five RPCs are overloaded — get exact signatures from
+  <code>pg_get_function_identity_arguments</code> before writing the REVOKE, or it will not match.
+</div>
+
+<h2><span class="num">05</span>Scope — decided, do not relitigate</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Decision</th><th>Outcome</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Fix A — lock what exists</td><td><span class="st s-ok">in scope</span></td><td>Closes every proven exposure.</td></tr>
+<tr><td>Fix B — kill the generator (<code>ALTER DEFAULT PRIVILEGES</code>)</td><td><span class="st s-ok">in scope</span></td><td>Root cause. Zero effect on existing objects, so zero risk today.</td></tr>
+<tr><td>Fix C — separate <code>pipeline</code> schema</td><td><span class="st s-bad">EXCLUDED</span></td><td>Operator decision. Also weaker than it sounds: the pipeline is a PostgREST client (<code>db_connector.py:683</code>, <code>draft_store.py:13</code> forbids psycopg), so the schema must be exposed anyway and security falls back to grants. Record in ADR-083 as rejected-for-now.</td></tr>
+<tr><td><code>aal2</code> on RLS write policies</td><td><span class="st s-bad">removed from scope</span></td><td>The eight admin RPCs are DEFINER and bypass RLS, so it would guard only three direct-write call sites (<code>api.ts:279, 296, 528</code>) while adding lockout surface. ADR follow-up.</td></tr>
+<tr><td><code>aal2</code> on the Edge Function</td><td><span class="st s-ok">in scope</span></td><td>Where it actually works. Safe — both admins have verified TOTP.</td></tr>
+<tr><td>PAT rotation</td><td><span class="st s-neu">last</span></td><td>Operator: happens after everything else is finished.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call warn">
+  <span class="lb">One side effect on the record</span>
+  While proving anon write access, an <code>INSERT</code> with a deliberately invalid payload called
+  <code>nextval()</code> before failing the not-null constraint. Sequence advancement is not
+  transactional, so <b class="k">the <code>tbl_recompute_queue</code> id sequence advanced by one on
+  CERT (→297) and one on PROD (→122)</b>. No row exists. Effect is a one-number id gap, which is
+  normal Postgres behaviour. Recorded because the session otherwise claimed strictly read-only.
+</div>
+
+<h2><span class="num">06</span>Numbers and conventions the build enforces</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Thing</th><th>Value / rule</th></tr></thead>
+<tbody>
+<tr><td>Next ADR</td><td><code>083</code> → <code>doc/adr/083-server-enforced-authorization.md</code></td></tr>
+<tr><td>Next pgTAP file</td><td><code>supabase/tests/52_security_posture.sql</code>, <code>SELECT plan(12)</code></td></tr>
+<tr><td>pgTAP total</td><td><b class="k">686 → 698</b> in <code>doc/Project Specification…md</code>, string <code>pgTAP total: N assertions</code>. Coherence Gate 3 hard-fails on mismatch.</td></tr>
+<tr><td>RTM</td><td><code>doc/requirements-traceability-matrix.md</code>. Add FR-132, FR-133, NFR-14. <b class="k">Then bump <code>EXPECTED=130</code> → <code>132</code> at <code>scripts/check-spec-sync.sh:79</code></b> — it counts <code>^\| FR-[0-9]</code> rows and hard-fails otherwise.</td></tr>
+<tr><td>ADR registry</td><td>Appendix C of the specification. Coherence Gate 2: ADR file count must equal Appendix C rows.</td></tr>
+<tr><td>Doc model (ADR-082)</td><td><code>.md</code> is source; <code>.html</code> generated by <code>scripts/render_adrs.py</code> / <code>scripts/render_docs.py</code>. <b class="k">Never hand-edit generated HTML.</b> Commit both.</td></tr>
+<tr><td>Handbook</td><td>Hand-authored HTML. New page <code>doc/handbook/reference/security-posture.html</code> (none exists today — that absence is why drift had no home). Register in <code>documentation-map.html</code>. Validate with <code>python scripts/check_docs.py</code>.</td></tr>
+<tr><td>After any SQL edit</td><td><code>plpgsql-check</code> skill (postgrestools) — mandatory, tests included.</td></tr>
+<tr><td>After any .svelte/.ts edit</td><td><code>svelte-check</code> skill + <code>npm run check</code>.</td></tr>
+<tr><td>Before every commit</td><td><code>./scripts/refresh-graph.sh</code></td></tr>
+<tr><td>LOCAL reset</td><td><code>./scripts/reset-dev.sh</code> — <b class="k">never</b> bare <code>supabase db reset</code>.</td></tr>
+<tr><td>Staging</td><td><b class="k">Stage explicit paths only.</b> The worktree carries unrelated untracked plans and <code>doc/reports/</code>. Never <code>git add -A</code>.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="num">07</span>Suggested opening move</h2>
+
+<ol>
+  <li><b class="k">Ask the operator to authorise closing signup</b> on CERT and PROD. You can do it
+  yourself via <code>PATCH /v1/projects/&lt;ref&gt;/config/auth</code> with the token already in
+  <code>.env</code> — it needs a yes, not a dashboard.</li>
+  <li>Run the §03 re-verification sweep and report any drift from the table in §02.</li>
+  <li>Begin at <b class="k">Step 3</b> of the plan: write <code>52_security_posture.sql</code> and
+  <b class="k">prove RED</b>. Capture that output — it is completion-report evidence and the project's
+  TDD rule is explicit that the RED run must be proven, not assumed.</li>
+</ol>
+
+<div class="call ok">
+  <span class="lb">Working style this operator expects</span>
+  Every deliverable is <b class="k">HTML in <code>doc/plans/</code></b>, never inline tables in chat.
+  Chat stays short: a pointer and one question. Ask <b class="k">one plain-text question at a time</b>,
+  with a recommendation and its justification — the multiple-choice question UI is blocked and must
+  not be used. Working documents and chat in English. Verify before claiming; if a claim turns out
+  wrong, correct it in the document rather than softening it quietly.
+</div>
+
+</div>
+
+<footer>
+Written 2026-07-23 at the close of the analysis session. <b>No implementation has been performed and
+no database, configuration, secret or remote state was changed</b> — with the single documented
+exception of the sequence advance in §05. Companion documents:
+<code>doc/plans/security-implementation-plan-2026-07-23.html</code> (the 13-step plan) and
+<code>doc/plans/security-case-cert-prod-2026-07-23.html</code> (the evidence, verified against live
+CERT and PROD). Project refs are identifiers, not secrets; no credential value appears in any of the
+three files.
+</footer>
+
+</div>
+</body>
+</html>

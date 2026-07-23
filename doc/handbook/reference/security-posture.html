@@ -1,0 +1,116 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="doc-id" content="HB-REF-SECURITY"><meta name="doc-status" content="current"><meta name="doc-type" content="reference"><meta name="doc-owner" content="Release operations"><meta name="last-verified" content="2026-07-23"><meta name="source-globs" content="supabase/migrations/**; supabase/tests/52_security_posture.sql; supabase/functions/dispatch-workflow/**; scripts/check-security-posture.sh; .github/workflows/release.yml"><meta name="review-triggers" content="New table, view, function or sequence in schema public; any GRANT/REVOKE or RLS change; changes to the anon-executable allowlist; dispatcher authorization changes; new Edge Function"><title>Security Posture · SPWS Handbook</title><link rel="stylesheet" href="../assets/handbook.css"></head><body><div class="page"><header class="handbook-header"><nav class="breadcrumb"><a href="../index.html">Handbook</a><span>Reference</span></nav><p class="eyebrow">Reference · Authorization</p><h1>Security posture</h1><p class="dek">Who may reach what, why new objects are unreachable until you say otherwise, and where that is enforced.</p><div class="doc-meta"><span>Deny by default</span><span>ADR-083</span><span>Verified 23 July 2026</span></div></header><main>
+
+<section id="purpose"><p class="kicker">Why it exists</p><h2>Purpose</h2>
+<p>This page is the single owner of the system's authorization model. Before July 2026 no such page existed anywhere in the handbook or governance corpus, and <code>documentation-map.html</code> assigned the topic to nobody. That absence is why four months of grant drift had no home to be recorded in — the drift was detectable the whole time, but nothing in the documentation claimed responsibility for noticing.</p></section>
+
+<section id="mental-model"><p class="kicker">Smallest useful explanation</p><h2>Mental model</h2>
+<p>Three Postgres roles reach the database, and they are not tiers of one hierarchy — they are three different trust stories.</p>
+<div class="tablewrap"><table><thead><tr><th>Role</th><th>Who it is</th><th>What it may reach</th></tr></thead><tbody>
+<tr><td><code>anon</code></td><td>Every anonymous visitor. Its API key ships in the public frontend bundle and is <strong>not a secret</strong>.</td><td><code>SELECT</code> on the tables and views the public ranklist and calendar render, plus a fixed allowlist of read-only functions and the two self-registration RPCs. <strong>No write privilege on any table.</strong></td></tr>
+<tr><td><code>authenticated</code></td><td>Any holder of a Supabase Auth account. Signup is closed, so in practice: the admins.</td><td>The admin surface. Reaches most tables through <code>SECURITY DEFINER</code> RPCs; three direct writes remain (season and event status).</td></tr>
+<tr><td><code>service_role</code></td><td>The Python pipeline and GitHub Actions workflows. Key is a repository secret and never reaches a browser.</td><td>Everything. It holds <code>BYPASSRLS</code>, which is how it reaches the pipeline/staging tables that have RLS on and no policy at all.</td></tr>
+</tbody></table></div>
+<p>The load-bearing idea: <strong>RLS and grants are two independent controls, and neither substitutes for the other.</strong> An owner-rights view ignores RLS on its base tables entirely, and a <code>TRUNCATE</code> grant is not filtered by RLS at all. Where the model relies on RLS alone, one mis-written policy is the whole defence.</p></section>
+
+<section id="current-flow"><p class="kicker">Present tense</p><h2>How access is decided</h2>
+<p><strong>Pipeline and staging tables</strong> — <code>tbl_result_draft</code>, <code>tbl_tournament_draft</code>, <code>tbl_event_ingest_history</code>, <code>tbl_tournament_ingest_history</code>, <code>tbl_recompute_queue</code>, <code>tbl_recompute_watermark</code> — have RLS enabled and <strong>no policy</strong>, with all grants revoked from <code>anon</code> and <code>authenticated</code>. No policy is the correct amount of policy: RLS with zero policies denies everyone except roles that bypass it, and only <code>service_role</code> does. Nothing in <code>frontend/src</code> or <code>supabase/functions</code> references any of the six.</p>
+<p><strong>The other ten tables</strong> keep <code>SELECT</code> for <code>anon</code> and have lost every write privilege — <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>TRUNCATE</code>, <code>REFERENCES</code>, <code>TRIGGER</code>. They also carry RLS policies, so the policy is now the second line rather than the only one.</p>
+<p><strong><code>vw_fencer_aliases</code></strong> is owner-rights (<code>owner=postgres</code>, no <code>security_invoker</code>), so RLS beneath it does nothing and grants are the only control that applies. <code>anon</code> holds nothing; <code>authenticated</code> holds <code>SELECT</code> only. The admin UI reads aliases through <code>fn_list_fencer_aliases</code>.</p>
+<p><strong>New objects arrive ungranted.</strong> <code>ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public</code> no longer grants <code>anon</code> or <code>authenticated</code> anything on new TABLES, FUNCTIONS or SEQUENCES.</p></section>
+
+<section id="adding-a-table"><p class="kicker">The common task</p><h2>Adding a new public-facing table</h2>
+<p>A new table is unreachable from the frontend until you grant it explicitly. That friction is deliberate — it forces a migration author to state intent rather than inherit it. In your migration:</p>
+<pre><code>CREATE TABLE tbl_example (...);
+
+-- Decide, explicitly, one of these two:
+
+-- (a) public-readable: the ranklist or calendar renders it
+ALTER TABLE tbl_example ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read" ON tbl_example FOR SELECT TO anon, authenticated USING (true);
+GRANT SELECT ON tbl_example TO anon, authenticated;
+
+-- (b) pipeline-only: only service_role touches it
+ALTER TABLE tbl_example ENABLE ROW LEVEL SECURITY;   -- and no policy, and no grant
+</code></pre>
+<p>Omitting the RLS line fails assertion 52.1 in CI. Granting a write privilege to <code>anon</code> fails 52.3–52.6. Adding an anon-callable function without updating the allowlist fails 52.7. You will find out before the change reaches CERT.</p></section>
+
+<section id="allowlist"><p class="kicker">The anon-executable surface</p><h2>Function allowlist</h2>
+<p>Nineteen functions are callable by <code>anon</code>, pinned as a set <strong>equality</strong> by pgTAP 52.7. Equality rather than a deny-list, because every object that produced the ADR-083 findings was created after any deny-list could have been written — a list of known-bad names would have caught none of them.</p>
+<div class="tablewrap"><table><thead><tr><th>Group</th><th>Functions</th><th>Why <code>anon</code> holds it</th></tr></thead><tbody>
+<tr><td>Public ranking and calendar</td><td><code>fn_ranking_ppw</code>, <code>fn_ranking_kadra</code>, <code>fn_fencer_scores_rolling</code> and their <code>_event_code_matching</code> / <code>_event_fk_matching</code> variants, <code>fn_season_summary</code>, <code>fn_export_scoring_config</code>, <code>fn_copy_prior_scoring_config</code>, <code>fn_compare_carryover_engines</code>, <code>fn_age_category</code>, <code>fn_effective_gender</code>, <code>fn_event_position</code>, <code>fn_vcat_violation_msg</code></td><td>The public ranklist renders from these. Documented as deliberate since migration <code>20260327000001</code>.</td></tr>
+<tr><td>Public self-registration</td><td><code>fn_create_registration</code>, <code>fn_match_registration_fencer</code></td><td><code>register.html</code> is served to anonymous visitors and these two are its entire server surface. <code>fn_create_registration</code> is <code>SECURITY DEFINER</code> precisely so <code>anon</code> can write a registration <em>without</em> holding <code>INSERT</code> on <code>tbl_registration</code> — asserted from both sides by pgTAP 49.13/49.14.</td></tr>
+</tbody></table></div>
+<p>Scope: directly-callable, non-extension functions. Trigger-returning functions are excluded because Postgres refuses to call them outside a trigger context, so a grant on one is not reachable surface; <code>btree_gist</code> ships roughly 200 functions into <code>public</code> whose grants belong to the extension.</p></section>
+
+<section id="dispatcher"><p class="kicker">Server-side workflow dispatch</p><h2>The dispatcher's authorization contract</h2>
+<p><code>dispatch-workflow</code> holds a GitHub PAT and can trigger seven allowlisted workflows, including <code>promote-season.yml</code> and <code>ftl-seed.yml</code> against PROD. Its contract:</p>
+<div class="tablewrap"><table><thead><tr><th>Caller</th><th>Response</th></tr></thead><tbody>
+<tr><td>No <code>Authorization</code> header</td><td><code>401 missing_authorization</code></td></tr>
+<tr><td>Undecodable bearer token</td><td><code>401 invalid_token</code></td></tr>
+<tr><td>Public anon key, or <code>service_role</code></td><td><code>401 not_authenticated</code></td></tr>
+<tr><td>Token that resolves to no user</td><td><code>401 invalid_token</code></td></tr>
+<tr><td>Signed-in admin who has not completed TOTP</td><td><code>403 mfa_required</code></td></tr>
+<tr><td>Signed-in admin at <code>aal2</code></td><td>Dispatch proceeds; the user id is logged</td></tr>
+</tbody></table></div>
+<p><strong><code>verify_jwt = true</code> is not an authorization control.</strong> It reads like one, which is how the gap survived review: the public anon key is a valid, correctly-signed JWT that ships in the frontend bundle, so it satisfied <code>verify_jwt</code> and reached the workflow allowlist. The role check is what closes it.</p>
+<p><strong>Consequence for local development:</strong> <code>admin-auth.svelte.ts</code> skips MFA on localhost, so a LOCAL session stays <code>aal1</code> and the dispatcher answers <code>403</code>. Dispatch targets real GitHub Actions and is not a LOCAL-appropriate operation.</p></section>
+
+<section id="invariants"><p class="kicker">Must remain true</p><h2>Invariants</h2>
+<ul>
+<li>No table in schema <code>public</code> has RLS disabled.</li>
+<li><code>anon</code> holds no <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code> or <code>TRUNCATE</code> on any table.</li>
+<li>The set of <code>anon</code>-EXECUTEable functions equals the documented allowlist exactly — no more, no fewer.</li>
+<li><code>vw_fencer_aliases</code> grants nothing to <code>anon</code> and only <code>SELECT</code> to <code>authenticated</code>.</li>
+<li>Role <code>postgres</code> grants no default privileges to <code>anon</code> or <code>authenticated</code> in schema <code>public</code>.</li>
+<li>Every <code>SECURITY DEFINER</code> function carries an explicit <code>SET search_path</code>. Without one it is a privilege-escalation vector, because the caller controls how its unqualified identifiers resolve.</li>
+<li>Signup stays closed on CERT and PROD. <code>authenticated</code> currently means "any account holder", so an open signup is an open admin door.</li>
+</ul></section>
+
+<section id="implementation-map"><p class="kicker">Where it lives</p><h2>Implementation map</h2>
+<div class="tablewrap"><table><thead><tr><th>Concern</th><th>File</th></tr></thead><tbody>
+<tr><td>Grants, RLS and the default-privilege revoke</td><td><code>supabase/migrations/20260723000001_adr083_deny_by_default_grants.sql</code></td></tr>
+<tr><td>Standing catalog assertions</td><td><code>supabase/tests/52_security_posture.sql</code></td></tr>
+<tr><td>Live-environment posture check</td><td><code>scripts/check-security-posture.sh</code></td></tr>
+<tr><td>Dispatcher authorization decision</td><td><code>supabase/functions/dispatch-workflow/authorize.ts</code></td></tr>
+<tr><td>Dispatcher wiring and CORS</td><td><code>supabase/functions/dispatch-workflow/index.ts</code></td></tr>
+<tr><td>Release-time enforcement and alerting</td><td><code>.github/workflows/release.yml</code></td></tr>
+</tbody></table></div></section>
+
+<section id="operations"><p class="kicker">Run and observe</p><h2>Operations</h2>
+<p>Check any environment on demand — read-only, safe to run at any time:</p>
+<pre><code>export SUPABASE_ACCESS_TOKEN=...            # already in .env
+./scripts/check-security-posture.sh &lt;project-ref&gt; CERT</code></pre>
+<p>The same script runs inside <code>release.yml</code>'s <code>deploy-cert</code> and <code>deploy-prod</code> jobs and fails the release on regression. It lives there, and not only in CI, because <code>release.yml</code>'s build job is skipped entirely by a manual <code>workflow_dispatch</code> — a CI-only guard is optional in practice. It also checks the right thing: pgTAP proves what LOCAL looks like after replaying migrations, while this proves what CERT and PROD actually look like.</p>
+<p>Failures alert to <strong>Telegram</strong>. Not e-mail: the Supabase advisory e-mail fired weekly from 6 May 2026 and every message but the last went unread. Detection was never the problem; delivery was.</p></section>
+
+<section id="tests"><p class="kicker">Evidence</p><h2>Tests</h2>
+<div class="tablewrap"><table><thead><tr><th>ID</th><th>Asserts</th></tr></thead><tbody>
+<tr><td>52.1, 52.2</td><td>RLS enabled on every table; the six pipeline tables named explicitly</td></tr>
+<tr><td>52.3–52.6</td><td><code>anon</code> holds no INSERT / UPDATE / DELETE / TRUNCATE on any table</td></tr>
+<tr><td>52.7</td><td>The <code>anon</code>-EXECUTEable set equals the allowlist</td></tr>
+<tr><td>52.8, 52.9</td><td><code>vw_fencer_aliases</code> grants</td></tr>
+<tr><td>52.10, 52.11</td><td>The self-guard: no default privileges to <code>anon</code>/<code>authenticated</code></td></tr>
+<tr><td>52.12</td><td><code>fn_enqueue_affected_events</code> is <code>SECURITY DEFINER</code></td></tr>
+<tr><td>FR-132.1–132.9</td><td>Dispatcher rejects missing, malformed, anon-key, service-role, unresolvable and <code>aal1</code> callers; accepts <code>aal2</code></td></tr>
+</tbody></table></div>
+<p>52.10 and 52.11 are the reason this does not silently rot. Without them someone restores the default privileges and every other assertion here keeps passing until the next table happens to be created.</p></section>
+
+<section id="decisions"><p class="kicker">Rationale</p><h2>Related decisions</h2>
+<ul>
+<li><a href="../../adr/083-server-enforced-authorization.html">ADR-083</a> — this model, and the alternatives rejected on the way to it.</li>
+<li><a href="../../adr/016-supabase-auth-totp-mfa.html">ADR-016</a> — admin auth and TOTP MFA; ADR-083 amends its server-side enforcement.</li>
+<li><a href="../../adr/041-edge-function-dispatch.html">ADR-041</a> — why dispatch is server-side at all.</li>
+<li><a href="../../adr/078-gdpr-data-handling.html">ADR-078</a> — why fencer identity exposure is a data-protection matter, not only an authorization one.</li>
+<li><a href="../../adr/079-event-self-registration-identity.html">ADR-079</a> — why two functions are deliberately anon-callable.</li>
+</ul></section>
+
+<section id="change-triggers"><p class="kicker">Maintenance</p><h2>Change triggers</h2>
+<ul>
+<li>Any new table, view, function or sequence in schema <code>public</code>.</li>
+<li>Any <code>GRANT</code>, <code>REVOKE</code>, RLS or policy change.</li>
+<li>Any change to the anon-executable allowlist — update <code>52_security_posture.sql</code> (source of truth), <code>scripts/check-security-posture.sh</code> and this page together.</li>
+<li>Any change to the dispatcher's authorization contract, or a new Edge Function.</li>
+<li>Any change to signup policy or the meaning of <code>authenticated</code>.</li>
+</ul></section>
+
+</main><nav class="page-links"><a href="workflow-catalog.html">← Workflow catalog</a><a href="test-and-traceability.html">Tests and traceability →</a></nav><footer class="freshness">Review triggers: new objects in schema public, grant/RLS changes, allowlist changes, dispatcher authorization changes.</footer></div></body></html>

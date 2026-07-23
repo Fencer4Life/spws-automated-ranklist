@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="b6efcb2a74ee4ccb1b99154154aab9b069d30a40eda9d9609886c862985d18e1">
+<meta name="doc-source-sha256" content="07307534653ca243231e8b82bf209c1d96a800ec0d3ef8a554dbb1cf7ab1df52">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>195 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>198 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -941,6 +941,20 @@
 <td><code>FTLDEL-PY-01</code>–<code>FTLDEL-PY-07</code> (<code>test_ftl_feed_seed_send.py</code>, exporter/orchestration compatibility); <code>FTLDEL-DB-01</code>–<code>FTLDEL-DB-03</code> (pgTAP 49.28–49.33, 8.25); <code>FTLDEL-UI-01</code>–<code>FTLDEL-UI-02</code> (<code>EventManager.test.ts</code>); <code>FTLDEL-OPS-01</code> (<code>test_ftl_seed_workflow_contract.py</code>)</td>
 <td>Implemented; CERT pilot pending</td>
 </tr>
+<tr>
+<td>FR-132</td>
+<td><strong>Workflow dispatch endpoint authenticates its caller and requires MFA.</strong> <code>dispatch-workflow</code> rejects any request whose bearer token is absent, undecodable, or carries a <code>role</code> claim other than <code>authenticated</code> — closing the finding that <code>verify_jwt = true</code> was satisfied by the <strong>public anon key</strong> (it ships in the frontend bundle), so any visitor could dispatch <code>promote-season.yml</code> or <code>ftl-seed.yml</code> against PROD. The role check precedes token resolution so the hostile case costs no network round-trip; <code>aal2</code> is checked last so a genuine admin who has not completed TOTP receives <code>403 mfa_required</code>, distinct from <code>401</code>. Decision logic is isolated in <code>authorize.ts</code> (no Deno/network dependency) so it is unit-testable rather than only reachable through a deployed function.</td>
+<td>ADR-083 §5, ADR-041, ADR-016</td>
+<td>vitest FR-132.1–FR-132.9 (<code>dispatchWorkflowAuth.test.ts</code>)</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>FR-133</td>
+<td><strong>Public-schema objects grant no access to <code>anon</code> by default; the anon surface is an explicit allowlist.</strong> <code>ALTER DEFAULT PRIVILEGES FOR ROLE postgres</code> no longer grants <code>anon</code>/<code>authenticated</code> on new TABLES, FUNCTIONS or SEQUENCES — the generator that silently re-opened the March 2026 REVOKE (<code>20260327000001</code>) once per new object. Existing exposure closed in the same migration: RLS + full revoke on the six pipeline/staging tables, <code>anon</code> write privileges removed from all 16 tables, <code>vw_fencer_aliases</code> (owner-rights, 365 identities) revoked from <code>anon</code>, and EXECUTE revoked from <code>anon, PUBLIC</code> on 13 write-capable RPCs incl. <code>fn_merge_fencers</code> and <code>fn_refresh_active_season</code>. The 19 surviving anon-callable functions are pinned as a set <strong>equality</strong> — a deny-list would have caught none of the findings. <code>fn_create_registration</code> / <code>fn_match_registration_fencer</code> are deliberately retained (ADR-079/FR-122 public self-registration).</td>
+<td>ADR-083 §1–§4, ADR-016, ADR-078</td>
+<td>pgTAP 52.1–52.12 (<code>52_security_posture.sql</code>); <code>scripts/check-security-posture.sh</code></td>
+<td>Covered</td>
+</tr>
 </tbody>
 </table></div>
 <blockquote>
@@ -1050,6 +1064,13 @@
 <td>8.55–8.61</td>
 <td>Covered (M8)</td>
 </tr>
+<tr>
+<td>NFR-14</td>
+<td>Security posture machine-verified against the <strong>live</strong> environment on every release, blocking the release on regression and alerting via Telegram</td>
+<td>ADR-083 §6</td>
+<td>pgTAP 52.1–52.12; <code>scripts/check-security-posture.sh</code> run in <code>release.yml</code> deploy-cert/deploy-prod</td>
+<td>Covered</td>
+</tr>
 </tbody>
 </table></div>
 </section>
@@ -1146,5 +1167,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>b6efcb2a74ee4ccb1b99154154aab9b069d30a40eda9d9609886c862985d18e1</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>07307534653ca243231e8b82bf209c1d96a800ec0d3ef8a554dbb1cf7ab1df52</code></footer>
 </div></body></html>
