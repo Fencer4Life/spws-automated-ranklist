@@ -403,14 +403,31 @@ fn_enqueue_affected_events   SECURITY DEFINER: TRUE
 service_role  bypassrls TRUE · all 6 staging tables writable · all 6 pipeline RPCs executable
 queue depth   CERT 125 · PROD 46   (unchanged — no data disturbed)</code></pre>
 
-<div class="call warn">
-  <span class="lb">One check is grant-level, not behavioural — stated plainly</span>
-  The most recent recompute drains on both environments ran at <b class="k">11:57 and 11:21, before the
-  12:24 deploy</b>. So the pipeline's continued operation is proven at the level of grants and
-  <code>BYPASSRLS</code>, and behaviourally on LOCAL, but <b class="k">not yet by a real post-deploy
-  run</b>. The next scheduled drain closes that gap. It is expected to pass — <code>service_role</code>
-  bypasses RLS inherently and its grants are untouched — but it has not happened yet, and this document
-  will not claim otherwise.
+<div class="call ok">
+  <span class="lb">Closed 13:00 — the pipeline is now proven behaviourally, post-deploy</span>
+  Both drains were triggered manually rather than waited for (the cron says every 15 minutes but
+  GitHub throttles scheduled runs to hours apart, and the last ones — 11:57 CERT, 11:21 PROD —
+  predated the deploy).
+<pre><code>CERT  run 30009270092  →  "recomputed 3 event(s): [5, 9, 62]"
+      queue: total 128, pending 3 → 0, done 125 → 128
+PROD  run 30009427428  →  "queue quiescent (nothing drained)"</code></pre>
+  <p style="margin:0">The CERT run is the strong evidence: <code>service_role</code> <b class="k">read
+  and wrote</b> <code>tbl_recompute_queue</code> after RLS was enabled with no policy, recomputed three
+  events end-to-end, and marked them done. PROD's quiescent result still proves the read path — it had
+  to query the queue to determine there was nothing pending. Separately, the CERT watermark had already
+  advanced to <b class="k">12:42:09</b>, after the 12:36 deploy, so the enqueue path was demonstrated
+  before either drain ran.</p>
+</div>
+
+<div class="call ok">
+  <span class="lb">Dispatcher confirmed by real use, not just by synthetic probe</span>
+  At <b class="k">12:45:01</b> the operator dispatched <code>populate-urls.yml</code> for
+  <code>PEW68-2026-2027</code> from the admin UI on CERT — nine minutes after the hardened function
+  deployed there (12:36:01 UTC). Run <code>30008247715</code> succeeded. The identical call, same
+  workflow and same inputs but carrying only the anon key, returns <b class="k">401</b>. Both sides of
+  the gate are therefore demonstrated on the same request: the admin's <code>aal2</code> session passes,
+  anonymous callers do not. This also confirms the MFA chain end-to-end —
+  <code>mfa.verify()</code> upgrades the session to <code>aal2</code> and the dispatcher accepts it.
 </div>
 
 <h2><span class="num">07</span>PAT rotation — skipped, with reasoning</h2>
@@ -434,8 +451,6 @@ short-expiry hygiene — not because of this finding.</p>
 <h2><span class="num">08</span>What remains</h2>
 
 <ol>
-  <li><b class="k">Watch the next scheduled recompute drain</b> on both environments — the one
-  behavioural check the release timing did not permit (§06).</li>
   <li><b class="k">Confirm next week's Supabase advisory arrives clean.</b> It has reported
   <code>rls_disabled_in_public</code> weekly since 6 May; that finding should now be absent. Its
   disappearance is independent third-party confirmation.</li>
