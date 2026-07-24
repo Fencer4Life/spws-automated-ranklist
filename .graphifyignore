@@ -12,3 +12,17 @@ doc/archive/
 doc/Project Specification. SPWS Automated Ranklist System.html
 doc/requirements-traceability-matrix.html
 doc/adr/*.html
+
+# Generated CERT→PROD reconcile run logs — one pair per day, pure churn. They
+# are operational records, not source, and add ~22 low-value doc nodes that the
+# semantic extractor would otherwise spend LLM budget on. (doc/archive/ above
+# already excludes superseded prose; this covers the live staging logs.)
+doc/staging/
+
+# MŚW Tbilisi campaign correspondence. This one file links named individuals to
+# private campaign replies, and the campaign promised those contacts would be
+# deleted once entries close (privacy variant A). It is deliberately NOT tracked
+# in git; keep it out of the local knowledge graph too, so a grep of graph.json
+# can never surface it. The other MŚW/XLS plans carry no personal data and may
+# be indexed normally.
+doc/plans/msw-tbilisi-handover-2026-07-19-evening.html
