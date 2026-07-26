@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="039-stale-event-gate.md">
-<meta name="adr-source-sha256" content="6243f0dff9e4eef2def924a3753fb60d6195ac8332c144f90b418c9b85584751">
+<meta name="adr-source-sha256" content="7e47f3a10bdb477392a9b312f86b4870fde5cd0a8acfeaf94ac7651019adeef6">
 <title>ADR-039 · EVF Scraper Dedup Algorithm + Stale-Event Gate</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 039</p><h1>EVF Scraper Dedup Algorithm + Stale-Event Gate</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-06-13 rev 2 — Step 0 self-heals from FTL before halting)</dd></div><div><dt>Date</dt><dd class="">2026-04-25 <strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)</dd></div><div><dt>Source</dt><dd class=""><code>039-stale-event-gate.md</code></dd></div><div><dt>Length</dt><dd class="">155 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (revised 2026-06-13 rev 2 — Step 0 self-heals from FTL before halting)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-07-26 rev 4 — <code>url_event</code> recorded only once an event has concluded; see the rev-4 amendment)</dd></div><div><dt>Date</dt><dd class="">2026-04-25 <strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)</dd></div><div><dt>Source</dt><dd class=""><code>039-stale-event-gate.md</code></dd></div><div><dt>Length</dt><dd class="">184 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (revised 2026-07-26 rev 4 — <code>url_event</code> recorded only once an event has concluded; see the rev-4 amendment)
 <strong>Date:</strong> 2026-04-25
 <strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#step-0-logical-integrity-guard">Step 0 — Logical-integrity guard</a></li><li class="depth-4"><a href="#rev-2-2026-06-13-self-heal-never-hard-halt">rev 2 (2026-06-13) — self-heal, never hard-halt</a></li><li class="depth-3"><a href="#step-1-stale-event-gate">Step 1 — Stale-event gate</a></li><li class="depth-3"><a href="#step-2-date-gate-blocking-for-dedup">Step 2 — Date gate (BLOCKING for dedup)</a></li><li class="depth-3"><a href="#step-3-country-corroboration-strong">Step 3 — Country corroboration (STRONG)</a></li><li class="depth-3"><a href="#step-4-location-corroboration-medium-fallback">Step 4 — Location corroboration (MEDIUM, fallback)</a></li><li class="depth-3"><a href="#step-5-no-match-return-none">Step 5 — No match → return None</a></li><li class="depth-3"><a href="#deliberately-removed-name-comparison">Deliberately removed: name comparison</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#positive">Positive</a></li><li class="depth-3"><a href="#negative">Negative</a></li><li class="depth-3"><a href="#outbound-telegram-surface-new-this-adr">Outbound Telegram surface (new, this ADR)</a></li><li class="depth-2"><a href="#test-plan">Test plan</a></li><li class="depth-2"><a href="#references">References</a></li><li class="depth-2"><a href="#amendment-rev-3-2026-07-11-adr-081">Amendment — rev 3 (2026-07-11, ADR-081)</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#step-0-logical-integrity-guard">Step 0 — Logical-integrity guard</a></li><li class="depth-4"><a href="#rev-2-2026-06-13-self-heal-never-hard-halt">rev 2 (2026-06-13) — self-heal, never hard-halt</a></li><li class="depth-3"><a href="#step-1-stale-event-gate">Step 1 — Stale-event gate</a></li><li class="depth-3"><a href="#step-2-date-gate-blocking-for-dedup">Step 2 — Date gate (BLOCKING for dedup)</a></li><li class="depth-3"><a href="#step-3-country-corroboration-strong">Step 3 — Country corroboration (STRONG)</a></li><li class="depth-3"><a href="#step-4-location-corroboration-medium-fallback">Step 4 — Location corroboration (MEDIUM, fallback)</a></li><li class="depth-3"><a href="#step-5-no-match-return-none">Step 5 — No match → return None</a></li><li class="depth-3"><a href="#deliberately-removed-name-comparison">Deliberately removed: name comparison</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#positive">Positive</a></li><li class="depth-3"><a href="#negative">Negative</a></li><li class="depth-3"><a href="#outbound-telegram-surface-new-this-adr">Outbound Telegram surface (new, this ADR)</a></li><li class="depth-2"><a href="#test-plan">Test plan</a></li><li class="depth-2"><a href="#references">References</a></li><li class="depth-2"><a href="#amendment-rev-3-2026-07-11-adr-081">Amendment — rev 3 (2026-07-11, ADR-081)</a></li><li class="depth-2"><a href="#amendment-rev-4-2026-07-26-evf-63">Amendment — rev 4 (2026-07-26, evf.63)</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The first version of the EVF dedup logic (<a href="https://github.com/Fencer4Life/spws-automated-ranklist/commit/e440299">commit <code>e440299</code></a>) used <code>(dt_start exact, canonical country)</code> as the primary key with a <code>±N day window + fuzzy-name ≥ 80%</code> fallback. EVF actively renames events mid-season — the canonical incident was &quot;EVF Circuit Napoli&quot; → &quot;EVF Circuit – Naples (ITA)&quot;, which scored ~73% on <code>token_set_ratio</code> and slipped below the 80% threshold. Three duplicate event rows were inserted into CERT and propagated to PROD via the calendar-promote cron:</p>
 <ul>
@@ -187,6 +187,10 @@ The event URL (FTL <code>eventSchedule</code> or <code>events/results</code>) is
 <td><code>evf.50</code></td>
 <td>rev 2: <code>fetch_ftl_event_metadata</code> parses the date from a <code>/tournaments/eventSchedule/</code> event URL (not only <code>/events/results/</code>).</td>
 </tr>
+<tr>
+<td><code>evf.63</code></td>
+<td>rev 4: <code>url_event_if_concluded</code> returns the link only when <code>dt_end &lt; today</code>; future / in-progress / ends-today / undated / url-less inputs → <code>''</code>.</td>
+</tr>
 </tbody>
 </table></div>
 <p>(Plus existing <code>evf.4</code>, <code>evf.5</code>, <code>evf.13</code>, <code>evf.14</code>–<code>evf.18</code> updated to align with the new ladder.)</p>
@@ -207,8 +211,32 @@ the CERT ingest: <code>fn_ingest_evf_calendar</code> (renamed from <code>fn_impo
 identity-first pre-check on <code>id_evf_event</code>/<code>txt_evf_slug</code> before the location-gated allocator,
 so a venue-less repeat scrape can never mint a second row even if the Python dedup is bypassed
 (regression evf.56). Closes <code>fn_allocate_evf_event_code</code>'s blank-location blind spot. See ADR-081.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-rev-4-2026-07-26-evf-63">Amendment — rev 4 (2026-07-26, evf.63)</h2>
+<p><code>url_event</code> is an event's <strong>results pointer</strong>: the operator clicks it to reach results, and
+<code>ingest_cli</code> uses it as the results source when no explicit <code>url_results</code> is set. The calendar
+scraper populated it from the EVF event/detail page for <strong>every</strong> scraped event — including ones
+that had not happened yet — so a future event advertised a schedule/registration page as if it
+were results. Fourteen such rows were observed live on <strong>both CERT and PROD</strong> on 2026-07-26.</p>
+<p><strong>Rule — a date-gate on the scraped <code>url_event</code>, sibling to Step 1's stale gate:</strong> the scraper
+records <code>url_event</code> only when the event has <strong>concluded</strong> — <code>dt_end &lt; today</code> (<code>dt_end</code> falls back
+to <code>dt_start</code>; a missing or unparseable date withholds it). Future and in-progress events land
+with <strong>no</strong> <code>url_event</code>. <code>url_invitation</code> and <code>url_registration</code> are deliberately <em>not</em> gated —
+those are wanted <em>before</em> the event and continue to be scraped and refreshed.</p>
+<p>The gate is a pure helper, <code>url_event_if_concluded(event, today)</code>
+(<a href="../../python/scrapers/evf_calendar.py">python/scrapers/evf_calendar.py</a>), applied to both
+<code>sync_calendar</code> write payloads — create (<code>fn_ingest_evf_calendar</code>) and refresh
+(<code>fn_refresh_evf_event_urls</code>). It composes with ADR-028's fill-blank refresh invariant: once an
+event ends, the next daily run fills the still-empty <code>url_event</code>, and a later manual edit is never
+overwritten — so a manually-added results URL survives permanently.</p>
+<p><strong>Data correction (one-time).</strong> The 14 pre-existing future rows on CERT and PROD had their wrong
+<code>url_event</code> cleared once by direct <code>UPDATE</code> — the fill-blank refresh cannot self-correct a column
+that is already populated, and the CERT→PROD reconciler
+(<a href="../../supabase/migrations/20260711000002_reconciler_update_nullif.sql"><code>fn_mirror_events_to_prod</code></a>,
+<code>url_event = COALESCE(url_event, …)</code>) is fill-blank too, so PROD needed its own clear rather than
+inheriting CERT's. The remediation is a one-shot, never wired into the workflow.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="038-evf-intake-polish-only.html">← ADR-038: EVF-Organized Tournaments Ingest POL-Only Rows</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="040-multi-slot-event-urls.html">→ ADR-040: Multi-Slot Event Result URLs with Compact-on-Save</a></nav>
-<footer class="foot">Generated from <code>039-stale-event-gate.md</code> · source SHA-256 <code>6243f0dff9e4eef2def924a3753fb60d6195ac8332c144f90b418c9b85584751</code></footer>
+<footer class="foot">Generated from <code>039-stale-event-gate.md</code> · source SHA-256 <code>7e47f3a10bdb477392a9b312f86b4870fde5cd0a8acfeaf94ac7651019adeef6</code></footer>
 </div></body></html>

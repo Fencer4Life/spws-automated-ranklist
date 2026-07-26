@@ -1,6 +1,6 @@
 # ADR-039: EVF Scraper Dedup Algorithm + Stale-Event Gate
 
-**Status:** Accepted (revised 2026-06-13 rev 2 — Step 0 self-heals from FTL before halting)
+**Status:** Accepted (revised 2026-07-26 rev 4 — `url_event` recorded only once an event has concluded; see the rev-4 amendment)
 **Date:** 2026-04-25
 **Relates to:** ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)
 
@@ -134,6 +134,7 @@ The full outbound-message catalogue lives in the operations manual.
 | `evf.48` | rev 2: no recoverable date → no date `UPDATE`; the row's status is demoted instead. |
 | `evf.49` | rev 2: the demotion bypasses the lifecycle trigger (`DISABLE`/`ENABLE TRIGGER trg_event_transition` around `enum_status='PLANNED'`). |
 | `evf.50` | rev 2: `fetch_ftl_event_metadata` parses the date from a `/tournaments/eventSchedule/` event URL (not only `/events/results/`). |
+| `evf.63` | rev 4: `url_event_if_concluded` returns the link only when `dt_end < today`; future / in-progress / ends-today / undated / url-less inputs → `''`. |
 
 (Plus existing `evf.4`, `evf.5`, `evf.13`, `evf.14`–`evf.18` updated to align with the new ladder.)
 
@@ -153,3 +154,31 @@ the CERT ingest: `fn_ingest_evf_calendar` (renamed from `fn_import_evf_events_v2
 identity-first pre-check on `id_evf_event`/`txt_evf_slug` before the location-gated allocator,
 so a venue-less repeat scrape can never mint a second row even if the Python dedup is bypassed
 (regression evf.56). Closes `fn_allocate_evf_event_code`'s blank-location blind spot. See ADR-081.
+
+## Amendment — rev 4 (2026-07-26, evf.63)
+
+`url_event` is an event's **results pointer**: the operator clicks it to reach results, and
+`ingest_cli` uses it as the results source when no explicit `url_results` is set. The calendar
+scraper populated it from the EVF event/detail page for **every** scraped event — including ones
+that had not happened yet — so a future event advertised a schedule/registration page as if it
+were results. Fourteen such rows were observed live on **both CERT and PROD** on 2026-07-26.
+
+**Rule — a date-gate on the scraped `url_event`, sibling to Step 1's stale gate:** the scraper
+records `url_event` only when the event has **concluded** — `dt_end < today` (`dt_end` falls back
+to `dt_start`; a missing or unparseable date withholds it). Future and in-progress events land
+with **no** `url_event`. `url_invitation` and `url_registration` are deliberately *not* gated —
+those are wanted *before* the event and continue to be scraped and refreshed.
+
+The gate is a pure helper, `url_event_if_concluded(event, today)`
+([python/scrapers/evf_calendar.py](../../python/scrapers/evf_calendar.py)), applied to both
+`sync_calendar` write payloads — create (`fn_ingest_evf_calendar`) and refresh
+(`fn_refresh_evf_event_urls`). It composes with ADR-028's fill-blank refresh invariant: once an
+event ends, the next daily run fills the still-empty `url_event`, and a later manual edit is never
+overwritten — so a manually-added results URL survives permanently.
+
+**Data correction (one-time).** The 14 pre-existing future rows on CERT and PROD had their wrong
+`url_event` cleared once by direct `UPDATE` — the fill-blank refresh cannot self-correct a column
+that is already populated, and the CERT→PROD reconciler
+([`fn_mirror_events_to_prod`](../../supabase/migrations/20260711000002_reconciler_update_nullif.sql),
+`url_event = COALESCE(url_event, …)`) is fill-blank too, so PROD needed its own clear rather than
+inheriting CERT's. The remediation is a one-shot, never wired into the workflow.
