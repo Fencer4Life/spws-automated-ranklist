@@ -29,6 +29,7 @@ from python.scrapers.evf_calendar import (
     is_in_scope,
     match_scraped_to_existing,
     scrape_full_season_calendar,
+    url_event_if_concluded,
 )
 from python.scrapers.evf_results import (
     EvfApiClient,
@@ -346,7 +347,13 @@ def sync_calendar(
                         "country": evt.get("country", ""),
                         "weapons": evt.get("weapons", []),
                         "is_team": bool(evt.get("is_team", False)),
-                        "url_event": evt.get("url", "") or "",
+                        # url_event is the *results* pointer: only record the EVF
+                        # link once the event has concluded. Future/in-progress
+                        # events land with a blank url_event and the daily refresh
+                        # fills it (fill-blank) the day after they end. Invitation
+                        # and registration below are unaffected — wanted before the
+                        # event. (evf.63)
+                        "url_event": url_event_if_concluded(evt),
                         "url_invitation": evt.get("url_invitation") or "",
                         "url_registration": evt.get("url_registration") or "",
                         "dt_registration_deadline": evt.get("dt_registration_deadline") or "",
@@ -443,7 +450,11 @@ def sync_calendar(
             refresh_payload.append(
                 {
                     "id_event": existing_row["id_event"],
-                    "url_event": scraped.get("url", "") or "",
+                    # Same gate as the create path: withhold the results pointer
+                    # until the event ends. fn_refresh_evf_event_urls is
+                    # fill-blank-only, so once concluded this fills a still-empty
+                    # url_event, and a later manual edit is never overwritten. (evf.63)
+                    "url_event": url_event_if_concluded(scraped),
                     "url_invitation": scraped.get("url_invitation") or "",
                     "url_registration": scraped.get("url_registration") or "",
                     "dt_registration_deadline": scraped.get("dt_registration_deadline") or "",

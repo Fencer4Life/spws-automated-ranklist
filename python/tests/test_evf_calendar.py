@@ -477,6 +477,46 @@ class TestStaleEventGate:
         )
         assert is_in_scope(future_planned, today=today) is True
 
+    def test_url_event_if_concluded_withholds_results_link_until_event_ends(self):
+        """evf.63: The scraped EVF event link is a *results* pointer only once
+        the event is over. Before that (future or in-progress) it points at a
+        schedule/registration page with no results, so we withhold it — while
+        invitation/registration URLs, handled elsewhere, are unaffected.
+
+        Rule: return event['url'] iff dt_end < today, else ''. dt_end falls back
+        to dt_start; a missing/unparseable date withholds the link.
+        """
+        from datetime import date
+
+        from python.scrapers.evf_calendar import url_event_if_concluded
+
+        today = date(2026, 7, 26)
+        URL = "https://veteransfencing.eu/event/samorin-2026/"
+
+        past = {"url": URL, "dt_start": "2026-06-01", "dt_end": "2026-06-03"}
+        future = {"url": URL, "dt_start": "2026-09-12", "dt_end": "2026-09-14"}
+        ending_today = {"url": URL, "dt_start": "2026-07-25", "dt_end": "2026-07-26"}
+        in_progress = {"url": URL, "dt_start": "2026-07-25", "dt_end": "2026-07-27"}
+
+        # Concluded → the link is a valid results pointer.
+        assert url_event_if_concluded(past, today=today) == URL
+
+        # Future / in-progress / ends-today → withheld (this is the bug fix).
+        assert url_event_if_concluded(future, today=today) == ""
+        assert url_event_if_concluded(in_progress, today=today) == ""
+        assert url_event_if_concluded(ending_today, today=today) == "", (
+            "dt_end == today is not yet concluded; the daily cron fills it the next day"
+        )
+
+        # dt_end missing → falls back to dt_start.
+        assert url_event_if_concluded({"url": URL, "dt_start": "2026-06-01"}, today=today) == URL
+        assert url_event_if_concluded({"url": URL, "dt_start": "2026-09-12"}, today=today) == ""
+
+        # No URL, or no parseable date → nothing to record.
+        assert url_event_if_concluded({"dt_end": "2026-06-01"}, today=today) == ""
+        assert url_event_if_concluded({"url": URL, "dt_end": "TBD"}, today=today) == ""
+        assert url_event_if_concluded({"url": URL}, today=today) == ""
+
     def test_caller_prefilter_excludes_out_of_scope(self):
         """evf.24: The caller-side pre-filter pattern — applying is_in_scope
         to existing rows BEFORE feeding them to deduplicate_events removes

@@ -849,6 +849,39 @@ def is_in_scope(event: dict, today: date | None = None) -> bool:
     return (today - end).days < STALE_WINDOW_DAYS
 
 
+def url_event_if_concluded(event: dict, today: date | None = None) -> str:
+    """Return the scraped EVF event link only once the event has concluded.
+
+    The calendar link (``event['url']``) is written to ``tbl_event.url_event``,
+    which the operator and the ingest pipeline treat as the event's *results*
+    pointer. On a future or in-progress event it points at a schedule/
+    registration page with no results, so recording it there is misleading —
+    the reported bug. We therefore withhold it until the event is over.
+
+    Rule: return ``event['url']`` iff ``dt_end < today`` (the event is fully in
+    the past). ``dt_end`` falls back to ``dt_start``. A missing URL or an
+    unparseable date returns ``''`` — we never record a link we cannot confirm
+    points at a concluded event.
+
+    Invitation and registration URLs are deliberately **not** governed here:
+    those are wanted *before* the event and flow through unchanged.
+    """
+    if today is None:
+        today = date.today()
+
+    url = str(event.get("url") or "").strip()
+    if not url:
+        return ""
+
+    end_str = event.get("dt_end") or event.get("dt_start") or ""
+    try:
+        end = datetime.strptime(str(end_str), "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return ""
+
+    return url if end < today else ""
+
+
 def find_future_completed(events: list[dict], today: date | None = None) -> list[dict]:
     """Return the rows that are future-COMPLETED — dt_start > today AND
     enum_status = 'COMPLETED' (ADR-039 Step 0).

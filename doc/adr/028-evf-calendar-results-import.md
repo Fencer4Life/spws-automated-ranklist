@@ -114,3 +114,16 @@ gains an **identity-first pre-check**: a current-season row already carrying the
 `fn_allocate_evf_event_code` runs — closing that allocator's blank-location blind spot at the
 SQL layer (Steps A/B skip on blank location → Step C previously minted a fresh code every
 scrape). This mirrors the Python `id→slug` dedup ladder (ADR-039 rev 2) in SQL. See ADR-081.
+
+## Amendment (2026-07-26, ADR-039 rev 4)
+
+`url_event` — the event's results pointer — is now recorded **only once the event has concluded**
+(`dt_end < today`). The calendar scraper described above wrote it for *every* event, so future
+events carried a schedule/registration page in a field the operator and `ingest_cli` treat as the
+results source. The **Refresh Semantics** "Columns refreshed" list is unchanged, but `url_event`
+specifically is gated by `url_event_if_concluded` before it reaches `fn_ingest_evf_calendar`
+(create) or `fn_refresh_evf_event_urls` (refresh). `url_invitation` and `url_registration` — the
+organizer's invitation letter and registration link — are **unaffected** and still harvested for
+upcoming events. The fill-blank invariant continues to hold: once concluded, the link is filled
+and a later manual edit is never overwritten. Canonical spec and the one-time CERT/PROD data
+correction: [ADR-039](039-stale-event-gate.md) rev 4.
