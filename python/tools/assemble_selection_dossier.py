@@ -442,17 +442,16 @@ def main() -> None:
         + '<div class="sep"></div>'
         + '<a href="#zA"><span class="no">A</span>Propozycje reprezentacji</a>'
         + '<a href="#zB"><span class="no">B</span>Przegląd obsady</a>'
-        + '<a href="#zE"><span class="no">C</span>Karty zawodników</a>'
+        + '<a href="#zC"><span class="no">C</span>Karty zawodników</a>'
         + '</nav>')
 
     # Extend the proposal's table of contents with the two annexes.
     inner = inner.replace(
         '<li><a href="#s08">Załączniki i słownik</a></li>',
-        '<li><a href="#s11">Załączniki i słownik</a></li>\n'
+        '<li><a href="#s08">Załączniki i słownik</a></li>\n'
         '  <li><a href="#zA"><b>Załącznik A</b> — propozycje reprezentacji</a></li>\n'
         '  <li><a href="#zB"><b>Załącznik B</b> — przegląd obsady reprezentacji</a></li>\n'
-        '  <li><a href="#zC"><b>Załącznik C</b> — jak czytać protokół meczu</a></li>\n'
-        '  <li><a href="#zE"><b>Załącznik E</b> — karty zawodników</a></li>')
+        '  <li><a href="#zC"><b>Załącznik C</b> — karty zawodników</a></li>')
 
     via_html = ""
     if args.viability:
@@ -481,9 +480,30 @@ def main() -> None:
 <div class="annex" id="zC">
   <div class="lbl">Załącznik C</div>
   <h2>Karty zawodników — {len(cards)} kart</h2>
-  <p>Po jednej karcie na zawodnika i broń, dla wszystkich kandydatów pozostających
-  w grze. Metodę czytania obu wykresów opisuje §06; gradację rangi zawodów — §03.
-  Każdy mecz drużynowy ma odnośnik do protokołu źródłowego.</p>
+  <p>Po jednej karcie na zawodnika i broń. Metodę czytania obu wykresów opisuje §03;
+  gradację rangi zawodów — §01. Każdy mecz drużynowy ma odnośnik do protokołu
+  źródłowego.</p>
+</div>
+<div class="body">
+<h3 style="margin-top:4px">Floret mężczyzn — zawodnicy drużyny narodowej spoza
+ewidencji SPWS</h3>
+<div class="call stop">
+  <span class="lb">Trzy karty, które najlepiej pokazują ograniczenie obecnej podstawy</span>
+  Polska wygrała drużynowo mistrzostwa Europy w Cognac 2026 — finał z Francją
+  <b class="k">45:42</b>. W tej drużynie fechtowali zawodnicy, których
+  <b class="k">ranking krajowy niemal nie widzi</b>:<br>
+  <b class="k">MOCEK Sławomir</b> — nie jest członkiem SPWS, więc nie ma pozycji
+  w rankingu krajowym. W drużynie: <b class="k">11 meczów, bilans +59</b>.<br>
+  <b class="k">CIEPŁY Tomasz</b> — dwa starty indywidualne w oknie oceny, obydwa
+  wygrane, ale w stawkach 11 i 4 osób. W drużynie: <b class="k">9 meczów, bilans +48</b>.<br>
+  <b class="k">SZUMIELEWICZ Paweł</b> — <b class="k">nie istnieje w tabeli zawodników
+  SPWS</b>, a jego wynik EVF nie daje się jednoznacznie przypisać. Jego karta po stronie
+  indywidualnej jest pusta w każdym szczeblu. W drużynie:
+  <b class="k">6 meczów, bilans +58</b>, kończył ćwierćfinał, półfinał i finał.<br>
+  Selekcja prowadzona wyłącznie z zakładki „Kadra” nie znalazłaby ostatniego z nich
+  w ogóle — nie ma tam wiersza. To nie jest kwestia porządku w danych, tylko
+  <b class="k">zawodnika ze złotym medalem i bez śladu w ewidencji</b>.
+</div>
 </div>
 <div class="toc"><div class="toclist">{card_toc}</div></div>
 {card_html}
