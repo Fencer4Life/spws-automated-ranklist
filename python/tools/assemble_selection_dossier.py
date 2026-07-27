@@ -117,7 +117,29 @@ def ab_sections(body: str) -> str:
         if cut != -1:
             tail = tail[:cut]
             break
-    return tail
+    return _balance_divs(tail)
+
+
+def _balance_divs(html: str) -> str:
+    """Make the lifted fragment self-contained.
+
+    The cut lands mid-structure, so the slice carries a surplus or shortfall of
+    </div>. Left alone, a surplus closes the wrapper early and then the page
+    container itself — everything after the annex would escape the column and
+    slide under the fixed rail. Balancing here keeps the fragment sealed.
+    """
+    opens = len(re.findall(r"<div\b", html))
+    closes = len(re.findall(r"</div>", html))
+    if closes > opens:
+        surplus = closes - opens
+        for _ in range(surplus):
+            idx = html.rfind("</div>")
+            if idx == -1:
+                break
+            html = html[:idx] + html[idx + len("</div>"):]
+    elif opens > closes:
+        html += "</div>" * (opens - closes)
+    return html
 
 
 # --------------------------------------------------------------------------- #
@@ -354,10 +376,8 @@ def viability_annex(via: dict[str, Any]) -> str:
     return f"""
 <div class="annex" id="zB">
   <div class="lbl">Załącznik B</div>
-  <h2>Wykonalność obsady — 24 kategorie</h2>
-  <p>Skład to {squad} zawodników (4 + 1 rezerwowy). „W grze” oznacza kandydatów,
-  którzy potwierdzili start albo pozostają bez odpowiedzi w sekcji A/B; „w rankingu” —
-  wszystkich sklasyfikowanych, niezależnie od deklaracji.</p>
+  <h2>Przegląd obsady reprezentacji w poszczególnych kategoriach wiekowych</h2>
+  <p>Skład to {squad} zawodników (4 + 1 rezerwowy).</p>
 </div>
 <div class="body">
 <div class="call stop">
@@ -369,178 +389,9 @@ def viability_annex(via: dict[str, Any]) -> str:
   floret kobiet i szabla kobiet nie mają pełnego składu w żadnej.</b>
 </div>
 <div class="tw"><table><thead><tr>
-  <th>Kategoria</th><th>W rankingu</th><th>W grze</th><th>Potwierdzeni</th>
-  <th>Werdykt</th><th>Brakuje</th></tr></thead>
+  <th>Kategoria</th><th>Ogółem</th><th>Zaproponowano</th><th>Wyraziło chęć</th>
+  <th>Stan</th><th>Brakuje</th></tr></thead>
 <tbody>{rows}</tbody></table></div>
-</div>"""
-
-
-def hygiene_annex(reports: Path) -> str:
-    """Załącznik D — EVF records to merge, with the position each fencer loses."""
-    rp = reports / "ranking-positions/pol.json"
-    if not rp.exists():
-        return ""
-    dups = []
-    for fe in json.loads(rp.read_text(encoding="utf-8")).get("fencers", []):
-        for row in fe.get("evf") or []:
-            if row.get("duplicate_records"):
-                dups.append((fe["name"], row))
-    if not dups:
-        return ""
-    rows = "".join(
-        f'<tr><td class="d">{bs.esc(n)}</td><td>{bs.esc(r["bucket"])}</td>'
-        f'<td>{" + ".join(bs.esc(x) for x in r["duplicate_records"])}</td>'
-        f'<td class="n">#{r["published_pos"]}</td><td class="n">#{r["pos"]}</td>'
-        f'<td class="n">{r["published_pos"] - r["pos"]}</td>'
-        f'<td class="n">{r["points"]:.2f}</td></tr>'
-        for n, r in dups)
-    return f"""
-<div class="annex" id="zD">
-  <div class="lbl">Załącznik D</div>
-  <h2>Rekordy do scalenia w rankingu EVF</h2>
-  <p>Zawodnicy prowadzeni przez EVF w dwóch rekordach — raz z polskimi znakami
-  diakrytycznymi, raz bez. Punkty są rozbite między rekordy, więc publikowana pozycja
-  jest gorsza od zdobytej. Lista do zgłoszenia do EVF z prośbą o scalenie.</p>
-</div>
-<div class="body">
-<div class="tw"><table><thead><tr>
-  <th>Zawodnik</th><th>Ranking</th><th>Rekordy w EVF</th><th>Publikowana</th>
-  <th>Po scaleniu</th><th>Traci miejsc</th><th>Punkty łącznie</th></tr></thead>
-<tbody>{rows}</tbody></table></div>
-</div>"""
-
-
-def _role_label(leg: int, n: int) -> str:
-    """Role by distance from the end, printed for the format actually fenced."""
-    seq = n - leg
-    if leg == 1:
-        return "otwierający"
-    if seq == 0:
-        return "kończący"
-    if seq == 1:
-        return "przedostatni"
-    if seq == 2:
-        return "trzeci od końca"
-    return "środek meczu"
-
-
-def worked_example_annex(reports: Path) -> str:
-    """Załącznik C — a DEFEAT read bout by bout.
-
-    A won match teaches the easy lesson. A lost one teaches the lesson that
-    matters for selection: where the match was actually decided, and why a good
-    indicator late in a lost cause is not the same evidence as a good indicator
-    that wins a match.
-    """
-    src = reports / "team-events/msw-dubai-2024.json"
-    if not src.exists():
-        return ""
-    d = json.loads(src.read_text(encoding="utf-8"))
-    match = tour = None
-    for t in d.get("tournaments", []):
-        if not (t.get("present") and t.get("is_team")):
-            continue
-        if "epee" not in str(t.get("weapon", "")).lower():
-            continue
-        for m in t.get("matches", []):
-            if "bronze" in str(m.get("stage", "")).lower() and not m.get("won"):
-                match, tour = m, t
-                break
-        if match:
-            break
-    if match is None or tour is None:
-        return ""
-
-    legs = match["legs"]
-    n = len(legs)
-    ca = cb = 0
-    rows, running = [], []
-    for lg in legs:
-        ca += lg["scored"]
-        cb += lg["conceded"]
-        running.append((lg, ca, cb))
-        state = ("prowadzenie" if ca > cb else "remis" if ca == cb else "strata")
-        cls = "tpos" if ca > cb else "tneg" if ca < cb else ""
-        rows.append(
-            f'<tr><td class="n">{lg["leg"]}/{n}</td>'
-            f'<td class="rr">{_role_label(lg["leg"], n)}</td>'
-            f'<td class="d">{bs.esc(lg["fencer"])}</td>'
-            f'<td class="n">{lg["scored"]}–{lg["conceded"]}</td>'
-            f'<td class="n"><span class="{"tpos" if lg["diff"] > 0 else "tneg" if lg["diff"] < 0 else ""}">'
-            f'{lg["diff"]:+d}</span></td>'
-            f'<td class="n">{ca}–{cb}</td>'
-            f'<td class="rr"><span class="{cls}">{state}</span></td></tr>')
-
-    # Where the match turned: the largest swing against Poland.
-    worst = min(legs, key=lambda x: x["diff"])
-    last = legs[-1]
-    _, pre_a, pre_b = running[-2] if len(running) > 1 else running[-1]
-    gap = pre_b - pre_a
-    per = {}
-    for lg in legs:
-        p = per.setdefault(lg["fencer"], {"n": 0, "d": 0})
-        p["n"] += 1
-        p["d"] += lg["diff"]
-    per_rows = "".join(
-        f'<tr><td class="d">{bs.esc(k)}</td><td class="n">{v["n"]}</td>'
-        f'<td class="n"><span class="{"tpos" if v["d"] > 0 else "tneg" if v["d"] < 0 else ""}">'
-        f'{v["d"]:+d}</span></td></tr>'
-        for k, v in sorted(per.items(), key=lambda kv: kv[1]["d"]))
-    url = f'{bs.FTL}/teammatches/details/{tour["eid"]}/{match["rid"]}/{match["match_id"]}'
-
-    return f"""
-<div class="annex" id="zC">
-  <div class="lbl">Załącznik C</div>
-  <h2>Jak czytać protokół meczu — na przykładzie porażki</h2>
-  <p>{bs.esc(d["championship"])} · {bs.esc(tour["category"])} {bs.esc(tour["gender"])}
-  {bs.esc(tour["weapon"])} · {bs.esc(match["stage"])} · Polska –
-  {bs.esc(match["opponent"])} <b>{match["country_score"]}–{match["opp_score"]}</b>.
-  Celowo bierzemy mecz <b>przegrany</b>: zwycięstwo pokazuje, kto wygrał, natomiast
-  porażka pokazuje, <b>gdzie mecz został rozstrzygnięty</b> — a to jest pytanie,
-  na które selekcja naprawdę potrzebuje odpowiedzi.</p>
-</div>
-<div class="body">
-<div class="tw"><table><thead><tr>
-  <th>Walka</th><th>Rola</th><th>Zawodnik</th><th>Trafienia</th><th>Bilans</th>
-  <th>Stan meczu</th><th>Kto prowadzi</th></tr></thead>
-<tbody>{"".join(rows)}</tbody></table></div>
-
-<h3>Bilans zawodnika w tym meczu</h3>
-<div class="tw"><table><thead><tr>
-  <th>Zawodnik</th><th>Walk</th><th>Bilans</th></tr></thead>
-<tbody>{per_rows}</tbody></table></div>
-
-<div class="call stop">
-  <span class="lb">Wniosek 1 — mecz przegrano w środku, nie na końcu</span>
-  Po walce 2 Polska <b class="k">prowadziła</b>. Przewaga zniknęła w kolejnych dwóch
-  walkach, z których gorsza — {bs.esc(worst["fencer"])},
-  {worst["scored"]}–{worst["conceded"]} (<b class="k">{worst["diff"]:+d}</b>) — jest
-  największą pojedynczą stratą meczu. Potoczne „przegraliśmy na ostatniej walce” jest
-  tu po prostu nieprawdziwe i protokół to pokazuje.
-</div>
-
-<div class="call warn">
-  <span class="lb">Wniosek 2 — dobry bilans w meczu już przegranym to nie to samo</span>
-  Ostatnią walkę {bs.esc(last["fencer"])} wygrał {last["scored"]}–{last["conceded"]}
-  (<b class="k">{last["diff"]:+d}</b>) — ale przystępował do niej przy stracie
-  <b class="k">{gap} trafień</b>, więc wynik meczu był już poza zasięgiem.
-  <b class="k">Ten sam zawodnik</b> w finale o brąz MEW Cognac 2026 wygrał ostatnią walkę
-  11–6, odrabiając stratę i <b class="k">przesądzając zwycięstwo</b>. Liczby w obu
-  przypadkach są dodatnie; wartość dla drużyny jest zupełnie inna. Dlatego karta
-  zawodnika podaje bilans <b class="k">zawsze razem z kontekstem</b> — fazą, rywalem
-  i stanem meczu — a nie jako samodzielną ocenę.
-</div>
-
-<div class="call">
-  <span class="lb">Wniosek 3 — czego ten mecz nie dowodzi</span>
-  Jedna porażka nie jest podstawą do wniosku o zawodniku. Ujemny bilans przeciwko
-  drużynie, która zdobyła medal, może oznaczać słabszy dzień, gorsze rozstawienie albo
-  po prostu lepszego rywala. Dlatego metoda operuje stanami dowodu (§05):
-  pojedynczy słaby występ to <b class="k">DEBIUT −</b>, a nie
-  <b class="k">POWTARZALNIE −</b>. Do drugiego potrzeba powtarzalności — i dopiero ona
-  jest argumentem selekcyjnym.
-  <br><a href="{url}" target="_blank">Protokół źródłowy ↗</a>
-</div>
 </div>"""
 
 
@@ -586,34 +437,29 @@ def main() -> None:
         '<nav class="rail"><p class="rt">Spis treści</p>'
         + rail_links
         + '<div class="sep"></div>'
-        + '<a href="#zA"><span class="no">A</span>Propozycja obsady</a>'
-        + '<a href="#zB"><span class="no">B</span>Wykonalność obsady</a>'
-        + '<a href="#zC"><span class="no">C</span>Protokół meczu</a>'
-        + '<a href="#zD"><span class="no">D</span>Rekordy EVF</a>'
-        + '<a href="#zE"><span class="no">E</span>Karty zawodników</a>'
+        + '<a href="#zA"><span class="no">A</span>Propozycje reprezentacji</a>'
+        + '<a href="#zB"><span class="no">B</span>Przegląd obsady</a>'
+        + '<a href="#zE"><span class="no">C</span>Karty zawodników</a>'
         + '</nav>')
 
     # Extend the proposal's table of contents with the two annexes.
     inner = inner.replace(
         '<li><a href="#s08">Załączniki i słownik</a></li>',
         '<li><a href="#s11">Załączniki i słownik</a></li>\n'
-        '  <li><a href="#zA"><b>Załącznik A</b> — propozycja obsady MŚW</a></li>\n'
-        '  <li><a href="#zB"><b>Załącznik B</b> — wykonalność obsady 24 kategorii</a></li>\n'
+        '  <li><a href="#zA"><b>Załącznik A</b> — propozycje reprezentacji</a></li>\n'
+        '  <li><a href="#zB"><b>Załącznik B</b> — przegląd obsady reprezentacji</a></li>\n'
         '  <li><a href="#zC"><b>Załącznik C</b> — jak czytać protokół meczu</a></li>\n'
-        '  <li><a href="#zD"><b>Załącznik D</b> — rekordy do scalenia w EVF</a></li>\n'
         '  <li><a href="#zE"><b>Załącznik E</b> — karty zawodników</a></li>')
 
     via_html = ""
     if args.viability:
         via_html = viability_annex(
             json.loads(Path(args.viability).read_text(encoding="utf-8")))
-    example_html = worked_example_annex(Path(args.reports))
-    hygiene_html = hygiene_annex(Path(args.reports))
 
     annexes = f"""
 <div class="annex" id="zA">
   <div class="lbl">Załącznik A</div>
-  <h2>Propozycja obsady MŚW — do rozpatrzenia przez PZSz</h2>
+  <h2>Propozycje reprezentacji</h2>
   <p><b>Sekcja A — start indywidualny.</b> Czterech zawodników i rezerwowy w każdej
   z 24 kategorii, wyłonieni z rankingu SPWS. To jest właściwa propozycja obsady
   indywidualnej, którą SPWS przedkłada Polskiemu Związkowi Szermierczemu.<br>
@@ -622,17 +468,15 @@ def main() -> None:
   niż skład celowo — pozwala uwzględnić formę, dostępność i ustawienie drużyny bez
   wracania po nowe dane.<br>
   Kolory oznaczają <b>stan deklaracji</b> zawodnika, nie ocenę sportową.
-  <b>Każde nazwisko jest odnośnikiem do karty zawodnika</b> w załączniku E — do karty
+  <b>Każde nazwisko jest odnośnikiem do karty zawodnika</b> w załączniku C — do karty
   dla tej broni, w której zawodnik występuje w danej kategorii. Podstawą jest raport
   kampanii ankietowej; pseudonim <code>TK</code> zastąpiono pełnym nazwiskiem, żeby
   odnośnik prowadził do właściwej karty.</p>
 </div>
 <div class="abr">{ab_block}</div>
 {via_html}
-{example_html}
-{hygiene_html}
-<div class="annex" id="zE">
-  <div class="lbl">Załącznik E</div>
+<div class="annex" id="zC">
+  <div class="lbl">Załącznik C</div>
   <h2>Karty zawodników — {len(cards)} kart</h2>
   <p>Po jednej karcie na zawodnika i broń, dla wszystkich kandydatów pozostających
   w grze. Metodę czytania obu wykresów opisuje §06; gradację rangi zawodów — §03.
