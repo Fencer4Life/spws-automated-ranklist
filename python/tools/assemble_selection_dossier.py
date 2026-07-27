@@ -359,9 +359,29 @@ def hygiene_annex(reports: Path) -> str:
 </div>"""
 
 
+def _role_label(leg: int, n: int) -> str:
+    """Role by distance from the end, printed for the format actually fenced."""
+    seq = n - leg
+    if leg == 1:
+        return "otwierający"
+    if seq == 0:
+        return "kończący"
+    if seq == 1:
+        return "przedostatni"
+    if seq == 2:
+        return "trzeci od końca"
+    return "środek meczu"
+
+
 def worked_example_annex(reports: Path) -> str:
-    """Załącznik C — one relay read bout by bout, as a reading guide."""
-    src = reports / "team-events/mew-cognac-2026.json"
+    """Załącznik C — a DEFEAT read bout by bout.
+
+    A won match teaches the easy lesson. A lost one teaches the lesson that
+    matters for selection: where the match was actually decided, and why a good
+    indicator late in a lost cause is not the same evidence as a good indicator
+    that wins a match.
+    """
+    src = reports / "team-events/msw-dubai-2024.json"
     if not src.exists():
         return ""
     d = json.loads(src.read_text(encoding="utf-8"))
@@ -369,55 +389,106 @@ def worked_example_annex(reports: Path) -> str:
     for t in d.get("tournaments", []):
         if not (t.get("present") and t.get("is_team")):
             continue
+        if "epee" not in str(t.get("weapon", "")).lower():
+            continue
         for m in t.get("matches", []):
-            if "bronze" in str(m.get("stage", "")).lower() and m.get("won"):
+            if "bronze" in str(m.get("stage", "")).lower() and not m.get("won"):
                 match, tour = m, t
                 break
         if match:
             break
     if match is None or tour is None:
         return ""
-    n = len(match["legs"])
+
+    legs = match["legs"]
+    n = len(legs)
     ca = cb = 0
-    rows = []
-    for lg in match["legs"]:
+    rows, running = [], []
+    for lg in legs:
         ca += lg["scored"]
         cb += lg["conceded"]
-        seq = n - lg["leg"]
-        role = ("Walka 1" if lg["leg"] == 1 else "Walka 9" if seq == 0 else
-                "Walka 8" if seq == 1 else "Walka 7" if seq == 2 else "Walki 2-6")
-        lead = "prowadzenie" if ca > cb else ("remis" if ca == cb else "strata")
+        running.append((lg, ca, cb))
+        state = ("prowadzenie" if ca > cb else "remis" if ca == cb else "strata")
+        cls = "tpos" if ca > cb else "tneg" if ca < cb else ""
         rows.append(
-            f'<tr><td class="n">{lg["leg"]}</td><td class="rr">{role}</td>'
+            f'<tr><td class="n">{lg["leg"]}/{n}</td>'
+            f'<td class="rr">{_role_label(lg["leg"], n)}</td>'
             f'<td class="d">{bs.esc(lg["fencer"])}</td>'
             f'<td class="n">{lg["scored"]}–{lg["conceded"]}</td>'
             f'<td class="n"><span class="{"tpos" if lg["diff"] > 0 else "tneg" if lg["diff"] < 0 else ""}">'
             f'{lg["diff"]:+d}</span></td>'
-            f'<td class="n">{ca}–{cb}</td><td class="rr">{lead}</td></tr>')
-    url = (f'{bs.FTL}/teammatches/details/{tour["eid"]}/{match["rid"]}/{match["match_id"]}')
-    last = match["legs"][-1]
+            f'<td class="n">{ca}–{cb}</td>'
+            f'<td class="rr"><span class="{cls}">{state}</span></td></tr>')
+
+    # Where the match turned: the largest swing against Poland.
+    worst = min(legs, key=lambda x: x["diff"])
+    last = legs[-1]
+    _, pre_a, pre_b = running[-2] if len(running) > 1 else running[-1]
+    gap = pre_b - pre_a
+    per = {}
+    for lg in legs:
+        p = per.setdefault(lg["fencer"], {"n": 0, "d": 0})
+        p["n"] += 1
+        p["d"] += lg["diff"]
+    per_rows = "".join(
+        f'<tr><td class="d">{bs.esc(k)}</td><td class="n">{v["n"]}</td>'
+        f'<td class="n"><span class="{"tpos" if v["d"] > 0 else "tneg" if v["d"] < 0 else ""}">'
+        f'{v["d"]:+d}</span></td></tr>'
+        for k, v in sorted(per.items(), key=lambda kv: kv[1]["d"]))
+    url = f'{bs.FTL}/teammatches/details/{tour["eid"]}/{match["rid"]}/{match["match_id"]}'
+
     return f"""
 <div class="annex" id="zC">
   <div class="lbl">Załącznik C</div>
-  <h2>Jak czytać protokół meczu drużynowego</h2>
+  <h2>Jak czytać protokół meczu — na przykładzie porażki</h2>
   <p>{bs.esc(d["championship"])} · {bs.esc(tour["category"])} {bs.esc(tour["gender"])}
   {bs.esc(tour["weapon"])} · {bs.esc(match["stage"])} · Polska –
-  {bs.esc(match["opponent"])} {match["country_score"]}–{match["opp_score"]}.
-  Ten sam mecz, z którego pochodzą słupki na kartach zawodników.</p>
+  {bs.esc(match["opponent"])} <b>{match["country_score"]}–{match["opp_score"]}</b>.
+  Celowo bierzemy mecz <b>przegrany</b>: zwycięstwo pokazuje, kto wygrał, natomiast
+  porażka pokazuje, <b>gdzie mecz został rozstrzygnięty</b> — a to jest pytanie,
+  na które selekcja naprawdę potrzebuje odpowiedzi.</p>
 </div>
 <div class="body">
 <div class="tw"><table><thead><tr>
   <th>Walka</th><th>Rola</th><th>Zawodnik</th><th>Trafienia</th><th>Bilans</th>
-  <th>Stan meczu</th><th></th></tr></thead>
+  <th>Stan meczu</th><th>Kto prowadzi</th></tr></thead>
 <tbody>{"".join(rows)}</tbody></table></div>
-<div class="call good">
-  <span class="lb">Co z tego wynika dla selekcji</span>
-  Przed ostatnią walką Polska <b class="k">przegrywała</b>. Zawodnik kończący —
-  {bs.esc(last["fencer"])} — wygrał ją {last["scored"]}–{last["conceded"]}
-  (<b class="k">{last["diff"]:+d}</b>) i to on odwrócił wynik meczu. Żaden ranking
-  indywidualny tego nie pokaże: w rankingu ta walka jest niewidoczna, a w karcie
-  zawodnika stoi jako <b class="k">Walka 9</b> z dodatnim bilansem.
-  <a href="{url}" target="_blank">Protokół źródłowy ↗</a>
+
+<h3>Bilans zawodnika w tym meczu</h3>
+<div class="tw"><table><thead><tr>
+  <th>Zawodnik</th><th>Walk</th><th>Bilans</th></tr></thead>
+<tbody>{per_rows}</tbody></table></div>
+
+<div class="call stop">
+  <span class="lb">Wniosek 1 — mecz przegrano w środku, nie na końcu</span>
+  Po walce 2 Polska <b class="k">prowadziła</b>. Przewaga zniknęła w kolejnych dwóch
+  walkach, z których gorsza — {bs.esc(worst["fencer"])},
+  {worst["scored"]}–{worst["conceded"]} (<b class="k">{worst["diff"]:+d}</b>) — jest
+  największą pojedynczą stratą meczu. Potoczne „przegraliśmy na ostatniej walce” jest
+  tu po prostu nieprawdziwe i protokół to pokazuje.
+</div>
+
+<div class="call warn">
+  <span class="lb">Wniosek 2 — dobry bilans w meczu już przegranym to nie to samo</span>
+  Ostatnią walkę {bs.esc(last["fencer"])} wygrał {last["scored"]}–{last["conceded"]}
+  (<b class="k">{last["diff"]:+d}</b>) — ale przystępował do niej przy stracie
+  <b class="k">{gap} trafień</b>, więc wynik meczu był już poza zasięgiem.
+  <b class="k">Ten sam zawodnik</b> w finale o brąz MEW Cognac 2026 wygrał ostatnią walkę
+  11–6, odrabiając stratę i <b class="k">przesądzając zwycięstwo</b>. Liczby w obu
+  przypadkach są dodatnie; wartość dla drużyny jest zupełnie inna. Dlatego karta
+  zawodnika podaje bilans <b class="k">zawsze razem z kontekstem</b> — fazą, rywalem
+  i stanem meczu — a nie jako samodzielną ocenę.
+</div>
+
+<div class="call">
+  <span class="lb">Wniosek 3 — czego ten mecz nie dowodzi</span>
+  Jedna porażka nie jest podstawą do wniosku o zawodniku. Ujemny bilans przeciwko
+  drużynie, która zdobyła medal, może oznaczać słabszy dzień, gorsze rozstawienie albo
+  po prostu lepszego rywala. Dlatego metoda operuje stanami dowodu (§05):
+  pojedynczy słaby występ to <b class="k">DEBIUT −</b>, a nie
+  <b class="k">POWTARZALNIE −</b>. Do drugiego potrzeba powtarzalności — i dopiero ona
+  jest argumentem selekcyjnym.
+  <br><a href="{url}" target="_blank">Protokół źródłowy ↗</a>
 </div>
 </div>"""
 
