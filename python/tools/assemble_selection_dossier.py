@@ -135,7 +135,9 @@ _WEAPON_CTX = re.compile(
 _NAME_LI = re.compile(r'(<li class="[a-z]+">)([^<]+)')
 
 
-def linkify_ab(block: str, anchors: dict[tuple[str, str], str]) -> tuple[str, int, int]:
+def linkify_ab(
+    block: str, anchors: dict[tuple[str, str], str]
+) -> tuple[str, int, int, set[str]]:
     """Turn every fencer name in the campaign annex into a link to their card.
 
     The report lists a fencer once per category, so which card to link depends on
@@ -143,7 +145,11 @@ def linkify_ab(block: str, anchors: dict[tuple[str, str], str]) -> tuple[str, in
     weapon context is tracked while scanning, and a name only becomes a link when
     a card exists for that exact (fencer, weapon) pair.
 
-    Returns (html, linked, unlinked).
+    The first reference to each card also carries ``id="ref-<anchor>"``, so the
+    card can link back to the exact line the reader came from rather than to the
+    top of a very long annex.
+
+    Returns (html, linked, unlinked, refs-created).
     """
     for pseudo, real in PSEUDONYMS.items():
         block = re.sub(rf'(<li class="[a-z]+">){re.escape(pseudo)}(?=<)',
@@ -151,6 +157,7 @@ def linkify_ab(block: str, anchors: dict[tuple[str, str], str]) -> tuple[str, in
 
     out: list[str] = []
     pos, weapon, linked, missed = 0, None, 0, 0
+    seen_ref: set[str] = set()
     events = sorted(
         [(m.start(), m.end(), "ctx", m) for m in _WEAPON_CTX.finditer(block)]
         + [(m.start(), m.end(), "li", m) for m in _NAME_LI.finditer(block)]
@@ -168,30 +175,45 @@ def linkify_ab(block: str, anchors: dict[tuple[str, str], str]) -> tuple[str, in
         anchor = anchors.get((bs.fold(clean), weapon or ""))
         if anchor and clean.lower() != "brak zawodników":
             linked += 1
-            out.append(f'{tag}<a class="pl-link" href="#{anchor}">{name}</a>')
+            back = ""
+            if anchor not in seen_ref:
+                seen_ref.add(anchor)
+                back = f' id="ref-{anchor}"'
+            out.append(f'{tag}<a class="pl-link"{back} href="#{anchor}">{name}</a>')
         else:
             if clean.lower() != "brak zawodników":
                 missed += 1
             out.append(m.group(0))
     out.append(block[pos:])
-    return "".join(out), linked, missed
+    return "".join(out), linked, missed, seen_ref
+
+
+def build_anchors(cards: list[dict[str, Any]]) -> dict[tuple[str, str], str]:
+    """Map (fencer, weapon) -> card anchor, indexing both name spellings."""
+    anchors: dict[tuple[str, str], str] = {}
+    for i, c in enumerate(cards):
+        anchors[(bs.fold(c["fencer"]), c["weapon"])] = f"karta{i}"
+        anchors.setdefault((bs.fold(c["roster_name"]), c["weapon"]), f"karta{i}")
+    return anchors
 
 
 def card_blocks(
-    cards: list[dict[str, Any]],
-) -> tuple[str, str, dict[tuple[str, str], str]]:
-    """Return (toc html, cards html, {(fencer, weapon): anchor}) for the annex."""
+    cards: list[dict[str, Any]], refs: set[str] | None = None,
+) -> tuple[str, str]:
+    """Return (toc html, cards html) for the annex.
+
+    ``refs`` are the back-anchors Załącznik A actually created. A fencer in play
+    may not appear in the annex's shown lists, so their card would otherwise
+    carry a link to an id that does not exist; those fall back to the annex top.
+    """
+    refs = refs or set()
     scale = max([0.5] + [m for c in cards
                          for v in list(c["team"].values()) + ([c["rez"]] if c["rez"] else [])
                          for m in bs.per_bout(v)])
     toc, blocks = [], []
-    anchors: dict[tuple[str, str], str] = {}
     for i, c in enumerate(cards):
         anchor = f"karta{i}"
-        anchors[(bs.fold(c["fencer"]), c["weapon"])] = anchor
-        # The report may print a roster spelling that differs from the master
-        # table's, so index both.
-        anchors.setdefault((bs.fold(c["roster_name"]), c["weapon"]), anchor)
+        back_href = f"#ref-{anchor}" if anchor in refs else "#zA"
         toc.append(f'<a class="tocitem" href="#{anchor}">'
                    f'<i style="background:{bs.WEAPON_COL[c["weapon"]]}"></i>'
                    f'{bs.esc(c["fencer"])} <span>{c["weapon_pl"]}</span></a>')
@@ -216,7 +238,8 @@ def card_blocks(
         blocks.append(f"""
 <section class="card" id="{anchor}">
   <div class="ch"><span class="wpn" style="background:{bs.WEAPON_COL[c["weapon"]]}">{c["weapon_pl"]}</span>
-    <h2>{bs.esc(c["fencer"])}</h2>{status}{bs.rank_chips(c)}</div>
+    <h2>{bs.esc(c["fencer"])}</h2>{status}{bs.rank_chips(c)}
+    <a class="back" href="{back_href}" title="Powrót do Załącznika A">↑ Załącznik A</a></div>
   <div class="two">
     <div><h3>Zakres wyników — indywidualnie</h3>{bs.ladder_svg(c, i)}
       <p class="note">Długość słupka = jak daleko zawodnik zaszedł w turnieju danej rangi:
@@ -229,7 +252,7 @@ def card_blocks(
   </div>
   {tbl}
 </section>""")
-    return "".join(toc), "".join(blocks), anchors
+    return "".join(toc), "".join(blocks)
 
 
 CARD_CSS = f"""
@@ -275,6 +298,27 @@ text-transform:uppercase;color:var(--navy);font-weight:700}}
 .annex h2{{font-family:var(--serif);font-size:24px;margin:8px 0 8px;font-weight:600;
 border:none;padding:0}}
 .annex p{{margin:0;color:var(--muted);font-size:13px;max-width:84ch}}
+.back{{margin-left:auto;font-family:var(--mono);font-size:9.5px;color:var(--muted);
+text-decoration:none;border:1px solid var(--line);border-radius:3px;padding:3px 8px;
+white-space:nowrap}}
+.back:hover{{color:var(--navy);border-color:var(--navy)}}
+/* Fixed contents rail. The dossier runs to ~800 kB and 96 cards, so scrolling
+   back to the table of contents is impractical; the rail appears once the
+   viewport is wide enough to hold it beside the text column. */
+.rail{{display:none}}
+@media(min-width:1200px){{
+  .rail{{display:block;position:fixed;left:14px;top:24px;bottom:24px;width:196px;
+  overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:6px;
+  padding:12px 12px 14px;z-index:60}}
+  .page{{margin-left:232px}}
+}}
+.rail .rt{{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+color:var(--muted);margin:0 0 8px;font-weight:600}}
+.rail a{{display:block;font-family:var(--mono);font-size:10px;line-height:1.3;
+color:var(--ink);text-decoration:none;padding:4px 0;border-bottom:1px solid transparent}}
+.rail a:hover{{color:var(--navy)}}
+.rail a .no{{color:var(--muted);margin-right:5px}}
+.rail .sep{{border-top:1px solid var(--line);margin:9px 0 7px}}
 /* Names in Załącznik A link to that fencer's card. Underlined on hover only, so
    a page of 200 names does not turn into a wall of blue. */
 {SCOPE} a.pl-link{{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;
@@ -514,8 +558,9 @@ def main() -> None:
 
     cards = bs.build_cards(roster, data, create_db_connector().fetch_fencer_db())
     cards.sort(key=lambda c: (c["fencer"], c["weapon"]))
-    card_toc, card_html, anchors = card_blocks(cards)
-    ab_block, linked, missed = linkify_ab(ab_block, anchors)
+    anchors = build_anchors(cards)
+    ab_block, linked, missed, refs = linkify_ab(ab_block, anchors)
+    card_toc, card_html = card_blocks(cards, refs)
     print(f"  Załącznik A: {linked} nazwisk z odnośnikiem do karty, "
           f"{missed} bez karty", file=sys.stderr)
 
@@ -523,6 +568,23 @@ def main() -> None:
     # its closing tags so the annexes sit inside the same column.
     inner = prop_body.strip()
     inner = re.sub(r"</div>\s*$", "", inner, count=1)
+
+    # The rail mirrors the document's own contents, so the two can never disagree.
+    toc_items = re.findall(r'<li><a href="(#s\d+)">(.*?)</a></li>', inner, re.S)
+    rail_links = "".join(
+        f'<a href="{h}"><span class="no">{i:02d}</span>'
+        f'{re.sub(r"<[^>]+>", "", t).split("—")[0].strip()}</a>'
+        for i, (h, t) in enumerate(toc_items))
+    rail = (
+        '<nav class="rail"><p class="rt">Spis treści</p>'
+        + rail_links
+        + '<div class="sep"></div>'
+        + '<a href="#zA"><span class="no">A</span>Propozycja obsady</a>'
+        + '<a href="#zB"><span class="no">B</span>Wykonalność obsady</a>'
+        + '<a href="#zC"><span class="no">C</span>Protokół meczu</a>'
+        + '<a href="#zD"><span class="no">D</span>Rekordy EVF</a>'
+        + '<a href="#zE"><span class="no">E</span>Karty zawodników</a>'
+        + '</nav>')
 
     # Extend the proposal's table of contents with the two annexes.
     inner = inner.replace(
@@ -584,7 +646,7 @@ def main() -> None:
             f"   clip their first letter. Neutralised here, after the scoped rules. */\n"
             f"{SCOPE}{{display:block;margin:0 22px;padding:0;background:none;"
             f"min-height:0;max-width:none}}</style>\n"
-            f"</head>\n<body>\n{inner}\n{annexes}\n</body>\n</html>\n")
+            f"</head>\n<body>\n{rail}\n{inner}\n{annexes}\n</body>\n</html>\n")
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
