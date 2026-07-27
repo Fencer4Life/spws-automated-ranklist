@@ -490,7 +490,7 @@ ewidencji SPWS</h3>
 <div class="call stop">
   <span class="lb">Trzy karty, które najlepiej pokazują ograniczenie obecnej podstawy</span>
   Polska wygrała drużynowo mistrzostwa Europy w Cognac 2026 — finał z Francją
-  <b class="k">45:42</b>. W tej drużynie fechtowali zawodnicy, których
+  <b class="k">45:42</b>. W tej drużynie walczyli zawodnicy, których
   <b class="k">ranking krajowy niemal nie widzi</b>:<br>
   <b class="k">MOCEK Sławomir</b> — nie jest członkiem SPWS, więc nie ma pozycji
   w rankingu krajowym. W drużynie: <b class="k">11 meczów, bilans +59</b>.<br>
