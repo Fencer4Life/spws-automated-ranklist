@@ -37,6 +37,7 @@ import glob
 import html
 import json
 import math
+import re
 import sys
 import unicodedata
 from collections import defaultdict
@@ -45,15 +46,15 @@ from typing import Any
 
 FTL = "https://www.fencingtimelive.com"
 
-LADDER = ["MSW", "MEW", "EVF-64+", "EVF-32+", "EVF-16+", "EVF-8+", "EVF-4+",
+LADDER = ["MŚW", "MEW", "EVF-64+", "EVF-32+", "EVF-16+", "EVF-8+", "EVF-4+",
           "MPW", "SPWS-16+", "SPWS-8+", "SPWS-4+", "SPWS-4-"]
-RENAME = {"WORLD": "MSW", "EUROPEAN": "MEW", "EVF-4-": "EVF-4+"}
+RENAME = {"WORLD": "MŚW", "EUROPEAN": "MEW", "EVF-4-": "EVF-4+"}
 ROLES = ["Walka 9", "Walka 8", "Walka 7", "Walki 2-6", "Walka 1"]
 ROLE_ORDER = {r: i for i, r in enumerate(ROLES)}
 WEAPON_PL = {"EPEE": "SZPADA", "FOIL": "FLORET", "SABRE": "SZABLA"}
 
 RUNG_COL = {
-    "MSW": "#12704a", "MEW": "#2e9155", "EVF-64+": "#4f9e4a", "EVF-32+": "#79a742",
+    "MŚW": "#12704a", "MEW": "#2e9155", "EVF-64+": "#4f9e4a", "EVF-32+": "#79a742",
     "EVF-16+": "#a3ad3c", "EVF-8+": "#c2a33a", "EVF-4+": "#d18f36", "MPW": "#c96a2e",
     "SPWS-16+": "#d75c33", "SPWS-8+": "#cf4e33", "SPWS-4+": "#c43f31", "SPWS-4-": "#b93636",
 }
@@ -111,6 +112,16 @@ def medal_col(place: int | None) -> str:
 
 def esc(s: Any) -> str:
     return html.escape(str(s if s is not None else ""))
+
+
+def champ_label(name: str) -> str:
+    """Display a championship label with the correct Polish abbreviation.
+
+    Scrape runs were labelled "MSW ..." on the command line; the document uses
+    MŚW throughout, so the two are reconciled at render time rather than by
+    re-scraping.
+    """
+    return re.sub(r"^MSW\b", "MŚW", str(name or ""))
 
 
 # --------------------------------------------------------------------------- #
@@ -373,7 +384,7 @@ def render(cards: list[dict], title: str, subtitle: str) -> str:
                    f'<i style="background:{WEAPON_COL[c["weapon"]]}"></i>'
                    f'{esc(c["fencer"])} <span>{c["weapon_pl"]}</span></a>')
         rows = "".join(
-            f'<tr><td class="d">{esc(m["ch"])}</td><td>{esc(m["tn"])}</td>'
+            f'<tr><td class="d">{esc(champ_label(m["ch"]))}</td><td>{esc(m["tn"])}</td>'
             f'<td>{esc(m["stage"])}</td><td>{esc(m["opp"])}</td>'
             f'<td class="n">{esc(m["sc"])}–{esc(m["os"])}</td>'
             f'<td><span class="st {"s-ok" if m["won"] else "s-bad"}">'

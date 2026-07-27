@@ -214,7 +214,7 @@ w dwunastostopniową drabinę, wspólną dla wyników indywidualnych i drużynow
 <table>
 <thead><tr><th style="width:16%">Szczebel</th><th style="width:34%">Zawody</th><th>Uzasadnienie pozycji</th></tr></thead>
 <tbody>
-<tr><td class="d"><span class="rung" style="background:#12704a"></span>MSW</td>
+<tr><td class="d"><span class="rung" style="background:#12704a"></span>MŚW</td>
   <td>Mistrzostwa świata weteranów (FIE)</td>
   <td>Najwyższa ranga i najgłębsza stawka. Indywidualnie i drużynowo.</td></tr>
 <tr><td class="d"><span class="rung" style="background:#2e9155"></span>MEW</td>
@@ -278,9 +278,10 @@ weteranów</b>. Dla cyklu kończącego się MŚW Tbilisi 2026 granicą są MEW C
 </table>
 </div>
 
-<p class="sub">Okno obowiązuje wszystkie strumienie dowodów jednakowo: wyniki indywidualne,
-mecze drużynowe i dorobek krajowy. Materiał starszy pozostaje w archiwum i może być
-przywołany w uzasadnieniu, ale nie wchodzi do kart ani do zestawień.</p>
+<p class="sub">Reguła obowiązuje wszystkie strumienie dowodów jednakowo: wyniki
+indywidualne, mecze drużynowe i dorobek krajowy. Materiał starszy pozostaje w archiwum
+i może być przywołany w uzasadnieniu, ale nie wchodzi do kart ani do zestawień.
+Faktyczny zakres danych w tej wersji dokumentu podaje §07.</p>
 
 <div class="call">
   <span class="lb">Dlaczego okno jest szerokie właśnie tak</span>
@@ -309,10 +310,11 @@ niczego, czego karta nie pokazuje.</p>
 <tr><td class="d">Suma jest punktem wyjścia, nie wnioskiem</td>
   <td>Podajemy dorobek punktowy, bo to waluta, której oczekuje związek — ale nigdy samotnie.
   Zawsze obok pokazujemy, <b class="k">skąd te punkty pochodzą</b> (§01).</td></tr>
-<tr><td class="d">Ostrzeżenia, nie bramki</td>
-  <td>Metoda <b class="k">sygnalizuje</b> wzorce wymagające wyjaśnienia — „78% dorobku
-  pochodzi z zawodów poniżej ośmiu startujących”, „brak wyniku powyżej EVF-16 od dwóch
-  sezonów” — ale <b class="k">nikogo nie wyklucza</b>.</td></tr>
+<tr><td class="d">Widoczność zamiast bramek</td>
+  <td>Wzorce wymagające wyjaśnienia — dorobek skupiony na najniższych szczeblach, brak
+  startów powyżej pewnego poziomu — <b class="k">widać na wykresie</b>: puste wiersze
+  i rozkład słupków mówią to same. Metoda niczego nie odcina i
+  <b class="k">nikogo nie wyklucza</b> — pokazuje, o co zapytać.</td></tr>
 <tr><td class="d">Brak danych to nie zarzut</td>
   <td><code>BRAK</code> i „powtarzalnie słabe wyniki” to dwie różne informacje o przeciwnym
   znaczeniu dla selekcji: pierwsza mówi „niesprawdzony”, druga „sprawdzony i wypadł źle”.</td></tr>
@@ -347,7 +349,7 @@ niczego, czego karta nie pokazuje.</p>
 <p>Karta jest jedynym dokumentem, na podstawie którego proponujemy zawodnika. Powstaje
 <b class="k">osobno dla każdej broni</b> i mieści się na jednym ekranie: nagłówek
 podsumowuje, dwa wykresy pokazują dorobek, tabela pod nimi wylicza wszystkie mecze
-drużynowe wraz z odnośnikami do protokołów. Komplet kart stanowi Załącznik D.</p>
+drużynowe wraz z odnośnikami do protokołów. Komplet kart stanowi Załącznik C.</p>
 
 <h3>Nagłówek — cztery informacje</h3>
 <div class="tw">
@@ -372,7 +374,7 @@ drużynowe wraz z odnośnikami do protokołów. Komplet kart stanowi Załącznik
 </div>
 
 <h3>Wykres 1 — zakres wyników indywidualnie</h3>
-<p>Dwanaście wierszy, po jednym na każdy szczebel drabiny rangi zawodów (§01), od MSW
+<p>Dwanaście wierszy, po jednym na każdy szczebel drabiny rangi zawodów (§01), od MŚW
 na górze do SPWS 4− na dole. Wiersz jest pusty i opisany jako <code>BRAK</code>, jeżeli
 zawodnik nigdy nie startował na tym poziomie.</p>
 <ul>
@@ -394,7 +396,8 @@ zawodnik nigdy nie startował na tym poziomie.</p>
 </ul>
 
 <h3>Wykres 2 — role w drużynie</h3>
-<p>Mecz drużynowy to dziewięć walk (na mistrzostwach świata bywa sześć). Kolejność nie
+<p>Mecz drużynowy liczy zwykle dziewięć walk, choć część turniejów rozgrywana jest
+w formacie sześciu — w analizowanym oknie tak było na MŚW Dubaj 2024. Kolejność nie
 jest przypadkowa: ostatnie walki rozstrzygają, pierwsza nadaje ton. Wykres pokazuje,
 <b class="k">które walki powierzano zawodnikowi i z jakim skutkiem</b>.</p>
 <ul>
@@ -403,7 +406,9 @@ jest przypadkowa: ostatnie walki rozstrzygają, pierwsza nadaje ton. Wykres poka
   z rezerwy. Dzięki liczeniu od końca role zachowują znaczenie niezależnie od tego,
   czy mecz miał dziewięć walk czy sześć.</li>
   <li><b class="k">W lewo, czerwone — trafienia stracone; w prawo, zielone — trafienia
-  zdobyte.</b> Liczby przy słupkach podają trafienia łącznie.</li>
+  zdobyte.</b> Liczba <b class="k">obok</b> słupka to trafienia łącznie, liczba
+  <b class="k">na</b> słupku (biała) — średnia na jedną walkę, czyli dokładnie to,
+  co odmierza jego długość.</li>
   <li><b class="k">Długość słupka liczona jest na jedną walkę</b>, nie łącznie. Bez tego
   rola stoczona trzydzieści razy zawsze wyglądałaby lepiej od stoczonej osiem razy —
   mierzylibyśmy częstotliwość zamiast jakości.</li>
@@ -480,10 +485,11 @@ osiągamy i nie udajemy, że osiągamy (Załącznik B).</p>
 <p>To dwie różne decyzje i traktujemy je osobno. Dla <b class="k">startu indywidualnego</b>
 proponujemy czterech zawodników i rezerwowego w każdej z 24 kategorii (Załącznik A,
 sekcja A). Dla <b class="k">drużyny</b> — która łączy kategorie w pary (Veteran: V1+V2,
-Grand Veteran: V3+V4) — przekazujemy <b class="k">pulę ośmiu zawodników</b>, z której
-wybierany jest skład czterech (Załącznik A, sekcja B). Pula jest szersza niż skład
-celowo: pozwala PZSz uwzględnić formę, dostępność i ustawienie drużyny bez wracania
-po nowe dane.</p>
+Grand Veteran: V3+V4) — przekazujemy <b class="k">pulę dziesięciu zawodników</b> — po pięciu najlepszych
+z każdej z dwóch kategorii składających się na drużynę — z której wybierany jest skład
+czterech (Załącznik A, sekcja B). Pula jest szersza niż skład celowo: pozwala PZSz
+uwzględnić formę, dostępność i ustawienie drużyny bez wracania po nowe dane. Tam, gdzie
+kandydatów jest mniej, pula jest odpowiednio krótsza.</p>
 
 <div class="call">
   <span class="lb">Granica kompetencji — świadomie ostra</span>
@@ -602,8 +608,8 @@ w tym kalendarzu jesteśmy dzisiaj.</p>
     <text x="550" y="192" text-anchor="middle" font-size="9" fill="var(--muted)">zgłoszenie kandydatów</text>
 
     <!-- nomination window -->
-    <text x="715" y="192" text-anchor="middle" font-size="9.5" fill="var(--muted)">okno decyzji PZSz</text>
-    <text x="715" y="206" text-anchor="middle" font-size="9" fill="var(--muted)">nominacja i zgłoszenie imienne</text>
+    <text x="715" y="192" text-anchor="middle" font-size="9.5" fill="var(--muted)">okno przygotowań reprezentacji</text>
+    <text x="715" y="206" text-anchor="middle" font-size="9" fill="var(--muted)">do startu na imprezie międzynarodowej</text>
 
     <!-- event -->
     <circle cx="880" cy="150" r="8" fill="#12704a"/>
@@ -692,8 +698,8 @@ organizacji</b> i jak zawodnik może poprawić błąd w swoich danych.</p>
   miejsca w rankingu</b>:<br>
   <b class="k">1.</b> EVF prowadzi część polskich zawodników <b class="k">w dwóch rekordach</b>
   — raz z polskimi znakami, raz bez — przez co punkty są rozbite. W jednym potwierdzonym
-  przypadku publikowane miejsce to 147, a zdobyte punkty dają <b class="k">93. na 246</b>
-  (Załącznik C).<br>
+  przypadku publikowane miejsce to 147, a zdobyte punkty dają <b class="k">93. na 246</b>.
+  Wykaz takich rekordów SPWS przekazuje do EVF z prośbą o scalenie.<br>
   <b class="k">2.</b> Część kandydatów <b class="k">nie istnieje w tabeli zawodników SPWS</b>,
   więc ich karta jest pusta mimo realnego dorobku.<br>
   <b class="k">3.</b> Pisownia nazwisk i zmiany nazwisk rozjeżdżają tożsamość między systemami.
@@ -714,21 +720,18 @@ organizacji</b> i jak zawodnik może poprawić błąd w swoich danych.</p>
 <h2 id="s08"><span class="num">08</span>Załączniki i słownik</h2>
 
 <h3>Załączniki</h3>
-<p class="sub">W wersji z załącznikami dokument zawiera cztery dodatki, w kolejności
+<p class="sub">W wersji z załącznikami dokument zawiera trzy dodatki, w kolejności
 od propozycji obsady do materiału dowodowego pojedynczego zawodnika.</p>
 <ul>
   <li><b class="k">Załącznik A. Propozycje reprezentacji</b> — sekcja A: czterech zawodników
   i rezerwowy do <b class="k">startu indywidualnego</b> w każdej z 24 kategorii; sekcja B:
-  <b class="k">pula ośmiu zawodników</b> na każdą drużynę, z której PZSz wybiera skład.
+  <b class="k">pula dziesięciu zawodników</b> na każdą drużynę (po pięciu z każdej kategorii), z której PZSz wybiera skład.
   Każde nazwisko jest odnośnikiem do karty zawodnika.</li>
   <li><b class="k">Załącznik B. Przegląd obsady reprezentacji</b> — stan obsady w każdej
   z 24 kategorii wiekowych — <span class="st s-ok">obsadzona</span> /
   <span class="st s-wip">niepełna</span> / <span class="st s-bad">brak obsady</span> —
   wraz z liczbą zawodników ogółem, zaproponowanych i tych, którzy wyrazili chęć startu.</li>
-  <li><b class="k">Załącznik C. Rekordy do scalenia w rankingu EVF</b> — zawodnicy
-  prowadzeni przez EVF w dwóch rekordach, z wyliczeniem, ile miejsc w rankingu na tym
-  tracą.</li>
-  <li><b class="k">Załącznik D. Karty zawodników</b> — komplet kart dla kandydatów
+  <li><b class="k">Załącznik C. Karty zawodników</b> — komplet kart dla kandydatów
   pozostających w grze, po jednej na zawodnika i broń.</li>
 </ul>
 
@@ -737,7 +740,7 @@ od propozycji obsady do materiału dowodowego pojedynczego zawodnika.</p>
 <table>
 <thead><tr><th style="width:16%">Skrót</th><th>Znaczenie</th></tr></thead>
 <tbody>
-<tr><td class="d">MSW</td><td>Mistrzostwa Świata Weteranów (FIE)</td></tr>
+<tr><td class="d">MŚW</td><td>Mistrzostwa Świata Weteranów (FIE)</td></tr>
 <tr><td class="d">MEW</td><td>Mistrzostwa Europy Weteranów (EVF)</td></tr>
 <tr><td class="d">MPW</td><td>Mistrzostwa Polski Weteranów</td></tr>
 <tr><td class="d">PPW</td><td>Puchar Polski Weteranów</td></tr>
@@ -756,7 +759,7 @@ od propozycji obsady do materiału dowodowego pojedynczego zawodnika.</p>
 <h3>Pytania otwarte do rozstrzygnięcia w dyskusji</h3>
 <ol>
   <li>Czy próg obsadzenia kategorii to 5 osób (4 + 1), czy dopuszczamy skład bez rezerwowego?</li>
-  <li>Czy pula drużynowa ma liczyć ośmiu zawodników, czy inną liczbę?</li>
+  <li>Czy pula drużynowa ma liczyć dziesięciu zawodników, czy inną liczbę?</li>
   <li>Czy okno reklamacji ma obejmować także <b class="k">kolejność</b> zaproponowaną przez
   SPWS, czy wyłącznie fakty?</li>
   <li>Czy przy werdykcie <span class="st s-wip">NIEPEŁNA</span> SPWS rekomenduje wystawienie

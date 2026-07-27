@@ -235,12 +235,15 @@ def card_blocks(
     toc, blocks = [], []
     for i, c in enumerate(cards):
         anchor = f"karta{i}"
-        back_href = f"#ref-{anchor}" if anchor in refs else "#zA"
+        # Back-links return to the card index at the head of Załącznik C, not to
+        # Załącznik A: a reader working through the cards wants the next card,
+        # not the representation table they may never have come from.
+        back_href = "#zC"
         toc.append(f'<a class="tocitem" href="#{anchor}">'
                    f'<i style="background:{bs.WEAPON_COL[c["weapon"]]}"></i>'
                    f'{bs.esc(c["fencer"])} <span>{c["weapon_pl"]}</span></a>')
         rows = "".join(
-            f'<tr><td class="d">{bs.esc(m["ch"])}</td><td>{bs.esc(m["tn"])}</td>'
+            f'<tr><td class="d">{bs.esc(bs.champ_label(m["ch"]))}</td><td>{bs.esc(m["tn"])}</td>'
             f'<td>{bs.esc(m["stage"])}</td><td>{bs.esc(m["opp"])}</td>'
             f'<td class="n">{bs.esc(m["sc"])}–{bs.esc(m["os"])}</td>'
             f'<td><span class="st {"s-ok" if m["won"] else "s-bad"}">'
@@ -261,7 +264,7 @@ def card_blocks(
 <section class="card" id="{anchor}">
   <div class="ch"><span class="wpn" style="background:{bs.WEAPON_COL[c["weapon"]]}">{c["weapon_pl"]}</span>
     <h2>{bs.esc(c["fencer"])}</h2>{status}{bs.rank_chips(c)}
-    <a class="back" href="{back_href}" title="Powrót do Załącznika A">↑ Załącznik A</a></div>
+    <a class="back" href="{back_href}" title="Powrót do spisu kart">↑ Karty zawodników</a></div>
   <div class="two">
     <div><h3>Zakres wyników — indywidualnie</h3>{bs.ladder_svg(c, i)}
       <p class="note">Długość słupka = jak daleko zawodnik zaszedł w turnieju danej rangi:
@@ -466,9 +469,10 @@ def main() -> None:
   z 24 kategorii, wyłonieni z rankingu SPWS. To jest właściwa propozycja obsady
   indywidualnej, którą SPWS przedkłada Polskiemu Związkowi Szermierczemu.<br>
   <b>Sekcja B — drużyny.</b> Dla każdej drużyny (Veteran: V1+V2, Grand Veteran: V3+V4)
-  podajemy <b>pulę ośmiu zawodników</b>, z której PZSz wybiera skład. Pula jest szersza
-  niż skład celowo — pozwala uwzględnić formę, dostępność i ustawienie drużyny bez
-  wracania po nowe dane.<br>
+  podajemy <b>pulę dziesięciu zawodników</b> — po pięciu najlepszych z każdej z dwóch
+  kategorii — z której PZSz wybiera skład. Pula jest szersza niż skład celowo: pozwala
+  uwzględnić formę, dostępność i ustawienie drużyny bez wracania po nowe dane. Tam, gdzie
+  kandydatów jest mniej, pula jest odpowiednio krótsza.<br>
   Kolory oznaczają <b>stan deklaracji</b> zawodnika, nie ocenę sportową.
   <b>Każde nazwisko jest odnośnikiem do karty zawodnika</b> w załączniku C — do karty
   dla tej broni, w której zawodnik występuje w danej kategorii. Podstawą jest raport
