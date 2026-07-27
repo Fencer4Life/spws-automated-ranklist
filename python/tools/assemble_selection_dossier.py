@@ -123,14 +123,75 @@ def ab_sections(body: str) -> str:
 # --------------------------------------------------------------------------- #
 # Card blocks (reuses the scorecard renderer's parts)
 # --------------------------------------------------------------------------- #
-def card_blocks(cards: list[dict[str, Any]]) -> tuple[str, str]:
-    """Return (table-of-contents html, cards html) for the scorecard annex."""
+# Pseudonymised entries the campaign report carries, mapped to the real fencer so
+# the annex links to the right card. Kept here rather than edited into the report,
+# which stays the campaign's own artefact.
+PSEUDONYMS = {"TK": "KOŃCZYŁO Tomasz"}
+
+_WEAPON_PL = {"SZPADA": "EPEE", "FLORET": "FOIL", "SZABLA": "SABRE"}
+_WEAPON_CTX = re.compile(
+    r'<h4>\s*(Szpada|Floret|Szabla)\b|<div class="ttl">\s*(Szpada|Floret|Szabla)\b',
+    re.I)
+_NAME_LI = re.compile(r'(<li class="[a-z]+">)([^<]+)')
+
+
+def linkify_ab(block: str, anchors: dict[tuple[str, str], str]) -> tuple[str, int, int]:
+    """Turn every fencer name in the campaign annex into a link to their card.
+
+    The report lists a fencer once per category, so which card to link depends on
+    the surrounding weapon heading — the same person may have three cards. The
+    weapon context is tracked while scanning, and a name only becomes a link when
+    a card exists for that exact (fencer, weapon) pair.
+
+    Returns (html, linked, unlinked).
+    """
+    for pseudo, real in PSEUDONYMS.items():
+        block = re.sub(rf'(<li class="[a-z]+">){re.escape(pseudo)}(?=<)',
+                       rf'\g<1>{real}', block)
+
+    out: list[str] = []
+    pos, weapon, linked, missed = 0, None, 0, 0
+    events = sorted(
+        [(m.start(), m.end(), "ctx", m) for m in _WEAPON_CTX.finditer(block)]
+        + [(m.start(), m.end(), "li", m) for m in _NAME_LI.finditer(block)]
+    )
+    for start, end, kind, m in events:
+        out.append(block[pos:start])
+        pos = end
+        if kind == "ctx":
+            word = (m.group(1) or m.group(2) or "").upper()
+            weapon = _WEAPON_PL.get(word)
+            out.append(m.group(0))
+            continue
+        tag, name = m.group(1), m.group(2)
+        clean = name.strip()
+        anchor = anchors.get((bs.fold(clean), weapon or ""))
+        if anchor and clean.lower() != "brak zawodników":
+            linked += 1
+            out.append(f'{tag}<a class="pl-link" href="#{anchor}">{name}</a>')
+        else:
+            if clean.lower() != "brak zawodników":
+                missed += 1
+            out.append(m.group(0))
+    out.append(block[pos:])
+    return "".join(out), linked, missed
+
+
+def card_blocks(
+    cards: list[dict[str, Any]],
+) -> tuple[str, str, dict[tuple[str, str], str]]:
+    """Return (toc html, cards html, {(fencer, weapon): anchor}) for the annex."""
     scale = max([0.5] + [m for c in cards
                          for v in list(c["team"].values()) + ([c["rez"]] if c["rez"] else [])
                          for m in bs.per_bout(v)])
     toc, blocks = [], []
+    anchors: dict[tuple[str, str], str] = {}
     for i, c in enumerate(cards):
         anchor = f"karta{i}"
+        anchors[(bs.fold(c["fencer"]), c["weapon"])] = anchor
+        # The report may print a roster spelling that differs from the master
+        # table's, so index both.
+        anchors.setdefault((bs.fold(c["roster_name"]), c["weapon"]), anchor)
         toc.append(f'<a class="tocitem" href="#{anchor}">'
                    f'<i style="background:{bs.WEAPON_COL[c["weapon"]]}"></i>'
                    f'{bs.esc(c["fencer"])} <span>{c["weapon_pl"]}</span></a>')
@@ -168,7 +229,7 @@ def card_blocks(cards: list[dict[str, Any]]) -> tuple[str, str]:
   </div>
   {tbl}
 </section>""")
-    return "".join(toc), "".join(blocks)
+    return "".join(toc), "".join(blocks), anchors
 
 
 CARD_CSS = f"""
@@ -214,6 +275,11 @@ text-transform:uppercase;color:var(--navy);font-weight:700}}
 .annex h2{{font-family:var(--serif);font-size:24px;margin:8px 0 8px;font-weight:600;
 border:none;padding:0}}
 .annex p{{margin:0;color:var(--muted);font-size:13px;max-width:84ch}}
+/* Names in Załącznik A link to that fencer's card. Underlined on hover only, so
+   a page of 200 names does not turn into a wall of blue. */
+{SCOPE} a.pl-link{{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;
+opacity:.95}}
+{SCOPE} a.pl-link:hover{{border-bottom-style:solid;opacity:1}}
 """
 
 
@@ -236,7 +302,10 @@ def main() -> None:
 
     cards = bs.build_cards(roster, data, create_db_connector().fetch_fencer_db())
     cards.sort(key=lambda c: (c["fencer"], c["weapon"]))
-    card_toc, card_html = card_blocks(cards)
+    card_toc, card_html, anchors = card_blocks(cards)
+    ab_block, linked, missed = linkify_ab(ab_block, anchors)
+    print(f"  Załącznik A: {linked} nazwisk z odnośnikiem do karty, "
+          f"{missed} bez karty", file=sys.stderr)
 
     # The proposal ships its own <title>/header; reuse its page wrapper and drop
     # its closing tags so the annexes sit inside the same column.
@@ -254,10 +323,14 @@ def main() -> None:
 <div class="annex" id="zA">
   <div class="lbl">Załącznik A</div>
   <h2>Proponowana reprezentacja — stan deklaracji</h2>
-  <p>Sekcje A i B przeniesione bez zmian z raportu kampanii ankietowej
+  <p>Sekcje A i B przeniesione z raportu kampanii ankietowej
   (<code>AB_raport.html</code>). Sekcja A pokazuje proponowaną obsadę startu
   indywidualnego w 24 kategoriach, sekcja B — obsadę drużyn według rankingu.
-  Kolory oznaczają stan deklaracji zawodnika, nie ocenę sportową.</p>
+  Kolory oznaczają stan deklaracji zawodnika, nie ocenę sportową.
+  <b>Każde nazwisko jest odnośnikiem do karty zawodnika</b> w załączniku B —
+  do karty dla tej broni, w której zawodnik występuje w danej kategorii.
+  Wobec raportu źródłowego wprowadzono jedną zmianę: pseudonim <code>TK</code>
+  zastąpiono pełnym nazwiskiem, żeby odnośnik prowadził do właściwej karty.</p>
 </div>
 <div class="abr">{ab_block}</div>
 
