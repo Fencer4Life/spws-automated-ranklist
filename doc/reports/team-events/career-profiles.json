@@ -1,0 +1,1753 @@
+{
+  "generated_at": "2026-07-27T04:23:20.516851+00:00",
+  "source_championships": [
+    "MEW Ciney 2024",
+    "MEW Cognac 2026",
+    "MSW Dubai 2024",
+    "MSW Manama 2025"
+  ],
+  "fencers": [
+    {
+      "matches": 19,
+      "legs": 50,
+      "net": 81,
+      "scored": 251,
+      "conceded": 170,
+      "anchor_legs": 8,
+      "anchor_net": 4,
+      "id_fencer": 182,
+      "name": "KRZEMIŃSKI Mariusz",
+      "aliases": [
+        "KRZEMIŃSKI Mariusz",
+        "KRZEMINSKI Mariusz"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MEW Cognac 2026",
+        "MSW Dubai 2024",
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Grand Veteran Men Epee",
+          "matches": 6,
+          "legs": 17,
+          "net": 17,
+          "scored": 77,
+          "conceded": 60,
+          "anchor_legs": 6,
+          "anchor_net": 3
+        },
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Grand Veteran Men Epee",
+          "matches": 6,
+          "legs": 17,
+          "net": 47,
+          "scored": 100,
+          "conceded": 53,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        {
+          "championship": "MSW Dubai 2024",
+          "tournament": "Veteran Men Epee",
+          "matches": 5,
+          "legs": 10,
+          "net": 15,
+          "scored": 46,
+          "conceded": 31,
+          "anchor_legs": 2,
+          "anchor_net": 1
+        },
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Grand Veteran Men Epee",
+          "matches": 2,
+          "legs": 6,
+          "net": 2,
+          "scored": 28,
+          "conceded": 26,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1962
+    },
+    {
+      "matches": 11,
+      "legs": 28,
+      "net": 59,
+      "scored": 151,
+      "conceded": 92,
+      "anchor_legs": 1,
+      "anchor_net": 4,
+      "id_fencer": 221,
+      "name": "MOCEK Sławomir",
+      "aliases": [
+        "MOCEK Sławomir"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MEW Cognac 2026"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Men Foil",
+          "matches": 5,
+          "legs": 15,
+          "net": 37,
+          "scored": 83,
+          "conceded": 46,
+          "anchor_legs": 1,
+          "anchor_net": 4
+        },
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Men Foil",
+          "matches": 6,
+          "legs": 13,
+          "net": 22,
+          "scored": 68,
+          "conceded": 46,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1976
+    },
+    {
+      "matches": 10,
+      "legs": 26,
+      "net": 57,
+      "scored": 138,
+      "conceded": 81,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 238,
+      "name": "OSSOWSKI Wojciech",
+      "aliases": [
+        "OSSOWSKI Wojciech"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MSW Dubai 2024",
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Grand Veteran Men Sabre",
+          "matches": 6,
+          "legs": 18,
+          "net": 30,
+          "scored": 88,
+          "conceded": 58,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        {
+          "championship": "MSW Dubai 2024",
+          "tournament": "Veteran Men Sabre",
+          "matches": 2,
+          "legs": 2,
+          "net": 4,
+          "scored": 10,
+          "conceded": 6,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Grand Veteran Men Sabre",
+          "matches": 2,
+          "legs": 6,
+          "net": 23,
+          "scored": 40,
+          "conceded": 17,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1961
+    },
+    {
+      "matches": 14,
+      "legs": 32,
+      "net": 50,
+      "scored": 177,
+      "conceded": 127,
+      "anchor_legs": 10,
+      "anchor_net": 3,
+      "id_fencer": 368,
+      "name": "ZABŁOCKI Michał",
+      "aliases": [
+        "ZABŁOCKI Michał",
+        "ZABLOCKI Michal"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MSW Dubai 2024",
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Grand Veteran Men Sabre",
+          "matches": 6,
+          "legs": 18,
+          "net": 30,
+          "scored": 97,
+          "conceded": 67,
+          "anchor_legs": 6,
+          "anchor_net": 7
+        },
+        {
+          "championship": "MSW Dubai 2024",
+          "tournament": "Veteran Men Sabre",
+          "matches": 6,
+          "legs": 10,
+          "net": 8,
+          "scored": 54,
+          "conceded": 46,
+          "anchor_legs": 2,
+          "anchor_net": -5
+        },
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Grand Veteran Men Sabre",
+          "matches": 2,
+          "legs": 4,
+          "net": 12,
+          "scored": 26,
+          "conceded": 14,
+          "anchor_legs": 2,
+          "anchor_net": 1
+        }
+      ],
+      "birth_year": 1964
+    },
+    {
+      "matches": 9,
+      "legs": 27,
+      "net": 48,
+      "scored": 128,
+      "conceded": 80,
+      "anchor_legs": 6,
+      "anchor_net": 2,
+      "id_fencer": 57,
+      "name": "CIEPŁY Tomasz",
+      "aliases": [
+        "CIEPŁY Tomasz"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MEW Cognac 2026"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Men Foil",
+          "matches": 6,
+          "legs": 18,
+          "net": 31,
+          "scored": 88,
+          "conceded": 57,
+          "anchor_legs": 5,
+          "anchor_net": -2
+        },
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Men Foil",
+          "matches": 3,
+          "legs": 9,
+          "net": 17,
+          "scored": 40,
+          "conceded": 23,
+          "anchor_legs": 1,
+          "anchor_net": 4
+        }
+      ],
+      "birth_year": 1980
+    },
+    {
+      "matches": 20,
+      "legs": 44,
+      "net": 48,
+      "scored": 246,
+      "conceded": 198,
+      "anchor_legs": 8,
+      "anchor_net": 24,
+      "id_fencer": 25,
+      "name": "ATANASSOW Aleksander",
+      "aliases": [
+        "ATANASSOW Aleksander"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MEW Cognac 2026",
+        "MSW Dubai 2024",
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Men Epee",
+          "matches": 6,
+          "legs": 16,
+          "net": 6,
+          "scored": 82,
+          "conceded": 76,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Men Epee",
+          "matches": 6,
+          "legs": 11,
+          "net": 21,
+          "scored": 63,
+          "conceded": 42,
+          "anchor_legs": 2,
+          "anchor_net": 7
+        },
+        {
+          "championship": "MSW Dubai 2024",
+          "tournament": "Veteran Men Epee",
+          "matches": 4,
+          "legs": 7,
+          "net": 19,
+          "scored": 47,
+          "conceded": 28,
+          "anchor_legs": 3,
+          "anchor_net": 19
+        },
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Veteran Men Epee",
+          "matches": 4,
+          "legs": 10,
+          "net": 2,
+          "scored": 54,
+          "conceded": 52,
+          "anchor_legs": 3,
+          "anchor_net": -2
+        }
+      ],
+      "birth_year": 1969
+    },
+    {
+      "matches": 14,
+      "legs": 40,
+      "net": 42,
+      "scored": 204,
+      "conceded": 162,
+      "anchor_legs": 3,
+      "anchor_net": 8,
+      "id_fencer": 163,
+      "name": "KOSIŃSKI Łukasz",
+      "aliases": [
+        "KOSIŃSKI Lukasz",
+        "KOSINSKI Lukasz"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MEW Cognac 2026",
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Men Sabre",
+          "matches": 6,
+          "legs": 18,
+          "net": 21,
+          "scored": 88,
+          "conceded": 67,
+          "anchor_legs": 1,
+          "anchor_net": 5
+        },
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Men Sabre",
+          "matches": 5,
+          "legs": 13,
+          "net": 8,
+          "scored": 70,
+          "conceded": 62,
+          "anchor_legs": 2,
+          "anchor_net": 3
+        },
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Veteran Men Sabre",
+          "matches": 3,
+          "legs": 9,
+          "net": 13,
+          "scored": 46,
+          "conceded": 33,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1983
+    },
+    {
+      "matches": 3,
+      "legs": 8,
+      "net": 20,
+      "scored": 41,
+      "conceded": 21,
+      "anchor_legs": 1,
+      "anchor_net": 4,
+      "id_fencer": 88,
+      "name": "GAJDA Leszek",
+      "aliases": [
+        "GAJDA Leszek"
+      ],
+      "championships": [
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Grand Veteran Men Sabre",
+          "matches": 3,
+          "legs": 8,
+          "net": 20,
+          "scored": 41,
+          "conceded": 21,
+          "anchor_legs": 1,
+          "anchor_net": 4
+        }
+      ],
+      "birth_year": 1965
+    },
+    {
+      "matches": 7,
+      "legs": 20,
+      "net": 16,
+      "scored": 85,
+      "conceded": 69,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 68,
+      "name": "DRAPELLA Maciej",
+      "aliases": [
+        "DRAPELLA Maciej"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MEW Cognac 2026"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Grand Veteran Men Epee",
+          "matches": 5,
+          "legs": 15,
+          "net": 14,
+          "scored": 66,
+          "conceded": 52,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Grand Veteran Men Epee",
+          "matches": 2,
+          "legs": 5,
+          "net": 2,
+          "scored": 19,
+          "conceded": 17,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1964
+    },
+    {
+      "matches": 3,
+      "legs": 9,
+      "net": 16,
+      "scored": 41,
+      "conceded": 25,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 264,
+      "name": "PRZYSTAJKO Daniel",
+      "aliases": [
+        "PRZYSTAJKO Daniel"
+      ],
+      "championships": [
+        "MEW Cognac 2026"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Men Foil",
+          "matches": 3,
+          "legs": 9,
+          "net": 16,
+          "scored": 41,
+          "conceded": 25,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1985
+    },
+    {
+      "matches": 11,
+      "legs": 25,
+      "net": 12,
+      "scored": 109,
+      "conceded": 97,
+      "anchor_legs": 2,
+      "anchor_net": 5,
+      "id_fencer": 372,
+      "name": "ZAWROTNIAK Przemysław",
+      "aliases": [
+        "ZAWROTNIAK Przemysław",
+        "ZAWROTNIAK Przemyslaw"
+      ],
+      "championships": [
+        "MEW Cognac 2026",
+        "MSW Dubai 2024",
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Men Sabre",
+          "matches": 4,
+          "legs": 11,
+          "net": 8,
+          "scored": 55,
+          "conceded": 47,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        {
+          "championship": "MSW Dubai 2024",
+          "tournament": "Veteran Men Sabre",
+          "matches": 5,
+          "legs": 9,
+          "net": 5,
+          "scored": 36,
+          "conceded": 31,
+          "anchor_legs": 2,
+          "anchor_net": 5
+        },
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Veteran Men Sabre",
+          "matches": 2,
+          "legs": 5,
+          "net": -1,
+          "scored": 18,
+          "conceded": 19,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1974
+    },
+    {
+      "matches": 11,
+      "legs": 25,
+      "net": 11,
+      "scored": 100,
+      "conceded": 89,
+      "anchor_legs": 9,
+      "anchor_net": -1,
+      "id_fencer": 164,
+      "name": "KOSTRZEWA Ireneusz",
+      "aliases": [
+        "KOSTRZEWA Ireneusz"
+      ],
+      "championships": [
+        "MEW Cognac 2026",
+        "MSW Dubai 2024",
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Grand Veteran Men Epee",
+          "matches": 6,
+          "legs": 14,
+          "net": 14,
+          "scored": 66,
+          "conceded": 52,
+          "anchor_legs": 6,
+          "anchor_net": 1
+        },
+        {
+          "championship": "MSW Dubai 2024",
+          "tournament": "Veteran Men Epee",
+          "matches": 3,
+          "legs": 5,
+          "net": -6,
+          "scored": 7,
+          "conceded": 13,
+          "anchor_legs": 1,
+          "anchor_net": -3
+        },
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Grand Veteran Men Epee",
+          "matches": 2,
+          "legs": 6,
+          "net": 3,
+          "scored": 27,
+          "conceded": 24,
+          "anchor_legs": 2,
+          "anchor_net": 1
+        }
+      ],
+      "birth_year": 1965
+    },
+    {
+      "matches": 16,
+      "legs": 42,
+      "net": 9,
+      "scored": 155,
+      "conceded": 146,
+      "anchor_legs": 2,
+      "anchor_net": -2,
+      "id_fencer": 159,
+      "name": "KORONA Przemysław",
+      "aliases": [
+        "KORONA-TRZEBSKI Przemysław",
+        "KORONA Przemysław",
+        "KORONA Przemyslaw"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MEW Cognac 2026",
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Men Epee",
+          "matches": 6,
+          "legs": 16,
+          "net": 15,
+          "scored": 65,
+          "conceded": 50,
+          "anchor_legs": 1,
+          "anchor_net": -3
+        },
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Men Epee",
+          "matches": 6,
+          "legs": 14,
+          "net": -4,
+          "scored": 39,
+          "conceded": 43,
+          "anchor_legs": 1,
+          "anchor_net": 1
+        },
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Veteran Men Epee",
+          "matches": 4,
+          "legs": 12,
+          "net": -2,
+          "scored": 51,
+          "conceded": 53,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1976
+    },
+    {
+      "matches": 6,
+      "legs": 16,
+      "net": 7,
+      "scored": 73,
+      "conceded": 66,
+      "anchor_legs": 4,
+      "anchor_net": -8,
+      "id_fencer": 373,
+      "name": "ZIELIŃSKI Dariusz",
+      "aliases": [
+        "ZIELIŃSKI Dariusz",
+        "ZIELINSKI Dariusz"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Men Epee",
+          "matches": 4,
+          "legs": 10,
+          "net": -1,
+          "scored": 40,
+          "conceded": 41,
+          "anchor_legs": 3,
+          "anchor_net": -8
+        },
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Veteran Men Epee",
+          "matches": 2,
+          "legs": 6,
+          "net": 8,
+          "scored": 33,
+          "conceded": 25,
+          "anchor_legs": 1,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1969
+    },
+    {
+      "matches": 1,
+      "legs": 2,
+      "net": 5,
+      "scored": 10,
+      "conceded": 5,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 325,
+      "name": "SZMIDT Grzegorz",
+      "aliases": [
+        "SZMIDT Grzegorz"
+      ],
+      "championships": [
+        "MEW Ciney 2024"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Men Foil",
+          "matches": 1,
+          "legs": 2,
+          "net": 5,
+          "scored": 10,
+          "conceded": 5,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1969
+    },
+    {
+      "matches": 1,
+      "legs": 1,
+      "net": 5,
+      "scored": 5,
+      "conceded": 0,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 261,
+      "name": "POŚPIESZNY Sławomir",
+      "aliases": [
+        "POŚPIESZNY Sławomir"
+      ],
+      "championships": [
+        "MEW Ciney 2024"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Men Foil",
+          "matches": 1,
+          "legs": 1,
+          "net": 5,
+          "scored": 5,
+          "conceded": 0,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1969
+    },
+    {
+      "matches": 8,
+      "legs": 22,
+      "net": 5,
+      "scored": 94,
+      "conceded": 89,
+      "anchor_legs": 6,
+      "anchor_net": -4,
+      "id_fencer": 178,
+      "name": "KROCHMALSKI Jakub",
+      "aliases": [
+        "KROCHMALSKI Jakub"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Men Sabre",
+          "matches": 6,
+          "legs": 18,
+          "net": 16,
+          "scored": 85,
+          "conceded": 69,
+          "anchor_legs": 4,
+          "anchor_net": 0
+        },
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Veteran Men Sabre",
+          "matches": 2,
+          "legs": 4,
+          "net": -11,
+          "scored": 9,
+          "conceded": 20,
+          "anchor_legs": 2,
+          "anchor_net": -4
+        }
+      ],
+      "birth_year": 1976
+    },
+    {
+      "matches": 4,
+      "legs": 8,
+      "net": 5,
+      "scored": 24,
+      "conceded": 19,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 41,
+      "name": "BORKOWSKI Andrzej",
+      "aliases": [
+        "BORKOWSKI Andrzej"
+      ],
+      "championships": [
+        "MSW Dubai 2024"
+      ],
+      "tournaments": [
+        {
+          "championship": "MSW Dubai 2024",
+          "tournament": "Veteran Men Epee",
+          "matches": 4,
+          "legs": 8,
+          "net": 5,
+          "scored": 24,
+          "conceded": 19,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1950
+    },
+    {
+      "matches": 12,
+      "legs": 30,
+      "net": 4,
+      "scored": 126,
+      "conceded": 122,
+      "anchor_legs": 4,
+      "anchor_net": 2,
+      "id_fencer": 91,
+      "name": "GANSZCZYK Marcin",
+      "aliases": [
+        "GANSZCZYK Marcin"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MEW Cognac 2026",
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Men Sabre",
+          "matches": 5,
+          "legs": 14,
+          "net": -2,
+          "scored": 56,
+          "conceded": 58,
+          "anchor_legs": 1,
+          "anchor_net": 1
+        },
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Men Sabre",
+          "matches": 5,
+          "legs": 11,
+          "net": 6,
+          "scored": 50,
+          "conceded": 44,
+          "anchor_legs": 2,
+          "anchor_net": 2
+        },
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Veteran Men Sabre",
+          "matches": 2,
+          "legs": 5,
+          "net": 0,
+          "scored": 20,
+          "conceded": 20,
+          "anchor_legs": 1,
+          "anchor_net": -1
+        }
+      ],
+      "birth_year": 1974
+    },
+    {
+      "matches": 9,
+      "legs": 25,
+      "net": 3,
+      "scored": 114,
+      "conceded": 111,
+      "anchor_legs": 2,
+      "anchor_net": -1,
+      "id_fencer": 290,
+      "name": "SĘKOWSKI Maciej",
+      "aliases": [
+        "SĘKOWSKI Maciej",
+        "SEKOWSKI Maciej"
+      ],
+      "championships": [
+        "MEW Cognac 2026",
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Men Epee",
+          "matches": 6,
+          "legs": 17,
+          "net": 15,
+          "scored": 89,
+          "conceded": 74,
+          "anchor_legs": 2,
+          "anchor_net": -1
+        },
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Veteran Men Epee",
+          "matches": 3,
+          "legs": 8,
+          "net": -12,
+          "scored": 25,
+          "conceded": 37,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1981
+    },
+    {
+      "matches": 1,
+      "legs": 2,
+      "net": 0,
+      "scored": 7,
+      "conceded": 7,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 65,
+      "name": "DOBRZAŃSKI Maciej",
+      "aliases": [
+        "DOBRZAŃSKI Maciej"
+      ],
+      "championships": [
+        "MEW Cognac 2026"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Men Epee",
+          "matches": 1,
+          "legs": 2,
+          "net": 0,
+          "scored": 7,
+          "conceded": 7,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1978
+    },
+    {
+      "matches": 1,
+      "legs": 3,
+      "net": -2,
+      "scored": 7,
+      "conceded": 9,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 307,
+      "name": "STAŃCZYK Agnieszka",
+      "aliases": [
+        "STAŃCZYK Agnieszka"
+      ],
+      "championships": [
+        "MEW Cognac 2026"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Women Epee",
+          "matches": 1,
+          "legs": 3,
+          "net": -2,
+          "scored": 7,
+          "conceded": 9,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1971
+    },
+    {
+      "matches": 2,
+      "legs": 4,
+      "net": -3,
+      "scored": 17,
+      "conceded": 20,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 279,
+      "name": "RUTECKI Bogdan",
+      "aliases": [
+        "RUTECKI Bogdan"
+      ],
+      "championships": [
+        "MEW Ciney 2024"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Grand Veteran Men Epee",
+          "matches": 2,
+          "legs": 4,
+          "net": -3,
+          "scored": 17,
+          "conceded": 20,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1929
+    },
+    {
+      "matches": 5,
+      "legs": 10,
+      "net": -5,
+      "scored": 34,
+      "conceded": 39,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 319,
+      "name": "SZCZĘSNY Jacek",
+      "aliases": [
+        "SZCZĘSNY Jacek"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MEW Cognac 2026"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Grand Veteran Men Epee",
+          "matches": 1,
+          "legs": 1,
+          "net": 2,
+          "scored": 3,
+          "conceded": 1,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Grand Veteran Men Epee",
+          "matches": 4,
+          "legs": 9,
+          "net": -7,
+          "scored": 31,
+          "conceded": 38,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1956
+    },
+    {
+      "matches": 1,
+      "legs": 2,
+      "net": -7,
+      "scored": 4,
+      "conceded": 11,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 121,
+      "name": "HERONIMEK Leszek",
+      "aliases": [
+        "HERONIMEK Leszek"
+      ],
+      "championships": [
+        "MSW Dubai 2024"
+      ],
+      "tournaments": [
+        {
+          "championship": "MSW Dubai 2024",
+          "tournament": "Veteran Men Epee",
+          "matches": 1,
+          "legs": 2,
+          "net": -7,
+          "scored": 4,
+          "conceded": 11,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1959
+    },
+    {
+      "matches": 4,
+      "legs": 7,
+      "net": -9,
+      "scored": 26,
+      "conceded": 35,
+      "anchor_legs": 1,
+      "anchor_net": 1,
+      "id_fencer": 232,
+      "name": "NOWICKI Robert",
+      "aliases": [
+        "NOWICKI Robert"
+      ],
+      "championships": [
+        "MSW Dubai 2024",
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MSW Dubai 2024",
+          "tournament": "Veteran Men Sabre",
+          "matches": 2,
+          "legs": 3,
+          "net": 1,
+          "scored": 14,
+          "conceded": 13,
+          "anchor_legs": 1,
+          "anchor_net": 1
+        },
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Veteran Men Sabre",
+          "matches": 2,
+          "legs": 4,
+          "net": -10,
+          "scored": 12,
+          "conceded": 22,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1970
+    },
+    {
+      "matches": 10,
+      "legs": 17,
+      "net": -10,
+      "scored": 85,
+      "conceded": 95,
+      "anchor_legs": 3,
+      "anchor_net": -6,
+      "id_fencer": 132,
+      "name": "JENDRYŚ Marek",
+      "aliases": [
+        "JENDRYŚ Marek"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MEW Cognac 2026"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Men Epee",
+          "matches": 4,
+          "legs": 7,
+          "net": -7,
+          "scored": 32,
+          "conceded": 39,
+          "anchor_legs": 2,
+          "anchor_net": -6
+        },
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Men Epee",
+          "matches": 6,
+          "legs": 10,
+          "net": -3,
+          "scored": 53,
+          "conceded": 56,
+          "anchor_legs": 1,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1974
+    },
+    {
+      "matches": 3,
+      "legs": 5,
+      "net": -10,
+      "scored": 19,
+      "conceded": 29,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 108,
+      "name": "GRIPAS Artiom",
+      "aliases": [
+        "GRIPAS Artiom"
+      ],
+      "championships": [
+        "MEW Ciney 2024"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Men Epee",
+          "matches": 3,
+          "legs": 5,
+          "net": -10,
+          "scored": 19,
+          "conceded": 29,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1984
+    },
+    {
+      "matches": 10,
+      "legs": 23,
+      "net": -12,
+      "scored": 94,
+      "conceded": 106,
+      "anchor_legs": 1,
+      "anchor_net": -2,
+      "id_fencer": 348,
+      "name": "WASILCZUK Beata",
+      "aliases": [
+        "WASILCZUK Beata"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MEW Cognac 2026"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Women Epee",
+          "matches": 5,
+          "legs": 11,
+          "net": 5,
+          "scored": 48,
+          "conceded": 43,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Women Epee",
+          "matches": 5,
+          "legs": 12,
+          "net": -17,
+          "scored": 46,
+          "conceded": 63,
+          "anchor_legs": 1,
+          "anchor_net": -2
+        }
+      ],
+      "birth_year": 1971
+    },
+    {
+      "matches": 12,
+      "legs": 34,
+      "net": -12,
+      "scored": 145,
+      "conceded": 157,
+      "anchor_legs": 11,
+      "anchor_net": -19,
+      "id_fencer": 137,
+      "name": "KAMIŃSKA Gabriela",
+      "aliases": [
+        "KAMIŃSKA Gabriela"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MEW Cognac 2026"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Women Epee",
+          "matches": 5,
+          "legs": 15,
+          "net": 4,
+          "scored": 69,
+          "conceded": 65,
+          "anchor_legs": 5,
+          "anchor_net": -6
+        },
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Women Epee",
+          "matches": 7,
+          "legs": 19,
+          "net": -16,
+          "scored": 76,
+          "conceded": 92,
+          "anchor_legs": 6,
+          "anchor_net": -13
+        }
+      ],
+      "birth_year": 1979
+    },
+    {
+      "matches": 1,
+      "legs": 3,
+      "net": -12,
+      "scored": 9,
+      "conceded": 21,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 285,
+      "name": "SADOWSKA Małgorzata",
+      "aliases": [
+        "SADOWSKA Małgorzata"
+      ],
+      "championships": [
+        "MEW Ciney 2024"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Women Epee",
+          "matches": 1,
+          "legs": 3,
+          "net": -12,
+          "scored": 9,
+          "conceded": 21,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1982
+    },
+    {
+      "matches": 2,
+      "legs": 4,
+      "net": -13,
+      "scored": 14,
+      "conceded": 27,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 199,
+      "name": "MAINKA Andrzej",
+      "aliases": [
+        "MAINKA Andrzej"
+      ],
+      "championships": [
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Grand Veteran Men Sabre",
+          "matches": 2,
+          "legs": 4,
+          "net": -13,
+          "scored": 14,
+          "conceded": 27,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1949
+    },
+    {
+      "matches": 3,
+      "legs": 6,
+      "net": -14,
+      "scored": 12,
+      "conceded": 26,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 328,
+      "name": "SZURLEJ Agata",
+      "aliases": [
+        "SZURLEJ Agata"
+      ],
+      "championships": [
+        "MEW Ciney 2024"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Women Epee",
+          "matches": 3,
+          "legs": 6,
+          "net": -14,
+          "scored": 12,
+          "conceded": 26,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1975
+    },
+    {
+      "matches": 6,
+      "legs": 15,
+      "net": -19,
+      "scored": 56,
+      "conceded": 75,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 299,
+      "name": "SOBIERAJ Wojciech",
+      "aliases": [
+        "SOBIERAJ Wojciech"
+      ],
+      "championships": [
+        "MEW Cognac 2026",
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Grand Veteran Men Epee",
+          "matches": 4,
+          "legs": 9,
+          "net": -9,
+          "scored": 36,
+          "conceded": 45,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Grand Veteran Men Epee",
+          "matches": 2,
+          "legs": 6,
+          "net": -10,
+          "scored": 20,
+          "conceded": 30,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1955
+    },
+    {
+      "matches": 3,
+      "legs": 7,
+      "net": -21,
+      "scored": 23,
+      "conceded": 44,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 263,
+      "name": "PRĘGOWSKI Jerzy",
+      "aliases": [
+        "PREGOWSKI Jerzi"
+      ],
+      "championships": [
+        "MEW Ciney 2024"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Grand Veteran Men Sabre",
+          "matches": 3,
+          "legs": 7,
+          "net": -21,
+          "scored": 23,
+          "conceded": 44,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1947
+    },
+    {
+      "matches": 5,
+      "legs": 13,
+      "net": -23,
+      "scored": 53,
+      "conceded": 76,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 17,
+      "name": "ADAMCZEWSKI Wojciech",
+      "aliases": [
+        "ADAMCZEWSKI Wojciech"
+      ],
+      "championships": [
+        "MEW Ciney 2024"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Grand Veteran Men Epee",
+          "matches": 5,
+          "legs": 13,
+          "net": -23,
+          "scored": 53,
+          "conceded": 76,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1952
+    },
+    {
+      "matches": 5,
+      "legs": 11,
+      "net": -24,
+      "scored": 34,
+      "conceded": 58,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 134,
+      "name": "JUSZKIEWICZ Piotr",
+      "aliases": [
+        "JUSZKIEWICZ Piotr"
+      ],
+      "championships": [
+        "MSW Dubai 2024",
+        "MSW Manama 2025"
+      ],
+      "tournaments": [
+        {
+          "championship": "MSW Dubai 2024",
+          "tournament": "Veteran Men Sabre",
+          "matches": 1,
+          "legs": 2,
+          "net": 2,
+          "scored": 10,
+          "conceded": 8,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        {
+          "championship": "MSW Dubai 2024",
+          "tournament": "Veteran Men Epee",
+          "matches": 2,
+          "legs": 4,
+          "net": -3,
+          "scored": 13,
+          "conceded": 16,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        {
+          "championship": "MSW Manama 2025",
+          "tournament": "Grand Veteran Men Sabre",
+          "matches": 2,
+          "legs": 5,
+          "net": -23,
+          "scored": 11,
+          "conceded": 34,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1954
+    },
+    {
+      "matches": 7,
+      "legs": 20,
+      "net": -28,
+      "scored": 60,
+      "conceded": 88,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 287,
+      "name": "SAMECKA-NACZYŃSKA Martyna",
+      "aliases": [
+        "SAMECKA-NACZYŃSKA Martyna"
+      ],
+      "championships": [
+        "MEW Cognac 2026"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Women Epee",
+          "matches": 7,
+          "legs": 20,
+          "net": -28,
+          "scored": 60,
+          "conceded": 88,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1985
+    },
+    {
+      "matches": 4,
+      "legs": 10,
+      "net": -32,
+      "scored": 27,
+      "conceded": 59,
+      "anchor_legs": 1,
+      "anchor_net": -2,
+      "id_fencer": 334,
+      "name": "TECŁAW Robert",
+      "aliases": [
+        "TECŁAW Robert"
+      ],
+      "championships": [
+        "MEW Cognac 2026"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Men Sabre",
+          "matches": 4,
+          "legs": 10,
+          "net": -32,
+          "scored": 27,
+          "conceded": 59,
+          "anchor_legs": 1,
+          "anchor_net": -2
+        }
+      ],
+      "birth_year": 1977
+    },
+    {
+      "matches": 8,
+      "legs": 19,
+      "net": -35,
+      "scored": 73,
+      "conceded": 108,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 90,
+      "name": "GANSZCZYK Anna",
+      "aliases": [
+        "GANSZCZYK Anna"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MEW Cognac 2026"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Women Epee",
+          "matches": 4,
+          "legs": 10,
+          "net": -11,
+          "scored": 44,
+          "conceded": 55,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Women Epee",
+          "matches": 4,
+          "legs": 9,
+          "net": -24,
+          "scored": 29,
+          "conceded": 53,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1972
+    },
+    {
+      "matches": 12,
+      "legs": 27,
+      "net": -44,
+      "scored": 104,
+      "conceded": 148,
+      "anchor_legs": 0,
+      "anchor_net": 0,
+      "id_fencer": 156,
+      "name": "KOŃCZYŁO Tomasz",
+      "aliases": [
+        "KOŃCZYŁO Tomasz"
+      ],
+      "championships": [
+        "MEW Ciney 2024",
+        "MEW Cognac 2026"
+      ],
+      "tournaments": [
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Men Foil",
+          "matches": 6,
+          "legs": 18,
+          "net": -29,
+          "scored": 70,
+          "conceded": 99,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        {
+          "championship": "MEW Ciney 2024",
+          "tournament": "Veteran Men Sabre",
+          "matches": 2,
+          "legs": 4,
+          "net": -13,
+          "scored": 10,
+          "conceded": 23,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        {
+          "championship": "MEW Cognac 2026",
+          "tournament": "Veteran Men Foil",
+          "matches": 4,
+          "legs": 5,
+          "net": -2,
+          "scored": 24,
+          "conceded": 26,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      ],
+      "birth_year": 1973
+    }
+  ],
+  "unresolved": [
+    {
+      "name": "MLYNEK Janusz",
+      "confidence": 100.0,
+      "status": "PENDING",
+      "candidate_id": 7,
+      "seen": [
+        "MEW Ciney 2024 / Grand Veteran Men Sabre",
+        "MSW Dubai 2024 / Veteran Men Sabre"
+      ]
+    },
+    {
+      "name": "SZUMIELEWICZ Paweł",
+      "confidence": 68.57142857142857,
+      "status": "PENDING",
+      "candidate_id": 50,
+      "seen": [
+        "MEW Cognac 2026 / Veteran Men Foil"
+      ]
+    }
+  ]
+}
