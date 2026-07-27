@@ -269,9 +269,10 @@ def card_blocks(
       najlepsze zajęte miejsce. Po prawej — liczba startów na tym poziomie,
       w wybranym oknie czasowym.</p></div>
     <div><h3>Role w drużynie</h3>{bs.team_svg(c, scale)}
-      <p class="note">W lewo (czerwone) — trafienia stracone, w prawo (zielone) — trafienia
-      zdobyte. Liczby to trafienia łącznie, długość słupka — średnia na jedną walkę.
-      Wejścia z rezerwy nakładają się na walki powyżej.</p></div>
+      <p class="note">W lewo (czerwone) poza słupkiem — trafienia stracone łącznie;
+      w lewo (czerwone) na słupku — średnia trafień straconych. W prawo (zielone) poza
+      słupkiem — trafienia zdobyte łącznie; w prawo (zielone) na słupku — średnia
+      trafień zdobytych. Wejścia z rezerwy nakładają się na walki powyżej.</p></div>
   </div>
   {tbl}
 </section>""")
@@ -301,6 +302,7 @@ padding:3px 8px;color:var(--muted);background:var(--paper);white-space:nowrap}}
 .rl2{{font-family:var(--mono);font-size:9px;fill:var(--ink);font-weight:700;letter-spacing:.04em}}
 .cnt{{font-family:var(--mono);font-size:9.5px;fill:var(--muted)}}
 .legs{{font-family:var(--mono);font-size:8.5px;fill:var(--muted);opacity:.8}}
+.avg{{font-family:var(--mono);font-size:9px;fill:#fff;font-weight:700;letter-spacing:.02em}}
 .pl{{font-family:var(--mono);font-size:10px;fill:var(--ink);font-weight:700}}
 .brak{{font-family:var(--mono);font-size:9px;fill:var(--muted);opacity:.5}}
 .star{{font-size:12px}} .track{{fill:var(--line);opacity:.38}} .axis{{stroke:var(--line)}}

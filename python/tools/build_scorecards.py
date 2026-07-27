@@ -284,6 +284,20 @@ def ladder_svg(card: dict, idx: int) -> str:
             f'{"".join(rows)}</svg>')
 
 
+def _avg_in_bar(cx: float, y: int, value: float, bar_w: float) -> list[str]:
+    """The per-bout average, printed inside the bar in white.
+
+    Bar length encodes the average while the figure alongside is the total, so
+    without this the two quantities sit next to each other unlabelled and appear
+    to contradict. Rendered only when the bar can hold the text; decimal comma
+    because the document is Polish.
+    """
+    if bar_w < 24:
+        return []
+    txt = f"{value:.1f}".replace(".", ",")
+    return [f'<text x="{cx:.0f}" y="{y + 18}" text-anchor="middle" class="avg">{txt}</text>']
+
+
 def _row(label: str, d: dict, y: int, scale: float, faint: bool = False) -> list[str]:
     GL, GR, MAXW, H = 150, 268, 118, 16
     op = ' opacity=".7"' if faint else ""
@@ -294,12 +308,14 @@ def _row(label: str, d: dict, y: int, scale: float, faint: bool = False) -> list
         w = min(1.0, co_pb / scale) * MAXW
         out.append(f'<rect x="{GL - w:.0f}" y="{y + 5}" width="{w:.0f}" height="{H}" '
                    f'rx="2" fill="{RED}"{op}/>')
+        out += _avg_in_bar(GL - w / 2, y, co_pb, w)
         out.append(f'<text x="{GL - w - 6:.0f}" y="{y + 18}" text-anchor="end" '
                    f'class="cnt neg">−{d["co"]}</text>')
     if d["sc"]:
         w = min(1.0, sc_pb / scale) * MAXW
         out.append(f'<rect x="{GR}" y="{y + 5}" width="{w:.0f}" height="{H}" rx="2" '
                    f'fill="{GREEN}"{op}/>')
+        out += _avg_in_bar(GR + w / 2, y, sc_pb, w)
         out.append(f'<text x="{GR + w + 6:.0f}" y="{y + 18}" class="cnt pos">+{d["sc"]}</text>')
     out.append(f'<line x1="{GL - 2}" y1="{y + 3}" x2="{GL - 2}" y2="{y + H + 7}" class="axis"/>')
     out.append(f'<line x1="{GR + 2}" y1="{y + 3}" x2="{GR + 2}" y2="{y + H + 7}" class="axis"/>')
@@ -385,9 +401,10 @@ def render(cards: list[dict], title: str, subtitle: str) -> str:
       najlepsze zajęte miejsce. Po prawej — liczba startów na tym poziomie,
       w wybranym oknie czasowym.</p></div>
     <div><h3>Role w drużynie</h3>{team_svg(c, scale)}
-      <p class="note">W lewo (czerwone) — trafienia stracone, w prawo (zielone) — trafienia
-      zdobyte. Liczby to trafienia łącznie, długość słupka — średnia na jedną walkę.
-      Wejścia z rezerwy nakładają się na walki powyżej.</p></div>
+      <p class="note">W lewo (czerwone) poza słupkiem — trafienia stracone łącznie;
+      w lewo (czerwone) na słupku — średnia trafień straconych. W prawo (zielone) poza
+      słupkiem — trafienia zdobyte łącznie; w prawo (zielone) na słupku — średnia
+      trafień zdobytych. Wejścia z rezerwy nakładają się na walki powyżej.</p></div>
   </div>
   {tbl}
 </section>""")
@@ -448,6 +465,7 @@ color:var(--navy);margin:14px 0 8px;font-weight:600}}
 .rl2{{font-family:var(--mono);font-size:9px;fill:var(--ink);font-weight:700;letter-spacing:.04em}}
 .cnt{{font-family:var(--mono);font-size:9.5px;fill:var(--muted)}}
 .legs{{font-family:var(--mono);font-size:8.5px;fill:var(--muted);opacity:.8}}
+.avg{{font-family:var(--mono);font-size:9px;fill:#fff;font-weight:700;letter-spacing:.02em}}
 .pl{{font-family:var(--mono);font-size:10px;fill:var(--ink);font-weight:700}}
 .brak{{font-family:var(--mono);font-size:9px;fill:var(--muted);opacity:.5}}
 .star{{font-size:12px}} .track{{fill:var(--line);opacity:.38}} .axis{{stroke:var(--line)}}
