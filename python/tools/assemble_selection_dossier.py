@@ -283,11 +283,152 @@ opacity:.95}}
 """
 
 
+VERDICT_CLASS = {"OBSADZONA": "s-ok", "NIEPEŁNA": "s-wip", "BRAK OBSADY": "s-bad"}
+
+
+def viability_annex(via: dict[str, Any]) -> str:
+    """Załącznik B — can each of the 24 categories actually field a squad?"""
+    squad = via["squad"]
+    s = via["summary"]
+    rows = "".join(
+        f'<tr><td class="d">{bs.esc(r["weapon"])} {bs.esc(r["gender_pl"])} '
+        f'{bs.esc(r["vcat"])}</td>'
+        f'<td class="n">{r["ranked"]}</td><td class="n">{r["inplay"]}</td>'
+        f'<td class="n">{r["confirmed"]}</td>'
+        f'<td><span class="st {VERDICT_CLASS[r["verdict"]]}">{r["verdict"]}</span></td>'
+        f'<td class="n">{r["missing"] or "—"}</td></tr>'
+        for r in via["rows"])
+    total_needed = len(via["rows"]) * squad
+    total_have = sum(r["inplay"] for r in via["rows"])
+    return f"""
+<div class="annex" id="zB">
+  <div class="lbl">Załącznik B</div>
+  <h2>Wykonalność obsady — 24 kategorie</h2>
+  <p>Skład to {squad} zawodników (4 + 1 rezerwowy). „W grze” oznacza kandydatów,
+  którzy potwierdzili start albo pozostają bez odpowiedzi w sekcji A/B; „w rankingu” —
+  wszystkich sklasyfikowanych, niezależnie od deklaracji.</p>
+</div>
+<div class="body">
+<div class="call stop">
+  <span class="lb">Wynik zestawienia</span>
+  Pełną obsadę ma <b class="k">{s["obsadzona"]} z 24</b> kategorii.
+  <b class="k">{s["niepelna"]}</b> jest niepełnych, a <b class="k">{s["brak"]}</b> nie ma
+  ani jednego kandydata. Komplet wymagałby {total_needed} zawodników — dysponujemy
+  {total_have}. <b class="k">Szpada i szabla mężczyzn są obsadzone w każdej kategorii;
+  floret kobiet i szabla kobiet nie mają pełnego składu w żadnej.</b>
+</div>
+<div class="tw"><table><thead><tr>
+  <th>Kategoria</th><th>W rankingu</th><th>W grze</th><th>Potwierdzeni</th>
+  <th>Werdykt</th><th>Brakuje</th></tr></thead>
+<tbody>{rows}</tbody></table></div>
+</div>"""
+
+
+def hygiene_annex(reports: Path) -> str:
+    """Załącznik D — EVF records to merge, with the position each fencer loses."""
+    rp = reports / "ranking-positions/pol.json"
+    if not rp.exists():
+        return ""
+    dups = []
+    for fe in json.loads(rp.read_text(encoding="utf-8")).get("fencers", []):
+        for row in fe.get("evf") or []:
+            if row.get("duplicate_records"):
+                dups.append((fe["name"], row))
+    if not dups:
+        return ""
+    rows = "".join(
+        f'<tr><td class="d">{bs.esc(n)}</td><td>{bs.esc(r["bucket"])}</td>'
+        f'<td>{" + ".join(bs.esc(x) for x in r["duplicate_records"])}</td>'
+        f'<td class="n">#{r["published_pos"]}</td><td class="n">#{r["pos"]}</td>'
+        f'<td class="n">{r["published_pos"] - r["pos"]}</td>'
+        f'<td class="n">{r["points"]:.2f}</td></tr>'
+        for n, r in dups)
+    return f"""
+<div class="annex" id="zD">
+  <div class="lbl">Załącznik D</div>
+  <h2>Rekordy do scalenia w rankingu EVF</h2>
+  <p>Zawodnicy prowadzeni przez EVF w dwóch rekordach — raz z polskimi znakami
+  diakrytycznymi, raz bez. Punkty są rozbite między rekordy, więc publikowana pozycja
+  jest gorsza od zdobytej. Lista do zgłoszenia do EVF z prośbą o scalenie.</p>
+</div>
+<div class="body">
+<div class="tw"><table><thead><tr>
+  <th>Zawodnik</th><th>Ranking</th><th>Rekordy w EVF</th><th>Publikowana</th>
+  <th>Po scaleniu</th><th>Traci miejsc</th><th>Punkty łącznie</th></tr></thead>
+<tbody>{rows}</tbody></table></div>
+</div>"""
+
+
+def worked_example_annex(reports: Path) -> str:
+    """Załącznik C — one relay read bout by bout, as a reading guide."""
+    src = reports / "team-events/mew-cognac-2026.json"
+    if not src.exists():
+        return ""
+    d = json.loads(src.read_text(encoding="utf-8"))
+    match = tour = None
+    for t in d.get("tournaments", []):
+        if not (t.get("present") and t.get("is_team")):
+            continue
+        for m in t.get("matches", []):
+            if "bronze" in str(m.get("stage", "")).lower() and m.get("won"):
+                match, tour = m, t
+                break
+        if match:
+            break
+    if match is None or tour is None:
+        return ""
+    n = len(match["legs"])
+    ca = cb = 0
+    rows = []
+    for lg in match["legs"]:
+        ca += lg["scored"]
+        cb += lg["conceded"]
+        seq = n - lg["leg"]
+        role = ("Walka 1" if lg["leg"] == 1 else "Walka 9" if seq == 0 else
+                "Walka 8" if seq == 1 else "Walka 7" if seq == 2 else "Walki 2-6")
+        lead = "prowadzenie" if ca > cb else ("remis" if ca == cb else "strata")
+        rows.append(
+            f'<tr><td class="n">{lg["leg"]}</td><td class="rr">{role}</td>'
+            f'<td class="d">{bs.esc(lg["fencer"])}</td>'
+            f'<td class="n">{lg["scored"]}–{lg["conceded"]}</td>'
+            f'<td class="n"><span class="{"tpos" if lg["diff"] > 0 else "tneg" if lg["diff"] < 0 else ""}">'
+            f'{lg["diff"]:+d}</span></td>'
+            f'<td class="n">{ca}–{cb}</td><td class="rr">{lead}</td></tr>')
+    url = (f'{bs.FTL}/teammatches/details/{tour["eid"]}/{match["rid"]}/{match["match_id"]}')
+    last = match["legs"][-1]
+    return f"""
+<div class="annex" id="zC">
+  <div class="lbl">Załącznik C</div>
+  <h2>Jak czytać protokół meczu drużynowego</h2>
+  <p>{bs.esc(d["championship"])} · {bs.esc(tour["category"])} {bs.esc(tour["gender"])}
+  {bs.esc(tour["weapon"])} · {bs.esc(match["stage"])} · Polska –
+  {bs.esc(match["opponent"])} {match["country_score"]}–{match["opp_score"]}.
+  Ten sam mecz, z którego pochodzą słupki na kartach zawodników.</p>
+</div>
+<div class="body">
+<div class="tw"><table><thead><tr>
+  <th>Walka</th><th>Rola</th><th>Zawodnik</th><th>Trafienia</th><th>Bilans</th>
+  <th>Stan meczu</th><th></th></tr></thead>
+<tbody>{"".join(rows)}</tbody></table></div>
+<div class="call good">
+  <span class="lb">Co z tego wynika dla selekcji</span>
+  Przed ostatnią walką Polska <b class="k">przegrywała</b>. Zawodnik kończący —
+  {bs.esc(last["fencer"])} — wygrał ją {last["scored"]}–{last["conceded"]}
+  (<b class="k">{last["diff"]:+d}</b>) i to on odwrócił wynik meczu. Żaden ranking
+  indywidualny tego nie pokaże: w rankingu ta walka jest niewidoczna, a w karcie
+  zawodnika stoi jako <b class="k">Walka 9</b> z dodatnim bilansem.
+  <a href="{url}" target="_blank">Protokół źródłowy ↗</a>
+</div>
+</div>"""
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--proposal", required=True)
     ap.add_argument("--ab-report", required=True)
     ap.add_argument("--roster", required=True)
+    ap.add_argument("--viability", default=None,
+                    help="JSON z wykonalnością obsady 24 kategorii (Załącznik B)")
     ap.add_argument("--reports", default="doc/reports")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
@@ -317,7 +458,17 @@ def main() -> None:
         '<li><a href="#s11">Załączniki i słownik</a></li>',
         '<li><a href="#s11">Załączniki i słownik</a></li>\n'
         '  <li><a href="#zA"><b>Załącznik A</b> — proponowana reprezentacja</a></li>\n'
-        '  <li><a href="#zB"><b>Załącznik B</b> — karty zawodników</a></li>')
+        '  <li><a href="#zB"><b>Załącznik B</b> — wykonalność obsady 24 kategorii</a></li>\n'
+        '  <li><a href="#zC"><b>Załącznik C</b> — jak czytać protokół meczu</a></li>\n'
+        '  <li><a href="#zD"><b>Załącznik D</b> — rekordy do scalenia w EVF</a></li>\n'
+        '  <li><a href="#zE"><b>Załącznik E</b> — karty zawodników</a></li>')
+
+    via_html = ""
+    if args.viability:
+        via_html = viability_annex(
+            json.loads(Path(args.viability).read_text(encoding="utf-8")))
+    example_html = worked_example_annex(Path(args.reports))
+    hygiene_html = hygiene_annex(Path(args.reports))
 
     annexes = f"""
 <div class="annex" id="zA">
@@ -333,9 +484,11 @@ def main() -> None:
   zastąpiono pełnym nazwiskiem, żeby odnośnik prowadził do właściwej karty.</p>
 </div>
 <div class="abr">{ab_block}</div>
-
-<div class="annex" id="zB">
-  <div class="lbl">Załącznik B</div>
+{via_html}
+{example_html}
+{hygiene_html}
+<div class="annex" id="zE">
+  <div class="lbl">Załącznik E</div>
   <h2>Karty zawodników — {len(cards)} kart</h2>
   <p>Po jednej karcie na zawodnika i broń, dla wszystkich kandydatów pozostających
   w grze. Metodę czytania obu wykresów opisuje §06; gradację rangi zawodów — §03.
