@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zasady typowania reprezentacji Polski weteranów — propozycja SPWS v0.1</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#12704a;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;--gold:#d4af37;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.62;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1100px;margin:0 auto;padding:0 0 80px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:24px 26px 20px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(24px,5.2vw,34px);line-height:1.14;margin:10px 0 8px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(14px,2.6vw,16px);color:var(--muted);
+ font-style:italic;margin:0 0 16px;max-width:74ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:16px 20px;margin:18px 22px 0}
+.toc h4{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--muted);margin:0 0 10px;font-weight:600}
+.toc ol{margin:0;padding-left:22px;columns:2;column-gap:30px;max-width:none}
+.toc li{margin-bottom:5px;font-size:12.5px}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:22px;font-weight:600;letter-spacing:-.01em;
+ margin:42px 0 8px;padding-top:22px;border-top:1px solid var(--line);scroll-margin-top:12px}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:11px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--navy);margin:28px 0 10px;font-weight:600}
+p{margin:0 0 13px;max-width:86ch}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 16px;max-width:88ch}
+ul,ol{margin:0 0 15px;padding-left:22px;max-width:86ch}
+li{margin-bottom:8px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:14px 17px;margin:16px 0 20px;font-size:13px;max-width:88ch}
+.call .lb{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:6px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:20px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:10.5px;white-space:nowrap;color:var(--navy);font-weight:600}
+td.n{font-family:var(--mono);font-size:13px;font-weight:600;text-align:right;white-space:nowrap}
+.st{font-family:var(--mono);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.s-grey{background:var(--grey-bg);color:var(--grey)}
+.rung{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:7px;vertical-align:-1px}
+figure{margin:18px 0 22px}
+figcaption{font-size:11.5px;color:var(--muted);margin-top:8px;max-width:86ch}
+svg.fig{width:100%;height:auto;background:var(--card);border:1px solid var(--line);border-radius:6px}
+footer{margin:46px 22px 0;padding-top:18px;border-top:1px solid var(--line);
+ font-size:11.5px;color:var(--muted);max-width:88ch}
+.ver{font-family:var(--mono);font-size:11px;color:var(--muted)}
+@media(max-width:680px){
+ .hd,.body,footer,.toc{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:20px}.toc ol{columns:1}}
+
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · propozycja do dyskusji · wersja 0.2 · 27 lipca 2026</div>
+  <h1>Jak typować reprezentację Polski weteranów — propozycja zasad dla SPWS i PZSz</h1>
+  <p class="dek">SPWS nie nominuje. SPWS proponuje. Dlatego jedyną realną siłą tej propozycji
+  jest jakość uzasadnienia, jakie trafia na biurko Polskiego Związku Szermierczego —
+  komplet danych o każdym kandydacie, ułożony tak samo dla wszystkich i możliwy do
+  sprawdzenia u źródła.</p>
+  <div class="chips">
+    <span class="chip">dokument do debaty</span>
+    <span class="chip">wersja 0.2 — spodziewane zmiany</span>
+    <span class="chip ok">dane zweryfikowane 27.07.2026</span>
+    <span class="chip warn">brak decyzji PZSz</span>
+    <span class="chip bad">niedobór kandydatów w połowie kategorii</span>
+  </div>
+</div>
+
+<div class="toc">
+<h4>Spis treści</h4>
+<ol>
+  <li><a href="#s00">Streszczenie — problem, twarda prawda i propozycja</a></li>
+  <li><a href="#s01">Gradacja rangi zawodów i okno czasowe</a></li>
+  <li><a href="#s02">Zasady, na których opiera się metoda</a></li>
+  <li><a href="#s03">Karta zawodnika</a></li>
+  <li><a href="#s04">Od kart do propozycji reprezentacji</a></li>
+  <li><a href="#s05">Kalendarz: T-90 / T-75 / T-60</a></li>
+  <li><a href="#s06">Tryb postępowania i poprawianie danych</a></li>
+  <li><a href="#s07">Źródła danych i ścieżka audytu</a></li>
+  <li><a href="#s08">Załączniki i słownik</a></li>
+</ol>
+</div>
+
+<div class="body">
+
+<!-- ============================================================= 00 -->
+<h2 id="s00"><span class="num">00</span>Streszczenie — problem, twarda prawda i propozycja</h2>
+
+<p>Propozycja odpowiada na jedno pytanie: <b class="k">na jakiej podstawie SPWS wskazuje
+Polskiemu Związkowi Szermierczemu zawodników do reprezentacji na mistrzostwa świata
+i Europy weteranów</b>. Podstawa formalnie istnieje — <b class="k">SPWS ma regulamin</b>,
+który wyłania kadrę na podstawie zakładki „Kadra” w rankingowym arkuszu kalkulacyjnym.
+Kłopot polega na czym innym: <b class="k">PZSz kwestionuje nominacje oparte wyłącznie na
+tej podstawie</b>. Problemem nie jest więc brak reguły, tylko to, że dotychczasowa reguła
+nie przekonuje organu, który podejmuje decyzję.</p>
+
+<div class="call">
+  <span class="lb">Twarda prawda, od której zaczynamy</span>
+  Zgłoszenia na mistrzostwa świata i Europy weteranów składa <b class="k">związek
+  narodowy</b>; SPWS aktualnie nie ma uprawnień nominacyjnych i nie zabiega o nie w tym
+  dokumencie. Skoro decyzję podejmuje PZSz, <b class="k">jedynym narzędziem SPWS jest
+  jakość uzasadnienia</b> — propozycja bez danych jest opinią i zostanie potraktowana jak
+  opinia, a propozycja z kompletem sprawdzalnych dowodów jest materiałem, z którym można
+  się rzeczowo nie zgodzić.
+</div>
+
+<p>Dlatego nie proponujemy zastąpienia regulaminu. Proponujemy <b class="k">materiał
+dowodowy</b>: karty zawodnika, które dają ciału dokonującemu selekcji
+<b class="k">możliwie najszerszy zestaw danych dostępnych w bazach wyników</b> — krajowych,
+europejskich i światowych — zamiast jednej liczby z jednej zakładki jednego arkusza.</p>
+
+<div class="call stop">
+  <span class="lb">Sześć przeszkód, które napotykamy dzisiaj</span>
+  <b class="k">1. Istniejąca reguła nie przekonuje organu nominującego.</b> Regulamin SPWS
+  opiera wyłonienie kadry na zakładce „Kadra” w arkuszu rankingowym. PZSz nie uznaje
+  nominacji opartych na tym jedynym źródle — a bez akceptacji związku regulamin nie
+  przekłada się na zgłoszenie.<br>
+  <b class="k">2. Dowody nigdy nie zostały zestawione.</b> Dorobek zawodnika żyje w trzech
+  niepołączonych systemach — FIE/FencingTimeLive, EVF oraz SPWS. Do tego tygodnia nikt nie
+  zestawił ich obok siebie.<br>
+  <b class="k">3. Arkusze kalkulacyjne odchodzą.</b> Dotychczasowa ewidencja w Excelu znika
+  w ciągu najbliższych tygodni. To, co ją zastąpi, musi być odtwarzalne.<br>
+  <b class="k">4. Tożsamość zawodnika rozjeżdża się między systemami.</b> EVF prowadzi
+  <b class="k">KORNASIA Jarosława w dwóch rekordach</b> i publikuje go na miejscu 147,
+  podczas gdy zdobyte punkty dają mu <b class="k">93. miejsce na 246</b>. Kandydatki
+  <b class="k">CISZEWSKIEJ Barbary nie ma w ogóle w tabeli zawodników SPWS</b>. Pisownia
+  nazwisk się rozjeżdża (SĘKOWSKI / SEKOWSKI), nazwiska się zmieniają
+  (KORONA → KORONA-TRZEBSKI).<br>
+  <b class="k">5. Rankingi nie widzą wartości drużynowej.</b> Zawodnik z brązowym medalem
+  mistrzostw Europy indywidualnie miał <b class="k">bilans −8 w przegranym półfinale
+  drużynowym</b>. Żaden ranking tego nie pokaże. Protokół meczu pokazuje.<br>
+  <b class="k">6. Niedobór kandydatów jest realnym ograniczeniem.</b> Przy 24 kategoriach
+  i składzie 4 + 1 rezerwowy <b class="k">tylko połowa kategorii ma komplet</b>; w części
+  pytanie nie brzmi „kto jest najlepszy”, tylko „czy w ogóle mamy kogo wystawić”
+  (Załącznik B).
+</div>
+
+<p>Ostatni punkt zmienia charakter całego dokumentu. W kategoriach obsadzonych proponujemy
+<b class="k">metodę wyboru</b>. W kategoriach cienkich proponujemy <b class="k">uczciwą
+deklarację wykonalności</b> — SPWS mówi PZSz wprost: „mamy dwóch kandydatów, nie pięciu,
+oto ich dorobek”, zamiast dopełniać skład do pozoru kompletu.</p>
+
+<h3>Co proponujemy w jednym akapicie</h3>
+<p>Dla każdego kandydata i <b class="k">każdej broni osobno</b> powstaje karta zawodnika.
+Karta zestawia dorobek indywidualny uporządkowany według <b class="k">rangi zawodów</b>
+(§01), wkład w mecze drużynowe rozbity na <b class="k">role w kolejności walk</b> (§03),
+oraz pozycje w rankingach EVF i SPWS. Karty nie sumują się do jednej oceny i
+<b class="k">nie nominują nikogo automatycznie</b> (§02). Powstaje z nich uszeregowana
+propozycja z uzasadnieniem, którą SPWS przekazuje PZSz na <b class="k">60 dni przed
+imprezą</b> (§05). Decyzję podejmuje PZSz.</p>
+
+<!-- ============================================================= 01 -->
+<h2 id="s01"><span class="num">01</span>Gradacja rangi zawodów i okno czasowe</h2>
+
+<p class="sub">Dwie decyzje, które razem określają, <b class="k">co w ogóle liczy się jako
+dowód</b>: jak ważymy rangę zawodów i jak daleko wstecz sięgamy. Bez pierwszej punkty są
+nieporównywalne; bez drugiej można wybrać sobie wygodny okres.</p>
+
+<h3>Drabina rangi zawodów</h3>
+<p>Punkty zdobyte w różnych zawodach nie są równoważnym dowodem, bo różni je
+<b class="k">ranga organizatora</b> i <b class="k">głębokość stawki</b>. Porządkujemy je
+w dwunastostopniową drabinę, wspólną dla wyników indywidualnych i drużynowych.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th style="width:16%">Szczebel</th><th style="width:34%">Zawody</th><th>Uzasadnienie pozycji</th></tr></thead>
+<tbody>
+<tr><td class="d"><span class="rung" style="background:#12704a"></span>MSW</td>
+  <td>Mistrzostwa świata weteranów (FIE)</td>
+  <td>Najwyższa ranga i najgłębsza stawka. Indywidualnie i drużynowo.</td></tr>
+<tr><td class="d"><span class="rung" style="background:#2e9155"></span>MEW</td>
+  <td>Mistrzostwa Europy weteranów (EVF)</td>
+  <td>Druga ranga. Rozgrywane naprzemiennie: w latach parzystych drużynowo,
+  w nieparzystych indywidualnie.</td></tr>
+<tr><td class="d"><span class="rung" style="background:#4f9e4a"></span>EVF 64+</td>
+  <td rowspan="5">Zawody obwodu EVF, dzielone według liczby startujących</td>
+  <td rowspan="5">Ta sama ranga organizatora, ale bardzo różna stawka. Miejsce w turnieju
+  stuosobowym i w ośmioosobowym to dwa różne osiągnięcia, więc dostają osobne szczeble.</td></tr>
+<tr><td class="d"><span class="rung" style="background:#79a742"></span>EVF 32+</td></tr>
+<tr><td class="d"><span class="rung" style="background:#a3ad3c"></span>EVF 16+</td></tr>
+<tr><td class="d"><span class="rung" style="background:#c2a33a"></span>EVF 8+</td></tr>
+<tr><td class="d"><span class="rung" style="background:#d18f36"></span>EVF 4+</td></tr>
+<tr><td class="d"><span class="rung" style="background:#c96a2e"></span>MPW</td>
+  <td>Mistrzostwa Polski Weteranów</td>
+  <td>Najwyższy szczebel krajowy — ranga mistrzostw kraju, niezależnie od frekwencji.
+  Powyżej rund Pucharu Polski, poniżej każdego szczebla międzynarodowego.</td></tr>
+<tr><td class="d"><span class="rung" style="background:#d75c33"></span>SPWS 16+</td>
+  <td rowspan="4">Puchar Polski Weteranów, dzielony według liczby startujących</td>
+  <td rowspan="4">Zawody krajowe mają najpłytszą stawkę w całym systemie. Dlatego
+  <b class="k">każdy szczebel krajowy leży poniżej każdego międzynarodowego</b> — nawet
+  gdy dorobek punktowy jest identyczny.</td></tr>
+<tr><td class="d"><span class="rung" style="background:#cf4e33"></span>SPWS 8+</td></tr>
+<tr><td class="d"><span class="rung" style="background:#c43f31"></span>SPWS 4+</td></tr>
+<tr><td class="d"><span class="rung" style="background:#b93636"></span>SPWS 4−</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call warn">
+  <span class="lb">Po co ta drabina — pułapka sumy punktów</span>
+  Ranking podaje jedną liczbę. Liczba jest wygodna i <b class="k">przemilcza pochodzenie</b>
+  dorobku. Zawodnik z dorobkiem zbudowanym na zawodach krajowych i zawodnik z takim samym
+  dorobkiem zbudowanym na mistrzostwach Europy mają w rankingu tę samą wartość, a jako
+  kandydaci do reprezentacji nie są porównywalni. Drabina nie zmienia punktów — pokazuje ich
+  rozkład, żeby <b class="k">czytelnik zobaczył kształt dorobku, a nie tylko jego wysokość</b>.
+</div>
+
+<h3>Okno czasowe — dwie edycje MEW wstecz</h3>
+<p>Okno oceny nie jest liczone w miesiącach, tylko <b class="k">zaczepione o kalendarz
+imprez</b>: sięgamy wstecz do <b class="k">drugiej poprzedniej edycji mistrzostw Europy
+weteranów</b>. Dla cyklu kończącego się MŚW Tbilisi 2026 granicą są MEW Ciney
+(9 maja 2024).</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Rozwiązanie</th><th>Wada</th></tr></thead>
+<tbody>
+<tr><td class="d">Sztywne 24 miesiące</td>
+  <td>Przecina cykl w przypadkowym miejscu — potrafi odciąć całe mistrzostwa Europy,
+  bo wypadły o kilka tygodni za wcześnie.</td></tr>
+<tr><td class="d">Pełna historia</td>
+  <td>Zrównuje wynik sprzed dekady z wynikiem z tego sezonu i premiuje długowieczność
+  zamiast formy.</td></tr>
+<tr><td class="d"><b class="k">Dwie edycje MEW wstecz</b></td>
+  <td>Zawsze obejmuje <b class="k">komplet: jedne mistrzostwa Europy drużynowe i jedne
+  indywidualne</b> plus mistrzostwa świata pomiędzy nimi. Granica jest ta sama dla
+  wszystkich i wynika z kalendarza, nie z arbitralnej liczby.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="sub">Okno obowiązuje wszystkie strumienie dowodów jednakowo: wyniki indywidualne,
+mecze drużynowe i dorobek krajowy. Materiał starszy pozostaje w archiwum i może być
+przywołany w uzasadnieniu, ale nie wchodzi do kart ani do zestawień.</p>
+
+<!-- ============================================================= 02 -->
+<h2 id="s02"><span class="num">02</span>Zasady, na których opiera się metoda</h2>
+
+<p class="sub">Sześć zasad, które rządzą całą metodą. Sprowadzają się do jednej myśli:
+<b class="k">nic nie sumuje się do jednej liczby i nic nie decyduje automatycznie</b>.
+Wszystko, co poniżej, jest widoczne na karcie zawodnika (§03) — metoda nie obiecuje
+niczego, czego karta nie pokazuje.</p>
+<div class="tw">
+<table>
+<thead><tr><th style="width:26%">Zasada</th><th>Co oznacza w praktyce</th></tr></thead>
+<tbody>
+<tr><td class="d">Brak automatycznych nominacji</td>
+  <td>Żaden wzór nie wskazuje składu. Metoda porządkuje dowody i formułuje rekomendację;
+  wybór pozostaje decyzją ludzi, którzy muszą ją uzasadnić na piśmie.</td></tr>
+<tr><td class="d">Suma jest punktem wyjścia, nie wnioskiem</td>
+  <td>Podajemy dorobek punktowy, bo to waluta, której oczekuje związek — ale nigdy samotnie.
+  Zawsze obok pokazujemy, <b class="k">skąd te punkty pochodzą</b> (§01).</td></tr>
+<tr><td class="d">Ostrzeżenia, nie bramki</td>
+  <td>Metoda <b class="k">sygnalizuje</b> wzorce wymagające wyjaśnienia — „78% dorobku
+  pochodzi z zawodów poniżej ośmiu startujących”, „brak wyniku powyżej EVF-16 od dwóch
+  sezonów” — ale <b class="k">nikogo nie wyklucza</b>.</td></tr>
+<tr><td class="d">Brak danych to nie zarzut</td>
+  <td><code>BRAK</code> i „powtarzalnie słabe wyniki” to dwie różne informacje o przeciwnym
+  znaczeniu dla selekcji: pierwsza mówi „niesprawdzony”, druga „sprawdzony i wypadł źle”.</td></tr>
+<tr><td class="d">Jedna karta na broń</td>
+  <td>Dorobek we florecie nie uzasadnia nominacji w szpadzie. Zawodnik startujący w trzech
+  broniach ma trzy osobne karty i trzy osobne oceny.</td></tr>
+<tr><td class="d">Wszystko ze wskazaniem źródła</td>
+  <td>Każdy wynik i każdy mecz drużynowy w karcie ma odnośnik do publicznego protokołu.
+  Uzasadnienie, którego nie da się sprawdzić, nie wchodzi do dokumentu.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call warn">
+  <span class="lb">Ograniczenie, o którym trzeba mówić otwarcie</span>
+  Bilans trafień w meczu drużynowym zależy nie tylko od zawodnika, ale też od
+  <b class="k">siły własnej drużyny i klasy rywala</b>. Kończący przegrywany mecz
+  z czołową reprezentacją będzie miał bilans ujemny niezależnie od tego, jak fechtował.
+  Dlatego w karcie bilans <b class="k">zawsze stoi obok kontekstu</b> — rywala, fazy
+  i wyniku meczu — i nigdy nie jest podawany jako samodzielna ocena zawodnika.
+  Rozwinięcie: Załącznik C.
+</div>
+
+<!-- ============================================================= 03 -->
+<h2 id="s03"><span class="num">03</span>Karta zawodnika</h2>
+
+<p>Jedna karta na zawodnika i broń. Karta ma dwie warstwy: <b class="k">nagłówek</b> —
+podsumowanie dla czytającego bez czasu — oraz <b class="k">pełny rozkład dowodów</b>
+z odnośnikami do źródeł. Komplet kart stanowi Załącznik E.</p>
+
+<h3>Nagłówek</h3>
+<ul>
+  <li><b class="k">Broń</b> — pierwsza informacja na karcie, bo karta dotyczy jednej broni.</li>
+  <li><b class="k">Zawodnik</b> i stan jego deklaracji na daną imprezę.</li>
+  <li><b class="k">Pozycja w rankingu EVF</b> i <b class="k">pozycja w rankingu SPWS</b>,
+  każda z liczebnością stawki — <code>#4/385</code> znaczy co innego niż <code>#1/5</code>.</li>
+</ul>
+
+<h3>Wykres 1 — zakres wyników indywidualnie</h3>
+<p>Dla każdego szczebla drabiny (§01) jeden słupek. <b class="k">Długość słupka pokazuje,
+jak daleko zawodnik zaszedł</b>: zwycięstwo wypełnia słupek, wczesne odpadnięcie zostawia
+go krótkim. Miarą jest liczba przetrwanych rund pucharowych, więc trzecie miejsce wśród
+76 startujących nie wygląda tak samo jak trzecie miejsce wśród ośmiu. Gwiazdka pokazuje
+najlepsze zajęte miejsce — złota, srebrna, brązowa lub szara — a po prawej stronie stoi
+liczba startów na tym szczeblu.</p>
+
+<h3>Wykres 2 — role w drużynie</h3>
+<p>Dla każdej roli słupek dwukierunkowy: <b class="k">w lewo, czerwone —
+trafienia stracone; w prawo, zielone — trafienia zdobyte</b>. Liczby podają trafienia
+łącznie, a długość słupka liczona jest <b class="k">na jedną walkę</b>, żeby rola stoczona
+trzydzieści razy nie wyglądała automatycznie lepiej od stoczonej osiem razy. Pod spodem
+liczba walk i bilans.</p>
+
+<div class="call good">
+  <span class="lb">Dlaczego karta jest per broń — przykład z danych</span>
+  Ten sam zawodnik jest w szpadzie <b class="k">czwarty w rankingu EVF na 385 sklasyfikowanych</b>,
+  z brązowym medalem mistrzostw Europy i kompletem startów drużynowych. We florecie jest
+  <b class="k">pierwszy w Polsce — w stawce pięciu osób</b> — i nie ma ani jednego startu
+  drużynowego. Jedna wspólna karta uśredniłaby te dwa obrazy w jeden, korzystniejszy niż
+  którykolwiek z nich z osobna.
+</div>
+
+<!-- ============================================================= 04 -->
+<h2 id="s04"><span class="num">04</span>Od kart do propozycji reprezentacji</h2>
+
+<p>Skład w jednej kategorii to <b class="k">czterech zawodników i jeden rezerwowy</b>.
+Kategorii jest <b class="k">24</b> — trzy bronie × dwie płcie × cztery kategorie wiekowe.
+Pełne obsadzenie wszystkich wymagałoby 120 zawodników gotowych do startu, czego nie
+osiągamy i nie udajemy, że osiągamy (Załącznik B).</p>
+
+<h3>Trzy możliwe werdykty dla kategorii</h3>
+<div class="tw">
+<table>
+<thead><tr><th style="width:22%">Werdykt</th><th style="width:20%">Warunek</th><th>Co SPWS przekazuje PZSz</th></tr></thead>
+<tbody>
+<tr><td class="d"><span class="st s-ok">OBSADZONA</span></td><td>≥ 5 kandydatów</td>
+  <td>Uszeregowana lista 4 + 1 z uzasadnieniem dla każdego miejsca oraz wskazaniem
+  kandydatów spoza składu i powodu.</td></tr>
+<tr><td class="d"><span class="st s-wip">NIEPEŁNA</span></td><td>1–4 kandydatów</td>
+  <td>Wszyscy dostępni kandydaci z kartami oraz <b class="k">jawna informacja, ilu brakuje
+  do składu</b>. Decyzja o wystawieniu niepełnej drużyny należy do PZSz.</td></tr>
+<tr><td class="d"><span class="st s-bad">BRAK OBSADY</span></td><td>0 kandydatów</td>
+  <td>Informacja, że kategoria nie ma reprezentacji, wraz z przyczyną — brak zawodników,
+  brak deklaracji czy brak wyników w oknie.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Start indywidualny a drużyna</h3>
+<p>To dwie różne decyzje i traktujemy je osobno. Dla <b class="k">startu indywidualnego</b>
+proponujemy czterech zawodników i rezerwowego w każdej z 24 kategorii (Załącznik A,
+sekcja A). Dla <b class="k">drużyny</b> — która łączy kategorie w pary (Veteran: V1+V2,
+Grand Veteran: V3+V4) — przekazujemy <b class="k">pulę ośmiu zawodników</b>, z której
+wybierany jest skład czterech (Załącznik A, sekcja B). Pula jest szersza niż skład
+celowo: pozwala PZSz uwzględnić formę, dostępność i ustawienie drużyny bez wracania
+po nowe dane.</p>
+
+<div class="call">
+  <span class="lb">Granica kompetencji — świadomie ostra</span>
+  SPWS <b class="k">szereguje i uzasadnia</b>. PZSz <b class="k">wybiera i nominuje</b>.
+  Propozycja nie zawiera składu ostatecznego ani ustawienia drużyny na mecz — zawiera
+  materiał, na podstawie którego związek może je ustalić i obronić. Jeżeli PZSz odstępuje
+  od kolejności zaproponowanej przez SPWS, prosimy wyłącznie o <b class="k">pisemne podanie
+  powodu</b>, tak aby następny cykl mógł się na tym oprzeć.
+</div>
+
+<!-- ============================================================= 05 -->
+<h2 id="s05"><span class="num">05</span>Kalendarz: T-90 / T-75 / T-60</h2>
+
+<p class="sub">Najczęstszą przyczyną słabych nominacji nie jest zły wybór, tylko brak czasu.
+Proponujemy trzy nieprzekraczalne terminy liczone wstecz od pierwszego dnia zawodów.</p>
+
+<figure>
+<svg class="fig" viewBox="0 0 1000 208" role="img" aria-label="Oś czasu procesu nominacyjnego">
+  <line x1="60" y1="120" x2="940" y2="120" stroke="var(--line)" stroke-width="2"/>
+  <g font-family="var(--mono)" font-size="11">
+    <circle cx="140" cy="120" r="8" fill="#173f70"/>
+    <text x="140" y="58" text-anchor="middle" font-size="15" font-weight="700" fill="#173f70">T-90</text>
+    <text x="140" y="78" text-anchor="middle" font-size="10.5" fill="var(--muted)">otwarcie procesu</text>
+    <text x="140" y="152" text-anchor="middle" font-size="10" fill="var(--ink)">zamknięcie danych</text>
+    <text x="140" y="167" text-anchor="middle" font-size="10" fill="var(--ink)">nabór deklaracji</text>
+    <text x="140" y="182" text-anchor="middle" font-size="10" fill="var(--ink)">ogłoszenie zasad</text>
+
+    <circle cx="450" cy="120" r="8" fill="#c96a2e"/>
+    <text x="450" y="58" text-anchor="middle" font-size="15" font-weight="700" fill="#c96a2e">T-75</text>
+    <text x="450" y="78" text-anchor="middle" font-size="10.5" fill="var(--muted)">projekt kart</text>
+    <text x="450" y="152" text-anchor="middle" font-size="10" fill="var(--ink)">karty zawodników</text>
+    <text x="450" y="167" text-anchor="middle" font-size="10" fill="var(--ink)">weryfikacja danych</text>
+    <text x="450" y="182" text-anchor="middle" font-size="10" fill="var(--ink)">okno reklamacji</text>
+
+    <circle cx="760" cy="120" r="8" fill="#12704a"/>
+    <text x="760" y="58" text-anchor="middle" font-size="15" font-weight="700" fill="#12704a">T-60</text>
+    <text x="760" y="78" text-anchor="middle" font-size="10.5" fill="var(--muted)">propozycja do PZSz</text>
+    <text x="760" y="152" text-anchor="middle" font-size="10" fill="var(--ink)">uszeregowana lista</text>
+    <text x="760" y="167" text-anchor="middle" font-size="10" fill="var(--ink)">komplet uzasadnień</text>
+    <text x="760" y="182" text-anchor="middle" font-size="10" fill="var(--ink)">werdykt obsadzenia</text>
+
+    <circle cx="920" cy="120" r="6" fill="var(--muted)"/>
+    <text x="920" y="58" text-anchor="middle" font-size="13" font-weight="700" fill="var(--muted)">T-0</text>
+    <text x="920" y="78" text-anchor="middle" font-size="10.5" fill="var(--muted)">zawody</text>
+  </g>
+  <rect x="140" y="112" width="310" height="16" fill="#173f70" opacity=".12"/>
+  <rect x="450" y="112" width="310" height="16" fill="#c96a2e" opacity=".12"/>
+  <rect x="760" y="112" width="160" height="16" fill="#12704a" opacity=".12"/>
+</svg>
+<figcaption>Terminy liczone wstecz od pierwszego dnia zawodów. Nominacji dokonuje PZSz
+po T-60; okres między T-60 a zawodami pozostaje związkowi na decyzję, zgłoszenie
+i organizację wyjazdu.</figcaption>
+</figure>
+
+<div class="tw">
+<table>
+<thead><tr><th style="width:12%">Termin</th><th style="width:26%">Zdarzenie</th><th>Zakres</th></tr></thead>
+<tbody>
+<tr><td class="d">T-90</td><td>Otwarcie procesu</td>
+  <td>Zamknięcie okna danych (§01). Ogłoszenie zasad i wezwanie do deklaracji gotowości.
+  Od tego dnia nowe wyniki nie zmieniają kart w tym cyklu.</td></tr>
+<tr><td class="d">T-75</td><td>Projekt kart</td>
+  <td>Karty rozesłane do zawodników i trenerów. <b class="k">Okno reklamacji</b> na
+  zgłoszenie braków i błędów w danych — to jedyny moment na poprawki faktograficzne.</td></tr>
+<tr><td class="d">T-60</td><td>Propozycja do PZSz</td>
+  <td>Uszeregowana propozycja z kompletem uzasadnień i werdyktem obsadzenia dla każdej
+  z 24 kategorii.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Ten sam kalendarz nałożony na MŚW Tbilisi 2026</h3>
+<p class="sub">Mistrzostwa świata weteranów w Tbilisi rozgrywane są
+<b class="k">9–17 października 2026</b> (harmonogram z listu zapraszającego FIE).
+Poniżej te same trzy terminy przeliczone na konkretne daty — wraz z tym, gdzie
+w tym kalendarzu jesteśmy dzisiaj.</p>
+
+<figure>
+<svg class="fig" viewBox="0 0 1000 250" role="img"
+     aria-label="Kalendarz nominacyjny nałożony na MŚW Tbilisi 2026">
+  <text x="40" y="28" font-family="var(--mono)" font-size="10.5" letter-spacing="1.6"
+        fill="var(--muted)">MŚW TBILISI 2026 · 9–17 PAŹDZIERNIKA · ZASTOSOWANIE KALENDARZA</text>
+
+  <line x1="70" y1="150" x2="930" y2="150" stroke="var(--line)" stroke-width="2"/>
+
+  <!-- passed window -->
+  <rect x="70" y="142" width="300" height="16" fill="var(--coral)" opacity=".16"/>
+  <rect x="370" y="142" width="180" height="16" fill="var(--amber)" opacity=".18"/>
+  <rect x="550" y="142" width="330" height="16" fill="var(--green)" opacity=".14"/>
+
+  <g font-family="var(--mono)">
+    <!-- T-90 -->
+    <circle cx="130" cy="150" r="7" fill="#9e3a29"/>
+    <text x="130" y="76" text-anchor="middle" font-size="13" font-weight="700" fill="#9e3a29">T-90</text>
+    <text x="130" y="94" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">11.07.2026</text>
+    <text x="130" y="110" text-anchor="middle" font-size="9.5" fill="var(--muted)">otwarcie procesu</text>
+    <text x="130" y="126" text-anchor="middle" font-size="9" fill="#9e3a29" font-weight="700">TERMIN MINĄŁ</text>
+
+    <!-- T-75 -->
+    <circle cx="370" cy="150" r="7" fill="#9e3a29"/>
+    <text x="370" y="76" text-anchor="middle" font-size="13" font-weight="700" fill="#9e3a29">T-75</text>
+    <text x="370" y="94" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">26.07.2026</text>
+    <text x="370" y="110" text-anchor="middle" font-size="9.5" fill="var(--muted)">karty do weryfikacji</text>
+    <text x="370" y="126" text-anchor="middle" font-size="9" fill="#9e3a29" font-weight="700">TERMIN MINĄŁ</text>
+
+    <!-- today -->
+    <line x1="390" y1="132" x2="390" y2="176" stroke="var(--navy)" stroke-width="2" stroke-dasharray="3 3"/>
+    <text x="390" y="192" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--navy)">DZIŚ 27.07</text>
+
+    <!-- T-60 -->
+    <circle cx="550" cy="150" r="8" fill="#7a5209"/>
+    <text x="550" y="76" text-anchor="middle" font-size="13" font-weight="700" fill="#7a5209">T-60</text>
+    <text x="550" y="94" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">10.08.2026</text>
+    <text x="550" y="110" text-anchor="middle" font-size="9.5" fill="var(--muted)">propozycja SPWS → PZSz</text>
+    <text x="550" y="126" text-anchor="middle" font-size="9" fill="#7a5209" font-weight="700">ZA 14 DNI</text>
+    <text x="550" y="192" text-anchor="middle" font-size="9" fill="var(--muted)">zgłoszenie kandydatów</text>
+
+    <!-- nomination window -->
+    <text x="715" y="192" text-anchor="middle" font-size="9.5" fill="var(--muted)">okno decyzji PZSz</text>
+    <text x="715" y="206" text-anchor="middle" font-size="9" fill="var(--muted)">nominacja i zgłoszenie imienne</text>
+
+    <!-- event -->
+    <circle cx="880" cy="150" r="8" fill="#12704a"/>
+    <text x="880" y="76" text-anchor="middle" font-size="13" font-weight="700" fill="#12704a">T-0</text>
+    <text x="880" y="94" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">9.10.2026</text>
+    <text x="880" y="110" text-anchor="middle" font-size="9.5" fill="var(--muted)">pierwszy dzień MŚW</text>
+    <text x="880" y="126" text-anchor="middle" font-size="9" fill="#12704a" font-weight="700">ZA 74 DNI</text>
+  </g>
+</svg>
+<figcaption>Terminy wyliczone wstecz od 9 października 2026. <b>Dwa z trzech terminów już
+minęły</b> — co samo w sobie jest argumentem za wprowadzeniem kalendarza: w obecnym cyklu
+proces powinien być już na etapie weryfikacji kart, a nie ustalania zasad. Do przekazania
+propozycji PZSz pozostaje 14 dni.</figcaption>
+</figure>
+
+<div class="call good">
+  <span class="lb">Dlaczego akurat 90 i 60 dni</span>
+  Sześćdziesiąt dni to realny margines dla związku na decyzję, zgłoszenie imienne
+  i sprawy organizacyjne wyjazdu. Trzydzieści dni między T-90 a T-60 to czas potrzebny na
+  zebranie deklaracji, przygotowanie kart i <b class="k">uczciwe okno reklamacji</b> —
+  bez niego zawodnik dowiaduje się o błędzie w swoich danych dopiero z ogłoszonego składu.
+</div>
+
+<!-- ============================================================= 06 -->
+<h2 id="s06"><span class="num">06</span>Tryb postępowania i poprawianie danych</h2>
+
+<p class="sub">Sekcja celowo krótka. Wewnętrzna organizacja pracy po stronie SPWS to nasza
+sprawa; dla PZSz istotne jest wyłącznie to, <b class="k">kto za co odpowiada na styku obu
+organizacji</b> i jak zawodnik może poprawić błąd w swoich danych.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th style="width:22%">Kto</th><th>Odpowiada za</th></tr></thead>
+<tbody>
+<tr><td class="d">SPWS</td>
+  <td>Zebranie i weryfikację wyników ze wszystkich trzech źródeł, przygotowanie kart,
+  uszeregowanie kandydatów wraz z pisemnym uzasadnieniem oraz przekazanie propozycji
+  w terminie T-60.</td></tr>
+<tr><td class="d">PZSz</td>
+  <td><b class="k">Wybór i nominację</b> oraz zgłoszenie imienne. Przy odstępstwie od
+  zaproponowanej kolejności — pisemne podanie powodu.</td></tr>
+<tr><td class="d">Zawodnik</td>
+  <td>Deklarację gotowości do T-90 i zgłoszenie błędów w swoich danych w oknie
+  reklamacji.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Poprawianie danych</h3>
+<ul>
+  <li><b class="k">Reklamacja danych (T-75 → T-60)</b> — dotyczy <b class="k">faktów</b>:
+  brakującego wyniku, błędnej pisowni nazwiska, wyniku przypisanego niewłaściwej osobie.
+  Poprawka wchodzi do karty przed T-60.</li>
+  <li><b class="k">Zastrzeżenie do oceny (po T-60)</b> — dotyczy <b class="k">wniosków</b>,
+  nie faktów. SPWS odpowiada pisemnie; zastrzeżenie nie wstrzymuje przekazania propozycji.</li>
+  <li>Obie ścieżki są <b class="k">jawne wobec zainteresowanego zawodnika</b> i archiwizowane
+  razem z dokumentacją cyklu.</li>
+</ul>
+
+<!-- ============================================================= 07 -->
+<h2 id="s07"><span class="num">07</span>Źródła danych i ścieżka audytu</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th style="width:20%">Źródło</th><th style="width:30%">Co dostarcza</th><th>Uwagi</th></tr></thead>
+<tbody>
+<tr><td class="d">FIE / FencingTimeLive</td>
+  <td>Wyniki indywidualne i <b class="k">protokoły meczów drużynowych walka po walce</b>
+  z mistrzostw świata i Europy.</td>
+  <td>Jedyne źródło ról w drużynie i bilansów w poszczególnych walkach.
+  <a href="https://www.fencingtimelive.com/" target="_blank">fencingtimelive.com</a></td></tr>
+<tr><td class="d">EVF</td>
+  <td>Rankingi europejskie i wyniki obwodu EVF.</td>
+  <td>Ranking prowadzony osobno dla każdej broni i kategorii.
+  <a href="https://www.veteransfencing.eu/fencing/rankings/" target="_blank">veteransfencing.eu</a></td></tr>
+<tr><td class="d">SPWS</td>
+  <td>Wyniki krajowe (PPW, MPW) i ranking krajowy.</td>
+  <td>Zautomatyzowany system rankingowy SPWS zastępuje dotychczasowe arkusze.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="call stop">
+  <span class="lb">Higiena danych — warunek wiarygodności propozycji</span>
+  Zestawienie trzech systemów ujawniło błędy, które <b class="k">kosztują zawodników realne
+  miejsca w rankingu</b>:<br>
+  <b class="k">1.</b> EVF prowadzi część polskich zawodników <b class="k">w dwóch rekordach</b>
+  — raz z polskimi znakami, raz bez — przez co punkty są rozbite. W jednym potwierdzonym
+  przypadku publikowane miejsce to 147, a zdobyte punkty dają <b class="k">93. na 246</b>
+  (Załącznik D).<br>
+  <b class="k">2.</b> Część kandydatów <b class="k">nie istnieje w tabeli zawodników SPWS</b>,
+  więc ich karta jest pusta mimo realnego dorobku.<br>
+  <b class="k">3.</b> Pisownia nazwisk i zmiany nazwisk rozjeżdżają tożsamość między systemami.
+  Kojarzenie musi być prowadzone przez mechanizm dopasowania z ewidencją aliasów, nigdy przez
+  proste porównanie tekstu.
+</div>
+
+<h3>Ścieżka audytu</h3>
+<ul>
+  <li>Każdy wynik w karcie ma <b class="k">odnośnik do publicznego protokołu</b>.</li>
+  <li>Każdy cykl archiwizuje <b class="k">stan danych z dnia T-90</b>, żeby propozycję dało
+  się odtworzyć po fakcie dokładnie w tym kształcie, w jakim trafiła do PZSz.</li>
+  <li>Karty, uzasadnienia, reklamacje i odpowiedzi tworzą <b class="k">komplet dokumentacji
+  cyklu</b>.</li>
+</ul>
+
+<!-- ============================================================= 08 -->
+<h2 id="s08"><span class="num">08</span>Załączniki i słownik</h2>
+
+<h3>Załączniki</h3>
+<p class="sub">W wersji z załącznikami dokument zawiera pięć dodatków, w kolejności
+od propozycji obsady do materiału dowodowego pojedynczego zawodnika.</p>
+<ul>
+  <li><b class="k">Załącznik A. Propozycja obsady MŚW</b> — sekcja A: czterech zawodników
+  i rezerwowy do <b class="k">startu indywidualnego</b> w każdej z 24 kategorii; sekcja B:
+  <b class="k">pula ośmiu zawodników</b> na każdą drużynę, z której PZSz wybiera skład.
+  Każde nazwisko jest odnośnikiem do karty zawodnika.</li>
+  <li><b class="k">Załącznik B. Wykonalność obsady 24 kategorii</b> — tabela
+  <span class="st s-ok">obsadzona</span> / <span class="st s-wip">niepełna</span> /
+  <span class="st s-bad">brak obsady</span> wraz z liczbą kandydatów w rankingu,
+  w grze i potwierdzonych.</li>
+  <li><b class="k">Załącznik C. Jak czytać protokół meczu</b> — mecz
+  <b class="k">przegrany</b> rozpisany na walki, z pokazaniem, gdzie naprawdę został
+  rozstrzygnięty i jakich wniosków nie wolno z niego wyciągać.</li>
+  <li><b class="k">Załącznik D. Rekordy do scalenia w rankingu EVF</b> — zawodnicy
+  prowadzeni przez EVF w dwóch rekordach, z wyliczeniem, ile miejsc w rankingu na tym
+  tracą.</li>
+  <li><b class="k">Załącznik E. Karty zawodników</b> — komplet kart dla kandydatów
+  pozostających w grze, po jednej na zawodnika i broń.</li>
+</ul>
+
+<h3>Słownik</h3>
+<div class="tw">
+<table>
+<thead><tr><th style="width:16%">Skrót</th><th>Znaczenie</th></tr></thead>
+<tbody>
+<tr><td class="d">MSW</td><td>Mistrzostwa Świata Weteranów (FIE)</td></tr>
+<tr><td class="d">MEW</td><td>Mistrzostwa Europy Weteranów (EVF)</td></tr>
+<tr><td class="d">MPW</td><td>Mistrzostwa Polski Weteranów</td></tr>
+<tr><td class="d">PPW</td><td>Puchar Polski Weteranów</td></tr>
+<tr><td class="d">EVF</td><td>European Veterans Fencing — europejska federacja szermierki weteranów</td></tr>
+<tr><td class="d">FIE</td><td>Międzynarodowa Federacja Szermiercza</td></tr>
+<tr><td class="d">PZSz</td><td>Polski Związek Szermierczy — organ nominujący</td></tr>
+<tr><td class="d">SPWS</td><td>Stowarzyszenie Polskich Weteranów Szermierki — organ proponujący</td></tr>
+<tr><td class="d">V1–V4</td><td>Kategorie wiekowe weteranów</td></tr>
+<tr><td class="d">Kończący</td><td>Ostatnia walka meczu drużynowego — rozstrzygająca</td></tr>
+<tr><td class="d">Bilans</td><td>Różnica trafień zdobytych i straconych w danej walce lub roli</td></tr>
+<tr><td class="d">T-90 / T-60</td><td>Liczba dni pozostałych do pierwszego dnia zawodów</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Pytania otwarte do rozstrzygnięcia w dyskusji</h3>
+<ol>
+  <li>Czy próg obsadzenia kategorii to 5 osób (4 + 1), czy dopuszczamy skład bez rezerwowego?</li>
+  <li>Czy pula drużynowa ma liczyć ośmiu zawodników, czy inną liczbę?</li>
+  <li>Czy okno reklamacji ma obejmować także <b class="k">kolejność</b> zaproponowaną przez
+  SPWS, czy wyłącznie fakty?</li>
+  <li>Czy przy werdykcie <span class="st s-wip">NIEPEŁNA</span> SPWS rekomenduje wystawienie
+  niepełnej drużyny, czy pozostawia to bez rekomendacji?</li>
+  <li>Czy zasady wchodzą w życie od najbliższego cyklu, czy od sezonu 2026/2027?</li>
+</ol>
+
+</div>
+
+<footer>
+<span class="ver">Wersja 0.2 · 27 lipca 2026 · dokument roboczy do dyskusji</span><br>
+Propozycja przygotowana przez SPWS jako materiał do uzgodnienia z Polskim Związkiem
+Szermierczym. Wszystkie liczby przytoczone w tekście pochodzą z danych zebranych
+i zweryfikowanych 27 lipca 2026 z trzech źródeł wymienionych w §07. Dokument nie zawiera
+danych kontaktowych ani żadnych danych osobowych poza nazwiskami zawodników i ich
+publicznymi wynikami sportowymi. Kolejne wersje wraz z historią zmian przechowywane są
+w repozytorium SPWS.
+</footer>
+
+</div>
+</body>
+</html>
