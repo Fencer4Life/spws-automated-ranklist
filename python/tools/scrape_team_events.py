@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+from python.scrapers.ftl import fetch_ftl_event_metadata
 from python.scrapers.ftl_auth import get_authed_ftl_client, normalize_ftl_url
 
 FTL = "https://www.fencingtimelive.com"
@@ -317,6 +318,11 @@ def scrape_event(
 ) -> dict[str, Any]:
     """Scrape one tournament: the target country's pool + bracket relays."""
     rec: dict[str, Any] = {"eid": eid, "name": name, **classify_event(name)}
+    # The event date is what a rolling selection window is applied against, so
+    # it must live in the store rather than be inferred from the championship's
+    # title later.
+    meta = fetch_ftl_event_metadata(f"{FTL}/events/results/{eid}", client) or {}
+    rec["date"] = meta.get("date") or ""
     rids = parse_round_ids(_get(client, f"{FTL}/events/results/{eid}").text, eid)
     rec["pool_rid"] = rids["pool_rid"]
     rec["tableau_rid"] = rids["tableau_rid"]

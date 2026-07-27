@@ -39,10 +39,14 @@ from python.scrapers.evf_results import EvfApiClient
 # Field-depth bands for ordinary EVF circuit events, widest first.
 _EVF_BANDS = ((64, "EVF-64+"), (32, "EVF-32+"), (16, "EVF-16+"), (8, "EVF-8+"), (4, "EVF-4+"))
 
-# Rank order for reporting (lower index = stronger provenance).
+# The provenance ladder, strongest first. Authority outranks field depth: any
+# World result sits above any European one, and every EVF circuit result sits
+# above every domestic SPWS one, because SPWS fields are the shallowest. Within
+# a body, depth of field orders the rungs.
 TIER_ORDER = [
     "WORLD", "EUROPEAN",
     "EVF-64+", "EVF-32+", "EVF-16+", "EVF-8+", "EVF-4+", "EVF-4-",
+    "SPWS-16+", "SPWS-8+", "SPWS-4+", "SPWS-4-",
 ]
 
 
