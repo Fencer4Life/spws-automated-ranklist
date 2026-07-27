@@ -526,9 +526,9 @@ def main() -> None:
 
     # Extend the proposal's table of contents with the two annexes.
     inner = inner.replace(
-        '<li><a href="#s11">Załączniki i słownik</a></li>',
+        '<li><a href="#s08">Załączniki i słownik</a></li>',
         '<li><a href="#s11">Załączniki i słownik</a></li>\n'
-        '  <li><a href="#zA"><b>Załącznik A</b> — proponowana reprezentacja</a></li>\n'
+        '  <li><a href="#zA"><b>Załącznik A</b> — propozycja obsady MŚW</a></li>\n'
         '  <li><a href="#zB"><b>Załącznik B</b> — wykonalność obsady 24 kategorii</a></li>\n'
         '  <li><a href="#zC"><b>Załącznik C</b> — jak czytać protokół meczu</a></li>\n'
         '  <li><a href="#zD"><b>Załącznik D</b> — rekordy do scalenia w EVF</a></li>\n'
@@ -544,15 +544,19 @@ def main() -> None:
     annexes = f"""
 <div class="annex" id="zA">
   <div class="lbl">Załącznik A</div>
-  <h2>Proponowana reprezentacja — stan deklaracji</h2>
-  <p>Sekcje A i B przeniesione z raportu kampanii ankietowej
-  (<code>AB_raport.html</code>). Sekcja A pokazuje proponowaną obsadę startu
-  indywidualnego w 24 kategoriach, sekcja B — obsadę drużyn według rankingu.
-  Kolory oznaczają stan deklaracji zawodnika, nie ocenę sportową.
-  <b>Każde nazwisko jest odnośnikiem do karty zawodnika</b> w załączniku B —
-  do karty dla tej broni, w której zawodnik występuje w danej kategorii.
-  Wobec raportu źródłowego wprowadzono jedną zmianę: pseudonim <code>TK</code>
-  zastąpiono pełnym nazwiskiem, żeby odnośnik prowadził do właściwej karty.</p>
+  <h2>Propozycja obsady MŚW — do rozpatrzenia przez PZSz</h2>
+  <p><b>Sekcja A — start indywidualny.</b> Czterech zawodników i rezerwowy w każdej
+  z 24 kategorii, wyłonieni z rankingu SPWS. To jest właściwa propozycja obsady
+  indywidualnej, którą SPWS przedkłada Polskiemu Związkowi Szermierczemu.<br>
+  <b>Sekcja B — drużyny.</b> Dla każdej drużyny (Veteran: V1+V2, Grand Veteran: V3+V4)
+  podajemy <b>pulę ośmiu zawodników</b>, z której PZSz wybiera skład. Pula jest szersza
+  niż skład celowo — pozwala uwzględnić formę, dostępność i ustawienie drużyny bez
+  wracania po nowe dane.<br>
+  Kolory oznaczają <b>stan deklaracji</b> zawodnika, nie ocenę sportową.
+  <b>Każde nazwisko jest odnośnikiem do karty zawodnika</b> w załączniku E — do karty
+  dla tej broni, w której zawodnik występuje w danej kategorii. Podstawą jest raport
+  kampanii ankietowej; pseudonim <code>TK</code> zastąpiono pełnym nazwiskiem, żeby
+  odnośnik prowadził do właściwej karty.</p>
 </div>
 <div class="abr">{ab_block}</div>
 {via_html}
