@@ -266,7 +266,8 @@ def card_blocks(
     <div><h3>Zakres wyników — indywidualnie</h3>{bs.ladder_svg(c, i)}
       <p class="note">Długość słupka = jak daleko zawodnik zaszedł w turnieju danej rangi:
       zwycięstwo wypełnia słupek, wczesne odpadnięcie zostawia go krótkim. Gwiazdka i liczba =
-      najlepsze zajęte miejsce. Po prawej — liczba startów na tym poziomie.</p></div>
+      najlepsze zajęte miejsce. Po prawej — liczba startów na tym poziomie,
+      w wybranym oknie czasowym.</p></div>
     <div><h3>Role w drużynie</h3>{bs.team_svg(c, scale)}
       <p class="note">W lewo (czerwone) — trafienia stracone, w prawo (zielone) — trafienia
       zdobyte. Liczby to trafienia łącznie, długość słupka — średnia na jedną walkę.
