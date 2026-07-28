@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="doc-id" content="HB-OPS-AGENTS">
+  <meta name="doc-status" content="current">
+  <meta name="doc-type" content="operations">
+  <meta name="doc-owner" content="Development environment">
+  <meta name="last-verified" content="2026-07-14">
+  <meta name="source-globs" content="AGENTS.md; CLAUDE.md; .githooks/**; scripts/install-agent-worktree-guards.sh; scripts/start-agent-worktree.sh; scripts/integrate-agent-branch.sh">
+  <meta name="review-triggers" content="Agent coordination, worktree, task-branch, integration-checkout, pre-push guard, or main-branch ownership changes">
+  <title>Claude and Codex Collaboration Tutorial · SPWS Handbook</title>
+  <link rel="stylesheet" href="../assets/handbook.css">
+  <style>
+    .role-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin:22px 0; }
+    .role { border:1px solid var(--line); border-top:5px solid var(--navy); background:var(--card); padding:20px; }
+    .role.claude { border-top-color:var(--coral); }
+    .role.integrator { border-top-color:var(--green); }
+    .role h3 { margin-top:0; }
+    .role .label { font:800 11px var(--mono); text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+    .window { border:1px solid var(--line); background:var(--card); margin:18px 0; }
+    .window-bar { display:flex; gap:7px; align-items:center; border-bottom:1px solid var(--line); padding:9px 13px; background:var(--surface); }
+    .window-bar i { width:10px; height:10px; border-radius:50%; background:var(--line-strong); }
+    .window-bar strong { margin-left:6px; font:750 12px var(--mono); color:var(--muted); }
+    .window-body { padding:18px 20px; }
+    .timeline { display:grid; grid-template-columns:7rem 1fr; margin:22px 0; border:1px solid var(--line); background:var(--card); }
+    .timeline > div { padding:13px 16px; border-bottom:1px solid var(--line); }
+    .timeline > div:nth-last-child(-n+2) { border-bottom:0; }
+    .timeline .time { font:800 12px var(--mono); color:var(--navy); background:var(--surface); }
+    .command-title { margin:22px 0 7px; font:800 12px var(--mono); color:var(--navy); text-transform:uppercase; letter-spacing:.08em; }
+    .decision { display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:stretch; margin:22px 0; }
+    .decision > div { border:1px solid var(--line); background:var(--card); padding:18px; }
+    .decision .or { border:0; display:grid; place-items:center; padding:8px; font:900 12px var(--mono); color:var(--muted); background:transparent; }
+    .path { word-break:break-word; }
+    @media (max-width:780px) {
+      .role-grid { grid-template-columns:1fr; }
+      .decision { grid-template-columns:1fr; }
+      .decision .or { min-height:0; }
+      .timeline { grid-template-columns:5rem 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header class="handbook-header">
+    <nav class="breadcrumb"><a href="../index.html">Handbook</a><span>Operations</span></nav>
+    <p class="eyebrow">Operations · Multi-agent development</p>
+    <h1>Claude and Codex working at the same time</h1>
+    <p class="dek">Give each agent its own folder and branch. Let them work simultaneously, then merge their finished work one branch at a time through a clean integration checkout.</p>
+    <div class="doc-meta"><span>macOS + VS Code</span><span>Separate worktrees</span><span>One integrator</span><span>No shared dirt</span></div>
+  </header>
+
+  <main>
+    <section id="idea">
+      <p class="kicker">The idea in one minute</p>
+      <h2>Three folders, three jobs</h2>
+      <p>A <strong>Git worktree</strong> is another folder containing the same repository on a different branch. It shares Git history with the other folders, but its checked-out files and uncommitted changes are independent.</p>
+      <div class="role-grid">
+        <article class="role">
+          <p class="label">Worker 1</p>
+          <h3>Codex worktree</h3>
+          <p>Codex edits and commits only its assigned task on <code>codex/&lt;task&gt;</code>.</p>
+        </article>
+        <article class="role claude">
+          <p class="label">Worker 2</p>
+          <h3>Claude worktree</h3>
+          <p>Claude edits and commits only its assigned task on <code>claude/&lt;task&gt;</code>.</p>
+        </article>
+        <article class="role integrator">
+          <p class="label">Traffic controller</p>
+          <h3>Integration checkout</h3>
+          <p>No feature editing. It reviews, validates and merges one completed worker branch at a time.</p>
+        </article>
+      </div>
+      <div class="success"><strong>The key rule:</strong> simultaneous work is safe because Claude and Codex never edit inside the same folder. Their branches meet only after one task is complete.</div>
+    </section>
+
+    <section id="mental-model">
+      <p class="kicker">Folder and branch map</p>
+      <h2>What you should see in your coding folder</h2>
+      <pre class="flow">/Users/aleks/coding/
+│
+├── SPWSranklist/                       clean integration checkout
+│     └── branch: main
+│
+├── SPWSranklist-codex-ftl-manual-test/   Codex VS Code window
+│     └── branch: codex/ftl-manual-test
+│
+└── SPWSranklist-claude-calendar-docs/    Claude VS Code window
+      └── branch: claude/calendar-docs</pre>
+      <p>This is the preferred layout: all three checkouts are direct siblings. The task names are examples. If the original <code>SPWSranklist</code> checkout cannot be made clean, add a fourth sibling named <code>SPWSranklist-integration</code> and register that temporary traffic-control checkout instead.</p>
+      <p>The folder <code>/private/tmp/claude-501</code> is Claude Code runtime data—not a Git worktree and not something to open as the repository.</p>
+      <div class="invariant"><strong>Branch and folder are different things.</strong> The branch records commits. The worktree is the physical folder where one agent edits that branch.</div>
+    </section>
+
+    <section id="setup">
+      <p class="kicker">One-time setup</p>
+      <h2>Choose and register the integration checkout</h2>
+      <div class="decision">
+        <div><h3>Root checkout is clean</h3><p>Use <code>/Users/aleks/coding/SPWSranklist</code> as the integration checkout. Do not use it for feature editing afterward.</p></div>
+        <div class="or">OR</div>
+        <div><h3>Root contains old or unfamiliar files</h3><p>Create <code>/Users/aleks/coding/SPWSranklist-integration</code>. This is the safer choice while the old root remains dirty.</p></div>
+      </div>
+      <p class="command-title">Create a dedicated clean integration checkout</p>
+      <pre><code class="language-bash">cd /Users/aleks/coding/SPWSranklist
+git fetch origin main
+git worktree add -b integration/main \
+  /Users/aleks/coding/SPWSranklist-integration origin/main
+
+cd /Users/aleks/coding/SPWSranklist-integration
+bash scripts/install-agent-worktree-guards.sh --integration</code></pre>
+      <p>The installer records this folder as the only checkout allowed to update remote <code>main</code>. The tracked pre-push hook blocks accidental worker-to-main pushes.</p>
+      <p class="warning"><strong>The remaining examples use the preferred root integration path.</strong> If you registered <code>SPWSranklist-integration</code> instead, substitute that path wherever an integration checkout is shown.</p>
+      <div class="danger"><strong>Do not register a dirty checkout.</strong> Registration, worker creation and integration deliberately fail when the integration folder has modified or untracked files.</div>
+    </section>
+
+    <section id="start-workers">
+      <p class="kicker">At the start of two tasks</p>
+      <h2>Create one worker for Claude and one for Codex</h2>
+      <p>Run these commands from the registered integration checkout. Use task names that say what each agent owns.</p>
+      <pre><code class="language-bash">cd /Users/aleks/coding/SPWSranklist
+
+bash scripts/start-agent-worktree.sh codex ftl-manual-test
+
+bash scripts/start-agent-worktree.sh claude calendar-docs</code></pre>
+      <p>Both branches start from the same current <code>origin/main</code>. The script creates direct siblings under <code>/Users/aleks/coding</code> and refuses duplicate branch names or existing folder paths.</p>
+
+      <h3>Open three separate VS Code windows</h3>
+      <div class="window">
+        <div class="window-bar"><i></i><i></i><i></i><strong>Terminal</strong></div>
+        <div class="window-body"><pre><code class="language-bash">code -n /Users/aleks/coding/SPWSranklist
+code -n /Users/aleks/coding/SPWSranklist-codex-ftl-manual-test
+code -n /Users/aleks/coding/SPWSranklist-claude-calendar-docs</code></pre></div>
+      </div>
+      <div class="tablewrap"><table><thead><tr><th>VS Code window</th><th>Who works there?</th><th>What happens there?</th></tr></thead><tbody>
+        <tr><td>Integration</td><td>You or designated integrator</td><td>Review, merge, validate, push <code>main</code></td></tr>
+        <tr><td>Codex worker</td><td>Codex only</td><td>Codex task edits, tests and commits</td></tr>
+        <tr><td>Claude worker</td><td>Claude only</td><td>Claude task edits, tests and commits</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="ownership">
+      <p class="kicker">Before prompting either agent</p>
+      <h2>Assign tasks with explicit file ownership</h2>
+      <p>Separate folders prevent accidental staging, but two branches can still make conflicting edits to the same source file. Give each agent a bounded outcome and anticipated paths.</p>
+      <div class="boundary">
+        <div class="owns"><h3>Good split</h3><ul><li>Codex: manual-trigger E2E tests and related test documentation.</li><li>Claude: calendar tutorial copy and screenshots.</li><li>Little or no expected file overlap.</li></ul></div>
+        <div class="not-owns"><h3>Risky split</h3><ul><li>Both agents redesign <code>EventManager.svelte</code>.</li><li>Both agents edit the same migration.</li><li>“Improve anything you find” without path boundaries.</li></ul></div>
+      </div>
+      <p class="warning"><strong>If both tasks require the same core file, work sequentially.</strong> Finish and integrate the first task, then create or rebase the second task from the new <code>origin/main</code>.</p>
+    </section>
+
+    <section id="simultaneous">
+      <p class="kicker">Normal working day</p>
+      <h2>How simultaneous work actually proceeds</h2>
+      <div class="timeline">
+        <div class="time">09:00</div><div>The integrator creates both worker branches from the same <code>origin/main</code>.</div>
+        <div class="time">09:05</div><div>Codex works in the Codex folder while Claude works in the Claude folder. Neither sees the other's uncommitted files.</div>
+        <div class="time">10:15</div><div>Codex finishes first, runs its checks and commits to <code>codex/ftl-manual-test</code>.</div>
+        <div class="time">10:20</div><div>The integrator merges Codex, validates the combined tree and pushes <code>HEAD:main</code>.</div>
+        <div class="time">10:45</div><div>Claude finishes and commits. Because <code>main</code> moved, Claude rebases its branch onto the new <code>origin/main</code>.</div>
+        <div class="time">11:00</div><div>The integrator merges Claude, validates again and pushes the second integration.</div>
+      </div>
+      <pre class="flow">origin/main ───────┬──────── codex/ftl-manual-test ── commit ──┐
+                  │                                             │
+                  └──────── claude/calendar-docs ───── commit ──┼─ rebase after first merge
+                                                                │
+clean integration checkout ◀── merge one branch ─ validate ─ push HEAD:main
+                              then repeat for the second branch</pre>
+    </section>
+
+    <section id="worker-finish">
+      <p class="kicker">Inside each worker</p>
+      <h2>Finish and commit the assigned task</h2>
+      <ol class="sequence">
+        <li><strong>Check scope.</strong> Run <code>git status --short</code>; every path must belong to this task.</li>
+        <li><strong>Run narrow validation.</strong> Test the changed behavior first, then run applicable repository gates.</li>
+        <li><strong>Refresh Graphify.</strong> Run <code>scripts/refresh-graph.sh</code> and follow its exit-code instructions.</li>
+        <li><strong>Stage explicit paths.</strong> Never use broad staging when unfamiliar files are present.</li>
+        <li><strong>Commit only to the worker branch.</strong> Keep the branch local until its base is final unless a remote review branch is explicitly needed. A worker never pushes remote <code>main</code>.</li>
+      </ol>
+      <pre><code class="language-bash">git status --short
+# Run task-specific tests and documentation gates.
+bash scripts/refresh-graph.sh
+git add path/owned-by-this-task another/owned-path
+git diff --cached --check
+git commit -m "test: cover FTL manual trigger end to end"</code></pre>
+    </section>
+
+    <section id="integrate">
+      <p class="kicker">Only in the clean integration checkout</p>
+      <h2>Integrate one completed branch</h2>
+      <ol class="sequence">
+        <li>Confirm the worker has committed everything and its worktree is clean.</li>
+        <li>Confirm the integration checkout is clean and exactly synchronized with <code>origin/main</code>.</li>
+        <li>Run the integration helper for one branch. It reviews the diff and creates a local merge; it does not push.</li>
+        <li>Run the checks appropriate to the merged change and inspect the merge.</li>
+        <li>Push the current integration branch to remote <code>main</code>.</li>
+      </ol>
+      <pre><code class="language-bash">cd /Users/aleks/coding/SPWSranklist
+
+bash scripts/integrate-agent-branch.sh codex/ftl-manual-test
+# Run applicable validation here.
+git status --short
+git log -3 --oneline --decorate
+git push origin HEAD:main</code></pre>
+      <div class="invariant"><strong>The helper intentionally stops before pushing.</strong> This creates a human-visible checkpoint between “the branch merged locally” and “main changed for everyone.”</div>
+    </section>
+
+    <section id="second-worker">
+      <p class="kicker">After the first task reaches main</p>
+      <h2>Rebase the second worker before integration</h2>
+      <p>The second agent may have worked simultaneously from the older base. After committing its own work, it must replay that work on the newly updated <code>origin/main</code>.</p>
+      <pre><code class="language-bash">cd /Users/aleks/coding/SPWSranklist-claude-calendar-docs
+git status --short                 # must be clean
+git fetch origin main
+git rebase origin/main
+# Resolve and test any conflict here, in Claude's own worktree.
+git push -u origin claude/calendar-docs  # only if not previously published</code></pre>
+      <p class="danger"><strong>Never force-push or rewrite a published branch.</strong> The integration helper can merge the local worker branch, so remote publication is optional. If a task branch was already published before <code>main</code> moved, stop and coordinate rather than rewriting shared history.</p>
+      <p>Once rebased and validated, integrate it from the clean integration checkout with <code>scripts/integrate-agent-branch.sh claude/calendar-docs</code>.</p>
+    </section>
+
+    <section id="graphify">
+      <p class="kicker">Local generated state</p>
+      <h2>Give each worker its own Graphify cache</h2>
+      <p><code>graphify-out/</code> is ignored by Git, so it does not appear automatically in a new worktree. Seed each worker from a refreshed integration cache instead of running two full semantic builds.</p>
+      <pre><code class="language-bash"># Run from a newly created worker.
+mkdir -p graphify-out
+cp /Users/aleks/coding/SPWSranklist/graphify-out/graph.json graphify-out/
+cp /Users/aleks/coding/SPWSranklist/graphify-out/manifest.json graphify-out/
+cp /Users/aleks/coding/SPWSranklist/graphify-out/.graphify_labels.json graphify-out/
+cp /Users/aleks/coding/SPWSranklist/graphify-out/GRAPH_REPORT.md graphify-out/</code></pre>
+      <p>These are portable baseline files. Do not copy <code>.graphify_root</code>, <code>.graphify_python</code>, logs, cost history or <code>.DS_Store</code>. Each worker refreshes its own cache for its branch; agents must not write to one shared live <code>graphify-out/</code> simultaneously.</p>
+    </section>
+
+    <section id="rules">
+      <p class="kicker">Guardrails</p>
+      <h2>What nobody should do</h2>
+      <div class="tablewrap"><table><thead><tr><th>Do not</th><th>Why</th><th>Use instead</th></tr></thead><tbody>
+        <tr><td>Run Claude and Codex in the same folder</td><td>Uncommitted ownership becomes unknowable</td><td>Separate worktrees</td></tr>
+        <tr><td>Let workers push <code>main</code></td><td>Skips integration review and absorbs unrelated state</td><td>Push only <code>codex/*</code> or <code>claude/*</code></td></tr>
+        <tr><td>Use <code>git clean</code>, broad restore/reset or another agent's stash</td><td>Can destroy unfamiliar work</td><td>Explicit paths in the owning worktree</td></tr>
+        <tr><td>Merge two branches at once</td><td>A failure cannot be attributed cleanly</td><td>Merge, validate and push one branch; then repeat</td></tr>
+        <tr><td>Resolve a worker conflict in the integration checkout</td><td>The integrator would be guessing task intent</td><td>Return the branch to its owning worker</td></tr>
+        <tr><td>Use <code>/private/tmp/claude-501</code> as a repository</td><td>It is temporary Claude runtime data</td><td>A registered Git worktree under <code>/Users/aleks/coding</code></td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="checklists">
+      <p class="kicker">Keep beside your terminal</p>
+      <h2>Three short checklists</h2>
+      <div class="flow-grid">
+        <article class="flow-card"><h3>Start a task</h3><ul class="checklist"><li>Integration checkout clean</li><li><code>origin/main</code> fetched</li><li>Unique task branch</li><li>Separate worker folder</li><li>Explicit path ownership</li></ul></article>
+        <article class="flow-card"><h3>Finish a worker</h3><ul class="checklist"><li>Status contains task paths only</li><li>Tests and docs gates run</li><li>Graphify refreshed</li><li>Explicit staging reviewed</li><li>Worker branch committed</li></ul></article>
+        <article class="flow-card"><h3>Integrate</h3><ul class="checklist"><li>One branch at a time</li><li>Integration checkout clean</li><li>Branch based on current main</li><li>Merged tree validated</li><li>Push <code>HEAD:main</code> only</li></ul></article>
+        <article class="flow-card"><h3>When uncertain</h3><ul class="checklist"><li>Stop before destructive Git</li><li>Preserve unfamiliar files</li><li>Ask who owns the paths</li><li>Move conflict resolution to worker</li><li>Do not improvise on main</li></ul></article>
+      </div>
+    </section>
+  </main>
+
+  <nav class="page-links"><a href="local-development.html">← Local development</a><a href="environments-and-release.html">Environments and release →</a></nav>
+  <footer class="freshness">Document owner: Development environment · Review when agent coordination, worktree scripts, branch naming, integration ownership or Git guards change.</footer>
+</div>
+</body>
+</html>
