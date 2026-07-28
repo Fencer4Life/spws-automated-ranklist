@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tbilisi 2026 sponsor proposal · Design</title>
+  <style>
+    :root{
+      --bg:#e8ecf3;--surface:#fff;--surface-2:#dce2ec;--ink:#0f1319;
+      --muted:#414b59;--faint:#6b7482;--line:#c9d1dc;--line-strong:#b3bdcc;
+      --accent:#12467e;--accent-ink:#0d3763;--accent-soft:#dbe7f5;
+      --good:#0f5f37;--good-soft:#d8eede;--warn:#7a4d02;--warn-soft:#f4e6c8;
+      --danger:#9e2418;--danger-soft:#f7ddd9;
+      --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+      --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+    }
+    @media(prefers-color-scheme:dark){
+      :root{
+        --bg:#12151b;--surface:#1b2029;--surface-2:#232935;--ink:#f1f4f8;
+        --muted:#aeb8c6;--faint:#7c8797;--line:#2c333f;--line-strong:#3c4552;
+        --accent:#8cbdec;--accent-ink:#a9d0f5;--accent-soft:#1a2a3c;
+        --good:#6cdc98;--good-soft:#15271b;--warn:#e6bd6f;--warn-soft:#282011;
+        --danger:#f59a90;--danger-soft:#331d1a;
+      }
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font:20px/1.62 var(--sans)}
+    .wrap{max-width:56rem;margin:auto;padding:60px 30px 110px}
+    .eyebrow,.kicker{font:700 14px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+    .eyebrow{margin:0 0 16px}.kicker{margin:0 0 10px}
+    h1,h2{font-family:var(--serif);letter-spacing:-.015em;color:var(--ink)}
+    h1{font-size:clamp(38px,6vw,56px);line-height:1.06;max-width:19ch;margin:0 0 20px}
+    h2{font-size:33px;line-height:1.14;margin:0 0 18px}
+    h3{font-size:20px;margin:26px 0 10px}
+    p{max-width:64ch;margin:0 0 16px}
+    .dek{font-size:23px;line-height:1.5;color:var(--muted);max-width:56ch}
+    .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+    .pill{font:600 14px var(--mono);padding:7px 13px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface);color:var(--muted)}
+    .pill.good{color:var(--good);background:var(--good-soft);border-color:transparent}
+    .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+    section{margin-top:52px}
+    ul,ol{max-width:64ch;padding-left:1.4em}li{margin:9px 0}li::marker{color:var(--accent)}
+    code{font:600 .82em var(--mono);background:var(--surface-2);padding:.1em .4em;border:1px solid var(--line);border-radius:5px}
+    .note{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0}
+    .note.good{border-left-color:var(--good);background:var(--good-soft)}
+    .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+    .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+    .note .lede{font-weight:800;margin-bottom:8px}
+    .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:18px 0}
+    table{width:100%;border-collapse:collapse;font-size:17px;min-width:620px}
+    th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+    tr:last-child td{border-bottom:0}
+    th{background:var(--surface-2);font:700 13px var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+    .flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:20px 0}
+    .flow div{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--accent);padding:14px}
+    .flow strong{display:block;font:800 13px var(--mono);color:var(--accent);margin-bottom:6px}
+    a{color:var(--accent)}
+    .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font:15px var(--mono);color:var(--faint)}
+    @media(max-width:760px){.flow{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">MŚW Tbilisi 2026 · Sponsor communication · Approved design</p>
+  <h1>Build a patronage proposal that begins with people and earns trust with evidence</h1>
+  <p class="dek">Create a Polish, print-ready, atomic HTML dossier for potential patrons of the Polish veteran fencing team at the 2026 World Championships in Tbilisi. The first draft is deliberately complete, then its final wording is refined with SPWS.</p>
+  <div class="meta">
+    <span class="pill good">Design approved</span>
+    <span class="pill">Implementation not started</span>
+    <span class="pill">8 pages + evidence annex</span>
+    <span class="pill">A4 PDF from atomic HTML</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Outcome</p>
+    <h2>One reusable Tbilisi proposal, not a general campaign system</h2>
+    <p>The document is specific to MŚW Tbilisi 2026 but neutral toward the recipient, because no sponsor has been selected. It invites flexible patronage rather than promising commercial return. SPWS may accept a donation, sponsorship agreement or in-kind equipment contribution.</p>
+    <div class="note good">
+      <p class="lede">Success criterion</p>
+      <p>A potential patron can understand in one reading who SPWS is, why veteran representation matters, what Polish athletes have achieved, what Tbilisi requires and how support of any size can help.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Audience and tone</p>
+    <h2>Mecenat sportu, continuity and lifelong example</h2>
+    <ul>
+      <li><strong>Primary audience:</strong> an unknown Polish company, foundation or private patron.</li>
+      <li><strong>Core frame:</strong> charitable patronage and service to the sporting community, not measurable marketing ROI.</li>
+      <li><strong>Emotional argument:</strong> Polish fencing tradition, national representation and continuity between generations.</li>
+      <li><strong>Social argument:</strong> athletes in 40+, 50+, 60+ and 70+ categories model active, ambitious life at every age.</li>
+      <li><strong>Voice:</strong> dignified, warm and specific; proud without inflated patriotic claims.</li>
+      <li><strong>Signatory:</strong> Borys Pardus, Prezes Zarządu SPWS.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Historical truth</p>
+    <h2>Nearly 35 years of the movement; SPWS founded in 2007</h2>
+    <p>The proposal must not describe SPWS itself as a 35-year-old legal association. The Polish veteran fencing movement began with the first Kraków oldboy tournament on 7 March 1992. SPWS was formally established in 2007.</p>
+    <div class="note">
+      <p class="lede">Approved Polish distinction</p>
+      <p><em>„Od blisko 35 lat rozwijamy w Polsce ruch szermierki weteranów. Od 2007 roku jego instytucjonalnym gospodarzem jest Stowarzyszenie Polskich Weteranów Szermierki.”</em></p>
+    </div>
+    <p>The origin story may include the first 20 competitors from four cities, the official December 1992 championship, the joy of returning to the piste and the involvement of early private sponsors.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Narrative architecture</p>
+    <h2>Emotion first, evidence next, a flexible invitation last</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Page</th><th>Purpose</th><th>Primary evidence</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Cover: <em>Na planszy nie ma wieku</em></td><td>Cognac 2026 team photograph</td></tr>
+          <tr><td>2</td><td>From Kraków 1992 to Tbilisi 2026</td><td>Karol Życzkowski history article</td></tr>
+          <tr><td>3</td><td>SPWS mission and lifelong activity</td><td>Official “O nas” and current SPWS activities</td></tr>
+          <tr><td>4</td><td>Scale of Polish medal success</td><td>Normalized workbook plus verified current results</td></tr>
+          <tr><td>5</td><td>Three to six standout achievements</td><td>Highest-level, source-linked results</td></tr>
+          <tr><td>6</td><td>Tbilisi 2026 participation case</td><td>44 of 104 declarations; planning ceiling 55</td></tr>
+          <tr><td>7</td><td>Flexible patronage model</td><td>3,000 zł planning estimate per traveler</td></tr>
+          <tr><td>8</td><td>Personal invitation and contact</td><td>Borys Pardus signature and SPWS details</td></tr>
+          <tr><td>Annex</td><td>Verified medal register</td><td>Record-level citations and provenance</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Visual system</p>
+    <h2>Editorial warmth with discreet evidence</h2>
+    <p>The approved direction is C1: a warm editorial patronage letter supported by restrained data blocks. Use cream paper tones, deep brown ink, muted red, serif display typography and small biało-czerwone signatures. Data remains clear but never turns the document into a corporate dashboard.</p>
+    <ul>
+      <li>The Cognac photograph is a wide upper-page crop; the source file remains unmodified.</li>
+      <li>The existing French headline and QR codes are excluded by the crop.</li>
+      <li>Approved caption: <em>„Reprezentacja Polski po zdobyciu brązowego medalu w szpadzie mężczyzn drużynowo, Mistrzostwa Europy Weteranów, Cognac 2026.”</em></li>
+      <li>Distribution requires confirmation that SPWS may reuse the Albane photograph and whether a visible photographer credit is required.</li>
+      <li>The cover carries no recipient-specific logo; a later sponsor mark may be added without restructuring the document.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Evidence model</p>
+    <h2>Workbook baseline plus official current-season results</h2>
+    <div class="flow">
+      <div><strong>1 · IMPORT</strong>Workbook rows become one normalized dataset.</div>
+      <div><strong>2 · VERIFY</strong>EVF, FIE and FTL supply missing current-season evidence.</div>
+      <div><strong>3 · DEDUPE</strong>Athlete, event, weapon, category and format form the result key.</div>
+      <div><strong>4 · PUBLISH</strong>Totals, highlights and annex are generated from verified records.</div>
+    </div>
+    <p>The workbook’s cached SPWS summary currently shows 68 medals for 2024–2025: 21 gold, 11 silver and 36 bronze. These are baseline values, not final published totals. Every number is recalculated after normalization and current-result verification.</p>
+    <h3>Canonical result fields</h3>
+    <p><code>athlete</code>, <code>competition</code>, <code>date</code>, <code>city</code>, <code>weapon</code>, <code>age_category</code>, <code>medal</code>, <code>event_format</code>, <code>source_provider</code>, <code>source_url</code>, <code>provenance</code>, <code>verified_at</code> and review notes.</p>
+    <div class="note warn">
+      <p class="lede">Acceptance rule</p>
+      <p>A newly scraped medal enters the verified dataset only when a stable source confirms Polish representation, athlete identity, competition, event, category, placing and individual/team format. Fuzzy name matching alone is insufficient.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Highlight policy</p>
+    <h2>Aggregate broadly; name only the strongest stories</h2>
+    <p>The main document presents aggregate totals and three to six standout achievements. Selection is rule-based:</p>
+    <ol>
+      <li>World and European Championship medals outrank circuit results.</li>
+      <li>Within the same competition level, gold precedes silver and bronze.</li>
+      <li>Repeated international success receives additional weight.</li>
+      <li>Exceptional breadth across seasons, categories or weapons may be highlighted.</li>
+      <li>Team achievements are labelled explicitly and are not inflated as independent individual medals.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">Tbilisi support model</p>
+    <h2>A benchmark, not an all-or-nothing package</h2>
+    <ul>
+      <li><strong>Current declaration state:</strong> 44 of 104 contacted fencers.</li>
+      <li><strong>Planning ceiling:</strong> 55 participants.</li>
+      <li><strong>Travel estimate:</strong> 3,000 zł per participant.</li>
+      <li><strong>Full travel benchmark:</strong> 165,000 zł.</li>
+      <li><strong>Allocation:</strong> travel, sports equipment or both, adjusted to the amount and patron’s preference.</li>
+      <li><strong>Formal paths:</strong> donation, sponsorship agreement and in-kind support.</li>
+    </ul>
+    <p>Detailed travel or equipment costs may be supplied during sponsor discussions. The document must label 3,000 zł as a planning assumption rather than a guaranteed final cost.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Atomic output</p>
+    <h2>One offline-safe HTML file that prints cleanly to PDF</h2>
+    <ul>
+      <li>Embed CSS, charts, icons, photograph and normalized evidence.</li>
+      <li>Require no JavaScript or network connection to render or print.</li>
+      <li>Keep source URLs visible in citations and footnotes.</li>
+      <li>Use A4 print rules and prevent awkward page breaks.</li>
+      <li>Retain a machine-readable embedded result block for auditability.</li>
+      <li>Keep the first draft’s wording editable section by section after generation.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Safety and exclusions</p>
+    <h2>No campaign-private data enters the artifact</h2>
+    <div class="note danger">
+      <p class="lede">Strict privacy boundary</p>
+      <p>Do not read or embed contact lists, OAuth credentials, tokens, send logs, response caches, per-fencer declaration tokens or individual campaign responses. Only the approved aggregate declaration counts enter the proposal.</p>
+    </div>
+    <p>Workbook macros are never executed. Conflicting or unverified results are excluded from totals and placed in a review note. The proposal uses public sporting results and official institutional sources only.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Validation</p>
+    <h2>Evidence, language, offline rendering and every PDF page</h2>
+    <ul>
+      <li>Recalculate totals independently from the embedded normalized dataset.</li>
+      <li>Verify every highlighted result against its cited official source.</li>
+      <li>Scan for unsupported claims, stale names and inconsistent dates.</li>
+      <li>Confirm Borys Pardus’s current title from the SPWS board page.</li>
+      <li>Review Polish language and fencing terminology with SPWS.</li>
+      <li>Confirm reuse permission and the required credit line for the Cognac photograph.</li>
+      <li>Render offline and inspect each PDF page for clipping, weak contrast and orphaned content.</li>
+      <li>Verify that no sensitive campaign files or values appear in the artifact.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Authoritative sources</p>
+    <h2>Institutional, historical, sporting and campaign evidence</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Source</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><a href="https://weteraniszermierki.pl/o-nas/">SPWS · O nas</a></td><td>Mission, activities, values and lifelong-sport positioning</td></tr>
+          <tr><td><a href="https://weteraniszermierki.pl/sklad-zarzadu/">SPWS · Skład Zarządu</a></td><td>Current signatory and board term</td></tr>
+          <tr><td><a href="https://weteraniszermierki.pl/regulaminy/">SPWS · Regulaminy</a></td><td>Representation and competition governance</td></tr>
+          <tr><td><a href="https://weteraniszermierki.pl/uchwaly-zarzadu/">SPWS · Uchwały i sprawozdania</a></td><td>Continuity, governance and annual activity evidence</td></tr>
+          <tr><td><code>Historia-Weteranów-Szermierki-Karol-Życzkowski-2010r.pdf</code></td><td>1992 origin, annual tradition and 2007 association formation</td></tr>
+          <tr><td><code>Rejestr_Medali_SPWS.xlsm</code></td><td>Historical medal baseline</td></tr>
+          <tr><td>EVF, FIE and FTL result pages</td><td>Missing current-season results and record-level verification</td></tr>
+          <tr><td>Approved campaign aggregates</td><td>104 contacted, 44 declarations, planning ceiling 55</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Documentation coherence gate</p>
+    <h2>Resolved for this design</h2>
+    <div class="note good">
+      <p><strong>Impact:</strong> campaign communication only.</p>
+      <p><strong>Canonical docs affected:</strong> none; this does not change the running ranklist system.</p>
+      <p><strong>ADR impact:</strong> none.</p>
+      <p><strong>Operational impact:</strong> none on LOCAL, CERT or PROD.</p>
+      <p><strong>Source-map / last-verified:</strong> not applicable.</p>
+      <p><strong>Superseded prose archived:</strong> not applicable.</p>
+      <p><strong>Validation before commit:</strong> <code>python3 scripts/check_docs.py --changed-from origin/main</code>.</p>
+    </div>
+  </section>
+
+  <p class="foot">design · Tbilisi 2026 sponsor proposal · approved 2026-07-28</p>
+</div>
+</body>
+</html>
