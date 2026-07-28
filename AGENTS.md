@@ -3,6 +3,12 @@
 ## Coordination
 
 - Claude Code may work in this repository concurrently. Treat unfamiliar changes as user-owned.
+- **Persistent multi-agent rule:** Codex and Claude must not perform concurrent work in the same Git working tree.
+- Use one clean registered integration checkout whenever more than one agent is active. Prefer the root checkout; if it still contains legacy dirty state, use a dedicated `integration/main` worktree instead. Do not implement feature work there.
+- Give each agent a separate `git worktree` and task branch (`codex/<task>` or `claude/<task>`) created from the current `origin/main` with `scripts/start-agent-worktree.sh`.
+- Worker worktrees may commit and push only their task branches. They must never push directly to `main`; install the tracked guard with `scripts/install-agent-worktree-guards.sh --integration`.
+- Integrate one completed task at a time with `scripts/integrate-agent-branch.sh`, then validate and push only from the clean registered integration checkout with `git push origin HEAD:main`.
+- If separate worktrees have not been provisioned, do not begin overlapping edits: stop and establish ownership or work sequentially first.
 - Check `git status` before editing, before staging, and before committing.
 - Never revert, overwrite, stage, or commit unrelated changes.
 - Read active plans in `/Users/aleks/.claude/plans` when coordinating work; never edit them.
