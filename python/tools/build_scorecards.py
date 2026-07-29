@@ -107,7 +107,31 @@ def starts_label(n: int) -> str:
 
 
 def medal_col(place: int | None) -> str:
+    """Colour for the *bar gradient's* closing stop. Deliberately still returns a warm
+    colour for 4th and grey below it: the bar encodes reach, and a near-podium finish
+    really is a deeper run. The star/square marker no longer shares this scale — see
+    marker() — which is why the two functions exist separately."""
     return {1: GOLD, 2: SILVER, 3: BRONZE, 4: BRONZE}.get(place or 0, GREY)
+
+
+def marker(place: int | None, x: float, y: int, mc: str) -> str:
+    """The achievement mark printed beside the bar.
+
+    A star means a medal and nothing else: gold, silver, bronze, strictly by place.
+    Anything below the podium — 4th included — is a green square, not a pale star.
+    The shape carries the meaning, so the distinction survives being read in greyscale
+    or by someone who cannot separate bronze from green; a grey star also read as a
+    lesser medal, which is precisely what 4th place is not.
+
+    Drawn as a <rect> rather than a '■' glyph on purpose: .star sets no font-family, so
+    a glyph would inherit the document serif and render at whatever the fallback font
+    decides, with an advance width that would shift the place label pinned at x + 13.
+    """
+    if place in (1, 2, 3):
+        return f'<text x="{x}" y="{y}" class="star" fill="{mc}">★</text>'
+    # 7x7 on the bar's midline: the bar spans y-11..y+4 about the text baseline y.
+    return (f'<rect x="{x + 1:.2f}" y="{y - 7}" width="7" height="7" rx="1.5" '
+            f'class="star-sq" fill="{GREEN}"/>')
 
 
 def esc(s: Any) -> str:
@@ -284,7 +308,7 @@ def ladder_svg(card: dict, idx: int) -> str:
             rows.append(f'<rect x="{LBL}" y="{y + 4}" width="{w:.0f}" height="15" rx="2" '
                         f'fill="url(#{gid})"/>')
             x = LBL + w + 8
-            rows.append(f'<text x="{x}" y="{y + 15}" class="star" fill="{mc}">★</text>')
+            rows.append(marker(d["best"], x, y + 15, mc))
             rows.append(f'<text x="{x + 13}" y="{y + 15}" class="pl">{d["best"] or "—"}</text>')
             rows.append(f'<text x="{RIGHT}" y="{y + 15}" text-anchor="end" class="cnt">'
                         f'{starts_label(d["n"])}</text>')
@@ -506,9 +530,9 @@ a{{color:var(--navy)}}
   <div class="keyrow">
     <span><b style="color:{GOLD}">★</b> 1. miejsce</span>
     <span><b style="color:{SILVER}">★</b> 2. miejsce</span>
-    <span><b style="color:{BRONZE}">★</b> 3.–4. miejsce</span>
-    <span><b style="color:{GREY}">★</b> pozostałe</span>
-    <span>MSW = mistrzostwa świata · MEW = mistrzostwa Europy · MPW = mistrzostwa Polski</span>
+    <span><b style="color:{BRONZE}">★</b> 3. miejsce</span>
+    <span><b style="color:{GREEN}">■</b> poza podium</span>
+    <span>MŚW = mistrzostwa świata · MEW = mistrzostwa Europy · MPW = mistrzostwa Polski</span>
   </div>
 </div>
 
