@@ -331,7 +331,8 @@ text-decoration:none;border:1px solid var(--line);border-radius:3px;padding:3px 
 white-space:nowrap}}
 .back:hover{{color:var(--navy);border-color:var(--navy)}}
 /* Fixed contents rail, pinned right. The dossier runs to ~800 kB across 96
-   cards, so scrolling back to the table of contents is impractical. It is
+   cards, so scrolling back to the table of contents is impractical. Pinned left,
+   beside the text column. It is
    deliberately inverted — a dark navy panel — so it reads as chrome rather than
    as part of the document, and its colours are fixed rather than themed so it
    looks the same in light and dark mode.
@@ -341,18 +342,24 @@ white-space:nowrap}}
    instead, so nothing is lost on a phone. */
 .rail{{display:none}}
 @media(min-width:1200px){{
-  .rail{{display:block;position:fixed;right:14px;top:24px;bottom:24px;width:200px;
+  .rail{{display:block;position:fixed;left:14px;top:24px;bottom:24px;width:200px;
   overflow-y:auto;background:#12304f;border:1px solid #24435f;border-radius:6px;
   padding:13px 13px 15px;z-index:60;
   box-shadow:0 2px 14px rgba(8,20,36,.18)}}
-  .page{{margin-right:232px}}
+  .page{{margin-left:232px}}
 }}
-.rail .rt{{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+/* Set in the document's own serif, not the mono used elsewhere for chrome: the rail
+   lists section titles, which are prose, and mono made them read as identifiers.
+   Sizes are larger than the mono they replace because 10px serif is not 10px mono. */
+.rail .rt{{font-family:var(--serif);font-size:12px;letter-spacing:.02em;
 color:#8fa6c0;margin:0 0 9px;font-weight:600}}
-.rail a{{display:block;font-family:var(--mono);font-size:10px;line-height:1.32;
+.rail a{{display:block;font-family:var(--serif);font-size:12.5px;line-height:1.34;
 color:#ccd7e6;text-decoration:none;padding:4px 0}}
 .rail a:hover{{color:#fff}}
-.rail a .no{{color:#7690ae;margin-right:6px}}
+/* The 00-08/A-B-C column stays monospaced and tabular: serif digits are
+   proportional, and the numbers would stop forming a straight edge. */
+.rail a .no{{color:#7690ae;margin-right:6px;font-family:var(--mono);font-size:10px;
+font-variant-numeric:tabular-nums}}
 .rail .sep{{border-top:1px solid #24435f;margin:10px 0 8px}}
 /* Names in Załącznik A link to that fencer's card. Underlined on hover only, so
    a page of 200 names does not turn into a wall of blue. */
