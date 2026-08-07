@@ -16,6 +16,7 @@ import argparse
 import json
 import os
 import time
+import uuid
 
 import httpx
 
@@ -26,8 +27,10 @@ from python.scrapers.evf_calendar import (
     compute_future_completed_corrections,
     deduplicate_events,
     find_future_completed,
+    is_ignored_calendar_entry,
     is_in_scope,
     match_scraped_to_existing,
+    plan_calendar_codes,
     scrape_full_season_calendar,
     url_event_if_concluded,
 )
@@ -85,6 +88,27 @@ def _get_active_season(ref: str, token: str) -> dict | None:
         "FROM tbl_season WHERE bool_active = TRUE",
     )
     return rows[0] if rows else None
+
+
+def _record_calendar_scrape(
+    ref: str,
+    token: str,
+    run_id: uuid.UUID,
+    season_id: int,
+    calendar_count: int,
+    cancelled_count: int,
+    status: str,
+    details: dict,
+) -> None:
+    """Persist one auditable state transition for an EVF calendar scrape."""
+    details_json = json.dumps(details, sort_keys=True).replace("'", "''")
+    _management_query(
+        ref,
+        token,
+        "SELECT fn_record_evf_calendar_scrape("
+        f"'{run_id}'::UUID, {int(season_id)}, {int(calendar_count)}, "
+        f"{int(cancelled_count)}, '{status}', '{details_json}'::JSONB)",
+    )
 
 
 def _scraped_event_url(violator: dict, cal_events: list[dict]) -> str | None:
@@ -270,12 +294,102 @@ def sync_calendar(
         return []
 
     print(f"Scraping EVF calendar for {season['txt_code']}...")
+    run_id = uuid.uuid4()
     try:
-        cal_events = scrape_full_season_calendar(season["dt_start"], season["dt_end"])
+        full_calendar = scrape_full_season_calendar(season["dt_start"], season["dt_end"])
+        # Defensive repeat of the parser-level rule: tests and alternate callers
+        # can supply snapshots directly. CAMP rows never reach counts or writes.
+        full_calendar = [event for event in full_calendar if not is_ignored_calendar_entry(event)]
     except RuntimeError as exc:
+        if not dry_run:
+            _record_calendar_scrape(
+                ref,
+                token,
+                run_id,
+                season["id_season"],
+                0,
+                0,
+                "FAILED",
+                {"error": str(exc)[:1000], "snapshot_validated": False},
+            )
         _telegram(bot_token, chat_id, f"<b>EVF Calendar FAILED</b>\n<pre>{str(exc)[:500]}</pre>")
         raise
-    print(f"  Found {len(cal_events)} circuit/championship events")
+
+    season_event_count = len(full_calendar)
+    cancelled_count = sum(bool(event.get("is_cancelled", False)) for event in full_calendar)
+    calendar_ids = [
+        event["evf_calendar_id"]
+        for event in full_calendar
+        if event.get("evf_calendar_id") is not None
+    ]
+
+    if not dry_run:
+        _record_calendar_scrape(
+            ref,
+            token,
+            run_id,
+            season["id_season"],
+            season_event_count,
+            cancelled_count,
+            "STARTED",
+            {"evf_calendar_ids": calendar_ids},
+        )
+
+    try:
+        result = _sync_calendar_snapshot(
+            ref,
+            token,
+            bot_token,
+            chat_id,
+            season,
+            full_calendar,
+            dry_run,
+        )
+    except Exception as exc:
+        if not dry_run:
+            _record_calendar_scrape(
+                ref,
+                token,
+                run_id,
+                season["id_season"],
+                season_event_count,
+                cancelled_count,
+                "FAILED",
+                {"error": str(exc)[:1000], "evf_calendar_ids": calendar_ids},
+            )
+        _telegram(bot_token, chat_id, f"<b>EVF Calendar FAILED</b>\n<pre>{str(exc)[:500]}</pre>")
+        raise
+
+    if not dry_run:
+        _record_calendar_scrape(
+            ref,
+            token,
+            run_id,
+            season["id_season"],
+            season_event_count,
+            cancelled_count,
+            "SUCCEEDED",
+            {"evf_calendar_ids": calendar_ids},
+        )
+    return result
+
+
+def _sync_calendar_snapshot(
+    ref: str,
+    token: str,
+    bot_token: str,
+    chat_id: str,
+    season: dict,
+    full_calendar: list[dict],
+    dry_run: bool,
+) -> list[dict]:
+    """Apply one already-validated full-season EVF calendar snapshot."""
+    season_event_count = len(full_calendar)
+    cal_events = list(full_calendar)
+    print(
+        f"  Found {season_event_count} retained EVF calendar competitions "
+        f"(whole-word CAMP entries excluded)"
+    )
 
     inv = sum(1 for e in cal_events if e.get("url_invitation"))
     reg = sum(1 for e in cal_events if e.get("url_registration"))
@@ -296,7 +410,7 @@ def sync_calendar(
         f"SELECT id_event, txt_code, txt_name, "
         f"dt_start::TEXT, dt_end::TEXT, "
         f"txt_country, txt_location, enum_status::TEXT, url_event, "
-        f"id_evf_event, txt_evf_slug "
+        f"id_evf_event, txt_evf_slug, id_evf_calendar_event "
         f"FROM tbl_event WHERE id_season = {season['id_season']}"
     )
     existing = _management_query(ref, token, roster_sql)
@@ -313,6 +427,20 @@ def sync_calendar(
         existing = _management_query(ref, token, roster_sql)
     # Belt-and-braces: the invariant must hold before we proceed.
     assert_no_future_completed(existing)
+
+    legacy_matches = {
+        int(scraped["evf_calendar_id"]): existing_row["id_event"]
+        for scraped, existing_row in match_scraped_to_existing(cal_events, existing)
+        if scraped.get("evf_calendar_id") is not None
+    }
+    planner_events = [
+        {
+            **event,
+            "existing_id_event": legacy_matches.get(int(event["evf_calendar_id"])),
+        }
+        for event in cal_events
+    ]
+    code_plan = plan_calendar_codes(planner_events, existing, season["txt_code"])
 
     # Match scraped events against the FULL existing roster (so a COMPLETED
     # PEW7 still hides Salzburg from being auto-created as a venue-coded
@@ -334,10 +462,11 @@ def sync_calendar(
     if not dry_run:
         print(f"\n  {len(new)} new, {len(already)} already in CERT")
 
-        if new:
-            # Phase 2 (ADR-043): allocator owns the code; payload omits `code`.
+        if code_plan:
+            # The client computes the complete deterministic plan for review;
+            # the transactional RPC validates it again before applying it.
             payload: list[dict] = []
-            for evt in new:
+            for evt in code_plan:
                 payload.append(
                     {
                         "name": evt.get("name", ""),
@@ -361,6 +490,10 @@ def sync_calendar(
                         "fee": "" if evt.get("fee") is None else str(evt["fee"]),
                         "fee_currency": evt.get("fee_currency", ""),
                         "evf_slug": evt.get("evf_slug", ""),
+                        "evf_calendar_id": evt.get("evf_calendar_id"),
+                        "is_cancelled": bool(evt.get("is_cancelled", False)),
+                        "desired_code": evt["desired_code"],
+                        "existing_id_event": evt.get("existing_id_event"),
                     }
                 )
 
@@ -369,7 +502,7 @@ def sync_calendar(
                 ref,
                 token,
                 f"SELECT fn_ingest_evf_calendar('{events_json}'::JSONB, "
-                f"{season['id_season']}) AS r",
+                f"{season['id_season']}, {season_event_count}) AS r",
             )
             r = result[0].get("r") if result else {}
             if isinstance(r, str):
@@ -422,7 +555,9 @@ def sync_calendar(
                 "location": scraped.get("location", ""),
                 "country": scraped.get("country", ""),
                 "evf_id": scraped.get("evf_id") or "",
+                "evf_calendar_id": scraped.get("evf_calendar_id"),
                 "evf_slug": scraped.get("evf_slug", ""),
+                "is_cancelled": bool(scraped.get("is_cancelled", False)),
             }
             for scraped, existing_row in matched_pairs
         ]
@@ -514,7 +649,7 @@ def sync_results(
         f"SELECT id_event, txt_code, txt_name, "
         f"dt_start::TEXT, dt_end::TEXT, "
         f"txt_country, txt_location, enum_status::TEXT, "
-        f"id_evf_event, txt_evf_slug "
+        f"id_evf_event, id_evf_calendar_event, txt_evf_slug "
         f"FROM tbl_event WHERE id_season = {season['id_season']}",
     )
 

@@ -124,8 +124,10 @@ linked to prior Chania while receiving `PEW14es` from the current filtered snaps
 Every complete scrape recomputes the desired mapping. Unscored rows may be reflowed
 transactionally if EVF inserts or reschedules an earlier entry. If a reflow would
 rename a results-bearing row, ingestion aborts before any mutation and requires a
-reviewed correction. Code swaps use transaction-local neutral codes before final
-codes so the unique code constraint never depends on rename order.
+reviewed correction. Empty inherited skeletons that collide with an identified
+calendar occurrence are preserved under an `EVFLEGACY` quarantine code;
+they are not deleted. A collision between two already-stamped durable identities
+also aborts for reviewed repair rather than guessing which row owns the code.
 
 For retained entries, missing/unparseable dates, missing calendar IDs, duplicate
 calendar IDs, missing/unsupported weapon sets, boundary-spanning entries and a

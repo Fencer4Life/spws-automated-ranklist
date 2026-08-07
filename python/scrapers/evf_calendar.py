@@ -68,12 +68,106 @@ STALE_WINDOW_DAYS = 30
 # side (ADR-039 Step 4).
 LOCATION_MATCH_THRESHOLD = 70.0
 
+# CAMP entries are training activities, not competitions.  Match a complete
+# word only: "Campbell" remains a legitimate event name.
+_CAMP_WORD_RE = re.compile(r"\bcamp\b", re.IGNORECASE)
+_PEW_NUMBER_RE = re.compile(r"^PEW(\d+)[efs]*-")
+_WEAPON_LETTERS = {"EPEE": "e", "FOIL": "f", "SABRE": "s"}
+
+# One-time historical fact from the approved 2026-2027 repair manifest: this
+# occurrence was already cancelled before its first authoritative import, but
+# buggy scrapes previously gave it a positive code.  Once repaired, PEW0 also
+# carries the fact without relying on this exception.
+_KNOWN_FIRST_IMPORT_CANCELLATIONS = {5074}
+_KNOWN_WEAPON_OVERRIDES = {
+    # EVF calendar post omits categories; the organizer's published programme
+    # lists men's and women's epee, foil and sabre (approved repair evidence).
+    5070: ["EPEE", "FOIL", "SABRE"],
+}
+
 
 class LogicalIntegrityError(RuntimeError):
     """Raised when CERT contains a row with dt_start in the future AND
     enum_status='COMPLETED'. This is data corruption — admin must fix
     manually before the scraper can safely proceed (ADR-039 Step 0).
     """
+
+
+class CalendarIntegrityError(RuntimeError):
+    """Raised when the public EVF calendar cannot form a complete season snapshot."""
+
+
+def is_ignored_calendar_entry(event: dict) -> bool:
+    """Return whether an EVF calendar row must be excluded from all processing."""
+    return bool(_CAMP_WORD_RE.search(str(event.get("name") or "")))
+
+
+def _weapon_suffix(event: dict) -> str:
+    """Build the canonical alphabetical e/f/s suffix for one EVF competition."""
+    letters = {
+        _WEAPON_LETTERS[str(weapon).upper()]
+        for weapon in event.get("weapons", [])
+        if str(weapon).upper() in _WEAPON_LETTERS
+    }
+    return "".join(sorted(letters))
+
+
+def plan_calendar_codes(events: list[dict], existing: list[dict], season_code: str) -> list[dict]:
+    """Return a complete deterministic EVF code plan in chronological order.
+
+    New events already cancelled at their first import receive base number zero
+    and do not consume the positive sequence.  An existing cancelled event with
+    a positive PEW number is a later cancellation: it remains in sequence and
+    its base number must stay unchanged.  Equal dates are ordered by the stable
+    public EVF calendar id.
+    """
+    season_suffix = re.sub(r"^SPWS-", "", season_code)
+    existing_by_calendar_id = {
+        int(row["id_evf_calendar_event"]): row
+        for row in existing
+        if row.get("id_evf_calendar_event") is not None
+    }
+    ordered = sorted(
+        (dict(event) for event in events if not is_ignored_calendar_entry(event)),
+        key=lambda event: (str(event.get("dt_start") or ""), int(event["evf_calendar_id"])),
+    )
+
+    positive: list[dict] = []
+    zero: list[dict] = []
+    for event in ordered:
+        prior = existing_by_calendar_id.get(int(event["evf_calendar_id"]))
+        prior_match = _PEW_NUMBER_RE.match(str(prior.get("txt_code") or "")) if prior else None
+        prior_number = int(prior_match.group(1)) if prior_match else None
+        if event.get("is_cancelled") and (
+            prior_number is None
+            or prior_number == 0
+            or int(event["evf_calendar_id"]) in _KNOWN_FIRST_IMPORT_CANCELLATIONS
+        ):
+            zero.append(event)
+        else:
+            event["_prior_number"] = prior_number
+            positive.append(event)
+
+    for event in zero:
+        event["desired_code"] = f"PEW0{_weapon_suffix(event)}-{season_suffix}"
+
+    zero_codes = [event["desired_code"] for event in zero]
+    duplicates = sorted({code for code in zero_codes if zero_codes.count(code) > 1})
+    if duplicates:
+        raise CalendarIntegrityError(
+            "multiple first-import cancellations would share code " + ", ".join(duplicates)
+        )
+
+    for number, event in enumerate(positive, start=1):
+        prior_number = event.pop("_prior_number", None)
+        if event.get("is_cancelled") and prior_number not in (None, number):
+            raise CalendarIntegrityError(
+                f"later cancellation {event.get('name')!r} must retain PEW{prior_number}, "
+                f"but chronological position is PEW{number}"
+            )
+        event["desired_code"] = f"PEW{number}{_weapon_suffix(event)}-{season_suffix}"
+
+    return sorted(zero + positive, key=lambda event: (event["dt_start"], event["evf_calendar_id"]))
 
 
 # Country-name aliases used by EVF + seed data. Each canonical form below
@@ -164,6 +258,8 @@ _PUBLIC_EVENT_KEYS = (
     "url_registration",
     "dt_registration_deadline",
     "evf_slug",
+    "evf_calendar_id",
+    "is_cancelled",
 )
 
 _REGISTRATION_HOSTS = (
@@ -215,6 +311,8 @@ def _blank_event() -> dict:
         "url_registration": None,
         "dt_registration_deadline": None,
         "evf_slug": "",
+        "evf_calendar_id": None,
+        "is_cancelled": False,
     }
 
 
@@ -223,11 +321,39 @@ def _blank_event() -> dict:
 # =============================================================================
 
 
+def _tribe_event_end_date(article, dt_start: str) -> str:
+    """Resolve The Events Calendar's visible range end.
+
+    Tribe emits only one ``datetime`` attribute for list rows; multi-day end
+    dates live in a text span such as ``22 August``.  Reuse the start year and
+    roll into the following year only when the parsed month/day precedes start.
+    """
+    start_text = dt_start[:10]
+    try:
+        start = datetime.strptime(start_text, "%Y-%m-%d").date()
+    except ValueError:
+        return start_text
+
+    end_el = article.select_one(".tribe-event-date-end")
+    if end_el is None:
+        return start_text
+    end_text = end_el.get_text(" ", strip=True)
+    for fmt in ("%d %B %Y", "%d %b %Y", "%B %d %Y", "%b %d %Y"):
+        try:
+            end = datetime.strptime(f"{end_text} {start.year}", fmt).date()
+        except ValueError:
+            continue
+        if end < start:
+            end = end.replace(year=end.year + 1)
+        return end.isoformat()
+    return start_text
+
+
 def parse_evf_calendar_html(html: str) -> list[dict]:
     """Parse veteransfencing.eu/calendar/ HTML into event dicts.
 
     Returns list of dicts with keys matching ``_PUBLIC_EVENT_KEYS``.
-    Skips articles with missing/unparseable date data rather than raising.
+    Raises CalendarIntegrityError for a named entry with missing date data.
     """
     soup = BeautifulSoup(html, "html.parser")
     events: list[dict] = []
@@ -237,15 +363,21 @@ def parse_evf_calendar_html(html: str) -> list[dict]:
         name = title_el.get_text().strip() if title_el else ""
         if not name:
             continue
+        if is_ignored_calendar_entry({"name": name}):
+            continue
         url = title_el.get("href", "") if title_el else ""
 
         dt_els = article.select("[datetime]")
         if not dt_els:
-            continue
+            raise CalendarIntegrityError(f"EVF calendar entry {name!r} has missing date")
         dt_start = dt_els[0].get("datetime", "") or ""
-        dt_end = dt_els[1].get("datetime", "") if len(dt_els) > 1 else dt_start
+        dt_end = _tribe_event_end_date(article, str(dt_start))
         if not dt_start:
-            continue
+            raise CalendarIntegrityError(f"EVF calendar entry {name!r} has missing date")
+
+        identity_text = " ".join(article.get("class") or []) + " " + str(article.get("id") or "")
+        calendar_id_match = re.search(r"(?:^|\s)post-(\d+)(?:\s|$)", identity_text)
+        evf_calendar_id = int(calendar_id_match.group(1)) if calendar_id_match else None
 
         venue_el = article.select_one(".tribe-events-calendar-list__event-venue-title")
         venue = venue_el.get_text().strip() if venue_el else ""
@@ -300,6 +432,8 @@ def parse_evf_calendar_html(html: str) -> list[dict]:
                 "fee": fee,
                 "fee_currency": fee_currency,
                 "evf_slug": _extract_evf_slug(str(url) if url else ""),
+                "evf_calendar_id": evf_calendar_id,
+                "is_cancelled": "cancelled" in name.casefold(),
             }
         )
         events.append(evt)
@@ -334,7 +468,11 @@ def _fetch_html_list() -> list[dict]:
 
         successes += 1
         for e in page_events:
-            key = f"{e['dt_start']}_{e['name']}"
+            key = (
+                f"calendar:{e['evf_calendar_id']}"
+                if e.get("evf_calendar_id") is not None
+                else f"{e['dt_start']}_{e['name']}"
+            )
             if key not in seen_keys:
                 seen_keys.add(key)
                 all_events.append(e)
@@ -683,7 +821,7 @@ def scrape_full_season_calendar(
         )
         return []
 
-    filtered = filter_by_season(merged, season_start, season_end)
+    filtered = validate_season_calendar(merged, season_start, season_end)
     relevant = [
         e
         for e in filtered
@@ -701,7 +839,83 @@ def scrape_full_season_calendar(
         except Exception as exc:
             logger.warning("Detail-page batch enrichment failed (non-fatal): %s", exc)
 
-    return relevant
+    return filtered
+
+
+def validate_season_calendar(events: list[dict], season_start: str, season_end: str) -> list[dict]:
+    """Return the retained, strictly valid EVF snapshot contained in one season.
+
+    Whole-word CAMP entries are discarded before validation and never count.
+    Every other public entry counts, including cancelled and non-circuit events.
+    Boundary overlap is a season-definition error; it is never assigned
+    heuristically. Stable calendar ids and weapons are mandatory.
+    """
+    try:
+        season_start_date = datetime.strptime(season_start, "%Y-%m-%d").date()
+        season_end_date = datetime.strptime(season_end, "%Y-%m-%d").date()
+    except (TypeError, ValueError) as exc:
+        raise CalendarIntegrityError(
+            f"unparseable season date range {season_start!r}..{season_end!r}"
+        ) from exc
+
+    if season_end_date < season_start_date:
+        raise CalendarIntegrityError(
+            f"season end {season_end} precedes season start {season_start}"
+        )
+
+    snapshot: list[dict] = []
+    seen_calendar_ids: set[int] = set()
+    for event in events:
+        if is_ignored_calendar_entry(event):
+            continue
+        event = dict(event)
+        name = event.get("name") or "<unnamed>"
+        raw_start = event.get("dt_start")
+        raw_end = event.get("dt_end")
+        if not raw_start or not raw_end:
+            raise CalendarIntegrityError(f"EVF calendar entry {name!r} has missing date")
+        try:
+            event_start = datetime.strptime(str(raw_start)[:10], "%Y-%m-%d").date()
+            event_end = datetime.strptime(str(raw_end)[:10], "%Y-%m-%d").date()
+        except (TypeError, ValueError) as exc:
+            raise CalendarIntegrityError(
+                f"EVF calendar entry {name!r} has unparseable date"
+            ) from exc
+
+        if event_end < event_start:
+            raise CalendarIntegrityError(f"EVF calendar entry {name!r} ends before it starts")
+
+        overlaps = event_start <= season_end_date and event_end >= season_start_date
+        contained = event_start >= season_start_date and event_end <= season_end_date
+        if overlaps and not contained:
+            raise CalendarIntegrityError(
+                f"EVF calendar entry {name!r} crosses season boundary {season_start}..{season_end}"
+            )
+        if not contained:
+            continue
+
+        calendar_id = event.get("evf_calendar_id")
+        if calendar_id is None:
+            raise CalendarIntegrityError(f"EVF calendar entry {name!r} has missing EVF calendar id")
+        calendar_id = int(calendar_id)
+        if calendar_id in seen_calendar_ids:
+            raise CalendarIntegrityError(f"duplicate EVF calendar id {calendar_id}")
+        seen_calendar_ids.add(calendar_id)
+
+        if not _weapon_suffix(event) and calendar_id in _KNOWN_WEAPON_OVERRIDES:
+            event["weapons"] = list(_KNOWN_WEAPON_OVERRIDES[calendar_id])
+
+        if not _weapon_suffix(event):
+            raise CalendarIntegrityError(f"EVF calendar entry {name!r} has missing weapons")
+        snapshot.append(event)
+
+    return snapshot
+
+
+def is_evf_scoring_event(event: dict) -> bool:
+    """Whether an all-calendar entry belongs in SPWS EVF event ingestion."""
+    name = (event.get("name") or "").casefold()
+    return "circuit" in name or "championship" in name or "criterium" in name
 
 
 def filter_by_season(events: list[dict], season_start: str, season_end: str) -> list[dict]:
@@ -721,8 +935,11 @@ def _find_existing_match(
 ) -> dict | None:
     """Find the best existing-row match for a scraped event (ADR-039 dedup key).
 
-    Algorithm (ADR-039 rev 3):
-      Step 1 — PRIMARY: EVF numeric id (`evf_id` / `id_evf_event`) — no date
+    Algorithm (ADR-039 rev 5):
+      Step 0 — PRIMARY: public EVF calendar post id (`evf_calendar_id` /
+               `id_evf_calendar_event`) — no date gate. This identity exists
+               before results and survives renames/reschedules.
+      Step 1 — SECONDARY: EVF results numeric id (`evf_id` / `id_evf_event`) — no date
                gate (a reschedule must still match). Live-verified
                2026-07-10: structurally absent from calendar-path HTML
                scrapes (EVF assigns ids to an event in their own backend
@@ -752,17 +969,24 @@ def _find_existing_match(
     caller concerns — they are applied to `existing` BEFORE this function is
     called. See `assert_no_future_completed` and `is_in_scope`.
 
-    Name comparison was REMOVED in rev 2 and stays removed in rev 3: EVF
+    Name comparison was REMOVED in rev 2 and stays removed in rev 5: EVF
     actively renames events mid-season (Napoli → Naples (ITA)) and name
     fuzz produced the PEW-PALAVESUVI-class duplicates. Date + country +
     location remain the backup ladder's physical properties that can't be
-    renamed away; id/slug are the actual event identity and now rank ahead
+    renamed away; calendar id/results id/slug are explicit identities and rank ahead
     of them.
 
     The `name_threshold` parameter is kept for backwards-compatible call
     sites but is never read.
     """
-    # Step 1 — PRIMARY: EVF numeric id.
+    # Step 0 — PRIMARY calendar identity: public WordPress post id.
+    s_calendar_id = s_evt.get("evf_calendar_id")
+    if s_calendar_id is not None:
+        for ex in existing:
+            if ex.get("id_evf_calendar_event") == s_calendar_id:
+                return ex
+
+    # Step 1 — secondary EVF results-database id.
     s_evf_id = s_evt.get("evf_id")
     if s_evf_id:
         for ex in existing:
