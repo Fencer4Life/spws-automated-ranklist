@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="028-evf-calendar-results-import.md">
-<meta name="adr-source-sha256" content="69c5f3d73a2961ae6ecec50330be9cc1c96c6667e7d1f84b567873dd404faef1">
+<meta name="adr-source-sha256" content="cda793e68e6124b34c9f567c392bbc7908a730ec38bc2059b7014d4ddf4a0ee2">
 <title>ADR-028 · EVF Calendar + Results Import</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 028</p><h1>EVF Calendar + Results Import</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-04-26 rev 3 — code allocator + EVF organizer fix per ADR-043)</dd></div><div><dt>Date</dt><dd class="">2026-04-06 <strong>Relates to:</strong> FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (<code>url_event</code>), ADR-030 (<code>url_registration</code>/<code>dt_registration_deadline</code>), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier)</dd></div><div><dt>Source</dt><dd class=""><code>028-evf-calendar-results-import.md</code></dd></div><div><dt>Length</dt><dd class="">129 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (revised 2026-04-26 rev 3 — code allocator + EVF organizer fix per ADR-043)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-08-07 rev 6 — every calendar entry is chronologically coded)</dd></div><div><dt>Date</dt><dd class="">2026-04-06 <strong>Relates to:</strong> FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (<code>url_event</code>), ADR-030 (<code>url_registration</code>/<code>dt_registration_deadline</code>), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier)</dd></div><div><dt>Source</dt><dd class=""><code>028-evf-calendar-results-import.md</code></dd></div><div><dt>Length</dt><dd class="">172 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (revised 2026-08-07 rev 6 — every calendar entry is chronologically coded)
 <strong>Date:</strong> 2026-04-06
 <strong>Relates to:</strong> FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (<code>url_event</code>), ADR-030 (<code>url_registration</code>/<code>dt_registration_deadline</code>), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier)</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-04-26-rev-3">Amendment 2026-04-26 (rev 3)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#calendar-scraping-api-first-html-enrichment-revised-2026-04-20">Calendar Scraping (API-first + HTML enrichment — revised 2026-04-20)</a></li><li class="depth-3"><a href="#results-scraping-json-api">Results Scraping (JSON API)</a></li><li class="depth-3"><a href="#refresh-semantics-amendment-2026-04-20-rev-2">Refresh Semantics (amendment, 2026-04-20 rev 2)</a></li><li class="depth-3"><a href="#deadline-harvesting-disabled-2026-04-20-rev-2">Deadline Harvesting (disabled 2026-04-20 rev 2)</a></li><li class="depth-3"><a href="#rate-limiting">Rate Limiting</a></li><li class="depth-3"><a href="#telegram-commands">Telegram Commands</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-04-25-algorithm-rev-3-superseded-by-adr-039">Amendment 2026-04-25 — Algorithm rev 3 (superseded by ADR-039)</a></li><li class="depth-2"><a href="#amendment-2026-07-11-adr-081">Amendment (2026-07-11, ADR-081)</a></li><li class="depth-2"><a href="#amendment-2026-07-26-adr-039-rev-4">Amendment (2026-07-26, ADR-039 rev 4)</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-04-26-rev-3">Amendment 2026-04-26 (rev 3)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#calendar-scraping-api-first-html-enrichment-revised-2026-04-20">Calendar Scraping (API-first + HTML enrichment — revised 2026-04-20)</a></li><li class="depth-3"><a href="#results-scraping-json-api">Results Scraping (JSON API)</a></li><li class="depth-3"><a href="#refresh-semantics-amendment-2026-04-20-rev-2">Refresh Semantics (amendment, 2026-04-20 rev 2)</a></li><li class="depth-3"><a href="#deadline-harvesting-disabled-2026-04-20-rev-2">Deadline Harvesting (disabled 2026-04-20 rev 2)</a></li><li class="depth-3"><a href="#rate-limiting">Rate Limiting</a></li><li class="depth-3"><a href="#telegram-commands">Telegram Commands</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-04-25-algorithm-rev-3-superseded-by-adr-039">Amendment 2026-04-25 — Algorithm rev 3 (superseded by ADR-039)</a></li><li class="depth-2"><a href="#amendment-2026-07-11-adr-081">Amendment (2026-07-11, ADR-081)</a></li><li class="depth-2"><a href="#amendment-2026-07-26-adr-039-rev-4">Amendment (2026-07-26, ADR-039 rev 4)</a></li><li class="depth-2"><a href="#amendment-2026-08-07-rev-5-authoritative-calendar-snapshot">Amendment (2026-08-07, rev 5) — authoritative calendar snapshot</a></li><li class="depth-2"><a href="#amendment-2026-08-07-rev-6-every-entry-becomes-a-coded-event-row">Amendment (2026-08-07, rev 6) — every entry becomes a coded event row</a></li></ol></nav>
   <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-04-26-rev-3">Amendment 2026-04-26 (rev 3)</h2>
 <p>The Python scraper no longer constructs venue-slug <code>code</code> values. Code allocation is delegated to <code>fn_import_evf_events_v2</code> (calendar path) and <code>fn_create_evf_event_from_results</code> (results path), both of which call the new allocator + classifier from ADR-043. <code>id_organizer</code> is set to <code>EVF</code> unconditionally (was incorrectly <code>SPWS</code> before). The bogus <code>MEW-{slug}-{year}</code> code pattern is gone — team events now go to the singleton <code>DMEW-{year}</code> and individual championships to <code>IMEW-{year}</code>. See ADR-043 for the allocator's three-step ladder + Telegram alert behaviour.</p>
 </section>
@@ -137,8 +137,44 @@ organizer's invitation letter and registration link — are <strong>unaffected</
 upcoming events. The fill-blank invariant continues to hold: once concluded, the link is filled
 and a later manual edit is never overwritten. Canonical spec and the one-time CERT/PROD data
 correction: <a href="039-stale-event-gate.html">ADR-039</a> rev 4.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-07-rev-5-authoritative-calendar-snapshot">Amendment (2026-08-07, rev 5) — authoritative calendar snapshot</h2>
+<p>The public EVF HTML calendar is the authority for event existence. Its WordPress
+<code>post-N</code> id is stored in <code>tbl_event.id_evf_calendar_event</code>. The EVF results database
+remains secondary: <code>id_evf_event</code> identifies a results occurrence but does not
+replace original scoring-provider links such as FTL, Engarde, 4Fence or Dartagnan.</p>
+<p>Every scrape validates one complete season snapshot before writing. The count <code>N</code>
+includes every distinct EVF calendar entry wholly contained within the season,
+including cancelled, camp, open and non-scoring entries. Missing/unparseable dates,
+duplicate calendar ids and a boundary-spanning event are hard errors. Each attempt
+is recorded in <code>tbl_evf_calendar_scrape_run</code> with counts, calendar ids and verdict.</p>
+<p>Only circuit/championship/criterium entries become SPWS event rows, but all entries
+contribute to <code>N</code>. Ingestion calls <code>fn_ingest_evf_calendar(payload, season, N)</code> and
+may not allocate <code>PEWn</code> where <code>n &gt; N</code>. Repeated calendar ids refresh one row instead
+of allocating. An authoritative cancellation marker moves a pre-scoring,
+results-free event to <code>CANCELLED</code>; terminal or scored rows are refused.</p>
+<p>Implementation: <a href="../../python/scrapers/evf_calendar.py">calendar scraper</a>,
+<a href="../../python/scrapers/evf_sync.py">sync orchestration</a>,
+<a href="../../supabase/migrations/20260807000001_evf_calendar_identity_bound.sql">migration</a>
+and <a href="../../supabase/tests/53_evf_calendar_identity_bound.sql">pgTAP contract</a>.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-07-rev-6-every-entry-becomes-a-coded-event-row">Amendment (2026-08-07, rev 6) — every entry becomes a coded event row</h2>
+<p>The rev-5 distinction “all entries count, only circuit/championship/criterium entries
+become rows” is superseded. Every valid public-calendar entry becomes exactly one
+<code>tbl_event</code> row, including camps, opens, non-scoring and cancelled entries. The full
+snapshot is sorted by <code>(dt_start, id_evf_calendar_event)</code> and assigned exact ordinal
+codes under ADR-043; ADR-046 supplies the mandatory weapon suffix.</p>
+<p>Calendar ordinals and prior-season identity are independent. <code>id_prior_event</code>
+preserves a verified geographic/event-series relationship, including the approved
+Athens→Chania link, while prior code digits never influence the new season. The EVF
+results database remains secondary provenance and original scoring-provider URLs
+remain authoritative.</p>
+<p>A complete scrape aborts before writing if any entry lacks a stable calendar ID,
+valid contained date range or authoritative weapon set. Reflow is allowed only for
+unscored rows; any required rename of a results-bearing row is an error requiring a
+reviewed migration.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="027-full-season-seed-export.html">← ADR-027: Full-Season Seed Export</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="029-tournament-url-auto-population.html">→ ADR-029: Tournament URL Auto-Population + Admin CRUD</a></nav>
-<footer class="foot">Generated from <code>028-evf-calendar-results-import.md</code> · source SHA-256 <code>69c5f3d73a2961ae6ecec50330be9cc1c96c6667e7d1f84b567873dd404faef1</code></footer>
+<footer class="foot">Generated from <code>028-evf-calendar-results-import.md</code> · source SHA-256 <code>cda793e68e6124b34c9f567c392bbc7908a730ec38bc2059b7014d4ddf4a0ee2</code></footer>
 </div></body></html>

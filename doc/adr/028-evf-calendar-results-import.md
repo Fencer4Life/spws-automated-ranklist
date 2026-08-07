@@ -1,6 +1,6 @@
 # ADR-028: EVF Calendar + Results Import
 
-**Status:** Accepted (revised 2026-04-26 rev 3 — code allocator + EVF organizer fix per ADR-043)
+**Status:** Accepted (revised 2026-08-07 rev 6 — every calendar entry is chronologically coded)
 **Date:** 2026-04-06
 **Relates to:** FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (`url_event`), ADR-030 (`url_registration`/`dt_registration_deadline`), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier)
 
@@ -127,3 +127,46 @@ organizer's invitation letter and registration link — are **unaffected** and s
 upcoming events. The fill-blank invariant continues to hold: once concluded, the link is filled
 and a later manual edit is never overwritten. Canonical spec and the one-time CERT/PROD data
 correction: [ADR-039](039-stale-event-gate.md) rev 4.
+
+## Amendment (2026-08-07, rev 5) — authoritative calendar snapshot
+
+The public EVF HTML calendar is the authority for event existence. Its WordPress
+`post-N` id is stored in `tbl_event.id_evf_calendar_event`. The EVF results database
+remains secondary: `id_evf_event` identifies a results occurrence but does not
+replace original scoring-provider links such as FTL, Engarde, 4Fence or Dartagnan.
+
+Every scrape validates one complete season snapshot before writing. The count `N`
+includes every distinct EVF calendar entry wholly contained within the season,
+including cancelled, camp, open and non-scoring entries. Missing/unparseable dates,
+duplicate calendar ids and a boundary-spanning event are hard errors. Each attempt
+is recorded in `tbl_evf_calendar_scrape_run` with counts, calendar ids and verdict.
+
+Only circuit/championship/criterium entries become SPWS event rows, but all entries
+contribute to `N`. Ingestion calls `fn_ingest_evf_calendar(payload, season, N)` and
+may not allocate `PEWn` where `n > N`. Repeated calendar ids refresh one row instead
+of allocating. An authoritative cancellation marker moves a pre-scoring,
+results-free event to `CANCELLED`; terminal or scored rows are refused.
+
+Implementation: [calendar scraper](../../python/scrapers/evf_calendar.py),
+[sync orchestration](../../python/scrapers/evf_sync.py),
+[migration](../../supabase/migrations/20260807000001_evf_calendar_identity_bound.sql)
+and [pgTAP contract](../../supabase/tests/53_evf_calendar_identity_bound.sql).
+
+## Amendment (2026-08-07, rev 6) — every entry becomes a coded event row
+
+The rev-5 distinction “all entries count, only circuit/championship/criterium entries
+become rows” is superseded. Every valid public-calendar entry becomes exactly one
+`tbl_event` row, including camps, opens, non-scoring and cancelled entries. The full
+snapshot is sorted by `(dt_start, id_evf_calendar_event)` and assigned exact ordinal
+codes under ADR-043; ADR-046 supplies the mandatory weapon suffix.
+
+Calendar ordinals and prior-season identity are independent. `id_prior_event`
+preserves a verified geographic/event-series relationship, including the approved
+Athens→Chania link, while prior code digits never influence the new season. The EVF
+results database remains secondary provenance and original scoring-provider URLs
+remain authoritative.
+
+A complete scrape aborts before writing if any entry lacks a stable calendar ID,
+valid contained date range or authoritative weapon set. Reflow is allowed only for
+unscored rows; any required rename of a results-bearing row is an error requiring a
+reviewed migration.

@@ -1,6 +1,6 @@
 # ADR-042: Per-season carry-over engine selection via dispatcher pattern
 
-**Status:** Accepted — Phase 1A + 1B implemented; **amended Phase 3** (2026-04-26) to flip the column DEFAULT from `EVENT_CODE_MATCHING` to `EVENT_FK_MATCHING` for new seasons and to make engine selection admin-configurable via the ScoringConfigEditor dropdown (see ADR-045). Existing rows are not rewritten; admin opts each one in via the UI.
+**Status:** Accepted — Phase 1A + 1B implemented; amended 2026-08-07 to preserve FK carry-over independently of chronological numbering.
 **Date:** 2026-04-25 (created), 2026-04-26 (Phase 3 amendment)
 **Relates to:** ADR-018 (Rolling Score for Active Season), ADR-021 (IMEW biennial carry-over), ADR-044 (Phase 3 wizard), ADR-045 (engine selector + default flip)
 
@@ -101,3 +101,21 @@ The dispatcher's signature is byte-identical to the renamed engine. PostgREST cl
 - **Phase 3 amendment (SHIPPED 2026-04-26 in commit 4da1659):** column DEFAULT flipped to `EVENT_FK_MATCHING` (greenfield seasons only); engine selection moved into the ScoringConfigEditor as a dropdown (Section 4b). Pre-Phase-3 seasons are untouched — admin opts each one in. The legacy CODE branch in the dispatcher remains for compatibility. See ADR-045 for the rationale and ADR-044 for the wizard that exercises the new default.
 - **Eventual cleanup**: when no live season uses `EVENT_CODE_MATCHING`, drop the legacy engine functions and remove the `WHEN 'EVENT_CODE_MATCHING'` branch from dispatchers.
 - **ADR-021** amendment pending Phase 1B (rule unchanged; expression mechanism updated to FK-based).
+
+## Amendment (2026-08-07) — number and rolling identity are independent
+
+Returning PPW/MPW/PEW events continue to use `id_prior_event` for rolling
+replacement. For EVF calendar rows, the current-season number is strictly the entry's
+chronological position under ADR-043 and never reuses or prefers the predecessor's
+number. A numbering repair therefore cannot break rolling-score behavior.
+
+Geographic continuity may cross city labels when the organizer confirms it is the
+same recurring event. The approved current-season mapping links Athens directly to
+the prior Chania event while Athens independently receives `PEW20es` from its current
+calendar position and weapon set. The FK is authoritative; country, city and code
+digits are matching evidence only.
+
+The trigger in
+[`20260807000001_evf_calendar_identity_bound.sql`](../../supabase/migrations/20260807000001_evf_calendar_identity_bound.sql)
+also carries reusable public-calendar identity into a new season skeleton. The
+occurrence-specific EVF results id is deliberately not inherited.
