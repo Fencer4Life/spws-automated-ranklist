@@ -91,11 +91,13 @@ Genuinely distinct events are untouched — they derive different codes and neve
 
 ## Amendment (2026-08-07): strict chronological public-calendar codes
 
-Every authoritative EVF public-calendar entry becomes one event row and receives
-`PEW{ordinal}{letters}-{season}`. `ordinal` is its one-based position after sorting
-the complete in-season snapshot by `(dt_start, id_evf_calendar_event)`. Equal start
-dates therefore use ascending stable calendar ID. Cancelled, camp, open and
-non-scoring entries participate exactly like circuit entries and do not create gaps.
+Every retained EVF public-calendar competition becomes one event row and receives
+`PEW{ordinal}{letters}-{season}`. Names matching case-insensitive whole-word `CAMP`
+are ignored completely. A retained event already cancelled at first import receives
+ordinal zero and does not consume a positive position. All other retained entries
+use one-based position after sorting by `(dt_start, id_evf_calendar_event)`; equal
+start dates therefore use ascending stable calendar ID. An event cancelled later
+keeps its previously assigned positive code.
 
 The `letters` suffix remains lowercase alphabetical (`e`, `f`, `s`) and is mandatory.
 The public EVF weapon categories are primary evidence. When EVF omits them, a linked
@@ -105,5 +107,5 @@ calendar write fails before mutation. An empty suffix is no longer valid for a
 calendar-owned PEW row.
 
 Historical split tooling remains unchanged for legacy data. New calendar ingestion
-uses the complete-snapshot planner in ADR-043, including transactional neutral-code
-renames and the scored-row reflow guard.
+uses the filtered-snapshot planner in ADR-043, including transactional neutral-code
+renames, duplicate-zero detection and the scored-row reflow guard.

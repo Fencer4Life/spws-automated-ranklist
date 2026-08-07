@@ -111,9 +111,9 @@ number. A numbering repair therefore cannot break rolling-score behavior.
 
 Geographic continuity may cross city labels when the organizer confirms it is the
 same recurring event. The approved current-season mapping links Athens directly to
-the prior Chania event while Athens independently receives `PEW20es` from its current
-calendar position and weapon set. The FK is authoritative; country, city and code
-digits are matching evidence only.
+the prior Chania event while Athens independently receives `PEW14es` from the
+filtered current calendar position and weapon set. The FK is authoritative; country,
+city and code digits are matching evidence only.
 
 The trigger in
 [`20260807000001_evf_calendar_identity_bound.sql`](../../supabase/migrations/20260807000001_evf_calendar_identity_bound.sql)

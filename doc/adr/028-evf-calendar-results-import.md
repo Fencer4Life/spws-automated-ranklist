@@ -1,6 +1,6 @@
 # ADR-028: EVF Calendar + Results Import
 
-**Status:** Accepted (revised 2026-08-07 rev 6 — every calendar entry is chronologically coded)
+**Status:** Accepted (revised 2026-08-07 rev 7 — camps excluded and first-import cancellations use zero)
 **Date:** 2026-04-06
 **Relates to:** FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (`url_event`), ADR-030 (`url_registration`/`dt_registration_deadline`), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier)
 
@@ -170,3 +170,22 @@ A complete scrape aborts before writing if any entry lacks a stable calendar ID,
 valid contained date range or authoritative weapon set. Reflow is allowed only for
 unscored rows; any required rename of a results-bearing row is an error requiring a
 reviewed migration.
+
+## Amendment (2026-08-07, rev 7) — CAMP exclusion and cancellation base zero
+
+Rev 6 is narrowed by two approved domain rules:
+
+1. An entry whose name contains case-insensitive whole-word `CAMP` is ignored
+   completely. It creates no row, expects no results and contributes neither a zero
+   nor a positive number. Filtering occurs before season validation/counting, so a
+   malformed camp date cannot block competition ingestion. Substrings such as
+   “Campbell” do not match.
+2. A retained event already marked cancelled at its first authoritative import is
+   stored at `PEW0{letters}-{season}` and excluded from positive chronology. An event
+   cancelled after receiving a positive code keeps that code; cancellation never
+   triggers a season-wide reflow.
+
+The current source has five ignored camps, Samorin at `PEW0efs`, and sixteen
+positive competitions numbered `PEW1…PEW16`. If two first-import cancellations
+would produce the same full zero code (same weapon suffix and season), ingestion
+fails before mutation rather than inventing another numbering shape.

@@ -1,6 +1,6 @@
 # ADR-043: EVF Event Code Allocator + Classifier (Phase 2)
 
-**Status:** Accepted (amended 2026-08-07 — complete-snapshot chronological allocation)
+**Status:** Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero)
 **Date:** 2026-04-26
 **Relates to:** ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)
 
@@ -103,20 +103,23 @@ When the EVF scraper next finds a Salzburg event, the allocator hits Step A and 
 ## Amendment (2026-08-07) — complete-snapshot chronological allocation
 
 The location/prior-number/lowest-free allocator is superseded for public-calendar
-ingestion. A complete validated season snapshot owns the numbering:
+ingestion. A filtered, validated season snapshot owns the numbering:
 
-1. include every distinct EVF calendar entry wholly inside the season, including
-   cancelled, camp, open and non-scoring entries;
-2. sort by `(dt_start, id_evf_calendar_event)` ascending;
-3. assign the one-based ordinal `N`;
-4. derive the alphabetical weapon suffix through ADR-046 (`e`, `f`, `s`);
-5. produce `PEW{N}{suffix}-{season}`.
+1. discard names matching case-insensitive whole-word `CAMP` before validation,
+   counting, matching and persistence;
+2. assign a retained event already cancelled at first import base zero;
+3. sort the remaining positive competitions by
+   `(dt_start, id_evf_calendar_event)` ascending;
+4. assign one-based positive ordinals;
+5. derive the alphabetical weapon suffix through ADR-046 (`e`, `f`, `s`);
+6. produce `PEW{ordinal}{suffix}-{season}`.
 
-The resulting numeric bases must equal exactly `{1..calendar_count}`. A returning
-event's prior-season number is never an input. Geographic/series continuity remains
-in `id_prior_event`, so a current code may change from its predecessor without
-affecting rolling scores. Athens is explicitly linked to the prior Chania occurrence
-while receiving its own current-season chronological code.
+The positive numeric bases must equal exactly `{1..positive_count}`. Zero-numbered
+first-import cancellations are outside that sequence. A later cancellation keeps its
+positive code. A returning event's prior-season number is never an input.
+Geographic/series continuity remains in `id_prior_event`, so a current code may
+change from its predecessor without affecting rolling scores. Athens is explicitly
+linked to prior Chania while receiving `PEW14es` from the current filtered snapshot.
 
 Every complete scrape recomputes the desired mapping. Unscored rows may be reflowed
 transactionally if EVF inserts or reschedules an earlier entry. If a reflow would
@@ -124,10 +127,11 @@ rename a results-bearing row, ingestion aborts before any mutation and requires 
 reviewed correction. Code swaps use transaction-local neutral codes before final
 codes so the unique code constraint never depends on rename order.
 
-Missing/unparseable dates, missing calendar IDs, duplicate calendar IDs, missing or
-unsupported weapon sets, boundary-spanning entries and a non-exact `{1..N}` plan are
-hard errors. Calendar ID is still the idempotence boundary; repeated unchanged
-snapshots update the same rows and change no codes. CERT→PROD reconciliation carries
-the same identity and mapping. See
+For retained entries, missing/unparseable dates, missing calendar IDs, duplicate
+calendar IDs, missing/unsupported weapon sets, boundary-spanning entries and a
+non-exact `{1..N}` positive plan are hard errors. Two first-import cancellations
+that generate the same full zero code also fail before mutation. Calendar ID remains
+the idempotence boundary; repeated unchanged snapshots update the same rows and
+change no codes. CERT→PROD reconciliation carries the same identity and mapping. See
 [`20260807000001_evf_calendar_identity_bound.sql`](../../supabase/migrations/20260807000001_evf_calendar_identity_bound.sql)
 and [`53_evf_calendar_identity_bound.sql`](../../supabase/tests/53_evf_calendar_identity_bound.sql).

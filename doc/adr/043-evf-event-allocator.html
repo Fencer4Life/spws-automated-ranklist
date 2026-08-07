@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="043-evf-event-allocator.md">
-<meta name="adr-source-sha256" content="6920e60f476bf56f635f66dfbac743420a208c171766ba64387c2f701c968438">
+<meta name="adr-source-sha256" content="0bb50fad2886544e1626d5a5a37f39dad13ba90cae7ef31d8740ae296a79ef1e">
 <title>ADR-043 · EVF Event Code Allocator + Classifier (Phase 2)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 043</p><h1>EVF Event Code Allocator + Classifier (Phase 2)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-08-07 — complete-snapshot chronological allocation)</dd></div><div><dt>Date</dt><dd class="">2026-04-26 <strong>Relates to:</strong> ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)</dd></div><div><dt>Source</dt><dd class=""><code>043-evf-event-allocator.md</code></dd></div><div><dt>Length</dt><dd class="">133 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (amended 2026-08-07 — complete-snapshot chronological allocation)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero)</dd></div><div><dt>Date</dt><dd class="">2026-04-26 <strong>Relates to:</strong> ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)</dd></div><div><dt>Source</dt><dd class=""><code>043-evf-event-allocator.md</code></dd></div><div><dt>Length</dt><dd class="">137 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero)
 <strong>Date:</strong> 2026-04-26
 <strong>Relates to:</strong> ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)</p>
 </div>
@@ -124,34 +124,38 @@ VALUES (
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-07-complete-snapshot-chronological-allocation">Amendment (2026-08-07) — complete-snapshot chronological allocation</h2>
 <p>The location/prior-number/lowest-free allocator is superseded for public-calendar
-ingestion. A complete validated season snapshot owns the numbering:</p>
+ingestion. A filtered, validated season snapshot owns the numbering:</p>
 <ol>
-<li>include every distinct EVF calendar entry wholly inside the season, including
-cancelled, camp, open and non-scoring entries;</li>
-<li>sort by <code>(dt_start, id_evf_calendar_event)</code> ascending;</li>
-<li>assign the one-based ordinal <code>N</code>;</li>
+<li>discard names matching case-insensitive whole-word <code>CAMP</code> before validation,
+counting, matching and persistence;</li>
+<li>assign a retained event already cancelled at first import base zero;</li>
+<li>sort the remaining positive competitions by
+<code>(dt_start, id_evf_calendar_event)</code> ascending;</li>
+<li>assign one-based positive ordinals;</li>
 <li>derive the alphabetical weapon suffix through ADR-046 (<code>e</code>, <code>f</code>, <code>s</code>);</li>
-<li>produce <code>PEW{N}{suffix}-{season}</code>.</li>
+<li>produce <code>PEW{ordinal}{suffix}-{season}</code>.</li>
 </ol>
-<p>The resulting numeric bases must equal exactly <code>{1..calendar_count}</code>. A returning
-event's prior-season number is never an input. Geographic/series continuity remains
-in <code>id_prior_event</code>, so a current code may change from its predecessor without
-affecting rolling scores. Athens is explicitly linked to the prior Chania occurrence
-while receiving its own current-season chronological code.</p>
+<p>The positive numeric bases must equal exactly <code>{1..positive_count}</code>. Zero-numbered
+first-import cancellations are outside that sequence. A later cancellation keeps its
+positive code. A returning event's prior-season number is never an input.
+Geographic/series continuity remains in <code>id_prior_event</code>, so a current code may
+change from its predecessor without affecting rolling scores. Athens is explicitly
+linked to prior Chania while receiving <code>PEW14es</code> from the current filtered snapshot.</p>
 <p>Every complete scrape recomputes the desired mapping. Unscored rows may be reflowed
 transactionally if EVF inserts or reschedules an earlier entry. If a reflow would
 rename a results-bearing row, ingestion aborts before any mutation and requires a
 reviewed correction. Code swaps use transaction-local neutral codes before final
 codes so the unique code constraint never depends on rename order.</p>
-<p>Missing/unparseable dates, missing calendar IDs, duplicate calendar IDs, missing or
-unsupported weapon sets, boundary-spanning entries and a non-exact <code>{1..N}</code> plan are
-hard errors. Calendar ID is still the idempotence boundary; repeated unchanged
-snapshots update the same rows and change no codes. CERT→PROD reconciliation carries
-the same identity and mapping. See
+<p>For retained entries, missing/unparseable dates, missing calendar IDs, duplicate
+calendar IDs, missing/unsupported weapon sets, boundary-spanning entries and a
+non-exact <code>{1..N}</code> positive plan are hard errors. Two first-import cancellations
+that generate the same full zero code also fail before mutation. Calendar ID remains
+the idempotence boundary; repeated unchanged snapshots update the same rows and
+change no codes. CERT→PROD reconciliation carries the same identity and mapping. See
 <a href="../../supabase/migrations/20260807000001_evf_calendar_identity_bound.sql"><code>20260807000001_evf_calendar_identity_bound.sql</code></a>
 and <a href="../../supabase/tests/53_evf_calendar_identity_bound.sql"><code>53_evf_calendar_identity_bound.sql</code></a>.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="042-carryover-engine-dispatcher.html">← ADR-042: Per-season carry-over engine selection via dispatcher pattern</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="044-phase3-wizard.html">→ ADR-044: Phase 3 Admin UI + Season-Init Wizard (atomic transaction model)</a></nav>
-<footer class="foot">Generated from <code>043-evf-event-allocator.md</code> · source SHA-256 <code>6920e60f476bf56f635f66dfbac743420a208c171766ba64387c2f701c968438</code></footer>
+<footer class="foot">Generated from <code>043-evf-event-allocator.md</code> · source SHA-256 <code>0bb50fad2886544e1626d5a5a37f39dad13ba90cae7ef31d8740ae296a79ef1e</code></footer>
 </div></body></html>
