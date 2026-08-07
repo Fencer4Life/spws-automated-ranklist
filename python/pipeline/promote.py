@@ -337,7 +337,7 @@ def _read_cert_promotable_events(query_fn, id_season: int) -> list[dict]:
         "COALESCE(e.txt_entry_fee_currency,'') AS txt_entry_fee_currency, "
         "(SELECT COALESCE(ARRAY_AGG(w::TEXT), ARRAY[]::TEXT[]) "
         "   FROM UNNEST(e.arr_weapons) w) AS weapons, "
-        "e.id_evf_event, e.txt_evf_slug, "
+        "e.id_evf_event, e.id_evf_calendar_event, e.txt_evf_slug, "
         "o.txt_code AS organizer_code, "
         "(SELECT pe.txt_code FROM tbl_event pe WHERE pe.id_event = e.id_prior_event) AS prior_code "
         "FROM tbl_event e JOIN tbl_organizer o ON o.id_organizer = e.id_organizer "
@@ -374,6 +374,7 @@ def _build_create_payload(
         "arr_weapons": evt.get("weapons") or [],
         "id_prior_event": id_prior_event,
         "id_evf_event": evt.get("id_evf_event"),
+        "id_evf_calendar_event": evt.get("id_evf_calendar_event"),
         "txt_evf_slug": evt.get("txt_evf_slug") or "",
     }
 
@@ -394,6 +395,7 @@ def _build_update_payload(prod_id_event: int, evt: dict, id_organizer: int | Non
         "id_organizer": id_organizer,
         "arr_weapons": evt.get("weapons") or [],
         "id_evf_event": evt.get("id_evf_event"),
+        "id_evf_calendar_event": evt.get("id_evf_calendar_event"),
         "txt_evf_slug": evt.get("txt_evf_slug") or "",
         "url_event": evt.get("url_event") or "",
         "url_event_2": evt.get("url_event_2") or "",
