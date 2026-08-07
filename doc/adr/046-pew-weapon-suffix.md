@@ -1,7 +1,7 @@
 # ADR-046: PEW event codes carry weapon-letter suffix; one event = one physical weekend
 
-**Status:** Accepted (Phase 4 implemented 2026-04-27; amended 2026-06-25 — collision guard)
-**Date:** 2026-04-27 (amended 2026-06-25)
+**Status:** Accepted (Phase 4 implemented 2026-04-27; amended 2026-08-07 — chronological calendar codes)
+**Date:** 2026-04-27 (amended 2026-06-25 and 2026-08-07)
 **Relates to:** ADR-043 (EVF event allocator — amended by this ADR), ADR-044 (Phase 3 wizard — adapts skeleton iteration)
 
 ## Context
@@ -71,7 +71,7 @@ Existing tests (`09_rolling_score.sql` R.15/R.18, `19_phase3_wizard.sql` ph3.1/p
 
 - **PPW (domestic) restructuring.** Polish domestic events run all weapons at one venue per round; the bundling problem doesn't manifest there.
 - **Championship code changes.** MEW/IMEW/DMEW/MSW/MPW are single-event-per-season; weapon distinction lives at the tournament level only.
-- **Renumbering existing PEW events into strict chronological order.** Splitter assigns next-free `N` for split-out clusters; chronological cleanup remains a manual admin task via the EventManager rename UI.
+- **Historical note — strict chronological order.** This was originally left to manual EventManager cleanup. The 2026-08-07 amendment below supersedes that exclusion for authoritative EVF calendar ingestion.
 
 ## Amendment (2026-06-25): collision-resilient splitter
 
@@ -88,3 +88,22 @@ A first instinct — dropping the offending events — is wrong: it destroys rea
    - **result-bearing holder** → a genuine conflict; skip this rename with a `WARNING` for operator review (no silent data change).
 
 Genuinely distinct events are untouched — they derive different codes and never collide (e.g. `PEW3s` Munich vs `PEW3efs` Guildford both survive). The splitter stays idempotent and a malformed export can no longer break a seed load. Migration `20260625000001_phase4_pew_split_collision_guard.sql`; pgTAP `47_pew_split_collision.sql` (C.1–C.6, TDD). Result-row count is conserved across the seed load (verified: 2673 in = 2673 after).
+
+## Amendment (2026-08-07): strict chronological public-calendar codes
+
+Every authoritative EVF public-calendar entry becomes one event row and receives
+`PEW{ordinal}{letters}-{season}`. `ordinal` is its one-based position after sorting
+the complete in-season snapshot by `(dt_start, id_evf_calendar_event)`. Equal start
+dates therefore use ascending stable calendar ID. Cancelled, camp, open and
+non-scoring entries participate exactly like circuit entries and do not create gaps.
+
+The `letters` suffix remains lowercase alphabetical (`e`, `f`, `s`) and is mandatory.
+The public EVF weapon categories are primary evidence. When EVF omits them, a linked
+official organizer programme may supply the set; the current Toronto occurrence is
+`efs` on that basis. If no authoritative weapon set can be established, the entire
+calendar write fails before mutation. An empty suffix is no longer valid for a
+calendar-owned PEW row.
+
+Historical split tooling remains unchanged for legacy data. New calendar ingestion
+uses the complete-snapshot planner in ADR-043, including transactional neutral-code
+renames and the scored-row reflow guard.
