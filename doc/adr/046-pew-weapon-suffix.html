@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="046-pew-weapon-suffix.md">
-<meta name="adr-source-sha256" content="c04ea30a259d00ac0e51428b8627476d472654a7927c82f2926966f51979d1bd">
+<meta name="adr-source-sha256" content="f4848e03c6aa89f5293b184f1f60a15e3f09659c12d9ca8bfb5c1d7aac1f6bd8">
 <title>ADR-046 · PEW event codes carry weapon-letter suffix; one event = one physical weekend</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 046</p><h1>PEW event codes carry weapon-letter suffix; one event = one physical weekend</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (Phase 4 implemented 2026-04-27; amended 2026-08-07 — chronological calendar codes)</dd></div><div><dt>Date</dt><dd class="">2026-04-27 (amended 2026-06-25 and 2026-08-07) <strong>Relates to:</strong> ADR-043 (EVF event allocator — amended by this ADR), ADR-044 (Phase 3 wizard — adapts skeleton iteration)</dd></div><div><dt>Source</dt><dd class=""><code>046-pew-weapon-suffix.md</code></dd></div><div><dt>Length</dt><dd class="">109 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (Phase 4 implemented 2026-04-27; amended 2026-08-07 — chronological calendar codes)</dd></div><div><dt>Date</dt><dd class="">2026-04-27 (amended 2026-06-25 and 2026-08-07) <strong>Relates to:</strong> ADR-043 (EVF event allocator — amended by this ADR), ADR-044 (Phase 3 wizard — adapts skeleton iteration)</dd></div><div><dt>Source</dt><dd class=""><code>046-pew-weapon-suffix.md</code></dd></div><div><dt>Length</dt><dd class="">111 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (Phase 4 implemented 2026-04-27; amended 2026-08-07 — chronological calendar codes)
 <strong>Date:</strong> 2026-04-27 (amended 2026-06-25 and 2026-08-07)
 <strong>Relates to:</strong> ADR-043 (EVF event allocator — amended by this ADR), ADR-044 (Phase 3 wizard — adapts skeleton iteration)</p>
@@ -88,11 +88,13 @@
 <p>Genuinely distinct events are untouched — they derive different codes and never collide (e.g. <code>PEW3s</code> Munich vs <code>PEW3efs</code> Guildford both survive). The splitter stays idempotent and a malformed export can no longer break a seed load. Migration <code>20260625000001_phase4_pew_split_collision_guard.sql</code>; pgTAP <code>47_pew_split_collision.sql</code> (C.1–C.6, TDD). Result-row count is conserved across the seed load (verified: 2673 in = 2673 after).</p>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-07-strict-chronological-public-calendar-codes">Amendment (2026-08-07): strict chronological public-calendar codes</h2>
-<p>Every authoritative EVF public-calendar entry becomes one event row and receives
-<code>PEW{ordinal}{letters}-{season}</code>. <code>ordinal</code> is its one-based position after sorting
-the complete in-season snapshot by <code>(dt_start, id_evf_calendar_event)</code>. Equal start
-dates therefore use ascending stable calendar ID. Cancelled, camp, open and
-non-scoring entries participate exactly like circuit entries and do not create gaps.</p>
+<p>Every retained EVF public-calendar competition becomes one event row and receives
+<code>PEW{ordinal}{letters}-{season}</code>. Names matching case-insensitive whole-word <code>CAMP</code>
+are ignored completely. A retained event already cancelled at first import receives
+ordinal zero and does not consume a positive position. All other retained entries
+use one-based position after sorting by <code>(dt_start, id_evf_calendar_event)</code>; equal
+start dates therefore use ascending stable calendar ID. An event cancelled later
+keeps its previously assigned positive code.</p>
 <p>The <code>letters</code> suffix remains lowercase alphabetical (<code>e</code>, <code>f</code>, <code>s</code>) and is mandatory.
 The public EVF weapon categories are primary evidence. When EVF omits them, a linked
 official organizer programme may supply the set; the current Toronto occurrence is
@@ -100,10 +102,10 @@ official organizer programme may supply the set; the current Toronto occurrence 
 calendar write fails before mutation. An empty suffix is no longer valid for a
 calendar-owned PEW row.</p>
 <p>Historical split tooling remains unchanged for legacy data. New calendar ingestion
-uses the complete-snapshot planner in ADR-043, including transactional neutral-code
-renames and the scored-row reflow guard.</p>
+uses the filtered-snapshot planner in ADR-043, including transactional neutral-code
+renames, duplicate-zero detection and the scored-row reflow guard.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="045-engine-selector-default-flip.html">← ADR-045: Carry-over engine selectable per-season via admin UI; default flipped to FK</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="047-vcat-invariant-trigger-and-splitter-consolidation.html">→ ADR-047: V-cat invariant trigger + combined-pool splitter consolidation</a></nav>
-<footer class="foot">Generated from <code>046-pew-weapon-suffix.md</code> · source SHA-256 <code>c04ea30a259d00ac0e51428b8627476d472654a7927c82f2926966f51979d1bd</code></footer>
+<footer class="foot">Generated from <code>046-pew-weapon-suffix.md</code> · source SHA-256 <code>f4848e03c6aa89f5293b184f1f60a15e3f09659c12d9ca8bfb5c1d7aac1f6bd8</code></footer>
 </div></body></html>

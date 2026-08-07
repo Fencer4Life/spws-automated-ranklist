@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="042-carryover-engine-dispatcher.md">
-<meta name="adr-source-sha256" content="97242e4f8684a8f1fd317790e43a7fa9bb0b7ca7d1df30cc35aaf619f4dd8816">
+<meta name="adr-source-sha256" content="83648a3961735b257d8bf3e1ea3f4064a9db1dba20cb0702ee7b6eac40d3359a">
 <title>ADR-042 · Per-season carry-over engine selection via dispatcher pattern</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -123,9 +123,9 @@ chronological position under ADR-043 and never reuses or prefers the predecessor
 number. A numbering repair therefore cannot break rolling-score behavior.</p>
 <p>Geographic continuity may cross city labels when the organizer confirms it is the
 same recurring event. The approved current-season mapping links Athens directly to
-the prior Chania event while Athens independently receives <code>PEW20es</code> from its current
-calendar position and weapon set. The FK is authoritative; country, city and code
-digits are matching evidence only.</p>
+the prior Chania event while Athens independently receives <code>PEW14es</code> from the
+filtered current calendar position and weapon set. The FK is authoritative; country,
+city and code digits are matching evidence only.</p>
 <p>The trigger in
 <a href="../../supabase/migrations/20260807000001_evf_calendar_identity_bound.sql"><code>20260807000001_evf_calendar_identity_bound.sql</code></a>
 also carries reusable public-calendar identity into a new season skeleton. The
@@ -133,5 +133,5 @@ occurrence-specific EVF results id is deliberately not inherited.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="041-edge-function-dispatch.html">← ADR-041: Server-Side Workflow Dispatch via Supabase Edge Function</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="043-evf-event-allocator.html">→ ADR-043: EVF Event Code Allocator + Classifier (Phase 2)</a></nav>
-<footer class="foot">Generated from <code>042-carryover-engine-dispatcher.md</code> · source SHA-256 <code>97242e4f8684a8f1fd317790e43a7fa9bb0b7ca7d1df30cc35aaf619f4dd8816</code></footer>
+<footer class="foot">Generated from <code>042-carryover-engine-dispatcher.md</code> · source SHA-256 <code>83648a3961735b257d8bf3e1ea3f4064a9db1dba20cb0702ee7b6eac40d3359a</code></footer>
 </div></body></html>
