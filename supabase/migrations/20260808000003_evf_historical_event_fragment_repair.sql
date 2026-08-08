@@ -257,6 +257,14 @@ BEGIN
   PERFORM pg_temp.merge_evf_fragment_slots(
     'PEW3s-2025-2026',ARRAY['PEW3s-2025-2026','PEW21fs-2025-2026'],NULL,TRUE
   );
+  -- KOŃCZYŁO is an unverified result that is deliberately removed below, so
+  -- its match-candidate provenance cannot be transferred to another result.
+  -- Delete only candidates whose FK points at that exact reviewed row.
+  DELETE FROM tbl_match_candidate mc USING tbl_result r,tbl_tournament t,tbl_fencer f
+   WHERE mc.id_result=r.id_result
+     AND r.id_tournament=t.id_tournament AND r.id_fencer=f.id_fencer
+     AND t.id_event=(SELECT id_event FROM tbl_event WHERE txt_code='PEW3s-2025-2026')
+     AND f.txt_surname='KOŃCZYŁO' AND f.txt_first_name='Tomasz';
   DELETE FROM tbl_result r USING tbl_tournament t,tbl_fencer f
    WHERE r.id_tournament=t.id_tournament AND r.id_fencer=f.id_fencer
      AND t.id_event=(SELECT id_event FROM tbl_event WHERE txt_code='PEW3s-2025-2026')
