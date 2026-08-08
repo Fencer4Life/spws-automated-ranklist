@@ -228,7 +228,8 @@ targeted historical correction, not a chronological reflow and not a generic
 merge path.
 
 The repair pins every input code and the expected tournament/result counts,
-refuses registrations or match candidates, rejects overlapping weapon/gender/
+refuses registrations, conserves any match-candidate provenance by unchanged
+result identity, rejects overlapping weapon/gender/
 age-category slots, preserves all 157 result rows in the six reviewed clusters and every stored score field,
 then deletes only the named donor events. Original scoring-provider URLs stay on
 their tournaments. No EVF results-database identity is invented, and three

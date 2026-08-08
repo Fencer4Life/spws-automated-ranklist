@@ -242,7 +242,8 @@ predecessor seasons. Six exact clusters are repaired by migration
 Automation still must stop on a results-bearing identity conflict; this migration
 is allowed because it pins the complete input codes and counts, proves that child
 competition slots do not overlap, conserves all results and stored score fields,
-and refuses any unexpected registration or match-candidate state.
+refuses registrations, and pins match-candidate count conservation because the
+repair moves tournaments without replacing result identities.
 
 The former rejection of event merging therefore remains the default operational
 rule. It does not prohibit an event-specific, reviewed, TDD-backed historical
