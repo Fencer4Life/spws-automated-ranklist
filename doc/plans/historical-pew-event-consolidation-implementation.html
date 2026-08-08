@@ -1,0 +1,67 @@
+<meta charset="utf-8">
+<title>Implement predecessor-season PEW consolidation</title>
+<style>
+  :root{--bg:#e8ecf3;--surface:#fff;--surface-2:#dce2ec;--ink:#0f1319;--muted:#414b59;--faint:#6b7482;--line:#c9d1dc;--line-strong:#b3bdcc;--accent:#12467e;--accent-soft:#dbe7f5;--danger:#9e2418;--danger-soft:#f7ddd9;--good:#0f5f37;--good-soft:#d8eede;--warn:#7a4d02;--warn-soft:#f4e6c8;--serif:"Iowan Old Style","Charter",Georgia,serif;--sans:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+  @media(prefers-color-scheme:dark){:root{--bg:#12151b;--surface:#1b2029;--surface-2:#232935;--ink:#f1f4f8;--muted:#aeb8c6;--faint:#7c8797;--line:#2c333f;--line-strong:#3c4552;--accent:#8cbdec;--accent-soft:#1a2a3c;--danger:#f59a90;--danger-soft:#331d1a;--good:#6cdc98;--good-soft:#15271b;--warn:#e6bd6f;--warn-soft:#282011}}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:20px/1.62 var(--sans)}.wrap{max-width:56rem;margin:auto;padding:60px 30px 110px}code,.mono{font-family:var(--mono)}code{background:var(--surface-2);padding:.1em .4em;border:1px solid var(--line);border-radius:5px;font-size:.82em;font-weight:600}a{color:var(--accent)}.eyebrow,.kicker{font:700 14px var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}h1,h2{font-family:var(--serif);line-height:1.1}h1{font-size:clamp(38px,6vw,56px);max-width:19ch;margin:0 0 20px}h2{font-size:33px;margin:0 0 18px}.dek{font-size:23px;color:var(--muted);max-width:56ch}.meta{display:flex;flex-wrap:wrap;gap:10px}.pill{font:600 14px var(--mono);padding:7px 13px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface)}.rule{height:2px;border:0;background:var(--line);margin:48px 0}section{margin-top:52px}p,ul,ol{max-width:64ch}li{margin:9px 0}.note{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0}.note.danger{border-left-color:var(--danger);background:var(--danger-soft)}.note.good{border-left-color:var(--good);background:var(--good-soft)}.note.warn{border-left-color:var(--warn);background:var(--warn-soft)}.lede{font-weight:800;margin-top:0}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin:18px 0}table{border-collapse:collapse;width:100%;min-width:720px;font-size:16px}th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--line)}th{background:var(--surface-2);font:700 13px var(--mono);text-transform:uppercase;letter-spacing:.06em}.foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font:15px var(--mono);color:var(--faint)}
+</style>
+<div class="wrap">
+  <p class="eyebrow">Implementation plan · TDD · CERT → PROD</p>
+  <h1>Execute the predecessor-season PEW consolidation safely</h1>
+  <p class="dek">Turn the <a href="historical-pew-event-consolidation-design.html">approved design</a> into one fail-closed migration, prove point and provenance conservation, update every governing record, and apply the same committed mapping to CERT and PROD.</p>
+  <div class="meta"><span class="pill">Plan — active</span><span class="pill">six clusters</span><span class="pill">no reflow</span></div>
+
+  <hr class="rule">
+  <section><p class="kicker">Step 1 · RED</p><h2>Write acceptance evidence before the migration</h2>
+    <ol>
+      <li>Create <code>supabase/tests/56_evf_predecessor_event_fragment_repair.sql</code> with an explicit plan and stable 56.x identifiers.</li>
+      <li>Assert the six canonical survivors, seven named donor removals, exact weapon suffixes, child ownership/code prefixes, zero registrations, zero dangling provenance, and cleared incorrect rolling links.</li>
+      <li>Assert event/tournament/result/match-candidate conservation per cluster and capture affected score totals before/after.</li>
+      <li>Register the suite in <code>supabase/config.toml</code> if required by the existing harness, then run it against the unrepaired LOCAL seed and retain the expected failures as RED evidence.</li>
+    </ol>
+  </section>
+
+  <section><p class="kicker">Step 2 · GREEN</p><h2>Implement one idempotent, atomic migration</h2>
+    <ol>
+      <li>Add the next timestamped migration, following <a href="../../supabase/migrations/20260808000003_evf_historical_event_fragment_repair.sql">the reviewed historical repair helper</a>.</li>
+      <li>Take an advisory transaction lock and accept only the exact unrepaired baseline or exact repaired state.</li>
+      <li>For each named cluster, select the reviewed sporting-slot winner, reconcile exact duplicate results and match-candidate rows, move retained children, rename the survivor and children, then delete only empty named donors.</li>
+      <li>Clear the unrelated Guildford and Warsaw links plus Chania’s reference to the distinct prior Guildford foil event. Retain that <code>PEW8f</code> event and do not create replacement links.</li>
+      <li>Recompute only scored tournaments whose ownership changed, then enforce postconditions before the transaction may commit.</li>
+    </ol>
+    <div class="note danger"><p class="lede">Hard stops</p><p>Any registration, missing member, unexpected baseline count, equal-field sporting conflict, provenance disagreement, child-code collision, dangling FK, or point change aborts the whole migration.</p></div>
+  </section>
+
+  <section><p class="kicker">Step 3 · Coherence</p><h2>Update decisions and current-system documentation together</h2>
+    <div class="tablewrap"><table><thead><tr><th>Record</th><th>Required amendment</th></tr></thead><tbody>
+      <tr><td><a href="../adr/028-evf-calendar-results-import.html">ADR-028</a></td><td>Original-provider evidence and predecessor physical-event consolidation.</td></tr>
+      <tr><td><a href="../adr/039-stale-event-gate.html">ADR-039</a></td><td>Scored fragments merge under reviewed evidence; they are not stale-row deletes.</td></tr>
+      <tr><td><a href="../adr/043-evf-event-allocator.html">ADR-043</a></td><td>Historical survivor keeps the lowest established number; no season reflow.</td></tr>
+      <tr><td><a href="../adr/046-pew-weapon-suffix.html">ADR-046</a></td><td>Record all six final weapon suffix unions and named donors.</td></tr>
+      <tr><td><a href="../Project Specification. SPWS Automated Ranklist System.html">Project Specification</a> and <a href="../requirements-traceability-matrix.html">RTM</a></td><td>Add migration/test evidence and update totals.</td></tr>
+      <tr><td><a href="../handbook/subsystems/events-and-registration.html">Events handbook</a>, <a href="../handbook/subsystems/scoring-and-ranking.html">scoring handbook</a>, <a href="../handbook/reference/test-and-traceability.html">test baseline</a></td><td>Describe the current repaired state and its invariant.</td></tr>
+    </tbody></table></div>
+  </section>
+
+  <section><p class="kicker">Step 4 · Validation</p><h2>Prove narrow behavior, then the repository gates</h2>
+    <ul>
+      <li>Targeted pgTAP suite and a second idempotency pass.</li>
+      <li><code>supabase test db</code>, then relevant Python calendar/promotion tests.</li>
+      <li>Ruff, format check, basedpyright, frontend tests/check where touched, coherence, spec sync, documentation validation, and SQL static checking with LOCAL Supabase running.</li>
+      <li>Refresh Graphify after all code and documentation changes; require the follow-up currentness gate.</li>
+      <li>Review explicit staged paths and staged diff only; commit on <code>codex/historical-pew-consolidation</code>.</li>
+    </ul>
+  </section>
+
+  <section><p class="kicker">Step 5 · Release</p><h2>Integrate once; verify both environments</h2>
+    <ol>
+      <li>Push the worker branch, merge it in the clean registered integration checkout, rerun required gates, and push only <code>integration/main:main</code>.</li>
+      <li>Observe CI to success. Apply and verify the migration on CERT first.</li>
+      <li>Compare CERT against every canonical/donor/conservation assertion. Stop on any mismatch.</li>
+      <li>Approve PROD only after CERT passes; apply the same migration and run the same read-only verification.</li>
+      <li>Finally audit whether any 2026–2027 row should carry a Guildford prior link. Report findings only; do not hook it without a separate user decision.</li>
+    </ol>
+    <div class="note warn"><p class="lede">Explicitly deferred</p><p>The final Guildford rolling-link target remains a post-repair decision. This plan finishes with the requested audit and does not guess the link.</p></div>
+  </section>
+  <p class="foot">Approved design: commit 313d072 · execution sequence frozen 2026-08-09</p>
+</div>
