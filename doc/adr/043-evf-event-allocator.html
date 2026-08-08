@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="043-evf-event-allocator.md">
-<meta name="adr-source-sha256" content="db6df15e102b938d644b754dfbe3546a9c944a8ce59df9297be5d890c25a4c08">
+<meta name="adr-source-sha256" content="19dfeb67a6b6b0760c7fbcbce0a6da52ff6649f9ab4adab66addb022f389d915">
 <title>ADR-043 · EVF Event Code Allocator + Classifier (Phase 2)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 043</p><h1>EVF Event Code Allocator + Classifier (Phase 2)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero)</dd></div><div><dt>Date</dt><dd class="">2026-04-26 <strong>Relates to:</strong> ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)</dd></div><div><dt>Source</dt><dd class=""><code>043-evf-event-allocator.md</code></dd></div><div><dt>Length</dt><dd class="">139 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero)</dd></div><div><dt>Date</dt><dd class="">2026-04-26 <strong>Relates to:</strong> ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)</dd></div><div><dt>Source</dt><dd class=""><code>043-evf-event-allocator.md</code></dd></div><div><dt>Length</dt><dd class="">167 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero)
 <strong>Date:</strong> 2026-04-26
 <strong>Relates to:</strong> ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#classifier-fn-classify-evf-event-p-name-p-is-team-pew-imew-dmew">Classifier — `fn_classify_evf_event(p_name, p_is_team) → &#x27;PEW&#x27; | &#x27;IMEW&#x27; | &#x27;DMEW&#x27;`</a></li><li class="depth-3"><a href="#allocator-fn-allocate-evf-event-code-p-id-season-p-kind-p-location-p-country">Allocator — `fn_allocate_evf_event_code(p_id_season, p_kind, p_location, p_country)`</a></li><li class="depth-3"><a href="#pre-allocation-pathway">Pre-allocation pathway</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#migration-test-references">Migration &amp; test references</a></li><li class="depth-2"><a href="#cross-phase-coordination">Cross-phase coordination</a></li><li class="depth-2"><a href="#amendment-2026-08-07-complete-snapshot-chronological-allocation">Amendment (2026-08-07) — complete-snapshot chronological allocation</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#classifier-fn-classify-evf-event-p-name-p-is-team-pew-imew-dmew">Classifier — `fn_classify_evf_event(p_name, p_is_team) → &#x27;PEW&#x27; | &#x27;IMEW&#x27; | &#x27;DMEW&#x27;`</a></li><li class="depth-3"><a href="#allocator-fn-allocate-evf-event-code-p-id-season-p-kind-p-location-p-country">Allocator — `fn_allocate_evf_event_code(p_id_season, p_kind, p_location, p_country)`</a></li><li class="depth-3"><a href="#pre-allocation-pathway">Pre-allocation pathway</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#migration-test-references">Migration &amp; test references</a></li><li class="depth-2"><a href="#cross-phase-coordination">Cross-phase coordination</a></li><li class="depth-2"><a href="#amendment-2026-08-07-complete-snapshot-chronological-allocation">Amendment (2026-08-07) — complete-snapshot chronological allocation</a></li><li class="depth-2"><a href="#amendment-2026-08-08-rolling-links-move-by-series-never-by-slot-number">Amendment (2026-08-08) — rolling links move by series, never by slot number</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The Phase 1B FK-based carry-over engine (ADR-042) reads <code>tbl_event.id_prior_event</code> as the cross-season link. But the EVF scraper, untouched since ADR-028, was still emitting:</p>
 <ul>
@@ -156,8 +156,34 @@ the idempotence boundary; repeated unchanged snapshots update the same rows and
 change no codes. CERT→PROD reconciliation carries the same identity and mapping. See
 <a href="../../supabase/migrations/20260807000001_evf_calendar_identity_bound.sql"><code>20260807000001_evf_calendar_identity_bound.sql</code></a>
 and <a href="../../supabase/tests/53_evf_calendar_identity_bound.sql"><code>53_evf_calendar_identity_bound.sql</code></a>.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-08-rolling-links-move-by-series-never-by-slot-number">Amendment (2026-08-08) — rolling links move by series, never by slot number</h2>
+<p>The first live complete-snapshot run exposed a uniqueness collision before any
+renumbering committed: the chronological code wanted by Guildford was occupied
+by an empty inherited skeleton whose <code>id_prior_event</code> belonged to Jabłonna. The
+initial implementation copied that link to Guildford before quarantining the
+skeleton. This was both mechanically invalid (<code>idx_event_prior_unique</code>) and
+semantically wrong: after chronological numbering, a numeric slot says nothing
+about geographic/series continuity.</p>
+<p>The corrected transaction therefore separates the two identities completely:</p>
+<ol>
+<li>before renumbering, detach a prior link only from a safe, unscored,
+unstamped empty occupant that the existing guard will quarantine;</li>
+<li>ingest and stamp the real event by public EVF calendar ID;</li>
+<li>normalize the real event's series name independently of its code;</li>
+<li>move (never copy) the prior link from the inherited carrier whose prior
+event has the same normalized series name;</li>
+<li>keep Athens → Chania as the explicit approved exception;</li>
+<li>retain no link when no unique returning series exists, which is the correct
+state for a genuinely new event.</li>
+</ol>
+<p>The v1 three-argument snapshot function is retained as an internal delegate and
+is no longer executable by application roles. The public three-argument RPC is
+the corrective wrapper. Migration and RED→GREEN regression coverage:
+<a href="../../supabase/migrations/20260808000001_evf_calendar_prior_link_reassignment.sql"><code>20260808000001_evf_calendar_prior_link_reassignment.sql</code></a>
+and <a href="../../supabase/tests/54_evf_calendar_prior_link_reassignment.sql"><code>54_evf_calendar_prior_link_reassignment.sql</code></a>.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="042-carryover-engine-dispatcher.html">← ADR-042: Per-season carry-over engine selection via dispatcher pattern</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="044-phase3-wizard.html">→ ADR-044: Phase 3 Admin UI + Season-Init Wizard (atomic transaction model)</a></nav>
-<footer class="foot">Generated from <code>043-evf-event-allocator.md</code> · source SHA-256 <code>db6df15e102b938d644b754dfbe3546a9c944a8ce59df9297be5d890c25a4c08</code></footer>
+<footer class="foot">Generated from <code>043-evf-event-allocator.md</code> · source SHA-256 <code>19dfeb67a6b6b0760c7fbcbce0a6da52ff6649f9ab4adab66addb022f389d915</code></footer>
 </div></body></html>
