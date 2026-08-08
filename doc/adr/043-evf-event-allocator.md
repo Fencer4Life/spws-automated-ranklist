@@ -165,3 +165,16 @@ is no longer executable by application roles. The public three-argument RPC is
 the corrective wrapper. Migration and RED→GREEN regression coverage:
 [`20260808000001_evf_calendar_prior_link_reassignment.sql`](../../supabase/migrations/20260808000001_evf_calendar_prior_link_reassignment.sql)
 and [`54_evf_calendar_prior_link_reassignment.sql`](../../supabase/tests/54_evf_calendar_prior_link_reassignment.sql).
+
+The first corrective wrapper still ran its series move after the deployed v1
+delegate. The live retry showed why that ordering was insufficient: v1 applies
+the approved Athens → Chania exception inside its own event loop, while the
+unrelated-number inherited Chania skeleton still owns the same prior link. The
+unique constraint correctly rejected the temporary duplicate. The follow-up
+[`20260808000002_evf_calendar_prior_link_preclaim.sql`](../../supabase/migrations/20260808000002_evf_calendar_prior_link_preclaim.sql)
+therefore resolves the complete geographic mapping from the untouched skeleton,
+releases only safe unscored/unstamped carriers, calls v1, and restores each saved
+link by durable public EVF calendar ID. A repeated scrape preserves a correct
+link already held by the durable target; no unique series match assigns `NULL`.
+Tests 54.1–54.5 include the live topology: high-number Athens target, separate
+PEW8 Chania carrier, and an independent chronological-slot occupant.
