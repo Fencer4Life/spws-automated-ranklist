@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-07-23T12:26:44Z",
-    "last_sha": "63e3105eeacc25577576a3d80dacdf6c451ab2ea",
+    "last_updated": "2026-08-08T05:29:56Z",
+    "last_sha": "5efb75a7ee41c5ac23a81c2f665e241b7b5dfcb2",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -135,9 +135,10 @@
       "20260714000002_season_2026_2027_dt_start_sync.sql",
       "20260714000003_fencer_birth_year_master_list_reconcile.sql",
       "20260719000001_add_fencer_koszyk_agnieszka.sql",
-      "20260723000001_adr083_deny_by_default_grants.sql"
+      "20260723000001_adr083_deny_by_default_grants.sql",
+      "20260807000001_evf_calendar_identity_bound.sql"
     ],
-    "schema_fingerprint": "2012753ff886f491d4cb8c3a0a8ad91d"
+    "schema_fingerprint": "bb1a7c53b95edd69b6e3cad7d5dbc872"
   },
   "prod": {
     "last_updated": "2026-07-23T12:28:19Z",
