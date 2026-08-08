@@ -1,1 +1,1 @@
-seed_prod_2026-07-19.sql
+seed_prod_2026-08-08.sql

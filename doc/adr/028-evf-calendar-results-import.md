@@ -1,6 +1,6 @@
 # ADR-028: EVF Calendar + Results Import
 
-**Status:** Accepted (revised 2026-08-07 rev 7 — camps excluded and first-import cancellations use zero)
+**Status:** Accepted (revised 2026-08-08 rev 8 — source-verified historical fragment repair)
 **Date:** 2026-04-06
 **Relates to:** FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (`url_event`), ADR-030 (`url_registration`/`dt_registration_deadline`), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier)
 
@@ -189,3 +189,30 @@ The current source has five ignored camps, Samorin at `PEW0efs`, and sixteen
 positive competitions numbered `PEW1…PEW16`. If two first-import cancellations
 would produce the same full zero code (same weapon suffix and season), ingestion
 fails before mutation rather than inventing another numbering shape.
+
+## Amendment (2026-08-08, rev 8) — original-provider facts govern historical repair
+
+The 2025–2026 data contained scored fragments for the same physical weekends,
+including Guildford under five event rows and Munich under two. This supersedes
+the earlier operational assumption that EVF calendar duplicates were always empty
+and could simply be deleted.
+
+Historical consolidation follows this evidence hierarchy:
+
+1. the original scoring provider (Fencing Time Live, FencingWorldwide, Engarde,
+   4Fence, Dartagnan or equivalent) supplies places, full field sizes, competition
+   dates and result URLs;
+2. the EVF results database is secondary evidence and never replaces an available
+   original-provider link;
+3. only when both are unavailable may a specifically approved repair use the
+   stored full-field tournament snapshot, pinned by exact input counts.
+
+The reviewed migration
+[`20260808000003_evf_historical_event_fragment_repair.sql`](../../supabase/migrations/20260808000003_evf_historical_event_fragment_repair.sql)
+applies that rule to Guildford, Munich, Faches, Stockholm and Chania. It preserves
+the historical event bases, including `PEW62` for Guildford, and does not reflow
+the season. FencingWorldwide facts replace the Munich fragments; the inaccessible
+Guildford/Faches sources and one March 2025 result use the explicitly approved
+full-field fallback. Child `url_results` values remain original scoring-site URLs.
+The 25-assertion contract is
+[`55_evf_historical_event_fragment_repair.sql`](../../supabase/tests/55_evf_historical_event_fragment_repair.sql).

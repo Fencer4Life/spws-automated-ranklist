@@ -178,3 +178,25 @@ link by durable public EVF calendar ID. A repeated scrape preserves a correct
 link already held by the durable target; no unique series match assigns `NULL`.
 Tests 54.1–54.5 include the live topology: high-number Athens target, separate
 PEW8 Chania carrier, and an independent chronological-slot occupant.
+
+## Amendment (2026-08-08) — historical fragments preserve their approved bases
+
+The reviewed 2025–2026 fragment repair is deliberately outside the complete-snapshot
+allocator. It consolidates scored fragments without reflowing the season:
+
+- Guildford remains `PEW62efs`; Munich becomes `PEW3fs`; Faches remains
+  `PEW31fs`; Stockholm becomes `PEW5ef`; Chania becomes `PEW8es`.
+- The donor events are deleted only after their result/tournament data has been
+  source-verified, consolidated and proven absent from the donor.
+- `id_prior_event` is nullable. A current event may carry zero or one prior link,
+  and the per-season unique index allows at most one current claimant for a given
+  non-null prior event.
+- This repair assigns, transfers or guesses no Guildford link. Deleting donors lets
+  the existing `ON DELETE SET NULL` FK clear incoming references. The 2026–2027
+  Guildford linkage is a separate, deferred decision after a read-only audit.
+
+Therefore a numeric code remains calendar presentation, not cross-season identity,
+and a historical data correction must not infer continuity from a shared number.
+See
+[`20260808000003_evf_historical_event_fragment_repair.sql`](../../supabase/migrations/20260808000003_evf_historical_event_fragment_repair.sql)
+and [`55_evf_historical_event_fragment_repair.sql`](../../supabase/tests/55_evf_historical_event_fragment_repair.sql).
