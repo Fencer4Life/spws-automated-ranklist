@@ -200,3 +200,19 @@ and a historical data correction must not infer continuity from a shared number.
 See
 [`20260808000003_evf_historical_event_fragment_repair.sql`](../../supabase/migrations/20260808000003_evf_historical_event_fragment_repair.sql)
 and [`55_evf_historical_event_fragment_repair.sql`](../../supabase/tests/55_evf_historical_event_fragment_repair.sql).
+## Amendment (2026-08-09) — predecessor repair preserves historical bases
+
+The predecessor-season repair is intentionally outside complete-snapshot
+allocation. Budapest, Terni, Stockholm, Guildford and Warsaw/Jabłonna fragments
+are consolidated under the lowest PEW base already present in their cluster.
+Neither 2023–2024 nor 2024–2025 is renumbered, and unaffected events—including
+`PEW15f-2024-2025`—do not move.
+
+Numeric bases remain independent of rolling identity. The repair clears the
+reviewed unrelated links on the Guildford and Warsaw/Jabłonna survivors and on
+`PEW8es-2025-2026`; the distinct prior Guildford `PEW8f-2024-2025` row is retained, and no replacement link is assigned. Whether a 2026–2027 row should
+carry a Guildford link remains a separate post-repair audit and requires explicit
+evidence and approval.
+
+See [`20260809000001_evf_predecessor_event_fragment_repair.sql`](../../supabase/migrations/20260809000001_evf_predecessor_event_fragment_repair.sql)
+and [`56_evf_predecessor_event_fragment_repair.sql`](../../supabase/tests/56_evf_predecessor_event_fragment_repair.sql).
