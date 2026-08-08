@@ -59,7 +59,7 @@
       <li>Assert the expected survivor/donor set, organizer, dates, weapons, result URLs and audited row counts.</li>
       <li>Build a temporary canonical result map keyed by physical event, weapon, gender, age category and fencer.</li>
       <li>For duplicate fencer-slots, prefer original-provider facts, then the EVF results DB, then the explicitly approved stored full-field fallback. An equal-field place conflict or any unreviewed state raises an exception and rolls back.</li>
-      <li>Move results before tournaments, re-point legacy match-candidate provenance to the selected canonical result before removing a duplicate result, assert exact candidate-count conservation, and delete an event only after it has zero children, results and registrations. Any registration still blocks the repair.</li>
+      <li>Move results before tournaments, re-point legacy match-candidate provenance to the selected canonical result before removing a duplicate result, collapse a candidate collision only when every semantic field is identical, abort on any disagreement, assert candidate-count conservation minus those proven exact duplicates, and delete an event only after it has zero children, results and registrations. Any registration still blocks the repair.</li>
       <li>Recompute affected events through the normal scoring path; compare ranklists and event/result conservation assertions inside the same transaction.</li>
       <li>Make the migration idempotent: an already-correct environment is a verified no-op; a partially matching unknown state is an error, never a best-effort continuation.</li>
     </ol>
