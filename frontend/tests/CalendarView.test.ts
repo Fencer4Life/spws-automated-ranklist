@@ -101,6 +101,39 @@ const EVENTS: CalendarEvent[] = [
 ]
 
 describe('CalendarView (T8.5)', () => {
+  it('shows a cancelled event through seven days after its original end date', () => {
+    const end = new Date()
+    end.setUTCDate(end.getUTCDate() - 7)
+    const cancelled = makeEvent({
+      id_event: 901,
+      txt_name: 'Cancelled but still announced',
+      dt_start: end.toISOString().slice(0, 10),
+      dt_end: end.toISOString().slice(0, 10),
+      enum_status: 'CANCELLED',
+    })
+
+    const { container } = render(CalendarView, { props: { events: [cancelled] } })
+    expect(container.querySelector('.timeline-event')?.textContent).toContain(
+      'Cancelled but still announced',
+    )
+    expect(container.querySelector('.status-cancelled')).not.toBeNull()
+  })
+
+  it('hides a cancelled event on day eight after its original end date', () => {
+    const end = new Date()
+    end.setUTCDate(end.getUTCDate() - 8)
+    const cancelled = makeEvent({
+      id_event: 902,
+      txt_name: 'Expired cancellation notice',
+      dt_start: end.toISOString().slice(0, 10),
+      dt_end: end.toISOString().slice(0, 10),
+      enum_status: 'CANCELLED',
+    })
+
+    const { container } = render(CalendarView, { props: { events: [cancelled] } })
+    expect(container.querySelector('.timeline-event')).toBeNull()
+  })
+
   // 8.38 — Renders events in reverse chronological order (future first)
   it('renders events in reverse chronological order', () => {
     const { container } = render(CalendarView, { props: { events: EVENTS } })

@@ -1,6 +1,6 @@
 # ADR-043: EVF Event Code Allocator + Classifier (Phase 2)
 
-**Status:** Accepted (implemented 2026-04-26)
+**Status:** Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero)
 **Date:** 2026-04-26
 **Relates to:** ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)
 
@@ -99,3 +99,41 @@ When the EVF scraper next finds a Salzburg event, the allocator hits Step A and 
 - ADR-028 amended (rev 3) — calendar import RPC is now `fn_import_evf_events_v2`; results path uses `fn_create_evf_event_from_results`; both go through the allocator and use EVF organizer.
 - ADR-021 unchanged — biennial rule still expressed via the FK engine, now correctly populated by the allocator on import.
 - Phase 3 (`fn_init_season` + admin UI) builds on the pre-creation pathway formalised here.
+
+## Amendment (2026-08-07) — complete-snapshot chronological allocation
+
+The location/prior-number/lowest-free allocator is superseded for public-calendar
+ingestion. A filtered, validated season snapshot owns the numbering:
+
+1. discard names matching case-insensitive whole-word `CAMP` before validation,
+   counting, matching and persistence;
+2. assign a retained event already cancelled at first import base zero;
+3. sort the remaining positive competitions by
+   `(dt_start, id_evf_calendar_event)` ascending;
+4. assign one-based positive ordinals;
+5. derive the alphabetical weapon suffix through ADR-046 (`e`, `f`, `s`);
+6. produce `PEW{ordinal}{suffix}-{season}`.
+
+The positive numeric bases must equal exactly `{1..positive_count}`. Zero-numbered
+first-import cancellations are outside that sequence. A later cancellation keeps its
+positive code. A returning event's prior-season number is never an input.
+Geographic/series continuity remains in `id_prior_event`, so a current code may
+change from its predecessor without affecting rolling scores. Athens is explicitly
+linked to prior Chania while receiving `PEW14es` from the current filtered snapshot.
+
+Every complete scrape recomputes the desired mapping. Unscored rows may be reflowed
+transactionally if EVF inserts or reschedules an earlier entry. If a reflow would
+rename a results-bearing row, ingestion aborts before any mutation and requires a
+reviewed correction. Empty inherited skeletons that collide with an identified
+calendar occurrence are preserved under an `EVFLEGACY` quarantine code;
+they are not deleted. A collision between two already-stamped durable identities
+also aborts for reviewed repair rather than guessing which row owns the code.
+
+For retained entries, missing/unparseable dates, missing calendar IDs, duplicate
+calendar IDs, missing/unsupported weapon sets, boundary-spanning entries and a
+non-exact `{1..N}` positive plan are hard errors. Two first-import cancellations
+that generate the same full zero code also fail before mutation. Calendar ID remains
+the idempotence boundary; repeated unchanged snapshots update the same rows and
+change no codes. CERT→PROD reconciliation carries the same identity and mapping. See
+[`20260807000001_evf_calendar_identity_bound.sql`](../../supabase/migrations/20260807000001_evf_calendar_identity_bound.sql)
+and [`53_evf_calendar_identity_bound.sql`](../../supabase/tests/53_evf_calendar_identity_bound.sql).

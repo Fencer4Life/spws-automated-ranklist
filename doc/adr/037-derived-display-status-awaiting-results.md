@@ -1,6 +1,6 @@
 # ADR-037: Derived Display Status — "Awaiting Results"
 
-**Status:** Implemented
+**Status:** Implemented (amended 2026-08-07 — cancelled-event notice window)
 **Date:** 2026-04-20
 **Related:** ADR-018 (Rolling Score for Active Season), ADR-025 (Event-Centric Ingestion), ADR-028 (EVF Calendar + Results Import)
 
@@ -49,3 +49,14 @@ Do not couple `enum_status` to the calendar. Instead, introduce a **view-layer d
 - **Bonus fix.** EventManager was previously rendering the raw enum string (`"PLANNED"`, `"SCHEDULED"`) instead of the i18n label. Adopting the helper closed that pre-existing bug.
 - **Not stored in DB.** Consumers that bypass the frontend (Telegram bot, server-side email digest, future BI dashboards) will see raw `enum_status`. If/when those consumers need the "awaiting" distinction, port `getEventDisplayStatus` to SQL or Python — the logic is a single `CASE` expression.
 - **Test coverage.** +11 vitest unit tests in `frontend/tests/eventStatus.test.ts` (ES.1–ES.11) covering every row of the truth table, including the null-both-dates edge and same-day grace. +1 vitest integration test in `frontend/tests/CalendarView.test.ts` (8.41b) asserting the amber badge renders. vitest total: 255 → 267.
+
+## Amendment (2026-08-07) — cancelled-event public visibility
+
+`CANCELLED` remains durable and retains its code, `id_prior_event`, calendar identity
+and audit history. The public Calendar shows it while `today <= dt_end + 7 days` and
+hides it on day eight. Admin data, season counts and numbering still include it, and
+it never displaces prior-season carry-over with empty results.
+
+The exact boundary lives in
+[`CalendarView.svelte`](../../frontend/src/components/CalendarView.svelte) and is
+tested in [`CalendarView.test.ts`](../../frontend/tests/CalendarView.test.ts).

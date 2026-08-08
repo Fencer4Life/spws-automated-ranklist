@@ -247,10 +247,22 @@
 
   const today = new Date().toISOString().slice(0, 10)
 
+  function isWithinCancellationNoticeWindow(event: CalendarEvent): boolean {
+    if (event.enum_status !== 'CANCELLED') return true
+    if (!event.dt_end) return true
+    const hideAfter = new Date(`${event.dt_end}T00:00:00Z`)
+    hideAfter.setUTCDate(hideAfter.getUTCDate() + 7)
+    return today <= hideAfter.toISOString().slice(0, 10)
+  }
+
   // CREATED-state events are planning skeletons (created date-less by
   // fn_init_season, scheduled later in EventManager). Hide them from the public
   // calendar — both the timeline and the rolling-progress bar (user req 2026-06-27).
-  let calendarEvents = $derived(events.filter((e) => e.enum_status !== 'CREATED'))
+  // CANCELLED rows remain durable, but their public notice expires after the
+  // seventh day following the original end date (ADR-037 amendment).
+  let calendarEvents = $derived(
+    events.filter((e) => e.enum_status !== 'CREATED' && isWithinCancellationNoticeWindow(e)),
+  )
 
   // Rolling progress: derive position slots respecting scope + time filters
   let positionSlots = $derived.by(() => {
