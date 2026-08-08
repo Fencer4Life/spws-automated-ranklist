@@ -219,6 +219,9 @@ allowed only through an event-specific, reviewed, atomic migration that:
   canonical result before deletion; a collision is collapsed only when every
   semantic field is identical, otherwise the repair aborts, and an exact
   per-merge count-minus-identical-duplicates assertion closes the operation;
+- deletes match-candidate provenance only when the reviewed repair deliberately
+  removes its exact source result as unverified and no canonical result exists to
+  receive it; the result identity is pinned by event and fencer before deletion;
 - verifies sporting facts against the original provider first, the EVF results DB
   second, or an explicitly approved stored full-field fallback when neither source
   is available;
