@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="c2e1e3cf28d5babcb4260b601bc8602f3a1fffca3ab5b761dcdfaa8bb55dd831">
+<meta name="doc-source-sha256" content="e0c8c8780a01e45415ac1d28777fc52514a153f813f4bc40a6b54199e4835e29">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -432,10 +432,10 @@
 </tr>
 <tr>
 <td>FR-58</td>
-<td>EVF calendar import: HTML-authoritative complete-season snapshot; whole-word <code>CAMP</code> entries ignored before validation/counting; durable WordPress calendar post id separate from secondary EVF results id; retained competitions numbered chronologically by date/calendar id with alphabetical weapon suffixes; first-import cancellations use base zero while later cancellations retain their positive base; <code>id_prior_event</code> independently preserves geographic rolling links; unsafe/scored reflows fail closed; scrape ledger and original scoring-site result links remain authoritative.</td>
+<td>EVF calendar import: HTML-authoritative complete-season snapshot; whole-word <code>CAMP</code> entries ignored before validation/counting; durable WordPress calendar post id separate from secondary EVF results id; retained competitions numbered chronologically by date/calendar id with alphabetical weapon suffixes; first-import cancellations use base zero while later cancellations retain their positive base; <code>id_prior_event</code> independently preserves nullable geographic rolling links; unsafe/scored reflows fail closed; original scoring-site facts/links remain authoritative, with the EVF results DB secondary and approved stored full-field fallback allowed only in a reviewed historical repair.</td>
 <td>UC8, UC9</td>
-<td>pgTAP 53.1–53.13; pytest <code>test_evf_calendar.py</code>; vitest <code>CalendarView.test.ts</code></td>
-<td>Covered (ADR-028 rev 7, ADR-037 amendment, ADR-039 rev 5, ADR-042/043/046 amendments)</td>
+<td>pgTAP 53.1–53.13, 54.1–54.5, 55.1–55.24; pytest <code>test_evf_calendar.py</code>; vitest <code>CalendarView.test.ts</code></td>
+<td>Covered (ADR-028 rev 8, ADR-037 amendment, ADR-039 rev 6, ADR-042/043/046 amendments; migration <code>20260808000003</code>)</td>
 </tr>
 <tr>
 <td>FR-59</td>
@@ -1167,5 +1167,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>c2e1e3cf28d5babcb4260b601bc8602f3a1fffca3ab5b761dcdfaa8bb55dd831</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>e0c8c8780a01e45415ac1d28777fc52514a153f813f4bc40a6b54199e4835e29</code></footer>
 </div></body></html>

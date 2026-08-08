@@ -1,6 +1,6 @@
 # ADR-039: EVF Scraper Dedup Algorithm + Stale-Event Gate
 
-**Status:** Accepted (revised 2026-08-07 rev 5 — public calendar id precedes results id in the identity ladder)
+**Status:** Accepted (revised 2026-08-08 rev 6 — reviewed repair for scored fragments)
 **Date:** 2026-04-25
 **Relates to:** ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)
 
@@ -200,3 +200,29 @@ still attach its occurrence id and original scoring-site links independently.
 See [`_find_existing_match`](../../python/scrapers/evf_calendar.py),
 [`fn_sync_evf_event_fields`](../../supabase/migrations/20260807000001_evf_calendar_identity_bound.sql)
 and [ADR-043](043-evf-event-allocator.md).
+
+## Amendment — rev 6 (2026-08-08) — scored fragments require a reviewed repair
+
+The original cleanup rationale assumed duplicate event rows had no results. The
+January 2026 Guildford incident disproved that assumption: one physical weekend was
+split across five scored event rows, and comparable scored fragmentation existed
+for Munich, Faches/Stockholm and Chania.
+
+This does **not** introduce a generic merge RPC. A results-bearing duplicate or
+identity conflict remains a hard stop for automated calendar ingestion. Repair is
+allowed only through an event-specific, reviewed, atomic migration that:
+
+- pins the complete expected input event/tournament/result baseline and aborts on
+  environmental divergence;
+- refuses registrations and unresolved match candidates;
+- verifies sporting facts against the original provider first, the EVF results DB
+  second, or an explicitly approved stored full-field fallback when neither source
+  is available;
+- preserves every unique sporting result, resolves a conflict only through that
+  evidence hierarchy, recomputes the affected tournaments, and deletes only named
+  donors proven empty;
+- is a verified no-op when the corrected seed is loaded before the migration.
+
+The implementation and RED→GREEN contract are
+[`20260808000003_evf_historical_event_fragment_repair.sql`](../../supabase/migrations/20260808000003_evf_historical_event_fragment_repair.sql)
+and [`55_evf_historical_event_fragment_repair.sql`](../../supabase/tests/55_evf_historical_event_fragment_repair.sql).
