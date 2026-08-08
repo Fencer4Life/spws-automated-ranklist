@@ -4,7 +4,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(25);
+SELECT plan(26);
 
 SELECT is(
   (SELECT COUNT(*)::INT FROM tbl_event
@@ -131,6 +131,19 @@ SELECT results_eq(
       ('FUHRMANN','Ulrike','SABRE','F','V3',5,11)
     ORDER BY column3, column4, column5, column1 $$,
   '55.10a: Munich places and full fields match the original FencingWorldwide pages'
+);
+
+SELECT is(
+  (SELECT COUNT(*)::INT
+     FROM tbl_match_candidate mc
+     JOIN tbl_result r ON r.id_result = mc.id_result
+     JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
+     JOIN tbl_event e ON e.id_event = t.id_event
+     JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
+    WHERE e.txt_code = 'PEW3fs-2025-2026'
+      AND f.txt_surname = 'KOŃCZYŁO' AND f.txt_first_name = 'Tomasz'),
+  0,
+  '55.10b: rejected Munich result leaves no dangling match-candidate provenance'
 );
 
 SELECT is(
