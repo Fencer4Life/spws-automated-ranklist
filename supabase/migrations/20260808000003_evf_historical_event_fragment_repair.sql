@@ -29,6 +29,8 @@ DECLARE
   v_winner_id INT;
   v_loser RECORD;
   v_desired_code TEXT;
+  v_candidate_count_before INT;
+  v_candidate_count_after INT;
   v_base TEXT := regexp_replace(p_survivor_code, '-[0-9]{4}-[0-9]{4}$', '');
   v_season TEXT := substring(p_survivor_code FROM '([0-9]{4}-[0-9]{4})$');
 BEGIN
@@ -48,15 +50,16 @@ BEGIN
   IF EXISTS (
     SELECT 1 FROM tbl_registration reg JOIN tbl_event e ON e.id_event=reg.id_event
      WHERE e.txt_code=ANY(p_member_codes)
-  ) OR EXISTS (
-    SELECT 1 FROM tbl_match_candidate mc
-      JOIN tbl_result r ON r.id_result=mc.id_result
-      JOIN tbl_tournament t ON t.id_tournament=r.id_tournament
-      JOIN tbl_event e ON e.id_event=t.id_event
-     WHERE e.txt_code=ANY(p_member_codes)
   ) THEN
-    RAISE EXCEPTION 'EVF repair refuses registrations or match candidates in %', p_member_codes;
+    RAISE EXCEPTION 'EVF repair refuses registrations in %', p_member_codes;
   END IF;
+
+  SELECT COUNT(*)::INT INTO v_candidate_count_before
+    FROM tbl_match_candidate mc
+    JOIN tbl_result r ON r.id_result=mc.id_result
+    JOIN tbl_tournament t ON t.id_tournament=r.id_tournament
+    JOIN tbl_event e ON e.id_event=t.id_event
+   WHERE e.txt_code=ANY(p_member_codes);
 
   FOR v_slot IN
     SELECT DISTINCT t.enum_weapon,t.enum_gender,t.enum_age_category
@@ -100,6 +103,18 @@ BEGIN
           v_slot.enum_weapon,v_slot.enum_gender,v_slot.enum_age_category;
       END IF;
 
+      -- A legacy AUTO_MATCHED candidate is provenance for its result. If the
+      -- reviewed winner already carries the same fencer, re-point every
+      -- candidate before deleting the losing duplicate. There is deliberately
+      -- no uniqueness constraint on id_result, so distinct provenance rows are
+      -- conserved rather than silently discarded.
+      UPDATE tbl_match_candidate mc SET id_result=winning.id_result,ts_updated=NOW()
+        FROM tbl_result losing,tbl_result winning
+       WHERE losing.id_tournament=v_loser.id_tournament
+         AND winning.id_tournament=v_winner_id
+         AND winning.id_fencer=losing.id_fencer
+         AND mc.id_result=losing.id_result;
+
       DELETE FROM tbl_result losing USING tbl_result winning
        WHERE losing.id_tournament=v_loser.id_tournament
          AND winning.id_tournament=v_winner_id
@@ -131,6 +146,16 @@ BEGIN
       RAISE EXCEPTION 'EVF repair left donor children in %',p_member_codes;
     END IF;
     DELETE FROM tbl_event WHERE txt_code=ANY(p_member_codes) AND id_event<>v_survivor_id;
+  END IF;
+
+  SELECT COUNT(*)::INT INTO v_candidate_count_after
+    FROM tbl_match_candidate mc
+    JOIN tbl_result r ON r.id_result=mc.id_result
+    JOIN tbl_tournament t ON t.id_tournament=r.id_tournament
+   WHERE t.id_event=v_survivor_id;
+  IF v_candidate_count_after<>v_candidate_count_before THEN
+    RAISE EXCEPTION 'EVF repair candidate conservation failed for %: expected %, found %',
+      p_survivor_code,v_candidate_count_before,v_candidate_count_after;
   END IF;
 END;
 $$;
