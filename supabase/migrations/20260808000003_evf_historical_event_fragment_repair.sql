@@ -31,6 +31,8 @@ DECLARE
   v_desired_code TEXT;
   v_candidate_count_before INT;
   v_candidate_count_after INT;
+  v_candidate_duplicates INT := 0;
+  v_deleted_candidates INT;
   v_base TEXT := regexp_replace(p_survivor_code, '-[0-9]{4}-[0-9]{4}$', '');
   v_season TEXT := substring(p_survivor_code FROM '([0-9]{4}-[0-9]{4})$');
 BEGIN
@@ -103,11 +105,39 @@ BEGIN
           v_slot.enum_weapon,v_slot.enum_gender,v_slot.enum_age_category;
       END IF;
 
-      -- A legacy AUTO_MATCHED candidate is provenance for its result. If the
-      -- reviewed winner already carries the same fencer, re-point every
-      -- candidate before deleting the losing duplicate. There is deliberately
-      -- no uniqueness constraint on id_result, so distinct provenance rows are
-      -- conserved rather than silently discarded.
+      -- A legacy AUTO_MATCHED candidate is provenance for its result. The
+      -- schema permits only one (result,scraped-name) pair, so an identical
+      -- pair on both duplicate results must collapse before re-pointing. Any
+      -- semantic disagreement is unreviewed and aborts the whole repair.
+      IF EXISTS (
+        SELECT 1
+          FROM tbl_result losing
+          JOIN tbl_match_candidate losing_mc ON losing_mc.id_result=losing.id_result
+          JOIN tbl_result winning ON winning.id_tournament=v_winner_id
+                                 AND winning.id_fencer=losing.id_fencer
+          JOIN tbl_match_candidate winning_mc ON winning_mc.id_result=winning.id_result
+                                             AND winning_mc.txt_scraped_name=losing_mc.txt_scraped_name
+         WHERE losing.id_tournament=v_loser.id_tournament
+           AND (winning_mc.id_fencer IS DISTINCT FROM losing_mc.id_fencer
+             OR winning_mc.num_confidence IS DISTINCT FROM losing_mc.num_confidence
+             OR winning_mc.enum_status IS DISTINCT FROM losing_mc.enum_status
+             OR winning_mc.txt_admin_note IS DISTINCT FROM losing_mc.txt_admin_note)
+      ) THEN
+        RAISE EXCEPTION 'unapproved match-candidate conflict in %/%/%',
+          v_slot.enum_weapon,v_slot.enum_gender,v_slot.enum_age_category;
+      END IF;
+
+      DELETE FROM tbl_match_candidate losing_mc
+        USING tbl_result losing,tbl_result winning,tbl_match_candidate winning_mc
+       WHERE losing.id_tournament=v_loser.id_tournament
+         AND winning.id_tournament=v_winner_id
+         AND winning.id_fencer=losing.id_fencer
+         AND losing_mc.id_result=losing.id_result
+         AND winning_mc.id_result=winning.id_result
+         AND winning_mc.txt_scraped_name=losing_mc.txt_scraped_name;
+      GET DIAGNOSTICS v_deleted_candidates = ROW_COUNT;
+      v_candidate_duplicates := v_candidate_duplicates+v_deleted_candidates;
+
       UPDATE tbl_match_candidate mc SET id_result=winning.id_result,ts_updated=NOW()
         FROM tbl_result losing,tbl_result winning
        WHERE losing.id_tournament=v_loser.id_tournament
@@ -153,9 +183,9 @@ BEGIN
     JOIN tbl_result r ON r.id_result=mc.id_result
     JOIN tbl_tournament t ON t.id_tournament=r.id_tournament
    WHERE t.id_event=v_survivor_id;
-  IF v_candidate_count_after<>v_candidate_count_before THEN
-    RAISE EXCEPTION 'EVF repair candidate conservation failed for %: expected %, found %',
-      p_survivor_code,v_candidate_count_before,v_candidate_count_after;
+  IF v_candidate_count_after<>v_candidate_count_before-v_candidate_duplicates THEN
+    RAISE EXCEPTION 'EVF repair candidate conservation failed for %: expected % minus % exact duplicates, found %',
+      p_survivor_code,v_candidate_count_before,v_candidate_duplicates,v_candidate_count_after;
   END IF;
 END;
 $$;
