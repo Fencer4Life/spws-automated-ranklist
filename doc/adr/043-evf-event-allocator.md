@@ -137,3 +137,31 @@ the idempotence boundary; repeated unchanged snapshots update the same rows and
 change no codes. CERT→PROD reconciliation carries the same identity and mapping. See
 [`20260807000001_evf_calendar_identity_bound.sql`](../../supabase/migrations/20260807000001_evf_calendar_identity_bound.sql)
 and [`53_evf_calendar_identity_bound.sql`](../../supabase/tests/53_evf_calendar_identity_bound.sql).
+
+## Amendment (2026-08-08) — rolling links move by series, never by slot number
+
+The first live complete-snapshot run exposed a uniqueness collision before any
+renumbering committed: the chronological code wanted by Guildford was occupied
+by an empty inherited skeleton whose `id_prior_event` belonged to Jabłonna. The
+initial implementation copied that link to Guildford before quarantining the
+skeleton. This was both mechanically invalid (`idx_event_prior_unique`) and
+semantically wrong: after chronological numbering, a numeric slot says nothing
+about geographic/series continuity.
+
+The corrected transaction therefore separates the two identities completely:
+
+1. before renumbering, detach a prior link only from a safe, unscored,
+   unstamped empty occupant that the existing guard will quarantine;
+2. ingest and stamp the real event by public EVF calendar ID;
+3. normalize the real event's series name independently of its code;
+4. move (never copy) the prior link from the inherited carrier whose prior
+   event has the same normalized series name;
+5. keep Athens → Chania as the explicit approved exception;
+6. retain no link when no unique returning series exists, which is the correct
+   state for a genuinely new event.
+
+The v1 three-argument snapshot function is retained as an internal delegate and
+is no longer executable by application roles. The public three-argument RPC is
+the corrective wrapper. Migration and RED→GREEN regression coverage:
+[`20260808000001_evf_calendar_prior_link_reassignment.sql`](../../supabase/migrations/20260808000001_evf_calendar_prior_link_reassignment.sql)
+and [`54_evf_calendar_prior_link_reassignment.sql`](../../supabase/tests/54_evf_calendar_prior_link_reassignment.sql).
