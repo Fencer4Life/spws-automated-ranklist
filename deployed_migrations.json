@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-08-08T20:50:30Z",
-    "last_sha": "99c070fd2181aff3e89874b22ce6cb4d3293b6d7",
+    "last_updated": "2026-08-08T23:13:05Z",
+    "last_sha": "6d5ac1d2daedb654b4aa4c5a5dfd01f94c316093",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -139,9 +139,10 @@
       "20260807000001_evf_calendar_identity_bound.sql",
       "20260808000001_evf_calendar_prior_link_reassignment.sql",
       "20260808000002_evf_calendar_prior_link_preclaim.sql",
-      "20260808000003_evf_historical_event_fragment_repair.sql"
+      "20260808000003_evf_historical_event_fragment_repair.sql",
+      "20260809000001_evf_predecessor_event_fragment_repair.sql"
     ],
-    "schema_fingerprint": "6182bbc2a341646592d0a65e4b5b1625"
+    "schema_fingerprint": "1347770fa42ab08c01c3f3695de2ccb7"
   },
   "prod": {
     "last_updated": "2026-08-08T20:53:00Z",
