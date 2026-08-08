@@ -30,9 +30,9 @@
         <tr><td>Budapest, 2023</td><td><code>PEW5efs-2023-2024</code></td><td><code>PEW21e-2023-2024</code></td><td>Preserve only a verified existing link; do not infer one.</td></tr>
         <tr><td>Terni, 2023</td><td><code>PEW8efs-2023-2024</code></td><td><code>PEW24e-2023-2024</code></td><td>Preserve only a verified existing link; do not infer one.</td></tr>
         <tr><td>Stockholm, 2024</td><td><code>PEW9ef-2023-2024</code></td><td><code>PEW11f-2023-2024</code></td><td>Preserve only a verified existing link; do not infer one.</td></tr>
-        <tr><td>Guildford, 2025</td><td><code>PEW4efs-2024-2025</code></td><td><code>PEW11e-2024-2025</code></td><td>Clear the unrelated prior-event link; leave NULL.</td></tr>
+        <tr><td>Guildford, 2025</td><td><code>PEW4ef-2024-2025</code></td><td><code>PEW11e-2024-2025</code></td><td>Clear the unrelated prior-event link; leave NULL. No sabre tournament exists, so the suffix is <code>ef</code>.</td></tr>
         <tr><td>Terni, 2025</td><td><code>PEW6efs-2024-2025</code></td><td><code>PEW12e-2024-2025</code></td><td>Preserve only a verified existing link; do not infer one.</td></tr>
-        <tr><td>Warsaw/Jabłonna, 2025</td><td><code>PEW7efs-2024-2025</code></td><td><code>PEW8f-2024-2025</code>, <code>PEW14e-2024-2025</code></td><td>Clear the unrelated prior-event link; consequently clear Chania's current link to the deleted foil donor.</td></tr>
+        <tr><td>Warsaw/Jabłonna, 2025</td><td><code>PEW7es-2024-2025</code></td><td><code>PEW14e-2024-2025</code></td><td>Clear the unrelated prior-event link. Retain <code>PEW8f-2024-2025</code> as the distinct prior Guildford foil event; clear Chania's current link to it without deleting it.</td></tr>
       </tbody>
     </table></div>
     <p><code>PEW15f-2024-2025</code> is not part of a sufficiently proven cluster and remains unchanged. Same-date events such as Gdańsk and Athens remain separate. No wildcard, fuzzy-name, or number-based deletion is permitted.</p>
@@ -70,7 +70,7 @@
     <ol>
       <li>Add a dedicated pgTAP suite that names every survivor and donor and initially fails against the current seed.</li>
       <li>Assert canonical event codes, identities, weapon suffixes, tournament ownership, child-code prefixes, donor deletion, and zero registrations.</li>
-      <li>Assert exact tournament, result, and match-candidate conservation. Candidate baselines already observed during analysis are zero for the three earlier clusters, eight for Guildford, five for Terni 2025, and 109 for Warsaw/Jabłonna; only proven exact duplicate provenance may reduce a count.</li>
+      <li>Assert exact tournament, result, and match-candidate conservation. The LOCAL baseline contains 26 Budapest results, 11 Terni 2023 results, 10 Stockholm results, 9 Guildford results, 12 Terni 2025 results, and 89 Warsaw/Jabłonna results. All six clusters contain zero <code>tbl_match_candidate</code> rows. The distinct <code>PEW8f</code> Guildford event and its 20 results stay untouched. Only a proven exact duplicate result or provenance row may reduce a count.</li>
       <li>Snapshot affected fencer/event points before repair and assert the same sporting points after consolidation, except where an official-source correction is separately and explicitly documented. This repair currently authorizes no point correction.</li>
       <li>Assert no duplicate <code>(event, weapon, gender, age category)</code> slot, no duplicate <code>(tournament, fencer)</code> result, no dangling match candidate, and no remaining reference to a deleted donor.</li>
       <li>Run the migration twice in the test database and prove the second pass is a no-op.</li>

@@ -130,3 +130,15 @@ of the scored-row reflow guard. Migration:
 [`20260808000003_evf_historical_event_fragment_repair.sql`](../../supabase/migrations/20260808000003_evf_historical_event_fragment_repair.sql);
 contract:
 [`55_evf_historical_event_fragment_repair.sql`](../../supabase/tests/55_evf_historical_event_fragment_repair.sql).
+## Amendment (2026-08-09) — suffixes after historical consolidation
+
+When reviewed historical fragments are proven to be one physical event, the
+surviving event keeps the lowest existing numeric base and its suffix becomes the
+alphabetically ordered union of weapons that actually own child tournaments.
+Thus Guildford January 2025 is `PEW4ef`, not `PEW4efs`; Warsaw/Jabłonna is
+`PEW7es`; and the distinct prior Guildford foil row remains `PEW8f`. The suffix repair does not authorize season-wide numeric
+reflow, invent absent weapon slots or delete any scored tournament.
+
+The idempotent post-seed repair runs after the legacy splitter so a LOCAL reset
+ends in the same approved state as the live migration. Contract:
+[`56_evf_predecessor_event_fragment_repair.sql`](../../supabase/tests/56_evf_predecessor_event_fragment_repair.sql).

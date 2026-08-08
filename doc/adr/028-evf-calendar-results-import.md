@@ -216,3 +216,25 @@ Guildford/Faches sources and one March 2025 result use the explicitly approved
 full-field fallback. Child `url_results` values remain original scoring-site URLs.
 The 25-assertion contract is
 [`55_evf_historical_event_fragment_repair.sql`](../../supabase/tests/55_evf_historical_event_fragment_repair.sql).
+
+## Amendment (2026-08-09, rev 9) — predecessor-season fragment consolidation
+
+The same physical-event fragmentation predates 2025–2026. Six reviewed clusters
+in 2023–2024 and 2024–2025 are consolidated by an atomic, fail-closed migration:
+Budapest, Terni and Stockholm in the first season; Guildford, Terni and
+Warsaw/Jabłonna in the second. The lowest existing PEW base survives in each
+cluster and receives the suffix for the weapons actually present. This is a
+targeted historical correction, not a chronological reflow and not a generic
+merge path.
+
+The repair pins every input code and the expected tournament/result counts,
+refuses registrations or match candidates, rejects overlapping weapon/gender/
+age-category slots, preserves all 157 result rows in the six reviewed clusters and every stored score field,
+then deletes only the named donor events. Original scoring-provider URLs stay on
+their tournaments. No EVF results-database identity is invented, and three
+reviewed unrelated `id_prior_event` links are cleared without replacement.
+The distinct `PEW8f-2024-2025` Guildford foil event and its 20 results are retained.
+
+Implementation and acceptance evidence:
+[`20260809000001_evf_predecessor_event_fragment_repair.sql`](../../supabase/migrations/20260809000001_evf_predecessor_event_fragment_repair.sql)
+and [`56_evf_predecessor_event_fragment_repair.sql`](../../supabase/tests/56_evf_predecessor_event_fragment_repair.sql).
