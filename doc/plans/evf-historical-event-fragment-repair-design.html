@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Repair the fragmented 2025–2026 EVF events without reflowing the calendar</title>
+<style>
+  :root{--bg:#e8ecf3;--surface:#fff;--surface-2:#dce2ec;--ink:#0f1319;--muted:#414b59;--line:#c9d1dc;--accent:#12467e;--accent-soft:#dbe7f5;--danger:#9e2418;--danger-soft:#f7ddd9;--good:#0f5f37;--good-soft:#d8eede;--warn:#7a4d02;--warn-soft:#f4e6c8;--serif:"Iowan Old Style",Charter,Georgia,serif;--sans:system-ui,-apple-system,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace}
+  @media(prefers-color-scheme:dark){:root{--bg:#12151b;--surface:#1b2029;--surface-2:#232935;--ink:#f1f4f8;--muted:#aeb8c6;--line:#3c4552;--accent:#8cbdec;--accent-soft:#1a2a3c;--danger:#f59a90;--danger-soft:#331d1a;--good:#6cdc98;--good-soft:#15271b;--warn:#e6bd6f;--warn-soft:#282011}}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:19px/1.62 var(--sans)} .wrap{max-width:60rem;margin:auto;padding:56px 30px 100px} code,.mono{font-family:var(--mono)} code{background:var(--surface-2);padding:.08em .35em;border-radius:5px;font-size:.86em} a{color:var(--accent)} .eyebrow,.kicker{font:700 14px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)} h1,h2{font-family:var(--serif);line-height:1.1} h1{font-size:clamp(38px,6vw,56px);max-width:20ch;margin:12px 0 20px} h2{font-size:32px;margin:8px 0 18px} h3{font-size:20px;margin:26px 0 10px} .dek{font-size:23px;color:var(--muted);max-width:57ch}.meta{display:flex;flex-wrap:wrap;gap:9px;margin:26px 0}.pill{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:7px 12px;font:600 14px var(--mono)} hr{border:0;border-top:2px solid var(--line);margin:44px 0} section{margin-top:48px} p,ul,ol{max-width:68ch} li{margin:8px 0}.note{border:1px solid var(--line);border-left:5px solid var(--accent);background:var(--surface);border-radius:10px;padding:17px 21px;margin:20px 0}.note.good{border-left-color:var(--good);background:var(--good-soft)}.note.warn{border-left-color:var(--warn);background:var(--warn-soft)}.note.danger{border-left-color:var(--danger);background:var(--danger-soft)}.lede{font-weight:800;margin-top:0}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin:18px 0}table{border-collapse:collapse;width:100%;min-width:720px;font-size:16px}th,td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}th{background:var(--surface-2);font:700 12px var(--mono);text-transform:uppercase;letter-spacing:.06em}tr:last-child td{border-bottom:0}.chip{display:inline-block;border-radius:5px;padding:3px 8px;font:700 12px var(--mono);white-space:nowrap}.keep{background:var(--good-soft);color:var(--good)}.merge{background:var(--accent-soft);color:var(--accent)}.delete{background:var(--danger-soft);color:var(--danger)}.inspect{background:var(--warn-soft);color:var(--warn)}.steps{counter-reset:s;list-style:none;padding:0}.steps>li{counter-increment:s;position:relative;padding-left:48px;margin:15px 0}.steps>li:before{content:counter(s);position:absolute;left:0;top:0;width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:white;font:800 15px var(--mono)}.foot{border-top:2px solid var(--line);margin-top:55px;padding-top:22px;color:var(--muted);font:14px var(--mono)}
+</style>
+</head>
+<body><main class="wrap">
+  <p class="eyebrow">EVF data integrity · TDD · LOCAL → CERT → PROD</p>
+  <h1>Repair the fragmented 2025–2026 EVF events without reflowing the calendar</h1>
+  <p class="dek">Consolidate results that belong to the same physical weekend, remove the emptied fragments, repair three independently contaminated event identities, and prove ranklist conservation. <strong>No complete-season renumbering and no Guildford prior-link assignment.</strong></p>
+  <div class="meta"><span class="pill">Approved · implementation evidence</span><span class="pill">Season: SPWS-2025-2026</span><span class="pill">Environments: LOCAL · CERT · PROD</span><span class="pill">Prior links: report only at end</span></div>
+
+  <hr>
+
+  <section>
+    <p class="kicker">Decision boundary</p><h2>What this repair is—and is not</h2>
+    <div class="note good"><p class="lede">Approved invariant: preserve the historical numbering</p><p>The canonical Guildford event remains <code>PEW62efs-2025-2026</code>. This correction does not chronologically reflow the 2025–2026 season and does not use a prior-season number to choose a new code.</p></div>
+    <ul>
+      <li><strong>In scope:</strong> consolidate proven same-weekend result fragments; correct the Munich, Faches/Stockholm and Chania identities uncovered by the full audit; delete only emptied donor events; apply the same reviewed migration to LOCAL, CERT and PROD.</li>
+      <li><strong>Out of scope:</strong> renumbering the rest of the calendar, changing ranking rules, fabricating EVF-results-database identities, or assigning a 2026–2027 Guildford carry-over link.</li>
+      <li><strong>Prior-link cardinality:</strong> <code>id_prior_event</code> is nullable. The partial unique index permits zero or one link on a current event and prevents two events in the same season from sharing one non-null prior event. “No reliable link” is represented by <code>NULL</code>.</li>
+      <li><strong>Deletion effect:</strong> when a donor event is deleted, its incoming references become <code>NULL</code> through the existing <code>ON DELETE SET NULL</code> FK. The repair will not redirect those references.</li>
+    </ul>
+    <div class="note warn"><p class="lede">Deferred decision</p><p>After every data repair and validation has passed, run a read-only audit of all 2026–2027 rows that could represent Guildford. Show their codes, dates, locations, EVF calendar identities, and current <code>id_prior_event</code> targets. Stop there. The user will separately decide which event, if any, should link to the repaired Guildford survivor.</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">Evidence model</p><h2>One physical weekend owns one event</h2>
+    <p>Event identity comes from the original calendar occurrence—date, location, weapons and durable public EVF calendar identity. The EVF results database is secondary; tournament result URLs continue to point to the original scoring provider such as Fencing Time Live, Engarde or 4Fence. Matching result URLs help expose fragments but are not sufficient by themselves to merge events.</p>
+    <p>Every mutation is guarded by preconditions over season, event code, dates, location, weapon/category slots, result-source URLs and result counts. Any unexpected CERT/PROD divergence aborts that environment before mutation.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Current state → corrected state</p><h2>Exact event-by-event mapping</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Physical event</th><th>Current rows</th><th>Corrected owner</th><th>Action</th><th>Numbering/link effect</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Guildford</strong><br>10–11 Jan 2026<br>Epee · Foil · Sabre</td><td><code>PEW62efs</code>, <code>PEW63e</code>, <code>PEW64s</code>, <code>PEW66f</code>, <code>PEW67f</code></td><td><code>PEW62efs-2025-2026</code></td><td><span class="chip keep">KEEP 62</span> <span class="chip merge">MERGE 4</span><br>Move unique category/result data into the survivor. Where a partial fragment conflicts, retain the approved stored full-field snapshot. Delete the four emptied donors.</td><td>Preserve <code>PEW62</code>. Incoming donor links clear to <code>NULL</code>. No 2026–2027 Guildford link is assigned.</td></tr>
+        <tr><td><strong>Munich</strong><br>6–7 Dec 2025<br>Foil · Sabre</td><td><code>PEW3s</code> contains Munich data under a corrupt Guildford header; <code>PEW21fs</code> is the second Munich fragment.</td><td><code>PEW3fs-2025-2026</code></td><td><span class="chip merge">CORRECT + MERGE</span><br>Correct the PEW3 header and suffix, merge PEW21 category/results, then delete the empty donor. Conflicting duplicates abort.</td><td>Keep base number 3. Do not treat PEW3 as Guildford and do not transfer its old incoming link.</td></tr>
+        <tr><td><strong>Faches</strong><br>7–8 Feb 2026<br>Foil · Sabre</td><td><code>PEW31fs</code> owns the event; one Faches sabre result is attached to corrupt <code>PEW5s</code>.</td><td><code>PEW31fs-2025-2026</code></td><td><span class="chip merge">MOVE RESULT</span><br>Move/consolidate the misplaced Faches result into its existing category under PEW31.</td><td>Preserve base number 31. No event-link reassignment.</td></tr>
+        <tr><td><strong>Stockholm</strong><br>14 Mar 2026<br>Epee · Foil</td><td><code>PEW65ef</code> contains the Stockholm results; <code>PEW5s</code> becomes empty after the Faches correction.</td><td><code>PEW5ef-2025-2026</code></td><td><span class="chip merge">TRANSFER</span> <span class="chip delete">DELETE 65</span><br>Correct PEW5 identity to Stockholm, transfer PEW65 tournaments/results, then delete the empty PEW65 donor.</td><td>Uses the already allocated base 5; does not reflow other numbers. The incoming PEW65 link becomes <code>NULL</code>.</td></tr>
+        <tr><td><strong>Chania / Athens series</strong><br>2–3 May 2026<br>Epee · Sabre</td><td><code>PEW8f-2025-2026</code> has a Chania header/date defect and one Guildford March 2025 foil result.</td><td><code>PEW8es-2025-2026</code> for Chania; existing <code>PEW8f-2024-2025</code> for the misplaced prior-season result.</td><td><span class="chip merge">RETURN RESULT</span> <span class="chip keep">CORRECT 8</span><br>Move/consolidate the prior-season Guildford result into its existing 2024–2025 category, then correct the 2025–2026 event date, weapons and suffix to Chania.</td><td>Preserve base 8 and the previously approved Athens↔Chania series semantics; this repair does not create a new link.</td></tr>
+      </tbody>
+    </table></div>
+    <p>The audited raw Guildford cluster contains 19 child tournaments and 57 result rows. Its canonical shape is 16 unique tournament slots and 52 unique fencer-slot results after source/fallback resolution. Munich ends with 8 tournament slots and 7 original-provider-verified results; one stored fencer absent from the public FencingWorldwide classification is removed. These are pinned migration outcomes, not estimates to silently force.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Safety</p><h2>Fail closed before touching scored history</h2>
+    <ol>
+      <li>Acquire an advisory transaction lock so two repair executions cannot interleave.</li>
+      <li>Resolve events by full <code>txt_code</code> plus season; never by numeric database id copied between environments.</li>
+      <li>Assert the expected survivor/donor set, organizer, dates, weapons, result URLs and audited row counts.</li>
+      <li>Build a temporary canonical result map keyed by physical event, weapon, gender, age category and fencer.</li>
+      <li>For duplicate fencer-slots, prefer original-provider facts, then the EVF results DB, then the explicitly approved stored full-field fallback. An equal-field place conflict or any unreviewed state raises an exception and rolls back.</li>
+      <li>Move results before tournaments, remove duplicate result rows only after equivalence is proven, and delete an event only after it has zero children, results and registrations.</li>
+      <li>Recompute affected events through the normal scoring path; compare ranklists and event/result conservation assertions inside the same transaction.</li>
+      <li>Make the migration idempotent: an already-correct environment is a verified no-op; a partially matching unknown state is an error, never a best-effort continuation.</li>
+    </ol>
+    <div class="note danger"><p class="lede">No broad delete</p><p>No event is removed because its name merely resembles a skeleton. Only the explicitly named donor codes above may be deleted, and only after the migration proves they are empty following the reviewed transfers.</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">TDD</p><h2>Acceptance assertions first, then RED → GREEN</h2>
+    <ol class="steps">
+      <li><strong>Write pgTAP acceptance tests.</strong> Seed representative fragmented rows; assert the exact canonical codes, tournament/result ownership, duplicate-collapse rules, conservation totals, donor deletion, FK nulling and idempotent rerun.</li>
+      <li><strong>Prove RED.</strong> Run only the new repair test file against the current schema and record the expected failures before adding the migration.</li>
+      <li><strong>Implement one atomic SQL migration.</strong> Use data-driven helper blocks scoped to the named event clusters; no production dependency and no public API change.</li>
+      <li><strong>Prove GREEN locally.</strong> Run the new pgTAP file, affected carry-over/calendar/scoring tests, then the complete database suite.</li>
+      <li><strong>Update authoritative documentation.</strong> Amend the Markdown sources and regenerate HTML for <a href="../adr/039-stale-event-gate.html">ADR-039</a>, <a href="../adr/028-evf-calendar-results-import.html">ADR-028</a>, <a href="../adr/043-evf-event-allocator.html">ADR-043</a> and <a href="../adr/046-pew-weapon-suffix.html">ADR-046</a>. Correct “exactly one” to “zero or one” in <a href="../rules/R008.md">R008</a>. Synchronize the <a href="../Project%20Specification.%20SPWS%20Automated%20Ranklist%20System.html">Project Specification</a>, <a href="../requirements-traceability-matrix.md">requirements traceability matrix</a>, <a href="../handbook/subsystems/events-and-registration.html">events handbook</a> and <a href="../handbook/subsystems/scoring-and-ranking.html">scoring handbook</a>.</li>
+      <li><strong>Pass the documentation coherence gate.</strong> Follow the <a href="../handbook/reference/documentation-standard.html">documentation standard</a>, refresh Graphify, run generated-document checks, <code>python scripts/check_docs.py --changed-from origin/main</code>, coherence and spec-sync checks.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">Ranklist impact</p><h2>Expected points outcome: conservation, not recalculation drift</h2>
+    <p>The repair changes event ownership, not sporting facts. For every affected fencer/category, the pre-repair and post-repair effective result set must be compared. Equivalent duplicates currently capable of presenting one physical result more than once are consolidated; genuine unique results are preserved. The migration must fail if the final place, field size or calculated points of any unique sporting result changes unexpectedly.</p>
+    <ul>
+      <li>Capture affected ranklist rows and result facts before the migration.</li>
+      <li>After recompute, produce a diff classifying each change as duplicate removal, event-code presentation change, or unexpected scoring change.</li>
+      <li>Require zero unexpected scoring changes and zero lost unique sporting results before promotion beyond LOCAL.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Release runbook</p><h2>Apply consistently to all environments</h2>
+    <ol class="steps">
+      <li>Commit the reviewed tests, migration and coherent documentation on the isolated task branch after Graphify refresh.</li>
+      <li>Integrate through the clean integration checkout, run the required repository gates, push <code>main</code>, and monitor CI.</li>
+      <li>Deploy to <strong>LOCAL</strong>; capture before/after event, tournament, result, prior-link and affected-ranklist evidence.</li>
+      <li>Deploy the identical migration to <strong>CERT</strong>; rerun the same assertions and compare with LOCAL.</li>
+      <li>Deploy the identical migration to <strong>PROD</strong> only after CERT evidence matches; rerun read-only proof queries and compare all three environments.</li>
+      <li><strong>Final mandatory read-only Guildford-link check:</strong> list every 2026–2027 Guildford candidate and every row referencing any repaired/deleted 2025–2026 fragment. Report current links and unlinked candidates to the user. Do not assign, move or clear any additional link. Wait for the user to specify where the real event link should be hooked.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">Source of truth</p><h2>Decisions and evidence this plan extends</h2>
+    <ul>
+      <li><a href="../adr/028-evf-calendar-results-import.html">ADR-028 — EVF Calendar + Results Import</a>: public EVF calendar identity and original result-provider URLs.</li>
+      <li><a href="../adr/039-stale-event-gate.html">ADR-039 — EVF Scraper Dedup + Stale-Event Gate</a>: amend the former no-results merge assumption for this reviewed historical repair.</li>
+      <li><a href="../adr/043-evf-event-allocator.html">ADR-043 — EVF Event Allocator</a>: historical repair preserves PEW62 and does not reflow the season; zero prior link is valid.</li>
+      <li><a href="../adr/046-pew-weapon-suffix.html">ADR-046 — PEW weapon suffix</a>: one physical weekend per event, suffix derived from included weapons.</li>
+      <li><a href="../adr/018-rolling-score.html">ADR-018 — Rolling Score</a>, <a href="../adr/042-carryover-engine-dispatcher.html">ADR-042 — Carry-over Dispatcher</a> and <a href="../rules/R008.md">R008 — Carry-over FK linkage</a>: ranklist impact and nullable explicit cross-season links.</li>
+      <li>Official EVF occurrences: <a href="https://www.veteransfencing.eu/event/evf-circuit-guildford-gbr/">Guildford</a>, <a href="https://www.veteransfencing.eu/event/evf-circuit-munich/">Munich</a>, <a href="https://www.veteransfencing.eu/event/evf-circuit-faches/">Faches</a>, <a href="https://www.veteransfencing.eu/event/evf-circuit-stockholm-swe/">Stockholm</a> and <a href="https://www.veteransfencing.eu/event/evf-circuit-athens-gre/">Chania/Athens</a>.</li>
+    </ul>
+  </section>
+
+  <footer class="foot">Status: approved 8 August 2026 · LOCAL migration and 25 acceptance assertions verified · CERT/PROD release requires the repository gates and identical guarded migration.</footer>
+</main></body></html>

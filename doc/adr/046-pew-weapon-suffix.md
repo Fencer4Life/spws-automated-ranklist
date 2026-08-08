@@ -1,6 +1,6 @@
 # ADR-046: PEW event codes carry weapon-letter suffix; one event = one physical weekend
 
-**Status:** Accepted (Phase 4 implemented 2026-04-27; amended 2026-08-07 — chronological calendar codes)
+**Status:** Accepted (Phase 4 implemented 2026-04-27; amended 2026-08-08 — scored-fragment repair)
 **Date:** 2026-04-27 (amended 2026-06-25 and 2026-08-07)
 **Relates to:** ADR-043 (EVF event allocator — amended by this ADR), ADR-044 (Phase 3 wizard — adapts skeleton iteration)
 
@@ -109,3 +109,24 @@ calendar-owned PEW row.
 Historical split tooling remains unchanged for legacy data. New calendar ingestion
 uses the filtered-snapshot planner in ADR-043, including transactional neutral-code
 renames, duplicate-zero detection and the scored-row reflow guard.
+
+## Amendment (2026-08-08): scored history now satisfies one-weekend ownership
+
+The source-verified 2025–2026 repair applies this ADR to historical scored data
+without renumbering the season. Its canonical event outcomes are:
+
+| Physical weekend | Canonical code | Weapons |
+|---|---|---|
+| Munich, 6–7 Dec 2025 | `PEW3fs-2025-2026` | foil, sabre |
+| Guildford, 10–11 Jan 2026 | `PEW62efs-2025-2026` | epee, foil, sabre |
+| Faches, 7–8 Feb 2026 | `PEW31fs-2025-2026` | foil, sabre |
+| Stockholm, 14 Mar 2026 | `PEW5ef-2025-2026` | epee, foil |
+| Chania, 2–3 May 2026 | `PEW8es-2025-2026` | epee, sabre |
+
+The suffix is derived from the weapons belonging to the physical occurrence, not
+from whatever fragment happened to contain a result. Named donor fragments are
+removed after consolidation. This is a one-time reviewed repair, not a relaxation
+of the scored-row reflow guard. Migration:
+[`20260808000003_evf_historical_event_fragment_repair.sql`](../../supabase/migrations/20260808000003_evf_historical_event_fragment_repair.sql);
+contract:
+[`55_evf_historical_event_fragment_repair.sql`](../../supabase/tests/55_evf_historical_event_fragment_repair.sql).

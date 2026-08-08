@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="039-stale-event-gate.md">
-<meta name="adr-source-sha256" content="e1858d3f882ad29c28e0324bcfb32f9b0c3299c059b9a372dc24d2d979d8bc53">
+<meta name="adr-source-sha256" content="98caba9deb7c5c198e45165f4925468fd3142d5f51241dd633f35cf22866d286">
 <title>ADR-039 · EVF Scraper Dedup Algorithm + Stale-Event Gate</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 039</p><h1>EVF Scraper Dedup Algorithm + Stale-Event Gate</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-08-07 rev 5 — public calendar id precedes results id in the identity ladder)</dd></div><div><dt>Date</dt><dd class="">2026-04-25 <strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)</dd></div><div><dt>Source</dt><dd class=""><code>039-stale-event-gate.md</code></dd></div><div><dt>Length</dt><dd class="">202 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (revised 2026-08-07 rev 5 — public calendar id precedes results id in the identity ladder)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-08-08 rev 6 — reviewed repair for scored fragments)</dd></div><div><dt>Date</dt><dd class="">2026-04-25 <strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)</dd></div><div><dt>Source</dt><dd class=""><code>039-stale-event-gate.md</code></dd></div><div><dt>Length</dt><dd class="">228 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (revised 2026-08-08 rev 6 — reviewed repair for scored fragments)
 <strong>Date:</strong> 2026-04-25
 <strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#step-0-logical-integrity-guard">Step 0 — Logical-integrity guard</a></li><li class="depth-4"><a href="#rev-2-2026-06-13-self-heal-never-hard-halt">rev 2 (2026-06-13) — self-heal, never hard-halt</a></li><li class="depth-3"><a href="#step-1-stale-event-gate">Step 1 — Stale-event gate</a></li><li class="depth-3"><a href="#step-2-date-gate-blocking-for-dedup">Step 2 — Date gate (BLOCKING for dedup)</a></li><li class="depth-3"><a href="#step-3-country-corroboration-strong">Step 3 — Country corroboration (STRONG)</a></li><li class="depth-3"><a href="#step-4-location-corroboration-medium-fallback">Step 4 — Location corroboration (MEDIUM, fallback)</a></li><li class="depth-3"><a href="#step-5-no-match-return-none">Step 5 — No match → return None</a></li><li class="depth-3"><a href="#deliberately-removed-name-comparison">Deliberately removed: name comparison</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#positive">Positive</a></li><li class="depth-3"><a href="#negative">Negative</a></li><li class="depth-3"><a href="#outbound-telegram-surface-new-this-adr">Outbound Telegram surface (new, this ADR)</a></li><li class="depth-2"><a href="#test-plan">Test plan</a></li><li class="depth-2"><a href="#references">References</a></li><li class="depth-2"><a href="#amendment-rev-3-2026-07-11-adr-081">Amendment — rev 3 (2026-07-11, ADR-081)</a></li><li class="depth-2"><a href="#amendment-rev-4-2026-07-26-evf-63">Amendment — rev 4 (2026-07-26, evf.63)</a></li><li class="depth-2"><a href="#amendment-rev-5-2026-08-07-split-calendar-and-results-identities">Amendment — rev 5 (2026-08-07) — split calendar and results identities</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#step-0-logical-integrity-guard">Step 0 — Logical-integrity guard</a></li><li class="depth-4"><a href="#rev-2-2026-06-13-self-heal-never-hard-halt">rev 2 (2026-06-13) — self-heal, never hard-halt</a></li><li class="depth-3"><a href="#step-1-stale-event-gate">Step 1 — Stale-event gate</a></li><li class="depth-3"><a href="#step-2-date-gate-blocking-for-dedup">Step 2 — Date gate (BLOCKING for dedup)</a></li><li class="depth-3"><a href="#step-3-country-corroboration-strong">Step 3 — Country corroboration (STRONG)</a></li><li class="depth-3"><a href="#step-4-location-corroboration-medium-fallback">Step 4 — Location corroboration (MEDIUM, fallback)</a></li><li class="depth-3"><a href="#step-5-no-match-return-none">Step 5 — No match → return None</a></li><li class="depth-3"><a href="#deliberately-removed-name-comparison">Deliberately removed: name comparison</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#positive">Positive</a></li><li class="depth-3"><a href="#negative">Negative</a></li><li class="depth-3"><a href="#outbound-telegram-surface-new-this-adr">Outbound Telegram surface (new, this ADR)</a></li><li class="depth-2"><a href="#test-plan">Test plan</a></li><li class="depth-2"><a href="#references">References</a></li><li class="depth-2"><a href="#amendment-rev-3-2026-07-11-adr-081">Amendment — rev 3 (2026-07-11, ADR-081)</a></li><li class="depth-2"><a href="#amendment-rev-4-2026-07-26-evf-63">Amendment — rev 4 (2026-07-26, evf.63)</a></li><li class="depth-2"><a href="#amendment-rev-5-2026-08-07-split-calendar-and-results-identities">Amendment — rev 5 (2026-08-07) — split calendar and results identities</a></li><li class="depth-2"><a href="#amendment-rev-6-2026-08-08-scored-fragments-require-a-reviewed-repair">Amendment — rev 6 (2026-08-08) — scored fragments require a reviewed repair</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The first version of the EVF dedup logic (<a href="https://github.com/Fencer4Life/spws-automated-ranklist/commit/e440299">commit <code>e440299</code></a>) used <code>(dt_start exact, canonical country)</code> as the primary key with a <code>±N day window + fuzzy-name ≥ 80%</code> fallback. EVF actively renames events mid-season — the canonical incident was &quot;EVF Circuit Napoli&quot; → &quot;EVF Circuit – Naples (ITA)&quot;, which scored ~73% on <code>token_set_ratio</code> and slipped below the 80% threshold. Three duplicate event rows were inserted into CERT and propagated to PROD via the calendar-promote cron:</p>
 <ul>
@@ -251,8 +251,32 @@ still attach its occurrence id and original scoring-site links independently.</p
 <p>See <a href="../../python/scrapers/evf_calendar.py"><code>_find_existing_match</code></a>,
 <a href="../../supabase/migrations/20260807000001_evf_calendar_identity_bound.sql"><code>fn_sync_evf_event_fields</code></a>
 and <a href="043-evf-event-allocator.html">ADR-043</a>.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-rev-6-2026-08-08-scored-fragments-require-a-reviewed-repair">Amendment — rev 6 (2026-08-08) — scored fragments require a reviewed repair</h2>
+<p>The original cleanup rationale assumed duplicate event rows had no results. The
+January 2026 Guildford incident disproved that assumption: one physical weekend was
+split across five scored event rows, and comparable scored fragmentation existed
+for Munich, Faches/Stockholm and Chania.</p>
+<p>This does <strong>not</strong> introduce a generic merge RPC. A results-bearing duplicate or
+identity conflict remains a hard stop for automated calendar ingestion. Repair is
+allowed only through an event-specific, reviewed, atomic migration that:</p>
+<ul>
+<li>pins the complete expected input event/tournament/result baseline and aborts on
+environmental divergence;</li>
+<li>refuses registrations and unresolved match candidates;</li>
+<li>verifies sporting facts against the original provider first, the EVF results DB
+second, or an explicitly approved stored full-field fallback when neither source
+is available;</li>
+<li>preserves every unique sporting result, resolves a conflict only through that
+evidence hierarchy, recomputes the affected tournaments, and deletes only named
+donors proven empty;</li>
+<li>is a verified no-op when the corrected seed is loaded before the migration.</li>
+</ul>
+<p>The implementation and RED→GREEN contract are
+<a href="../../supabase/migrations/20260808000003_evf_historical_event_fragment_repair.sql"><code>20260808000003_evf_historical_event_fragment_repair.sql</code></a>
+and <a href="../../supabase/tests/55_evf_historical_event_fragment_repair.sql"><code>55_evf_historical_event_fragment_repair.sql</code></a>.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="038-evf-intake-polish-only.html">← ADR-038: EVF-Organized Tournaments Ingest POL-Only Rows</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="040-multi-slot-event-urls.html">→ ADR-040: Multi-Slot Event Result URLs with Compact-on-Save</a></nav>
-<footer class="foot">Generated from <code>039-stale-event-gate.md</code> · source SHA-256 <code>e1858d3f882ad29c28e0324bcfb32f9b0c3299c059b9a372dc24d2d979d8bc53</code></footer>
+<footer class="foot">Generated from <code>039-stale-event-gate.md</code> · source SHA-256 <code>98caba9deb7c5c198e45165f4925468fd3142d5f51241dd633f35cf22866d286</code></footer>
 </div></body></html>
