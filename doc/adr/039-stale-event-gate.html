@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="039-stale-event-gate.md">
-<meta name="adr-source-sha256" content="3b5c913a659186f56d51a93fb2b756f554ae8765f821f36f3b7a0290e1dbd37f">
+<meta name="adr-source-sha256" content="1b96a0b6d96b6ed4624611cba5c8535d900bea9cb269f774f458e82fd38b3f53">
 <title>ADR-039 · EVF Scraper Dedup Algorithm + Stale-Event Gate</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 039</p><h1>EVF Scraper Dedup Algorithm + Stale-Event Gate</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-08-08 rev 6 — reviewed repair for scored fragments)</dd></div><div><dt>Date</dt><dd class="">2026-04-25 <strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)</dd></div><div><dt>Source</dt><dd class=""><code>039-stale-event-gate.md</code></dd></div><div><dt>Length</dt><dd class="">249 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-08-08 rev 6 — reviewed repair for scored fragments)</dd></div><div><dt>Date</dt><dd class="">2026-04-25 <strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)</dd></div><div><dt>Source</dt><dd class=""><code>039-stale-event-gate.md</code></dd></div><div><dt>Length</dt><dd class="">250 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (revised 2026-08-08 rev 6 — reviewed repair for scored fragments)
 <strong>Date:</strong> 2026-04-25
 <strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)</p>
@@ -290,12 +290,13 @@ predecessor seasons. Six exact clusters are repaired by migration
 Automation still must stop on a results-bearing identity conflict; this migration
 is allowed because it pins the complete input codes and counts, proves that child
 competition slots do not overlap, conserves all results and stored score fields,
-and refuses any unexpected registration or match-candidate state.</p>
+refuses registrations, and pins match-candidate count conservation because the
+repair moves tournaments without replacing result identities.</p>
 <p>The former rejection of event merging therefore remains the default operational
 rule. It does not prohibit an event-specific, reviewed, TDD-backed historical
 repair when the supposed duplicates themselves own genuine results.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="038-evf-intake-polish-only.html">← ADR-038: EVF-Organized Tournaments Ingest POL-Only Rows</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="040-multi-slot-event-urls.html">→ ADR-040: Multi-Slot Event Result URLs with Compact-on-Save</a></nav>
-<footer class="foot">Generated from <code>039-stale-event-gate.md</code> · source SHA-256 <code>3b5c913a659186f56d51a93fb2b756f554ae8765f821f36f3b7a0290e1dbd37f</code></footer>
+<footer class="foot">Generated from <code>039-stale-event-gate.md</code> · source SHA-256 <code>1b96a0b6d96b6ed4624611cba5c8535d900bea9cb269f774f458e82fd38b3f53</code></footer>
 </div></body></html>
