@@ -64,6 +64,372 @@ class TestEvfCalendarScraper:
             assert e["dt_start"] >= "2026-04-01"
             assert e["dt_start"] <= "2026-05-01"
 
+    def test_extracts_calendar_post_id_and_cancelled_marker(self):
+        """evf.64: public WordPress post id is calendar identity; cancellation is state."""
+        from python.scrapers.evf_calendar import parse_evf_calendar_html
+
+        html = """
+        <article class="tribe-events-calendar-list__event post-5074">
+          <h3 class="tribe-events-calendar-list__event-title">
+            <a href="https://www.veteransfencing.eu/event/evf-circuit-samorin-svk/">
+              EVF Circuit – Samorin (SVK) – Cancelled
+            </a>
+          </h3>
+          <time datetime="2026-09-12"></time>
+          <time datetime="2026-09-13"></time>
+        </article>
+        """
+
+        events = parse_evf_calendar_html(html)
+
+        assert events[0]["evf_calendar_id"] == 5074
+        assert events[0]["is_cancelled"] is True
+
+    def test_extracts_multi_day_end_date_from_tribe_visible_range(self):
+        html = """
+        <article class="tribe-events-calendar-list__event post-9000">
+          <time class="tribe-events-calendar-list__event-datetime" datetime="2026-08-16">
+            <span class="tribe-event-date-start">16 August</span> -
+            <span class="tribe-event-date-end">22 August</span>
+          </time>
+          <h4 class="tribe-events-calendar-list__event-title">
+            <a href="https://www.veteransfencing.eu/event/weekend/">Veterans Weekend</a>
+          </h4>
+        </article>
+        """
+        from python.scrapers.evf_calendar import parse_evf_calendar_html
+
+        events = parse_evf_calendar_html(html)
+        assert events[0]["dt_start"] == "2026-08-16"
+        assert events[0]["dt_end"] == "2026-08-22"
+
+    def test_missing_calendar_date_is_hard_error(self):
+        """evf.65: named calendar entries may not be silently skipped when dates are absent."""
+        from python.scrapers.evf_calendar import CalendarIntegrityError, parse_evf_calendar_html
+
+        html = """
+        <article class="tribe-events-calendar-list__event post-9999">
+          <h3 class="tribe-events-calendar-list__event-title">
+            <a href="https://www.veteransfencing.eu/event/broken/">Broken EVF event</a>
+          </h3>
+        </article>
+        """
+
+        with pytest.raises(CalendarIntegrityError, match="missing date"):
+            parse_evf_calendar_html(html)
+
+
+class TestEvfSeasonSnapshotIntegrity:
+    """evf.66–evf.71: retained source count and fail-before-write season gate."""
+
+    def test_ignores_whole_word_camp_before_validation(self):
+        from python.scrapers.evf_calendar import validate_season_calendar
+
+        events = [
+            {
+                "name": "Training camp",
+                "dt_start": "not-a-date",
+                "dt_end": "also-not-a-date",
+                "evf_calendar_id": 1,
+                "is_cancelled": False,
+                "weapons": [],
+            },
+            {
+                "name": "EVF Circuit – Cancelled",
+                "dt_start": "2026-09-12",
+                "dt_end": "2026-09-13",
+                "evf_calendar_id": 2,
+                "is_cancelled": True,
+                "weapons": ["EPEE"],
+            },
+            {
+                "name": "Campbell International Veterans Cup",
+                "dt_start": "2027-06-18",
+                "dt_end": "2027-06-20",
+                "evf_calendar_id": 3,
+                "is_cancelled": False,
+                "weapons": ["FOIL"],
+            },
+        ]
+
+        snapshot = validate_season_calendar(events, "2026-07-13", "2027-07-15")
+
+        assert [event["evf_calendar_id"] for event in snapshot] == [2, 3]
+
+    def test_parser_ignores_camp_before_missing_date_gate(self):
+        from python.scrapers.evf_calendar import parse_evf_calendar_html
+
+        html = """
+        <article class="tribe-events-calendar-list__event post-3979">
+          <h3 class="tribe-events-calendar-list__event-title">
+            <a href="https://www.veteransfencing.eu/event/training-camp/">Training CAMP</a>
+          </h3>
+        </article>
+        """
+
+        assert parse_evf_calendar_html(html) == []
+
+    def test_applies_approved_toronto_weapon_evidence(self):
+        from python.scrapers.evf_calendar import validate_season_calendar
+
+        snapshot = validate_season_calendar(
+            [
+                {
+                    "name": "International Veterans Cup Toronto",
+                    "dt_start": "2027-06-18",
+                    "dt_end": "2027-06-20",
+                    "evf_calendar_id": 5070,
+                    "weapons": [],
+                }
+            ],
+            "2026-07-13",
+            "2027-07-15",
+        )
+
+        assert snapshot[0]["weapons"] == ["EPEE", "FOIL", "SABRE"]
+
+    @pytest.mark.parametrize(
+        ("event", "message"),
+        [
+            (
+                {
+                    "name": "EVF Circuit without identity",
+                    "dt_start": "2026-09-12",
+                    "dt_end": "2026-09-13",
+                    "weapons": ["EPEE"],
+                },
+                "missing EVF calendar id",
+            ),
+            (
+                {
+                    "name": "EVF Circuit without weapons",
+                    "dt_start": "2026-09-12",
+                    "dt_end": "2026-09-13",
+                    "evf_calendar_id": 7,
+                    "weapons": [],
+                },
+                "missing weapons",
+            ),
+        ],
+    )
+    def test_retained_entry_requires_identity_and_weapons(self, event, message):
+        from python.scrapers.evf_calendar import CalendarIntegrityError, validate_season_calendar
+
+        with pytest.raises(CalendarIntegrityError, match=message):
+            validate_season_calendar([event], "2026-07-13", "2027-07-15")
+
+    def test_plans_zero_then_chronological_codes_with_alphabetical_suffixes(self):
+        from python.scrapers.evf_calendar import plan_calendar_codes
+
+        events = [
+            {
+                "name": "Madrid",
+                "dt_start": "2026-10-10",
+                "evf_calendar_id": 30,
+                "weapons": ["SABRE", "EPEE"],
+                "is_cancelled": False,
+            },
+            {
+                "name": "Samorin",
+                "dt_start": "2026-09-12",
+                "evf_calendar_id": 10,
+                "weapons": ["SABRE", "FOIL", "EPEE"],
+                "is_cancelled": True,
+            },
+            {
+                "name": "Foil Celebration",
+                "dt_start": "2026-10-03",
+                "evf_calendar_id": 20,
+                "weapons": ["FOIL"],
+                "is_cancelled": False,
+            },
+        ]
+
+        planned = plan_calendar_codes(events, [], "SPWS-2026-2027")
+
+        assert [event["desired_code"] for event in planned] == [
+            "PEW0efs-2026-2027",
+            "PEW1f-2026-2027",
+            "PEW2es-2026-2027",
+        ]
+
+    def test_later_cancellation_keeps_positive_code_and_place_in_sequence(self):
+        from python.scrapers.evf_calendar import plan_calendar_codes
+
+        events = [
+            {
+                "name": "One",
+                "dt_start": "2026-09-01",
+                "evf_calendar_id": 10,
+                "weapons": ["FOIL"],
+                "is_cancelled": False,
+            },
+            {
+                "name": "Two now cancelled",
+                "dt_start": "2026-10-01",
+                "evf_calendar_id": 20,
+                "weapons": ["EPEE", "SABRE"],
+                "is_cancelled": True,
+            },
+            {
+                "name": "Three",
+                "dt_start": "2026-11-01",
+                "evf_calendar_id": 30,
+                "weapons": ["EPEE"],
+                "is_cancelled": False,
+            },
+        ]
+        existing = [
+            {
+                "id_event": 200,
+                "id_evf_calendar_event": 20,
+                "txt_code": "PEW2es-2026-2027",
+            }
+        ]
+
+        planned = plan_calendar_codes(events, existing, "SPWS-2026-2027")
+
+        assert [event["desired_code"] for event in planned] == [
+            "PEW1f-2026-2027",
+            "PEW2es-2026-2027",
+            "PEW3e-2026-2027",
+        ]
+
+    def test_approved_samorin_repair_overrides_buggy_positive_legacy_code(self):
+        from python.scrapers.evf_calendar import plan_calendar_codes
+
+        planned = plan_calendar_codes(
+            [
+                {
+                    "name": "Samorin Cancelled",
+                    "dt_start": "2026-09-12",
+                    "evf_calendar_id": 5074,
+                    "weapons": ["FOIL", "SABRE", "EPEE"],
+                    "is_cancelled": True,
+                }
+            ],
+            [
+                {
+                    "id_evf_calendar_event": 5074,
+                    "txt_code": "PEW68efs-2026-2027",
+                }
+            ],
+            "SPWS-2026-2027",
+        )
+
+        assert planned[0]["desired_code"] == "PEW0efs-2026-2027"
+
+    def test_approved_2026_2027_manifest_has_exact_codes(self):
+        from python.scrapers.evf_calendar import plan_calendar_codes
+
+        rows = [
+            (5074, "2026-09-12", "efs", True),
+            (5363, "2026-09-19", "f", False),
+            (877, "2026-10-31", "es", False),
+            (873, "2026-11-14", "ef", False),
+            (879, "2026-11-28", "fs", False),
+            (892, "2026-12-12", "efs", False),
+            (2113, "2027-01-09", "efs", False),
+            (4855, "2027-01-30", "efs", False),
+            (882, "2027-02-06", "fs", False),
+            (5087, "2027-02-06", "e", False),
+            (886, "2027-03-06", "efs", False),
+            (3444, "2027-03-13", "ef", False),
+            (890, "2027-04-10", "s", False),
+            (4523, "2027-04-24", "ef", False),
+            (3438, "2027-05-22", "es", False),
+            (4594, "2027-05-29", "efs", False),
+            (5070, "2027-06-18", "efs", False),
+        ]
+        weapon_names = {"e": "EPEE", "f": "FOIL", "s": "SABRE"}
+        events = [
+            {
+                "name": f"Event {calendar_id}",
+                "dt_start": start,
+                "evf_calendar_id": calendar_id,
+                "weapons": [weapon_names[letter] for letter in letters],
+                "is_cancelled": cancelled,
+            }
+            for calendar_id, start, letters, cancelled in rows
+        ]
+
+        planned = plan_calendar_codes(events, [], "SPWS-2026-2027")
+
+        assert [event["desired_code"].split("-2026-2027")[0] for event in planned] == [
+            "PEW0efs",
+            "PEW1f",
+            "PEW2es",
+            "PEW3ef",
+            "PEW4fs",
+            "PEW5efs",
+            "PEW6efs",
+            "PEW7efs",
+            "PEW8fs",
+            "PEW9e",
+            "PEW10efs",
+            "PEW11ef",
+            "PEW12s",
+            "PEW13ef",
+            "PEW14es",
+            "PEW15efs",
+            "PEW16efs",
+        ]
+
+    def test_boundary_spanning_event_is_error(self):
+        from python.scrapers.evf_calendar import CalendarIntegrityError, validate_season_calendar
+
+        events = [
+            {
+                "name": "Impossible boundary event",
+                "dt_start": "2026-07-10",
+                "dt_end": "2026-07-14",
+                "evf_calendar_id": 4,
+                "weapons": ["EPEE"],
+            }
+        ]
+
+        with pytest.raises(CalendarIntegrityError, match="crosses season boundary"):
+            validate_season_calendar(events, "2026-07-13", "2027-07-15")
+
+    def test_unparseable_date_is_error(self):
+        from python.scrapers.evf_calendar import CalendarIntegrityError, validate_season_calendar
+
+        events = [
+            {
+                "name": "Bad date",
+                "dt_start": "not-a-date",
+                "dt_end": "2026-09-13",
+                "evf_calendar_id": 5,
+                "weapons": ["EPEE"],
+            }
+        ]
+
+        with pytest.raises(CalendarIntegrityError, match="unparseable date"):
+            validate_season_calendar(events, "2026-07-13", "2027-07-15")
+
+    def test_duplicate_calendar_id_is_error(self):
+        from python.scrapers.evf_calendar import CalendarIntegrityError, validate_season_calendar
+
+        events = [
+            {
+                "name": "First rendering",
+                "dt_start": "2026-09-12",
+                "dt_end": "2026-09-13",
+                "evf_calendar_id": 5074,
+                "weapons": ["EPEE"],
+            },
+            {
+                "name": "Second rendering",
+                "dt_start": "2026-10-01",
+                "dt_end": "2026-10-02",
+                "evf_calendar_id": 5074,
+                "weapons": ["EPEE"],
+            },
+        ]
+
+        with pytest.raises(CalendarIntegrityError, match="duplicate EVF calendar id 5074"):
+            validate_season_calendar(events, "2026-07-13", "2027-07-15")
+
 
 class TestEvfDedup:
     """Tests evf.4–evf.5: deduplication logic."""
@@ -891,7 +1257,9 @@ class TestEvfScrapeFailureSurface:
         monkeypatch.setattr(evf_calendar, "_fetch_html_list", raise_html)
 
         with pytest.raises(RuntimeError) as excinfo:
-            evf_calendar.scrape_full_season_calendar("2026-01-01", "2026-12-31", skip_details=True)
+            evf_calendar.scrape_full_season_calendar(
+                "2026-01-01", "2026-12-31", client=object(), skip_details=True
+            )
 
         msg = str(excinfo.value)
         assert "api exploded" in msg
@@ -1045,6 +1413,7 @@ class TestEvfPhase2Allocator:
                 "weapons": ["EPEE"],
                 "is_team": False,
                 "url": "",
+                "evf_calendar_id": 810,
                 "fee": None,
                 "fee_currency": "",
             }
@@ -1089,6 +1458,7 @@ class TestEvfPhase2Allocator:
                 "weapons": ["EPEE"],
                 "is_team": False,
                 "url": "",
+                "evf_calendar_id": 811,
                 "fee": None,
                 "fee_currency": "",
             },
@@ -1101,6 +1471,7 @@ class TestEvfPhase2Allocator:
                 "weapons": ["EPEE"],
                 "is_team": False,
                 "url": "",
+                "evf_calendar_id": 812,
                 "fee": None,
                 "fee_currency": "",
             },
@@ -1131,20 +1502,24 @@ class TestEvfPhase2Allocator:
         ]
         assert summary, f"expected a summary message; got {sent}"
 
-    def test_payload_omits_code_includes_classifier_inputs(self, monkeypatch):
-        """evf.42: Payload to RPC has `name` + `is_team` but NOT `code`."""
+    def test_payload_includes_complete_server_validated_code_plan(self, monkeypatch):
+        """The RPC receives calendar identity plus the deterministic desired code."""
+        from datetime import date, timedelta
+
         from python.scrapers import evf_sync
 
+        start = date.today() + timedelta(days=5)
         scraped = [
             {
                 "name": "EVF Circuit – Berlin (GER)",
-                "dt_start": "2026-07-01",
-                "dt_end": "2026-07-02",
+                "dt_start": start.isoformat(),
+                "dt_end": (start + timedelta(days=1)).isoformat(),
                 "location": "Berlin",
                 "country": "Germany",
                 "weapons": ["EPEE"],
                 "is_team": False,
                 "url": "",
+                "evf_calendar_id": 812,
                 "fee": None,
                 "fee_currency": "",
             }
@@ -1172,9 +1547,104 @@ class TestEvfPhase2Allocator:
 
         assert isinstance(payload, list) and len(payload) == 1
         evt = payload[0]
-        assert "code" not in evt, f"payload must not include `code`; got keys: {list(evt.keys())}"
+        assert evt["desired_code"] == "PEW1e-2025-2026"
         assert "name" in evt and evt["name"]
         assert "is_team" in evt
+        assert evt["evf_calendar_id"] == 812
+        assert ", 7, 1) AS r" in sql
+
+    def test_scrape_ledger_excludes_camps_everywhere(self, monkeypatch):
+        """CAMP entries are absent from counts, payload and cancellation totals.
+
+        A successful run records STARTED and SUCCEEDED using the same run UUID.
+        """
+        from datetime import date, timedelta
+
+        from python.scrapers import evf_sync
+
+        start = date.today() + timedelta(days=10)
+        scraped = [
+            {
+                "name": "EVF Circuit Madrid",
+                "dt_start": start.isoformat(),
+                "dt_end": start.isoformat(),
+                "location": "Madrid",
+                "country": "Spain",
+                "weapons": ["EPEE"],
+                "is_team": False,
+                "url": "",
+                "evf_calendar_id": 877,
+                "is_cancelled": False,
+                "fee": None,
+                "fee_currency": "",
+            },
+            {
+                "name": "EVF Training Camp CANCELLED",
+                "dt_start": (start + timedelta(days=1)).isoformat(),
+                "dt_end": (start + timedelta(days=2)).isoformat(),
+                "location": "Paris",
+                "country": "France",
+                "weapons": [],
+                "is_team": False,
+                "url": "",
+                "evf_calendar_id": 999,
+                "is_cancelled": True,
+                "fee": None,
+                "fee_currency": "",
+            },
+        ]
+        sql_calls, _ = self._patch_sync(
+            monkeypatch,
+            scraped,
+            {"created": 1, "slot_reused": 0, "prior_matched": 0, "alerts": []},
+        )
+
+        evf_sync.sync_calendar("ref", "token", "bot", "chat", dry_run=False)
+
+        ledger_calls = [sql for sql in sql_calls if "fn_record_evf_calendar_scrape" in sql]
+        assert len(ledger_calls) == 2
+        assert "1, 0, 'STARTED'" in ledger_calls[0]
+        assert "1, 0, 'SUCCEEDED'" in ledger_calls[1]
+        first_run_id = ledger_calls[0].split("('", 1)[1].split("'::UUID", 1)[0]
+        second_run_id = ledger_calls[1].split("('", 1)[1].split("'::UUID", 1)[0]
+        assert first_run_id == second_run_id
+
+        ingest_call = next(sql for sql in sql_calls if "fn_ingest_evf_calendar" in sql)
+        assert ", 7, 1) AS r" in ingest_call
+        assert "Training Camp" not in ingest_call
+
+    def test_scrape_failure_records_failed_attempt(self, monkeypatch):
+        from python.scrapers import evf_sync
+
+        sql_calls: list[str] = []
+
+        def fake_mgmt(ref, token, sql):
+            sql_calls.append(sql)
+            if "FROM tbl_season WHERE bool_active" in sql:
+                return [
+                    {
+                        "txt_code": "SPWS-2026-2027",
+                        "dt_start": "2026-07-13",
+                        "dt_end": "2027-07-15",
+                        "id_season": 4,
+                    }
+                ]
+            return []
+
+        monkeypatch.setattr(evf_sync, "_management_query", fake_mgmt)
+        monkeypatch.setattr(evf_sync, "_telegram", lambda *args: None)
+        monkeypatch.setattr(
+            evf_sync,
+            "scrape_full_season_calendar",
+            lambda *args: (_ for _ in ()).throw(RuntimeError("calendar unavailable")),
+        )
+
+        with pytest.raises(RuntimeError, match="calendar unavailable"):
+            evf_sync.sync_calendar("ref", "token", "bot", "chat")
+
+        ledger_calls = [sql for sql in sql_calls if "fn_record_evf_calendar_scrape" in sql]
+        assert len(ledger_calls) == 1
+        assert "0, 0, 'FAILED'" in ledger_calls[0]
 
     def test_new_event_payload_includes_evf_slug(self, monkeypatch):
         """evf.54: fn_ingest_evf_calendar payload carries an `evf_slug` key
@@ -1194,6 +1664,7 @@ class TestEvfPhase2Allocator:
                 "is_team": False,
                 "url": "https://www.veteransfencing.eu/event/evf-circuit-samorin-svk/",
                 "evf_slug": "evf-circuit-samorin-svk",
+                "evf_calendar_id": 5074,
                 "fee": None,
                 "fee_currency": "",
             }
@@ -1241,6 +1712,7 @@ class TestEvfPhase2Allocator:
                 "is_team": False,
                 "url": "https://www.veteransfencing.eu/event/evf-circuit-samorin-svk/",
                 "evf_slug": "evf-circuit-samorin-svk",
+                "evf_calendar_id": 5074,
                 "fee": None,
                 "fee_currency": "",
             }
@@ -1278,6 +1750,7 @@ class TestEvfPhase2Allocator:
                         "url_event": "https://www.veteransfencing.eu/event/evf-circuit-samorin-svk/",
                         "id_evf_event": None,
                         "txt_evf_slug": "evf-circuit-samorin-svk",
+                        "id_evf_calendar_event": 5074,
                     }
                 ]
             return []
@@ -1296,6 +1769,8 @@ class TestEvfPhase2Allocator:
 
         sync_calls = [s for s in sql_calls if "fn_sync_evf_event_fields" in s.lower()]
         refresh_calls = [s for s in sql_calls if "fn_refresh_evf_event_urls" in s.lower()]
+        ingest_call = next(s for s in sql_calls if "fn_ingest_evf_calendar" in s.lower())
+        assert '"existing_id_event": 111' in ingest_call
         assert sync_calls, f"expected fn_sync_evf_event_fields to be invoked; got {sql_calls}"
         assert refresh_calls, "fn_refresh_evf_event_urls must still run (unchanged)"
         assert sql_calls.index(sync_calls[0]) < sql_calls.index(refresh_calls[0]), (
@@ -1316,7 +1791,9 @@ class TestEvfPhase2Allocator:
             "location",
             "country",
             "evf_id",
+            "evf_calendar_id",
             "evf_slug",
+            "is_cancelled",
         ):
             assert key in evt, f"identity-sync payload missing `{key}`: {evt}"
         assert evt["id_event"] == 111

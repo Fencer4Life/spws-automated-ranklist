@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="07307534653ca243231e8b82bf209c1d96a800ec0d3ef8a554dbb1cf7ab1df52">
+<meta name="doc-source-sha256" content="c2e1e3cf28d5babcb4260b601bc8602f3a1fffca3ab5b761dcdfaa8bb55dd831">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -432,10 +432,10 @@
 </tr>
 <tr>
 <td>FR-58</td>
-<td>EVF calendar import: HTML-primary fetch from veteransfencing.eu with JSON-API cross-reference, event-level URL harvesting (<code>url_event</code>, <code>url_invitation</code>, <code>url_registration</code>), dedup, create events via <code>fn_import_evf_events_v2</code> (allocator-driven code, EVF organizer, FK auto-link, idempotent), refresh existing events via <code>fn_refresh_evf_event_urls</code> (NULL-only, protects admin edits), raise on total failure. Deadline harvesting disabled pending real-world pattern data. Dedup algorithm rev 3 (ADR-039 2026-04-25): name comparison removed, location step added, single matcher across calendar + results paths. Code allocator (ADR-043 2026-04-26): three-step ladder (CURRENT_SLOT_REUSE → PRIOR_SEASON_MATCH → NEXT_FREE_ALLOC) + classifier (PEW/IMEW/DMEW; MEW dropped); Telegram alert per NEXT_FREE_ALLOC. Automated CERT→PROD propagation via <code>promote.py --mode calendar</code> (see FR-86).</td>
+<td>EVF calendar import: HTML-authoritative complete-season snapshot; whole-word <code>CAMP</code> entries ignored before validation/counting; durable WordPress calendar post id separate from secondary EVF results id; retained competitions numbered chronologically by date/calendar id with alphabetical weapon suffixes; first-import cancellations use base zero while later cancellations retain their positive base; <code>id_prior_event</code> independently preserves geographic rolling links; unsafe/scored reflows fail closed; scrape ledger and original scoring-site result links remain authoritative.</td>
 <td>UC8, UC9</td>
-<td>12.1–12.13, pytest evf.1–evf.21, evf.24, evf.40–evf.42, evf.25–evf.39, prom.5–prom.7</td>
-<td>Covered (ADR-028 rev 3 2026-04-26 → ADR-043: allocator + classifier + EVF organizer; ADR-039: dedup ladder; ADR-026 calendar mode)</td>
+<td>pgTAP 53.1–53.13; pytest <code>test_evf_calendar.py</code>; vitest <code>CalendarView.test.ts</code></td>
+<td>Covered (ADR-028 rev 7, ADR-037 amendment, ADR-039 rev 5, ADR-042/043/046 amendments)</td>
 </tr>
 <tr>
 <td>FR-59</td>
@@ -621,9 +621,9 @@
 </tr>
 <tr>
 <td>FR-86</td>
-<td>CERT → PROD promotion: per-tournament transfer with url_results carry and error recovery (event mode), plus automated EVF calendar propagation (calendar mode — new events + URL refresh via <code>fn_import_evf_events</code> / <code>fn_refresh_evf_event_urls</code>; runs after 3-day EVF scrape cron, admin edits protected, concurrency-group-protected from overlap with event-promote)</td>
-<td>ADR-026 (rev 2026-04-20), ADR-028</td>
-<td>9.204–9.207, prom.5–prom.7</td>
+<td>CERT → PROD promotion: whole active-season event reconciliation plus event/results promotion; stable identities and environment-local FKs are resolved rather than copied; <code>id_evf_calendar_event</code> is carried on create/fill and the active-season mismatch/delete guards remain fail-closed.</td>
+<td>ADR-026, ADR-028, ADR-081</td>
+<td>pgTAP 51.*, 53.13; pytest <code>test_promote.py</code></td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -1167,5 +1167,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>07307534653ca243231e8b82bf209c1d96a800ec0d3ef8a554dbb1cf7ab1df52</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>c2e1e3cf28d5babcb4260b601bc8602f3a1fffca3ab5b761dcdfaa8bb55dd831</code></footer>
 </div></body></html>

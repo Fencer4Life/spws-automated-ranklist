@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EVF calendar identity, numbering and cancellation — decision explainer</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --cancel:#8b2635; --cancel-soft:#f5dce2;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+      --cancel:#f2a1b0; --cancel-soft:#351c22;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:19px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:68rem;margin:0 auto;padding:58px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  .eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:800}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,60px);line-height:1.04;letter-spacing:-.018em;margin:0 0 20px;text-wrap:balance;max-width:21ch}
+  .dek{font-size:23px;line-height:1.48;color:var(--muted);margin:0 0 28px;max-width:64ch}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:13px;font-weight:700;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.cancel .dot{background:var(--cancel)}
+  .rule{height:2px;background:var(--line);border:0;margin:46px 0}
+  section{margin-top:54px}
+  .kicker{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;margin:0 0 10px}
+  h2{font-family:var(--serif);font-size:34px;line-height:1.13;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px}
+  p{margin:0 0 16px;max-width:68ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:68ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  .toc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 26px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 26px;margin:28px 0}
+  .toc a{text-decoration:none;font-weight:700}
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.cancel{border-left-color:var(--cancel);background:var(--cancel-soft)}
+  .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:22px 0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:19px}
+  .card h3{margin:0 0 9px;font-size:18px}
+  .card p{font-size:16px;color:var(--muted);margin:0}
+  .card.recommended{border:2px solid var(--good);background:var(--good-soft)}
+  .badge{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:5px;margin-bottom:10px;background:var(--surface-2);color:var(--muted)}
+  .badge.good{background:var(--good);color:white}
+  .badge.cancel{background:var(--cancel);color:white}
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-size:16px;min-width:680px}
+  th,td{text-align:left;vertical-align:top;padding:13px 15px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:12px;font-weight:800;padding:3px 8px;border-radius:5px;white-space:nowrap}
+  .chip.good{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.cancel{color:var(--cancel);background:var(--cancel-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2)}
+  .flow{display:flex;align-items:stretch;gap:10px;overflow-x:auto;padding:8px 0 12px;margin:18px 0}
+  .flow .node{min-width:165px;flex:1;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  .flow .node strong{display:block;margin-bottom:5px}
+  .flow .node small{display:block;color:var(--muted);line-height:1.4}
+  .flow .arrow{display:flex;align-items:center;color:var(--accent);font-size:25px;font-weight:800}
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:18px 21px;margin:18px 0;font-family:var(--mono);font-size:14px;line-height:1.75;color:var(--ink)}
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:72ch}
+  ol.steps>li{position:relative;padding-left:50px;margin:17px 0;min-height:34px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:15px;font-weight:800;background:var(--accent);color:#fff}
+  .decision{border:2px solid var(--accent);border-radius:12px;background:var(--accent-soft);padding:22px 25px;margin:20px 0}
+  .decision h3{margin:0 0 10px;color:var(--accent-ink)}
+  .refs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:20px 0}
+  .ref{display:block;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:17px 19px;text-decoration:none;color:var(--ink)}
+  .ref:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .ref strong{display:block;margin-bottom:4px}
+  .ref small{display:block;color:var(--muted);line-height:1.45}
+  .foot{margin-top:64px;padding-top:24px;border-top:2px solid var(--line);font-size:14px;color:var(--faint);font-family:var(--mono)}
+  @media(max-width:800px){.grid,.refs{grid-template-columns:1fr}.toc{grid-template-columns:1fr}.flow{flex-direction:column}.flow .arrow{justify-content:center;transform:rotate(90deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">EVF calendar · Approved design · Review before implementation</p>
+  <h1>Number the complete EVF calendar chronologically and keep rolling identity separate</h1>
+  <p class="dek">This document records the corrected approved repair: whole-word <code>CAMP</code> entries are ignored completely; an event already cancelled at first import receives base zero; every remaining competition receives a positive chronological PEW code with an authoritative weapon suffix; and prior-season geography remains independent through <code>id_prior_event</code>.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Design approved 7 August 2026</span>
+    <span class="pill">branch <code>codex/fix-evf-calendar-event-codes</code></span>
+    <span class="pill warn"><span class="dot"></span>no CERT/PROD mutation yet</span>
+    <span class="pill cancel"><span class="dot"></span>Samorin is the cancellation example</span>
+  </div>
+
+  <nav class="toc" aria-label="Contents">
+    <a href="#short-version">1. The short version</a>
+    <a href="#bug">2. What failed</a>
+    <a href="#current-state">3. Live current-state table</a>
+    <a href="#identities">4. The three identities</a>
+    <a href="#approaches">5. Approaches considered</a>
+    <a href="#matching">6. Recommended matching</a>
+    <a href="#numbering">7. Chronological numbering</a>
+    <a href="#cancelled">8. Cancellation lifecycle</a>
+    <a href="#repair">9. CERT and PROD repair</a>
+    <a href="#tdd">10. TDD and validation</a>
+    <a href="#adrs">11. ADR amendments</a>
+    <a href="#references">12. Evidence and references</a>
+    <a href="#scenarios">13. Scenario walk-throughs</a>
+    <a href="#parity">14. Environment parity</a>
+    <a href="#docs-gate">15. Documentation gate</a>
+    <a href="#done">16. Definition of done</a>
+    <a href="#approval">17. Approved decisions</a>
+  </nav>
+
+  <hr class="rule">
+
+  <section id="short-version">
+    <p class="kicker">Start here</p>
+    <h2>The short version</h2>
+    <div class="grid">
+      <article class="card">
+        <span class="badge">Returning event</span>
+        <h3>Number by this season’s calendar</h3>
+        <p>After camps and first-import cancellations are removed from the positive sequence, Madrid is second and becomes <code>PEW2es</code> even if it had another number last season. The rolling relationship is the foreign key.</p>
+      </article>
+      <article class="card">
+        <span class="badge">Genuinely new</span>
+        <h3>Use the same chronological rule</h3>
+        <p>Returning and genuinely new competitions use the same calculation: exclude whole-word camps and first-import cancellations, sort by start date then EVF calendar ID, and use the one-based position.</p>
+      </article>
+      <article class="card">
+        <span class="badge cancel">Cancelled</span>
+        <h3>Keep history; limit public display</h3>
+        <p>Already cancelled at first import receives <code>PEW0{weapons}</code>. A later cancellation keeps its positive code. The public calendar shows the cancellation through seven days after the original end date, then hides it.</p>
+      </article>
+    </div>
+    <h3>Numbering strategies considered</h3>
+    <div class="grid">
+      <article class="card recommended"><span class="badge good">Chosen</span><h3>Guarded filtered chronology</h3><p>Filter camps and first-import cancellations, recompute the positive sequence, reflow unscored rows, and abort before renaming a scored row. Preserves the approved chronology without silently rewriting result identity.</p></article>
+      <article class="card"><span class="badge">Rejected</span><h3>Always reflow</h3><p>Perfect chronology, but an EVF insertion or reschedule could silently rename result-bearing events and their child codes.</p></article>
+      <article class="card"><span class="badge">Rejected</span><h3>Assign once</h3><p>Stable codes, but a late earlier entry makes the season permanently non-chronological and violates the approved business rule.</p></article>
+    </div>
+    <div class="note good">
+      <p class="lede">The invariant we want</p>
+      <p><strong>Whole-word CAMP → no row; first-import cancellation → base zero; every other EVF competition → one database event and one positive chronological <code>PEW{N}{weapons}</code> code.</strong> A scrape may enrich, reschedule, rename, cancel, or safely reflow an unscored occurrence, but it may not allocate another row for the same calendar ID. Prior-season numbers never influence the current-season number.</p>
+    </div>
+  </section>
+
+  <section id="bug">
+    <p class="kicker">Current failure</p>
+    <h2>Why the current season jumped to PEW68–PEW80</h2>
+    <p>The season initializer correctly pre-created low-number slots from the prior season. Those rows are marked <code>CREATED</code> and point to <code>id_prior_event</code>. However, they did not carry the EVF calendar’s stable identifier or slug.</p>
+    <p>The scraper then compared physical text. EVF often publishes a <em>venue</em> where SPWS stores a <em>city</em>, and it may use a three-letter country abbreviation where SPWS stores a country name. The same event therefore looked different even though it was not new.</p>
+    <pre class="trace">current slot:  PEW2…  location = "Madrid"  country = "Spain"
+EVF scrape:    venue = "POLIDEPORTIVO MUNICIPAL DE MORATALAZ"
+               title country = "ESP"
+
+physical match misses
+→ allocator interprets the row as genuinely new
+→ NEXT_FREE_ALLOC
+→ PEW69… instead of updating one identified row</pre>
+    <div class="note danger">
+      <p class="lede">The allocator did what it was told, but it was asked the wrong question</p>
+      <p>It was asked “does this venue text equal a current slot?” It should first be asked “does this EVF calendar identity already belong to a slot or its prior event?”</p>
+    </div>
+  </section>
+
+  <section id="current-state">
+    <p class="kicker">Live read-only inventory · 2026-08-06</p>
+    <h2>What the active season looks like right now</h2>
+    <p>The official EVF calendar currently contains <strong>22 distinct source entries</strong> wholly inside the active SPWS season (<code>2026-07-13</code> through <code>2027-07-15</code>). Five names contain the case-insensitive whole word <code>CAMP</code> and are ignored completely. Of the 17 retained entries, Samorin was already cancelled and receives base zero; the other 16 receive positive chronological bases <code>1…16</code> after sorting by <code>(dt_start, id_evf_calendar_event)</code>.</p>
+    <div class="note danger">
+      <p class="lede">The live invariant currently fails in both environments</p>
+      <p>CERT and PROD both contain active-season PEW codes through <code>PEW80</code>. They also contain inherited <code>CREATED</code> skeletons, so returning events such as Madrid exist twice: a historical-number skeleton and a newly allocated high-number row. Neither number is authoritative under the approved chronological rule. The deployed schema has no calendar-post-ID column yet, and every inspected <code>id_evf_event</code> value is null.</p>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Positive #</th><th>Retained EVF entry</th><th>Calendar ID</th><th>Date</th><th>Weapons</th><th>Required code</th><th>Identity / lifecycle</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>EVF Circuit – Samorin <strong>Cancelled</strong></td><td><code>5074</code></td><td>2026-09-12</td><td>efs</td><td><code>PEW0efs</code></td><td><span class="chip cancel">CANCELLED AT FIRST IMPORT</span>; excluded from positive sequence</td></tr>
+        <tr><td>1</td><td>Foil Celebration in Buda Castle – Budapest</td><td><code>5363</code></td><td>2026-09-19</td><td>f</td><td><code>PEW1f</code></td><td>New calendar occurrence</td></tr>
+        <tr><td>2</td><td>EVF Circuit – Madrid</td><td><code>877</code></td><td>2026-10-31</td><td>es</td><td><code>PEW2es</code></td><td>Link to prior Madrid</td></tr>
+        <tr><td>3</td><td>EVF Circuit – Budapest</td><td><code>873</code></td><td>2026-11-14</td><td>ef</td><td><code>PEW3ef</code></td><td>Link to prior Budapest</td></tr>
+        <tr><td>4</td><td>EVF Circuit Memoriam Max Geuter – Munich</td><td><code>879</code></td><td>2026-11-28</td><td>fs</td><td><code>PEW4fs</code></td><td>Link to prior Munich</td></tr>
+        <tr><td>5</td><td>EVF Circuit – Łomianki</td><td><code>892</code></td><td>2026-12-12</td><td>efs</td><td><code>PEW5efs</code></td><td>Link to the established Polish circuit lineage</td></tr>
+        <tr><td>6</td><td>EVF Circuit – Guildford</td><td><code>2113</code></td><td>2027-01-09</td><td>efs</td><td><code>PEW6efs</code></td><td>Link to prior Guildford</td></tr>
+        <tr><td>7</td><td>Levi Open</td><td><code>4855</code></td><td>2027-01-30</td><td>efs</td><td><code>PEW7efs</code></td><td>New calendar occurrence</td></tr>
+        <tr><td>8</td><td>EVF Circuit – Fâches-Thumesnil</td><td><code>882</code></td><td>2027-02-06</td><td>fs</td><td><code>PEW8fs</code></td><td>Same-date tie precedes Lausanne because 882 &lt; 5087</td></tr>
+        <tr><td>9</td><td>EVF Circuit – Lausanne</td><td><code>5087</code></td><td>2027-02-06</td><td>e</td><td><code>PEW9e</code></td><td>New calendar occurrence</td></tr>
+        <tr><td>10</td><td>EVF Circuit – Naples</td><td><code>886</code></td><td>2027-03-06</td><td>efs</td><td><code>PEW10efs</code></td><td>Link to prior Naples</td></tr>
+        <tr><td>11</td><td>EVF Circuit – Stockholm</td><td><code>3444</code></td><td>2027-03-13</td><td>ef</td><td><code>PEW11ef</code></td><td>Link to prior Stockholm</td></tr>
+        <tr><td>12</td><td>EVF Circuit – Liège</td><td><code>890</code></td><td>2027-04-10</td><td>s</td><td><code>PEW12s</code></td><td>Link to prior Liège</td></tr>
+        <tr><td>13</td><td>EVF Circuit – Salzburg</td><td><code>4523</code></td><td>2027-04-24</td><td>ef</td><td><code>PEW13ef</code></td><td>Link to prior Salzburg</td></tr>
+        <tr><td>14</td><td>EVF Circuit – Athens</td><td><code>3438</code></td><td>2027-05-22</td><td>es</td><td><code>PEW14es</code></td><td><strong>Link to prior Chania</strong>; same geographic event series</td></tr>
+        <tr><td>15</td><td>EVF Circuit – Dublin</td><td><code>4594</code></td><td>2027-05-29</td><td>efs</td><td><code>PEW15efs</code></td><td>Link to prior Dublin</td></tr>
+        <tr><td>16</td><td>International Veterans Cup – Toronto</td><td><code>5070</code></td><td>2027-06-18</td><td>efs</td><td><code>PEW16efs</code></td><td>Weapon set verified on organizer’s official programme</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Ignored source entries</h3>
+    <p>Calendar IDs <code>3979</code>, <code>3232</code>, <code>3234</code>, <code>4742</code> and <code>4367</code> contain the whole word <code>CAMP</code> in their names. They are filtered before season validation, counting, matching, allocation and persistence. A name such as “Campbell Cup” does not match the whole-word rule.</p>
+    <p><strong>Weapon provenance:</strong> retained entries except Toronto come from the weapon categories on the official EVF calendar snapshot. Toronto’s EVF entry lacks weapon categories, so <code>efs</code> is verified from the event organizer’s official programme, which lists men’s and women’s épée, foil and sabre. A retained entry with no authoritative weapon set is a hard pre-write error.</p>
+    <p>Source snapshot: <a href="https://www.veteransfencing.eu/calendar/">official EVF calendar</a>, refreshed 2026-08-07; Toronto evidence: <a href="https://cffveterans.com/registration-info/">official International Veterans Cup programme</a>. Environment-local database IDs are deliberately omitted because the repair resolves stable identities rather than copying raw IDs.</p>
+  </section>
+
+  <section id="repair-manifest">
+    <p class="kicker">Approved target mapping; mutation remains guarded</p>
+    <h2>Chronological CERT + PROD repair target</h2>
+    <p>The prior 22-row manifest is superseded. The required target is the 17-row retained table above: five camps have no rows, Samorin owns <code>PEW0efs</code>, and the 16 non-cancelled competitions own positive bases exactly <code>1…16</code>. Existing skeletons and scrape-created PEW68–PEW80 rows are inputs to consolidation, not authorities for the final number.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Calendar IDs</th><th>Operation class</th><th>Required postcondition</th><th>Safety condition</th></tr></thead>
+      <tbody>
+        <tr><td>3979, 3232, 3234, 4742, 4367</td><td>Exclude camps</td><td>No event rows and no codes</td><td>Whole-word, case-insensitive match only</td></tr>
+        <tr><td>5363, 4855, 5070</td><td>Create missing retained rows</td><td><code>PEW1f</code>, <code>PEW7efs</code>, <code>PEW16efs</code></td><td>No duplicate calendar ID; no invented weapon set</td></tr>
+        <tr><td>5074</td><td>Rename and cancel</td><td><code>PEW0efs</code>, <code>CANCELLED</code></td><td>Abort if results or protected lifecycle state appeared</td></tr>
+        <tr><td>877, 873, 879, 892, 2113, 882, 886, 3444, 890, 4523, 3438, 4594</td><td>Consolidate duplicate/skeleton rows and chronologically rename</td><td>Positive positions 2–6, 8, 10–15 match the table above</td><td>Every child and FK has one proven destination; result count conserved</td></tr>
+        <tr><td>5087</td><td>Chronologically rename</td><td><code>PEW9e</code></td><td>No unreviewed predecessor is invented</td></tr>
+        <tr><td>3438</td><td>Preserve geographic lineage</td><td><code>PEW14es</code> with <code>id_prior_event</code> pointing to Chania</td><td>Resolve the environment-local Chania row by stable prior-season identity</td></tr>
+      </tbody>
+    </table></div>
+    <p><strong>Temporary collision handling:</strong> the repair first assigns transaction-local neutral codes, then writes all final chronological codes. It never tries to swap two unique codes directly. Empty superseded rows may be deleted only after their fields, prior link and children have been resolved; a results-bearing or registered row blocks deletion.</p>
+    <p>The postcondition is identical on CERT and PROD: no CAMP rows; exactly 17 retained EVF rows; Samorin at base zero and cancelled; positive bases exactly <code>1…16</code>; suffixes equal authoritative weapon sets; and Athens linked to Chania. Rationale: <a href="../adr/028-evf-calendar-results-import.html">ADR-028</a>, <a href="../adr/039-stale-event-gate.html">ADR-039</a>, <a href="../adr/042-carryover-engine-dispatcher.html">ADR-042</a>, <a href="../adr/043-evf-event-allocator.html">ADR-043</a>, and <a href="../adr/046-pew-weapon-suffix.html">ADR-046</a>.</p>
+  </section>
+
+  <section id="identities">
+    <p class="kicker">Source model</p>
+    <h2>Calendar identity, result provenance and rolling identity are separate</h2>
+    <p>These identifiers must not be collapsed into one column because they come from different systems and become available at different times.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Identity</th><th>Example</th><th>Available when</th><th>What it identifies</th><th>Proposed storage</th></tr></thead>
+      <tbody>
+        <tr><td>EVF calendar post ID</td><td><code>877</code> Madrid<br><code>873</code> Budapest<br><code>5074</code> Samorin</td><td>Immediately on the public calendar</td><td>The EVF calendar entry/page, including future and cancelled events</td><td><code>id_evf_calendar_event</code></td></tr>
+        <tr><td>EVF results DB ID</td><td>Occurrence-specific result event ID</td><td>Usually later, when the results system knows the event</td><td>Secondary discovery/parity evidence. Original FTL, Engarde, 4Fence, Dartagnan and similar result links remain authoritative.</td><td>existing <code>id_evf_event</code></td></tr>
+        <tr><td>Calendar slug</td><td><code>evf-circuit-madrid</code></td><td>Immediately on the public calendar</td><td>Human-readable calendar page identity; useful fallback</td><td>existing <code>txt_evf_slug</code></td></tr>
+        <tr><td>Prior-season FK</td><td>Current Madrid → prior Madrid row</td><td>Season initialization or verified repair</td><td>The exact cross-season counterpart consumed by the FK rolling engine</td><td>existing <code>id_prior_event</code></td></tr>
+      </tbody>
+    </table></div>
+    <div class="note accent">
+      <p class="lede">Why a new column is safer</p>
+      <p>Using <code>id_evf_event</code> for both APIs would make two unrelated ID namespaces appear equivalent. A numeric collision could silently join the wrong calendar event to the wrong results event. The calendar post ID therefore needs its own explicitly named field.</p>
+    </div>
+    <p>The calendar ID is already present in the HTML as a class such as <code>post-877</code>; the scraper can capture it without introducing a new external service or authentication requirement.</p>
+  </section>
+
+  <section id="approaches">
+    <p class="kicker">Architectural choice</p>
+    <h2>Three approaches considered</h2>
+    <div class="grid">
+      <article class="card recommended">
+        <span class="badge good">Recommended</span>
+        <h3>Separate calendar, results and rolling identities</h3>
+        <p>Calendar ID identifies the public occurrence; original scoring URLs are authoritative for results; EVF results ID is secondary evidence; <code>id_prior_event</code> controls rolling. Strongest audit trail and lowest collision risk.</p>
+      </article>
+      <article class="card">
+        <span class="badge">Rejected</span>
+        <h3>Put both numeric IDs in one column</h3>
+        <p>Smaller schema change, but the meaning of the field depends on the caller. Numeric collisions and later results linking become unsafe and difficult to diagnose.</p>
+      </article>
+      <article class="card">
+        <span class="badge">Rejected</span>
+        <h3>Continue with slug, city and country only</h3>
+        <p>No new column, but repeats the existing failure when EVF changes venue text, abbreviations, spelling, or page naming. It cannot provide a durable numeric identity.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="matching">
+    <p class="kicker">Decision ladder</p>
+    <h2>How one scrape will identify an event</h2>
+    <div class="flow" role="img" aria-label="Calendar matching hierarchy">
+      <div class="node"><strong>1 · Calendar ID</strong><small>Exact <code>id_evf_calendar_event</code> match</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><strong>2 · Slug</strong><small>Exact <code>txt_evf_slug</code> match</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><strong>3 · Prior link/history</strong><small>Verified current skeleton and <code>id_prior_event</code></small></div>
+      <div class="arrow">→</div>
+      <div class="node"><strong>4 · Physical fallback</strong><small>Date + canonical country/city, ambiguity fails loudly</small></div>
+    </div>
+    <p>The first exact identity match wins even if the event date, public name, venue, or cancellation marker changed. This is essential for reschedules and renamed venues.</p>
+    <div class="note warn">
+      <p class="lede">No silent guess on ambiguity</p>
+      <p>If the fallback finds two possible predecessors—for example two historical rows for the same city—the sync must stop for that event, report both candidates, and require an explicit mapping. It must not allocate a new number merely because the answer is ambiguous.</p>
+    </div>
+    <h3>Season initialization</h3>
+    <p>When next season’s skeleton is created, it may carry a verified reusable calendar identity as a matching hint together with <code>id_prior_event</code>, but it does <strong>not</strong> reserve or inherit the prior PEW number. The filtered current-season snapshot assigns the final ordinal. It will not copy the results DB ID, because that ID describes a particular results occurrence rather than the recurring calendar series.</p>
+  </section>
+
+  <section id="numbering">
+    <p class="kicker">Business rule</p>
+    <h2>Chronology owns the code; geography owns the prior link</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Situation</th><th>Decision</th><th>Code effect</th><th>Alert</th></tr></thead>
+      <tbody>
+        <tr><td>Name contains whole-word CAMP</td><td>Filter before validation, counting and persistence</td><td><span class="chip plain">no row, no number</span></td><td>Ignored-count summary</td></tr>
+        <tr><td>Already cancelled at first import</td><td>Retain as a cancellation notice outside the positive sequence</td><td><span class="chip cancel">base 0 + suffix</span></td><td>Lifecycle summary</td></tr>
+        <tr><td>Retained positive snapshot</td><td>Sort by <code>dt_start</code>, then numeric calendar ID</td><td><span class="chip good">ordinal 1…N</span></td><td>Summary only</td></tr>
+        <tr><td>Weapon set is authoritative</td><td>Map EPEE→e, FOIL→f, SABRE→s; concatenate alphabetically</td><td><span class="chip good">PEW{ordinal}{suffix}</span></td><td>Summary only</td></tr>
+        <tr><td>Returning geographic series</td><td>Set the exact <code>id_prior_event</code></td><td><span class="chip plain">no influence on number</span></td><td>Report ambiguous candidates</td></tr>
+        <tr><td>Same calendar ID is scraped again</td><td>Refresh the same row and recompute desired ordinal</td><td><span class="chip good">idempotent when snapshot unchanged</span></td><td>No new-event alert</td></tr>
+        <tr><td>Earlier entry added or rescheduled</td><td>Reflow affected unscored rows transactionally</td><td><span class="chip warn">chronology restored</span></td><td>Report renames</td></tr>
+        <tr><td>Reflow would rename a results-bearing row</td><td>Abort the whole calendar write</td><td><span class="chip plain">no partial rename</span></td><td>Fail-loud operator review</td></tr>
+        <tr><td>Positive event cancelled later</td><td>Keep its existing positive code</td><td><span class="chip cancel">no reflow</span></td><td>Lifecycle summary</td></tr>
+        <tr><td>Two first-import cancellations produce the same zero code</td><td>Abort before mutation</td><td><span class="chip plain">no ambiguous duplicate</span></td><td>Fail-loud operator review</td></tr>
+      </tbody>
+    </table></div>
+    <p>Let <code>N</code> be the number of retained, not-already-cancelled competitions after whole-word CAMP exclusion. Their positive numeric bases must equal exactly <code>{1,…,N}</code>. First-import cancellations are retained separately at base zero. A prior-season code number is evidence of history only and is never an allocation input.</p>
+    <div class="note accent">
+      <p class="lede">Current-season examples</p>
+      <p>Samorin becomes <code>PEW0efs</code>. Madrid is second and becomes <code>PEW2es</code>; Budapest is third and becomes <code>PEW3ef</code>. Athens is fourteenth and becomes <code>PEW14es</code>, while its independent <code>id_prior_event</code> points to Chania as the same geographic event series.</p>
+    </div>
+    <h3>Every scrape records the source count before it writes</h3>
+    <p>A dedicated calendar-scrape ledger records the run ID, environment, season boundaries, every distinct calendar ID counted, total <code>N</code>, cancelled count, proposed highest PEW number, create/update/unchanged/rejected counts, and the final verdict. Failed runs are retained too; mutation-only audit logs cannot explain a scrape that correctly refused to write.</p>
+    <div class="note danger">
+      <p class="lede">Hard pre-write errors</p>
+      <p>After camps are excluded, the entire calendar write aborts when a retained entry has a missing or unparseable date; an entry crosses a season boundary; season definitions overlap or leave the entry unassigned; calendar IDs duplicate; a weapon set is missing or unsupported; one calendar ID maps to multiple database rows; positive bases are not exactly <code>1…N</code>; two first-import cancellations collide on the same full zero code; or a required reflow would rename a results-bearing event.</p>
+    </div>
+  </section>
+
+  <section id="cancelled">
+    <p class="kicker">Cancellation policy</p>
+    <h2>Cancelled is a lifecycle state, not part of the event’s name</h2>
+    <p>Today Samorin’s name changed to include “Cancelled,” but its database status remained <code>PLANNED</code>. That makes the UI look planned and keeps it visible indefinitely. The scraper should convert an authoritative cancellation marker into the existing <code>CANCELLED</code> status.</p>
+    <p><strong>Numbering depends on when cancellation becomes known.</strong> Samorin is already cancelled before its first authoritative import, so it receives <code>PEW0efs</code> and consumes no positive ordinal. If an event is imported with a positive code and EVF cancels it later, it keeps that positive code; cancellation does not trigger a season-wide reflow.</p>
+    <div class="flow" role="img" aria-label="Cancelled event visibility timeline">
+      <div class="node"><strong>EVF says cancelled</strong><small>Keep original dates, code and identity</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><strong>Until original end</strong><small>Prominent cancelled badge; no registration action</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><strong>Seven-day notice tail</strong><small>Still public for travellers checking the change</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><strong>Day eight onward</strong><small>Hidden publicly; retained in admin and database</small></div>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Concern</th><th>Rule</th></tr></thead>
+      <tbody>
+        <tr><td>Database history</td><td>Never delete a cancelled event. Keep code, identity, original dates, prior link and audit trail.</td></tr>
+        <tr><td>Public visibility</td><td>Visible while <code>today ≤ dt_end + 7 days</code>; hidden from the public Calendar on day eight.</td></tr>
+        <tr><td>Admin visibility</td><td>Always visible in Event Manager and environment diagnostics.</td></tr>
+        <tr><td>Scoring</td><td><code>CANCELLED</code> remains ineligible for scoring and does not replace carry-over with empty results.</td></tr>
+        <tr><td>Future season</td><td>The recurring series may still be pre-created next season with its prior link, but no inherited number is reserved. That season’s complete calendar assigns its chronological ordinal. One cancelled occurrence does not retire the identity.</td></tr>
+        <tr><td>Unexpected results</td><td>If results exist or lifecycle status has advanced, do not auto-cancel. Alert for operator review.</td></tr>
+        <tr><td>Cancellation removed later</td><td>Do not auto-reactivate. Require an explicit operator decision so a mistaken source edit cannot silently reopen registration.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="repair">
+    <p class="kicker">Existing data</p>
+    <h2>How CERT and PROD will be corrected safely</h2>
+    <p>The repair will not be a hand-written collection of blind renames. It will first generate an exact manifest from current data and official EVF identities.</p>
+    <ol class="steps">
+      <li><strong>Read-only source snapshot.</strong> Capture the source page, exclude whole-word CAMP names, separate first-import cancellations at base zero, validate retained competitions and calculate positive <code>N</code>.</li>
+      <li><strong>Read-only database inventory.</strong> List every current-season EVF row, its calendar ID, slug, prior link, tournaments, results, registrations and candidate predecessor in CERT and PROD.</li>
+      <li><strong>Classify identity separately.</strong> Mark each row <em>RETURNING</em>, <em>GENUINELY_NEW</em>, <em>CANCELLED</em>, or <em>AMBIGUOUS</em> for <code>id_prior_event</code>. This classification never changes the chronological number. Ambiguous prior links block the mutation.</li>
+      <li><strong>Produce a dry-run mapping.</strong> Show ignored camp IDs, zero-code cancellations, and calendar ID → positive ordinal/suffix → current code → target code → prior event, with proof that positive bases are exactly <code>1…N</code>.</li>
+      <li><strong>Snapshot and migrate CERT.</strong> Apply one transaction. Preserve enrichment and children, restore prior links, cascade codes, and set cancellation state.</li>
+      <li><strong>Scrape CERT twice.</strong> The first run may enrich; the second must allocate zero events and leave all codes identical.</li>
+      <li><strong>Verify CERT invariants.</strong> No CAMP rows, no duplicate calendar ID/slug, Samorin at zero, exact positive bases <code>1…N</code>, authoritative suffixes, no orphan tournaments, no results lost, exact prior links, and expected cancellation visibility.</li>
+      <li><strong>Apply the same business mapping to PROD.</strong> Resolve environment-local IDs by stable codes/identities, never by copying raw database IDs from CERT.</li>
+      <li><strong>Reconcile and verify PROD.</strong> CERT and PROD must agree on event codes and source identity; protected environment-owned differences remain reported.</li>
+    </ol>
+    <div class="note danger">
+      <p class="lede">Destructive guard</p>
+      <p>No row with results, registrations, or unresolved child data will be deleted. A merge that cannot prove where every child row goes aborts the transaction. CERT is verified before PROD is touched.</p>
+    </div>
+    <div class="note good">
+      <p class="lede">Idempotence is the live acceptance test</p>
+      <p>After repair, two consecutive calendar scrapes over unchanged EVF data must produce the same event set and exactly the same codes. “No new allocation on the second run” is mandatory evidence, not an assumption.</p>
+    </div>
+  </section>
+
+  <section id="tdd">
+    <p class="kicker">By the book</p>
+    <h2>TDD sequence: acceptance assertions, RED, implementation, GREEN</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Layer</th><th>Test written first</th><th>What RED proves</th><th>GREEN requirement</th></tr></thead>
+      <tbody>
+        <tr><td><code>EVF-CHRON-01</code> Python parser</td><td>Extract <code>post-877</code> as calendar ID; detect cancellation marker</td><td>Current public event shape is not captured</td><td>Stable ID and cancellation flag in scraper payload</td></tr>
+        <tr><td><code>EVF-CHRON-02</code> Python planner</td><td>Whole-word CAMP entries disappear; first-import cancellations receive zero; retained positives sort by date/calendar ID with suffixes</td><td>Current scraper does not implement the approved exclusion/zero boundary</td><td>Exact <code>PEW0</code> plus positive <code>PEW1…PEWN</code> mapping</td></tr>
+        <tr><td><code>EVF-CHRON-03</code> Python gate</td><td>Camp malformed dates are ignored; retained missing date/ID/weapons, boundary crossing, no season or multiple seasons aborts</td><td>Filtering order and retained-source validation are undefined</td><td>Failed retained run has zero calendar mutations</td></tr>
+        <tr><td><code>EVF-CHRON-04</code> Python matcher</td><td>Calendar-ID match beats changed date/name/venue; ambiguity does not allocate</td><td>Current ladder can miss returning events</td><td>Exact identity reuse and fail-loud ambiguity</td></tr>
+        <tr><td><code>EVF-CHRON-05</code> pgTAP init</td><td>Preserve <code>id_prior_event</code> without inheriting the prior PEW number or occurrence-specific results ID</td><td>Current skeleton copies historical numbering</td><td>Rolling identity is ready but chronology owns the new code</td></tr>
+        <tr><td><code>EVF-CHRON-06</code> pgTAP planner</td><td>No CAMP rows; first-import cancelled row uses zero; positive bases equal exactly <code>1…N</code>; suffixes match source</td><td>Current SQL can reuse a historical number or mint a new high code</td><td>Second unchanged ingest creates zero rows and changes zero codes</td></tr>
+        <tr><td><code>EVF-CHRON-07</code> pgTAP reflow</td><td>Earlier unscored insertion reflows safely; a required scored-row rename aborts atomically</td><td>Chronology/stability conflict is currently undefined</td><td>No partial renames or result-code drift</td></tr>
+        <tr><td><code>EVF-CHRON-08</code> pgTAP ledger</td><td>Successful and failed attempts retain counts, IDs and verdict; calendar mutations are atomic</td><td>No durable per-scrape count exists</td><td>Every attempt is auditable without misusing result-ingest history</td></tr>
+        <tr><td><code>EVF-CHRON-09</code> pgTAP cancel</td><td>First-import cancellation uses zero; later cancellation preserves positive code; duplicate zero-code collision aborts; results-bearing unsafe transition refused</td><td>Current sync only renames the event</td><td>Timing-sensitive numbering and lifecycle safety enforced</td></tr>
+        <tr><td><code>EVF-CHRON-10</code> Frontend</td><td>Visible through <code>dt_end + 7</code>; hidden on day eight; actions suppressed</td><td>Current calendar keeps CANCELLED rows forever</td><td>Exact public cancellation behavior</td></tr>
+        <tr><td><code>EVF-CHRON-11</code> Repair</td><td>Synthetic duplicate fixture merges without losing children; two-phase renames avoid collisions; Athens keeps Chania FK</td><td>Unsafe mappings, collision order or FK behavior are exposed</td><td>Atomic, repeat-safe repair with exact chronological <code>1…N</code> postcondition</td></tr>
+      </tbody>
+    </table></div>
+    <p>After narrow tests pass, the applicable Python, Ruff, type, frontend, pgTAP, coherence, specification-sync, documentation, and Graphify gates run before any commit or deployment claim. The authoritative procedures are linked below: <a href="../claude/testing.md">testing and mandatory TDD</a>, <a href="../handbook/reference/documentation-standard.html">documentation standard</a>, and <a href="../claude/graph-analysis.md">Graphify analysis and refresh</a>.</p>
+  </section>
+
+  <section id="adrs">
+    <p class="kicker">Decision records</p>
+    <h2>Which ADR owns which part</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ADR</th><th>Amendment</th><th>Why it belongs there</th></tr></thead>
+      <tbody>
+        <tr><td><a href="../adr/043-evf-event-allocator.html"><code>ADR-043</code></a></td><td>Replace prior-number/lowest-free allocation with CAMP-filtered positive chronology, cancellation zero and guarded reflow</td><td>This ADR owns EVF event-code allocation and the transaction/error semantics.</td></tr>
+        <tr><td><a href="../adr/046-pew-weapon-suffix.html"><code>ADR-046</code></a></td><td>Require suffixes on retained rows, support base zero for first-import cancellation, and keep strict positive chronology</td><td>This ADR owns <code>PEW{N}{letters}</code>.</td></tr>
+        <tr><td><a href="../adr/028-evf-calendar-results-import.html"><code>ADR-028</code></a></td><td>Exclude whole-word CAMP names completely; persist retained entries; separate first-import cancellations before positive numbering</td><td>This ADR owns EVF calendar import semantics.</td></tr>
+        <tr><td><a href="../adr/039-stale-event-gate.html"><code>ADR-039</code></a></td><td>Put the calendar-ID and season-integrity gates before stale filtering and allocation</td><td>This ADR owns the ordered fail-fast matching and stale-event gate.</td></tr>
+        <tr><td><a href="../adr/042-carryover-engine-dispatcher.html"><code>ADR-042</code></a></td><td>Make <code>id_prior_event</code> the only rolling relationship; current-season ordinal never follows the prior code; record Athens→Chania</td><td>This ADR owns FK-based carry-over and explicitly rejects guessing from code prefixes when the FK is absent.</td></tr>
+        <tr><td><a href="../adr/050-unified-ingestion-pipeline.html"><code>ADR-050</code></a></td><td>Clarify that original scoring platforms are authoritative and the EVF results database is secondary evidence</td><td>This ADR owns unified results ingestion and already records EVF as a backup/parity source.</td></tr>
+        <tr><td><a href="../adr/037-derived-display-status-awaiting-results.html"><code>ADR-037</code></a></td><td>CANCELLED public display through seven days after original end, then public hiding</td><td>This ADR owns derived calendar display status and must document the new visibility boundary.</td></tr>
+      </tbody>
+    </table></div>
+    <p>The Markdown ADR sources are canonical in this repository and their HTML presentations are generated from those sources. Both forms will remain coherent, with updated source hashes, <a href="../adr/index.html">ADR registry</a>, <a href="../requirements-traceability-matrix.html">requirements traceability</a>, and current-system handbook ownership.</p>
+  </section>
+
+  <section id="references">
+    <p class="kicker">Linked evidence</p>
+    <h2>Documents and source artifacts cited by this approved design</h2>
+    <p>These links lead to the current repository evidence behind the design. They are relative links, so the explainer remains navigable when reviewed locally or published with the documentation tree.</p>
+    <div class="refs">
+      <a class="ref" href="evf-calendar-sync-how-it-works.html"><strong>EVF calendar sync — how it works</strong><small>Current end-to-end scrape, CERT ingest, and CERT→PROD reconciliation explainer.</small></a>
+      <a class="ref" href="../handbook/reference/workflow-catalog.html"><strong>Workflow catalog</strong><small>Current responsibility and trigger contract for <code>evf-sync.yml</code>.</small></a>
+      <a class="ref" href="../handbook/operations/environments-and-release.html"><strong>Environments and release</strong><small>LOCAL → CERT → PROD safety, promotion, and verification contract.</small></a>
+      <a class="ref" href="../handbook/reference/documentation-standard.html"><strong>Documentation standard</strong><small>Handbook, ADR, governance, evidence, generated-HTML, and coherence rules.</small></a>
+      <a class="ref" href="../requirements-traceability-matrix.html"><strong>Requirements traceability matrix</strong><small>Formal coverage for EVF import, promotion, stale-event behavior, and calendar functionality.</small></a>
+      <a class="ref" href="../adr/081-cert-prod-event-reconciler.html"><strong>ADR-081 · CERT→PROD event reconciler</strong><small>Current environment reconciliation behavior that the repair must preserve.</small></a>
+      <a class="ref" href="../adr/042-carryover-engine-dispatcher.html"><strong>ADR-042 · FK carry-over engine</strong><small><code>id_prior_event</code> is the exact cross-season rolling relationship; event-code matching is not an acceptable identity fallback.</small></a>
+      <a class="ref" href="../adr/050-unified-ingestion-pipeline.html"><strong>ADR-050 · Unified ingestion pipeline</strong><small>Original scoring sources remain authoritative; EVF results data is a backup/parity source.</small></a>
+      <a class="ref" href="../adr/039-stale-event-gate.html"><strong>ADR-039 · Stale-event gate</strong><small>Current ordered calendar matching, duplicate prevention and fail-fast integrity behavior.</small></a>
+      <a class="ref" href="../../supabase/migrations/20260425000007_vw_eligible_event.sql"><strong>Eligible-event rolling view</strong><small>Shows carried events selected through the exact <code>id_prior_event</code> relationship.</small></a>
+      <a class="ref" href="../staging_overrides/events.csv"><strong>Prior-season source links</strong><small>Concrete FTL, Engarde, 4Fence and other original scoring-site URLs used for last season’s results.</small></a>
+      <a class="ref" href="../../python/scrapers/evf_calendar.py"><strong>EVF calendar scraper</strong><small>HTML parsing, slug extraction, matching hierarchy, enrichment, and calendar orchestration.</small></a>
+      <a class="ref" href="../../python/scrapers/evf_results.py"><strong>EVF results API client</strong><small>The separate EVF results identity namespace and result-event discovery path.</small></a>
+      <a class="ref" href="../../python/scrapers/evf_sync.py"><strong>EVF sync orchestrator</strong><small>Active-season roster, ingest payload, refresh, cancellation integration point, and notifications.</small></a>
+      <a class="ref" href="../../.github/workflows/evf-sync.yml"><strong>EVF GitHub Actions workflow</strong><small>Scheduled scrape and pre/post CERT→PROD reconciliation sequence.</small></a>
+    </div>
+  </section>
+
+  <section id="scenarios">
+    <p class="kicker">Scenario walk-throughs</p>
+    <h2>How the rule behaves beyond the happy path</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Scenario</th><th>Expected behavior</th></tr></thead>
+      <tbody>
+        <tr><td>Unchanged source snapshot</td><td>Five camps remain ignored; 17 retained IDs resolve to existing rows; codes and prior links remain unchanged; zero allocations.</td></tr>
+        <tr><td>EVF inserts an earlier camp</td><td>The whole-word filter removes it before planning; no row, no positive shift and no reflow.</td></tr>
+        <tr><td>EVF inserts/reschedules an earlier entry after a later row has results</td><td>The scrape ledger records failure and the database remains unchanged. Operator receives the exact blocked old→new code set for a reviewed migration.</td></tr>
+        <tr><td>Samorin is already cancelled at first import</td><td>It becomes <code>PEW0efs</code>, consumes no positive ordinal and remains visible through seven days after its original end.</td></tr>
+        <tr><td>An existing positive event is cancelled later</td><td>It keeps its positive code and moves to <code>CANCELLED</code>; later entries are not renumbered.</td></tr>
+        <tr><td>Athens arrives as the fourteenth positive entry</td><td>It becomes <code>PEW14es</code>; <code>id_prior_event</code> independently resolves to Chania.</td></tr>
+        <tr><td>Toronto lacks EVF weapon categories</td><td>The linked organizer programme supplies <code>efs</code>. Without authoritative linked evidence, the entire scrape would fail rather than invent an empty or guessed suffix.</td></tr>
+        <tr><td>CERT and PROD use different numeric database IDs</td><td>The approved mapping resolves by season code, event code/calendar ID and prior-event stable code. Raw environment-local IDs are never copied.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="parity">
+    <p class="kicker">Environment contract</p>
+    <h2>LOCAL, CERT and PROD parity</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Environment</th><th>Role</th><th>Allowed action</th><th>Exit condition</th></tr></thead>
+      <tbody>
+        <tr><td>LOCAL</td><td>TDD and from-scratch migration proof</td><td>Reset only through <code>./scripts/reset-dev.sh</code>; run targeted and full suites</td><td>Five ignored camps, 17 retained rows, zero/positive mapping, reflow guard and idempotence GREEN</td></tr>
+        <tr><td>CERT</td><td>First live repair and repeated-scrape proof</td><td>Apply reviewed mapping transaction; run two unchanged scrapes</td><td>Exact codes, suffixes, prior links, cancellation and zero second-run changes</td></tr>
+        <tr><td>PROD</td><td>Published mirror after CERT acceptance</td><td>Apply the same business mapping with environment-local FK resolution</td><td>CERT/PROD business identity converges; protected differences reported</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="docs-gate">
+    <p class="kicker">Required repository gate</p>
+    <h2>Documentation coherence gate</h2>
+    <div class="note warn"><p class="lede">☐ Documentation coherence gate complete</p><pre class="trace">Impact: domain | product | architecture | operations | reference
+Canonical docs affected: doc/handbook/subsystems/events-and-registration.html
+ADR impact: amend ADR-028, ADR-042, ADR-043, ADR-046
+Operational impact: doc/handbook/operations/operator-runbooks.html if repair command changes operator flow; workflow catalog otherwise none
+Source-map / last-verified updated: pending implementation
+Validation: python scripts/check_docs.py --changed-from origin/main [pending]
+Superseded prose archived rather than appended: not applicable</pre></div>
+  </section>
+
+  <section id="done">
+    <p class="kicker">Binary completion criteria</p>
+    <h2>Definition of done</h2>
+    <ul>
+      <li>All <code>EVF-CHRON-01…11</code> assertions followed RED→GREEN.</li>
+      <li>The current source snapshot ignores exactly five camps and produces exactly the 17 retained codes shown in this document.</li>
+      <li>Every calendar row has a stable calendar ID and non-empty authoritative weapon suffix.</li>
+      <li>Athens points to Chania through <code>id_prior_event</code>; prior digits do not affect any current code.</li>
+      <li>CERT passes two consecutive unchanged scrapes with zero second-run mutations before PROD is touched.</li>
+      <li>PROD receives the identical business mapping and passes post-repair reconciliation.</li>
+      <li>All applicable Python, Ruff, BasedPyright, frontend, pgTAP, renderer, coherence, specification-sync, documentation and graph gates pass or are explicitly reported unavailable.</li>
+    </ul>
+  </section>
+
+  <section id="approval">
+    <p class="kicker">Decision gate</p>
+    <h2>Approved decisions</h2>
+    <div class="decision">
+      <h3>The user approved these rules on 7 August 2026</h3>
+      <ol>
+        <li>Store the EVF calendar post ID separately from the EVF results DB ID.</li>
+        <li>Use original scoring-platform links as the results authority; use the EVF results database only as secondary evidence.</li>
+        <li>Ignore any name containing case-insensitive whole-word <code>CAMP</code> before validation, counting or persistence.</li>
+        <li>Assign first-import cancellations base zero; assign retained non-cancelled competitions positive chronological codes after sorting by start date then calendar ID. A later cancellation keeps its positive code.</li>
+        <li>Use <code>id_prior_event</code> as the exact rolling/geographic relationship, including Athens→Chania.</li>
+        <li>Persist every scrape attempt and abort before mutation on malformed retained data, duplicate identity/zero code, ambiguity, non-exact positive <code>1…N</code> numbering, or a required scored-row rename.</li>
+        <li>Cancelled event: retain permanently, show publicly through seven days after its original end, then hide publicly; never auto-reactivate.</li>
+        <li>Repair CERT first from a reviewed dry-run manifest, prove repeated-scrape idempotence, then apply the same mapping to PROD and verify both.</li>
+      </ol>
+    </div>
+    <p>The corrected CAMP-exclusion and zero-number design was approved on 7 August 2026. Before mutation, the executable dry run must still enumerate every exact old row → keeper/delete/create operation in each environment and re-check results, registrations and child ownership.</p>
+  </section>
+
+  <p class="foot">approved design · EVF calendar identity + chronological numbering + cancellation · 2026-08-07</p>
+</div>
+</body>
+</html>

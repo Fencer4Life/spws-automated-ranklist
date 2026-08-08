@@ -1,6 +1,6 @@
 # ADR-039: EVF Scraper Dedup Algorithm + Stale-Event Gate
 
-**Status:** Accepted (revised 2026-07-26 rev 4 — `url_event` recorded only once an event has concluded; see the rev-4 amendment)
+**Status:** Accepted (revised 2026-08-07 rev 5 — public calendar id precedes results id in the identity ladder)
 **Date:** 2026-04-25
 **Relates to:** ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)
 
@@ -182,3 +182,21 @@ that is already populated, and the CERT→PROD reconciler
 ([`fn_mirror_events_to_prod`](../../supabase/migrations/20260711000002_reconciler_update_nullif.sql),
 `url_event = COALESCE(url_event, …)`) is fill-blank too, so PROD needed its own clear rather than
 inheriting CERT's. The remediation is a one-shot, never wired into the workflow.
+
+## Amendment — rev 5 (2026-08-07) — split calendar and results identities
+
+The earlier ladder conflated the EVF results-database id with calendar identity.
+They are separate namespaces. Matching now evaluates, in order:
+
+1. `evf_calendar_id` ↔ `id_evf_calendar_event` (public WordPress calendar post id);
+2. `evf_id` ↔ `id_evf_event` (secondary results-database occurrence id);
+3. `evf_slug` ↔ `txt_evf_slug`;
+4. the date/country/location fallback for legacy unstamped rows.
+
+The calendar id wins without a date gate, so a reschedule or rename updates the same
+row. It is unique per season and fill-only after assignment. The results source can
+still attach its occurrence id and original scoring-site links independently.
+
+See [`_find_existing_match`](../../python/scrapers/evf_calendar.py),
+[`fn_sync_evf_event_fields`](../../supabase/migrations/20260807000001_evf_calendar_identity_bound.sql)
+and [ADR-043](043-evf-event-allocator.md).
