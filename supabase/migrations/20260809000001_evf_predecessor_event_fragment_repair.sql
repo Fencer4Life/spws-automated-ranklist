@@ -27,6 +27,7 @@ DECLARE
   v_tournaments INT;
   v_results INT;
   v_candidates INT;
+  v_candidates_after INT;
   v_final_base TEXT := regexp_replace(p_final_code,'-[0-9]{4}-[0-9]{4}$','');
 BEGIN
   SELECT COUNT(*)::INT INTO v_member_count
@@ -53,8 +54,7 @@ BEGIN
     LEFT JOIN tbl_result r ON r.id_tournament=t.id_tournament
     LEFT JOIN tbl_match_candidate mc ON mc.id_result=r.id_result
    WHERE e.txt_code=ANY(p_member_codes);
-  IF v_tournaments<>p_expected_tournaments OR v_results<>p_expected_results
-     OR v_candidates<>0 THEN
+  IF v_tournaments<>p_expected_tournaments OR v_results<>p_expected_results THEN
     RAISE EXCEPTION 'predecessor EVF repair baseline mismatch for %: tournaments %, results %, candidates %',
       p_final_code,v_tournaments,v_results,v_candidates;
   END IF;
@@ -98,12 +98,16 @@ BEGIN
     ts_updated=NOW()
    WHERE id_event=v_survivor_id;
 
-  SELECT COUNT(DISTINCT t.id_tournament)::INT,COUNT(r.id_result)::INT
-    INTO v_tournaments,v_results
+  SELECT COUNT(DISTINCT t.id_tournament)::INT,COUNT(r.id_result)::INT,
+         COUNT(DISTINCT mc.id_match)::INT
+    INTO v_tournaments,v_results,v_candidates_after
     FROM tbl_tournament t LEFT JOIN tbl_result r ON r.id_tournament=t.id_tournament
+    LEFT JOIN tbl_match_candidate mc ON mc.id_result=r.id_result
    WHERE t.id_event=v_survivor_id;
-  IF v_tournaments<>p_expected_tournaments OR v_results<>p_expected_results THEN
-    RAISE EXCEPTION 'predecessor EVF repair conservation failure for %',p_final_code;
+  IF v_tournaments<>p_expected_tournaments OR v_results<>p_expected_results
+     OR v_candidates_after<>v_candidates THEN
+    RAISE EXCEPTION 'predecessor EVF repair conservation failure for %: tournaments %, results %, candidates % -> %',
+      p_final_code,v_tournaments,v_results,v_candidates,v_candidates_after;
   END IF;
 END;
 $$;

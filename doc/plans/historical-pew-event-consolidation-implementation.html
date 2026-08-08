@@ -26,7 +26,7 @@
       <li>Add the next timestamped migration, following <a href="../../supabase/migrations/20260808000003_evf_historical_event_fragment_repair.sql">the reviewed historical repair helper</a>.</li>
       <li>Take an advisory transaction lock and accept only the exact unrepaired baseline or exact repaired state.</li>
       <li>For each named cluster, select the reviewed sporting-slot winner, reconcile exact duplicate results and match-candidate rows, move retained children, rename the survivor and children, then delete only empty named donors.</li>
-      <li>Clear the unrelated Guildford and Warsaw links plus Chania’s reference to the distinct prior Guildford foil event. Retain that <code>PEW8f</code> event and do not create replacement links.</li>
+      <li>Clear the unrelated Guildford and Warsaw links plus Chania’s reference to the distinct prior Guildford foil event. Retain that <code>PEW8f</code> event and do not create replacement links. Preserve any environment-specific match-candidate rows through their unchanged result IDs.</li>
       <li>Recompute only scored tournaments whose ownership changed, then enforce postconditions before the transaction may commit.</li>
     </ol>
     <div class="note danger"><p class="lede">Hard stops</p><p>Any registration, missing member, unexpected baseline count, equal-field sporting conflict, provenance disagreement, child-code collision, dangling FK, or point change aborts the whole migration.</p></div>

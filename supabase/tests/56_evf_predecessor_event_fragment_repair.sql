@@ -120,12 +120,10 @@ SELECT is(
   0, '56.16: no repaired predecessor event has registrations'
 );
 
-SELECT is(
-  (SELECT COUNT(*)::INT FROM tbl_match_candidate mc JOIN tbl_result r ON r.id_result=mc.id_result
-    JOIN tbl_tournament t ON t.id_tournament=r.id_tournament JOIN tbl_event e ON e.id_event=t.id_event
-    WHERE e.txt_code IN ('PEW5efs-2023-2024','PEW8efs-2023-2024','PEW9ef-2023-2024',
-      'PEW4ef-2024-2025','PEW6efs-2024-2025','PEW7es-2024-2025')),
-  0, '56.17: the pinned predecessor clusters have no match-candidate rows'
+SELECT ok(
+  pg_get_functiondef('fn_merge_predecessor_evf_event(text,text[],text,text,text,text,date,date,enum_weapon_type[],integer,integer)'::regprocedure)
+    LIKE '%v_candidates_after<>v_candidates%',
+  '56.17: existing match-candidate provenance is conserved rather than rejected'
 );
 
 SELECT is(
