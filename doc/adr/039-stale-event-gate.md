@@ -216,7 +216,9 @@ allowed only through an event-specific, reviewed, atomic migration that:
   environmental divergence;
 - refuses registrations; legacy match-candidate provenance is conserved by
   re-pointing candidates from a discarded duplicate result to the selected
-  canonical result before deletion, with an exact per-merge count assertion;
+  canonical result before deletion; a collision is collapsed only when every
+  semantic field is identical, otherwise the repair aborts, and an exact
+  per-merge count-minus-identical-duplicates assertion closes the operation;
 - verifies sporting facts against the original provider first, the EVF results DB
   second, or an explicitly approved stored full-field fallback when neither source
   is available;
