@@ -142,8 +142,8 @@
     "schema_fingerprint": "c62c43ee72266e0518eee373da1def6a"
   },
   "prod": {
-    "last_updated": "2026-07-23T12:28:19Z",
-    "last_sha": "63e3105eeacc25577576a3d80dacdf6c451ab2ea",
+    "last_updated": "2026-08-08T06:22:05Z",
+    "last_sha": "530e18ca94a0f1293d07ebcb57dabde6c7069e45",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -277,8 +277,10 @@
       "20260714000002_season_2026_2027_dt_start_sync.sql",
       "20260714000003_fencer_birth_year_master_list_reconcile.sql",
       "20260719000001_add_fencer_koszyk_agnieszka.sql",
-      "20260723000001_adr083_deny_by_default_grants.sql"
+      "20260723000001_adr083_deny_by_default_grants.sql",
+      "20260807000001_evf_calendar_identity_bound.sql",
+      "20260808000001_evf_calendar_prior_link_reassignment.sql"
     ],
-    "schema_fingerprint": "2012753ff886f491d4cb8c3a0a8ad91d"
+    "schema_fingerprint": "c62c43ee72266e0518eee373da1def6a"
   }
 }
