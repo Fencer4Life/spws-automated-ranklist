@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-08-08T06:19:50Z",
-    "last_sha": "530e18ca94a0f1293d07ebcb57dabde6c7069e45",
+    "last_updated": "2026-08-08T06:50:44Z",
+    "last_sha": "e07e375822dd27aec149f701cb45a412539cb053",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -137,9 +137,10 @@
       "20260719000001_add_fencer_koszyk_agnieszka.sql",
       "20260723000001_adr083_deny_by_default_grants.sql",
       "20260807000001_evf_calendar_identity_bound.sql",
-      "20260808000001_evf_calendar_prior_link_reassignment.sql"
+      "20260808000001_evf_calendar_prior_link_reassignment.sql",
+      "20260808000002_evf_calendar_prior_link_preclaim.sql"
     ],
-    "schema_fingerprint": "c62c43ee72266e0518eee373da1def6a"
+    "schema_fingerprint": "6182bbc2a341646592d0a65e4b5b1625"
   },
   "prod": {
     "last_updated": "2026-08-08T06:22:05Z",
