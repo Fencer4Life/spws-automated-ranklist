@@ -214,7 +214,9 @@ allowed only through an event-specific, reviewed, atomic migration that:
 
 - pins the complete expected input event/tournament/result baseline and aborts on
   environmental divergence;
-- refuses registrations and unresolved match candidates;
+- refuses registrations; legacy match-candidate provenance is conserved by
+  re-pointing candidates from a discarded duplicate result to the selected
+  canonical result before deletion, with an exact per-merge count assertion;
 - verifies sporting facts against the original provider first, the EVF results DB
   second, or an explicitly approved stored full-field fallback when neither source
   is available;
