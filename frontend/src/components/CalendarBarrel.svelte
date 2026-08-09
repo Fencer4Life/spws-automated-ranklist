@@ -26,11 +26,22 @@
           <em>{seamSeason(qi, quarter)}</em>
         </div>
 
-        <div class="rw">
+        <!-- Only the focused row is padded and scrolled: it is the only row
+             with a selection to centre. Receded rows keep the `margin: 0 auto`
+             centring of their whole group. -->
+        <div
+          class="rw"
+          style:padding-left={qi === active && scroll ? `${scroll.padding}px` : null}
+          style:padding-right={qi === active && scroll ? `${scroll.padding}px` : null}
+        >
           {#if quarter.isEmpty}
             <span class="mt">{t('calendar_empty_quarter')}</span>
           {:else}
-            <div class="rwi" style:gap={layout?.overlapping ? '0px' : null}>
+            <div
+              class="rwi"
+              style:margin={qi === active && scroll ? '0' : null}
+              style:gap={layout?.overlapping ? '0px' : null}
+            >
               {#each quarter.events as event, j (event.id_event)}
                 {@const place = layout?.panels[j]}
                 {@const isSelected = qi === active && selected === j}
@@ -99,6 +110,7 @@
   import {
     caretOffset,
     layoutRow,
+    rowScroll,
     panelLabel,
     panelType,
     seasonShortCode,
@@ -248,7 +260,61 @@
     })
   })
 
-  /** Centre of the selected panel, for the caret that tracks it. */
+  /** Padding + scroll that put the selected panel under the caret. */
+  const scroll = $derived.by(() => {
+    const layout = midLayout
+    return layout ? rowScroll(layout, selected, available) : null
+  })
+
+  // Scroll the focused row so its selection sits under the caret.
+  //
+  // Timing is the whole difficulty here, and it cost three wrong attempts:
+  //
+  //  - A `use:` action looked right, because an action's parameter update runs
+  //    after the element's attributes are patched. But **Svelte 5 removed
+  //    `action.update`** — the callback ran once, on mount, while the row was
+  //    unlaid-out, and never again. Every later write simply never happened.
+  //  - Cancelling the retry frame in the effect's cleanup meant each re-run
+  //    killed the pending retry, so only the synchronous write survived — and
+  //    that one is clamped to 0 whenever `scrollWidth` still equals
+  //    `clientWidth`, which is exactly the case in the patch that adds the
+  //    padding.
+  //  - On rotation the row was receded a frame ago, where `overflow-x` is
+  //    hidden and scrollLeft is pinned at 0, so one retry frame is too early.
+  //
+  // Hence: no cleanup, and retries on the next two frames. Frames fire in
+  // order, so a newer selection's writes always land after an older one's.
+  $effect(() => {
+    // Depend on the selection and the layout, but resolve the ROW inside the
+    // retries. The anchor effect assigns `active` from within an effect, so on
+    // the opening render this effect can run in the same flush — before Svelte
+    // has moved the `mid` class onto the anchor row. Querying up front found
+    // the outgoing row and centred that one, which is why every rotation
+    // looked right and only the first screen was off.
+    void active
+    const target = scroll
+    if (!target || !viewportEl) return
+    // Correct by MEASUREMENT, not by writing the model's absolute value.
+    // An absolute write is only right if the row already has its final layout,
+    // which is exactly what cannot be relied on here. Nudging by the measured
+    // error converges whenever it runs and is idempotent once centred, so the
+    // retries below need no ordering guarantees at all.
+    const fix = () => {
+      const el = viewportEl?.querySelector<HTMLElement>('.ln.mid .rw')
+      const panel = el?.querySelector<HTMLElement>('.p.sel')
+      if (!el || !panel) return
+      const row = el.getBoundingClientRect()
+      const p = panel.getBoundingClientRect()
+      const delta = p.left + p.width / 2 - (row.left + row.width / 2)
+      if (Math.abs(delta) > 0.5) el.scrollLeft += delta
+    }
+    fix()
+    requestAnimationFrame(fix)
+    const late = setTimeout(fix, 120)
+    return () => clearTimeout(late)
+  })
+
+  /** Caret position — the centre, since the row scrolls its selection there. */
   const caretLeft = $derived.by((): number | null => {
     const layout = midLayout
     if (!layout) return null
