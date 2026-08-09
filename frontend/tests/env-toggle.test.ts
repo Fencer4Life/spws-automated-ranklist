@@ -13,6 +13,8 @@ vi.mock('../src/lib/api', () => ({
   fetchRankingKadra: vi.fn().mockResolvedValue([]),
   fetchFencerScores: vi.fn().mockResolvedValue([]),
   fetchRankingRules: vi.fn().mockResolvedValue(null),
+  // ADR-084 — the calendar view spans every season, so App loads through this.
+  fetchAllCalendarEvents: vi.fn().mockResolvedValue([]),
 }))
 
 import App from '../src/App.svelte'

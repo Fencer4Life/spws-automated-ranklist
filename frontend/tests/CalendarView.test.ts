@@ -1,5 +1,35 @@
-// Plan tests: 8.38, 8.39, 8.40, 8.41, 8.42, 8.43, 8.44, 8.45, 8.46, 8.47, 8.76, 8.77
-// See doc/archive/m8_implementation_plan.md §T8.5.
+// CalendarView — the calendar ORCHESTRATOR (ADR-084). Test IDs CV.1–CV.14.
+//
+// The 659-line timeline this replaced carried 49 tests. Every one has a
+// recorded decision below; none was dropped silently.
+//
+// MOVED to the pure module or the components (the behaviour survives, the
+// assertion moved to where it can be made without mounting):
+//   cancelled 7-day notice window ............ CQ.15, CQ.16
+//   CREATED skeletons hidden ................. CQ.14
+//   international detection + PPW scope ...... CQ.19–CQ.23
+//   next-upcoming derived from filtered set .. CQ.26
+//   registration/entry-list visibility rules . CQ.27–CQ.35, EC.20–EC.24
+//   fee tiers and currency fallback .......... EC.15–EC.19
+//   status + awaiting-results badge .......... EC.27
+//   results and invitation links ............. EC.25, EC.29, EC.30
+//   date / name / location rendering ......... EC.1–EC.11
+//   event-type classes (evf-circuit etc.) .... CQ.11–CQ.13, CB.11, CB.12
+//   code prefix normalisation ................ CQ.57, CQ.58
+//
+// DELETED as retired mechanisms (ADR-084 replaces them; nothing to re-home):
+//   reverse-chronological order, month grouping and month headers — the drum
+//     is quantised into quarters and runs ascending (CQ.1–CQ.4).
+//   past/future/all time filter — "the drum IS the time control" (ADR-084).
+//   season dropdown — the barrel owns season state, the seam carries the code.
+//   .timeline-event / .timeline-links block layout — markup no longer exists.
+//   R.23, R.24, R.25 rolling-progress slots — retired by ADR-084 and recorded
+//     as an amendment to ADR-018, which pinned .rolling-progress/.slot.
+//   tournament count on the tile — the card drops the field (its unpluralised
+//     string is a live defect tracked separately).
+//
+// What is left here is what only the orchestrator can be responsible for:
+// wiring the three children together, and the scope control it owns.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent, waitFor } from '@testing-library/svelte'
@@ -25,7 +55,7 @@ beforeEach(() => {
 
 const makeEvent = (overrides: Partial<CalendarEvent> = {}): CalendarEvent => ({
   id_event: 1,
-  txt_code: 'PP1-2024-2025',
+  txt_code: 'PPW1-2024-2025',
   txt_name: 'I Puchar Polski Weteranów',
   id_season: 1,
   txt_season_code: 'SPWS-2024-2025',
@@ -53,736 +83,202 @@ const makeEvent = (overrides: Partial<CalendarEvent> = {}): CalendarEvent => ({
   ...overrides,
 })
 
+/**
+ * Dates are computed from the run date, not hardcoded.
+ *
+ * The barrel fills every quarter between the first and last event (CQ.4), so a
+ * 2099 fixture would build ~300 rows and assert nothing extra. Relative dates
+ * keep the model small AND stop the suite from silently changing meaning as
+ * real time passes a hardcoded boundary.
+ */
+function monthsOut(months: number): string {
+  const d = new Date()
+  d.setDate(15)
+  d.setMonth(d.getMonth() + months)
+  return d.toISOString().slice(0, 10)
+}
+
+/** Three dates inside one future quarter, so the anchor row has three panels. */
+function futureQuarter(): [string, string, string] {
+  const d = new Date()
+  d.setDate(15)
+  d.setMonth(d.getMonth() + 4)
+  const firstMonth = Math.floor(d.getMonth() / 3) * 3
+  const year = d.getFullYear()
+  const at = (i: number) => `${year}-${String(firstMonth + i + 1).padStart(2, '0')}-10`
+  return [at(0), at(1), at(2)]
+}
+
+const [F1, F2, F3] = futureQuarter()
+
 const EVENTS: CalendarEvent[] = [
+  makeEvent({ id_event: 1, txt_code: 'PPW1-2025-2026', txt_name: 'Puchar Konin', dt_start: monthsOut(-8) }),
   makeEvent({
-    id_event: 1,
-    txt_code: 'PP1-2024-2025',
-    txt_name: 'I Puchar Polski Weteranów',
-    dt_start: '2024-09-28',
-    txt_location: 'Konin',
-    enum_status: 'COMPLETED',
-    num_tournaments: 5,
-    bool_has_international: false,
+    id_event: 2, txt_code: 'PEW1-2025-2026', txt_name: 'EVF Budapeszt',
+    dt_start: monthsOut(-5), bool_has_international: true,
   }),
   makeEvent({
-    id_event: 2,
-    txt_code: 'PP2-2024-2025',
-    txt_name: 'II Puchar Polski Weteranów',
-    dt_start: '2024-10-25',
-    txt_location: 'Kraków',
-    enum_status: 'COMPLETED',
-    num_tournaments: 8,
-    bool_has_international: false,
+    id_event: 3, txt_code: 'PPW4-2026-2027', txt_name: 'Puchar Gdansk',
+    dt_start: F1, dt_end: F1, enum_status: 'SCHEDULED',
   }),
   makeEvent({
-    id_event: 3,
-    txt_code: 'PEW1-2024-2025',
-    txt_name: 'EVF Grand Prix 1 — Budapeszt',
-    dt_start: '2024-10-15',
-    txt_location: 'Budapeszt',
-    enum_status: 'COMPLETED',
-    num_tournaments: 10,
-    bool_has_international: true,
-    url_invitation: 'https://example.com/invite',
-    url_event: 'https://example.com/results',
-    num_entry_fee: 50,
-    txt_entry_fee_currency: 'EUR',
+    id_event: 4, txt_code: 'PEW7-2026-2027', txt_name: 'EVF Wieden',
+    dt_start: F2, dt_end: F2, enum_status: 'SCHEDULED', bool_has_international: true,
   }),
   makeEvent({
-    id_event: 4,
-    txt_code: 'PP4-2025-2026',
-    txt_name: 'IV Puchar Polski Weteranów',
-    dt_start: '2099-04-15',
-    txt_location: 'Gdańsk',
-    enum_status: 'SCHEDULED',
-    num_tournaments: 6,
-    bool_has_international: false,
+    id_event: 5, txt_code: 'PPW5-2026-2027', txt_name: 'Puchar Krakow',
+    dt_start: F3, dt_end: F3, enum_status: 'SCHEDULED',
   }),
 ]
 
-describe('CalendarView (T8.5)', () => {
-  it('shows a cancelled event through seven days after its original end date', () => {
-    const end = new Date()
-    end.setUTCDate(end.getUTCDate() - 7)
-    const cancelled = makeEvent({
-      id_event: 901,
-      txt_name: 'Cancelled but still announced',
-      dt_start: end.toISOString().slice(0, 10),
-      dt_end: end.toISOString().slice(0, 10),
-      enum_status: 'CANCELLED',
-    })
+const panels = (c: HTMLElement) => c.querySelectorAll('.p')
+const midPanels = (c: HTMLElement) => c.querySelectorAll('.ln.mid .p')
+const cardName = (c: HTMLElement) => c.querySelector('.cnm')?.textContent?.trim() ?? null
 
-    const { container } = render(CalendarView, { props: { events: [cancelled] } })
-    expect(container.querySelector('.timeline-event')?.textContent).toContain(
-      'Cancelled but still announced',
-    )
-    expect(container.querySelector('.status-cancelled')).not.toBeNull()
+describe('CalendarView orchestrator (ADR-084)', () => {
+  // CV.1 — the whole point of the rewrite: it holds state and mounts children.
+  it('CV.1: renders the barrel and a card for the opening selection', () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    expect(container.querySelector('.vp')).not.toBeNull()
+    expect(container.querySelector('.card')).not.toBeNull()
+    // findNextUpcoming picks the earliest future event, which is F1.
+    expect(cardName(container)).toBe('Puchar Gdansk')
   })
 
-  it('hides a cancelled event on day eight after its original end date', () => {
-    const end = new Date()
-    end.setUTCDate(end.getUTCDate() - 8)
-    const cancelled = makeEvent({
-      id_event: 902,
-      txt_name: 'Expired cancellation notice',
-      dt_start: end.toISOString().slice(0, 10),
-      dt_end: end.toISOString().slice(0, 10),
-      enum_status: 'CANCELLED',
-    })
-
-    const { container } = render(CalendarView, { props: { events: [cancelled] } })
-    expect(container.querySelector('.timeline-event')).toBeNull()
-  })
-
-  // 8.38 — Renders events in reverse chronological order (future first)
-  it('renders events in reverse chronological order', () => {
+  // CV.2 / CV.3 — the scope segment is the one control that survived, and it
+  // only appears when the season config turns it on.
+  it('CV.2: hides the scope segment when showEvfToggle is false', () => {
     const { container } = render(CalendarView, { props: { events: EVENTS } })
-    const items = container.querySelectorAll('.timeline-event')
-    expect(items.length).toBeGreaterThanOrEqual(3)
-    // First item should be April (latest / most future)
-    expect(items[0].textContent).toContain('IV Puchar Polski')
-  })
-
-  // 8.39 — Groups events by month with month headers
-  it('groups events by month with month headers', () => {
-    const { container } = render(CalendarView, { props: { events: EVENTS } })
-    const monthHeaders = container.querySelectorAll('.timeline-month')
-    expect(monthHeaders.length).toBeGreaterThanOrEqual(2)
-  })
-
-  // 8.40 — Event card shows date, name, location, tournament count
-  it('shows date, name, location, tournament count on timeline event', () => {
-    const { container } = render(CalendarView, {
-      props: { events: [EVENTS[0]] },
-    })
-    const item = container.querySelector('.timeline-event')
-    expect(item).not.toBeNull()
-    expect(item!.textContent).toContain('I Puchar Polski')
-    expect(item!.textContent).toContain('Konin')
-    expect(item!.textContent).toContain('5')
-  })
-
-  // 8.41 — Status badge color-coded
-  it('renders color-coded status badge', () => {
-    const { container } = render(CalendarView, {
-      props: { events: [EVENTS[0]] },
-    })
-    const badge = container.querySelector('.status-badge')
-    expect(badge).not.toBeNull()
-    expect(badge!.classList.contains('status-completed')).toBe(true)
-  })
-
-  // 8.41b — PLANNED event with past dt_end renders amber "Awaiting results" badge
-  it('renders amber awaiting-results badge for past PLANNED events', () => {
-    const pastPlanned = makeEvent({
-      id_event: 99,
-      txt_code: 'PP99-2025-2026',
-      txt_name: 'Past event awaiting results',
-      dt_start: '2000-01-01',
-      dt_end: '2000-01-02',
-      enum_status: 'PLANNED',
-    })
-    const { container } = render(CalendarView, { props: { events: [pastPlanned] } })
-    const badge = container.querySelector('.status-badge')
-    expect(badge).not.toBeNull()
-    expect(badge!.classList.contains('status-awaiting')).toBe(true)
-    expect(badge!.classList.contains('status-planned')).toBe(false)
-  })
-
-  // 8.42 — "Komunikat organizatora" link present when url_invitation set
-  it('shows invitation link when url_invitation is set', () => {
-    const evt = makeEvent({ url_invitation: 'https://example.com/invite' })
-    const { container } = render(CalendarView, {
-      props: { events: [evt] },
-    })
-    const link = container.querySelector('.invitation-link') as HTMLAnchorElement
-    expect(link).not.toBeNull()
-    expect(link.href).toContain('example.com/invite')
-  })
-
-  // 8.43 — "Komunikat organizatora" link absent when url_invitation null
-  it('hides invitation link when url_invitation is null', () => {
-    const { container } = render(CalendarView, {
-      props: { events: [EVENTS[0]] },
-    })
-    const link = container.querySelector('.invitation-link')
-    expect(link).toBeNull()
-  })
-
-  // 8.44 — Past/future/all toggle filters events relative to today
-  it('filters events by past/future/all toggle', async () => {
-    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
-
-    // Part 1 (ADR-044 amend): calendar flag ON → default scope 'all', so all 4
-    // events (incl. the international PEW1) show before any time filter.
-    let items = container.querySelectorAll('.timeline-event')
-    expect(items.length).toBe(4)
-
-    // Select "future" filter
-    const select = container.querySelector('.time-filter-select') as HTMLSelectElement
-    expect(select).not.toBeNull()
-    await fireEvent.change(select, { target: { value: 'future' } })
-
-    // Only future events (dt_start > today 2026-03-27)
-    items = container.querySelectorAll('.timeline-event')
-    expect(items.length).toBe(1)
-    expect(items[0].textContent).toContain('IV Puchar Polski')
-  })
-
-  // 8.45 — PPW shows domestic only; +EVF shows all events
-  it('PPW mode hides international events; +EVF shows all', async () => {
-    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
-
-    // Default is now 'all' (4 shown); clicking PPW narrows to domestic.
-    let allItems = container.querySelectorAll('.timeline-event')
-    expect(allItems.length).toBe(4)
-
-    // Click PPW filter
-    const modeBtns = container.querySelectorAll('.scope-filter-btn')
-    const ppwBtn = Array.from(modeBtns).find((btn) =>
-      btn.textContent?.trim() === 'PPW',
-    )
-    expect(ppwBtn).not.toBeUndefined()
-    await fireEvent.click(ppwBtn!)
-
-    // Only domestic events (3 out of 4)
-    let items = container.querySelectorAll('.timeline-event')
-    expect(items.length).toBe(3)
-
-    // Click +EVF filter
-    const evfBtn = Array.from(modeBtns).find((btn) =>
-      btn.textContent?.trim() === '+EVF',
-    )
-    await fireEvent.click(evfBtn!)
-
-    // All events shown
-    items = container.querySelectorAll('.timeline-event')
-    expect(items.length).toBe(4)
-  })
-
-  // 8.46 — Mobile layout: cards stack at 375px viewport
-  it('renders timeline events as block elements (stackable)', () => {
-    const { container } = render(CalendarView, {
-      props: { events: [EVENTS[0]] },
-    })
-    const item = container.querySelector('.timeline-event')
-    expect(item).not.toBeNull()
-    expect(item!.tagName).toBe('DIV')
-  })
-
-  // 8.76 — Results link shown when COMPLETED + url_event set
-  it('shows results link when event is completed and url_event is set', () => {
-    const evt = makeEvent({ enum_status: 'COMPLETED', url_event: 'https://example.com/results' })
-    const { container } = render(CalendarView, {
-      props: { events: [evt] },
-    })
-    const link = container.querySelector('.results-link') as HTMLAnchorElement
-    expect(link).not.toBeNull()
-    expect(link.href).toContain('example.com/results')
-  })
-
-  // 8.77 — Results link hidden when not COMPLETED or url_event null
-  it('hides results link when event is not completed or url_event is null', () => {
-    // SCHEDULED event (no results yet)
-    const { container: c1 } = render(CalendarView, {
-      props: { events: [EVENTS[3]] }, // SCHEDULED, no url_event
-    })
-    expect(c1.querySelector('.results-link')).toBeNull()
-
-    // COMPLETED but no url_event
-    const { container: c2 } = render(CalendarView, {
-      props: { events: [EVENTS[0]] }, // COMPLETED, url_event null
-    })
-    expect(c2.querySelector('.results-link')).toBeNull()
-  })
-
-  // 8.78 — Calendar links stacked vertically
-  it('renders event links in a stacked .timeline-links container', () => {
-    const evt = makeEvent({ enum_status: 'COMPLETED', url_event: 'https://example.com/results', url_invitation: 'https://example.com/invite' })
-    const { container } = render(CalendarView, {
-      props: { events: [evt] },
-    })
-    const linksContainer = container.querySelector('.timeline-links')
-    expect(linksContainer).not.toBeNull()
-    const links = linksContainer!.querySelectorAll('a')
-    expect(links.length).toBe(2)
-  })
-
-  // 8.79 — scope filter hidden when showEvfToggle=false (default)
-  it('hides scope filter buttons when showEvfToggle is false', () => {
-    const { container } = render(CalendarView, { props: { events: EVENTS } })
-    const scopeBtns = container.querySelectorAll('.scope-filter-btn')
-    expect(scopeBtns.length).toBe(0)
-  })
-
-  // 8.80 — scope filter visible when showEvfToggle=true
-  it('shows scope filter buttons when showEvfToggle is true', () => {
-    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
-    const scopeBtns = container.querySelectorAll('.scope-filter-btn')
-    expect(scopeBtns.length).toBe(2)
-  })
-
-  // Part 1 (ADR-044 amend) — calendar flag ON shows international by default;
-  // flag OFF shows domestic only. The +EVF scope button defaults active when ON.
-  it('calendar flag ON defaults to the richer EVF+FIE view', () => {
-    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
-    // international PEW1 visible by default
-    expect(container.querySelectorAll('.timeline-event').length).toBe(4)
-    const evfBtn = Array.from(container.querySelectorAll('.scope-filter-btn'))
-      .find((b) => b.textContent?.trim() === '+EVF')
-    expect(evfBtn!.classList.contains('active')).toBe(true)
-  })
-
-  // CREATED-state events are planning skeletons (no dates yet) — hidden from the
-  // public calendar entirely, even if a date is set. Admin schedules them in
-  // EventManager; they reappear once promoted past CREATED. (user req 2026-06-27)
-  it('hides CREATED-state events from the calendar timeline', () => {
-    const events = [
-      makeEvent({ id_event: 1, txt_code: 'PPW1-2026-2027', txt_name: 'Skeleton PPW1', enum_status: 'CREATED', dt_start: '2026-09-15', bool_has_international: false }),
-      makeEvent({ id_event: 2, txt_code: 'PPW2-2026-2027', txt_name: 'Scheduled PPW2', enum_status: 'SCHEDULED', dt_start: '2026-10-15', bool_has_international: false }),
-    ]
-    const { container } = render(CalendarView, { props: { events, showEvfToggle: true } })
-    const tiles = container.querySelectorAll('.timeline-event')
-    expect(tiles.length).toBe(1)
-    expect(container.textContent).toContain('Scheduled PPW2')
-    expect(container.textContent).not.toContain('Skeleton PPW1')
-  })
-
-  it('calendar flag OFF shows domestic events only', () => {
-    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: false } })
-    // 3 domestic, PEW1 hidden; no scope buttons
-    expect(container.querySelectorAll('.timeline-event').length).toBe(3)
     expect(container.querySelectorAll('.scope-filter-btn').length).toBe(0)
   })
 
-  // 8.47 — Season filter changes displayed events (tested via events prop)
-  it('updates when events prop changes', () => {
+  it('CV.3: shows the scope segment when showEvfToggle is true', () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    expect(container.querySelectorAll('.scope-filter-btn').length).toBe(2)
+  })
+
+  // CV.4 — ADR-044 amend. The flag arrives async, so the default has to re-sync
+  // rather than being fixed at mount.
+  it('CV.4: defaults to the richer EVF+FIE view when the flag is on', () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    expect(panels(container).length).toBe(5)
+    const evf = [...container.querySelectorAll('.scope-filter-btn')]
+      .find((b) => b.textContent?.trim() === '+EVF')
+    expect(evf!.classList.contains('active')).toBe(true)
+  })
+
+  it('CV.5: shows domestic events only when the flag is off', () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS } })
+    expect(panels(container).length).toBe(3)
+  })
+
+  // CV.6 — picking PPW explicitly must stick, and must drop the EVF events.
+  it('CV.6: switching to PPW drops the international events', async () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    expect(panels(container).length).toBe(5)
+
+    const ppw = [...container.querySelectorAll('.scope-filter-btn')]
+      .find((b) => b.textContent?.trim() === 'PPW')!
+    await fireEvent.click(ppw)
+
+    expect(panels(container).length).toBe(3)
+    expect(ppw.classList.contains('active')).toBe(true)
+  })
+
+  it('CV.7: rebuilds when the events prop changes', async () => {
     const { container, rerender } = render(CalendarView, {
       props: { events: EVENTS, showEvfToggle: true },
     })
-    // Part 1 (ADR-044 amend): default scope 'all' → all 4 events shown.
-    let items = container.querySelectorAll('.timeline-event')
-    expect(items.length).toBe(4)
+    expect(panels(container).length).toBe(5)
 
-    // Simulate season change: pass only 1 event
-    rerender({ events: [EVENTS[0]] })
-    items = container.querySelectorAll('.timeline-event')
-    expect(items.length).toBe(1)
+    await rerender({ events: [EVENTS[0]!], showEvfToggle: true })
+    expect(panels(container).length).toBe(1)
   })
 
-  // R.23 — rolling progress bar with slot elements for active season
-  it('R.23: shows rolling-progress with slot elements for active season', () => {
-    const events = [
-      makeEvent({ id_event: 1, txt_code: 'PP1-2025-2026', enum_status: 'COMPLETED', dt_start: '2025-09-28' }),
-      makeEvent({ id_event: 2, txt_code: 'PP2-2025-2026', enum_status: 'SCHEDULED', dt_start: '2025-10-26' }),
-      makeEvent({ id_event: 3, txt_code: 'MPW-2025-2026', enum_status: 'SCHEDULED', dt_start: '2026-06-07' }),
-    ]
-    const { container } = render(CalendarView, {
-      props: { events, isActiveSeason: true },
-    })
-    const progress = container.querySelector('.rolling-progress')
-    expect(progress).not.toBeNull()
-    const slots = progress!.querySelectorAll('.slot')
-    expect(slots.length).toBe(3)
+  // CV.8 — the wiring the orchestrator exists for: the barrel reports a
+  // selection and the card follows it.
+  it('CV.8: swaps the card when a panel is selected', async () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    const row = midPanels(container)
+    expect(row.length).toBe(3)
+    expect(cardName(container)).toBe('Puchar Gdansk')
+
+    await fireEvent.click(row[1]!)
+    expect(cardName(container)).toBe('EVF Wieden')
   })
 
-  // R.24 — no rolling progress for non-active season
-  it('R.24: hides rolling-progress for non-active season', () => {
-    const events = [
-      makeEvent({ id_event: 1, txt_code: 'PP1-2025-2026', enum_status: 'COMPLETED', dt_start: '2025-09-28' }),
-    ]
-    const { container } = render(CalendarView, {
-      props: { events, isActiveSeason: false },
-    })
-    expect(container.querySelector('.rolling-progress')).toBeNull()
+  // CV.9 — a selection can outlive the model that produced it. Switching to PPW
+  // removes the selected EVF event; the card must fall back rather than render
+  // an event the barrel no longer shows.
+  it('CV.9: falls back when the selection leaves the model', async () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    await fireEvent.click(midPanels(container)[1]!)
+    expect(cardName(container)).toBe('EVF Wieden')
+
+    const ppw = [...container.querySelectorAll('.scope-filter-btn')]
+      .find((b) => b.textContent?.trim() === 'PPW')!
+    await fireEvent.click(ppw)
+
+    expect(cardName(container)).toBe('Puchar Gdansk')
   })
 
-  // R.25 — correct slot states
-  it('R.25: slot states match event statuses (completed/planned)', () => {
-    const events = [
-      makeEvent({ id_event: 1, txt_code: 'PP1-2025-2026', enum_status: 'COMPLETED', dt_start: '2025-09-28' }),
-      makeEvent({ id_event: 2, txt_code: 'PP2-2025-2026', enum_status: 'COMPLETED', dt_start: '2025-10-26' }),
-      makeEvent({ id_event: 3, txt_code: 'PP3-2025-2026', enum_status: 'SCHEDULED', dt_start: '2025-11-30' }),
-      makeEvent({ id_event: 4, txt_code: 'MPW-2025-2026', enum_status: 'SCHEDULED', dt_start: '2026-06-07' }),
-    ]
-    const { container } = render(CalendarView, {
-      props: { events, isActiveSeason: true },
-    })
-    const completedSlots = container.querySelectorAll('.slot.completed')
-    const plannedSlots = container.querySelectorAll('.slot.planned')
-    expect(completedSlots.length).toBe(2)
-    expect(plannedSlots.length).toBe(2)
+  it('CV.10: renders the empty state when nothing is visible', () => {
+    const { container } = render(CalendarView, { props: { events: [] } })
+    expect(container.querySelector('.no-events')).not.toBeNull()
+    expect(container.querySelector('.vp')).toBeNull()
   })
 
-  // 11.1 — PEW event card gets evf-circuit class
-  it('11.1: PEW event gets evf-circuit class on timeline-event', () => {
-    const events = [
-      makeEvent({ id_event: 1, txt_code: 'PEW1-2025-2026', txt_name: 'EVF Circuit Stockholm', dt_start: '2026-03-14', enum_status: 'COMPLETED', bool_has_international: true }),
-    ]
-    const { container } = render(CalendarView, {
-      props: { events, showEvfToggle: true },
-    })
-    // Click +EVF to show international
-    const evfBtn = Array.from(container.querySelectorAll('.scope-filter-btn')).find(b => b.textContent?.trim() === '+EVF')
-    evfBtn && fireEvent.click(evfBtn)
-    const card = container.querySelector('.timeline-event.evf-circuit')
-    expect(card).not.toBeNull()
+  // CV.11 — unchanged by ADR-084. activeEnv is $bindable and App re-points the
+  // Supabase client from it, so dropping this footer fails only at runtime.
+  it('CV.11: shows the CERT/PROD footer only when dualEnv is set', () => {
+    const off = render(CalendarView, { props: { events: EVENTS } })
+    expect(off.container.querySelector('.env-footer')).toBeNull()
+
+    const on = render(CalendarView, { props: { events: EVENTS, dualEnv: true } })
+    const btns = on.container.querySelectorAll('.env-btn')
+    expect([...btns].map((b) => b.textContent?.trim())).toEqual(['CT', 'PD'])
   })
 
-  // 11.2 — IMEW event card gets evf-intl class
-  it('11.2: IMEW event gets evf-intl class on timeline-event', () => {
-    const events = [
-      makeEvent({ id_event: 1, txt_code: 'IMEW-2025-2026', txt_name: 'European Champs', dt_start: '2026-05-14', enum_status: 'PLANNED', bool_has_international: true }),
-    ]
-    const { container } = render(CalendarView, {
-      props: { events, showEvfToggle: true },
-    })
-    const evfBtn = Array.from(container.querySelectorAll('.scope-filter-btn')).find(b => b.textContent?.trim() === '+EVF')
-    evfBtn && fireEvent.click(evfBtn)
-    const card = container.querySelector('.timeline-event.evf-intl')
-    expect(card).not.toBeNull()
-  })
-
-  // 11.3 — MSW event card gets evf-intl class (same as IMEW)
-  it('11.3: MSW event gets evf-intl class on timeline-event', () => {
-    const events = [
-      makeEvent({ id_event: 1, txt_code: 'MSW-2025-2026', txt_name: 'World Championships', dt_start: '2026-10-15', enum_status: 'PLANNED', bool_has_international: true }),
-    ]
-    const { container } = render(CalendarView, {
-      props: { events, showEvfToggle: true },
-    })
-    const evfBtn = Array.from(container.querySelectorAll('.scope-filter-btn')).find(b => b.textContent?.trim() === '+EVF')
-    evfBtn && fireEvent.click(evfBtn)
-    const card = container.querySelector('.timeline-event.evf-intl')
-    expect(card).not.toBeNull()
-  })
-
-  // 11.4 — PPW event card has no evf class
-  it('11.4: PPW event has no evf-circuit or evf-intl class', () => {
-    const events = [
-      makeEvent({ id_event: 1, txt_code: 'PP1-2025-2026', enum_status: 'COMPLETED', dt_start: '2025-09-28' }),
-    ]
-    const { container } = render(CalendarView, { props: { events } })
-    const card = container.querySelector('.timeline-event')
-    expect(card).not.toBeNull()
-    expect(card!.classList.contains('evf-circuit')).toBe(false)
-    expect(card!.classList.contains('evf-intl')).toBe(false)
-  })
-
-  // 11.5 — Slot box shows city name from txt_location
-  it('11.5: slot box shows city name', () => {
-    const events = [
-      makeEvent({ id_event: 1, txt_code: 'PP1-2025-2026', enum_status: 'COMPLETED', dt_start: '2025-09-28', txt_location: 'Konin' }),
-    ]
-    const { container } = render(CalendarView, {
-      props: { events, isActiveSeason: true },
-    })
-    const city = container.querySelector('.slot-city')
-    expect(city).not.toBeNull()
-    expect(city!.textContent).toBe('Konin')
-  })
-
-  // 11.6 — Slot type classes: PEW slot gets pew class
-  it('11.6: PEW slot gets pew type class', () => {
-    const events = [
-      makeEvent({ id_event: 1, txt_code: 'PEW1-2025-2026', enum_status: 'COMPLETED', dt_start: '2025-10-15', bool_has_international: true }),
-    ]
-    const { container } = render(CalendarView, {
-      props: { events, isActiveSeason: true, showEvfToggle: true },
-    })
-    // Click +EVF
-    const evfBtn = Array.from(container.querySelectorAll('.scope-filter-btn')).find(b => b.textContent?.trim() === '+EVF')
-    evfBtn && fireEvent.click(evfBtn)
-    const slot = container.querySelector('.slot.pew')
-    expect(slot).not.toBeNull()
-  })
-
-  // 8.21 — Registration link + deadline shown when both set and today <= deadline
-  it('8.21: shows registration link and deadline when both set and before deadline', () => {
-    const futureDate = new Date()
-    futureDate.setMonth(futureDate.getMonth() + 2)
-    const futureStr = futureDate.toISOString().slice(0, 10)
-    const futureStartStr = new Date(futureDate.getTime() + 30 * 86400000).toISOString().slice(0, 10)
-    const events = [makeEvent({
-      id_event: 99, dt_start: futureStartStr, enum_status: 'SCHEDULED',
-      url_registration: 'https://example.com/register',
-      dt_registration_deadline: futureStr,
-    })]
-    const { container } = render(CalendarView, { props: { events } })
-    const regLink = container.querySelector('.registration-link')
-    expect(regLink).not.toBeNull()
-    expect(regLink!.getAttribute('href')).toBe('https://example.com/register')
-    const deadline = container.querySelector('.registration-deadline')
-    expect(deadline).not.toBeNull()
-  })
-
-  // 8.22 — Registration link only shown (no deadline) when URL set and today <= dt_start
-  it('8.22: shows registration link without deadline when only URL set and before dt_start', () => {
-    const futureStart = new Date()
-    futureStart.setMonth(futureStart.getMonth() + 2)
-    const futureStartStr = futureStart.toISOString().slice(0, 10)
-    const events = [makeEvent({
-      id_event: 99, dt_start: futureStartStr, enum_status: 'SCHEDULED',
-      url_registration: 'https://example.com/register',
-      dt_registration_deadline: null,
-    })]
-    const { container } = render(CalendarView, { props: { events } })
-    const regLink = container.querySelector('.registration-link')
-    expect(regLink).not.toBeNull()
-    const deadline = container.querySelector('.registration-deadline')
-    expect(deadline).toBeNull()
-  })
-
-  // 8.23 — Registration deadline text shown without link when only deadline set
-  it('8.23: shows deadline text without link when only deadline set', () => {
-    const futureDate = new Date()
-    futureDate.setMonth(futureDate.getMonth() + 2)
-    const futureStr = futureDate.toISOString().slice(0, 10)
-    const events = [makeEvent({
-      id_event: 99, dt_start: futureStr, enum_status: 'SCHEDULED',
-      url_registration: null,
-      dt_registration_deadline: futureStr,
-    })]
-    const { container } = render(CalendarView, { props: { events } })
-    const regLink = container.querySelector('.registration-link')
-    expect(regLink).toBeNull()
-    const deadline = container.querySelector('.registration-deadline')
-    expect(deadline).not.toBeNull()
-  })
-
-  // ADR-079 amend (D7) — the form link renders from the stored (absolute)
-  // url_registration and the entry-list link from the stored url_entry_list.
-  // Both are auto-derived by EventManager when the SPWS toggle is on; the
-  // calendar simply renders whatever URLs are stored (self-contained for
-  // cross-origin embeds — no registrationBase prop / deployment attribute).
-  it('ADR-079 amend: renders form + entry-list links from stored url_registration + url_entry_list', () => {
-    const futureDate = new Date()
-    futureDate.setMonth(futureDate.getMonth() + 2)
-    const futureStr = futureDate.toISOString().slice(0, 10)
-    const events = [makeEvent({
-      id_event: 99, txt_code: 'PPW4-2025-2026', dt_start: futureStr, enum_status: 'SCHEDULED',
-      url_registration: 'https://host/register.html?event=PPW4-2025-2026',
-      url_entry_list: 'https://host/register.html?event=PPW4-2025-2026&view=list',
-      dt_registration_deadline: futureStr,
-      bool_use_spws_registration: true,
-    })]
-    const { container } = render(CalendarView, { props: { events } })
-    const regLink = container.querySelector('.registration-link') as HTMLAnchorElement
-    expect(regLink).not.toBeNull()
-    expect(regLink.getAttribute('href')).toBe('https://host/register.html?event=PPW4-2025-2026')
-    const listLink = container.querySelector('.entry-list-link') as HTMLAnchorElement
-    expect(listLink).not.toBeNull()
-    expect(listLink.getAttribute('href')).toBe('https://host/register.html?event=PPW4-2025-2026&view=list')
-  })
-
-  // ADR-079 amend — no url_entry_list (external / hand-entered registration) →
-  // the form link still shows from url_registration, but no entry-list link.
-  it('ADR-079 amend: no entry-list link when url_entry_list is absent', () => {
-    const futureDate = new Date()
-    futureDate.setMonth(futureDate.getMonth() + 2)
-    const futureStr = futureDate.toISOString().slice(0, 10)
-    const events = [makeEvent({
-      id_event: 99, dt_start: futureStr, enum_status: 'SCHEDULED',
-      url_registration: 'https://example.com/register',
-      url_entry_list: null,
-      dt_registration_deadline: futureStr,
-      bool_use_spws_registration: false,
-    })]
-    const { container } = render(CalendarView, { props: { events } })
-    const regLink = container.querySelector('.registration-link') as HTMLAnchorElement
-    expect(regLink.getAttribute('href')).toBe('https://example.com/register')
-    expect(container.querySelector('.entry-list-link')).toBeNull()
-  })
-
-  // ADR-079 amend #2 — clicking the SPWS-hosted registration/entry-list links
-  // opens an in-app modal (identical overlay/close pattern to DrilldownModal)
-  // instead of navigating away; closing it returns to the calendar. The href
-  // is kept (right-click "copy link" / open-in-new-tab still work) — only the
-  // default left-click is intercepted.
+  // ADR-079 amend — the modal wiring moved from the timeline row to the card,
+  // but the orchestrator still owns the modal. EC.24 covers the card emitting;
+  // these cover the orchestrator acting on it.
   function spwsEvent(overrides: Partial<CalendarEvent> = {}) {
-    const futureDate = new Date()
-    futureDate.setMonth(futureDate.getMonth() + 2)
-    const futureStr = futureDate.toISOString().slice(0, 10)
     return makeEvent({
-      id_event: 99, txt_code: 'PPW4-2025-2026', dt_start: futureStr, enum_status: 'SCHEDULED',
-      url_registration: 'https://host/register.html?event=PPW4-2025-2026',
-      url_entry_list: 'https://host/register.html?event=PPW4-2025-2026&view=list',
-      dt_registration_deadline: futureStr,
+      id_event: 99, txt_code: 'PPW4-2026-2027', dt_start: F1, dt_end: F1,
+      enum_status: 'SCHEDULED',
+      url_registration: 'https://host/register.html?event=PPW4-2026-2027',
+      url_entry_list: 'https://host/register.html?event=PPW4-2026-2027&view=list',
+      dt_registration_deadline: F1,
       bool_use_spws_registration: true,
       ...overrides,
     })
   }
 
-  it('ADR-079 amend: clicking the SPWS-hosted registration link opens an in-app modal instead of navigating', async () => {
-    mockFetchEvent.mockResolvedValue(null)
-    const { container, findByText } = render(CalendarView, { props: { events: [spwsEvent()] } })
-    const regLink = container.querySelector('.registration-link') as HTMLAnchorElement
-    await fireEvent.click(regLink)
-    await findByText(/Nie znaleziono wydarzenia/)
-    expect(container.querySelector('.modal-overlay')).not.toBeNull()
-    expect(mockFetchEvent).toHaveBeenCalledWith('PPW4-2025-2026')
-  })
-
-  it('ADR-079 amend: clicking the entry-list link opens the modal in list view', async () => {
-    mockFetchEntryList.mockResolvedValue([])
-    const { container } = render(CalendarView, { props: { events: [spwsEvent()] } })
-    const listLink = container.querySelector('.entry-list-link') as HTMLAnchorElement
-    await fireEvent.click(listLink)
-    await waitFor(() => expect(container.querySelector('.el-card')).not.toBeNull())
-    expect(mockFetchEntryList).toHaveBeenCalledWith(99)
-  })
-
-  it('ADR-079 amend: closing the modal returns to the calendar (no navigation)', async () => {
+  it('CV.12: opens the registration modal from the card instead of navigating', async () => {
     mockFetchEvent.mockResolvedValue(null)
     const { container, findByText } = render(CalendarView, { props: { events: [spwsEvent()] } })
     await fireEvent.click(container.querySelector('.registration-link') as HTMLAnchorElement)
     await findByText(/Nie znaleziono wydarzenia/)
+    expect(container.querySelector('.modal-overlay')).not.toBeNull()
+    expect(mockFetchEvent).toHaveBeenCalledWith('PPW4-2026-2027')
+  })
+
+  it('CV.13: opens the modal in list view from the entry-list link', async () => {
+    mockFetchEntryList.mockResolvedValue([])
+    const { container } = render(CalendarView, { props: { events: [spwsEvent()] } })
+    await fireEvent.click(container.querySelector('.entry-list-link') as HTMLAnchorElement)
+    await waitFor(() => expect(container.querySelector('.el-card')).not.toBeNull())
+    expect(mockFetchEntryList).toHaveBeenCalledWith(99)
+  })
+
+  it('CV.14: closing the modal returns to the calendar', async () => {
+    mockFetchEvent.mockResolvedValue(null)
+    const { container, findByText } = render(CalendarView, { props: { events: [spwsEvent()] } })
+    await fireEvent.click(container.querySelector('.registration-link') as HTMLAnchorElement)
+    await findByText(/Nie znaleziono wydarzenia/)
+
     await fireEvent.click(container.querySelector('.modal-overlay') as HTMLElement)
     expect(container.querySelector('.modal-overlay')).toBeNull()
-    expect(container.querySelector('.timeline-event')).not.toBeNull()
-  })
-
-  it('ADR-079 amend: an external (non-SPWS) registration link still navigates normally (no modal)', () => {
-    const { container } = render(CalendarView, {
-      props: { events: [spwsEvent({ url_registration: 'https://example.com/register', url_entry_list: null, bool_use_spws_registration: false })] },
-    })
-    const regLink = container.querySelector('.registration-link') as HTMLAnchorElement
-    expect(regLink.getAttribute('href')).toBe('https://example.com/register')
-    expect(mockFetchEvent).not.toHaveBeenCalled()
-  })
-
-  // 8.24 — Nothing shown when both null
-  it('8.24: shows no registration block when both fields are null', () => {
-    const events = [makeEvent({
-      id_event: 99, enum_status: 'SCHEDULED',
-      url_registration: null, dt_registration_deadline: null,
-    })]
-    const { container } = render(CalendarView, { props: { events } })
-    expect(container.querySelector('.registration-link')).toBeNull()
-    expect(container.querySelector('.registration-deadline')).toBeNull()
-  })
-
-  // 8.26 — Registration block green when 7+ days remain, red when < 7 days
-  it('8.26: registration block has reg-urgent class when < 7 days remain', () => {
-    const soon = new Date()
-    soon.setDate(soon.getDate() + 3)
-    const soonStr = soon.toISOString().slice(0, 10)
-    const farStart = new Date()
-    farStart.setDate(farStart.getDate() + 30)
-    const farStartStr = farStart.toISOString().slice(0, 10)
-    const events = [makeEvent({
-      id_event: 99, dt_start: farStartStr, enum_status: 'SCHEDULED',
-      url_registration: 'https://example.com/register',
-      dt_registration_deadline: soonStr,
-    })]
-    const { container } = render(CalendarView, { props: { events } })
-    const regBlock = container.querySelector('.timeline-registration')
-    expect(regBlock).not.toBeNull()
-    expect(regBlock!.classList.contains('reg-urgent')).toBe(true)
-  })
-
-  it('8.26b: registration block has no reg-urgent class when 7+ days remain', () => {
-    const far = new Date()
-    far.setDate(far.getDate() + 14)
-    const farStr = far.toISOString().slice(0, 10)
-    const farStart = new Date()
-    farStart.setDate(farStart.getDate() + 30)
-    const farStartStr = farStart.toISOString().slice(0, 10)
-    const events = [makeEvent({
-      id_event: 99, dt_start: farStartStr, enum_status: 'SCHEDULED',
-      url_registration: 'https://example.com/register',
-      dt_registration_deadline: farStr,
-    })]
-    const { container } = render(CalendarView, { props: { events } })
-    const regBlock = container.querySelector('.timeline-registration')
-    expect(regBlock).not.toBeNull()
-    expect(regBlock!.classList.contains('reg-urgent')).toBe(false)
-  })
-
-  // 8.25 — Nothing shown when deadline/dt_start has passed
-  it('8.25: hides registration when deadline has passed', () => {
-    const events = [makeEvent({
-      id_event: 99, dt_start: '2020-01-01', enum_status: 'COMPLETED',
-      url_registration: 'https://example.com/register',
-      dt_registration_deadline: '2019-12-20',
-    })]
-    const { container } = render(CalendarView, { props: { events } })
-    expect(container.querySelector('.registration-link')).toBeNull()
-    expect(container.querySelector('.registration-deadline')).toBeNull()
-  })
-
-  // 11.9 — PEW event card shows code prefix below the date in the date column
-  it('11.9: PEW event card shows code prefix (e.g. PEW7) in .timeline-code', () => {
-    const events = [
-      makeEvent({ id_event: 1, txt_code: 'PEW7-2025-2026', txt_name: 'EVF Circuit Salzburg', dt_start: '2026-04-18', enum_status: 'SCHEDULED', bool_has_international: true }),
-    ]
-    const { container } = render(CalendarView, { props: { events, showEvfToggle: true } })
-    const evfBtn = Array.from(container.querySelectorAll('.scope-filter-btn')).find(b => b.textContent?.trim() === '+EVF')
-    evfBtn && fireEvent.click(evfBtn)
-    const code = container.querySelector('.timeline-event.evf-circuit .timeline-code')
-    expect(code).not.toBeNull()
-    expect(code!.textContent?.trim()).toBe('PEW7')
-  })
-
-  // 11.10 — Two-digit prefix (e.g. PEW10) renders in full
-  it('11.10: PEW10 event card shows full two-digit prefix in .timeline-code', () => {
-    const events = [
-      makeEvent({ id_event: 1, txt_code: 'PEW10-2024-2025', txt_name: 'EVF Circuit X', dt_start: '2025-05-01', enum_status: 'COMPLETED', bool_has_international: true }),
-    ]
-    const { container } = render(CalendarView, { props: { events, showEvfToggle: true } })
-    const evfBtn = Array.from(container.querySelectorAll('.scope-filter-btn')).find(b => b.textContent?.trim() === '+EVF')
-    evfBtn && fireEvent.click(evfBtn)
-    const code = container.querySelector('.timeline-event.evf-circuit .timeline-code')
-    expect(code).not.toBeNull()
-    expect(code!.textContent?.trim()).toBe('PEW10')
-  })
-
-  // 11.11 — Legacy PP-coded events render normalized PPW prefix in card column
-  it('11.11: PP-coded event card shows normalized PPW prefix in .timeline-code', () => {
-    const events = [
-      makeEvent({ id_event: 1, txt_code: 'PP4-2025-2026', txt_name: 'IV Puchar Polski', dt_start: '2026-03-07', enum_status: 'COMPLETED' }),
-    ]
-    const { container } = render(CalendarView, { props: { events } })
-    const code = container.querySelector('.timeline-event .timeline-code')
-    expect(code).not.toBeNull()
-    expect(code!.textContent?.trim()).toBe('PPW4')
-  })
-
-  // 11.8 — Season dropdown renders in calendar-filters when seasons provided
-  it('11.8: renders season dropdown in calendar filters when seasons provided', () => {
-    const seasons = [
-      { id_season: 1, txt_code: 'SPWS-2024-2025', dt_start: '2024-09-01', dt_end: '2025-06-30', bool_active: false },
-      { id_season: 2, txt_code: 'SPWS-2025-2026', dt_start: '2025-09-01', dt_end: '2026-06-30', bool_active: true },
-    ]
-    const { container } = render(CalendarView, {
-      props: { events: EVENTS, seasons, selectedSeasonId: 2 },
-    })
-    const filters = container.querySelector('.calendar-filters')
-    expect(filters).not.toBeNull()
-    const seasonSelect = filters!.querySelector('.season-select')
-    expect(seasonSelect).not.toBeNull()
-    expect(seasonSelect!.textContent).toContain('SPWS-2025-2026')
-  })
-
-  // User report (2026-07-05) — the calendar only ever showed the base
-  // num_entry_fee line, even when an event has num_entry_fee_2w/3w filled in
-  // (both already fetched/typed, just never rendered).
-  it('renders a fee line for every filled fee tier (1/2/3 weapons)', () => {
-    const events = [makeEvent({
-      id_event: 99, num_entry_fee: 250, num_entry_fee_2w: 350, num_entry_fee_3w: 400,
-      txt_entry_fee_currency: 'PLN',
-    })]
-    const { container } = render(CalendarView, { props: { events } })
-    const feeLines = container.querySelectorAll('.timeline-fee')
-    expect(feeLines.length).toBe(3)
-    expect(feeLines[0].textContent).toContain('250')
-    expect(feeLines[1].textContent).toContain('350')
-    expect(feeLines[2].textContent).toContain('400')
-  })
-
-  it('renders exactly one fee line when only the base fee is set (no regression)', () => {
-    const events = [makeEvent({ id_event: 3, num_entry_fee: 50, txt_entry_fee_currency: 'EUR' })]
-    const { container } = render(CalendarView, { props: { events } })
-    expect(container.querySelectorAll('.timeline-fee').length).toBe(1)
+    expect(container.querySelector('.card')).not.toBeNull()
   })
 })

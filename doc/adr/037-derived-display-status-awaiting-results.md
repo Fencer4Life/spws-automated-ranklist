@@ -3,6 +3,16 @@
 **Status:** Implemented (amended 2026-08-07 — cancelled-event notice window)
 **Date:** 2026-04-20
 **Related:** ADR-018 (Rolling Score for Active Season), ADR-025 (Event-Centric Ingestion), ADR-028 (EVF Calendar + Results Import)
+**Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (repoints the consumer from the timeline row to the event card).
+
+## Amendment (2026-08-09 — the consumer moves)
+
+`getEventDisplayStatus()` and the cancelled-event notice window are **unchanged**. What changes is who calls them: the timeline row is gone, and `EventCard` is now the consumer, rendering the derived status as a `.chp.status` chip (EC.27) with the awaiting-results and cancelled notices as `.note` lines.
+
+Two points worth pinning:
+
+1. The seven-day cancellation notice window this ADR added is now asserted in the pure module (**CQ.15–CQ.18**) rather than through a mounted view, so it can be checked without a DOM.
+2. `findNextUpcoming` **skips cancelled events** — ringing a cancelled competition as the thing to look forward to would be wrong. This follows from the ADR's intent but is not yet pinned by its own test.
 
 ## Context
 

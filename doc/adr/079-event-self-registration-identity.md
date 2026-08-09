@@ -3,6 +3,17 @@
 **Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (email delivery) not started, blocked on Resend/eu.org). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation.
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
+**Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §7 (decouples the entry-list gate from the registration cutoff).
+
+## Amendment (2026-08-09 — the entry list outlives the registration window)
+
+§7 gated the entry-list link on the same cutoff as the registration link, so both vanished together once the deadline passed. [ADR-084](084-calendar-quarter-barrel-event-card.md) **decouples them**: registration closes at `COALESCE(dt_registration_deadline, dt_start)`, but the entry list stays visible until the event **starts** (CQ.31, CQ.32, EC.22), and is never shown on a cancelled event (CQ.33).
+
+This is the point at which people most want to see who is entered — after entries close and before the event runs.
+
+**No existing test pinned the old coupling**, which is why the change cost new tests rather than rewrites: every test touching `.entry-list-link` set a deadline *equal to* `dt_start`, so both readings agreed. The uncomfortable half is why it was cheap — the coupling was never covered, so nothing would have caught it drifting either way.
+
+The in-app modal presentation from the 2026-07-05 amendment is unchanged; the links moved from the timeline row to `EventCard`, which emits `onopenregistration`/`onopenentrylist` for the orchestrator to act on (EC.24, CV.12–CV.14).
 
 ## Context
 

@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="084-calendar-quarter-barrel-event-card.md">
+<meta name="adr-source-sha256" content="cee1b7e2c150b5f80241196a86b014af56b1b1360ef3254b11cb883594654400">
+<title>ADR-084 · Calendar Quarter Barrel + Single Event Card</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 084</p><h1>Calendar Quarter Barrel + Single Event Card</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-08-09; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-08-09</dd></div><div><dt>Source</dt><dd class=""><code>084-calendar-quarter-barrel-event-card.md</code></dd></div><div><dt>Length</dt><dd class="">243 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-08-09; awaiting sign-off)
+<strong>Date:</strong> 2026-08-09
+<strong>Supersedes:</strong> <a href="015-m8-ui-design-decisions.html">ADR-015</a> §2 (Calendar Layout — Vertical Timeline) and its <code>m8_calendar_view.html</code> mockup registry entry. ADR-015 §§1, 3–9 are untouched.
+<strong>Amends:</strong> <a href="018-rolling-score.html">ADR-018</a> (withdraws the calendar rolling-progress strip; the scoring rule is unaffected), <a href="017-season-configurable-evf-toggle.html">ADR-017</a> (records the calendar's own toggle field and the data constraint), <a href="079-event-self-registration-identity.html">ADR-079</a> §7 (decouples the entry-list gate from the registration cutoff), <a href="030-event-registration-url-deadline.html">ADR-030</a> (relocates the registration DOM contract), <a href="005-svelte-state-i18n.html">ADR-005</a> (retires the no-pluralisation trade-off), <a href="028-evf-calendar-results-import.html">ADR-028</a> (carves out one-time curated enrichment), <a href="037-derived-display-status-awaiting-results.html">ADR-037</a> (repoints consumers), <a href="040-multi-slot-event-urls.html">ADR-040</a> (permits render-time day labels)
+<strong>Relates to:</strong> <a href="007-shadow-dom-deferred.html">ADR-007</a> (Shadow DOM + CSP on <code>&lt;spws-calendar&gt;</code>), <a href="009-cert-prod-runtime-toggle.html">ADR-009</a> (the env footer this view carries), <a href="046-pew-weapon-suffix.html">ADR-046</a> (weapon derived from code suffix), <a href="077-event-lifecycle-season-skeletons.html">ADR-077</a> (<code>CREATED</code> hidden until dated), <a href="063-polish-plural-and-grupy-zbiorcze.html">ADR-063</a> (Polish grammatical case as a first-class concern)
+<strong>Source:</strong> <code>doc/plans/kalendarz-barrel-2026-08-08.html</code> (plan + live acceptance mock), <code>doc/plans/kalendarz-barrel-adr-alignment-2026-08-09.html</code> (ADR audit)</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-each-variable-gets-its-own-channel">1 · Each variable gets its own channel</a></li><li class="depth-3"><a href="#2-three-row-drum-rotation-by-translatey-facing-by-rotatex">2 · Three-row drum, rotation by `translateY`, facing by `rotateX`</a></li><li class="depth-3"><a href="#3-detail-tiers-follow-rotation">3 · Detail tiers follow rotation</a></li><li class="depth-3"><a href="#4-continuous-history-the-barrel-owns-season-state">4 · Continuous history; the barrel owns season state</a></li><li class="depth-3"><a href="#5-overlap-not-shrink">5 · Overlap, not shrink</a></li><li class="depth-3"><a href="#6-whole-row-is-the-tap-target">6 · Whole row is the tap target</a></li><li class="depth-3"><a href="#7-engraved-seams">7 · Engraved seams</a></li><li class="depth-3"><a href="#8-one-card-ordered-by-what-a-fencer-acts-on">8 · One card, ordered by what a fencer acts on</a></li><li class="depth-3"><a href="#9-entry-list-is-gated-on-dt-start-today-not-on-the-registration-cutoff">9 · Entry list is gated on `dt_start &gt; today`, not on the registration cutoff</a></li><li class="depth-3"><a href="#10-one-scope-control-ppw-evf-governed-per-season">10 · One scope control, `PPW | +EVF`, governed per season</a></li><li class="depth-3"><a href="#11-results-links-are-labelled-by-day-never-by-weapon">11 · Results links are labelled by day, never by weapon</a></li><li class="depth-3"><a href="#12-localisation-including-three-form-polish-plurals">12 · Localisation, including three-form Polish plurals</a></li><li class="depth-3"><a href="#13-derivation-moves-into-a-pure-module-no-sql-in-this-work">13 · Derivation moves into a pure module; no SQL in this work</a></li><li class="depth-3"><a href="#14-the-four-way-type-split-is-kept-and-the-fourth-bucket-is-renamed">14 · The four-way type split is kept, and the fourth bucket is renamed</a></li><li class="depth-3"><a href="#15-country-flags-are-css-and-depend-on-an-enrichment-pass">15 · Country flags are CSS, and depend on an enrichment pass</a></li><li class="depth-3"><a href="#16-what-is-removed-and-what-is-carried-unchanged">16 · What is removed, and what is carried unchanged</a></li><li class="depth-3"><a href="#17-scroll-behaviour">17 · Scroll behaviour</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li><li class="depth-2"><a href="#verification">Verification</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The public Calendar is the SPWS surface a fencer opens to decide whether to enter a competition. It renders today as three stacked mechanisms in <code>CalendarView.svelte</code> (659 lines): a month-grouped reverse-chronological event list, a flat rolling-progress strip above it, and a season dropdown that clamps the whole view to one season.</p>
+<p><strong>The complaint that started this was specific, and it is a design defect rather than a taste preference.</strong> The progress strip encodes two independent variables in one visual channel: hue carries event type (<code>pew</code> / <code>imew</code> / <code>mpw</code> / <code>ppw</code> via <code>slotTypeClass()</code>, <code>CalendarView.svelte:241-246</code>), and <em>lightness of that same hue</em> carries completion. Two variables sharing one channel means neither reads cleanly — a light PEW slot and a dark PPW slot are not comparable on either dimension. The strip is also gated to the active season (<code>isActiveSeason</code>, read only at <code>:34</code> and <code>:269</code>), so it vanishes exactly when a fencer is looking at history.</p>
+<p>A second, independent finding came from the card content. Pulled live from <code>vw_calendar</code> on 2026-08-08 — 126 rows, 103 after excluding <code>CREATED</code> skeletons:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Populated</th>
+<th>On the card today</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>num_tournaments</code></td>
+<td>103/103</td>
+<td><strong>Yes</strong>, prominently</td>
+</tr>
+<tr>
+<td><code>num_entry_fee</code></td>
+<td>28/103</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>txt_venue_address</code></td>
+<td>22/103</td>
+<td><strong>No</strong></td>
+</tr>
+<tr>
+<td><code>dt_registration_deadline</code></td>
+<td>5/103</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Fee tiers (<code>_2w</code> / <code>_3w</code>)</td>
+<td>1/103</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table></div>
+<p>The tournament count was the easiest thing to display and the least useful thing to read: it answers a question nobody asks. Meanwhile the venue address — the field a fencer pastes into a maps app or sends to a driver — was absent entirely. The list optimised for what the data had, not for what the decision needs.</p>
+<p>The same pull established four data realities this design must survive rather than assume away:</p>
+<ul>
+<li><strong>Location is missing on PEW only.</strong> Domestic 22/22 = 100%; PEW 30/75 = 40%, improving by season as the scraper gained the field. A location-dependent layout would degrade only for international events.</li>
+<li><strong><code>txt_country</code> is free text in mixed languages</strong> — <code>Polska</code>, <code>Germany</code>, <code>GRUZJA</code>, and both <code>Great Britain</code> and <code>United Kingdom</code> for one country.</li>
+<li><strong>The scraper writes venue strings into the city field.</strong> <code>Sporthalle der Städtischen Berufsschule für Informationstechnik</code> and <code>Savoy Terrace - Buda Castle</code> are stored as <code>txt_location</code>.</li>
+<li><strong><code>arr_weapons</code> is unusable.</strong> The column exists with <code>DEFAULT '{EPEE,FOIL,SABRE}'</code> and 102 of 103 events sit on that default, so &quot;all three&quot; means both <em>genuinely all three</em> and <em>nobody set this</em>. The real weapon lives in the lowercase code suffix per ADR-046.</li>
+</ul>
+<p>Finally, <strong>320px is the floor</strong> — an iPhone SE is a real device in this user base, and the embed sits inside a host page with no width guarantee.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Replace the month-grouped list, the rolling-progress strip and the season dropdown with a <strong>rotating three-row quarter barrel</strong> that is the primary navigation control, driving a <strong>single full-detail event card</strong> beneath it.</p>
+<p>A live, interactive mock built on all 103 real CERT events is the <strong>acceptance criterion</strong> for this ADR: the work is done when the implemented component matches it. It sits at the top of <code>doc/plans/kalendarz-barrel-2026-08-08.html</code>. Reading that file as source does not exercise it; it must be served and driven.</p>
+<h3 id="1-each-variable-gets-its-own-channel">1 · Each variable gets its own channel</h3>
+<p>The defect above is fixed by separation, not by re-tuning colours:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Channel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Event type</td>
+<td><strong>Hue</strong></td>
+</tr>
+<tr>
+<td>Completed</td>
+<td><strong>Fill</strong> (not lightness of the type hue)</td>
+</tr>
+<tr>
+<td>Next upcoming</td>
+<td><strong>Ring</strong></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="2-three-row-drum-rotation-by-translatey-facing-by-rotatex">2 · Three-row drum, rotation by <code>translateY</code>, facing by <code>rotateX</code></h3>
+<p>The focused quarter is centred; the previous quarter recedes above at <code>rotateX(46deg)</code> and the next below at <code>-46deg</code>. Rotation is a <code>translateY</code> on the drum; per-row facing angle is <code>rotateX</code>. <strong>The DOM never re-renders on rotate — only classes change.</strong></p>
+<h3 id="3-detail-tiers-follow-rotation">3 · Detail tiers follow rotation</h3>
+<p>The focused row shows day, month and code. Receded rows drop to day + code at 38px. The selected panel additionally carries the city, spells its month out in full (<code>19 września</code>, not <code>19 wrz</code>), and is 56px tall.</p>
+<h3 id="4-continuous-history-the-barrel-owns-season-state">4 · Continuous history; the barrel owns season state</h3>
+<p>The drum rolls back to the start of history with <strong>no season clamp</strong>. Crossing a season boundary <em>drives</em> season state rather than being constrained by it — which is what allowed the season dropdown to be deleted. Quarters may legitimately hold two seasons: CERT contains <code>PEW2e-2023-2024</code> dated <code>2022-01-08</code> and <code>PEW8f-2025-2026</code> sitting among 2024-25 events.</p>
+<h3 id="5-overlap-not-shrink">5 · Overlap, not shrink</h3>
+<p>When a quarter's panels do not fit the viewport, they <strong>fan and overlap at full size</strong> rather than compressing. Compression is the conventional response and it is wrong here: at 320px a compressed panel stops being readable, whereas an overlapped one still exposes an edge.</p>
+<ul>
+<li>Positions are fixed at <code>i × S</code>, where <code>S = (available − W_selected) ÷ (n − 1)</code>, floor 13px.</li>
+<li><code>z-index = 200 − |i − selected| × 2</code>, so the stack peaks on the selection. Panels left of it expose their left edge; panels right of it expose their right edge.</li>
+<li><strong>Only <code>z-index</code> changes on select</strong> — selecting is a paint operation, never a layout reflow.</li>
+<li>The selected panel widens to 78px to carry a city, 74px without one. Uniform negative margins mean every later panel shifts right automatically, with no special-casing.</li>
+</ul>
+<p>Verified in the mock at the 320px floor: five panels sit flat, six fan; a ten-panel quarter fans at <code>margin-left: -23px</code> (S = 25px) with z-indices 192/194/196/198/<strong>200</strong>/198/196/194/192/190.</p>
+<h3 id="6-whole-row-is-the-tap-target">6 · Whole row is the tap target</h3>
+<p>Tapping a receded row rotates it to centre. Tapping a panel on the focused row selects that event. There is no separate affordance to discover.</p>
+<h3 id="7-engraved-seams">7 · Engraved seams</h3>
+<p>The quarter label (<code>4Q26</code>) sits at 11px muted on a hairline above each row and rotates with it. The season code (<code>25/26</code>) sits at the seam's right end on the focused row, and <strong>permanently</strong> on season-boundary seams, which take a 2px stronger rule. This is where the deleted dropdown's information went.</p>
+<h3 id="8-one-card-ordered-by-what-a-fencer-acts-on">8 · One card, ordered by what a fencer acts on</h3>
+<p>Identity first (date, code, name, place), then a two-chip status line, then a rule, then <strong>the decision block</strong>: entry fee, both tiered fees, registration deadline, and the two links. Weapons close the card as small muted pills — they qualify an event, they are not why anyone opened it.</p>
+<ul>
+<li><strong>Optional fields render only when present.</strong> No <code>brak danych</code> placeholders.</li>
+<li><strong>Fee tiers are gated on the event's weapon count.</strong> An event covering foil alone has no two-weapon price; a populated <code>num_entry_fee_2w</code> there is a <em>data error</em>, not something to render. The tiers are otherwise <strong>independent, not a set</strong> — an event may fill the base fee and <code>_3w</code> while leaving <code>_2w</code> null, so one line per non-null field.</li>
+<li><strong>Currency is stored, not assumed:</strong> <code>txt_entry_fee_currency ?? 'PLN'</code>.</li>
+<li><strong>Location is always a city, never a venue.</strong> Venue belongs in <code>txt_venue_address</code>. The card never infers a city that is not literally in the string. <strong>If <code>txt_location</code> holds anything, it appears</strong> — classification picks which line it goes on, never whether it is visible. This fixes a live defect where 9 events with a location displayed none.</li>
+<li><strong>The venue address replaces the old country-and-season row</strong> and carries a 22px copy-icon button. What lands on the clipboard is the <strong>full composed address</strong> — venue, city, country name — even though the card shows only a flag, because a string pasted into a maps app cannot see the flag. The button attaches to the city line when there is no venue, and is absent only when there is no location at all.</li>
+<li><strong>The copy button has no visible text</strong>, so its <code>aria-label</code> and <code>title</code> <em>are</em> its accessible name and both are translated and both flip to <code>Skopiowano</code> / <code>Copied</code> on success. The glyph is <strong>inline SVG</strong> — ADR-007's strict CSP makes an icon font or sprite one more asset that can fail to load. Use <code>navigator.clipboard.writeText()</code> with an <code>execCommand</code> fallback, since the Clipboard API needs a secure context and the public embed may sit on a plain-http host page.</li>
+</ul>
+<h3 id="9-entry-list-is-gated-on-dt-start-today-not-on-the-registration-cutoff">9 · Entry list is gated on <code>dt_start &gt; today</code>, not on the registration cutoff</h3>
+<p><strong>This is a deliberate behaviour change</strong> and it amends ADR-079 §7. Today both links share one cutoff, <code>regCutoff = dt_registration_deadline ?? dt_start</code> (<code>CalendarView.svelte:53-58</code>), so on an event with a stored deadline the entry list disappears the moment entries close.</p>
+<p>That is the wrong rule for this link. Who has entered becomes <strong>more</strong> interesting once the list is final: you check the draw, see who is in your category, and decide whether the trip is worth it. Registration and the entry list answer different questions and must not share a date. The entry list is additionally suppressed on a <code>CANCELLED</code> event.</p>
+<p>The registration side is <strong>unchanged</strong> and ported verbatim from ADR-030: the deadline <em>text</em> has its own stricter test requiring <code>dt_registration_deadline</code> non-null, while the links survive until the deadline or, absent one, until the event starts — which is what keeps them live for the 98 of 103 events with no stored deadline. <code>regUrgent</code> still turns the block red under seven days. ADR-079's in-app modal behaviour is unchanged: <code>bool_use_spws_registration</code> calls <code>preventDefault()</code> and opens <code>RegistrationModal</code>; an external URL still navigates.</p>
+<p><strong>Consequence for implementation:</strong> <code>registrationState(event, today)</code> must return the registration and entry-list flags <strong>separately</strong>, not one shared <code>regOpen</code>.</p>
+<p>No existing test pins the old coupling — every test touching <code>.entry-list-link</code> sets a future deadline equal to <code>dt_start</code>, and the one past-deadline test asserts only the registration link — so this costs <strong>new</strong> tests rather than rewrites. The uncomfortable half is why it was cheap: the coupling was never covered, so nothing would have caught it drifting either way.</p>
+<h3 id="10-one-scope-control-ppw-evf-governed-per-season">10 · One scope control, <code>PPW | +EVF</code>, governed per season</h3>
+<p>Centred below the header. It is governed by the scoring-config field <code>show_evf_toggle_calendar</code> (&quot;Pokaż przełącznik +EVF w Kalendarzu&quot;), which resolves with a default of <strong><code>true</code></strong> — the opposite of its ranklist sibling <code>show_evf_toggle</code>, split deliberately by ADR-044 so the two surfaces are independent. Do not re-merge them.</p>
+<p><strong>Off does not merely hide the button — it constrains the data.</strong> <code>CalendarView.svelte:291</code> reads <code>!showEvfToggle || scopeFilter === 'ppw'</code>, so with the config off the calendar is domestic-only regardless of scope state; hiding the control alone would strand EVF events on screen with no way to filter them. In the mock this is the difference between 103 panels and 22. This behaviour is real today but was never recorded in ADR-017, which is why that ADR is amended here.</p>
+<p>The flag arrives asynchronously from <code>fn_export_scoring_config</code>, so the scope default must <strong>re-sync on every change</strong> until the user picks explicitly. A scope initialised once at mount is wrong for the first paint.</p>
+<p><code>isInternationalEvent</code> is ported verbatim: <code>bool_has_international || /^(PEW|MEW|MSW|PSW|IMEW|IMSW)/.test(txt_code)</code>.</p>
+<h3 id="11-results-links-are-labelled-by-day-never-by-weapon">11 · Results links are labelled by day, never by weapon</h3>
+<p>One URL renders as <code>Wyniki</code>; several render as <code>Dzień 1</code>, <code>Dzień 2</code>. Two weapons on one day still read as that day.</p>
+<p>This follows ADR-040, which holds the five URL slots to be equal-status with no role labels, no per-slot enum and no primary pointer. An earlier per-weapon design was wrong and was removed. <strong>The label is derived at render time from the URL's own content and never stored</strong>, which is what keeps it compatible — Engarde encodes the date in the path (<code>2025_09_20_pbt</code>), so those URLs label themselves. A stored role remains rejected.</p>
+<p>Where a platform does not encode the date, fall back to <strong>bare numbering</strong> — <code>Wyniki 1</code>, <code>Wyniki 2</code>. ADR-040 forbids inferring day from slot position, because slots are compacted on save and therefore non-semantic. Bare numbering degrades honestly and fails visibly, which signals which platforms need a parser.</p>
+<h3 id="12-localisation-including-three-form-polish-plurals">12 · Localisation, including three-form Polish plurals</h3>
+<p>Every string goes through <code>t()</code> and <code>locales/{en,pl}.json</code>. Registry codes (<code>SPWS</code>, <code>EVF</code>, <code>FIE</code>), event codes and device names are proper nouns and stay untranslated.</p>
+<p>Two things a naive port gets wrong, both amending ADR-005:</p>
+<ul>
+<li><strong>Polish months in a date are genitive</strong> — <code>18 kwietnia</code>, not <code>18 kwiecień</code>. Because they appear only inside dates here the genitive forms can be stored directly, but a <code>month_N</code> key reused for a standalone heading elsewhere would then read wrongly. The calendar gets <strong>its own month keys</strong> rather than borrowing <code>month_1…12</code>.</li>
+<li><strong>Polish has three plural forms and the count picks between them</strong> — <code>1 turniej</code> · <code>2–4 turnieje</code> · <code>0 and 5+ turniejów</code> — with the trap that <strong>12, 13 and 14 take the genitive</strong> despite ending in 2–4, while 22, 23 and 24 do not. ADR-005 recorded &quot;no pluralisation support&quot; as an accepted trade-off on the grounds that no key then contained a plural. <strong>That trade-off has since expired in production:</strong> <code>tournaments_count</code> is a flat string concatenated with the count at <code>CalendarView.svelte:72</code>, so <code>2 turniejów</code> and <code>1 tournaments</code> are both on screen today. A count-keyed pluralisation helper replaces it. ADR-063 already established Polish grammatical case as a first-class concern in this codebase, so this is an extension of an existing principle rather than a new one.</li>
+</ul>
+<h3 id="13-derivation-moves-into-a-pure-module-no-sql-in-this-work">13 · Derivation moves into a pure module; no SQL in this work</h3>
+<p>All derivation currently lives inline in the component, which is why its test file is 788 lines of component-mounting tests. <code>lib/calendarQuarters.ts</code> is <strong>new and pure — no Svelte</strong> — and owns: quarter bucketing by <code>dt_start</code>, season-boundary detection, anchor resolution, next-upcoming, scope filtering, <code>registrationState()</code>, <code>countryCode()</code>, and the type split.</p>
+<p>Two ordering hazards it must absorb rather than inherit:</p>
+<ul>
+<li><code>fetchPriorSeasonEvents</code> (<code>api.ts:206</code>) sorts by <code>.order('txt_code')</code> while <code>fetchCalendarEvents</code> (<code>:172</code>) sorts by <code>.order('dt_start')</code>. Since <code>txt_code</code> orders <code>PEW10</code> before <code>PEW2</code>, the multi-season path arrives in an order that is neither chronological nor numeric. <strong><code>calendarQuarters.ts</code> sorts by <code>dt_start</code> itself and never trusts caller order</strong>, pinned by a test that feeds deliberately shuffled input.</li>
+<li><strong>Next-upcoming is derived from the <em>filtered</em> set</strong>, not assigned once — toggling scope must move the ring.</li>
+</ul>
+<p>The multi-season load is a caller change, not a new query: volume is roughly 20 events per season, so a single up-front load is simpler than lazy-loading on boundary approach and removes the fetch-per-rotation problem entirely.</p>
+<p><strong>There is no migration, no <code>vw_calendar</code> rebuild and no SQL in this work.</strong> An earlier draft proposed <code>txt_nearest_hub</code> / <code>num_nearest_hub_km</code>; it was dropped on 2026-08-09 as the only unrequested item with no acceptance criterion attached. Raise it separately if wanted.</p>
+<h3 id="14-the-four-way-type-split-is-kept-and-the-fourth-bucket-is-renamed">14 · The four-way type split is kept, and the fourth bucket is renamed</h3>
+<p><code>slotTypeClass()</code> (<code>CalendarView.svelte:241-246</code>) already types events four ways, but the stylesheet paints <code>.slot.ppw.completed</code> and <code>.slot.mpw.completed</code> identically — <strong><code>MPW</code> is classified separately and then rendered the same</strong>. The distinction was built and never cashed in.</p>
+<p>Keep the four-way split in <code>calendarQuarters.ts</code> and let the barrel decide whether the fourth gets its own treatment:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Bucket</th>
+<th>Absorbs</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ppw</code></td>
+<td>domestic regular series, GP</td>
+<td></td>
+</tr>
+<tr>
+<td><code>mpw</code></td>
+<td><code>MPW</code></td>
+<td><strong>kept distinct</strong> even though nothing styles it yet</td>
+</tr>
+<tr>
+<td><code>pew</code></td>
+<td>EVF circuit</td>
+<td></td>
+</tr>
+<tr>
+<td><code>int</code></td>
+<td><code>IMEW</code>, <code>IMSW</code>, <code>MEW</code>, <code>MSW</code>, <code>PSW</code></td>
+<td><strong>renamed</strong> from the live <code>imew</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Keeping <code>mpw</code> matters for the open past-season-anchor item, which asks for championships to be marked distinctly so finished seasons keep a focal point once next-upcoming has nothing to point at. That is not new machinery — it is styling a bucket the code has carried, unstyled, all along. Discarding the bucket would turn a styling decision into a prerequisite.</p>
+<h3 id="15-country-flags-are-css-and-depend-on-an-enrichment-pass">15 · Country flags are CSS, and depend on an enrichment pass</h3>
+<p><code>CountryFlag.svelte</code> draws horizontal bands, vertical bands and offset crosses in CSS. <strong>No emoji</strong> — inconsistent on Android, absent on many devices — and <strong>no image requests</strong>, per ADR-007's CSP.</p>
+<p>It has an unstated prerequisite: <code>txt_country</code> is free text today. Normalisation to ISO-3166 alpha-2 is a <strong>one-time enrichment pass with human review of ambiguous cases, never a per-render web lookup</strong>. <code>countryCode(raw)</code> returns <code>null</code> for unrecognised input so the component degrades to no flag and is not blocked on the pass completing.</p>
+<p>This is why ADR-028 is amended. Its refresh contract lists <code>txt_location</code> and <code>txt_country</code> as <strong>never refreshed</strong> — a rule that exists to stop the scraper overwriting curated values, not to freeze the columns forever. A one-time curated enrichment write is a different act from a scraper refresh, and the never-refreshed rule continues to bind the scraper afterwards.</p>
+<h3 id="16-what-is-removed-and-what-is-carried-unchanged">16 · What is removed, and what is carried unchanged</h3>
+<p><strong>Removed:</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Removed</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Month-grouped event list</td>
+<td>Replaced by the barrel; ADR-015 §2 superseded</td>
+</tr>
+<tr>
+<td>Rolling-progress strip</td>
+<td>The two-channel defect; ADR-018's UI consequence withdrawn</td>
+</tr>
+<tr>
+<td>Season dropdown</td>
+<td>The barrel owns season state (§4); the seam carries the code (§7)</td>
+</tr>
+<tr>
+<td>Time filter (all / past / future)</td>
+<td>The drum <em>is</em> the time control</td>
+</tr>
+<tr>
+<td>Weapon filter</td>
+<td>Dropped entirely — the data is not to be compressed</td>
+</tr>
+<tr>
+<td>Tournament count on the card</td>
+<td>Filled 103/103 and useless to read there; still loaded, still drives the barrel</td>
+</tr>
+<tr>
+<td><code>isActiveSeason</code> prop</td>
+<td>Existed only to gate the strip (<code>:34</code>, <code>:269</code>); becomes a lie once the strip goes. Delete from the props interface, from <code>App.svelte:81</code>, <strong>and</strong> the derivation at <code>App.svelte:399</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Carried unchanged — deliberately, not by omission:</strong></p>
+<ul>
+<li><strong>The CERT/PROD environment footer.</strong> <code>activeEnv</code> is <code>$bindable</code> and <code>App.svelte:379-380</code> derives <code>supabaseUrl</code> / <code>supabaseKey</code> from it, so pressing <code>PD</code> re-points the whole Supabase client at production. Four tests in <code>env-toggle.test.ts</code> mount <code>CalendarView</code> solely to drive this. Leaving <code>dualEnv</code> / <code>activeEnv</code> declared but unrendered compiles clean, passes <code>svelte-check</code>, and fails only at runtime as a silently missing control — the worst way for this one to fail. It is <strong>deliberately temporary</strong>: it retires when PROD moves off GitHub Pages to the WordPress CMS, together with both props and those four tests. Carry it across unchanged and <strong>do not improve it</strong>; the byte-identical second copy in <code>App.svelte:70-79</code> also stays, because hoisting it would add the footer to admin views that do not have it.</li>
+<li><strong><code>getEventDisplayStatus()</code></strong> from <code>lib/eventStatus.ts</code> — already exhaustive over the lifecycle plus derived awaiting-results (ADR-037). <code>EventCard</code> consumes it unchanged; zero new work.</li>
+<li><strong>The two ADR-037 / ADR-077 data rules</strong>, ported into <code>calendarQuarters.ts</code> verbatim: <code>CREATED</code> events hidden as dateless planning skeletons (<code>:264</code>), and the cancelled-event notice window of <code>dt_end + 7 days</code> (<code>:250-256</code>).</li>
+</ul>
+<h3 id="17-scroll-behaviour">17 · Scroll behaviour</h3>
+<p>The page scrolls; the barrel is <strong>not</strong> pinned. Pinning ~250px of drum above every card on a 568px screen leaves under half the display for the thing the reader came for, and the barrel is not used continuously — you spin it, pick, then read.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Keep the timeline and just re-tune the strip's colours.</strong> Rejected — the defect is two variables in one channel, so any palette inherits it. Re-tuning would have bought a nicer-looking version of the same unreadable encoding.</li>
+<li><strong>Horizontal timeline</strong> — this is what ADR-015 §2 explicitly rejected as &quot;poor mobile&quot;, and the objection deserves an answer rather than a reversal. It was right about a <em>scrolling</em> horizontal timeline, where the viewport is a sliding window over an unbounded strip and the reader loses their place. The barrel is not that: it is <strong>quantised</strong> into quarters, three rows are visible at once with the focus always centred, and the seams keep absolute position legible. The mobile objection is met by measurement at the rejected breakpoint — 320px verified throughout, five panels flat and six fanning — rather than by assertion.</li>
+<li><strong>Compress panels to fit the viewport.</strong> Rejected — at 320px a compressed panel is illegible, which trades a visible overlap for an invisible failure. Overlap keeps every panel at full size and trades <em>visibility</em> for <em>size</em>, so a date fragment always survives.</li>
+<li><strong>Shrink the drum to one row, or a flat carousel.</strong> Rejected — the receded rows are what make the control legible as a continuum; one row is a dropdown with extra steps.</li>
+<li><strong>Pin the barrel to the top.</strong> Rejected on the 568px arithmetic in §17.</li>
+<li><strong>A <code>CalendarFilters.svelte</code> component.</strong> Rejected. It was sized to hold two controls, the scope segment and a weapon picker; the weapon filter is a settled removal, so one control is left and it goes inline in the orchestrator with the state it depends on. A judgment call, not a constraint — extract it if the scope control ever gains a second dimension.</li>
+<li><strong>Per-weapon result-link labels.</strong> Rejected as an ADR-040 violation; day labels replaced them.</li>
+<li><strong>Retaining the weapon filter with a <code>localStorage</code> preference shared with the ranking tab's <code>BROŃ</code> selector.</strong> Rejected with the filter itself; there is no preference left to persist.</li>
+<li><strong>Nearest-hub / nearest-airport fields on the card.</strong> Dropped 2026-08-09 (§13) — never requested, no acceptance criterion, and the sole reason this work would have needed a migration.</li>
+<li><strong>Folding <code>MPW</code> into <code>ppw</code></strong> as the mock does, dropping the unused class. Rejected for the module (§14) — it would make the past-season-anchor decision a prerequisite instead of a styling choice.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>Four new files:</strong> <code>lib/calendarQuarters.ts</code>, <code>components/CalendarBarrel.svelte</code>, <code>components/EventCard.svelte</code>, <code>components/CountryFlag.svelte</code>. <code>CalendarView.svelte</code> becomes an orchestrator. <strong>Not five</strong> — <code>CalendarFilters.svelte</code> is not built.</li>
+<li><strong>Test triage spans two files and is not optional.</strong> <code>CalendarView.test.ts</code> holds 49 tests and <code>env-toggle.test.ts</code> a further 4 mounting the same component — <strong>53 in scope</strong>. Every one gets a decision recorded in one of three buckets — <strong>move</strong> (behaviour survives), <strong>rewrite</strong> (behaviour deliberately changed), <strong>delete</strong> (assertions about removed DOM) — and no test is deleted without recording its bucket. The <em>rewrite</em> bucket is currently empty; see §9.</li>
+<li><strong>Three of those deletions retire an ADR-018 consequence.</strong> R.23, R.24 and R.25 (<code>CalendarView.test.ts:374</code>, <code>:390</code>, <code>:401</code>) assert <code>.rolling-progress</code>, <code>.slot</code>, and <code>.slot.completed</code> / <code>.slot.planned</code>. They are the recorded verification of ADR-018's calendar UI, so ADR-018 must be amended in the same change rather than left pointing at deleted tests.</li>
+<li><strong>Carry-over is not affected, and ADR-018's calendar description is corrected rather than merely withdrawn.</strong> ADR-018 describes the calendar strip as three-state — green ✓ completed, amber <code>↩</code> carried, grey — empty. <strong>Only two of those states were ever built.</strong> <code>positionSlots</code> (<code>CalendarView.svelte:268</code>) computes a single boolean, <code>completed: e.enum_status === 'COMPLETED'</code>; the template renders <code>class:completed</code> / <code>class:planned</code>; the CSS at <code>:638-656</code> covers exactly those two per type bucket. The word <em>carried</em> and the <code>↩</code> glyph do not appear in <code>CalendarView.svelte</code>, and nothing in it reads prior-season results — the strip is named <code>rolling-progress</code> while displaying no rolling data. Carry-over's actual surface is <code>DrilldownModal.svelte:49-104</code> (the <code>↩</code> banner, <code>.carried-row</code>, striped swatches, legend), driven by <code>bool_has_carryover</code> on the ranking row types (<code>types.ts:95</code>, <code>:105</code>). It is a ranking concept: a fencer's points from last season's event at the same position stand in until this season's event at that position is scored. <strong>A calendar has no carried state to lose</strong> — an event either takes place or it does not. So ADR-018's amendment withdraws the calendar UI consequence <em>and</em> corrects a three-state claim that never matched the implementation, which is a documentation defect predating this redesign.</li>
+<li><strong>Two live defects are reported, not silently fixed:</strong> the <code>tournaments_count</code> pluralisation defect (§12), and the duplicated env footer between <code>App.svelte</code> and <code>CalendarView.svelte</code> (§16 — leave it, it retires with the WordPress migration).</li>
+<li><strong>One finding to verify, not fix:</strong> <code>ce/CalendarElement.svelte</code> derives <code>demo ? MOCK_CALENDAR_EVENTS : []</code>, meaning the non-demo embed renders empty. Confirm how the production <code>spws-calendar</code> element is actually fed before changing anything; if it is genuinely unwired that is a separate report. Note also that the embed renders <strong>no header</strong> — <code>CalendarElement</code> mounts <code>CalendarView</code> alone, so the hamburger, wordmark and language toggle are app-only chrome. Should that change, the logo's <code>src=&quot;SPWS-logo.png&quot;</code> is document-relative and would resolve against the host page and 404.</li>
+<li><strong><code>SCORED</code> label dependency.</strong> ADR-077 recorded that the display map omits <code>CREATED</code> and <code>SCORED</code>, both rendering as &quot;Planned&quot;, marked as a fix. <code>CREATED</code> is moot here since the barrel hides it, but <code>SCORED</code> is a real state on the forward spine and the card must label it. Verify against <code>eventStatus.ts</code> before assuming ADR-037's helper is complete.</li>
+<li><strong>Zero DB impact.</strong> No migration, no view rebuild, no <code>types.ts</code> extension, no <code>plpgsql-check</code> run.</li>
+<li><strong>Documentation:</strong> register in specification Appendix C; update <code>doc/handbook/product/product-surfaces.html</code>, <code>doc/handbook/subsystems/events-and-registration.html</code>, and <code>doc/handbook/reference/codebase-map.html</code>. RTM check for requirements touching calendar presentation — ADR-030's FR-90/FR-91 and ADR-079's FR-120–FR-130 keep their wording but the test IDs they cite move.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<p>Both remaining items land in <code>resolveAnchorQuarter()</code>, which is why that function is written <strong>last</strong> in the pure module.</p>
+<ol>
+<li><strong>What the card opens on</strong> — next upcoming, most recent result, or time-sensitive. <strong>Recommendation: time-sensitive</strong> — the result for seven days after an event ends, then the next upcoming. The Monday after a competition weekend everyone wants results; three weeks later nobody does. The seven-day window already exists in the codebase for cancelled-event notices, so it is not a new concept to explain. <em>The mock opens on next-upcoming because that was the simplest thing to demonstrate; that is not a decision.</em></li>
+<li><strong>Past-season anchor</strong> — finished seasons have no next-upcoming event, so the drum loses its focal point and rows read flat. <strong>Recommendation:</strong> mark championships (<code>MPW</code>, <code>MŚW</code>, <code>MEW</code>) distinctly using the <code>mpw</code> and <code>int</code> buckets §14 preserves, so past rows keep structure. Marking events the viewer competed in would be better but is impossible on a public embed with no viewer identity.</li>
+</ol>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="verification">Verification</h2>
+<p><code>npm run check</code> and <code>svelte-check</code> on every changed <code>.svelte</code> and <code>.ts</code>; <code>npx vitest run</code> for the full frontend suite. Browser preview via the <code>frontend-ce-dev</code> launch config on port 5299 (<code>index.ce.html</code>), at 320, 360 and 390px.</p>
+<p><strong>Measure, do not eyeball</strong> — most of the geometry findings in this design were caught that way and would have passed a glance:</p>
+<ul>
+<li>five panels flat at 320px, six fanning; no content spilling past a panel border, and the selected panel's outline not clipped by the row's scroll container</li>
+<li>the selected panel's month in full and untruncated in <strong>both</strong> languages — <code>października</code> is the widest</li>
+<li>rotation across a season boundary updates season state</li>
+<li>the <code>PPW | +EVF</code> control appears only when <code>show_evf_toggle_calendar</code> allows it, <strong>and</strong> turning it off actually removes EVF events rather than only hiding the buttons</li>
+<li>the next-upcoming ring moves when scope is toggled</li>
+<li>all three fee lines with the right currency, and no tier on a single-weapon event</li>
+<li>the entry-list link present on a future event whose deadline has passed, and absent on a cancelled one</li>
+<li>copy-to-clipboard writing the full composed address, with the icon confirming and reverting</li>
+<li><code>EN | PL</code> switching every string, including plural forms at counts of 1, 2 and 5</li>
+<li>the CERT/PROD footer still present and still switching environments</li>
+</ul>
+<p>A 320px screenshot placed beside the mock is the acceptance check.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="083-server-enforced-authorization.html">← ADR-083: Server-Enforced Authorization — Deny-by-Default Grants and a Standing Posture Gate</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>084-calendar-quarter-barrel-event-card.md</code> · source SHA-256 <code>cee1b7e2c150b5f80241196a86b014af56b1b1360ef3254b11cb883594654400</code></footer>
+</div></body></html>

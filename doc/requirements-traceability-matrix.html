@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="9cd196d3beb5d039f21c134ab2d2703463ecc64388ce305d42578c2560e96644">
+<meta name="doc-source-sha256" content="4234cf924955505d9d8576f0414eded48f9bebd2233bb7bff12b3028dc74c9e2">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -650,15 +650,15 @@
 <tr>
 <td>FR-90</td>
 <td>Event registration URL: nullable <code>url_registration</code> on <code>tbl_event</code>, displayed in Calendar before deadline/start, editable in Admin UI</td>
-<td>UC21, ADR-030</td>
-<td>8.18–8.20, 8.21–8.25, 9.43a–9.43c</td>
+<td>UC21, ADR-030, ADR-084</td>
+<td>8.18–8.20, 9.43a–9.43c; <strong>CQ.27–CQ.35</strong> (visibility rules, pure), <strong>EC.20–EC.24</strong> (card rendering) — <em>retargeted 2026-08-09: the requirement is unchanged, but ADR-084 replaced the calendar timeline, so vitest 8.21–8.25 no longer exist</em></td>
 <td>Covered</td>
 </tr>
 <tr>
 <td>FR-91</td>
 <td>Event registration deadline: nullable <code>dt_registration_deadline</code> on <code>tbl_event</code>, displayed in Calendar until deadline passes, editable in Admin UI</td>
-<td>UC21, ADR-030</td>
-<td>8.18–8.20, 8.21–8.25, 9.43a–9.43c</td>
+<td>UC21, ADR-030, ADR-084</td>
+<td>8.18–8.20, 9.43a–9.43c; <strong>CQ.27–CQ.30</strong> (cutoff fallback, urgency, expiry), <strong>EC.20–EC.21</strong> (dd/mm/yyyy + under-seven-days flag) — <em>retargeted 2026-08-09, see FR-90</em></td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -931,7 +931,7 @@
 <td>FR-130</td>
 <td><strong>Public registration UI (Phase 2)</strong>: standalone shareable page <code>frontend/register.html</code> (own URL, zero dependency on calendar/main app) renders <code>&lt;spws-registration event=&quot;…&quot;&gt;</code> (identity → exact-match routing → RODO consent gate → payment, click-to-copy) or <code>&lt;spws-entry-list event=&quot;…&quot;&gt;</code> (<code>?view=list</code>) — custom elements built by <code>vite.config.ce.ts</code>. <strong>Expiry gating (D10, client-side mirror of the FR-122 server guard):</strong> <code>today ≤ COALESCE(dt_registration_deadline, dt_start)</code> → form open; past cutoff but <code>≤ dt_end</code> → &quot;Zapisy zamknięte&quot; (list still viewable); past <code>dt_end</code> → whole page expired, no form/list. <code>bool_use_spws_registration=FALSE</code> → external <code>url_registration</code> link only (self-enforced, so a shared link is always safe). Mobile-first (D8): single-column reflow ≤480px, no horizontal scroll, ≥36px touch targets. <strong>RODO checkbox mobile fix + invalid-state cue (same day, user-reported on-device regression):</strong> the global <code>input, select { width: 100% }</code> rule was stretching the RODO <code>&lt;input type=&quot;checkbox&quot;&gt;</code> to fill its flex row, pushing the consent label off-screen on narrow viewports — <code>.reg-rodo-checkbox</code> now overrides to a fixed custom-styled 20×20px box (<code>appearance: none</code>, own checked/unchecked paint) so D8's &quot;no horizontal scroll&quot; holds on the consent step too. The accept button no longer hard-<code>disabled</code>s on an unticked box (which silently swallowed the click with no feedback); clicking without consent now sets <code>consentInvalid</code> — the checkbox fills light red (<code>rgba(255,92,92,.45)</code> background + red border) until the box is ticked, then clears automatically. <strong>Calendar integration (P2.8, amended ADR-079 §7 2026-07-05):</strong> admin <code>EventManager.svelte</code> &quot;Rejestracja SPWS&quot; section (toggle + 2/3-weapon fee tiers) writes via extended <code>fn_update_event</code>, which now also auto-derives and persists absolute <code>url_registration</code>/<code>url_entry_list</code> (<code>fn_update_event p_url_entry_list</code>, migration <code>20260705000004</code>) so a cross-origin embed is self-sufficient (no <code>registration-base</code> attribute — that plumbing was removed). <code>CalendarView.svelte</code> renders both links from the stored columns and opens them in an in-app <code>RegistrationModal.svelte</code> overlay (DrilldownModal-style; <code>RegistrationForm</code>/<code>EntryList</code> gained <code>onclose</code>/<code>onviewlist</code> props) instead of navigating away; <code>href</code> is kept for copy-link/open-in-new-tab. <code>bool_use_spws_registration=FALSE</code> still keeps the existing external <code>url_registration</code> link unchanged, plain navigation (add-only, ADR-080 §5 UI constraint).</td>
 <td>ADR-079 §6 (UI), §7 (URL auto-fill + modal, 2026-07-05 amend), ADR-080 §5 (add-only constraint), ADR-078 (RODO notice/consent)</td>
-<td>vitest: <code>RegistrationForm.test.ts</code> (18: +2 accept-without-consent flags invalid / ticking clears invalid + writes, 2026-07-05 PM mobile fix), <code>EntryList.test.ts</code> (12, see FR-123), <code>birthYearEstimate.test.ts</code> +8 (<code>birthYearToVcat</code>), <code>api.registration.test.ts</code> +2 (<code>fetchEventForRegistration</code>), <code>EventManager.test.ts</code> +3, <code>CalendarView.test.ts</code> +2 (+2 ADR-079§7: stored-URL links, modal open/close); <code>RegistrationModal.test.ts</code> (5, new); pgTAP 8.23 (<code>fn_update_event</code> registration fields) + 8.24 (<code>p_url_entry_list</code>); LOCAL E2E (exact-match fencer → RODO accept → <code>tbl_registration</code> row with <code>ts_consent</code>/<code>txt_consent_version</code> → appears in entry list)</td>
+<td>vitest: <code>RegistrationForm.test.ts</code> (18: +2 accept-without-consent flags invalid / ticking clears invalid + writes, 2026-07-05 PM mobile fix), <code>EntryList.test.ts</code> (12, see FR-123), <code>birthYearEstimate.test.ts</code> +8 (<code>birthYearToVcat</code>), <code>api.registration.test.ts</code> +2 (<code>fetchEventForRegistration</code>), <code>EventManager.test.ts</code> +3, <code>CalendarView.test.ts</code> <strong>CV.12–CV.14</strong> (orchestrator opens/closes the modal; <em>retargeted 2026-08-09 by ADR-084 — the links moved from the timeline row to <code>EventCard</code>, asserted there by EC.22/EC.24</em>); <code>RegistrationModal.test.ts</code> (5, new); pgTAP 8.23 (<code>fn_update_event</code> registration fields) + 8.24 (<code>p_url_entry_list</code>); LOCAL E2E (exact-match fencer → RODO accept → <code>tbl_registration</code> row with <code>ts_consent</code>/<code>txt_consent_version</code> → appears in entry list)</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -1167,5 +1167,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>9cd196d3beb5d039f21c134ab2d2703463ecc64388ce305d42578c2560e96644</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>4234cf924955505d9d8576f0414eded48f9bebd2233bb7bff12b3028dc74c9e2</code></footer>
 </div></body></html>

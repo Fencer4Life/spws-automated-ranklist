@@ -1,0 +1,258 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ADR alignment before the calendar barrel (9 Aug 2026)</title>
+<style>
+:root{
+  --surface-0:#f7f6f3; --surface-1:#f1efe9; --surface-2:#ffffff;
+  --text-primary:#1c1b19; --text-secondary:#565550; --text-muted:#8a887f;
+  --border:rgba(0,0,0,.13); --rule:rgba(0,0,0,.10);
+  --accent:#185FA5; --ok:#3B6D11; --warn:#854F0B; --bad:#A32D2D;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+:root{
+  --surface-0:#17171a; --surface-1:#1f1f23; --surface-2:#26262b;
+  --text-primary:#eceae5; --text-secondary:#a9a79f; --text-muted:#77756d;
+  --border:rgba(255,255,255,.14); --rule:rgba(255,255,255,.12);
+  --accent:#B5D4F4; --ok:#97C459; --warn:#EF9F27; --bad:#F09595;
+}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface-0);color:var(--text-primary);font-family:var(--serif);font-size:17px;line-height:1.62}
+.page{max-width:47rem;margin:0 auto;padding:3.5rem 1.5rem 6rem}
+.eyebrow{font-family:var(--sans);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .8rem}
+h1{font-size:2rem;line-height:1.2;font-weight:600;margin:0 0 .6rem;letter-spacing:-.015em}
+.standfirst{font-size:1.13rem;color:var(--text-secondary);margin:0 0 1.5rem;line-height:1.5}
+.meta{font-family:var(--sans);font-size:12.5px;color:var(--text-muted);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:.7rem 0;display:flex;gap:1.4rem;flex-wrap:wrap;margin-bottom:2.5rem}
+.meta b{font-weight:600;color:var(--text-secondary)}
+h2{font-size:1.36rem;font-weight:600;margin:3rem 0 .3rem;line-height:1.3}
+h2 .num{font-family:var(--sans);font-size:12px;letter-spacing:.14em;color:var(--text-muted);display:block;margin-bottom:.4rem;font-weight:500}
+h3{font-size:1.05rem;font-weight:600;margin:1.8rem 0 .4rem}
+p{margin:0 0 .9rem}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:.84em;background:var(--surface-1);padding:.12em .38em;border-radius:4px;border:1px solid var(--rule)}
+ol,ul{margin:0 0 1rem;padding-left:1.35rem}
+li{margin-bottom:.45rem}
+table{width:100%;border-collapse:collapse;font-family:var(--sans);font-size:14px;margin:.9rem 0 1.3rem;display:block;overflow-x:auto}
+th,td{text-align:left;padding:.55rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap}
+td code{background:none;border:none;padding:0}
+.callout{background:var(--surface-1);border-radius:10px;padding:1rem 1.2rem;margin:1.3rem 0;font-family:var(--sans);font-size:14.5px;line-height:1.6}
+.callout b{font-weight:600}
+.lede{font-family:var(--sans);font-size:14.5px;color:var(--text-secondary);line-height:1.6}
+.open{border-left:3px solid var(--warn);padding-left:1rem;margin:1.1rem 0}
+.open b{font-family:var(--sans);font-size:14px;display:block;margin-bottom:.2rem}
+.open p{font-family:var(--sans);font-size:14px;color:var(--text-secondary);margin:0 0 .35rem;line-height:1.55}
+.rec{font-family:var(--sans);font-size:13.5px;color:var(--ok)}
+.locked{font-family:var(--sans);font-size:14px;line-height:1.6}
+.locked li{margin-bottom:.35rem}
+hr{border:none;border-top:1px solid var(--rule);margin:2.6rem 0}
+.big{font-family:var(--sans);font-size:15px;background:var(--surface-1);border-radius:10px;padding:1rem 1.2rem;margin:1.2rem 0}
+.tag{font-family:var(--sans);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;padding:.18em .5em;border-radius:4px;white-space:nowrap;border:1px solid}
+.t-block{color:var(--bad);border-color:var(--bad)}
+.t-conc{color:var(--warn);border-color:var(--warn)}
+.t-clean{color:var(--ok);border-color:var(--ok)}
+.t-new{color:var(--accent);border-color:var(--accent)}
+.adr{border-left:3px solid var(--border);padding-left:1.1rem;margin:1.6rem 0}
+.adr.block{border-left-color:var(--bad)}
+.adr.conc{border-left-color:var(--warn)}
+.adr h3{margin-top:0;display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap}
+.adr .why{font-family:var(--sans);font-size:14px;color:var(--text-secondary);line-height:1.58;margin:0 0 .5rem}
+.adr .act{font-family:var(--sans);font-size:14px;line-height:1.58;margin:0}
+.adr .act b{font-weight:600}
+.q{font-family:var(--sans);font-size:14px;background:var(--surface-1);border-left:2px solid var(--text-muted);padding:.5rem .8rem;margin:.6rem 0;color:var(--text-secondary)}
+</style>
+<div class="page">
+
+<p class="eyebrow">ADR audit · SPWS Ranklist</p>
+<h1>ADR alignment before the calendar barrel</h1>
+<p class="standfirst">Every prior decision the barrel-and-card redesign touches, and which of them has to move before Phase 1 can be written. Four are blocking, five are concurrent, six are clean.</p>
+
+<div class="meta">
+  <span><b>Date</b> 9 August 2026</span>
+  <span><b>Corpus</b> 81 ADRs (001–083)</span>
+  <span><b>Verdict</b> 4 blocking · 5 concurrent · 1 new</span>
+  <span><b>Plan</b> <code>kalendarz-barrel-2026-08-08.html</code></span>
+</div>
+
+<div class="callout">
+  <p><b>What this document is.</b> The plan's §08 documentation gate names one new ADR and, in passing, four existing ones. That list is incomplete. This is the full pass over all 81 ADRs, sorted by whether the decision has to be settled <em>before</em> <code>calendarQuarters.ts</code> is written or merely <em>alongside</em> the work.</p>
+  <p style="margin-bottom:0"><b>The one finding that changes the plan.</b> <b>ADR-018 pins three live tests</b> — R.23, R.24 and R.25 at <code>CalendarView.test.ts:373–412</code> — to the rolling-progress strip the redesign deletes. The plan's test triage lists <code>.slot</code> assertions in its <em>delete</em> bucket without recording that deleting them retires a documented ADR consequence. That is exactly the case the triage rule was written to catch, and the triage as written walks past it.</p>
+</div>
+
+<h2><span class="num">00</span>Verdict table</h2>
+
+<p class="lede">Blocking means the decision defines logic that Phase 1 implements, so writing the module first would encode an undecided rule. Concurrent means the ADR must move with the work but does not gate the first commit.</p>
+
+<table>
+<thead><tr><th>ADR</th><th>Owns</th><th>Action</th><th>When</th></tr></thead>
+<tbody>
+<tr><td><b>ADR-015</b> §2</td><td>Calendar layout — vertical timeline</td><td><b>Supersede §2</b></td><td><span class="tag t-block">Blocking</span></td></tr>
+<tr><td><b>ADR-018</b></td><td>Rolling-progress strip + R.23–R.25</td><td><b>Amend</b> — withdraw UI surface</td><td><span class="tag t-block">Blocking</span></td></tr>
+<tr><td><b>ADR-079</b> §7</td><td><code>url_entry_list</code> gate + modal</td><td><b>Amend</b> — decouple gate</td><td><span class="tag t-block">Blocking</span></td></tr>
+<tr><td><b>ADR-017</b></td><td>EVF toggle visibility matrix</td><td><b>Amend</b> — record data constraint</td><td><span class="tag t-block">Blocking</span></td></tr>
+<tr><td><b>ADR-030</b></td><td><code>regCutoff</code>, urgency, DOM contract</td><td><b>Amend</b> — relocate contract</td><td><span class="tag t-conc">Concurrent</span></td></tr>
+<tr><td><b>ADR-005</b></td><td>i18n; "no pluralisation" trade-off</td><td><b>Amend</b> — reverse trade-off</td><td><span class="tag t-conc">Concurrent</span></td></tr>
+<tr><td><b>ADR-028</b></td><td>Never-refreshed columns</td><td><b>Amend</b> — carve out enrichment</td><td><span class="tag t-conc">Concurrent</span></td></tr>
+<tr><td><b>ADR-037</b></td><td>Display status + cancel window</td><td><b>Amend</b> — repoint consumers</td><td><span class="tag t-conc">Concurrent</span></td></tr>
+<tr><td><b>ADR-040</b></td><td>Equal-status URL slots</td><td><b>Amend</b> — permit render-time labels</td><td><span class="tag t-conc">Concurrent</span></td></tr>
+<tr><td><b>ADR-084</b></td><td>Barrel + card</td><td><b>Author new</b></td><td><span class="tag t-new">New</span></td></tr>
+<tr><td>ADR-007</td><td>Shadow DOM, <code>&lt;spws-calendar&gt;</code></td><td>No change — one finding to report</td><td><span class="tag t-clean">Clean</span></td></tr>
+<tr><td>ADR-009</td><td>CERT/PROD runtime toggle</td><td>No change — carry unchanged</td><td><span class="tag t-clean">Clean</span></td></tr>
+<tr><td>ADR-031</td><td>Auto-active season</td><td>No change</td><td><span class="tag t-clean">Clean</span></td></tr>
+<tr><td>ADR-032</td><td>Drilldown mobile cards</td><td>No change — precedent only</td><td><span class="tag t-clean">Clean</span></td></tr>
+<tr><td>ADR-046</td><td>PEW weapon-letter suffix</td><td>No change — redesign relies on it</td><td><span class="tag t-clean">Clean</span></td></tr>
+<tr><td>ADR-077</td><td>Lifecycle, <code>CREATED</code> hidden</td><td>No change — but see its own open fix</td><td><span class="tag t-clean">Clean</span></td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h2><span class="num">01</span>Blocking — settle before <code>calendarQuarters.ts</code></h2>
+
+<div class="adr block">
+<h3>ADR-015 §2 — Calendar Layout: Vertical Timeline <span class="tag t-block">Supersede</span></h3>
+<p class="why">This is the decision the redesign reverses, and it is the only one that needs superseding rather than amending. ADR-015 §2 chose a vertical timeline with connected dots, month headers, colour-coded status dots and event cards carrying date, name, location, <b>tournament count</b> and status badge. The barrel removes every element of that, and the tournament count is a deliberate drop per the plan's §04.</p>
+<p class="why"><b>It also rejected the shape we are now building.</b> §2's rejected-alternatives line dismisses a horizontal timeline as poor on mobile. The barrel is a rotating horizontal drum, so the new ADR cannot quietly ignore that: it has to answer it with the 320px evidence — five panels flat, six fanning, full-size overlap instead of compression. An ADR that reverses a rejection without addressing the reason reads as an oversight to the next person.</p>
+<p class="act"><b>Action.</b> Supersede §2 only — §§1 and 3–9 cover the app shell, EVF import, tournament management, identity admin and scoring editor and stay valid. Mark the <code>m8_calendar_view.html</code> row in ADR-015's mockup table (line 95) as superseded rather than <b>APPROVED</b>; it is the only <b>APPROVED</b> artefact the redesign invalidates.</p>
+</div>
+
+<div class="adr block">
+<h3>ADR-018 — Rolling Score for Active Season <span class="tag t-block">Amend</span></h3>
+<p class="why">ADR-018's UI-changes section records the calendar consequence explicitly: a slot bar above the timeline for the active season, green ✓ completed, amber ↩ carried, grey — empty, with the mockup <code>m10_calendar_rolling.html</code>. Its test table pins three vitest assertions to it, and all three are live today:</p>
+<table>
+<thead><tr><th>Test</th><th>Location</th><th>Asserts</th></tr></thead>
+<tbody>
+<tr><td>R.23</td><td><code>CalendarView.test.ts:374</code></td><td><code>.rolling-progress</code> and its <code>.slot</code> children render for the active season</td></tr>
+<tr><td>R.24</td><td><code>CalendarView.test.ts:390</code></td><td><code>.rolling-progress</code> is null for a non-active season</td></tr>
+<tr><td>R.25</td><td><code>CalendarView.test.ts:401</code></td><td><code>.slot.completed</code> / <code>.slot.planned</code> track event status</td></tr>
+</tbody>
+</table>
+<p class="why">All three go in the redesign's <em>delete</em> bucket, and the plan's triage never names them or ADR-018. Deleting an ADR-pinned test without touching the ADR leaves a decision whose recorded verification no longer exists — the failure mode the triage rule exists to prevent.</p>
+<p class="why"><b>The scoring rule itself is untouched.</b> ADR-018's substance — <code>completed_positions</code> redefined as positions with a scored result, the per-(position, weapon, gender) either/or, migration <code>20260626120000</code> — is database-side and entirely unaffected. Only the visual surface is withdrawn. The amendment must say that plainly, or a future reader will misread a UI deletion as a scoring change.</p>
+<div class="q"><b>Correction — an earlier draft of this section raised a decision that does not exist.</b> It claimed the strip was rolling's only UI surface, that ADR-018's third state <b>carried</b> had nowhere to go in the barrel, and that this needed a decision. <b>That was wrong, and checking the code settles it rather than the reader having to.</b> The calendar strip has only <em>two</em> states: <code>positionSlots</code> at <code>CalendarView.svelte:268</code> computes one boolean, <code>completed: e.enum_status === 'COMPLETED'</code>, the template renders <code>class:completed</code> / <code>class:planned</code>, and the CSS at <code>:638-656</code> covers exactly those two per bucket. The word <em>carried</em> and the <code>↩</code> glyph never appear in <code>CalendarView.svelte</code>, and nothing in it reads prior-season results.</div>
+<p class="why"><b>So ADR-018's calendar line describes a strip that was never built.</b> Its three-state description — green ✓ completed, amber ↩ carried, grey — empty — has two states implemented and the carried one absent. The strip is even named <code>rolling-progress</code> while carrying no rolling data; the name is a misnomer inherited from that ADR's framing. Carry-over's real surface is <code>DrilldownModal.svelte:49-104</code> — the <code>↩</code> banner, <code>.carried-row</code>, striped swatches and legend — driven by <code>bool_has_carryover</code> on the <em>ranking</em> row types at <code>types.ts:95</code>. It is a ranking concept and always was.</p>
+<p class="why">This makes the item <b>simpler, not harder</b>. Nothing is lost by deleting the strip, no decision is required, and the barrel's fill-and-ring scheme is complete as designed. What the amendment must additionally do is correct a claim that was never true — a documentation defect that predates this redesign and would otherwise be inherited by whoever reads ADR-018 next.</p>
+<p class="act"><b>Action.</b> Amend ADR-018: withdraw the calendar UI consequence, <b>correct the three-state description to the two states actually built</b>, retire R.23–R.25 with the reason, and state that the scoring rule and its migration are unaffected. No product decision needed.</p>
+</div>
+
+<div class="adr block">
+<h3>ADR-079 §7 — Event Self-Registration &amp; Identity <span class="tag t-block">Amend</span></h3>
+<p class="why">ADR-079 owns <code>url_entry_list</code>, the computed SPWS registration URLs, and the §7 amendment that made <code>CalendarView</code> render both links from the flags and open <code>RegistrationModal</code> on left-click with <code>preventDefault()</code>. The redesign changes the entry-list gate from <code>regOpen</code> to <code>dt_start &gt; today</code>, and never on a cancelled event — a rule change that lands squarely in this ADR's territory.</p>
+<p class="why">It is blocking because <code>registrationState(event, today)</code> is a Phase 1 function and the plan requires it to return the registration and entry-list flags <em>separately</em>. That signature is the ADR change made executable; writing it before the decision is recorded means the module encodes a rule with no normative home.</p>
+<p class="why">The plan's cost analysis is sound and I re-verified the shape of it: no existing test pins the old coupling, so this costs new tests rather than rewrites. The uncomfortable half is the reason — the entry list's dependence on <code>regOpen</code> was never covered, so nothing would have caught it drifting either way.</p>
+<p class="act"><b>Action.</b> Amend §7: entry list gated on <code>dt_start &gt; today</code>, decoupled from the registration cutoff, suppressed on <code>CANCELLED</code>; note that registration and entry list answer different questions and deliberately no longer share a date. Keep the modal and ADR-079 link behaviour as-is — those move unchanged.</p>
+</div>
+
+<div class="adr block">
+<h3>ADR-017 — Season-Configurable EVF Toggle <span class="tag t-block">Amend</span></h3>
+<p class="why">Two divergences, and the second is the one that matters.</p>
+<p class="why"><b>Stale matrix.</b> ADR-017 defines a single <code>bool_show_evf_toggle</code> with <code>DEFAULT FALSE</code> governing three components — FilterBar, CalendarView, DrilldownModal — from one flag. The calendar now has its own field, <code>show_evf_toggle_calendar</code>, defaulting to <b>true</b>, split from its ranklist sibling by ADR-044 so the surfaces are independent. ADR-017's three-column matrix no longer describes the calendar column, and its stated default is the opposite of the calendar's.</p>
+<p class="why"><b>Unrecorded data constraint.</b> ADR-017 records only <em>visibility</em> — buttons hidden, mode locked to PPW. It never says that with the flag off the calendar is domestic-<em>only</em> regardless of scope state. That behaviour is real and load-bearing: <code>CalendarView.svelte:291</code> reads <code>!showEvfToggle || scopeFilter === 'ppw'</code>, and in the mock it is the difference between 103 panels and 22. Hiding the control without forcing the scope would strand EVF events on screen with no way to filter them. Phase 1 ports that filter, so it needs a normative statement to port <em>from</em>.</p>
+<p class="act"><b>Action.</b> Amend ADR-017: record the ADR-044 split and the calendar's opposite default, and state the data constraint — the flag governs the event set, not merely the buttons. Confirm the ranklist sibling's <code>FALSE</code> default is untouched; the split was deliberate and must not be re-merged.</p>
+</div>
+
+<hr>
+
+<h2><span class="num">02</span>Concurrent — move with the work</h2>
+
+<div class="adr conc">
+<h3>ADR-030 — Event Registration URL + Deadline <span class="tag t-conc">Amend</span></h3>
+<p class="why">ADR-030 is the normative home of the computation the plan warns against rewriting from memory: <code>regCutoff = dt_registration_deadline ?? dt_start</code>, the deadline text's stricter independent test, and the two-tier urgency where under seven days turns the block red. The redesign <b>preserves all of it</b> — this is a relocation, not a rule change.</p>
+<p class="why">What breaks is the DOM contract. ADR-030 names <code>.timeline-registration</code> as the container carrying <code>.reg-urgent</code>, plus <code>.registration-deadline</code> and <code>.registration-link</code>. The rewrite deletes <code>.timeline-registration</code> outright. An ADR describing a CSS class that no longer exists is a quiet trap for whoever next touches urgency styling.</p>
+<p class="act"><b>Action.</b> Amend: the logic moves to <code>registrationState()</code> in <code>calendarQuarters.ts</code>, presentation moves to <code>EventCard.svelte</code>, and the container class is renamed. Add a pointer to the ADR-079 entry-list divergence so ADR-030's display-logic table is not read as still governing both links.</p>
+</div>
+
+<div class="adr conc">
+<h3>ADR-005 — Svelte 5 <code>$state</code> for Internationalisation <span class="tag t-conc">Amend</span></h3>
+<p class="why">ADR-005 records a trade-off the redesign reverses outright: no pluralisation support, Polish has three grammatical forms, and the then-current 46 keys contained no plurals. The plan introduces a three-form Polish pluralisation helper keyed by count, including the trap that 12–14 take the genitive while 22–24 do not. That is the recorded trade-off being retired.</p>
+<p class="why">The live defect proves the trade-off expired on its own: <code>tournaments_count</code> is a flat string, concatenated with the count at <code>CalendarView.svelte:72</code>, so <b>2 turniejów</b> and <b>1 tournaments</b> are both in production today. The card drops that field, but the helper is needed regardless and the defect should be reported rather than silently absorbed.</p>
+<p class="why">Second, smaller divergence: ADR-005 records month localisation via <code>toLocaleString('pl-PL', {month:'short'})</code>. The card needs full months in the <b>genitive</b> — <code>18 kwietnia</code>, not <code>18 kwiecień</code> — which is why the plan gives the calendar its own keys rather than borrowing <code>month_1…12</code>.</p>
+<p class="act"><b>Action.</b> Amend ADR-005 with a pluralisation sub-decision and the genitive-month key rule. Cross-reference ADR-063, which already established that Polish grammatical case is a first-class concern in this codebase — that precedent makes this an extension rather than a new principle.</p>
+</div>
+
+<div class="adr conc">
+<h3>ADR-028 — EVF Calendar + Results Import <span class="tag t-conc">Amend</span></h3>
+<p class="why">This is the unstated prerequisite the plan flags against <code>CountryFlag</code>, and it lands here. ADR-028's refresh contract lists columns that are <b>never refreshed</b>, and <code>txt_location</code> and <code>txt_country</code> are both on that list. The redesign needs exactly those two columns written: ISO-3166 alpha-2 normalisation of free-text country (today <b>Polska</b>, <b>Germany</b>, <b>GRUZJA</b>, and both <b>Great Britain</b> and <b>United Kingdom</b> for one country), and the location backfill for the current and previous season.</p>
+<p class="why">A one-time, human-reviewed enrichment pass is a different act from a scraper refresh, and the distinction is worth writing down: ADR-028's rule exists to stop the scraper overwriting curated values, not to freeze the columns forever. Without the carve-out, the enrichment pass looks like a violation of the refresh contract.</p>
+<p class="act"><b>Action.</b> Amend ADR-028 to distinguish scraper refresh from one-time curated enrichment, and confirm the never-refreshed rule still binds the scraper afterwards. Also record the venue-in-city defect — the scraper writes venue strings into <code>txt_location</code> — since the card's location line assumes a city and the mock never infers one that is not literally in the string.</p>
+</div>
+
+<div class="adr conc">
+<h3>ADR-037 — Derived Display Status <span class="tag t-conc">Amend</span></h3>
+<p class="why">The helper itself is reused unchanged and the plan is right that this is zero new work — <code>getEventDisplayStatus()</code> is already exhaustive over the lifecycle plus derived awaiting-results. The amendment is pointer maintenance, not substance: ADR-037 names its consumers as <code>CalendarView.svelte</code> and <code>EventManager.svelte</code>, and its 2026-08-07 amendment states the cancelled-notice window is implemented in <code>CalendarView.svelte</code> and tested in <code>CalendarView.test.ts</code>. Both move — the window into <code>calendarQuarters.ts</code>, the consumer into <code>EventCard.svelte</code>.</p>
+<div class="q"><b>Dependency worth checking before Phase 1.</b> ADR-077 records a bug against this display map: it omits <code>CREATED</code> and <code>SCORED</code>, both rendering as <b>Planned</b>, marked <b>fix</b> and not obviously closed. The barrel hides <code>CREATED</code> so that half is moot, but <code>SCORED</code> is a real lifecycle state on the forward spine and the card must label it correctly. Verify against <code>eventStatus.ts</code> before assuming the helper is complete.</div>
+<p class="act"><b>Action.</b> Amend the consumer list and the amendment's implementation pointers. Confirm the <code>SCORED</code> label exists.</p>
+</div>
+
+<div class="adr conc">
+<h3>ADR-040 — Multi-Slot Event Result URLs <span class="tag t-conc">Amend</span></h3>
+<p class="why">ADR-040 states the five URL slots are equal-status with no role labels, no per-slot enum and no primary pointer, and it explicitly rejected a child table with role labels as overkill. The plan honours this: day labels are <b>derived at render time</b> from the URL's own content, never stored, and the plan cites the same clause when rejecting an earlier per-weapon design. So there is no conflict in substance.</p>
+<p class="why">The amendment is defensive. A reader who meets <b>Dzień 1 / Dzień 2</b> in the new card and then reads ADR-040's no-role-labels rule will reasonably conclude the UI violates it. Recording that a render-time label derived from URL content is compatible — while a stored role remains rejected — closes that gap. Open item 1, the fallback for platforms that do not encode the date, is the same concern: Engarde puts the date in the path so those label themselves, FTL and 4Fence may not, and ADR-040 forbids inferring day from slot position because slots are compacted.</p>
+<p class="act"><b>Action.</b> Amend with a render-time-labelling clause and resolve open item 1 inside it. The plan's recommendation — bare numbering, <b>Wyniki 1 / Wyniki 2</b> — degrades honestly and signals which platforms need a parser; I agree with it.</p>
+</div>
+
+<hr>
+
+<h2><span class="num">03</span>The new ADR — and the one constraint on how it is written</h2>
+
+<p class="lede">Replacing the list and strip with a barrel and card is an architectural decision with a public-facing consequence, so it needs its own ADR. <b>ADR-084</b> is the next free number: the corpus runs 001–083 with 051 and 054 absent.</p>
+
+<div class="big">
+<p><b>ADR-084 must be authored as Markdown, not HTML.</b> This is the one place where the standing "every deliverable is HTML" rule yields, and it yields to a recorded decision rather than to preference. <b>ADR-082</b> makes the ADR corpus a source→artifact model: the <code>.md</code> is the hand-authored source of truth and the Appendix C link target, the <code>.html</code> is generated solely by <code>scripts/render_adrs.py</code> and never hand-edited. Each HTML embeds a source SHA-256 and CI's <em>Validate generated ADR HTML</em> step fails on a stale twin. A hand-written ADR HTML would fail that check.</p>
+<p style="margin-bottom:0">Worth flagging: <b>ADR-082 is still Draft, awaiting sign-off</b> — it is the governing standard for the file I would be creating and has not itself been accepted. It is being followed in practice by the whole corpus, so following it is right; but if it is going to be signed off, doing that before adding an eighty-fourth file under it is tidier than after.</p>
+</div>
+
+<p>ADR-084 should carry, at minimum: the two-channel rationale that started this — hue for type, fill for completion, ring for next-upcoming, replacing a strip that encoded both in one channel; the barrel owning season state, which is what let the dropdown go; the overlap-not-shrink rule with its z-index formula and 320px evidence; the answer to ADR-015 §2's horizontal-timeline rejection; and the deliberate removals — weapon filter, tournament count, time filter, season dropdown.</p>
+
+<h3>Registry and traceability</h3>
+<ul class="locked">
+<li>Register ADR-084 in <b>specification Appendix C</b> — Architecture Decision Registry, line 1402 onward — as the plan's §08 requires.</li>
+<li>Amended ADRs need their Appendix C entries updated too, not just their own files; the registry carries a status and summary per ADR.</li>
+<li><b>RTM check</b> for requirements touching calendar presentation. ADR-030 introduced FR-90 and FR-91, both worded as displayed <em>in the Calendar</em>; ADR-079 carries FR-120–FR-130. Those wordings survive the redesign but the test IDs they cite move.</li>
+<li>Handbook pages per the plan's §08: <code>product/product-surfaces.html</code>, <code>subsystems/events-and-registration.html</code>, and <code>reference/codebase-map.html</code> with four new files — <code>CalendarFilters.svelte</code> is not built.</li>
+</ul>
+
+<hr>
+
+<h2><span class="num">04</span>Verified clean — and why, so nobody re-checks</h2>
+
+<table>
+<thead><tr><th>ADR</th><th>Why it survives untouched</th></tr></thead>
+<tbody>
+<tr><td><b>ADR-009</b><br>CERT/PROD toggle</td><td>The env footer is carried across unchanged — same markup, same <code>CT</code>/<code>PD</code> labels, same position — so the ADR still describes reality. It is deliberately temporary and retires when PROD moves to the WordPress CMS, together with <code>dualEnv</code>, <code>activeEnv</code> and the four tests in <code>env-toggle.test.ts</code>. Do not refactor it; its best outcome is being deleted tidily.</td></tr>
+<tr><td><b>ADR-031</b><br>Auto-active season</td><td>Concerns DB-side <code>bool_active</code> auto-management. The <code>isActiveSeason</code> prop does die with the strip, but that prop was ADR-018's gate, not ADR-031's — ADR-031 never mentions it. Delete the prop, the call site at <code>App.svelte:81</code> and the derivation at <code>App.svelte:399</code> without touching this ADR.</td></tr>
+<tr><td><b>ADR-032</b><br>Drilldown mobile cards</td><td>Different component. Its dual-render pattern at a 600px breakpoint is useful precedent for the card, not a constraint on it. Its closing constraint — future column additions must be mirrored in the card snippet — applies to the drilldown table, not here.</td></tr>
+<tr><td><b>ADR-046</b><br>PEW weapon suffix</td><td>The redesign <em>depends</em> on it rather than changing it. Panels shorten EVF codes to <code>EVF</code> + number for display only and the card preserves the full code, so the identity rule is intact. And ADR-046 is the reason weapons can be derived from the lowercase code suffix at all, which is what makes the unusable <code>arr_weapons</code> column survivable — 102 of 103 events sit on its default.</td></tr>
+<tr><td><b>ADR-077</b><br>Event lifecycle</td><td>Its table already specifies <code>CREATED</code> as hidden until dated, which is exactly what the barrel implements — the redesign conforms rather than diverges. Its recorded display-map fix is tracked above under ADR-037.</td></tr>
+<tr><td><b>ADR-007</b><br>Shadow DOM</td><td>No decision changes. Two operational consequences the plan already respects: components must survive Shadow-DOM scoping, and the strict CSP is why the copy icon is inline SVG rather than an icon font. The plan's Phase 5 finding — <code>CalendarElement.svelte</code> deriving <code>demo ? MOCK_CALENDAR_EVENTS : []</code>, meaning the non-demo embed renders empty — is a separate report, not something to fix inside this work.</td></tr>
+</tbody>
+</table>
+
+<h3>Also checked, no impact</h3>
+<p class="lede">ADR-063 (Polish plural case in bracket parsing) — precedent for ADR-005's amendment, no change of its own. ADR-052 (URL→data validation at Stage 7) — the redesign performs no ingest writes. ADR-044 — already carries the toggle split; it is the authority ADR-017's amendment cites, not itself in need of change. The remaining ADRs are scoring, ingestion, identity, auth and release decisions with no calendar-presentation surface.</p>
+
+<div class="callout">
+<p style="margin-bottom:0"><b>Incidental, pre-existing, not caused by this work.</b> <b>ADR-051 and ADR-054 have no files</b> in <code>doc/adr/</code>, yet ADR-077 cites ADR-054 normatively for the <code>CREATED</code>/<code>SCORED</code> enum values and validator extension. Either the numbers were skipped and ADR-077's reference is wrong, or two ADRs were lost. Worth resolving while in the registry, but it does not block the calendar work.</p>
+</div>
+
+<hr>
+
+<h2><span class="num">05</span>Recommended order</h2>
+
+<ol class="locked">
+<li><b>Nothing here changes the barrel's visual spec.</b> The one candidate — ADR-018's carried state — was checked against the code and does not exist in the calendar (§01), so the fill-and-ring scheme stands as designed and no product decision gates the build.</li>
+<li><b>Draft the four blocking changes together</b> — ADR-015 §2 supersession, ADR-018, ADR-079 §7, ADR-017 — and sign them off as one batch. They are interlocking: three of the four describe rules <code>calendarQuarters.ts</code> implements.</li>
+<li><b>Verify the <code>SCORED</code> label</b> in <code>eventStatus.ts</code> against ADR-077's recorded fix. Cheap, and it decides whether ADR-037's amendment is pointer-only.</li>
+<li><b>Write Phase 1</b> — <code>calendarQuarters.ts</code> and its tests, RED → GREEN — with <code>resolveAnchorQuarter()</code> last, since the plan's open items 1 and 4 both land there.</li>
+<li><b>Author ADR-084 as Markdown</b>, generate its twin, register in Appendix C.</li>
+<li><b>Amend the five concurrent ADRs</b> as their behaviour lands, then run the documentation coherence gate: <code>scripts/check_docs.py</code> clean and <code>scripts/refresh-graph.sh</code> before the commit.</li>
+</ol>
+
+<div class="big">
+<p style="margin-bottom:0"><b>One thing this audit did not do.</b> It reads the ADR corpus against the plan, not against the running system. Where an ADR and the current code disagree, I have quoted the code — <code>CalendarView.svelte:291</code>, <code>:72</code>, <code>CalendarView.test.ts:373–412</code> — but I have not re-verified every ADR's claim of its own implementation status. The four blocking items are all evidenced against live source or live tests; the five concurrent ones are evidenced against ADR text and should be confirmed against implementation as each amendment is written.</p>
+</div>
+
+</div>
