@@ -1,6 +1,6 @@
 // Phase 1 of the calendar barrel redesign — ADR-084.
 // Plan: doc/plans/kalendarz-barrel-2026-08-08.html §06 Phase 1.
-// Test IDs CQ.1–CQ.72.
+// Test IDs CQ.1–CQ.75.
 //
 // This module is pure: no Svelte, no mounting. Everything the old view derived
 // inline (CalendarView.svelte) lives here so it can be asserted directly.
@@ -25,6 +25,7 @@ import {
   composeAddress,
   formatDeadline,
   caretOffset,
+  rowScroll,
   layoutRow,
   panelLabel,
   registryOf,
@@ -780,25 +781,63 @@ describe('layoutRow', () => {
 })
 
 describe('caretOffset', () => {
-  // CQ.71 — while the row fits it is centred, so the caret takes the row's
-  // centring offset into account rather than measuring from the viewport edge.
-  it('CQ.71: centres the caret under the selected panel', () => {
-    const layout = layoutRow({ count: 3, selectedIndex: 1, available: 320, selectedHasCity: false })
-    expect(caretOffset(layout, 1, 320)).toBe(154)
+  // CQ.71 — the caret marks the centre, because that is where the row puts its
+  // selection. Independent of which panel is selected.
+  it('CQ.71: puts the caret at the centre regardless of the selected index', () => {
+    const layout = layoutRow({ count: 7, selectedIndex: 0, available: 320, selectedHasCity: false })
+    expect(caretOffset(layout, 0, 320)).toBe(154)
+    expect(caretOffset(layout, 6, 320)).toBe(154)
   })
 
-  // CQ.72 — a selection past the clip edge must not point off-screen. This is
-  // reachable WITHOUT a tap: selectDefault() opens on the next-upcoming event,
-  // which can sit anywhere in the row.
-  it('CQ.72: clamps the caret to the viewport when the selection is past the edge', () => {
-    const layout = layoutRow({ count: 30, selectedIndex: 29, available: 320, selectedHasCity: false })
-    expect(caretOffset(layout, 29, 320)).toBe(300)
+  it('CQ.72: tracks the viewport width', () => {
+    const layout = layoutRow({ count: 3, selectedIndex: 1, available: 390, selectedHasCity: false })
+    expect(caretOffset(layout, 1, 390)).toBe(189)
   })
 
   // CQ.72b — a row with no selection has no caret at all.
   it('CQ.72b: reports no caret for an empty row', () => {
     const layout = layoutRow({ count: 0, selectedIndex: 0, available: 320, selectedHasCity: false })
     expect(caretOffset(layout, null, 320)).toBeNull()
+  })
+})
+
+describe('rowScroll', () => {
+  // CQ.73 — the defect the user reported: the group was centred, so a
+  // selection at index 0 of seven sat ~110px left of centre while the rest of
+  // the row ran right, and the whole barrel read as shifted.
+  it('CQ.73: scrolls the selected panel to the centre whatever its index', () => {
+    const layout = layoutRow({ count: 7, selectedIndex: 0, available: 390, selectedHasCity: false })
+    const first = rowScroll(layout, 0, 390)!
+    expect(first.padding).toBe(195)
+    // panel 0 starts at the content origin, so its centre is half its width in
+    expect(first.scrollLeft).toBe(layout.panels[0]!.width / 2)
+
+    const last = rowScroll(layout, 6, 390)!
+    expect(last.padding).toBe(195)
+    expect(last.scrollLeft).toBeGreaterThan(first.scrollLeft)
+  })
+
+  // CQ.74 — scrollLeft must stay inside the scrollable range, or the browser
+  // clamps it and the panel lands off-centre. Range is [0, contentWidth]
+  // because the padding adds exactly one viewport of slack.
+  it('CQ.74: keeps every scroll position within the scrollable range', () => {
+    for (const count of [1, 3, 7, 22, 40]) {
+      const layout = layoutRow({ count, selectedIndex: 0, available: 320, selectedHasCity: false })
+      for (let i = 0; i < count; i++) {
+        const s = rowScroll(layout, i, 320)!
+        expect(s.scrollLeft, `count ${count} index ${i}`).toBeGreaterThanOrEqual(0)
+        expect(s.scrollLeft, `count ${count} index ${i}`).toBeLessThanOrEqual(layout.contentWidth)
+      }
+    }
+  })
+
+  // CQ.75 — a single-panel row still centres, and nothing is asked of a row
+  // with no selection.
+  it('CQ.75: centres a lone panel and reports nothing without a selection', () => {
+    const one = layoutRow({ count: 1, selectedIndex: 0, available: 320, selectedHasCity: false })
+    expect(rowScroll(one, 0, 320)).toEqual({ padding: 160, scrollLeft: 37 })
+    expect(rowScroll(one, null, 320)).toBeNull()
+    expect(rowScroll(one, 0, 0)).toBeNull()
   })
 })
 
