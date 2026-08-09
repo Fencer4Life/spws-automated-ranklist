@@ -7,6 +7,608 @@
 **Relates to:** [ADR-007](007-shadow-dom-deferred.md) (Shadow DOM + CSP on `<spws-calendar>`), [ADR-009](009-cert-prod-runtime-toggle.md) (the env footer this view carries), [ADR-046](046-pew-weapon-suffix.md) (weapon derived from code suffix), [ADR-077](077-event-lifecycle-season-skeletons.md) (`CREATED` hidden until dated), [ADR-063](063-polish-plural-and-grupy-zbiorcze.md) (Polish grammatical case as a first-class concern)
 **Source:** `doc/plans/kalendarz-barrel-2026-08-08.html` (plan + live acceptance mock), `doc/plans/kalendarz-barrel-adr-alignment-2026-08-09.html` (ADR audit)
 
+## The decision, as a working screen
+
+The mock below **is** the acceptance criterion for this decision, reproduced here so the ADR stands on its own. It is live: drag the width slider from 320px upward, tap a quarter label or a receded row to rotate the drum, tap a panel to select an event, toggle `PPW` / `+EVF` and `EN | PL`, copy a venue address, and use the season-config checkbox to see the calendar with and without the `+EVF` control.
+
+**Full plan and rationale:** [`doc/plans/kalendarz-barrel-2026-08-08.html`](../plans/kalendarz-barrel-2026-08-08.html) — the phase breakdown, the field contract in its §04, the CERT data analysis and the acceptance procedure. This ADR records *what was decided*; the plan records *how it was built and measured*.
+
+**What in the mock is real, and what is not.** The fixture is **real CERT data** — all 103 non-skeleton events across four seasons, pulled from `vw_calendar` on 8 August 2026. But that fixture carries only seven columns and never held a fee, a deadline or a registration URL. Four values — **entry fee and both weapon tiers, registration deadline, registration link, entry-list link** — are therefore *illustrative*, derived deterministically from the event code so every present/absent combination can be reviewed. Their **presence, placement, formatting and conditional rules are the specification**; their values are not data. Everything else on screen is real.
+
+<div class="adr-live-mock">
+<style>
+.adr-live-mock{
+  --surface-0:#f7f6f3; --surface-1:#f1efe9; --surface-2:#ffffff;
+  --text-primary:#1c1b19; --text-secondary:#565550; --text-muted:#8a887f;
+  --border:rgba(0,0,0,.13); --border-strong:rgba(0,0,0,.24); --border-stronger:rgba(0,0,0,.42);
+  --bg-accent:#E6F1FB; --text-accent:#185FA5; --border-accent:#378ADD;
+  --radius:8px; --rule:rgba(0,0,0,.10);
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color:var(--text-primary);
+}
+@media (prefers-color-scheme: dark){
+.adr-live-mock{
+  --surface-0:#17171a; --surface-1:#1f1f23; --surface-2:#26262b;
+  --text-primary:#eceae5; --text-secondary:#a9a79f; --text-muted:#77756d;
+  --border:rgba(255,255,255,.14); --border-strong:rgba(255,255,255,.26); --border-stronger:rgba(255,255,255,.44);
+  --bg-accent:#0C447C; --text-accent:#B5D4F4; --border-accent:#378ADD;
+  --rule:rgba(255,255,255,.12);
+}
+}
+.adr-live-mock *{box-sizing:border-box}
+.adr-live-mock .mockwrap{background:var(--surface-1);border-radius:14px;padding:1.6rem 1rem 1.9rem;margin:1.2rem 0 1rem;display:flex;flex-direction:column;align-items:center;gap:1rem}
+.adr-live-mock .mockcap{font-family:var(--sans);font-size:12.5px;color:var(--text-muted);text-align:center;margin:0;max-width:46rem}
+</style>
+<style>
+#mkctl{display:flex;align-items:center;gap:12px;width:100%;max-width:440px;font-family:var(--sans)}
+#mkctl label{font-size:11px;color:var(--text-secondary);white-space:nowrap}
+#mkctl input[type=range]{flex:1}
+.cfg{display:flex;align-items:center;gap:10px;width:100%;max-width:440px;font-family:var(--sans);margin-top:8px;flex-wrap:wrap}
+.cfg label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-secondary);cursor:pointer}
+.cfgn{font-size:10px;color:var(--text-muted)}
+.cfgn code{font-size:10px}
+.ro{font-size:11px;color:var(--text-primary);min-width:132px;text-align:right}
+.ph{border:1px solid var(--border-strong);border-radius:24px;background:var(--surface-2);padding:9px 6px 12px;transition:width .2s;font-family:var(--sans)}
+.nub{width:38px;height:4px;border-radius:2px;background:var(--border-strong);margin:0 auto 8px}
+.envf{display:flex;justify-content:center;padding:14px 0 2px}
+.envt{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.envb{font-size:11px;font-weight:600;letter-spacing:.5px;padding:3px 10px;border:none;background:var(--surface-2);color:var(--text-muted);cursor:pointer;font-family:inherit}
+.envb+.envb{border-left:1px solid var(--border)}
+.envb.on{background:#378ADD;color:#fff}
+.hd{display:flex;align-items:center;gap:7px;padding:0 3px 8px;border-bottom:1px solid var(--border)}
+.hb{background:none;border:none;padding:0;cursor:pointer;color:var(--text-primary);font-size:15px;line-height:1}
+.lgo{height:15px;width:auto;display:block;flex:0 0 auto}
+.ttl{font-size:14px;font-weight:600}
+.lang{margin-left:auto;display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.lb{font-size:11px;padding:2px 7px;border:none;background:var(--surface-2);color:var(--text-muted);cursor:pointer;font-family:inherit}
+.lb+.lb{border-left:1px solid var(--border)}
+.lb.on{background:var(--surface-0);color:var(--text-primary);font-weight:600}
+.fil{display:flex;justify-content:center;gap:6px;padding:8px 0 2px}
+.seg{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.sg,.wb{font-size:11px;font-weight:600;padding:3px 9px;border:none;background:var(--surface-2);cursor:pointer;font-family:inherit}
+.sg{color:var(--text-secondary)}
+.sg+.sg,.wb+.wb{border-left:1px solid var(--border)}
+.sg.on{background:#378ADD;color:#fff}
+.wb{color:var(--text-muted)}
+.wb.on{background:var(--bg-accent);color:var(--text-accent)}
+.wseg{max-width:0;opacity:0;overflow:hidden;transition:max-width .3s,opacity .3s}
+.wseg.on{max-width:130px;opacity:1}
+.vp{height:246px;overflow:hidden;perspective:760px;margin-top:6px}
+.drum{display:flex;flex-direction:column;transition:transform .45s cubic-bezier(.22,.61,.36,1)}
+.ln{height:82px;flex:0 0 82px;transform-origin:50% 50%;transition:transform .45s cubic-bezier(.22,.61,.36,1),opacity .45s;cursor:pointer}
+.ln.up{transform:rotateX(46deg) scale(.88);opacity:.42}
+.ln.dn{transform:rotateX(-46deg) scale(.88);opacity:.42}
+.ln.far{opacity:0;pointer-events:none}
+.ln.mid{cursor:default}
+.sm{display:flex;align-items:center;gap:5px;height:14px}
+.sm b{font-size:11px;font-weight:400;color:var(--text-muted);letter-spacing:.6px}
+.ln.mid .sm b{color:var(--text-secondary)}
+.sm i{flex:1;height:1px;background:var(--border);font-style:normal}
+.sm.bd i{height:2px;background:var(--border-stronger)}
+.sm em{font-size:11px;color:var(--text-muted);font-style:normal}
+.rw{display:flex;overflow-x:auto;scrollbar-width:none;padding-top:3px;padding-bottom:4px}
+.rw::-webkit-scrollbar{display:none}
+.rwi{display:flex;gap:3px;margin:0 auto}
+.up .rw,.dn .rw{overflow-x:hidden}
+.p{flex:0 0 48px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 1px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;height:56px}
+.p>*{flex:0 0 auto}
+.p.f{border:none}
+.up .p,.dn .p{flex:0 0 38px}
+.dd{font-size:15px;font-weight:600;line-height:1.1}
+.dm{font-size:11px;line-height:1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dm i{font-style:normal}
+.mf{display:none}
+.p.sel .ms{display:none}
+.p.sel .mf{display:inline}
+.cdc{font-size:11px;font-weight:600;line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.up .dm,.dn .dm{display:none}
+.p .cty{display:none;font-size:9px;line-height:1.05;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
+.p.sel .cty{display:block}
+.p.ov{position:relative;box-shadow:-1px 0 0 0 var(--border-strong)}
+.p.ov.sel{box-shadow:none}
+.rwi{position:relative}
+.p.t1 .dd{font-size:13px}
+.p.t1 .dm{font-size:10px}
+.p.t1 .cdc{font-size:10px;letter-spacing:-.2px}
+.p.t2{padding-left:0;padding-right:0}
+.p.t2 .dd{font-size:13px}
+.p.t2 .dm{font-size:9px}
+.p.t2 .cdc{font-size:9px;letter-spacing:-.4px}
+.p.sel{outline:2px solid var(--text-primary);outline-offset:1px}
+.p.nx{border:2px solid var(--border-accent)}
+.mt{font-size:11px;color:var(--text-muted);margin:0 auto;align-self:center}
+.crw{height:7px;position:relative}
+.crt{position:absolute;top:0;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:7px solid var(--surface-1);transition:left .3s}
+.card{background:var(--surface-1);border-radius:12px;padding:12px}
+.chd{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+.cdt{font-size:11px;color:var(--text-secondary)}
+.ccd{font-size:11px;font-weight:600;padding:1px 7px;border-radius:8px}
+.cnm{font-size:15px;font-weight:600;margin-top:6px;line-height:1.25}
+.clo{display:flex;align-items:center;gap:6px;margin-top:3px}
+.cct{font-size:15px;font-weight:600;line-height:1.25}
+.addr{display:flex;align-items:flex-start;gap:8px;margin-top:3px}
+.addrt{flex:1;min-width:0;font-size:11px;color:var(--text-secondary);line-height:1.35}
+.cpy{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;padding:0;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-muted);cursor:pointer}
+.cpy:hover{color:var(--text-primary)}
+.cpy.ok{background:var(--bg-accent);border-color:var(--border-accent);color:var(--text-accent)}
+.clo .cpy{margin-left:auto}
+.fg{width:19px;height:13px;border-radius:2px;overflow:hidden;flex:0 0 19px;position:relative;border:1px solid var(--border-strong)}
+.fg div{position:absolute}
+.chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+.chp{font-size:11px;padding:2px 7px;border-radius:8px;background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--border)}
+.dvv{height:1px;background:var(--border);margin:10px 0}
+.dl{font-size:11px;font-weight:600}
+.fee{font-size:11px;color:var(--text-secondary);margin-top:5px;line-height:1.6}
+.pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
+.pl{font-size:11px;font-weight:600;padding:4px 10px;border-radius:14px;border:1px solid var(--border-accent);color:var(--text-accent);background:var(--surface-2);text-decoration:none;display:inline-block}
+.pl.q{border-color:var(--border);color:var(--text-secondary)}
+.pl.r{background:var(--bg-accent);border-color:var(--border-accent);color:var(--text-accent)}
+.facts{margin-top:2px}
+.fct{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:4px 0}
+.fct+.fct{border-top:1px solid var(--border)}
+.fk{font-size:11px;color:var(--text-muted)}
+.fv{font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap}
+.wps{display:flex;gap:3px;flex-wrap:wrap;margin-top:10px}
+.wp{font-size:9px;line-height:1.5;padding:0 6px;border-radius:7px;background:var(--surface-0);color:var(--text-muted);border:1px solid var(--border)}
+.lgd{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text-secondary);justify-content:center;max-width:440px;font-family:var(--sans)}
+.sw{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+</style>
+<div class="mockwrap">
+<div class="ctl" id="mkctl">
+<label for="w" id="wl">szerokość</label>
+<input type="range" id="w" min="320" max="430" step="1" value="320">
+<span class="ro" id="ro">320px · iPhone SE</span>
+</div>
+<div class="ctl cfg">
+<label><input type="checkbox" id="cfgevf" checked> <span>Pokaż przełącznik +EVF w Kalendarzu</span></label>
+<span class="cfgn">season scoring config · <code>show_evf_toggle_calendar</code></span>
+</div>
+<div class="ph" id="ph" style="width:320px">
+<div class="nub"></div>
+<div class="hd">
+<button class="hb" aria-label="Menu">&#9776;</button>
+<img class="lgo" src="../assets/SPWS-logo.png" alt="SPWS"><span class="ttl" id="vt">Kalendarz</span>
+<div class="lang"><button class="lb" data-l="en">EN</button><button class="lb on" data-l="pl">PL</button></div>
+</div>
+<div class="fil">
+<div class="seg" id="sc"><button class="sg" data-s="ppw">PPW</button><button class="sg on" data-s="all">+EVF</button></div>
+</div>
+<div class="vp"><div class="drum" id="drum"></div></div>
+<div class="crw"><div class="crt" id="crt"></div></div>
+<div class="card" id="card"></div>
+<div class="envf"><div class="envt" id="envt">
+<button class="envb on" type="button" data-e="CERT">CT</button><button class="envb" type="button" data-e="PROD">PD</button>
+</div></div>
+</div>
+<div class="lgd">
+<span><span class="sw" style="background:#EAF3DE;border:1px solid #639922"></span>krajowe (PPW/MPW)</span>
+<span><span class="sw" style="background:#E6F1FB;border:1px solid #378ADD"></span>puchar EVF (PEW)</span>
+<span><span class="sw" style="background:#FAEEDA;border:1px solid #BA7517"></span>międzynarodowe (MŚW/MEW)</span>
+<span><span class="sw" style="background:var(--surface-2);border:1px solid var(--border-strong)"></span>zaplanowane</span>
+</div>
+<p class="mockcap">Real CERT data — all 103 non-skeleton events across four seasons, pulled from <code>vw_calendar</code> on 8 August 2026. Where <code>txt_location</code> holds a venue string rather than a city — a known scraper defect — the city line is omitted and the venue is shown demoted; no city is ever inferred that is not literally present. An asterisk on a seam marks a quarter whose events disagree about which season they belong to. Interface strings are Polish because this surface reaches fencers; this document is English.</p>
+<script>
+(function(){
+var TY={ppw:['#EAF3DE','#3B6D11','#173404'],pew:['#E6F1FB','#185FA5','#042C53'],int:['#FAEEDA','#854F0B','#412402']};
+var RG={ppw:'SPWS',pew:'EVF',int:'FIE'};
+// EN | PL localisation. Registry codes (SPWS/EVF/FIE), event codes and device
+// names are proper nouns and stay untranslated. PL months are genitive because
+// they only ever appear in a date ("18 kwietnia"), never standalone.
+var lang='pl';
+var L={
+ pl:{
+  mo:['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia','września','października','listopada','grudnia'],
+  sm:['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'],
+  wn:{E:'Szpada',F:'Floret',S:'Szabla'},
+  nm:{PPW:'Puchar Polski Weteranów',MPW:'Mistrzostwa Polski Weteranów','MŚW':'Mistrzostwa Świata Weteranów',MEW:'Mistrzostwa Europy Weteranów',PEW:'European Veterans Circuit'},
+  cn:{PL:'Polska',GB:'Wielka Brytania',DE:'Niemcy',GR:'Grecja',BG:'Bułgaria',FR:'Francja',HU:'Węgry',ES:'Hiszpania',BH:'Bahrajn',SE:'Szwecja',IT:'Włochy',BE:'Belgia',AT:'Austria',IE:'Irlandia',CH:'Szwajcaria',GE:'Gruzja'},
+  st:{done:'Zakończone',await:'Oczekuje na wyniki',plan:'Zaplanowane',canc:'Odwołane'},
+  next:'Najbliższe',empty:'brak zawodów',season:'sezon SPWS-',
+  // Polish pluralisation: 1 → singular, 2-4 → nominative plural, 0 and 5+ →
+  // genitive plural, EXCEPT 12-14 which take the genitive despite ending 2-4.
+  trn:function(n){var a=n%10,b=n%100;
+    if(n===1)return 'turniej';
+    if(a>=2&&a<=4&&!(b>=12&&b<=14))return 'turnieje';
+    return 'turniejów';},
+  res:'Wyniki',day:'Dzień',inv:'Komunikat',
+  feeL:'Opłata startowa',fee2L:'Opłata (2 bronie)',fee3L:'Opłata (3 bronie)',
+  dlL:'Termin rejestracji',regL:'Rejestracja',entL:'Lista zgłoszeń',
+  copy:'Kopiuj',copied:'Skopiowano',
+  awaitMsg:'Zawody się odbyły — wyniki jeszcze nie wprowadzone',
+  cancMsg:'Zawody odwołane przez organizatora',
+  title:'Kalendarz',width:'szerokość',nr:' nr '
+ },
+ en:{
+  mo:['January','February','March','April','May','June','July','August','September','October','November','December'],
+  sm:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  wn:{E:'Épée',F:'Foil',S:'Sabre'},
+  nm:{PPW:'Polish Veterans Cup',MPW:'Polish Veterans Championships','MŚW':'World Veterans Championships',MEW:'European Veterans Championships',PEW:'European Veterans Circuit'},
+  cn:{PL:'Poland',GB:'United Kingdom',DE:'Germany',GR:'Greece',BG:'Bulgaria',FR:'France',HU:'Hungary',ES:'Spain',BH:'Bahrain',SE:'Sweden',IT:'Italy',BE:'Belgium',AT:'Austria',IE:'Ireland',CH:'Switzerland',GE:'Georgia'},
+  st:{done:'Completed',await:'Awaiting results',plan:'Scheduled',canc:'Cancelled'},
+  next:'Next up',empty:'no events',season:'season SPWS-',
+  trn:function(n){return n===1?'tournament':'tournaments';},
+  res:'Results',day:'Day',inv:'Invitation',
+  feeL:'Entry fee',fee2L:'Fee (2 weapons)',fee3L:'Fee (3 weapons)',
+  dlL:'Registration deadline',regL:'Register',entL:'Entry list',
+  copy:'Copy',copied:'Copied',
+  awaitMsg:'Competition held — results not yet entered',
+  cancMsg:'Cancelled by the organiser',
+  title:'Calendar',width:'width',nr:' no. '
+ }
+};
+function T(){return L[lang]}
+var FL={PL:['h','#fff','#DC143C'],BG:['h','#fff','#00966E','#D62612'],BH:['v','#fff','#CE1126'],HR:['h','#FF0000','#fff','#171796'],FR:['v','#0055A4','#fff','#EF4135'],IT:['v','#009246','#fff','#CE2B37'],DE:['h','#000','#D00','#FFCE00'],SE:['c','#006AA7','#FECC00'],BE:['v','#000','#FAE042','#ED2939'],EE:['h','#0072CE','#000','#fff'],PT:['v','#046A38','#DA291C'],NL:['h','#AE1C28','#fff','#21468B'],GE:['c','#fff','#F00'],ES:['h','#AA151B','#F1BF00','#AA151B'],CH:['c','#DA291C','#fff'],AT:['h','#ED2939','#fff','#ED2939'],HU:['h','#CD2A3E','#fff','#436F4D'],GB:['c','#012169','#fff'],IE:['v','#169B62','#fff','#FF883E'],GR:['h','#0D5EAF','#fff','#0D5EAF'],CA:['v','#D80621','#fff','#D80621']};
+function flag(cc){
+  var f=FL[cc];if(!f)return '<div class="fg"></div>';
+  var k=f[0],c=f.slice(1),h='';
+  if(k==='h'){var n=c.length;c.forEach(function(x,i){h+='<div style="left:0;right:0;top:'+(i*100/n)+'%;height:'+(100/n)+'%;background:'+x+'"></div>'})}
+  else if(k==='v'){var n2=c.length;c.forEach(function(x,i){h+='<div style="top:0;bottom:0;left:'+(i*100/n2)+'%;width:'+(100/n2)+'%;background:'+x+'"></div>'})}
+  else{h='<div style="left:0;right:0;top:0;bottom:0;background:'+c[0]+'"></div><div style="left:0;right:0;top:38%;height:24%;background:'+c[1]+'"></div><div style="top:0;bottom:0;left:32%;width:24%;background:'+c[1]+'"></div>'}
+  return '<div class="fg">'+h+'</div>';
+}
+var TODAY=new Date(2026,7,8);
+function v(d,mo,y,c,t,w,s,city,cc,nt,fee,cu,vn,nr){return{d:d,mo:mo,y:y,c:c,t:t,w:w,s:s,city:city,cc:cc,nt:nt,fee:fee,cu:cu,vn:vn,nr:nr}}
+var RAW=[
+"2022-01-08|PEW2e|||COMPLETED|1|2023-2024","2022-02-25|PEW16e|||COMPLETED|1|2023-2024",
+"2023-01-01|IMEW|||COMPLETED|16|2023-2024","2023-01-07|PEW1e|Guilford|Great Britain|COMPLETED|4|2023-2024",
+"2023-01-14|GP1|Pabianice|Polska|COMPLETED|20|2023-2024","2023-01-21|PEW17fs|||COMPLETED|2|2023-2024",
+"2023-02-12|PEW3s|||COMPLETED|2|2023-2024","2023-02-25|PEW18e|||COMPLETED|2|2023-2024",
+"2023-03-04|GP2|Toruń|Polska|COMPLETED|25|2023-2024","2023-03-18|PEW4f|||COMPLETED|3|2023-2024",
+"2023-03-23|PEW12f|||COMPLETED|1|2023-2024","2023-04-01|PEW20s|||COMPLETED|3|2023-2024",
+"2023-04-14|PEW19e|||COMPLETED|8|2023-2024","2023-06-18|GP3|Niepołomice|Polska|COMPLETED|22|2023-2024",
+"2023-07-07|VFC|||COMPLETED|0|2023-2024","2023-09-16|PEW21e|||COMPLETED|5|2023-2024",
+"2023-09-16|PEW5fs|||COMPLETED|7|2023-2024","2023-09-23|GP4|Opole|Polska|COMPLETED|22|2023-2024",
+"2023-09-24|PEW22e|||COMPLETED|2|2023-2024","2023-10-09|PEW7s|||COMPLETED|1|2023-2024",
+"2023-10-28|GP5|Gdańsk|Polska|COMPLETED|20|2023-2024","2023-11-11|PEW6efs|||COMPLETED|9|2023-2024",
+"2023-11-18|GP6|Kraków|Polska|COMPLETED|20|2023-2024","2023-12-09|PEW23f|||COMPLETED|1|2023-2024",
+"2023-12-16|PEW8fs|||COMPLETED|2|2023-2024","2023-12-16|PEW24e|||COMPLETED|5|2023-2024",
+"2024-01-06|PEW25e|||COMPLETED|4|2023-2024","2024-01-06|PEW9e|Guildford|Great Britain|COMPLETED|4|2023-2024",
+"2024-01-20|PEW10s|||COMPLETED|1|2023-2024","2024-01-27|GP7|Spała|Polska|COMPLETED|22|2023-2024",
+"2024-02-24|PEW11f|||COMPLETED|2|2023-2024","2024-03-02|MPW|Warszawa|Polska|COMPLETED|25|2023-2024",
+"2024-04-06|PEW14s|||COMPLETED|1|2023-2024","2024-04-06|PEW13e|||COMPLETED|6|2023-2024",
+"2024-04-27|PEW15e|||COMPLETED|3|2023-2024","2024-06-22|GP8|Niepołomice|Polska|COMPLETED|18|2023-2024",
+"2024-09-21|PEW1efs|Budapest||COMPLETED|14|2024-2025","2024-09-28|PPW1|Konin|Polska|COMPLETED|23|2024-2025",
+"2024-10-26|PPW2|Bytom|Polska|COMPLETED|24|2024-2025","2024-11-16|PEW2efs|Madrid||COMPLETED|11|2024-2025",
+"2024-11-30|PPW3|Kraków|Polska|COMPLETED|26|2024-2025","2024-12-07|PEW3fs|Munich|Germany|COMPLETED|5|2024-2025",
+"2025-01-04|PEW11e|Guildford|Great Britain|COMPLETED|4|2024-2025","2025-01-05|PEW4f|||COMPLETED|1|2024-2025",
+"2025-01-18|PEW5s|||COMPLETED|1|2024-2025","2025-02-01|PEW12e|||COMPLETED|4|2024-2025",
+"2025-02-02|PEW6fs|||COMPLETED|3|2024-2025","2025-02-22|PPW4|Warszawa|Polska|COMPLETED|27|2024-2025",
+"2025-03-15|PEW13e|||COMPLETED|3|2024-2025","2025-03-29|PEW7s|||COMPLETED|7|2024-2025",
+"2025-03-29|PEW8f|Chania|Greece|PLANNED|1|2025-2026","2025-03-29|PEW14e|||COMPLETED|8|2024-2025",
+"2025-03-30|PEW8f|||COMPLETED|7|2024-2025","2025-04-26|PPW5|Szczecin|Polska|COMPLETED|23|2024-2025",
+"2025-05-03|PEW9|||COMPLETED|0|2024-2025","2025-05-15|PEW15f|||COMPLETED|2|2024-2025",
+"2025-05-28|IMEW|Plovdiv|Bulgaria|COMPLETED|17|2024-2025","2025-06-07|MPW|Pabianice|Polska|COMPLETED|25|2024-2025",
+"2025-07-05|PEW10efs|Paris|France|COMPLETED|7|2024-2025","2025-09-20|PEW1efs|Budapest|Hungary|COMPLETED|14|2025-2026",
+"2025-09-27|PPW1|Opole|Polska|COMPLETED|23|2025-2026","2025-10-25|PPW2|Poznań|Polska|COMPLETED|24|2025-2026",
+"2025-11-01|PEW2efs|Madrid|Spain|COMPLETED|13|2025-2026","2025-11-12|IMSW|Manama|Bahrain|IN_PROGRESS|10|2025-2026",
+"2025-12-06|PEW3s|Munich|Germany|COMPLETED|3|2025-2026","2025-12-06|PEW21fs|Munich|Germany|COMPLETED|8|2025-2026",
+"2025-12-13|PPW3|Warszawa-Łomianki|Polska|COMPLETED|23|2025-2026","2026-01-10|PEW63e|||COMPLETED|1|2025-2026",
+"2026-01-10|PEW62efs|||COMPLETED|9|2025-2026","2026-01-11|PEW64s|||COMPLETED|2|2025-2026",
+"2026-02-07|PEW5s|Stockholm|Sweden|COMPLETED|1|2025-2026","2026-02-07|PEW31fs|Faches|France|COMPLETED|5|2025-2026",
+"2026-02-21|PPW4|Gdańsk|Polska|COMPLETED|24|2025-2026","2026-03-07|PEW4efs|Napoli|Italy|COMPLETED|10|2025-2026",
+"2026-03-14|PEW65ef|||COMPLETED|5|2025-2026","2026-03-28|PEW6efs|Jabłonna|Polska|COMPLETED|23|2025-2026",
+"2026-03-29|PEW66f|||COMPLETED|3|2025-2026","2026-04-11|PPW5|Gdańsk|Polska|COMPLETED|23|2025-2026",
+"2026-04-11|PEW61s|Liège|Belgium|COMPLETED|2|2025-2026","2026-04-18|PEW7ef|Salzburg|Austria|COMPLETED|4|2025-2026",
+"2026-05-02|PEW67f|||COMPLETED|4|2025-2026","2026-05-14|DMEW|Complexe Sportif Omnisports des Vauzelles|France|PLANNED|6|2025-2026",
+"2026-05-30|PEW9efs|Dublin|Ireland|IN_PROGRESS|10|2025-2026","2026-06-20|MPW|Warszawa|Polska|COMPLETED|28|2025-2026",
+"2026-09-12|PEW0efs|||CANCELLED|12|2026-2027","2026-09-19|PEW1f|Savoy Terrace - Buda Castle|Hungary|PLANNED|2|2026-2027",
+"2026-09-26|PPW1|Opole|Polska|PLANNED|0|2026-2027","2026-10-09|MSW|TBILISI|GRUZJA|PLANNED|0|2026-2027",
+"2026-10-31|PEW2es|POLIDEPORTIVO MUNICIPAL DE MORATALAZ|Spain|PLANNED|8|2026-2027",
+"2026-11-14|PEW3ef|||PLANNED|8|2026-2027",
+"2026-11-28|PEW4fs|Sporthalle der Städtischen Berufsschule für Informationstechnik|Germany|PLANNED|8|2026-2027",
+"2026-12-12|PEW5efs|||PLANNED|12|2026-2027","2027-01-09|PEW6efs|Guildford Spectrum|United Kingdom|PLANNED|12|2026-2027",
+"2027-01-30|PEW7efs|||PLANNED|6|2026-2027","2027-02-06|PEW9e|Vaudoise aréna - Lausanne|Switzerland|PLANNED|4|2026-2027",
+"2027-02-06|PEW8fs|Salle Jean Zay|France|PLANNED|8|2026-2027","2027-03-06|PEW10efs|Palavesuvio|Italy|PLANNED|12|2026-2027",
+"2027-03-13|PEW11ef|Stora mossen IP idrottshall|Sweden|PLANNED|8|2026-2027","2027-04-10|PEW12s|Liège|Belgium|PLANNED|4|2026-2027",
+"2027-04-24|PEW13ef|Sporthalle HAK 2 - Salzburg|Austria|PLANNED|8|2026-2027","2027-05-22|PEW14es|||PLANNED|8|2026-2027",
+"2027-05-29|PEW15efs|UCD Sport Center Dublin|Ireland|PLANNED|12|2026-2027","2027-06-18|PEW16efs|||PLANNED|6|2026-2027"];
+var ISO={'Polska':'PL','Great Britain':'GB','United Kingdom':'GB','Germany':'DE','Greece':'GR','Bulgaria':'BG','France':'FR','Hungary':'HU','Spain':'ES','Bahrain':'BH','Sweden':'SE','Italy':'IT','Belgium':'BE','Austria':'AT','Ireland':'IE','Switzerland':'CH','GRUZJA':'GE'};
+function typeOf(c){
+  if(/^(PPW|MPW|GP)/.test(c))return 'ppw';
+  if(/^PEW/.test(c))return 'pew';
+  return 'int';
+}
+var VENUE_RE=/sporthalle|salle |complexe|polideportivo|palavesuvio|spectrum|idrottshall|topsporthal|sport ?cent|sports city|castle|pavilh|palais|paladozza|country hall|variety village|olympic palace|arena|ar[eé]na|berufsschule/i;
+// txt_location is specified to hold a CITY. On PEW rows the scraper wrote the
+// venue into it instead. Split what is recoverable, leave the rest unknown —
+// never guess a city that is not in the string.
+function splitLoc(v){
+  if(!v) return {city:'',venue:''};
+  var m=v.split(/\s+-\s+/);
+  if(m.length===2 && /^[A-ZŁŚŻŹĆÓĄĘŃ][^\s]*$/.test(m[1].trim())) return {city:m[1].trim(),venue:m[0].trim()};
+  if(VENUE_RE.test(v)) return {city:'',venue:v};
+  return {city:v,venue:''};
+}
+function panelLabel(e){
+  if(e.t==='pew'){var m=e.c.match(/^PEW-?(\d*)/);return 'EVF'+((m&&m[1])?m[1]:'')}
+  return e.c.replace(/[efs]+$/,'');
+}
+function weaponsOf(c){var m=c.match(/[efs]+$/);return m?m[0].toUpperCase():'EFS'}
+var EV=RAW.map(function(r){
+  var p=r.split('|'),d=p[0].split('-').map(Number);
+  var cc=ISO[p[3]]||'';
+  return {y:d[0],mo:d[1]-1,d:d[2],iso:p[0],c:p[1],loc:p[2],cc:cc,ccRaw:p[3],
+          st:p[4],nt:+p[5],season:p[6],t:typeOf(p[1]),w:weaponsOf(p[1])};
+});
+var TODAY_ISO='2026-08-08';
+function stOf(e){
+  if(e.st==='CANCELLED')return 'canc';
+  if(e.st==='COMPLETED'||e.st==='IN_PROGRESS')return 'done';
+  return e.iso < TODAY_ISO ? 'await' : 'plan';
+}
+// Fee, deadline and registration are ILLUSTRATIVE in this mock. CERT carries a
+// fee on 28/103 events and a deadline on 5/103, and this fixture never had
+// those columns at all — so they are derived deterministically from the event
+// code purely to show the card's shape across present/absent combinations.
+// Everything else in this mock is real CERT data.
+function fmtDL(dt){return pad(dt.getUTCDate())+'/'+pad(dt.getUTCMonth()+1)+'/'+dt.getUTCFullYear()}
+EV.forEach(function(e){
+  var L=splitLoc(e.loc);e.city=L.city;e.venue=L.venue;e.s=stOf(e);
+  if(/^(PEW1efs|PEW2efs|PEW6efs|IMEW|IMSW)$/.test(e.c))e.urls=e.nt>10?3:2;
+  var hsh=0;for(var q=0;q<e.c.length;q++)hsh=(hsh*31+e.c.charCodeAt(q))>>>0;
+  e.cur=e.t==='ppw'?'PLN':(e.cc==='GB'?'GBP':'EUR');
+  // A tiered fee can only exist where the tier does: an event covering foil
+  // alone has no two- or three-weapon price to quote. So the tiers are gated
+  // on the event's own weapon count, not sprinkled at random.
+  if(hsh%10<5){
+    e.fee=e.cur==='PLN'?(60+(hsh%5)*10):(35+(hsh%6)*5);
+    if(e.w.length>=2)e.fee2=Math.round(e.fee*1.7);
+    if(e.w.length>=3)e.fee3=Math.round(e.fee*2.3);
+  }
+  e.inv=hsh%7!==0;
+  // Registration only exists while the event is still ahead of you. Mirrors the
+  // real rule (today <= dt_registration_deadline ?? dt_start), under which an
+  // event that has already been held can never show a live registration link.
+  if(e.s==='plan'){
+    e.reg=hsh%4!==0;
+    e.ent=hsh%3!==0;
+    if(e.reg){var d0=new Date(Date.UTC(e.y,e.mo,e.d));d0.setUTCDate(d0.getUTCDate()-(10+hsh%12));e.dl=d0;}
+  }
+});
+// The card opens on the next upcoming event, so give that one the full set —
+// fee, deadline and both links — to make the richest state the default view.
+(function(){var f=null;EV.forEach(function(e){if(!f&&e.s==='plan')f=e});
+ if(!f)return; f.reg=true; f.inv=true; f.ent=true;
+ if(f.fee==null)f.fee=f.cur==='PLN'?90:45;
+ if(f.w.length>=2&&f.fee2==null)f.fee2=Math.round(f.fee*1.7);
+ if(f.w.length>=3&&f.fee3==null)f.fee3=Math.round(f.fee*2.3);
+ if(!f.dl){var d1=new Date(Date.UTC(f.y,f.mo,f.d));d1.setUTCDate(d1.getUTCDate()-14);f.dl=d1;}})();
+EV.sort(function(a,b){return a.iso<b.iso?-1:a.iso>b.iso?1:0});
+var QM={},QO=[];
+EV.forEach(function(e){
+  var qi=Math.floor(e.mo/3), k=e.y+'.'+qi;
+  if(!QM[k]){QM[k]={q:(qi+1)+'Q'+String(e.y).slice(2),k:k,y:e.y,qi:qi,v:[],ss:{}};QO.push(QM[k])}
+  QM[k].v.push(e); QM[k].ss[e.season]=(QM[k].ss[e.season]||0)+1;
+});
+QO.sort(function(a,b){return a.y-b.y||a.qi-b.qi});
+QO.forEach(function(g){
+  var best=null,n=0;
+  for(var k in g.ss){if(g.ss[k]>n){n=g.ss[k];best=k}}
+  g.s=best; g.mixed=Object.keys(g.ss).length>1;
+});
+var Q=QO;
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+// What lands on the clipboard is the FULL address — venue, city, country —
+// even though the card shows the country only as a flag. You paste this into
+// a maps app or send it to a driver; a bare venue fragment is not enough.
+function addrOf(e){var p=[];if(e.venue)p.push(e.venue);if(e.city)p.push(e.city);if(e.cc)p.push(T().cn[e.cc]||e.ccRaw);return p.join(', ')}
+// Inline SVG, no external requests — the embed runs under a strict CSP and an
+// icon font or sprite sheet would be a second thing that can fail to load.
+var ICO_COPY='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+var ICO_OK='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 6L9 17l-5-5"/></svg>';
+// The button shows no text, so aria-label and title ARE the label — they still
+// have to be translated. Dropping the word from the surface does not drop it
+// from the locale files; an icon-only control with no accessible name is
+// simply an unlabelled button to a screen reader.
+function cpyBtn(e){var a=addrOf(e);return a?'<button class="cpy" type="button" aria-label="'+esc(T().copy)+'" title="'+esc(T().copy)+'" data-copy="'+esc(a)+'">'+ICO_COPY+'</button>':''}
+function nameOf(c){var N=T().nm;if(c.indexOf('PPW')===0)return N.PPW+T().nr+(c.slice(3)||'0');if(c.indexOf('PEW')===0)return N.PEW;return N[c]||c}
+var drum=document.getElementById('drum'),card=document.getElementById('card'),crt=document.getElementById('crt'),vp=document.querySelector('.vp');
+var sc=document.getElementById('sc');
+var SCOPE_ONLY=1;
+var W={E:1,F:1,S:1};var active=(function(){for(var i=0;i<Q.length;i++){for(var j=0;j<Q[i].v.length;j++){if(Q[i].v[j].s==='plan')return i}}return Q.length-1})(),H=82,W={E:1,F:1,S:1},SC='all',sel=null;
+function ok(e){return SC==='ppw'?e.t==='ppw':true}
+function visOf(i){return Q[i].v.filter(ok)}
+function build(){
+  var seen=0;drum.innerHTML='';
+  Q.forEach(function(g,i){
+    var ln=document.createElement('div');ln.className='ln';ln.dataset.i=i;
+    var bd=i>0&&Q[i-1].s!==g.s;
+    var sm=document.createElement('div');sm.className='sm'+(bd?' bd':'');
+    sm.innerHTML='<b>'+g.q+'</b><i></i><em></em>';
+    var rw=document.createElement('div');rw.className='rw';
+    var inr=document.createElement('div');inr.className='rwi';
+    var vis=g.v.filter(ok);
+    if(!vis.length){var m=document.createElement('span');m.className='mt';m.textContent=T().empty;rw.appendChild(m)}
+    vis.forEach(function(e,j){
+      var c=TY[e.t],isn=e.s==='plan'&&!seen;if(isn)seen=1;e._n=isn;
+      var p=document.createElement('div');p.className='p'+((e.s==='done'||e.s==='await')?' f':isn?' nx':'');
+      p.dataset.q=i;p.dataset.j=j;p.dataset.prio=(e.t==='pew'?'0':'1');p.dataset.city=(e.city||e.venue)?'1':'0';
+      if(e.s==='done'||e.s==='await')p.style.background=c[0];
+      if(e.s==='canc')p.style.opacity=.45;
+      if(e.s==='plan'&&!isn)p.style.borderLeft='2px solid '+c[1];
+      var dc=(e.s==='done'||e.s==='await')?c[1]:isn?'var(--text-accent)':'var(--text-secondary)';
+      var tc=(e.s==='done'||e.s==='await')?c[2]:'var(--text-primary)';
+      p.innerHTML='<span class="dd" style="color:'+dc+'">'+e.d+'</span><span class="dm" style="color:'+dc+'"><i class="ms">'+T().sm[e.mo]+'</i><i class="mf">'+T().mo[e.mo]+'</i></span><span class="cdc" style="color:'+tc+'">'+panelLabel(e)+'</span>'+((e.city||e.venue)?'<span class="cty" style="color:'+(e.s==='done'?c[1]:'var(--text-muted)')+'">'+(e.city||e.venue)+'</span>':'');
+      inr.appendChild(p);
+    });
+    if(vis.length)rw.appendChild(inr);
+    ln.appendChild(sm);ln.appendChild(rw);drum.appendChild(ln);
+  });
+}
+function pad(n){return n<10?'0'+n:''+n}
+function showCard(e){
+  var c=TY[e.t],nw=e.w.length;
+  var ST=T().st;
+  var LB={done:[ST.done,c[0],c[2]],await:[ST.await,'#FAEEDA','#412402'],
+          plan:[ST.plan,'var(--surface-2)','var(--text-secondary)'],canc:[ST.canc,'#FCEBEB','#501313']};
+  var stt=e._n?[T().next,'var(--bg-accent)','var(--text-accent)']:LB[e.s];
+  var miss='';
+  var h='<div class="chd"><span class="cdt">'+e.d+' '+T().mo[e.mo]+' '+e.y+'</span>'+
+    '<span class="ccd" style="background:'+c[0]+';color:'+c[2]+'">'+e.c+'</span></div>'+
+    '<div class="cnm">'+nameOf(e.c)+'</div>'+
+    (e.city?'<div class="clo">'+(e.cc?flag(e.cc):'')+'<span class="cct">'+e.city+'</span>'+(e.venue?'':cpyBtn(e))+'</div>':'')+
+    (e.venue?'<div class="addr"><span class="addrt">'+e.venue+'</span>'+cpyBtn(e)+'</div>':'')+
+    '<div class="chips"><span class="chp" style="background:'+stt[1]+';color:'+stt[2]+';border-color:transparent">'+stt[0]+'</span>'+
+    '<span class="chp">'+RG[e.t]+'</span></div>'+
+    '<div class="dvv"></div>';
+  // The four fields that actually drive a decision: fee, deadline, and the two
+  // URLs. Each row is omitted entirely when its field is empty — no placeholders.
+  var facts='';
+  // Each tier is independent — render one line per non-null field, never a
+  // block gated on the base fee being present.
+  if(e.fee!=null)facts+='<div class="fct"><span class="fk">'+T().feeL+'</span><span class="fv">'+e.fee+' '+e.cur+'</span></div>';
+  if(e.fee2!=null)facts+='<div class="fct"><span class="fk">'+T().fee2L+'</span><span class="fv">'+e.fee2+' '+e.cur+'</span></div>';
+  if(e.fee3!=null)facts+='<div class="fct"><span class="fk">'+T().fee3L+'</span><span class="fv">'+e.fee3+' '+e.cur+'</span></div>';
+  if(e.dl)facts+='<div class="fct"><span class="fk">'+T().dlL+'</span><span class="fv">'+fmtDL(e.dl)+'</span></div>';
+  if(facts)h+='<div class="facts">'+facts+'</div>';
+  if(e.s==='await')h+='<div class="dl" style="color:#854F0B">'+T().awaitMsg+'</div>';
+  else if(e.s==='canc')h+='<div class="dl" style="color:#A32D2D">'+T().cancMsg+'</div>';
+  var pills=[];
+  if(e.s==='done'){
+    var slots=e.urls||1;
+    var lbl=slots===1?[T().res]:(function(){var a=[];for(var i2=1;i2<=slots;i2++)a.push(T().day+' '+i2);return a})();
+    lbl.forEach(function(x){pills.push('<a class="pl" href="#">'+x+' &rarr;</a>')});
+  }
+  if(e.reg)pills.push('<a class="pl r" href="#">'+T().regL+' &rarr;</a>');
+  // Entry list shows only while the start date is still ahead — 'plan' is
+  // exactly that (future date, not cancelled). Deliberately NOT tied to the
+  // registration deadline: who has entered stays worth reading after entries
+  // close, right up until the event begins.
+  if(e.ent)pills.push('<a class="pl" href="#">'+T().entL+' &rarr;</a>');
+  if(e.inv)pills.push('<a class="pl q" href="#">'+T().inv+' &rarr;</a>');
+  if(pills.length)h+='<div class="pills">'+pills.join('')+'</div>';
+  h+='<div class="wps">'+e.w.split('').map(function(x){return '<span class="wp">'+T().wn[x]+'</span>'}).join('')+'</div>';
+  card.innerHTML=h;
+}
+function fitRow(){
+  var all=[].slice.call(drum.querySelectorAll('.p'));
+  all.forEach(function(p){p.style.flex='';p.style.marginLeft='';p.style.zIndex='';p.classList.remove('ov')});
+  [].slice.call(drum.querySelectorAll('.rwi')).forEach(function(r){r.style.gap=''});
+  var mid=drum.querySelector('.ln.mid'); if(!mid)return;
+  var rw=mid.querySelector('.rw'), inr=mid.querySelector('.rwi'); if(!inr)return;
+  var ps=[].slice.call(inr.querySelectorAll('.p')); if(!ps.length)return;
+  var W=48, GAP=3, n=ps.length, avail=rw.clientWidth;
+  var selP=inr.querySelector('.p.sel');
+  // The selected panel spells the month out in full, so it can never be the
+  // plain 48px: "października" alone measures 66px. 74px leaves real headroom
+  // for the longest month in either language; a city still needs the full 78px.
+  var WSEL=(selP&&selP.dataset.city==='1')?78:74;
+  if((n-1)*(W+GAP)+WSEL<=avail){
+    ps.forEach(function(p){p.style.flex='0 0 '+(p===selP?WSEL:W)+'px'});
+    return;
+  }
+  var S=Math.floor((avail-WSEL)/(n-1));
+  S=Math.max(13,Math.min(W+GAP,S));
+  inr.style.gap='0px';
+  var sj=sel?sel.j:0;
+  ps.forEach(function(p,i2){
+    p.style.flex='0 0 '+(p===selP?WSEL:W)+'px';
+    if(i2>0)p.style.marginLeft=(-(W-S))+'px';
+    p.style.zIndex=String(200-Math.abs(i2-sj)*2);
+    p.classList.add('ov');
+  });
+}
+function caret(){
+  var p=drum.querySelector('.p.sel');if(!p){crt.style.opacity=0;return}
+  crt.style.opacity=1;
+  var r=p.getBoundingClientRect(),vr=vp.getBoundingClientRect();
+  crt.style.left=Math.max(8,Math.min(vr.width-20,r.left+r.width/2-vr.left-6))+'px';
+}
+function select(qi,j){
+  var vis=visOf(qi);if(!vis.length)return;
+  j=Math.max(0,Math.min(vis.length-1,j));sel={q:qi,j:j};
+  [].slice.call(drum.querySelectorAll('.p')).forEach(function(p){
+    p.classList.toggle('sel',+p.dataset.q===qi&&+p.dataset.j===j)});
+  showCard(vis[j]);fitRow();caret();
+}
+function render(){
+  var rows=[].slice.call(drum.querySelectorAll('.ln'));
+  drum.style.transform='translateY('+(-(active-1)*H)+'px)';
+  rows.forEach(function(ln,i){
+    var d=i-active,bd=ln.querySelector('.sm').classList.contains('bd');
+    ln.className='ln'+(d===-1?' up':d===1?' dn':d===0?' mid':' far');
+    ln.querySelector('em').textContent=(d===0||bd)?Q[i].s.slice(2,4)+'/'+Q[i].s.slice(7,9)+(Q[i].mixed?' *':''):'';
+  });
+  fitRow();setTimeout(function(){fitRow();caret()},460);
+}
+card.addEventListener('click',function(ev){
+  var b=ev.target.closest('.cpy'); if(!b)return;
+  ev.preventDefault();
+  var txt=b.dataset.copy||'';
+  function done(){
+    b.innerHTML=ICO_OK;b.classList.add('ok');
+    b.setAttribute('aria-label',T().copied);b.setAttribute('title',T().copied);
+    setTimeout(function(){b.innerHTML=ICO_COPY;b.classList.remove('ok');
+      b.setAttribute('aria-label',T().copy);b.setAttribute('title',T().copy);},1400);}
+  // execCommand fallback matters here: navigator.clipboard needs a secure
+  // context, and the public embed may sit on a plain-http host page.
+  function fallback(){var ta=document.createElement('textarea');ta.value=txt;
+    ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.top='-1000px';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy')}catch(_){}
+    document.body.removeChild(ta);done();}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done,fallback);
+  }else fallback();
+});
+drum.addEventListener('click',function(ev){
+  var p=ev.target.closest('.p');
+  if(p&&+p.dataset.q===active){select(active,+p.dataset.j);return}
+  var ln=ev.target.closest('.ln');if(!ln)return;
+  var i=+ln.dataset.i;if(i!==active&&visOf(i).length){active=i;render();select(i,0)}
+});
+sc.addEventListener('click',function(ev){
+  var b=ev.target.closest('.sg');if(!b)return;SC=b.dataset.s;
+  [].slice.call(sc.querySelectorAll('.sg')).forEach(function(x){x.className='sg'+(x.dataset.s===SC?' on':'')});
+  build();render();
+  var qi=active;while(qi<Q.length&&!visOf(qi).length)qi++;
+  if(qi>=Q.length){qi=active;while(qi>=0&&!visOf(qi).length)qi--}
+  if(qi>=0&&qi<Q.length){active=qi;render();select(qi,0)}
+});
+// Season scoring config: show_evf_toggle_calendar ("Pokaż przełącznik +EVF w
+// Kalendarzu"). Turning it OFF does not merely hide the control — it forces the
+// domestic scope, exactly as `!showEvfToggle || scopeFilter === 'ppw'` does in
+// CalendarView today. Hiding the button without constraining the data would
+// leave EVF events on screen with no way to filter them out.
+document.getElementById('cfgevf').addEventListener('change',function(){
+  var on=this.checked;
+  document.querySelector('.fil').style.display=on?'':'none';
+  SC=on?'all':'ppw';
+  [].slice.call(sc.querySelectorAll('.sg')).forEach(function(x){x.className='sg'+(x.dataset.s===SC?' on':'')});
+  build();render();
+  var qi=active;while(qi<Q.length&&!visOf(qi).length)qi++;
+  if(qi>=Q.length){qi=active;while(qi>=0&&!visOf(qi).length)qi--}
+  if(qi>=0&&qi<Q.length){active=qi;render();select(qi,0)}
+});
+[].slice.call(document.querySelectorAll('.lb')).forEach(function(b){
+  b.addEventListener('click',function(){
+    if(lang===b.dataset.l)return;
+    lang=b.dataset.l;
+    [].slice.call(document.querySelectorAll('.lb')).forEach(function(x){x.className='lb'+(x===b?' on':'')});
+    document.getElementById('vt').textContent=T().title;
+    document.getElementById('wl').textContent=T().width;
+    // build() recreates the panels, which drops the .sel class — keep the
+    // current selection and restore it so switching language does not move you.
+    var keep=sel?{q:sel.q,j:sel.j}:null;
+    build();render();
+    if(keep)select(keep.q,keep.j);else select(active,0);
+  })});
+// CERT/PROD switch. Temporary by design — it exists only because both
+// environments are served from GitHub Pages today, and retires when PROD moves
+// to the WordPress CMS. Labels are environment codes, so they never translate.
+document.getElementById('envt').addEventListener('click',function(ev){
+  var b=ev.target.closest('.envb'); if(!b)return;
+  [].slice.call(this.querySelectorAll('.envb')).forEach(function(x){x.className='envb'+(x===b?' on':'')});
+});
+var w=document.getElementById('w'),ro=document.getElementById('ro'),ph=document.getElementById('ph');
+function dev(n){return n<=320?'iPhone SE':n<=360?'Pixel / Galaxy':n<=375?'iPhone SE2 / 13 mini':n<=393?'iPhone 15 / Pixel 8':n<=414?'iPhone Plus':'iPhone Pro Max'}
+w.addEventListener('input',function(){ph.style.width=w.value+'px';ro.textContent=w.value+'px · '+dev(+w.value);setTimeout(function(){fitRow();caret()},220)});
+build();render();(function(){var v=visOf(active);for(var j=0;j<v.length;j++){if(v[j].s==='plan'){select(active,j);return}}select(active,0)})();
+})();
+</script>
+</div>
+
 ## Context
 
 The public Calendar is the SPWS surface a fencer opens to decide whether to enter a competition. It renders today as three stacked mechanisms in `CalendarView.svelte` (659 lines): a month-grouped reverse-chronological event list, a flat rolling-progress strip above it, and a season dropdown that clamps the whole view to one season.
