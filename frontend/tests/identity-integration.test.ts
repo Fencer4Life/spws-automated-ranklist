@@ -17,6 +17,8 @@ vi.mock('../src/lib/api', () => ({
   fetchFencerScores: vi.fn().mockResolvedValue([]),
   fetchRankingRules: vi.fn().mockResolvedValue(null),
   fetchCalendarEvents: vi.fn().mockResolvedValue([]),
+  // ADR-084 — the calendar view spans every season, so App loads through this.
+  fetchAllCalendarEvents: vi.fn().mockResolvedValue([]),
   fetchMatchCandidates: vi.fn().mockResolvedValue([]),
   approveMatch: vi.fn().mockResolvedValue(undefined),
   dismissMatch: vi.fn().mockResolvedValue(undefined),

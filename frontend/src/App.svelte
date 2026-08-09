@@ -78,7 +78,7 @@
       </div>
     {/if}
   {:else if currentView === 'calendar'}
-    <CalendarView events={calendarEvents} showEvfToggle={showEvfToggleCalendar} {isActiveSeason} {seasons} bind:selectedSeasonId {dualEnv} bind:activeEnv onseasonchange={handleSeasonChange} />
+    <CalendarView events={calendarEvents} showEvfToggle={showEvfToggleCalendar} {dualEnv} bind:activeEnv />
   {:else if currentView === 'admin_seasons'}
     <SeasonManager
       {seasons}
@@ -249,6 +249,7 @@
     fetchFencerScores,
     fetchFencerScoresRolling,
     fetchRankingRules,
+    fetchAllCalendarEvents,
     fetchCalendarEvents,
     fetchPriorSeasonEvents,
     fetchOrganizers,
@@ -396,7 +397,6 @@
   let errorLink: string | null = $state(null)
   function clearStatus() { error = null; errorLink = null }
 
-  let isActiveSeason = $derived(seasons.find(s => s.id_season === selectedSeasonId)?.bool_active ?? false)
   // ADR-077: rolling carry-over applies to the active season AND future seasons
   // (a not-yet-started season's ranklist is the carry-over preview); past seasons
   // show their own finals. Was gated to isActiveSeason only, so a promoted future
@@ -1269,10 +1269,12 @@
     }
   }
 
+  // ADR-084 — the barrel spans every season, so the calendar view is no longer
+  // clamped to `selectedSeasonId`. Admin views still load per-season.
   async function loadCalendar() {
-    if (demo || !selectedSeasonId) return
+    if (demo) return
     try {
-      calendarEvents = await fetchCalendarEvents(selectedSeasonId)
+      calendarEvents = await fetchAllCalendarEvents()
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
     }

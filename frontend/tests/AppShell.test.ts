@@ -16,6 +16,8 @@ vi.mock('../src/lib/api', () => ({
   fetchFencerScores: vi.fn().mockResolvedValue([]),
   fetchRankingRules: vi.fn().mockResolvedValue(null),
   fetchCalendarEvents: vi.fn().mockResolvedValue([]),
+  // ADR-084 — the calendar view spans every season, so App loads through this.
+  fetchAllCalendarEvents: vi.fn().mockResolvedValue([]),
 }))
 
 import App from '../src/App.svelte'
@@ -84,8 +86,15 @@ describe('App Shell (T8.4)', () => {
     expect(title?.querySelector('.header-logo')).not.toBeNull()
   })
 
-  // 8.37 — Season selector in filter bar of both views (moved from header)
-  it('keeps season selector visible in both views', async () => {
+  // 8.37 — Season selector in the ranklist filter bar (moved from the header).
+  //
+  // REWRITTEN by the ADR-084 triage. This used to assert the selector survived
+  // the switch INTO the calendar. It no longer does, and that is the decision,
+  // not a regression: the barrel owns season state with no season clamp, and
+  // the seam carries the season code, which is what allowed the dropdown to be
+  // deleted. The ranklist half of the original assertion still stands and is
+  // the half that was actually protecting something.
+  it('keeps the season selector in the ranklist, and drops it in the calendar', async () => {
     const { fetchSeasons } = await import('../src/lib/api')
     vi.mocked(fetchSeasons).mockResolvedValue(MOCK_SEASONS)
     const { container } = renderApp()
@@ -108,9 +117,9 @@ describe('App Shell (T8.4)', () => {
     await fireEvent.click(calendarItem!)
     await tick()
 
-    // Season select still present in calendar filter bar
-    const seasonSelectAfter = container.querySelector('.season-select')
-    expect(seasonSelectAfter).not.toBeNull()
+    // ADR-084 — the calendar has no season dropdown; the barrel is the control.
+    expect(container.querySelector('.season-select')).toBeNull()
+    expect(container.querySelector('.calendar-view')).not.toBeNull()
   })
 })
 

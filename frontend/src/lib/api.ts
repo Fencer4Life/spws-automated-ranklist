@@ -179,6 +179,22 @@ export async function fetchCalendarEvents(seasonId: number): Promise<CalendarEve
   return data ?? []
 }
 
+/**
+ * Every season's calendar events, for the barrel (ADR-084 §4).
+ *
+ * The drum rolls back to the start of history with no season clamp, so the
+ * single-season `fetchCalendarEvents` cannot feed it. Ordering is by date here,
+ * but `buildQuarters` re-sorts defensively (CQ.2) — do not rely on it.
+ */
+export async function fetchAllCalendarEvents(): Promise<CalendarEvent[]> {
+  const { data, error } = await getClient()
+    .from('vw_calendar')
+    .select('*')
+    .order('dt_start', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
 // N13.4 — admin saves a per-event source skip/process override from the accordion.
 export async function setEventSourceOverride(
   eventId: number,

@@ -3,6 +3,15 @@
 **Status:** Accepted
 **Date:** 2026-04-25
 **Relates to:** ADR-028 (EVF Calendar + Results Import — refresh invariant generalises), ADR-029 (Tournament URL Auto-Population — discovery loop becomes multi-URL), ADR-030 (Event Registration URL — same form), ADR-036 (PROD Export — schema-driven, auto-handles), ADR-039 (EVF Dedup — unaffected).
+**Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (permits render-time day labels over the compacted slot list).
+
+## Amendment (2026-08-09 — day labels at render time)
+
+The compact-on-save invariant is **unchanged**: slots stay gap-free in storage, and `url_event`…`url_event_5` are written compacted.
+
+[ADR-084](084-calendar-quarter-barrel-event-card.md) adds a render-time reading of that list. `EventCard` labels each result link by **day** — *Wyniki 1*, *Wyniki 2* — derived from slot order against the event's date range, and falls back to a plain *Wyniki* for a lone URL (CQ.55, EC.25).
+
+The constraint this creates, and the reason it belongs in this ADR: **day labels are only meaningful because the list is compacted**. If a gap could appear mid-list, slot *N* would stop corresponding to day *N* and the labels would silently mislead. Labelling by day therefore depends on the compact-on-save rule and must be revisited if it is ever relaxed. Labelling by **weapon** stays rejected, as this ADR originally decided.
 
 ## Context
 

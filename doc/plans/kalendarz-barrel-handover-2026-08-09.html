@@ -1,0 +1,333 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handover — calendar barrel, Phases 1, 3 and 4 built (9 Aug 2026)</title>
+<style>
+:root{
+  --surface-0:#f7f6f3; --surface-1:#f1efe9; --surface-2:#ffffff;
+  --text-primary:#1c1b19; --text-secondary:#565550; --text-muted:#8a887f;
+  --border:rgba(0,0,0,.13); --rule:rgba(0,0,0,.10);
+  --accent:#185FA5; --ok:#3B6D11; --warn:#854F0B; --bad:#A32D2D;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+:root{
+  --surface-0:#17171a; --surface-1:#1f1f23; --surface-2:#26262b;
+  --text-primary:#eceae5; --text-secondary:#a9a79f; --text-muted:#77756d;
+  --border:rgba(255,255,255,.14); --rule:rgba(255,255,255,.12);
+  --accent:#B5D4F4; --ok:#97C459; --warn:#EF9F27; --bad:#F09595;
+}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface-0);color:var(--text-primary);font-family:var(--serif);font-size:17px;line-height:1.62}
+.page{max-width:47rem;margin:0 auto;padding:3.5rem 1.5rem 6rem}
+.eyebrow{font-family:var(--sans);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .8rem}
+h1{font-size:2rem;line-height:1.2;font-weight:600;margin:0 0 .6rem;letter-spacing:-.015em}
+.standfirst{font-size:1.13rem;color:var(--text-secondary);margin:0 0 1.5rem;line-height:1.5}
+.meta{font-family:var(--sans);font-size:12.5px;color:var(--text-muted);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:.7rem 0;display:flex;gap:1.4rem;flex-wrap:wrap;margin-bottom:2.5rem}
+.meta b{font-weight:600;color:var(--text-secondary)}
+h2{font-size:1.36rem;font-weight:600;margin:3rem 0 .3rem;line-height:1.3}
+h2 .num{font-family:var(--sans);font-size:12px;letter-spacing:.14em;color:var(--text-muted);display:block;margin-bottom:.4rem;font-weight:500}
+h3{font-size:1.05rem;font-weight:600;margin:1.8rem 0 .4rem}
+p{margin:0 0 .9rem}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:.84em;background:var(--surface-1);padding:.12em .38em;border-radius:4px;border:1px solid var(--rule)}
+ol,ul{margin:0 0 1rem;padding-left:1.35rem}
+li{margin-bottom:.45rem}
+table{width:100%;border-collapse:collapse;font-family:var(--sans);font-size:14px;margin:.9rem 0 1.3rem;display:block;overflow-x:auto}
+th,td{text-align:left;padding:.55rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap}
+td code{background:none;border:none;padding:0}
+.callout{background:var(--surface-1);border-radius:10px;padding:1rem 1.2rem;margin:1.3rem 0;font-family:var(--sans);font-size:14.5px;line-height:1.6}
+.callout b{font-weight:600}
+.lede{font-family:var(--sans);font-size:14.5px;color:var(--text-secondary);line-height:1.6}
+.open{border-left:3px solid var(--warn);padding-left:1rem;margin:1.1rem 0}
+.open b{font-family:var(--sans);font-size:14px;display:block;margin-bottom:.2rem}
+.open p{font-family:var(--sans);font-size:14px;color:var(--text-secondary);margin:0 0 .35rem;line-height:1.55}
+.rec{font-family:var(--sans);font-size:13.5px;color:var(--ok)}
+.locked{font-family:var(--sans);font-size:14px;line-height:1.6}
+.locked li{margin-bottom:.35rem}
+hr{border:none;border-top:1px solid var(--rule);margin:2.6rem 0}
+.big{font-family:var(--sans);font-size:15px;background:var(--surface-1);border-radius:10px;padding:1rem 1.2rem;margin:1.2rem 0}
+.tag{font-family:var(--sans);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;padding:.18em .5em;border-radius:4px;white-space:nowrap;border:1px solid}
+.t-done{color:var(--ok);border-color:var(--ok)}
+.t-todo{color:var(--bad);border-color:var(--bad)}
+.t-part{color:var(--warn);border-color:var(--warn)}
+.fix{border-left:3px solid var(--bad);padding-left:1rem;margin:1.2rem 0}
+.fix b{font-family:var(--sans);font-size:14px;display:block;margin-bottom:.2rem}
+.fix p{font-family:var(--sans);font-size:14px;color:var(--text-secondary);margin:0 0 .4rem;line-height:1.55}
+</style>
+<div class="page">
+
+<p class="eyebrow">Session handover · SPWS Ranklist</p>
+<h1>Calendar barrel — Phases 1, 3 and 4 are built</h1>
+<p class="standfirst">The pure module, all three components and the orchestrator exist, tested and type-clean, driving the real app against real data. The 53-test triage is done and recorded. What remains is documentation: handbook pages, and the eight ADR amendments other than ADR-018.</p>
+
+<div class="meta">
+  <span><b>Date</b> 9 August 2026</span>
+  <span><b>Stage</b> Phases 1 + 3 + 4 complete</span>
+  <span><b>Tests</b> 594 pass (49 timeline tests retired)</span>
+  <span><b>Types</b> 0 errors</span>
+  <span><b>Branch</b> main, 23 unpushed, nothing committed this session</span>
+</div>
+
+<div class="callout">
+  <p><b>Read these three, in order.</b></p>
+  <ol style="margin-bottom:.6rem">
+    <li>This file — what exists now.</li>
+    <li><code>doc/adr/084-calendar-quarter-barrel-event-card.md</code> — the decision record written this session. <b>It is the normative spec for the build.</b></li>
+    <li><code>doc/plans/kalendarz-barrel-2026-08-08.html</code> — the plan. Its live mock at the top is still the acceptance criterion; serve it on port 8100 and drive it.</li>
+  </ol>
+  <p style="margin-bottom:0"><b>Nothing is committed.</b> Every file below is untracked or modified in the worktree. 23 commits from before this session remain unpushed, and four unrelated plan HTMLs plus other pre-existing changes were dirty on arrival — preserve them.</p>
+</div>
+
+<h2><span class="num">00</span>Where the phases stand</h2>
+
+<table>
+<thead><tr><th>Phase</th><th>State</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td><b>1</b> — pure logic</td><td><span class="tag t-done">Done</span></td><td><code>lib/calendarQuarters.ts</code>, 73 tests</td></tr>
+<tr><td><b>2</b> — migration</td><td><span class="tag t-done">N/A</span></td><td>Does not exist. Nearest-hub dropped; no SQL in this work</td></tr>
+<tr><td><b>3</b> — components</td><td><span class="tag t-done">Done</span></td><td>CountryFlag, EventCard, CalendarBarrel — 70 tests</td></tr>
+<tr><td><b>4</b> — orchestration</td><td><span class="tag t-done">Done</span></td><td>CalendarView is a 4-prop orchestrator; 53-test triage recorded. See §05</td></tr>
+<tr><td><b>5</b> — public embed</td><td><span class="tag t-todo">Not started</span></td><td>One finding to verify, not fix</td></tr>
+<tr><td>ADR + audit</td><td><span class="tag t-done">Done</span></td><td>ADR-084 drafted; all 81 prior ADRs swept</td></tr>
+<tr><td>Documentation gate</td><td><span class="tag t-part">Partial</span></td><td>ADR-084 registered in Appendix C; ADR-018 amended. Handbook pages and 8 further ADR amendments outstanding</td></tr>
+</tbody>
+</table>
+
+<h3>Verification as it stands</h3>
+<ul class="locked">
+<li><code>npx vitest run</code> — <b>594 pass, 42 files</b>, zero failures. Down from 627 because the triage retired 49 timeline tests and added 16 (CV.1–CV.14, EC.29, EC.30).</li>
+<li><code>npm run check</code> (svelte-check) — <b>0 errors</b>, 14 warnings, all pre-existing in <code>src/ce/*</code>.</li>
+<li><code>npx tsc --noEmit</code> — exit 0.</li>
+<li><code>scripts/check_docs.py</code> — clean, 24 handbook pages.</li>
+<li><code>scripts/refresh-graph.sh</code> — <b>blocked, and it needs a decision before the commit.</b> The graph sits at 7140 nodes. Phase 4 deleted ~500 lines from <code>CalendarView.svelte</code>, so the incremental refresh now <b>refuses to shrink <code>graph.json</code></b> — a deliberate guard, and correct here, because the shrink is real. Its own remedy is a full <code>/graphify .</code> rebuild, which is the expensive path the incremental refresh exists to avoid. Cold-start was attempted and is not supported: removing <code>graph.json</code> makes the script exit with <q>no graph yet</q>. <b>The graph is therefore stale for the calendar subgraph</b> — <code>graphify query/affected</code> will still describe the 659-line timeline. Restored from backup, nothing lost.</li>
+</ul>
+
+<hr>
+
+<h2><span class="num">01</span>What was built</h2>
+
+<table>
+<thead><tr><th>File</th><th>Tests</th><th>Owns</th></tr></thead>
+<tbody>
+<tr><td><code>src/lib/calendarQuarters.ts</code></td><td>73 (CQ.1–72b)</td><td>All derivation. Quarter bucketing, season boundaries, anchor, next-upcoming, scope filter, <code>registrationState()</code>, <code>countryCode()</code>, four-way type split, ADR-037/077 visibility rules, card field helpers, <b>and the barrel's overlap geometry</b></td></tr>
+<tr><td><code>src/components/CountryFlag.svelte</code></td><td>22 (CF.1–22)</td><td>CSS/SVG flag chips. ~63 flags</td></tr>
+<tr><td><code>src/components/EventCard.svelte</code></td><td>28 (EC.1–28)</td><td>The whole §04 field contract</td></tr>
+<tr><td><code>src/components/CalendarBarrel.svelte</code></td><td>20 (CB.1–20)</td><td>Rows, seams, panels, rotation, tap targets, detail tiers</td></tr>
+<tr><td><code>src/lib/locales/{pl,en}.json</code></td><td>parity guard</td><td><b>+102 keys each</b>, 516 total, parity held</td></tr>
+</tbody>
+</table>
+
+<p class="lede">Four new source files, matching the plan's count exactly — <code>CalendarFilters.svelte</code> is not built, and a <code>countryFlags.ts</code> data module was written and then deleted when the flag scope narrowed.</p>
+
+<h3>Why the geometry lives in the pure module, not the component</h3>
+<div class="big">
+  <p><b>jsdom has no layout engine.</b> Every <code>clientWidth</code> there is <code>0</code>, so the overlap maths — step, margins, z-index — can never be asserted through a mounted component. It would silently test nothing.</p>
+  <p style="margin-bottom:0">So it lives in <code>layoutRow()</code> and is asserted directly (CQ.59–69), and <code>CalendarBarrel</code> treats a measured width of 0 as "not yet measured" and renders a flat row with no inline geometry. That is also correct for first paint. <b>The barrel's own test file states this explicitly at the top</b> — do not "fix" it by trying to assert widths in jsdom.</p>
+</div>
+
+<h3>Locale keys added</h3>
+<p class="lede">Every fee, status and link key already existed — no new strings were needed for those. What was missing:</p>
+<ul class="locked">
+<li><code>cal_month_1…12</code> and <code>cal_month_short_1…12</code> — the calendar needs <b>genitive</b> months (<code>18 kwietnia</code>). Verified that the existing <code>month_1</code> is <code>Styczeń</code>, nominative, so borrowing it would have read wrongly.</li>
+<li><code>tournaments_one</code> / <code>_few</code> / <code>_many</code> — the three-form Polish plural, replacing the flat <code>tournaments_count</code>.</li>
+<li><code>copy_address</code>, <code>copied</code>, <code>event_results_day</code>, <code>event_awaiting_message</code>, <code>event_cancelled_message</code>, <code>calendar_empty_quarter</code>, <code>calendar_next_up</code>.</li>
+<li><code>country_XX</code> for 68 ISO codes.</li>
+</ul>
+
+<hr>
+
+<h2><span class="num">02</span>Verified in a browser, with numbers</h2>
+
+<p class="lede">Measured, not eyeballed, per the plan's §07 instruction. Scratch preview pages were built, measured and deleted — the repo carries none of them.</p>
+
+<h3>Barrel geometry at 320px</h3>
+<table>
+<thead><tr><th>Quarter</th><th>Panels</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>2Q26</td><td>5</td><td><b>Flat.</b> Widths 74 + 4×48, all margins 0, no z-index emitted, text tier 0</td></tr>
+<tr><td>1Q26</td><td>10</td><td><b>Fans.</b> Widths 74 + 9×48 — <b>no panel shrinks</b> — <code>margin-left:-21px</code> (step 27), text tier 1</td></tr>
+</tbody>
+</table>
+<p class="lede">The ten-panel row's z-index came back <code>200, 198, 196, 194, 192, 190, 188, 186, 184, 182</code> with the selection at index 0 — exactly <code>200 − |i − sel| × 2</code>. The selected panel rendered <code>12 września</code>, month spelled out in full, at 74px; receded rows dropped to day + code at 38px. The seam printed <code>3Q26 ──── 26/27</code> with the heavier rule on the season boundary.</p>
+
+<h3>Card at 320px</h3>
+<p class="lede">The crowded case — three fee tiers, deadline, three links, three weapon pills, venue address — fits in a <b>332px-tall card with no horizontal overflow</b>. Fee rows measure <b>15px each, 45px for all three</b>, against 23px for the deadline row.</p>
+
+<div class="callout">
+<p style="margin-bottom:0"><b>The fee font was reduced on explicit instruction</b> ("the 3 fees are taking too much space… make the font way smaller"). Fee labels are 9px and values 10px, against 11px/13px for the deadline. This is deliberate hierarchy, not an accident: the fees are reference detail and the deadline is the row that forces a decision. <b>Do not normalise them back</b> without asking.</p>
+</div>
+
+<h3>The plan's §07 acceptance check — done, with one caveat</h3>
+<p class="lede">Barrel and card mounted side by side at <b>320 / 360 / 390px</b> against <b>111 real events</b> from <code>vw_calendar</code>, 22 quarters. Caveat: this is the <b>LOCAL seeded database</b>, not cloud CERT — CERT credentials live in GitHub Secrets, not <code>.env</code>. LOCAL is seeded from the CERT dump, so the shapes are real, but it is not the literal environment the plan named.</p>
+
+<table>
+<thead><tr><th>Width</th><th>Anchor row (3Q26, 1 panel)</th><th>Rotated to 2Q26 (7 panels)</th></tr></thead>
+<tbody>
+<tr><td><b>320px</b></td><td>flat, caret 154px</td><td><b>fans</b> — <code>margin-left −8px</code> (step 40), tier 0</td></tr>
+<tr><td><b>360px</b></td><td>flat, caret 174px</td><td><b>fans</b> — <code>margin-left −1px</code> (step 47), tier 0</td></tr>
+<tr><td><b>390px</b></td><td>flat, caret 189px</td><td><b>flat</b> — content 380px fits</td></tr>
+</tbody>
+</table>
+
+<p class="lede">No horizontal spill outside the column at any width, the selected panel's outline never clipped by the row's scroll container, and the caret centres exactly where the arithmetic says <code>(w − 74) ÷ 2 + 31</code>. The fan/flat breakpoint for a 7-panel quarter falls between 360 and 390, as <code>flatWidth = 6×51 + 74 = 380</code> predicts.</p>
+
+<div class="callout">
+<p><b>Compared against the mock, live.</b> The mock's own DOM at slider 320 reports <code>.rw</code> → <code>overflow-x: auto</code> and <code>.up .rw</code> → <code>hidden</code>, selected panel 78px with a city. The component now emits the same three. That measurement is what turned correction 0 from a judgement call into a fact.</p>
+<p style="margin-bottom:0"><b>Two differences that are not defects.</b> The component screenshots carry no header, scope segment or CT/PD footer — those are the Phase 4 orchestrator's, not the barrel's. And the card renders fewer rows than the mock's because the real row's fee, deadline and registration URLs are <em>null</em>; the mock states outright that it synthesises those four values because <code>vw_calendar</code> never carried them. Omitting an absent row is the §04 contract working.</p>
+</div>
+
+<div class="open">
+<b>What this check did NOT cover</b>
+<p>The harness mounted the card statically on the next-upcoming event rather than wiring <code>onselect</code>, so <b>card-follows-selection was not exercised here</b> — it is covered by CB.18 and EC tests, but not visually at these widths. Rotation, overlap, caret and spill were all driven live.</p>
+</div>
+
+<hr>
+
+<h2><span class="num">03</span>Five corrections made this session — do not re-introduce</h2>
+
+<div class="fix">
+<b>0. The focused row must scroll — <code>overflow-x: hidden</code> stranded panels</b>
+<p>Found by re-checking Phase 3 against the mock rather than trusting this handover's own <q>DONE</q>. The mock carries <strong>two</strong> overflow rules — <code>.rw{overflow-x:auto}</code> and <code>.up&nbsp;.rw,.dn&nbsp;.rw{overflow-x:hidden}</code> — and the component had collapsed them into <code>hidden</code> for every row.</p>
+<p>That matters because <code>layoutRow</code> stops absorbing overflow at <code>PANEL_STEP_FLOOR</code> (13px). Past it the row is genuinely wider than the viewport: at 320px the content width <code>(n−1)×13 + W_last</code> exceeds 320 from <strong>n = 22</strong> (at 360px, n = 26). A panel is reachable <em>only</em> by tapping it — rotation moves between rows, never within one — so clipping stranded the trailing panels with no way back. <b>ADR-084's own acceptance criteria already presume a scroll container</b> (<q>not clipped by the row's scroll container</q>), so this was a slip against the spec, not a design choice.</p>
+<p>Worse, it needed no user action: <code>selectDefault()</code> opens on the next-upcoming event, which in a long quarter can sit past the clip edge — an invisible selection with the caret computed off-screen.</p>
+<p><b>Fixed:</b> the two mock rules restored; <code>contentWidth</code> now returned by <code>layoutRow</code> (CQ.70) instead of being recomputed in the component; caret math moved into the pure module as <code>caretOffset()</code> with the mock's viewport clamp (CQ.71, CQ.72, CQ.72b). Browser-measured at 320px with 22 panels: content 351px, <code>maxScrollLeft</code> 31px, trailing panel fully reachable after scroll, receded row still <code>hidden</code>.</p>
+</div>
+
+<div class="fix">
+<b>1. "Carried" is not a calendar state — a false blocker I raised</b>
+<p>I escalated ADR-018's <b>carried</b> state as a decision blocking the barrel's visual spec. It is not. <code>positionSlots</code> at <code>CalendarView.svelte:268</code> computes exactly one boolean, <code>completed</code>; the template renders <code>class:completed</code>/<code>class:planned</code>; the CSS covers those two only. The word <em>carried</em> and the <code>↩</code> glyph <b>appear nowhere</b> in that file.</p>
+<p>ADR-018's three-state calendar description documents a strip that was never built. Carry-over is a <b>ranking</b> concept, surfaced only in <code>DrilldownModal.svelte:49-104</code> via <code>bool_has_carryover</code>. A calendar has no carried state to lose. <b>Nothing is blocked; the fill-and-ring scheme is complete as designed.</b></p>
+</div>
+
+<div class="fix">
+<b>2. Flag collisions I shipped and then fixed</b>
+<p>Rendered as plain bands, <b>Croatia is red/white/blue exactly like the Netherlands</b>, and <b>Slovakia and Slovenia are white/blue/red exactly like Russia</b>. Their emblem is the only difference, so band-only rendering was actively wrong. Greece was also wrong — 5 bands instead of 9 stripes with a canton — and Laos was drawn as a plain blue field because its disc sits over stripes the primitive cannot express.</p>
+<p>Now: <b>7 hand-drawn SVG flags</b> (GB, GR, HR, SK, SI, RS, PT), Laos removed, and <b>CF.20 pins that the three former colliders differ from each other and from their band-only twins</b>.</p>
+</div>
+
+<div class="fix">
+<b>3. Images are not banned — document-relative <code>src</code> is the problem</b>
+<p>I over-claimed that a flag image was impossible under ADR-007's CSP. The real constraint is narrower and worth carrying: <code>SPWS-logo.png</code> is referenced as <code>src="SPWS-logo.png"</code>, <b>document-relative</b>, so inside a custom element on a third-party page it resolves against the <em>host's</em> URL and 404s. That is a latent bug in the logo, not a pattern to copy. <b>Inline SVG has neither problem</b> — no request for CSP to block, no URL to resolve wrongly — and is authored rather than downloaded, so provenance is not in question.</p>
+</div>
+
+<div class="fix">
+<b>4. svelte-check caught two type errors the tests did not</b>
+<p>TypeScript will not subtract both literals from a union member whose own discriminant is a union (<code>kind: 'h' | 'v'</code>), so a fall-through branch was unnarrowed while all tests were green. Fixed by narrowing positively. <b>Run <code>npm run check</code>, not just vitest</b> — it is the gate that caught this.</p>
+</div>
+
+<hr>
+
+<h2><span class="num">04</span>Deliberate choices worth not relitigating</h2>
+
+<ul class="locked">
+<li><b>Flag scope is "only what renders correctly."</b> Emblem-bearing flags that would collide with another country are <b>omitted</b>, not approximated — an unlisted code renders nothing and the card shows the place without a chip. Italy/Mexico, Ireland/Côte d'Ivoire, Romania/Chad and Monaco/Indonesia are the live examples; the emblem-bearing member of each pair is the one dropped.</li>
+<li><b>Identity and rendering are separate.</b> <code>countryCode()</code> resolves ~120 names, more than there are drawable flags. GB resolved before it was drawable, and CQ.46 pins that separation.</li>
+<li><b>The reduced-emblem tier is labelled as such.</b> Croatia gets a two-square checker, not a faithful chequy. At 19×13 a real coat of arms is sub-pixel; the mark's job is to disambiguate.</li>
+<li><b><code>mpw</code> is kept distinct</b> in both the module and the barrel's classes, even though it currently paints like <code>ppw</code>, so the past-season-anchor item stays a styling choice rather than becoming a prerequisite.</li>
+<li><b><code>findNextUpcoming</code> skips cancelled events.</b> Ringing a cancelled competition as the thing to look forward to would be wrong. Not pinned by a test — worth adding one.</li>
+<li><b><code>allowsFeeTier</code> permits a tier when the weapon count is unknown.</b> Suppressing real pricing on missing metadata is the worse failure (CQ.51).</li>
+<li><b><code>t1</code>/<code>t2</code> text tiers are now live.</b> They are dead CSS in the mock — defined, never applied. Here they are driven off the overlap step, so a code still fits its panel at tight steps. This is an addition beyond the mock's observed behaviour.</li>
+</ul>
+
+<hr>
+
+<h2><span class="num">05</span>Phase 4 — done, and what it cost
+
+</h2>
+
+<p class="lede"><code>CalendarView.svelte</code> went from 659 lines to a <b>4-prop orchestrator</b>: <code>events</code>, <code>showEvfToggle</code>, <code>dualEnv</code>, <code>activeEnv</code>. It holds state and wires three children; every rule it used to derive inline now lives in <code>buildCalendar()</code>.</p>
+
+<h3>What changed beyond the component</h3>
+<ul class="locked">
+<li><b>New API call.</b> <code>fetchAllCalendarEvents()</code> in <code>lib/api.ts</code> — no <code>id_season</code> filter, because the drum rolls back with no season clamp. Verified live: <code>GET /vw_calendar?select=*&amp;order=dt_start.asc → 200</code>, 22 quarters from real data. <code>fetchCalendarEvents</code> stays for the admin views.</li>
+<li><b><code>isActiveSeason</code> deleted</b> from the props interface, <code>App.svelte:81</code> and the derivation at <code>App.svelte:399</code>.</li>
+<li><b>Season dropdown and time filter gone</b> from the calendar — both retired by ADR-084's rejected-alternatives table. The ranklist keeps its own season selector in <code>FilterBar</code>, which is untouched.</li>
+<li><b>Three test files needed the new API name</b> in their <code>vi.mock</code> factory: <code>AppShell</code>, <code>identity-integration</code>, <code>env-toggle</code>. A factory omitting an imported name throws at module init, so this is a hard break, not a warning.</li>
+</ul>
+
+<h3>The 53-test triage, and why it was 54</h3>
+<p class="lede">All 49 <code>CalendarView.test.ts</code> tests have a recorded decision in the file's own header comment — that is where it belongs, so the next reader finds it without this handover. Summary:</p>
+
+<table>
+<thead><tr><th>Bucket</th><th>Count</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td><b>Moved</b></td><td>~30</td><td>Behaviour survives, assertion re-homed to CQ / CB / EC where it can be made without mounting</td></tr>
+<tr><td><b>Rewritten</b></td><td>9</td><td>Scope segment, events-prop rebuild, and the three ADR-079 modal-wiring tests → CV.1–CV.14</td></tr>
+<tr><td><b>Deleted</b></td><td>10</td><td>Retired mechanisms with nothing to re-home: month grouping, time filter, <code>.timeline-*</code> layout, season dropdown, R.23–R.25</td></tr>
+</tbody>
+</table>
+
+<div class="callout">
+<p><b>The plan said 53. It was 54, and the extra one mattered.</b> <code>AppShell.test.ts</code> carried <q>keeps season selector visible in both views</q>, which asserted the dropdown survived the switch <em>into</em> the calendar. That is now false by design. It was rewritten rather than deleted: the ranklist half of the assertion still protects something real, and the calendar half became its inverse.</p>
+<p style="margin-bottom:0"><b>The triage also found a coverage gap it would otherwise have destroyed.</b> The timeline had two tests for <code>url_invitation</code>. <code>EventCard</code> renders that link — it always did — but <b>nothing asserted it</b>. Deleting the timeline tests would have silently dropped the only coverage. Preserved as <b>EC.29 / EC.30</b>.</p>
+</div>
+
+<h3>Verified in the running app, not just jsdom</h3>
+<p class="lede">Local Supabase, real <code>vw_calendar</code> data, 375px viewport: 22 quarters, 85 panels under <code>+EVF</code>. Rotating a receded row moves the focus to 2Q26 and the card follows; selecting the last panel swaps the card to <code>MPW</code>; switching to <code>PPW</code> drops 85 panels to 22 and the card <b>falls back to a domestic event instead of going blank</b> — the CV.9 guard doing its job against data it had never seen. The only console error is a 401 on <code>fn_refresh_active_season</code>, an admin RPC <code>anon</code> cannot call under ADR-083: pre-existing, unrelated.</p>
+
+
+<h2><span class="num">06</span>Documentation still owed</h2>
+
+<p class="lede"><b>ADR-084 exists and validates</b> — authored as Markdown per ADR-082, twin generated by <code>scripts/render_adrs.py</code>, 82 ADRs validating, all 16 cross-links resolving. Its status is <code>Draft — awaiting sign-off</code>, which is the user's call, not mine.</p>
+
+<ul class="locked">
+<li><b>Register ADR-084 in specification Appendix C</b> (line 1402 onward). Not done.</li>
+<li><b>The nine ADR amendments</b> in <a href="kalendarz-barrel-adr-alignment-2026-08-09.html">the audit</a> are identified but <b>not written</b>: ADR-015 §2 supersession, and amendments to 018, 079 §7, 017, 030, 005, 028, 037, 040.</li>
+<li><b>Handbook:</b> <code>product/product-surfaces.html</code>, <code>subsystems/events-and-registration.html</code>, <code>reference/codebase-map.html</code> (four new files).</li>
+<li><b>RTM check</b> — ADR-030's FR-90/FR-91 and ADR-079's FR-120–FR-130 keep their wording, but the test IDs they cite move.</li>
+</ul>
+
+<div class="callout">
+<p style="margin-bottom:0"><b>A new skill was added:</b> <code>.claude/skills/new-adr/SKILL.md</code>. It encodes what cost time this session — that <code>doc/adr/ADR_TEMPLATE.html</code> is the <em>render</em> skeleton and not an authoring template, that ADRs must be Markdown per ADR-082, the renderer's exact contract, and the supersede/amend audit step. Not mirrored to <code>.agents/skills/</code>, matching its five siblings.</p>
+</div>
+
+<hr>
+
+<h2><span class="num">07</span>Still open</h2>
+
+<div class="open">
+<b>1. What the card opens on</b>
+<p>Unresolved. <code>resolveAnchorQuarter()</code> currently implements the mock's <b>next-upcoming</b> default, which was demonstrated but never chosen. The time-sensitive policy — the result for seven days after an event ends, then the next upcoming — is <b>not</b> applied.</p>
+<p class="rec">Recommendation unchanged: time-sensitive. The seven-day window already exists for cancelled-event notices. It is a self-contained change in one function.</p>
+</div>
+
+<div class="open">
+<b>2. Past-season anchor</b>
+<p>Finished seasons have no next-upcoming, so the drum loses its focal point. The <code>mpw</code> and <code>int</code> buckets are preserved specifically so championships can be marked without new machinery.</p>
+<p class="rec">Recommendation: mark championships distinctly. Nothing is blocked on it.</p>
+</div>
+
+<div class="open">
+<b>3. How far to take the flag set</b>
+<p>Asked and left open. Roughly 140 countries are drawable exactly with geometric primitives; the remaining ~55 need faithful emblems that are not hand-authorable at quality. <b>Every country in the observed CERT data is already covered.</b></p>
+<p class="rec">Recommendation: leave it. Expand against a list of countries that actually appear, not speculatively — a 200-country file was written and deleted once already this session.</p>
+</div>
+
+<div class="open">
+<b>4. Public embed — verify, do not fix</b>
+<p><code>ce/CalendarElement.svelte</code> derives <code>demo ? MOCK_CALENDAR_EVENTS : []</code>, meaning the non-demo embed renders empty. Confirm how the production <code>spws-calendar</code> element is actually fed before changing anything; if it is genuinely unwired, that is a separate report.</p>
+</div>
+
+<div class="open">
+<b>5. A default selection can still open off-screen</b>
+<p>Residual from correction 0. The trailing panels are now <em>reachable</em> — the row scrolls — but the row does not scroll <em>to</em> them. When <code>selectDefault()</code> rings an event past the clip edge, the card below is correct while the selected panel sits outside the viewport, with the caret pinned to the edge that points at it. This is exactly the mock's behaviour, so the component is at parity; the mock simply never had a quarter large enough to show it.</p>
+<p class="rec"><b>Recommendation:</b> add <code>scrollLeftFor(layout, selectedIndex, available)</code> to the pure module — the clamped centring offset — and assign it in the barrel's select effect, with the caret subtracting it. Deliberately <b>not</b> done here: it is behaviour beyond the mock, and the agreed fix was reachability. Needs 22+ events in one quarter to trigger at 320px, which no observed CERT quarter reaches.</p>
+</div>
+
+<hr>
+
+<h2><span class="num">08</span>Two live defects found, deliberately not fixed</h2>
+<ul class="locked">
+<li><b><code>tournaments_count</code> has no pluralisation</b>, so <code>2 turniejów</code> and <code>1 tournaments</code> are both in production today (<code>CalendarView.svelte:72</code>). The card drops the field, and <code>tournamentsPluralKey()</code> plus the three new locale keys are ready — but the live defect is unpatched.</li>
+<li><b>The env footer is duplicated</b> between <code>App.svelte:70-79</code> and <code>CalendarView.svelte</code>. Leave it: it retires with the WordPress migration, and hoisting it would add the footer to admin views that do not have one.</li>
+</ul>
+
+<div class="big">
+<p style="margin-bottom:0"><b>The honest gap, now mostly closed.</b> The 320/360/390 acceptance check ran against 111 real <code>vw_calendar</code> events and was compared live against the mock — see §02. What remains: the data was the <b>LOCAL seeded database, not cloud CERT</b>, and card-follows-selection was not exercised visually. Both are named where they belong rather than left implicit.</p>
+</div>
+
+</div>

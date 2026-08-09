@@ -3,6 +3,15 @@
 **Status:** Accepted (revised 2026-08-08 rev 8 — source-verified historical fragment repair)
 **Date:** 2026-04-06
 **Relates to:** FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (`url_event`), ADR-030 (`url_registration`/`dt_registration_deadline`), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier)
+**Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (carves out one-time curated enrichment of calendar-facing fields).
+
+## Amendment (2026-08-09 — curated enrichment is permitted, once)
+
+This ADR treats scraped EVF fields as source-owned: the sync overwrites them on every run. [ADR-084](084-calendar-quarter-barrel-event-card.md) surfaces fields the scrape does not populate well — venue address, country as an ISO code, a city distinguishable from a venue name — because the card renders them directly.
+
+The carve-out: **one-time curated enrichment of presentation-only fields is permitted** where the scrape has no value to overwrite. It does not extend to identity or schedule fields (name, dates, `txt_evf_slug`, `id_evf_event`), which remain strictly source-owned and are re-synced by `fn_sync_evf_event_fields`.
+
+The reason this needs saying: `txt_location` in CERT holds a venue where a city belongs, and the card demotes such a value to the address line rather than printing it as a city (EC.8, EC.9). That is a **rendering** accommodation of a data defect, not a fix — the defect stays recorded against the ingest.
 
 ## Amendment 2026-04-26 (rev 3)
 

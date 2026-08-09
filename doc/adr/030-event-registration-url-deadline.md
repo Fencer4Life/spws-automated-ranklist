@@ -3,6 +3,19 @@
 **Status:** Implemented  
 **Date:** 2026-04-11  
 **Source:** UC21, FR-90, FR-91
+**Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (relocates the registration DOM contract from the timeline row to the event card; FR-90/FR-91 wording unchanged, cited test IDs retargeted).
+
+## Amendment (2026-08-09 — the DOM contract moves to the card)
+
+[ADR-084](084-calendar-quarter-barrel-event-card.md) deletes the timeline row this ADR's presentation rules were written against. **The rules themselves are unchanged**; where they are asserted is not.
+
+| Was | Now |
+| --- | --- |
+| `.timeline-registration`, `.registration-deadline`, `.registration-link` on a timeline row | The same link classes on `EventCard`'s pill row; the deadline is a `.fct.deadline` fact row |
+| `.reg-urgent` on the registration block | `.reg-urgent` on the deadline fact row |
+| vitest 8.21–8.25 in `CalendarView.test.ts` | **CQ.27–CQ.35** (the rules, pure) and **EC.20–EC.24** (the rendering) |
+
+FR-90 and FR-91 keep their wording; the RTM's cited test IDs were retargeted in the same change. The `.registration-link`/`.entry-list-link` class names were **deliberately preserved** through the rewrite so this contract did not have to change name as well as location.
 
 ## Context
 
