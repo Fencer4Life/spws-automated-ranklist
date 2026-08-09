@@ -40,8 +40,12 @@ from python.scrapers.evf_results import EvfApiClient
 
 # EVF weapon_id encodes weapon *and* gender in a single number.
 EVF_WEAPONS = {
-    1: ("FOIL", "M"), 2: ("EPEE", "M"), 3: ("SABRE", "M"),
-    4: ("FOIL", "F"), 5: ("EPEE", "F"), 6: ("SABRE", "F"),
+    1: ("FOIL", "M"),
+    2: ("EPEE", "M"),
+    3: ("SABRE", "M"),
+    4: ("FOIL", "F"),
+    5: ("EPEE", "F"),
+    6: ("SABRE", "F"),
 }
 EVF_CATEGORIES = {1: "V1", 2: "V2", 3: "V3", 4: "V4"}
 
@@ -68,25 +72,30 @@ def fetch_evf(client: EvfApiClient, country: str) -> list[dict[str, Any]]:
                 continue
             results = (data.get("data") or {}).get("results") or []
             total = len(results)
-            mine = [r for r in results
-                    if str(r.get("country") or "").upper() == country.upper()]
-            rows.extend(
-                _merge_duplicates(mine, results, weapon, gender, cat, total)
-            )
+            mine = [r for r in results if str(r.get("country") or "").upper() == country.upper()]
+            rows.extend(_merge_duplicates(mine, results, weapon, gender, cat, total))
     return rows
 
 
 def _fold(name: str) -> str:
     """Diacritic-insensitive key — EVF stores some fencers both ways."""
     import unicodedata
+
     s = name.replace("Ł", "L").replace("ł", "l")
-    return "".join(c for c in unicodedata.normalize("NFD", s)
-                   if unicodedata.category(c) != "Mn").upper().strip()
+    return (
+        "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+        .upper()
+        .strip()
+    )
 
 
 def _merge_duplicates(
-    mine: list[dict[str, Any]], field: list[dict[str, Any]],
-    weapon: str, gender: str, cat: str, total: int,
+    mine: list[dict[str, Any]],
+    field: list[dict[str, Any]],
+    weapon: str,
+    gender: str,
+    cat: str,
+    total: int,
 ) -> list[dict[str, Any]]:
     """Fold an EVF fencer's split records into one standing.
 
@@ -98,26 +107,29 @@ def _merge_duplicates(
     """
     groups: dict[str, list[dict[str, Any]]] = {}
     for r in mine:
-        nm = f'{r.get("name", "")} {r.get("firstname", "")}'.strip()
+        nm = f"{r.get('name', '')} {r.get('firstname', '')}".strip()
         groups.setdefault(_fold(nm), []).append(r)
 
     out: list[dict[str, Any]] = []
     for recs in groups.values():
         pts = sum(float(x.get("points") or 0) for x in recs)
-        names = [f'{x.get("name", "")} {x.get("firstname", "")}'.strip() for x in recs]
+        names = [f"{x.get('name', '')} {x.get('firstname', '')}".strip() for x in recs]
         best = min(int(x.get("pos") or 9999) for x in recs)
         row = {
-            "weapon": weapon, "gender": gender, "category": cat,
+            "weapon": weapon,
+            "gender": gender,
+            "category": cat,
             "bucket": bucket(weapon, gender, cat),
-            "pos": best, "of": total, "points": pts,
+            "pos": best,
+            "of": total,
+            "points": pts,
             "scraped_name": names[0],
         }
         if len(recs) > 1:
             # Position the merged total would hold: everyone outside this
             # fencer's own duplicate rows who still has more points.
             own = {id(x) for x in recs}
-            ahead = sum(1 for x in field
-                        if id(x) not in own and float(x.get("points") or 0) > pts)
+            ahead = sum(1 for x in field if id(x) not in own and float(x.get("points") or 0) > pts)
             row.update(
                 duplicate_records=names,
                 published_pos=best,
@@ -137,8 +149,12 @@ def fetch_spws(base: str, headers: dict[str, str]) -> list[dict[str, Any]]:
                 resp = httpx.post(
                     f"{base}/rest/v1/rpc/fn_ranking_ppw",
                     headers={**headers, "Content-Type": "application/json"},
-                    json={"p_weapon": weapon, "p_gender": gender,
-                          "p_category": cat, "p_rolling": True},
+                    json={
+                        "p_weapon": weapon,
+                        "p_gender": gender,
+                        "p_category": cat,
+                        "p_rolling": True,
+                    },
                     timeout=90,
                 )
                 if resp.status_code >= 400:
@@ -146,14 +162,19 @@ def fetch_spws(base: str, headers: dict[str, str]) -> list[dict[str, Any]]:
                 data = resp.json()
                 total = len(data)
                 for r in data:
-                    rows.append({
-                        "weapon": weapon, "gender": gender, "category": cat,
-                        "bucket": bucket(weapon, gender, cat),
-                        "pos": r.get("rank"), "of": total,
-                        "points": float(r.get("total_score") or 0),
-                        "id_fencer": r.get("id_fencer"),
-                        "name": r.get("fencer_name"),
-                    })
+                    rows.append(
+                        {
+                            "weapon": weapon,
+                            "gender": gender,
+                            "category": cat,
+                            "bucket": bucket(weapon, gender, cat),
+                            "pos": r.get("rank"),
+                            "of": total,
+                            "points": float(r.get("total_score") or 0),
+                            "id_fencer": r.get("id_fencer"),
+                            "name": r.get("fencer_name"),
+                        }
+                    )
     return rows
 
 
@@ -173,8 +194,14 @@ def resolve_evf(
         m = cache[name]
         if m.id_fencer is None or m.status != "AUTO_MATCHED":
             u = unresolved.setdefault(
-                name, {"name": name, "confidence": float(m.confidence or 0),
-                       "status": m.status, "buckets": []})
+                name,
+                {
+                    "name": name,
+                    "confidence": float(m.confidence or 0),
+                    "status": m.status,
+                    "buckets": [],
+                },
+            )
             u["buckets"].append(row["bucket"])
             continue
         by_id.setdefault(m.id_fencer, []).append(row)
@@ -215,27 +242,33 @@ def main() -> None:
     fencers = []
     for fid in sorted(set(evf_by_id) | set(spws_by_id)):
         f = db_by_id.get(fid, {})
-        fencers.append({
-            "id_fencer": fid,
-            "name": f"{f.get('txt_surname', '')} {f.get('txt_first_name', '')}".strip(),
-            "birth_year": f.get("int_birth_year"),
-            "evf": sorted(evf_by_id.get(fid, []), key=lambda r: r["pos"] or 999),
-            "spws": sorted(spws_by_id.get(fid, []), key=lambda r: r["pos"] or 999),
-        })
+        fencers.append(
+            {
+                "id_fencer": fid,
+                "name": f"{f.get('txt_surname', '')} {f.get('txt_first_name', '')}".strip(),
+                "birth_year": f.get("int_birth_year"),
+                "evf": sorted(evf_by_id.get(fid, []), key=lambda r: r["pos"] or 999),
+                "spws": sorted(spws_by_id.get(fid, []), key=lambda r: r["pos"] or 999),
+            }
+        )
 
     data = {
         "generated_at": dt.datetime.now(dt.UTC).isoformat(),
         "country": args.country,
-        "sources": {"evf": "api.veteransfencing.eu /fe/ranking/list",
-                    "spws": "fn_ranking_ppw (rolling)"},
+        "sources": {
+            "evf": "api.veteransfencing.eu /fe/ranking/list",
+            "spws": "fn_ranking_ppw (rolling)",
+        },
         "fencers": fencers,
         "unresolved_evf": unresolved,
     }
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"Wrote {out} — {len(fencers)} fencer(s), {len(unresolved)} unresolved EVF name(s).",
-          file=sys.stderr)
+    print(
+        f"Wrote {out} — {len(fencers)} fencer(s), {len(unresolved)} unresolved EVF name(s).",
+        file=sys.stderr,
+    )
 
 
 if __name__ == "__main__":

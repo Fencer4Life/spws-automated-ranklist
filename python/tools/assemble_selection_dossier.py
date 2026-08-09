@@ -64,7 +64,7 @@ def scope_css(css: str, scope: str = SCOPE) -> str:
                     depth -= 1
                 j += 1
             query = css[at:head_end].strip()
-            inner = css[head_end + 1:j - 1]
+            inner = css[head_end + 1 : j - 1]
             if query.lower().startswith("@media"):
                 out.append(f"{query}{{{scope_css(inner, scope)}}}")
             i = j
@@ -73,7 +73,7 @@ def scope_css(css: str, scope: str = SCOPE) -> str:
         end = css.find("}", brace)
         if end == -1:
             break
-        body = css[brace + 1:end]
+        body = css[brace + 1 : end]
         i = end + 1
         if not selectors:
             continue
@@ -87,7 +87,7 @@ def scope_css(css: str, scope: str = SCOPE) -> str:
             else:
                 parts.append(f"{scope} {s}")
         if parts:
-            out.append(f'{",".join(parts)}{{{body}}}')
+            out.append(f"{','.join(parts)}{{{body}}}")
     return "".join(out)
 
 
@@ -136,7 +136,7 @@ def _balance_divs(html: str) -> str:
             idx = html.rfind("</div>")
             if idx == -1:
                 break
-            html = html[:idx] + html[idx + len("</div>"):]
+            html = html[:idx] + html[idx + len("</div>") :]
     elif opens > closes:
         html += "</div>" * (opens - closes)
     return html
@@ -152,14 +152,12 @@ PSEUDONYMS = {"TK": "KOŃCZYŁO Tomasz"}
 
 _WEAPON_PL = {"SZPADA": "EPEE", "FLORET": "FOIL", "SZABLA": "SABRE"}
 _WEAPON_CTX = re.compile(
-    r'<h4>\s*(Szpada|Floret|Szabla)\b|<div class="ttl">\s*(Szpada|Floret|Szabla)\b',
-    re.I)
+    r'<h4>\s*(Szpada|Floret|Szabla)\b|<div class="ttl">\s*(Szpada|Floret|Szabla)\b', re.I
+)
 _NAME_LI = re.compile(r'(<li class="[a-z]+">)([^<]+)')
 
 
-def linkify_ab(
-    block: str, anchors: dict[tuple[str, str], str]
-) -> tuple[str, int, int, set[str]]:
+def linkify_ab(block: str, anchors: dict[tuple[str, str], str]) -> tuple[str, int, int, set[str]]:
     """Turn every fencer name in the campaign annex into a link to their card.
 
     The report lists a fencer once per category, so which card to link depends on
@@ -174,8 +172,7 @@ def linkify_ab(
     Returns (html, linked, unlinked, refs-created).
     """
     for pseudo, real in PSEUDONYMS.items():
-        block = re.sub(rf'(<li class="[a-z]+">){re.escape(pseudo)}(?=<)',
-                       rf'\g<1>{real}', block)
+        block = re.sub(rf'(<li class="[a-z]+">){re.escape(pseudo)}(?=<)', rf"\g<1>{real}", block)
 
     out: list[str] = []
     pos, weapon, linked, missed = 0, None, 0, 0
@@ -220,7 +217,8 @@ def build_anchors(cards: list[dict[str, Any]]) -> dict[tuple[str, str], str]:
 
 
 def card_blocks(
-    cards: list[dict[str, Any]], refs: set[str] | None = None,
+    cards: list[dict[str, Any]],
+    refs: set[str] | None = None,
 ) -> tuple[str, str]:
     """Return (toc html, cards html) for the annex.
 
@@ -229,9 +227,15 @@ def card_blocks(
     carry a link to an id that does not exist; those fall back to the annex top.
     """
     refs = refs or set()
-    scale = max([0.5] + [m for c in cards
-                         for v in list(c["team"].values()) + ([c["rez"]] if c["rez"] else [])
-                         for m in bs.per_bout(v)])
+    scale = max(
+        [0.5]
+        + [
+            m
+            for c in cards
+            for v in list(c["team"].values()) + ([c["rez"]] if c["rez"] else [])
+            for m in bs.per_bout(v)
+        ]
+    )
     toc, blocks = [], []
     for i, c in enumerate(cards):
         anchor = f"karta{i}"
@@ -239,26 +243,34 @@ def card_blocks(
         # Załącznik A: a reader working through the cards wants the next card,
         # not the representation table they may never have come from.
         back_href = "#zC"
-        toc.append(f'<a class="tocitem" href="#{anchor}">'
-                   f'<i style="background:{bs.WEAPON_COL[c["weapon"]]}"></i>'
-                   f'{bs.esc(c["fencer"])} <span>{c["weapon_pl"]}</span></a>')
+        toc.append(
+            f'<a class="tocitem" href="#{anchor}">'
+            f'<i style="background:{bs.WEAPON_COL[c["weapon"]]}"></i>'
+            f"{bs.esc(c['fencer'])} <span>{c['weapon_pl']}</span></a>"
+        )
         rows = "".join(
             f'<tr><td class="d">{bs.esc(bs.champ_label(m["ch"]))}</td><td>{bs.esc(m["tn"])}</td>'
-            f'<td>{bs.esc(m["stage"])}</td><td>{bs.esc(m["opp"])}</td>'
+            f"<td>{bs.esc(m['stage'])}</td><td>{bs.esc(m['opp'])}</td>"
             f'<td class="n">{bs.esc(m["sc"])}–{bs.esc(m["os"])}</td>'
             f'<td><span class="st {"s-ok" if m["won"] else "s-bad"}">'
-            f'{"W" if m["won"] else "P"}</span></td>'
+            f"{'W' if m['won'] else 'P'}</span></td>"
             f'<td class="rr">{bs.esc(m["roles"])}{" · rez." if m["rez"] else ""}</td>'
             f'<td class="n">{m["legs"]}</td>'
             f'<td class="n"><span class="{"tpos" if m["diff"] > 0 else "tneg" if m["diff"] < 0 else ""}">'
-            f'{m["diff"]:+d}</span></td>'
+            f"{m['diff']:+d}</span></td>"
             f'<td><a href="{bs.esc(m["u"])}" target="_blank">mecz ↗</a></td></tr>'
-            for m in c["matches"][:20])
-        tbl = (f'<h3>Mecze drużynowe — pełny zapis ze źródłem</h3><div class="tw"><table>'
-               f'<thead><tr><th>Impreza</th><th>Turniej</th><th>Faza</th><th>Rywal</th>'
-               f'<th>Wynik</th><th></th><th>Rola</th><th>Walk</th><th>Bilans</th>'
-               f'<th>Źródło</th></tr></thead><tbody>{rows}</tbody></table></div>'
-               ) if rows else '<p class="note">Brak startów drużynowych w analizowanym okresie.</p>'
+            for m in c["matches"][:20]
+        )
+        tbl = (
+            (
+                f'<h3>Mecze drużynowe — pełny zapis ze źródłem</h3><div class="tw"><table>'
+                f"<thead><tr><th>Impreza</th><th>Turniej</th><th>Faza</th><th>Rywal</th>"
+                f"<th>Wynik</th><th></th><th>Rola</th><th>Walk</th><th>Bilans</th>"
+                f"<th>Źródło</th></tr></thead><tbody>{rows}</tbody></table></div>"
+            )
+            if rows
+            else '<p class="note">Brak startów drużynowych w analizowanym okresie.</p>'
+        )
         status = f'<span class="tag">{bs.esc(c["status"])}</span>' if c.get("status") else ""
         blocks.append(f"""
 <section class="card" id="{anchor}">
@@ -378,12 +390,13 @@ def viability_annex(via: dict[str, Any]) -> str:
     s = via["summary"]
     rows = "".join(
         f'<tr><td class="d">{bs.esc(r["weapon"])} {bs.esc(r["gender_pl"])} '
-        f'{bs.esc(r["vcat"])}</td>'
+        f"{bs.esc(r['vcat'])}</td>"
         f'<td class="n">{r["ranked"]}</td><td class="n">{r["inplay"]}</td>'
         f'<td class="n">{r["confirmed"]}</td>'
         f'<td><span class="st {VERDICT_CLASS[r["verdict"]]}">{r["verdict"]}</span></td>'
         f'<td class="n">{r["missing"] or "—"}</td></tr>'
-        for r in via["rows"])
+        for r in via["rows"]
+    )
     total_needed = len(via["rows"]) * squad
     total_have = sum(r["inplay"] for r in via["rows"])
     return f"""
@@ -413,8 +426,9 @@ def main() -> None:
     ap.add_argument("--proposal", required=True)
     ap.add_argument("--ab-report", required=True)
     ap.add_argument("--roster", required=True)
-    ap.add_argument("--viability", default=None,
-                    help="JSON z wykonalnością obsady 24 kategorii (Załącznik B)")
+    ap.add_argument(
+        "--viability", default=None, help="JSON z wykonalnością obsady 24 kategorii (Załącznik B)"
+    )
     ap.add_argument("--reports", default="doc/reports")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
@@ -432,8 +446,10 @@ def main() -> None:
     anchors = build_anchors(cards)
     ab_block, linked, missed, refs = linkify_ab(ab_block, anchors)
     card_toc, card_html = card_blocks(cards, refs)
-    print(f"  Załącznik A: {linked} nazwisk z odnośnikiem do karty, "
-          f"{missed} bez karty", file=sys.stderr)
+    print(
+        f"  Załącznik A: {linked} nazwisk z odnośnikiem do karty, {missed} bez karty",
+        file=sys.stderr,
+    )
 
     # The proposal ships its own <title>/header; reuse its page wrapper and drop
     # its closing tags so the annexes sit inside the same column.
@@ -444,8 +460,9 @@ def main() -> None:
     toc_items = re.findall(r'<li><a href="(#s\d+)">(.*?)</a></li>', inner, re.S)
     rail_links = "".join(
         f'<a href="{h}"><span class="no">{i:02d}</span>'
-        f'{re.sub(r"<[^>]+>", "", t).split("—")[0].strip()}</a>'
-        for i, (h, t) in enumerate(toc_items))
+        f"{re.sub(r'<[^>]+>', '', t).split('—')[0].strip()}</a>"
+        for i, (h, t) in enumerate(toc_items)
+    )
     rail = (
         '<nav class="rail"><p class="rt">Spis treści</p>'
         + rail_links
@@ -453,7 +470,8 @@ def main() -> None:
         + '<a href="#zA"><span class="no">A</span>Propozycje reprezentacji</a>'
         + '<a href="#zB"><span class="no">B</span>Przegląd obsady</a>'
         + '<a href="#zC"><span class="no">C</span>Karty zawodników</a>'
-        + '</nav>')
+        + "</nav>"
+    )
 
     # Extend the proposal's table of contents with the two annexes.
     inner = inner.replace(
@@ -461,12 +479,12 @@ def main() -> None:
         '<li><a href="#s08">Załączniki i słownik</a></li>\n'
         '  <li><a href="#zA"><b>Załącznik A</b> — propozycje reprezentacji</a></li>\n'
         '  <li><a href="#zB"><b>Załącznik B</b> — przegląd obsady reprezentacji</a></li>\n'
-        '  <li><a href="#zC"><b>Załącznik C</b> — karty zawodników</a></li>')
+        '  <li><a href="#zC"><b>Załącznik C</b> — karty zawodników</a></li>',
+    )
 
     via_html = ""
     if args.viability:
-        via_html = viability_annex(
-            json.loads(Path(args.viability).read_text(encoding="utf-8")))
+        via_html = viability_annex(json.loads(Path(args.viability).read_text(encoding="utf-8")))
 
     annexes = f"""
 <div class="annex" id="zA">
@@ -520,24 +538,28 @@ ewidencji SPWS</h3>
 {card_html}
 </div>"""
 
-    html = (f"<!doctype html>\n<html lang=\"pl\">\n<head>\n<meta charset=\"utf-8\">\n"
-            f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n"
-            f"<title>Nominacje kadry narodowej — propozycja SPWS z załącznikami</title>\n"
-            f"<style>{prop_css}\n{CARD_CSS}\n"
-            f"/* --- Załącznik A: styl raportu kampanii, ograniczony do .abr --- */\n"
-            f"{scope_css(ab_css)}\n"
-            f"/* The campaign report paints a navy stripe down the left of its own\n"
-            f"   <body>; scoped onto the wrapper it would sit under the headings and\n"
-            f"   clip their first letter. Neutralised here, after the scoped rules. */\n"
-            f"{SCOPE}{{display:block;margin:0 22px;padding:0;background:none;"
-            f"min-height:0;max-width:none}}</style>\n"
-            f"</head>\n<body>\n{rail}\n{inner}\n{annexes}\n</body>\n</html>\n")
+    html = (
+        f'<!doctype html>\n<html lang="pl">\n<head>\n<meta charset="utf-8">\n'
+        f'<meta name="viewport" content="width=device-width,initial-scale=1">\n'
+        f"<title>Nominacje kadry narodowej — propozycja SPWS z załącznikami</title>\n"
+        f"<style>{prop_css}\n{CARD_CSS}\n"
+        f"/* --- Załącznik A: styl raportu kampanii, ograniczony do .abr --- */\n"
+        f"{scope_css(ab_css)}\n"
+        f"/* The campaign report paints a navy stripe down the left of its own\n"
+        f"   <body>; scoped onto the wrapper it would sit under the headings and\n"
+        f"   clip their first letter. Neutralised here, after the scoped rules. */\n"
+        f"{SCOPE}{{display:block;margin:0 22px;padding:0;background:none;"
+        f"min-height:0;max-width:none}}</style>\n"
+        f"</head>\n<body>\n{rail}\n{inner}\n{annexes}\n</body>\n</html>\n"
+    )
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(html, encoding="utf-8")
-    print(f"Wrote {out} — proposal + Załącznik A + {len(cards)} kart "
-          f"({len(html) // 1024} KB).", file=sys.stderr)
+    print(
+        f"Wrote {out} — proposal + Załącznik A + {len(cards)} kart ({len(html) // 1024} KB).",
+        file=sys.stderr,
+    )
 
 
 if __name__ == "__main__":

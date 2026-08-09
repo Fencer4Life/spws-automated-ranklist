@@ -44,9 +44,18 @@ _EVF_BANDS = ((64, "EVF-64+"), (32, "EVF-32+"), (16, "EVF-16+"), (8, "EVF-8+"), 
 # above every domestic SPWS one, because SPWS fields are the shallowest. Within
 # a body, depth of field orders the rungs.
 TIER_ORDER = [
-    "WORLD", "EUROPEAN",
-    "EVF-64+", "EVF-32+", "EVF-16+", "EVF-8+", "EVF-4+", "EVF-4-",
-    "SPWS-16+", "SPWS-8+", "SPWS-4+", "SPWS-4-",
+    "WORLD",
+    "EUROPEAN",
+    "EVF-64+",
+    "EVF-32+",
+    "EVF-16+",
+    "EVF-8+",
+    "EVF-4+",
+    "EVF-4-",
+    "SPWS-16+",
+    "SPWS-8+",
+    "SPWS-4+",
+    "SPWS-4-",
 ]
 
 
@@ -120,7 +129,7 @@ def collect_results(
                         "weapon": r.get("weapon_abbr") or "",
                         "category": r.get("category_name") or "",
                         "scraped_name": f"{r.get('fencer_surname', '')} "
-                                        f"{r.get('fencer_firstname', '')}".strip(),
+                        f"{r.get('fencer_firstname', '')}".strip(),
                         # Birth YEAR only. The API returns a full date of birth,
                         # but this repo is public and has only ever tracked a
                         # year (tbl_fencer.int_birth_year); the day and month are
@@ -147,9 +156,7 @@ def _disambiguate_by_birth_year(
     subset = [f for f in fencer_db if f.get("int_birth_year") == year]
     if not subset:
         return None
-    m = find_best_match(
-        name, subset, use_diacritic_folding=True, use_token_set_ratio=True
-    )
+    m = find_best_match(name, subset, use_diacritic_folding=True, use_token_set_ratio=True)
     return m if m.status == "AUTO_MATCHED" else None
 
 
@@ -193,8 +200,14 @@ def resolve_rows(
             continue
         rec = by_id.setdefault(
             m.id_fencer,
-            {"id_fencer": m.id_fencer, "name": "", "birth_year": None,
-             "aliases": [], "tier_counts": {}, "results": []},
+            {
+                "id_fencer": m.id_fencer,
+                "name": "",
+                "birth_year": None,
+                "aliases": [],
+                "tier_counts": {},
+                "results": [],
+            },
         )
         if name not in rec["aliases"]:
             rec["aliases"].append(name)

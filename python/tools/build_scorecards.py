@@ -46,17 +46,38 @@ from typing import Any
 
 FTL = "https://www.fencingtimelive.com"
 
-LADDER = ["MŚW", "MEW", "EVF-64+", "EVF-32+", "EVF-16+", "EVF-8+", "EVF-4+",
-          "MPW", "SPWS-16+", "SPWS-8+", "SPWS-4+", "SPWS-4-"]
+LADDER = [
+    "MŚW",
+    "MEW",
+    "EVF-64+",
+    "EVF-32+",
+    "EVF-16+",
+    "EVF-8+",
+    "EVF-4+",
+    "MPW",
+    "SPWS-16+",
+    "SPWS-8+",
+    "SPWS-4+",
+    "SPWS-4-",
+]
 RENAME = {"WORLD": "MŚW", "EUROPEAN": "MEW", "EVF-4-": "EVF-4+"}
 ROLES = ["Walka 9", "Walka 8", "Walka 7", "Walki 2-6", "Walka 1"]
 ROLE_ORDER = {r: i for i, r in enumerate(ROLES)}
 WEAPON_PL = {"EPEE": "SZPADA", "FOIL": "FLORET", "SABRE": "SZABLA"}
 
 RUNG_COL = {
-    "MŚW": "#12704a", "MEW": "#2e9155", "EVF-64+": "#4f9e4a", "EVF-32+": "#79a742",
-    "EVF-16+": "#a3ad3c", "EVF-8+": "#c2a33a", "EVF-4+": "#d18f36", "MPW": "#c96a2e",
-    "SPWS-16+": "#d75c33", "SPWS-8+": "#cf4e33", "SPWS-4+": "#c43f31", "SPWS-4-": "#b93636",
+    "MŚW": "#12704a",
+    "MEW": "#2e9155",
+    "EVF-64+": "#4f9e4a",
+    "EVF-32+": "#79a742",
+    "EVF-16+": "#a3ad3c",
+    "EVF-8+": "#c2a33a",
+    "EVF-4+": "#d18f36",
+    "MPW": "#c96a2e",
+    "SPWS-16+": "#d75c33",
+    "SPWS-8+": "#cf4e33",
+    "SPWS-4+": "#c43f31",
+    "SPWS-4-": "#b93636",
 }
 WEAPON_COL = {"EPEE": "#173f70", "FOIL": "#12704a", "SABRE": "#8a4b1f"}
 GOLD, SILVER, BRONZE, GREY = "#d4af37", "#a8b0b8", "#b0793f", "#8a8f98"
@@ -69,8 +90,11 @@ RIGHT = 462
 # --------------------------------------------------------------------------- #
 def fold(name: str) -> str:
     s = (name or "").replace("Ł", "L").replace("ł", "l")
-    return "".join(c for c in unicodedata.normalize("NFD", s)
-                   if unicodedata.category(c) != "Mn").upper().strip()
+    return (
+        "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+        .upper()
+        .strip()
+    )
 
 
 def weapon_of(raw: str | None) -> str | None:
@@ -130,8 +154,10 @@ def marker(place: int | None, x: float, y: int, mc: str) -> str:
     if place in (1, 2, 3):
         return f'<text x="{x}" y="{y}" class="star" fill="{mc}">★</text>'
     # 7x7 on the bar's midline: the bar spans y-11..y+4 about the text baseline y.
-    return (f'<rect x="{x + 1:.2f}" y="{y - 7}" width="7" height="7" rx="1.5" '
-            f'class="star-sq" fill="{GREEN}"/>')
+    return (
+        f'<rect x="{x + 1:.2f}" y="{y - 7}" width="7" height="7" rx="1.5" '
+        f'class="star-sq" fill="{GREEN}"/>'
+    )
 
 
 def esc(s: Any) -> str:
@@ -167,10 +193,10 @@ def _add(rec: dict, place, entry) -> None:
 def collect(reports: Path) -> dict[str, Any]:
     """Read every report directory into per-fencer, per-weapon structures."""
     ind: Any = defaultdict(lambda: defaultdict(lambda: defaultdict(_blank_tier)))
-    team: Any = defaultdict(lambda: defaultdict(
-        lambda: {r: {"legs": 0, "net": 0, "sc": 0, "co": 0} for r in ROLES}))
-    rez: Any = defaultdict(lambda: defaultdict(
-        lambda: {"legs": 0, "net": 0, "sc": 0, "co": 0}))
+    team: Any = defaultdict(
+        lambda: defaultdict(lambda: {r: {"legs": 0, "net": 0, "sc": 0, "co": 0} for r in ROLES})
+    )
+    rez: Any = defaultdict(lambda: defaultdict(lambda: {"legs": 0, "net": 0, "sc": 0, "co": 0}))
     matches: Any = defaultdict(lambda: defaultdict(dict))
     ranks: Any = defaultdict(lambda: defaultdict(lambda: {"evf": [], "spws": []}))
 
@@ -185,8 +211,9 @@ def collect(reports: Path) -> dict[str, Any]:
 
     load_individual("evf-individual/*.json", lambda r: RENAME.get(r["tier"], r["tier"]))
     load_individual("ftl-individual/*.json", lambda r: RENAME.get(r["tier"], r["tier"]))
-    load_individual("spws-domestic/*.json",
-                    lambda r: "MPW" if r.get("type") == "MPW" else r["tier"])
+    load_individual(
+        "spws-domestic/*.json", lambda r: "MPW" if r.get("type") == "MPW" else r["tier"]
+    )
 
     for f in glob.glob(str(reports / "team-events/*.json")):
         d = json.loads(Path(f).read_text(encoding="utf-8"))
@@ -198,14 +225,21 @@ def collect(reports: Path) -> dict[str, Any]:
                 continue
             for m in t.get("matches", []):
                 n = len(m["legs"])
-                url = f'{FTL}/teammatches/details/{t["eid"]}/{m["rid"]}/{m["match_id"]}'
+                url = f"{FTL}/teammatches/details/{t['eid']}/{m['rid']}/{m['match_id']}"
                 for lg in m["legs"]:
                     k = fold(lg["fencer"])
                     seq = n - lg["leg"]
-                    role = ("Walka 1" if lg["leg"] == 1 else
-                            "Walka 9" if seq == 0 else
-                            "Walka 8" if seq == 1 else
-                            "Walka 7" if seq == 2 else "Walki 2-6")
+                    role = (
+                        "Walka 1"
+                        if lg["leg"] == 1
+                        else "Walka 9"
+                        if seq == 0
+                        else "Walka 8"
+                        if seq == 1
+                        else "Walka 7"
+                        if seq == 2
+                        else "Walki 2-6"
+                    )
                     is_r = str(lg["pos"]).upper() == "R"
                     targets = [team[k][w][role]] + ([rez[k][w]] if is_r else [])
                     for tgt in targets:
@@ -213,13 +247,24 @@ def collect(reports: Path) -> dict[str, Any]:
                         tgt["net"] += lg["diff"]
                         tgt["sc"] += lg["scored"]
                         tgt["co"] += lg["conceded"]
-                    row = matches[k][w].setdefault(url, {
-                        "ch": d["championship"],
-                        "tn": f'{t["category"]} {t["gender"]} {t["weapon"]}',
-                        "opp": m["opponent"], "sc": m["country_score"],
-                        "os": m["opp_score"], "won": m["won"], "stage": m["stage"],
-                        "roles": set(), "legs": 0, "diff": 0, "u": url,
-                        "date": t.get("date", ""), "rez": False})
+                    row = matches[k][w].setdefault(
+                        url,
+                        {
+                            "ch": d["championship"],
+                            "tn": f"{t['category']} {t['gender']} {t['weapon']}",
+                            "opp": m["opponent"],
+                            "sc": m["country_score"],
+                            "os": m["opp_score"],
+                            "won": m["won"],
+                            "stage": m["stage"],
+                            "roles": set(),
+                            "legs": 0,
+                            "diff": 0,
+                            "u": url,
+                            "date": t.get("date", ""),
+                            "rez": False,
+                        },
+                    )
                     row["roles"].add(role)
                     row["legs"] += 1
                     row["diff"] += lg["diff"]
@@ -246,8 +291,7 @@ def build_cards(roster: list[dict], data: dict, fencer_db: list[dict]) -> list[d
     unresolved: list[str] = []
     for person in roster:
         name = person["name"]
-        m = find_best_match(name, fencer_db, use_diacritic_folding=True,
-                            use_token_set_ratio=True)
+        m = find_best_match(name, fencer_db, use_diacritic_folding=True, use_token_set_ratio=True)
         canonical = name
         if m.id_fencer is not None and m.status == "AUTO_MATCHED":
             f = next((x for x in fencer_db if x["id_fencer"] == m.id_fencer), {})
@@ -259,26 +303,38 @@ def build_cards(roster: list[dict], data: dict, fencer_db: list[dict]) -> list[d
         weapons = [w for w in (weapon_of(x) for x in person.get("weapons") or []) if w]
         weapons = sorted(set(weapons)) or sorted(set(data["ind"][k]) | set(data["team"][k]))
         for w in weapons:
-            ladder = {t: dict(data["ind"][k][w][t]) for t in LADDER
-                      if data["ind"][k][w].get(t) and data["ind"][k][w][t]["n"]}
-            troles = {r: data["team"][k][w][r] for r in ROLES
-                      if data["team"][k][w][r]["legs"]}
-            rows = sorted(data["matches"][k][w].values(),
-                          key=lambda r: (r["date"], r["ch"]), reverse=True)
+            ladder = {
+                t: dict(data["ind"][k][w][t])
+                for t in LADDER
+                if data["ind"][k][w].get(t) and data["ind"][k][w][t]["n"]
+            }
+            troles = {r: data["team"][k][w][r] for r in ROLES if data["team"][k][w][r]["legs"]}
+            rows = sorted(
+                data["matches"][k][w].values(), key=lambda r: (r["date"], r["ch"]), reverse=True
+            )
             for r in rows:
                 r["roles"] = " + ".join(sorted(r["roles"], key=lambda x: ROLE_ORDER[x]))
-            cards.append({
-                "fencer": canonical, "roster_name": name, "weapon": w,
-                "weapon_pl": WEAPON_PL[w], "status": person.get("status", ""),
-                "ladder": ladder, "team": troles,
-                "rez": dict(data["rez"][k][w]) if data["rez"][k][w]["legs"] else None,
-                "ranks": data["ranks"][k][w], "matches": rows,
-                "starts": sum(v["n"] for v in ladder.values()),
-                "legs": sum(v["legs"] for v in troles.values()),
-            })
+            cards.append(
+                {
+                    "fencer": canonical,
+                    "roster_name": name,
+                    "weapon": w,
+                    "weapon_pl": WEAPON_PL[w],
+                    "status": person.get("status", ""),
+                    "ladder": ladder,
+                    "team": troles,
+                    "rez": dict(data["rez"][k][w]) if data["rez"][k][w]["legs"] else None,
+                    "ranks": data["ranks"][k][w],
+                    "matches": rows,
+                    "starts": sum(v["n"] for v in ladder.values()),
+                    "legs": sum(v["legs"] for v in troles.values()),
+                }
+            )
     if unresolved:
-        print(f"  unresolved roster names ({len(unresolved)}): "
-              f"{', '.join(unresolved[:8])}", file=sys.stderr)
+        print(
+            f"  unresolved roster names ({len(unresolved)}): {', '.join(unresolved[:8])}",
+            file=sys.stderr,
+        )
     return cards
 
 
@@ -295,28 +351,38 @@ def ladder_svg(card: dict, idx: int) -> str:
     RH, LBL, BARW = 23, 78, 250
     for t in LADDER:
         d = card["ladder"].get(t)
-        rows.append(f'<text x="{LBL - 8}" y="{y + 15}" text-anchor="end" class="rl" '
-                    f'fill="{RUNG_COL[t]}">{t}</text>')
+        rows.append(
+            f'<text x="{LBL - 8}" y="{y + 15}" text-anchor="end" class="rl" '
+            f'fill="{RUNG_COL[t]}">{t}</text>'
+        )
         rows.append(f'<rect x="{LBL}" y="{y + 4}" width="{BARW}" height="15" class="track"/>')
         if d:
             mc = medal_col(d["best"])
-            gid = f'g{idx}{t.replace("+", "p").replace("-", "m")}'
-            defs.append(f'<linearGradient id="{gid}" x1="0" y1="0" x2="1" y2="0">'
-                        f'<stop offset="0%" stop-color="{RUNG_COL[t]}" stop-opacity=".5"/>'
-                        f'<stop offset="100%" stop-color="{mc}"/></linearGradient>')
+            gid = f"g{idx}{t.replace('+', 'p').replace('-', 'm')}"
+            defs.append(
+                f'<linearGradient id="{gid}" x1="0" y1="0" x2="1" y2="0">'
+                f'<stop offset="0%" stop-color="{RUNG_COL[t]}" stop-opacity=".5"/>'
+                f'<stop offset="100%" stop-color="{mc}"/></linearGradient>'
+            )
             w = max(7, d["reach"] * BARW)
-            rows.append(f'<rect x="{LBL}" y="{y + 4}" width="{w:.0f}" height="15" rx="2" '
-                        f'fill="url(#{gid})"/>')
+            rows.append(
+                f'<rect x="{LBL}" y="{y + 4}" width="{w:.0f}" height="15" rx="2" '
+                f'fill="url(#{gid})"/>'
+            )
             x = LBL + w + 8
             rows.append(marker(d["best"], x, y + 15, mc))
             rows.append(f'<text x="{x + 13}" y="{y + 15}" class="pl">{d["best"] or "—"}</text>')
-            rows.append(f'<text x="{RIGHT}" y="{y + 15}" text-anchor="end" class="cnt">'
-                        f'{starts_label(d["n"])}</text>')
+            rows.append(
+                f'<text x="{RIGHT}" y="{y + 15}" text-anchor="end" class="cnt">'
+                f"{starts_label(d['n'])}</text>"
+            )
         else:
             rows.append(f'<text x="{LBL + 7}" y="{y + 15}" class="brak">BRAK</text>')
         y += RH
-    return (f'<svg viewBox="0 0 {RIGHT + 6} {y}" class="chart"><defs>{"".join(defs)}</defs>'
-            f'{"".join(rows)}</svg>')
+    return (
+        f'<svg viewBox="0 0 {RIGHT + 6} {y}" class="chart"><defs>{"".join(defs)}</defs>'
+        f"{''.join(rows)}</svg>"
+    )
 
 
 def _avg_in_bar(cx: float, y: int, value: float, bar_w: float) -> list[str]:
@@ -337,32 +403,43 @@ def _row(label: str, d: dict, y: int, scale: float, faint: bool = False) -> list
     GL, GR, MAXW, H = 150, 268, 118, 16
     op = ' opacity=".7"' if faint else ""
     sc_pb, co_pb = per_bout(d)
-    out = [f'<text x="{(GL + GR) / 2:.0f}" y="{y + 17}" text-anchor="middle" '
-           f'class="rl2"{op}>{label}</text>']
+    out = [
+        f'<text x="{(GL + GR) / 2:.0f}" y="{y + 17}" text-anchor="middle" '
+        f'class="rl2"{op}>{label}</text>'
+    ]
     if d["co"]:
         w = min(1.0, co_pb / scale) * MAXW
-        out.append(f'<rect x="{GL - w:.0f}" y="{y + 5}" width="{w:.0f}" height="{H}" '
-                   f'rx="2" fill="{RED}"{op}/>')
+        out.append(
+            f'<rect x="{GL - w:.0f}" y="{y + 5}" width="{w:.0f}" height="{H}" '
+            f'rx="2" fill="{RED}"{op}/>'
+        )
         out += _avg_in_bar(GL - w / 2, y, co_pb, w)
-        out.append(f'<text x="{GL - w - 6:.0f}" y="{y + 18}" text-anchor="end" '
-                   f'class="cnt neg">−{d["co"]}</text>')
+        out.append(
+            f'<text x="{GL - w - 6:.0f}" y="{y + 18}" text-anchor="end" '
+            f'class="cnt neg">−{d["co"]}</text>'
+        )
     if d["sc"]:
         w = min(1.0, sc_pb / scale) * MAXW
-        out.append(f'<rect x="{GR}" y="{y + 5}" width="{w:.0f}" height="{H}" rx="2" '
-                   f'fill="{GREEN}"{op}/>')
+        out.append(
+            f'<rect x="{GR}" y="{y + 5}" width="{w:.0f}" height="{H}" rx="2" fill="{GREEN}"{op}/>'
+        )
         out += _avg_in_bar(GR + w / 2, y, sc_pb, w)
         out.append(f'<text x="{GR + w + 6:.0f}" y="{y + 18}" class="cnt pos">+{d["sc"]}</text>')
     out.append(f'<line x1="{GL - 2}" y1="{y + 3}" x2="{GL - 2}" y2="{y + H + 7}" class="axis"/>')
     out.append(f'<line x1="{GR + 2}" y1="{y + 3}" x2="{GR + 2}" y2="{y + H + 7}" class="axis"/>')
-    out.append(f'<text x="{(GL + GR) / 2:.0f}" y="{y + 29}" text-anchor="middle" '
-               f'class="legs">{d["legs"]}× walk · bilans {d["net"]:+d}</text>')
+    out.append(
+        f'<text x="{(GL + GR) / 2:.0f}" y="{y + 29}" text-anchor="middle" '
+        f'class="legs">{d["legs"]}× walk · bilans {d["net"]:+d}</text>'
+    )
     return out
 
 
 def team_svg(card: dict, scale: float) -> str:
     if not card["team"]:
-        return (f'<svg viewBox="0 0 {RIGHT + 6} 40" class="chart"><text x="8" y="24" '
-                f'class="brak">BRAK STARTÓW DRUŻYNOWYCH</text></svg>')
+        return (
+            f'<svg viewBox="0 0 {RIGHT + 6} 40" class="chart"><text x="8" y="24" '
+            f'class="brak">BRAK STARTÓW DRUŻYNOWYCH</text></svg>'
+        )
     rows, y, RH = [], 0, 38
     for r in ROLES:
         d = card["team"].get(r)
@@ -370,10 +447,13 @@ def team_svg(card: dict, scale: float) -> str:
             rows += _row(r, d, y, scale)
         else:
             cx = (150 + 268) / 2
-            rows.append(f'<text x="{cx:.0f}" y="{y + 17}" text-anchor="middle" class="rl2" '
-                        f'opacity=".45">{r}</text>')
-            rows.append(f'<text x="{cx:.0f}" y="{y + 29}" text-anchor="middle" '
-                        f'class="brak">BRAK</text>')
+            rows.append(
+                f'<text x="{cx:.0f}" y="{y + 17}" text-anchor="middle" class="rl2" '
+                f'opacity=".45">{r}</text>'
+            )
+            rows.append(
+                f'<text x="{cx:.0f}" y="{y + 29}" text-anchor="middle" class="brak">BRAK</text>'
+            )
         y += RH
     if card.get("rez"):
         rows += _row("z REZERWY", card["rez"], y, scale, faint=True)
@@ -383,48 +463,72 @@ def team_svg(card: dict, scale: float) -> str:
 
 def rank_chips(card: dict) -> str:
     out = []
-    for src, rows in (("EVF", card["ranks"].get("evf") or []),
-                      ("SPWS", card["ranks"].get("spws") or [])):
+    for src, rows in (
+        ("EVF", card["ranks"].get("evf") or []),
+        ("SPWS", card["ranks"].get("spws") or []),
+    ):
         if not rows:
             out.append(f'<span class="rank rank-none">{src} — brak</span>')
             continue
         top = rows[0]
-        dup = (' <span class="dup" title="EVF prowadzi dwa rekordy tego zawodnika '
-               '— punkty rozbite">⚠</span>') if top.get("duplicate_records") else ""
-        out.append(f'<span class="rank"><b>{src} #{top["pos"]}</b>'
-                   f'<span class="of">/{top["of"]}</span> '
-                   f'<span class="bkt">{esc(top["bucket"])}</span>{dup}</span>')
+        dup = (
+            (
+                ' <span class="dup" title="EVF prowadzi dwa rekordy tego zawodnika '
+                '— punkty rozbite">⚠</span>'
+            )
+            if top.get("duplicate_records")
+            else ""
+        )
+        out.append(
+            f'<span class="rank"><b>{src} #{top["pos"]}</b>'
+            f'<span class="of">/{top["of"]}</span> '
+            f'<span class="bkt">{esc(top["bucket"])}</span>{dup}</span>'
+        )
     return "".join(out)
 
 
 def render(cards: list[dict], title: str, subtitle: str) -> str:
-    scale = max([0.5] + [m for c in cards
-                         for v in list(c["team"].values()) + ([c["rez"]] if c["rez"] else [])
-                         for m in per_bout(v)])
+    scale = max(
+        [0.5]
+        + [
+            m
+            for c in cards
+            for v in list(c["team"].values()) + ([c["rez"]] if c["rez"] else [])
+            for m in per_bout(v)
+        ]
+    )
     blocks, toc = [], []
     for i, c in enumerate(cards):
         anchor = f"k{i}"
-        toc.append(f'<a class="tocitem" href="#{anchor}">'
-                   f'<i style="background:{WEAPON_COL[c["weapon"]]}"></i>'
-                   f'{esc(c["fencer"])} <span>{c["weapon_pl"]}</span></a>')
+        toc.append(
+            f'<a class="tocitem" href="#{anchor}">'
+            f'<i style="background:{WEAPON_COL[c["weapon"]]}"></i>'
+            f"{esc(c['fencer'])} <span>{c['weapon_pl']}</span></a>"
+        )
         rows = "".join(
             f'<tr><td class="d">{esc(champ_label(m["ch"]))}</td><td>{esc(m["tn"])}</td>'
-            f'<td>{esc(m["stage"])}</td><td>{esc(m["opp"])}</td>'
+            f"<td>{esc(m['stage'])}</td><td>{esc(m['opp'])}</td>"
             f'<td class="n">{esc(m["sc"])}–{esc(m["os"])}</td>'
             f'<td><span class="st {"s-ok" if m["won"] else "s-bad"}">'
-            f'{"W" if m["won"] else "P"}</span></td>'
+            f"{'W' if m['won'] else 'P'}</span></td>"
             f'<td class="rr">{esc(m["roles"])}{" · rez." if m["rez"] else ""}</td>'
             f'<td class="n">{m["legs"]}</td>'
             f'<td class="n"><span class="{"tpos" if m["diff"] > 0 else "tneg" if m["diff"] < 0 else ""}">'
-            f'{m["diff"]:+d}</span></td>'
+            f"{m['diff']:+d}</span></td>"
             f'<td><a href="{esc(m["u"])}" target="_blank">mecz ↗</a></td></tr>'
-            for m in c["matches"][:20])
-        tbl = (f'<h3>Mecze drużynowe — pełny zapis ze źródłem</h3><div class="tw"><table>'
-               f'<thead><tr><th>Impreza</th><th>Turniej</th><th>Faza</th><th>Rywal</th>'
-               f'<th>Wynik</th><th></th><th>Rola</th><th>Walk</th><th>Bilans</th>'
-               f'<th>Źródło</th></tr></thead><tbody>{rows}</tbody></table></div>'
-               ) if rows else '<p class="note">Brak startów drużynowych w analizowanym okresie.</p>'
-        status = (f'<span class="tag">{esc(c["status"])}</span>' if c.get("status") else "")
+            for m in c["matches"][:20]
+        )
+        tbl = (
+            (
+                f'<h3>Mecze drużynowe — pełny zapis ze źródłem</h3><div class="tw"><table>'
+                f"<thead><tr><th>Impreza</th><th>Turniej</th><th>Faza</th><th>Rywal</th>"
+                f"<th>Wynik</th><th></th><th>Rola</th><th>Walk</th><th>Bilans</th>"
+                f"<th>Źródło</th></tr></thead><tbody>{rows}</tbody></table></div>"
+            )
+            if rows
+            else '<p class="note">Brak startów drużynowych w analizowanym okresie.</p>'
+        )
+        status = f'<span class="tag">{esc(c["status"])}</span>' if c.get("status") else ""
         blocks.append(f"""
 <section class="card" id="{anchor}">
   <div class="ch"><span class="wpn" style="background:{WEAPON_COL[c["weapon"]]}">{c["weapon_pl"]}</span>
@@ -564,8 +668,11 @@ def main() -> None:
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(render(cards, args.title, args.subtitle), encoding="utf-8")
-    print(f"Wrote {out} — {len(cards)} card(s) for {len(roster)} fencer(s), "
-          f"generated {dt.date.today().isoformat()}.", file=sys.stderr)
+    print(
+        f"Wrote {out} — {len(cards)} card(s) for {len(roster)} fencer(s), "
+        f"generated {dt.date.today().isoformat()}.",
+        file=sys.stderr,
+    )
 
 
 if __name__ == "__main__":

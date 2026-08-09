@@ -116,15 +116,25 @@ def resolve(
         if m.id_fencer is None or m.status != "AUTO_MATCHED":
             u = unresolved.setdefault(
                 name,
-                {"name": name, "confidence": float(m.confidence or 0),
-                 "status": m.status, "results": 0},
+                {
+                    "name": name,
+                    "confidence": float(m.confidence or 0),
+                    "status": m.status,
+                    "results": 0,
+                },
             )
             u["results"] += 1
             continue
         rec = by_id.setdefault(
             m.id_fencer,
-            {"id_fencer": m.id_fencer, "name": "", "birth_year": None,
-             "aliases": [], "tier_counts": {}, "results": []},
+            {
+                "id_fencer": m.id_fencer,
+                "name": "",
+                "birth_year": None,
+                "aliases": [],
+                "tier_counts": {},
+                "results": [],
+            },
         )
         if name not in rec["aliases"]:
             rec["aliases"].append(name)
