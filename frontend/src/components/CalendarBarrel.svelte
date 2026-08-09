@@ -26,22 +26,15 @@
           <em>{seamSeason(qi, quarter)}</em>
         </div>
 
-        <!-- Only the focused row is padded and scrolled: it is the only row
-             with a selection to centre. Receded rows keep the `margin: 0 auto`
-             centring of their whole group. -->
-        <div
-          class="rw"
-          style:padding-left={qi === active && scroll ? `${scroll.padding}px` : null}
-          style:padding-right={qi === active && scroll ? `${scroll.padding}px` : null}
-        >
+        <div class="rw">
           {#if quarter.isEmpty}
             <span class="mt">{t('calendar_empty_quarter')}</span>
           {:else}
-            <div
-              class="rwi"
-              style:margin={qi === active && scroll ? '0' : null}
-              style:gap={layout?.overlapping ? '0px' : null}
-            >
+            <!-- `margin: 0 auto` keeps every row centred while its content
+                 fits, focused or receded alike. It resolves to 0 once the
+                 content is wider than the row, which is when the scroll below
+                 takes over. -->
+            <div class="rwi" style:gap={layout?.overlapping ? '0px' : null}>
               {#each quarter.events as event, j (event.id_event)}
                 {@const place = layout?.panels[j]}
                 {@const isSelected = qi === active && selected === j}
@@ -260,10 +253,10 @@
     })
   })
 
-  /** Padding + scroll that put the selected panel under the caret. */
+  /** How far the focused row is scrolled — 0 unless its content overflows. */
   const scroll = $derived.by(() => {
     const layout = midLayout
-    return layout ? rowScroll(layout, selected, available) : null
+    return layout ? rowScroll(layout, selected, available) : 0
   })
 
   // Scroll the focused row so its selection sits under the caret.
@@ -293,20 +286,10 @@
     // looked right and only the first screen was off.
     void active
     const target = scroll
-    if (!target || !viewportEl) return
-    // Correct by MEASUREMENT, not by writing the model's absolute value.
-    // An absolute write is only right if the row already has its final layout,
-    // which is exactly what cannot be relied on here. Nudging by the measured
-    // error converges whenever it runs and is idempotent once centred, so the
-    // retries below need no ordering guarantees at all.
+    if (!viewportEl) return
     const fix = () => {
       const el = viewportEl?.querySelector<HTMLElement>('.ln.mid .rw')
-      const panel = el?.querySelector<HTMLElement>('.p.sel')
-      if (!el || !panel) return
-      const row = el.getBoundingClientRect()
-      const p = panel.getBoundingClientRect()
-      const delta = p.left + p.width / 2 - (row.left + row.width / 2)
-      if (Math.abs(delta) > 0.5) el.scrollLeft += delta
+      if (el) el.scrollLeft = target
     }
     fix()
     requestAnimationFrame(fix)

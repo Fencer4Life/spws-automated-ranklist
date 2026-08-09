@@ -718,42 +718,51 @@ function panelOrigin(layout: RowLayout, i: number): number {
     .reduce((sum, p) => sum + p.width + PANEL_GAP, 0)
 }
 
+/** Left offset of the content group: centred while it fits, flush when not. */
+function groupOffset(layout: RowLayout, available: number): number {
+  return Math.max(0, (available - layout.contentWidth) / 2)
+}
+
 /**
- * How to place the focused row so the SELECTED panel sits at the centre.
+ * How far the focused row is scrolled.
  *
- * The row is centred on its selection, not on its own width. Centring the
- * group instead leaves the selected panel wherever its index falls — for a
- * seven-panel quarter with the selection at index 0 it lands ~110px left of
- * centre, and since the caret and the card below both point at it, the whole
- * barrel reads as shifted the other way.
+ * **A row that fits is never scrolled and never shifted** — it stays centred,
+ * exactly like the receded rows. Anything else leaves blank space down one
+ * side, which reads as the row being stuck against the other. Centring on the
+ * selection instead of the content was tried and is precisely that bug: with
+ * an early selection the row emptied its left side and ran right.
  *
- * The mechanism is the standard picker one: pad the scroll container by half
- * the viewport on each side so any panel can reach the middle, then scroll to
- * the selected panel's centre. `scrollLeft` is always in range — the origin of
- * the last panel never exceeds `contentWidth`.
+ * A row that does NOT fit fills the width edge to edge, and scrolls to bring
+ * the selection as close to the middle as the ends allow. That is the case the
+ * original complaint came from: the row was pinned at scroll 0 and simply ran
+ * off the right, taking the selected panel with it.
  */
 export function rowScroll(
   layout: RowLayout,
   selectedIndex: number | null,
   available: number,
-): { padding: number; scrollLeft: number } | null {
-  if (selectedIndex == null || available <= 0) return null
+): number {
+  if (selectedIndex == null || available <= 0) return 0
   const panel = layout.panels[selectedIndex]
-  if (!panel) return null
-  return {
-    padding: available / 2,
-    scrollLeft: panelOrigin(layout, selectedIndex) + panel.width / 2,
-  }
+  if (!panel) return 0
+  const maxScroll = Math.max(0, layout.contentWidth - available)
+  if (maxScroll === 0) return 0
+  const centre = panelOrigin(layout, selectedIndex) + panel.width / 2
+  return Math.max(0, Math.min(maxScroll, centre - available / 2))
 }
+
+/** Keeps the caret clear of the viewport edges. */
+const CARET_MIN_LEFT = 8
+const CARET_EDGE_INSET = 20
 
 /**
  * Where the caret sits, in pixels from the row's left edge, or `null` when
  * nothing is selected.
  *
- * Since `rowScroll` puts the selected panel at the centre, the caret is simply
- * the centre too — it no longer has to chase the panel's index. The clamping
- * the old group-centred version needed is gone with it: a selection can no
- * longer land off-screen, because the row scrolls to it.
+ * It tracks the selected panel through both placements — the centring offset
+ * of a row that fits, and the scroll of one that does not — and is clamped to
+ * the viewport so it still points the right way when a long row holds its
+ * selection at an end that cannot reach the middle.
  */
 export function caretOffset(
   layout: RowLayout,
@@ -761,8 +770,15 @@ export function caretOffset(
   available: number,
 ): number | null {
   if (selectedIndex == null || available <= 0) return null
-  if (!layout.panels[selectedIndex]) return null
-  return available / 2 - CARET_HALF
+  const panel = layout.panels[selectedIndex]
+  if (!panel) return null
+  const centre =
+    groupOffset(layout, available) +
+    panelOrigin(layout, selectedIndex) +
+    panel.width / 2 -
+    rowScroll(layout, selectedIndex, available) -
+    CARET_HALF
+  return Math.max(CARET_MIN_LEFT, Math.min(available - CARET_EDGE_INSET, centre))
 }
 
 // ---------------------------------------------------------------------------

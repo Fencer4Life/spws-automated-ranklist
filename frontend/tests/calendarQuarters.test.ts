@@ -780,64 +780,59 @@ describe('layoutRow', () => {
   })
 })
 
-describe('caretOffset', () => {
-  // CQ.71 — the caret marks the centre, because that is where the row puts its
-  // selection. Independent of which panel is selected.
-  it('CQ.71: puts the caret at the centre regardless of the selected index', () => {
-    const layout = layoutRow({ count: 7, selectedIndex: 0, available: 320, selectedHasCity: false })
-    expect(caretOffset(layout, 0, 320)).toBe(154)
-    expect(caretOffset(layout, 6, 320)).toBe(154)
+describe('caretOffset and rowScroll', () => {
+  // CQ.71 — a row that FITS is centred and never scrolled, focused or not.
+  // Shifting it toward the selection empties one side, which reads as the row
+  // being stuck against the other — the exact defect this replaced.
+  it('CQ.71: never scrolls or shifts a row that fits', () => {
+    const layout = layoutRow({ count: 3, selectedIndex: 0, available: 320, selectedHasCity: false })
+    expect(layout.contentWidth).toBeLessThanOrEqual(320)
+    expect(rowScroll(layout, 0, 320)).toBe(0)
+    expect(rowScroll(layout, 2, 320)).toBe(0)
   })
 
-  it('CQ.72: tracks the viewport width', () => {
-    const layout = layoutRow({ count: 3, selectedIndex: 1, available: 390, selectedHasCity: false })
-    expect(caretOffset(layout, 1, 390)).toBe(189)
+  // CQ.72 — a row that does NOT fit scrolls to bring the selection toward the
+  // middle, clamped so the ends stay flush and no blank edge ever appears.
+  it('CQ.72: scrolls an overflowing row, keeping both ends flush', () => {
+    const layout = layoutRow({ count: 30, selectedIndex: 0, available: 320, selectedHasCity: false })
+    const maxScroll = layout.contentWidth - 320
+    expect(maxScroll).toBeGreaterThan(0)
+
+    expect(rowScroll(layout, 0, 320)).toBe(0)
+    expect(rowScroll(layout, 29, 320)).toBe(maxScroll)
+
+    const middle = rowScroll(layout, 15, 320)
+    expect(middle).toBeGreaterThan(0)
+    expect(middle).toBeLessThan(maxScroll)
   })
 
-  // CQ.72b — a row with no selection has no caret at all.
-  it('CQ.72b: reports no caret for an empty row', () => {
-    const layout = layoutRow({ count: 0, selectedIndex: 0, available: 320, selectedHasCity: false })
-    expect(caretOffset(layout, null, 320)).toBeNull()
-  })
-})
+  // CQ.73 — the caret follows the selection through both placements.
+  it('CQ.73: tracks the selected panel whether the row is centred or scrolled', () => {
+    const fits = layoutRow({ count: 3, selectedIndex: 1, available: 320, selectedHasCity: false })
+    expect(caretOffset(fits, 1, 320)).toBe(154)
 
-describe('rowScroll', () => {
-  // CQ.73 — the defect the user reported: the group was centred, so a
-  // selection at index 0 of seven sat ~110px left of centre while the rest of
-  // the row ran right, and the whole barrel read as shifted.
-  it('CQ.73: scrolls the selected panel to the centre whatever its index', () => {
-    const layout = layoutRow({ count: 7, selectedIndex: 0, available: 390, selectedHasCity: false })
-    const first = rowScroll(layout, 0, 390)!
-    expect(first.padding).toBe(195)
-    // panel 0 starts at the content origin, so its centre is half its width in
-    expect(first.scrollLeft).toBe(layout.panels[0]!.width / 2)
-
-    const last = rowScroll(layout, 6, 390)!
-    expect(last.padding).toBe(195)
-    expect(last.scrollLeft).toBeGreaterThan(first.scrollLeft)
+    const spills = layoutRow({ count: 30, selectedIndex: 15, available: 320, selectedHasCity: false })
+    const caret = caretOffset(spills, 15, 320)!
+    expect(caret).toBeGreaterThan(8)
+    expect(caret).toBeLessThan(300)
   })
 
-  // CQ.74 — scrollLeft must stay inside the scrollable range, or the browser
-  // clamps it and the panel lands off-centre. Range is [0, contentWidth]
-  // because the padding adds exactly one viewport of slack.
-  it('CQ.74: keeps every scroll position within the scrollable range', () => {
-    for (const count of [1, 3, 7, 22, 40]) {
-      const layout = layoutRow({ count, selectedIndex: 0, available: 320, selectedHasCity: false })
-      for (let i = 0; i < count; i++) {
-        const s = rowScroll(layout, i, 320)!
-        expect(s.scrollLeft, `count ${count} index ${i}`).toBeGreaterThanOrEqual(0)
-        expect(s.scrollLeft, `count ${count} index ${i}`).toBeLessThanOrEqual(layout.contentWidth)
-      }
+  // CQ.74 — a selection at an end cannot reach the middle, so the caret must
+  // stay inside the viewport rather than pointing off it.
+  it('CQ.74: keeps the caret on screen for a selection at either end', () => {
+    const layout = layoutRow({ count: 30, selectedIndex: 0, available: 320, selectedHasCity: false })
+    for (const i of [0, 29]) {
+      const c = caretOffset(layout, i, 320)!
+      expect(c, `index ${i}`).toBeGreaterThanOrEqual(8)
+      expect(c, `index ${i}`).toBeLessThanOrEqual(300)
     }
   })
 
-  // CQ.75 — a single-panel row still centres, and nothing is asked of a row
-  // with no selection.
-  it('CQ.75: centres a lone panel and reports nothing without a selection', () => {
-    const one = layoutRow({ count: 1, selectedIndex: 0, available: 320, selectedHasCity: false })
-    expect(rowScroll(one, 0, 320)).toEqual({ padding: 160, scrollLeft: 37 })
-    expect(rowScroll(one, null, 320)).toBeNull()
-    expect(rowScroll(one, 0, 0)).toBeNull()
+  // CQ.75 — nothing selected, nothing to place.
+  it('CQ.75: reports no caret and no scroll without a selection', () => {
+    const layout = layoutRow({ count: 0, selectedIndex: 0, available: 320, selectedHasCity: false })
+    expect(caretOffset(layout, null, 320)).toBeNull()
+    expect(rowScroll(layout, null, 320)).toBe(0)
   })
 })
 
