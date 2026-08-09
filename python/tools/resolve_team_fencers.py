@@ -75,9 +75,7 @@ def resolve_name(
     return cache[name]
 
 
-def merge_stores(
-    stores: list[dict[str, Any]], fencer_db: list[dict[str, Any]]
-) -> dict[str, Any]:
+def merge_stores(stores: list[dict[str, Any]], fencer_db: list[dict[str, Any]]) -> dict[str, Any]:
     """Fold every championship's per-tournament profiles into career records."""
     by_id: dict[int, dict[str, Any]] = {}
     unresolved: dict[str, dict[str, Any]] = {}

@@ -157,9 +157,14 @@ def parse_relay(fragment_html: str) -> dict[str, Any] | None:
         if len(r) >= 8 and r[1] and (r[3] or "").isdigit() and (r[4] or "").isdigit():
             legs.append(
                 {
-                    "pos_a": r[0], "name_a": r[1], "ts_a": _i(r[2]),
-                    "cum_a": _i(r[3]), "cum_b": _i(r[4]), "ts_b": _i(r[5]),
-                    "name_b": r[6], "pos_b": r[7],
+                    "pos_a": r[0],
+                    "name_a": r[1],
+                    "ts_a": _i(r[2]),
+                    "cum_a": _i(r[3]),
+                    "cum_b": _i(r[4]),
+                    "ts_b": _i(r[5]),
+                    "name_b": r[6],
+                    "pos_b": r[7],
                 }
             )
     if not legs:
@@ -176,16 +181,19 @@ def parse_relay(fragment_html: str) -> dict[str, Any] | None:
         res_a = "V" if (score_a or 0) > (score_b or 0) else "D"
         res_b = "V" if (score_b or 0) > (score_a or 0) else "D"
     return {
-        "team_a": team_a, "team_b": team_b,
-        "result_a": res_a, "score_a": score_a,
-        "result_b": res_b, "score_b": score_b,
-        "walkover": False, "note": "", "legs": legs,
+        "team_a": team_a,
+        "team_b": team_b,
+        "result_a": res_a,
+        "score_a": score_a,
+        "result_b": res_b,
+        "score_b": score_b,
+        "walkover": False,
+        "note": "",
+        "legs": legs,
     }
 
 
-def _parse_walkover(
-    rows: list[list[str]], team_a: str, team_b: str
-) -> dict[str, Any] | None:
+def _parse_walkover(rows: list[list[str]], team_a: str, team_b: str) -> dict[str, Any] | None:
     """Handle a match with named line-ups but no fenced bouts (withdrawal / walkover).
 
     Reads the result from bare ``V``/``D`` flags and any status note, returning
@@ -193,11 +201,7 @@ def _parse_walkover(
     that would pollute per-fencer statistics.
     """
     has_names = any(len(r) >= 7 and r[1] and r[6] for r in rows[1:])
-    bare = [
-        (r[3], r[4])
-        for r in rows
-        if len(r) >= 5 and r[3] in ("V", "D") and r[4] in ("V", "D")
-    ]
+    bare = [(r[3], r[4]) for r in rows if len(r) >= 5 and r[3] in ("V", "D") and r[4] in ("V", "D")]
     if not (has_names and bare):
         return None
     res_a, res_b = bare[-1]
@@ -207,10 +211,15 @@ def _parse_walkover(
             if re.search(r"withdrew|forfeit|walkover|excluded", cell, re.I):
                 note = cell
     return {
-        "team_a": team_a, "team_b": team_b,
-        "result_a": res_a, "score_a": None,
-        "result_b": res_b, "score_b": None,
-        "walkover": True, "note": note, "legs": [],
+        "team_a": team_a,
+        "team_b": team_b,
+        "result_a": res_a,
+        "score_a": None,
+        "result_b": res_b,
+        "score_b": None,
+        "walkover": True,
+        "note": note,
+        "legs": [],
     }
 
 
@@ -230,8 +239,12 @@ def relay_for_country(relay: dict[str, Any], country: str) -> dict[str, Any] | N
         conceded = (lg["ts_b"] if a else lg["ts_a"]) or 0
         legs.append(
             {
-                "leg": i + 1, "pos": pos, "fencer": fencer,
-                "scored": scored, "conceded": conceded, "diff": scored - conceded,
+                "leg": i + 1,
+                "pos": pos,
+                "fencer": fencer,
+                "scored": scored,
+                "conceded": conceded,
+                "diff": scored - conceded,
                 "anchor": i == len(src) - 1,
             }
         )
@@ -284,8 +297,15 @@ def _html_has_country(html: str, country: str) -> bool:
 
 
 def blank_fencer() -> dict[str, Any]:
-    return {"matches": 0, "legs": 0, "net": 0, "scored": 0, "conceded": 0,
-            "anchor_legs": 0, "anchor_net": 0}
+    return {
+        "matches": 0,
+        "legs": 0,
+        "net": 0,
+        "scored": 0,
+        "conceded": 0,
+        "anchor_legs": 0,
+        "anchor_net": 0,
+    }
 
 
 def fold_fencers(profile: dict[str, dict[str, Any]], matches: list[dict[str, Any]]) -> None:
@@ -313,9 +333,7 @@ def _get(client: httpx.Client, url: str) -> httpx.Response:
     return client.get(normalize_ftl_url(url))
 
 
-def scrape_event(
-    client: httpx.Client, eid: str, name: str, country: str
-) -> dict[str, Any]:
+def scrape_event(client: httpx.Client, eid: str, name: str, country: str) -> dict[str, Any]:
     """Scrape one tournament: the target country's pool + bracket relays."""
     rec: dict[str, Any] = {"eid": eid, "name": name, **classify_event(name)}
     # The event date is what a rolling selection window is applied against, so
@@ -336,8 +354,9 @@ def scrape_event(
     except (ValueError, httpx.HTTPError):
         seeding = []
     info = parse_seeding(seeding, country)
-    rec.update(is_team=info["is_team"], present=info["present"],
-               roster=info["roster"], seed=info["seed"])
+    rec.update(
+        is_team=info["is_team"], present=info["present"], roster=info["roster"], seed=info["seed"]
+    )
     if not (info["is_team"] and info["present"]):
         rec["matches"] = []
         return rec
@@ -375,8 +394,9 @@ def scrape_event(
             if not _html_has_country(table, country):
                 continue
             for rid, mid in parse_match_links(table, eid):
-                m = _scrape_match(client, eid, rid, mid, country,
-                                  phase="Tableau", stage=str(tree.get("name", "")))
+                m = _scrape_match(
+                    client, eid, rid, mid, country, phase="Tableau", stage=str(tree.get("name", ""))
+                )
                 if m:
                     matches.append(m)
 
@@ -390,8 +410,14 @@ def scrape_event(
 
 
 def _scrape_match(
-    client: httpx.Client, eid: str, rid: str, mid: str, country: str,
-    *, phase: str, stage: str,
+    client: httpx.Client,
+    eid: str,
+    rid: str,
+    mid: str,
+    country: str,
+    *,
+    phase: str,
+    stage: str,
 ) -> dict[str, Any] | None:
     frag = _get(client, f"{FTL}/teammatches/details/{eid}/{rid}/{mid}/data").text
     relay = parse_relay(frag)

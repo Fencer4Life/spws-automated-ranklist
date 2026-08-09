@@ -84,8 +84,11 @@ def fetch_rows(
     while True:
         resp = httpx.get(
             url,
-            headers={**headers, "Range-Unit": "items",
-                     "Range": f"{offset}-{offset + page_size - 1}"},
+            headers={
+                **headers,
+                "Range-Unit": "items",
+                "Range": f"{offset}-{offset + page_size - 1}",
+            },
             timeout=120,
         )
         resp.raise_for_status()
