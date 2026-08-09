@@ -1,21 +1,4 @@
 <div class="calendar-view">
-  {#if showEvfToggle}
-    <div class="calendar-filters">
-      <div class="scope-filters">
-        <button
-          class="scope-filter-btn"
-          class:active={scopeFilter === 'ppw'}
-          onclick={() => { scopeFilter = 'ppw'; scopeUserOverride = true }}
-        >PPW</button>
-        <button
-          class="scope-filter-btn"
-          class:active={scopeFilter === 'all'}
-          onclick={() => { scopeFilter = 'all'; scopeUserOverride = true }}
-        >+EVF</button>
-      </div>
-    </div>
-  {/if}
-
   {#if hasEvents}
     <CalendarBarrel
       quarters={model.quarters}
@@ -35,17 +18,34 @@
     <div class="no-events">{t('no_results')}</div>
   {/if}
 
-  <!-- ADR-084 does not touch this. `activeEnv` is $bindable and App.svelte
-       re-points the Supabase client from it, so the footer retires with the
-       WordPress migration, not with the calendar redesign. -->
-  {#if dualEnv}
-    <div class="env-footer">
-      <div class="env-toggle">
-        <button class="env-btn" class:active={activeEnv === 'CERT'}
-          onclick={() => { activeEnv = 'CERT' }}>CT</button>
-        <button class="env-btn" class:active={activeEnv === 'PROD'}
-          onclick={() => { activeEnv = 'PROD' }}>PD</button>
-      </div>
+  <!-- One footer row carries both segments: scope on the left, environment on
+       the right. The env toggle is ADR-009's and retires with the WordPress
+       migration; `activeEnv` is $bindable and App.svelte re-points the Supabase
+       client from it. -->
+  {#if showEvfToggle || dualEnv}
+    <div class="calendar-footer">
+      {#if showEvfToggle}
+        <div class="scope-filters">
+          <button
+            class="scope-filter-btn"
+            class:active={scopeFilter === 'ppw'}
+            onclick={() => { scopeFilter = 'ppw'; scopeUserOverride = true }}
+          >PPW</button>
+          <button
+            class="scope-filter-btn"
+            class:active={scopeFilter === 'all'}
+            onclick={() => { scopeFilter = 'all'; scopeUserOverride = true }}
+          >+EVF</button>
+        </div>
+      {/if}
+      {#if dualEnv}
+        <div class="env-toggle">
+          <button class="env-btn" class:active={activeEnv === 'CERT'}
+            onclick={() => { activeEnv = 'CERT' }}>CT</button>
+          <button class="env-btn" class:active={activeEnv === 'PROD'}
+            onclick={() => { activeEnv = 'PROD' }}>PD</button>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -148,11 +148,13 @@
   .calendar-view {
     padding: 0;
   }
-  .calendar-filters {
+  /* Scope on the left, environment on the right — one row, centred together. */
+  .calendar-footer {
     display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    padding: 8px 0;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 0;
     flex-wrap: wrap;
   }
   .scope-filters {
@@ -182,11 +184,6 @@
     color: #888;
     padding: 32px 0;
     font-size: 14px;
-  }
-  .env-footer {
-    display: flex;
-    justify-content: center;
-    padding: 16px 0;
   }
   .env-toggle {
     display: flex;
