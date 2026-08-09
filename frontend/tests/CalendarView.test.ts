@@ -228,15 +228,32 @@ describe('CalendarView orchestrator (ADR-084)', () => {
     expect(container.querySelector('.vp')).toBeNull()
   })
 
-  // CV.11 — unchanged by ADR-084. activeEnv is $bindable and App re-points the
-  // Supabase client from it, so dropping this footer fails only at runtime.
-  it('CV.11: shows the CERT/PROD footer only when dualEnv is set', () => {
+  // CV.11 — activeEnv is $bindable and App re-points the Supabase client from
+  // it, so dropping the env toggle fails only at runtime.
+  it('CV.11: shows the CERT/PROD toggle only when dualEnv is set', () => {
     const off = render(CalendarView, { props: { events: EVENTS } })
-    expect(off.container.querySelector('.env-footer')).toBeNull()
+    expect(off.container.querySelector('.calendar-footer')).toBeNull()
 
     const on = render(CalendarView, { props: { events: EVENTS, dualEnv: true } })
     const btns = on.container.querySelectorAll('.env-btn')
     expect([...btns].map((b) => b.textContent?.trim())).toEqual(['CT', 'PD'])
+  })
+
+  // CV.11b — both segments share one footer row, scope first. Pinned because
+  // the ordering is the requirement, not an accident of markup order.
+  it('CV.11b: puts the scope segment left of the env toggle in one footer row', () => {
+    const { container } = render(CalendarView, {
+      props: { events: EVENTS, showEvfToggle: true, dualEnv: true },
+    })
+    const footer = container.querySelector('.calendar-footer')!
+    expect(footer).not.toBeNull()
+    // Svelte appends a scoped-style hash to className, so compare first tokens.
+    const kids = [...footer.children].map((e) => e.classList[0])
+    expect(kids).toEqual(['scope-filters', 'env-toggle'])
+    // and the scope segment still renders without the env toggle
+    const scopeOnly = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    expect(scopeOnly.container.querySelectorAll('.scope-filter-btn').length).toBe(2)
+    expect(scopeOnly.container.querySelector('.env-toggle')).toBeNull()
   })
 
   // ADR-079 amend — the modal wiring moved from the timeline row to the card,
