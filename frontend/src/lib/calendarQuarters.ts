@@ -718,9 +718,16 @@ function panelOrigin(layout: RowLayout, i: number): number {
     .reduce((sum, p) => sum + p.width + PANEL_GAP, 0)
 }
 
-/** Left offset of the content group: centred while it fits, flush when not. */
-function groupOffset(layout: RowLayout, available: number): number {
-  return Math.max(0, (available - layout.contentWidth) / 2)
+/**
+ * Left offset of the content group.
+ *
+ * Rows are LEFT-ALIGNED: every row starts at the same edge, whatever it holds.
+ * Centring was tried twice — on the content and on the selection — and both
+ * read as the row drifting, because the amount of blank space changes with the
+ * row's width and moves as you rotate. A fixed left edge cannot drift.
+ */
+function groupOffset(_layout: RowLayout, _available: number): number {
+  return 0
 }
 
 /**
