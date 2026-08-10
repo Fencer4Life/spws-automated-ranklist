@@ -30,10 +30,6 @@
           {#if quarter.isEmpty}
             <span class="mt">{t('calendar_empty_quarter')}</span>
           {:else}
-            <!-- `margin: 0 auto` keeps every row centred while its content
-                 fits, focused or receded alike. It resolves to 0 once the
-                 content is wider than the row, which is when the scroll below
-                 takes over. -->
             <div class="rwi" style:gap={layout?.overlapping ? '0px' : null}>
               {#each quarter.events as event, j (event.id_event)}
                 {@const place = layout?.panels[j]}
@@ -320,7 +316,10 @@
   .ln {
     height: 82px;
     flex: 0 0 82px;
-    transform-origin: 50% 50%;
+    /* Anchored left, not centre: the receded rows are scaled to 0.88, and a
+       centre origin would inset them from the left edge by ~6% of the row —
+       so the rows would no longer share a left edge. */
+    transform-origin: 0 50%;
     transition:
       transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
       opacity 0.45s;
@@ -402,10 +401,12 @@
      POSITIVE free space, so a row that fits is centred and one that overflows
      left-aligns and stays scrollable. Centring would push the leading panels
      into negative scroll space, where nothing can reach them. */
+  /* Left-aligned. Every row starts on the same edge, so nothing drifts as the
+     drum rotates between rows of different widths. */
   .rwi {
     display: flex;
     gap: 3px;
-    margin: 0 auto;
+    margin: 0;
     position: relative;
   }
   .p {
