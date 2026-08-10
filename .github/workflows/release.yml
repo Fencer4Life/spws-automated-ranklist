@@ -37,7 +37,7 @@ jobs:
       # --- Schema fingerprint from LOCAL Docker Supabase ---
       - uses: supabase/setup-cli@v1
         with:
-          version: 2.84.2
+          version: latest
 
       - name: Start Supabase local stack
         run: supabase start
@@ -163,7 +163,7 @@ jobs:
       # the function on each deploy. Function source: supabase/functions/.
       - uses: supabase/setup-cli@v1
         with:
-          version: 2.84.2
+          version: latest
       - name: Deploy Edge Functions to CERT
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -286,7 +286,7 @@ jobs:
       # ADR-041: deploy Edge Functions to PROD.
       - uses: supabase/setup-cli@v1
         with:
-          version: 2.84.2
+          version: latest
       - name: Deploy Edge Functions to PROD
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
