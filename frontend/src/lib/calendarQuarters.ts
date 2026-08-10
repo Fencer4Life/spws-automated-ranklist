@@ -726,8 +726,8 @@ function panelOrigin(layout: RowLayout, i: number): number {
  * read as the row drifting, because the amount of blank space changes with the
  * row's width and moves as you rotate. A fixed left edge cannot drift.
  */
-function groupOffset(_layout: RowLayout, _available: number): number {
-  return 0
+function groupOffset(layout: RowLayout, available: number): number {
+  return Math.max(0, (available - layout.contentWidth) / 2)
 }
 
 /**

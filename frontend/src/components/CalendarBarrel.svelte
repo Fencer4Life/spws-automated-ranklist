@@ -316,10 +316,7 @@
   .ln {
     height: 82px;
     flex: 0 0 82px;
-    /* Anchored left, not centre: the receded rows are scaled to 0.88, and a
-       centre origin would inset them from the left edge by ~6% of the row —
-       so the rows would no longer share a left edge. */
-    transform-origin: 0 50%;
+    transform-origin: 50% 50%;
     transition:
       transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
       opacity 0.45s;
@@ -401,12 +398,10 @@
      POSITIVE free space, so a row that fits is centred and one that overflows
      left-aligns and stays scrollable. Centring would push the leading panels
      into negative scroll space, where nothing can reach them. */
-  /* Left-aligned. Every row starts on the same edge, so nothing drifts as the
-     drum rotates between rows of different widths. */
   .rwi {
     display: flex;
     gap: 3px;
-    margin: 0;
+    margin: 0 auto;
     position: relative;
   }
   .p {
