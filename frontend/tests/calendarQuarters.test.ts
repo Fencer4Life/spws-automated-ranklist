@@ -806,13 +806,12 @@ describe('caretOffset and rowScroll', () => {
     expect(middle).toBeLessThan(maxScroll)
   })
 
-  // CQ.73 — the caret follows the selection through both placements: the
-  // centring offset of a row that fits, and the scroll of one that does not.
-  it('CQ.73: tracks the selected panel whether the row is centred or scrolled', () => {
-    // 3 panels = 176px content in 320px, so the group is inset (320-176)/2 = 72;
-    // the selected middle panel sits 51 in, half its 74px width beyond that.
+  // CQ.73 — the caret follows the selection. Rows are left-aligned, so for a
+  // row that fits this is just the panel's own offset: 48 + 3 gap + half of
+  // the 74px selected panel, less half the caret.
+  it('CQ.73: tracks the selected panel whether the row is left-aligned or scrolled', () => {
     const fits = layoutRow({ count: 3, selectedIndex: 1, available: 320, selectedHasCity: false })
-    expect(caretOffset(fits, 1, 320)).toBe(72 + 48 + PANEL_GAP + 74 / 2 - 6)
+    expect(caretOffset(fits, 1, 320)).toBe(48 + PANEL_GAP + 74 / 2 - 6)
 
     const spills = layoutRow({ count: 30, selectedIndex: 15, available: 320, selectedHasCity: false })
     const caret = caretOffset(spills, 15, 320)!
