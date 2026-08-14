@@ -409,13 +409,18 @@ w Grecji, gdzie startuje mniej osób niż w krajowym pucharze.</p>
 </div>
 
 <div class="formula-box">
-  <pre><code><span class="c">dziś</span>          50
-<span class="c">proponowane</span>   <a href="#pelna-formula"><b>2k · log₂(B)</b></a>   <span class="c">← pełna implementacja na końcu strony</span></code></pre>
-  <p class="formula-note"><code>N</code> to liczba startujących.<br>
-  <code>B</code> — <strong>najmniejsza potęga dwójki mieszcząca całą stawkę</strong>: 4, 8, 16, 32, 64, 128, 256 i tak dalej.<br>
-  Mnożnik <code>2</code> bierze się stąd, że nowa podstawa niesie w sobie także <strong>premię za wygrane
-  rundy</strong>, dziś liczoną osobno. Pierwsze miejsce jest więc warte dokładnie tyle, ile daje dziś suma
-  punktów za miejsce i premii za rundy.</p>
+  <pre><code><span class="c">dziś</span>          miejsce ze stałej 50  +  premia za rundy  +  podium
+<span class="c">proponowane</span>   <a href="#pelna-formula"><b>f(m, N, k, p)</b></a>                             +  podium
+              <span class="c">↑ pełny wzór na końcu strony</span></code></pre>
+  <p class="formula-note">Jedna funkcja zastępuje <strong>dwa</strong> dzisiejsze składniki: punkty za
+  miejsce i premię za wygrane rundy. Bonus za podium zostaje osobno, bez zmian.<br><br>
+  <code>m</code> — zajęte miejsce. &nbsp; <code>N</code> — liczba startujących.<br>
+  <code>k</code>, <code>p</code> — dwa suwaki: <code>k</code> decyduje, ile waży głębokość stawki,
+  <code>p</code> — jak bardzo stawka przestawia rozkład miejsc.<br>
+  <code>B</code> — <strong>najmniejsza potęga dwójki mieszcząca całą stawkę</strong>: 4, 8, 16, 32, 64,
+  128, 256 i tak dalej. Funkcja liczy się z <code>B</code>, nie z dokładnej frekwencji.<br><br>
+  Ponieważ premia za rundy jest w środku, <strong>pierwsze miejsce jest warte dokładnie tyle, ile daje
+  dziś suma punktów za miejsce i premii za rundy</strong> — zmienia się dopiero rozkład miejsc poniżej.</p>
 </div>
 
 <p>Ale sama wysokość to za mało. Ta sama podstawa rozdzielona po tabeli może dać zupełnie różne rankingi,
@@ -555,10 +560,11 @@ w⁻ = max(0, 4,5 − R) / 2,5                           <span class="c">o ile p
 <b>b  = 1 + p · (w⁺ + 1,5 · w⁻)</b>                            <span class="c">gasi ogon; w płytkich — stromy spadek</span>
 
 <span class="c">— dwa składniki wyniku —</span>
-<b>punkty za miejsce = 1 + (T − 1) · (1 − u^a)^b</b>           <span class="c">z wchłoniętą premią za rundy</span>
-bonus za podium   = c · 3 · ∛B                       <span class="c">c = 3 złoto, 2 srebro, 1 brąz, 0 poza podium</span>
+<b>f(m, N, k, p) = 1 + (T − 1) · (1 − u^a)^b</b>               <span class="c">punkty za miejsce z wchłoniętą</span>
+                                                     <span class="c">premią za wygrane rundy</span>
+bonus za podium = c · 3 · ∛B                         <span class="c">c = 3 złoto, 2 srebro, 1 brąz, 0 poza podium</span>
 
-<b>wynik = (miejsce + podium) · w</b>
+<b>wynik = ( f(m, N, k, p) + podium ) · w</b>
 </code></pre>
 
 <p>Krzywa jest zakotwiczona na obu końcach: przy <code>m = 1</code> mamy <code>u = 0</code>, więc punkty
@@ -590,11 +596,11 @@ zrównuje je i jednocześnie wyznacza najniższą uznawaną stawkę.</p>
     <td style="text-align:left;font-family:var(--sans);font-size:13px">Nikogo nie pokonano. Dziś taki start daje pełne 50 punktów.</td></tr>
 <tr><td style="text-align:left">m &gt; N</td><td style="text-align:left">wynik 0</td>
     <td style="text-align:left;font-family:var(--sans);font-size:13px">Miejsce spoza stawki — dane błędne.</td></tr>
-<tr><td style="text-align:left">m = 1</td><td style="text-align:left">punkty za miejsce = T</td>
+<tr><td style="text-align:left">m = 1</td><td style="text-align:left">f = T</td>
     <td style="text-align:left;font-family:var(--sans);font-size:13px"><code>u = 0</code>, więc <code>(1 − 0)^b = 1</code> i zostaje pełny pułap.</td></tr>
-<tr><td style="text-align:left">m = B</td><td style="text-align:left">punkty za miejsce = 1</td>
+<tr><td style="text-align:left">m = B</td><td style="text-align:left">f = 1</td>
     <td style="text-align:left;font-family:var(--sans);font-size:13px"><code>u = 1</code>, więc <code>(1 − 1)^b = 0</code>. Kotwica dolna trzyma się sama.</td></tr>
-<tr><td style="text-align:left">m = N, tryb „ostatni zawsze 1"</td><td style="text-align:left">punkty za miejsce = 1</td>
+<tr><td style="text-align:left">m = N, tryb „ostatni zawsze 1"</td><td style="text-align:left">f = 1</td>
     <td style="text-align:left;font-family:var(--sans);font-size:13px">Rozpiętość liczona z <code>N</code>, nie z <code>B</code>, więc ostatni ląduje dokładnie na kotwicy.</td></tr>
 </tbody>
 </table>
@@ -692,7 +698,7 @@ drużynowy jest osobnym składnikiem oceny i nie wchodzi do tej punktacji. Formu
 plus premii za rundy — mnożnik 2 wchłania tę premię; pozycja względna <code>u = log₂miejsce / log₂B</code>;
 wykładniki kształtu <code>a = 1 + p·w⁺</code> oraz <code>b = 1 + p·(w⁺ + 1,5·w⁻)</code>, gdzie
 <code>w⁺</code> i <code>w⁻</code> mierzą odległość stawki od progu 32; punkty za miejsce
-<code>1 + (T−1)·(1 − u^a)^b</code>; bonus za podium <code>współczynnik · 3 · ∛B</code> — jedyny składnik
+<code>f(m,N,k,p) = 1 + (T−1)·(1 − u^a)^b</code>; bonus za podium <code>współczynnik · 3 · ∛B</code> — jedyny składnik
 poza krzywą. Walkower (stawka 1) daje zero. Zestawienie wykorzystuje publiczne wyniki sportowe
 wskazanych zawodników.
 </footer>
