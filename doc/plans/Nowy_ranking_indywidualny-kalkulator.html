@@ -65,6 +65,9 @@ h1{font-family:var(--serif);font-size:clamp(23px,4.6vw,31px);line-height:1.18;ma
 .sidebar-controls .coef label{font-size:9.5px;margin-bottom:4px;text-align:center}
 .sidebar-controls .coef label i{font-size:8.5px;line-height:1.2;min-height:2.4em}
 .sidebar-controls .coef input{font-size:14px;padding:4px}
+.sidebar-controls .ctl-second{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.knob-note{font-size:10px;line-height:1.45;color:var(--muted);margin:7px 0 0}
+.knob-note b{color:var(--ink);font-weight:700}
 .sidebar-help{font-size:10.5px;line-height:1.4;color:var(--muted);margin:10px 0 0}
 .control-pointer{max-width:86ch;margin:18px 0 22px;padding:13px 16px;background:var(--navy-soft);
  border-left:4px solid var(--navy);font-size:13.5px}
@@ -286,7 +289,7 @@ footer{grid-column:2;grid-row:3;margin:40px 0 0;padding-top:16px;border-top:1px 
   <li><a href="#s-tabela">Wartość miejsca według stawki</a></li>
   <li><a href="#s-sprawdziany">Sprawdziany z preambuły</a></li>
   <li><a href="#s-sezon">Rzeczywiste dorobki sezonu 2025–2026</a></li>
-  <li><a href="#pelna-formula">Pełna implementacja f(N)</a></li>
+  <li><a href="#pelna-formula">Pełna implementacja</a></li>
   <li><a href="#s-bez-zmian">Co pozostaje bez zmian</a></li>
   <li><a href="#s-pula-szpada-veteran">Pula: szpada Veteran V1/V2</a></li>
   <li><a href="#s-pula-szabla-grand-veteran">Pula: szabla Grand Veteran V3/V4</a></li>
@@ -296,16 +299,31 @@ footer{grid-column:2;grid-row:3;margin:40px 0 0;padding-top:16px;border-top:1px 
 <section class="sidebar-controls" aria-label="Sterowanie kalkulatorem">
   <div class="sidebar-title">Sterowanie kalkulatorem</div>
   <div class="ctl">
-    <div class="big"><span id="kVal">10</span><small>WSPÓŁCZYNNIK k</small></div>
+    <div class="big"><span id="kVal">8</span><small>WSPÓŁCZYNNIK k</small></div>
     <div class="slider-wrap">
-      <input type="range" id="k" min="3" max="10" step="1" value="10" aria-label="Współczynnik podstawy punktowej k">
+      <input type="range" id="k" min="3" max="10" step="1" value="8"
+             aria-label="Współczynnik k — ile waży głębokość stawki">
       <div class="ticks" id="ticks"></div>
     </div>
   </div>
-  <label class="cb" title="Zastosuj k także do bonusu za faktycznie wygrane rundy">
-    <input type="checkbox" id="both" checked><span><code>k</code> także w bonusie za wygrane rundy</span>
-  </label>
-  <label class="cb" title="Punkty za miejsce i rundy liczone z faktycznej liczby startujących">
+  <p class="knob-note"><b>Ile waży głębokość stawki.</b> Każde podwojenie liczby startujących dokłada
+  do zwycięstwa <b id="kStep">16</b> punktów. Decyduje o różnicach <b>między zawodami</b> — czy wygrany
+  puchar krajowy leży blisko, czy daleko od wygranych mistrzostw świata.</p>
+
+  <div class="ctl ctl-second">
+    <div class="big"><span id="pVal">1,0</span><small>WYKŁADNIK p</small></div>
+    <div class="slider-wrap">
+      <input type="range" id="p" min="1" max="2" step="0.1" value="1"
+             aria-label="Wykładnik p — jak bardzo stawka przestawia rozkład miejsc">
+      <div class="ticks" id="ticksP"></div>
+    </div>
+  </div>
+  <p class="knob-note"><b>Jak bardzo stawka przestawia rozkład miejsc.</b> Decyduje o kształcie tabeli
+  <b>wewnątrz jednych zawodów</b>. Im wyżej, tym bardziej piąte miejsce w wielkiej stawce staje się
+  dobrym wynikiem, drugie miejsce w stawce czterech osób traci na wartości, a dojazd w końcówce dużego
+  turnieju przestaje się opłacać.</p>
+
+  <label class="cb" title="Punkty liczone z faktycznej liczby startujących">
     <input type="checkbox" id="real"><span>ostatni zawsze otrzymuje 1 punkt za zajęte miejsce</span>
   </label>
   <div class="coef" aria-label="Współczynniki rangi zawodów">
@@ -392,22 +410,35 @@ w Grecji, gdzie startuje mniej osób niż w krajowym pucharze.</p>
 
 <div class="formula-box">
   <pre><code><span class="c">dziś</span>          50
-<span class="c">proponowane</span>   <a href="#pelna-formula"><b>f(N) = k · log₂(B)</b></a>   <span class="c">← pełna implementacja na końcu strony</span></code></pre>
+<span class="c">proponowane</span>   <a href="#pelna-formula"><b>2k · log₂(B)</b></a>   <span class="c">← pełna implementacja na końcu strony</span></code></pre>
   <p class="formula-note"><code>N</code> to liczba startujących.<br>
-  <code>B</code> — <strong>najmniejsza potęga dwójki mieszcząca całą stawkę</strong>: 2, 4, 8, 16, 32, 64, 128, 256 i tak dalej.</p>
+  <code>B</code> — <strong>najmniejsza potęga dwójki mieszcząca całą stawkę</strong>: 4, 8, 16, 32, 64, 128, 256 i tak dalej.<br>
+  Mnożnik <code>2</code> bierze się stąd, że nowa podstawa niesie w sobie także <strong>premię za wygrane
+  rundy</strong>, dziś liczoną osobno. Pierwsze miejsce jest więc warte dokładnie tyle, ile daje dziś suma
+  punktów za miejsce i premii za rundy.</p>
 </div>
 
-<p>A więc wprowadzamy gradację zawodów w rankingu, którą można skalibrować dwiema wartościami — „pokrętłami”:</p>
+<p>Ale sama wysokość to za mało. Ta sama podstawa rozdzielona po tabeli może dać zupełnie różne rankingi,
+zależnie od tego, <b class="k">jak szybko wartość spada wraz z miejscem</b>. Piąte miejsce w stawce dwustu
+osób to dobry wynik; piąte miejsce w stawce ośmiu to wynik dramatycznie słaby. Dzisiejszy algorytm nie
+odróżnia tych dwóch sytuacji dostatecznie mocno, bo w każdej stawce traci tyle samo punktów na podwojenie
+miejsca.</p>
+
+<p>Dlatego gradacja ma <b class="k">dwa pokrętła</b>, a każde działa w innym kierunku:</p>
 <ul>
-  <li><code>k</code> - współczynnik podstawy punktowej za wygranie zawodów. W miejsce sztywnej stałej wartości 50; każde podwojenie stawki dokłada do podstawy za zwycięstwo kolejne <code>k</code> punktów, oraz</li>
-  <li><b class="k">współczynnik rangi zawodów</b> — osobny dla każdego typu zawodów</li>
+  <li><code>k</code> — <b class="k">w pionie, między zawodami.</b> Każde podwojenie stawki dokłada do
+  zwycięstwa <code>2k</code> punktów. Decyduje, jak daleko wygrany puchar krajowy leży od wygranych
+  mistrzostw świata. Zakres suwaka: 3–10.</li>
+  <li><code>p</code> — <b class="k">w poziomie, wewnątrz jednych zawodów.</b> Decyduje, jak bardzo
+  głębokość stawki przestawia rozkład miejsc: w stawkach głębszych niż 32 czoło tabeli zbija się
+  do kupy, a końcówka gaśnie; w stawkach płytszych tabela rozjeżdża się już od drugiego miejsca.
+  Zakres suwaka: 1,0–2,0.</li>
 </ul>
 
-<p>Poniżej dostępny jest suwak zmieniający wartość współczynnika podstawy punktowej za wygranie zawodów <code>k</code>, w zakresie od 3 do 10.</p>
-<p>Można też ustawić współczynniki rangi zawodów dla wszystkich typów zawodów szermierczych.</p>
-<p>Ustawienia te zmieniają wartości w tabeli, która obrazuje działanie algorytmu z danym zestawem wartości współczynników.</p>
+<p>Trzecim pokrętłem pozostaje <b class="k">współczynnik rangi zawodów</b> — osobny dla każdego typu
+zawodów, mnożący gotowy wynik.</p>
 
-<p class="control-pointer">Suwak <code>k</code>, przełączniki sposobu liczenia i współczynniki rangi
+<p class="control-pointer">Oba suwaki, przełącznik sposobu liczenia i współczynniki rangi
 znajdują się w zakotwiczonym panelu pod spisem treści. <a href="#sterowanie">Przejdź do sterowania</a>.</p>
 
 <h2 id="s-wsp">Współczynniki rangi zawodów</h2>
@@ -431,9 +462,11 @@ zaokrąglona stawka B, nie dokładna frekwencja. Kolumny pokazują wynik przy ws
   <code>B</code>. Im głębsza stawka, tym mocniejszy ton i tym wyżej leży cała krzywa; krzywe nigdy się nie
   przecinają. Przerywana linia odniesienia pokazuje wartość zwycięstwa w najmniejszej uznawanej stawce —
   <b>każdy punkt powyżej niej jest wart więcej niż wygrana z jednym rywalem</b>. Wykres przelicza się
-  natychmiast po zmianie <code>k</code> oraz przełącznika bonusu za rundy. Przełącznik „ostatni zawsze
-  otrzymuje 1 punkt” tych krzywych nie rusza: dla stawek będących dokładną potęgą dwójki oba sposoby
-  liczenia dają identyczne wartości. Dokładne liczby pozostają w tabeli powyżej.</figcaption>
+  natychmiast po zmianie <code>k</code> lub <code>p</code>: <code>k</code> podnosi i obniża wszystkie
+  krzywe naraz, <code>p</code> zmienia ich kształt — zbija czoło i gasi końcówkę w stawkach głębokich,
+  a rozjeżdża tabelę w płytkich. Przełącznik „ostatni zawsze otrzymuje 1 punkt” tych krzywych nie rusza:
+  dla stawek będących dokładną potęgą dwójki oba sposoby liczenia dają identyczne wartości. Dokładne
+  liczby pozostają w tabeli powyżej.</figcaption>
   <div class="chart-legend" id="chartLegend"></div>
   <div class="chart-holder">
     <svg id="valueChart" viewBox="0 0 880 430" tabindex="0" role="img" aria-label="Wykres liniowy"></svg>
@@ -493,7 +526,7 @@ i międzynarodowych wymaga osobnej decyzji przed wdrożeniem rankingu. Brak wyni
 zweryfikowanego startu w badanym sezonie, a nie ocenę klasy zawodnika.
 </div>
 
-<h2 id="pelna-formula">Pełna implementacja f(N)</h2>
+<h2 id="pelna-formula">Pełna implementacja</h2>
 
 <p>Powyżej podałem samą istotę zmiany. Tu jest wszystko, łącznie z zaokrągleniem i przypadkami
 brzegowymi — w tej postaci trafi to do silnika.</p>
@@ -501,7 +534,8 @@ brzegowymi — w tej postaci trafi to do silnika.</p>
 <pre><code><span class="c">— wejście —</span>
 N   liczba startujących w tej konkurencji
 m   miejsce zajęte przez zawodnika
-k   współczynnik wartości pierwszego miejsca            <span class="c">(suwak, 3–10)</span>
+k   współczynnik głębokości stawki                      <span class="c">(suwak, 3–10)</span>
+p   wykładnik kształtu tabeli                           <span class="c">(suwak, 1,0–2,0)</span>
 w   współczynnik rangi zawodów                          <span class="c">(PPW, MPW, PPS, MPS, PEW, MEW, MŚW)</span>
 
 <span class="c">— zaokrąglenie stawki —</span>
@@ -509,17 +543,35 @@ w   współczynnik rangi zawodów                          <span class="c">(PPW,
                                                      <span class="c">ale nigdy mniej niż 4</span>
 R = log₂B                                            <span class="c">liczba całkowita: 2, 3, 4, 5, …</span>
 
-<span class="c">— sedno zmiany —</span>
-<b>f(N) = MP = k · R</b>                                      <span class="c">wartość pierwszego miejsca;</span>
-                                                     <span class="c">dziś w tym miejscu jest stałe 50</span>
+<span class="c">— pułap: wartość pierwszego miejsca bez podium —</span>
+<b>T = 2k · R</b>                                             <span class="c">dziś w tym miejscu jest 50 + premia za rundy;</span>
+                                                     <span class="c">mnożnik 2 wchłania premię za rundy</span>
 
-<span class="c">— trzy składniki wyniku —</span>
-punkty za miejsce = MP − (MP−1) · ln(m) / ln(B)
-bonus za rundy    = k · (R − ⌈log₂m⌉)                <span class="c">lub 10·(…), gdy przełącznik wyłączony</span>
+<span class="c">— kształt tabeli, zależny od głębokości stawki —</span>
+u  = log₂m / R                                       <span class="c">pozycja względna: 0 czoło, 1 koniec stawki</span>
+w⁺ = max(0, R − 4,5) / 3,5                           <span class="c">o ile stawka jest głębsza niż próg 32</span>
+w⁻ = max(0, 4,5 − R) / 2,5                           <span class="c">o ile płytsza niż próg 32</span>
+<b>a  = 1 + p · w⁺</b>                                        <span class="c">spłaszcza czoło w głębokich stawkach</span>
+<b>b  = 1 + p · (w⁺ + 1,5 · w⁻)</b>                            <span class="c">gasi ogon; w płytkich — stromy spadek</span>
+
+<span class="c">— dwa składniki wyniku —</span>
+<b>punkty za miejsce = 1 + (T − 1) · (1 − u^a)^b</b>           <span class="c">z wchłoniętą premią za rundy</span>
 bonus za podium   = c · 3 · ∛B                       <span class="c">c = 3 złoto, 2 srebro, 1 brąz, 0 poza podium</span>
 
-<b>wynik = (miejsce + rundy + podium) · w</b>
+<b>wynik = (miejsce + podium) · w</b>
 </code></pre>
+
+<p>Krzywa jest zakotwiczona na obu końcach: przy <code>m = 1</code> mamy <code>u = 0</code>, więc punkty
+za miejsce wynoszą dokładnie <code>T</code>; przy <code>m = B</code> mamy <code>u = 1</code>, więc wynoszą
+dokładnie 1. Wykładniki <code>a</code> i <code>b</code> zmieniają wyłącznie <b class="k">kształt między
+tymi kotwicami</b> — nigdy same kotwice. Przy <code>p</code> większym od zera i stawce głębszej niż 32
+oba rosną powyżej jedynki: <code>a</code> spłaszcza początek tabeli, <code>b</code> ścina jej koniec.
+W stawkach płytszych niż 32 rośnie tylko <code>b</code>, co daje stromy spadek już od drugiego miejsca.</p>
+
+<p>Ponieważ <code>(1 − u^a)^b</code> maleje monotonicznie dla dowolnych dodatnich <code>a</code>
+i <code>b</code>, kolejność miejsc nie może się odwrócić przy żadnym ustawieniu suwaków. Sprawdzone
+także, że głębsza stawka nigdy nie daje mniej punktów niż płytsza na tym samym miejscu — dla każdego
+<code>k</code> od 3 do 10 i każdego <code>p</code> od 1,0 do 2,0.</p>
 
 <h3 style="font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin:26px 0 10px">Dlaczego <code>max(4, …)</code></h3>
 
@@ -538,22 +590,27 @@ zrównuje je i jednocześnie wyznacza najniższą uznawaną stawkę.</p>
     <td style="text-align:left;font-family:var(--sans);font-size:13px">Nikogo nie pokonano. Dziś taki start daje pełne 50 punktów.</td></tr>
 <tr><td style="text-align:left">m &gt; N</td><td style="text-align:left">wynik 0</td>
     <td style="text-align:left;font-family:var(--sans);font-size:13px">Miejsce spoza stawki — dane błędne.</td></tr>
-<tr><td style="text-align:left">m = 1</td><td style="text-align:left">punkty za miejsce = MP</td>
-    <td style="text-align:left;font-family:var(--sans);font-size:13px"><code>ln(1) = 0</code>, więc człon odejmowany znika.</td></tr>
+<tr><td style="text-align:left">m = 1</td><td style="text-align:left">punkty za miejsce = T</td>
+    <td style="text-align:left;font-family:var(--sans);font-size:13px"><code>u = 0</code>, więc <code>(1 − 0)^b = 1</code> i zostaje pełny pułap.</td></tr>
+<tr><td style="text-align:left">m = B</td><td style="text-align:left">punkty za miejsce = 1</td>
+    <td style="text-align:left;font-family:var(--sans);font-size:13px"><code>u = 1</code>, więc <code>(1 − 1)^b = 0</code>. Kotwica dolna trzyma się sama.</td></tr>
 <tr><td style="text-align:left">m = N, tryb „ostatni zawsze 1"</td><td style="text-align:left">punkty za miejsce = 1</td>
-    <td style="text-align:left;font-family:var(--sans);font-size:13px">Wtedy w mianowniku jest <code>ln(N)</code>, nie <code>ln(B)</code>.</td></tr>
+    <td style="text-align:left;font-family:var(--sans);font-size:13px">Rozpiętość liczona z <code>N</code>, nie z <code>B</code>, więc ostatni ląduje dokładnie na kotwicy.</td></tr>
 </tbody>
 </table>
 </div>
 
 <h3 style="font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin:26px 0 10px">Wariant „ostatni zawsze 1 punkt"</h3>
 
-<p>Po zaznaczeniu tego przełącznika <code>MP</code> nadal pochodzi z <code>B</code>, ale dwa
-składniki liczą się z <b class="k">faktycznej stawki N</b>:</p>
+<p>Bez tego przełącznika rozpiętość tabeli bierze się z zaokrąglonej stawki <code>B</code>, więc
+w stawce, która nie jest potęgą dwójki, ostatni zawodnik nie dochodzi do dolnej kotwicy — kończy nieco
+powyżej jednego punktu. Po zaznaczeniu przełącznika <b class="k">pułap <code>T</code> nadal pochodzi
+z <code>B</code></b>, ale pozycja względna i bonus za podium liczą się z <b class="k">faktycznej stawki
+N</b>:</p>
 
-<pre><code>punkty za miejsce = MP − (MP−1) · ln(m) / <b>ln(N)</b>
-bonus za rundy    = k · max(0, ⌊log₂N⌋ − ⌈log₂m⌉ + <span class="c">(0 gdy N jest potęgą dwójki, inaczej 1)</span>)
-bonus za podium   = c · 3 · <b>∛N</b></code></pre>
+<pre><code>u  = log₂m / <b>log₂N</b>                                <span class="c">zamiast log₂B</span>
+w⁺, w⁻, a, b — liczone z <b>log₂N</b>
+bonus za podium = c · 3 · <b>∛N</b></code></pre>
 
 <p>Ostatni w stawce dostaje wtedy dokładnie 1 punkt za miejsce plus bonus za podium, jeśli mu
 przysługuje. <b class="k">Cena:</b> zwycięstwa w stawkach 2, 3 i 4 przestają być sobie równe.</p>
@@ -561,8 +618,11 @@ przysługuje. <b class="k">Cena:</b> zwycięstwa w stawkach 2, 3 i 4 przestają 
 <a class="backlink" href="#top">↑ wróć na górę</a>
 
 <h2 id="s-bez-zmian">Co pozostaje bez zmian</h2>
-<p>Bonus za podium — <code>3 × ∛B</code>, mnożony przez 3 za złoto, 2 za srebro, 1 za brąz.
-Suwak i współczynniki go nie ruszają.</p>
+<p>Bonus za podium — <code>3 × ∛B</code>, mnożony przez 3 za złoto, 2 za srebro, 1 za brąz. To jedyny
+składnik, który został <b class="k">na zewnątrz krzywej</b>: suwaki go nie ruszają, a uskok między trzecim
+a czwartym miejscem pozostaje widoczny i rośnie wraz z głębokością stawki. Premia za wygrane rundy nie
+znika — została wchłonięta w pułap <code>T = 2k · log₂B</code>, dzięki czemu pierwsze miejsce jest warte
+dokładnie tyle, ile daje dziś suma punktów za miejsce i premii za rundy.</p>
 
 <h2 id="s-pula-szpada-veteran">Pula drużynowa — szpada mężczyzn Veteran V1/V2</h2>
 <p>Poniżej zestawiono kolejność dziesięciu kandydatów z materiału nominacyjnego na Tbilisi z kolejnością
@@ -628,11 +688,13 @@ wyboru i limitowania najlepszych wyników wymaga osobnego ustalenia.</div>
 <footer>
 Narzędzie robocze SPWS, 14 sierpnia 2026. Dotyczy wyłącznie <b>wyników indywidualnych</b>; dorobek
 drużynowy jest osobnym składnikiem oceny i nie wchodzi do tej punktacji. Formuła:
-<code>B = max(4, 2^⌈log₂N⌉)</code>; wartość pierwszego miejsca <code>MP = k·log₂B</code> zamiast
-stałej 50; punkty za miejsce <code>MP − (MP−1)·ln(miejsce)/ln(B)</code>; bonus za faktycznie wygrane
-rundy <code>k·(log₂B − ⌈log₂miejsce⌉)</code> — to osobny składnik, dziś sztywne 10 punktów za rundę;
-bonus za podium <code>współczynnik · 3 · ∛B</code>. Walkower (stawka 1) daje zero. Zestawienie
-wykorzystuje publiczne wyniki sportowe wskazanych zawodników.
+<code>B = max(4, 2^⌈log₂N⌉)</code>; pułap pierwszego miejsca <code>T = 2k·log₂B</code> zamiast stałej 50
+plus premii za rundy — mnożnik 2 wchłania tę premię; pozycja względna <code>u = log₂miejsce / log₂B</code>;
+wykładniki kształtu <code>a = 1 + p·w⁺</code> oraz <code>b = 1 + p·(w⁺ + 1,5·w⁻)</code>, gdzie
+<code>w⁺</code> i <code>w⁻</code> mierzą odległość stawki od progu 32; punkty za miejsce
+<code>1 + (T−1)·(1 − u^a)^b</code>; bonus za podium <code>współczynnik · 3 · ∛B</code> — jedyny składnik
+poza krzywą. Walkower (stawka 1) daje zero. Zestawienie wykorzystuje publiczne wyniki sportowe
+wskazanych zawodników.
 </footer>
 
 </div>
@@ -643,26 +705,33 @@ const PL = [1,2,3,4,8,16,32,64,128,256];
 
 function bracket(n){ return n < 2 ? 0 : Math.max(4, Math.pow(2, Math.ceil(Math.log2(n)))); }
 
-function score(place, n, mult, k, both, real){
+// Proponowana funkcja punktowa.
+// Punkty za miejsce mają wchłonięty bonus za wygrane rundy — pułap 1. miejsca to 2k·log₂B,
+// czyli dokładnie tyle, ile dziś dają razem punkty za miejsce i premia za rundy.
+// Kształt krzywej między czołem a końcem tabeli zależy od głębokości stawki (wykładnik p):
+// głębokie stawki mają zbite czoło i wygaszony ogon, płytkie rozjeżdżają się od razu.
+// Bonus za podium zostaje osobnym, widocznym składnikiem — bez zmian wobec dziś.
+function score(place, n, mult, k, pExp, real){
   const B = bracket(n);
   if (!B) return 0;
-  const R = Math.round(Math.log2(B));
-  const MP = k * R;                       // pułap zawsze z B
   if (place > n) return 0;
-  const kb  = both ? k : 10;
+
+  const RB = Math.log2(B);                    // pułap zawsze z zaokrąglonej stawki B
+  const D  = real ? Math.max(2, n) : B;       // rozpiętość tabeli: faktyczna stawka albo B
+  const R  = Math.log2(D);
+  if (R <= 0) return 0;
+
+  const u  = Math.log2(place) / R;            // pozycja względna: 0 czoło, 1 koniec stawki
+  const wp = Math.max(0, R - 4.5) / 3.5;      // o ile stawka jest głębsza niż próg 32
+  const wm = Math.max(0, 4.5 - R) / 2.5;      // o ile płytsza niż próg 32
+  const a  = 1 + pExp * wp;                   // spłaszcza czoło w głębokich stawkach
+  const b  = 1 + pExp * (wp + 1.5 * wm);      // gasi ogon; w płytkich daje stromy spadek
+
+  const top = 2 * k * RB;                     // wartość 1. miejsca bez podium
+  const pp  = 1 + (top - 1) * Math.pow(1 - Math.pow(u, a), b);
   const c   = {1:3, 2:2, 3:1}[place] || 0;
-  let pp, de, pod;
-  if (real) {                             // miejsce i rundy z FAKTYCZNEJ stawki
-    pp  = n < 2 ? 0 : MP - (MP - 1) * Math.log(place) / Math.log(n);
-    const pow2 = (n & (n - 1)) === 0;
-    de  = Math.max(0, Math.floor(Math.log2(n)) - Math.ceil(Math.log2(place)) + (pow2 ? 0 : 1)) * kb;
-    pod = c * 3 * Math.cbrt(n);
-  } else {                                // wszystko z B
-    pp  = MP - (MP - 1) * Math.log(place) / Math.log(B);
-    de  = Math.max(0, R - Math.ceil(Math.log2(place))) * kb;
-    pod = c * 3 * Math.cbrt(B);
-  }
-  return (pp + de + pod) * mult;
+  const pod = c * 3 * Math.cbrt(D);
+  return (pp + pod) * mult;
 }
 
 // obecny silnik: MP = 50 na sztywno, wszystko liczone z faktycznej stawki
@@ -709,15 +778,20 @@ function renderDiag(){
 
 const THUMB = 22;   // musi zgadzać się z --thumb w CSS
 
-function buildTicks(cur){
-  const lo = 3, hi = 10;
+// Wspólny generator podziałki dla obu suwaków.
+// labelEvery — co która wartość dostaje podpis (przy p wypisanie wszystkich 11 byłoby nieczytelne).
+function buildTicks(el, lo, hi, stepv, cur, labelEvery, fmt){
   let h = '';
-  for (let v = lo; v <= hi; v++){
-    const f = (v - lo) / (hi - lo);
-    h += `<span class="${v === cur ? 'on' : ''}" data-v="${v}"`
-       + ` style="left:calc(${THUMB / 2}px + ${f} * (100% - ${THUMB}px))">${v}</span>`;
+  const eps = stepv / 100;
+  for (let v = lo; v <= hi + eps; v += stepv){
+    const val = +v.toFixed(4);
+    const f = (val - lo) / (hi - lo);
+    const shown = Math.abs((val - lo) / labelEvery - Math.round((val - lo) / labelEvery)) < 0.01;
+    if (!shown) continue;
+    h += `<span class="${Math.abs(val - cur) < eps ? 'on' : ''}" data-v="${val}"`
+       + ` style="left:calc(${THUMB / 2}px + ${f} * (100% - ${THUMB}px))">${fmt(val)}</span>`;
   }
-  document.getElementById('ticks').innerHTML = h;
+  document.getElementById(el).innerHTML = h;
 }
 
 const SOURCE = {
@@ -1040,11 +1114,11 @@ function proposedMultiplier(type){
   return (+document.getElementById('c_' + id).value) || 0;
 }
 
-function profileTotals(profile,k,both,real){
+function profileTotals(profile,k,pExp,real){
   return profile.starts.reduce((tot,[date,event,type,place,field]) => {
     const oldMult = CURRENT_MULT[type] || 0;
     tot.current += oldMult ? oldScore(place,field,oldMult) : 0;
-    tot.proposed += score(place,field,proposedMultiplier(type),k,both,real);
+    tot.proposed += score(place,field,proposedMultiplier(type),k,pExp,real);
     return tot;
   },{current:0,proposed:0});
 }
@@ -1058,7 +1132,7 @@ function startsByFieldSize(starts){
     .map(item => item.start);
 }
 
-function renderProfileDetails(profile, ids, k, both, real){
+function renderProfileDetails(profile, ids, k, pExp, real){
   document.getElementById(ids.title).textContent = `${profile.name} · ${profile.weapon} ${profile.category}`;
   document.getElementById(ids.subtitle).textContent = 'Wszystkie zweryfikowane indywidualne starty w sezonie 2025–2026';
   document.getElementById(ids.count).textContent = profile.starts.length
@@ -1075,7 +1149,7 @@ function renderProfileDetails(profile, ids, k, both, real){
     const oldMult = CURRENT_MULT[type] || 0;
     const newMult = proposedMultiplier(type);
     const current = oldMult ? oldScore(place,field,oldMult) : 0;
-    const proposed = score(place,field,newMult,k,both,real);
+    const proposed = score(place,field,newMult,k,pExp,real);
     const delta = proposed - current;
     totalCurrent += current; totalProposed += proposed;
     const currentCell = oldMult ? current.toFixed(1) : '<span class="current-zero">nieuwzględniany</span>';
@@ -1093,7 +1167,7 @@ function renderProfileDetails(profile, ids, k, both, real){
     <td class="${totalClass}">${totalDelta > 0 ? '+' : ''}${totalDelta.toFixed(1)}</td></tr>`;
 }
 
-function renderSeason(k,both,real){
+function renderSeason(k,pExp,real){
   const weapons = ['Szpada','Floret','Szabla'];
   document.getElementById('profileGroups').innerHTML = weapons.map(weapon => {
     const cards = SEASON_PROFILES.filter(p => FEATURED_PROFILE_IDS.includes(p.id) && p.weapon === weapon).map(profile => {
@@ -1103,7 +1177,7 @@ function renderSeason(k,both,real){
           <strong>${profile.name}</strong><span class="meta">${profile.category} · ${profile.weapon}</span>
           <span class="no-results">brak zweryfikowanego startu w sezonie</span></button>`;
       }
-      const total = profileTotals(profile,k,both,real);
+      const total = profileTotals(profile,k,pExp,real);
       return `<button class="profile-card" type="button" data-profile="${profile.id}" aria-pressed="${selected}">
         <strong>${profile.name}</strong><span class="meta">${profile.category} · ${profile.weapon} · ${profile.starts.length} ${profile.starts.length === 1 ? 'start' : 'startów'}</span>
         <span class="totals"><span>dzisiaj<b>${total.current.toFixed(1)}</b></span><span>po zmianie<b>${total.proposed.toFixed(1)}</b></span></span></button>`;
@@ -1114,14 +1188,14 @@ function renderSeason(k,both,real){
   const profile = SEASON_PROFILES.find(p => p.id === activeProfileId) || SEASON_PROFILES[0];
   renderProfileDetails(profile,{
     title:'seasonTitle',subtitle:'seasonSubtitle',count:'seasonCount',rows:'seasonRows',sum:'seasonSum'
-  },k,both,real);
+  },k,pExp,real);
 }
 
-function renderTeamPool(key,k,both,real){
+function renderTeamPool(key,k,pExp,real){
   const pool = TEAM_POOLS[key];
   const entries = pool.ids.map((id,index) => {
     const profile = SEASON_PROFILES.find(p => p.id === id);
-    return {profile,inputPlace:index + 1,categoryRank:pool.categoryRanks[index],totals:profileTotals(profile,k,both,real)};
+    return {profile,inputPlace:index + 1,categoryRank:pool.categoryRanks[index],totals:profileTotals(profile,k,pExp,real)};
   });
   const ordered = [...entries].sort((a,b) => b.totals.proposed - a.totals.proposed || a.inputPlace - b.inputPlace);
   const proposedPlace = Object.fromEntries(ordered.map((entry,index) => [entry.profile.id,index + 1]));
@@ -1151,7 +1225,7 @@ function renderTeamPool(key,k,both,real){
   renderProfileDetails(active.profile,{
     title:`${key}DetailTitle`,subtitle:`${key}DetailSubtitle`,count:`${key}DetailCount`,
     rows:`${key}DetailRows`,sum:`${key}DetailSum`
-  },k,both,real);
+  },k,pExp,real);
 }
 
 /* ---------- wykres: wartość miejsca według stawki ---------- */
@@ -1159,7 +1233,7 @@ const CHART_B = [4,8,16,32,64,128,256];
 const CHART_G = {w:880,h:430,l:58,r:96,t:22,b:50};
 let CHART_STATE = null, CHART_PLACE = null;
 
-function renderChart(k,both,real){
+function renderChart(k,pExp,real){
   const svg = document.getElementById('valueChart');
   if(!svg) return;
   const G = CHART_G, pw = G.w-G.l-G.r, ph = G.h-G.t-G.b, lgMax = 8;
@@ -1168,7 +1242,7 @@ function renderChart(k,both,real){
   // Siedem stałych stawek — barwa zawsze należy do tej samej stawki, niezależnie od ustawień.
   const series = CHART_B.map((B,i) => {
     const pts = [];
-    for(let p=1;p<=B;p++) pts.push([p, score(p,B,1.0,k,both,real)]);
+    for(let p=1;p<=B;p++) pts.push([p, score(p,B,1.0,k,pExp,real)]);
     return {B, slot:i+1, pts};
   });
 
@@ -1272,10 +1346,13 @@ function chartPointer(ev){
 
 function render(){
   const k = +document.getElementById('k').value;
-  const both = document.getElementById('both').checked;
+  const pExp = +document.getElementById('p').value;
   const real = document.getElementById('real').checked;
   document.getElementById('kVal').textContent = k;
-  buildTicks(k);
+  document.getElementById('kStep').textContent = 2 * k;
+  document.getElementById('pVal').textContent = pExp.toFixed(1).replace('.', ',');
+  buildTicks('ticks',  3, 10, 1,   k,    1,   v => v);
+  buildTicks('ticksP', 1,  2, 0.1, pExp, 0.5, v => v.toFixed(1).replace('.', ','));
 
   const list = real
     ? [[2,"2"],[3,"3"],[4,"4"],[5,"5"],[6,"6"],[8,"8"],[9,"9"],[16,"16"],[32,"32"],[64,"64"],[100,"100"],[200,"200"]]
@@ -1286,7 +1363,7 @@ function render(){
     const N = real ? n : B;
     const cells = PL.map(p=>{
       if (p > N) return '<td style="opacity:.28">—</td>';
-      const v = score(p, N, 1.0, k, both, real);
+      const v = score(p, N, 1.0, k, pExp, real);
       return `<td${p===1?' class="win"':''}>${v.toFixed(1)}</td>`;
     }).join('');
     return `<tr><td>${lab}</td><td>${B}</td>${cells}</tr>`;
@@ -1296,16 +1373,16 @@ function render(){
   const ppw = C('ppw'), mpw = C('mpw'), pps = C('pps'), mps = C('mps'),
         pew = C('pew'), mew = C('mew'), msw_c = C('msw');
 
-  renderChart(k,both,real);
-  renderSeason(k,both,real);
-  renderTeamPool('epee',k,both,real);
-  renderTeamPool('sabre',k,both,real);
+  renderChart(k,pExp,real);
+  renderSeason(k,pExp,real);
+  renderTeamPool('epee',k,pExp,real);
+  renderTeamPool('sabre',k,pExp,real);
 
-  const five = score(1,2,mpw,k,both,real) + score(1,2,ppw,k,both,real) + score(1,2,ppw,k,both,real)
-             + score(1,3,ppw,k,both,real) + score(1,3,mpw,k,both,real);
-  const msw  = score(1,200,msw_c,k,both,real);
-  const top8 = score(8,100,pew,k,both,real);
-  const win2 = score(1,2,ppw,k,both,real);
+  const five = score(1,2,mpw,k,pExp,real) + score(1,2,ppw,k,pExp,real) + score(1,2,ppw,k,pExp,real)
+             + score(1,3,ppw,k,pExp,real) + score(1,3,mpw,k,pExp,real);
+  const msw  = score(1,200,msw_c,k,pExp,real);
+  const top8 = score(8,100,pew,k,pExp,real);
+  const win2 = score(1,2,ppw,k,pExp,real);
 
   const mk = (ok, a, la, b, lb) =>
     `<div class="row ${ok?'ok':'bad'}"><span class="tag">${ok?'PRZECHODZI':'NIE PRZECHODZI'}</span>
@@ -1319,13 +1396,19 @@ function render(){
 }
 
 document.getElementById('k').addEventListener('input', render);
+document.getElementById('p').addEventListener('input', render);
 document.getElementById('ticks').addEventListener('click', e => {
   const v = e.target && e.target.dataset && e.target.dataset.v;
   if (!v) return;
   document.getElementById('k').value = v;
   render();
 });
-document.getElementById('both').addEventListener('change', render);
+document.getElementById('ticksP').addEventListener('click', e => {
+  const v = e.target && e.target.dataset && e.target.dataset.v;
+  if (!v) return;
+  document.getElementById('p').value = v;
+  render();
+});
 document.getElementById('real').addEventListener('change', render);
 document.querySelectorAll('.coef input').forEach(i => i.addEventListener('input', render));
 document.getElementById('profileGroups').addEventListener('click', e => {
