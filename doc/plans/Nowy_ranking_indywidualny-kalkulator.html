@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ranking indywidualny — kalkulator do proponowanej implementacji gradacji zawodów</title>
+<title>Ranking indywidualny — nowa formuła liczenia punktów i kalkulator implementacji gradacji zawodów</title>
 <style>
 :root{
  --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
@@ -275,7 +275,7 @@ footer{grid-column:2;grid-row:3;margin:40px 0 0;padding-top:16px;border-top:1px 
 
 <div class="hd">
   <div class="eyebrow">SPWS · narzędzie robocze · 12 sierpnia 2026 · wyniki indywidualne</div>
-  <h1>Ranking indywidualny — kalkulator do proponowanej implementacji gradacji zawodów</h1>
+  <h1>Ranking indywidualny — nowa formuła liczenia punktów i kalkulator implementacji gradacji zawodów</h1>
   <p class="dek">Suwak i pola współczynników są aktywne: przestaw je i obserwuj, jak zmieniają się wartości w tabeli.</p>
 </div>
 
@@ -286,9 +286,9 @@ footer{grid-column:2;grid-row:3;margin:40px 0 0;padding-top:16px;border-top:1px 
   <li><a href="#s-po-co">Po co ten dokument</a></li>
   <li><a href="#s-zmiana">Na czym polega testowana zmiana</a></li>
   <li><a href="#s-wsp">Współczynniki rangi zawodów</a></li>
-  <li><a href="#s-tabela">Wartość miejsca według stawki</a></li>
+  <li><a href="#s-tabela">Punkty za miejsce według stawki</a></li>
   <li><a href="#s-sprawdziany">Sprawdziany z preambuły</a></li>
-  <li><a href="#s-sezon">Rzeczywiste dorobki sezonu 2025–2026</a></li>
+  <li><a href="#s-sezon">Przykłady z sezonu 2025–2026</a></li>
   <li><a href="#pelna-formula">Pełna implementacja</a></li>
   <li><a href="#s-bez-zmian">Co pozostaje bez zmian</a></li>
   <li><a href="#s-pula-szpada-veteran">Pula: szpada Veteran V1/V2</a></li>
@@ -344,16 +344,16 @@ footer{grid-column:2;grid-row:3;margin:40px 0 0;padding-top:16px;border-top:1px 
 <section class="ranking-intro" aria-labelledby="s-ranking">
 <h2 id="s-ranking">Ranking indywidualny</h2>
 
-<p class="ranking-lead">Ranking ma obejmować <strong>każdego polskiego weterana</strong>, niezależnie od tego, w jakim obwodzie, klubie lub systemie wynikowym pojawił się jego rezultat.</p>
+<p class="ranking-lead">Ranking obejmuje <strong>każdego polskiego weterana</strong>, niezależnie od tego, w jakim państwie, związku, lub klubie szermierczym uprawia szermierkę i występuje na zawodach.</p>
 
 <div class="scope-grid">
   <article class="scope-card">
     <h3>Pełny zakres zawodników</h3>
-    <p>Warunkiem obecności w rankingu jest polskie uprawnienie do reprezentowania kraju i zweryfikowany wynik sportowy, a nie członkostwo w jednej organizacji ani start w jednym kalendarzu.</p>
+    <p>Warunkiem obecności w rankingu jest uprawnienie do reprezentowania kraju - polskie obywatelstwo oraz weryfikowalny wynik sportowy.</p>
   </article>
   <article class="scope-card">
     <h3>Pełny zakres wyników</h3>
-    <p>Do materiału rankingowego wchodzą wszystkie dostępne wyniki indywidualne: krajowe, europejskie, światowe oraz <strong>seniorskie</strong>. Wynik seniora-weterana nie może znikać tylko dlatego, że został osiągnięty poza obwodem weteranów.</p>
+    <p>Ranking bierze pod uwagę wszystkie dostępne wyniki indywidualne: krajowe, europejskie, światowe oraz <strong>seniorskie</strong> w danym przedziale czasowym.</p>
   </article>
 </div>
 
@@ -361,13 +361,9 @@ footer{grid-column:2;grid-row:3;margin:40px 0 0;padding-top:16px;border-top:1px 
 
 <h2 id="s-po-co">Po co ten dokument</h2>
 
-<p>Ranking będzie oparty na implementacji nieznacznie zmienionej wersji algorytmu EVF/BVF.</p>
+<p>Ranking będzie oparty na zmienionej formule algorytmu EVF/BVF. Zmiana wprowadza pożądaną wrażliwość algorytmu na „liczbę osób w stawce zawodów". Innymi słowy, wprowadzamy dodatkową gradację zawodów, ze względu na liczebność stawki, poprzez silne uzależnienie wywalczonych punktów od liczby zawodników startujących.</p>
 
-<p>Jedna zmiana wprowadza pożądaną wrażliwość algorytmu na liczbę osób w stawce zawodów.</p>
-
-<p>Innymi słowy, tworzymy gradację zawodów poprzez silne uzależnienie liczby wywalczonych punktów od liczby zawodników w stawce.</p>
-
-<p>Współczynnik rangi zawodów pozostaje, lecz proponuje się jego nowe, zwiększone wartości.</p>
+<p>Współczynnik rangi zawodów — który stosujemy np. do odróżnienia MPW od MEW — pozostaje, lecz proponuje się jego nowe, zwiększone wartości.</p>
 
 <h2 id="s-zmiana">Na czym polega testowana zmiana</h2>
 
@@ -403,8 +399,9 @@ w Grecji, gdzie startuje mniej osób niż w krajowym pucharze.</p>
 
 <div class="key-conclusion">
   <span class="lb">Najważniejszy wniosek</span>
-  <p>Aby wykalibrować istniejący algorytm, <b class="k">dodajemy kolejne „pokrętło” do istniejącego już współczynnika rangi. Pozbywamy się stałej 50</b>. <b class="k">Dlaczego jedno „pokrętło” nie wystarczy?</b></p>
-  <p>Współczynnik rangi steruje różnicą <b class="k">między typami</b> zawodów; różnicę <b class="k">wewnątrz typu</b> odzwierciedli dopiero uzależnienie podstawy punktowej za zwycięstwo od liczby startujących.</p>
+  <p>Aby wykalibrować istniejący algorytm, <b class="k">dodajemy kolejne dwa „pokrętła” do istniejącego już współczynnika rangi. Pozbywamy się stałej 50</b>. <b class="k">Dlaczego jeden współczynnik plus bonusy za rundę nie wystarczą?</b></p>
+  <p>Współczynnik rangi steruje różnicą <b class="k">między typami</b> zawodów; różnicę wyników <b class="k">wewnątrz jednego typu</b> należycie odzwierciedli dopiero uzależnienie podstawy punktowej za zwycięstwo od liczby osób startujących.</p>
+  <p>Dodatkowo nowa formuła wchłania bonusy za wygraną rundę. Dlaczego? Gdyż przy stawkach mniej niż ośmiu zawodników to właśnie ten bonus powoduje, że formuła EVF/BVF <b class="k">„się załamuje”</b> — dochodzi w niej do niewspółmiernego naliczania punktów.</p>
   <p>Dlatego zastępujemy stałą 50 <span class="now">funkcją, której wynik jest zależny od liczby startujących</span>:</p>
 </div>
 
@@ -419,22 +416,23 @@ w Grecji, gdzie startuje mniej osób niż w krajowym pucharze.</p>
   <code>p</code> — jak bardzo stawka przestawia rozkład miejsc.<br>
   <code>B</code> — <strong>najmniejsza potęga dwójki mieszcząca całą stawkę</strong>: 4, 8, 16, 32, 64,
   128, 256 i tak dalej. Funkcja liczy się z <code>B</code>, nie z dokładnej frekwencji.<br><br>
-  Ponieważ premia za rundy jest w środku, <strong>pierwsze miejsce jest warte dokładnie tyle, ile daje
-  dziś suma punktów za miejsce i premii za rundy</strong> — zmienia się dopiero rozkład miejsc poniżej.</p>
+  Premia za rundy jest teraz wewnątrz wzoru. Wywalczonych za pierwsze miejsce punktów jest tyle samo,
+  ile daje dziś suma podstawy punktów za miejsce plus premia za wygrane rundy.
+  <strong>Zmieniamy wyłącznie dorobek dla miejsc poniżej pierwszego</strong> i to z różną dynamiką
+  w zależności od liczby zawodników. Obrazuje to wykres poniżej.</p>
 </div>
 
-<p>Ale sama wysokość to za mało. Ta sama podstawa rozdzielona po tabeli może dać zupełnie różne rankingi,
-zależnie od tego, <b class="k">jak szybko wartość spada wraz z miejscem</b>. Piąte miejsce w stawce dwustu
-osób to dobry wynik; piąte miejsce w stawce ośmiu to wynik dramatycznie słaby. Dzisiejszy algorytm nie
-odróżnia tych dwóch sytuacji dostatecznie mocno, bo w każdej stawce traci tyle samo punktów na podwojenie
-miejsca.</p>
+<p>Ta sama podstawa rozdzielona po tabeli może dać zupełnie różne ilości punktów, zależnie od tego,
+<b class="k">jak szybko wartość spada wraz z miejscem</b>. Piąte miejsce w stawce dwustu osób to dobry
+wynik; piąte miejsce w stawce ośmiu to wynik raczej słaby. Dzisiejszy algorytm nie odróżnia tych dwóch
+sytuacji dostatecznie.</p>
 
 <p>Dlatego gradacja ma <b class="k">dwa pokrętła</b>, a każde działa w innym kierunku:</p>
 <ul>
   <li><code>k</code> — <b class="k">w pionie, między zawodami.</b> Każde podwojenie stawki dokłada do
   zwycięstwa <code>2k</code> punktów. Decyduje, jak daleko wygrany puchar krajowy leży od wygranych
   mistrzostw świata. Zakres suwaka: 3–10.</li>
-  <li><code>p</code> — <b class="k">w poziomie, wewnątrz jednych zawodów.</b> Decyduje, jak bardzo
+  <li><code>p</code> — <b class="k">w poziomie, dla danej liczby startujących.</b> Decyduje, jak bardzo
   głębokość stawki przestawia rozkład miejsc: w stawkach głębszych niż 32 czoło tabeli zbija się
   do kupy, a końcówka gaśnie; w stawkach płytszych tabela rozjeżdża się już od drugiego miejsca.
   Zakres suwaka: 1,0–2,0.</li>
@@ -452,7 +450,7 @@ znajdują się w zakotwiczonym panelu pod spisem treści. <a href="#sterowanie">
   propozycją do sprawdzenia, nie ustaleniem: umieszczają starty seniorskie <b class="k">powyżej
   obwodu EVF, a poniżej mistrzostw</b>, zgodnie z kolejnością, którą podałeś.</p>
 
-<h2 id="s-tabela">Wartość miejsca według stawki</h2>
+<h2 id="s-tabela">Ilość punktów za zdobycie poszczególnych miejsc, w zależności od liczby startujących w stawce</h2>
 <div class="tw">
 <table>
 <thead><tr><th>Stawka</th><th>B</th><th>1. miejsce</th><th>2.</th><th>3.</th><th>4.</th><th>8.</th><th>16.</th><th>32.</th><th>64.</th><th>128.</th><th>256.</th></tr></thead>
@@ -486,11 +484,10 @@ i trzy starty w stawce 2–3, w tym dwa z mnożnikiem mistrzostw Polski 1,2) wob
 świata w stawce 200 z mnożnikiem 2,0. Drugi: miejsce ósme w stuosobowym Pucharze Europy wobec
 zwycięstwa nad jednym rywalem w kraju.</p>
 
-<h2 id="s-sezon">Rzeczywiste dorobki sezonu 2025–2026</h2>
+<h2 id="s-sezon">Przykłady z sezonu 2025–2026</h2>
 
-<p>Zamiast kolejnych oderwanych przykładów poniżej znajduje się <b class="k">jeden audyt rzeczywistego
-sezonu</b>. Obejmuje wszystkie zweryfikowane starty indywidualne wskazanych zawodników od
-1 sierpnia 2025 do 11 lipca 2026: krajowe i międzynarodowe zawody weteranów oraz zawody seniorów.</p>
+<p>Poniżej znajduje się audyt z ubiegłego sezonu. Obejmuje on zweryfikowane starty indywidualne
+wybranych zawodników: krajowe, międzynarodowe zawody weteranów oraz zawody seniorów.</p>
 
 <p>Wybierz zawodnika i broń. Jedna wspólna tabela pokaże każdy start, rzeczywistą liczebność stawki,
 zastosowany współczynnik oraz zmianę punktów po poruszeniu suwaka lub współczynników rangi.</p>
