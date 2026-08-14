@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Proponowana metoda selekcji kadry narodowej weteranów</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --violet:#60418f; --violet-soft:#e9e0f4;
+    --teal:#08666b; --teal-soft:#d6eef0;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+      --violet:#c3a8ef; --violet-soft:#281f38;
+      --teal:#7bd5da; --teal-soft:#142b2d;
+    }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:19px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:94rem;margin:0 auto;padding:60px 30px 110px;display:grid;grid-template-columns:minmax(220px,260px) minmax(0,68rem);grid-template-rows:auto auto;column-gap:42px;align-items:start}
+  header{grid-column:2;grid-row:1;min-width:0}
+  .document{grid-column:2;grid-row:2;min-width:0}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.84em;font-weight:650;border:1px solid var(--line)}
+  a{color:var(--accent);text-underline-offset:3px}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:800}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(39px,6vw,62px);line-height:1.04;letter-spacing:-.018em;margin:0 0 22px;text-wrap:balance;max-width:20ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:62ch}
+  .dek b{color:var(--ink)}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:13px;font-weight:700;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.good .dot{background:var(--good)} .pill.warn .dot{background:var(--warn)}
+  .method-map{margin:30px 0 26px;max-width:58rem}
+  .method-goal{display:block;max-width:44rem;margin:0 auto;padding:22px 26px;border-radius:13px;background:linear-gradient(135deg,#163c79,#2563a9);color:#fff;text-decoration:none;text-align:center;box-shadow:0 12px 30px rgba(30,64,175,.22);transition:transform .18s ease,box-shadow .18s ease}
+  .method-goal:hover{color:#fff;transform:translateY(-2px);box-shadow:0 15px 34px rgba(30,64,175,.27)}
+  .method-goal .map-label{color:rgba(255,255,255,.78)}
+  .method-goal strong{display:block;color:#fff;font-family:var(--serif);font-size:28px;line-height:1.17}
+  .method-goal .event{display:block;margin-top:6px;font-size:18px;font-weight:720;line-height:1.3}
+  .map-label{display:block;margin-bottom:8px;font:900 11px/1.2 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--faint)}
+  .method-arrow{height:66px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:52px;line-height:1}
+  .method-frame{border:3px solid var(--accent);border-radius:15px;padding:22px;background:var(--surface-2);box-shadow:0 12px 30px rgba(15,23,42,.07)}
+  .method-frame-title{text-align:center;margin-bottom:18px;font:900 14px/1.35 var(--mono);letter-spacing:.11em;text-transform:uppercase;color:var(--accent)}
+  .map-group-label{text-align:center;margin:0 0 9px;font:900 11px/1.2 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+  .map-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  .map-grid+.map-group-label{margin-top:21px}
+  .map-block{display:flex;align-items:center;justify-content:center;min-height:102px;padding:16px;border:2px solid;border-radius:10px;text-align:center;text-decoration:none;font-weight:850;line-height:1.32;transition:transform .18s ease,box-shadow .18s ease}
+  .map-block:hover{transform:translateY(-2px);box-shadow:0 9px 20px rgba(15,23,42,.10)}
+  .map-ranking{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}
+  .map-team{background:var(--violet-soft);border-color:var(--violet);color:var(--violet)}
+  .map-calendar{min-height:78px;background:var(--good-soft);border-color:var(--good);color:var(--good)}
+  .map-improvement{min-height:78px;background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:58px;scroll-margin-top:18px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:35px;line-height:1.14;letter-spacing:-.014em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:21px;font-weight:850;margin:30px 0 11px;letter-spacing:.003em;color:var(--ink)}
+  h4{font-family:var(--mono);font-size:14px;letter-spacing:.09em;text-transform:uppercase;margin:0 0 8px;color:var(--muted)}
+  p{margin:0 0 16px;max-width:69ch}
+  ul,ol{margin:0 0 18px;padding-left:1.45em;max-width:69ch}
+  li{margin:9px 0} li::marker{color:var(--accent)}
+  strong{font-weight:750;color:var(--ink)}
+  .lead{font-size:21px;color:var(--muted);max-width:66ch}
+  .toc{grid-column:1;grid-row:1 / span 2;position:sticky;top:20px;align-self:start;max-height:calc(100vh - 40px);overflow-y:auto;overscroll-behavior:contain;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:19px 18px;margin:0;scrollbar-width:thin}
+  .toc h2{font:800 13px/1.4 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin:0 0 11px}
+  .toc>ol{margin:0;padding-left:0;font-size:14px;line-height:1.42;list-style:none;counter-reset:tocitem}
+  .toc>ol>li{counter-increment:tocitem}
+  .toc>ol>li>a::before{content:counter(tocitem) ". ";font-family:var(--mono);font-weight:800;color:var(--accent)}
+  .toc>ol>li>a{font-weight:720;color:var(--ink)}
+  .toc .subtoc{margin:7px 0 11px 3px;padding:1px 0 1px 12px;border-left:2px solid var(--line-strong);list-style:none;counter-reset:subitem}
+  .toc .subtoc>li{counter-increment:subitem;margin:6px 0;font-size:13px;line-height:1.38}
+  .toc .subtoc>li>a::before{content:counter(tocitem) "." counter(subitem) " ";font-family:var(--mono);font-weight:800;color:var(--violet)}
+  .toc li{break-inside:avoid;margin:6px 0}
+  .toc a{text-decoration:none;color:var(--muted)} .toc a:hover{color:var(--accent)}
+  .team-subsection{margin-top:44px;padding-left:22px;border-left:3px solid var(--violet);scroll-margin-top:20px}
+  .team-subsection h2{font-size:31px}
+  .team-subsection .kicker{color:var(--violet)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:19px 23px;margin:21px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:850;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:67ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)} .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)} .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)} .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)} .note.accent .lede{color:var(--accent-ink)}
+  .note.violet{border-left-color:var(--violet);background:var(--violet-soft)} .note.violet .lede{color:var(--violet)}
+  .tick{font-family:var(--mono);font-weight:900;font-size:17px}
+
+  .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:22px 0}
+  .cards.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .card{background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--accent);border-radius:11px;padding:20px;min-width:0}
+  .card.danger{border-top-color:var(--danger)} .card.warn{border-top-color:var(--warn)} .card.good{border-top-color:var(--good)} .card.violet{border-top-color:var(--violet)} .card.teal{border-top-color:var(--teal)}
+  .card h3{font-family:var(--serif);font-size:24px;margin:2px 0 9px}
+  .card p,.card li{font-size:16px;line-height:1.52}.card p:last-child{margin-bottom:0}.card ul{margin-bottom:0}
+  .big-no{font-family:var(--mono);font-size:31px;font-weight:900;color:var(--accent);line-height:1;margin-bottom:8px}
+  .support-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0 22px}
+  .support-card{background:var(--surface-2);border:1px solid var(--line);border-left:4px solid var(--line-strong);border-radius:9px;padding:15px 18px;min-width:0}
+  .support-card h3{font-family:var(--serif);font-size:20px;line-height:1.2;margin:0 0 7px;color:var(--muted)}
+  .support-card p{font-size:15px;line-height:1.5;color:var(--muted);margin:0}
+  .ranking-context{max-width:42rem;margin:12px 0 22px;padding:13px 16px;background:var(--surface-2);border-left-color:var(--faint)}
+  .ranking-context h3{font-size:18px}
+  .ranking-context p{font-size:14px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-size:16px;min-width:650px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:800}
+  tbody tr:hover{background:var(--surface-2)}
+  .tag{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:850;letter-spacing:.025em;padding:3px 8px;border-radius:5px;white-space:nowrap}
+  .tag.good{color:var(--good);background:var(--good-soft)} .tag.warn{color:var(--warn);background:var(--warn-soft)} .tag.bad{color:var(--danger);background:var(--danger-soft)} .tag.info{color:var(--accent);background:var(--accent-soft)}
+
+  .flow{display:grid;grid-template-columns:1fr 46px 1fr 46px 1fr;align-items:stretch;margin:26px 0}
+  .flow-node{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px;display:flex;flex-direction:column;justify-content:flex-start}
+  .flow-node.one{border-top:6px solid var(--accent)} .flow-node.two{border-top:6px solid var(--violet)} .flow-node.three{border-top:6px solid var(--good)}
+  .flow-node .num{font:900 13px/1 var(--mono);letter-spacing:.13em;color:var(--faint);text-transform:uppercase;margin-bottom:10px}
+  .flow-node strong{font-family:var(--serif);font-size:23px;line-height:1.15;margin-bottom:9px}
+  .flow-node p{font-size:15px;line-height:1.48;margin:0;color:var(--muted)}
+  .arrow{display:flex;align-items:center;justify-content:center;font-size:30px;color:var(--faint)}
+
+  .search-space{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px;margin:22px 0}
+  .search-step{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:18px 19px;text-align:center}
+  .search-step .metric{font:900 clamp(28px,4vw,42px)/1 var(--mono);color:var(--accent);display:block;margin-bottom:9px}
+  .search-step:nth-child(2) .metric{color:var(--violet)} .search-step:nth-child(3) .metric{color:var(--good)}
+  .search-step p{font-size:15px;line-height:1.45;margin:0 auto;color:var(--muted)}
+
+  .ladder{counter-reset:rank;list-style:none;padding:0;margin:24px 0;max-width:none}
+  .ladder li{counter-increment:rank;display:grid;grid-template-columns:42px minmax(165px,.8fr) 2fr;gap:13px;align-items:start;background:var(--surface);border:1px solid var(--line);border-bottom:0;padding:13px 16px;margin:0}
+  .ladder li:first-child{border-radius:10px 10px 0 0}.ladder li:last-child{border-bottom:1px solid var(--line);border-radius:0 0 10px 10px}
+  .ladder li::before{content:counter(rank);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--accent);color:white;font:850 14px/1 var(--mono)}
+  .ladder .name{font-weight:800}.ladder .why{font-size:15px;color:var(--muted)}
+
+  .role-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:22px 0}
+  .role{border-radius:11px;padding:19px;border:1px solid var(--line);background:var(--surface)}
+  .role.r1{border-top:5px solid var(--teal)} .role.r2{border-top:5px solid var(--accent)} .role.r3{border-top:5px solid var(--violet)}
+  .role h3{font-family:var(--serif);font-size:24px;margin:0 0 7px}.role p{font-size:15px;line-height:1.48;margin:0;color:var(--muted)}
+
+  .matrix td:first-child{font-weight:750}.matrix .p{background:var(--good-soft)}.matrix .n{background:var(--danger-soft)}.matrix .m{background:var(--warn-soft)}
+
+  .timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:28px 0 20px;position:relative}
+  .timeline:before{content:"";position:absolute;left:8%;right:8%;top:25px;height:4px;background:var(--line-strong);z-index:0}
+  .moment{position:relative;z-index:1;text-align:center;padding:0 9px}
+  .moment .dot{width:52px;height:52px;border-radius:50%;margin:0 auto 11px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:white;border:5px solid var(--bg);font:900 13px/1 var(--mono)}
+  .moment:nth-child(2) .dot{background:var(--violet)}.moment:nth-child(3) .dot{background:var(--good)}.moment:nth-child(4) .dot{background:var(--warn)}
+  .moment strong{display:block;font-size:16px;margin-bottom:5px}.moment p{font-size:13px;line-height:1.4;color:var(--muted);margin:0 auto;max-width:20ch}
+
+  .output{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:20px 0}
+  .slot{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:14px;text-align:center}
+  .slot strong{display:block;font-family:var(--serif);font-size:20px}.slot span{font-size:12px;color:var(--muted);font-family:var(--mono)}
+  .slot.core{background:var(--accent-soft);border-color:var(--accent)}.slot.sub{background:var(--violet-soft);border-color:var(--violet)}.slot.ext{background:var(--warn-soft);border-color:var(--warn)}.slot.out{background:var(--surface-2)}
+
+  .foot{margin-top:64px;padding-top:24px;border-top:2px solid var(--line);font-size:14px;color:var(--faint);font-family:var(--mono)}
+  @media(max-width:1180px){
+    .wrap{display:block;max-width:68rem;padding:60px 30px 110px}
+    .toc{position:static;max-height:none;overflow:visible;margin:34px 0 0;padding:22px 25px}
+    .toc>ol{font-size:16px}
+    .toc .subtoc>li{font-size:14px}
+    .document{min-width:0}
+  }
+  @media(max-width:820px){
+    .cards,.cards.three,.role-grid,.support-cards{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.arrow{transform:rotate(90deg);height:42px}.map-grid{grid-template-columns:1fr}.map-block{min-height:82px}.search-space{grid-template-columns:1fr}.timeline{grid-template-columns:1fr;gap:18px}.timeline:before{display:none}.moment{text-align:left;display:grid;grid-template-columns:62px 1fr;column-gap:8px}.moment .dot{grid-row:1/3;margin:0}.moment p{max-width:none;margin:0}.output{grid-template-columns:1fr 1fr}.toc{columns:1}.ladder li{grid-template-columns:36px 1fr}.ladder .why{grid-column:2}}
+  @media(max-width:520px){body{font-size:17px}.wrap{padding:38px 18px 80px}.output{grid-template-columns:1fr}h2{font-size:30px}}
+  @media print{body{background:white;color:#111;font-size:12pt}.wrap{display:block;max-width:none;padding:0}.toc{position:static;max-height:none;overflow:visible;columns:2;margin:24px 0}.card,.note,.flow-node,.role,.search-step,.slot{break-inside:avoid}.timeline{break-inside:avoid}a{color:#111}.rule{margin:28px 0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">SPWS · projekt metody · 13 sierpnia 2026</p>
+    <h1>Proponowana metoda selekcji kadry narodowej weteranów</h1>
+    <div class="method-map" aria-label="Schemat metody wyłaniania reprezentacji Polski weteranów">
+      <a class="method-goal" href="#cel">
+        <span class="map-label">Cel</span>
+        <strong>Najsilniejsza reprezentacja Polski</strong>
+        <span class="event">na Drużynowe Mistrzostwa Świata Weteranów</span>
+      </a>
+      <div class="method-arrow" aria-hidden="true">↑</div>
+      <div class="method-frame">
+        <div class="method-frame-title">Metoda wyłaniania reprezentacji Polski weteranów</div>
+        <div class="map-group-label">Dwie główne składowe</div>
+        <div class="map-grid">
+          <a class="map-block map-ranking" href="#ranking">Ranking indywidualny</a>
+          <a class="map-block map-team" href="#algorytm">Algorytm doboru składu drużyny</a>
+        </div>
+        <div class="map-group-label">Dwa elementy wspierające</div>
+        <div class="map-grid">
+          <a class="map-block map-calendar" href="#kalendarz">Terminarz wyłaniania reprezentacji weteranów</a>
+          <a class="map-block map-improvement" href="#doskonalenie">Cykliczna implementacja usprawnień — doskonalenie ciągłe</a>
+        </div>
+      </div>
+    </div>
+    <div class="meta">
+      <span class="pill good"><span class="dot"></span>Projekt uzgodniony w sesji roboczej</span>
+      <span class="pill"><span class="dot"></span>Dokument opisowy — bez danych osobowych</span>
+      <span class="pill warn"><span class="dot"></span>Testy metody powstaną osobno</span>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="Spis treści">
+    <h2>Spis treści</h2>
+    <ol>
+      <li><a href="#cel">Cel i punkt wyjścia</a>
+        <ol class="subtoc">
+          <li><a href="#dowod">Zarzuty wobec wyniku działania obecnej metody wyłaniania kadry</a></li>
+          <li><a href="#diagnoza">Dlaczego obecna metoda działa źle?</a></li>
+          <li><a href="#architektura">Składowe i elementy wspierające metody</a></li>
+        </ol>
+      </li>
+      <li><a href="#ranking">Ranking indywidualny</a></li>
+      <li><a href="#algorytm">Algorytm doboru składu drużyny</a>
+        <ol class="subtoc">
+          <li><a href="#dowody">Jakie dane brane są pod uwagę przy ustalaniu składu drużyny</a></li>
+          <li><a href="#role">Ocena roli zawodnika w meczu drużynowym</a></li>
+          <li><a href="#optymalizacja">Porządek porównania składów</a></li>
+          <li><a href="#wynik">Wynik i odpowiedzialność</a></li>
+        </ol>
+      </li>
+      <li><a href="#kalendarz">Terminarz wyłaniania reprezentacji weteranów</a></li>
+      <li><a href="#doskonalenie">Cykliczne doskonalenie metody</a></li>
+      <li><a href="#granice">Granice i dalsze prace</a></li>
+    </ol>
+  </nav>
+
+  <main class="document">
+  <hr class="rule">
+
+  <section id="cel">
+    <p class="kicker">01 · Cel</p>
+    <h2>Metoda ma wyłonić najsilniejszą reprezentację kraju</h2>
+    <p class="lead">To jest jej podstawowe i nadrzędne zadanie — zarówno w indywidualnych startach mistrzowskich, jak i w składach na Drużynowe Mistrzostwa Europy Weteranów (DMEW) oraz drużynowe Mistrzostwa Świata Weteranów (MŚW). Prostota obliczeń, frekwencja krajowa, łatwość administrowania oraz nagradzanie aktywności mogą być wartościowe, ale nie mogą zastąpić oceny zdolności do wygrywania dla Polski.</p>
+    <div class="note accent">
+      <p class="lede"><span class="tick">→</span> Zasada nadrzędna</p>
+      <p>Powołanie do reprezentacji jest <strong>zadaniem sportowym do wykonania</strong>, a nie wyróżnieniem za liczbę startów. Ranking indywidualny i dobór drużyny odpowiadają na różne pytania, lecz są dwiema częściami tej samej metody selekcji.</p>
+    </div>
+    <p>Pełny materiał dowodowy, który wykazuje, że obecny sposób selekcji nie osiągnął tego celu, znajduje się w dokumencie <a href="../external_files/National_Team_Selection/01-metoda/PREAMBLE-new-ranking-method-2026-08-12.html">„Obecna metoda nie osiąga wyznaczonego celu — nie wyłania najsilniejszej kadry narodowej”</a>. Niniejszy dokument przyjmuje ten wniosek jako punkt wyjścia, następnie diagnozuje przyczyny i opisuje rozwiązanie.</p>
+  </section>
+
+  <section id="dowod">
+    <p class="kicker">01.1 · Zarzuty wobec wyniku działania obecnej metody wyłaniania kadry</p>
+    <h2>Trzy bronie, trzy niezależne przykłady niedociągnięć</h2>
+    <div class="cards three">
+      <article class="card danger">
+        <div class="big-no">01</div>
+        <h3>Floret</h3>
+        <p>Aktualna drużyna mistrzów Europy znalazła się poza składem na kolejną imprezę. Metoda nie rozpoznała podstawowego składu ani zawodnika kończącego, który odrobił stratę w dziewiątej walce finału, zdobywając złoto dla Polski.</p>
+      </article>
+      <article class="card danger">
+        <div class="big-no">02</div>
+        <h3>Szabla</h3>
+        <p>Dwukrotny medalista drużynowych mistrzostw świata i zawodnik kończący mecze o najwyższą stawkę znalazł się poza składem drużyny.</p>
+      </article>
+      <article class="card danger">
+        <div class="big-no">03</div>
+        <h3>Szpada</h3>
+        <p>Aktualny mistrz świata i lider rankingu europejskiego został nominowany do drużyny jako ostatni.</p>
+      </article>
+    </div>
+    <div class="note danger">
+      <p class="lede"><span class="tick">!</span> Wspólny problem konstrukcyjny</p>
+      <p>Przykłady niedociągnięć dotyczą różnych broni, różnych drużyn oraz różnych rodzajów zaniechań: nieuwzględnienia sukcesu całej drużyny, pominięcia doświadczenia w walkach kończących oraz pominięcia indywidualnych sukcesów przekładających się na dorobek drużynowy. Liczba niedociągnięć wskazuje na wadę konstrukcji metody, stąd podjęcie próby jej naprawy.</p>
+    </div>
+  </section>
+
+  <section id="diagnoza">
+    <p class="kicker">01.2 · Diagnoza</p>
+    <h2>Dlaczego obecna metoda działa źle?</h2>
+    <div class="cards three">
+      <article class="card danger">
+        <h3>1. Nie uwzględnia gradacji zawodów</h3>
+        <p>Wynik z płytkiej stawki może uzyskać wartość zbliżoną do wyniku osiągniętego przeciw znacznie liczniejszej i mocniejszej obsadzie. Suma wielu łatwiejszych startów może przesłonić jedno osiągnięcie najwyższej rangi.</p>
+      </article>
+      <article class="card warn">
+        <h3>2. Nie bierze pod uwagę startów w zawodach seniorów</h3>
+        <p>Polski weteran skutecznie rywalizujący w otwartej kategorii seniorów może pozostać niewidoczny. Metoda pomija miarodajne wyniki z trudniejszej, liczniejszej i wiekowo otwartej rywalizacji.</p>
+      </article>
+      <article class="card violet">
+        <h3>3. Pomija starty w zawodach drużynowych</h3>
+        <p>Dostępne wyniki meczów drużynowych są źródłem cennych informacji: wyniku walki otwierającej, stanu meczu przekazanego z walki 7 do walki 8, wyniku przy wyjściu do walki 9 i jej ostatecznego skutku oraz skuteczności wejścia z rezerwy. Ujmując rzecz ogólniej, dane te mogą wskazywać, jak zawodnik radzi sobie pod presją wyniku w trudnym meczu drużynowym.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="architektura">
+    <p class="kicker">01.3 · Jak to poprawić?</p>
+    <h2>Nowa metoda wyłaniania — dwie główne składowe i dwa elementy wspierające</h2>
+    <div class="cards">
+      <article class="card good">
+        <h3>Ranking indywidualny</h3>
+        <p>Obejmuje każdego polskiego weterana z uwzględnieniem wszystkich dostępnych wyników indywidualnych — włącznie z zawodami seniorów. Wyłania pierwszą czwórkę każdej kategorii wiekowej.</p>
+      </article>
+      <article class="card violet">
+        <h3>Algorytm doboru składu drużyny</h3>
+        <p>Łączy czwórki z dwóch kategorii w pulę ośmiu kandydatów. Z tej puli wybiera pięciu, sugeruje role i wskazuje zawodników rezerwowych.</p>
+      </article>
+    </div>
+    <div class="support-cards">
+      <article class="support-card">
+        <h3>Terminarz wyłaniania reprezentacji weteranów</h3>
+        <p>Wprowadza grafik ogłaszania nominacji, daje czas na podjęcie decyzji o starcie oraz sugeruje utrzymanie rezerwowych w gotowości do momentu wyjazdu.</p>
+      </article>
+      <article class="support-card">
+        <h3>Cykliczna implementacja usprawnień</h3>
+        <p>Po każdej dużej imprezie uruchamia retrospektywę działania metody i pozwala wdrażać uzasadnione usprawnienia przed kolejnym cyklem selekcyjnym.</p>
+      </article>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Różnica między rankingiem a drużyną</p>
+      <p>Pozycja w rankingu jest dowodem aktualnej formy indywidualnej, lecz <strong>nie gwarantuje miejsca w pięcioosobowej drużynie</strong>. Skład drużyny proponuje osobny algorytm, ponieważ drużyna wymaga uwzględnienia wymogów regulaminu, indywidualnych kompetencji oraz konfiguracji możliwych ról w składzie drużyny.</p>
+    </div>
+  </section>
+
+  <section id="ranking">
+    <p class="kicker">02 · Część pierwsza</p>
+    <h2>Ranking indywidualny</h2>
+    <p class="lead">Ranking ma obejmować <strong>każdego polskiego weterana</strong>, niezależnie od tego, w jakim obwodzie, klubie lub systemie wynikowym pojawił się jego rezultat.</p>
+    <div class="cards">
+      <article class="card good">
+        <h3>Pełny zakres zawodników</h3>
+        <p>Warunkiem obecności w rankingu jest polskie uprawnienie do reprezentowania kraju i zweryfikowany wynik sportowy, a nie członkostwo w jednej organizacji ani start w jednym kalendarzu.</p>
+      </article>
+      <article class="card good">
+        <h3>Pełny zakres wyników</h3>
+        <p>Do materiału rankingowego wchodzą wszystkie dostępne wyniki indywidualne: krajowe, europejskie, światowe oraz <strong>seniorskie</strong>. Wynik seniora-weterana nie może znikać tylko dlatego, że został osiągnięty poza obwodem weteranów.</p>
+      </article>
+    </div>
+    <h3>Co ranking rozstrzyga</h3>
+    <ul>
+      <li>Wyłania czterech zawodników do startów indywidualnych w każdej kategorii weteranów.</li>
+      <li>Dostarcza obiektywnego obrazu aktualnej siły indywidualnej.</li>
+      <li>Tworzy pulę drużynową: po czterech zawodników z dwóch kategorii tworzących daną drużynę, czyli razem osiem osób.</li>
+      <li>Nie rozstrzyga, kto ma walczyć w drużynie ani kto ma objąć walki 7, 8 i 9.</li>
+    </ul>
+    <div class="note accent">
+      <p class="lede"><span class="tick">ƒ</span> Gradacja i matematyka</p>
+      <p>Szczegółową propozycję uzależnienia wartości wyniku od rangi zawodów i głębokości stawki przedstawia <a href="Nowy_ranking_indywidualny-kalkulator.html">interaktywny kalkulator nowego rankingu indywidualnego</a>. Kalkulator pozwala zmieniać parametry i natychmiast obserwować ich wpływ na realne profile wyników. Niniejszy dokument określa rolę rankingu w całej metodzie; szczegółowa kalibracja współczynników pozostaje odpowiedzialnością części rankingowej.</p>
+    </div>
+  </section>
+
+  <section id="algorytm">
+    <p class="kicker">03 · Część druga</p>
+    <h2>Algorytm doboru składu drużyny</h2>
+    <p class="lead">Ta część metody wybiera z ośmiu kandydatów — po czterech z każdej kategorii wiekowej — pięcioosobowy skład na DMEW lub drużynowe MŚW. Wskazuje również sugerowaną podstawową trójkę, role w walkach 7, 8 i 9, dwóch zmienników startujących w imprezie oraz maksymalnie dwóch zawodników rezerwowych. Preferowana jest nominacja po jednym rezerwowym z każdej kategorii wiekowej; jeżeli nie jest to możliwe, obaj mogą pochodzić z tej samej kategorii.</p>
+    <h3>Jak dokonywany jest wybór</h3>
+    <p>Do przeprowadzenia nominacji służy przejrzysta optymalizacja ograniczona. Algorytm nie próbuje przewidywać wyniku meczu za pomocą nieprzejrzystego modelu. Przegląda wszystkie dopuszczalne składy i role, odrzuca konfiguracje niezgodne z regulaminem, a pozostałe porównuje według jawnej hierarchii sportowej.</p>
+    <div class="search-space" aria-label="Przestrzeń przeszukiwania algorytmu">
+      <article class="search-step">
+        <span class="metric">8</span>
+        <p>kandydatów: po czterech z dwóch rankingów indywidualnych</p>
+      </article>
+      <article class="search-step">
+        <span class="metric">56</span>
+        <p>możliwych pięcioosobowych składów: wszystkie kombinacje, bez zgadywania</p>
+      </article>
+      <article class="search-step">
+        <span class="metric">3360</span>
+        <p>konfiguracji po przypisaniu walk 7, 8 i 9; pozostała dwójka pełni role zmienników</p>
+      </article>
+    </div>
+    <p>Tak mała przestrzeń pozwala ocenić każdą możliwość. Nie trzeba stosować heurystyki, która mogłaby pominąć lepszy skład. Dla każdej konfiguracji algorytm zapisuje: zgodność z regulaminem, źródła dowodu, role, ryzyka, braki danych i wynik porównania.</p>
+
+    <h3>Krok 1 — sprawdzenie dostępności i zgodności nominacji z regulaminem</h3>
+    <p>Zanim metoda zacznie porównywać siłę sportową możliwych składów, ustala, <strong>kto rzeczywiście może zostać powołany</strong> oraz <strong>które ustawienia drużyny są zgodne z regulaminem</strong>. Przez „ustawienie” rozumie się tutaj konkretną piątkę zawodników, wskazaną podstawową trójkę i możliwe użycie dwóch zmienników podczas meczu.</p>
+    <p>Na tym etapie nie przyznaje się jeszcze punktów i nie ocenia, który skład jest mocniejszy. Najpierw usuwa się z analizy osoby niedostępne oraz warianty, których nie można zastosować zgodnie z regulaminem zawodów.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Co sprawdzamy</th><th>Zasada</th><th>Co robi metoda</th></tr></thead>
+        <tbody>
+          <tr><td>Gotowość zawodnika</td><td>Zawodnik potwierdził, że chce wystąpić w drużynie i może przygotować się do wskazanej imprezy.</td><td>Jeżeli nie potwierdzi udziału, nie jest brany pod uwagę przy wyborze piątki na tę imprezę.</td></tr>
+          <tr><td>Skład podstawowej trójki</td><td>W każdej proponowanej trójce walczącej musi znajdować się co najmniej jeden zawodnik ze starszej z dwóch połączonych kategorii wiekowych.</td><td>Ustawienie niespełniające tego wymogu nie może zostać zarekomendowane.</td></tr>
+          <tr><td>Możliwość dokonania zmian</td><td>Plan użycia dwóch zawodników pozostających poza podstawową trójką musi respektować limit zmian i zakaz powrotu zmienionego zawodnika, z wyjątkiem przewidzianym przez regulamin ze względów medycznych.</td><td>Niezgodny z regulaminem wariant zmiany jest usuwany. Algorytm może nadal rozważać tę samą piątkę w innym ustawieniu zgodnym z regulaminem.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">↻</span> Wymóg powtarzalności dotyczy całej metody</p>
+      <p>Powtarzalność nie jest warunkiem dopuszczenia zawodnika ani składu. Jest warunkiem wiarygodności procedury: te same dane, przepisy i zasady porównania muszą prowadzić do tej samej rekomendacji i tego samego uzasadnienia.</p>
+    </div>
+
+    <h3>Preferowana, ale nie obowiązkowa głębokość kategorii</h3>
+    <div class="note warn">
+      <p class="lede"><span class="tick">2+</span> Dwóch zawodników z wyższej kategorii zwiększa odporność składu</p>
+      <p>To konfiguracja preferowana, ponieważ pozwala odpocząć lub zastąpić jednego z nich bez naruszenia zgodności trójki z regulaminem. Nie jest jednak bezwzględnym wymogiem. Skład <code>4 + 1</code> pozostaje dopuszczalny, gdy brakuje odpowiednio silnych i chętnych zawodników wyższej kategorii albo gdy czterech wyjątkowo mocnych zawodników niższej kategorii daje wyraźną przewagę sportową.</p>
+      <p>W takim przypadku raport musi pokazać ryzyko: jedyny zawodnik wyższej kategorii staje się elementem, którego nie można normalnie odciążyć w walczącej trójce.</p>
+    </div>
+  </section>
+
+  <section id="dowody" class="team-subsection">
+    <p class="kicker">03.1 · Jakie dane brane są pod uwagę przy ustalaniu składu drużyny</p>
+    <h2>Drużynowe wyniki weteranów i seniorów. Wyjątek dla wybitnych seniorów.</h2>
+    <h3>Podstawowe okno czasowe</h3>
+    <p>Algorytm otrzymuje wszystkie dostępne, zweryfikowane wyniki drużynowe weteranów z <strong>trzech lat poprzedzających datę T-90</strong> oraz wyniki drużynowe seniorów z <strong>dwóch lat poprzedzających tę datę</strong>. W praktyce część seniorska obejmuje dwa ostatnie rozegrane turnieje drużynowe Mistrzostw Polski Seniorów (MPS). Walki w drużynie seniorów są oceniane według tych samych reguł ról co walki weteranów.</p>
+    <div class="cards">
+      <article class="card good">
+        <h3>Weterani · 3 lata</h3>
+        <p>Pełny zapis walk drużynowych: rola, stan meczu, wynik walki, wynik meczu, faza i wejście z rezerwy.</p>
+      </article>
+      <article class="card teal">
+        <h3>Seniorzy · 2 lata</h3>
+        <p>Dwa ostatnie rozegrane turnieje drużynowe Mistrzostw Polski Seniorów (MPS), oceniane według tego samego schematu ról. Rywalizacja otwarta wiekowo jest mocnym dowodem aktualnej formy oraz przydatności do walki w drużynie.</p>
+      </article>
+    </div>
+    <aside class="support-card ranking-context">
+      <h3>Ranking indywidualny</h3>
+      <p>Pozycja w rankingu indywidualnym oraz karta zawodnika pozostają miarą aktualnej formy zawodnika, lecz nie uprawniają automatycznie do startu w drużynie.</p>
+    </aside>
+
+    <h3>Dozwolony wyjątek. Wybitna kariera seniorska.</h3>
+    <p>Nowy zawodnik V1 może nie mieć żadnego wyniku <strong>drużynowego</strong> z ostatnich trzech lat, a jednocześnie posiadać klasę potwierdzoną na najwyższym poziomie seniorskim w przeszłości. Metoda nie może takiego dorobku ignorować. Musimy zdefiniować wyjątek precyzyjnie, aby nie dochodziło do nadużyć.</p>
+    <div class="note violet">
+      <p class="lede"><span class="tick">★</span> Definicja wybitnego doświadczenia</p>
+      <p>Wybitnym doświadczeniem jest <strong>medal igrzysk olimpijskich, mistrzostw świata lub mistrzostw Europy seniorów</strong> — indywidualny lub drużynowy. Sam udział w reprezentacji, igrzyskach lub mistrzostwach bez medalu nie spełnia tej definicji i podlega zwykłym zasadom.</p>
+    </div>
+    <ul>
+      <li>Medal trwale potwierdza klasę i doświadczenie przy presji w zawodach najwyższej rangi.</li>
+      <li>Nie potwierdza aktualnej gotowości fizycznej; tę musi wykazać niedawny wynik indywidualny weteranów albo seniorów.</li>
+      <li>Nie stanowi automatycznego dowodu gotowości do walk 7–9 w obecnej drużynie weteranów.</li>
+      <li>Zawodnik bez zapisu drużynowego może wejść do podstawowej trójki albo zostać zmiennikiem, lecz jego zdolność pełnienia konkretnej roli pozostaje oznaczona jako <strong>nieznana</strong>.</li>
+    </ul>
+
+    <h3>Brak danych nie jest wynikiem zerowym</h3>
+    <div class="note accent">
+      <p class="lede"><span class="tick">?</span> „Nie wiemy” jest prawidłowym wynikiem</p>
+      <p>Świetny wynik indywidualny nie dowodzi odporności w walce 9. Brak doświadczenia drużynowego nie dowodzi słabości. Algorytm może rekomendować zawodnika mimo niepewności, ale musi ją nazwać i nie może przypisać mu kompetencji, której dane nie potwierdzają.</p>
+    </div>
+
+    <h3>Kiedy medal drużyny weteranów staje się wynikiem przypisanym zawodnikowi?</h3>
+    <p>Medal drużynowy odzwierciedla rangę imprezy. Indywidualne zasługi za wynik drużynowy otrzymuje się jednak <strong>wyłącznie za walki faktycznie stoczone</strong>. Niewykorzystany członek pięcioosobowego składu nie otrzymuje dorobku punktowego tak jak zawodnicy, którzy wywalczyli wynik na planszy.</p>
+  </section>
+
+  <section id="role" class="team-subsection">
+    <p class="kicker">03.2 · Ocena roli zawodnika w meczu drużynowym</p>
+    <h2>Podział meczu drużyny na etapy i premiowanie wyników poszczególnych walk</h2>
+    <div class="role-grid">
+      <article class="role r1">
+        <h3>Otwarcie · walka 1</h3>
+        <p>Ma nadać taktyczny kierunek. Objęcie prowadzenia jest najmocniejszym sukcesem; oddanie wyniku remisowego również realizuje zadanie, lecz słabiej. Deficyt jest dowodem negatywnym.</p>
+      </article>
+      <article class="role r2">
+        <h3>Rdzeń · walki 2–6</h3>
+        <p>Ocena zmiany pozycji drużyny: powiększenie przewagi, zmniejszenie straty, utrzymanie kontroli, utrata części pozycji albo odwrócenie prowadzenia na niekorzyść.</p>
+      </article>
+      <article class="role r3">
+        <h3>Zamknięcie · walki 7–9</h3>
+        <p>Walka 7 przekazuje pozycję walce 8; walka 8 — kończącemu; walka 9 ma wygrać mecz. Znaczenie rośnie wraz z malejącą liczbą możliwości naprawy.</p>
+      </article>
+    </div>
+
+    <h3>Walka 1 — Zadanie szermierza otwierającego mecz</h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Stan po walce 1</th><th>Ocena</th><th>Znaczenie</th></tr></thead>
+        <tbody>
+          <tr><td>Prowadzenie</td><td><span class="tag good">najmocniejszy bonus</span></td><td>Drużyna zyskuje inicjatywę i swobodę taktyczną.</td></tr>
+          <tr><td>Remis</td><td><span class="tag good">sukces</span></td><td>Pozycja wyjściowa zostaje obroniona; taktyka nie musi gonić wyniku.</td></tr>
+          <tr><td>Deficyt</td><td><span class="tag bad">dowód negatywny</span></td><td>Pozostała część drużyny od początku przejmuje obowiązek odrabiania.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Walki 7 i 8 — jakość przekazanej pozycji</h3>
+    <p>Obie walki są oceniane tą samą logiką zmiany wyniku, ale mają różny poziom odpowiedzialności. Po walce 7 pozostają dwie możliwości naprawy; po walce 8 tylko jedna. Nie stosuje się arbitralnego przelicznika typu „walka 7 jest warta 70% walki 8”. Zapisuje się poziom dźwigni oraz faktyczny skutek.</p>
+    <ul>
+      <li>utworzenie lub powiększenie przewagi — dowód pozytywny;</li>
+      <li>zmniejszenie deficytu — dowód pozytywny;</li>
+      <li>utrzymanie korzystnej pozycji — neutralny do pozytywnego;</li>
+      <li>utrata części pozycji bez oddania kontroli — ostrzeżenie;</li>
+      <li>zamiana prowadzenia w deficyt — mocny dowód negatywny.</li>
+    </ul>
+    <p>Jeżeli walka 8 przekazała kończącemu prowadzenie, a walka 9 później przegrała mecz, sukces walki 8 pozostaje sukcesem. Późniejsze zdarzenie nie usuwa poprawnie wykonanego zadania.</p>
+
+    <h3>Walka 9 — macierz zamknięcia meczu</h3>
+    <div class="tablewrap matrix">
+      <table>
+        <thead><tr><th>Stan na wejściu</th><th>Wynik drużyny</th><th>Ocena kończącego</th><th>Interpretacja</th></tr></thead>
+        <tbody>
+          <tr class="p"><td>Deficyt</td><td>Wygrana</td><td><strong>udany powrót</strong></td><td>Najmocniejszy dowód umiejętności kończenia: odrobienie straty i wygranie meczu.</td></tr>
+          <tr class="p"><td>Remis lub prowadzenie</td><td>Wygrana</td><td><strong>udane zamknięcie</strong></td><td>Zadanie wykonane. Nie ma kary za przegraną własnej walki ani za końcową przewagę jednego trafienia — liczy się wygrany mecz.</td></tr>
+          <tr class="m"><td>Deficyt</td><td>Przegrana, mimo wygrania własnej walki</td><td><strong>nieudane zamknięcie z kontekstem łagodzącym</strong></td><td>Zawodnik zmniejszył stratę, ale nie zamknął różnicy. Brak bonusu; wynik pozostaje negatywny.</td></tr>
+          <tr class="n"><td>Deficyt</td><td>Przegrana</td><td><strong>nieudana próba powrotu</strong></td><td>Dowód negatywny, ale słabszy niż utrata prowadzenia.</td></tr>
+          <tr class="n"><td>Remis</td><td>Przegrana</td><td><strong>nieudane rozstrzygnięcie</strong></td><td>Mocny dowód negatywny.</td></tr>
+          <tr class="n"><td>Prowadzenie</td><td>Przegrana</td><td><strong>utrata meczu z prowadzenia</strong></td><td>Najmocniejszy dowód negatywny dla roli kończącego.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Wejście z rezerwy</h3>
+    <p>Walka stoczona po zmianie jest oceniana według zwykłej reguły swojej pozycji. Dodatkowo otrzymuje osobny znacznik <strong>skutecznego wejścia z rezerwy</strong>, jeżeli zawodnik poprawnie wykonał zadanie po wejściu w trakcie meczu. Znacznik uznaje trudność wejścia bez rytmu startowego, ale nie liczy tych samych trafień po raz drugi.</p>
+
+    <h3>Dwa niezależne znaczniki kontekstu</h3>
+    <div class="cards">
+      <article class="card danger">
+        <h3>Presja fazy</h3>
+        <p>Półfinał, mecz o brąz i finał otrzymują znacznik najwyższej presji. Wcześniejsza runda i faza grupowa pozostają rozróżnione.</p>
+      </article>
+      <article class="card warn">
+        <h3>Najtrudniejszy rywal</h3>
+        <p>Francja i Włochy otrzymują znacznik najsilniejszego przeciwnika we wszystkich broniach, płciach i połączeniach kategorii. Jest to jawne uproszczenie domenowe, a nie wynik pozornego rankingu drużyn.</p>
+      </article>
+    </div>
+    <p>Znaczniki mogą wystąpić razem: finał przeciw Francji niesie zarówno najwyższą presję, jak i najsilniejszego rywala. Wzmacniają wagę dowodu, ale nigdy nie zmieniają wyniku, który faktycznie wydarzył się na planszy.</p>
+  </section>
+
+  <section id="optymalizacja" class="team-subsection">
+    <p class="kicker">03.3 · Porządek porównania składów</p>
+    <h2>Porządek leksykograficzny zamiast jednej nieprzejrzystej liczby</h2>
+    <p>Algorytm nie sumuje wszystkiego do jednego wyniku. Najpierw porównuje skład w najważniejszym wymiarze; dopiero gdy konfiguracje pozostają porównywalne, przechodzi do następnego. Dzięki temu kilka łatwych zalet nie może „zrównoważyć” naruszenia zgodności z regulaminem ani braku jednej z kluczowych ról.</p>
+    <ol class="ladder">
+      <li><span class="name">Dostępność</span><span class="why">Czy pięciu zawodników rzeczywiście chce i może przygotować się do drużyny.</span></li>
+      <li><span class="name">Zgodność z regulaminem</span><span class="why">Czy trójka i możliwe użycie zmienników spełniają przepisy kategorii oraz zmian.</span></li>
+      <li><span class="name">Siła podstawowej trójki</span><span class="why">Aktualna siła indywidualna połączona z udokumentowanym dowodem wykonywania zadań drużynowych pod presją w przeszłości.</span></li>
+      <li><span class="name">Pokrycie walk 1, 7, 8 i 9</span><span class="why">Czy skład ma wiarygodnego otwierającego i pełną kolejkę zamykającą, a nie tylko jednego wyróżniającego się zawodnika.</span></li>
+      <li><span class="name">Rdzeń walk 2–6</span><span class="why">Czy podstawowa trójka systematycznie buduje, odzyskuje albo utrzymuje korzystną pozycję.</span></li>
+      <li><span class="name">Zmiennicy w pięcioosobowym składzie</span><span class="why">Aktualna forma, skuteczne wejścia z rezerwy i zdolność odciążenia podstawowej trójki w ciągu dnia.</span></li>
+      <li><span class="name">Głębokość starszej kategorii</span><span class="why">Preferencja co najmniej dwóch zawodników wyższej kategorii; jawne ryzyko przy konfiguracji 4 + 1.</span></li>
+      <li><span class="name">Niepewność</span><span class="why">Ile kluczowych ról opiera się na potwierdzonym dowodzie, a ile na świadomym założeniu „nie wiemy”.</span></li>
+    </ol>
+    <div class="note warn">
+      <p class="lede"><span class="tick">≠</span> Ranking nie daje prawa do miejsca drużynowego</p>
+      <p>Pozycja indywidualna pozostaje istotnym dowodem siły i może rozstrzygnąć rzeczywisty remis dowodowy, ale nie wyprzedza zgodności z regulaminem, roli kończącego, jakości otwarcia, wartości zmienników ani odporności całej piątki.</p>
+    </div>
+  </section>
+
+  <section id="wynik" class="team-subsection">
+    <p class="kicker">03.4 · Wynik i odpowiedzialność</p>
+    <h2>Pięciu zawodników, role, rezerwowi i pełne uzasadnienie</h2>
+    <div class="output" aria-label="Struktura wyniku selekcji">
+      <div class="slot core"><strong>Walka 9</strong><span>kończący</span></div>
+      <div class="slot core"><strong>Walka 8</strong><span>przedostatni</span></div>
+      <div class="slot core"><strong>Walka 7</strong><span>trzeci zamykający</span></div>
+      <div class="slot sub"><strong>Zmiennik 1</strong><span>w składzie pięciu</span></div>
+      <div class="slot sub"><strong>Zmiennik 2</strong><span>w składzie pięciu</span></div>
+      <div class="slot ext"><strong>Rezerwowy A</strong><span>poza składem drużyny na wyjazd</span></div>
+      <div class="slot ext"><strong>Rezerwowy B</strong><span>poza składem drużyny na wyjazd</span></div>
+      <div class="slot out"><strong>Poza nominacją</strong><span>z uzasadnieniem</span></div>
+    </div>
+    <p>Przypisanie walk 7–9 jest sugerowaną konfiguracją wyjściową i jednocześnie wskazuje podstawową trójkę. Pozostali dwaj członkowie piątki są uczestnikami imprezy oraz zmiennikami w meczu. Szczegółowy plan rotacji przeciw konkretnym rywalom pozostaje w pierwszej wersji poza algorytmem i należy do zespołu.</p>
+
+    <h3>Kapitan</h3>
+    <p>Algorytm wskazuje swojego <strong>kandydata numer jeden</strong> jako sugerowanego lidera lub kapitana oraz uzasadnia ten wybór faktami. Ostateczną decyzję, kto będzie kapitanem, podejmuje później drużyna — czyli nominowana piątka.</p>
+
+    <h3>Nominacja rezerwowych.</h3>
+    <p>Z trzech osób pozostających poza piątką algorytm nominuje, tam gdzie jest to możliwe, po jednym rezerwowym z każdej kategorii wiekowej. Jeżeli nie można wytypować rezerwowego z jednej kategorii, algorytm może nominować dwóch zawodników rezerwowych z drugiej kategorii wiekowej. Rezerwowy nie rezerwuje podróży ani zakwaterowania. Ma trenować i pozostawać wstępnie dostępny na wypadek kontuzji lub przyczyn osobistych zawodnika w podstawowej piątce.</p>
+    <div class="note warn">
+      <p class="lede"><span class="tick">max 7</span> Nominacja obejmuje najwyżej siedem osób</p>
+      <p>Pięciu tworzy skład drużyny na wyjazd, a maksymalnie dwóch otrzymuje status zawodnika rezerwowego. Przy skrajnym podziale piątki, np. gdy wybrano wszystkich czterech kandydatów z jednej kategorii, rezerwowy z tej kategorii nie jest typowany.</p>
+      <p>Algorytm dopuszcza w takim wypadku nominację dwóch zawodników rezerwowych z drugiej kategorii wiekowej.</p>
+    </div>
+
+    <h3>Uzasadnienie nominacji do drużyny — raport nominacji zawiera:</h3>
+    <ul>
+      <li>wybór piątki i sugerowane role;</li>
+      <li>sugerowany kapitan;</li>
+      <li>zawodnicy rezerwowi i osoba bez nominacji;</li>
+      <li>uzasadnienie każdej decyzji;</li>
+      <li>braki danych oraz role oparte na założeniu;</li>
+      <li>ryzyka prawne, kategorii, zastępstw i głębokości;</li>
+      <li>najbliższe alternatywne składy oraz różnice, które przesądziły o rekomendacji.</li>
+    </ul>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Algorytm rekomenduje, człowiek odpowiada</p>
+      <p>Rekomendacja jest domyślnym wynikiem metody. Organ selekcyjny może ją zmienić wyłącznie z pisemnym uzasadnieniem sportowym, prawnym, zdrowotnym albo dotyczącym dostępności. Dzięki temu odpowiedzialność pozostaje ludzka, lecz odstępstwo nie może być niewidoczne.</p>
+    </div>
+  </section>
+
+  <section id="kalendarz">
+    <p class="kicker">04 · Element wspierający</p>
+    <h2>Terminarz wyłaniania reprezentacji weteranów</h2>
+    <div class="timeline" role="img" aria-label="T-90 zamrożenie danych, T-75 projekt nominacji, T-60 finalna nominacja, następnie gotowość do oficjalnego terminu zastępstwa">
+      <article class="moment">
+        <div class="dot">T-90</div>
+        <strong>Zamrożenie danych</strong>
+        <p>Deklaracje dostępności i zamknięcie materiału sportowego.</p>
+      </article>
+      <article class="moment">
+        <div class="dot">T-75</div>
+        <strong>Projekt 5 + 2 + 1</strong>
+        <p>Karty, role, rezerwowi i okno poprawiania faktów.</p>
+      </article>
+      <article class="moment">
+        <div class="dot">T-60</div>
+        <strong>Finalna nominacja</strong>
+        <p>Każdy z ośmiu otrzymuje status i uzasadnienie.</p>
+      </article>
+      <article class="moment">
+        <div class="dot">limit</div>
+        <strong>Termin zastępstw</strong>
+        <p>Rezerwowi pozostają w gotowości do daty właściwej dla imprezy.</p>
+      </article>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Termin</th><th>Działanie</th><th>Skutek</th></tr></thead>
+        <tbody>
+          <tr><td><code>T-90</code></td><td>Zamrożenie danych rankingowych i drużynowych; wezwanie kandydatów do potwierdzenia udziału w drużynie i gotowości do roli rezerwowego.</td><td>Nowe wyniki po tej dacie nie przesuwają nominacji w danym cyklu. Nadal wolno poprawić fakt, który już istniał.</td></tr>
+          <tr><td><code>T-75</code></td><td>Ogłoszenie projektu pięciu, dwóch rezerwowych i jednej osoby bez nominacji wraz z kartami, rolami i uzasadnieniem.</td><td>Rozpoczyna się okno zgłaszania brakujących lub błędnie przypisanych danych.</td></tr>
+          <tr><td><code>T-60</code></td><td>Ogłoszenie finalnej rekomendacji. Osobna wiadomość do każdego z ośmiu kandydatów określa jego status, oczekiwania i regułę zastępstwa.</td><td>Pięciu planuje i finansuje wyjazd. Rezerwowi nie kupują podróży, lecz trenują i pozostają wstępnie dostępni.</td></tr>
+          <tr><td>Daty kontrolne</td><td>Zawodnicy piątki oraz rezerwowi ponownie potwierdzają zdrowie i praktyczną dostępność.</td><td>Kontrole nie zwalniają rezerwowego z gotowości i nie tworzą sztucznej daty T-14.</td></tr>
+          <tr><td>Oficjalny limit zastępstw</td><td>Data wynika z regulaminu konkretnej imprezy i może przypadać bardzo późno, nawet około T-2.</td><td>Do tej chwili rezerwowy pozostaje wstępnie dostępny. Aktywacja wymaga ponownego potwierdzenia, że późna, samofinansowana podróż jest jeszcze możliwa.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Aktywacja rezerwowego</h3>
+    <ol>
+      <li>Kontuzja, choroba albo ważna przyczyna osobista tworzy wakat w podstawowej piątce.</li>
+      <li>W pierwszej kolejności sprawdza się możliwość zastąpienia zawodnika rezerwowym tej samej kategorii.</li>
+      <li>Jeżeli oba warianty rezerwowe są zgodne z regulaminem i obaj zawodnicy mogą przyjechać, algorytm porównuje je na podstawie zgodności z regulaminem, kart zawodników, ról drużynowych, głębokości kategorii i niepewności.</li>
+      <li>Algorytm przedstawia rekomendację i konsekwencje obu wariantów.</li>
+      <li><strong>Lider drużyny podejmuje ostateczną decyzję o zastępstwie.</strong></li>
+    </ol>
+    <div class="note accent">
+      <p class="lede"><span class="tick">i</span> Późna niedostępność nie jest przewinieniem</p>
+      <p>Ponieważ zawodnicy finansują udział samodzielnie, rezerwowy wezwany bardzo późno może nie być w stanie kupić podróży, uzyskać urlopu albo zorganizować pobytu. Taki przypadek zapisuje się jako niedostępność logistyczną, nie odmowę sportową ani naruszenie obowiązku.</p>
+    </div>
+  </section>
+
+  <section id="doskonalenie">
+    <p class="kicker">05 · Element wspierający</p>
+    <h2>Cykliczna implementacja usprawnień — doskonalenie ciągłe</h2>
+    <p class="lead">Po każdej dużej imprezie przeprowadza się retrospektywę oceniającą, jak metoda zadziałała w praktyce. Analiza obejmuje trafność rankingu indywidualnego, dobór pięcioosobowego składu, przypisanie ról, wykorzystanie zmienników i zawodników rezerwowych, kompletność danych oraz wykonanie terminarza nominacji.</p>
+    <p>Retrospektywa ma wskazać zarówno elementy, które zadziałały zgodnie z założeniami, jak i wady ujawnione podczas przygotowań oraz zawodów. Stwierdzenie istotnej wady uruchamia kolejną edycję usprawnień: problem zostaje opisany, proponowana zmiana uzasadniona, a jej wpływ sprawdzony na dostępnych danych i wcześniejszych przypadkach.</p>
+    <div class="note warn">
+      <p class="lede"><span class="tick">↻</span> Usprawnienie obowiązuje od kolejnego cyklu</p>
+      <p>Zmiany wynikające z retrospektywy muszą zostać przyjęte i opublikowane przed rozpoczęciem następnego cyklu selekcyjnego. Nie mogą zmieniać zakończonych nominacji ani reguł trwającego procesu po poznaniu jego częściowych wyników.</p>
+    </div>
+  </section>
+
+  <section id="granice">
+    <p class="kicker">06 · Granice projektu</p>
+    <h2>Co metoda rozstrzyga teraz, a co pozostawia przyszłym pracom</h2>
+    <div class="cards">
+      <article class="card good">
+        <h3>W pierwszej wersji</h3>
+        <ul>
+          <li>pełny i audytowalny wybór pięciu z ośmiu;</li>
+          <li>sugerowane walki 7, 8 i 9;</li>
+          <li>dwóch zmienników w piątce;</li>
+          <li>nominowani zawodnicy rezerwowi;</li>
+          <li>sugerowany kapitan;</li>
+          <li>jawne ryzyka i alternatywy;</li>
+          <li>kalendarz nominacji i zastępstw.</li>
+        </ul>
+      </article>
+      <article class="card warn">
+        <h3>Świadomie później</h3>
+        <ul>
+          <li>plan rotacji przeciw konkretnym rywalom;</li>
+          <li>osobna konfiguracja na mecze łatwiejsze i medalowe;</li>
+          <li>predykcyjna symulacja wyników;</li>
+          <li>automatyczne modelowanie siły każdego zagranicznego zespołu;</li>
+          <li>testy i backtesty — opisane w osobnym dokumencie.</li>
+        </ul>
+      </article>
+    </div>
+
+    <h3>Dlaczego nie model predykcyjny</h3>
+    <p>Dostępne 89 meczów reprezentacji Polski to wartościowy materiał dowodowy, lecz zbyt mały i nierównomiernie rozłożony zbiór do trenowania wiarygodnego modelu typu „czarna skrzynka”. Braki nie są losowe: część kategorii ma wiele protokołów, inne nie mają ich wcale; zawodnicy seniorowscy bywają niewidoczni w rankingach weteranów; wcześniejsze decyzje selekcyjne wpływają na to, kto w ogóle otrzymał możliwość walki 9.</p>
+    <div class="note good">
+      <p class="lede"><span class="tick">→</span> Właściwy pierwszy krok</p>
+      <p>Regułowy optymalizator jest możliwy do automatyzacji, audytu i powtórzenia już teraz. Można go przetestować na danych historycznych, poprawiać przesłanki i ponownie przeliczać wszystkie konfiguracje. Jeżeli w przyszłości powstanie znacznie większy i pełniejszy zbiór, model predykcyjny może stać się dodatkowym dowodem — nie niewidocznym zastępcą decyzji.</p>
+    </div>
+
+    <h3>Następny dokument</h3>
+    <p>Niniejszy opis definiuje metodę-kandydatkę. Osobny dokument testowy ustali daty odcięcia, zdarzenia dowodowe, karty wyniku, próg akceptacji oraz sposób backtestu. Pozwoli to sprawdzić metodę bez zmieniania jej reguł po zobaczeniu korzystnego lub niekorzystnego wyniku.</p>
+  </section>
+
+  <section id="podsumowanie">
+    <p class="kicker">07 · W jednym zdaniu</p>
+    <h2>Najpierw pełny obraz zawodnika, potem pełny obraz drużyny, zawsze w terminie</h2>
+    <div class="note accent">
+      <p class="lede"><span class="tick">2 + 2</span> Proponowana metoda</p>
+      <p><strong>Ranking indywidualny</strong> uwzględnia wszystkie dostępne wyniki indywidualne, w tym seniorów, i wyłania czwórki kategorii. <strong>Przejrzysty algorytm drużynowy</strong> wybiera z dwóch czwórek najsilniejszą piątkę zgodną z regulaminem, przypisuje role i wskazuje zawodników rezerwowych na podstawie rzeczywistych walk drużynowych oraz jawnej niepewności. <strong>Stały terminarz</strong> daje wybranym i rezerwowym czas oraz jasne obowiązki, a <strong>cykliczne doskonalenie</strong> pozwala ocenić metodę po dużej imprezie i poprawić ją przed kolejnym cyklem.</p>
+    </div>
+  </section>
+
+  <footer class="foot">
+    Projekt opisowy SPWS · 13 sierpnia 2026 · Dokument bez danych osobowych. Podstawa problemu: prywatna preambuła w katalogu National_Team_Selection. Szczegóły gradacji: interaktywny kalkulator w doc/plans/. Testy porównawcze i backtest zostaną opisane osobno po zatwierdzeniu niniejszego opisu.
+  </footer>
+  </main>
+</div>
+</body>
+</html>
