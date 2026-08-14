@@ -18,6 +18,16 @@
   --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
   --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b}
 }
+/* Rampa porządkowa wykresu: jedna barwa, 7 stopni jasności — głębsza stawka = mocniejszy ton.
+   Stopnie dobrane osobno dla trybu jasnego i ciemnego, nie odwracane automatycznie. */
+:root{
+ --r1:#8fb6df;--r2:#6f9ed2;--r3:#5086c2;--r4:#376ead;--r5:#235a93;--r6:#144274;--r7:#0a2d52;
+ --grid:#e6ecf4;--chart-surface:#fff}
+@media (prefers-color-scheme:dark){
+ :root{
+  --r1:#24578e;--r2:#3a6faa;--r3:#5588c4;--r4:#72a1d8;--r5:#93b9e6;--r6:#b3cff1;--r7:#d3e4f8;
+  --grid:#25313f;--chart-surface:#1a2330}
+}
 *{box-sizing:border-box}
 body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
  font-family:var(--sans);color:var(--ink);font-size:16px;line-height:1.6;min-height:100vh;overflow-x:hidden}
@@ -123,6 +133,32 @@ label.cb input{accent-color:var(--navy);width:16px;height:16px;flex:none;margin:
 label.cb b{color:var(--ink)}
 label.cb .q{opacity:.72}
 .tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+.chart-figure{margin:18px 0 10px;padding:16px 18px 12px;background:var(--card);border:1px solid var(--line);
+ border-radius:7px;max-width:86ch}
+.chart-figure figcaption{font-size:13.5px;color:var(--muted);margin:0 0 13px;line-height:1.5;max-width:78ch}
+.chart-legend{display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin:0 0 12px}
+.chart-legend .lg-label{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);font-weight:700;margin-right:8px}
+.chart-legend .lg-item{display:flex;align-items:center;gap:5px;padding:2px 6px;font-family:var(--mono);
+ font-size:10.5px;color:var(--muted)}
+.chart-legend .lg-swatch{width:17px;height:3px;border-radius:2px;flex:none}
+.chart-legend .lg-note{margin-left:10px;font-size:11px;color:var(--muted);font-style:italic}
+.chart-holder{position:relative}
+.chart-holder svg{display:block;width:100%;height:auto;overflow:visible}
+.chart-holder svg:focus-visible{outline:2px solid var(--navy);outline-offset:3px;border-radius:4px}
+.chart-holder text{font-family:var(--mono);font-size:10.5px;fill:var(--muted);font-variant-numeric:tabular-nums}
+.chart-holder text.axname{font-size:9.5px;letter-spacing:.1em;font-weight:700;fill:var(--muted)}
+.chart-holder text.ref{font-size:10px;font-weight:700;fill:var(--coral)}
+.chart-holder text.hint{font-size:10.5px;fill:var(--muted)}
+.chart-tip{position:absolute;pointer-events:none;opacity:0;transition:opacity .12s;z-index:3;
+ background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px 10px;
+ box-shadow:0 7px 22px rgba(15,23,42,.17);font-family:var(--mono);font-size:11px;min-width:134px}
+.chart-tip.on{opacity:1}
+.chart-tip .tip-head{font-weight:800;color:var(--ink);margin-bottom:5px;padding-bottom:4px;
+ border-bottom:1px solid var(--line)}
+.chart-tip .tip-row{display:flex;align-items:center;gap:6px;margin:2px 0;white-space:nowrap;color:var(--muted)}
+.chart-tip .tip-row b{margin-left:auto;color:var(--ink);font-variant-numeric:tabular-nums}
+.chart-tip .tip-sw{width:12px;height:3px;border-radius:2px;flex:none}
 table{border-collapse:collapse;width:100%;min-width:600px}
 th{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
  text-align:right;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--paper)}
@@ -389,6 +425,21 @@ znajdują się w zakotwiczonym panelu pod spisem treści. <a href="#sterowanie">
 </div>
 <p class="note">Wszystkie stawki w jednym wierszu są warte dokładnie tyle samo — o wartości decyduje
 zaokrąglona stawka B, nie dokładna frekwencja. Kolumny pokazują wynik przy współczynniku rangi 1,0.</p>
+
+<figure class="chart-figure">
+  <figcaption>Te same liczby co w tabeli, w postaci krzywych — jedna krzywa na każdą zaokrągloną stawkę
+  <code>B</code>. Im głębsza stawka, tym mocniejszy ton i tym wyżej leży cała krzywa; krzywe nigdy się nie
+  przecinają. Przerywana linia odniesienia pokazuje wartość zwycięstwa w najmniejszej uznawanej stawce —
+  <b>każdy punkt powyżej niej jest wart więcej niż wygrana z jednym rywalem</b>. Wykres przelicza się
+  natychmiast po zmianie <code>k</code> oraz przełącznika bonusu za rundy. Przełącznik „ostatni zawsze
+  otrzymuje 1 punkt” tych krzywych nie rusza: dla stawek będących dokładną potęgą dwójki oba sposoby
+  liczenia dają identyczne wartości. Dokładne liczby pozostają w tabeli powyżej.</figcaption>
+  <div class="chart-legend" id="chartLegend"></div>
+  <div class="chart-holder">
+    <svg id="valueChart" viewBox="0 0 880 430" tabindex="0" role="img" aria-label="Wykres liniowy"></svg>
+    <div class="chart-tip" id="chartTip" role="status" aria-live="polite"></div>
+  </div>
+</figure>
 
 <h2 id="s-sprawdziany">Sprawdziany z preambuły</h2>
 <div class="chk" id="chk"></div>
@@ -1103,6 +1154,122 @@ function renderTeamPool(key,k,both,real){
   },k,both,real);
 }
 
+/* ---------- wykres: wartość miejsca według stawki ---------- */
+const CHART_B = [4,8,16,32,64,128,256];
+const CHART_G = {w:880,h:430,l:58,r:96,t:22,b:50};
+let CHART_STATE = null, CHART_PLACE = null;
+
+function renderChart(k,both,real){
+  const svg = document.getElementById('valueChart');
+  if(!svg) return;
+  const G = CHART_G, pw = G.w-G.l-G.r, ph = G.h-G.t-G.b, lgMax = 8;
+  const X = p => G.l + (Math.log2(p)/lgMax)*pw;
+
+  // Siedem stałych stawek — barwa zawsze należy do tej samej stawki, niezależnie od ustawień.
+  const series = CHART_B.map((B,i) => {
+    const pts = [];
+    for(let p=1;p<=B;p++) pts.push([p, score(p,B,1.0,k,both,real)]);
+    return {B, slot:i+1, pts};
+  });
+
+  const peak = Math.max(...series.map(s => s.pts[0][1]));
+  const yMax = Math.max(20, Math.ceil(peak/25)*25);
+  const Y = v => G.t + ph - (v/yMax)*ph;
+  const step = yMax>200 ? 50 : yMax>100 ? 25 : 20;
+
+  let grid = '';
+  for(let v=0;v<=yMax;v+=step){
+    grid += `<line x1="${G.l}" y1="${Y(v).toFixed(1)}" x2="${G.l+pw}" y2="${Y(v).toFixed(1)}" stroke="var(--grid)" stroke-width="1"/>`
+          + `<text x="${G.l-10}" y="${(Y(v)+3.6).toFixed(1)}" text-anchor="end">${v}</text>`;
+  }
+
+  let xax = '';
+  [1,2,4,8,16,32,64,128,256].forEach(p => {
+    xax += `<text x="${X(p).toFixed(1)}" y="${G.t+ph+19}" text-anchor="middle">${p}</text>`;
+  });
+
+  const lines = series.map(s =>
+    `<polyline points="${s.pts.map(([p,v]) => `${X(p).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}" fill="none" `
+    + `stroke="var(--r${s.slot})" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`).join('');
+
+  const dots = series.map(s =>
+    `<circle cx="${X(1).toFixed(1)}" cy="${Y(s.pts[0][1]).toFixed(1)}" r="4.5" fill="var(--r${s.slot})" `
+    + `stroke="var(--chart-surface)" stroke-width="2"/>`).join('');
+
+  const refV = series[0].pts[0][1], refY = Y(refV);
+  const ref = `<line x1="${G.l}" y1="${refY.toFixed(1)}" x2="${G.l+pw}" y2="${refY.toFixed(1)}" `
+    + `stroke="var(--coral)" stroke-width="1.5" stroke-dasharray="5 4"/>`
+    + `<text class="ref" x="${G.l+pw}" y="${(refY-7).toFixed(1)}" text-anchor="end">zwycięstwo w stawce 2–4 · ${refV.toFixed(1)} pkt</text>`;
+
+  svg.innerHTML = `<g>${grid}</g>`
+    + `<line x1="${G.l}" y1="${G.t}" x2="${G.l}" y2="${G.t+ph}" stroke="var(--grid)" stroke-width="1"/>`
+    + `<line x1="${G.l}" y1="${G.t+ph}" x2="${G.l+pw}" y2="${G.t+ph}" stroke="var(--grid)" stroke-width="1"/>`
+    + ref + `<g>${lines}</g><g>${dots}</g>${xax}`
+    + `<text class="axname" x="${G.l}" y="${G.h-8}">ZAJĘTE MIEJSCE · SKALA LOG</text>`
+    + `<text class="axname" x="${G.l-10}" y="${G.t-8}" text-anchor="end">PKT</text>`
+    + `<g id="chartCross" style="opacity:0"></g>`
+    + `<rect id="chartHit" x="${G.l}" y="${G.t}" width="${pw}" height="${ph}" fill="transparent" style="cursor:crosshair"/>`;
+
+  svg.setAttribute('aria-label', `Wykres liniowy: wartość punktowa według zajętego miejsca dla siedmiu `
+    + `zaokrąglonych stawek od 4 do 256, przy k = ${k}. Każde podwojenie stawki podnosi całą krzywą; `
+    + `krzywe nie przecinają się. Dokładne wartości znajdują się w tabeli powyżej.`);
+
+  document.getElementById('chartLegend').innerHTML = '<span class="lg-label">STAWKA B</span>'
+    + series.map(s => `<span class="lg-item"><span class="lg-swatch" style="background:var(--r${s.slot})"></span>${s.B}</span>`).join('')
+    + '<span class="lg-note">głębsza stawka = mocniejszy ton i wyżej położona krzywa</span>';
+
+  CHART_STATE = {series,X,Y,G,pw,ph};
+  if(CHART_PLACE !== null) drawCrosshair(CHART_PLACE);
+}
+
+function drawCrosshair(p){
+  const st = CHART_STATE; if(!st) return;
+  const svg = document.getElementById('valueChart'), holder = svg.parentElement;
+  const visible = st.series.filter(s => p <= s.B);
+  if(!visible.length) return;
+  const cx = st.X(p);
+
+  let g = `<line x1="${cx.toFixed(1)}" y1="${st.G.t}" x2="${cx.toFixed(1)}" y2="${st.G.t+st.ph}" stroke="var(--navy)" stroke-width="1"/>`;
+  visible.forEach(s => {
+    g += `<circle cx="${cx.toFixed(1)}" cy="${st.Y(s.pts[p-1][1]).toFixed(1)}" r="4.5" fill="var(--r${s.slot})" `
+       + `stroke="var(--chart-surface)" stroke-width="2"/>`;
+  });
+  const cross = document.getElementById('chartCross');
+  cross.innerHTML = g; cross.style.opacity = 1;
+
+  const tip = document.getElementById('chartTip');
+  tip.innerHTML = `<div class="tip-head">Miejsce ${p}</div>`
+    + visible.slice().reverse().map(s =>
+        `<div class="tip-row"><span class="tip-sw" style="background:var(--r${s.slot})"></span>B ${s.B}`
+        + `<b>${s.pts[p-1][1].toFixed(1)}</b></div>`).join('');
+  tip.classList.add('on');
+
+  const hr = holder.getBoundingClientRect(), sr = svg.getBoundingClientRect();
+  const px = (cx/st.G.w)*sr.width + (sr.left-hr.left);
+  let left = px + 16;
+  if(left + tip.offsetWidth > hr.width) left = px - tip.offsetWidth - 16;
+  tip.style.left = Math.max(0,left)+'px';
+  tip.style.top = '10px';
+}
+
+function hideCrosshair(){
+  CHART_PLACE = null;
+  const c = document.getElementById('chartCross');
+  if(c){ c.style.opacity = 0; c.innerHTML = ''; }
+  const t = document.getElementById('chartTip');
+  if(t) t.classList.remove('on');
+}
+
+function chartPointer(ev){
+  const st = CHART_STATE; if(!st) return;
+  const svg = document.getElementById('valueChart');
+  const r = svg.getBoundingClientRect(), sc = st.G.w/r.width;
+  const mx = (ev.clientX-r.left)*sc, my = (ev.clientY-r.top)*sc;
+  if(mx < st.G.l-6 || mx > st.G.l+st.pw+6 || my < st.G.t-6 || my > st.G.t+st.ph+6){ hideCrosshair(); return; }
+  const p = Math.max(1, Math.min(256, Math.round(Math.pow(2, ((mx-st.G.l)/st.pw)*8))));
+  CHART_PLACE = p; drawCrosshair(p);
+}
+
 function render(){
   const k = +document.getElementById('k').value;
   const both = document.getElementById('both').checked;
@@ -1129,6 +1296,7 @@ function render(){
   const ppw = C('ppw'), mpw = C('mpw'), pps = C('pps'), mps = C('mps'),
         pew = C('pew'), mew = C('mew'), msw_c = C('msw');
 
+  renderChart(k,both,real);
   renderSeason(k,both,real);
   renderTeamPool('epee',k,both,real);
   renderTeamPool('sabre',k,both,real);
@@ -1172,6 +1340,18 @@ document.querySelector('.body').addEventListener('click', e => {
   activePoolProfile[button.dataset.pool] = button.dataset.poolProfile;
   render();
 });
+const chartSvg = document.getElementById('valueChart');
+chartSvg.addEventListener('mousemove', chartPointer);
+chartSvg.addEventListener('mouseleave', hideCrosshair);
+chartSvg.addEventListener('blur', hideCrosshair);
+chartSvg.addEventListener('keydown', e => {
+  const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+  if(!d) return;
+  e.preventDefault();
+  CHART_PLACE = Math.max(1, Math.min(256, (CHART_PLACE || 1) + d));
+  drawCrosshair(CHART_PLACE);
+});
+
 renderDiag();
 render();
 </script>
