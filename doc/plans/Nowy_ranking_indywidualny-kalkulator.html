@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ranking indywidualny — kalkulator do proponowanej implementacji gradacji zawodów</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b}
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:16px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+.page{max-width:94rem;margin:0 auto;padding:0 30px 70px 8px;display:grid;
+ grid-template-columns:minmax(220px,260px) minmax(0,1080px);grid-template-rows:auto auto auto;
+ column-gap:42px;align-items:start}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:22px 26px 18px;margin:26px 0 0;grid-column:2;grid-row:1}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(23px,4.6vw,31px);line-height:1.18;margin:8px 0 8px;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:74ch}
+.toc{grid-column:1;grid-row:1 / span 3;position:sticky;top:20px;align-self:start;
+ max-height:calc(100vh - 40px);overflow-y:auto;overscroll-behavior:contain;background:var(--card);
+ border:1px solid var(--line);border-radius:8px;padding:18px 18px;margin:26px 0 0;scrollbar-width:thin}
+.toc:before{content:"Spis treści";display:block;margin-bottom:10px;font-family:var(--mono);
+ font-size:11px;line-height:1.4;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.toc ol{margin:0;padding-left:20px;columns:1;max-width:none}
+.toc li{margin-bottom:7px;font-size:13px;line-height:1.4}
+.toc a{text-decoration:none}.toc a:hover{text-decoration:underline;text-underline-offset:3px}
+.body{grid-column:2;grid-row:2;padding:24px 0 0}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:0}
+p{margin:0 0 12px;max-width:82ch}
+h3{font-family:var(--serif);font-size:18px;line-height:1.25;margin:22px 0 8px}
+ul{max-width:82ch}
+.ranking-intro{margin-bottom:28px}
+.ranking-lead{font-family:var(--serif);font-size:19px;line-height:1.55;color:var(--muted);max-width:76ch}
+.scope-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin:18px 0}
+.scope-card{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--navy);
+ border-radius:6px;padding:16px 18px}
+.scope-card h3{margin:0 0 7px;color:var(--navy)}
+.scope-card p{margin:0;font-size:14px}
+.ranking-decides{background:var(--navy-soft);border-left:4px solid var(--navy);padding:14px 18px;margin:18px 0 28px;max-width:86ch}
+.ranking-decides h3{margin:0 0 8px;color:var(--navy)}
+.ranking-decides ul{margin-bottom:0}
+.key-conclusion{max-width:86ch;margin:26px 0 20px;padding:21px 24px;background:var(--navy-soft);
+ border:2px solid var(--navy);border-left-width:8px;border-radius:7px;box-shadow:0 9px 24px rgba(20,32,51,.10)}
+.key-conclusion .lb{display:block;margin-bottom:10px;font-family:var(--mono);font-size:11px;
+ line-height:1.3;letter-spacing:.13em;text-transform:uppercase;color:var(--navy);font-weight:800}
+.key-conclusion p{max-width:none;margin:0 0 12px;font-size:17px;line-height:1.55}
+.key-conclusion p:last-child{margin-bottom:0}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;border:1px solid var(--line);border-radius:3px}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.75;background:var(--card);
+ border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:15px 18px;overflow-x:auto;margin:0 0 16px;max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+pre .c{color:var(--muted)}
+pre b{color:var(--navy)}
+.was{background:var(--coral-bg);color:var(--coral);padding:1px 6px;border-radius:3px;
+ font-family:var(--mono);font-size:.87em;font-weight:600}
+.now{background:var(--green-bg);color:var(--green);padding:1px 6px;border-radius:3px;
+ font-family:var(--mono);font-size:.87em;font-weight:600}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+pre a{color:var(--navy);text-decoration:underline;text-underline-offset:3px}
+pre a:hover{background:var(--navy-soft)}
+.formula-box{max-width:86ch;margin:0 0 16px;background:var(--card);border:1px solid var(--line);
+ border-left:4px solid var(--navy);border-radius:0 5px 5px 0;padding:15px 18px}
+.formula-box pre{max-width:none;margin:0 0 12px;padding:0 0 12px;background:none;border:0;
+ border-bottom:1px solid var(--line);border-radius:0}
+.formula-box .formula-note{max-width:none;margin:0;font-size:14px;line-height:1.6}
+.backlink{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+ color:var(--muted);text-decoration:none;display:inline-block;margin-top:14px}
+.backlink:hover{color:var(--navy)}
+h2[id]{scroll-margin-top:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:20px 24px;margin:18px 0 22px}
+.ctl{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.big{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--navy);min-width:64px;text-align:center;line-height:1}
+.big small{display:block;font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:600;margin-top:4px}
+.slider-wrap{position:relative;flex:1;min-width:260px;--thumb:22px}
+input[type=range]{-webkit-appearance:none;appearance:none;display:block;width:100%;
+ height:8px;border-radius:4px;background:var(--line);outline:none;margin:0;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+ width:var(--thumb);height:var(--thumb);border-radius:50%;background:var(--navy);
+ border:3px solid var(--card);box-shadow:0 1px 4px rgba(0,0,0,.28);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:var(--thumb);height:var(--thumb);border-radius:50%;
+ background:var(--navy);border:3px solid var(--card);box-shadow:0 1px 4px rgba(0,0,0,.28);cursor:pointer}
+.ticks{position:relative;height:16px;margin-top:8px}
+.ticks span{position:absolute;transform:translateX(-50%);font-family:var(--mono);
+ font-size:10.5px;color:var(--muted);user-select:none}
+.ticks span.on{color:var(--navy);font-weight:700;font-size:12px}
+label.cb{display:flex;align-items:flex-start;gap:9px;font-size:14px;color:var(--muted);
+ margin-top:14px;cursor:pointer;line-height:1.5;max-width:78ch}
+label.cb input{accent-color:var(--navy);width:16px;height:16px;flex:none;margin:3px 0 0}
+label.cb b{color:var(--ink)}
+label.cb .q{opacity:.72}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;min-width:600px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+ text-align:right;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--paper)}
+th:first-child,th:nth-child(2){text-align:left}
+td{padding:8px 12px;border-bottom:1px solid var(--line);font-size:14px;text-align:right;
+ font-family:var(--mono);font-variant-numeric:tabular-nums}
+td:first-child,td:nth-child(2){text-align:left;color:var(--navy);font-weight:600;font-size:12px}
+.parts-table th{vertical-align:bottom;line-height:1.25;white-space:normal}
+.parts-table th:first-child{width:12%;text-align:left}
+.parts-table th:nth-child(n+2){width:22%;text-align:right}
+.parts-table td:first-child{text-align:left}
+.parts-table td:nth-child(n+2){text-align:right}
+tbody tr:last-child td{border-bottom:none}
+tfoot td{border-top:2px solid var(--navy);border-bottom:none;padding-top:10px}
+td.win{font-weight:700;color:var(--ink);background:var(--navy-soft)}
+.coef{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:12px}
+.coef>div{background:var(--paper);border:1px solid var(--line);border-radius:5px;padding:9px 11px}
+.coef>div.new{border-color:var(--navy);background:var(--navy-soft)}
+.coef label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+ color:var(--navy);font-weight:700;margin-bottom:6px}
+.coef label i{display:block;font-style:normal;font-family:var(--sans);font-size:10.5px;
+ letter-spacing:0;color:var(--muted);font-weight:400;margin-top:2px}
+.coef input{width:100%;font-family:var(--mono);font-size:17px;font-weight:700;color:var(--ink);
+ padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--card);text-align:center}
+.chk{display:grid;gap:10px}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 15px;border-radius:5px;font-size:14.5px}
+.row.ok{background:var(--green-bg);color:var(--green)}
+.row.bad{background:var(--coral-bg);color:var(--coral)}
+.row .tag{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 8px;
+ border-radius:3px;background:rgba(0,0,0,.10)}
+.row .num{font-family:var(--mono);font-weight:700}
+.note{font-size:13.5px;color:var(--muted);max-width:84ch}
+footer{grid-column:2;grid-row:3;margin:40px 0 0;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);max-width:86ch}
+@media(max-width:900px){
+ .page{display:block;max-width:1080px;padding-right:8px}
+ .hd{margin:26px 22px 0}.toc{position:static;max-height:none;overflow:visible;margin:18px 22px 0}
+ .toc ol{columns:2;column-gap:28px}.body{padding:24px 22px 0}footer{margin:40px 22px 0}
+}
+@media(max-width:680px){
+ .hd,.body,footer,.toc{margin-left:10px;margin-right:10px}.body{padding-left:0;padding-right:0}
+ .toc ol{columns:1}.scope-grid{grid-template-columns:1fr}
+}
+@media print{
+ .page{display:block;max-width:none;padding:0}.toc{position:static;max-height:none;overflow:visible;margin:18px 0}
+ .toc ol{columns:2}.hd,.body,footer{margin-left:0;margin-right:0}
+}
+</style>
+</head>
+<body>
+<div class="page" id="top">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · narzędzie robocze · 12 sierpnia 2026 · wyniki indywidualne</div>
+  <h1>Ranking indywidualny — kalkulator do proponowanej implementacji gradacji zawodów</h1>
+  <p class="dek">Suwak i pola współczynników są aktywne: przestaw je i obserwuj, jak zmieniają się wartości w tabeli.</p>
+</div>
+
+<div class="toc">
+<ol>
+  <li><a href="#s-ranking">Ranking indywidualny</a></li>
+  <li><a href="#s-po-co">Po co ten dokument</a></li>
+  <li><a href="#s-zmiana">Na czym polega testowana zmiana</a></li>
+  <li><a href="#s-wsp">Współczynniki rangi zawodów</a></li>
+  <li><a href="#s-tabela">Wartość miejsca według stawki</a></li>
+  <li><a href="#s-sprawdziany">Sprawdziany z preambuły</a></li>
+  <li><a href="#s-przyklad1">Przykład: dorobek z miejsca gwarantowanego</a></li>
+  <li><a href="#s-przyklad2">Przykład: dorobek z ostatniego miejsca</a></li>
+  <li><a href="#s-senior">Ile wart jest start w zawodach seniorów</a></li>
+  <li><a href="#pelna-formula">Pełna implementacja f(N)</a></li>
+  <li><a href="#s-bez-zmian">Co pozostaje bez zmian</a></li>
+</ol>
+</div>
+
+<div class="body">
+
+<section class="ranking-intro" aria-labelledby="s-ranking">
+<h2 id="s-ranking">Ranking indywidualny</h2>
+
+<p class="ranking-lead">Ranking ma obejmować <strong>każdego polskiego weterana</strong>, niezależnie od tego, w jakim obwodzie, klubie lub systemie wynikowym pojawił się jego rezultat.</p>
+
+<div class="scope-grid">
+  <article class="scope-card">
+    <h3>Pełny zakres zawodników</h3>
+    <p>Warunkiem obecności w rankingu jest polskie uprawnienie do reprezentowania kraju i zweryfikowany wynik sportowy, a nie członkostwo w jednej organizacji ani start w jednym kalendarzu.</p>
+  </article>
+  <article class="scope-card">
+    <h3>Pełny zakres wyników</h3>
+    <p>Do materiału rankingowego wchodzą wszystkie dostępne wyniki indywidualne: krajowe, europejskie, światowe oraz <strong>seniorskie</strong>. Wynik seniora-weterana nie może znikać tylko dlatego, że został osiągnięty poza obwodem weteranów.</p>
+  </article>
+</div>
+
+<div class="ranking-decides">
+  <h3>Co ranking rozstrzyga</h3>
+  <ul>
+    <li>Wyłania czterech zawodników do startów indywidualnych w każdej kategorii weteranów.</li>
+    <li>Dostarcza obiektywnego obrazu aktualnej siły indywidualnej.</li>
+    <li>Tworzy pulę drużynową: po czterech zawodników z dwóch kategorii tworzących daną drużynę, czyli razem osiem osób.</li>
+    <li>Nie rozstrzyga, kto ma walczyć w drużynie ani kto ma objąć walki 7, 8 i 9.</li>
+  </ul>
+</div>
+</section>
+
+<h2 id="s-po-co">Po co ten dokument</h2>
+
+<p>Ranking będzie oparty na implementacji nieznacznie zmienionej wersji algorytmu EVF/BVF.</p>
+
+<p>Jedna zmiana wprowadza pożądaną wrażliwość algorytmu na liczbę osób w stawce zawodów.</p>
+
+<p>Innymi słowy, tworzymy gradację zawodów poprzez silne uzależnienie liczby wywalczonych punktów od liczby zawodników w stawce.</p>
+
+<p>Współczynnik rangi zawodów pozostaje, lecz proponuje się jego nowe, zwiększone wartości.</p>
+
+<h2 id="s-zmiana">Na czym polega testowana zmiana</h2>
+
+<p>Dziś pierwsze miejsce jest warte <span class="was">zawsze 50 punktów</span> plus bonus za rundę,
+razy współczynnik rangi zawodów — czy rywal był jeden, czy dwustu,
+<b class="k">podstawa punktowa jest zawsze 50</b>.</p>
+
+<h3 style="font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin:24px 0 9px">Z czego składa się dzisiejszy wynik</h3>
+
+<div class="tw">
+<table class="parts-table">
+<thead><tr><th>Stawka</th><th>podstawa<br>za 1. miejsce</th><th>bonus za<br>wygrane rundy</th><th>bonus<br>za podium</th><th>łącznie</th></tr></thead>
+<tbody id="diag2"></tbody>
+</table>
+</div>
+<p><b class="k">Podstawa za 1 miejsce wynosi zawsze 50 punktów</b> — niezależnie od tego, czy pokonałeś
+jednego rywala, czy dziewięćdziesięciu dziewięciu. Przy stawce dwóch osób <b class="k">70% całego
+wyniku</b> pochodzi ze składnika, który stawki w ogóle nie widzi.</p>
+
+<h3 style="font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin:24px 0 9px">Czego nie naprawi współczynnik rangi</h3>
+
+<p>Te same zawody EVF, różna liczebność — wszystko przy tym samym współczynniku, bo to ten sam typ
+zawodów:</p>
+<div class="tw">
+<table>
+<thead><tr><th>Stawka</th><th>Punkty za zwycięstwo</th><th>% wartości zwycięstwa w stawce 100</th></tr></thead>
+<tbody id="diag1"></tbody>
+</table>
+</div>
+<p><b class="k">Stawka większa siedemnaście razy daje 1,7 raza więcej punktów.</b> Mnożnik tu nie
+pomoże — oba turnieje to PEW, więc mają ten sam współczynnik. Dokładnie przypadek zawodów EVF
+w Grecji, gdzie startuje mniej osób niż w krajowym pucharze.</p>
+
+<div class="key-conclusion">
+  <span class="lb">Najważniejszy wniosek</span>
+  <p>Aby wykalibrować istniejący algorytm, <b class="k">dodajemy kolejne „pokrętło” do istniejącego już współczynnika rangi. Pozbywamy się stałej 50</b>. <b class="k">Dlaczego jedno „pokrętło” nie wystarczy?</b></p>
+  <p>Współczynnik rangi steruje różnicą <b class="k">między typami</b> zawodów; różnicę <b class="k">wewnątrz typu</b> odzwierciedli dopiero uzależnienie podstawy punktowej za zwycięstwo od liczby startujących.</p>
+  <p>Dlatego zastępujemy stałą 50 <span class="now">funkcją, której wynik jest zależny od liczby startujących</span>:</p>
+</div>
+
+<div class="formula-box">
+  <pre><code><span class="c">dziś</span>          50
+<span class="c">proponowane</span>   <a href="#pelna-formula"><b>f(N) = k · log₂(B)</b></a>   <span class="c">← pełna implementacja na końcu strony</span></code></pre>
+  <p class="formula-note"><code>N</code> to liczba startujących.<br>
+  <code>B</code> — <strong>najmniejsza potęga dwójki mieszcząca całą stawkę</strong>: 2, 4, 8, 16, 32, 64, 128, 256 i tak dalej.</p>
+</div>
+
+<p>A więc wprowadzamy gradację zawodów w rankingu, którą można skalibrować dwoma wartościamy - „pokrętłami”:</p>
+<ul>
+  <li><code>k</code> - współczynnik podstawy punktowej za wygranie zawodów. W miejsce sztywnej stałej wartości 50; każde podwojenie stawki dokłada do podstawy za zwycięstwo kolejne <code>k</code> punktów, oraz</li>
+  <li><b class="k">współczynnik rangi zawodów</b> — osobny dla każdego typu zawodów</li>
+</ul>
+
+<p>Poniżej dostępny jest suwak zmieniający wartość współczynnika podstawy punktowej za wygranie zawodów <code>k</code>, w zakresie od 3 do 10.</p>
+<p>Można też ustawić współczynniki rangi zawodów dla wszystkich typów zawodów szermierczych.</p>
+<p>Ustawienia te zmieniają wartości w tabeli, która obrazuje działanie algorytmu z danym zestawem wartości współczynników.</p>
+
+<div class="panel">
+  <div class="ctl">
+    <div class="big"><span id="kVal">10</span><small>WSPÓŁCZYNNIK k</small></div>
+    <div class="slider-wrap">
+      <input type="range" id="k" min="3" max="10" step="1" value="10">
+      <div class="ticks" id="ticks"></div>
+    </div>
+  </div>
+  <label class="cb"><input type="checkbox" id="both" checked><span>zastosuj <code>k</code> także do
+    <b>bonusu za faktycznie wygrane rundy</b> <span class="q">— to osobny składnik, dziś sztywne
+    10 punktów za każdą wygraną rundę; bez tego zaznaczenia zostaje przy dziesiątce</span></span></label>
+  <label class="cb"><input type="checkbox" id="real"><span><b>ostatni zawsze otrzymuje 1 punkt za zajęte miejsce</b> — punkty za miejsce i wygrane rundy są liczone z faktycznej liczby startujących, a nie z zaokrąglonej stawki <code>B</code>. <span class="q">Do 1 punktu za miejsce może zostać dodany bonus za podium. Dlatego zawodnik przegrywający finał w stawce dwóch osób otrzymuje 1 punkt za miejsce oraz bonus za drugie miejsce. Przy tym ustawieniu zwycięstwa w stawkach 2, 3 i 4 osób nie mają jednakowej wartości.</span></span></label>
+</div>
+
+<h2 id="s-wsp">Współczynniki rangi zawodów</h2>
+<div class="panel">
+  <div class="coef">
+    <div><label>PPW <i>Puchar Polski Wet.</i></label><input type="number" id="c_ppw" value="1.0" step="0.1" min="0"></div>
+    <div><label>MPW <i>Mistrz. Polski Wet.</i></label><input type="number" id="c_mpw" value="1.2" step="0.1" min="0"></div>
+    <div class="new"><label>PPS <i>Puchar Polski Sen.</i></label><input type="number" id="c_pps" value="1.2" step="0.1" min="0"></div>
+    <div class="new"><label>MPS <i>Mistrz. Polski Sen.</i></label><input type="number" id="c_mps" value="1.5" step="0.1" min="0"></div>
+    <div><label>PEW <i>Puchar Europy Wet.</i></label><input type="number" id="c_pew" value="1.0" step="0.1" min="0"></div>
+    <div><label>MEW <i>Mistrz. Europy Wet.</i></label><input type="number" id="c_mew" value="2.0" step="0.1" min="0"></div>
+    <div><label>MŚW <i>Mistrz. Świata Wet.</i></label><input type="number" id="c_msw" value="2.0" step="0.1" min="0"></div>
+  </div>
+  <p class="note" style="margin-top:14px"><b class="k">Dwa typy wyróżnione to nowość</b> — zawody
+  seniorskie PZSz nie istnieją dziś w silniku i trzeba je dopiero dodać. Wartości 1,2 i 1,5 są moją
+  propozycją do sprawdzenia, nie ustaleniem: umieszczają starty seniorskie <b class="k">powyżej
+  obwodu EVF, a poniżej mistrzostw</b>, zgodnie z kolejnością, którą podałeś.</p>
+</div>
+
+<h2 id="s-tabela">Wartość miejsca według stawki</h2>
+<div class="tw">
+<table>
+<thead><tr><th>Stawka</th><th>B</th><th>1. miejsce</th><th>2.</th><th>3.</th><th>4.</th><th>8.</th><th>16.</th><th>32.</th><th>64.</th><th>128.</th><th>256.</th></tr></thead>
+<tbody id="tb"></tbody>
+</table>
+</div>
+<p class="note">Wszystkie stawki w jednym wierszu są warte dokładnie tyle samo — o wartości decyduje
+zaokrąglona stawka B, nie dokładna frekwencja. Kolumny pokazują wynik przy współczynniku rangi 1,0.</p>
+
+<h2 id="s-sprawdziany">Sprawdziany z preambuły</h2>
+<div class="chk" id="chk"></div>
+<p class="note">Pierwszy sprawdzian: pięć zwycięstw nad jednym–dwoma rywalami (dwa Puchary Polski
+i trzy starty w stawce 2–3, w tym dwa z mnożnikiem mistrzostw Polski 1,2) wobec złota mistrzostw
+świata w stawce 200 z mnożnikiem 2,0. Drugi: miejsce ósme w stuosobowym Pucharze Europy wobec
+zwycięstwa nad jednym rywalem w kraju.</p>
+
+<h2 id="s-przyklad1">Przykład z preambuły — dorobek, który dał miejsce gwarantowane</h2>
+<p>Tu i w następnej sekcji porównujemy dwa prawdziwe dorobki z <b class="k">arkusza selekcyjnego na Tbilisi</b> — dokumentu, w którym SPWS ustawiło zawodników w kolejności; cztery pierwsze pozycje to <b class="k">miejsca gwarantowane</b>, dalsze to kandydaci i rezerwa.</p>
+<p>Dwanaście startów krajowych z jednego cyklu. <b class="k">Jedenaście z dwunastu wyników pochodzi
+ze stawki czterech lub mniejszej</b>, mediana stawki wynosi trzy. Ten dorobek dał w arkuszu
+selekcyjnym pierwsze miejsce gwarantowane. Kolumna „dziś" to punkty policzone obecnym silnikiem.</p>
+<div class="tw">
+<table>
+<thead><tr><th>Zawody</th><th>Miejsce</th><th>Stawka</th><th>B</th><th>Współczynnik<br>rangi</th><th>Dziś</th><th>Po zmianie</th></tr></thead>
+<tbody id="kariera"></tbody>
+<tfoot id="karieraSum"></tfoot>
+</table>
+</div>
+<div class="panel" id="karieraWniosek" style="border-left:5px solid var(--coral);border-radius:0 7px 7px 0"></div>
+
+<h2 id="s-przyklad2">Drugi przykład — dorobek, który dał ostatnie miejsce</h2>
+<p>Ten sam arkusz, inna broń. Zawodnik umieszczony <b class="k">na końcu listy, w rubryce „głęboka
+rezerwa"</b>. Jego starty indywidualne w tym samym oknie czasowym:</p>
+<div class="tw">
+<table>
+<thead><tr><th>Zawody</th><th>Miejsce</th><th>Stawka</th><th>B</th><th>Współczynnik<br>rangi</th><th>Dziś</th><th>Po zmianie</th></tr></thead>
+<tbody id="kariera2"></tbody>
+<tfoot id="kariera2Sum"></tfoot>
+</table>
+</div>
+<p class="note">Dwa pierwsze wiersze pochodzą <b class="k">wprost z protokołów FencingTimeLive</b> —
+mistrzostwa Europy 2025, szabla Vet-60, stawka 39, oraz mistrzostwa świata 2025, stawka 41.
+Pozostałe cztery znam tylko z przedziału stawki, więc podstawiam <b class="k">dolną granicę
+przedziału</b> — rzeczywisty wynik jest zatem nie niższy niż podany.</p>
+<div class="panel" id="kariera2Wniosek" style="border-left:5px solid var(--green);border-radius:0 7px 7px 0"></div>
+
+<h2 id="s-senior">Ile wart jest start w zawodach seniorów</h2>
+<div class="tw">
+<table>
+<thead><tr><th>Wynik</th><th>Stawka</th><th>B</th><th>Współczynnik</th><th>Punkty</th></tr></thead>
+<tbody id="sen"></tbody>
+</table>
+</div>
+<p class="note">Dwa pierwsze wiersze to <b class="k">rzeczywiste wyniki z sezonu 2025–2026</b>
+czterdziestolatka startującego w seniorach, dwa tygodnie po zdobyciu złota drużynowych mistrzostw
+Europy weteranów. Pozostałe wiersze są punktem odniesienia z krajowych zawodów weterańskich.</p>
+
+<div class="panel" id="wnioski" style="border-left:5px solid var(--navy);border-radius:0 7px 7px 0"></div>
+
+<h2 id="pelna-formula">Pełna implementacja f(N)</h2>
+
+<p>Powyżej podałem samą istotę zmiany. Tu jest wszystko, łącznie z zaokrągleniem i przypadkami
+brzegowymi — w tej postaci trafi to do silnika.</p>
+
+<pre><code><span class="c">— wejście —</span>
+N   liczba startujących w tej konkurencji
+m   miejsce zajęte przez zawodnika
+k   współczynnik wartości pierwszego miejsca            <span class="c">(suwak, 3–10)</span>
+w   współczynnik rangi zawodów                          <span class="c">(PPW, MPW, PPS, MPS, PEW, MEW, MŚW)</span>
+
+<span class="c">— zaokrąglenie stawki —</span>
+<b>B = max(4, 2^⌈log₂N⌉)</b>                                  <span class="c">najmniejsza potęga dwójki ≥ N,</span>
+                                                     <span class="c">ale nigdy mniej niż 4</span>
+R = log₂B                                            <span class="c">liczba całkowita: 2, 3, 4, 5, …</span>
+
+<span class="c">— sedno zmiany —</span>
+<b>f(N) = MP = k · R</b>                                      <span class="c">wartość pierwszego miejsca;</span>
+                                                     <span class="c">dziś w tym miejscu jest stałe 50</span>
+
+<span class="c">— trzy składniki wyniku —</span>
+punkty za miejsce = MP − (MP−1) · ln(m) / ln(B)
+bonus za rundy    = k · (R − ⌈log₂m⌉)                <span class="c">lub 10·(…), gdy przełącznik wyłączony</span>
+bonus za podium   = c · 3 · ∛B                       <span class="c">c = 3 złoto, 2 srebro, 1 brąz, 0 poza podium</span>
+
+<b>wynik = (miejsce + rundy + podium) · w</b>
+</code></pre>
+
+<h3 style="font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin:26px 0 10px">Dlaczego <code>max(4, …)</code></h3>
+
+<p>Bez tego ograniczenia stawka dwuosobowa dałaby <code>B = 2</code> i <code>R = 1</code>, czyli
+pierwsze miejsce warte <code>k</code> zamiast <code>2k</code>. Wtedy stawki 2, 3 i 4 nie byłyby sobie
+równe, a to jest wymóg: <b class="k">w każdej z nich rozgrywa się tyle samo</b>. Podłoga na czwórce
+zrównuje je i jednocześnie wyznacza najniższą uznawaną stawkę.</p>
+
+<h3 style="font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin:26px 0 10px">Przypadki brzegowe</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Sytuacja</th><th>Zachowanie</th><th>Uzasadnienie</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">N = 1 — walkower</td><td style="text-align:left">wynik 0</td>
+    <td style="text-align:left;font-family:var(--sans);font-size:13px">Nikogo nie pokonano. Dziś taki start daje pełne 50 punktów.</td></tr>
+<tr><td style="text-align:left">m &gt; N</td><td style="text-align:left">wynik 0</td>
+    <td style="text-align:left;font-family:var(--sans);font-size:13px">Miejsce spoza stawki — dane błędne.</td></tr>
+<tr><td style="text-align:left">m = 1</td><td style="text-align:left">punkty za miejsce = MP</td>
+    <td style="text-align:left;font-family:var(--sans);font-size:13px"><code>ln(1) = 0</code>, więc człon odejmowany znika.</td></tr>
+<tr><td style="text-align:left">m = N, tryb „ostatni zawsze 1"</td><td style="text-align:left">punkty za miejsce = 1</td>
+    <td style="text-align:left;font-family:var(--sans);font-size:13px">Wtedy w mianowniku jest <code>ln(N)</code>, nie <code>ln(B)</code>.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 style="font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin:26px 0 10px">Wariant „ostatni zawsze 1 punkt"</h3>
+
+<p>Po zaznaczeniu tego przełącznika <code>MP</code> nadal pochodzi z <code>B</code>, ale dwa
+składniki liczą się z <b class="k">faktycznej stawki N</b>:</p>
+
+<pre><code>punkty za miejsce = MP − (MP−1) · ln(m) / <b>ln(N)</b>
+bonus za rundy    = k · max(0, ⌊log₂N⌋ − ⌈log₂m⌉ + <span class="c">(0 gdy N jest potęgą dwójki, inaczej 1)</span>)
+bonus za podium   = c · 3 · <b>∛N</b></code></pre>
+
+<p>Ostatni w stawce dostaje wtedy dokładnie 1 punkt za miejsce plus bonus za podium, jeśli mu
+przysługuje. <b class="k">Cena:</b> zwycięstwa w stawkach 2, 3 i 4 przestają być sobie równe.</p>
+
+<a class="backlink" href="#top">↑ wróć na górę</a>
+
+<h2 id="s-bez-zmian">Co pozostaje bez zmian</h2>
+<p>Bonus za podium — <code>3 × ∛B</code>, mnożony przez 3 za złoto, 2 za srebro, 1 za brąz.
+Suwak i współczynniki go nie ruszają.</p>
+
+</div>
+
+<footer>
+Narzędzie robocze SPWS, 12 sierpnia 2026. Dotyczy wyłącznie <b>wyników indywidualnych</b>; dorobek
+drużynowy jest osobnym składnikiem oceny i nie wchodzi do tej punktacji. Formuła:
+<code>B = max(4, 2^⌈log₂N⌉)</code>; wartość pierwszego miejsca <code>MP = k·log₂B</code> zamiast
+stałej 50; punkty za miejsce <code>MP − (MP−1)·ln(miejsce)/ln(B)</code>; bonus za faktycznie wygrane
+rundy <code>k·(log₂B − ⌈log₂miejsce⌉)</code> — to osobny składnik, dziś sztywne 10 punktów za rundę;
+bonus za podium <code>współczynnik · 3 · ∛B</code>. Walkower (stawka 1) daje zero. Dokument nie
+zawiera danych osobowych.
+</footer>
+
+</div>
+
+<script>
+const ROWS = [[2,"2 / 3 / 4"],[5,"5 … 8"],[9,"9 … 16"],[17,"17 … 32"],[33,"33 … 64"],[65,"65 … 128"],[129,"129 … 256"]];
+const PL = [1,2,3,4,8,16,32,64,128,256];
+
+function bracket(n){ return n < 2 ? 0 : Math.max(4, Math.pow(2, Math.ceil(Math.log2(n)))); }
+
+function score(place, n, mult, k, both, real){
+  const B = bracket(n);
+  if (!B) return 0;
+  const R = Math.round(Math.log2(B));
+  const MP = k * R;                       // pułap zawsze z B
+  if (place > n) return 0;
+  const kb  = both ? k : 10;
+  const c   = {1:3, 2:2, 3:1}[place] || 0;
+  let pp, de, pod;
+  if (real) {                             // miejsce i rundy z FAKTYCZNEJ stawki
+    pp  = n < 2 ? 0 : MP - (MP - 1) * Math.log(place) / Math.log(n);
+    const pow2 = (n & (n - 1)) === 0;
+    de  = Math.max(0, Math.floor(Math.log2(n)) - Math.ceil(Math.log2(place)) + (pow2 ? 0 : 1)) * kb;
+    pod = c * 3 * Math.cbrt(n);
+  } else {                                // wszystko z B
+    pp  = MP - (MP - 1) * Math.log(place) / Math.log(B);
+    de  = Math.max(0, R - Math.ceil(Math.log2(place))) * kb;
+    pod = c * 3 * Math.cbrt(B);
+  }
+  return (pp + de + pod) * mult;
+}
+
+// obecny silnik: MP = 50 na sztywno, wszystko liczone z faktycznej stawki
+function oldScore(place, n, mult){
+  const MP = 50;
+  if (n < 1 || place > n) return 0;
+  const pp   = n === 1 ? MP : MP - (MP - 1) * Math.log(place) / Math.log(n);
+  const pow2 = (n & (n - 1)) === 0;
+  const de   = n <= 1 ? 0
+             : Math.max(0, Math.floor(Math.log2(n)) - Math.ceil(Math.log2(place)) + (pow2 ? 0 : 1)) * 10;
+  const c    = {1:3, 2:2, 3:1}[place] || 0;
+  return (pp + de + c * 3 * Math.cbrt(n)) * mult;
+}
+
+// rozbicie obecnego silnika na składniki — do tabel diagnostycznych na górze strony
+function oldParts(place, n){
+  const MP = 50;
+  const pp   = n === 1 ? MP : MP - (MP - 1) * Math.log(place) / Math.log(n);
+  const pow2 = (n & (n - 1)) === 0;
+  const de   = n <= 1 ? 0
+             : Math.max(0, Math.floor(Math.log2(n)) - Math.ceil(Math.log2(place)) + (pow2 ? 0 : 1)) * 10;
+  const c    = {1:3, 2:2, 3:1}[place] || 0;
+  const pod  = c * 3 * Math.cbrt(n);
+  return {pp, de, pod, total: pp + de + pod};
+}
+
+// obie tabele opisują silnik, który dziś działa — nie zależą od suwaka, liczone raz
+function renderDiag(){
+  const ref = oldParts(1, 100).total;
+  document.getElementById('diag1').innerHTML = [6, 16, 40, 100].map(n => {
+    const v = oldParts(1, n).total;
+    return `<tr${n === 100 ? ' style="background:var(--navy-soft)"' : ''}>`
+         + `<td style="text-align:left">${n}</td><td>${v.toFixed(0)}</td>`
+         + `<td>${Math.round(100 * v / ref)}%</td></tr>`;
+  }).join('');
+  document.getElementById('diag2').innerHTML = [2, 6, 27, 54, 100].map(n => {
+    const p = oldParts(1, n);
+    return `<tr><td style="text-align:left">${n}</td>`
+         + `<td style="background:var(--coral-bg);font-weight:700">${p.pp.toFixed(1)}</td>`
+         + `<td>${p.de.toFixed(1)}</td><td>${p.pod.toFixed(1)}</td>`
+         + `<td style="font-weight:700">${p.total.toFixed(1)}</td></tr>`;
+  }).join('');
+}
+
+const THUMB = 22;   // musi zgadzać się z --thumb w CSS
+
+function buildTicks(cur){
+  const lo = 3, hi = 10;
+  let h = '';
+  for (let v = lo; v <= hi; v++){
+    const f = (v - lo) / (hi - lo);
+    h += `<span class="${v === cur ? 'on' : ''}" data-v="${v}"`
+       + ` style="left:calc(${THUMB / 2}px + ${f} * (100% - ${THUMB}px))">${v}</span>`;
+  }
+  document.getElementById('ticks').innerHTML = h;
+}
+
+function render(){
+  const k = +document.getElementById('k').value;
+  const both = document.getElementById('both').checked;
+  const real = document.getElementById('real').checked;
+  document.getElementById('kVal').textContent = k;
+  buildTicks(k);
+
+  const list = real
+    ? [[2,"2"],[3,"3"],[4,"4"],[5,"5"],[6,"6"],[8,"8"],[9,"9"],[16,"16"],[32,"32"],[64,"64"],[100,"100"],[200,"200"]]
+    : ROWS;
+
+  document.getElementById('tb').innerHTML = list.map(([n,lab])=>{
+    const B = bracket(n);
+    const N = real ? n : B;
+    const cells = PL.map(p=>{
+      if (p > N) return '<td style="opacity:.28">—</td>';
+      const v = score(p, N, 1.0, k, both, real);
+      return `<td${p===1?' class="win"':''}>${v.toFixed(1)}</td>`;
+    }).join('');
+    return `<tr><td>${lab}</td><td>${B}</td>${cells}</tr>`;
+  }).join('');
+
+  const C = id => (+document.getElementById('c_' + id).value) || 0;
+  const ppw = C('ppw'), mpw = C('mpw'), pps = C('pps'), mps = C('mps'),
+        pew = C('pew'), mew = C('mew'), msw_c = C('msw');
+
+  const SEN = [
+    ["13. miejsce",  84, 13, 'MPS', mps, true],
+    ["34. miejsce",  70, 34, 'PPS', pps, true],
+    ["zwycięstwo",    8,  1, 'PPW', ppw, false],
+    ["zwycięstwo",    4,  1, 'PPW', ppw, false],
+    ["zwycięstwo",    3,  1, 'MPW', mpw, false],
+  ];
+  document.getElementById('sen').innerHTML = SEN.map(([lab,n,p,code,c,hi])=>{
+    const v = score(p, n, c, k, both, real);
+    return `<tr${hi?' style="background:var(--navy-soft)"':''}>`
+         + `<td style="text-align:left">${lab}</td><td>${n}</td><td>${bracket(n)}</td>`
+         + `<td style="text-align:left;font-size:12px">${code} · ${c.toFixed(1)}</td>`
+         + `<td${hi?' class="win"':''}>${v.toFixed(1)}</td></tr>`;
+  }).join('');
+
+  // --- dorobek 12 startów z preambuły; "dziś" = wartości z obecnego silnika ---
+  const KAR = [
+    ["GP7",                3, 3, ppw,'PPW',  5.33],
+    ["Mistrzostwa Polski", 3, 5, mpw,'MPW', 38.02],
+    ["GP8",                3, 3, ppw,'PPW',  5.33],
+    ["Puchar Polski 1",    4, 4, ppw,'PPW',  1.00],
+    ["Puchar Polski 2",    2, 3, ppw,'PPW', 37.74],
+    ["Puchar Polski 3",    3, 3, ppw,'PPW',  5.33],
+    ["Puchar Polski 4",    4, 4, ppw,'PPW',  1.00],
+    ["Mistrzostwa Polski", 1, 2, mpw,'MPW', 85.61],
+    ["Puchar Polski 3",    1, 2, ppw,'PPW', 71.34],
+    ["Puchar Polski 4",    1, 2, ppw,'PPW', 71.34],
+    ["Puchar Polski 5",    1, 3, ppw,'PPW', 82.98],
+    ["Mistrzostwa Polski", 1, 3, mpw,'MPW', 99.58],
+  ];
+  let sumOld = 0, sumNew = 0;
+  document.getElementById('kariera').innerHTML = KAR.map(([lab,p,nn,c,code,old])=>{
+    const v = score(p, nn, c, k, both, real);
+    sumOld += old; sumNew += v;
+    const tiny = nn <= 4;
+    return `<tr${tiny?' style="background:var(--coral-bg)"':''}>`
+         + `<td style="text-align:left">${lab}</td>`
+         + `<td>${p}</td><td>${nn}</td><td>${bracket(nn)}</td><td><code>${code}</code> · ${c.toFixed(1)}</td>`
+         + `<td style="opacity:.65">${old.toFixed(1)}</td><td class="win">${v.toFixed(1)}</td></tr>`;
+  }).join('');
+  document.getElementById('karieraSum').innerHTML =
+    `<tr><td style="text-align:left;font-weight:700">RAZEM</td><td></td><td></td><td></td><td></td>`
+    + `<td style="font-weight:700;opacity:.65">${sumOld.toFixed(0)}</td>`
+    + `<td class="win" style="font-weight:700">${sumNew.toFixed(0)}</td></tr>`;
+  const spadek = sumOld ? Math.round(100 * (1 - sumNew / sumOld)) : 0;
+  document.getElementById('karieraWniosek').innerHTML =
+    `<p style="margin-bottom:0">Ten sam dorobek, te same wyniki: dziś <b class="k">${sumOld.toFixed(0)}</b>
+     punktów, po zmianie <b class="k">${sumNew.toFixed(0)}</b> —
+     ${spadek >= 0 ? `spadek o <b class="k">${spadek}%</b>` : `wzrost o <b class="k">${-spadek}%</b>`}.
+     Nic nie zostało skasowane: każdy z dwunastu startów nadal się liczy. Zmieniła się tylko cena
+     zwycięstwa nad jednym rywalem.</p>`;
+
+  // --- drugi dorobek: zawodnik z ostatniego miejsca w arkuszu ---
+  // dwa pierwsze wiersze z protokołów FTL; pozostałe to dolne granice przedziału stawki
+  const KAR2 = [
+    ["MEW 2025 · brąz",   3, 39, mew,   'MEW', false],
+    ["MŚW Manama 2025",   5, 41, msw_c, 'MŚW', false],
+    ["Puchar Europy",     1, 16, pew,   'PEW', true ],
+    ["Puchar Europy",     1,  8, pew,   'PEW', true ],
+    ["Puchar Polski",     1,  4, ppw,   'PPW', true ],
+    ["Puchar Polski",     1,  3, ppw,   'PPW', true ],
+  ];
+  let s2Old = 0, s2New = 0;
+  document.getElementById('kariera2').innerHTML = KAR2.map(([lab,p,nn,c,code,band])=>{
+    const old = oldScore(p, nn, c);
+    const v   = score(p, nn, c, k, both, real);
+    s2Old += old; s2New += v;
+    const big = nn >= 16;
+    return `<tr${big?' style="background:var(--green-bg)"':''}>`
+         + `<td style="text-align:left">${lab}</td>`
+         + `<td>${p}</td><td>${band ? '≥' : ''}${nn}</td><td>${bracket(nn)}</td><td><code>${code}</code> · ${c.toFixed(1)}</td>`
+         + `<td style="opacity:.65">${old.toFixed(1)}</td><td class="win">${v.toFixed(1)}</td></tr>`;
+  }).join('');
+  document.getElementById('kariera2Sum').innerHTML =
+    `<tr><td style="text-align:left;font-weight:700">RAZEM</td><td></td><td></td><td></td><td></td>`
+    + `<td style="font-weight:700;opacity:.65">${s2Old.toFixed(0)}</td>`
+    + `<td class="win" style="font-weight:700">${s2New.toFixed(0)}</td></tr>`;
+  const zm2 = s2Old ? Math.round(100 * (s2New / s2Old - 1)) : 0;
+  const zm1 = sumOld ? Math.round(100 * (sumNew / sumOld - 1)) : 0;
+  // tylko dwa wiersze mają dokładną stawkę z protokołu — na nich mierzymy kierunek
+  const exOld = KAR2.filter(r=>!r[5]).reduce((a,[l,p,nn,c])=>a+oldScore(p,nn,c),0);
+  const exNew = KAR2.filter(r=>!r[5]).reduce((a,[l,p,nn,c])=>a+score(p,nn,c,k,both,real),0);
+  const zmEx  = exOld ? Math.round(100 * (exNew / exOld - 1)) : 0;
+  const dir = v => v >= 0 ? `zyskuje <b class="k">${v}%</b>` : `traci <b class="k">${-v}%</b>`;
+  document.getElementById('kariera2Wniosek').innerHTML =
+    `<p>Na dwóch wynikach, przy których znam <b class="k">dokładną stawkę z protokołu</b> — brąz
+     mistrzostw Europy i piąte miejsce mistrzostw świata — ten dorobek ${dir(zmEx)}:
+     z <b class="k">${exOld.toFixed(0)}</b> na <b class="k">${exNew.toFixed(0)}</b> punktów.</p>
+     <p>Suma całej szóstki ${dir(zm2)}, ale ta liczba jest <b class="k">zaniżona</b>: przy czterech
+     pozostałych startach znam tylko przedział stawki i podstawiam jego dolną granicę. Gdyby te
+     turnieje miały górne stawki swoich przedziałów, poszłyby w górę tak samo jak mistrzostwa.</p>
+     <p style="margin-bottom:0"><b>I o to chodzi w tej zmianie.</b> Dorobek zbudowany na stawkach
+     dwu- i trzyosobowych ${dir(zm1)}. Dorobek z medalem mistrzostw Europy w stawce 39
+     ${dir(zmEx)}. <b class="k">Nikomu nie skasowano ani jednego startu</b> — zmieniła się tylko
+     relacja między nimi.</p>`;
+
+  // --- wnioski, przeliczane razem z tabelą, żeby nie skłamały po ruchu suwaka ---
+  const A = score(13, 84, mps, k, both, real);   // 13. na 84 seniorów
+  const B = score(1,   8, ppw, k, both, real);   // wygrany puchar weteranów, stawka 8
+  const Cc= score(1,   3, mpw, k, both, real);   // mistrzostwo Polski weteranów, stawka 3
+  const D = score(34, 70, pps, k, both, real);   // 34. na 70 seniorów
+  const E = score(1,   4, ppw, k, both, real);   // zwycięstwo w stawce 4 weteranów
+  const cmp = (x,y) => x > y ? 'więcej' : (x < y ? 'mniej' : 'tyle samo co');
+  const n = v => `<b class="k">${v.toFixed(1)}</b>`;
+
+  document.getElementById('wnioski').innerHTML =
+    `<p style="margin-bottom:14px"><b>Dwie rzeczy z tego widać.</b></p>
+     <p>Trzynaste miejsce na 84 seniorów daje ${n(A)} — ${cmp(A,B)} niż wygrany krajowy puchar
+     weteranów w stawce ośmiu (${n(B)}) i ${cmp(A,Cc)} niż mistrzostwo Polski weteranów w stawce
+     trzech (${n(Cc)}). ${A > B && A > Cc
+       ? 'Czyli zawodnik, którego dziś ranking w ogóle nie widzi, staje się widoczny — i to na właściwym miejscu.'
+       : 'Przy tych współczynnikach start seniorski nie wystarcza, by taki zawodnik wyszedł ponad krajowy dorobek weterański.'}</p>
+     <p style="margin-bottom:0">Ale trzydzieste czwarte miejsce na 70 daje tylko ${n(D)} —
+     ${cmp(D,E)} niż zwycięstwo w stawce czterech weteranów (${n(E)}). ${D < E
+       ? 'To ważne dla obrony przed komisją: droga seniorska nie rozdaje punktów za samo pojawienie się. Trzeba w tych seniorach coś ugrać.'
+       : 'Przy tych współczynnikach nawet odległe miejsce w seniorach przebija zwycięstwo w małej stawce weterańskiej — a to osłabia argument, że droga seniorska nie rozdaje punktów za samo pojawienie się.'}</p>`;
+
+  const five = score(1,2,mpw,k,both,real) + score(1,2,ppw,k,both,real) + score(1,2,ppw,k,both,real)
+             + score(1,3,ppw,k,both,real) + score(1,3,mpw,k,both,real);
+  const msw  = score(1,200,msw_c,k,both,real);
+  const top8 = score(8,100,pew,k,both,real);
+  const win2 = score(1,2,ppw,k,both,real);
+
+  const mk = (ok, a, la, b, lb) =>
+    `<div class="row ${ok?'ok':'bad'}"><span class="tag">${ok?'PRZECHODZI':'NIE PRZECHODZI'}</span>
+     <span>${la} <span class="num">${a.toFixed(0)}</span></span>
+     <span style="opacity:.6">wobec</span>
+     <span>${lb} <span class="num">${b.toFixed(0)}</span></span></div>`;
+
+  document.getElementById('chk').innerHTML =
+      mk(msw > five, msw, "złoto MŚW", five, "5 drobnych zwycięstw")
+    + mk(top8 > win2, top8, "miejsce 8. na 100", win2, "wygrana z jednym rywalem");
+}
+
+document.getElementById('k').addEventListener('input', render);
+document.getElementById('ticks').addEventListener('click', e => {
+  const v = e.target && e.target.dataset && e.target.dataset.v;
+  if (!v) return;
+  document.getElementById('k').value = v;
+  render();
+});
+document.getElementById('both').addEventListener('change', render);
+document.getElementById('real').addEventListener('change', render);
+document.querySelectorAll('.coef input').forEach(i => i.addEventListener('input', render));
+renderDiag();
+render();
+</script>
+</body>
+</html>
