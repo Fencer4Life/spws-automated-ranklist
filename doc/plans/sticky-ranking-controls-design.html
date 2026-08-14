@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zakotwiczone sterowanie kalkulatorem rankingu</title>
+<style>
+:root{--bg:#e8ecf3;--surface:#fff;--surface-2:#dce2ec;--ink:#0f1319;--muted:#414b59;--line:#c9d1dc;--accent:#12467e;--accent-soft:#dbe7f5;--good:#0f5f37;--good-soft:#d8eede;--serif:"Iowan Old Style",Charter,Georgia,serif;--sans:system-ui,-apple-system,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace}
+@media(prefers-color-scheme:dark){:root{--bg:#12151b;--surface:#1b2029;--surface-2:#232935;--ink:#f1f4f8;--muted:#aeb8c6;--line:#3c4552;--accent:#8cbdec;--accent-soft:#1a2a3c;--good:#6cdc98;--good-soft:#15271b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.62 var(--sans)}main{max-width:58rem;margin:auto;padding:54px 30px 90px}header,section{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px 28px;margin-bottom:18px}header{border-left:7px solid var(--accent)}.eyebrow{font:700 12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}h1,h2{font-family:var(--serif);line-height:1.15}h1{font-size:38px;margin:9px 0 12px}h2{font-size:27px;margin:0 0 14px}.dek{font-size:20px;color:var(--muted);max-width:62ch}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.box{padding:16px 18px;border:1px solid var(--line);border-radius:7px;background:var(--surface-2)}.good{border-left:5px solid var(--good);background:var(--good-soft)}code{font-family:var(--mono);font-size:.86em}@media(max-width:680px){main{padding:24px 16px 50px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body><main>
+<header>
+  <p class="eyebrow">Projekt interfejsu · 14 sierpnia 2026</p>
+  <h1>Zakotwiczone sterowanie kalkulatorem rankingu</h1>
+  <p class="dek">Suwak <code>k</code> i pola współczynników rangi pozostają dostępne podczas analizy tabel w dowolnym miejscu dokumentu.</p>
+</header>
+
+<section>
+  <h2>Wybrany wariant</h2>
+  <p>Na ekranach desktopowych lewa kolumna staje się jednym zakotwiczonym panelem. Najpierw zawiera spis treści, a bezpośrednio pod nim kompaktowe sterowanie: suwak <code>k</code>, dwa przełączniki sposobu liczenia oraz siedem pól współczynników rangi zawodów.</p>
+  <p>Cały panel ma wysokość ograniczoną do okna przeglądarki i własne przewijanie. Dzięki temu kontrolki są stale osiągalne, także na niższym ekranie.</p>
+</section>
+
+<section>
+  <h2>Zachowanie responsywne</h2>
+  <div class="grid">
+    <div class="box"><strong>Desktop, powyżej 900 px</strong><br>Jeden przyklejony lewy panel: spis treści, następnie sterowanie. Główna treść przewija się niezależnie.</div>
+    <div class="box"><strong>Tablet i telefon, do 900 px</strong><br>Panel wraca do zwykłego toku strony pod nagłówkiem. Nie jest przyklejony i nie zasłania treści.</div>
+  </div>
+</section>
+
+<section>
+  <h2>Zakres zmiany</h2>
+  <ul>
+    <li>Istniejące elementy formularza zachowują identyfikatory, wartości początkowe i obsługę JavaScript.</li>
+    <li>Kontrolki zostają fizycznie przeniesione; nie powstaje drugi, zsynchronizowany formularz.</li>
+    <li>W miejscu dotychczasowego formularza pozostaje krótki odsyłacz do panelu sterowania.</li>
+    <li>Spis treści zachowuje wszystkie obecne odnośniki.</li>
+    <li>Widok drukowany pokazuje panel w zwykłym toku dokumentu, bez pozycji sticky.</li>
+  </ul>
+</section>
+
+<section class="good">
+  <h2>Kryteria odbioru</h2>
+  <ul>
+    <li>Podczas przewijania tabel na desktopie można zmienić <code>k</code> i każdą rangę bez powrotu do wcześniejszego rozdziału.</li>
+    <li>Każda zmiana nadal natychmiast przelicza wszystkie tabele i obie pule drużynowe.</li>
+    <li>Na szerokości mobilnej panel nie jest przyklejony.</li>
+    <li>W dokumencie istnieje tylko jeden element o każdym identyfikatorze kontrolki.</li>
+    <li>Skrypt uruchamia się bez błędu, a dotychczasowe wyniki dla ustawień domyślnych pozostają identyczne.</li>
+  </ul>
+</section>
+</main></body>
+</html>
