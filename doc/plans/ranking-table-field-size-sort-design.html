@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sortowanie wyników według stawki N — projekt</title>
+<style>
+:root{--bg:#e8ecf3;--surface:#fff;--surface-2:#dce2ec;--ink:#0f1319;--muted:#414b59;--line:#c9d1dc;--accent:#12467e;--accent-soft:#dbe7f5;--good:#0f5f37;--good-soft:#d8eede;--serif:"Iowan Old Style",Charter,Georgia,serif;--sans:system-ui,-apple-system,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace}
+@media(prefers-color-scheme:dark){:root{--bg:#12151b;--surface:#1b2029;--surface-2:#232935;--ink:#f1f4f8;--muted:#aeb8c6;--line:#2c333f;--accent:#8cbdec;--accent-soft:#1a2a3c;--good:#6cdc98;--good-soft:#15271b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:19px;line-height:1.62}.wrap{max-width:56rem;margin:0 auto;padding:60px 30px 100px}.eyebrow,.kicker{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}.eyebrow{margin:0 0 14px}h1,h2{font-family:var(--serif);line-height:1.12}h1{font-size:clamp(36px,6vw,52px);margin:0 0 18px}h2{font-size:30px;margin:0 0 16px}.dek{font-size:22px;color:var(--muted);max-width:58ch}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:24px 0 44px}.pill{font-family:var(--mono);font-size:13px;padding:7px 12px;border:1px solid var(--line);border-radius:7px;background:var(--surface)}section{margin-top:46px}.note{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;background:var(--accent-soft);padding:18px 22px}.note.good{border-left-color:var(--good);background:var(--good-soft)}p,ul{max-width:64ch}li{margin:8px 0}code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);padding:.1em .38em;border-radius:4px}.foot{margin-top:56px;padding-top:22px;border-top:2px solid var(--line);color:var(--muted);font-family:var(--mono);font-size:14px}
+</style>
+</head>
+<body><main class="wrap">
+  <p class="eyebrow">Ranking indywidualny · zatwierdzony projekt · 14 sierpnia 2026</p>
+  <h1>Sortowanie wyników według stawki N</h1>
+  <p class="dek">Tabela rzeczywistych dorobków sezonu 2025–2026 ma prezentować starty od najmniejszej do największej liczby uczestników.</p>
+  <div class="meta"><span class="pill">zakres: jedna tabela</span><span class="pill">bez nowych kontrolek</span><span class="pill">sortowanie automatyczne</span></div>
+
+  <section>
+    <p class="kicker">Zachowanie</p>
+    <h2>Jedna stała reguła kolejności</h2>
+    <div class="note good">
+      <p><strong>Podstawowy klucz:</strong> wartość kolumny <code>Stawka N</code>, rosnąco.</p>
+      <p><strong>Remis:</strong> data zawodów, rosnąco. Jeśli dwa starty mają tę samą stawkę i datę, zachowują kolejność zapisaną w danych.</p>
+    </div>
+    <p>Sortowanie następuje przed wygenerowaniem wierszy i działa ponownie po każdej zmianie wybranego profilu. Suwak punktowy oraz współczynniki rangi nie wpływają na kolejność, ponieważ nie zmieniają stawki.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Implementacja</p>
+    <h2>Nie mutować danych źródłowych</h2>
+    <ul>
+      <li>Utworzyć kopię tablicy startów wybranego profilu.</li>
+      <li>Posortować kopię po liczbie uczestników, następnie po dacie.</li>
+      <li>Na podstawie posortowanej kopii wygenerować wiersze tabeli i sumy punktowe.</li>
+      <li>Nie dodawać sortowania po kliknięciu nagłówka ani przełącznika kierunku.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Sprawdzenie</p>
+    <h2>Kryteria akceptacji</h2>
+    <ul>
+      <li>Dla każdego profilu wartości w kolumnie <code>Stawka N</code> nigdy nie maleją.</li>
+      <li>Wiersze z jednakową stawką są uporządkowane chronologicznie.</li>
+      <li>Liczba startów i sumy punktów pozostają identyczne przed i po sortowaniu.</li>
+      <li>Profile bez startów nadal pokazują komunikat o braku zweryfikowanego wyniku.</li>
+    </ul>
+  </section>
+
+  <p class="foot">projekt · ranking-table-field-size-sort · zatwierdzona reguła prezentacji danych</p>
+</main></body>
+</html>
