@@ -146,12 +146,15 @@ label.cb .q{opacity:.72}
  font-size:10.5px;color:var(--muted)}
 .chart-legend .lg-swatch{width:17px;height:3px;border-radius:2px;flex:none}
 .chart-legend .lg-note{margin-left:10px;font-size:11px;color:var(--muted);font-style:italic}
-.chart-toggle{display:flex;align-items:flex-start;gap:8px;margin:0 0 12px;padding:9px 12px;
- background:var(--paper);border:1px solid var(--line);border-radius:6px;cursor:pointer;
- font-size:12.5px;line-height:1.45;color:var(--muted);max-width:78ch}
-.chart-toggle:hover{border-color:var(--navy)}
-.chart-toggle input{accent-color:var(--navy);width:15px;height:15px;flex:none;margin:2px 0 0}
-.chart-toggle b{color:var(--ink)}
+.chart-modes{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.chart-modes .cm-label{font-family:var(--mono);font-size:10px;letter-spacing:.09em;color:var(--muted);
+ font-weight:700;margin-right:4px}
+.chart-modes .cm-opt{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;cursor:pointer;
+ border:1px solid var(--line);border-radius:999px;background:var(--card);font-size:12.5px;
+ color:var(--muted);line-height:1.3}
+.chart-modes .cm-opt:hover{border-color:var(--navy)}
+.chart-modes .cm-opt input{accent-color:var(--navy);width:14px;height:14px;flex:none;margin:0}
+.chart-modes .cm-opt:has(input:checked){border-color:var(--navy);background:var(--navy-soft);color:var(--ink);font-weight:700}
 .chart-holder{position:relative}
 .chart-holder svg{display:block;width:100%;height:auto;overflow:visible}
 .chart-holder svg:focus-visible{outline:2px solid var(--navy);outline-offset:3px;border-radius:4px}
@@ -482,16 +485,22 @@ zaokrąglona stawka B, nie dokładna frekwencja. Kolumny pokazują wynik przy ws
   a rozjeżdża tabelę w płytkich. Przełącznik „ostatni zawsze otrzymuje 1 punkt” tych krzywych nie rusza:
   dla stawek będących dokładną potęgą dwójki oba sposoby liczenia dają identyczne wartości. Dokładne
   liczby pozostają w tabeli powyżej.<br><br>
-  Przełącznik poniżej nakłada na wykres <b>krzywe algorytmu EVF</b> — przerywane, w tych samych
-  barwach stawek. Algorytm EVF ma zaszytą stałą 50 i sztywne 10 punktów za rundę, więc
+  Przełącznik poniżej wybiera, co pokazać: samą proponowaną formułę, obie formuły naraz, albo
+  <b>sam algorytm EVF</b>. Krzywe EVF są przerywane, w tych samych barwach stawek. Algorytm EVF ma
+  zaszytą stałą 50 i sztywne 10 punktów za rundę, więc
   <b>nie reaguje na suwaki</b>: jest nieruchomym punktem odniesienia, względem którego widać, jak
   przesuwają się nowe krzywe. Najlepiej widać na nim problem stałej 50 — dziś zwycięstwo w stawce
   czterech osób jest warte 84,3 punktu wobec 187,1 za wygranie stawki 256, czyli tylko 2,2 raza mniej
   za pokonanie trzech rywali zamiast 255.</figcaption>
-  <label class="chart-toggle" title="Nałóż krzywe algorytmu EVF: stała 50, premia 10 za rundę, bonus za podium">
-    <input type="checkbox" id="chartOld">
-    <span>pokaż nakładkę: <b>algorytm EVF</b> (stała 50 + premia za rundy + podium)</span>
-  </label>
+  <div class="chart-modes" role="radiogroup" aria-label="Które krzywe pokazać">
+    <span class="cm-label">POKAŻ</span>
+    <label class="cm-opt"><input type="radio" name="chartMode" value="nowe" checked>
+      <span>proponowaną formułę</span></label>
+    <label class="cm-opt"><input type="radio" name="chartMode" value="obie">
+      <span>obie naraz</span></label>
+    <label class="cm-opt"><input type="radio" name="chartMode" value="evf">
+      <span>sam algorytm EVF</span></label>
+  </div>
   <div class="chart-legend" id="chartLegend"></div>
   <div class="chart-holder">
     <svg id="valueChart" viewBox="0 0 880 430" tabindex="0" role="img" aria-label="Wykres liniowy"></svg>
@@ -1264,17 +1273,21 @@ function renderChart(k,pExp,real){
   const G = CHART_G, pw = G.w-G.l-G.r, ph = G.h-G.t-G.b, lgMax = 8;
   const X = p => G.l + (Math.log2(p)/lgMax)*pw;
 
+  // Trzy tryby: same nowe krzywe, obie rodziny naraz, albo sam algorytm EVF.
+  const tryb = (document.querySelector('input[name="chartMode"]:checked') || {}).value || 'nowe';
+  const pokazNowe = tryb !== 'evf';
+  const pokazEvf  = tryb !== 'nowe';
+
   // Siedem stałych stawek — barwa zawsze należy do tej samej stawki, niezależnie od ustawień.
-  const series = CHART_B.map((B,i) => {
+  const series = pokazNowe ? CHART_B.map((B,i) => {
     const pts = [];
     for(let p=1;p<=B;p++) pts.push([p, score(p,B,1.0,k,pExp,real)]);
     return {B, slot:i+1, pts};
-  });
+  }) : [];
 
-  // Nakładka: dzisiejszy silnik. Ma zaszyte 50 i 10, więc nie reaguje na suwaki —
-  // jest nieruchomym punktem odniesienia, względem którego widać ruch nowych krzywych.
-  const overlay = document.getElementById('chartOld').checked;
-  const seriesOld = overlay ? CHART_B.map((B,i) => {
+  // Algorytm EVF ma zaszyte 50 i 10, więc nie reaguje na suwaki — jest nieruchomym
+  // punktem odniesienia, względem którego widać ruch nowych krzywych.
+  const seriesOld = pokazEvf ? CHART_B.map((B,i) => {
     const pts = [];
     for(let p=1;p<=B;p++) pts.push([p, oldScore(p,B,1.0)]);
     return {B, slot:i+1, pts};
@@ -1306,14 +1319,19 @@ function renderChart(k,pExp,real){
     `<polyline points="${s.pts.map(([p,v]) => `${X(p).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}" fill="none" `
     + `stroke="var(--r${s.slot})" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`).join('');
 
-  const dots = series.map(s =>
+  // Znaczniki startowe i linia odniesienia opierają się na rodzinie wiodącej:
+  // nowej, a gdy pokazujemy sam EVF — na EVF.
+  const wiodaca = series.length ? series : seriesOld;
+
+  const dots = wiodaca.map(s =>
     `<circle cx="${X(1).toFixed(1)}" cy="${Y(s.pts[0][1]).toFixed(1)}" r="4.5" fill="var(--r${s.slot})" `
     + `stroke="var(--chart-surface)" stroke-width="2"/>`).join('');
 
-  const refV = series[0].pts[0][1], refY = Y(refV);
+  const refV = wiodaca[0].pts[0][1], refY = Y(refV);
   const ref = `<line x1="${G.l}" y1="${refY.toFixed(1)}" x2="${G.l+pw}" y2="${refY.toFixed(1)}" `
     + `stroke="var(--coral)" stroke-width="1.5" stroke-dasharray="5 4"/>`
-    + `<text class="ref" x="${G.l+pw}" y="${(refY-7).toFixed(1)}" text-anchor="end">zwycięstwo w stawce 2–4 · ${refV.toFixed(1)} pkt</text>`;
+    + `<text class="ref" x="${G.l+pw}" y="${(refY-7).toFixed(1)}" text-anchor="end">zwycięstwo w stawce 2–4`
+    + `${pokazNowe ? '' : ' wg EVF'} · ${refV.toFixed(1)} pkt</text>`;
 
   svg.innerHTML = `<g>${grid}</g>`
     + `<line x1="${G.l}" y1="${G.t}" x2="${G.l}" y2="${G.t+ph}" stroke="var(--grid)" stroke-width="1"/>`
@@ -1325,14 +1343,18 @@ function renderChart(k,pExp,real){
     + `<rect id="chartHit" x="${G.l}" y="${G.t}" width="${pw}" height="${ph}" fill="transparent" style="cursor:crosshair"/>`;
 
   svg.setAttribute('aria-label', `Wykres liniowy: wartość punktowa według zajętego miejsca dla siedmiu `
-    + `zaokrąglonych stawek od 4 do 256, przy k = ${k}. Każde podwojenie stawki podnosi całą krzywą; `
-    + `krzywe nie przecinają się. Dokładne wartości znajdują się w tabeli powyżej.`);
+    + `zaokrąglonych stawek od 4 do 256, przy k = ${k}. Pokazane krzywe: `
+    + `${tryb === 'nowe' ? 'proponowana formuła' : tryb === 'evf' ? 'algorytm EVF' : 'obie formuły naraz'}. `
+    + `Dokładne wartości znajdują się w tabeli powyżej.`);
 
+  const opisLinii = tryb === 'obie'
+    ? '<b>ciągła</b> — po zmianie &nbsp;·&nbsp; <b>przerywana</b> — EVF'
+    : tryb === 'evf'
+      ? '<b>przerywana</b> — algorytm EVF; suwaki jej nie ruszają'
+      : 'głębsza stawka = mocniejszy ton i wyżej położona krzywa';
   document.getElementById('chartLegend').innerHTML = '<span class="lg-label">STAWKA B</span>'
-    + series.map(s => `<span class="lg-item"><span class="lg-swatch" style="background:var(--r${s.slot})"></span>${s.B}</span>`).join('')
-    + (overlay
-        ? '<span class="lg-note"><b>ciągła</b> — po zmianie &nbsp;·&nbsp; <b>przerywana</b> — EVF</span>'
-        : '<span class="lg-note">głębsza stawka = mocniejszy ton i wyżej położona krzywa</span>');
+    + wiodaca.map(s => `<span class="lg-item"><span class="lg-swatch" style="background:var(--r${s.slot})"></span>${s.B}</span>`).join('')
+    + `<span class="lg-note">${opisLinii}</span>`;
 
   CHART_STATE = {series,seriesOld,X,Y,G,pw,ph};
   if(CHART_PLACE !== null) drawCrosshair(CHART_PLACE);
@@ -1341,37 +1363,40 @@ function renderChart(k,pExp,real){
 function drawCrosshair(p){
   const st = CHART_STATE; if(!st) return;
   const svg = document.getElementById('valueChart'), holder = svg.parentElement;
-  const visible = st.series.filter(s => p <= s.B);
-  if(!visible.length) return;
+  const nowe = st.series.filter(s => p <= s.B);
+  const evf  = st.seriesOld.filter(s => p <= s.B);
+  const maNowe = nowe.length > 0, maEvf = evf.length > 0;
+  const wiodace = maNowe ? nowe : evf;          // która rodzina wyznacza listę stawek
+  if(!wiodace.length) return;
   const cx = st.X(p);
 
-  const stary = st.seriesOld && st.seriesOld.length;
   let g = `<line x1="${cx.toFixed(1)}" y1="${st.G.t}" x2="${cx.toFixed(1)}" y2="${st.G.t+st.ph}" stroke="var(--navy)" stroke-width="1"/>`;
-  if(stary) st.seriesOld.filter(s => p <= s.B).forEach(s => {
-    g += `<circle cx="${cx.toFixed(1)}" cy="${st.Y(s.pts[p-1][1]).toFixed(1)}" r="3.5" fill="var(--chart-surface)" `
+  evf.forEach(s => {
+    g += `<circle cx="${cx.toFixed(1)}" cy="${st.Y(s.pts[p-1][1]).toFixed(1)}" r="3.5" `
+       + `fill="${maNowe ? 'var(--chart-surface)' : 'var(--r'+s.slot+')'}" `
        + `stroke="var(--r${s.slot})" stroke-width="1.5"/>`;
   });
-  visible.forEach(s => {
+  nowe.forEach(s => {
     g += `<circle cx="${cx.toFixed(1)}" cy="${st.Y(s.pts[p-1][1]).toFixed(1)}" r="4.5" fill="var(--r${s.slot})" `
        + `stroke="var(--chart-surface)" stroke-width="2"/>`;
   });
   const cross = document.getElementById('chartCross');
   cross.innerHTML = g; cross.style.opacity = 1;
 
+  const obie = maNowe && maEvf;
   const tip = document.getElementById('chartTip');
-  const wiersze = visible.slice().reverse().map(s => {
-    const nowa = s.pts[p-1][1];
+  const wiersze = wiodace.slice().reverse().map(s => {
     const klucz = `<span class="tip-k"><span class="tip-sw" style="background:var(--r${s.slot})"></span>B ${s.B}</span>`;
-    if(!stary) return klucz + `<span class="tip-v">${nowa.toFixed(1)}</span>`;
+    if(!obie) return klucz + `<span class="tip-v">${s.pts[p-1][1].toFixed(1)}</span>`;
     const o = st.seriesOld.find(x => x.B === s.B);
-    const dzis = o ? o.pts[p-1][1] : null;
-    return klucz + `<span class="tip-v tip-was">${dzis === null ? '—' : dzis.toFixed(1)}</span>`
-                 + `<span class="tip-v">${nowa.toFixed(1)}</span>`;
+    const stara = o ? o.pts[p-1][1] : null;
+    return klucz + `<span class="tip-v tip-was">${stara === null ? '—' : stara.toFixed(1)}</span>`
+                 + `<span class="tip-v">${s.pts[p-1][1].toFixed(1)}</span>`;
   }).join('');
   tip.innerHTML = `<div class="tip-head">Miejsce ${p}</div>`
-    + `<div class="tip-grid ${stary ? 'two' : 'one'}">`
-    + (stary ? '<span class="tip-h"></span><span class="tip-h">EVF</span><span class="tip-h">po zmianie</span>'
-             : '<span class="tip-h"></span><span class="tip-h">punkty</span>')
+    + `<div class="tip-grid ${obie ? 'two' : 'one'}">`
+    + (obie ? '<span class="tip-h"></span><span class="tip-h">EVF</span><span class="tip-h">po zmianie</span>'
+            : `<span class="tip-h"></span><span class="tip-h">${maNowe ? 'punkty' : 'EVF'}</span>`)
     + wiersze + `</div>`;
   tip.classList.add('on');
 
@@ -1467,7 +1492,7 @@ document.getElementById('ticksP').addEventListener('click', e => {
   render();
 });
 document.getElementById('real').addEventListener('change', render);
-document.getElementById('chartOld').addEventListener('change', render);
+document.querySelectorAll('input[name="chartMode"]').forEach(r => r.addEventListener('change', render));
 document.querySelectorAll('.coef input').forEach(i => i.addEventListener('input', render));
 document.getElementById('profileGroups').addEventListener('click', e => {
   const button = e.target.closest('[data-profile]');
