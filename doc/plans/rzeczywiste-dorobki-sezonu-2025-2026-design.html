@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rzeczywiste dorobki sezonu 2025–2026 — projekt przebudowy kalkulatora</title>
+<style>
+:root{--bg:#e8ecf3;--surface:#fff;--surface2:#dce2ec;--ink:#0f1319;--muted:#414b59;--line:#c9d1dc;--accent:#12467e;--accent-soft:#dbe7f5;--good:#0f5f37;--good-soft:#d8eede;--serif:"Iowan Old Style",Charter,Georgia,serif;--sans:system-ui,-apple-system,"Segoe UI",sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+@media(prefers-color-scheme:dark){:root{--bg:#12151b;--surface:#1b2029;--surface2:#232935;--ink:#f1f4f8;--muted:#aeb8c6;--line:#3c4552;--accent:#8cbdec;--accent-soft:#1a2a3c;--good:#6cdc98;--good-soft:#15271b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.62 var(--sans)}.wrap{max-width:58rem;margin:auto;padding:58px 30px 100px}.eyebrow,.kicker{font:700 13px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}h1,h2{font-family:var(--serif);line-height:1.12}h1{font-size:clamp(36px,6vw,54px);margin:12px 0 18px;max-width:20ch}h2{font-size:30px;margin:0 0 16px}p,ul{max-width:66ch}.dek{font-size:22px;color:var(--muted)}section{margin-top:50px}.note{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;background:var(--surface);padding:18px 22px;margin:22px 0}.note.good{border-left-color:var(--good);background:var(--good-soft)}.note>:last-child{margin-bottom:0}.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:18px 0}table{border-collapse:collapse;width:100%;min-width:680px;font-size:15px}th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}th{background:var(--surface2);font:700 12px var(--mono);text-transform:uppercase;letter-spacing:.06em}tr:last-child td{border-bottom:0}code{font-family:var(--mono);background:var(--surface2);padding:.1em .35em;border-radius:4px}.foot{margin-top:58px;padding-top:20px;border-top:2px solid var(--line);color:var(--muted);font:13px var(--mono)}
+</style>
+</head>
+<body><main class="wrap">
+<p class="eyebrow">Specyfikacja projektu · kalkulator rankingu indywidualnego</p>
+<h1>Rzeczywiste dorobki sezonu 2025–2026</h1>
+<p class="dek">Uprościć dokument i pokazać działanie proponowanego algorytmu na kompletnych, możliwych do sprawdzenia startach siedmiu profili rankingowych.</p>
+
+<section>
+<p class="kicker">Cel</p>
+<h2>Od wzoru do rzeczywistego skutku</h2>
+<p>Kalkulator ma nadal wyjaśniać mechanikę gradacji zawodów, ale jego głównym dowodem praktycznym będzie pełne przeliczenie sezonu 2025–2026. Czytelnik zobaczy wkład każdego startu, wynik według obecnej metody, wynik według proponowanej metody oraz sumę sezonu.</p>
+<div class="note good"><p><strong>Główna sekwencja narracji:</strong> problem stałej 50 → działanie nowej podstawy punktowej → rzeczywisty skutek dla dorobku sezonowego.</p></div>
+</section>
+
+<section>
+<p class="kicker">Zakres</p>
+<h2>Siedem profili rankingowych</h2>
+<div class="tablewrap"><table><thead><tr><th>Broń</th><th>Kategoria</th><th>Zawodnik</th><th>Rola przykładu</th></tr></thead><tbody>
+<tr><td>Szpada</td><td>V2</td><td>KORONA Przemysław</td><td>porównanie w tej samej kategorii</td></tr>
+<tr><td>Szpada</td><td>V2</td><td>ATANASSOW Aleksander</td><td>porównanie w tej samej kategorii</td></tr>
+<tr><td>Floret</td><td>V2</td><td>KORONA Przemysław</td><td>pełny dorobek floretowy</td></tr>
+<tr><td>Floret</td><td>V2</td><td>MOCEK Sławomir</td><td>wyniki krajowe, międzynarodowe i seniorskie</td></tr>
+<tr><td>Floret</td><td>V2</td><td>CIEPŁY Tomasz</td><td>wyniki krajowe, międzynarodowe i seniorskie</td></tr>
+<tr><td>Floret</td><td>V1</td><td>SZUMIELEWICZ Paweł</td><td>jawne zachowanie przykładu startów seniorskich</td></tr>
+<tr><td>Szabla</td><td>V3</td><td>ZABŁOCKI Michał</td><td>działanie algorytmu w trzeciej broni</td></tr>
+</tbody></table></div>
+<p>Dla każdego profilu wchodzą wszystkie indywidualne starty sezonu 2025–2026 zaliczane do nowego rankingu: PPW, MPW, PEW, MEW, MŚW oraz zawody seniorskie. Wyniki w innej broni nie przechodzą między profilami.</p>
+</section>
+
+<section>
+<p class="kicker">Prezentacja</p>
+<h2>Trzy bloki, jeden standard danych</h2>
+<ol>
+<li><strong>Szpada V2:</strong> Korona i Atanassow — bezpośrednie porównanie sum.</li>
+<li><strong>Floret:</strong> Korona V2, Mocek V2, Ciepły V2 i Szumielewicz V1 — kategoria zawsze widoczna.</li>
+<li><strong>Szabla V3:</strong> Zabłocki — samodzielny przykład działania tych samych reguł.</li>
+</ol>
+<p>Każdy start będzie osobnym wierszem o stałych kolumnach:</p>
+<div class="tablewrap"><table><thead><tr><th>Zawody i data</th><th>Typ</th><th>Miejsce</th><th>N</th><th>B</th><th>Współczynnik</th><th>Obecnie</th><th>Propozycja</th><th>Różnica</th></tr></thead><tbody><tr><td>nazwa oraz data</td><td>PPW / MPW / PPS / MPS / PEW / MEW / MŚW</td><td>zajęte miejsce</td><td>faktyczna stawka</td><td>zaokrąglona stawka</td><td>wartość użyta w obliczeniu</td><td>punkty obecnej metody</td><td>wynik reagujący na ustawienia kalkulatora</td><td>zmiana punktowa</td></tr></tbody></table></div>
+<p>Po startach każdego profilu pojawi się jeden wiersz <strong>RAZEM</strong>. Pod zestawieniem znajdą się niewielkie boxy podsumowujące, bez tworzenia kolejnej tabeli.</p>
+</section>
+
+<section>
+<p class="kicker">Uproszczenie dokumentu</p>
+<h2>Mniej tabel, wyraźniejsze funkcje</h2>
+<ul>
+<li>Zostaje mała tabela diagnozująca stałą podstawę 50.</li>
+<li>Zostaje tabela „Wartość miejsca według stawki” jako główna ilustracja algorytmu.</li>
+<li>Dwa dotychczasowe przykłady dorobków zostają zastąpione rzeczywistym zestawieniem sezonu.</li>
+<li>Dowód wyników seniorskich Pawła Szumielewicza nie znika: staje się częścią jego kompletnego profilu i zostaje jawnie opisany.</li>
+<li>Szczegóły matematyczne pozostają na końcu jako część techniczna.</li>
+</ul>
+</section>
+
+<section>
+<p class="kicker">Dane i obliczenia</p>
+<h2>Audytowalność</h2>
+<ul>
+<li>Każdy wynik pochodzi z publicznego protokołu albo ze zweryfikowanych danych projektu.</li>
+<li>Brak startu oznacza „nie startował”, a nie wynik sportowy równy zero.</li>
+<li>Brak liczebności stawki jest ujawniony; wartość nie może być zgadywana bez wyraźnego oznaczenia.</li>
+<li>Wartości obecnej metody tworzą nieruchomy punkt odniesienia.</li>
+<li>Wartości proponowane reagują na suwak <code>k</code>, checkboxy oraz współczynniki rangi.</li>
+<li>Sumy profili są liczone z widocznych wierszy, nie wpisywane ręcznie.</li>
+</ul>
+</section>
+
+<section>
+<p class="kicker">Warunki odbioru</p>
+<h2>Po czym poznamy, że ilustracja działa</h2>
+<ul>
+<li>Każdy z siedmiu profili ma kompletną listę kwalifikujących się startów sezonu.</li>
+<li>Zmiana dowolnego parametru natychmiast aktualizuje każdy wynik proponowany, różnicę i sumę.</li>
+<li>Wiersz można niezależnie przeliczyć na podstawie pokazanych danych.</li>
+<li>Porównanie Korona–Atanassow jest czytelne bez mieszania go z innymi kategoriami.</li>
+<li>Starty seniorskie Szumielewicza, Mocka i Ciepłego są widoczne, jeżeli wystąpiły w sezonie i spełniają zasady wejścia.</li>
+<li>Dokument pozostaje czytelny na telefonie dzięki przewijanym tabelom i krótkim podsumowaniom.</li>
+</ul>
+</section>
+
+<p class="foot">projekt · 14 sierpnia 2026 · zatwierdzony zakres przed implementacją</p>
+</main></body></html>
