@@ -165,8 +165,14 @@ label.cb .q{opacity:.72}
 .chart-tip.on{opacity:1}
 .chart-tip .tip-head{font-weight:800;color:var(--ink);margin-bottom:5px;padding-bottom:4px;
  border-bottom:1px solid var(--line)}
-.chart-tip .tip-row{display:flex;align-items:center;gap:6px;margin:2px 0;white-space:nowrap;color:var(--muted)}
-.chart-tip .tip-row b{margin-left:auto;color:var(--ink);font-variant-numeric:tabular-nums}
+.chart-tip .tip-grid{display:grid;gap:3px 14px;align-items:center}
+.chart-tip .tip-grid.one{grid-template-columns:auto auto}
+.chart-tip .tip-grid.two{grid-template-columns:auto auto auto}
+.chart-tip .tip-h{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
+ font-weight:700;text-align:right;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.chart-tip .tip-k{display:flex;align-items:center;gap:6px;white-space:nowrap;color:var(--muted)}
+.chart-tip .tip-v{text-align:right;color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+.chart-tip .tip-was{color:var(--muted);font-weight:400}
 .chart-tip .tip-sw{width:12px;height:3px;border-radius:2px;flex:none}
 table{border-collapse:collapse;width:100%;min-width:600px}
 th{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
@@ -476,15 +482,15 @@ zaokrąglona stawka B, nie dokładna frekwencja. Kolumny pokazują wynik przy ws
   a rozjeżdża tabelę w płytkich. Przełącznik „ostatni zawsze otrzymuje 1 punkt” tych krzywych nie rusza:
   dla stawek będących dokładną potęgą dwójki oba sposoby liczenia dają identyczne wartości. Dokładne
   liczby pozostają w tabeli powyżej.<br><br>
-  Przełącznik poniżej nakłada na wykres <b>krzywe dzisiejszego silnika</b> — przerywane, w tych samych
-  barwach stawek. Dzisiejszy algorytm ma zaszytą stałą 50 i sztywne 10 punktów za rundę, więc
+  Przełącznik poniżej nakłada na wykres <b>krzywe algorytmu EVF</b> — przerywane, w tych samych
+  barwach stawek. Algorytm EVF ma zaszytą stałą 50 i sztywne 10 punktów za rundę, więc
   <b>nie reaguje na suwaki</b>: jest nieruchomym punktem odniesienia, względem którego widać, jak
   przesuwają się nowe krzywe. Najlepiej widać na nim problem stałej 50 — dziś zwycięstwo w stawce
   czterech osób jest warte 84,3 punktu wobec 187,1 za wygranie stawki 256, czyli tylko 2,2 raza mniej
   za pokonanie trzech rywali zamiast 255.</figcaption>
-  <label class="chart-toggle" title="Nałóż krzywe dzisiejszego silnika: stała 50, premia 10 za rundę, bonus za podium">
+  <label class="chart-toggle" title="Nałóż krzywe algorytmu EVF: stała 50, premia 10 za rundę, bonus za podium">
     <input type="checkbox" id="chartOld">
-    <span>pokaż nakładkę: <b>dzisiejszy algorytm</b> (stała 50 + premia za rundy + podium)</span>
+    <span>pokaż nakładkę: <b>algorytm EVF</b> (stała 50 + premia za rundy + podium)</span>
   </label>
   <div class="chart-legend" id="chartLegend"></div>
   <div class="chart-holder">
@@ -1325,7 +1331,7 @@ function renderChart(k,pExp,real){
   document.getElementById('chartLegend').innerHTML = '<span class="lg-label">STAWKA B</span>'
     + series.map(s => `<span class="lg-item"><span class="lg-swatch" style="background:var(--r${s.slot})"></span>${s.B}</span>`).join('')
     + (overlay
-        ? '<span class="lg-note"><b>ciągła</b> — po zmianie &nbsp;·&nbsp; <b>przerywana</b> — dziś</span>'
+        ? '<span class="lg-note"><b>ciągła</b> — po zmianie &nbsp;·&nbsp; <b>przerywana</b> — EVF</span>'
         : '<span class="lg-note">głębsza stawka = mocniejszy ton i wyżej położona krzywa</span>');
 
   CHART_STATE = {series,seriesOld,X,Y,G,pw,ph};
@@ -1353,16 +1359,20 @@ function drawCrosshair(p){
   cross.innerHTML = g; cross.style.opacity = 1;
 
   const tip = document.getElementById('chartTip');
-  tip.innerHTML = `<div class="tip-head">Miejsce ${p}${stary ? ' · dziś → po zmianie' : ''}</div>`
-    + visible.slice().reverse().map(s => {
-        const nowa = s.pts[p-1][1];
-        if(!stary) return `<div class="tip-row"><span class="tip-sw" style="background:var(--r${s.slot})"></span>B ${s.B}`
-          + `<b>${nowa.toFixed(1)}</b></div>`;
-        const o = st.seriesOld.find(x => x.B === s.B);
-        const dzis = o ? o.pts[p-1][1] : null;
-        return `<div class="tip-row"><span class="tip-sw" style="background:var(--r${s.slot})"></span>B ${s.B}`
-          + `<b>${dzis === null ? '—' : dzis.toFixed(1)} → ${nowa.toFixed(1)}</b></div>`;
-      }).join('');
+  const wiersze = visible.slice().reverse().map(s => {
+    const nowa = s.pts[p-1][1];
+    const klucz = `<span class="tip-k"><span class="tip-sw" style="background:var(--r${s.slot})"></span>B ${s.B}</span>`;
+    if(!stary) return klucz + `<span class="tip-v">${nowa.toFixed(1)}</span>`;
+    const o = st.seriesOld.find(x => x.B === s.B);
+    const dzis = o ? o.pts[p-1][1] : null;
+    return klucz + `<span class="tip-v tip-was">${dzis === null ? '—' : dzis.toFixed(1)}</span>`
+                 + `<span class="tip-v">${nowa.toFixed(1)}</span>`;
+  }).join('');
+  tip.innerHTML = `<div class="tip-head">Miejsce ${p}</div>`
+    + `<div class="tip-grid ${stary ? 'two' : 'one'}">`
+    + (stary ? '<span class="tip-h"></span><span class="tip-h">EVF</span><span class="tip-h">po zmianie</span>'
+             : '<span class="tip-h"></span><span class="tip-h">punkty</span>')
+    + wiersze + `</div>`;
   tip.classList.add('on');
 
   const hr = holder.getBoundingClientRect(), sr = svg.getBoundingClientRect();
