@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Handover — nowa formuła rankingu indywidualnego</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --violet:#60418f; --violet-soft:#e9e0f4;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+      --violet:#c3a8ef; --violet-soft:#281f38;
+    }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:64rem;margin:0 auto;padding:52px 26px 96px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .38em;border-radius:5px;font-size:.85em;font-weight:650;border:1px solid var(--line)}
+  a{color:var(--accent);text-underline-offset:3px}
+  .eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin:0 0 14px;font-weight:800}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(33px,5vw,50px);line-height:1.06;letter-spacing:-.017em;margin:0 0 18px;text-wrap:balance;max-width:22ch}
+  .dek{font-size:20px;line-height:1.5;color:var(--muted);margin:0 0 24px;max-width:62ch}
+  .dek b{color:var(--ink)}
+  .meta{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 10px}
+  .pill{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;font-weight:700;padding:6px 11px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+  .pill.good .dot{background:var(--good)} .pill.warn .dot{background:var(--warn)} .pill.bad .dot{background:var(--danger)}
+  .rule{height:2px;background:var(--line);border:0;margin:40px 0}
+  section{margin-top:50px;scroll-margin-top:16px}
+  .kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);font-weight:800;margin:0 0 9px}
+  h2{font-family:var(--serif);font-weight:700;font-size:30px;line-height:1.15;letter-spacing:-.012em;margin:0 0 15px;text-wrap:balance}
+  h3{font-size:18.5px;font-weight:850;margin:26px 0 9px}
+  p{margin:0 0 14px;max-width:70ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:70ch}
+  li{margin:7px 0} li::marker{color:var(--accent)}
+  strong{font-weight:750}
+  pre{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);
+      border-radius:8px;padding:16px 18px;overflow-x:auto;margin:16px 0;font-size:13.5px;line-height:1.65}
+  pre code{background:none;border:0;padding:0;font-weight:500}
+  .c{color:var(--faint)}
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:9px;background:var(--surface);padding:16px 20px;margin:18px 0}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:850;font-size:17px;margin:0 0 7px;display:flex;align-items:center;gap:10px}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)} .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)} .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)} .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)} .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:900;font-size:16px}
+  .tablewrap{overflow-x:auto;margin:16px 0;border:1px solid var(--line);border-radius:9px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:10px 13px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}
+  td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+  .toc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 22px;margin:26px 0}
+  .toc h2{font:800 12px/1.4 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin:0 0 10px}
+  .toc ol{margin:0;padding-left:1.3em;font-size:15px;columns:2;column-gap:26px}
+  .toc a{text-decoration:none;color:var(--muted)} .toc a:hover{color:var(--accent)}
+  .foot{margin-top:56px;padding-top:20px;border-top:2px solid var(--line);font-size:13px;color:var(--faint);font-family:var(--mono)}
+  @media(max-width:700px){.toc ol{columns:1}.wrap{padding:34px 17px 70px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="eyebrow">SPWS · handover · 15 sierpnia 2026</p>
+<h1>Nowa formuła rankingu indywidualnego</h1>
+<p class="dek">Sesja zamknięta ośmioma commitami. Powstała <b>nowa funkcja punktowa z dwoma pokrętłami</b>,
+zastępująca dotychczasowy trzyskładnikowy wzór, oraz wykres z przełączanym porównaniem do algorytmu EVF.
+Ten dokument zawiera wszystko, czego potrzeba, żeby kontynuować bez wyprowadzania formuły od nowa.</p>
+
+<div class="meta">
+  <span class="pill good"><span class="dot"></span>8 commitów, lokalnie</span>
+  <span class="pill warn"><span class="dot"></span>nie pushnięte</span>
+  <span class="pill warn"><span class="dot"></span>branch 54 commity za main</span>
+</div>
+
+<div class="toc">
+  <h2>Spis treści</h2>
+  <ol>
+    <li><a href="#stan">Stan na koniec sesji</a></li>
+    <li><a href="#formula">Finalna formuła</a></li>
+    <li><a href="#kontrolne">Liczby kontrolne</a></li>
+    <li><a href="#odrzucone">Odrzucone podejścia</a></li>
+    <li><a href="#diagnozy">Diagnozy uzasadniające konstrukcję</a></li>
+    <li><a href="#otwarte">Otwarte wątki</a></li>
+    <li><a href="#jak">Jak pracujemy</a></li>
+  </ol>
+</div>
+
+<hr class="rule">
+
+<section id="stan">
+<p class="kicker">01 · Stan</p>
+<h2>Gdzie co leży</h2>
+
+<p>Pracujemy w worktree <code>SPWSranklist-codex-operating-structure</code>, na branchu
+<code>codex/agent-worktree-operating-structure</code>. <strong>Nie w repo głównym.</strong></p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Plik</th><th>Co to</th></tr></thead>
+<tbody>
+<tr><td><code>doc/plans/Nowy_ranking_indywidualny-kalkulator.html</code></td>
+    <td>Główny przedmiot pracy. Interaktywny kalkulator: nowa formuła, dwa suwaki, tabela wartości,
+        wykres z trzema trybami, audyt sezonu 2025–2026, dwie pule drużynowe.</td></tr>
+<tr><td><code>doc/plans/proponowana-metoda-selekcji-kadry-narodowej-2026-08-13.html</code></td>
+    <td>Dokument metody selekcji kadry. Linkuje do kalkulatora. Ruszany tylko raz — wyrównanie
+        trzech zdań o zakresie rankingu.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Osiem commitów sesji, od najstarszego</h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th>SHA</th><th>Co wnosi</th></tr></thead>
+<tbody>
+<tr><td><code>f1d9391</code></td><td>wykres wartości miejsca według stawki</td></tr>
+<tr><td><code>c0b9cd4</code></td><td><strong>nowa funkcja punktowa z pokrętłami k i p</strong></td></tr>
+<tr><td><code>3e30cb7</code></td><td>nazwa <code>f(m, N, k, p)</code> we wprowadzeniu i implementacji</td></tr>
+<tr><td><code>27de780</code></td><td>redakcja tekstu po czytaniu całości</td></tr>
+<tr><td><code>52d136b</code></td><td>wyrównanie dokumentu metody selekcji</td></tr>
+<tr><td><code>88f9bfb</code></td><td>nakładka z krzywymi algorytmu EVF</td></tr>
+<tr><td><code>05b5239</code></td><td>siatka podpowiedzi wykresu, nazwa „algorytm EVF"</td></tr>
+<tr><td><code>bafcef1</code></td><td>trzy tryby wykresu, w tym sam EVF</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note warn">
+<p class="lede"><span class="tick">!</span> Nietknięte przez całą sesję</p>
+<p><code>.superpowers/</code> (śmieci narzędziowe) oraz <code>doc/plans/tbilisi-2026-sponsor-proposal-handover.html</code>
+i <code>doc/plans/tbilisi-team-pools-ranking-audit-design.html</code> — niezwiązane, nieśledzone, sprzed sesji.
+Nie commitować bez wyraźnej decyzji.</p>
+</div>
+</section>
+
+<section id="formula">
+<p class="kicker">02 · Sedno</p>
+<h2>Finalna formuła</h2>
+
+<p>To jest wynik wielu iteracji i kilku ślepych uliczek. <strong>Nie wyprowadzać jej od nowa</strong> —
+sekcja „Odrzucone podejścia" mówi, co już nie zadziałało i dlaczego.</p>
+
+<pre><code><span class="c">— wejście —</span>
+N   liczba startujących        m   zajęte miejsce
+k   suwak głębokości (3–10, domyślnie 8)
+p   suwak kształtu (1,0–2,0 co 0,1, domyślnie 1,0)
+w   współczynnik rangi zawodów
+
+<span class="c">— zaokrąglenie i rozpiętość —</span>
+B  = max(4, 2^⌈log₂N⌉)
+RB = log₂B
+D  = tryb „ostatni zawsze 1" ? max(2, N) : B     <span class="c">rozpiętość tabeli</span>
+R  = log₂D
+
+<span class="c">— kształt zależny od głębokości —</span>
+u  = log₂m / R                        <span class="c">0 czoło, 1 koniec</span>
+w⁺ = max(0, R − 4,5) / 3,5            <span class="c">o ile głębsza niż próg 32</span>
+w⁻ = max(0, 4,5 − R) / 2,5            <span class="c">o ile płytsza niż próg 32</span>
+a  = 1 + p · w⁺                       <span class="c">spłaszcza czoło (głębokie)</span>
+b  = 1 + p · (w⁺ + 1,5 · w⁻)          <span class="c">gasi ogon / stromy spadek (płytkie)</span>
+
+<span class="c">— wynik —</span>
+T = 2k · RB                                       <span class="c">pułap 1. miejsca bez podium</span>
+punkty za miejsce = 1 + (T − 1) · (1 − u^a)^b     <span class="c">rundy WCHŁONIĘTE (stąd 2k)</span>
+podium            = c · 3 · ∛D                    <span class="c">c = 3/2/1/0; jedyny składnik na zewnątrz</span>
+
+wynik = (punkty za miejsce + podium) · w</code></pre>
+
+<div class="note accent">
+<p class="lede"><span class="tick">→</span> Podział ról pokręteł</p>
+<p><code>k</code> działa <strong>w pionie, między zawodami</strong>: każde podwojenie stawki dokłada do
+zwycięstwa <code>2k</code> punktów. <code>p</code> działa <strong>w poziomie, wewnątrz jednych zawodów</strong>:
+zmienia kształt tabeli, nie ruszając ani pierwszego miejsca, ani ostatniego. Sprawdzone na żywo —
+przy <code>p</code> 1,0 / 1,5 / 2,0 pierwsze miejsce w stawce 256 daje za każdym razem 185,1.</p>
+</div>
+
+<h3>Dlaczego mnożnik 2 przy k</h3>
+<p>Pułap <code>T = 2k·log₂B</code> jest sumą dwóch dawnych składników: punktów za miejsce
+(<code>k·log₂B</code>) i premii za wygrane rundy (też <code>k·log₂B</code> na pierwszym miejscu).
+Dzięki temu <strong>pierwsze miejsce jest warte dokładnie tyle, co w starym wzorze</strong>, a zmienia się
+wyłącznie rozkład miejsc poniżej. To był twardy wymóg użytkownika.</p>
+
+<h3>Ustawienia interfejsu</h3>
+<ul>
+  <li>Suwak <code>k</code>: 3–10, krok 1, domyślnie <strong>8</strong>. Pokazuje na żywo <code>2k</code> w opisie.</li>
+  <li>Suwak <code>p</code>: 1,0–2,0, krok 0,1, domyślnie <strong>1,0</strong>. Podziałka podpisana co 0,5.</li>
+  <li>Przełącznik „ostatni zawsze otrzymuje 1 punkt" — <strong>został</strong>, steruje <code>D</code>.</li>
+  <li>Przełącznik „<code>k</code> także w bonusie za rundy" — <strong>usunięty</strong>, nie ma czym przełączać.</li>
+  <li>Wykres: trzy tryby — proponowana formuła / obie naraz / sam algorytm EVF.</li>
+</ul>
+</section>
+
+<section id="kontrolne">
+<p class="kicker">03 · Regresja</p>
+<h2>Liczby kontrolne</h2>
+
+<p>Przy <code>k = 8</code>, <code>p = 1,0</code>, tryb domyślny (bez „ostatni zawsze 1"), współczynnik rangi 1,0.
+Jeśli po zmianach te liczby się nie zgadzają — coś się zepsuło.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>B</th><th>1.</th><th>2.</th><th>3.</th><th>4.</th><th>8.</th><th>16.</th><th>32.</th><th>64.</th><th>128.</th><th>256.</th></tr></thead>
+<tbody>
+<tr><td>4</td><td class="num">46,3</td><td class="num">16,0</td><td class="num">6,4</td><td class="num">1,0</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+<tr><td>8</td><td class="num">66,0</td><td class="num">34,8</td><td class="num">18,3</td><td class="num">6,8</td><td class="num">1,0</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+<tr><td>16</td><td class="num">86,7</td><td class="num">59,5</td><td class="num">41,3</td><td class="num">26,6</td><td class="num">11,4</td><td class="num">1,0</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+<tr><td>32</td><td class="num">108,6</td><td class="num">84,9</td><td class="num">65,7</td><td class="num">49,2</td><td class="num">32,1</td><td class="num">15,4</td><td class="num">1,0</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+<tr><td>64</td><td class="num">132,0</td><td class="num">109,7</td><td class="num">88,4</td><td class="num">69,1</td><td class="num">49,9</td><td class="num">30,4</td><td class="num">12,6</td><td class="num">1,0</td><td class="num">—</td><td class="num">—</td></tr>
+<tr><td>128</td><td class="num">157,4</td><td class="num">135,6</td><td class="num">112,6</td><td class="num">90,7</td><td class="num">71,3</td><td class="num">49,5</td><td class="num">28,0</td><td class="num">10,1</td><td class="num">1,0</td><td class="num">—</td></tr>
+<tr><td>256</td><td class="num">185,1</td><td class="num">162,2</td><td class="num">137,3</td><td class="num">112,6</td><td class="num">94,8</td><td class="num">72,4</td><td class="num">48,2</td><td class="num">25,3</td><td class="num">8,0</td><td class="num">1,0</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Niezmienniki — sprawdzone dla każdego k od 3 do 10 i każdego p od 1,0 do 2,0</h3>
+<ul>
+  <li><strong>Monotoniczna</strong> — dalsze miejsce nigdy nie daje więcej niż wcześniejsze.</li>
+  <li><strong>Brak przecięć między stawkami</strong> — głębsza stawka nigdy nie daje mniej na tym samym miejscu.</li>
+  <li><strong>Kotwica górna</strong> — <code>f(1) = 2k·log₂B + 9·∛B</code>, co do grosza tyle, ile dawał stary wzór.</li>
+  <li><strong>Kotwica dolna</strong> — <code>f(B) = 1</code> dokładnie.</li>
+</ul>
+
+<p>Monotoniczność wynika z konstrukcji: <code>(1 − u^a)^b</code> maleje monotonicznie dla dowolnych
+dodatnich <code>a</code>, <code>b</code>. Ale <strong>przecięcia i kotwice trzeba sprawdzać numerycznie</strong>
+po każdej zmianie stałych.</p>
+
+<div class="note good">
+<p class="lede"><span class="tick">✓</span> Sprawdziany z preambuły przechodzą</p>
+<p>Złoto MŚW 370 wobec pięciu drobnych zwycięstw 250. Ósme miejsce na sto 71 wobec wygranej
+z jednym rywalem 46. Oba przy <code>k = 8</code>, <code>p = 1</code>.</p>
+</div>
+</section>
+
+<section id="odrzucone">
+<p class="kicker">04 · Nie powtarzać</p>
+<h2>Odrzucone podejścia</h2>
+
+<p>Każde z nich zostało zbudowane i sprawdzone liczbowo. Wszystkie odpadły z konkretnego powodu.</p>
+
+<h3>1. Deformacja f1 — odrzucona z zasady</h3>
+<p>Postać <code>1 + (V₁−1)·z^θ</code>, gdzie <code>z</code> to znormalizowana wartość starego wzoru.
+Działała technicznie, ale użytkownik postawił twardy warunek: <strong>„f2 ma być niezależne od f1"</strong> —
+wolno używać <code>m</code>, <code>N</code>, <code>B</code>, <code>k</code>, <code>p</code>, ale nie wywoływać
+starej funkcji. Nie wracać do tego.</p>
+
+<h3>2. Garb multiplikatywny — złamał monotoniczność</h3>
+<p>Postać <code>f1 · (1 + D(B)·φ(u))</code> z garbem <code>φ</code> zerowym na obu końcach.
+Przy <code>B = 256</code> i <code>p = 1</code> <strong>drugie miejsce dostawało 240,8, a pierwsze 217,1</strong>.
+Garb rósł szybciej, niż spadała wartość miejsca. Nie da się tego naprawić dostrojeniem parametru.</p>
+
+<h3>3. Jedna potęga <code>(1−u)^γ</code> — rozdęła ogon</h3>
+<p>Zagęszczenie czoła przy zakotwiczonych obu końcach <strong>musi</strong> podnieść całą krzywą, bo ogon leży
+przy podłodze jednego punktu. Przy <code>B = 256</code> miejsce 128. szło z 20,9 na 68,1, czyli
+<strong>+226%</strong>. Skutek domenowy: 64. miejsce na 256 (100,1) zrównywało się z wygraniem stawki 16 (102,7),
+więc sam przyjazd na dużą imprezę zaczynał się opłacać. Stąd przejście na rodzinę
+<code>(1 − u^a)^b</code>, gdzie <code>a</code> i <code>b</code> działają na przeciwnych końcach tabeli.</p>
+
+<h3>4. Bramkowanie podium na głębokość — łamie kotwicę</h3>
+<p>Pomysł: <code>podium · gate(B)</code>, gdzie <code>gate</code> rośnie od 0 przy B=4 do 1 przy B=32.
+Naprawiał realną patologię (brąz w stawce czterech osób za pokonanie jednej), ale
+<strong>zmieniał wartość pierwszego miejsca w płytkich stawkach</strong> (B=4: 46,3 → 32,0), co narusza
+twardy wymóg równości z dotychczasowym wzorem. Odrzucone.</p>
+
+<h3>5. Premia za rundy jako widoczny schodek — świadomie porzucona</h3>
+<p>Rozważany był wariant, w którym premia zostaje osobnym, sprawdzalnym składnikiem
+<code>k × liczba wygranych rund</code>. Wszystkie warunki trzymały, ale <strong>efekt był o połowę
+słabszy</strong> — schodka nie da się wygiąć, a stanowi połowę wartości. Ogon schodził do 12,5 zamiast 8,0.
+Użytkownik wybrał wchłonięcie mimo utraty czytelnego składnika.</p>
+
+<div class="note danger">
+<p class="lede"><span class="tick">✗</span> Pułapka pomiarowa</p>
+<p>Stosunek srebra do złota <strong>nie nadaje się</strong> do oceny wpływu <code>p</code>. Jest zablokowany
+przez podium: złoto dostaje <code>9∛B</code>, srebro <code>6∛B</code>, więc sama różnica medalowa to
+około 10% wartości złota i srebro nie przekroczy ~90% niezależnie od kształtu krzywej.
+Do oceny <code>p</code> patrzeć <strong>na ogon</strong>.</p>
+</div>
+</section>
+
+<section id="diagnozy">
+<p class="kicker">05 · Uzasadnienie</p>
+<h2>Diagnozy, na których stoi konstrukcja</h2>
+
+<p>Cztery ustalenia liczbowe o dotychczasowym algorytmie. Warto je mieć pod ręką, bo to one uzasadniają
+każdy element nowej formuły — i są mocnym materiałem do dokumentu przekonującego federację.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Ustalenie</th><th>Liczby</th></tr></thead>
+<tbody>
+<tr><td><strong>Nachylenie identyczne przy każdej stawce.</strong> Głębokość podnosi krzywą, ale nigdy nie
+    zmienia tempa utraty wartości. Około <code>−2k</code> na podwojenie miejsca, niezależnie od B.</td>
+    <td class="num">B=8: −15,67<br>B=32: −15,80<br>B=256: −15,88<br><span class="c">(k=8)</span></td></tr>
+<tr><td><strong>Ogon w ogóle nie widzi głębokości.</strong> Połowa stawki daje tyle samo, czy pokonano
+    cztery osoby, czy sto dwadzieścia osiem. To ta sama wada co stała 50, tylko na drugim końcu tabeli.</td>
+    <td class="num">4. na 8: 20,7<br>16. na 32: 20,8<br>128. na 256: 20,9</td></tr>
+<tr><td><strong>Zagęszczenie czoła wysyca się.</strong> Piąte miejsce jako procent zwycięzcy przestaje
+    rosnąć przy głębokich stawkach — podwojenie ze 128 na 256 daje już tylko +2,3 pkt proc.</td>
+    <td class="num">B=32: 37%<br>B=64: 43%<br>B=128: 47%<br>B=256: 49%</td></tr>
+<tr><td><strong>Podium najcenniejsze tam, gdzie znaczy najmniej.</strong> Brąz w stawce czterech osób to
+    połowa wyniku za pokonanie jednej osoby; brąz w stawce 256 to 13% za pokonanie 253.</td>
+    <td class="num">B=4: 49%<br>B=8: 20%<br>B=32: 13%<br>B=256: 13%</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Cel domenowy, sformułowany przez użytkownika</h3>
+<blockquote style="margin:0;padding:12px 18px;border-left:4px solid var(--violet);background:var(--violet-soft);border-radius:0 8px 8px 0">
+<p style="margin:0">„Wysokie miejsca w dużej stawce mają być bliżej siebie procentowo niż w małych stawkach.
+Piąte miejsce w dużej stawce to dobry wynik, a przy małych dramatycznie zły." Do tego: pierwsze miejsce
+bez zmian, wartości poniżej niższe niż dotąd do stawki 16, a od stawki 32 czoło wyżej. I osobno:
+<strong>„trzeba zgasić ten ogon"</strong>.</p>
+</blockquote>
+</section>
+
+<section id="otwarte">
+<p class="kicker">06 · Do zrobienia</p>
+<h2>Otwarte wątki</h2>
+
+<div class="note danger">
+<p class="lede"><span class="tick">!</span> Trzy ostatnie commity nie były oglądane wzrokowo</p>
+<p>Zrzuty ekranu w przeglądarce zwracały puste obrazy przez drugą połowę sesji. Nakładka EVF, siatka
+podpowiedzi i trzy tryby wykresu (<code>88f9bfb</code>, <code>05b5239</code>, <code>bafcef1</code>)
+zweryfikowane <strong>wyłącznie pomiarowo</strong> — liczba krzywych, kolory, wartości odczytane
+z narysowanego SVG, klasy CSS, przeskalowanie osi. Wszystko się zgadzało, ale wyglądu nikt nie ocenił.
+<strong>Pierwsza rzecz do zrobienia: otworzyć kalkulator i obejrzeć wykres w trzech trybach.</strong></p>
+</div>
+
+<h3>Drobne, znane rozjazdy</h3>
+<ul>
+  <li><strong>Dokument metody selekcji</strong> — karta „Ranking indywidualny" w sekcji o architekturze metody
+      nadal ma własne, skrótowe sformułowanie, nieujednolicone z resztą. Trzy główne zdania są już wyrównane.</li>
+  <li><strong>„Obrazuje to wykres poniżej"</strong> w kalkulatorze — wykres nie sąsiaduje z tym akapitem,
+      dzieli je sekcja o współczynnikach rangi i tabela.</li>
+  <li><strong>Nazwa „algorytm EVF"</strong> weszła tylko tam, gdzie dotyczy wykresu. W tekście poza wykresem
+      nadal jest „Dzisiejszy algorytm nie odróżnia…" oraz tabele opisane jako „dzisiejszy wynik".</li>
+  <li><strong>Stare pliki handover</strong> nie zostały przeniesione do tego folderu — użytkownik odpuścił
+      to świadomie. Dwa z nich są linkowane z innych dokumentów, więc przenosiny wymagają poprawienia
+      odnośników w <code>security-implementation-progress-2026-07-23.html</code>,
+      <code>security-hardening-2026-07-22.html</code> i <code>supabase-rls-deep-analysis-2026-07-22.html</code>.</li>
+  <li><strong>Odsyłacz do preambuły</strong> w dokumencie metody nie działa w tym worktree, bo
+      <code>doc/external_files/</code> jest w <code>.gitignore</code>, a pliki ignorowane nie są współdzielone
+      między worktree'ami. Z repo głównego zadziała. Stan zastany, nie do naprawy tutaj.</li>
+</ul>
+
+<h3>Decyzje świadomie odłożone</h3>
+<ul>
+  <li>Zakres suwaka <code>p</code> zaczyna się od 1,0, więc <code>p = 0</code> — dokładny odpowiednik
+      starego silnika — jest poza suwakiem. Gdyby przydał się punkt odniesienia „jak dziś", wystarczy
+      rozszerzyć dół zakresu.</li>
+  <li>Branch nie był pushowany i jest 54 commity za <code>main</code>. Rebase nie był robiony.</li>
+</ul>
+</section>
+
+<section id="jak">
+<p class="kicker">07 · Współpraca</p>
+<h2>Jak pracujemy</h2>
+
+<ul>
+  <li><strong>Konsultować każdą zmianę.</strong> Użytkownik wprost prosił, żeby nie iterować samodzielnie
+      przez wiele kroków. Pokazać liczby, dać rekomendację, poczekać na decyzję.</li>
+  <li><strong>Po polsku.</strong> Rozmowa i dokumenty tej rodziny są po polsku.</li>
+  <li><strong>Nie czepiać się przykładów.</strong> Gdy użytkownik pisze „np. do odróżnienia MPW od MEW",
+      to jest przykład, nie definicja — nie zgłaszać tego jako niespójności.</li>
+  <li><strong>Weryfikować, ale nie ufać zrzutom ekranu.</strong> Panel podglądu bywa niestabilny.
+      Pomiar przez <code>javascript_tool</code> — odczyt wartości z DOM i z narysowanego SVG — jest
+      pewniejszy i wystarczający do potwierdzenia liczb.</li>
+  <li><strong>Sprawdzać liczbowo przed twierdzeniem.</strong> Cała ta sesja polegała na tym, że każde
+      „to powinno zadziałać" było najpierw policzone w Node, a dopiero potem wpisane do dokumentu.</li>
+  <li><strong>Commity opisowe, po polsku</strong>, z uzasadnieniem decyzji, nie tylko listą zmian.</li>
+</ul>
+
+<div class="note accent">
+<p class="lede"><span class="tick">i</span> Szybki sposób na przeliczenie czegokolwiek</p>
+<p>Funkcję da się odtworzyć w Node w kilkunastu linijkach — wzór jest w sekcji „Finalna formuła".
+Do sprawdzenia niezmienników wystarczy pętla po <code>k = 3…10</code> i <code>p = 1,0…2,0</code>
+z porównaniem sąsiednich miejsc i sąsiednich stawek.</p>
+</div>
+</section>
+
+<footer class="foot">
+Handover SPWS · 15 sierpnia 2026 · worktree codex/agent-worktree-operating-structure ·
+HEAD bafcef1 · osiem commitów lokalnie, bez pusha.
+</footer>
+
+</div>
+</body>
+</html>
