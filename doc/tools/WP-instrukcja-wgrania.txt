@@ -99,11 +99,15 @@ adresu ?v=2.
 
 UWAGA O KOPIACH PLIKU
 -------------------------
-W katalogu doc/tools/ leza: kalkulator-punktow-za-wynik-spws.v2.html
-(wersja robocza, zrodlo prawdy), WP-kalkulator-punktow-za-wynik-spws.html
-(kopia do wgrania na strone) oraz kalkulator-punktow-za-wynik-spws.html
-(poprzednia wersja formuly, zachowana do porownan - NIE wgrywac).
-Trzecia kopia tej samej tresci lezy w frontend/public/ i jedzie na
-GitHub Pages razem z ranklista. Przy kazdej zmianie trzeba odswiezyc
-wszystkie trzy aktualne kopie, inaczej zaczna sie rozjezdzac; pilnuje
-tego test 8.88 w zestawie testow frontendu.
+W katalogu doc/tools/ leza dwa pliki tej samej tresci:
+kalkulator-punktow-za-wynik-spws.v2.html (wersja robocza, zrodlo prawdy)
+oraz WP-kalkulator-punktow-za-wynik-spws.html (kopia do wgrania na strone).
+Trzecia kopia lezy w frontend/public/kalkulator-punktow.html i jedzie na
+GitHub Pages razem z ranklista.
+
+Przy kazdej zmianie trzeba odswiezyc wszystkie trzy, inaczej zaczna sie
+rozjezdzac; pilnuje tego test 8.88 w zestawie testow frontendu.
+
+Poprzednia wersja formuly (z pokretlami k i p, porzucona 16 sierpnia 2026)
+lezy w doc/archive/ pod nazwa kalkulator-punktow-za-wynik-spws-formula-k-p.html.
+Nie wgrywac jej nigdzie - jest materialem porownawczym.
