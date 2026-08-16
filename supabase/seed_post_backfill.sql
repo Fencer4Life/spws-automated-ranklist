@@ -186,6 +186,14 @@ BEGIN
 END;
 $phase4_locations$;
 
+-- Historical EVF predecessor repair (migration 20260809000001) runs against
+-- live CERT/PROD data during migration apply. LOCAL reset applies migrations
+-- before loading this seed, so repeat the same idempotent, fail-closed function
+-- after the legacy PEW splitter and reconciliation have finished. Running it
+-- here makes the approved consolidated event metadata the final LOCAL state.
+-- No mapping is duplicated here.
+SELECT fn_repair_evf_predecessor_fragments();
+
 -- =============================================================================
 -- ADR-066 / 2026-05-10: Recompute scores for every tournament that has
 -- results. The new exporter (export_seed.py) drops num_place_pts /

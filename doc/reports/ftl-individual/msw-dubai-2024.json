@@ -1,0 +1,578 @@
+{
+  "generated_at": "2026-07-27T05:01:30.721576+00:00",
+  "source": "https://www.fencingtimelive.com/tournaments/eventSchedule/D22419660A364A42B5C5FFFB805460BA",
+  "championship": "MSW Dubai 2024",
+  "country": "POL",
+  "tier_order": [
+    "WORLD",
+    "EUROPEAN",
+    "EVF-64+",
+    "EVF-32+",
+    "EVF-16+",
+    "EVF-8+",
+    "EVF-4+",
+    "EVF-4-"
+  ],
+  "fencers": [
+    {
+      "id_fencer": 134,
+      "name": "JUSZKIEWICZ Piotr",
+      "birth_year": 1954,
+      "aliases": [
+        "JUSZKIEWICZ Piotr"
+      ],
+      "tier_counts": {
+        "WORLD": 2
+      },
+      "results": [
+        {
+          "eid": "17D3B4D50D90413A808F39F6D28F2D64",
+          "event_name": "Vet-70 Men's Foil",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-14",
+          "category": "Veteran",
+          "weapon": "Foil",
+          "gender": "Men",
+          "scraped_name": "JUSZKIEWICZ Piotr",
+          "place": 37,
+          "entry": 42,
+          "tier": "WORLD"
+        },
+        {
+          "eid": "A2051A3C60434B66A082377F8010D383",
+          "event_name": "Vet-70 Men's Saber",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-11",
+          "category": "Veteran",
+          "weapon": "Sabre",
+          "gender": "Men",
+          "scraped_name": "JUSZKIEWICZ Piotr",
+          "place": 9,
+          "entry": 36,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 40,
+      "name": "BORKOWSKA Halina",
+      "birth_year": 1956,
+      "aliases": [
+        "BORKOWSKA Halina"
+      ],
+      "tier_counts": {
+        "WORLD": 2
+      },
+      "results": [
+        {
+          "eid": "7157EB9ADBDC4A1594E9BAFADF76C50C",
+          "event_name": "Vet-60 Women's Épée",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-15",
+          "category": "Veteran",
+          "weapon": "Epee",
+          "gender": "Women",
+          "scraped_name": "BORKOWSKA Halina",
+          "place": 45,
+          "entry": 45,
+          "tier": "WORLD"
+        },
+        {
+          "eid": "F796DE15A77D4B83B2D72E9FAC34F268",
+          "event_name": "Vet-60 Women's Foil",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-13",
+          "category": "Veteran",
+          "weapon": "Foil",
+          "gender": "Women",
+          "scraped_name": "BORKOWSKA Halina",
+          "place": 28,
+          "entry": 28,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 41,
+      "name": "BORKOWSKI Andrzej",
+      "birth_year": 1950,
+      "aliases": [
+        "BORKOWSKI Andrzej"
+      ],
+      "tier_counts": {
+        "WORLD": 2
+      },
+      "results": [
+        {
+          "eid": "AB1367D6CE73456E879CEEFDADD2B4A9",
+          "event_name": "Vet-70 Men's Épée",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-16",
+          "category": "Veteran",
+          "weapon": "Epee",
+          "gender": "Men",
+          "scraped_name": "BORKOWSKI Andrzej",
+          "place": 42,
+          "entry": 54,
+          "tier": "WORLD"
+        },
+        {
+          "eid": "17D3B4D50D90413A808F39F6D28F2D64",
+          "event_name": "Vet-70 Men's Foil",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-14",
+          "category": "Veteran",
+          "weapon": "Foil",
+          "gender": "Men",
+          "scraped_name": "BORKOWSKI Andrzej",
+          "place": 18,
+          "entry": 42,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 263,
+      "name": "PRĘGOWSKI Jerzy",
+      "birth_year": 1947,
+      "aliases": [
+        "PREGOWSKI Jerzy"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "A2051A3C60434B66A082377F8010D383",
+          "event_name": "Vet-70 Men's Saber",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-11",
+          "category": "Veteran",
+          "weapon": "Sabre",
+          "gender": "Men",
+          "scraped_name": "PREGOWSKI Jerzy",
+          "place": 14,
+          "entry": 36,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 199,
+      "name": "MAINKA Andrzej",
+      "birth_year": 1949,
+      "aliases": [
+        "MAINKA Andrzej"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "A2051A3C60434B66A082377F8010D383",
+          "event_name": "Vet-70 Men's Saber",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-11",
+          "category": "Veteran",
+          "weapon": "Sabre",
+          "gender": "Men",
+          "scraped_name": "MAINKA Andrzej",
+          "place": 20,
+          "entry": 36,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 232,
+      "name": "NOWICKI Robert",
+      "birth_year": 1970,
+      "aliases": [
+        "NOWICKI Robert"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "333717C6DFA7423987FE3A8EC159E6A3",
+          "event_name": "Vet-50 Men's Saber",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-12",
+          "category": "Veteran",
+          "weapon": "Sabre",
+          "gender": "Men",
+          "scraped_name": "NOWICKI Robert",
+          "place": 15,
+          "entry": 55,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 372,
+      "name": "ZAWROTNIAK Przemysław",
+      "birth_year": 1974,
+      "aliases": [
+        "ZAWROTNIAK Przemyslaw"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "333717C6DFA7423987FE3A8EC159E6A3",
+          "event_name": "Vet-50 Men's Saber",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-12",
+          "category": "Veteran",
+          "weapon": "Sabre",
+          "gender": "Men",
+          "scraped_name": "ZAWROTNIAK Przemyslaw",
+          "place": 19,
+          "entry": 55,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 135,
+      "name": "KACZMAREK Paweł",
+      "birth_year": 1970,
+      "aliases": [
+        "KACZMAREK Pawel"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "333717C6DFA7423987FE3A8EC159E6A3",
+          "event_name": "Vet-50 Men's Saber",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-12",
+          "category": "Veteran",
+          "weapon": "Sabre",
+          "gender": "Men",
+          "scraped_name": "KACZMAREK Pawel",
+          "place": 33,
+          "entry": 55,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 88,
+      "name": "GAJDA Leszek",
+      "birth_year": 1965,
+      "aliases": [
+        "GAJDA Leszek"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "333717C6DFA7423987FE3A8EC159E6A3",
+          "event_name": "Vet-50 Men's Saber",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-12",
+          "category": "Veteran",
+          "weapon": "Sabre",
+          "gender": "Men",
+          "scraped_name": "GAJDA Leszek",
+          "place": 41,
+          "entry": 55,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 238,
+      "name": "OSSOWSKI Wojciech",
+      "birth_year": 1961,
+      "aliases": [
+        "OSSOWSKI Wojciech"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "82AC3D36E8884A4DB47CD6828277B6AD",
+          "event_name": "Vet-60 Men's Saber",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-12",
+          "category": "Veteran",
+          "weapon": "Sabre",
+          "gender": "Men",
+          "scraped_name": "OSSOWSKI Wojciech",
+          "place": 5,
+          "entry": 43,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 368,
+      "name": "ZABŁOCKI Michał",
+      "birth_year": 1964,
+      "aliases": [
+        "ZABLOCKI Michal"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "82AC3D36E8884A4DB47CD6828277B6AD",
+          "event_name": "Vet-60 Men's Saber",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-12",
+          "category": "Veteran",
+          "weapon": "Sabre",
+          "gender": "Men",
+          "scraped_name": "ZABLOCKI Michal",
+          "place": 16,
+          "entry": 43,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 31,
+      "name": "BAZAK Jacek",
+      "birth_year": 1974,
+      "aliases": [
+        "BAZAK Jacek"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "010D30FDC92B478CA5D9613CC30BA24B",
+          "event_name": "Vet-50 Men's Foil",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-14",
+          "category": "Veteran",
+          "weapon": "Foil",
+          "gender": "Men",
+          "scraped_name": "BAZAK Jacek",
+          "place": 33,
+          "entry": 55,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 182,
+      "name": "KRZEMIŃSKI Mariusz",
+      "birth_year": 1962,
+      "aliases": [
+        "KRZEMINSKI Mariusz"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "0D385A29CD5B4A6EA6F82F00F0C3D1BC",
+          "event_name": "Vet-60 Men's Épée",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-15",
+          "category": "Veteran",
+          "weapon": "Epee",
+          "gender": "Men",
+          "scraped_name": "KRZEMINSKI Mariusz",
+          "place": 3,
+          "entry": 81,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 121,
+      "name": "HERONIMEK Leszek",
+      "birth_year": 1959,
+      "aliases": [
+        "HERONIMEK Leszek"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "0D385A29CD5B4A6EA6F82F00F0C3D1BC",
+          "event_name": "Vet-60 Men's Épée",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-15",
+          "category": "Veteran",
+          "weapon": "Epee",
+          "gender": "Men",
+          "scraped_name": "HERONIMEK Leszek",
+          "place": 49,
+          "entry": 81,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 25,
+      "name": "ATANASSOW Aleksander",
+      "birth_year": 1969,
+      "aliases": [
+        "ATANASSOW Aleksander"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "C3D14F7CB9904E03AC12562942070CBC",
+          "event_name": "Vet-50 Men's Épée",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-16",
+          "category": "Veteran",
+          "weapon": "Epee",
+          "gender": "Men",
+          "scraped_name": "ATANASSOW Aleksander",
+          "place": 11,
+          "entry": 89,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 164,
+      "name": "KOSTRZEWA Ireneusz",
+      "birth_year": 1965,
+      "aliases": [
+        "KOSTRZEWA Ireneusz"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "C3D14F7CB9904E03AC12562942070CBC",
+          "event_name": "Vet-50 Men's Épée",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-16",
+          "category": "Veteran",
+          "weapon": "Epee",
+          "gender": "Men",
+          "scraped_name": "KOSTRZEWA Ireneusz",
+          "place": 16,
+          "entry": 89,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 373,
+      "name": "ZIELIŃSKI Dariusz",
+      "birth_year": 1969,
+      "aliases": [
+        "ZIELINSKI Dariusz"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "C3D14F7CB9904E03AC12562942070CBC",
+          "event_name": "Vet-50 Men's Épée",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-16",
+          "category": "Veteran",
+          "weapon": "Epee",
+          "gender": "Men",
+          "scraped_name": "ZIELINSKI Dariusz",
+          "place": 39,
+          "entry": 89,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 244,
+      "name": "PARDUS Borys",
+      "birth_year": 1970,
+      "aliases": [
+        "PARDUS Borys"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "C3D14F7CB9904E03AC12562942070CBC",
+          "event_name": "Vet-50 Men's Épée",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-16",
+          "category": "Veteran",
+          "weapon": "Epee",
+          "gender": "Men",
+          "scraped_name": "PARDUS Borys",
+          "place": 76,
+          "entry": 89,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    },
+    {
+      "id_fencer": 302,
+      "name": "SOSNOWSKA Aniela",
+      "birth_year": 1952,
+      "aliases": [
+        "SOSNOWSKA Aniela"
+      ],
+      "tier_counts": {
+        "WORLD": 1
+      },
+      "results": [
+        {
+          "eid": "8327150A4C1C4342867A8AC937ACB5EF",
+          "event_name": "Vet-70 Women's Épée",
+          "championship": "MSW Dubai 2024",
+          "date": "2024-10-16",
+          "category": "Veteran",
+          "weapon": "Epee",
+          "gender": "Women",
+          "scraped_name": "SOSNOWSKA Aniela",
+          "place": 27,
+          "entry": 37,
+          "tier": "WORLD"
+        }
+      ],
+      "best_tier": "WORLD"
+    }
+  ],
+  "unresolved": [
+    {
+      "name": "MLYNEK Janusz",
+      "confidence": 100.0,
+      "status": "PENDING",
+      "results": 1
+    }
+  ]
+}

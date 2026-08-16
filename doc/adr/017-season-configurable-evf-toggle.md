@@ -2,6 +2,16 @@
 
 **Status:** Accepted
 **Date:** 2026-03-29 (M9)
+**Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (records the Calendar's own toggle field and the data constraint it carries).
+
+## Amendment (2026-08-09 — the Calendar's toggle is a separate field)
+
+[ADR-084](084-calendar-quarter-barrel-event-card.md) records what this ADR's single-flag model became: the Calendar reads **`bool_show_evf_toggle_calendar`** (default TRUE — the richer EVF+FIE view), which is independent of the Ranklist's `bool_show_evf_toggle` (default FALSE). The split shipped under the ADR-044 amendment; this note exists so a reader of ADR-017 alone does not assume one flag still governs both surfaces.
+
+Two consequences the barrel makes load-bearing:
+
+1. **The flag arrives asynchronously**, so a scope fixed at mount is wrong for the first paint. The orchestrator re-syncs the default from the live flag until the user picks a scope explicitly (CV.4).
+2. **The next-upcoming ring must be derived from the filtered set**, not the raw one — switching to PPW moves the ring onto the next domestic event enterable (CQ.26). A ring computed before the filter points at an event the filter just removed.
 
 ## Context
 

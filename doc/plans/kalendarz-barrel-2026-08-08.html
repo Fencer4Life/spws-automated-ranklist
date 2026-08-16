@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendar UI replacement — quarter barrel + single event card</title>
+<style>
+:root{
+  --surface-0:#f7f6f3; --surface-1:#f1efe9; --surface-2:#ffffff;
+  --text-primary:#1c1b19; --text-secondary:#565550; --text-muted:#8a887f;
+  --border:rgba(0,0,0,.13); --border-strong:rgba(0,0,0,.24); --border-stronger:rgba(0,0,0,.42);
+  --bg-accent:#E6F1FB; --text-accent:#185FA5; --border-accent:#378ADD;
+  --radius:8px;
+  --rule:rgba(0,0,0,.10);
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+:root{
+  --surface-0:#17171a; --surface-1:#1f1f23; --surface-2:#26262b;
+  --text-primary:#eceae5; --text-secondary:#a9a79f; --text-muted:#77756d;
+  --border:rgba(255,255,255,.14); --border-strong:rgba(255,255,255,.26); --border-stronger:rgba(255,255,255,.44);
+  --bg-accent:#0C447C; --text-accent:#B5D4F4; --border-accent:#378ADD;
+  --rule:rgba(255,255,255,.12);
+}
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--surface-0); color:var(--text-primary);
+  font-family:var(--serif); font-size:17px; line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+.page{max-width:47rem;margin:0 auto;padding:4rem 1.5rem 6rem}
+.eyebrow{font-family:var(--sans);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .9rem}
+h1{font-size:2.1rem;line-height:1.18;font-weight:600;margin:0 0 .7rem;letter-spacing:-.015em}
+.standfirst{font-size:1.16rem;line-height:1.55;color:var(--text-secondary);margin:0 0 1.6rem}
+.meta{font-family:var(--sans);font-size:12.5px;color:var(--text-muted);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:.7rem 0;display:flex;gap:1.4rem;flex-wrap:wrap;margin-bottom:3rem}
+.meta b{font-weight:600;color:var(--text-secondary)}
+h2{font-size:1.42rem;font-weight:600;margin:3.2rem 0 .3rem;letter-spacing:-.01em;line-height:1.3}
+h2 .num{font-family:var(--sans);font-size:12px;letter-spacing:.14em;color:var(--text-muted);display:block;margin-bottom:.45rem;font-weight:500}
+h3{font-size:1.08rem;font-weight:600;margin:2rem 0 .4rem}
+h4{font-size:.96rem;font-weight:600;margin:1.6rem 0 .35rem;color:var(--text-secondary)}
+pre{background:var(--surface-1);border:1px solid var(--rule);border-radius:8px;padding:.85rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.55;margin:.9rem 0}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+p{margin:0 0 1rem}
+a{color:var(--text-accent)}
+code{font-family:var(--mono);font-size:.85em;background:var(--surface-1);padding:.12em .38em;border-radius:4px;border:1px solid var(--rule)}
+ol,ul{margin:0 0 1.1rem;padding-left:1.35rem}
+li{margin-bottom:.5rem}
+table{width:100%;border-collapse:collapse;font-family:var(--sans);font-size:14px;margin:1rem 0 1.4rem;display:block;overflow-x:auto}
+th,td{text-align:left;padding:.6rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap}
+td code{background:none;border:none;padding:0}
+blockquote{margin:1.5rem 0;padding:.2rem 0 .2rem 1.2rem;border-left:3px solid var(--border-accent);color:var(--text-secondary);font-style:italic}
+.callout{background:var(--surface-1);border-radius:10px;padding:1rem 1.2rem;margin:1.5rem 0;font-family:var(--sans);font-size:14.5px;line-height:1.6}
+.callout b{font-weight:600}
+hr{border:none;border-top:1px solid var(--rule);margin:3rem 0}
+.lede{font-family:var(--sans);font-size:14.5px;color:var(--text-secondary);line-height:1.6}
+
+/* ── live mock frame ───────────────────────────────────────── */
+.mockwrap{background:var(--surface-1);border-radius:14px;padding:1.6rem 1rem 1.9rem;margin:1.2rem 0 1rem;display:flex;flex-direction:column;align-items:center;gap:1rem}
+.mockcap{font-family:var(--sans);font-size:12.5px;color:var(--text-muted);text-align:center;margin:0}
+</style>
+</head>
+<body>
+<div class="page">
+
+<p class="eyebrow">Development plan · SPWS Ranklist</p>
+<h1>Calendar UI replacement — quarter barrel + single event card</h1>
+<p class="standfirst">Replacing the calendar's month-grouped list and flat progress strip with a rotating three-row quarter barrel that drives a single full-detail event card.</p>
+<div class="meta">
+  <span><b>Date</b> 8 August 2026 · revised 9 August</span>
+  <span><b>Status</b> Design complete, not implemented</span>
+  <span><b>Surface</b> App calendar + public <code>spws-calendar</code> embed</span>
+  <span><b>Replaces</b> <code>CalendarView.svelte</code> (659 lines)</span>
+</div>
+
+<div class="callout">
+<b>Reading this cold?</b> This document is the only authority for this work — there is no Markdown twin, and the summary in <code>kalendarz-barrel-handover-2026-08-08.html</code> §00 defers to this file wherever they differ. Frontend source is <b>untouched</b>; nothing here is built. Start at <b>§06 Phase 1</b>, which is self-contained and blocked only by open items 1 and 4 in §09, both of which land in a single function you can write last.
+<br><br>
+<b>Both pre-start decisions were settled on 9 August — do not reopen them.</b> <b>Nearest-hub is dropped</b> (§05): Phase 2 does not exist and there is no SQL in this work. <b>The entry-list rule change is accepted</b> (§04): the link is gated on <code>dt_start &gt; today</code>, never on a cancelled event, decoupled from the registration cutoff. The cost warning attached to that second decision was <b>wrong and has been corrected in §04</b> — no existing test pins the old rule, so it costs new tests rather than rewrites.
+</div>
+
+<h2><span class="num">Acceptance criterion</span>This is what we are building</h2>
+<p class="lede">Live and interactive. Tap a quarter label or a receded row to rotate the drum; tap a panel to select that event. Toggle <code>PPW</code> / <code>+EVF</code> and drag the width slider from 320px upward. The drum rolls back through prior seasons to the start of history. Switch <code>EN | PL</code>; copy a venue address; toggle the season config checkbox above the frame to see the calendar with and without the <code>+EVF</code> control. <strong>The implementation is done when the real component matches this.</strong></p>
+<div class="callout">
+<b>One thing about the mock you must know before trusting it.</b> Its underlying fixture is <b>real CERT data</b> — all 103 non-skeleton events, pulled from <code>vw_calendar</code> on 8 August 2026 — but that fixture has only seven columns and never carried a fee, a deadline or a registration URL. Those four values (<b>entry fee and both tiers, registration deadline, registration link, entry-list link</b>) are therefore <b>illustrative</b>: derived deterministically from the event code so every present/absent combination can be reviewed. Their <em>presence, placement, formatting and conditional rules</em> are the specification; their <em>values</em> are not data. Everything else on screen is real.</div>
+
+<div class="mockwrap">
+
+<div class="ctl" id="mkctl">
+<label for="w" id="wl">szerokość</label>
+<input type="range" id="w" min="320" max="430" step="1" value="320">
+<span class="ro" id="ro">320px · iPhone SE</span>
+</div>
+<div class="ctl cfg">
+<label><input type="checkbox" id="cfgevf" checked> <span>Pokaż przełącznik +EVF w Kalendarzu</span></label>
+<span class="cfgn">season scoring config · <code>show_evf_toggle_calendar</code></span>
+</div>
+
+<div class="ph" id="ph" style="width:320px">
+<div class="nub"></div>
+<div class="hd">
+<button class="hb" aria-label="Menu">&#9776;</button>
+<img class="lgo" src="../assets/SPWS-logo.png" alt="SPWS"><span class="ttl" id="vt">Kalendarz</span>
+<div class="lang"><button class="lb" data-l="en">EN</button><button class="lb on" data-l="pl">PL</button></div>
+</div>
+<div class="fil">
+<div class="seg" id="sc"><button class="sg" data-s="ppw">PPW</button><button class="sg on" data-s="all">+EVF</button></div>
+</div>
+<div class="vp"><div class="drum" id="drum"></div></div>
+<div class="crw"><div class="crt" id="crt"></div></div>
+<div class="card" id="card"></div>
+<div class="envf"><div class="envt" id="envt">
+<button class="envb on" type="button" data-e="CERT">CT</button><button class="envb" type="button" data-e="PROD">PD</button>
+</div></div>
+</div>
+
+<div class="lgd">
+<span><span class="sw" style="background:#EAF3DE;border:1px solid #639922"></span>krajowe (PPW/MPW)</span>
+<span><span class="sw" style="background:#E6F1FB;border:1px solid #378ADD"></span>puchar EVF (PEW)</span>
+<span><span class="sw" style="background:#FAEEDA;border:1px solid #BA7517"></span>międzynarodowe (MŚW/MEW)</span>
+<span><span class="sw" style="background:var(--surface-2);border:1px solid var(--border-strong)"></span>zaplanowane</span>
+</div>
+<p class="mockcap">Real CERT data — all 103 non-skeleton events across four seasons, pulled from <code>vw_calendar</code> on 8 August 2026. Where <code>txt_location</code> holds a venue string rather than a city — a known scraper defect — the city line is omitted and the venue is shown demoted; no city is ever inferred that is not literally present. An asterisk on a seam marks a quarter whose events disagree about which season they belong to. Interface strings are Polish because this surface reaches fencers; this document is English.</p>
+</div>
+
+<style>
+#mkctl{display:flex;align-items:center;gap:12px;width:100%;max-width:440px;font-family:var(--sans)}
+#mkctl label{font-size:11px;color:var(--text-secondary);white-space:nowrap}
+#mkctl input[type=range]{flex:1}
+.cfg{display:flex;align-items:center;gap:10px;width:100%;max-width:440px;font-family:var(--sans);margin-top:8px;flex-wrap:wrap}
+.cfg label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-secondary);cursor:pointer}
+.cfgn{font-size:10px;color:var(--text-muted)}
+.cfgn code{font-size:10px}
+.ro{font-size:11px;color:var(--text-primary);min-width:132px;text-align:right}
+.ph{border:1px solid var(--border-strong);border-radius:24px;background:var(--surface-2);padding:9px 6px 12px;transition:width .2s;font-family:var(--sans)}
+.nub{width:38px;height:4px;border-radius:2px;background:var(--border-strong);margin:0 auto 8px}
+.envf{display:flex;justify-content:center;padding:14px 0 2px}
+.envt{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.envb{font-size:11px;font-weight:600;letter-spacing:.5px;padding:3px 10px;border:none;background:var(--surface-2);color:var(--text-muted);cursor:pointer;font-family:inherit}
+.envb+.envb{border-left:1px solid var(--border)}
+.envb.on{background:#378ADD;color:#fff}
+.hd{display:flex;align-items:center;gap:7px;padding:0 3px 8px;border-bottom:1px solid var(--border)}
+.hb{background:none;border:none;padding:0;cursor:pointer;color:var(--text-primary);font-size:15px;line-height:1}
+.lgo{height:15px;width:auto;display:block;flex:0 0 auto}
+.ttl{font-size:14px;font-weight:600}
+.lang{margin-left:auto;display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.lb{font-size:11px;padding:2px 7px;border:none;background:var(--surface-2);color:var(--text-muted);cursor:pointer;font-family:inherit}
+.lb+.lb{border-left:1px solid var(--border)}
+.lb.on{background:var(--surface-0);color:var(--text-primary);font-weight:600}
+.fil{display:flex;justify-content:center;gap:6px;padding:8px 0 2px}
+.seg{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.sg,.wb{font-size:11px;font-weight:600;padding:3px 9px;border:none;background:var(--surface-2);cursor:pointer;font-family:inherit}
+.sg{color:var(--text-secondary)}
+.sg+.sg,.wb+.wb{border-left:1px solid var(--border)}
+.sg.on{background:#378ADD;color:#fff}
+.wb{color:var(--text-muted)}
+.wb.on{background:var(--bg-accent);color:var(--text-accent)}
+.wseg{max-width:0;opacity:0;overflow:hidden;transition:max-width .3s,opacity .3s}
+.wseg.on{max-width:130px;opacity:1}
+.vp{height:246px;overflow:hidden;perspective:760px;margin-top:6px}
+.drum{display:flex;flex-direction:column;transition:transform .45s cubic-bezier(.22,.61,.36,1)}
+.ln{height:82px;flex:0 0 82px;transform-origin:50% 50%;transition:transform .45s cubic-bezier(.22,.61,.36,1),opacity .45s;cursor:pointer}
+.ln.up{transform:rotateX(46deg) scale(.88);opacity:.42}
+.ln.dn{transform:rotateX(-46deg) scale(.88);opacity:.42}
+.ln.far{opacity:0;pointer-events:none}
+.ln.mid{cursor:default}
+.sm{display:flex;align-items:center;gap:5px;height:14px}
+.sm b{font-size:11px;font-weight:400;color:var(--text-muted);letter-spacing:.6px}
+.ln.mid .sm b{color:var(--text-secondary)}
+.sm i{flex:1;height:1px;background:var(--border);font-style:normal}
+.sm.bd i{height:2px;background:var(--border-stronger)}
+.sm em{font-size:11px;color:var(--text-muted);font-style:normal}
+.rw{display:flex;overflow-x:auto;scrollbar-width:none;padding-top:3px;padding-bottom:4px}
+.rw::-webkit-scrollbar{display:none}
+.rwi{display:flex;gap:3px;margin:0 auto}
+.up .rw,.dn .rw{overflow-x:hidden}
+.p{flex:0 0 48px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 1px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;height:56px}
+.p>*{flex:0 0 auto}
+.p.f{border:none}
+.up .p,.dn .p{flex:0 0 38px}
+.dd{font-size:15px;font-weight:600;line-height:1.1}
+.dm{font-size:11px;line-height:1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dm i{font-style:normal}
+.mf{display:none}
+.p.sel .ms{display:none}
+.p.sel .mf{display:inline}
+.cdc{font-size:11px;font-weight:600;line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.up .dm,.dn .dm{display:none}
+.p .cty{display:none;font-size:9px;line-height:1.05;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
+.p.sel .cty{display:block}
+.p.ov{position:relative;box-shadow:-1px 0 0 0 var(--border-strong)}
+.p.ov.sel{box-shadow:none}
+.rwi{position:relative}
+.p.t1 .dd{font-size:13px}
+.p.t1 .dm{font-size:10px}
+.p.t1 .cdc{font-size:10px;letter-spacing:-.2px}
+.p.t2{padding-left:0;padding-right:0}
+.p.t2 .dd{font-size:13px}
+.p.t2 .dm{font-size:9px}
+.p.t2 .cdc{font-size:9px;letter-spacing:-.4px}
+.p.sel{outline:2px solid var(--text-primary);outline-offset:1px}
+.p.nx{border:2px solid var(--border-accent)}
+.mt{font-size:11px;color:var(--text-muted);margin:0 auto;align-self:center}
+.crw{height:7px;position:relative}
+.crt{position:absolute;top:0;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:7px solid var(--surface-1);transition:left .3s}
+.card{background:var(--surface-1);border-radius:12px;padding:12px}
+.chd{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+.cdt{font-size:11px;color:var(--text-secondary)}
+.ccd{font-size:11px;font-weight:600;padding:1px 7px;border-radius:8px}
+.cnm{font-size:15px;font-weight:600;margin-top:6px;line-height:1.25}
+.clo{display:flex;align-items:center;gap:6px;margin-top:3px}
+.cct{font-size:15px;font-weight:600;line-height:1.25}
+.addr{display:flex;align-items:flex-start;gap:8px;margin-top:3px}
+.addrt{flex:1;min-width:0;font-size:11px;color:var(--text-secondary);line-height:1.35}
+.cpy{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;padding:0;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-muted);cursor:pointer}
+.cpy:hover{color:var(--text-primary)}
+.cpy.ok{background:var(--bg-accent);border-color:var(--border-accent);color:var(--text-accent)}
+.clo .cpy{margin-left:auto}
+.fg{width:19px;height:13px;border-radius:2px;overflow:hidden;flex:0 0 19px;position:relative;border:1px solid var(--border-strong)}
+.fg div{position:absolute}
+.chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+.chp{font-size:11px;padding:2px 7px;border-radius:8px;background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--border)}
+.dvv{height:1px;background:var(--border);margin:10px 0}
+.dl{font-size:11px;font-weight:600}
+.fee{font-size:11px;color:var(--text-secondary);margin-top:5px;line-height:1.6}
+.pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
+.pl{font-size:11px;font-weight:600;padding:4px 10px;border-radius:14px;border:1px solid var(--border-accent);color:var(--text-accent);background:var(--surface-2);text-decoration:none;display:inline-block}
+.pl.q{border-color:var(--border);color:var(--text-secondary)}
+.pl.r{background:var(--bg-accent);border-color:var(--border-accent);color:var(--text-accent)}
+.facts{margin-top:2px}
+.fct{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:4px 0}
+.fct+.fct{border-top:1px solid var(--border)}
+.fk{font-size:11px;color:var(--text-muted)}
+.fv{font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap}
+.wps{display:flex;gap:3px;flex-wrap:wrap;margin-top:10px}
+.wp{font-size:9px;line-height:1.5;padding:0 6px;border-radius:7px;background:var(--surface-0);color:var(--text-muted);border:1px solid var(--border)}
+.lgd{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text-secondary);justify-content:center;max-width:440px;font-family:var(--sans)}
+.sw{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+</style>
+
+<script>
+(function(){
+var TY={ppw:['#EAF3DE','#3B6D11','#173404'],pew:['#E6F1FB','#185FA5','#042C53'],int:['#FAEEDA','#854F0B','#412402']};
+var RG={ppw:'SPWS',pew:'EVF',int:'FIE'};
+// EN | PL localisation. Registry codes (SPWS/EVF/FIE), event codes and device
+// names are proper nouns and stay untranslated. PL months are genitive because
+// they only ever appear in a date ("18 kwietnia"), never standalone.
+var lang='pl';
+var L={
+ pl:{
+  mo:['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia','września','października','listopada','grudnia'],
+  sm:['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'],
+  wn:{E:'Szpada',F:'Floret',S:'Szabla'},
+  nm:{PPW:'Puchar Polski Weteranów',MPW:'Mistrzostwa Polski Weteranów','MŚW':'Mistrzostwa Świata Weteranów',MEW:'Mistrzostwa Europy Weteranów',PEW:'European Veterans Circuit'},
+  cn:{PL:'Polska',GB:'Wielka Brytania',DE:'Niemcy',GR:'Grecja',BG:'Bułgaria',FR:'Francja',HU:'Węgry',ES:'Hiszpania',BH:'Bahrajn',SE:'Szwecja',IT:'Włochy',BE:'Belgia',AT:'Austria',IE:'Irlandia',CH:'Szwajcaria',GE:'Gruzja'},
+  st:{done:'Zakończone',await:'Oczekuje na wyniki',plan:'Zaplanowane',canc:'Odwołane'},
+  next:'Najbliższe',empty:'brak zawodów',season:'sezon SPWS-',
+  // Polish pluralisation: 1 → singular, 2-4 → nominative plural, 0 and 5+ →
+  // genitive plural, EXCEPT 12-14 which take the genitive despite ending 2-4.
+  trn:function(n){var a=n%10,b=n%100;
+    if(n===1)return 'turniej';
+    if(a>=2&&a<=4&&!(b>=12&&b<=14))return 'turnieje';
+    return 'turniejów';},
+  res:'Wyniki',day:'Dzień',inv:'Komunikat',
+  feeL:'Opłata startowa',fee2L:'Opłata (2 bronie)',fee3L:'Opłata (3 bronie)',
+  dlL:'Termin rejestracji',regL:'Rejestracja',entL:'Lista zgłoszeń',
+  copy:'Kopiuj',copied:'Skopiowano',
+  awaitMsg:'Zawody się odbyły — wyniki jeszcze nie wprowadzone',
+  cancMsg:'Zawody odwołane przez organizatora',
+  title:'Kalendarz',width:'szerokość',nr:' nr '
+ },
+ en:{
+  mo:['January','February','March','April','May','June','July','August','September','October','November','December'],
+  sm:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  wn:{E:'Épée',F:'Foil',S:'Sabre'},
+  nm:{PPW:'Polish Veterans Cup',MPW:'Polish Veterans Championships','MŚW':'World Veterans Championships',MEW:'European Veterans Championships',PEW:'European Veterans Circuit'},
+  cn:{PL:'Poland',GB:'United Kingdom',DE:'Germany',GR:'Greece',BG:'Bulgaria',FR:'France',HU:'Hungary',ES:'Spain',BH:'Bahrain',SE:'Sweden',IT:'Italy',BE:'Belgium',AT:'Austria',IE:'Ireland',CH:'Switzerland',GE:'Georgia'},
+  st:{done:'Completed',await:'Awaiting results',plan:'Scheduled',canc:'Cancelled'},
+  next:'Next up',empty:'no events',season:'season SPWS-',
+  trn:function(n){return n===1?'tournament':'tournaments';},
+  res:'Results',day:'Day',inv:'Invitation',
+  feeL:'Entry fee',fee2L:'Fee (2 weapons)',fee3L:'Fee (3 weapons)',
+  dlL:'Registration deadline',regL:'Register',entL:'Entry list',
+  copy:'Copy',copied:'Copied',
+  awaitMsg:'Competition held — results not yet entered',
+  cancMsg:'Cancelled by the organiser',
+  title:'Calendar',width:'width',nr:' no. '
+ }
+};
+function T(){return L[lang]}
+var FL={PL:['h','#fff','#DC143C'],BG:['h','#fff','#00966E','#D62612'],BH:['v','#fff','#CE1126'],HR:['h','#FF0000','#fff','#171796'],FR:['v','#0055A4','#fff','#EF4135'],IT:['v','#009246','#fff','#CE2B37'],DE:['h','#000','#D00','#FFCE00'],SE:['c','#006AA7','#FECC00'],BE:['v','#000','#FAE042','#ED2939'],EE:['h','#0072CE','#000','#fff'],PT:['v','#046A38','#DA291C'],NL:['h','#AE1C28','#fff','#21468B'],GE:['c','#fff','#F00'],ES:['h','#AA151B','#F1BF00','#AA151B'],CH:['c','#DA291C','#fff'],AT:['h','#ED2939','#fff','#ED2939'],HU:['h','#CD2A3E','#fff','#436F4D'],GB:['c','#012169','#fff'],IE:['v','#169B62','#fff','#FF883E'],GR:['h','#0D5EAF','#fff','#0D5EAF'],CA:['v','#D80621','#fff','#D80621']};
+function flag(cc){
+  var f=FL[cc];if(!f)return '<div class="fg"></div>';
+  var k=f[0],c=f.slice(1),h='';
+  if(k==='h'){var n=c.length;c.forEach(function(x,i){h+='<div style="left:0;right:0;top:'+(i*100/n)+'%;height:'+(100/n)+'%;background:'+x+'"></div>'})}
+  else if(k==='v'){var n2=c.length;c.forEach(function(x,i){h+='<div style="top:0;bottom:0;left:'+(i*100/n2)+'%;width:'+(100/n2)+'%;background:'+x+'"></div>'})}
+  else{h='<div style="left:0;right:0;top:0;bottom:0;background:'+c[0]+'"></div><div style="left:0;right:0;top:38%;height:24%;background:'+c[1]+'"></div><div style="top:0;bottom:0;left:32%;width:24%;background:'+c[1]+'"></div>'}
+  return '<div class="fg">'+h+'</div>';
+}
+var TODAY=new Date(2026,7,8);
+function v(d,mo,y,c,t,w,s,city,cc,nt,fee,cu,vn,nr){return{d:d,mo:mo,y:y,c:c,t:t,w:w,s:s,city:city,cc:cc,nt:nt,fee:fee,cu:cu,vn:vn,nr:nr}}
+var RAW=[
+"2022-01-08|PEW2e|||COMPLETED|1|2023-2024","2022-02-25|PEW16e|||COMPLETED|1|2023-2024",
+"2023-01-01|IMEW|||COMPLETED|16|2023-2024","2023-01-07|PEW1e|Guilford|Great Britain|COMPLETED|4|2023-2024",
+"2023-01-14|GP1|Pabianice|Polska|COMPLETED|20|2023-2024","2023-01-21|PEW17fs|||COMPLETED|2|2023-2024",
+"2023-02-12|PEW3s|||COMPLETED|2|2023-2024","2023-02-25|PEW18e|||COMPLETED|2|2023-2024",
+"2023-03-04|GP2|Toruń|Polska|COMPLETED|25|2023-2024","2023-03-18|PEW4f|||COMPLETED|3|2023-2024",
+"2023-03-23|PEW12f|||COMPLETED|1|2023-2024","2023-04-01|PEW20s|||COMPLETED|3|2023-2024",
+"2023-04-14|PEW19e|||COMPLETED|8|2023-2024","2023-06-18|GP3|Niepołomice|Polska|COMPLETED|22|2023-2024",
+"2023-07-07|VFC|||COMPLETED|0|2023-2024","2023-09-16|PEW21e|||COMPLETED|5|2023-2024",
+"2023-09-16|PEW5fs|||COMPLETED|7|2023-2024","2023-09-23|GP4|Opole|Polska|COMPLETED|22|2023-2024",
+"2023-09-24|PEW22e|||COMPLETED|2|2023-2024","2023-10-09|PEW7s|||COMPLETED|1|2023-2024",
+"2023-10-28|GP5|Gdańsk|Polska|COMPLETED|20|2023-2024","2023-11-11|PEW6efs|||COMPLETED|9|2023-2024",
+"2023-11-18|GP6|Kraków|Polska|COMPLETED|20|2023-2024","2023-12-09|PEW23f|||COMPLETED|1|2023-2024",
+"2023-12-16|PEW8fs|||COMPLETED|2|2023-2024","2023-12-16|PEW24e|||COMPLETED|5|2023-2024",
+"2024-01-06|PEW25e|||COMPLETED|4|2023-2024","2024-01-06|PEW9e|Guildford|Great Britain|COMPLETED|4|2023-2024",
+"2024-01-20|PEW10s|||COMPLETED|1|2023-2024","2024-01-27|GP7|Spała|Polska|COMPLETED|22|2023-2024",
+"2024-02-24|PEW11f|||COMPLETED|2|2023-2024","2024-03-02|MPW|Warszawa|Polska|COMPLETED|25|2023-2024",
+"2024-04-06|PEW14s|||COMPLETED|1|2023-2024","2024-04-06|PEW13e|||COMPLETED|6|2023-2024",
+"2024-04-27|PEW15e|||COMPLETED|3|2023-2024","2024-06-22|GP8|Niepołomice|Polska|COMPLETED|18|2023-2024",
+"2024-09-21|PEW1efs|Budapest||COMPLETED|14|2024-2025","2024-09-28|PPW1|Konin|Polska|COMPLETED|23|2024-2025",
+"2024-10-26|PPW2|Bytom|Polska|COMPLETED|24|2024-2025","2024-11-16|PEW2efs|Madrid||COMPLETED|11|2024-2025",
+"2024-11-30|PPW3|Kraków|Polska|COMPLETED|26|2024-2025","2024-12-07|PEW3fs|Munich|Germany|COMPLETED|5|2024-2025",
+"2025-01-04|PEW11e|Guildford|Great Britain|COMPLETED|4|2024-2025","2025-01-05|PEW4f|||COMPLETED|1|2024-2025",
+"2025-01-18|PEW5s|||COMPLETED|1|2024-2025","2025-02-01|PEW12e|||COMPLETED|4|2024-2025",
+"2025-02-02|PEW6fs|||COMPLETED|3|2024-2025","2025-02-22|PPW4|Warszawa|Polska|COMPLETED|27|2024-2025",
+"2025-03-15|PEW13e|||COMPLETED|3|2024-2025","2025-03-29|PEW7s|||COMPLETED|7|2024-2025",
+"2025-03-29|PEW8f|Chania|Greece|PLANNED|1|2025-2026","2025-03-29|PEW14e|||COMPLETED|8|2024-2025",
+"2025-03-30|PEW8f|||COMPLETED|7|2024-2025","2025-04-26|PPW5|Szczecin|Polska|COMPLETED|23|2024-2025",
+"2025-05-03|PEW9|||COMPLETED|0|2024-2025","2025-05-15|PEW15f|||COMPLETED|2|2024-2025",
+"2025-05-28|IMEW|Plovdiv|Bulgaria|COMPLETED|17|2024-2025","2025-06-07|MPW|Pabianice|Polska|COMPLETED|25|2024-2025",
+"2025-07-05|PEW10efs|Paris|France|COMPLETED|7|2024-2025","2025-09-20|PEW1efs|Budapest|Hungary|COMPLETED|14|2025-2026",
+"2025-09-27|PPW1|Opole|Polska|COMPLETED|23|2025-2026","2025-10-25|PPW2|Poznań|Polska|COMPLETED|24|2025-2026",
+"2025-11-01|PEW2efs|Madrid|Spain|COMPLETED|13|2025-2026","2025-11-12|IMSW|Manama|Bahrain|IN_PROGRESS|10|2025-2026",
+"2025-12-06|PEW3s|Munich|Germany|COMPLETED|3|2025-2026","2025-12-06|PEW21fs|Munich|Germany|COMPLETED|8|2025-2026",
+"2025-12-13|PPW3|Warszawa-Łomianki|Polska|COMPLETED|23|2025-2026","2026-01-10|PEW63e|||COMPLETED|1|2025-2026",
+"2026-01-10|PEW62efs|||COMPLETED|9|2025-2026","2026-01-11|PEW64s|||COMPLETED|2|2025-2026",
+"2026-02-07|PEW5s|Stockholm|Sweden|COMPLETED|1|2025-2026","2026-02-07|PEW31fs|Faches|France|COMPLETED|5|2025-2026",
+"2026-02-21|PPW4|Gdańsk|Polska|COMPLETED|24|2025-2026","2026-03-07|PEW4efs|Napoli|Italy|COMPLETED|10|2025-2026",
+"2026-03-14|PEW65ef|||COMPLETED|5|2025-2026","2026-03-28|PEW6efs|Jabłonna|Polska|COMPLETED|23|2025-2026",
+"2026-03-29|PEW66f|||COMPLETED|3|2025-2026","2026-04-11|PPW5|Gdańsk|Polska|COMPLETED|23|2025-2026",
+"2026-04-11|PEW61s|Liège|Belgium|COMPLETED|2|2025-2026","2026-04-18|PEW7ef|Salzburg|Austria|COMPLETED|4|2025-2026",
+"2026-05-02|PEW67f|||COMPLETED|4|2025-2026","2026-05-14|DMEW|Complexe Sportif Omnisports des Vauzelles|France|PLANNED|6|2025-2026",
+"2026-05-30|PEW9efs|Dublin|Ireland|IN_PROGRESS|10|2025-2026","2026-06-20|MPW|Warszawa|Polska|COMPLETED|28|2025-2026",
+"2026-09-12|PEW0efs|||CANCELLED|12|2026-2027","2026-09-19|PEW1f|Savoy Terrace - Buda Castle|Hungary|PLANNED|2|2026-2027",
+"2026-09-26|PPW1|Opole|Polska|PLANNED|0|2026-2027","2026-10-09|MSW|TBILISI|GRUZJA|PLANNED|0|2026-2027",
+"2026-10-31|PEW2es|POLIDEPORTIVO MUNICIPAL DE MORATALAZ|Spain|PLANNED|8|2026-2027",
+"2026-11-14|PEW3ef|||PLANNED|8|2026-2027",
+"2026-11-28|PEW4fs|Sporthalle der Städtischen Berufsschule für Informationstechnik|Germany|PLANNED|8|2026-2027",
+"2026-12-12|PEW5efs|||PLANNED|12|2026-2027","2027-01-09|PEW6efs|Guildford Spectrum|United Kingdom|PLANNED|12|2026-2027",
+"2027-01-30|PEW7efs|||PLANNED|6|2026-2027","2027-02-06|PEW9e|Vaudoise aréna - Lausanne|Switzerland|PLANNED|4|2026-2027",
+"2027-02-06|PEW8fs|Salle Jean Zay|France|PLANNED|8|2026-2027","2027-03-06|PEW10efs|Palavesuvio|Italy|PLANNED|12|2026-2027",
+"2027-03-13|PEW11ef|Stora mossen IP idrottshall|Sweden|PLANNED|8|2026-2027","2027-04-10|PEW12s|Liège|Belgium|PLANNED|4|2026-2027",
+"2027-04-24|PEW13ef|Sporthalle HAK 2 - Salzburg|Austria|PLANNED|8|2026-2027","2027-05-22|PEW14es|||PLANNED|8|2026-2027",
+"2027-05-29|PEW15efs|UCD Sport Center Dublin|Ireland|PLANNED|12|2026-2027","2027-06-18|PEW16efs|||PLANNED|6|2026-2027"];
+var ISO={'Polska':'PL','Great Britain':'GB','United Kingdom':'GB','Germany':'DE','Greece':'GR','Bulgaria':'BG','France':'FR','Hungary':'HU','Spain':'ES','Bahrain':'BH','Sweden':'SE','Italy':'IT','Belgium':'BE','Austria':'AT','Ireland':'IE','Switzerland':'CH','GRUZJA':'GE'};
+function typeOf(c){
+  if(/^(PPW|MPW|GP)/.test(c))return 'ppw';
+  if(/^PEW/.test(c))return 'pew';
+  return 'int';
+}
+var VENUE_RE=/sporthalle|salle |complexe|polideportivo|palavesuvio|spectrum|idrottshall|topsporthal|sport ?cent|sports city|castle|pavilh|palais|paladozza|country hall|variety village|olympic palace|arena|ar[eé]na|berufsschule/i;
+// txt_location is specified to hold a CITY. On PEW rows the scraper wrote the
+// venue into it instead. Split what is recoverable, leave the rest unknown —
+// never guess a city that is not in the string.
+function splitLoc(v){
+  if(!v) return {city:'',venue:''};
+  var m=v.split(/\s+-\s+/);
+  if(m.length===2 && /^[A-ZŁŚŻŹĆÓĄĘŃ][^\s]*$/.test(m[1].trim())) return {city:m[1].trim(),venue:m[0].trim()};
+  if(VENUE_RE.test(v)) return {city:'',venue:v};
+  return {city:v,venue:''};
+}
+function panelLabel(e){
+  if(e.t==='pew'){var m=e.c.match(/^PEW-?(\d*)/);return 'EVF'+((m&&m[1])?m[1]:'')}
+  return e.c.replace(/[efs]+$/,'');
+}
+function weaponsOf(c){var m=c.match(/[efs]+$/);return m?m[0].toUpperCase():'EFS'}
+var EV=RAW.map(function(r){
+  var p=r.split('|'),d=p[0].split('-').map(Number);
+  var cc=ISO[p[3]]||'';
+  return {y:d[0],mo:d[1]-1,d:d[2],iso:p[0],c:p[1],loc:p[2],cc:cc,ccRaw:p[3],
+          st:p[4],nt:+p[5],season:p[6],t:typeOf(p[1]),w:weaponsOf(p[1])};
+});
+
+var TODAY_ISO='2026-08-08';
+function stOf(e){
+  if(e.st==='CANCELLED')return 'canc';
+  if(e.st==='COMPLETED'||e.st==='IN_PROGRESS')return 'done';
+  return e.iso < TODAY_ISO ? 'await' : 'plan';
+}
+// Fee, deadline and registration are ILLUSTRATIVE in this mock. CERT carries a
+// fee on 28/103 events and a deadline on 5/103, and this fixture never had
+// those columns at all — so they are derived deterministically from the event
+// code purely to show the card's shape across present/absent combinations.
+// Everything else in this mock is real CERT data.
+function fmtDL(dt){return pad(dt.getUTCDate())+'/'+pad(dt.getUTCMonth()+1)+'/'+dt.getUTCFullYear()}
+EV.forEach(function(e){
+  var L=splitLoc(e.loc);e.city=L.city;e.venue=L.venue;e.s=stOf(e);
+  if(/^(PEW1efs|PEW2efs|PEW6efs|IMEW|IMSW)$/.test(e.c))e.urls=e.nt>10?3:2;
+  var hsh=0;for(var q=0;q<e.c.length;q++)hsh=(hsh*31+e.c.charCodeAt(q))>>>0;
+  e.cur=e.t==='ppw'?'PLN':(e.cc==='GB'?'GBP':'EUR');
+  // A tiered fee can only exist where the tier does: an event covering foil
+  // alone has no two- or three-weapon price to quote. So the tiers are gated
+  // on the event's own weapon count, not sprinkled at random.
+  if(hsh%10<5){
+    e.fee=e.cur==='PLN'?(60+(hsh%5)*10):(35+(hsh%6)*5);
+    if(e.w.length>=2)e.fee2=Math.round(e.fee*1.7);
+    if(e.w.length>=3)e.fee3=Math.round(e.fee*2.3);
+  }
+  e.inv=hsh%7!==0;
+  // Registration only exists while the event is still ahead of you. Mirrors the
+  // real rule (today <= dt_registration_deadline ?? dt_start), under which an
+  // event that has already been held can never show a live registration link.
+  if(e.s==='plan'){
+    e.reg=hsh%4!==0;
+    e.ent=hsh%3!==0;
+    if(e.reg){var d0=new Date(Date.UTC(e.y,e.mo,e.d));d0.setUTCDate(d0.getUTCDate()-(10+hsh%12));e.dl=d0;}
+  }
+});
+// The card opens on the next upcoming event, so give that one the full set —
+// fee, deadline and both links — to make the richest state the default view.
+(function(){var f=null;EV.forEach(function(e){if(!f&&e.s==='plan')f=e});
+ if(!f)return; f.reg=true; f.inv=true; f.ent=true;
+ if(f.fee==null)f.fee=f.cur==='PLN'?90:45;
+ if(f.w.length>=2&&f.fee2==null)f.fee2=Math.round(f.fee*1.7);
+ if(f.w.length>=3&&f.fee3==null)f.fee3=Math.round(f.fee*2.3);
+ if(!f.dl){var d1=new Date(Date.UTC(f.y,f.mo,f.d));d1.setUTCDate(d1.getUTCDate()-14);f.dl=d1;}})();
+EV.sort(function(a,b){return a.iso<b.iso?-1:a.iso>b.iso?1:0});
+var QM={},QO=[];
+EV.forEach(function(e){
+  var qi=Math.floor(e.mo/3), k=e.y+'.'+qi;
+  if(!QM[k]){QM[k]={q:(qi+1)+'Q'+String(e.y).slice(2),k:k,y:e.y,qi:qi,v:[],ss:{}};QO.push(QM[k])}
+  QM[k].v.push(e); QM[k].ss[e.season]=(QM[k].ss[e.season]||0)+1;
+});
+QO.sort(function(a,b){return a.y-b.y||a.qi-b.qi});
+QO.forEach(function(g){
+  var best=null,n=0;
+  for(var k in g.ss){if(g.ss[k]>n){n=g.ss[k];best=k}}
+  g.s=best; g.mixed=Object.keys(g.ss).length>1;
+});
+var Q=QO;
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+// What lands on the clipboard is the FULL address — venue, city, country —
+// even though the card shows the country only as a flag. You paste this into
+// a maps app or send it to a driver; a bare venue fragment is not enough.
+function addrOf(e){var p=[];if(e.venue)p.push(e.venue);if(e.city)p.push(e.city);if(e.cc)p.push(T().cn[e.cc]||e.ccRaw);return p.join(', ')}
+// Inline SVG, no external requests — the embed runs under a strict CSP and an
+// icon font or sprite sheet would be a second thing that can fail to load.
+var ICO_COPY='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+var ICO_OK='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 6L9 17l-5-5"/></svg>';
+// The button shows no text, so aria-label and title ARE the label — they still
+// have to be translated. Dropping the word from the surface does not drop it
+// from the locale files; an icon-only control with no accessible name is
+// simply an unlabelled button to a screen reader.
+function cpyBtn(e){var a=addrOf(e);return a?'<button class="cpy" type="button" aria-label="'+esc(T().copy)+'" title="'+esc(T().copy)+'" data-copy="'+esc(a)+'">'+ICO_COPY+'</button>':''}
+function nameOf(c){var N=T().nm;if(c.indexOf('PPW')===0)return N.PPW+T().nr+(c.slice(3)||'0');if(c.indexOf('PEW')===0)return N.PEW;return N[c]||c}
+var drum=document.getElementById('drum'),card=document.getElementById('card'),crt=document.getElementById('crt'),vp=document.querySelector('.vp');
+var sc=document.getElementById('sc');
+var SCOPE_ONLY=1;
+var W={E:1,F:1,S:1};var active=(function(){for(var i=0;i<Q.length;i++){for(var j=0;j<Q[i].v.length;j++){if(Q[i].v[j].s==='plan')return i}}return Q.length-1})(),H=82,W={E:1,F:1,S:1},SC='all',sel=null;
+function ok(e){return SC==='ppw'?e.t==='ppw':true}
+function visOf(i){return Q[i].v.filter(ok)}
+function build(){
+  var seen=0;drum.innerHTML='';
+  Q.forEach(function(g,i){
+    var ln=document.createElement('div');ln.className='ln';ln.dataset.i=i;
+    var bd=i>0&&Q[i-1].s!==g.s;
+    var sm=document.createElement('div');sm.className='sm'+(bd?' bd':'');
+    sm.innerHTML='<b>'+g.q+'</b><i></i><em></em>';
+    var rw=document.createElement('div');rw.className='rw';
+    var inr=document.createElement('div');inr.className='rwi';
+    var vis=g.v.filter(ok);
+    if(!vis.length){var m=document.createElement('span');m.className='mt';m.textContent=T().empty;rw.appendChild(m)}
+    vis.forEach(function(e,j){
+      var c=TY[e.t],isn=e.s==='plan'&&!seen;if(isn)seen=1;e._n=isn;
+      var p=document.createElement('div');p.className='p'+((e.s==='done'||e.s==='await')?' f':isn?' nx':'');
+      p.dataset.q=i;p.dataset.j=j;p.dataset.prio=(e.t==='pew'?'0':'1');p.dataset.city=(e.city||e.venue)?'1':'0';
+      if(e.s==='done'||e.s==='await')p.style.background=c[0];
+      if(e.s==='canc')p.style.opacity=.45;
+      if(e.s==='plan'&&!isn)p.style.borderLeft='2px solid '+c[1];
+      var dc=(e.s==='done'||e.s==='await')?c[1]:isn?'var(--text-accent)':'var(--text-secondary)';
+      var tc=(e.s==='done'||e.s==='await')?c[2]:'var(--text-primary)';
+      p.innerHTML='<span class="dd" style="color:'+dc+'">'+e.d+'</span><span class="dm" style="color:'+dc+'"><i class="ms">'+T().sm[e.mo]+'</i><i class="mf">'+T().mo[e.mo]+'</i></span><span class="cdc" style="color:'+tc+'">'+panelLabel(e)+'</span>'+((e.city||e.venue)?'<span class="cty" style="color:'+(e.s==='done'?c[1]:'var(--text-muted)')+'">'+(e.city||e.venue)+'</span>':'');
+      inr.appendChild(p);
+    });
+    if(vis.length)rw.appendChild(inr);
+    ln.appendChild(sm);ln.appendChild(rw);drum.appendChild(ln);
+  });
+}
+function pad(n){return n<10?'0'+n:''+n}
+function showCard(e){
+  var c=TY[e.t],nw=e.w.length;
+  var ST=T().st;
+  var LB={done:[ST.done,c[0],c[2]],await:[ST.await,'#FAEEDA','#412402'],
+          plan:[ST.plan,'var(--surface-2)','var(--text-secondary)'],canc:[ST.canc,'#FCEBEB','#501313']};
+  var stt=e._n?[T().next,'var(--bg-accent)','var(--text-accent)']:LB[e.s];
+  var miss='';
+  var h='<div class="chd"><span class="cdt">'+e.d+' '+T().mo[e.mo]+' '+e.y+'</span>'+
+    '<span class="ccd" style="background:'+c[0]+';color:'+c[2]+'">'+e.c+'</span></div>'+
+    '<div class="cnm">'+nameOf(e.c)+'</div>'+
+    (e.city?'<div class="clo">'+(e.cc?flag(e.cc):'')+'<span class="cct">'+e.city+'</span>'+(e.venue?'':cpyBtn(e))+'</div>':'')+
+    (e.venue?'<div class="addr"><span class="addrt">'+e.venue+'</span>'+cpyBtn(e)+'</div>':'')+
+    '<div class="chips"><span class="chp" style="background:'+stt[1]+';color:'+stt[2]+';border-color:transparent">'+stt[0]+'</span>'+
+    '<span class="chp">'+RG[e.t]+'</span></div>'+
+    '<div class="dvv"></div>';
+  // The four fields that actually drive a decision: fee, deadline, and the two
+  // URLs. Each row is omitted entirely when its field is empty — no placeholders.
+  var facts='';
+  // Each tier is independent — render one line per non-null field, never a
+  // block gated on the base fee being present.
+  if(e.fee!=null)facts+='<div class="fct"><span class="fk">'+T().feeL+'</span><span class="fv">'+e.fee+' '+e.cur+'</span></div>';
+  if(e.fee2!=null)facts+='<div class="fct"><span class="fk">'+T().fee2L+'</span><span class="fv">'+e.fee2+' '+e.cur+'</span></div>';
+  if(e.fee3!=null)facts+='<div class="fct"><span class="fk">'+T().fee3L+'</span><span class="fv">'+e.fee3+' '+e.cur+'</span></div>';
+  if(e.dl)facts+='<div class="fct"><span class="fk">'+T().dlL+'</span><span class="fv">'+fmtDL(e.dl)+'</span></div>';
+  if(facts)h+='<div class="facts">'+facts+'</div>';
+  if(e.s==='await')h+='<div class="dl" style="color:#854F0B">'+T().awaitMsg+'</div>';
+  else if(e.s==='canc')h+='<div class="dl" style="color:#A32D2D">'+T().cancMsg+'</div>';
+  var pills=[];
+  if(e.s==='done'){
+    var slots=e.urls||1;
+    var lbl=slots===1?[T().res]:(function(){var a=[];for(var i2=1;i2<=slots;i2++)a.push(T().day+' '+i2);return a})();
+    lbl.forEach(function(x){pills.push('<a class="pl" href="#">'+x+' &rarr;</a>')});
+  }
+  if(e.reg)pills.push('<a class="pl r" href="#">'+T().regL+' &rarr;</a>');
+  // Entry list shows only while the start date is still ahead — 'plan' is
+  // exactly that (future date, not cancelled). Deliberately NOT tied to the
+  // registration deadline: who has entered stays worth reading after entries
+  // close, right up until the event begins.
+  if(e.ent)pills.push('<a class="pl" href="#">'+T().entL+' &rarr;</a>');
+  if(e.inv)pills.push('<a class="pl q" href="#">'+T().inv+' &rarr;</a>');
+  if(pills.length)h+='<div class="pills">'+pills.join('')+'</div>';
+  h+='<div class="wps">'+e.w.split('').map(function(x){return '<span class="wp">'+T().wn[x]+'</span>'}).join('')+'</div>';
+  card.innerHTML=h;
+}
+function fitRow(){
+  var all=[].slice.call(drum.querySelectorAll('.p'));
+  all.forEach(function(p){p.style.flex='';p.style.marginLeft='';p.style.zIndex='';p.classList.remove('ov')});
+  [].slice.call(drum.querySelectorAll('.rwi')).forEach(function(r){r.style.gap=''});
+  var mid=drum.querySelector('.ln.mid'); if(!mid)return;
+  var rw=mid.querySelector('.rw'), inr=mid.querySelector('.rwi'); if(!inr)return;
+  var ps=[].slice.call(inr.querySelectorAll('.p')); if(!ps.length)return;
+  var W=48, GAP=3, n=ps.length, avail=rw.clientWidth;
+  var selP=inr.querySelector('.p.sel');
+  // The selected panel spells the month out in full, so it can never be the
+  // plain 48px: "października" alone measures 66px. 74px leaves real headroom
+  // for the longest month in either language; a city still needs the full 78px.
+  var WSEL=(selP&&selP.dataset.city==='1')?78:74;
+  if((n-1)*(W+GAP)+WSEL<=avail){
+    ps.forEach(function(p){p.style.flex='0 0 '+(p===selP?WSEL:W)+'px'});
+    return;
+  }
+  var S=Math.floor((avail-WSEL)/(n-1));
+  S=Math.max(13,Math.min(W+GAP,S));
+  inr.style.gap='0px';
+  var sj=sel?sel.j:0;
+  ps.forEach(function(p,i2){
+    p.style.flex='0 0 '+(p===selP?WSEL:W)+'px';
+    if(i2>0)p.style.marginLeft=(-(W-S))+'px';
+    p.style.zIndex=String(200-Math.abs(i2-sj)*2);
+    p.classList.add('ov');
+  });
+}
+function caret(){
+  var p=drum.querySelector('.p.sel');if(!p){crt.style.opacity=0;return}
+  crt.style.opacity=1;
+  var r=p.getBoundingClientRect(),vr=vp.getBoundingClientRect();
+  crt.style.left=Math.max(8,Math.min(vr.width-20,r.left+r.width/2-vr.left-6))+'px';
+}
+function select(qi,j){
+  var vis=visOf(qi);if(!vis.length)return;
+  j=Math.max(0,Math.min(vis.length-1,j));sel={q:qi,j:j};
+  [].slice.call(drum.querySelectorAll('.p')).forEach(function(p){
+    p.classList.toggle('sel',+p.dataset.q===qi&&+p.dataset.j===j)});
+  showCard(vis[j]);fitRow();caret();
+}
+function render(){
+  var rows=[].slice.call(drum.querySelectorAll('.ln'));
+  drum.style.transform='translateY('+(-(active-1)*H)+'px)';
+  rows.forEach(function(ln,i){
+    var d=i-active,bd=ln.querySelector('.sm').classList.contains('bd');
+    ln.className='ln'+(d===-1?' up':d===1?' dn':d===0?' mid':' far');
+    ln.querySelector('em').textContent=(d===0||bd)?Q[i].s.slice(2,4)+'/'+Q[i].s.slice(7,9)+(Q[i].mixed?' *':''):'';
+  });
+  fitRow();setTimeout(function(){fitRow();caret()},460);
+}
+card.addEventListener('click',function(ev){
+  var b=ev.target.closest('.cpy'); if(!b)return;
+  ev.preventDefault();
+  var txt=b.dataset.copy||'';
+  function done(){
+    b.innerHTML=ICO_OK;b.classList.add('ok');
+    b.setAttribute('aria-label',T().copied);b.setAttribute('title',T().copied);
+    setTimeout(function(){b.innerHTML=ICO_COPY;b.classList.remove('ok');
+      b.setAttribute('aria-label',T().copy);b.setAttribute('title',T().copy);},1400);}
+  // execCommand fallback matters here: navigator.clipboard needs a secure
+  // context, and the public embed may sit on a plain-http host page.
+  function fallback(){var ta=document.createElement('textarea');ta.value=txt;
+    ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.top='-1000px';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy')}catch(_){}
+    document.body.removeChild(ta);done();}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done,fallback);
+  }else fallback();
+});
+drum.addEventListener('click',function(ev){
+  var p=ev.target.closest('.p');
+  if(p&&+p.dataset.q===active){select(active,+p.dataset.j);return}
+  var ln=ev.target.closest('.ln');if(!ln)return;
+  var i=+ln.dataset.i;if(i!==active&&visOf(i).length){active=i;render();select(i,0)}
+});
+sc.addEventListener('click',function(ev){
+  var b=ev.target.closest('.sg');if(!b)return;SC=b.dataset.s;
+  [].slice.call(sc.querySelectorAll('.sg')).forEach(function(x){x.className='sg'+(x.dataset.s===SC?' on':'')});
+  build();render();
+  var qi=active;while(qi<Q.length&&!visOf(qi).length)qi++;
+  if(qi>=Q.length){qi=active;while(qi>=0&&!visOf(qi).length)qi--}
+  if(qi>=0&&qi<Q.length){active=qi;render();select(qi,0)}
+});
+// Season scoring config: show_evf_toggle_calendar ("Pokaż przełącznik +EVF w
+// Kalendarzu"). Turning it OFF does not merely hide the control — it forces the
+// domestic scope, exactly as `!showEvfToggle || scopeFilter === 'ppw'` does in
+// CalendarView today. Hiding the button without constraining the data would
+// leave EVF events on screen with no way to filter them out.
+document.getElementById('cfgevf').addEventListener('change',function(){
+  var on=this.checked;
+  document.querySelector('.fil').style.display=on?'':'none';
+  SC=on?'all':'ppw';
+  [].slice.call(sc.querySelectorAll('.sg')).forEach(function(x){x.className='sg'+(x.dataset.s===SC?' on':'')});
+  build();render();
+  var qi=active;while(qi<Q.length&&!visOf(qi).length)qi++;
+  if(qi>=Q.length){qi=active;while(qi>=0&&!visOf(qi).length)qi--}
+  if(qi>=0&&qi<Q.length){active=qi;render();select(qi,0)}
+});
+[].slice.call(document.querySelectorAll('.lb')).forEach(function(b){
+  b.addEventListener('click',function(){
+    if(lang===b.dataset.l)return;
+    lang=b.dataset.l;
+    [].slice.call(document.querySelectorAll('.lb')).forEach(function(x){x.className='lb'+(x===b?' on':'')});
+    document.getElementById('vt').textContent=T().title;
+    document.getElementById('wl').textContent=T().width;
+    // build() recreates the panels, which drops the .sel class — keep the
+    // current selection and restore it so switching language does not move you.
+    var keep=sel?{q:sel.q,j:sel.j}:null;
+    build();render();
+    if(keep)select(keep.q,keep.j);else select(active,0);
+  })});
+// CERT/PROD switch. Temporary by design — it exists only because both
+// environments are served from GitHub Pages today, and retires when PROD moves
+// to the WordPress CMS. Labels are environment codes, so they never translate.
+document.getElementById('envt').addEventListener('click',function(ev){
+  var b=ev.target.closest('.envb'); if(!b)return;
+  [].slice.call(this.querySelectorAll('.envb')).forEach(function(x){x.className='envb'+(x===b?' on':'')});
+});
+var w=document.getElementById('w'),ro=document.getElementById('ro'),ph=document.getElementById('ph');
+function dev(n){return n<=320?'iPhone SE':n<=360?'Pixel / Galaxy':n<=375?'iPhone SE2 / 13 mini':n<=393?'iPhone 15 / Pixel 8':n<=414?'iPhone Plus':'iPhone Pro Max'}
+w.addEventListener('input',function(){ph.style.width=w.value+'px';ro.textContent=w.value+'px · '+dev(+w.value);setTimeout(function(){fitRow();caret()},220)});
+build();render();(function(){var v=visOf(active);for(var j=0;j<v.length;j++){if(v[j].s==='plan'){select(active,j);return}}select(active,0)})();
+})();
+</script>
+
+<hr>
+
+<h2><span class="num">01</span>Context</h2>
+<p>The calendar today is one 659-line component, <code>frontend/src/components/CalendarView.svelte</code>, doing everything at once: season dropdown, scope and time filters, a flat rolling-progress strip, a month-grouped reverse-chronological event list, and the registration modal. On a phone a 21-event season is an unbroken vertical scroll.</p>
+<p>The progress strip has a specific, diagnosable flaw: it encodes <em>two</em> variables in <em>one</em> visual channel. Hue says what kind of event it is; lightness of that same hue says whether it has been held. Light-blue-planned and light-green-planned sit close enough in value that the eye cannot separate "which type" from "which state". The fix is not better colours — it is giving state its own channel.</p>
+<p>The replacement inverts the structure. A rotating three-row quarter barrel becomes the primary control, and selecting a panel shows exactly one event in a full-detail card beneath it. The season dropdown and the event list are both removed; the barrel replaces them.</p>
+
+<h2><span class="num">02</span>What the mock requires</h2>
+<ol>
+<li><b>Quarter barrel.</b> Three visible rows on a 3D drum: focused quarter centred, previous receded above at <code>rotateX(46deg)</code>, next receded below at <code>rotateX(-46deg)</code>. Rotation is <code>translateY</code> on the drum container; facing angle is <code>rotateX</code> per row. The DOM never re-renders on rotate — only classes change — which is what makes it read as mechanical rather than as a crossfade.</li>
+<li><b>Detail tiers follow the rotation.</b> Focused row shows day, month and code; receded rows drop to day and code, and panels narrow from 48px to 38px. Because the outer rows are visibly receding, they have earned the right to carry less. This is what fits ~21 events into ~216px. <b>The selected panel spells its month out in full</b> — <code>wrz</code> becomes <code>września</code> — so the abbreviation is only ever a consequence of not being selected, never the only form on offer.</li>
+<li><b>Engraved seams.</b> The quarter label (<code>4Q26</code>) sits at 11px muted on a hairline above each row and rotates <em>with</em> it. The season code (<code>26/27</code>) appears at the right end of the seam on the focused row, and permanently on season-boundary seams — which also take a 2px <code>--border-stronger</code> rule so a boundary is visible before you reach it.</li>
+<li><b>Continuous history.</b> The drum rolls back through every prior season to the start of history. No season clamp. Crossing a boundary updates season state.</li>
+<li><b>Panels.</b> 48px focused, 38px receded, centred via an inner <code>margin: 0 auto</code> flex wrapper. Height is <b>56px</b>, which is exactly what four lines of type need once they are stopped from shrinking — see the callout below. Hue encodes type; <em>fill</em> encodes completed; a 2px accent ring marks the next upcoming event, computed from the visible set rather than assigned.</li>
+<li><b>The selected panel widens to fit what it has to say: 78px with a city, 74px without.</b> This supersedes the earlier <q>48px when the event has no city</q> — the full month name made 48px impossible, since <code>października</code> alone measures 66px. The selected panel is never the plain width in either language.</li>
+<li><b>The whole row is the tap target.</b> Tapping a receded row rotates it to centre; tapping a panel on the focused row selects that event. An 11px label is a poor thing to ask someone to hit with a thumb.</li>
+<li><b>Filter centred below the header:</b> a single <code>PPW | +EVF</code> segmented control. No weapon filter — the drum holds the whole history without compressing it. <b>This also retires the existing all/past/future <code>.time-filter-select</code></b>: the drum <em>is</em> the time control, and a dropdown that hides half the barrel's rows fights it. Recording it explicitly because it is a behaviour removal, not a styling change, and one test asserts it.</li>
+<li><b>Header:</b> hamburger, <b>SPWS logo mark</b>, view title, <code>EN | PL</code> toggle. The logo is the image, not a text wordmark — <code>frontend/public/SPWS-logo.png</code>, rendered as <code>&lt;img src="SPWS-logo.png" alt="SPWS" class="header-logo"&gt;</code> at <code>height:22px</code>, dropping to <code>18px</code> at the mobile breakpoint. <b>This is already how the app works</b> (<code>App.svelte:15</code>); the earlier text wordmark existed only in the mock, which has now been corrected to match. Nothing to build here — the header is <code>App.svelte</code> chrome that the barrel sits beneath, not one of the new components, and it is listed only so the mock reads as a faithful screen.</li>
+<li><b>Single event card</b>, joined to its panel by a caret positioned from the panel's measured <code>getBoundingClientRect()</code> after the rotation settles. Every optional row is <em>omitted entirely</em> when its field is empty — no placeholders, no “brak danych”. The card's full field set is the contract table in <b>§04</b>, not the shorter list the mock happens to render: the card must carry <b>everything <code>CalendarView.svelte</code> shows today</b>, including the registration flow and the fee tiers, or the redesign is a functional regression.</li>
+<li><b>320px is the floor.</b> <b>Five panels lay out flat</b> in the focused row at 320px; six or more fan and overlap. This is one fewer than the original design, and it is the price of the full month name on the selected panel — widening it from 48px to 74px spends the room a sixth flat panel needed. Overlapping is the designed response to overflow, not a failure, so the change costs nothing functional; it is recorded because the old <q>six panels fit</q> figure is now wrong and will not reproduce. Measured across all 19 quarters at 320px.</li>
+</ol>
+
+<div class="callout">
+<b>Results links are labelled by day, never by weapon.</b> ADR-040 is explicit that the five URL slots are <em>"equal-status — no role labels, no per-slot enum, no primary pointer"</em>. They exist because organisers split results across multiple platform URLs, usually per day. So: one URL renders as <code>Wyniki</code>; several render as <code>Dzień 1</code>, <code>Dzień 2</code>. Where a single day carries two weapons, both still read as that day — the card never claims a slot belongs to a weapon.
+</div>
+
+<div class="callout">
+<b>Two details worth protecting during implementation.</b> First, <code>justify-content: center</code> combined with <code>overflow-x: auto</code> clips the leading items when a row overflows, and they become unreachable — the inner <code>margin: 0 auto</code> wrapper is the fix, not a stylistic preference. Second, the next-upcoming ring must be <em>derived</em> from the filtered set: switching to PPW moves it off <code>PEW7 Wiedeń</code> and onto <code>MPW Warszawa</code>, which is genuinely the next domestic event enterable. A hardcoded ring would point at an event the filter just removed.
+</div>
+
+<h2><span class="num">03</span>What the real data says</h2>
+<p class="lede">All figures below are the 103 non-skeleton events on CERT as of 8 August 2026 — the same set driving the mock above.</p>
+
+<h3>Location is missing on PEW, and only PEW</h3>
+<table>
+<tr><th>Family</th><th>Location filled</th></tr>
+<tr><td>PPW · GP · MPW (domestic)</td><td>22 / 22 — 100%</td></tr>
+<tr><td>Championships (MSW · IMSW · DMEW · IMEW)</td><td>4 / 5</td></tr>
+<tr><td><b>PEW (EVF circuit)</b></td><td><b>30 / 75 — 40%</b></td></tr>
+</table>
+<p>Domestic events are typed by an SPWS admin, who naturally enters a city. PEW events arrive from the EVF calendar scraper, which for most of its history captured nothing. Fill rate by season — 30%, 54%, 76%, 68% — tracks the scraper gaining the field, not anyone backfilling. <b>45 PEW events have no location.</b></p>
+<p><b><code>txt_location</code> must always hold a city.</b> Rows like <code>Sporthalle der Städtischen Berufsschule für Informationstechnik</code> and <code>Savoy Terrace - Buda Castle</code> are a scraping defect, not a modelling choice — the scraper is writing the venue into the city field. Venues belong in <code>txt_venue_address</code>. Fixing the scraper and cleaning the polluted rows are one job.</p>
+
+<div class="callout">
+<b>Rendering rule: if <code>txt_location</code> holds anything, it appears. Classification never gates visibility.</b> The venue/city split decides <em>which line</em> the string lands on and whether it earns a flag — never whether the user sees it. A row is blank on screen only when the column is genuinely <code>NULL</code>.
+<p>This was a real defect in the mock, not a hypothetical. Its <code>splitLoc()</code> returned an empty city for anything matching the venue heuristic, and the panel rendered <code>e.city</code> alone — so <b>9 of the 56 events that have a location showed none at all</b>. The worst case was <code>Guildford Spectrum</code>: the city is <em>literally the first word</em>, and the heuristic threw the whole string away because the second word matched <code>spectrum</code>. A lossy classifier had been promoted into a visibility gate. The mock now falls back to the raw value, and panel coverage went from 47 to 56.</p>
+<p>So: <b>45 blank PEW locations are correct</b> — that data does not exist, and §02's omit-when-empty rule covers it. Anything else blank is a bug. The card handles both shapes: a city-classified string takes the flag line, a venue-classified one takes the address line below it, and either way the string is on screen and in the clipboard.</p>
+</div>
+
+<h3>Country is free text in mixed languages</h3>
+<p><code>Polska</code>, <code>Germany</code>, <code>GRUZJA</code>, and both <code>Great Britain</code> and <code>United Kingdom</code> for the same country. Normalise to ISO-3166 alpha-2 in a one-time enrichment pass with human review of the ambiguous cases — never a per-render web lookup, which would be slow, non-deterministic and unauditable. Once stored, flags become a static map and country names come from the existing <code>EN</code>/<code>PL</code> locale files.</p>
+
+<h3><code>arr_weapons</code> exists and is unusable</h3>
+<p><code>20260327000006_event_weapons.sql</code> added it for exactly this purpose — <em>"stores which weapons an event covers (usually all 3, sometimes 2 or 1)"</em> — with <code>DEFAULT '{EPEE,FOIL,SABRE}'</code>. It was never populated: 102 of 103 events sit on the default, one was set by hand. The real weapon is in the code suffix, lowercase: <code>PEW2es</code>, <code>PEW12s</code>, <code>PEW6efs</code>. This is a backfill and a write path, not a new column.</p>
+
+<h3>Most optional detail simply is not there</h3>
+<table>
+<tr><th>Field</th><th>Filled</th></tr>
+<tr><td><code>num_tournaments</code>, <code>arr_weapons</code></td><td>103 / 103</td></tr>
+<tr><td><code>num_entry_fee</code></td><td>28 / 103</td></tr>
+<tr><td><code>txt_venue_address</code></td><td>22 / 103</td></tr>
+<tr><td><code>dt_registration_deadline</code></td><td>5 / 103</td></tr>
+<tr><td><code>num_entry_fee_2w</code> / <code>_3w</code></td><td>1 / 103</td></tr>
+</table>
+<p>The card therefore renders what exists and omits the rest. Fee tiers, deadline countdowns and venue lines are exceptions, not the shape of a typical card.</p>
+
+<h3>Dates and seasons disagree</h3>
+<p><code>PEW2e-2023-2024</code> is dated 2022-01-08; <code>PEW8f-2025-2026</code> sits among 2024-2025 events. Quarters bucket by <code>dt_start</code>, so some hold events from two seasons — the mock marks those seams with an asterisk. Worth a data audit independently of this work.</p>
+
+<h2><span class="num">04</span>Architecture</h2>
+<p>All derivation currently lives inline in the component, which is why its test file is 788 lines of component-mounting tests. Split the logic out so it can be tested directly.</p>
+<table>
+<tr><th>File</th><th>Role</th></tr>
+<tr><td><code>lib/calendarQuarters.ts</code></td><td><b>New, pure.</b> Bucket events into quarters, order them, mark season boundaries, resolve the anchor quarter, compute next-upcoming, apply the scope filter, derive <code>registrationState()</code>. No Svelte.</td></tr>
+<tr><td><code>components/CalendarBarrel.svelte</code></td><td><b>New.</b> Rows, seams, panels, rotation, tap targets. Props in, events out — owns no data.</td></tr>
+<tr><td><code>components/EventCard.svelte</code></td><td><b>New.</b> Single-event detail. Its field set is <b>not</b> what the mock renders — see the contract below. It must carry everything the current list shows, including the entry fee with its currency, both weapon-tier fees, and the whole registration block (deadline, link, entry list, in-app modal).</td></tr>
+<tr><td><code>components/CountryFlag.svelte</code></td><td><b>New.</b> CSS flag chip: horizontal bands, vertical bands, offset cross. No emoji — inconsistent on Android, absent on many devices — and no image requests. <b>Has an unstated prerequisite:</b> it needs ISO-3166 codes and <code>txt_country</code> is free text today — see below.</td></tr>
+<tr><td><s><code>components/CalendarFilters.svelte</code></s></td><td><b>Do not create this file. There is nothing to delete — it never existed;</b> it was only ever a proposed row in this table. It was sized to hold <em>two</em> controls, the scope segment and a weapon picker. The weapon filter is a settled removal, so only the scope segment is left, and it goes <b>inline in <code>CalendarView.svelte</code></b> with the state it depends on. Exact shape and reasoning: <b>“The <code>PPW | +EVF</code> control and the season field that rules it”</b> below. <em>Judgment call, not a constraint</em> — if the scope control ever gains a second dimension, extract it then.</td></tr>
+<tr><td><code>components/CalendarView.svelte</code></td><td><b>Rewritten as an orchestrator.</b> Holds state, wires the three children, renders the <code>PPW | +EVF</code> buttons inline, keeps the existing <code>RegistrationModal</code> integration <b>and the CERT/PROD environment footer</b> — see the warning below.</td></tr>
+</table>
+
+<div class="callout">
+<b>The CERT/PROD environment switch stays — this is a requirement, not an option.</b> <code>CalendarView.svelte</code> lines 134–143 render it (<code>dualEnv</code>, <code>bind:activeEnv</code>), and the rewrite <b>carries it into the orchestrator unchanged</b>: same <code>.env-footer</code> / <code>.env-toggle</code> / <code>.env-btn</code> markup, same <code>CT</code> and <code>PD</code> labels, same position at the foot of the view.
+<p>It is not cosmetic. <code>activeEnv</code> is <code>$bindable</code>, and <code>App.svelte:379-380</code> derives <code>supabaseUrl</code> and <code>supabaseKey</code> from it — pressing <code>PD</code> re-points the entire Supabase client at production. Four tests in <b><code>tests/env-toggle.test.ts</code></b> mount <code>CalendarView</code> solely to drive this, asserting the buttons render only when both credential pairs are present and that clicking <code>PD</code> re-initialises against the PROD URL. Keeping the footer where it is keeps all four green with no edits.</p>
+<p><b>Nothing will catch you if you drop it.</b> Leaving <code>dualEnv</code> and <code>activeEnv</code> declared in the props interface but never rendered compiles clean, passes <code>svelte-check</code>, and fails only at runtime — as a silently missing control, which is the worst way for this particular one to fail.</p>
+<p><b>It is deliberately temporary, and that changes how much to invest in it.</b> The switch exists only because CERT and PROD are both served from GitHub Pages, so a single static bundle has to be able to point at either. <b>It retires when PROD moves to the WordPress CMS</b> — at that point the calendar is embedded in a site that <em>is</em> production, there is no second environment to flip to, and the control, the <code>dualEnv</code> / <code>activeEnv</code> props and the four tests in <code>env-toggle.test.ts</code> all go together.</p>
+<p>So: <b>carry it across unchanged and do not improve it.</b> Note in passing that <code>App.svelte:70-79</code> renders a byte-identical second copy for the ranklist view — the markup sits inside the <code>{#if currentView}</code> chain, so each branch needs its own. Hoisting it above the chain would remove the duplicate, but it would also add the footer to the admin views, which do not have it today. <b>Do not do this.</b> Refactoring a control with a known removal date spends effort on something whose best outcome is being deleted more tidily; the duplication is two small blocks of markup and it costs nothing to leave alone until both disappear.</p>
+</div>
+
+<h3><code>EventCard</code> field contract</h3>
+<p><b>This table is the specification for the card — build against it, not against a reading of the mock.</b> It was produced by diffing the mock against every field <code>CalendarView.svelte</code> puts on screen today, which found five omissions, one of them an interaction rather than a field. All five have since been built into the mock, so the <q>Mock</q> column now reads as confirmation rather than as a to-do list; only the struck-through rows are deliberate removals. <b>Nothing here is optional</b> — every row was either already live with passing tests, or added by explicit decision on 9 August.</p>
+
+<table>
+<tr><th>Card row</th><th>Source</th><th>Shown when</th><th>Today</th><th>Mock</th></tr>
+<tr><td>Date</td><td><code>dt_start</code>, <code>dt_end</code></td><td>always</td><td>✓ <code>d.MM</code>, start only</td><td>✓ full — <code>8 sierpnia 2026</code></td></tr>
+<tr><td>Event code</td><td><code>txt_code</code></td><td>always</td><td>✓ prefix only</td><td>✓ full code</td></tr>
+<tr><td>Name</td><td><code>txt_name</code></td><td>always</td><td>✓</td><td>✓</td></tr>
+<tr><td>Location + flag</td><td><code>txt_location</code>, <code>txt_country</code></td><td><b><code>txt_location</code> non-null</b> — never gated on classification</td><td>✓ text only</td><td>✓ flag + city, venue on its own line</td></tr>
+<tr><td><s>Country name + season code</s></td><td><code>txt_country</code>, <code>txt_season_code</code></td><td><b>dropped from the card</b></td><td>partial</td><td>removed — see below</td></tr>
+<tr><td><b>Venue address</b></td><td><code>txt_venue_address</code></td><td>present</td><td>✗</td><td>✓ <b>+ copy to clipboard</b></td></tr>
+<tr><td>Status</td><td><code>getEventDisplayStatus()</code></td><td>always</td><td>✓ badge</td><td>✓ chip</td></tr>
+<tr><td>Registry</td><td>derived from code</td><td>always</td><td>✗</td><td>✓ <code>SPWS</code>/<code>EVF</code>/<code>FIE</code></td></tr>
+<tr><td><s>Tournament count</s></td><td><code>num_tournaments</code></td><td><b>dropped from the card</b></td><td>✓</td><td>removed</td></tr>
+<tr><td>Weapons</td><td><code>arr_weapons</code> → code suffix</td><td>always</td><td>✓ mid-card</td><td>✓ small pills, bottom</td></tr>
+<tr><td>Results links</td><td><code>url_event</code> … <code>url_event_5</code></td><td><code>COMPLETED</code></td><td>✓ single link</td><td>✓ day-labelled</td></tr>
+<tr><td>Invitation</td><td><code>url_invitation</code></td><td>present</td><td>✓</td><td>✓ <code>Komunikat</code></td></tr>
+<tr><td><b>Registration deadline</b></td><td><code>dt_registration_deadline</code></td><td><code>today ≤ deadline</code></td><td>✓ + urgent styling</td><td>✓ <code>dd/mm/yyyy</code></td></tr>
+<tr><td><b>Registration link</b></td><td><code>url_registration</code>, <code>bool_use_spws_registration</code></td><td><code>today ≤ cutoff</code></td><td>✓ + in-app modal</td><td>✓ accent pill</td></tr>
+<tr><td><b>Entry-list link</b></td><td><code>url_entry_list</code></td><td><b><code>dt_start &gt; today</code></b> — changed, see below</td><td>✓ + modal, list view</td><td>✓</td></tr>
+<tr><td><b>Entry fee</b></td><td><code>num_entry_fee</code>, <code>txt_entry_fee_currency</code></td><td>present</td><td>✓</td><td>✓ with currency</td></tr>
+<tr><td><b>Fee — 2 weapons</b></td><td><code>num_entry_fee_2w</code></td><td>present <em>and</em> event covers ≥2 weapons</td><td>✓</td><td>✓</td></tr>
+<tr><td><b>Fee — 3 weapons</b></td><td><code>num_entry_fee_3w</code></td><td>present <em>and</em> event covers 3 weapons</td><td>✓</td><td>✓</td></tr>
+<tr><td>Nearest hub</td><td><code>txt_nearest_hub</code>, <code>num_nearest_hub_km</code></td><td>present</td><td>✗</td><td>✗ — new, see §05</td></tr>
+</table>
+
+<div class="callout">
+<b>The registration block is a flow, not a row — port its logic verbatim.</b> Three of the five gaps share one date computation, and it is subtle enough that a rewrite from memory will get it wrong:
+<code>regCutoff = dt_registration_deadline ?? dt_start</code>, and <code>regOpen = today ≤ regCutoff</code>. So the registration and entry-list links stay visible until the deadline <em>or, when no deadline is stored, until the event starts</em> — which is what keeps them live for the 98 of 103 events that have no deadline at all. The deadline <em>text</em> has a stricter test than the links: it needs <code>dt_registration_deadline</code> to be non-null in its own right. <code>regUrgent</code> turns the block red when the cutoff is under seven days away. And when <code>bool_use_spws_registration</code> is set, the link must <code>preventDefault()</code> and open the in-app <code>RegistrationModal</code> rather than navigating — ADR-079 amend, with an external URL still navigating normally. Lift this into <code>calendarQuarters.ts</code> as a pure <code>registrationState(event, today)</code> helper so it is unit-testable without mounting anything, and the six existing tests (8.21–8.26b) move across nearly unchanged.
+</div>
+
+<h4>What the card leads with</h4>
+<p>The card is ordered by what a fencer actually acts on. Identity first (date, code, name, place), then a two-chip status line, then a rule, then <b>the decision block</b>: entry fee, the two tiered fees, the registration deadline, and the two links. Weapons close the card as small muted pills — they qualify the event, they are not why anyone opened it.</p>
+<p><b>The tournament count is gone.</b> <code>num_tournaments</code> is filled on 103/103 events, which made it the easiest thing to put on a card and the least useful thing to read there: it answers a question nobody asks, while the fee and the deadline — the two fields that decide whether you enter — were absent. It is still loaded and still drives the barrel's data; it simply is not card content.</p>
+
+<h4>The venue address replaces the country-and-season line, and is copyable</h4>
+<p>The card used to carry <code>Polska · sezon SPWS-2025-2026</code>. Both halves were already on screen elsewhere: the <b>country</b> is the flag on the city line, and the <b>season</b> is engraved on the barrel seam directly above — the row restated what the surrounding UI had already said. It now holds <code>txt_venue_address</code> with a 22px copy-icon button.</p>
+<p><b>What lands on the clipboard is the full address, not the visible fragment</b> — venue, city and country name joined: <code>Complexe Sportif Omnisports des Vauzelles, Francja</code>, or <code>Pabianice, Polska</code> where there is no venue. The card can afford to show a flag because the reader can see it; a clipboard string pasted into a maps app or sent to a driver cannot. This is also why dropping the country <em>name</em> from display costs nothing: it survives where it is actually needed.</p>
+<p>When an event has a city but no venue, the copy button attaches to the city line instead, so the affordance follows whatever location the card has. It is absent only when the event has no location at all. In the mock that is 56 of 103 cards with a copy button and 11 with a full venue row.</p>
+<p>The button carries <b>no visible text</b> — an inline SVG glyph only, at 22×22. That does <em>not</em> remove it from the locale files: with no text node, its <code>aria-label</code> and <code>title</code> <em>are</em> its label, so both are translated and both are updated to <q>Skopiowano</q> / <q>Copied</q> on success. An icon-only control with no accessible name is an unlabelled button to a screen reader. Keep the SVG inline rather than reaching for an icon font or sprite sheet — the embed runs under a strict CSP, and that would be one more asset that can fail to load.</p>
+<p>Use <code>navigator.clipboard.writeText()</code> with an <code>execCommand</code> fallback: the Clipboard API requires a secure context, and the public <code>spws-calendar</code> embed may sit on a plain-http host page. Confirm the copy visibly — the mock swaps the icon to a checkmark for 1.4s — because a clipboard write is otherwise completely silent.</p>
+
+<h4>Entry list — shown until the event starts, not until entries close</h4>
+<p><b>DECIDED 9 August: accepted.</b> The entry-list link appears only while <code>dt_start</code> is <b>still in the future</b>, and never on a cancelled event. <b>This is a deliberate change from current behaviour.</b> Today <code>CalendarView.svelte:57</code> gates it on <code>regOpen</code>, the same <code>deadline ?? dt_start</code> cutoff used for the registration link — so on an event with a stored deadline, the entry list disappears the moment entries close.</p>
+<p>That is the wrong rule for this link. Who has entered becomes <em>more</em> interesting once the list is final: you check the draw, you see who is in your category, you decide whether the trip is worth it. Registration and the entry list answer different questions and should not share a cutoff. <b>Consequence for implementation:</b> <code>registrationState()</code> must return the two flags separately rather than one <code>regOpen</code> boolean.</p>
+<p><b>Correction — the test cost stated here was wrong.</b> An earlier draft of this section said <code>CalendarView.test.ts:580</code> and its neighbours <q>need rewriting to the new rule rather than porting</q>. A read of all 49 tests on 9 August found that <b>no existing test pins the old rule</b>, so nothing needs rewriting:</p>
+<ul>
+<li>Every test touching <code>.entry-list-link</code> sets <code>dt_registration_deadline: futureStr</code> where <code>futureStr</code> <em>is</em> <code>dt_start</code>, both roughly two months out. Under <code>dt_start &gt; today</code> they all still render the link and still pass.</li>
+<li>Line 580 asserts <em>absence</em> when <code>url_entry_list</code> is <b>null</b> — a URL check, not a date gate. Unaffected.</li>
+<li>The only past-deadline test, 8.25, asserts <code>.registration-link</code> and <code>.registration-deadline</code> only, on a <code>2020-01-01</code> / <code>COMPLETED</code> event — the entry list is hidden under either rule.</li>
+</ul>
+<p>So this change costs <b>new</b> tests, not rewrites, and the §06 test-triage <q>rewrite</q> bucket is empty on this account. The uncomfortable half is the reason it was cheap: the current coupling of the entry list to <code>regOpen</code> was never covered, so nothing would have caught it drifting in either direction. Write the new tests to pin both halves — link present on a future event whose deadline has passed, absent on a cancelled one.</p>
+
+<h4>Entry fees — three independent lines, not one block</h4>
+<p>The card carries <b>all three</b> fee fields, each on its own line, each rendered only when non-null:</p>
+<table>
+<tr><th>Line</th><th>Column</th><th>Existing locale key</th><th>PL</th><th>EN</th></tr>
+<tr><td>Base fee</td><td><code>num_entry_fee</code></td><td><code>entry_fee</code></td><td>Opłata startowa</td><td>Entry fee</td></tr>
+<tr><td>Two weapons</td><td><code>num_entry_fee_2w</code></td><td><code>event_entry_fee_2w_label</code></td><td>Opłata (2 bronie)</td><td>Fee (2 weapons)</td></tr>
+<tr><td>Three weapons</td><td><code>num_entry_fee_3w</code></td><td><code>event_entry_fee_3w_label</code></td><td>Opłata (3 bronie)</td><td>Fee (3 weapons)</td></tr>
+</table>
+<p><b>All three keys already exist in both locale files</b> — no new strings are needed for fees, so this is reuse, not translation work. Two rules the current component follows and the card must keep:</p>
+<ul>
+<li><b>The tiers are independent, not a set.</b> An event may fill the base fee and <code>_3w</code> while leaving <code>_2w</code> null. Render one line per non-null field — never a block gated on the base fee being present, which would hide a tier-only event's pricing entirely. Asserted at <code>CalendarView.test.ts:770</code> and <code>:783</code>.</li>
+<li><b>A tier can only exist where the tier does.</b> An event covering foil alone has no two- or three-weapon price to quote, so a populated <code>_2w</code> on a single-weapon event is a data error, not something to render. The mock gates the tiers on the event's own weapon count and the reconciliation check proposed for <code>arr_weapons</code> should flag the disagreement rather than the card quietly displaying an impossible price.</li>
+<li><b>The currency is stored, not assumed.</b> <code>txt_entry_fee_currency ?? 'PLN'</code> — the fallback is PLN, but PEW events are priced in EUR and GBP, and a hardcoded <code>zł</code> suffix would misprice every foreign competition on the calendar. The same currency applies to all three lines.</li>
+</ul>
+<p>Coverage is thin — 28 of 103 events carry a base fee and just 1 carries tiers — so on most cards this whole block is absent. That is correct behaviour, not a bug: it is the strongest case for the omit-when-empty rule, since a card padded with three empty fee rows would bury the fields that <em>are</em> filled.</p>
+
+<h4>Dates — the card has room for the range the list never had</h4>
+<p><code>dt_end</code> is loaded and used twice today, but never <em>shown</em>: <code>getEventDisplayStatus(enum_status, dt_end, dt_start)</code> derives awaiting-results from it, and the cancelled-notice window counts seven days from it. The list rendered <code>dt_start</code> alone because a 56px date column had no room for more. The card does. Most competitions run a weekend, and <q>10–11 stycznia</q> answers a question <q>10 stycznia</q> leaves open — whether to book two nights. Render the range when <code>dt_end</code> differs from <code>dt_start</code>, the single date when it does not. Panels stay single-date; the space argument still holds there.</p>
+
+<h4><code>CountryFlag</code> is blocked until countries are normalised</h4>
+<p>Phase 3 builds <code>CountryFlag</code> first, but it has nothing to key off. <code>txt_country</code> is free text in mixed languages — <code>Polska</code>, <code>Germany</code>, <code>GRUZJA</code>, and both <code>Great Britain</code> and <code>United Kingdom</code> for one country — and a flag component needs ISO-3166 alpha-2. The mock only draws flags because it carries a hardcoded 21-entry <code>ISO</code> lookup.</p>
+<p><b>Do not let this stall the component.</b> Put the same mapping in a pure, tested <code>countryCode(raw)</code> function inside <code>calendarQuarters.ts</code>, returning <code>null</code> for anything unrecognised so the card renders the country name without a flag rather than the wrong flag. The enrichment pass in §05 then makes that function a near-identity, and its tests become the regression net proving the pass did not change what anyone sees. This is an ordering dependency the phase list does not currently state.</p>
+
+<h3>Panel type buckets — the fourth one already exists</h3>
+<p>The retired strip typed events into <b>four</b> buckets via <code>slotTypeClass()</code>: <code>pew</code>, <code>imew</code> (which absorbs <code>IMEW</code>, <code>IMSW</code>, <code>MEW</code>, <code>MSW</code>, <code>PSW</code>), <code>mpw</code>, and <code>ppw</code>. But look at the stylesheet — <code>.slot.ppw.completed</code> and <code>.slot.mpw.completed</code> share one rule, as do their <code>.planned</code> pair. <b><code>MPW</code> is classified separately and then painted identically.</b> The distinction was built and never cashed in. The mock goes further and folds <code>MPW</code> into <code>ppw</code> outright, dropping even the unused class.</p>
+<p>This matters for <b>open item 4</b>, which asks for championships to be marked distinctly so finished seasons keep a focal point once next-upcoming has nothing to point at. That is not new machinery — it is styling a bucket the code has carried, unstyled, all along. Keep the four-way split in <code>calendarQuarters.ts</code>, and let the barrel decide whether the fourth one gets its own treatment. Deciding it is <em>not</em> a prerequisite for building the barrel; discarding the bucket would make it one later.</p>
+
+<h3>Props that die with the old view</h3>
+<p><code>isActiveSeason</code> exists <b>only</b> to gate the rolling strip — <code>CalendarView.svelte:34</code> and <code>:269</code> are its sole readers. When the strip goes it becomes a lie: a prop that is threaded through, type-checked, and consulted by nothing. Delete it from the props interface, from the call site at <code>App.svelte:81</code>, <em>and</em> delete the derivation at <code>App.svelte:399</code>, which is computed for no other consumer. Same for <code>onseasonchange</code> and the meaning of <code>selectedSeasonId</code> once the barrel owns season state — already noted in Phase 4, but <code>isActiveSeason</code> was not.</p>
+
+<h3>The <code>PPW | +EVF</code> control and the season field that rules it</h3>
+<p>The scope control stays, and it is <b>not</b> unconditional. It is governed per season by the scoring-config field <code>show_evf_toggle_calendar</code>, shown to admins as <b>“Pokaż przełącznik +EVF w Kalendarzu”</b> (<code>sc_show_evf_toggle_calendar</code>, edited at <code>SeasonManager.svelte:54</code>). It reaches the view like this:</p>
+<table>
+<tr><th>Step</th><th>Where</th></tr>
+<tr><td>Admin edits the field</td><td><code>SeasonManager.svelte:54</code>, inside the season's scoring config</td></tr>
+<tr><td>Read back over RPC</td><td><code>fetchScoringConfig()</code> → <code>fn_export_scoring_config(p_id_season)</code>, <code>api.ts:246</code></td></tr>
+<tr><td>Resolved with a default</td><td><code>App.svelte:496</code> — <code>scoringConfig?.show_evf_toggle_calendar ?? true</code></td></tr>
+<tr><td>Passed to the view</td><td><code>App.svelte:81</code> — <code>showEvfToggle={showEvfToggleCalendar}</code></td></tr>
+</table>
+<p>Four things to carry across exactly:</p>
+<ul>
+<li><b>It is per-season scoring config, not a column on <code>tbl_season</code>,</b> and it is fetched through an RPC rather than selected from a view. Do not go looking for a boolean column to join.</li>
+<li><b>The default is <code>true</code></b> — an unset season <em>shows</em> the control. This is the opposite of its ranklist sibling <code>show_evf_toggle</code>, which defaults to <code>false</code>. ADR-044 amend split the two deliberately so the surfaces are independent; do not re-merge them.</li>
+<li><b>Off does not merely hide the button — it constrains the data.</b> <code>CalendarView.svelte:291</code> reads <code>!showEvfToggle || scopeFilter === 'ppw'</code>, so with the config off the calendar is domestic-only regardless of scope state. Hiding the control without forcing the scope would strand EVF events on screen with no way to filter them. In the mock this is the difference between 103 panels and 22.</li>
+<li><b>It loads asynchronously,</b> which is the whole reason for the <code>$effect</code> at <code>CalendarView.svelte:225-227</code>: the scope default re-syncs from <code>showEvfToggle</code> on every change until the user picks explicitly (<code>scopeUserOverride</code>). Port that effect with the state into the orchestrator — a scope initialised once at mount will be wrong for the first paint.</li>
+</ul>
+<p>The mock carries a review-only checkbox above the phone frame, outside the device, so both states can be seen. It is not part of the UI — the real switch lives in the season admin.</p>
+
+<p><b>This is what goes inline in the orchestrator</b> — ported from <code>CalendarView.svelte</code> lines 13–26, 223–227 and 291, not rewritten from memory:</p>
+<pre><code>// state — stays in CalendarView, which is why CalendarFilters.svelte is not a file
+let scopeFilter: 'all' | 'ppw' = $state('ppw')
+let scopeUserOverride = $state(false)
+
+// showEvfToggle arrives async from the season scoring config, so the default
+// re-syncs on every change until the user picks a scope explicitly.
+$effect(() =&gt; {
+  if (!scopeUserOverride) scopeFilter = showEvfToggle ? 'all' : 'ppw'
+})
+
+// markup — only rendered when the season config allows it
+{#if showEvfToggle}
+  &lt;div class="scope-filters"&gt;
+    &lt;button class:active={scopeFilter === 'ppw'}
+      onclick={() =&gt; { scopeFilter = 'ppw'; scopeUserOverride = true }}&gt;PPW&lt;/button&gt;
+    &lt;button class:active={scopeFilter === 'all'}
+      onclick={() =&gt; { scopeFilter = 'all'; scopeUserOverride = true }}&gt;+EVF&lt;/button&gt;
+  &lt;/div&gt;
+{/if}
+
+// and the data rule that must travel with it — hiding the control is not enough
+if (!showEvfToggle || scopeFilter === 'ppw') {
+  result = result.filter((e) =&gt; !isInternationalEvent(e))
+}</code></pre>
+<p><code>isInternationalEvent</code> is <code>bool_has_international || /^(PEW|MEW|MSW|PSW|IMEW|IMSW)/.test(txt_code)</code> — port it into <code>calendarQuarters.ts</code> so the filter is unit-testable without mounting anything.</p>
+
+<h3>Localisation — and the Polish plural trap</h3>
+<p>Every string in the barrel and the card goes through <code>t()</code> and <code>locales/{en,pl}.json</code>. The mock now demonstrates the full <code>EN | PL</code> switch working across months (short and full), weapon names, country names, event names, the four status labels, the awaiting and cancelled sentences, the results and invitation links, the empty-quarter label, and the view title. Registry codes (<code>SPWS</code>, <code>EVF</code>, <code>FIE</code>), event codes and device names are proper nouns and stay untranslated.</p>
+<p>Two things a naive port gets wrong:</p>
+<ul>
+<li><b>Polish months in a date are genitive.</b> <code>18 kwietnia</code>, not <code>18 kwiecień</code>. Because they only ever appear inside a date here, the genitive forms can be stored directly — but a <code>month_N</code> key reused for a standalone month heading elsewhere would then read wrongly, so the calendar needs its own keys rather than borrowing the existing <code>month_1…12</code>.</li>
+<li><b>Polish has three plural forms, and the count picks between them.</b> <code>1 turniej</code> · <code>2–4 turnieje</code> · <code>0 and 5+ turniejów</code> — with the trap that <b>12, 13 and 14 take the genitive</b> despite ending in 2–4, while 22, 23 and 24 do not. English needs only a singular/plural pair, so the template <code>count + ' ' + noun</code> looks right in EN and is wrong for roughly half of all counts in PL. The current calendar has this defect live in <em>both</em> languages: <code>tournaments_count</code> is a flat string — <code>"turniejów"</code> in <code>pl.json:90</code>, <code>"tournaments"</code> in <code>en.json:90</code> — concatenated with the count at <code>CalendarView.svelte:72</code>. So <q>2 turniejów</q> and <q>1 tournaments</q> are both on screen today, and events with a single tournament are common. This needs a pluralisation helper keyed by count, not a flat string; the mock carries a reference implementation for both languages.</li>
+</ul>
+
+<h3>Reuse rather than reinvent</h3>
+<ul>
+<li><code>getEventDisplayStatus()</code> in <code>lib/eventStatus.ts</code> — already exhaustive over all eight <code>EventStatus</code> values and already handles awaiting-results. <code>EventCard</code> consumes it unchanged.</li>
+<li><code>fetchPriorSeasonEvents(seasonIds)</code> at <code>lib/api.ts:206</code> — already queries <code>vw_calendar</code> across multiple seasons. The barrel's multi-season need is a caller change, not a new query. <b>But note the ordering:</b> this one sorts <code>.order('txt_code')</code> while <code>fetchCalendarEvents</code> at <code>api.ts:172</code> sorts <code>.order('dt_start')</code>. Since <code>txt_code</code> orders <code>PEW10</code> before <code>PEW2</code>, the multi-season path arrives in an order that is neither chronological nor numeric. <code>calendarQuarters.ts</code> must sort by <code>dt_start</code> itself and never inherit caller order — and a test should feed it deliberately shuffled input so that requirement is pinned rather than accidentally satisfied.</li>
+<li><code>t()</code> from <code>lib/locale.svelte.ts</code> with <code>locales/{en,pl}.json</code> for every new string.</li>
+<li>The CREATED-hiding and cancelled-notice-window rules already in <code>CalendarView.svelte</code> — port them into <code>calendarQuarters.ts</code> unchanged. They are ADR-037 behaviour, not incidental.</li>
+</ul>
+
+<h2><span class="num">05</span>Data changes</h2>
+<h3>Multi-season load</h3>
+<p><code>fetchCalendarEvents(seasonId)</code> at <code>api.ts:172</code> is single-season. Add <code>fetchCalendarEventsAllSeasons()</code> alongside it, or call <code>fetchPriorSeasonEvents</code> with every season id. Volume is modest — roughly 20 events per season — so a single up-front load is simpler than lazy-loading on boundary approach, and it removes the fetch-per-rotation problem entirely.</p>
+
+<h3>Nearest-hub fields — proposed, and now the only unrequested item in this plan</h3>
+<div class="callout">
+<b>DECIDED 9 August: dropped from this plan.</b> It came from the first design session, when the card sketch had a <q>nearest airport</q> line. The 9 August card rebuild did not include one, the user has never asked for it, and the mock does not demonstrate it — it was the one piece of scope here with no acceptance criterion attached. It was also the only reason this plan needed a migration: with it gone, <b>Phase 2 does not exist</b>, and there is no <code>vw_calendar</code> rebuild, no <code>plpgsql-check</code> run and <b>no SQL in this work at all</b>. Raise it separately if anyone actually wants it. The shape it would have taken is kept below so that a future request starts from a design rather than a blank page — it is <em>not</em> work in scope here.
+</div>
+<p>If it is built: add two <em>structured</em> fields rather than one free-text phrase:</p>
+<ul>
+<li><code>tbl_event.txt_nearest_hub</code> — text, nullable</li>
+<li><code>tbl_event.num_nearest_hub_km</code> — integer, nullable</li>
+</ul>
+<p>Structured because the <code>EN | PL</code> toggle would otherwise render a stored Polish sentence inside an English card — a free-text field silently opts out of translation. New migration, then <b>rebuild <code>vw_calendar</code></b> to expose both: the <code>tbl_event</code> row contract is changing, which is exactly the recorded trigger for reviewing that view. Extend <code>CalendarEvent</code> in <code>types.ts</code> with both as optional, matching how <code>num_entry_fee_2w</code> and <code>url_entry_list</code> were added. Run <code>plpgsql-check</code> against the migration.</p>
+
+<h2><span class="num">06</span>Phases</h2>
+<p class="lede">Strict RED → GREEN per <code>doc/claude/testing.md</code>.</p>
+<ol>
+<li><b>Pure logic.</b> <code>tests/calendarQuarters.test.ts</code> first, then the module. It owns more than the original draft gave it:
+  <ul>
+  <li>quarter bucketing by <code>dt_start</code>, with <b>deliberately shuffled input</b> — the multi-season fetch does not arrive chronological</li>
+  <li>season-boundary detection, and the mixed-season quarters from §03</li>
+  <li>anchor resolution, including off-season and archived-season cases where no quarter contains today <em>(shape depends on open items 1 and 4 — write this last)</em></li>
+  <li>next-upcoming, derived from the <b>filtered</b> set, not assigned</li>
+  <li>scope filtering, plus <code>isInternationalEvent</code> ported verbatim</li>
+  <li><code>registrationState(event, today)</code> returning <b>separate</b> registration and entry-list flags plus the urgent flag — not one shared <code>regOpen</code>; see §04</li>
+  <li><code>countryCode(raw)</code> returning <code>null</code> for unrecognised input, so <code>CountryFlag</code> is not blocked on the enrichment pass</li>
+  <li>the <b>four-way</b> type split (<code>ppw</code> / <code>mpw</code> / <code>pew</code> / <code>int</code>) — keep <code>mpw</code> distinct even though nothing styles it yet, per §04</li>
+  <li>the two ADR-037 rules ported unchanged: CREATED hidden, cancelled-notice window</li>
+  <li>empty quarters</li>
+  </ul></li>
+<li><s><b>Migration and view.</b></s> <b>This phase does not exist.</b> Nearest-hub was dropped on 9 August (§05), so there is no migration, no <code>vw_calendar</code> rebuild, no <code>types.ts</code> extension and <b>no SQL in this work at all</b>. The numbering below is left unchanged so that existing references to <q>Phase 3</q> and <q>Phase 4</q> still resolve.</li>
+<li><b>Components.</b> <code>CountryFlag</code> → <code>EventCard</code> → <code>CalendarBarrel</code>, each with its own test file. Barrel tests cover rotation state, detail tiers, tap targets, seam rendering, boundary marking, and the selected panel's full month name and width. <b>Card tests cover the whole §04 contract</b>, every optional row present and absent: all three fee lines with currency and the weapon-count gate, the deadline in <code>dd/mm/yyyy</code>, registration and entry-list links under their <em>different</em> conditions, day-labelled result links, the venue address with its copy button and composed clipboard string, and the weapons row. Assert the omissions too — a card for an event with no fee must render no fee line, not an empty one.</li>
+<li><b>Orchestration.</b> Rewrite <code>CalendarView.svelte</code>. Update the call site at <code>App.svelte:81</code> — <code>seasons</code>, <code>selectedSeasonId</code> and <code>onseasonchange</code> change meaning now that the barrel owns season state.</li>
+<li><b>Test migration.</b> See below.</li>
+<li><b>Public embed.</b> <code>ce/CalendarElement.svelte</code> currently derives <code>demo ? MOCK_CALENDAR_EVENTS : []</code> — meaning the non-demo embed renders empty. Verify how the production <code>spws-calendar</code> element is actually fed before changing it. If it is genuinely unwired, that is a separate finding to report, not something to silently fix inside this work. <b>Note also that the embed renders no header</b> — <code>CalendarElement.svelte</code> mounts <code>CalendarView</code> alone, so the hamburger, logo and language toggle are app-only chrome and the embed has never shown them. Should that ever change, the logo's <code>src="SPWS-logo.png"</code> is <em>document-relative</em>: inside a custom element on a third-party page it resolves against the host's URL, not the bundle, and 404s. Any header in the embed needs an absolute asset URL or an inlined SVG.</li>
+</ol>
+
+<div class="callout">
+<b>Test triage is not optional, and it spans two files, not one.</b> <code>tests/CalendarView.test.ts</code> holds 49 tests and <code>tests/env-toggle.test.ts</code> a further 4 that mount the same component — <b>53 in scope</b>. Most of the 49 assert the list and strip being deleted: <code>.timeline-event</code>, <code>.timeline-month</code>, reverse-chronological order, <code>.slot</code>, the season dropdown (11.8), and the all/past/future filter (<code>CalendarView.test.ts:213</code>) now that the drum replaces it. Every one gets a decision, into <b>three</b> buckets, not two:
+<ul>
+<li><b>Move</b> — behaviour survives unchanged: CREATED hidden, cancelled-notice window, scope filtering, registration modal and ADR-079 link behaviour, fee tiers, code-prefix normalisation.</li>
+<li><b>Rewrite</b> — behaviour deliberately changed, so porting the assertion would re-assert the old rule. <b>This bucket turned out to be empty</b>, and the reason is worth carrying: the entry-list rule change is real, but no existing test pinned the old rule, so every entry-list test <em>moves</em> unchanged. See the correction under <q>Entry list</q> in §04 before assuming otherwise — the earlier claim that <code>CalendarView.test.ts:580</code> needed rewriting was checked and is wrong. Keep the bucket in the triage anyway: any test that ties the entry list to the registration deadline would belong here, and the new tests pinning <code>dt_start &gt; today</code> are additions, not ports.</li>
+<li><b>Delete</b> — assertions about removed DOM, with a note in the commit.</li>
+</ul>
+<b>Do not delete a test without recording which bucket it fell in</b>, and do not let a <q>rewrite</q> pass as a <q>move</q>.
+</div>
+
+<h2><span class="num">07</span>Verification</h2>
+<ul>
+<li><code>npm run check</code> and the <code>svelte-check</code> skill on every changed <code>.svelte</code> and <code>.ts</code>.</li>
+<li><code>npx vitest run</code> — full frontend suite.</li>
+<li><code>plpgsql-check</code> against the new migration and <code>./scripts/reset-dev.sh</code> for the LOCAL rebuild — <em>only if</em> nearest-hub survives §05; otherwise there is no SQL in this work. Never a bare <code>supabase db reset</code>.</li>
+<li>Browser preview via the <code>frontend-ce-dev</code> launch config on port 5299, <code>index.ce.html</code>. Resize to 320, 360 and 390 and confirm each of the following. <b>Measure, do not eyeball</b> — most of these were caught this way and would have passed a glance:
+  <ul>
+  <li><b>five</b> panels flat at 320px, six fanning; no panel's content spilling past its border, and the selected panel's outline not clipped by the row's scroll container</li>
+  <li>the selected panel showing its month in full, untruncated, in <b>both</b> languages — <code>października</code> is the widest</li>
+  <li>rotation across a season boundary updates season state; the caret tracks the selected panel</li>
+  <li>the <code>PPW | +EVF</code> control appears only when <code>show_evf_toggle_calendar</code> allows it, <b>and</b> that turning it off actually removes EVF events rather than only hiding the buttons</li>
+  <li>the next-upcoming ring moves when scope is toggled</li>
+  <li>a card showing all three fee lines with the right currency, and no tier on a single-weapon event</li>
+  <li>the entry-list link present on a future event and <b>absent</b> on a held, awaiting or cancelled one</li>
+  <li>copy-to-clipboard writing the full composed address, with the icon confirming and reverting</li>
+  <li><code>EN | PL</code> switching every string, including the plural forms — check counts of 1, 2 and 5</li>
+  <li>the CERT/PROD footer still present and still switching environments</li>
+  </ul></li>
+<li>Screenshot at 320px placed beside the mock at the top of this document. That comparison is the acceptance check.</li>
+</ul>
+
+<h2><span class="num">08</span>Documentation gate</h2>
+<ul>
+<li><b>New ADR</b> — replacing the list-and-strip with a barrel-and-card is an architectural decision with a public-facing consequence. Draft, sign off, register in specification Appendix C.</li>
+<li><code>doc/handbook/product/product-surfaces.html</code> — the calendar surface is materially different.</li>
+<li><code>doc/handbook/subsystems/events-and-registration.html</code> — owning subsystem page.</li>
+<li><code>doc/handbook/reference/codebase-map.html</code> — <b>four</b> new files: <code>lib/calendarQuarters.ts</code>, <code>components/CalendarBarrel.svelte</code>, <code>components/EventCard.svelte</code>, <code>components/CountryFlag.svelte</code>. Not five — <code>CalendarFilters.svelte</code> is not built.</li>
+<li><b>Two live defects found during this design work, both outside its scope</b>, to report rather than silently fix: <code>tournaments_count</code> has no pluralisation, so <q>2 turniejów</q> and <q>1 tournaments</q> are in production now; and the <code>+EVF</code>/environment footer is duplicated between <code>App.svelte</code> and <code>CalendarView.svelte</code> (leave that one — it retires with the WordPress migration).</li>
+<li>RTM check for any requirement touching calendar presentation.</li>
+<li><code>scripts/check_docs.py</code> clean; <code>scripts/refresh-graph.sh</code> before the commit.</li>
+</ul>
+
+<h2><span class="num">09</span>Open items</h2>
+<p class="lede">Raised during design and recorded here rather than guessed at.</p>
+<ol>
+<li><b>Card opening state — still open.</b> Next upcoming, most recent result, or time-sensitive. Recommendation: time-sensitive. The Monday after a competition weekend everyone wants results; three weeks later nobody does. The seven-day window already exists in the codebase for cancelled-event notices, so it is not a new concept to explain. <b>Do not read the mock as having settled this</b> — it opens on next-upcoming because that was the simplest thing to demonstrate, not because it was chosen. This and item 4 are the only two open items that reach into Phase 1, and both land in <code>resolveAnchorQuarter()</code>, which is why that function is written last.</li>
+<li><b>Scroll behaviour</b> — barrel pinned versus whole page scrolling. Recommendation: scrolling. Pinning ~250px of drum above every card on a 568px screen leaves under half the display for the thing you came to read, and the barrel is not used continuously — you spin it, pick, then read.</li>
+<li><s><b>Weapon preference lifetime</b></s> — <b>moot, closed.</b> This asked whether the calendar's weapon filter should persist in <code>localStorage</code> and whether it should share state with the ranking tab's <code>BROŃ</code> selector. There is no weapon filter, so there is no preference to persist. Left visible rather than deleted so it is not re-raised as an oversight.</li>
+<li><b>Past-season anchor</b> — finished seasons have no next-upcoming event, so the drum loses its focal point and rows go flat. Recommendation: mark championship events (<code>MPW</code>, <code>MŚW</code>, <code>MEW</code>) distinctly so past rows keep structure without needing viewer identity, which the public embed cannot have.</li>
+</ol>
+
+</div>
+</body>
+</html>

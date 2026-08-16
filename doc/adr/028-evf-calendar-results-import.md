@@ -3,6 +3,15 @@
 **Status:** Accepted (revised 2026-08-08 rev 8 — source-verified historical fragment repair)
 **Date:** 2026-04-06
 **Relates to:** FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (`url_event`), ADR-030 (`url_registration`/`dt_registration_deadline`), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier)
+**Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (carves out one-time curated enrichment of calendar-facing fields).
+
+## Amendment (2026-08-09 — curated enrichment is permitted, once)
+
+This ADR treats scraped EVF fields as source-owned: the sync overwrites them on every run. [ADR-084](084-calendar-quarter-barrel-event-card.md) surfaces fields the scrape does not populate well — venue address, country as an ISO code, a city distinguishable from a venue name — because the card renders them directly.
+
+The carve-out: **one-time curated enrichment of presentation-only fields is permitted** where the scrape has no value to overwrite. It does not extend to identity or schedule fields (name, dates, `txt_evf_slug`, `id_evf_event`), which remain strictly source-owned and are re-synced by `fn_sync_evf_event_fields`.
+
+The reason this needs saying: `txt_location` in CERT holds a venue where a city belongs, and the card demotes such a value to the address line rather than printing it as a city (EC.8, EC.9). That is a **rendering** accommodation of a data defect, not a fix — the defect stays recorded against the ingest.
 
 ## Amendment 2026-04-26 (rev 3)
 
@@ -216,3 +225,26 @@ Guildford/Faches sources and one March 2025 result use the explicitly approved
 full-field fallback. Child `url_results` values remain original scoring-site URLs.
 The 25-assertion contract is
 [`55_evf_historical_event_fragment_repair.sql`](../../supabase/tests/55_evf_historical_event_fragment_repair.sql).
+
+## Amendment (2026-08-09, rev 9) — predecessor-season fragment consolidation
+
+The same physical-event fragmentation predates 2025–2026. Six reviewed clusters
+in 2023–2024 and 2024–2025 are consolidated by an atomic, fail-closed migration:
+Budapest, Terni and Stockholm in the first season; Guildford, Terni and
+Warsaw/Jabłonna in the second. The lowest existing PEW base survives in each
+cluster and receives the suffix for the weapons actually present. This is a
+targeted historical correction, not a chronological reflow and not a generic
+merge path.
+
+The repair pins every input code and the expected tournament/result counts,
+refuses registrations, conserves any match-candidate provenance by unchanged
+result identity, rejects overlapping weapon/gender/
+age-category slots, preserves all 157 result rows in the six reviewed clusters and every stored score field,
+then deletes only the named donor events. Original scoring-provider URLs stay on
+their tournaments. No EVF results-database identity is invented, and three
+reviewed unrelated `id_prior_event` links are cleared without replacement.
+The distinct `PEW8f-2024-2025` Guildford foil event and its 20 results are retained.
+
+Implementation and acceptance evidence:
+[`20260809000001_evf_predecessor_event_fragment_repair.sql`](../../supabase/migrations/20260809000001_evf_predecessor_event_fragment_repair.sql)
+and [`56_evf_predecessor_event_fragment_repair.sql`](../../supabase/tests/56_evf_predecessor_event_fragment_repair.sql).

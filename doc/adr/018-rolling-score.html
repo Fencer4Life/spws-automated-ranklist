@@ -4,20 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="018-rolling-score.md">
-<meta name="adr-source-sha256" content="3c62bcdd42a74415f4fb3ff3273858a350bfa3b68f2520a1351ce05ddc3add0f">
+<meta name="adr-source-sha256" content="5e06377163db91e6297f444d11e5219a18b51b62f014293031e32c07c773302c">
 <title>ADR-018 · Rolling Score for Active Season</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 018</p><h1>Rolling Score for Active Season</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted; <strong>amended 2026-06-26</strong> (results-based carry-stop)</dd></div><div><dt>Date</dt><dd class="">2026-03-29 (M10)</dd></div><div><dt>Source</dt><dd class=""><code>018-rolling-score.md</code></dd></div><div><dt>Length</dt><dd class="">182 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted; <strong>amended 2026-06-26</strong> (results-based carry-stop)
-<strong>Date:</strong> 2026-03-29 (M10)</p>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted; <strong>amended 2026-06-26</strong> (results-based carry-stop), <strong>amended 2026-08-09</strong> (calendar progress strip retired)</dd></div><div><dt>Date</dt><dd class="">2026-03-29 (M10) <strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (withdraws the calendar rolling-progress strip and retires tests R.23–R.25; the scoring rule is unaffected)</dd></div><div><dt>Source</dt><dd class=""><code>018-rolling-score.md</code></dd></div><div><dt>Length</dt><dd class="">193 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted; <strong>amended 2026-06-26</strong> (results-based carry-stop), <strong>amended 2026-08-09</strong> (calendar progress strip retired)
+<strong>Date:</strong> 2026-03-29 (M10)
+<strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (withdraws the calendar rolling-progress strip and retires tests R.23–R.25; the scoring rule is unaffected)</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-06-26-results-based-carry-stop">Amendment (2026-06-26 — results-based carry-stop)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-3"><a href="#three-state-position-logic">Three-State Position Logic</a></li><li class="depth-3"><a href="#position-extraction">Position Extraction</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#implementation-mechanics">Implementation Mechanics</a></li><li class="depth-3"><a href="#new-drilldown-function">New Drilldown Function</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-3"><a href="#why-option-c">Why Option C</a></li><li class="depth-2"><a href="#visual-distinction">Visual Distinction</a></li><li class="depth-2"><a href="#db-schema">DB Schema</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#test-coverage">Test Coverage</a></li><li class="depth-2"><a href="#test-maintenance-note-2026-06-28">Test maintenance note (2026-06-28)</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-06-26-results-based-carry-stop">Amendment (2026-06-26 — results-based carry-stop)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-3"><a href="#three-state-position-logic">Three-State Position Logic</a></li><li class="depth-3"><a href="#position-extraction">Position Extraction</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#implementation-mechanics">Implementation Mechanics</a></li><li class="depth-3"><a href="#new-drilldown-function">New Drilldown Function</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-3"><a href="#why-option-c">Why Option C</a></li><li class="depth-2"><a href="#visual-distinction">Visual Distinction</a></li><li class="depth-2"><a href="#db-schema">DB Schema</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#test-coverage">Test Coverage</a></li><li class="depth-2"><a href="#amendment-2026-08-09-the-calendar-progress-strip-is-withdrawn">Amendment (2026-08-09 — the calendar progress strip is withdrawn)</a></li><li class="depth-2"><a href="#test-maintenance-note-2026-06-28">Test maintenance note (2026-06-28)</a></li></ol></nav>
   <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-06-26-results-based-carry-stop">Amendment (2026-06-26 — results-based carry-stop)</h2>
 <p>The carry-stop trigger for the <strong>EVENT_CODE_MATCHING</strong> engine changes from event <em>status</em> to the <em>existence of a current-season scored result</em> for the position. <code>completed_positions</code> is redefined from &quot;active-season events at status <code>COMPLETED</code>&quot; (later <code>COMPLETED</code>/<code>IN_PROGRESS</code> via <code>20260406000006</code>) to <strong>&quot;positions for which the active season already has a scored result&quot;</strong>, scoped to the queried <strong>weapon+gender</strong>. This makes the rule a strict per-(position, weapon, gender) <strong>either/or</strong> — a current result supersedes the carried prior-season equivalent the moment it exists, regardless of lifecycle status — removing the dependence on <code>SCHEDULED→IN_PROGRESS→COMPLETED</code> hygiene (an ingested <code>SCHEDULED</code> event with results previously showed <strong>both</strong> seasons). <strong>Supersedes <code>20260406000006</code>.</strong> Migration <code>20260626120000</code>; tests R.22–R.24 (R.6/R.18 reworked status→results, R.10 recalibrated 196.78→135.88). The inactive <strong>EVENT_FK_MATCHING</strong> engine (ADR-042) keys carry-stop on <code>SCORED</code> and is unchanged — a known boundary divergence if ever activated.</p>
 <p>The &quot;Three-State Position Logic&quot; table below is superseded by:</p>
@@ -323,22 +324,31 @@ fn_fencer_scores_rolling(p_fencer, p_weapon, p_gender, p_category, p_season)
 <td>DrilldownModal: non-carried scores render normally (regression)</td>
 </tr>
 <tr>
-<td>R.23</td>
-<td>vitest</td>
-<td>CalendarView: progress slots render for active season</td>
+<td><s>R.23</s></td>
+<td><s>vitest</s></td>
+<td><strong>Retired 2026-08-09 by <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a></strong> — CalendarView: progress slots render for active season</td>
 </tr>
 <tr>
-<td>R.24</td>
-<td>vitest</td>
-<td>CalendarView: progress hidden for non-active season</td>
+<td><s>R.24</s></td>
+<td><s>vitest</s></td>
+<td><strong>Retired 2026-08-09 by <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a></strong> — CalendarView: progress hidden for non-active season</td>
 </tr>
 <tr>
-<td>R.25</td>
-<td>vitest</td>
-<td>CalendarView: correct slot states (completed/carried/missing)</td>
+<td><s>R.25</s></td>
+<td><s>vitest</s></td>
+<td><strong>Retired 2026-08-09 by <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a></strong> — CalendarView: correct slot states (completed/carried/missing)</td>
 </tr>
 </tbody>
 </table></div>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-09-the-calendar-progress-strip-is-withdrawn">Amendment (2026-08-09 — the calendar progress strip is withdrawn)</h2>
+<p><a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> replaces <code>CalendarView.svelte</code>'s flat rolling-progress strip with the quarter barrel. The strip's DOM contract — <code>.rolling-progress</code>, <code>.slot</code>, and <code>.slot.completed</code>/<code>.slot.planned</code> — no longer exists, so <strong>tests R.23, R.24 and R.25 are retired</strong> rather than rewritten. They are struck through in the table above.</p>
+<p><strong>The scoring rule in this ADR is untouched.</strong> What is withdrawn is one <em>presentation</em> of it. Three points worth keeping, because the strip and this ADR were less connected than the table implied:</p>
+<ol>
+<li>The strip only ever rendered <strong>two</strong> states. This ADR's &quot;Three-State Position Logic&quot; describes <code>completed</code> / <code>carried</code> / <code>missing</code>, but <code>positionSlots</code> computed a single boolean, <code>completed</code>, and the template rendered <code>class:completed</code>/<code>class:planned</code>. R.25's name — &quot;correct slot states (completed/carried/missing)&quot; — described a third state the component never had.</li>
+<li><strong>Carry-over is a ranking concept, not a calendar one.</strong> It surfaces in <code>DrilldownModal.svelte</code> via <code>bool_has_carryover</code>, which is what R.19–R.22 pin and which is unaffected. A calendar has no carried state to lose.</li>
+<li>The barrel encodes completion on its own channel — fill for completed, ring for next-upcoming, hue for event type — which is what the strip got wrong by encoding type as hue and completion as lightness of that same hue.</li>
+</ol>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="test-maintenance-note-2026-06-28">Test maintenance note (2026-06-28)</h2>
 <p>The pgTAP carry-stop suite (<code>supabase/tests/09_rolling_score.sql</code>, and the cross-gender
@@ -353,5 +363,5 @@ entry in <code>doc/archive/legacy-2026-07/development_history.md</code>.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="017-season-configurable-evf-toggle.html">← ADR-017: Season-Configurable EVF Toggle</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="019-domestic-only-fencer-seed.html">→ ADR-019: Domestic-Only Fencer Seed</a></nav>
-<footer class="foot">Generated from <code>018-rolling-score.md</code> · source SHA-256 <code>3c62bcdd42a74415f4fb3ff3273858a350bfa3b68f2520a1351ce05ddc3add0f</code></footer>
+<footer class="foot">Generated from <code>018-rolling-score.md</code> · source SHA-256 <code>5e06377163db91e6297f444d11e5219a18b51b62f014293031e32c07c773302c</code></footer>
 </div></body></html>

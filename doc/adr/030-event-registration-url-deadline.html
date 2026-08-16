@@ -4,22 +4,49 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="030-event-registration-url-deadline.md">
-<meta name="adr-source-sha256" content="8a11702014cb884b04502cff54b266ab8d3adeab35e2e76421676d50994fca8d">
+<meta name="adr-source-sha256" content="c0ecddb0d2c35a0abeff90382e7f6f6937da57423701a80a7ca7cfd6b72c7c0d">
 <title>ADR-030 · Event Registration URL + Deadline</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 030</p><h1>Event Registration URL + Deadline</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented</dd></div><div><dt>Date</dt><dd class="">2026-04-11</dd></div><div><dt>Source</dt><dd class=""><code>030-event-registration-url-deadline.md</code></dd></div><div><dt>Length</dt><dd class="">305 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented</dd></div><div><dt>Date</dt><dd class="">2026-04-11</dd></div><div><dt>Source</dt><dd class=""><code>030-event-registration-url-deadline.md</code></dd></div><div><dt>Length</dt><dd class="">318 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Implemented<br />
 <strong>Date:</strong> 2026-04-11<br />
-<strong>Source:</strong> UC21, FR-90, FR-91</p>
+<strong>Source:</strong> UC21, FR-90, FR-91
+<strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (relocates the registration DOM contract from the timeline row to the event card; FR-90/FR-91 wording unchanged, cited test IDs retargeted).</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#new-fields">New fields</a></li><li class="depth-3"><a href="#display-logic-in-calendar-view">Display logic in Calendar View</a></li><li class="depth-3"><a href="#visual-style">Visual style</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#implementation-plan">Implementation Plan</a></li><li class="depth-3"><a href="#1-spec-rtm-updates">1. Spec &amp; RTM Updates</a></li><li class="depth-4"><a href="#new-functional-requirements-after-fr-89">New Functional Requirements (after FR-89)</a></li><li class="depth-4"><a href="#other-spec-updates">Other spec updates</a></li><li class="depth-3"><a href="#2-database-migration">2. Database Migration</a></li><li class="depth-3"><a href="#3-pgtap-tests">3. pgTAP Tests</a></li><li class="depth-3"><a href="#4-frontend-types">4. Frontend Types</a></li><li class="depth-3"><a href="#5-frontend-api">5. Frontend API</a></li><li class="depth-3"><a href="#6-locale-keys">6. Locale Keys</a></li><li class="depth-3"><a href="#7-calendar-view">7. Calendar View</a></li><li class="depth-3"><a href="#8-event-manager-admin-edit-form">8. Event Manager (Admin Edit Form)</a></li><li class="depth-3"><a href="#9-vitest-tests">9. Vitest Tests</a></li><li class="depth-3"><a href="#10-development-history">10. Development History</a></li><li class="depth-3"><a href="#11-memory-md">11. MEMORY.md</a></li><li class="depth-2"><a href="#execution-order-tdd">Execution Order (TDD)</a></li><li class="depth-2"><a href="#files-modified-summary">Files Modified (Summary)</a></li></ol></nav>
-  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-08-09-the-dom-contract-moves-to-the-card">Amendment (2026-08-09 — the DOM contract moves to the card)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#new-fields">New fields</a></li><li class="depth-3"><a href="#display-logic-in-calendar-view">Display logic in Calendar View</a></li><li class="depth-3"><a href="#visual-style">Visual style</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#implementation-plan">Implementation Plan</a></li><li class="depth-3"><a href="#1-spec-rtm-updates">1. Spec &amp; RTM Updates</a></li><li class="depth-4"><a href="#new-functional-requirements-after-fr-89">New Functional Requirements (after FR-89)</a></li><li class="depth-4"><a href="#other-spec-updates">Other spec updates</a></li><li class="depth-3"><a href="#2-database-migration">2. Database Migration</a></li><li class="depth-3"><a href="#3-pgtap-tests">3. pgTAP Tests</a></li><li class="depth-3"><a href="#4-frontend-types">4. Frontend Types</a></li><li class="depth-3"><a href="#5-frontend-api">5. Frontend API</a></li><li class="depth-3"><a href="#6-locale-keys">6. Locale Keys</a></li><li class="depth-3"><a href="#7-calendar-view">7. Calendar View</a></li><li class="depth-3"><a href="#8-event-manager-admin-edit-form">8. Event Manager (Admin Edit Form)</a></li><li class="depth-3"><a href="#9-vitest-tests">9. Vitest Tests</a></li><li class="depth-3"><a href="#10-development-history">10. Development History</a></li><li class="depth-3"><a href="#11-memory-md">11. MEMORY.md</a></li><li class="depth-2"><a href="#execution-order-tdd">Execution Order (TDD)</a></li><li class="depth-2"><a href="#files-modified-summary">Files Modified (Summary)</a></li></ol></nav>
+  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-09-the-dom-contract-moves-to-the-card">Amendment (2026-08-09 — the DOM contract moves to the card)</h2>
+<p><a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> deletes the timeline row this ADR's presentation rules were written against. <strong>The rules themselves are unchanged</strong>; where they are asserted is not.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Was</th>
+<th>Now</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.timeline-registration</code>, <code>.registration-deadline</code>, <code>.registration-link</code> on a timeline row</td>
+<td>The same link classes on <code>EventCard</code>'s pill row; the deadline is a <code>.fct.deadline</code> fact row</td>
+</tr>
+<tr>
+<td><code>.reg-urgent</code> on the registration block</td>
+<td><code>.reg-urgent</code> on the deadline fact row</td>
+</tr>
+<tr>
+<td>vitest 8.21–8.25 in <code>CalendarView.test.ts</code></td>
+<td><strong>CQ.27–CQ.35</strong> (the rules, pure) and <strong>EC.20–EC.24</strong> (the rendering)</td>
+</tr>
+</tbody>
+</table></div>
+<p>FR-90 and FR-91 keep their wording; the RTM's cited test IDs were retargeted in the same change. The <code>.registration-link</code>/<code>.entry-list-link</code> class names were <strong>deliberately preserved</strong> through the rewrite so this contract did not have to change name as well as location.</p>
+</section>
+<section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>Fencing events typically require pre-registration. Organisers publish a registration URL and often a deadline. Currently <code>tbl_event</code> has no fields for registration information — only <code>url_event</code> (results) and <code>url_invitation</code> (organiser announcement). Participants need to see registration links in the Calendar view before the event starts, and admins need to enter this data via the Admin UI.</p>
 </section>
 <section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
@@ -473,5 +500,5 @@ p_registration_deadline: params.registrationDeadline ?? null,
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="029-tournament-url-auto-population.html">← ADR-029: Tournament URL Auto-Population + Admin CRUD</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="031-auto-active-season.html">→ ADR-031: Auto-Active Season by Date</a></nav>
-<footer class="foot">Generated from <code>030-event-registration-url-deadline.md</code> · source SHA-256 <code>8a11702014cb884b04502cff54b266ab8d3adeab35e2e76421676d50994fca8d</code></footer>
+<footer class="foot">Generated from <code>030-event-registration-url-deadline.md</code> · source SHA-256 <code>c0ecddb0d2c35a0abeff90382e7f6f6937da57423701a80a7ca7cfd6b72c7c0d</code></footer>
 </div></body></html>
