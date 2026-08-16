@@ -8,9 +8,13 @@
 
 ## Context
 
-The points calculator (`doc/tools/kalkulator-punktow-za-wynik-spws.html`) exists to show
-fencers and the board the **proposed** scoring function — fixed at `k = 10`, `p = 1.5`,
-computed from the actual number of entries — before it becomes the scoring rule in force.
+The points calculator (`doc/tools/kalkulator-punktow-za-wynik-spws.v2.html`) exists to show
+fencers and the board the **proposed** scoring function before it becomes the scoring rule in
+force. The proposal keeps the EVF algorithm intact — logarithmic place scale, 10 points per
+direct-elimination round won, podium bonus `3·∛N` — and changes exactly one thing: the base for
+first place, a flat 50 in EVF §3.2, becomes `f(N) = 10 · log₂N` capped at 50. That is 10 points
+for every round of the bracket: 2 entries → 10, 4 → 20, 8 → 30, 16 → 40, 32 → 50. From 32 entries
+upwards the base reaches its cap and the scoring is **identical to today's**, to the decimal.
 It is one self-contained HTML file: styles, script and the SPWS logo as a `data:` URI, with
 no external requests at all.
 
@@ -71,10 +75,21 @@ superseded.
 
 - **Accepted duplication, bounded in time.** The scoring function now exists in two
   implementations: the ranklist engine (`fn_calc_tournament_scores`, scoring in force) and this
-  page (the proposal). The duplication ends with the page, under §3.
+  page (the proposal). The duplication is small — the two differ only in the base for first place —
+  and it ends with the page, under §3.
+- **The proposal satisfies EVF §3.5 in full.** The six "Formula Requirements" hold for every field
+  size from the minimum measurable up to 1000 — 5748 checks, zero violations, margins 2.9–8.0%,
+  the same margins the EVF algorithm itself has. This is a consequence of keeping the round bonus
+  as a separate, visible component: those six conditions require a step at each round boundary.
+  An earlier draft of the proposal absorbed the round bonus into a smooth curve and broke all six;
+  that variant was abandoned on 2026-08-15 for this reason.
+- **The departure from EVF §3.2 is deliberate.** That section states the first placed gets 50 points
+  whatever the size of the competition. Removing that constant is the entire point of the change:
+  today, in a field of two, 70% of the winner's score comes from a component blind to field size.
 - **The file bypasses the build pipeline**, so type checking and minification do not cover it.
-  Correctness is held by plan test 8.88 — the published copy must be byte-identical to the copy
-  under `doc/tools/` — and by the control values documented in the plan.
+  Correctness is held by plan test 8.88 — the published copy must be byte-identical to
+  `doc/tools/kalkulator-punktow-za-wynik-spws.v2.html` — and by the control values documented in
+  the plan. Control value: 3rd place out of 7 entries at rank 1.0 scores 28.5.
 - **New files:** `frontend/public/kalkulator-punktow.html`, `frontend/tests/assets.test.ts`.
   **Changed:** `frontend/src/components/Sidebar.svelte` (third entry; the drawer now declares the
   application font stack explicitly, because it renders outside the container that carried it and
@@ -89,6 +104,6 @@ superseded.
   worth its own fix.
 - **Publication is public.** GitHub Pages serves the page to anyone with the address. The file
   carries `noindex, nofollow` so search engines skip it, but the drawer entry makes it reachable
-  by every ranklist visitor. This was the user's explicit decision on 2026-08-15, taken while the
-  question of EVF Ranking System v6 §3.5 (formula requirements the proposed function does not
-  satisfy) is still open.
+  by every ranklist visitor. This was the user's explicit decision on 2026-08-15. The reservation
+  recorded earlier the same day — that the proposal violated EVF §3.5 — no longer applies: the
+  formula was reworked to `f(N)` and now satisfies all six conditions.

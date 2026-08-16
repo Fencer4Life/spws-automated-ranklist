@@ -55,7 +55,7 @@ Otworz ten adres na telefonie. Powinienes zobaczyc logo SPWS, trzy pola
 i duza liczbe pod nimi. Sprawdzian: przy 7 startujacych i 3 miejscu,
 przy wspolczynniku rangi 1,0 i wybranym SPWS, wynik ma wynosic
 
-    14,0
+    28,5
 
 Jesli wynik sie zgadza - plik dziala poprawnie.
 
@@ -97,9 +97,13 @@ wystarczy odswiezyc z pominieciem pamieci podrecznej albo dopisac do
 adresu ?v=2.
 
 
-UWAGA O DWOCH KOPIACH PLIKU
----------------------------
-W katalogu doc/tools/ leza dwa identyczne pliki: bez przedrostka
-(wersja robocza w repozytorium) i z przedrostkiem WP (ta do wgrania).
-Przy kazdej zmianie kalkulatora trzeba odswiezyc obie, inaczej zaczna
-sie rozjezdzac.
+UWAGA O KOPIACH PLIKU
+-------------------------
+W katalogu doc/tools/ leza: kalkulator-punktow-za-wynik-spws.v2.html
+(wersja robocza, zrodlo prawdy), WP-kalkulator-punktow-za-wynik-spws.html
+(kopia do wgrania na strone) oraz kalkulator-punktow-za-wynik-spws.html
+(poprzednia wersja formuly, zachowana do porownan - NIE wgrywac).
+Trzecia kopia tej samej tresci lezy w frontend/public/ i jedzie na
+GitHub Pages razem z ranklista. Przy kazdej zmianie trzeba odswiezyc
+wszystkie trzy aktualne kopie, inaczej zaczna sie rozjezdzac; pilnuje
+tego test 8.88 w zestawie testow frontendu.
