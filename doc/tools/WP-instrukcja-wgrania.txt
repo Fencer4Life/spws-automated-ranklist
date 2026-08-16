@@ -1,0 +1,105 @@
+KALKULATOR PUNKTOW SPWS - JAK WGRAC NA STRONE WORDPRESS
+=======================================================
+Plik: WP-kalkulator-punktow-za-wynik-spws.html
+Wielkosc: okolo 37 KB. Data przygotowania: 15 sierpnia 2026.
+
+
+CO TO JEST
+----------
+Jeden samodzielny plik HTML. Nie potrzebuje niczego wiecej - ani obrazkow,
+ani arkuszy stylow, ani polaczenia z internetem. Logo SPWS jest wklejone
+w srodek pliku. Cale liczenie odbywa sie w przegladarce osoby, ktora
+otworzy strone; nic nie jest wysylane na zaden serwer.
+
+
+NAJWAZNIEJSZE OSTRZEZENIE
+-------------------------
+Ten plik NIE ZADZIALA wyslany jako zalacznik - Whatsappem, mailem,
+Messengerem - ani otwarty z aplikacji "Pliki" na telefonie. Podglady
+zalacznikow otwieraja HTML z wylaczonym JavaScriptem, a kalkulator bez
+JavaScriptu nie ma czym liczyc: zobaczysz formularz, ale wynik sie nie
+pojawi. To nie jest usterka pliku. Kalkulator dziala wylacznie wtedy, gdy
+jest otwarty POD ADRESEM, w normalnej przegladarce - i wlasnie po to
+wgrywamy go na serwer.
+
+
+KROK 1 - GDZIE GO POLOZYC
+-------------------------
+Biblioteka mediow WordPressa odrzuca pliki .html. To domyslne
+zabezpieczenie i nie warto go rozbrajac wtyczka dla jednego pliku.
+Zamiast tego wchodzimy w menedzer plikow hostingu (w cPanel: "Menedzer
+plikow") albo laczymy sie przez FTP.
+
+Zalecane miejsce:
+
+    wp-content/uploads/narzedzia/
+
+Katalog "narzedzia" trzeba zalozyc, jesli go nie ma. Wgrywamy do niego
+plik WP-kalkulator-punktow-za-wynik-spws.html.
+
+Adres strony bedzie wtedy taki:
+
+    https://weteraniszermierki.pl/wp-content/uploads/narzedzia/WP-kalkulator-punktow-za-wynik-spws.html
+
+Jesli hosting ma wtyczke bezpieczenstwa, ktora blokuje otwieranie plikow
+w katalogu uploads, mozna zamiast tego zalozyc katalog "narzedzia" w
+glownym katalogu strony (tam, gdzie leza wp-content, wp-admin i
+wp-includes). Adres skroci sie wtedy do:
+
+    https://weteraniszermierki.pl/narzedzia/WP-kalkulator-punktow-za-wynik-spws.html
+
+
+KROK 2 - SPRAWDZENIE
+--------------------
+Otworz ten adres na telefonie. Powinienes zobaczyc logo SPWS, trzy pola
+i duza liczbe pod nimi. Sprawdzian: przy 7 startujacych i 3 miejscu,
+przy wspolczynniku rangi 1,0 i wybranym SPWS, wynik ma wynosic
+
+    14,0
+
+Jesli wynik sie zgadza - plik dziala poprawnie.
+
+Jesli zamiast wyniku widzisz czerwona ramke z napisem o JavaScripcie,
+to znaczy, ze otwierasz plik z dysku albo z zalacznika, a nie spod
+adresu. Wroc do kroku 1.
+
+
+KROK 3 - ZANIM POKAZESZ GO SZERMIERZOM
+--------------------------------------
+Plik ma w tej chwili wpisana blokade wyszukiwarek, zeby mogl lezec na
+serwerze i nie trafic do nikogo przypadkiem. W 10 wierszu pliku
+znajduje sie:
+
+    <meta name="robots" content="noindex, nofollow">
+
+Dopoki ten wiersz tam jest, Google nie doda strony do wynikow
+wyszukiwania. Gdy zapadnie decyzja o publikacji, usun ten jeden wiersz i
+wgraj plik ponownie.
+
+
+PODLINKOWANIE ZE STRONY
+-----------------------
+Gdy kalkulator ma juz byc widoczny, wystarczy zwykly odnosnik w tresci
+dowolnej strony lub wpisu, na przyklad w regulaminie zawodow:
+
+    <a href="/wp-content/uploads/narzedzia/WP-kalkulator-punktow-za-wynik-spws.html">
+    Kalkulator punktow za wynik</a>
+
+W edytorze blokowym: blok "HTML wlasny" albo zwykle wstawienie odnosnika
+przez ikone lancucha.
+
+
+AKTUALIZACJE
+------------
+Kolejne wersje wgrywa sie tak samo, nadpisujac plik. Jesli po nadpisaniu
+strona wyglada po staremu, to przegladarka pokazuje zapamietana kopie -
+wystarczy odswiezyc z pominieciem pamieci podrecznej albo dopisac do
+adresu ?v=2.
+
+
+UWAGA O DWOCH KOPIACH PLIKU
+---------------------------
+W katalogu doc/tools/ leza dwa identyczne pliki: bez przedrostka
+(wersja robocza w repozytorium) i z przedrostkiem WP (ta do wgrania).
+Przy kazdej zmianie kalkulatora trzeba odswiezyc obie, inaczej zaczna
+sie rozjezdzac.
