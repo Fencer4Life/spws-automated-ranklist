@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="084-points-calculator-temporary-static-page.md">
-<meta name="adr-source-sha256" content="7dd18842a1a979cae7a687486d1c52b6088c36bdd2a4341148b15a4da91450b0">
+<meta name="adr-source-sha256" content="72b5333e8e85696cc18a4098797a76d3f202cbd0605d4c393f5981ea6027a569">
 <title>ADR-084 · Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 084</p><h1>Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (signed off 2026-08-15)</dd></div><div><dt>Date</dt><dd class="">2026-08-15</dd></div><div><dt>Source</dt><dd class=""><code>084-points-calculator-temporary-static-page.md</code></dd></div><div><dt>Length</dt><dd class="">94 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (signed off 2026-08-15)</dd></div><div><dt>Date</dt><dd class="">2026-08-15</dd></div><div><dt>Source</dt><dd class=""><code>084-points-calculator-temporary-static-page.md</code></dd></div><div><dt>Length</dt><dd class="">109 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (signed off 2026-08-15)
 <strong>Date:</strong> 2026-08-15
 <strong>Amends:</strong> <a href="015-m8-ui-design-decisions.html">ADR-015</a> §1 (App Navigation — Sidebar Drawer) — the drawer gains a third entry which is an external link rather than a view switch. §§2–9 are untouched.
@@ -22,9 +22,13 @@
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-publication-mechanism">1 · Publication mechanism</a></li><li class="depth-3"><a href="#2-this-is-an-exception-not-a-pattern">2 · This is an exception, not a pattern</a></li><li class="depth-3"><a href="#3-expiry-condition">3 · Expiry condition</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
-<p>The points calculator (<code>doc/tools/kalkulator-punktow-za-wynik-spws.html</code>) exists to show
-fencers and the board the <strong>proposed</strong> scoring function — fixed at <code>k = 10</code>, <code>p = 1.5</code>,
-computed from the actual number of entries — before it becomes the scoring rule in force.
+<p>The points calculator (<code>doc/tools/kalkulator-punktow-za-wynik-spws.v2.html</code>) exists to show
+fencers and the board the <strong>proposed</strong> scoring function before it becomes the scoring rule in
+force. The proposal keeps the EVF algorithm intact — logarithmic place scale, 10 points per
+direct-elimination round won, podium bonus <code>3·∛N</code> — and changes exactly one thing: the base for
+first place, a flat 50 in EVF §3.2, becomes <code>f(N) = 10 · log₂N</code> capped at 50. That is 10 points
+for every round of the bracket: 2 entries → 10, 4 → 20, 8 → 30, 16 → 40, 32 → 50. From 32 entries
+upwards the base reaches its cap and the scoring is <strong>identical to today's</strong>, to the decimal.
 It is one self-contained HTML file: styles, script and the SPWS logo as a <code>data:</code> URI, with
 no external requests at all.</p>
 <p>Distributing it as a file failed in practice. Opened from a messenger attachment or from the
@@ -77,10 +81,21 @@ publication path, and a separate host is one more thing to keep alive.</li>
 <ul>
 <li><strong>Accepted duplication, bounded in time.</strong> The scoring function now exists in two
 implementations: the ranklist engine (<code>fn_calc_tournament_scores</code>, scoring in force) and this
-page (the proposal). The duplication ends with the page, under §3.</li>
+page (the proposal). The duplication is small — the two differ only in the base for first place —
+and it ends with the page, under §3.</li>
+<li><strong>The proposal satisfies EVF §3.5 in full.</strong> The six &quot;Formula Requirements&quot; hold for every field
+size from the minimum measurable up to 1000 — 5748 checks, zero violations, margins 2.9–8.0%,
+the same margins the EVF algorithm itself has. This is a consequence of keeping the round bonus
+as a separate, visible component: those six conditions require a step at each round boundary.
+An earlier draft of the proposal absorbed the round bonus into a smooth curve and broke all six;
+that variant was abandoned on 2026-08-15 for this reason.</li>
+<li><strong>The departure from EVF §3.2 is deliberate.</strong> That section states the first placed gets 50 points
+whatever the size of the competition. Removing that constant is the entire point of the change:
+today, in a field of two, 70% of the winner's score comes from a component blind to field size.</li>
 <li><strong>The file bypasses the build pipeline</strong>, so type checking and minification do not cover it.
-Correctness is held by plan test 8.88 — the published copy must be byte-identical to the copy
-under <code>doc/tools/</code> — and by the control values documented in the plan.</li>
+Correctness is held by plan test 8.88 — the published copy must be byte-identical to
+<code>doc/tools/kalkulator-punktow-za-wynik-spws.v2.html</code> — and by the control values documented in
+the plan. Control value: 3rd place out of 7 entries at rank 1.0 scores 28.5.</li>
 <li><strong>New files:</strong> <code>frontend/public/kalkulator-punktow.html</code>, <code>frontend/tests/assets.test.ts</code>.
 <strong>Changed:</strong> <code>frontend/src/components/Sidebar.svelte</code> (third entry; the drawer now declares the
 application font stack explicitly, because it renders outside the container that carried it and
@@ -95,12 +110,12 @@ readable message when it cannot reach the database. Pre-existing, unrelated to t
 worth its own fix.</li>
 <li><strong>Publication is public.</strong> GitHub Pages serves the page to anyone with the address. The file
 carries <code>noindex, nofollow</code> so search engines skip it, but the drawer entry makes it reachable
-by every ranklist visitor. This was the user's explicit decision on 2026-08-15, taken while the
-question of EVF Ranking System v6 §3.5 (formula requirements the proposed function does not
-satisfy) is still open.</li>
+by every ranklist visitor. This was the user's explicit decision on 2026-08-15. The reservation
+recorded earlier the same day — that the proposal violated EVF §3.5 — no longer applies: the
+formula was reworked to <code>f(N)</code> and now satisfies all six conditions.</li>
 </ul>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="083-server-enforced-authorization.html">← ADR-083: Server-Enforced Authorization — Deny-by-Default Grants and a Standing Posture Gate</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>084-points-calculator-temporary-static-page.md</code> · source SHA-256 <code>7dd18842a1a979cae7a687486d1c52b6088c36bdd2a4341148b15a4da91450b0</code></footer>
+<footer class="foot">Generated from <code>084-points-calculator-temporary-static-page.md</code> · source SHA-256 <code>72b5333e8e85696cc18a4098797a76d3f202cbd0605d4c393f5981ea6027a569</code></footer>
 </div></body></html>

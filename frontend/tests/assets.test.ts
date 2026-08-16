@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from 'vitest'
 import published from '../public/kalkulator-punktow.html?raw'
-import source from '../../doc/tools/kalkulator-punktow-za-wynik-spws.html?raw'
+import source from '../../doc/tools/kalkulator-punktow-za-wynik-spws.v2.html?raw'
 
 describe('static tool assets (ADR-084)', () => {
   // 8.88 — the menu entry must point at a file that actually ships, and that

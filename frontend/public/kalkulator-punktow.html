@@ -212,40 +212,35 @@ footer{margin-top:22px;font-size:12px;color:var(--muted);text-align:center}
  * startujących, więc ostatnie miejsce daje 1 punkt niezależnie od stawki
  * (regulamin EVF Ranking System v6, §3.2).
  * ------------------------------------------------------------------ */
-const K = 10;      // współczynnik głębokości, ustalony
-const P = 1.5;     // wykładnik kształtu, ustalony
+// Podstawa za pierwsze miejsce. Dziś algorytm EVF ma tu sztywne 50 niezależnie od
+// tego, czy pokonało się jednego rywala, czy stu. Propozycja SPWS zastępuje tę stałą
+// funkcją liczby startujących: 10 punktów za każdą rundę drabinki, nie więcej niż 50.
+//   2 osoby → 10 · 4 → 20 · 8 → 30 · 16 → 40 · 32 → 50
+// Od 32 startujących w górę podstawa osiąga pułap 50, więc punktacja jest DOKŁADNIE
+// taka jak dzisiejsza. Cała zmiana dotyczy stawek mniejszych.
+const NACHYLENIE = 10;   // punktów podstawy na jedną rundę drabinki
+const PULAP = 50;        // powyżej tej wartości podstawa nie rośnie
 
-function bracket(n){ return n < 2 ? 0 : Math.max(4, Math.pow(2, Math.ceil(Math.log2(n)))); }
+function fN(n){ return Math.min(PULAP, NACHYLENIE * Math.log2(Math.max(2, n))); }
 
-function spwsParts(place, n){
-  const B = bracket(n);
-  if (!B || place > n || place < 1) return null;
-  const RB = Math.log2(B);
-  const D  = Math.max(2, n);
-  const R  = Math.log2(D);
-  const u  = Math.log2(place) / R;
-  const wp = Math.max(0, R - 4.5) / 3.5;
-  const wm = Math.max(0, 4.5 - R) / 2.5;
-  const a  = 1 + P * wp;
-  const b  = 1 + P * (wp + 1.5 * wm);
-  const top = 2 * K * RB;
-  const pp  = 1 + (top - 1) * Math.pow(1 - Math.pow(u, a), b);
-  const c   = {1:3, 2:2, 3:1}[place] || 0;
-  return {place: pp, rounds: null, podium: c * 3 * Math.cbrt(D)};
-}
-
-function evfParts(place, n){
-  const MP = 50;
-  if (n < 1 || place > n || place < 1) return null;
-  const pp   = n === 1 ? MP : MP - (MP - 1) * Math.log(place) / Math.log(n);
+// liczba wygranych rund bezpośredniej eliminacji — wzór EVF, bez zmian
+function rundy(place, n){
+  if (n <= 1) return 0;
   const pow2 = (n & (n - 1)) === 0;
-  const de   = n <= 1 ? 0
-             : Math.max(0, Math.floor(Math.log2(n)) - Math.ceil(Math.log2(place)) + (pow2 ? 0 : 1)) * 10;
-  const c    = {1:3, 2:2, 3:1}[place] || 0;
-  return {place: pp, rounds: de, podium: c * 3 * Math.cbrt(n)};
+  return Math.max(0, Math.floor(Math.log2(n)) - Math.ceil(Math.log2(place)) + (pow2 ? 0 : 1));
 }
 
-function parts(place, n, alg){ return alg === 'evf' ? evfParts(place, n) : spwsParts(place, n); }
+// Oba algorytmy mają IDENTYCZNĄ budowę — różnią się wyłącznie podstawą.
+// EVF: podstawa 50 zawsze.   SPWS: podstawa f(N).
+// Premia za rundy i bonus podiumowy są w obu takie same.
+function parts(place, n, alg){
+  if (n < 1 || place > n || place < 1) return null;
+  const MP = alg === 'evf' ? 50 : fN(n);
+  const pp = n === 1 ? MP : MP - (MP - 1) * Math.log(place) / Math.log(n);
+  const c  = {1:3, 2:2, 3:1}[place] || 0;
+  return {base: MP, place: pp, rounds: rundy(place, n) * 10, podium: c * 3 * Math.cbrt(n)};
+}
+
 function total(place, n, w, alg){
   const p = parts(place, n, alg);
   return p === null ? null : (p.place + (p.rounds || 0) + p.podium) * w;
@@ -259,38 +254,38 @@ const T = {
     lang:'pl-PL', htmlLang:'pl',
     docTitle:'Kalkulator punktów za wynik — SPWS',
     title:'Kalkulator punktów za wynik',
-    dek:'Ile punktów do rankingu daje zajęte miejsce.',
+    dek:'Ile punktów do rankingu daje zajęte miejsce. Zmiana dotyczy stawek poniżej 32 osób.',
     lblN:'Liczba startujących', lblM:'Zajęte miejsce', lblW:'Współczynnik rangi zawodów',
     unit:'pkt', showAll:'Punkty za wszystkie miejsca', hideAll:'Zwiń listę miejsc',
     thPlace:'Miejsce', thPts:'Punkty',
     howTitle:'Jak to policzono', foot:'Stowarzyszenie Polskich Weteranów Szermierki',
-    noteSpws:'Proponowana formuła SPWS.',
+    noteSpws:'Propozycja SPWS — podstawa zależna od liczby startujących.',
     noteEvf:'Algorytm EVF',
     sub:(m,n,w)=>`${m}. miejsce na ${n} startujących · ranga ${w}`,
     errPlace:(n)=>`Zajęte miejsce nie może być większe niż liczba startujących (${n}).`,
     errN:'Podaj liczbę startujących od 2 do 1000.',
-    bPlace:'Punkty za miejsce', bRounds:'Bonus za wygrane rundy', bPodium:'Bonus za podium',
+    bBase:'Podstawa za 1. miejsce', bPlace:'Punkty za miejsce', bRounds:'Bonus za wygrane rundy', bPodium:'Bonus za podium',
     bSum:'Razem', bRank:'× ranga', bTotal:'Wynik',
-    howSpws:'Punkty za miejsce mają wchłonięty bonus za wygrane rundy, dlatego nie ma go na osobnej pozycji. Wysokość krzywej i tempo jej opadania zależą od liczby startujących. Stałe formuły: k = 10, p = 1,5. Bonus za podium to 3·∛N, 6·∛N i 9·∛N dla trzeciego, drugiego i pierwszego miejsca.',
+    howSpws:'Propozycja SPWS zmienia w algorytmie EVF jedną rzecz: podstawa za pierwsze miejsce nie jest już stałą 50, tylko wynosi 10 punktów za każdą rundę drabinki, nie więcej niż 50 — czyli 10 przy dwóch startujących, 20 przy czterech, 30 przy ośmiu, 40 przy szesnastu i 50 od trzydziestu dwóch w górę. Wszystko pozostałe zostaje bez zmian: skala logarytmiczna miejsc, 10 punktów za każdą wygraną rundę i bonus za podium 3·∛N, 6·∛N i 9·∛N dla trzeciego, drugiego i pierwszego miejsca. Od 32 startujących wynik jest identyczny z dzisiejszym.',
     howEvf:'Punkty za miejsce według skali logarytmicznej z maksimum 50, plus 10 punktów za każdą wygraną rundę bezpośredniej eliminacji, plus bonus za podium 3·∛N, 6·∛N i 9·∛N dla trzeciego, drugiego i pierwszego miejsca.'
   },
   en: {
     lang:'en-GB', htmlLang:'en',
     docTitle:'Result points calculator — SPWS',
     title:'Result points calculator',
-    dek:'How many ranking points a finishing place is worth.',
+    dek:'How many ranking points a finishing place is worth. Only fields below 32 change.',
     lblN:'Number of entries', lblM:'Finishing place', lblW:'Competition rank coefficient',
     unit:'pts', showAll:'Points for every place', hideAll:'Hide the list of places',
     thPlace:'Place', thPts:'Points',
     howTitle:'How this was calculated', foot:'Polish Veterans Fencing Association',
-    noteSpws:'Proposed SPWS formula.',
+    noteSpws:'SPWS proposal — base depends on the number of entries.',
     noteEvf:'EVF algorithm',
     sub:(m,n,w)=>`${ord(m)} place out of ${n} entries · rank ${w}`,
     errPlace:(n)=>`The finishing place cannot be greater than the number of entries (${n}).`,
     errN:'Enter a number of entries between 2 and 1000.',
-    bPlace:'Place points', bRounds:'Round bonus', bPodium:'Podium bonus',
+    bBase:'Base for 1st place', bPlace:'Place points', bRounds:'Round bonus', bPodium:'Podium bonus',
     bSum:'Subtotal', bRank:'× rank', bTotal:'Result',
-    howSpws:'The round bonus is absorbed into the place points, so it has no separate line. Both the height of the curve and how fast it falls depend on the number of entries. Fixed constants: k = 10, p = 1.5. The podium bonus is 3·∛N, 6·∛N and 9·∛N for third, second and first place.',
+    howSpws:'The SPWS proposal changes one thing in the EVF algorithm: the base for first place is no longer a flat 50 but 10 points for every round of the bracket, capped at 50 — that is 10 for two entries, 20 for four, 30 for eight, 40 for sixteen and 50 from thirty-two upwards. Everything else stays as it is: the logarithmic place scale, 10 points per direct-elimination round won, and a podium bonus of 3·∛N, 6·∛N and 9·∛N for third, second and first place. From 32 entries up the result is identical to today.',
     howEvf:'Place points on a logarithmic scale with a maximum of 50, plus 10 points for every direct-elimination round won, plus a podium bonus of 3·∛N, 6·∛N and 9·∛N for third, second and first place.'
   }
 };
@@ -365,14 +360,17 @@ function renderBreakdown(m, n, w){
   // „Razem" liczone ze składników JUŻ ZAOKRĄGLONYCH, żeby kolumna zgadzała się
   // dla kogoś, kto ją dodaje na kartce; „Wynik" idzie z wartości dokładnych
   const r2 = v => Math.round(v * 100) / 100;
-  const shown = r2(p.place) + r2(p.rounds || 0) + r2(p.podium);
+  const shown = r2(p.place) + r2(p.rounds || 0) + r2(p.podium);   // podstawa NIE wchodzi do sumy — jest wejściem do punktów za miejsce
   const rows = [[t.bPlace, fmt2(p.place)]];
   if (p.rounds) rows.push([t.bRounds, fmt2(p.rounds)]);   // zero rund — bez pustego wiersza
   if (p.podium) rows.push([t.bPodium, fmt2(p.podium)]);   // poza podium — bez pustego wiersza
   rows.push([t.bSum, fmt2(shown)], [t.bRank, fmt(w)]);
   $('breakdown').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')
     + `<dt class="tot">${t.bTotal}</dt><dd class="tot">${fmt(sum * w)}</dd>`;
-  $('howText').textContent = alg === 'evf' ? t.howEvf : t.howSpws;
+  const bazaTxt = (lang === 'pl'
+    ? 'Podstawa za pierwsze miejsce przy tej stawce: ' + fmt2(p.base) + ' pkt. '
+    : 'Base for first place at this field size: ' + fmt2(p.base) + ' pts. ');
+  $('howText').textContent = bazaTxt + (alg === 'evf' ? t.howEvf : t.howSpws);
 }
 
 function renderAll(m, n, w){
