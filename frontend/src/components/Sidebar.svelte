@@ -24,6 +24,23 @@
         {t('nav_calendar')}
       </button>
     </li>
+    <li>
+      <!-- TYMCZASOWE, jednorazowy wyjątek (ADR-084). Kalkulator jest samodzielną
+           stroną statyczną w frontend/public/, a nie widokiem aplikacji — stąd
+           odnośnik zamiast przycisku. Gdy proponowana formuła stanie się
+           obowiązującą punktacją SPWS, ta pozycja i strona znikają, a ich miejsce
+           zajmuje kalkulator liczący silnikiem ranklisty.
+           Język strony bierze się z języka ustawionego w rankingu. -->
+      <a
+        class="nav-item"
+        href="kalkulator-punktow.html?lang={getLocale()}"
+        target="_blank"
+        rel="noopener"
+        onclick={onclose}
+      >
+        {t('nav_calculator')}
+      </a>
+    </li>
   </ul>
 
   {#if isAdmin}
@@ -45,7 +62,7 @@
 
 <script lang="ts">
   import type { AppView } from '../lib/types'
-  import { t } from '../lib/locale.svelte'
+  import { t, getLocale } from '../lib/locale.svelte'
 
   let {
     open = false,
@@ -109,6 +126,9 @@
     border: none;
     background: none;
     text-align: left;
+    /* szuflada leży poza kontenerem aplikacji, więc nie dziedziczy jej kroju:
+       przyciski spadały do Arialu, a odnośnik do Timesa. Deklarujemy wprost. */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 15px;
     color: #333;
     cursor: pointer;
@@ -116,6 +136,12 @@
   }
   .nav-item:hover {
     background: #f0f2f5;
+  }
+  /* pozycja kalkulatora jest odnośnikiem, więc potrzebuje tego, czego przycisk
+     nie potrzebował — zdjęcia podkreślenia i wyrównania do wysokości pozostałych */
+  a.nav-item {
+    text-decoration: none;
+    box-sizing: border-box;
   }
   .nav-item.active {
     color: #4a90d9;

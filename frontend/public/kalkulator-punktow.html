@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Kalkulator punktów rankingowych SPWS — ile punktów daje zajęte miejsce przy danej liczbie startujących.">
+<!-- Plik leży na serwerze, ale nie ma jeszcze trafić do wyszukiwarek ani do
+     szermierzy. Gdy zapadnie decyzja o publikacji, USUŃ poniższy wiersz. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Kalkulator punktów za wynik — SPWS</title>
+<style>
+:root{
+  --paper:#f6f7f9; --card:#fff; --ink:#16202e; --muted:#5d6b7f; --line:#dde3ea;
+  --red:#d0202e; --red-soft:#fdeced; --focus:#1d63b8;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{--paper:#121821; --card:#1a2230; --ink:#e9eef6; --muted:#9aa8bd; --line:#2b3646;
+        --red:#ff5a63; --red-soft:#3a1a1d; --focus:#7fb0f0;}
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;
+     line-height:1.5;-webkit-text-size-adjust:100%}
+.wrap{max-width:560px;margin:0 auto;padding:16px 14px 40px}
+
+/* ---- nagłówek ---- */
+.head{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brand img{height:30px;width:auto;display:block}
+@media (prefers-color-scheme:dark){
+  /* znak jest w ciemnej czerwieni druku — na ciemnym tle wymaga rozjaśnienia */
+  .brand img{filter:brightness(1.4) saturate(1.05)}
+}
+h1{font-size:19px;line-height:1.25;margin:0;font-weight:650;letter-spacing:-.01em}
+.dek{margin:0;color:var(--muted);font-size:13.5px}
+
+/* ---- przełączniki ---- */
+.switches{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--line);
+     border-radius:9px;padding:3px;gap:3px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{display:flex;align-items:center;justify-content:center;min-height:38px;
+     padding:0 13px;border-radius:6px;font-size:14px;font-weight:600;color:var(--muted);
+     cursor:pointer;user-select:none;white-space:nowrap}
+.seg input:checked + label{background:var(--red);color:#fff}
+.seg input:focus-visible + label{outline:2px solid var(--focus);outline-offset:2px}
+.seg.lang label{min-width:44px;font-family:var(--mono);font-size:13px;letter-spacing:.04em}
+.algo-note{margin:6px 0 0;font-size:12.5px;color:var(--muted)}
+
+/* ---- pola ---- */
+.fields{display:flex;flex-direction:column;gap:12px;margin:18px 0}
+.field{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:12px 13px}
+.field > label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:7px}
+.field input[type=number]{width:100%;font-size:19px;font-weight:650;font-family:var(--mono);
+     min-height:46px;padding:6px 10px;color:var(--ink);background:var(--paper);
+     border:1px solid var(--line);border-radius:8px}
+.field input[type=number]:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.rank-row{display:flex;align-items:center;gap:12px}
+.rank-val{font-family:var(--mono);font-size:19px;font-weight:650;min-width:2.9em;text-align:right}
+input[type=range]{flex:1;min-width:0;height:44px;background:transparent;-webkit-appearance:none;appearance:none}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;background:var(--line)}
+input[type=range]::-moz-range-track{height:5px;border-radius:3px;background:var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-10.5px;
+     border-radius:50%;background:var(--red);border:2px solid var(--card);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--red);
+     border:2px solid var(--card);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+input[type=range]:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:8px}
+
+/* ---- wynik ---- */
+.result{background:var(--card);border:1px solid var(--line);border-radius:13px;
+        padding:20px 14px;text-align:center;margin:16px 0}
+.big{font-size:clamp(44px,15vw,60px);line-height:1;font-weight:700;letter-spacing:-.02em;
+     font-variant-numeric:tabular-nums}
+.unit{font-size:15px;font-weight:600;color:var(--muted);margin-left:6px;letter-spacing:.02em}
+.sub{margin-top:9px;font-size:13.5px;color:var(--muted)}
+.warn{margin:16px 0 0;background:var(--red-soft);border:1px solid var(--red);border-radius:10px;
+      padding:11px 13px;font-size:13.5px}
+
+/* ---- rozwijane ---- */
+.btn{display:block;width:100%;min-height:48px;background:var(--card);color:var(--ink);
+     border:1px solid var(--line);border-radius:11px;font:inherit;font-weight:600;font-size:14.5px;
+     cursor:pointer;padding:10px 14px;text-align:left}
+.btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.btn .chev{float:right;color:var(--muted);font-weight:400}
+.panel{margin-top:10px;background:var(--card);border:1px solid var(--line);border-radius:11px;
+       max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.panel table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.panel th,.panel td{padding:9px 14px;font-size:14.5px;text-align:right}
+.panel th:first-child,.panel td:first-child{text-align:left}
+.panel thead th{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--line);
+     font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.panel tbody tr + tr td{border-top:1px solid var(--line)}
+.panel tr.me td{background:var(--red-soft);font-weight:700}
+.panel td.pl{font-family:var(--mono)}
+
+details.how{margin-top:10px;background:var(--card);border:1px solid var(--line);border-radius:11px}
+details.how > summary{min-height:48px;display:flex;align-items:center;padding:10px 14px;
+     font-weight:600;font-size:14.5px;cursor:pointer;list-style:none}
+details.how > summary::-webkit-details-marker{display:none}
+details.how > summary::after{content:"+";margin-left:auto;color:var(--muted);font-weight:400;font-size:18px}
+details.how[open] > summary::after{content:"–"}
+.how-body{padding:2px 14px 14px;font-size:13.5px;color:var(--muted)}
+.how-body dl{display:grid;grid-template-columns:1fr auto;gap:7px 12px;margin:0 0 12px}
+.how-body dt{color:var(--muted)}
+.how-body dd{margin:0;font-family:var(--mono);color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+.how-body dl .tot{font-weight:700;border-top:1px solid var(--line);padding-top:7px}
+.how-body p{margin:9px 0}
+.how-body code{font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+
+footer{margin-top:22px;font-size:12px;color:var(--muted);text-align:center}
+@media (max-width:359px){
+  .wrap{padding:12px 10px 32px}
+  .seg label{padding:0 10px;font-size:13.5px}
+  .panel th,.panel td{padding:8px 10px}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<header class="head">
+  <div class="brand">
+    <img src="data:image/png;base64,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" alt="SPWS">
+    <h1 data-i18n="title">Kalkulator punktów za wynik</h1>
+  </div>
+  <p class="dek" data-i18n="dek">Ile punktów do rankingu daje zajęte miejsce.</p>
+  <div class="switches">
+    <div class="seg" role="radiogroup" aria-label="algorytm">
+      <input type="radio" name="alg" id="algSpws" value="spws" checked>
+      <label for="algSpws">SPWS</label>
+      <input type="radio" name="alg" id="algEvf" value="evf">
+      <label for="algEvf">EVF</label>
+    </div>
+    <div class="seg lang" role="radiogroup" aria-label="język / language">
+      <input type="radio" name="lang" id="langPl" value="pl" checked>
+      <label for="langPl">PL</label>
+      <input type="radio" name="lang" id="langEn" value="en">
+      <label for="langEn">EN</label>
+    </div>
+  </div>
+  <p class="algo-note" id="algoNote"></p>
+</header>
+
+<noscript>
+  <div class="warn" style="margin:0 0 16px">
+    <b>Kalkulator nie działa, bo przeglądarka ma wyłączony JavaScript.</b>
+    Ten plik liczy wszystko u Ciebie, bez internetu — ale potrzebuje włączonych skryptów.
+    Na telefonie otwórz go w Chrome lub Safari, a nie w podglądzie komunikatora czy poczty.
+    <hr style="border:none;border-top:1px solid currentColor;opacity:.3;margin:8px 0">
+    <b>The calculator needs JavaScript, which is switched off.</b>
+    This file does all the maths on your own device, with no internet — but it needs scripts enabled.
+    On a phone, open it in Chrome or Safari rather than inside a messenger or mail preview.
+  </div>
+</noscript>
+
+<section class="fields">
+  <div class="field">
+    <label for="fN" data-i18n="lblN">Liczba startujących</label>
+    <input type="number" id="fN" inputmode="numeric" min="2" max="1000" step="1" value="7">
+  </div>
+  <div class="field">
+    <label for="fM" data-i18n="lblM">Zajęte miejsce</label>
+    <input type="number" id="fM" inputmode="numeric" min="1" max="1000" step="1" value="3">
+  </div>
+  <div class="field">
+    <label for="fW" data-i18n="lblW">Współczynnik rangi zawodów</label>
+    <div class="rank-row">
+      <input type="range" id="fW" min="1" max="3" step="0.1" value="1">
+      <span class="rank-val" id="wVal">1,0</span>
+    </div>
+  </div>
+</section>
+
+<section class="result" aria-live="polite">
+  <div><span class="big" id="out">—</span><span class="unit" id="outUnit">pkt</span></div>
+  <div class="sub" id="outSub"></div>
+</section>
+
+<div class="warn" id="warn" hidden></div>
+
+<button class="btn" id="btnAll" aria-expanded="false" aria-controls="allPanel">
+  <span data-i18n="showAll">Punkty za wszystkie miejsca</span><span class="chev" id="chev">+</span>
+</button>
+<div class="panel" id="allPanel" hidden>
+  <table>
+    <thead><tr><th data-i18n="thPlace">Miejsce</th><th data-i18n="thPts">Punkty</th></tr></thead>
+    <tbody id="allBody"></tbody>
+  </table>
+</div>
+
+<details class="how">
+  <summary data-i18n="howTitle">Jak to policzono</summary>
+  <div class="how-body">
+    <dl id="breakdown"></dl>
+    <p id="howText"></p>
+  </div>
+</details>
+
+<footer><span data-i18n="foot">Stowarzyszenie Polskich Weteranów Szermierki</span></footer>
+
+
+</main>
+
+<script>
+/* ------------------------------------------------------------------ *
+ * Silnik punktowy. Obie funkcje przepisane bez zmian z dokumentu
+ * doc/plans/Nowy_ranking_indywidualny-kalkulator.html — spws() z score(),
+ * evf() z oldScore(). Punktacja liczona zawsze od FAKTYCZNEJ liczby
+ * startujących, więc ostatnie miejsce daje 1 punkt niezależnie od stawki
+ * (regulamin EVF Ranking System v6, §3.2).
+ * ------------------------------------------------------------------ */
+const K = 10;      // współczynnik głębokości, ustalony
+const P = 1.5;     // wykładnik kształtu, ustalony
+
+function bracket(n){ return n < 2 ? 0 : Math.max(4, Math.pow(2, Math.ceil(Math.log2(n)))); }
+
+function spwsParts(place, n){
+  const B = bracket(n);
+  if (!B || place > n || place < 1) return null;
+  const RB = Math.log2(B);
+  const D  = Math.max(2, n);
+  const R  = Math.log2(D);
+  const u  = Math.log2(place) / R;
+  const wp = Math.max(0, R - 4.5) / 3.5;
+  const wm = Math.max(0, 4.5 - R) / 2.5;
+  const a  = 1 + P * wp;
+  const b  = 1 + P * (wp + 1.5 * wm);
+  const top = 2 * K * RB;
+  const pp  = 1 + (top - 1) * Math.pow(1 - Math.pow(u, a), b);
+  const c   = {1:3, 2:2, 3:1}[place] || 0;
+  return {place: pp, rounds: null, podium: c * 3 * Math.cbrt(D)};
+}
+
+function evfParts(place, n){
+  const MP = 50;
+  if (n < 1 || place > n || place < 1) return null;
+  const pp   = n === 1 ? MP : MP - (MP - 1) * Math.log(place) / Math.log(n);
+  const pow2 = (n & (n - 1)) === 0;
+  const de   = n <= 1 ? 0
+             : Math.max(0, Math.floor(Math.log2(n)) - Math.ceil(Math.log2(place)) + (pow2 ? 0 : 1)) * 10;
+  const c    = {1:3, 2:2, 3:1}[place] || 0;
+  return {place: pp, rounds: de, podium: c * 3 * Math.cbrt(n)};
+}
+
+function parts(place, n, alg){ return alg === 'evf' ? evfParts(place, n) : spwsParts(place, n); }
+function total(place, n, w, alg){
+  const p = parts(place, n, alg);
+  return p === null ? null : (p.place + (p.rounds || 0) + p.podium) * w;
+}
+
+/* ------------------------------------------------------------------ *
+ * Teksty
+ * ------------------------------------------------------------------ */
+const T = {
+  pl: {
+    lang:'pl-PL', htmlLang:'pl',
+    docTitle:'Kalkulator punktów za wynik — SPWS',
+    title:'Kalkulator punktów za wynik',
+    dek:'Ile punktów do rankingu daje zajęte miejsce.',
+    lblN:'Liczba startujących', lblM:'Zajęte miejsce', lblW:'Współczynnik rangi zawodów',
+    unit:'pkt', showAll:'Punkty za wszystkie miejsca', hideAll:'Zwiń listę miejsc',
+    thPlace:'Miejsce', thPts:'Punkty',
+    howTitle:'Jak to policzono', foot:'Stowarzyszenie Polskich Weteranów Szermierki',
+    noteSpws:'Proponowana formuła SPWS.',
+    noteEvf:'Algorytm EVF',
+    sub:(m,n,w)=>`${m}. miejsce na ${n} startujących · ranga ${w}`,
+    errPlace:(n)=>`Zajęte miejsce nie może być większe niż liczba startujących (${n}).`,
+    errN:'Podaj liczbę startujących od 2 do 1000.',
+    bPlace:'Punkty za miejsce', bRounds:'Bonus za wygrane rundy', bPodium:'Bonus za podium',
+    bSum:'Razem', bRank:'× ranga', bTotal:'Wynik',
+    howSpws:'Punkty za miejsce mają wchłonięty bonus za wygrane rundy, dlatego nie ma go na osobnej pozycji. Wysokość krzywej i tempo jej opadania zależą od liczby startujących. Stałe formuły: k = 10, p = 1,5. Bonus za podium to 3·∛N, 6·∛N i 9·∛N dla trzeciego, drugiego i pierwszego miejsca.',
+    howEvf:'Punkty za miejsce według skali logarytmicznej z maksimum 50, plus 10 punktów za każdą wygraną rundę bezpośredniej eliminacji, plus bonus za podium 3·∛N, 6·∛N i 9·∛N dla trzeciego, drugiego i pierwszego miejsca.'
+  },
+  en: {
+    lang:'en-GB', htmlLang:'en',
+    docTitle:'Result points calculator — SPWS',
+    title:'Result points calculator',
+    dek:'How many ranking points a finishing place is worth.',
+    lblN:'Number of entries', lblM:'Finishing place', lblW:'Competition rank coefficient',
+    unit:'pts', showAll:'Points for every place', hideAll:'Hide the list of places',
+    thPlace:'Place', thPts:'Points',
+    howTitle:'How this was calculated', foot:'Polish Veterans Fencing Association',
+    noteSpws:'Proposed SPWS formula.',
+    noteEvf:'EVF algorithm',
+    sub:(m,n,w)=>`${ord(m)} place out of ${n} entries · rank ${w}`,
+    errPlace:(n)=>`The finishing place cannot be greater than the number of entries (${n}).`,
+    errN:'Enter a number of entries between 2 and 1000.',
+    bPlace:'Place points', bRounds:'Round bonus', bPodium:'Podium bonus',
+    bSum:'Subtotal', bRank:'× rank', bTotal:'Result',
+    howSpws:'The round bonus is absorbed into the place points, so it has no separate line. Both the height of the curve and how fast it falls depend on the number of entries. Fixed constants: k = 10, p = 1.5. The podium bonus is 3·∛N, 6·∛N and 9·∛N for third, second and first place.',
+    howEvf:'Place points on a logarithmic scale with a maximum of 50, plus 10 points for every direct-elimination round won, plus a podium bonus of 3·∛N, 6·∛N and 9·∛N for third, second and first place.'
+  }
+};
+
+function ord(n){
+  const s = ['th','st','nd','rd'], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+let lang = 'pl';
+let alg  = 'spws';
+
+const $ = id => document.getElementById(id);
+
+// Formatowanie liczb piszemy sami, bez Intl i bez toLocaleString — plik bywa
+// otwierany prosto z dysku telefonu, a tam warto zejść do najprostszych
+// mechanizmów języka. Polski przecinek, angielska kropka.
+function num(v, dec){
+  const s = Math.abs(v).toFixed(dec);
+  const sign = v < 0 ? '-' : '';
+  return sign + (lang === 'pl' ? s.replace('.', ',') : s);
+}
+const fmt  = v => num(v, 1);
+// rozbicie na składniki idzie z dwoma miejscami po przecinku — przy jednym
+// zaokrąglone składniki nie sumują się do zaokrąglonej sumy (8,2 + 5,7 = 14,0)
+const fmt2 = v => num(v, 2);
+
+/* ------------------------------------------------------------------ *
+ * Przeliczanie — wywoływane przy każdej zmianie któregokolwiek pola
+ * ------------------------------------------------------------------ */
+function read(){
+  const n = parseInt($('fN').value, 10);
+  const m = parseInt($('fM').value, 10);
+  const w = parseFloat($('fW').value);
+  return {n, m, w};
+}
+
+function render(){
+  const t = T[lang];
+  const {n, m, w} = read();
+  $('wVal').textContent = fmt(w);
+  $('algoNote').textContent = alg === 'evf' ? t.noteEvf : t.noteSpws;
+  $('fM').max = Number.isFinite(n) ? n : 1000;
+
+  const nBad = !Number.isFinite(n) || n < 2 || n > 1000;
+  const mBad = !nBad && (!Number.isFinite(m) || m < 1 || m > n);
+
+  if (nBad || mBad){
+    $('out').textContent = '—';
+    $('outSub').textContent = '';
+    $('warn').hidden = false;
+    $('warn').textContent = nBad ? t.errN : t.errPlace(n);
+    $('allBody').innerHTML = '';
+    $('breakdown').innerHTML = '';
+    $('howText').textContent = '';
+    return;
+  }
+  $('warn').hidden = true;
+
+  const v = total(m, n, w, alg);
+  $('out').textContent = fmt(v);
+  $('outUnit').textContent = t.unit;
+  $('outSub').textContent = t.sub(m, n, fmt(w));
+
+  renderBreakdown(m, n, w);
+  renderAll(m, n, w);
+}
+
+function renderBreakdown(m, n, w){
+  const t = T[lang], p = parts(m, n, alg);
+  const sum = p.place + (p.rounds || 0) + p.podium;
+  // „Razem" liczone ze składników JUŻ ZAOKRĄGLONYCH, żeby kolumna zgadzała się
+  // dla kogoś, kto ją dodaje na kartce; „Wynik" idzie z wartości dokładnych
+  const r2 = v => Math.round(v * 100) / 100;
+  const shown = r2(p.place) + r2(p.rounds || 0) + r2(p.podium);
+  const rows = [[t.bPlace, fmt2(p.place)]];
+  if (p.rounds) rows.push([t.bRounds, fmt2(p.rounds)]);   // zero rund — bez pustego wiersza
+  if (p.podium) rows.push([t.bPodium, fmt2(p.podium)]);   // poza podium — bez pustego wiersza
+  rows.push([t.bSum, fmt2(shown)], [t.bRank, fmt(w)]);
+  $('breakdown').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')
+    + `<dt class="tot">${t.bTotal}</dt><dd class="tot">${fmt(sum * w)}</dd>`;
+  $('howText').textContent = alg === 'evf' ? t.howEvf : t.howSpws;
+}
+
+function renderAll(m, n, w){
+  let html = '';
+  for (let i = 1; i <= n; i++){
+    html += `<tr${i === m ? ' class="me" id="meRow"' : ''}><td class="pl">${i}</td>`
+          + `<td>${fmt(total(i, n, w, alg))}</td></tr>`;
+  }
+  $('allBody').innerHTML = html;
+  if (!$('allPanel').hidden) scrollToMe(false);
+}
+
+function scrollToMe(){
+  const row = $('meRow'), panel = $('allPanel');
+  if (!row) return;
+  // zwykłe przypisanie scrollTop zamiast scrollTo({...}) — starsze przeglądarki
+  // telefonów nie przyjmują postaci z obiektem i potrafią na niej wywalić się
+  panel.scrollTop = Math.max(0, row.offsetTop - panel.clientHeight / 2 + row.clientHeight / 2);
+}
+
+/* ------------------------------------------------------------------ *
+ * Język, algorytm, stan interfejsu
+ * ------------------------------------------------------------------ */
+function applyLang(){
+  const t = T[lang];
+  document.documentElement.lang = t.htmlLang;
+  document.title = t.docTitle;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (key === 'showAll') return;              // zależy od stanu panelu
+    if (t[key]) el.textContent = t[key];
+  });
+  setToggleLabel();
+}
+
+function setToggleLabel(){
+  const open = !$('allPanel').hidden;
+  $('btnAll').querySelector('[data-i18n="showAll"]').textContent =
+    open ? T[lang].hideAll : T[lang].showAll;
+  $('chev').textContent = open ? '–' : '+';
+  $('btnAll').setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function store(){
+  try{ localStorage.setItem('spws-calc', JSON.stringify({lang, alg})); }catch(e){}
+}
+
+function param(name){
+  // bez URLSearchParams — zwykłe wyrażenie regularne działa wszędzie
+  const m = location.search.match(new RegExp('[?&]' + name + '=([^&]*)'));
+  return m ? decodeURIComponent(m[1]) : '';
+}
+
+function restore(){
+  let saved = {};
+  // dostęp do localStorage potrafi RZUCIĆ WYJĄTKIEM przy otwarciu pliku
+  // prosto z dysku (protokół file:) — dlatego cały dostęp jest w klamrze
+  try{ saved = JSON.parse(localStorage.getItem('spws-calc') || '{}') || {}; }catch(e){ saved = {}; }
+  const l = (param('lang') || saved.lang || '').toLowerCase();
+  const a = (param('alg')  || saved.alg  || '').toLowerCase();
+  if (l === 'en' || l === 'pl') lang = l;
+  if (a === 'evf' || a === 'spws') alg = a;
+  $(lang === 'en' ? 'langEn' : 'langPl').checked = true;
+  $(alg === 'evf' ? 'algEvf' : 'algSpws').checked = true;
+}
+
+document.querySelectorAll('input[name=lang]').forEach(r =>
+  r.addEventListener('change', () => {
+    if (!r.checked) return;
+    lang = r.value; store(); applyLang(); render();
+  }));
+document.querySelectorAll('input[name=alg]').forEach(r =>
+  r.addEventListener('change', () => {
+    if (!r.checked) return;
+    alg = r.value; store(); render();
+  }));
+['fN','fM','fW'].forEach(id => $(id).addEventListener('input', render));
+
+$('btnAll').addEventListener('click', () => {
+  const panel = $('allPanel');
+  panel.hidden = !panel.hidden;
+  setToggleLabel();
+  if (!panel.hidden) scrollToMe(false);
+});
+
+// Gdyby cokolwiek wysypało się przy starcie, ma to być widać NA STRONIE,
+// a nie w konsoli — na telefonie nikt do konsoli nie zajrzy.
+try {
+  restore();
+  applyLang();
+  render();
+} catch (err) {
+  const box = document.getElementById('warn');
+  if (box){
+    box.hidden = false;
+    box.textContent = 'Kalkulator nie wystartował / The calculator failed to start: '
+                    + (err && err.message ? err.message : String(err));
+  }
+}
+</script>
+</body>
+</html>

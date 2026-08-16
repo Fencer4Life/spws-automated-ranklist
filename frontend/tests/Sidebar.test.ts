@@ -1,9 +1,12 @@
 // Plan tests: 8.27, 8.28, 8.29, 8.30, 8.31, 8.32, 8.35, 8.36
 // See doc/archive/m8_implementation_plan.md §T8.4.
+// Plan tests 8.84–8.87 — third navigation entry linking to the standalone
+// points calculator. See doc/plans/kalkulator-w-menu-ranklisty-2026-08-15.html.
 
 import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
 import Sidebar from '../src/components/Sidebar.svelte'
+import { getLocale } from '../src/lib/locale.svelte'
 
 describe('Sidebar (T8.4)', () => {
   const defaultProps = {
@@ -77,6 +80,55 @@ describe('Sidebar (T8.4)', () => {
     await fireEvent.click(calendarItem!)
     expect(onnavigate).toHaveBeenCalledWith('calendar')
     expect(onclose).toHaveBeenCalled()
+  })
+
+  // 8.84 — Trzecia pozycja „Kalkulator punktów” stoi bezpośrednio po „Kalendarz”
+  it('renders the calculator entry directly after Kalendarz', () => {
+    const { container } = render(Sidebar, { props: defaultProps })
+    const texts = Array.from(container.querySelectorAll('.nav-list .nav-item')).map((el) =>
+      el.textContent?.trim(),
+    )
+    expect(texts).toEqual(['Ranking', 'Kalendarz', 'Kalkulator punktów'])
+  })
+
+  // 8.85 — Kalkulator to odnośnik do samodzielnej strony, nie widok aplikacji
+  it('renders the calculator entry as a link that does not navigate the app', async () => {
+    const onnavigate = vi.fn()
+    const { container } = render(Sidebar, {
+      props: { ...defaultProps, onnavigate },
+    })
+    const item = Array.from(container.querySelectorAll('.nav-item')).find((el) =>
+      el.textContent?.includes('Kalkulator'),
+    ) as HTMLAnchorElement
+    expect(item).not.toBeUndefined()
+    expect(item.tagName).toBe('A')
+    expect(item.getAttribute('href')).toContain('kalkulator-punktow.html')
+    await fireEvent.click(item)
+    expect(onnavigate).not.toHaveBeenCalled()
+  })
+
+  // 8.86 — Kliknięcie kalkulatora zamyka szufladę
+  it('emits close when the calculator entry is clicked', async () => {
+    const onclose = vi.fn()
+    const { container } = render(Sidebar, {
+      props: { ...defaultProps, onclose },
+    })
+    const item = Array.from(container.querySelectorAll('.nav-item')).find((el) =>
+      el.textContent?.includes('Kalkulator'),
+    )
+    await fireEvent.click(item!)
+    expect(onclose).toHaveBeenCalled()
+  })
+
+  // 8.87 — Odnośnik niesie język ustawiony w aplikacji
+  it('carries the active locale in the calculator link', () => {
+    const { container } = render(Sidebar, { props: defaultProps })
+    const item = Array.from(container.querySelectorAll('.nav-item')).find((el) =>
+      el.textContent?.includes('Kalkulator'),
+    ) as HTMLAnchorElement
+    expect(item.getAttribute('href')).toBe(
+      `kalkulator-punktow.html?lang=${getLocale()}`,
+    )
   })
 
   // 8.31 — Sidebar overlay dims content

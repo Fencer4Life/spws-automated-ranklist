@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan — kalkulator punktów w menu ranklisty</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+     font-size:16px;line-height:1.6}
+.page{max-width:860px;margin:0 auto;padding:32px 20px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:70ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:17px;margin:22px 0 6px}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:22px 0}
+.toc:before{content:"Kolejność czytania";display:block;margin-bottom:8px;font-family:var(--mono);
+  font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.toc ol{margin:0;padding-left:20px}
+.toc a{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:13px;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.locked{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warn{border-left:4px solid var(--coral)}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:6px}
+ul.gate{list-style:none;padding-left:0}
+ul.gate li{padding:3px 0}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<p class="eyebrow">SPWS · plan · 15 sierpnia 2026</p>
+<h1>Kalkulator punktów w menu ranklisty</h1>
+<p class="dek">Trzecia pozycja w szufladzie nawigacyjnej, pod „Kalendarz”, prowadząca do samodzielnej
+strony kalkulatora publikowanej razem z aplikacją na GitHub Pages.</p>
+
+<div class="toc">
+<ol>
+  <li><a href="#po-co">Po co to robimy</a></li>
+  <li><a href="#bramka">Wynik bramki planistycznej</a></li>
+  <li><a href="#decyzje">Decyzje zamknięte i pytania otwarte</a></li>
+  <li><a href="#adr">Szkic ADR-084 — do podpisu</a></li>
+  <li><a href="#testy">Testy akceptacyjne (RED przed GREEN)</a></li>
+  <li><a href="#scenariusz">Przejście scenariusza użytkownika</a></li>
+  <li><a href="#parytet">Parytet LOCAL / CERT / Pages</a></li>
+  <li><a href="#zakres">Zakres zmian w plikach</a></li>
+  <li><a href="#gotowe">Definicja ukończenia</a></li>
+  <li><a href="#gate">Bramka spójności dokumentacji</a></li>
+</ol>
+</div>
+
+<h2 id="po-co">1 · Po co to robimy</h2>
+
+<p>Kalkulator punktów za wynik powstał jako samodzielny plik HTML
+(<code>doc/tools/kalkulator-punktow-za-wynik-spws.html</code>). Praktyka pokazała, że
+<b>plik przesłany jako załącznik nie działa na telefonie</b>: podglądy WhatsAppa, poczty
+i aplikacji Pliki na iOS otwierają HTML z wyłączonym JavaScriptem, a kalkulator liczy
+wyłącznie w przeglądarce. Sprawdzone na dwóch niezależnych plikach — ten sam skutek.</p>
+
+<p>Wniosek: narzędzie musi być dostępne <b>pod adresem</b>. Ranklista jest już publikowana na
+GitHub Pages z katalogu <code>frontend/dist</code> (workflow <code>.github/workflows/release.yml</code>,
+zadania <code>build</code> → <code>deploy-pages</code>), więc dołożenie kalkulatora do tej publikacji
+daje adres bez nowej infrastruktury i bez nowego hostingu.</p>
+
+<h2 id="bramka">2 · Wynik bramki planistycznej</h2>
+
+<h3>Graf wiedzy — promień rażenia</h3>
+<p><code>graphify explain "Sidebar"</code> pokazuje sześć połączeń. Komponent jest importowany przez
+<code>App.svelte</code> oraz przez <b>dwa pliki testowe</b>: <code>frontend/tests/Sidebar.test.ts</code>
+i <code>frontend/tests/AdminRouting.test.ts</code>. Sam importuje <code>lib/locale.svelte</code>
+i <code>lib/types</code>. Zmiana menu dotyka więc obu tych testów i modułu tłumaczeń.</p>
+
+<h3>Wymagania — RTM</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Wiersz</th><th>Treść</th><th>Testy</th><th>Status</th><th>Co z tym robimy</th></tr></thead>
+<tbody>
+<tr><td>FR-59</td><td>Two-view app shell: sidebar drawer with Ranklista + Kalendarz navigation</td>
+    <td>8.27–8.37</td><td>Covered (M8)</td>
+    <td><b>Wymaga zmiany.</b> Szuflada przestaje być dwupozycyjna. Treść wiersza i zakres testów
+    trzeba rozszerzyć w tej samej zmianie.</td></tr>
+<tr><td>FR-130</td><td>Public registration UI: standalone shareable page <code>frontend/register.html</code>
+    (own URL, zero dependency on calendar/main app)</td><td>—</td><td>Covered</td>
+    <td><b>Precedens.</b> Repozytorium już publikuje samodzielną stronę obok aplikacji. Nasza różni się
+    mechanizmem — patrz szkic ADR.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Mapa dokumentacji — strony właścicielskie</h3>
+<p>Wg <code>doc/handbook/documentation-map.html</code> zmiana dotyka dwóch obszarów:
+<b>Product / Product surfaces</b> („Svelte components and public views”) oraz
+<b>Frontend/automation</b> („frontend, workflows, functions and GAS”). Dokładne strony do
+aktualizacji wskazane w bramce spójności na końcu planu.</p>
+
+<h2 id="decyzje">3 · Decyzje zamknięte i pytania otwarte</h2>
+
+<div class="card locked">
+<span class="lb">Zamknięte — nie wracamy</span>
+<ul>
+<li>Kalkulator zostaje <b>samodzielną stroną</b>, nie widokiem aplikacji. Nie przepisujemy go na
+Svelte — jeden plik, jedno źródło prawdy, ten sam plik idzie na WordPressa.</li>
+<li><b>To rozwiązanie tymczasowe i jednorazowe.</b> Żadna inna strona statyczna nie będzie
+publikowana tą drogą. Gdy proponowana formuła stanie się obowiązującą punktacją SPWS na sezon
+2026/2027, strona znika, a jej miejsce zajmuje kalkulator liczący silnikiem ranklisty.</li>
+<li>Pozycja w menu stoi <b>pod „Kalendarz”</b>, przed sekcją administracyjną.</li>
+<li>Etykieta: „Kalkulator punktów” / „Points calculator”, klucz <code>nav_calculator</code>.</li>
+<li>Stałe formuły <code>k = 10</code>, <code>p = 1,5</code>, liczenie od faktycznej liczby startujących —
+bez zmian wobec pliku, który już istnieje.</li>
+</ul>
+</div>
+
+<div class="card open">
+<span class="lb">Otwarte — potrzebuję decyzji</span>
+<ol>
+<li><b>Nowa karta czy ta sama?</b> Proponuję nową (<code>target="_blank"</code>), bo kalkulator nie ma
+odnośnika powrotnego do ranklisty, a użytkownik na telefonie straciłby ustawione filtry rankingu.
+Koszt: część przeglądarek mobilnych pokazuje nową kartę jako osobne okno.</li>
+<li><b>Widoczność.</b> Pages jest publiczne. Plik ma <code>noindex, nofollow</code>, więc nie trafi do
+wyszukiwarek, ale każdy z adresem go otworzy. Wcześniej ustaliliśmy, żeby nie upubliczniać kalkulatora
+do czasu rozstrzygnięcia punktu 3.5 regulaminu EVF. <b>Ta zmiana to ustalenie łamie</b> — potrzebuję
+świadomego „tak”, albo trzymamy pozycję w menu za flagą do czasu decyzji.</li>
+</ol>
+</div>
+
+<h2 id="adr">4 · Szkic ADR-084 — status: Proposed, do podpisu</h2>
+
+<div class="card">
+<p><b>ADR-084: Kalkulator punktów jako tymczasowa strona statyczna — jednorazowy wyjątek
+z terminem ważności</b></p>
+
+<p><b>Kontekst.</b> Ranklista to aplikacja Svelte budowana Vite do <code>frontend/dist</code> i publikowana
+na GitHub Pages. Repozytorium ma już jedną samodzielną stronę obok aplikacji —
+<code>register.html</code> (FR-130) — ale powstaje ona z osobnej konfiguracji
+<code>vite.config.ce.ts</code> i jest kopiowana do <code>dist</code> krokiem w workflow, bo zawiera
+komponent Svelte skompilowany jako custom element. Kalkulator punktów nie ma żadnych zależności:
+to jeden plik HTML ze stylami, skryptem i logo wklejonym jako <code>data:</code>. Powstał, żeby
+pokazać szermierzom i zarządowi <b>proponowaną</b> funkcję punktową, zanim stanie się ona
+obowiązującą punktacją — i ten sam plik musi dać się wgrać na WordPressa SPWS.</p>
+
+<p><b>Decyzja.</b> Kalkulator punktów zostaje opublikowany jako statyczna strona w
+<code>frontend/public/kalkulator-punktow.html</code>, przenoszona do <code>dist</code> przez samo Vite,
+bez kroku w workflow i bez wpisu w konfiguracji budowania. Aplikacja odsyła do niej zwykłym
+odnośnikiem względnym z szuflady nawigacyjnej.</p>
+
+<div class="card warn" style="margin:10px 0">
+<span class="lb">To jest wyjątek, nie wzorzec</span>
+<p style="margin:0 0 8px"><b>Nie przewiduje się publikowania żadnej innej strony statycznej w ten
+sposób.</b> Decyzja dotyczy jednego pliku o znanym czasie życia i nie ustanawia reguły dla kolejnych
+narzędzi. Każda następna strona wymaga własnej decyzji — domyślną drogą pozostaje widok w aplikacji
+albo mechanizm użyty dla <code>register.html</code>.</p>
+<p style="margin:0"><b>Warunek wygaśnięcia.</b> W chwili, gdy ten sposób liczenia zostanie wdrożony
+jako obowiązująca punktacja SPWS na sezon 2026/2027, strona zostaje <b>usunięta</b>, a w jej miejsce
+powstaje kalkulator korzystający z <b>silnika punktowego ranklisty</b> — tego samego, który liczy
+ranking. Wraz z nią znikają: kopia w <code>frontend/public/</code>, kopia w <code>doc/tools/</code>
+i test 8.88, który pilnuje ich zgodności. Ten ADR należy wtedy oznaczyć jako zastąpiony.</p>
+</div>
+
+<p><b>Rozważane alternatywy.</b>
+(1) Zbudować kalkulator przez <code>vite.config.ce.ts</code>, tak jak <code>register.html</code> —
+odrzucone: dokłada krok budowania i krok kopiowania w workflow dla pliku, który niczego nie
+potrzebuje i który i tak zostanie usunięty.
+(2) Przepisać kalkulator od razu na widok Svelte korzystający z silnika ranklisty — odrzucone
+<b>na teraz, ale to jest stan docelowy</b>: silnik ranklisty liczy dzisiejszą punktację EVF, a
+kalkulator pokazuje formułę dopiero proponowaną. Wpięcie jej w silnik przed decyzją zarządu
+zmieniłoby wyniki rankingu.
+(3) Hostować kalkulator poza repozytorium — odrzucone: ranklista już ma publikację, a osobny
+hosting to nowa rzecz do utrzymania.</p>
+
+<p><b>Konsekwencje.</b> Plusy: zero nowej infrastruktury, adres dostępny natychmiast, ten sam plik
+działa na WordPressie. Minusy, przyjęte świadomie i na określony czas: funkcja punktowa istnieje
+w <b>dwóch</b> implementacjach — w silniku ranklisty (dzisiejsza punktacja) i w tym pliku
+(propozycja) — a plik omija potok budowania, więc nie obejmują go kontrole typów. Dlatego
+poprawność pilnują test 8.88 (zgodność kopii bajt w bajt) oraz sprawdziany liczbowe wpisane w sam
+kalkulator. Powielenie kończy się razem ze stroną, w momencie opisanym w warunku wygaśnięcia.</p>
+</div>
+
+<h2 id="testy">5 · Testy akceptacyjne — piszemy je pierwsze</h2>
+
+<p>Identyfikatory kontynuują serię ósemkową powiązaną z FR-59. Najwyższy zajęty w repozytorium to
+<code>8.83</code>, więc nowe zaczynają się od <code>8.84</code>. Plik:
+<code>frontend/tests/Sidebar.test.ts</code>, oprócz 8.88, który dotyczy zasobu.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>ID</th><th>Asercja</th><th>Dlaczego</th></tr></thead>
+<tbody>
+<tr><td>8.84</td><td>Szuflada renderuje trzy pozycje nawigacyjne, a trzecia ma etykietę
+  „Kalkulator punktów” i stoi bezpośrednio po „Kalendarz”.</td>
+  <td>To jest treść zamówienia — pozycja pod kalendarzem.</td></tr>
+<tr><td>8.85</td><td>Trzecia pozycja jest elementem <code>&lt;a&gt;</code> z atrybutem
+  <code>href</code> wskazującym <code>kalkulator-punktow.html</code>, a kliknięcie w nią
+  <b>nie</b> wywołuje <code>onnavigate</code>.</td>
+  <td>Kalkulator nie jest widokiem aplikacji. Gdyby wywoływał nawigację, wpadłby w router jako
+  nieznany widok.</td></tr>
+<tr><td>8.86</td><td>Kliknięcie w trzecią pozycję wywołuje <code>onclose</code>.</td>
+  <td>Szuflada ma się zamknąć, tak samo jak przy dwóch pozostałych pozycjach.</td></tr>
+<tr><td>8.87</td><td><code>href</code> niesie język ustawiony w aplikacji:
+  <code>?lang=pl</code> albo <code>?lang=en</code>.</td>
+  <td>Kalkulator obsługuje oba języki i przyjmuje parametr <code>lang</code>. Użytkownik nie powinien
+  przełączać języka drugi raz.</td></tr>
+<tr><td>8.88</td><td>Plik <code>frontend/public/kalkulator-punktow.html</code> istnieje i jest
+  bajt w bajt identyczny z <code>doc/tools/kalkulator-punktow-za-wynik-spws.html</code>.</td>
+  <td>Pozycja w menu prowadząca do nieistniejącego pliku to zepsute menu. Test pilnuje też
+  rozjazdu obu kopii, wskazanego w konsekwencjach ADR-084.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><b>Kolejność wykonania:</b> napisać 8.84–8.88 → uruchomić → potwierdzić RED (8.88 padnie na
+porównaniu, reszta na braku trzeciej pozycji) → dopiero wtedy implementacja → GREEN →
+<code>npm run check</code> → pełny <code>npm test</code>.</p>
+
+<h2 id="scenariusz">6 · Przejście scenariusza użytkownika</h2>
+
+<p><b>Ścieżka główna.</b> Szermierz otwiera ranklistę na telefonie, stuka w hamburger, widzi trzy
+pozycje, wybiera „Kalkulator punktów”. Otwiera się nowa karta pod adresem
+<code>…/kalkulator-punktow.html?lang=pl</code>. Wpisuje 7 startujących i 3. miejsce, widzi 14,0.
+Wraca do karty z ranklistą — filtry rankingu są nietknięte.</p>
+
+<p><b>Ścieżka poboczna — język angielski.</b> Szermierz z ustawionym EN dostaje
+<code>?lang=en</code>, a kalkulator wchodzi po angielsku z kropką dziesiętną.</p>
+
+<p><b>Ścieżka poboczna — administrator.</b> Przy aktywnej sesji administratora szuflada pokazuje
+także sekcję administracyjną. Nowa pozycja stoi <b>nad</b> tą sekcją, więc nie miesza się
+z pozycjami administracyjnymi ani nie zmienia ich zachowania — pilnuje tego istniejący test 8.35.</p>
+
+<p><b>Ścieżka poboczna — brak sieci.</b> Kalkulator liczy w całości w przeglądarce, więc po
+jednorazowym otwarciu działa bez połączenia. Nie dotyczy to ranklisty, która czyta dane z bazy.</p>
+
+<h2 id="parytet">7 · Parytet LOCAL / CERT / Pages</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Środowisko</th><th>Skąd bierze plik</th><th>Zmiana zachowania</th></tr></thead>
+<tbody>
+<tr><td>LOCAL (<code>npm run dev</code>)</td><td>Vite serwuje <code>frontend/public/</code> pod
+  katalogiem głównym</td><td>Żadna poza nową pozycją w menu. Operator nic nie musi zrobić.</td></tr>
+<tr><td>CERT</td><td>ten sam artefakt budowania</td><td>Żadna.</td></tr>
+<tr><td>GitHub Pages</td><td><code>frontend/dist</code>, gdzie Vite kopiuje zawartość
+  <code>public/</code></td><td>Dochodzi jeden plik statyczny. Workflow bez zmian.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Żaden krok w <code>.github/workflows/release.yml</code> nie wymaga edycji — kopiowanie
+<code>public/</code> robi Vite. To jest sprawdzone w konfiguracji, nie założone.</p>
+
+<h2 id="zakres">8 · Zakres zmian w plikach</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Plik</th><th>Zmiana</th></tr></thead>
+<tbody>
+<tr><td><code>frontend/tests/Sidebar.test.ts</code></td><td>Testy 8.84–8.87 (najpierw).</td></tr>
+<tr><td><code>frontend/tests/assets.test.ts</code> (nowy)</td><td>Test 8.88 — obecność i zgodność zasobu.</td></tr>
+<tr><td><code>frontend/public/kalkulator-punktow.html</code></td><td>Kopia kalkulatora (plik już wgrany, nieśledzony).</td></tr>
+<tr><td><code>frontend/src/components/Sidebar.svelte</code></td><td>Trzecia pozycja jako odnośnik + styl dla <code>a.nav-item</code>.</td></tr>
+<tr><td><code>frontend/src/lib/locales/pl.json</code>, <code>en.json</code></td><td>Klucz <code>nav_calculator</code>.</td></tr>
+<tr><td><code>doc/requirements-traceability-matrix.html</code></td><td>FR-59: treść i zakres testów.</td></tr>
+<tr><td>specyfikacja, Appendix C</td><td>Wiersz rejestru ADR-084 (bramka 2 spójności — twardy fail bez niego).</td></tr>
+<tr><td><code>doc/adr/084-*.md</code> + bliźniak HTML</td><td>Dopiero po Twoim podpisie szkicu.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="gotowe">9 · Definicja ukończenia — binarna</h2>
+<ul>
+<li>Testy 8.84–8.88 były RED przed implementacją i są GREEN po niej.</li>
+<li><code>npm run check</code> bez błędów; pełny <code>npm test</code> bez regresji.</li>
+<li><code>bash scripts/check-coherence.sh</code> — PASS, w tym bramka 2 (ADR ↔ Appendix C).</li>
+<li><code>python scripts/check_docs.py</code> — PASS.</li>
+<li>FR-59 w RTM opisuje trzy pozycje, a nie dwie.</li>
+<li>Pozycja obejrzana wzrokowo przy 320 px, w obu językach.</li>
+</ul>
+
+<h2 id="gate">10 · Bramka spójności dokumentacji</h2>
+<ul class="gate">
+<li>☐ Documentation coherence gate complete</li>
+<li><b>Impact:</b> product, reference</li>
+<li><b>Canonical docs affected:</b> <code>doc/requirements-traceability-matrix.html</code> (FR-59);
+  <code>doc/handbook/subsystems/</code> — strona opisująca powierzchnie frontendu, wskazana przez mapę
+  dokumentacji przed implementacją; specyfikacja Appendix C (rejestr ADR)</li>
+<li><b>ADR impact:</b> new — ADR-084, status Proposed, czeka na podpis</li>
+<li><b>Operational impact:</b> none — workflow publikacji bez zmian</li>
+<li><b>Source-map / last-verified updated:</b> yes</li>
+<li><b>Validation:</b> <code>python scripts/check_docs.py --changed-from origin/main</code> — do uruchomienia po implementacji</li>
+<li><b>Superseded prose archived rather than appended:</b> not applicable</li>
+</ul>
+
+<footer>
+Plan SPWS · 15 sierpnia 2026 · worktree <code>codex/agent-worktree-operating-structure</code>.
+Wstrzymany na dwóch pytaniach z sekcji 3 i na podpisie szkicu ADR-084. Bez tego nie ruszam kodu.
+</footer>
+
+</div>
+</body>
+</html>
