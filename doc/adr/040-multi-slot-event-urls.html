@@ -4,22 +4,28 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="040-multi-slot-event-urls.md">
-<meta name="adr-source-sha256" content="399bbffda23d98bad6e238bdd99ddf04159e19d3cf9547e14bd24f43170051b7">
+<meta name="adr-source-sha256" content="8dfcc1e69b207888b2c064d42144f3d22361e78972efd1b240e01f36794bd8f4">
 <title>ADR-040 · Multi-Slot Event Result URLs with Compact-on-Save</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 040</p><h1>Multi-Slot Event Result URLs with Compact-on-Save</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-25 <strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — refresh invariant generalises), ADR-029 (Tournament URL Auto-Population — discovery loop becomes multi-URL), ADR-030 (Event Registration URL — same form), ADR-036 (PROD Export — schema-driven, auto-handles), ADR-039 (EVF Dedup — unaffected).</dd></div><div><dt>Source</dt><dd class=""><code>040-multi-slot-event-urls.md</code></dd></div><div><dt>Length</dt><dd class="">101 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-25 <strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — refresh invariant generalises), ADR-029 (Tournament URL Auto-Population — discovery loop becomes multi-URL), ADR-030 (Event Registration URL — same form), ADR-036 (PROD Export — schema-driven, auto-handles), ADR-039 (EVF Dedup — unaffected). <strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (permits render-time day labels over the compacted slot list).</dd></div><div><dt>Source</dt><dd class=""><code>040-multi-slot-event-urls.md</code></dd></div><div><dt>Length</dt><dd class="">110 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted
 <strong>Date:</strong> 2026-04-25
-<strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — refresh invariant generalises), ADR-029 (Tournament URL Auto-Population — discovery loop becomes multi-URL), ADR-030 (Event Registration URL — same form), ADR-036 (PROD Export — schema-driven, auto-handles), ADR-039 (EVF Dedup — unaffected).</p>
+<strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — refresh invariant generalises), ADR-029 (Tournament URL Auto-Population — discovery loop becomes multi-URL), ADR-030 (Event Registration URL — same form), ADR-036 (PROD Export — schema-driven, auto-handles), ADR-039 (EVF Dedup — unaffected).
+<strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (permits render-time day labels over the compacted slot list).</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#why-this-shape">Why this shape</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#positive">Positive</a></li><li class="depth-3"><a href="#negative">Negative</a></li><li class="depth-3"><a href="#outbound-surface-none">Outbound surface (none)</a></li><li class="depth-2"><a href="#test-plan">Test plan</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
-  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-08-09-day-labels-at-render-time">Amendment (2026-08-09 — day labels at render time)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#why-this-shape">Why this shape</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#positive">Positive</a></li><li class="depth-3"><a href="#negative">Negative</a></li><li class="depth-3"><a href="#outbound-surface-none">Outbound surface (none)</a></li><li class="depth-2"><a href="#test-plan">Test plan</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
+  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-09-day-labels-at-render-time">Amendment (2026-08-09 — day labels at render time)</h2>
+<p>The compact-on-save invariant is <strong>unchanged</strong>: slots stay gap-free in storage, and <code>url_event</code>…<code>url_event_5</code> are written compacted.</p>
+<p><a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> adds a render-time reading of that list. <code>EventCard</code> labels each result link by <strong>day</strong> — <em>Wyniki 1</em>, <em>Wyniki 2</em> — derived from slot order against the event's date range, and falls back to a plain <em>Wyniki</em> for a lone URL (CQ.55, EC.25).</p>
+<p>The constraint this creates, and the reason it belongs in this ADR: <strong>day labels are only meaningful because the list is compacted</strong>. If a gap could appear mid-list, slot <em>N</em> would stop corresponding to day <em>N</em> and the labels would silently mislead. Labelling by day therefore depends on the compact-on-save rule and must be revisited if it is ever relaxed. Labelling by <strong>weapon</strong> stays rejected, as this ADR originally decided.</p>
+</section>
+<section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The EVF Circuit Budapest event (2025-09-20/21) has <strong>three</strong> organiser-published Engarde URLs, one per weapon:</p>
 <pre><code>2025_09_20_pbt   → Day 1, Épée
 2025_09_21_kard  → Day 2, Sabre
@@ -148,5 +154,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="039-stale-event-gate.html">← ADR-039: EVF Scraper Dedup Algorithm + Stale-Event Gate</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="041-edge-function-dispatch.html">→ ADR-041: Server-Side Workflow Dispatch via Supabase Edge Function</a></nav>
-<footer class="foot">Generated from <code>040-multi-slot-event-urls.md</code> · source SHA-256 <code>399bbffda23d98bad6e238bdd99ddf04159e19d3cf9547e14bd24f43170051b7</code></footer>
+<footer class="foot">Generated from <code>040-multi-slot-event-urls.md</code> · source SHA-256 <code>8dfcc1e69b207888b2c064d42144f3d22361e78972efd1b240e01f36794bd8f4</code></footer>
 </div></body></html>

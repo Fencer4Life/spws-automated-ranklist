@@ -2,6 +2,15 @@
 
 **Status:** Accepted
 **Date:** 2025-03-06 (M6)
+**Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (retires the no-pluralisation trade-off for calendar strings).
+
+## Amendment (2026-08-09 — pluralisation is no longer deferred)
+
+This ADR accepted a flat key-per-string model with **no pluralisation**, which is wrong for Polish and produced a live defect: `tournaments_count` rendered both *2 turniejów* and *1 tournaments*.
+
+[ADR-084](084-calendar-quarter-barrel-event-card.md) introduces `tournamentsPluralKey()` plus three-form keys (`tournaments_one` / `_few` / `_many`, CQ.53–CQ.54) and genitive month names (`cal_month_1…12`), because a calendar cannot write *18 kwietnia* from a nominative `month_4`. The locale files remain flat JSON — this is a helper that selects the key, not a new i18n framework, so the ADR's core simplicity argument stands.
+
+**The live defect is not yet patched.** The card drops the tournament-count field entirely, so the barrel does not show the broken string, but the helper and keys exist and the remaining consumer has not been migrated.
 
 ## Context
 

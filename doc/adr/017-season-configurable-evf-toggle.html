@@ -4,21 +4,30 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="017-season-configurable-evf-toggle.md">
-<meta name="adr-source-sha256" content="61ac5a6d243081c0262143c2f4bbb4d2a79a466063af98a705e4d6e61b6f68ff">
+<meta name="adr-source-sha256" content="577159867fa0b4d1ae29689372c9b8a86fe1705907a1219212224a079df138a7">
 <title>ADR-017 · Season-Configurable EVF Toggle</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 017</p><h1>Season-Configurable EVF Toggle</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-03-29 (M9)</dd></div><div><dt>Source</dt><dd class=""><code>017-season-configurable-evf-toggle.md</code></dd></div><div><dt>Length</dt><dd class="">130 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-03-29 (M9) <strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (records the Calendar's own toggle field and the data constraint it carries).</dd></div><div><dt>Source</dt><dd class=""><code>017-season-configurable-evf-toggle.md</code></dd></div><div><dt>Length</dt><dd class="">140 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted
-<strong>Date:</strong> 2026-03-29 (M9)</p>
+<strong>Date:</strong> 2026-03-29 (M9)
+<strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (records the Calendar's own toggle field and the data constraint it carries).</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#ui-behavior-matrix">UI Behavior Matrix</a></li><li class="depth-3"><a href="#admin-control">Admin Control</a></li><li class="depth-3"><a href="#toggle-visibility-3-components">Toggle Visibility (3 components)</a></li><li class="depth-3"><a href="#default-mode-on-state-transitions">Default Mode on State Transitions</a></li><li class="depth-3"><a href="#calendarview-scope-filter-logic">CalendarView Scope Filter Logic</a></li><li class="depth-3"><a href="#v0-category-guard">V0 Category Guard</a></li><li class="depth-2"><a href="#db-schema">DB Schema</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#test-coverage">Test Coverage</a></li></ol></nav>
-  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-08-09-the-calendar-s-toggle-is-a-separate-field">Amendment (2026-08-09 — the Calendar&#x27;s toggle is a separate field)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#ui-behavior-matrix">UI Behavior Matrix</a></li><li class="depth-3"><a href="#admin-control">Admin Control</a></li><li class="depth-3"><a href="#toggle-visibility-3-components">Toggle Visibility (3 components)</a></li><li class="depth-3"><a href="#default-mode-on-state-transitions">Default Mode on State Transitions</a></li><li class="depth-3"><a href="#calendarview-scope-filter-logic">CalendarView Scope Filter Logic</a></li><li class="depth-3"><a href="#v0-category-guard">V0 Category Guard</a></li><li class="depth-2"><a href="#db-schema">DB Schema</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#test-coverage">Test Coverage</a></li></ol></nav>
+  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-09-the-calendar-s-toggle-is-a-separate-field">Amendment (2026-08-09 — the Calendar's toggle is a separate field)</h2>
+<p><a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> records what this ADR's single-flag model became: the Calendar reads <strong><code>bool_show_evf_toggle_calendar</code></strong> (default TRUE — the richer EVF+FIE view), which is independent of the Ranklist's <code>bool_show_evf_toggle</code> (default FALSE). The split shipped under the ADR-044 amendment; this note exists so a reader of ADR-017 alone does not assume one flag still governs both surfaces.</p>
+<p>Two consequences the barrel makes load-bearing:</p>
+<ol>
+<li><strong>The flag arrives asynchronously</strong>, so a scope fixed at mount is wrong for the first paint. The orchestrator re-syncs the default from the live flag until the user picks a scope explicitly (CV.4).</li>
+<li><strong>The next-upcoming ring must be derived from the filtered set</strong>, not the raw one — switching to PPW moves the ring onto the next domestic event enterable (CQ.26). A ring computed before the filter points at an event the filter just removed.</li>
+</ol>
+</section>
+<section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The web UI includes PPW/+EVF (Kadra) toggle buttons in three places:</p>
 <ol>
 <li><strong>FilterBar</strong> (Ranklist view) — switches between PPW-only and Kadra ranking modes</li>
@@ -256,5 +265,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="016-supabase-auth-totp-mfa.html">← ADR-016: Supabase Auth with TOTP MFA for Admin Access</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="018-rolling-score.html">→ ADR-018: Rolling Score for Active Season</a></nav>
-<footer class="foot">Generated from <code>017-season-configurable-evf-toggle.md</code> · source SHA-256 <code>61ac5a6d243081c0262143c2f4bbb4d2a79a466063af98a705e4d6e61b6f68ff</code></footer>
+<footer class="foot">Generated from <code>017-season-configurable-evf-toggle.md</code> · source SHA-256 <code>577159867fa0b4d1ae29689372c9b8a86fe1705907a1219212224a079df138a7</code></footer>
 </div></body></html>

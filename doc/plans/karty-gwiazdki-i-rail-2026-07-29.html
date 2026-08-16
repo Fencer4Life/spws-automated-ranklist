@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scorecard star colours + contents rail — plan (29 July 2026)</title>
+<style>
+:root{--ink:#1a1a17;--muted:#6b6a63;--rule:#ddd9d0;--bg:#faf8f4;--card:#fff;
+--navy:#12304f;--green:#12704a;--red:#b93636;--amber:#a8730f;
+--serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 var(--serif);padding:48px 24px}
+.wrap{max-width:880px;margin:0 auto}
+.kicker{font-family:var(--mono);font-size:10.5px;letter-spacing:1.8px;text-transform:uppercase;
+color:var(--muted);margin-bottom:10px}
+h1{font-size:33px;line-height:1.15;margin:0 0 8px;letter-spacing:-.02em}
+h2{font-size:12px;font-family:var(--mono);letter-spacing:1.6px;text-transform:uppercase;
+color:var(--navy);margin:38px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--rule)}
+h3{font-size:18px;margin:24px 0 8px}
+p.sub{color:var(--muted);font-size:15px;margin:0 0 26px}
+code{font-family:var(--mono);font-size:12.5px;background:#f1eee8;padding:1px 5px;border-radius:3px}
+pre{background:#f7f5f0;border:1px solid var(--rule);border-radius:6px;padding:13px 15px;
+overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.55}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--rule);
+border-radius:6px;overflow:hidden;margin:14px 0;font-size:14.5px}
+th{background:#f3f0ea;font:600 10.5px/1 var(--mono);letter-spacing:1.1px;text-transform:uppercase;
+color:var(--muted);padding:10px 12px;text-align:left;border-bottom:1px solid var(--rule)}
+td{padding:9px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.call{background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--amber);
+border-radius:6px;padding:15px 17px;margin:18px 0;font-size:14.5px}
+.call.stop{border-left-color:var(--red)}
+.call.ok{border-left-color:var(--green)}
+.call .lb{display:block;font-family:var(--mono);font-size:10px;letter-spacing:1.3px;
+text-transform:uppercase;color:var(--amber);margin-bottom:7px;font-weight:700}
+.call.stop .lb{color:var(--red)} .call.ok .lb{color:var(--green)}
+.sw{display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:-1px;
+margin-right:5px;border:1px solid rgba(0,0,0,.15)}
+ol,ul{padding-left:22px} li{margin:6px 0}
+.chk{list-style:none;padding-left:0} .chk li{padding-left:24px;position:relative}
+.chk li::before{content:"☐";position:absolute;left:0;font-family:var(--mono);color:var(--muted)}
+footer{margin-top:36px;padding-top:15px;border-top:1px solid var(--rule);font-size:12.5px;
+color:var(--muted)}
+@media(max-width:640px){body{padding:28px 14px}h1{font-size:25px}}
+</style></head><body><div class="wrap">
+
+<div class="kicker">MŚW Tbilisi 2026 · dossier · plan · 29 July 2026</div>
+<h1>Two changes: star colours and the contents rail</h1>
+<p class="sub">Scope is deliberately closed: the fencer scorecard star icons, and the
+floating table-of-contents rail. Nothing else in the dossier is to move.</p>
+
+<h2>Pre-analysis gate</h2>
+<table>
+<tr><th style="width:22%">Source</th><th>Result</th></tr>
+<tr><td>graphify</td><td><b>No usable answer.</b> The graph was built 2026-06-26 and predates
+all July campaign tooling. <code>affected python/tools/build_scorecards.py</code> returns
+“no unique node match”; <code>explain assemble_selection_dossier</code> finds nothing;
+a scorecard query falls through to an unrelated frontend auth community. Recorded here so
+nobody later assumes the graph informed this plan. <code>scripts/refresh-graph.sh</code>
+is required before any commit anyway, which will close the gap.</td></tr>
+<tr><td>LSP (basedpyright)</td><td><b>Authoritative.</b> <code>documentSymbol</code> located
+<code>medal_col</code> at line 109 and the colour constants at 62–63;
+<code>findReferences</code> returned exactly two sites — the definition and one consumer at
+line 278. That second reference is what makes change 1 non-trivial (below).</td></tr>
+</table>
+
+<h2>Change 1 — strict star colours</h2>
+
+<h3>Current behaviour</h3>
+<pre>python/tools/build_scorecards.py:62-63
+GOLD, SILVER, BRONZE, GREY = "#d4af37", "#a8b0b8", "#b0793f", "#8a8f98"
+GREEN, RED = "#12704a", "#c0392b"
+
+python/tools/build_scorecards.py:109-110
+def medal_col(place: int | None) -> str:
+    return {1: GOLD, 2: SILVER, 3: BRONZE, 4: BRONZE}.get(place or 0, GREY)</pre>
+
+<table>
+<tr><th>Place</th><th>Today</th><th>Requested</th><th>Change</th></tr>
+<tr><td>1st</td><td><span class="sw" style="background:#d4af37"></span>gold</td>
+    <td><span class="sw" style="background:#d4af37"></span>gold</td><td>none</td></tr>
+<tr><td>2nd</td><td><span class="sw" style="background:#a8b0b8"></span>silver</td>
+    <td><span class="sw" style="background:#a8b0b8"></span>silver</td><td>none</td></tr>
+<tr><td>3rd</td><td><span class="sw" style="background:#b0793f"></span>bronze</td>
+    <td><span class="sw" style="background:#b0793f"></span>bronze</td><td>none</td></tr>
+<tr><td><b>4th</b></td><td><span class="sw" style="background:#b0793f"></span><b>bronze</b></td>
+    <td><span class="sw" style="background:#12704a"></span>green</td>
+    <td><b>yes — 4th place currently shows a bronze star although no medal was won</b></td></tr>
+<tr><td>5th+ / none</td><td><span class="sw" style="background:#8a8f98"></span>grey</td>
+    <td><span class="sw" style="background:#12704a"></span>green</td><td>yes</td></tr>
+</table>
+
+<div class="call stop"><span class="lb">The one real obstacle — the colour is shared</span>
+<code>medal_col()</code> is called once, at line 278, and its result <code>mc</code> is used
+<b>twice</b>: as the star fill (line 287) <i>and</i> as the closing stop of the bar’s
+gradient (line 281). The bar fades from its rung colour into the medal colour.
+<br><br>
+The dossier proves the coupling — star fills and gradient stops match exactly:
+<b>146 gold · 64 silver · 86 bronze · 143 grey</b> of each, 439 stars in total.
+<br><br>
+So editing <code>medal_col</code> alone repaints <b>439 bars</b> as well as 439 stars.
+You asked for the star icon only.</div>
+
+<h3>Resolution — decided</h3>
+<p><b>Option A, with a shape change.</b> The star slot alone is rewritten;
+<code>medal_col</code> is left untouched so the bar gradients do not move. Podium places keep
+their star. <b>Fourth place and below become a green square</b> rather than a green star.</p>
+
+<div class="call ok"><span class="lb">Why a square rather than a green star</span>
+<b>1. It does not rely on colour.</b> Gold, silver, bronze and green differ only in hue, and
+bronze against green is precisely the boundary a red-green colour-blind reader cannot resolve.
+Shape encodes “no medal” a second time.
+<br><b>2. It corrects the semantics instead of recolouring them.</b> A grey star still reads as
+a lesser medal; a square does not. Star = podium, square = placement — which is the
+distinction the rule is actually drawing, and why a bronze star on 4th place was wrong.
+<br><b>3. It dissolves the colour clash.</b> With shape carrying the meaning, the fact that
+<code>#12704a</code> equals <code>RUNG_COL["MŚW"]</code> and <code>WEAPON_COL["FOIL"]</code>
+stops being a legibility problem. The requested green is used as-is.</div>
+
+<div class="call stop"><span class="lb">Draw it as <code>&lt;rect&gt;</code>, never as a glyph</span>
+<code>.star</code> is <code>{{font-size:12px}}</code> with <b>no font-family</b>, so it inherits
+the document serif stack. A <code>■</code> (U+25A0) would render at the mercy of whichever
+fallback font resolves — geometric glyphs vary widely in size and baseline — and its advance
+width differs from <code>★</code>, which would shift the place number pinned at
+<code>x + 13</code>. An SVG <code>&lt;rect&gt;</code> has exact geometry, no font dependency,
+and leaves the 13px offset intact.</div>
+
+<h3>Transform, as measured in the dossier</h3>
+<p>All <b>439</b> stars are followed immediately by their <code>.pl</code> place label —
+verified, 439 of 439 — so place is read from the markup rather than inferred from colour.
+That matters because bronze covers <i>both</i> 3rd and 4th and only the latter changes.</p>
+<table>
+<tr><th>Colour</th><th>Place</th><th>Count</th><th>Becomes</th></tr>
+<tr><td><span class="sw" style="background:#d4af37"></span>gold</td><td>1</td><td>146</td>
+    <td>★ unchanged</td></tr>
+<tr><td><span class="sw" style="background:#a8b0b8"></span>silver</td><td>2</td><td>64</td>
+    <td>★ unchanged</td></tr>
+<tr><td><span class="sw" style="background:#b0793f"></span>bronze</td><td>3</td><td>72</td>
+    <td>★ unchanged</td></tr>
+<tr><td><span class="sw" style="background:#b0793f"></span>bronze</td><td><b>4</b></td><td>14</td>
+    <td><b><span class="sw" style="background:#12704a"></span>green square</b></td></tr>
+<tr><td><span class="sw" style="background:#8a8f98"></span>grey</td><td>5–78</td><td>143</td>
+    <td><b><span class="sw" style="background:#12704a"></span>green square</b></td></tr>
+</table>
+<p>Result: <b>282 stars, 157 squares</b>, 439 total. Geometry: 7×7, <code>rx=1.5</code>,
+centred on the bar’s vertical midline (<code>y = Y−7</code> where <code>Y</code> is the star
+baseline), <code>x = X+1</code> for optical inset.</p>
+
+<div class="call"><span class="lb">Knock-on — the legend</span>
+<code>render()</code> at lines 507–510 prints a legend reading
+“<span class="sw" style="background:#b0793f"></span><b>3.–4. miejsce</b>” and
+“<span class="sw" style="background:#8a8f98"></span>pozostałe”. Under the new rule bronze is
+3rd <i>only</i>, and “pozostałe” becomes green. That legend is <b>not present in the
+dossier</b> (0 occurrences) — it belongs to the standalone
+<code>Tibilisi_2026-karty_zawodników.html</code>. It therefore only needs fixing if we touch
+the generator, and if we do, the standalone file must be regenerated or it will contradict
+itself.</div>
+
+<h2>Change 2 — contents rail to the left, document font</h2>
+
+<h3>Current state</h3>
+<pre>dossier lines 156-170  ·  assemble_selection_dossier.py:344-355
+.rail{display:none}
+@media(min-width:1200px){
+  .rail{display:block;position:fixed;right:14px;top:24px;bottom:24px;width:200px; …}
+  .page{margin-right:232px}
+}
+.rail .rt{font-family:var(--mono);font-size:9px;letter-spacing:.12em; …}
+.rail a{display:block;font-family:var(--mono);font-size:10px;line-height:1.32; …}</pre>
+
+<table>
+<tr><th style="width:30%">Property</th><th>From</th><th>To</th></tr>
+<tr><td>rail position</td><td><code>right:14px</code></td><td><code>left:14px</code></td></tr>
+<tr><td>page offset</td><td><code>.page{margin-right:232px}</code></td>
+    <td><code>.page{margin-left:232px}</code></td></tr>
+<tr><td><code>.rail .rt</code> font</td><td><code>var(--mono)</code></td>
+    <td><code>var(--serif)</code></td></tr>
+<tr><td><code>.rail a</code> font</td><td><code>var(--mono)</code></td>
+    <td><code>var(--serif)</code></td></tr>
+</table>
+<p><code>--serif</code> resolves to <code>"Iowan Old Style", Charter, "Palatino Linotype",
+Georgia, serif</code> — the same stack the document body uses, confirmed present in the
+dossier’s own <code>:root</code>.</p>
+
+<div class="call"><span class="lb">Two things to watch when the font changes</span>
+<b>1. Number alignment.</b> <code>.rail a .no</code> prints <code>00…08</code> and A/B/C.
+Mono gives those a fixed column; a serif will ragged them. Fix: keep <code>.no</code> on
+<code>var(--mono)</code>, or add <code>font-variant-numeric:tabular-nums</code>.
+<br><b>2. Size.</b> 10px mono and 10px serif are not equally legible, and
+<code>letter-spacing:.12em</code> on a serif small-cap line reads poorly. Expect to nudge to
+~12px and drop the tracking on <code>.rt</code>. Tuned visually, not guessed.</div>
+
+<div class="call ok"><span class="lb">Checked — no left-edge collision</span>
+The campaign report painted a navy stripe down the left of its own <code>&lt;body&gt;</code>,
+which is already neutralised at the wrapper
+(<code>{SCOPE}{display:block;margin:0 22px;…}</code>, assembler line 524). Moving the rail
+left should not clash with Załącznik A. To be confirmed visually, not assumed.</div>
+
+<h2>Execution path</h2>
+<p>The dossier is a <i>generated</i> artefact, so there are two places to change and they
+must not drift.</p>
+<ol>
+<li><b>Edit the dossier directly</b> — immediate result, strict scope. A rebuild would
+otherwise also pull in the §06/§07 rewrite done earlier today, which is more than the two
+changes requested.</li>
+<li><b>Port the same two changes to source</b> — <code>build_scorecards.py</code>
+(<code>star_col</code>, legend) and <code>assemble_selection_dossier.py</code> (rail CSS) —
+so the next <code>assemble_selection_dossier</code> run does not silently revert them.</li>
+</ol>
+<p>Mechanically, in the dossier the star change is a targeted rewrite of
+<code>class="star" fill="…"</code> only — the <code>stop-color</code> occurrences carrying the
+same hex must be left alone. That asymmetry is the whole reason this is scripted rather than
+done with a find-and-replace.</p>
+
+<h2>Verification</h2>
+<ul class="chk">
+<li>Backup taken and hash-verified: <code>.bak-20260729-223413-dossier.html</code>
+(sha256 identical, 885 841 bytes).</li>
+<li><code>diff</code> against the backup shows changed lines <i>only</i> in the rail CSS block
+and in <code>class="star"</code> attributes.</li>
+<li>Verify script returns the baseline <b>0 / 0 / 99 / 0 / 0</b>.</li>
+<li>Star fills re-counted by colour: gold 146, silver 64, bronze 86 unchanged;
+grey 143 → 0; green 143 + former 4th places.</li>
+<li><code>stop-color</code> counts unchanged at 146 / 64 / 86 / 143 — proof the bars did not
+move.</li>
+<li>Rendered check in the browser pane at ≥1200 px: rail left, serif, no overlap with
+Załącznik A.</li>
+<li>Source ported; <code>ruff</code> + <code>basedpyright</code> clean on both tools.</li>
+<li><code>scripts/refresh-graph.sh</code> before any commit.</li>
+</ul>
+
+<h2>Documentation coherence</h2>
+<p>This touches campaign tooling only — the scorecard renderer and the dossier assembler —
+not the ranking system’s behaviour, schema, or formal rules. No handbook page in
+<code>doc/handbook/documentation-map.html</code> owns the MŚW Tbilisi campaign artefacts; the
+campaign is explicitly outside the ranking system, with no ADR and no schema surface. The
+canonical record of these two changes is therefore this plan plus the source diff. No
+governance, RTM or ADR update is triggered.</p>
+
+<footer>Plan only — nothing has been changed yet. Star-colour option (A or B) and the exact
+green remain open. Backup verified before any edit.</footer>
+
+</div></body></html>

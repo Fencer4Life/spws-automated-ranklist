@@ -1,0 +1,4028 @@
+{
+  "championship": "MEW Ciney 2024",
+  "schedule_uuid": "7631EB7B4A1F4AE6A2396D40E1D3946E",
+  "source_url": "https://www.fencingtimelive.com/tournaments/eventSchedule/7631EB7B4A1F4AE6A2396D40E1D3946E",
+  "country": "Poland",
+  "scraped_at": "2026-07-27T05:09:21.039457+00:00",
+  "tournaments": [
+    {
+      "eid": "2E3F675315464B738CB3AFF6F4474873",
+      "name": "Vet Team Men's Foil",
+      "category": "Veteran",
+      "weapon": "Foil",
+      "gender": "Men",
+      "date": "2024-05-09",
+      "pool_rid": "DAEE8023CD154894B47C55ED06E2292F",
+      "tableau_rid": "50231CA954A046939FF3DC44ABDB19E6",
+      "is_team": true,
+      "present": true,
+      "roster": [
+        "CIEPŁY Tomasz",
+        "KOŃCZYŁO Tomasz",
+        "MOCEK Sławomir",
+        "POŚPIESZNY Sławomir",
+        "SZMIDT Grzegorz"
+      ],
+      "seed": 3,
+      "matches": [
+        {
+          "match_id": "9DD2AE269F4440DD9B95556095155CE5",
+          "rid": "DAEE8023CD154894B47C55ED06E2292F",
+          "phase": "Pool",
+          "stage": "Pool",
+          "opponent": "Slovakia",
+          "country_score": 45,
+          "opp_score": 29,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "MOCEK Sławomir",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 5,
+              "conceded": 0,
+              "diff": 5,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 5,
+              "conceded": 7,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "MOCEK Sławomir",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "1",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "2",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "MOCEK Sławomir",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "245FF1FE867D499390A1074EC4201BE2",
+          "rid": "DAEE8023CD154894B47C55ED06E2292F",
+          "phase": "Pool",
+          "stage": "Pool",
+          "opponent": "Netherlands",
+          "country_score": 45,
+          "opp_score": 25,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "SZMIDT Grzegorz",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "SZMIDT Grzegorz",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "R",
+              "fencer": "POŚPIESZNY Sławomir",
+              "scored": 5,
+              "conceded": 0,
+              "diff": 5,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "2",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 5,
+              "conceded": 12,
+              "diff": -7,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "BBA839EE79BA40F2845DBD3F992C2583",
+          "rid": "DAEE8023CD154894B47C55ED06E2292F",
+          "phase": "Pool",
+          "stage": "Pool",
+          "opponent": "France",
+          "country_score": 37,
+          "opp_score": 45,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "MOCEK Sławomir",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 1,
+              "conceded": 6,
+              "diff": -5,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 1,
+              "conceded": 5,
+              "diff": -4,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "MOCEK Sławomir",
+              "scored": 4,
+              "conceded": 5,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 0,
+              "conceded": 5,
+              "diff": -5,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 15,
+              "conceded": 5,
+              "diff": 10,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "4",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 1,
+              "conceded": 5,
+              "diff": -4,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "MOCEK Sławomir",
+              "scored": 7,
+              "conceded": 5,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "6C6D837C721140A3BD76766BDF624669",
+          "rid": "50231CA954A046939FF3DC44ABDB19E6",
+          "phase": "Tableau",
+          "stage": "Semi-Finals",
+          "opponent": "France",
+          "country_score": 39,
+          "opp_score": 45,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 1,
+              "conceded": 0,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 4,
+              "conceded": 10,
+              "diff": -6,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "MOCEK Sławomir",
+              "scored": 6,
+              "conceded": 5,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 2,
+              "conceded": 5,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "MOCEK Sławomir",
+              "scored": 6,
+              "conceded": 5,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "1",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 4,
+              "conceded": 5,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "2",
+              "fencer": "MOCEK Sławomir",
+              "scored": 11,
+              "conceded": 5,
+              "diff": 6,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 0,
+              "conceded": 5,
+              "diff": -5,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "C450682913484FF2986CFB042962D599",
+          "rid": "50231CA954A046939FF3DC44ABDB19E6",
+          "phase": "Tableau",
+          "stage": "Table of 8",
+          "opponent": "Belgium",
+          "country_score": 45,
+          "opp_score": 32,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "MOCEK Sławomir",
+              "scored": 4,
+              "conceded": 2,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 6,
+              "conceded": 6,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "MOCEK Sławomir",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 3,
+              "conceded": 12,
+              "diff": -9,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 7,
+              "conceded": 2,
+              "diff": 5,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "4",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 5,
+              "conceded": 0,
+              "diff": 5,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "MOCEK Sławomir",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "1672623C24B14DA0A0C5484346017B76",
+          "rid": "50231CA954A046939FF3DC44ABDB19E6",
+          "phase": "Tableau",
+          "stage": "Bronze Medal",
+          "opponent": "Great Britain",
+          "country_score": 45,
+          "opp_score": 31,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 5,
+              "conceded": 0,
+              "diff": 5,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "MOCEK Sławomir",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 5,
+              "conceded": 11,
+              "diff": -6,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "MOCEK Sławomir",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "1",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "2",
+              "fencer": "MOCEK Sławomir",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "CIEPŁY Tomasz",
+              "scored": 5,
+              "conceded": 6,
+              "diff": -1,
+              "anchor": true
+            }
+          ]
+        }
+      ],
+      "fencer_profile": {
+        "MOCEK Sławomir": {
+          "matches": 5,
+          "legs": 15,
+          "net": 37,
+          "scored": 83,
+          "conceded": 46,
+          "anchor_legs": 1,
+          "anchor_net": 4
+        },
+        "KOŃCZYŁO Tomasz": {
+          "matches": 6,
+          "legs": 18,
+          "net": -29,
+          "scored": 70,
+          "conceded": 99,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        "CIEPŁY Tomasz": {
+          "matches": 6,
+          "legs": 18,
+          "net": 31,
+          "scored": 88,
+          "conceded": 57,
+          "anchor_legs": 5,
+          "anchor_net": -2
+        },
+        "SZMIDT Grzegorz": {
+          "matches": 1,
+          "legs": 2,
+          "net": 5,
+          "scored": 10,
+          "conceded": 5,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        "POŚPIESZNY Sławomir": {
+          "matches": 1,
+          "legs": 1,
+          "net": 5,
+          "scored": 5,
+          "conceded": 0,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      }
+    },
+    {
+      "eid": "D99B834D7E2245B88DE79F85C88C9AC4",
+      "name": "Grand Vet Team Women's Épée",
+      "category": "Grand Veteran",
+      "weapon": "Epee",
+      "gender": "Women",
+      "date": "2024-05-09",
+      "pool_rid": "403D9FC5F3FB4DC091B841A85FE19586",
+      "tableau_rid": "F9E0EFEC82CA449D83219F04695A207F",
+      "is_team": true,
+      "present": false,
+      "roster": [],
+      "seed": null,
+      "matches": []
+    },
+    {
+      "eid": "CDE410C994B340E3BA8CE570818A0D43",
+      "name": "Grand Vet Team Men's Saber",
+      "category": "Grand Veteran",
+      "weapon": "Sabre",
+      "gender": "Men",
+      "date": "2024-05-09",
+      "pool_rid": "6564BB8A199148FEB35D3D97F173EFE9",
+      "tableau_rid": "E33464EFECC84273A2FBACB4297F19E7",
+      "is_team": true,
+      "present": true,
+      "roster": [
+        "MLYNEK Janusz",
+        "OSSOWSKI Wojciech",
+        "PIOTR Juszkiewicz",
+        "PREGOWSKI Jerzi",
+        "ZABŁOCKI Michał"
+      ],
+      "seed": 6,
+      "matches": [
+        {
+          "match_id": "6802F1D022DF493BA4A54130165B5088",
+          "rid": "6564BB8A199148FEB35D3D97F173EFE9",
+          "phase": "Pool",
+          "stage": "Pool",
+          "opponent": "Germany",
+          "country_score": 42,
+          "opp_score": 45,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 2,
+              "conceded": 5,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 7,
+              "conceded": 5,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "MLYNEK Janusz",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 4,
+              "conceded": 5,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "MLYNEK Janusz",
+              "scored": 2,
+              "conceded": 5,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 12,
+              "conceded": 3,
+              "diff": 9,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "4",
+              "fencer": "MLYNEK Janusz",
+              "scored": 4,
+              "conceded": 7,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 2,
+              "conceded": 5,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 6,
+              "conceded": 5,
+              "diff": 1,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "91F5BE51C11E408E803039020839A661",
+          "rid": "6564BB8A199148FEB35D3D97F173EFE9",
+          "phase": "Pool",
+          "stage": "Pool",
+          "opponent": "Hungary",
+          "country_score": 45,
+          "opp_score": 41,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "PREGOWSKI Jerzi",
+              "scored": 5,
+              "conceded": 6,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "PREGOWSKI Jerzi",
+              "scored": 4,
+              "conceded": 9,
+              "diff": -5,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 4,
+              "conceded": 5,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "4",
+              "fencer": "PREGOWSKI Jerzi",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 9,
+              "conceded": 2,
+              "diff": 7,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "161EE48544344698BAB4A21F6353483B",
+          "rid": "6564BB8A199148FEB35D3D97F173EFE9",
+          "phase": "Pool",
+          "stage": "Pool",
+          "opponent": "Belgium",
+          "country_score": 45,
+          "opp_score": 17,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 5,
+              "conceded": 0,
+              "diff": 5,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "PREGOWSKI Jerzi",
+              "scored": 5,
+              "conceded": 7,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "R",
+              "fencer": "MLYNEK Janusz",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "R",
+              "fencer": "MLYNEK Janusz",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "2",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 5,
+              "conceded": 0,
+              "diff": 5,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "1F793172349A4629A3C19A98AD03764F",
+          "rid": "E33464EFECC84273A2FBACB4297F19E7",
+          "phase": "Tableau",
+          "stage": "Table of 8",
+          "opponent": "Great Britain",
+          "country_score": 45,
+          "opp_score": 42,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 5,
+              "conceded": 0,
+              "diff": 5,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "MLYNEK Janusz",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "MLYNEK Janusz",
+              "scored": 5,
+              "conceded": 7,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "1",
+              "fencer": "MLYNEK Janusz",
+              "scored": 5,
+              "conceded": 18,
+              "diff": -13,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "2",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 4,
+              "conceded": 7,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 6,
+              "conceded": 2,
+              "diff": 4,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "5D918B9492E941BABE4513C3B8FFA0E8",
+          "rid": "E33464EFECC84273A2FBACB4297F19E7",
+          "phase": "Tableau",
+          "stage": "Semi-Finals",
+          "opponent": "France",
+          "country_score": 35,
+          "opp_score": 45,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "PREGOWSKI Jerzi",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 9,
+              "conceded": 3,
+              "diff": 6,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "PREGOWSKI Jerzi",
+              "scored": 2,
+              "conceded": 7,
+              "diff": -5,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "4",
+              "fencer": "PREGOWSKI Jerzi",
+              "scored": 1,
+              "conceded": 5,
+              "diff": -4,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 1,
+              "conceded": 5,
+              "diff": -4,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 6,
+              "conceded": 5,
+              "diff": 1,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "36A11CDD610F4801B6FBEA4BB42CD2A8",
+          "rid": "E33464EFECC84273A2FBACB4297F19E7",
+          "phase": "Tableau",
+          "stage": "Bronze Medal",
+          "opponent": "Germany",
+          "country_score": 40,
+          "opp_score": 45,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "MLYNEK Janusz",
+              "scored": 5,
+              "conceded": 8,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "MLYNEK Janusz",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 5,
+              "conceded": 12,
+              "diff": -7,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "4",
+              "fencer": "MLYNEK Janusz",
+              "scored": 0,
+              "conceded": 6,
+              "diff": -6,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "OSSOWSKI Wojciech",
+              "scored": 9,
+              "conceded": 5,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "ZABŁOCKI Michał",
+              "scored": 1,
+              "conceded": 5,
+              "diff": -4,
+              "anchor": true
+            }
+          ]
+        }
+      ],
+      "fencer_profile": {
+        "OSSOWSKI Wojciech": {
+          "matches": 6,
+          "legs": 18,
+          "net": 30,
+          "scored": 88,
+          "conceded": 58,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        "ZABŁOCKI Michał": {
+          "matches": 6,
+          "legs": 18,
+          "net": 30,
+          "scored": 97,
+          "conceded": 67,
+          "anchor_legs": 6,
+          "anchor_net": 7
+        },
+        "MLYNEK Janusz": {
+          "matches": 4,
+          "legs": 11,
+          "net": -22,
+          "scored": 44,
+          "conceded": 66,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        "PREGOWSKI Jerzi": {
+          "matches": 3,
+          "legs": 7,
+          "net": -21,
+          "scored": 23,
+          "conceded": 44,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      }
+    },
+    {
+      "eid": "E1B9E48AE23B4BA78AF6B759FA31254A",
+      "name": "Vet Team Men's Épée",
+      "category": "Veteran",
+      "weapon": "Epee",
+      "gender": "Men",
+      "date": "2024-05-10",
+      "pool_rid": "4832C3413FDE429FBCBCD6581FAFA80D",
+      "tableau_rid": "A0DD7C96A7D340299BEBEF7A50AEF6B3",
+      "is_team": true,
+      "present": true,
+      "roster": [
+        "ATANASSOW Aleksander",
+        "GRIPAS Artiom",
+        "JENDRYŚ Marek",
+        "KORONA-TRZEBSKI Przemysław",
+        "ZIELIŃSKI Dariusz"
+      ],
+      "seed": 2,
+      "matches": [
+        {
+          "match_id": "1B1A2726752D42B787AA27377BCE1A86",
+          "rid": "4832C3413FDE429FBCBCD6581FAFA80D",
+          "phase": "Pool",
+          "stage": "Pool",
+          "opponent": "Belgium",
+          "country_score": 33,
+          "opp_score": 34,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 2,
+              "conceded": 1,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "JENDRYŚ Marek",
+              "scored": 2,
+              "conceded": 1,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 6,
+              "conceded": 3,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 0,
+              "conceded": 5,
+              "diff": -5,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "JENDRYŚ Marek",
+              "scored": 10,
+              "conceded": 10,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "R",
+              "fencer": "GRIPAS Artiom",
+              "scored": 4,
+              "conceded": 2,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 3,
+              "conceded": 6,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "R",
+              "fencer": "ZIELIŃSKI Dariusz",
+              "scored": 1,
+              "conceded": 4,
+              "diff": -3,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "08E5AD166E6D415586AB25B4FF62FAB8",
+          "rid": "4832C3413FDE429FBCBCD6581FAFA80D",
+          "phase": "Pool",
+          "stage": "Pool",
+          "opponent": "Switzerland",
+          "country_score": 45,
+          "opp_score": 33,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "GRIPAS Artiom",
+              "scored": 4,
+              "conceded": 3,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 4,
+              "conceded": 3,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 1,
+              "conceded": 2,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "GRIPAS Artiom",
+              "scored": 3,
+              "conceded": 7,
+              "diff": -4,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 6,
+              "conceded": 1,
+              "diff": 5,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "1",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 12,
+              "conceded": 5,
+              "diff": 7,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "2",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "R",
+              "fencer": "JENDRYŚ Marek",
+              "scored": 5,
+              "conceded": 6,
+              "diff": -1,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "8C63D024D09F4108B01C2D3291259D08",
+          "rid": "A0DD7C96A7D340299BEBEF7A50AEF6B3",
+          "phase": "Tableau",
+          "stage": "Semi-Finals",
+          "opponent": "Hungary",
+          "country_score": 37,
+          "opp_score": 45,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "ZIELIŃSKI Dariusz",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 4,
+              "conceded": 5,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 3,
+              "conceded": 2,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 6,
+              "conceded": 8,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "ZIELIŃSKI Dariusz",
+              "scored": 6,
+              "conceded": 5,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 4,
+              "conceded": 4,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "1",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 8,
+              "conceded": 6,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "R",
+              "fencer": "JENDRYŚ Marek",
+              "scored": 2,
+              "conceded": 5,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "ZIELIŃSKI Dariusz",
+              "scored": 1,
+              "conceded": 5,
+              "diff": -4,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "B1B9C8382C8D40F1A1528CFCCF150070",
+          "rid": "A0DD7C96A7D340299BEBEF7A50AEF6B3",
+          "phase": "Tableau",
+          "stage": "Table of 16",
+          "opponent": "Sweden",
+          "country_score": 45,
+          "opp_score": 44,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "JENDRYŚ Marek",
+              "scored": 2,
+              "conceded": 2,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 8,
+              "conceded": 8,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 3,
+              "conceded": 2,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 5,
+              "conceded": 8,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "JENDRYŚ Marek",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 7,
+              "conceded": 5,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "1",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "2",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 4,
+              "conceded": 2,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "JENDRYŚ Marek",
+              "scored": 6,
+              "conceded": 11,
+              "diff": -5,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "A767E72300B641ACAA295AA11E18F408",
+          "rid": "A0DD7C96A7D340299BEBEF7A50AEF6B3",
+          "phase": "Tableau",
+          "stage": "Table of 8",
+          "opponent": "Luxemburg",
+          "country_score": 45,
+          "opp_score": 34,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 2,
+              "conceded": 5,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "ZIELIŃSKI Dariusz",
+              "scored": 3,
+              "conceded": 2,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 9,
+              "conceded": 3,
+              "diff": 6,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 6,
+              "conceded": 0,
+              "diff": 6,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "ZIELIŃSKI Dariusz",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "4",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 4,
+              "conceded": 2,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 6,
+              "conceded": 8,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "ZIELIŃSKI Dariusz",
+              "scored": 5,
+              "conceded": 6,
+              "diff": -1,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "6DF2A5D3FC98430A8F87DAD01EF91E37",
+          "rid": "A0DD7C96A7D340299BEBEF7A50AEF6B3",
+          "phase": "Tableau",
+          "stage": "Bronze Medal",
+          "opponent": "Italy",
+          "country_score": 33,
+          "opp_score": 45,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 2,
+              "conceded": 4,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "ZIELIŃSKI Dariusz",
+              "scored": 4,
+              "conceded": 4,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "GRIPAS Artiom",
+              "scored": 6,
+              "conceded": 3,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "ZIELIŃSKI Dariusz",
+              "scored": 2,
+              "conceded": 2,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 2,
+              "conceded": 3,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "GRIPAS Artiom",
+              "scored": 2,
+              "conceded": 14,
+              "diff": -12,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "1",
+              "fencer": "ZIELIŃSKI Dariusz",
+              "scored": 10,
+              "conceded": 5,
+              "diff": 5,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "R",
+              "fencer": "ATANASSOW Aleksander",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "KORONA-TRZEBSKI Przemysław",
+              "scored": 2,
+              "conceded": 5,
+              "diff": -3,
+              "anchor": true
+            }
+          ]
+        }
+      ],
+      "fencer_profile": {
+        "ATANASSOW Aleksander": {
+          "matches": 6,
+          "legs": 16,
+          "net": 6,
+          "scored": 82,
+          "conceded": 76,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        "JENDRYŚ Marek": {
+          "matches": 4,
+          "legs": 7,
+          "net": -7,
+          "scored": 32,
+          "conceded": 39,
+          "anchor_legs": 2,
+          "anchor_net": -6
+        },
+        "KORONA-TRZEBSKI Przemysław": {
+          "matches": 6,
+          "legs": 16,
+          "net": 15,
+          "scored": 65,
+          "conceded": 50,
+          "anchor_legs": 1,
+          "anchor_net": -3
+        },
+        "GRIPAS Artiom": {
+          "matches": 3,
+          "legs": 5,
+          "net": -10,
+          "scored": 19,
+          "conceded": 29,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        "ZIELIŃSKI Dariusz": {
+          "matches": 4,
+          "legs": 10,
+          "net": -1,
+          "scored": 40,
+          "conceded": 41,
+          "anchor_legs": 3,
+          "anchor_net": -8
+        }
+      }
+    },
+    {
+      "eid": "AF9CF3AB01A94FEEA412FDBC776B30BD",
+      "name": "Vet Team Women's Foil",
+      "category": "Veteran",
+      "weapon": "Foil",
+      "gender": "Women",
+      "date": "2024-05-10",
+      "pool_rid": "3516D68FD6A04C70B2F46E69D2626DD0",
+      "tableau_rid": "282EB76AC4AB4555A03D9E5AEEC7ED78",
+      "is_team": true,
+      "present": false,
+      "roster": [],
+      "seed": null,
+      "matches": []
+    },
+    {
+      "eid": "9D414A6FB400409FBA34B6FD5663BD02",
+      "name": "Grand Vet Team Women's Saber",
+      "category": "Grand Veteran",
+      "weapon": "Sabre",
+      "gender": "Women",
+      "date": "2024-05-10",
+      "pool_rid": "463E205B21614A7DB86A249F17B28813",
+      "tableau_rid": "A909E57016C146E1A167F00E7DACE9C9",
+      "is_team": true,
+      "present": false,
+      "roster": [],
+      "seed": null,
+      "matches": []
+    },
+    {
+      "eid": "94AFA7FCF8BC4FA0B73408AC44250F3B",
+      "name": "Vet Team Women's Épée",
+      "category": "Veteran",
+      "weapon": "Epee",
+      "gender": "Women",
+      "date": "2024-05-11",
+      "pool_rid": "966D25D84DEB4F0FB5D983CD00F28B89",
+      "tableau_rid": "41E7A7818AD2414396AE8A53418C5152",
+      "is_team": true,
+      "present": true,
+      "roster": [
+        "GANSZCZYK Anna",
+        "KAMIŃSKA Gabriela",
+        "SADOWSKA Małgorzata",
+        "SZURLEJ Agata",
+        "WASILCZUK Beata"
+      ],
+      "seed": 10,
+      "matches": [
+        {
+          "match_id": "E129FF06984943BFA309017B0FBBD187",
+          "rid": "966D25D84DEB4F0FB5D983CD00F28B89",
+          "phase": "Pool",
+          "stage": "Pool",
+          "opponent": "Ireland",
+          "country_score": 45,
+          "opp_score": 35,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "WASILCZUK Beata",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "KAMIŃSKA Gabriela",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "SZURLEJ Agata",
+              "scored": 4,
+              "conceded": 5,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "WASILCZUK Beata",
+              "scored": 3,
+              "conceded": 4,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "SZURLEJ Agata",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "KAMIŃSKA Gabriela",
+              "scored": 10,
+              "conceded": 4,
+              "diff": 6,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "R",
+              "fencer": "GANSZCZYK Anna",
+              "scored": 3,
+              "conceded": 4,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "WASILCZUK Beata",
+              "scored": 6,
+              "conceded": 2,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "KAMIŃSKA Gabriela",
+              "scored": 8,
+              "conceded": 4,
+              "diff": 4,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "CD08F0E6B0A8421FA4ED7C948F79F8CA",
+          "rid": "966D25D84DEB4F0FB5D983CD00F28B89",
+          "phase": "Pool",
+          "stage": "Pool",
+          "opponent": "Italy",
+          "country_score": 31,
+          "opp_score": 45,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "WASILCZUK Beata",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "KAMIŃSKA Gabriela",
+              "scored": 4,
+              "conceded": 5,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "SADOWSKA Małgorzata",
+              "scored": 3,
+              "conceded": 4,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "WASILCZUK Beata",
+              "scored": 2,
+              "conceded": 0,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "SADOWSKA Małgorzata",
+              "scored": 4,
+              "conceded": 12,
+              "diff": -8,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "KAMIŃSKA Gabriela",
+              "scored": 4,
+              "conceded": 5,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "4",
+              "fencer": "SADOWSKA Małgorzata",
+              "scored": 2,
+              "conceded": 5,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "WASILCZUK Beata",
+              "scored": 3,
+              "conceded": 4,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "KAMIŃSKA Gabriela",
+              "scored": 4,
+              "conceded": 6,
+              "diff": -2,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "B20E1C3092F040FABAD6DD1E9D8A45C6",
+          "rid": "41E7A7818AD2414396AE8A53418C5152",
+          "phase": "Tableau",
+          "stage": "Table of 16",
+          "opponent": "Belgium",
+          "country_score": 35,
+          "opp_score": 45,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "KAMIŃSKA Gabriela",
+              "scored": 4,
+              "conceded": 4,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "GANSZCZYK Anna",
+              "scored": 2,
+              "conceded": 5,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "WASILCZUK Beata",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "GANSZCZYK Anna",
+              "scored": 5,
+              "conceded": 6,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "KAMIŃSKA Gabriela",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "WASILCZUK Beata",
+              "scored": 4,
+              "conceded": 4,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "1",
+              "fencer": "GANSZCZYK Anna",
+              "scored": 5,
+              "conceded": 6,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "2",
+              "fencer": "WASILCZUK Beata",
+              "scored": 6,
+              "conceded": 5,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "KAMIŃSKA Gabriela",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "2410EF525E9A42FBB61DA6D725733037",
+          "rid": "41E7A7818AD2414396AE8A53418C5152",
+          "phase": "Tableau",
+          "stage": "Table of 4 (Pl. 9-12)",
+          "opponent": "Finland",
+          "country_score": 43,
+          "opp_score": 40,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "KAMIŃSKA Gabriela",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "SZURLEJ Agata",
+              "scored": 0,
+              "conceded": 3,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "GANSZCZYK Anna",
+              "scored": 9,
+              "conceded": 10,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "SZURLEJ Agata",
+              "scored": 3,
+              "conceded": 4,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "KAMIŃSKA Gabriela",
+              "scored": 6,
+              "conceded": 2,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "GANSZCZYK Anna",
+              "scored": 4,
+              "conceded": 4,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "R",
+              "fencer": "WASILCZUK Beata",
+              "scored": 8,
+              "conceded": 5,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "2",
+              "fencer": "GANSZCZYK Anna",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "KAMIŃSKA Gabriela",
+              "scored": 3,
+              "conceded": 6,
+              "diff": -3,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "DBFF4FF5DC9C4EA08C16B3139B430D47",
+          "rid": "41E7A7818AD2414396AE8A53418C5152",
+          "phase": "Tableau",
+          "stage": "Table of 2 (Pl. 9-10)",
+          "opponent": "Switzerland",
+          "country_score": 28,
+          "opp_score": 45,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "SZURLEJ Agata",
+              "scored": 1,
+              "conceded": 3,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "KAMIŃSKA Gabriela",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "GANSZCZYK Anna",
+              "scored": 6,
+              "conceded": 3,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "SZURLEJ Agata",
+              "scored": 1,
+              "conceded": 6,
+              "diff": -5,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "GANSZCZYK Anna",
+              "scored": 0,
+              "conceded": 8,
+              "diff": -8,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "KAMIŃSKA Gabriela",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "4",
+              "fencer": "GANSZCZYK Anna",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "R",
+              "fencer": "WASILCZUK Beata",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "KAMIŃSKA Gabriela",
+              "scored": 2,
+              "conceded": 5,
+              "diff": -3,
+              "anchor": true
+            }
+          ]
+        }
+      ],
+      "fencer_profile": {
+        "WASILCZUK Beata": {
+          "matches": 5,
+          "legs": 11,
+          "net": 5,
+          "scored": 48,
+          "conceded": 43,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        "KAMIŃSKA Gabriela": {
+          "matches": 5,
+          "legs": 15,
+          "net": 4,
+          "scored": 69,
+          "conceded": 65,
+          "anchor_legs": 5,
+          "anchor_net": -6
+        },
+        "SZURLEJ Agata": {
+          "matches": 3,
+          "legs": 6,
+          "net": -14,
+          "scored": 12,
+          "conceded": 26,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        "GANSZCZYK Anna": {
+          "matches": 4,
+          "legs": 10,
+          "net": -11,
+          "scored": 44,
+          "conceded": 55,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        "SADOWSKA Małgorzata": {
+          "matches": 1,
+          "legs": 3,
+          "net": -12,
+          "scored": 9,
+          "conceded": 21,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      }
+    },
+    {
+      "eid": "E5719F14754D45DCB3DEA9B1F3317E2C",
+      "name": "Grand Vet Team Men's Foil",
+      "category": "Grand Veteran",
+      "weapon": "Foil",
+      "gender": "Men",
+      "date": "2024-05-11",
+      "pool_rid": "CAA8E16B70DD4BA3BC8F9A6845D825C6",
+      "tableau_rid": "04DC14496C66410286E1C5A0459250A9",
+      "is_team": true,
+      "present": false,
+      "roster": [],
+      "seed": null,
+      "matches": []
+    },
+    {
+      "eid": "3C219627FF13449BB81D9D5D032AEEA0",
+      "name": "Vet Team Men's Saber",
+      "category": "Veteran",
+      "weapon": "Sabre",
+      "gender": "Men",
+      "date": "2024-05-11",
+      "pool_rid": "D74001D3FD0F409EA8BF6B2CB979ED24",
+      "tableau_rid": "EF5FCC73AD8F4C04B0CB53AA18F6E4A7",
+      "is_team": true,
+      "present": true,
+      "roster": [
+        "GANSZCZYK Marcin",
+        "KOŃCZYŁO Tomasz",
+        "KOSIŃSKI Lukasz",
+        "KROCHMALSKI Jakub"
+      ],
+      "seed": 4,
+      "matches": [
+        {
+          "match_id": "998FBF4EF59C4CED84E8063482E550DD",
+          "rid": "D74001D3FD0F409EA8BF6B2CB979ED24",
+          "phase": "Pool",
+          "stage": "Pool",
+          "opponent": "Netherlands",
+          "country_score": 45,
+          "opp_score": 32,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "GANSZCZYK Marcin",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "GANSZCZYK Marcin",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "4",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "GANSZCZYK Marcin",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "E3F729B48A2440DF9428F3F839983517",
+          "rid": "D74001D3FD0F409EA8BF6B2CB979ED24",
+          "phase": "Pool",
+          "stage": "Pool",
+          "opponent": "Finland",
+          "country_score": 45,
+          "opp_score": 22,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 5,
+              "conceded": 0,
+              "diff": 5,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 5,
+              "conceded": 6,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "R",
+              "fencer": "GANSZCZYK Marcin",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "R",
+              "fencer": "GANSZCZYK Marcin",
+              "scored": 5,
+              "conceded": 0,
+              "diff": 5,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "2",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "7A545595C00244BFB42E33D14E547923",
+          "rid": "D74001D3FD0F409EA8BF6B2CB979ED24",
+          "phase": "Pool",
+          "stage": "Pool",
+          "opponent": "Germany",
+          "country_score": 33,
+          "opp_score": 45,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "GANSZCZYK Marcin",
+              "scored": 2,
+              "conceded": 5,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 4,
+              "conceded": 5,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "GANSZCZYK Marcin",
+              "scored": 1,
+              "conceded": 5,
+              "diff": -4,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 4,
+              "conceded": 5,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "4",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 6,
+              "conceded": 5,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "GANSZCZYK Marcin",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "8DB2E79818D543A7A4CAE8B4C34892E9",
+          "rid": "EF5FCC73AD8F4C04B0CB53AA18F6E4A7",
+          "phase": "Tableau",
+          "stage": "Table of 8",
+          "opponent": "Great Britain",
+          "country_score": 34,
+          "opp_score": 45,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "GANSZCZYK Marcin",
+              "scored": 2,
+              "conceded": 6,
+              "diff": -4,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 2,
+              "conceded": 5,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "GANSZCZYK Marcin",
+              "scored": 7,
+              "conceded": 5,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 2,
+              "conceded": 5,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 9,
+              "conceded": 5,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "1",
+              "fencer": "GANSZCZYK Marcin",
+              "scored": 1,
+              "conceded": 5,
+              "diff": -4,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "2",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 1,
+              "conceded": 5,
+              "diff": -4,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "90AD1C31335740E88639DEDDFF93F5E5",
+          "rid": "EF5FCC73AD8F4C04B0CB53AA18F6E4A7",
+          "phase": "Tableau",
+          "stage": "Table of 4 (Pl. 5-8)",
+          "opponent": "France",
+          "country_score": 37,
+          "opp_score": 45,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 7,
+              "conceded": 3,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 1,
+              "conceded": 7,
+              "diff": -6,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 7,
+              "conceded": 5,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 4,
+              "conceded": 5,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "4",
+              "fencer": "KOŃCZYŁO Tomasz",
+              "scored": 1,
+              "conceded": 5,
+              "diff": -4,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 8,
+              "conceded": 5,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "0EF24D5324EC46F597A6C3D7AA998C10",
+          "rid": "EF5FCC73AD8F4C04B0CB53AA18F6E4A7",
+          "phase": "Tableau",
+          "stage": "Table of 2 (Pl. 7-8)",
+          "opponent": "Belgium",
+          "country_score": 45,
+          "opp_score": 28,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "GANSZCZYK Marcin",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "GANSZCZYK Marcin",
+              "scored": 5,
+              "conceded": 6,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "4",
+              "fencer": "GANSZCZYK Marcin",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "KROCHMALSKI Jakub",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "KOSIŃSKI Lukasz",
+              "scored": 5,
+              "conceded": 0,
+              "diff": 5,
+              "anchor": true
+            }
+          ]
+        }
+      ],
+      "fencer_profile": {
+        "KROCHMALSKI Jakub": {
+          "matches": 6,
+          "legs": 18,
+          "net": 16,
+          "scored": 85,
+          "conceded": 69,
+          "anchor_legs": 4,
+          "anchor_net": 0
+        },
+        "GANSZCZYK Marcin": {
+          "matches": 5,
+          "legs": 14,
+          "net": -2,
+          "scored": 56,
+          "conceded": 58,
+          "anchor_legs": 1,
+          "anchor_net": 1
+        },
+        "KOSIŃSKI Lukasz": {
+          "matches": 6,
+          "legs": 18,
+          "net": 21,
+          "scored": 88,
+          "conceded": 67,
+          "anchor_legs": 1,
+          "anchor_net": 5
+        },
+        "KOŃCZYŁO Tomasz": {
+          "matches": 2,
+          "legs": 4,
+          "net": -13,
+          "scored": 10,
+          "conceded": 23,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      }
+    },
+    {
+      "eid": "8CB492D1DBCD4CB5B6B0BD624623BCC1",
+      "name": "Grand Vet Team Men's Épée",
+      "category": "Grand Veteran",
+      "weapon": "Epee",
+      "gender": "Men",
+      "date": "2024-05-12",
+      "pool_rid": "26EDC575486B4E9EB89033175C08CC29",
+      "tableau_rid": "D427F272CF84473885327D51E66B8769",
+      "is_team": true,
+      "present": true,
+      "roster": [
+        "ADAMCZEWSKI Wojciech",
+        "DRAPELLA Maciej",
+        "KRZEMIŃSKI Mariusz",
+        "RUTECKI Bogdan",
+        "SZCZĘSNY Jacek"
+      ],
+      "seed": 9,
+      "matches": [
+        {
+          "match_id": "1B796D7421CB4856A06DCF69C4DD9C8D",
+          "rid": "26EDC575486B4E9EB89033175C08CC29",
+          "phase": "Pool",
+          "stage": "Pool",
+          "opponent": "Netherlands",
+          "country_score": 45,
+          "opp_score": 29,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "ADAMCZEWSKI Wojciech",
+              "scored": 5,
+              "conceded": 8,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "DRAPELLA Maciej",
+              "scored": 5,
+              "conceded": 0,
+              "diff": 5,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "ADAMCZEWSKI Wojciech",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "DRAPELLA Maciej",
+              "scored": 4,
+              "conceded": 4,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "1",
+              "fencer": "ADAMCZEWSKI Wojciech",
+              "scored": 6,
+              "conceded": 3,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "2",
+              "fencer": "DRAPELLA Maciej",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 5,
+              "conceded": 6,
+              "diff": -1,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "79B44631E4DE431C9939A32399947B28",
+          "rid": "26EDC575486B4E9EB89033175C08CC29",
+          "phase": "Pool",
+          "stage": "Pool",
+          "opponent": "France",
+          "country_score": 33,
+          "opp_score": 45,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "DRAPELLA Maciej",
+              "scored": 1,
+              "conceded": 1,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 9,
+              "conceded": 8,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "ADAMCZEWSKI Wojciech",
+              "scored": 2,
+              "conceded": 6,
+              "diff": -4,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "DRAPELLA Maciej",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "ADAMCZEWSKI Wojciech",
+              "scored": 4,
+              "conceded": 5,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 0,
+              "conceded": 5,
+              "diff": -5,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "R",
+              "fencer": "RUTECKI Bogdan",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "DRAPELLA Maciej",
+              "scored": 4,
+              "conceded": 5,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "76D6D7E90D0C436DB77FF8AF17ABBB3A",
+          "rid": "D427F272CF84473885327D51E66B8769",
+          "phase": "Tableau",
+          "stage": "Table of 16",
+          "opponent": "Czech Republic",
+          "country_score": 45,
+          "opp_score": 31,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "ADAMCZEWSKI Wojciech",
+              "scored": 5,
+              "conceded": 7,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "DRAPELLA Maciej",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "ADAMCZEWSKI Wojciech",
+              "scored": 3,
+              "conceded": 6,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 7,
+              "conceded": 3,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "DRAPELLA Maciej",
+              "scored": 5,
+              "conceded": 2,
+              "diff": 3,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "1",
+              "fencer": "ADAMCZEWSKI Wojciech",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "2",
+              "fencer": "DRAPELLA Maciej",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 5,
+              "conceded": 5,
+              "diff": 0,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "DAB5CC009CC441DCBFA5C7B6FDA319A4",
+          "rid": "D427F272CF84473885327D51E66B8769",
+          "phase": "Tableau",
+          "stage": "Table of 8",
+          "opponent": "Italy",
+          "country_score": 29,
+          "opp_score": 45,
+          "won": false,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "6",
+              "fencer": "DRAPELLA Maciej",
+              "scored": 1,
+              "conceded": 1,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "5",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 3,
+              "conceded": 2,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "4",
+              "fencer": "ADAMCZEWSKI Wojciech",
+              "scored": 0,
+              "conceded": 8,
+              "diff": -8,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "6",
+              "fencer": "DRAPELLA Maciej",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "4",
+              "fencer": "ADAMCZEWSKI Wojciech",
+              "scored": 2,
+              "conceded": 10,
+              "diff": -8,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "5",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 4,
+              "conceded": 5,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "4",
+              "fencer": "ADAMCZEWSKI Wojciech",
+              "scored": 4,
+              "conceded": 4,
+              "diff": 0,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "6",
+              "fencer": "DRAPELLA Maciej",
+              "scored": 7,
+              "conceded": 6,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "5",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "FC110383D5614F589C77D04F2EB5FA44",
+          "rid": "D427F272CF84473885327D51E66B8769",
+          "phase": "Tableau",
+          "stage": "Table of 4 (Pl. 5-8)",
+          "opponent": "Switzerland",
+          "country_score": 44,
+          "opp_score": 41,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 4,
+              "conceded": 5,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "RUTECKI Bogdan",
+              "scored": 6,
+              "conceded": 4,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "DRAPELLA Maciej",
+              "scored": 5,
+              "conceded": 4,
+              "diff": 1,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "RUTECKI Bogdan",
+              "scored": 5,
+              "conceded": 6,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 5,
+              "conceded": 3,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 6,
+              "pos": "2",
+              "fencer": "DRAPELLA Maciej",
+              "scored": 4,
+              "conceded": 7,
+              "diff": -3,
+              "anchor": false
+            },
+            {
+              "leg": 7,
+              "pos": "1",
+              "fencer": "RUTECKI Bogdan",
+              "scored": 3,
+              "conceded": 5,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 8,
+              "pos": "2",
+              "fencer": "DRAPELLA Maciej",
+              "scored": 5,
+              "conceded": 6,
+              "diff": -1,
+              "anchor": false
+            },
+            {
+              "leg": 9,
+              "pos": "3",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 7,
+              "conceded": 1,
+              "diff": 6,
+              "anchor": true
+            }
+          ]
+        },
+        {
+          "match_id": "9F12E2FF2E97484784176FE14A75E96F",
+          "rid": "D427F272CF84473885327D51E66B8769",
+          "phase": "Tableau",
+          "stage": "Table of 2 (Pl. 5-6)",
+          "opponent": "Belgium",
+          "country_score": 20,
+          "opp_score": 18,
+          "won": true,
+          "walkover": false,
+          "note": "",
+          "legs": [
+            {
+              "leg": 1,
+              "pos": "3",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 5,
+              "conceded": 1,
+              "diff": 4,
+              "anchor": false
+            },
+            {
+              "leg": 2,
+              "pos": "1",
+              "fencer": "ADAMCZEWSKI Wojciech",
+              "scored": 5,
+              "conceded": 7,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 3,
+              "pos": "2",
+              "fencer": "SZCZĘSNY Jacek",
+              "scored": 3,
+              "conceded": 1,
+              "diff": 2,
+              "anchor": false
+            },
+            {
+              "leg": 4,
+              "pos": "1",
+              "fencer": "ADAMCZEWSKI Wojciech",
+              "scored": 7,
+              "conceded": 9,
+              "diff": -2,
+              "anchor": false
+            },
+            {
+              "leg": 5,
+              "pos": "3",
+              "fencer": "KRZEMIŃSKI Mariusz",
+              "scored": 0,
+              "conceded": 0,
+              "diff": 0,
+              "anchor": true
+            }
+          ]
+        }
+      ],
+      "fencer_profile": {
+        "KRZEMIŃSKI Mariusz": {
+          "matches": 6,
+          "legs": 17,
+          "net": 17,
+          "scored": 77,
+          "conceded": 60,
+          "anchor_legs": 6,
+          "anchor_net": 3
+        },
+        "ADAMCZEWSKI Wojciech": {
+          "matches": 5,
+          "legs": 13,
+          "net": -23,
+          "scored": 53,
+          "conceded": 76,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        "DRAPELLA Maciej": {
+          "matches": 5,
+          "legs": 15,
+          "net": 14,
+          "scored": 66,
+          "conceded": 52,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        "RUTECKI Bogdan": {
+          "matches": 2,
+          "legs": 4,
+          "net": -3,
+          "scored": 17,
+          "conceded": 20,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        },
+        "SZCZĘSNY Jacek": {
+          "matches": 1,
+          "legs": 1,
+          "net": 2,
+          "scored": 3,
+          "conceded": 1,
+          "anchor_legs": 0,
+          "anchor_net": 0
+        }
+      }
+    },
+    {
+      "eid": "3798FA6B84D2462C8AAFA325327E2083",
+      "name": "Grand Vet Team Women's Foil",
+      "category": "Grand Veteran",
+      "weapon": "Foil",
+      "gender": "Women",
+      "date": "2024-05-12",
+      "pool_rid": "174857D0372A4BCE85CE4D32D98E83DB",
+      "tableau_rid": "DC8CA385BF084AD2BEE26EEE50C155A3",
+      "is_team": true,
+      "present": false,
+      "roster": [],
+      "seed": null,
+      "matches": []
+    },
+    {
+      "eid": "D1367908D37D4AA7918CCC8584D58C7B",
+      "name": "Vet Team Women's Saber",
+      "category": "Veteran",
+      "weapon": "Sabre",
+      "gender": "Women",
+      "date": "2024-05-12",
+      "pool_rid": "96AF3DBA516C4D3DAC449CE33A3DAF8B",
+      "tableau_rid": "542F2098A7DE4BFAACFF516102E14CE3",
+      "is_team": true,
+      "present": false,
+      "roster": [],
+      "seed": null,
+      "matches": []
+    }
+  ],
+  "country_profile": {
+    "MOCEK Sławomir": {
+      "matches": 5,
+      "legs": 15,
+      "net": 37,
+      "scored": 83,
+      "conceded": 46,
+      "anchor_legs": 1,
+      "anchor_net": 4
+    },
+    "KOŃCZYŁO Tomasz": {
+      "matches": 8,
+      "legs": 22,
+      "net": -42,
+      "scored": 80,
+      "conceded": 122,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    },
+    "CIEPŁY Tomasz": {
+      "matches": 6,
+      "legs": 18,
+      "net": 31,
+      "scored": 88,
+      "conceded": 57,
+      "anchor_legs": 5,
+      "anchor_net": -2
+    },
+    "SZMIDT Grzegorz": {
+      "matches": 1,
+      "legs": 2,
+      "net": 5,
+      "scored": 10,
+      "conceded": 5,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    },
+    "POŚPIESZNY Sławomir": {
+      "matches": 1,
+      "legs": 1,
+      "net": 5,
+      "scored": 5,
+      "conceded": 0,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    },
+    "OSSOWSKI Wojciech": {
+      "matches": 6,
+      "legs": 18,
+      "net": 30,
+      "scored": 88,
+      "conceded": 58,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    },
+    "ZABŁOCKI Michał": {
+      "matches": 6,
+      "legs": 18,
+      "net": 30,
+      "scored": 97,
+      "conceded": 67,
+      "anchor_legs": 6,
+      "anchor_net": 7
+    },
+    "MLYNEK Janusz": {
+      "matches": 4,
+      "legs": 11,
+      "net": -22,
+      "scored": 44,
+      "conceded": 66,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    },
+    "PREGOWSKI Jerzi": {
+      "matches": 3,
+      "legs": 7,
+      "net": -21,
+      "scored": 23,
+      "conceded": 44,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    },
+    "ATANASSOW Aleksander": {
+      "matches": 6,
+      "legs": 16,
+      "net": 6,
+      "scored": 82,
+      "conceded": 76,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    },
+    "JENDRYŚ Marek": {
+      "matches": 4,
+      "legs": 7,
+      "net": -7,
+      "scored": 32,
+      "conceded": 39,
+      "anchor_legs": 2,
+      "anchor_net": -6
+    },
+    "KORONA-TRZEBSKI Przemysław": {
+      "matches": 6,
+      "legs": 16,
+      "net": 15,
+      "scored": 65,
+      "conceded": 50,
+      "anchor_legs": 1,
+      "anchor_net": -3
+    },
+    "GRIPAS Artiom": {
+      "matches": 3,
+      "legs": 5,
+      "net": -10,
+      "scored": 19,
+      "conceded": 29,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    },
+    "ZIELIŃSKI Dariusz": {
+      "matches": 4,
+      "legs": 10,
+      "net": -1,
+      "scored": 40,
+      "conceded": 41,
+      "anchor_legs": 3,
+      "anchor_net": -8
+    },
+    "WASILCZUK Beata": {
+      "matches": 5,
+      "legs": 11,
+      "net": 5,
+      "scored": 48,
+      "conceded": 43,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    },
+    "KAMIŃSKA Gabriela": {
+      "matches": 5,
+      "legs": 15,
+      "net": 4,
+      "scored": 69,
+      "conceded": 65,
+      "anchor_legs": 5,
+      "anchor_net": -6
+    },
+    "SZURLEJ Agata": {
+      "matches": 3,
+      "legs": 6,
+      "net": -14,
+      "scored": 12,
+      "conceded": 26,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    },
+    "GANSZCZYK Anna": {
+      "matches": 4,
+      "legs": 10,
+      "net": -11,
+      "scored": 44,
+      "conceded": 55,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    },
+    "SADOWSKA Małgorzata": {
+      "matches": 1,
+      "legs": 3,
+      "net": -12,
+      "scored": 9,
+      "conceded": 21,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    },
+    "KROCHMALSKI Jakub": {
+      "matches": 6,
+      "legs": 18,
+      "net": 16,
+      "scored": 85,
+      "conceded": 69,
+      "anchor_legs": 4,
+      "anchor_net": 0
+    },
+    "GANSZCZYK Marcin": {
+      "matches": 5,
+      "legs": 14,
+      "net": -2,
+      "scored": 56,
+      "conceded": 58,
+      "anchor_legs": 1,
+      "anchor_net": 1
+    },
+    "KOSIŃSKI Lukasz": {
+      "matches": 6,
+      "legs": 18,
+      "net": 21,
+      "scored": 88,
+      "conceded": 67,
+      "anchor_legs": 1,
+      "anchor_net": 5
+    },
+    "KRZEMIŃSKI Mariusz": {
+      "matches": 6,
+      "legs": 17,
+      "net": 17,
+      "scored": 77,
+      "conceded": 60,
+      "anchor_legs": 6,
+      "anchor_net": 3
+    },
+    "ADAMCZEWSKI Wojciech": {
+      "matches": 5,
+      "legs": 13,
+      "net": -23,
+      "scored": 53,
+      "conceded": 76,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    },
+    "DRAPELLA Maciej": {
+      "matches": 5,
+      "legs": 15,
+      "net": 14,
+      "scored": 66,
+      "conceded": 52,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    },
+    "RUTECKI Bogdan": {
+      "matches": 2,
+      "legs": 4,
+      "net": -3,
+      "scored": 17,
+      "conceded": 20,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    },
+    "SZCZĘSNY Jacek": {
+      "matches": 1,
+      "legs": 1,
+      "net": 2,
+      "scored": 3,
+      "conceded": 1,
+      "anchor_legs": 0,
+      "anchor_net": 0
+    }
+  }
+}

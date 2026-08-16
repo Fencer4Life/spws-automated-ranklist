@@ -233,3 +233,18 @@ allowed only through an event-specific, reviewed, atomic migration that:
 The implementation and RED→GREEN contract are
 [`20260808000003_evf_historical_event_fragment_repair.sql`](../../supabase/migrations/20260808000003_evf_historical_event_fragment_repair.sql)
 and [`55_evf_historical_event_fragment_repair.sql`](../../supabase/tests/55_evf_historical_event_fragment_repair.sql).
+
+## Amendment — rev 7 (2026-08-09) — scored predecessor fragments
+
+The reviewed-repair exception from rev 6 also applies to scored fragments in
+predecessor seasons. Six exact clusters are repaired by migration
+[`20260809000001_evf_predecessor_event_fragment_repair.sql`](../../supabase/migrations/20260809000001_evf_predecessor_event_fragment_repair.sql).
+Automation still must stop on a results-bearing identity conflict; this migration
+is allowed because it pins the complete input codes and counts, proves that child
+competition slots do not overlap, conserves all results and stored score fields,
+refuses registrations, and pins match-candidate count conservation because the
+repair moves tournaments without replacing result identities.
+
+The former rejection of event merging therefore remains the default operational
+rule. It does not prohibit an event-specific, reviewed, TDD-backed historical
+repair when the supposed duplicates themselves own genuine results.

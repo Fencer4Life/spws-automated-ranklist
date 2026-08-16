@@ -4,22 +4,31 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="037-derived-display-status-awaiting-results.md">
-<meta name="adr-source-sha256" content="c76c9b66a004045276d83360f1a7fa0ba25311da525c4a639c0c3e190df09a91">
+<meta name="adr-source-sha256" content="17abacaf64f7dcf81cce6d42e68cd1897de73ba6831c12bf0465097b26843a2b">
 <title>ADR-037 · Derived Display Status — &quot;Awaiting Results&quot;</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 037</p><h1>Derived Display Status — &quot;Awaiting Results&quot;</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented (amended 2026-08-07 — cancelled-event notice window)</dd></div><div><dt>Date</dt><dd class="">2026-04-20 <strong>Related:</strong> ADR-018 (Rolling Score for Active Season), ADR-025 (Event-Centric Ingestion), ADR-028 (EVF Calendar + Results Import)</dd></div><div><dt>Source</dt><dd class=""><code>037-derived-display-status-awaiting-results.md</code></dd></div><div><dt>Length</dt><dd class="">62 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented (amended 2026-08-07 — cancelled-event notice window)</dd></div><div><dt>Date</dt><dd class="">2026-04-20 <strong>Related:</strong> ADR-018 (Rolling Score for Active Season), ADR-025 (Event-Centric Ingestion), ADR-028 (EVF Calendar + Results Import) <strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (repoints the consumer from the timeline row to the event card).</dd></div><div><dt>Source</dt><dd class=""><code>037-derived-display-status-awaiting-results.md</code></dd></div><div><dt>Length</dt><dd class="">72 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Implemented (amended 2026-08-07 — cancelled-event notice window)
 <strong>Date:</strong> 2026-04-20
-<strong>Related:</strong> ADR-018 (Rolling Score for Active Season), ADR-025 (Event-Centric Ingestion), ADR-028 (EVF Calendar + Results Import)</p>
+<strong>Related:</strong> ADR-018 (Rolling Score for Active Season), ADR-025 (Event-Centric Ingestion), ADR-028 (EVF Calendar + Results Import)
+<strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (repoints the consumer from the timeline row to the event card).</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-08-07-cancelled-event-public-visibility">Amendment (2026-08-07) — cancelled-event public visibility</a></li></ol></nav>
-  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-08-09-the-consumer-moves">Amendment (2026-08-09 — the consumer moves)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-08-07-cancelled-event-public-visibility">Amendment (2026-08-07) — cancelled-event public visibility</a></li></ol></nav>
+  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-09-the-consumer-moves">Amendment (2026-08-09 — the consumer moves)</h2>
+<p><code>getEventDisplayStatus()</code> and the cancelled-event notice window are <strong>unchanged</strong>. What changes is who calls them: the timeline row is gone, and <code>EventCard</code> is now the consumer, rendering the derived status as a <code>.chp.status</code> chip (EC.27) with the awaiting-results and cancelled notices as <code>.note</code> lines.</p>
+<p>Two points worth pinning:</p>
+<ol>
+<li>The seven-day cancellation notice window this ADR added is now asserted in the pure module (<strong>CQ.15–CQ.18</strong>) rather than through a mounted view, so it can be checked without a DOM.</li>
+<li><code>findNextUpcoming</code> <strong>skips cancelled events</strong> — ringing a cancelled competition as the thing to look forward to would be wrong. This follows from the ADR's intent but is not yet pinned by its own test.</li>
+</ol>
+</section>
+<section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p><code>tbl_event.enum_status</code> has six values — <code>PLANNED</code>, <code>SCHEDULED</code>, <code>CHANGED</code>, <code>IN_PROGRESS</code>, <code>COMPLETED</code>, <code>CANCELLED</code> — and the transition <code>PLANNED → IN_PROGRESS</code> is driven by <em>results ingestion</em>, not by calendar date. The transition fires automatically inside <code>fn_ingest_tournament_results</code> the moment the first tournament result arrives.</p>
 <p>This leaves a visible gap: EVF events whose <code>dt_end</code> has already passed but whose results haven't been ingested yet (normal for EVF circuit — results lag by ~2 days per ADR-028) show as <code>PLANNED</code> in the Calendar UI, which misleads users into thinking the event is still upcoming.</p>
 <p>An obvious fix — auto-flipping <code>PLANNED → IN_PROGRESS</code> at <code>dt_start &lt; today</code> — would break ADR-018. The rolling carry-over query explicitly drops the previous-season score when the current-season equivalent becomes <code>IN_PROGRESS</code> (<a href="../../supabase/migrations/20260406000006_fix_carryover_in_progress.sql">migration 20260406000006</a>). The invariant is: <em>a new event replaces the old carry-over only when the new event has actual data</em>. An <code>IN_PROGRESS</code> event with no results would silently wipe the prior-season score and leave the ranklist slot empty.</p>
@@ -118,5 +127,5 @@ tested in <a href="../../frontend/tests/CalendarView.test.ts"><code>CalendarView
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="036-prod-export-local-mirror.html">← ADR-036: PROD Export &amp; Local Mirror (Single Monolithic Dump)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="038-evf-intake-polish-only.html">→ ADR-038: EVF-Organized Tournaments Ingest POL-Only Rows</a></nav>
-<footer class="foot">Generated from <code>037-derived-display-status-awaiting-results.md</code> · source SHA-256 <code>c76c9b66a004045276d83360f1a7fa0ba25311da525c4a639c0c3e190df09a91</code></footer>
+<footer class="foot">Generated from <code>037-derived-display-status-awaiting-results.md</code> · source SHA-256 <code>17abacaf64f7dcf81cce6d42e68cd1897de73ba6831c12bf0465097b26843a2b</code></footer>
 </div></body></html>

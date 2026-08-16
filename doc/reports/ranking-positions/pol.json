@@ -1,0 +1,5327 @@
+{
+  "generated_at": "2026-07-27T06:52:11.967372+00:00",
+  "country": "POL",
+  "sources": {
+    "evf": "api.veteransfencing.eu /fe/ranking/list",
+    "spws": "fn_ranking_ppw (rolling)"
+  },
+  "fencers": [
+    {
+      "id_fencer": 17,
+      "name": "ADAMCZEWSKI Wojciech",
+      "birth_year": 1952,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 14,
+          "of": 139,
+          "points": 166.37,
+          "scraped_name": "ADAMCZEWSKI Wojciech"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 3,
+          "of": 11,
+          "points": 298.95,
+          "id_fencer": 17,
+          "name": "ADAMCZEWSKI Wojciech"
+        },
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "FOIL-M-V4",
+          "pos": 3,
+          "of": 5,
+          "points": 45.29,
+          "id_fencer": 17,
+          "name": "ADAMCZEWSKI Wojciech"
+        },
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "SABRE-M-V4",
+          "pos": 7,
+          "of": 7,
+          "points": 1.2,
+          "id_fencer": 17,
+          "name": "ADAMCZEWSKI Wojciech"
+        }
+      ]
+    },
+    {
+      "id_fencer": 19,
+      "name": "ADAMS Richard",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 7,
+          "of": 22,
+          "points": 42.66,
+          "id_fencer": 19,
+          "name": "ADAMS Richard"
+        }
+      ]
+    },
+    {
+      "id_fencer": 25,
+      "name": "ATANASSOW Aleksander",
+      "birth_year": 1969,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 1,
+          "of": 385,
+          "points": 690.52,
+          "scraped_name": "ATANASSOW Aleksander"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 3,
+          "of": 22,
+          "points": 268.87,
+          "id_fencer": 25,
+          "name": "ATANASSOW Aleksander"
+        }
+      ]
+    },
+    {
+      "id_fencer": 26,
+      "name": "AUGUSTOWSKI Waldemar",
+      "birth_year": 1959,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 167,
+          "of": 317,
+          "points": 23.06,
+          "scraped_name": "AUGUSTOWSKI Waldemar"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 5,
+          "of": 14,
+          "points": 124.56,
+          "id_fencer": 26,
+          "name": "AUGUSTOWSKI Waldemar"
+        }
+      ]
+    },
+    {
+      "id_fencer": 27,
+      "name": "AUGUSTYN Kajetan",
+      "birth_year": 1990,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 9,
+          "of": 22,
+          "points": 33.62,
+          "id_fencer": 27,
+          "name": "AUGUSTYN Kajetan"
+        }
+      ]
+    },
+    {
+      "id_fencer": 31,
+      "name": "BAZAK Jacek",
+      "birth_year": 1974,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "FOIL-M-V2",
+          "pos": 19,
+          "of": 175,
+          "points": 221.41,
+          "scraped_name": "BAZAK Jacek"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "FOIL-M-V2",
+          "pos": 5,
+          "of": 5,
+          "points": 5.33,
+          "id_fencer": 31,
+          "name": "BAZAK Jacek"
+        }
+      ]
+    },
+    {
+      "id_fencer": 35,
+      "name": "BETLEJA Artur",
+      "birth_year": 1984,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 194,
+          "of": 246,
+          "points": 6.41,
+          "scraped_name": "BETLEJA Artur"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 36,
+      "name": "BOBUSIA Dariusz",
+      "birth_year": 1984,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 33,
+          "of": 246,
+          "points": 126.05,
+          "scraped_name": "BOBUSIA Dariusz"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 14,
+          "of": 23,
+          "points": 28.06,
+          "id_fencer": 36,
+          "name": "BOBUSIA Dariusz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 37,
+      "name": "BOBUSIA Jarosław",
+      "birth_year": 1985,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 7,
+          "of": 246,
+          "points": 334.37,
+          "scraped_name": "BOBUSIA Jaroslaw"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 6,
+          "of": 23,
+          "points": 101.3,
+          "id_fencer": 37,
+          "name": "BOBUSIA Jarosław"
+        }
+      ]
+    },
+    {
+      "id_fencer": 40,
+      "name": "BORKOWSKA Halina",
+      "birth_year": 1956,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V4",
+          "bucket": "FOIL-F-V4",
+          "pos": 32,
+          "of": 34,
+          "points": 5.33,
+          "scraped_name": "BORKOWSKA Halina"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V4",
+          "bucket": "EPEE-F-V4",
+          "pos": 42,
+          "of": 44,
+          "points": 2.2,
+          "scraped_name": "BORKOWSKA Halina"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V4",
+          "bucket": "EPEE-F-V4",
+          "pos": 1,
+          "of": 2,
+          "points": 156.95,
+          "id_fencer": 40,
+          "name": "BORKOWSKA Halina"
+        },
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V4",
+          "bucket": "FOIL-F-V4",
+          "pos": 2,
+          "of": 3,
+          "points": 138.36,
+          "id_fencer": 40,
+          "name": "BORKOWSKA Halina"
+        }
+      ]
+    },
+    {
+      "id_fencer": 41,
+      "name": "BORKOWSKI Andrzej",
+      "birth_year": 1950,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "FOIL-M-V4",
+          "pos": 20,
+          "of": 74,
+          "points": 90.03,
+          "scraped_name": "BORKOWSKI Andrzej"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 72,
+          "of": 139,
+          "points": 30.32,
+          "scraped_name": "BORKOWSKI Andrzej"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "FOIL-M-V4",
+          "pos": 2,
+          "of": 5,
+          "points": 182.56,
+          "id_fencer": 41,
+          "name": "BORKOWSKI Andrzej"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 6,
+          "of": 11,
+          "points": 76.34,
+          "id_fencer": 41,
+          "name": "BORKOWSKI Andrzej"
+        }
+      ]
+    },
+    {
+      "id_fencer": 42,
+      "name": "BOROWIEC Maciej",
+      "birth_year": 1981,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 20,
+          "of": 23,
+          "points": 13.63,
+          "id_fencer": 42,
+          "name": "BOROWIEC Maciej"
+        }
+      ]
+    },
+    {
+      "id_fencer": 43,
+      "name": "BORYSIUK Zbigniew",
+      "birth_year": 1953,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "SABRE-M-V4",
+          "pos": 33,
+          "of": 65,
+          "points": 55.2,
+          "scraped_name": "BORYSIUK Zbigniew"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "SABRE-M-V4",
+          "pos": 6,
+          "of": 7,
+          "points": 31.68,
+          "id_fencer": 43,
+          "name": "BORYSIUK Zbigniew"
+        }
+      ]
+    },
+    {
+      "id_fencer": 50,
+      "name": "CHARKIEWICZ Paweł",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "SABRE-M-V0",
+          "pos": 6,
+          "of": 11,
+          "points": 37.74,
+          "id_fencer": 50,
+          "name": "CHARKIEWICZ Paweł"
+        }
+      ]
+    },
+    {
+      "id_fencer": 51,
+      "name": "CHIAROMONTE Francesco",
+      "birth_year": 1971,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 12,
+          "of": 18,
+          "points": 25.75,
+          "id_fencer": 51,
+          "name": "CHIAROMONTE Francesco"
+        }
+      ]
+    },
+    {
+      "id_fencer": 52,
+      "name": "CHMIELEWSKA Emilia",
+      "birth_year": 1986,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "EPEE-F-V1",
+          "pos": 102,
+          "of": 131,
+          "points": 4.6,
+          "scraped_name": "CHMIELEWSKA Emilia"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "EPEE-F-V1",
+          "pos": 3,
+          "of": 6,
+          "points": 71.62,
+          "id_fencer": 52,
+          "name": "CHMIELEWSKA Emilia"
+        }
+      ]
+    },
+    {
+      "id_fencer": 53,
+      "name": "CHOJNACKI Tomasz",
+      "birth_year": 1987,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "SABRE-M-V1",
+          "pos": 5,
+          "of": 6,
+          "points": 5.33,
+          "id_fencer": 53,
+          "name": "CHOJNACKI Tomasz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 55,
+      "name": "CHUDY Tomasz",
+      "birth_year": 1980,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "FOIL-M-V1",
+          "pos": 3,
+          "of": 5,
+          "points": 84.45,
+          "id_fencer": 55,
+          "name": "CHUDY Tomasz"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 16,
+          "of": 23,
+          "points": 26.09,
+          "id_fencer": 55,
+          "name": "CHUDY Tomasz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 56,
+      "name": "CHUDYCKI Artur",
+      "birth_year": 1960,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "SABRE-M-V3",
+          "pos": 90,
+          "of": 109,
+          "points": 6.97,
+          "scraped_name": "CHUDYCKI Artur"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 211,
+          "of": 317,
+          "points": 17.04,
+          "scraped_name": "CHUDYCKI Artur"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "SABRE-M-V3",
+          "pos": 6,
+          "of": 8,
+          "points": 20.32,
+          "id_fencer": 56,
+          "name": "CHUDYCKI Artur"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 12,
+          "of": 14,
+          "points": 21.9,
+          "id_fencer": 56,
+          "name": "CHUDYCKI Artur"
+        }
+      ]
+    },
+    {
+      "id_fencer": 57,
+      "name": "CIEPŁY Tomasz",
+      "birth_year": 1980,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "FOIL-M-V1",
+          "pos": 27,
+          "of": 129,
+          "points": 110.02,
+          "scraped_name": "CIEPŁY Tomasz"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 58,
+      "name": "ĆWIORO Krzysztof",
+      "birth_year": 1960,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "FOIL-M-V3",
+          "pos": 142,
+          "of": 157,
+          "points": 2.0,
+          "scraped_name": "ĆWIORO Krzysztof"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 198,
+          "of": 317,
+          "points": 18.71,
+          "scraped_name": "ĆWIORO Krzysztof"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 61,
+      "name": "CZAJKOWSKI Marcin",
+      "birth_year": 1979,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 9,
+          "of": 23,
+          "points": 65.07,
+          "id_fencer": 61,
+          "name": "CZAJKOWSKI Marcin"
+        }
+      ]
+    },
+    {
+      "id_fencer": 65,
+      "name": "DOBRZAŃSKI Maciej",
+      "birth_year": 1978,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 76,
+          "of": 246,
+          "points": 57.81,
+          "scraped_name": "DOBRZAŃSKI Maciej"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 3,
+          "of": 23,
+          "points": 201.29,
+          "id_fencer": 65,
+          "name": "DOBRZAŃSKI Maciej"
+        }
+      ]
+    },
+    {
+      "id_fencer": 66,
+      "name": "DOMAŃSKI Sławomir",
+      "birth_year": 1990,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "SABRE-M-V0",
+          "pos": 10,
+          "of": 11,
+          "points": 5.33,
+          "id_fencer": 66,
+          "name": "DOMAŃSKI Sławomir"
+        }
+      ]
+    },
+    {
+      "id_fencer": 67,
+      "name": "DONKE Ryszard",
+      "birth_year": 1931,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 10,
+          "of": 11,
+          "points": 5.99,
+          "id_fencer": 67,
+          "name": "DONKE Ryszard"
+        }
+      ]
+    },
+    {
+      "id_fencer": 68,
+      "name": "DRAPELLA Maciej",
+      "birth_year": 1964,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "FOIL-M-V3",
+          "pos": 16,
+          "of": 157,
+          "points": 282.63,
+          "scraped_name": "DRAPELLA Maciej"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 26,
+          "of": 317,
+          "points": 205.93,
+          "scraped_name": "DRAPELLA Maciej"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "FOIL-M-V3",
+          "pos": 1,
+          "of": 4,
+          "points": 267.35,
+          "id_fencer": 68,
+          "name": "DRAPELLA Maciej"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 3,
+          "of": 14,
+          "points": 233.12,
+          "id_fencer": 68,
+          "name": "DRAPELLA Maciej"
+        }
+      ]
+    },
+    {
+      "id_fencer": 69,
+      "name": "DRAPELLA Magdalena",
+      "birth_year": 1996,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V0",
+          "bucket": "FOIL-F-V0",
+          "pos": 1,
+          "of": 2,
+          "points": 236.85,
+          "id_fencer": 69,
+          "name": "DRAPELLA Magdalena"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V0",
+          "bucket": "EPEE-F-V0",
+          "pos": 7,
+          "of": 8,
+          "points": 69.34,
+          "id_fencer": 69,
+          "name": "DRAPELLA Magdalena"
+        }
+      ]
+    },
+    {
+      "id_fencer": 71,
+      "name": "DROBIŃSKI Leszek",
+      "birth_year": 1967,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 4,
+          "of": 14,
+          "points": 166.78,
+          "id_fencer": 71,
+          "name": "DROBIŃSKI Leszek"
+        }
+      ]
+    },
+    {
+      "id_fencer": 72,
+      "name": "DRYMAJŁO Paweł",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 15,
+          "of": 22,
+          "points": 22.31,
+          "id_fencer": 72,
+          "name": "DRYMAJŁO Paweł"
+        }
+      ]
+    },
+    {
+      "id_fencer": 73,
+      "name": "DUDEK Mariusz",
+      "birth_year": 1973,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 246,
+          "of": 385,
+          "points": 17.48,
+          "scraped_name": "DUDEK Mariusz"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 10,
+          "of": 22,
+          "points": 59.18,
+          "id_fencer": 73,
+          "name": "DUDEK Mariusz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 74,
+      "name": "DWORAKOWSKA-BANAŚ Agnieszka",
+      "birth_year": 1971,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "SABRE-F-V2",
+          "pos": 1,
+          "of": 2,
+          "points": 201.14,
+          "id_fencer": 74,
+          "name": "DWORAKOWSKA-BANAŚ Agnieszka"
+        }
+      ]
+    },
+    {
+      "id_fencer": 76,
+      "name": "DZIUBIŃSKI Mateusz",
+      "birth_year": 1988,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 3,
+          "of": 22,
+          "points": 262.52,
+          "id_fencer": 76,
+          "name": "DZIUBIŃSKI Mateusz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 77,
+      "name": "EJCHSZTET Mariusz",
+      "birth_year": 1981,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "FOIL-M-V1",
+          "pos": 5,
+          "of": 5,
+          "points": 46.22,
+          "id_fencer": 77,
+          "name": "EJCHSZTET Mariusz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 80,
+      "name": "FORNAL Mateusz",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 22,
+          "of": 22,
+          "points": 1.0,
+          "id_fencer": 80,
+          "name": "FORNAL Mateusz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 82,
+      "name": "FRYDRYCH Aleksander",
+      "birth_year": 1981,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "SABRE-M-V1",
+          "pos": 6,
+          "of": 6,
+          "points": 1.0,
+          "id_fencer": 82,
+          "name": "FRYDRYCH Aleksander"
+        }
+      ]
+    },
+    {
+      "id_fencer": 85,
+      "name": "FUHRMANN Ulrike",
+      "birth_year": 1963,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "F",
+          "category": "V3",
+          "bucket": "SABRE-F-V3",
+          "pos": 18,
+          "of": 47,
+          "points": 129.54,
+          "scraped_name": "FUHRMANN Ulrike"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "F",
+          "category": "V3",
+          "bucket": "SABRE-F-V3",
+          "pos": 1,
+          "of": 1,
+          "points": 215.95,
+          "id_fencer": 85,
+          "name": "FUHRMANN Ulrike"
+        }
+      ]
+    },
+    {
+      "id_fencer": 86,
+      "name": "FURMANIAK Andrzej",
+      "birth_year": 1947,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 123,
+          "of": 139,
+          "points": 2.72,
+          "scraped_name": "FURMANIAK Andrzej"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 9,
+          "of": 11,
+          "points": 11.14,
+          "id_fencer": 86,
+          "name": "FURMANIAK Andrzej"
+        }
+      ]
+    },
+    {
+      "id_fencer": 88,
+      "name": "GAJDA Leszek",
+      "birth_year": 1965,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "SABRE-M-V3",
+          "pos": 7,
+          "of": 109,
+          "points": 350.02,
+          "scraped_name": "GAJDA Leszek"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "SABRE-M-V3",
+          "pos": 1,
+          "of": 8,
+          "points": 386.46,
+          "id_fencer": 88,
+          "name": "GAJDA Leszek"
+        }
+      ]
+    },
+    {
+      "id_fencer": 89,
+      "name": "GAJDA Zbigniew",
+      "birth_year": 1967,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 127,
+          "of": 159,
+          "points": 5.09,
+          "scraped_name": "GAJDA Zbigniew"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "SABRE-M-V3",
+          "pos": 8,
+          "of": 8,
+          "points": 6.67,
+          "id_fencer": 89,
+          "name": "GAJDA Zbigniew"
+        }
+      ]
+    },
+    {
+      "id_fencer": 90,
+      "name": "GANSZCZYK Anna",
+      "birth_year": 1972,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 41,
+          "of": 178,
+          "points": 92.26,
+          "scraped_name": "GANSZCZYK Anna"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 3,
+          "of": 11,
+          "points": 172.94,
+          "id_fencer": 90,
+          "name": "GANSZCZYK Anna"
+        }
+      ]
+    },
+    {
+      "id_fencer": 91,
+      "name": "GANSZCZYK Marcin",
+      "birth_year": 1974,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 1,
+          "of": 159,
+          "points": 539.78,
+          "scraped_name": "GANSZCZYK Marcin"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 1,
+          "of": 18,
+          "points": 469.23,
+          "id_fencer": 91,
+          "name": "GANSZCZYK Marcin"
+        }
+      ]
+    },
+    {
+      "id_fencer": 93,
+      "name": "GAWLE Katarzyna",
+      "birth_year": 1980,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "SABRE-F-V1",
+          "pos": 2,
+          "of": 4,
+          "points": 118.0,
+          "id_fencer": 93,
+          "name": "GAWLE Katarzyna"
+        }
+      ]
+    },
+    {
+      "id_fencer": 94,
+      "name": "GERTSMAN Alex",
+      "birth_year": 1976,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 16,
+          "of": 22,
+          "points": 20.1,
+          "id_fencer": 94,
+          "name": "GERTSMAN Alex"
+        }
+      ]
+    },
+    {
+      "id_fencer": 95,
+      "name": "GĘZIKIEWICZ Marcin",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "SABRE-M-V0",
+          "pos": 7,
+          "of": 11,
+          "points": 37.74,
+          "id_fencer": 95,
+          "name": "GĘZIKIEWICZ Marcin"
+        }
+      ]
+    },
+    {
+      "id_fencer": 96,
+      "name": "GIBULA Marcin",
+      "birth_year": 1981,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "FOIL-M-V1",
+          "pos": 4,
+          "of": 5,
+          "points": 53.67,
+          "id_fencer": 96,
+          "name": "GIBULA Marcin"
+        }
+      ]
+    },
+    {
+      "id_fencer": 97,
+      "name": "GIERS-ROMEK Monika",
+      "birth_year": 1984,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "EPEE-F-V1",
+          "pos": 5,
+          "of": 6,
+          "points": 1.0,
+          "id_fencer": 97,
+          "name": "GIERS-ROMEK Monika"
+        }
+      ]
+    },
+    {
+      "id_fencer": 100,
+      "name": "GOLD Oleg",
+      "birth_year": 1976,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 22,
+          "of": 22,
+          "points": 1.0,
+          "id_fencer": 100,
+          "name": "GOLD Oleg"
+        }
+      ]
+    },
+    {
+      "id_fencer": 101,
+      "name": "GÓRNA Karolina",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V0",
+          "bucket": "EPEE-F-V0",
+          "pos": 5,
+          "of": 8,
+          "points": 73.79,
+          "id_fencer": 101,
+          "name": "GÓRNA Karolina"
+        }
+      ]
+    },
+    {
+      "id_fencer": 108,
+      "name": "GRIPAS Artiom",
+      "birth_year": 1984,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 32,
+          "of": 246,
+          "points": 127.15,
+          "scraped_name": "GRIPAS Artiom"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 110,
+      "name": "GROMADA Roland",
+      "birth_year": 1985,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 45,
+          "of": 246,
+          "points": 97.31,
+          "scraped_name": "GROMADA Roland"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 12,
+          "of": 23,
+          "points": 52.01,
+          "id_fencer": 110,
+          "name": "GROMADA Roland"
+        }
+      ]
+    },
+    {
+      "id_fencer": 116,
+      "name": "GWIAZDA Paweł",
+      "birth_year": 1970,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "FOIL-M-V2",
+          "pos": 144,
+          "of": 175,
+          "points": 6.61,
+          "scraped_name": "GWIAZDA Paweł"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 117,
+      "name": "HAJDAS Martyna",
+      "birth_year": 1990,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "F",
+          "category": "V0",
+          "bucket": "SABRE-F-V0",
+          "pos": 1,
+          "of": 1,
+          "points": 71.34,
+          "id_fencer": 117,
+          "name": "HAJDAS Martyna"
+        }
+      ]
+    },
+    {
+      "id_fencer": 119,
+      "name": "HAŚKO Sergiusz",
+      "birth_year": 1974,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "FOIL-M-V2",
+          "pos": 82,
+          "of": 175,
+          "points": 44.68,
+          "scraped_name": "HAŚKO Sergiusz"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 125,
+          "of": 385,
+          "points": 55.02,
+          "scraped_name": "HAŚKO Sergiusz"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "FOIL-M-V2",
+          "pos": 2,
+          "of": 5,
+          "points": 91.59,
+          "id_fencer": 119,
+          "name": "HAŚKO Sergiusz"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 7,
+          "of": 22,
+          "points": 89.08,
+          "id_fencer": 119,
+          "name": "HAŚKO Sergiusz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 120,
+      "name": "HEŁKA Jacek",
+      "birth_year": 1968,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 20,
+          "of": 22,
+          "points": 6.15,
+          "id_fencer": 120,
+          "name": "HEŁKA Jacek"
+        }
+      ]
+    },
+    {
+      "id_fencer": 121,
+      "name": "HERONIMEK Leszek",
+      "birth_year": 1959,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 48,
+          "of": 317,
+          "points": 129.1,
+          "scraped_name": "HERONIMEK Leszek"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 7,
+          "of": 14,
+          "points": 86.83,
+          "id_fencer": 121,
+          "name": "HERONIMEK Leszek"
+        }
+      ]
+    },
+    {
+      "id_fencer": 122,
+      "name": "IRZYK Sabina",
+      "birth_year": 1990,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V0",
+          "bucket": "EPEE-F-V0",
+          "pos": 3,
+          "of": 8,
+          "points": 85.71,
+          "id_fencer": 122,
+          "name": "IRZYK Sabina"
+        }
+      ]
+    },
+    {
+      "id_fencer": 124,
+      "name": "JABŁOŃSKA Ewa",
+      "birth_year": 1971,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "FOIL-F-V2",
+          "pos": 62,
+          "of": 93,
+          "points": 18.59,
+          "scraped_name": "JABŁOŃSKA Ewa"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "FOIL-F-V2",
+          "pos": 1,
+          "of": 4,
+          "points": 301.26,
+          "id_fencer": 124,
+          "name": "JABŁOŃSKA Ewa"
+        }
+      ]
+    },
+    {
+      "id_fencer": 126,
+      "name": "JAKÓBOWSKA Agnieszka",
+      "birth_year": 1981,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "FOIL-F-V1",
+          "pos": 1,
+          "of": 2,
+          "points": 70.8,
+          "id_fencer": 126,
+          "name": "JAKÓBOWSKA Agnieszka"
+        }
+      ]
+    },
+    {
+      "id_fencer": 128,
+      "name": "JAROSZEK Zbigniew",
+      "birth_year": 1972,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 155,
+          "of": 159,
+          "points": 1.0,
+          "scraped_name": "JAROSZEK Zbigniew"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 13,
+          "of": 18,
+          "points": 23.57,
+          "id_fencer": 128,
+          "name": "JAROSZEK Zbigniew"
+        }
+      ]
+    },
+    {
+      "id_fencer": 129,
+      "name": "JASIELCZUK Igor",
+      "birth_year": 1987,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 8,
+          "of": 23,
+          "points": 72.99,
+          "id_fencer": 129,
+          "name": "JASIELCZUK Igor"
+        }
+      ]
+    },
+    {
+      "id_fencer": 130,
+      "name": "JASIŃSKI Tomasz",
+      "birth_year": 1961,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "SABRE-M-V3",
+          "pos": 69,
+          "of": 109,
+          "points": 21.63,
+          "scraped_name": "JASIŃSKI Tomasz"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "SABRE-M-V3",
+          "pos": 2,
+          "of": 8,
+          "points": 136.93,
+          "id_fencer": 130,
+          "name": "JASIŃSKI Tomasz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 131,
+      "name": "JASZCZAK Piotr",
+      "birth_year": 1973,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 64,
+          "of": 385,
+          "points": 110.26,
+          "scraped_name": "JASZCZAK Piotr"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 6,
+          "of": 22,
+          "points": 120.64,
+          "id_fencer": 131,
+          "name": "JASZCZAK Piotr"
+        }
+      ]
+    },
+    {
+      "id_fencer": 132,
+      "name": "JENDRYŚ Marek",
+      "birth_year": 1974,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 53,
+          "of": 385,
+          "points": 125.65,
+          "scraped_name": "JENDRYŚ Marek"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 1,
+          "of": 22,
+          "points": 430.1,
+          "id_fencer": 132,
+          "name": "JENDRYŚ Marek"
+        }
+      ]
+    },
+    {
+      "id_fencer": 133,
+      "name": "JEROZOLIMSKI Marek",
+      "birth_year": 1990,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "FOIL-M-V0",
+          "pos": 4,
+          "of": 4,
+          "points": 5.33,
+          "id_fencer": 133,
+          "name": "JEROZOLIMSKI Marek"
+        }
+      ]
+    },
+    {
+      "id_fencer": 134,
+      "name": "JUSZKIEWICZ Piotr",
+      "birth_year": 1954,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "FOIL-M-V4",
+          "pos": 36,
+          "of": 74,
+          "points": 31.68,
+          "scraped_name": "JUSZKIEWICZ Piotr"
+        },
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "SABRE-M-V4",
+          "pos": 46,
+          "of": 65,
+          "points": 21.63,
+          "scraped_name": "JUSZKIEWICZ Piotr"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 82,
+          "of": 139,
+          "points": 24.67,
+          "scraped_name": "JUSZKIEWICZ Piotr"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "SABRE-M-V4",
+          "pos": 2,
+          "of": 7,
+          "points": 236.37,
+          "id_fencer": 134,
+          "name": "JUSZKIEWICZ Piotr"
+        },
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "FOIL-M-V4",
+          "pos": 5,
+          "of": 5,
+          "points": 5.33,
+          "id_fencer": 134,
+          "name": "JUSZKIEWICZ Piotr"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 7,
+          "of": 11,
+          "points": 13.77,
+          "id_fencer": 134,
+          "name": "JUSZKIEWICZ Piotr"
+        }
+      ]
+    },
+    {
+      "id_fencer": 135,
+      "name": "KACZMAREK Paweł",
+      "birth_year": 1970,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 45,
+          "of": 159,
+          "points": 72.71,
+          "scraped_name": "KACZMAREK Paweł"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 8,
+          "of": 18,
+          "points": 84.25,
+          "id_fencer": 135,
+          "name": "KACZMAREK Paweł"
+        }
+      ]
+    },
+    {
+      "id_fencer": 137,
+      "name": "KAMIŃSKA Gabriela",
+      "birth_year": 1979,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "EPEE-F-V1",
+          "pos": 10,
+          "of": 131,
+          "points": 220.85,
+          "scraped_name": "KAMIŃSKA Gabriela"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "EPEE-F-V1",
+          "pos": 1,
+          "of": 6,
+          "points": 446.18,
+          "id_fencer": 137,
+          "name": "KAMIŃSKA Gabriela"
+        },
+        {
+          "weapon": "SABRE",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "SABRE-F-V1",
+          "pos": 3,
+          "of": 4,
+          "points": 70.8,
+          "id_fencer": 137,
+          "name": "KAMIŃSKA Gabriela"
+        }
+      ]
+    },
+    {
+      "id_fencer": 138,
+      "name": "KARMAN Irene",
+      "birth_year": 1970,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 11,
+          "of": 11,
+          "points": 1.0,
+          "id_fencer": 138,
+          "name": "KARMAN Irene"
+        }
+      ]
+    },
+    {
+      "id_fencer": 144,
+      "name": "KIERSZNICKI Ryszard",
+      "birth_year": 1955,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "SABRE-M-V4",
+          "pos": 38,
+          "of": 65,
+          "points": 35.6,
+          "scraped_name": "KIERSZNICKI Ryszard"
+        },
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "FOIL-M-V4",
+          "pos": 52,
+          "of": 74,
+          "points": 16.93,
+          "scraped_name": "KIERSZNICKI Ryszard"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 84,
+          "of": 139,
+          "points": 23.19,
+          "scraped_name": "KIERSZNICKI Ryszard"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "FOIL-M-V4",
+          "pos": 1,
+          "of": 5,
+          "points": 233.47,
+          "id_fencer": 144,
+          "name": "KIERSZNICKI Ryszard"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 4,
+          "of": 11,
+          "points": 110.37,
+          "id_fencer": 144,
+          "name": "KIERSZNICKI Ryszard"
+        },
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "SABRE-M-V4",
+          "pos": 5,
+          "of": 7,
+          "points": 55.21,
+          "id_fencer": 144,
+          "name": "KIERSZNICKI Ryszard"
+        }
+      ]
+    },
+    {
+      "id_fencer": 145,
+      "name": "KLEPACKI Denis",
+      "birth_year": 1981,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 18,
+          "of": 23,
+          "points": 17.51,
+          "id_fencer": 145,
+          "name": "KLEPACKI Denis"
+        }
+      ]
+    },
+    {
+      "id_fencer": 146,
+      "name": "KLIMECKA Dorota",
+      "birth_year": 1977,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "EPEE-F-V1",
+          "pos": 122,
+          "of": 131,
+          "points": 1.0,
+          "scraped_name": "KLIMECKA Dorota"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 4,
+          "of": 11,
+          "points": 98.76,
+          "id_fencer": 146,
+          "name": "KLIMECKA Dorota"
+        }
+      ]
+    },
+    {
+      "id_fencer": 148,
+      "name": "KŁUSEK Damian",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 4,
+          "of": 22,
+          "points": 95.39,
+          "id_fencer": 148,
+          "name": "KŁUSEK Damian"
+        }
+      ]
+    },
+    {
+      "id_fencer": 150,
+      "name": "KOBIERSKI Krzysztof",
+      "birth_year": 1976,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 217,
+          "of": 385,
+          "points": 19.88,
+          "scraped_name": "KOBIERSKI Krzysztof"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 151,
+      "name": "KOCÓR Agata",
+      "birth_year": 1990,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V0",
+          "bucket": "EPEE-F-V0",
+          "pos": 8,
+          "of": 8,
+          "points": 18.12,
+          "id_fencer": 151,
+          "name": "KOCÓR Agata"
+        }
+      ]
+    },
+    {
+      "id_fencer": 154,
+      "name": "KOŁUCKI Michał",
+      "birth_year": 1975,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 14,
+          "of": 18,
+          "points": 20.24,
+          "id_fencer": 154,
+          "name": "KOŁUCKI Michał"
+        }
+      ]
+    },
+    {
+      "id_fencer": 155,
+      "name": "KONARSKI Marcin",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 16,
+          "of": 22,
+          "points": 19.0,
+          "id_fencer": 155,
+          "name": "KONARSKI Marcin"
+        }
+      ]
+    },
+    {
+      "id_fencer": 156,
+      "name": "KOŃCZYŁO Tomasz",
+      "birth_year": 1973,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "FOIL-M-V2",
+          "pos": 3,
+          "of": 175,
+          "points": 436.74,
+          "scraped_name": "KOŃCZYŁO Tomasz"
+        },
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 15,
+          "of": 159,
+          "points": 266.36,
+          "scraped_name": "KOŃCZYŁO Tomasz"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 158,
+      "name": "KORNAŚ Jarosław",
+      "birth_year": 1985,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 93,
+          "of": 246,
+          "points": 40.82,
+          "scraped_name": "KORNAŚ Jarosław",
+          "duplicate_records": [
+            "KORNAŚ Jarosław",
+            "KORNAS Jaroslaw"
+          ],
+          "published_pos": 147,
+          "note": "EVF prowadzi tego zawodnika w dwóch rekordach — punkty rozbite"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 4,
+          "of": 23,
+          "points": 119.13,
+          "id_fencer": 158,
+          "name": "KORNAŚ Jarosław"
+        }
+      ]
+    },
+    {
+      "id_fencer": 159,
+      "name": "KORONA Przemysław",
+      "birth_year": 1976,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 4,
+          "of": 385,
+          "points": 613.66,
+          "scraped_name": "KORONA Przemysław"
+        },
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "FOIL-M-V2",
+          "pos": 11,
+          "of": 175,
+          "points": 296.61,
+          "scraped_name": "KORONA Przemysław"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "FOIL-M-V2",
+          "pos": 1,
+          "of": 5,
+          "points": 325.24,
+          "id_fencer": 159,
+          "name": "KORONA Przemysław"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 2,
+          "of": 22,
+          "points": 420.62,
+          "id_fencer": 159,
+          "name": "KORONA Przemysław"
+        }
+      ]
+    },
+    {
+      "id_fencer": 160,
+      "name": "KORONA Radosław",
+      "birth_year": 1981,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 5,
+          "of": 23,
+          "points": 110.02,
+          "id_fencer": 160,
+          "name": "KORONA Radosław"
+        }
+      ]
+    },
+    {
+      "id_fencer": 161,
+      "name": "KORYGA Bartłomiej",
+      "birth_year": 1992,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 11,
+          "of": 22,
+          "points": 28.26,
+          "id_fencer": 161,
+          "name": "KORYGA Bartłomiej"
+        }
+      ]
+    },
+    {
+      "id_fencer": 163,
+      "name": "KOSIŃSKI Łukasz",
+      "birth_year": 1983,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "SABRE-M-V1",
+          "pos": 74,
+          "of": 106,
+          "points": 12.71,
+          "scraped_name": "KOSINSKI Łukasz",
+          "duplicate_records": [
+            "KOSINSKI Łukasz",
+            "KOSIŃSKI Lukasz"
+          ],
+          "published_pos": 75,
+          "note": "EVF prowadzi tego zawodnika w dwóch rekordach — punkty rozbite"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "SABRE-M-V1",
+          "pos": 2,
+          "of": 6,
+          "points": 158.21,
+          "id_fencer": 163,
+          "name": "KOSIŃSKI Łukasz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 164,
+      "name": "KOSTRZEWA Ireneusz",
+      "birth_year": 1965,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 3,
+          "of": 317,
+          "points": 423.01,
+          "scraped_name": "KOSTRZEWA Ireneusz"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 2,
+          "of": 14,
+          "points": 341.91,
+          "id_fencer": 164,
+          "name": "KOSTRZEWA Ireneusz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 167,
+      "name": "KOTTS Radosław",
+      "birth_year": 1970,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 145,
+          "of": 159,
+          "points": 3.32,
+          "scraped_name": "KOTTS Radoslaw"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 17,
+          "of": 18,
+          "points": 2.0,
+          "id_fencer": 167,
+          "name": "KOTTS Radosław"
+        }
+      ]
+    },
+    {
+      "id_fencer": 168,
+      "name": "KOWALCZYK Piotr",
+      "birth_year": 1986,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 131,
+          "of": 246,
+          "points": 24.5,
+          "scraped_name": "KOWALCZYK Piotr"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 11,
+          "of": 23,
+          "points": 54.22,
+          "id_fencer": 168,
+          "name": "KOWALCZYK Piotr"
+        }
+      ]
+    },
+    {
+      "id_fencer": 169,
+      "name": "KOWALEWSKI Rafał",
+      "birth_year": 1979,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "SABRE-M-V1",
+          "pos": 72,
+          "of": 106,
+          "points": 15.75,
+          "scraped_name": "KOWALEWSKI Rafał"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "SABRE-M-V1",
+          "pos": 3,
+          "of": 6,
+          "points": 129.76,
+          "id_fencer": 169,
+          "name": "KOWALEWSKI Rafał"
+        }
+      ]
+    },
+    {
+      "id_fencer": 171,
+      "name": "KOWALSKI Bartosz",
+      "birth_year": 1995,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 18,
+          "of": 22,
+          "points": 6.67,
+          "id_fencer": 171,
+          "name": "KOWALSKI Bartosz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 174,
+      "name": "KOZIEJOWSKI Sebastian",
+      "birth_year": 1979,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "FOIL-M-V1",
+          "pos": 2,
+          "of": 5,
+          "points": 101.14,
+          "id_fencer": 174,
+          "name": "KOZIEJOWSKI Sebastian"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 13,
+          "of": 23,
+          "points": 32.53,
+          "id_fencer": 174,
+          "name": "KOZIEJOWSKI Sebastian"
+        }
+      ]
+    },
+    {
+      "id_fencer": 175,
+      "name": "KRAMARZ Konrad",
+      "birth_year": 1986,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 17,
+          "of": 23,
+          "points": 23.39,
+          "id_fencer": 175,
+          "name": "KRAMARZ Konrad"
+        }
+      ]
+    },
+    {
+      "id_fencer": 178,
+      "name": "KROCHMALSKI Jakub",
+      "birth_year": 1976,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 32,
+          "of": 159,
+          "points": 111.23,
+          "scraped_name": "KROCHMALSKI Jakub"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 2,
+          "of": 18,
+          "points": 376.68,
+          "id_fencer": 178,
+          "name": "KROCHMALSKI Jakub"
+        }
+      ]
+    },
+    {
+      "id_fencer": 179,
+      "name": "KRUJALSKIENE Julija",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V0",
+          "bucket": "EPEE-F-V0",
+          "pos": 6,
+          "of": 8,
+          "points": 71.34,
+          "id_fencer": 179,
+          "name": "KRUJALSKIENE Julija"
+        }
+      ]
+    },
+    {
+      "id_fencer": 180,
+      "name": "KRUJALSKIS Gotfridas",
+      "birth_year": 1989,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 5,
+          "of": 22,
+          "points": 82.98,
+          "id_fencer": 180,
+          "name": "KRUJALSKIS Gotfridas"
+        }
+      ]
+    },
+    {
+      "id_fencer": 181,
+      "name": "KRZACZKOWSKI Daniel",
+      "birth_year": 1981,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 22,
+          "of": 23,
+          "points": 7.78,
+          "id_fencer": 181,
+          "name": "KRZACZKOWSKI Daniel"
+        }
+      ]
+    },
+    {
+      "id_fencer": 182,
+      "name": "KRZEMIŃSKI Mariusz",
+      "birth_year": 1962,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 2,
+          "of": 317,
+          "points": 428.31,
+          "scraped_name": "KRZEMIŃSKI Mariusz"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 1,
+          "of": 14,
+          "points": 486.86,
+          "id_fencer": 182,
+          "name": "KRZEMIŃSKI Mariusz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 183,
+      "name": "KUCIĘBA Piotr",
+      "birth_year": 1979,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "SABRE-M-V1",
+          "pos": 16,
+          "of": 106,
+          "points": 173.41,
+          "scraped_name": "KUCIĘBA Piotr"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "SABRE-M-V1",
+          "pos": 1,
+          "of": 6,
+          "points": 212.46,
+          "id_fencer": 183,
+          "name": "KUCIĘBA Piotr"
+        }
+      ]
+    },
+    {
+      "id_fencer": 184,
+      "name": "KULKA Dawid",
+      "birth_year": 1979,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 10,
+          "of": 23,
+          "points": 61.95,
+          "id_fencer": 184,
+          "name": "KULKA Dawid"
+        }
+      ]
+    },
+    {
+      "id_fencer": 185,
+      "name": "KURBATSKYI Stepan",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 10,
+          "of": 22,
+          "points": 31.68,
+          "id_fencer": 185,
+          "name": "KURBATSKYI Stepan"
+        }
+      ]
+    },
+    {
+      "id_fencer": 186,
+      "name": "KUZMICHOVA Svitlana",
+      "birth_year": 1971,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 5,
+          "of": 11,
+          "points": 96.35,
+          "id_fencer": 186,
+          "name": "KUZMICHOVA Svitlana"
+        }
+      ]
+    },
+    {
+      "id_fencer": 188,
+      "name": "LASKUS Krystyna",
+      "birth_year": 1969,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 102,
+          "of": 178,
+          "points": 26.86,
+          "scraped_name": "LASKUS Krystyna"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 8,
+          "of": 11,
+          "points": 31.68,
+          "id_fencer": 188,
+          "name": "LASKUS Krystyna"
+        }
+      ]
+    },
+    {
+      "id_fencer": 189,
+      "name": "LEAHEY John",
+      "birth_year": 1976,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 11,
+          "of": 22,
+          "points": 56.93,
+          "id_fencer": 189,
+          "name": "LEAHEY John"
+        }
+      ]
+    },
+    {
+      "id_fencer": 190,
+      "name": "ŁĘCKI Krzysztof",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 19,
+          "of": 22,
+          "points": 5.89,
+          "id_fencer": 190,
+          "name": "ŁĘCKI Krzysztof"
+        }
+      ]
+    },
+    {
+      "id_fencer": 191,
+      "name": "LELONEK Tomasz",
+      "birth_year": 1980,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 214,
+          "of": 246,
+          "points": 4.06,
+          "scraped_name": "LELONEK Tomasz"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 15,
+          "of": 23,
+          "points": 27.33,
+          "id_fencer": 191,
+          "name": "LELONEK Tomasz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 193,
+      "name": "LIPKOWSKA Dominika",
+      "birth_year": 1984,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "FOIL-F-V1",
+          "pos": 24,
+          "of": 54,
+          "points": 72.65,
+          "scraped_name": "LIPKOWSKA Dominika"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "FOIL-F-V1",
+          "pos": 2,
+          "of": 2,
+          "points": 59.0,
+          "id_fencer": 193,
+          "name": "LIPKOWSKA Dominika"
+        }
+      ]
+    },
+    {
+      "id_fencer": 194,
+      "name": "LISOWSKI Igor",
+      "birth_year": 1990,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "SABRE-M-V0",
+          "pos": 5,
+          "of": 11,
+          "points": 59.0,
+          "id_fencer": 194,
+          "name": "LISOWSKI Igor"
+        }
+      ]
+    },
+    {
+      "id_fencer": 195,
+      "name": "LISOWSKI Robert",
+      "birth_year": 1971,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 16,
+          "of": 18,
+          "points": 2.0,
+          "id_fencer": 195,
+          "name": "LISOWSKI Robert"
+        }
+      ]
+    },
+    {
+      "id_fencer": 198,
+      "name": "MADDEN Gerard",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 13,
+          "of": 22,
+          "points": 24.67,
+          "id_fencer": 198,
+          "name": "MADDEN Gerard"
+        }
+      ]
+    },
+    {
+      "id_fencer": 199,
+      "name": "MAINKA Andrzej",
+      "birth_year": 1949,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "SABRE-M-V4",
+          "pos": 25,
+          "of": 65,
+          "points": 97.76,
+          "scraped_name": "MAINKA Andrzej"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "SABRE-M-V4",
+          "pos": 3,
+          "of": 7,
+          "points": 173.07,
+          "id_fencer": 199,
+          "name": "MAINKA Andrzej"
+        }
+      ]
+    },
+    {
+      "id_fencer": 200,
+      "name": "MAKARSKI Czesław",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 21,
+          "of": 22,
+          "points": 1.2,
+          "id_fencer": 200,
+          "name": "MAKARSKI Czesław"
+        }
+      ]
+    },
+    {
+      "id_fencer": 201,
+      "name": "MAŁASIŃSKI Adam",
+      "birth_year": 1958,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "FOIL-M-V3",
+          "pos": 126,
+          "of": 157,
+          "points": 4.86,
+          "scraped_name": "MAŁASIŃSKI Adam"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 200,
+          "of": 317,
+          "points": 18.66,
+          "scraped_name": "MAŁASIŃSKI Adam"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "FOIL-M-V3",
+          "pos": 4,
+          "of": 4,
+          "points": 56.86,
+          "id_fencer": 201,
+          "name": "MAŁASIŃSKI Adam"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 6,
+          "of": 14,
+          "points": 112.62,
+          "id_fencer": 201,
+          "name": "MAŁASIŃSKI Adam"
+        }
+      ]
+    },
+    {
+      "id_fencer": 203,
+      "name": "MALINOWSKI Piotr",
+      "birth_year": 1980,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "FOIL-M-V1",
+          "pos": 52,
+          "of": 129,
+          "points": 49.53,
+          "scraped_name": "MALINOWSKI Piotr"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 176,
+          "of": 246,
+          "points": 11.86,
+          "scraped_name": "MALINOWSKI Piotr"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "FOIL-M-V1",
+          "pos": 1,
+          "of": 5,
+          "points": 339.3,
+          "id_fencer": 203,
+          "name": "MALINOWSKI Piotr"
+        }
+      ]
+    },
+    {
+      "id_fencer": 206,
+      "name": "MARNIAK Ksenia",
+      "birth_year": 1980,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "EPEE-F-V1",
+          "pos": 6,
+          "of": 6,
+          "points": 1.0,
+          "id_fencer": 206,
+          "name": "MARNIAK Ksenia"
+        }
+      ]
+    },
+    {
+      "id_fencer": 207,
+      "name": "MAZIK Aleksander",
+      "birth_year": 1970,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 29,
+          "of": 159,
+          "points": 116.33,
+          "scraped_name": "MAZIK Aleksander"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 5,
+          "of": 18,
+          "points": 170.41,
+          "id_fencer": 207,
+          "name": "MAZIK Aleksander"
+        }
+      ]
+    },
+    {
+      "id_fencer": 209,
+      "name": "MCQUEEN Andy",
+      "birth_year": 1976,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 21,
+          "of": 22,
+          "points": 1.9,
+          "id_fencer": 209,
+          "name": "MCQUEEN Andy"
+        }
+      ]
+    },
+    {
+      "id_fencer": 216,
+      "name": "MILCZAREK Renata",
+      "birth_year": 1968,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "SABRE-F-V2",
+          "pos": 54,
+          "of": 56,
+          "points": 2.0,
+          "scraped_name": "MILCZAREK Renata"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "SABRE-F-V2",
+          "pos": 2,
+          "of": 2,
+          "points": 126.56,
+          "id_fencer": 216,
+          "name": "MILCZAREK Renata"
+        }
+      ]
+    },
+    {
+      "id_fencer": 219,
+      "name": "MŁYNEK Janusz",
+      "birth_year": 1951,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "SABRE-M-V4",
+          "pos": 1,
+          "of": 7,
+          "points": 386.28,
+          "id_fencer": 219,
+          "name": "MŁYNEK Janusz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 221,
+      "name": "MOCEK Sławomir",
+      "birth_year": 1976,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "FOIL-M-V2",
+          "pos": 75,
+          "of": 175,
+          "points": 54.22,
+          "scraped_name": "MOCEK Sławomir"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 224,
+      "name": "MULSON Irena",
+      "birth_year": 1956,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V4",
+          "bucket": "FOIL-F-V4",
+          "pos": 3,
+          "of": 3,
+          "points": 71.34,
+          "id_fencer": 224,
+          "name": "MULSON Irena"
+        }
+      ]
+    },
+    {
+      "id_fencer": 228,
+      "name": "NIKALAICHUK Aliaksandr",
+      "birth_year": 1963,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "FOIL-M-V3",
+          "pos": 24,
+          "of": 157,
+          "points": 172.55,
+          "scraped_name": "NIKALAICHUK Aliaksandr"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "FOIL-M-V3",
+          "pos": 2,
+          "of": 4,
+          "points": 177.81,
+          "id_fencer": 228,
+          "name": "NIKALAICHUK Aliaksandr"
+        },
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "SABRE-M-V3",
+          "pos": 7,
+          "of": 8,
+          "points": 15.93,
+          "id_fencer": 228,
+          "name": "NIKALAICHUK Aliaksandr"
+        }
+      ]
+    },
+    {
+      "id_fencer": 230,
+      "name": "NOWAK Szymon",
+      "birth_year": 1990,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "FOIL-M-V0",
+          "pos": 2,
+          "of": 4,
+          "points": 211.25,
+          "id_fencer": 230,
+          "name": "NOWAK Szymon"
+        }
+      ]
+    },
+    {
+      "id_fencer": 231,
+      "name": "NOWAKOWSKI Andrzej",
+      "birth_year": 1952,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 111,
+          "of": 139,
+          "points": 5.6,
+          "scraped_name": "NOWAKOWSKI Andrzej"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 11,
+          "of": 11,
+          "points": 3.2,
+          "id_fencer": 231,
+          "name": "NOWAKOWSKI Andrzej"
+        }
+      ]
+    },
+    {
+      "id_fencer": 232,
+      "name": "NOWICKI Robert",
+      "birth_year": 1970,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 10,
+          "of": 159,
+          "points": 309.13,
+          "scraped_name": "NOWICKI Robert"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 3,
+          "of": 18,
+          "points": 335.84,
+          "id_fencer": 232,
+          "name": "NOWICKI Robert"
+        }
+      ]
+    },
+    {
+      "id_fencer": 234,
+      "name": "ODOLAK Jarosław",
+      "birth_year": 1970,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 366,
+          "of": 385,
+          "points": 1.59,
+          "scraped_name": "ODOLAK Jarosław"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 18,
+          "of": 22,
+          "points": 17.32,
+          "id_fencer": 234,
+          "name": "ODOLAK Jarosław"
+        }
+      ]
+    },
+    {
+      "id_fencer": 235,
+      "name": "OLBRYCHSKI Antoni",
+      "birth_year": 1990,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "SABRE-M-V0",
+          "pos": 4,
+          "of": 11,
+          "points": 74.34,
+          "id_fencer": 235,
+          "name": "OLBRYCHSKI Antoni"
+        }
+      ]
+    },
+    {
+      "id_fencer": 236,
+      "name": "OLSZEWSKI Mikołaj",
+      "birth_year": 1968,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 164,
+          "of": 385,
+          "points": 34.75,
+          "scraped_name": "OLSZEWSKI Mikołaj"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 14,
+          "of": 22,
+          "points": 37.62,
+          "id_fencer": 236,
+          "name": "OLSZEWSKI Mikołaj"
+        }
+      ]
+    },
+    {
+      "id_fencer": 238,
+      "name": "OSSOWSKI Wojciech",
+      "birth_year": 1961,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "SABRE-M-V3",
+          "pos": 3,
+          "of": 8,
+          "points": 121.34,
+          "id_fencer": 238,
+          "name": "OSSOWSKI Wojciech"
+        }
+      ]
+    },
+    {
+      "id_fencer": 239,
+      "name": "OWCZAREK Elżbieta",
+      "birth_year": 1957,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "F",
+          "category": "V3",
+          "bucket": "SABRE-F-V3",
+          "pos": 30,
+          "of": 47,
+          "points": 32.68,
+          "scraped_name": "OWCZAREK Elżbieta"
+        },
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V3",
+          "bucket": "FOIL-F-V3",
+          "pos": 47,
+          "of": 60,
+          "points": 5.33,
+          "scraped_name": "OWCZAREK Elżbieta"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V4",
+          "bucket": "FOIL-F-V4",
+          "pos": 1,
+          "of": 3,
+          "points": 306.8,
+          "id_fencer": 239,
+          "name": "OWCZAREK Elżbieta"
+        },
+        {
+          "weapon": "SABRE",
+          "gender": "F",
+          "category": "V4",
+          "bucket": "SABRE-F-V4",
+          "pos": 1,
+          "of": 2,
+          "points": 136.83,
+          "id_fencer": 239,
+          "name": "OWCZAREK Elżbieta"
+        }
+      ]
+    },
+    {
+      "id_fencer": 240,
+      "name": "OWCZAREK Ewelina",
+      "birth_year": 1987,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "SABRE-F-V1",
+          "pos": 1,
+          "of": 4,
+          "points": 126.56,
+          "id_fencer": 240,
+          "name": "OWCZAREK Ewelina"
+        }
+      ]
+    },
+    {
+      "id_fencer": 243,
+      "name": "PANZ Marian",
+      "birth_year": 1930,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "SABRE-M-V4",
+          "pos": 62,
+          "of": 65,
+          "points": 1.0,
+          "scraped_name": "PANZ Marian"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 244,
+      "name": "PARDUS Borys",
+      "birth_year": 1970,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 81,
+          "of": 385,
+          "points": 84.95,
+          "scraped_name": "PARDUS Borys"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 15,
+          "of": 22,
+          "points": 22.56,
+          "id_fencer": 244,
+          "name": "PARDUS Borys"
+        }
+      ]
+    },
+    {
+      "id_fencer": 245,
+      "name": "PARELL Mikołaj",
+      "birth_year": 1990,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 14,
+          "of": 22,
+          "points": 23.12,
+          "id_fencer": 245,
+          "name": "PARELL Mikołaj"
+        }
+      ]
+    },
+    {
+      "id_fencer": 246,
+      "name": "PAWŁOWSKI Łukasz",
+      "birth_year": 1981,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 238,
+          "of": 246,
+          "points": 1.0,
+          "scraped_name": "PAWŁOWSKI Łukasz"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 23,
+          "of": 23,
+          "points": 7.15,
+          "id_fencer": 246,
+          "name": "PAWŁOWSKI Łukasz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 247,
+      "name": "PĘCZEK Sandra",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V0",
+          "bucket": "EPEE-F-V0",
+          "pos": 1,
+          "of": 8,
+          "points": 267.87,
+          "id_fencer": 247,
+          "name": "PĘCZEK Sandra"
+        }
+      ]
+    },
+    {
+      "id_fencer": 251,
+      "name": "PILARSKA Barbara",
+      "birth_year": 1974,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 10,
+          "of": 11,
+          "points": 1.0,
+          "id_fencer": 251,
+          "name": "PILARSKA Barbara"
+        }
+      ]
+    },
+    {
+      "id_fencer": 252,
+      "name": "PILUTKIEWICZ Igor",
+      "birth_year": 1975,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 9,
+          "of": 22,
+          "points": 80.01,
+          "id_fencer": 252,
+          "name": "PILUTKIEWICZ Igor"
+        }
+      ]
+    },
+    {
+      "id_fencer": 255,
+      "name": "PLUCIŃSKI Paweł",
+      "birth_year": 1969,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 9,
+          "of": 18,
+          "points": 72.55,
+          "id_fencer": 255,
+          "name": "PLUCIŃSKI Paweł"
+        }
+      ]
+    },
+    {
+      "id_fencer": 256,
+      "name": "POKRYWA Bartosz",
+      "birth_year": 1984,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 136,
+          "of": 246,
+          "points": 23.51,
+          "scraped_name": "POKRYWA Bartosz"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 21,
+          "of": 23,
+          "points": 12.09,
+          "id_fencer": 256,
+          "name": "POKRYWA Bartosz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 257,
+      "name": "POKRZYWA Mariusz",
+      "birth_year": 1959,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "FOIL-M-V3",
+          "pos": 80,
+          "of": 157,
+          "points": 31.14,
+          "scraped_name": "POKRZYWA Mariusz"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 259,
+      "name": "POPRAWA Mariusz",
+      "birth_year": 1960,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 13,
+          "of": 14,
+          "points": 3.89,
+          "id_fencer": 259,
+          "name": "POPRAWA Mariusz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 260,
+      "name": "POROWSKI Jan",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "SABRE-M-V0",
+          "pos": 3,
+          "of": 11,
+          "points": 80.23,
+          "id_fencer": 260,
+          "name": "POROWSKI Jan"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 6,
+          "of": 22,
+          "points": 63.7,
+          "id_fencer": 260,
+          "name": "POROWSKI Jan"
+        }
+      ]
+    },
+    {
+      "id_fencer": 262,
+      "name": "PRAHA-TSAREHRADSKA Nadiia",
+      "birth_year": 1970,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 6,
+          "of": 11,
+          "points": 61.95,
+          "id_fencer": 262,
+          "name": "PRAHA-TSAREHRADSKA Nadiia"
+        }
+      ]
+    },
+    {
+      "id_fencer": 263,
+      "name": "PRĘGOWSKI Jerzy",
+      "birth_year": 1947,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "SABRE-M-V4",
+          "pos": 26,
+          "of": 65,
+          "points": 85.81,
+          "scraped_name": "PRĘGOWSKI Jerzy"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "SABRE-M-V4",
+          "pos": 4,
+          "of": 7,
+          "points": 105.18,
+          "id_fencer": 263,
+          "name": "PRĘGOWSKI Jerzy"
+        }
+      ]
+    },
+    {
+      "id_fencer": 264,
+      "name": "PRZYSTAJKO Daniel",
+      "birth_year": 1985,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "FOIL-M-V1",
+          "pos": 2,
+          "of": 129,
+          "points": 426.55,
+          "scraped_name": "PRZYSTAJKO Daniel"
+        },
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "SABRE-M-V1",
+          "pos": 10,
+          "of": 106,
+          "points": 223.25,
+          "scraped_name": "PRZYSTAJKO Daniel"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 266,
+      "name": "PYZIK Zdzisław",
+      "birth_year": 1960,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "FOIL-M-V3",
+          "pos": 3,
+          "of": 4,
+          "points": 77.32,
+          "id_fencer": 266,
+          "name": "PYZIK Zdzisław"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 14,
+          "of": 14,
+          "points": 1.2,
+          "id_fencer": 266,
+          "name": "PYZIK Zdzisław"
+        }
+      ]
+    },
+    {
+      "id_fencer": 270,
+      "name": "RATAJ Marek",
+      "birth_year": 1971,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 18,
+          "of": 18,
+          "points": 1.2,
+          "id_fencer": 270,
+          "name": "RATAJ Marek"
+        }
+      ]
+    },
+    {
+      "id_fencer": 274,
+      "name": "ROMANOWICZ Aleksiej",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "SABRE-M-V0",
+          "pos": 2,
+          "of": 11,
+          "points": 82.98,
+          "id_fencer": 274,
+          "name": "ROMANOWICZ Aleksiej"
+        }
+      ]
+    },
+    {
+      "id_fencer": 281,
+      "name": "RZEPECKA Martyna",
+      "birth_year": 1990,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V0",
+          "bucket": "FOIL-F-V0",
+          "pos": 2,
+          "of": 2,
+          "points": 157.73,
+          "id_fencer": 281,
+          "name": "RZEPECKA Martyna"
+        }
+      ]
+    },
+    {
+      "id_fencer": 283,
+      "name": "SADOWIŃSKA Adriana",
+      "birth_year": 1970,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "FOIL-F-V2",
+          "pos": 89,
+          "of": 93,
+          "points": 1.0,
+          "scraped_name": "SADOWIŃSKA Adriana"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 101,
+          "of": 178,
+          "points": 30.19,
+          "scraped_name": "SADOWIŃSKA Adriana"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "FOIL-F-V2",
+          "pos": 3,
+          "of": 4,
+          "points": 14.95,
+          "id_fencer": 283,
+          "name": "SADOWIŃSKA Adriana"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 7,
+          "of": 11,
+          "points": 39.14,
+          "id_fencer": 283,
+          "name": "SADOWIŃSKA Adriana"
+        }
+      ]
+    },
+    {
+      "id_fencer": 285,
+      "name": "SADOWSKA Małgorzata",
+      "birth_year": 1982,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "EPEE-F-V1",
+          "pos": 4,
+          "of": 6,
+          "points": 5.99,
+          "id_fencer": 285,
+          "name": "SADOWSKA Małgorzata"
+        }
+      ]
+    },
+    {
+      "id_fencer": 287,
+      "name": "SAMECKA-NACZYŃSKA Martyna",
+      "birth_year": 1985,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "EPEE-F-V1",
+          "pos": 16,
+          "of": 131,
+          "points": 164.04,
+          "scraped_name": "SAMECKA-NACZYŃSKA Martyna"
+        },
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "FOIL-F-V1",
+          "pos": 49,
+          "of": 54,
+          "points": 3.0,
+          "scraped_name": "SAMECKA-NACZYŃSKA Martyna"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "EPEE-F-V1",
+          "pos": 2,
+          "of": 6,
+          "points": 227.74,
+          "id_fencer": 287,
+          "name": "SAMECKA-NACZYŃSKA Martyna"
+        },
+        {
+          "weapon": "SABRE",
+          "gender": "F",
+          "category": "V1",
+          "bucket": "SABRE-F-V1",
+          "pos": 4,
+          "of": 4,
+          "points": 59.0,
+          "id_fencer": 287,
+          "name": "SAMECKA-NACZYŃSKA Martyna"
+        }
+      ]
+    },
+    {
+      "id_fencer": 290,
+      "name": "SĘKOWSKI Maciej",
+      "birth_year": 1981,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 10,
+          "of": 246,
+          "points": 297.99,
+          "scraped_name": "SĘKOWSKI Maciej"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 1,
+          "of": 23,
+          "points": 532.31,
+          "id_fencer": 290,
+          "name": "SĘKOWSKI Maciej"
+        }
+      ]
+    },
+    {
+      "id_fencer": 291,
+      "name": "SERAFIN Błażej",
+      "birth_year": 1980,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "FOIL-M-V1",
+          "pos": 51,
+          "of": 129,
+          "points": 51.16,
+          "scraped_name": "SERAFIN Błażej"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 293,
+      "name": "SERWATKA Marek",
+      "birth_year": 1968,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "FOIL-M-V2",
+          "pos": 3,
+          "of": 5,
+          "points": 8.56,
+          "id_fencer": 293,
+          "name": "SERWATKA Marek"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 19,
+          "of": 22,
+          "points": 14.93,
+          "id_fencer": 293,
+          "name": "SERWATKA Marek"
+        }
+      ]
+    },
+    {
+      "id_fencer": 295,
+      "name": "SKOCZEK Artur",
+      "birth_year": 1970,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 230,
+          "of": 385,
+          "points": 18.72,
+          "scraped_name": "SKOCZEK Artur"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 17,
+          "of": 22,
+          "points": 18.65,
+          "id_fencer": 295,
+          "name": "SKOCZEK Artur"
+        }
+      ]
+    },
+    {
+      "id_fencer": 297,
+      "name": "SKRYPKA Glib",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 20,
+          "of": 22,
+          "points": 4.6,
+          "id_fencer": 297,
+          "name": "SKRYPKA Glib"
+        }
+      ]
+    },
+    {
+      "id_fencer": 299,
+      "name": "SOBIERAJ Wojciech",
+      "birth_year": 1955,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 22,
+          "of": 139,
+          "points": 129.54,
+          "scraped_name": "SOBIERAJ Wojciech"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 2,
+          "of": 11,
+          "points": 300.06,
+          "id_fencer": 299,
+          "name": "SOBIERAJ Wojciech"
+        }
+      ]
+    },
+    {
+      "id_fencer": 302,
+      "name": "SOSNOWSKA Aniela",
+      "birth_year": 1952,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "F",
+          "category": "V4",
+          "bucket": "SABRE-F-V4",
+          "pos": 20,
+          "of": 23,
+          "points": 18.92,
+          "scraped_name": "SOSNOWSKA Aniela"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V4",
+          "bucket": "EPEE-F-V4",
+          "pos": 32,
+          "of": 44,
+          "points": 24.64,
+          "scraped_name": "SOSNOWSKA Aniela"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V4",
+          "bucket": "EPEE-F-V4",
+          "pos": 2,
+          "of": 2,
+          "points": 18.83,
+          "id_fencer": 302,
+          "name": "SOSNOWSKA Aniela"
+        },
+        {
+          "weapon": "SABRE",
+          "gender": "F",
+          "category": "V4",
+          "bucket": "SABRE-F-V4",
+          "pos": 2,
+          "of": 2,
+          "points": 71.8,
+          "id_fencer": 302,
+          "name": "SOSNOWSKA Aniela"
+        }
+      ]
+    },
+    {
+      "id_fencer": 304,
+      "name": "SPŁAWA-NEYMAN MACIEJ",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 1,
+          "of": 22,
+          "points": 319.07,
+          "id_fencer": 304,
+          "name": "SPŁAWA-NEYMAN MACIEJ"
+        },
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "FOIL-M-V0",
+          "pos": 3,
+          "of": 4,
+          "points": 153.21,
+          "id_fencer": 304,
+          "name": "SPŁAWA-NEYMAN MACIEJ"
+        },
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "SABRE-M-V0",
+          "pos": 8,
+          "of": 11,
+          "points": 26.51,
+          "id_fencer": 304,
+          "name": "SPŁAWA-NEYMAN MACIEJ"
+        }
+      ]
+    },
+    {
+      "id_fencer": 305,
+      "name": "SPODARYK Mikołaj",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 12,
+          "of": 22,
+          "points": 26.24,
+          "id_fencer": 305,
+          "name": "SPODARYK Mikołaj"
+        }
+      ]
+    },
+    {
+      "id_fencer": 307,
+      "name": "STAŃCZYK Agnieszka",
+      "birth_year": 1971,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 80,
+          "of": 178,
+          "points": 45.29,
+          "scraped_name": "STAŃCZYK Agnieszka"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 2,
+          "of": 11,
+          "points": 243.73,
+          "id_fencer": 307,
+          "name": "STAŃCZYK Agnieszka"
+        },
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "FOIL-F-V2",
+          "pos": 4,
+          "of": 4,
+          "points": 8.56,
+          "id_fencer": 307,
+          "name": "STAŃCZYK Agnieszka"
+        }
+      ]
+    },
+    {
+      "id_fencer": 308,
+      "name": "STAŃCZYK Marcin",
+      "birth_year": 1980,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 233,
+          "of": 246,
+          "points": 1.66,
+          "scraped_name": "STAŃCZYK Marcin"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 19,
+          "of": 23,
+          "points": 15.15,
+          "id_fencer": 308,
+          "name": "STAŃCZYK Marcin"
+        }
+      ]
+    },
+    {
+      "id_fencer": 309,
+      "name": "STANIEWICZ Witold",
+      "birth_year": 1967,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 10,
+          "of": 14,
+          "points": 27.33,
+          "id_fencer": 309,
+          "name": "STANIEWICZ Witold"
+        }
+      ]
+    },
+    {
+      "id_fencer": 310,
+      "name": "STANISŁAWSKI Albert",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "SABRE-M-V0",
+          "pos": 1,
+          "of": 11,
+          "points": 340.58,
+          "id_fencer": 310,
+          "name": "STANISŁAWSKI Albert"
+        }
+      ]
+    },
+    {
+      "id_fencer": 311,
+      "name": "STOCKI Piotr",
+      "birth_year": 1980,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 12,
+          "of": 246,
+          "points": 285.15,
+          "scraped_name": "STOCKI Piotr"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 2,
+          "of": 23,
+          "points": 205.5,
+          "id_fencer": 311,
+          "name": "STOCKI Piotr"
+        }
+      ]
+    },
+    {
+      "id_fencer": 313,
+      "name": "STOLARSKI Krzysztof",
+      "birth_year": 1961,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "SABRE-M-V3",
+          "pos": 5,
+          "of": 8,
+          "points": 21.35,
+          "id_fencer": 313,
+          "name": "STOLARSKI Krzysztof"
+        }
+      ]
+    },
+    {
+      "id_fencer": 314,
+      "name": "STOŁOWSKI Mariusz",
+      "birth_year": 1963,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 9,
+          "of": 14,
+          "points": 58.66,
+          "id_fencer": 314,
+          "name": "STOŁOWSKI Mariusz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 319,
+      "name": "SZCZĘSNY Jacek",
+      "birth_year": 1956,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 66,
+          "of": 139,
+          "points": 39.01,
+          "scraped_name": "SZCZĘSNY Jacek"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 1,
+          "of": 11,
+          "points": 374.04,
+          "id_fencer": 319,
+          "name": "SZCZĘSNY Jacek"
+        }
+      ]
+    },
+    {
+      "id_fencer": 321,
+      "name": "SZKLAR Bożena",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V0",
+          "bucket": "EPEE-F-V0",
+          "pos": 4,
+          "of": 8,
+          "points": 84.29,
+          "id_fencer": 321,
+          "name": "SZKLAR Bożena"
+        }
+      ]
+    },
+    {
+      "id_fencer": 322,
+      "name": "SZKODA Marek Tomasz",
+      "birth_year": 1969,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 319,
+          "of": 385,
+          "points": 4.31,
+          "scraped_name": "SZKODA Marek"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 323,
+      "name": "SZMAJDZIŃSKA Katarzyna",
+      "birth_year": 1992,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V0",
+          "bucket": "EPEE-F-V0",
+          "pos": 2,
+          "of": 8,
+          "points": 142.14,
+          "id_fencer": 323,
+          "name": "SZMAJDZIŃSKA Katarzyna"
+        }
+      ]
+    },
+    {
+      "id_fencer": 324,
+      "name": "SZMELC Łukasz",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "FOIL-M-V0",
+          "pos": 1,
+          "of": 4,
+          "points": 231.47,
+          "id_fencer": 324,
+          "name": "SZMELC Łukasz"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 8,
+          "of": 22,
+          "points": 37.74,
+          "id_fencer": 324,
+          "name": "SZMELC Łukasz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 325,
+      "name": "SZMIDT Grzegorz",
+      "birth_year": 1969,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "FOIL-M-V2",
+          "pos": 104,
+          "of": 175,
+          "points": 24.79,
+          "scraped_name": "SZMIDT Grzegorz"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 327,
+      "name": "SZTYBER Michał",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 2,
+          "of": 22,
+          "points": 270.5,
+          "id_fencer": 327,
+          "name": "SZTYBER Michał"
+        },
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "SABRE-M-V0",
+          "pos": 11,
+          "of": 11,
+          "points": 1.2,
+          "id_fencer": 327,
+          "name": "SZTYBER Michał"
+        }
+      ]
+    },
+    {
+      "id_fencer": 328,
+      "name": "SZURLEJ Agata",
+      "birth_year": 1975,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 162,
+          "of": 178,
+          "points": 2.52,
+          "scraped_name": "SZURLEJ Agata"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 329,
+      "name": "SZYMAŃSKI Adam",
+      "birth_year": 1976,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 133,
+          "of": 159,
+          "points": 4.67,
+          "scraped_name": "SZYMAŃSKI Adam"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 11,
+          "of": 18,
+          "points": 49.66,
+          "id_fencer": 329,
+          "name": "SZYMAŃSKI Adam"
+        }
+      ]
+    },
+    {
+      "id_fencer": 330,
+      "name": "SZYMKOWIAK Krzysztof",
+      "birth_year": 1956,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 5,
+          "of": 11,
+          "points": 98.0,
+          "id_fencer": 330,
+          "name": "SZYMKOWIAK Krzysztof"
+        }
+      ]
+    },
+    {
+      "id_fencer": 333,
+      "name": "TATCHYN Andriy",
+      "birth_year": 1980,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "EPEE-M-V1",
+          "pos": 7,
+          "of": 23,
+          "points": 97.07,
+          "id_fencer": 333,
+          "name": "TATCHYN Andriy"
+        }
+      ]
+    },
+    {
+      "id_fencer": 334,
+      "name": "TECŁAW Robert",
+      "birth_year": 1977,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "SABRE-M-V1",
+          "pos": 5,
+          "of": 106,
+          "points": 371.22,
+          "scraped_name": "TECŁAW Robert"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 4,
+          "of": 18,
+          "points": 175.36,
+          "id_fencer": 334,
+          "name": "TECŁAW Robert"
+        }
+      ]
+    },
+    {
+      "id_fencer": 336,
+      "name": "TOMCZAK Ireneusz",
+      "birth_year": 1968,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 13,
+          "of": 22,
+          "points": 42.08,
+          "id_fencer": 336,
+          "name": "TOMCZAK Ireneusz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 337,
+      "name": "TRACZ Jerzy",
+      "birth_year": 1966,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 131,
+          "of": 317,
+          "points": 36.07,
+          "scraped_name": "TRACZ Jerzy"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 8,
+          "of": 14,
+          "points": 60.14,
+          "id_fencer": 337,
+          "name": "TRACZ Jerzy"
+        }
+      ]
+    },
+    {
+      "id_fencer": 345,
+      "name": "WALECKA Wanda",
+      "birth_year": 1973,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 159,
+          "of": 178,
+          "points": 2.97,
+          "scraped_name": "WALECKA Wanda"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 9,
+          "of": 11,
+          "points": 6.53,
+          "id_fencer": 345,
+          "name": "WALECKA Wanda"
+        }
+      ]
+    },
+    {
+      "id_fencer": 348,
+      "name": "WASILCZUK Beata",
+      "birth_year": 1971,
+      "evf": [
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "FOIL-F-V2",
+          "pos": 27,
+          "of": 93,
+          "points": 76.3,
+          "scraped_name": "WASILCZUK Beata"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 29,
+          "of": 178,
+          "points": 150.49,
+          "scraped_name": "WASILCZUK Beata"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "EPEE-F-V2",
+          "pos": 1,
+          "of": 11,
+          "points": 365.72,
+          "id_fencer": 348,
+          "name": "WASILCZUK Beata"
+        },
+        {
+          "weapon": "FOIL",
+          "gender": "F",
+          "category": "V2",
+          "bucket": "FOIL-F-V2",
+          "pos": 2,
+          "of": 4,
+          "points": 184.19,
+          "id_fencer": 348,
+          "name": "WASILCZUK Beata"
+        }
+      ]
+    },
+    {
+      "id_fencer": 349,
+      "name": "WASIOŁKA Sebastian",
+      "birth_year": 1976,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 54,
+          "of": 385,
+          "points": 125.52,
+          "scraped_name": "WASIOŁKA Sebastian"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 4,
+          "of": 22,
+          "points": 148.03,
+          "id_fencer": 349,
+          "name": "WASIOŁKA Sebastian"
+        }
+      ]
+    },
+    {
+      "id_fencer": 351,
+      "name": "WHITLEY Gary",
+      "birth_year": 1961,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "EPEE-M-V3",
+          "pos": 11,
+          "of": 14,
+          "points": 22.09,
+          "id_fencer": 351,
+          "name": "WHITLEY Gary"
+        }
+      ]
+    },
+    {
+      "id_fencer": 353,
+      "name": "WIERZBICKI Jacek",
+      "birth_year": 1970,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 48,
+          "of": 159,
+          "points": 69.21,
+          "scraped_name": "WIERZBICKI Jacek"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 226,
+          "of": 385,
+          "points": 19.02,
+          "scraped_name": "WIERZBICKI Jacek"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 10,
+          "of": 18,
+          "points": 52.28,
+          "id_fencer": 353,
+          "name": "WIERZBICKI Jacek"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 12,
+          "of": 22,
+          "points": 52.44,
+          "id_fencer": 353,
+          "name": "WIERZBICKI Jacek"
+        }
+      ]
+    },
+    {
+      "id_fencer": 354,
+      "name": "WINGROWICZ Mariusz",
+      "birth_year": 1973,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 58,
+          "of": 159,
+          "points": 46.34,
+          "scraped_name": "WINGROWICZ Mariusz"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 7,
+          "of": 18,
+          "points": 142.91,
+          "id_fencer": 354,
+          "name": "WINGROWICZ Mariusz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 356,
+      "name": "WIŚNIEWSKI Maciej",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "EPEE-M-V0",
+          "pos": 17,
+          "of": 22,
+          "points": 18.9,
+          "id_fencer": 356,
+          "name": "WIŚNIEWSKI Maciej"
+        }
+      ]
+    },
+    {
+      "id_fencer": 360,
+      "name": "WOJCIECHOWSKI Marek",
+      "birth_year": 1960,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "SABRE-M-V3",
+          "pos": 106,
+          "of": 109,
+          "points": 1.0,
+          "scraped_name": "WOJCIECHOWSKI Marek"
+        }
+      ],
+      "spws": []
+    },
+    {
+      "id_fencer": 364,
+      "name": "WRONA Piotr",
+      "birth_year": 1971,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 15,
+          "of": 18,
+          "points": 4.98,
+          "id_fencer": 364,
+          "name": "WRONA Piotr"
+        }
+      ]
+    },
+    {
+      "id_fencer": 368,
+      "name": "ZABŁOCKI Michał",
+      "birth_year": 1964,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "SABRE-M-V3",
+          "pos": 4,
+          "of": 109,
+          "points": 560.99,
+          "scraped_name": "ZABŁOCKI Michał"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V3",
+          "bucket": "SABRE-M-V3",
+          "pos": 4,
+          "of": 8,
+          "points": 84.29,
+          "id_fencer": 368,
+          "name": "ZABŁOCKI Michał"
+        }
+      ]
+    },
+    {
+      "id_fencer": 369,
+      "name": "ZAJĄC Michał",
+      "birth_year": 1982,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "SABRE-M-V1",
+          "pos": 98,
+          "of": 106,
+          "points": 1.0,
+          "scraped_name": "ZAJĄC Michał"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V1",
+          "bucket": "SABRE-M-V1",
+          "pos": 4,
+          "of": 6,
+          "points": 9.76,
+          "id_fencer": 369,
+          "name": "ZAJĄC Michał"
+        }
+      ]
+    },
+    {
+      "id_fencer": 370,
+      "name": "ZAKONEK Bronisław",
+      "birth_year": 1950,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "FOIL-M-V4",
+          "pos": 4,
+          "of": 5,
+          "points": 8.56,
+          "id_fencer": 370,
+          "name": "ZAKONEK Bronisław"
+        }
+      ]
+    },
+    {
+      "id_fencer": 372,
+      "name": "ZAWROTNIAK Przemysław",
+      "birth_year": 1974,
+      "evf": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 16,
+          "of": 159,
+          "points": 255.9,
+          "scraped_name": "ZAWROTNIAK Przemysław"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "SABRE-M-V2",
+          "pos": 6,
+          "of": 18,
+          "points": 160.82,
+          "id_fencer": 372,
+          "name": "ZAWROTNIAK Przemysław"
+        }
+      ]
+    },
+    {
+      "id_fencer": 373,
+      "name": "ZIELIŃSKI Dariusz",
+      "birth_year": 1969,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 52,
+          "of": 385,
+          "points": 127.26,
+          "scraped_name": "ZIELIŃSKI Dariusz"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 5,
+          "of": 22,
+          "points": 141.22,
+          "id_fencer": 373,
+          "name": "ZIELIŃSKI Dariusz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 376,
+      "name": "ŻUCHOWSKI Bartosz",
+      "birth_year": 1991,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "SABRE",
+          "gender": "M",
+          "category": "V0",
+          "bucket": "SABRE-M-V0",
+          "pos": 9,
+          "of": 11,
+          "points": 12.51,
+          "id_fencer": 376,
+          "name": "ŻUCHOWSKI Bartosz"
+        }
+      ]
+    },
+    {
+      "id_fencer": 377,
+      "name": "ŻUKOWSKI Wojciech",
+      "birth_year": 1969,
+      "evf": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 94,
+          "of": 385,
+          "points": 76.42,
+          "scraped_name": "ŻUKOWSKI Wojciech"
+        },
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "FOIL-M-V2",
+          "pos": 139,
+          "of": 175,
+          "points": 8.75,
+          "scraped_name": "ŻUKOWSKI Wojciech"
+        }
+      ],
+      "spws": [
+        {
+          "weapon": "FOIL",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "FOIL-M-V2",
+          "pos": 4,
+          "of": 5,
+          "points": 6.39,
+          "id_fencer": 377,
+          "name": "ŻUKOWSKI Wojciech"
+        },
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V2",
+          "bucket": "EPEE-M-V2",
+          "pos": 8,
+          "of": 22,
+          "points": 84.1,
+          "id_fencer": 377,
+          "name": "ŻUKOWSKI Wojciech"
+        }
+      ]
+    },
+    {
+      "id_fencer": 380,
+      "name": "ZYLKA Henryk",
+      "birth_year": 1955,
+      "evf": [],
+      "spws": [
+        {
+          "weapon": "EPEE",
+          "gender": "M",
+          "category": "V4",
+          "bucket": "EPEE-M-V4",
+          "pos": 8,
+          "of": 11,
+          "points": 12.08,
+          "id_fencer": 380,
+          "name": "ZYLKA Henryk"
+        }
+      ]
+    }
+  ],
+  "unresolved_evf": [
+    {
+      "name": "GOLA Maciej",
+      "confidence": 100.0,
+      "status": "PENDING",
+      "buckets": [
+        "EPEE-M-V1"
+      ]
+    },
+    {
+      "name": "KRAWCZYK Paweł",
+      "confidence": 100.0,
+      "status": "PENDING",
+      "buckets": [
+        "EPEE-M-V4"
+      ]
+    },
+    {
+      "name": "MLYNEK Janusz",
+      "confidence": 100.0,
+      "status": "PENDING",
+      "buckets": [
+        "SABRE-M-V4"
+      ]
+    },
+    {
+      "name": "ŁOJAK Szymon",
+      "confidence": 83.33333333333334,
+      "status": "PENDING",
+      "buckets": [
+        "EPEE-M-V1"
+      ]
+    },
+    {
+      "name": "CZERWINSKA Malgorzata",
+      "confidence": 68.75,
+      "status": "PENDING",
+      "buckets": [
+        "EPEE-F-V1"
+      ]
+    },
+    {
+      "name": "SZUMIELEWICZ Paweł",
+      "confidence": 68.57142857142857,
+      "status": "PENDING",
+      "buckets": [
+        "FOIL-M-V1"
+      ]
+    },
+    {
+      "name": "CISZEWSKA Barbara",
+      "confidence": 62.857142857142854,
+      "status": "PENDING",
+      "buckets": [
+        "EPEE-F-V2"
+      ]
+    },
+    {
+      "name": "WIECZOREK Janusz",
+      "confidence": 61.66666666666667,
+      "status": "PENDING",
+      "buckets": [
+        "EPEE-M-V1"
+      ]
+    },
+    {
+      "name": "BELIAKOVA Alena",
+      "confidence": 61.66666666666667,
+      "status": "PENDING",
+      "buckets": [
+        "EPEE-F-V2"
+      ]
+    },
+    {
+      "name": "BISKUPSKI Marek",
+      "confidence": 60.41666666666667,
+      "status": "PENDING",
+      "buckets": [
+        "EPEE-M-V2"
+      ]
+    },
+    {
+      "name": "KARATHANASIS Athanasios",
+      "confidence": 54.054054054054056,
+      "status": "PENDING",
+      "buckets": [
+        "EPEE-M-V3"
+      ]
+    }
+  ]
+}

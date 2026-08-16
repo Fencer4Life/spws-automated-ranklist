@@ -1,7 +1,8 @@
 # ADR-018: Rolling Score for Active Season
 
-**Status:** Accepted; **amended 2026-06-26** (results-based carry-stop)
+**Status:** Accepted; **amended 2026-06-26** (results-based carry-stop), **amended 2026-08-09** (calendar progress strip retired)
 **Date:** 2026-03-29 (M10)
+**Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (withdraws the calendar rolling-progress strip and retires tests R.23–R.25; the scoring rule is unaffected)
 
 ## Amendment (2026-06-26 — results-based carry-stop)
 
@@ -165,9 +166,19 @@ fn_fencer_scores_rolling(p_fencer, p_weapon, p_gender, p_category, p_season)
 | R.20 | vitest | DrilldownModal: chart items for carried-over have `↩` marker |
 | R.21 | vitest | DrilldownModal: rolling info banner shows when carried-over present |
 | R.22 | vitest | DrilldownModal: non-carried scores render normally (regression) |
-| R.23 | vitest | CalendarView: progress slots render for active season |
-| R.24 | vitest | CalendarView: progress hidden for non-active season |
-| R.25 | vitest | CalendarView: correct slot states (completed/carried/missing) |
+| ~~R.23~~ | ~~vitest~~ | **Retired 2026-08-09 by [ADR-084](084-calendar-quarter-barrel-event-card.md)** — CalendarView: progress slots render for active season |
+| ~~R.24~~ | ~~vitest~~ | **Retired 2026-08-09 by [ADR-084](084-calendar-quarter-barrel-event-card.md)** — CalendarView: progress hidden for non-active season |
+| ~~R.25~~ | ~~vitest~~ | **Retired 2026-08-09 by [ADR-084](084-calendar-quarter-barrel-event-card.md)** — CalendarView: correct slot states (completed/carried/missing) |
+
+## Amendment (2026-08-09 — the calendar progress strip is withdrawn)
+
+[ADR-084](084-calendar-quarter-barrel-event-card.md) replaces `CalendarView.svelte`'s flat rolling-progress strip with the quarter barrel. The strip's DOM contract — `.rolling-progress`, `.slot`, and `.slot.completed`/`.slot.planned` — no longer exists, so **tests R.23, R.24 and R.25 are retired** rather than rewritten. They are struck through in the table above.
+
+**The scoring rule in this ADR is untouched.** What is withdrawn is one *presentation* of it. Three points worth keeping, because the strip and this ADR were less connected than the table implied:
+
+1. The strip only ever rendered **two** states. This ADR's "Three-State Position Logic" describes `completed` / `carried` / `missing`, but `positionSlots` computed a single boolean, `completed`, and the template rendered `class:completed`/`class:planned`. R.25's name — "correct slot states (completed/carried/missing)" — described a third state the component never had.
+2. **Carry-over is a ranking concept, not a calendar one.** It surfaces in `DrilldownModal.svelte` via `bool_has_carryover`, which is what R.19–R.22 pin and which is unaffected. A calendar has no carried state to lose.
+3. The barrel encodes completion on its own channel — fill for completed, ring for next-upcoming, hue for event type — which is what the strip got wrong by encoding type as hue and completion as lightness of that same hue.
 
 ## Test maintenance note (2026-06-28)
 

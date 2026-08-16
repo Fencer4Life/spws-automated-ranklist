@@ -2,6 +2,13 @@
 
 **Status:** Accepted
 **Date:** 2026-03-26 (M8)
+**Superseded in part by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) — §2 (Calendar Layout — Vertical Timeline) and its `m8_calendar_view.html` mockup registry entry. §§1, 3–9 stand.
+
+## Superseded in part (2026-08-09 — §2 Calendar Layout)
+
+[ADR-084](084-calendar-quarter-barrel-event-card.md) replaces §2's month-grouped vertical timeline with a rotating quarter barrel driving a single event card. **§§1 and 3–9 are untouched**, as is the `m8_*` mockup set apart from `m8_calendar_view.html`, whose registry entry is retired with §2.
+
+§2 rejected a horizontal timeline as "poor mobile", and that objection deserves an answer rather than a silent reversal. It was right about a *scrolling* horizontal timeline, where the viewport is a sliding window over an unbounded strip and the reader loses their place. The barrel is not that: it is **quantised into quarters**, three rows are visible at once with the focus always centred, and the seams keep absolute position legible. The objection is met by measurement at the rejected breakpoint — 320px verified throughout, five panels flat and six fanning — rather than by assertion.
 
 ## Context
 

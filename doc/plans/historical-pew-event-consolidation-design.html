@@ -1,0 +1,101 @@
+<meta charset="utf-8">
+<title>Consolidate predecessor-season EVF event fragments</title>
+<style>
+  :root{--bg:#e8ecf3;--surface:#fff;--surface-2:#dce2ec;--ink:#0f1319;--muted:#414b59;--faint:#6b7482;--line:#c9d1dc;--line-strong:#b3bdcc;--accent:#12467e;--accent-ink:#0d3763;--accent-soft:#dbe7f5;--danger:#9e2418;--danger-soft:#f7ddd9;--good:#0f5f37;--good-soft:#d8eede;--warn:#7a4d02;--warn-soft:#f4e6c8;--serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;--sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace}
+  @media(prefers-color-scheme:dark){:root{--bg:#12151b;--surface:#1b2029;--surface-2:#232935;--ink:#f1f4f8;--muted:#aeb8c6;--faint:#7c8797;--line:#2c333f;--line-strong:#3c4552;--accent:#8cbdec;--accent-ink:#a9d0f5;--accent-soft:#1a2a3c;--danger:#f59a90;--danger-soft:#331d1a;--good:#6cdc98;--good-soft:#15271b;--warn:#e6bd6f;--warn-soft:#282011}}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:20px/1.62 var(--sans)}.wrap{max-width:56rem;margin:auto;padding:60px 30px 110px}code,.mono{font-family:var(--mono)}code{background:var(--surface-2);padding:.1em .4em;border:1px solid var(--line);border-radius:5px;font-size:.82em;font-weight:600}a{color:var(--accent)}.eyebrow,.kicker{font:700 14px var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}h1,h2{font-family:var(--serif);line-height:1.1}h1{font-size:clamp(38px,6vw,56px);max-width:19ch;margin:0 0 20px}h2{font-size:33px;margin:0 0 18px}.dek{font-size:23px;color:var(--muted);max-width:56ch}.meta{display:flex;flex-wrap:wrap;gap:10px}.pill{font:600 14px var(--mono);padding:7px 13px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface)}.rule{height:2px;border:0;background:var(--line);margin:48px 0}section{margin-top:52px}p,ul,ol{max-width:64ch}li{margin:9px 0}.note{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0}.note.danger{border-left-color:var(--danger);background:var(--danger-soft)}.note.good{border-left-color:var(--good);background:var(--good-soft)}.note.warn{border-left-color:var(--warn);background:var(--warn-soft)}.lede{font-weight:800;margin-top:0}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin:18px 0}table{border-collapse:collapse;width:100%;min-width:720px;font-size:16px}th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--line)}th{background:var(--surface-2);font:700 13px var(--mono);text-transform:uppercase;letter-spacing:.06em}.flow{white-space:pre-wrap;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;padding:18px;font:15px/1.7 var(--mono)}.foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font:15px var(--mono);color:var(--faint)}
+</style>
+<div class="wrap">
+  <p class="eyebrow">EVF history · data integrity · approved design</p>
+  <h1>Consolidate predecessor-season EVF event fragments</h1>
+  <p class="dek">Repair six source-verified physical events that were scattered across multiple PEW rows. Preserve the lowest established PEW number, merge only named fragments, clear demonstrably wrong rolling links, and leave historical season boundaries and every unrelated event untouched.</p>
+  <div class="meta"><span class="pill">Design approved in conversation</span><span class="pill">TDD required</span><span class="pill">CERT → PROD</span></div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Decision</p>
+    <h2>One physical event, one surviving event row</h2>
+    <p>The repair uses the same transactional, result-preserving mechanism established by <a href="../../supabase/migrations/20260808000003_evf_historical_event_fragment_repair.sql">the 2025–2026 historical-fragment repair</a>. For each reviewed cluster, the lowest existing event base survives. Its suffix becomes the union of the weapons actually held at that physical event. Donor tournaments and results move to the survivor; exact duplicate sporting slots collapse under evidence-first rules; only empty donor event rows are then deleted.</p>
+    <div class="note good"><p class="lede">No chronological renumbering</p><p>The repair does not reflow any season. A survivor keeps its existing lowest number even when that number is not chronological. This is a historical identity repair, not a calendar reallocation.</p></div>
+    <div class="note danger"><p class="lede">No season-boundary correction</p><p><code>SPWS-2023-2024</code> retains its historical dates exactly as stored. The two 2022 rows and the season start date are explicitly outside this repair.</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">Exact mapping</p>
+    <h2>The only rows authorized to consolidate</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Physical event</th><th>Survivor after repair</th><th>Named donors deleted</th><th>Link treatment</th></tr></thead>
+      <tbody>
+        <tr><td>Budapest, 2023</td><td><code>PEW5efs-2023-2024</code></td><td><code>PEW21e-2023-2024</code></td><td>Preserve only a verified existing link; do not infer one.</td></tr>
+        <tr><td>Terni, 2023</td><td><code>PEW8efs-2023-2024</code></td><td><code>PEW24e-2023-2024</code></td><td>Preserve only a verified existing link; do not infer one.</td></tr>
+        <tr><td>Stockholm, 2024</td><td><code>PEW9ef-2023-2024</code></td><td><code>PEW11f-2023-2024</code></td><td>Preserve only a verified existing link; do not infer one.</td></tr>
+        <tr><td>Guildford, 2025</td><td><code>PEW4ef-2024-2025</code></td><td><code>PEW11e-2024-2025</code></td><td>Clear the unrelated prior-event link; leave NULL. No sabre tournament exists, so the suffix is <code>ef</code>.</td></tr>
+        <tr><td>Terni, 2025</td><td><code>PEW6efs-2024-2025</code></td><td><code>PEW12e-2024-2025</code></td><td>Preserve only a verified existing link; do not infer one.</td></tr>
+        <tr><td>Warsaw/Jabłonna, 2025</td><td><code>PEW7es-2024-2025</code></td><td><code>PEW14e-2024-2025</code></td><td>Clear the unrelated prior-event link. Retain <code>PEW8f-2024-2025</code> as the distinct prior Guildford foil event; clear Chania's current link to it without deleting it.</td></tr>
+      </tbody>
+    </table></div>
+    <p><code>PEW15f-2024-2025</code> is not part of a sufficiently proven cluster and remains unchanged. Same-date events such as Gdańsk and Athens remain separate. No wildcard, fuzzy-name, or number-based deletion is permitted.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Atomic data flow</p>
+    <h2>Fail before changing anything uncertain</h2>
+    <pre class="flow">advisory transaction lock
+  → assert every named member exists, or all are already repaired
+  → pin exact event / tournament / result / candidate / registration baselines
+  → abort if any registration exists in a member event
+  → choose each sporting-slot winner by reviewed source/full-field evidence
+  → reconcile exact duplicate results and their match-candidate provenance
+  → move retained tournaments and results to the survivor
+  → rename survivor and child codes to the approved suffix
+  → clear only the reviewed incorrect id_prior_event links
+  → delete only now-childless named donors
+  → recalculate only affected scored tournaments
+  → assert conservation, uniqueness, donor absence and ranking invariance
+  → commit atomically</pre>
+    <p>Idempotency has two accepted entry states: the exact unrepaired baseline, or the exact fully repaired state. A partial or unfamiliar state raises an exception. This prevents a migration from guessing after CERT or PROD has drifted.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Evidence hierarchy</p>
+    <h2>Sporting facts are not selected by row age</h2>
+    <p>The original scoring provider and complete field are authoritative, consistent with <a href="../adr/028-evf-calendar-results-import.html">ADR-028</a>, <a href="../adr/039-stale-event-gate.html">ADR-039</a>, <a href="../adr/043-evf-event-allocator.html">ADR-043</a>, and <a href="../adr/046-pew-weapon-suffix.html">ADR-046</a>. EVF calendar identity establishes the physical event; original scoring sites establish results, places, and field sizes. Equal-field disagreements, non-identical match-candidate provenance, code collisions, or unexpected result counts abort the transaction for operator review.</p>
+    <p>The repair never derives rolling continuity from a shared PEW number. A prior-event FK is nullable and may remain absent, as specified by the <a href="../handbook/subsystems/scoring-and-ranking.html">scoring and ranking handbook</a>. Event ownership and calendar invariants follow the <a href="../handbook/subsystems/events-and-registration.html">events and registration handbook</a>.</p>
+  </section>
+
+  <section>
+    <p class="kicker">TDD and acceptance</p>
+    <h2>RED must prove the current fragmentation</h2>
+    <ol>
+      <li>Add a dedicated pgTAP suite that names every survivor and donor and initially fails against the current seed.</li>
+      <li>Assert canonical event codes, identities, weapon suffixes, tournament ownership, child-code prefixes, donor deletion, and zero registrations.</li>
+      <li>Assert exact tournament, result, and match-candidate conservation. The LOCAL baseline contains 26 Budapest results, 11 Terni 2023 results, 10 Stockholm results, 9 Guildford results, 12 Terni 2025 results, and 89 Warsaw/Jabłonna results. LOCAL has zero cluster match candidates, while CERT has eight on Guildford; both are valid because result identities remain unchanged and the repair pins candidate count before and after each merge. The distinct <code>PEW8f</code> Guildford event and its 20 results stay untouched. Only a proven exact duplicate result or provenance row may reduce a count.</li>
+      <li>Snapshot affected fencer/event points before repair and assert the same sporting points after consolidation, except where an official-source correction is separately and explicitly documented. This repair currently authorizes no point correction.</li>
+      <li>Assert no duplicate <code>(event, weapon, gender, age category)</code> slot, no duplicate <code>(tournament, fencer)</code> result, no dangling match candidate, and no remaining reference to a deleted donor.</li>
+      <li>Run the migration twice in the test database and prove the second pass is a no-op.</li>
+    </ol>
+    <p>The repository-wide database baseline, traceability totals, specification, ADR source documents, generated ADR HTML, and current handbook pages change together under the <a href="../handbook/reference/test-and-traceability.html">traceability standard</a> and <a href="../handbook/reference/documentation-standard.html">documentation coherence gate</a>.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Deployment</p>
+    <h2>One reviewed migration, promoted consistently</h2>
+    <p>The implementation is a forward-only Supabase migration plus pgTAP evidence and coherent documentation amendments. LOCAL proves RED/GREEN and repeatability. The validated branch is integrated through the clean integration checkout. Release applies the same committed migration to CERT, verifies the post-state, then applies it to PROD after the protected-environment approval and verifies the same post-state.</p>
+    <div class="note warn"><p class="lede">Production hard stop</p><p>If CERT differs from the pinned baseline, PROD is not attempted. If PROD differs from the pinned baseline, the transaction aborts without partial changes. No manual DELETE and no environment-specific mapping are allowed.</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">Documentation impact</p>
+    <h2>Records amended with the code</h2>
+    <ul>
+      <li><a href="../adr/028-evf-calendar-results-import.html">ADR-028</a>: extend original-provider evidence and physical-event consolidation to the predecessor clusters.</li>
+      <li><a href="../adr/039-stale-event-gate.html">ADR-039</a>: record that scored duplicates require a reviewed merge, not stale-row deletion.</li>
+      <li><a href="../adr/043-evf-event-allocator.html">ADR-043</a>: record preservation of the established lowest historical number without season reflow.</li>
+      <li><a href="../adr/046-pew-weapon-suffix.html">ADR-046</a>: record the six canonical suffix unions and named donors.</li>
+      <li><a href="../Project Specification. SPWS Automated Ranklist System.html">Project Specification</a>, <a href="../requirements-traceability-matrix.html">RTM</a>, <a href="../handbook/subsystems/events-and-registration.html">events handbook</a>, <a href="../handbook/subsystems/scoring-and-ranking.html">scoring handbook</a>, and <a href="../handbook/reference/test-and-traceability.html">test baseline</a>: update current logic and evidence links.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Design scope frozen 2026-08-09 · No season reflow · No inferred prior links · Six reviewed clusters only</p>
+</div>

@@ -1,144 +1,51 @@
 <div class="calendar-view">
-  <div class="calendar-filters">
-    {#if seasons.length > 0}
-      <label class="filter-group">
-        <span class="filter-label">{t('season_label')}</span>
-        <select class="season-select" bind:value={selectedSeasonId} onchange={onseasonchange}>
-          {#each seasons as s}
-            <option value={s.id_season}>{s.txt_code}{s.bool_active ? ' ' + t('season_active') : ''}</option>
-          {/each}
-        </select>
-      </label>
+  {#if hasEvents}
+    <CalendarBarrel
+      quarters={model.quarters}
+      anchorIndex={model.anchorIndex}
+      nextUpcoming={model.nextUpcoming}
+      onselect={(event) => { selected = event }}
+    />
+    {#if shown}
+      <EventCard
+        event={shown}
+        isNextUpcoming={shown.id_event === model.nextUpcoming?.id_event}
+        onopenregistration={openRegistrationModal}
+        onopenentrylist={openEntryListModal}
+      />
     {/if}
-    {#if showEvfToggle}
-      <div class="scope-filters">
-        <button
-          class="scope-filter-btn"
-          class:active={scopeFilter === 'ppw'}
-          onclick={() => { scopeFilter = 'ppw'; scopeUserOverride = true }}
-        >PPW</button>
-        <button
-          class="scope-filter-btn"
-          class:active={scopeFilter === 'all'}
-          onclick={() => { scopeFilter = 'all'; scopeUserOverride = true }}
-        >+EVF</button>
-      </div>
-    {/if}
-    <select class="time-filter-select" bind:value={timeFilter}>
-      <option value="all">{t('filter_all')}</option>
-      <option value="past">{t('filter_past')}</option>
-      <option value="future">{t('filter_future')}</option>
-    </select>
-  </div>
-
-  {#if isActiveSeason && positionSlots.length > 0}
-    <div class="rolling-progress">
-      <div class="progress-slots">
-        {#each positionSlots as slot}
-          <div class="slot {slot.type}" class:completed={slot.completed} class:planned={!slot.completed}>
-            <span class="slot-code">{slot.name}</span>
-            <span class="slot-icon">{slot.completed ? '✓' : '📅'}</span>
-            {#if slot.city}
-              <span class="slot-city">{slot.city}</span>
-            {/if}
-          </div>
-        {/each}
-      </div>
-    </div>
-  {/if}
-
-  {#each monthGroups as group}
-    <div class="timeline-month">{group.label}</div>
-    {#each group.events as event}
-      {@const regCutoff = event.dt_registration_deadline ?? event.dt_start ?? ''}
-      {@const showRegDeadline = event.dt_registration_deadline != null && today <= event.dt_registration_deadline}
-      {@const regOpen = regCutoff !== '' && today <= regCutoff}
-      {@const showRegLink = event.url_registration != null && event.url_registration !== '' && regOpen}
-      {@const showEntryListLink = !!event.url_entry_list && regOpen}
-      {@const regUrgent = regCutoff !== '' && (new Date(regCutoff).getTime() - new Date(today).getTime()) < 7 * 86400000}
-      {@const displayStatus = getEventDisplayStatus(event.enum_status, event.dt_end, event.dt_start)}
-      <div
-        class="timeline-event {eventTypeClass(event.txt_code)}"
-        class:completed={event.enum_status === 'COMPLETED'}
-      >
-        <div class="timeline-date">
-          <span class="timeline-date-text">{formatDate(event.dt_start)}</span>
-          <span class="timeline-code">{eventCodePrefix(event.txt_code)}</span>
-        </div>
-        <div class="timeline-info">
-          <div class="timeline-name">{event.txt_name}</div>
-          {#if event.txt_location}
-            <div class="timeline-loc">
-              {event.txt_location}{event.txt_country ? ', ' + event.txt_country : ''} · {event.num_tournaments} {t('tournaments_count')}
-            </div>
-          {:else}
-            <div class="timeline-loc">{event.num_tournaments} {t('tournaments_count')}</div>
-          {/if}
-          {#if event.arr_weapons?.length}
-            <div class="timeline-weapons">{formatWeapons(event.arr_weapons)}</div>
-          {/if}
-          <div class="timeline-meta">
-            <span class="status-badge {displayStatus.cssClass}">{t(displayStatus.labelKey)}</span>
-          </div>
-          {#if (event.enum_status === 'COMPLETED' && event.url_event) || event.url_invitation}
-            <div class="timeline-links">
-              {#if event.enum_status === 'COMPLETED' && event.url_event}
-                <a class="results-link" href={event.url_event} target="_blank" rel="noopener">
-                  {t('event_results')} &rarr;
-                </a>
-              {/if}
-              {#if event.url_invitation}
-                <a class="invitation-link" href={event.url_invitation} target="_blank" rel="noopener">
-                  {t('organizer_announcement')} &rarr;
-                </a>
-              {/if}
-            </div>
-          {/if}
-          {#if showRegDeadline || showRegLink || showEntryListLink}
-            <div class="timeline-registration" class:reg-urgent={regUrgent}>
-              {#if showRegDeadline}
-                <span class="registration-deadline">{t('event_registration_deadline_label')}: {formatDate(event.dt_registration_deadline)}</span>
-              {/if}
-              {#if showRegLink}
-                <a class="registration-link" href={event.url_registration} target="_blank" rel="noopener"
-                  onclick={event.bool_use_spws_registration ? (e) => { e.preventDefault(); openRegistrationModal(event) } : undefined}>
-                  {t('event_registration')} &rarr;
-                </a>
-              {/if}
-              {#if showEntryListLink}
-                <a class="entry-list-link" href={event.url_entry_list} target="_blank" rel="noopener"
-                  onclick={(e) => { e.preventDefault(); openEntryListModal(event) }}>
-                  {t('reg_entry_list_link')} &rarr;
-                </a>
-              {/if}
-            </div>
-          {/if}
-          {#if event.num_entry_fee != null}
-            <div class="timeline-fee">{t('entry_fee')}: {event.num_entry_fee} {event.txt_entry_fee_currency ?? 'PLN'}</div>
-          {/if}
-          {#if event.num_entry_fee_2w != null}
-            <div class="timeline-fee">{t('event_entry_fee_2w_label')}: {event.num_entry_fee_2w} {event.txt_entry_fee_currency ?? 'PLN'}</div>
-          {/if}
-          {#if event.num_entry_fee_3w != null}
-            <div class="timeline-fee">{t('event_entry_fee_3w_label')}: {event.num_entry_fee_3w} {event.txt_entry_fee_currency ?? 'PLN'}</div>
-          {/if}
-        </div>
-      </div>
-    {/each}
-  {/each}
-
-  {#if filteredEvents.length === 0}
+  {:else}
     <div class="no-events">{t('no_results')}</div>
   {/if}
 
-  {#if dualEnv}
-    <div class="env-footer">
-      <div class="env-toggle">
-        <button class="env-btn" class:active={activeEnv === 'CERT'}
-          onclick={() => { activeEnv = 'CERT' }}>CT</button>
-        <button class="env-btn" class:active={activeEnv === 'PROD'}
-          onclick={() => { activeEnv = 'PROD' }}>PD</button>
-      </div>
+  <!-- One footer row carries both segments: scope on the left, environment on
+       the right. The env toggle is ADR-009's and retires with the WordPress
+       migration; `activeEnv` is $bindable and App.svelte re-points the Supabase
+       client from it. -->
+  {#if showEvfToggle || dualEnv}
+    <div class="calendar-footer">
+      {#if showEvfToggle}
+        <div class="scope-filters">
+          <button
+            class="scope-filter-btn"
+            class:active={scopeFilter === 'ppw'}
+            onclick={() => { scopeFilter = 'ppw'; scopeUserOverride = true }}
+          >PPW</button>
+          <button
+            class="scope-filter-btn"
+            class:active={scopeFilter === 'all'}
+            onclick={() => { scopeFilter = 'all'; scopeUserOverride = true }}
+          >+EVF</button>
+        </div>
+      {/if}
+      {#if dualEnv}
+        <div class="env-toggle">
+          <button class="env-btn" class:active={activeEnv === 'CERT'}
+            onclick={() => { activeEnv = 'CERT' }}>CT</button>
+          <button class="env-btn" class:active={activeEnv === 'PROD'}
+            onclick={() => { activeEnv = 'PROD' }}>PD</button>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -153,14 +60,70 @@
 />
 
 <script lang="ts">
-  import type { CalendarEvent, WeaponType, Season, Environment } from '../lib/types'
+  // Calendar orchestrator — ADR-084.
+  //
+  // It holds state and wires three children; it derives nothing itself. Every
+  // rule that used to live here inline — visibility, scope, quarter bucketing,
+  // next-upcoming, the anchor — now lives in `buildCalendar()`, where it can be
+  // asserted without mounting anything.
+  //
+  // Retired with the timeline (ADR-084 §"Rejected alternatives"): the season
+  // dropdown (the barrel owns season state and the seam carries the code), the
+  // time filter (the drum IS the time control), the month grouping, and the
+  // flat rolling-progress strip.
+  import type { CalendarEvent, Environment } from '../lib/types'
   import { t } from '../lib/locale.svelte'
-  import { getEventDisplayStatus } from '../lib/eventStatus'
+  import { buildCalendar, type CalendarScope } from '../lib/calendarQuarters'
+  import CalendarBarrel from './CalendarBarrel.svelte'
+  import EventCard from './EventCard.svelte'
   import RegistrationModal from './RegistrationModal.svelte'
 
-  // ADR-079 amend — the SPWS-hosted registration/entry-list links open this
-  // in-app modal (DrilldownModal-style overlay) instead of navigating to the
-  // standalone register.html page; closing it returns to the calendar.
+  let {
+    events = [] as CalendarEvent[],
+    showEvfToggle = false,
+    dualEnv = false,
+    activeEnv = $bindable('CERT' as Environment),
+  }: {
+    events?: CalendarEvent[]
+    showEvfToggle?: boolean
+    dualEnv?: boolean
+    activeEnv?: Environment
+  } = $props()
+
+  // ADR-044 amend — with the Calendar +EVF flag ON, default the scope to the
+  // richer EVF+FIE view. The flag loads async, so re-sync the default until the
+  // user picks a scope explicitly; a scope fixed at mount is wrong for the
+  // first paint.
+  let scopeFilter = $state<CalendarScope>('ppw')
+  let scopeUserOverride = $state(false)
+  $effect(() => {
+    if (!scopeUserOverride) scopeFilter = showEvfToggle ? 'all' : 'ppw'
+  })
+
+  const model = $derived(
+    buildCalendar({ events, scope: scopeFilter, showEvfToggle }),
+  )
+
+  const hasEvents = $derived(model.quarters.some((q) => q.events.length > 0))
+
+  /** The barrel reports its own opening selection, so this starts null. */
+  let selected = $state<CalendarEvent | null>(null)
+
+  // A selection made before a scope change can fall outside the new model —
+  // switching to PPW removes every EVF event, including the selected one. Fall
+  // back to what the barrel would open on rather than rendering a card for an
+  // event the barrel no longer shows.
+  const shown = $derived.by((): CalendarEvent | null => {
+    // Captured first: TypeScript will not narrow a mutable `$state` binding
+    // inside the closure below, so `selected.id_event` there is an error.
+    const current = selected
+    const visible = model.quarters.flatMap((q) => q.events)
+    if (current && visible.some((e) => e.id_event === current.id_event)) return current
+    return model.nextUpcoming ?? model.quarters[model.anchorIndex]?.events[0] ?? visible[0] ?? null
+  })
+
+  // ADR-079 amend — SPWS-hosted registration and entry-list links open this
+  // in-app modal instead of navigating; closing it returns to the calendar.
   let regModalOpen = $state(false)
   let regModalView = $state<'form' | 'list'>('form')
   let regModalEventCode = $state('')
@@ -179,188 +142,19 @@
     regModalView = 'list'
     regModalOpen = true
   }
-
-  function weaponLabel(w: WeaponType): string {
-    switch (w) {
-      case 'EPEE': return t('epee')
-      case 'FOIL': return t('foil')
-      case 'SABRE': return t('sabre')
-    }
-  }
-
-  function formatWeapons(weapons: WeaponType[]): string {
-    return weapons.map(weaponLabel).join(' + ')
-  }
-
-  let {
-    events = [] as CalendarEvent[],
-    showEvfToggle = false,
-    isActiveSeason = false,
-    seasons = [] as Season[],
-    selectedSeasonId = $bindable(null as number | null),
-    dualEnv = false,
-    activeEnv = $bindable('CERT' as Environment),
-    onseasonchange,
-  }: {
-    events?: CalendarEvent[]
-    showEvfToggle?: boolean
-    isActiveSeason?: boolean
-    seasons?: Season[]
-    selectedSeasonId?: number | null
-    dualEnv?: boolean
-    activeEnv?: Environment
-    onseasonchange?: () => void
-  } = $props()
-
-  let timeFilter: 'all' | 'past' | 'future' = $state('all')
-  // Part 1 (ADR-044 amend): when the Calendar +EVF flag (showEvfToggle) is ON,
-  // default the scope to 'all' so EVF (PEW/MEW) + FIE (MSW/IMSW/PSW) events show
-  // by default (the richer calendar). The flag loads async, so re-sync the
-  // default via an effect until the user explicitly picks a scope.
-  // Starting value doesn't matter — the effect below re-syncs from the live
-  // `showEvfToggle` on mount (it loads async) and on every change until the
-  // user picks a scope explicitly.
-  let scopeFilter: 'all' | 'ppw' = $state('ppw')
-  let scopeUserOverride = $state(false)
-  $effect(() => {
-    if (!scopeUserOverride) scopeFilter = showEvfToggle ? 'all' : 'ppw'
-  })
-
-  const INTL_PREFIXES = /^(PEW|MEW|MSW|PSW|IMEW|IMSW)/
-
-  function isInternationalEvent(e: CalendarEvent): boolean {
-    return e.bool_has_international || INTL_PREFIXES.test(e.txt_code)
-  }
-
-  function eventTypeClass(code: string): string {
-    if (/^PEW/.test(code)) return 'evf-circuit'
-    if (/^(IMEW|IMSW|MEW|MSW|PSW)/.test(code)) return 'evf-intl'
-    return ''
-  }
-
-  function slotTypeClass(code: string): string {
-    if (/^PEW/.test(code)) return 'pew'
-    if (/^(IMEW|IMSW|MEW|MSW|PSW)/.test(code)) return 'imew'
-    if (/^MPW/.test(code)) return 'mpw'
-    return 'ppw'
-  }
-
-  const today = new Date().toISOString().slice(0, 10)
-
-  function isWithinCancellationNoticeWindow(event: CalendarEvent): boolean {
-    if (event.enum_status !== 'CANCELLED') return true
-    if (!event.dt_end) return true
-    const hideAfter = new Date(`${event.dt_end}T00:00:00Z`)
-    hideAfter.setUTCDate(hideAfter.getUTCDate() + 7)
-    return today <= hideAfter.toISOString().slice(0, 10)
-  }
-
-  // CREATED-state events are planning skeletons (created date-less by
-  // fn_init_season, scheduled later in EventManager). Hide them from the public
-  // calendar — both the timeline and the rolling-progress bar (user req 2026-06-27).
-  // CANCELLED rows remain durable, but their public notice expires after the
-  // seventh day following the original end date (ADR-037 amendment).
-  let calendarEvents = $derived(
-    events.filter((e) => e.enum_status !== 'CREATED' && isWithinCancellationNoticeWindow(e)),
-  )
-
-  // Rolling progress: derive position slots respecting scope + time filters
-  let positionSlots = $derived.by(() => {
-    if (!isActiveSeason) return []
-    let inScope = scopeFilter === 'all'
-      ? calendarEvents
-      : calendarEvents.filter(e => !isInternationalEvent(e))
-    if (timeFilter === 'past') {
-      inScope = inScope.filter(e => e.dt_start != null && e.dt_start < today)
-    } else if (timeFilter === 'future') {
-      inScope = inScope.filter(e => e.dt_start != null && e.dt_start > today)
-    }
-    return inScope
-      .slice()
-      .sort((a, b) => (a.dt_start ?? '').localeCompare(b.dt_start ?? ''))
-      .map(e => ({
-        name: eventCodePrefix(e.txt_code),
-        completed: e.enum_status === 'COMPLETED',
-        type: slotTypeClass(e.txt_code),
-        city: e.txt_location ?? '',
-      }))
-  })
-
-  let filteredEvents = $derived.by(() => {
-    let result = calendarEvents
-    if (!showEvfToggle || scopeFilter === 'ppw') {
-      result = result.filter((e) => !isInternationalEvent(e))
-    }
-    if (timeFilter === 'past') {
-      result = result.filter((e) => e.dt_start != null && e.dt_start < today)
-    } else if (timeFilter === 'future') {
-      result = result.filter((e) => e.dt_start != null && e.dt_start > today)
-    }
-    return result.slice().sort((a, b) => (b.dt_start ?? '').localeCompare(a.dt_start ?? ''))
-  })
-
-  let monthGroups = $derived.by(() => {
-    const groups: { label: string; events: CalendarEvent[] }[] = []
-    let currentKey = ''
-    for (const event of filteredEvents) {
-      const key = event.dt_start ? event.dt_start.slice(0, 7) : 'unknown'
-      if (key !== currentKey) {
-        currentKey = key
-        groups.push({ label: formatMonth(key), events: [] })
-      }
-      groups[groups.length - 1].events.push(event)
-    }
-    return groups
-  })
-
-  function formatMonth(yearMonth: string): string {
-    if (yearMonth === 'unknown') return '—'
-    const [y, m] = yearMonth.split('-')
-    const monthNum = parseInt(m, 10)
-    return `${t(`month_${monthNum}`)} ${y}`
-  }
-
-  function formatDate(dt: string | null): string {
-    if (!dt) return '—'
-    const [, m, d] = dt.split('-')
-    return `${parseInt(d, 10)}.${m}`
-  }
-
-  function eventCodePrefix(code: string): string {
-    return code.split('-')[0].replace(/^PP(\d)/, 'PPW$1')
-  }
-
 </script>
 
 <style>
   .calendar-view {
     padding: 0;
   }
-  .filter-group {
+  /* Scope on the left, environment on the right — one row, centred together. */
+  .calendar-footer {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .filter-label {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    color: #666;
-    letter-spacing: 0.5px;
-  }
-  .season-select {
-    padding: 6px 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-    background: #fff;
-    cursor: pointer;
-  }
-  .calendar-filters {
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    padding: 8px 0;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 0;
     flex-wrap: wrap;
   }
   .scope-filters {
@@ -385,10 +179,11 @@
     background: #4a90d9;
     color: #fff;
   }
-  .env-footer {
-    display: flex;
-    justify-content: center;
-    padding: 16px 0;
+  .no-events {
+    text-align: center;
+    color: #888;
+    padding: 32px 0;
+    font-size: 14px;
   }
   .env-toggle {
     display: flex;
@@ -412,248 +207,5 @@
   .env-btn.active {
     background: #4a90d9;
     color: #fff;
-  }
-  .time-filter-select {
-    padding: 5px 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 13px;
-    font-weight: 600;
-    background: #fff;
-    cursor: pointer;
-  }
-  .timeline-month {
-    font-size: 13px;
-    font-weight: 700;
-    color: #888;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 14px 0 8px;
-  }
-  .timeline-event {
-    display: flex;
-    gap: 14px;
-    margin-bottom: 10px;
-    padding: 10px 14px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    background: #fff;
-  }
-  .timeline-event.completed {
-    border-left: 4px solid #1a7f37;
-  }
-  /* PEW — EVF circuit: light blue */
-  .timeline-event.evf-circuit {
-    border-left: 4px solid #5ba8e0;
-    background: #f4f9fd;
-  }
-  /* IMEW/MEW/MSW/PSW — international: light gold */
-  .timeline-event.evf-intl {
-    border-left: 4px solid #c9a030;
-    background: #fdf9f0;
-  }
-  .timeline-date {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    min-width: 56px;
-    padding-top: 0;
-  }
-  .timeline-date-text {
-    font-weight: 700;
-    font-size: 13px;
-    color: #4a90d9;
-    white-space: nowrap;
-  }
-  .timeline-code {
-    font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    padding: 1px 6px;
-    border-radius: 8px;
-    text-transform: uppercase;
-    line-height: 1.4;
-    background: #e6f4ea;
-    color: #1a7f37;
-  }
-  .timeline-event.evf-circuit .timeline-code {
-    background: #deedf8;
-    color: #2a6faa;
-  }
-  .timeline-event.evf-intl .timeline-code {
-    background: #faf3e0;
-    color: #8a6d1b;
-  }
-  .timeline-info {
-    flex: 1;
-  }
-  .timeline-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: #222;
-  }
-  .timeline-loc {
-    font-size: 12px;
-    color: #888;
-    margin-top: 2px;
-  }
-  .timeline-weapons {
-    font-size: 11px;
-    color: #4a90d9;
-    margin-top: 3px;
-  }
-  .timeline-meta {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    margin-top: 4px;
-    flex-wrap: wrap;
-  }
-  .timeline-fee {
-    font-size: 11px;
-    color: #666;
-    margin-top: 3px;
-  }
-  .status-badge {
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-weight: 600;
-    display: inline-block;
-  }
-  .status-completed { background: #e6f4ea; color: #1a7f37; }
-  .status-scheduled { background: #e1f0ff; color: #1a6fbf; }
-  .status-planned { background: #f0f0f0; color: #666; }
-  .status-cancelled { background: #ffeef0; color: #c33; }
-  .status-inprogress { background: #fff4e6; color: #b35c00; }
-  .status-awaiting { background: #fef3c7; color: #92400e; }
-  .status-changed { background: #ffe0cc; color: #8a4500; }
-  .status-created { background: #f3e8ff; color: #6b21a8; }
-  .status-scored { background: #e0f2f1; color: #00695c; }
-  .timeline-links {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    align-items: flex-start;
-    margin-top: 4px;
-  }
-  .results-link {
-    font-size: 11px;
-    color: #1a7f37;
-    text-decoration: none;
-    font-weight: 600;
-  }
-  .results-link:hover {
-    text-decoration: underline;
-  }
-  .invitation-link {
-    font-size: 11px;
-    color: #4a90d9;
-    text-decoration: none;
-  }
-  .invitation-link:hover {
-    text-decoration: underline;
-  }
-  .timeline-registration {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    align-items: flex-start;
-    margin-top: 4px;
-  }
-  .registration-deadline {
-    font-size: 11px;
-    color: #2e7d32;
-    font-weight: 600;
-  }
-  .registration-link {
-    font-size: 11px;
-    color: #2e7d32;
-    text-decoration: none;
-    font-weight: 600;
-  }
-  .registration-link:hover {
-    text-decoration: underline;
-  }
-  .entry-list-link {
-    font-size: 11px;
-    color: #2c5f8a;
-    text-decoration: none;
-    font-weight: 600;
-    margin-left: 8px;
-  }
-  .entry-list-link:hover {
-    text-decoration: underline;
-  }
-  .reg-urgent .registration-deadline,
-  .reg-urgent .registration-link {
-    color: #c33;
-  }
-  .no-events {
-    text-align: center;
-    color: #888;
-    padding: 32px 0;
-    font-size: 14px;
-  }
-  .rolling-progress {
-    padding: 12px 0;
-    border-bottom: 1px solid #eee;
-    margin-bottom: 12px;
-  }
-  .progress-slots {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .slot {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 5px 8px 4px;
-    border-radius: 5px;
-    font-weight: 600;
-    min-width: 52px;
-  }
-  .slot-code {
-    font-size: 9px;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-  }
-  .slot-icon {
-    font-size: 14px;
-    line-height: 1.2;
-  }
-  .slot-city {
-    font-size: 8px;
-    font-weight: 500;
-    opacity: 0.7;
-    max-width: 58px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  /* PPW/MPW domestic — completed (solid green) */
-  .slot.ppw.completed, .slot.mpw.completed {
-    background: #e6f4ea; color: #1a7f37; border: 1px solid #b4dfbf;
-  }
-  /* PPW/MPW domestic — future (lighter green) */
-  .slot.ppw.planned, .slot.mpw.planned {
-    background: #f2faf5; color: #5aad6a; border: 1px solid #d0e8d6;
-  }
-  /* PEW — EVF circuit (light blue) */
-  .slot.pew.completed {
-    background: #deedf8; color: #2a6faa; border: 1px solid #aed0ec;
-  }
-  .slot.pew.planned {
-    background: #f2f7fb; color: #a0c4dd; border: 1px solid #d8e8f2;
-  }
-  /* IMEW/MEW/MSW/PSW — international (light gold) */
-  .slot.imew.completed {
-    background: #faf3e0; color: #8a6d1b; border: 1px solid #e8d5a0;
-  }
-  .slot.imew.planned {
-    background: #fefcf5; color: #c8b880; border: 1px solid #ede8d8;
   }
 </style>

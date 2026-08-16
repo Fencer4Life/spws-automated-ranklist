@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handover — calendar barrel redesign (8 Aug 2026)</title>
+<style>
+:root{
+  --surface-0:#f7f6f3; --surface-1:#f1efe9; --surface-2:#ffffff;
+  --text-primary:#1c1b19; --text-secondary:#565550; --text-muted:#8a887f;
+  --border:rgba(0,0,0,.13); --rule:rgba(0,0,0,.10);
+  --accent:#185FA5; --ok:#3B6D11; --warn:#854F0B; --bad:#A32D2D;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+:root{
+  --surface-0:#17171a; --surface-1:#1f1f23; --surface-2:#26262b;
+  --text-primary:#eceae5; --text-secondary:#a9a79f; --text-muted:#77756d;
+  --border:rgba(255,255,255,.14); --rule:rgba(255,255,255,.12);
+  --accent:#B5D4F4; --ok:#97C459; --warn:#EF9F27; --bad:#F09595;
+}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface-0);color:var(--text-primary);font-family:var(--serif);font-size:17px;line-height:1.62}
+.page{max-width:47rem;margin:0 auto;padding:3.5rem 1.5rem 6rem}
+.eyebrow{font-family:var(--sans);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .8rem}
+h1{font-size:2rem;line-height:1.2;font-weight:600;margin:0 0 .6rem;letter-spacing:-.015em}
+.standfirst{font-size:1.13rem;color:var(--text-secondary);margin:0 0 1.5rem;line-height:1.5}
+.meta{font-family:var(--sans);font-size:12.5px;color:var(--text-muted);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:.7rem 0;display:flex;gap:1.4rem;flex-wrap:wrap;margin-bottom:2.5rem}
+.meta b{font-weight:600;color:var(--text-secondary)}
+h2{font-size:1.36rem;font-weight:600;margin:3rem 0 .3rem;line-height:1.3}
+h2 .num{font-family:var(--sans);font-size:12px;letter-spacing:.14em;color:var(--text-muted);display:block;margin-bottom:.4rem;font-weight:500}
+h3{font-size:1.05rem;font-weight:600;margin:1.8rem 0 .4rem}
+p{margin:0 0 .9rem}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:.84em;background:var(--surface-1);padding:.12em .38em;border-radius:4px;border:1px solid var(--rule)}
+ol,ul{margin:0 0 1rem;padding-left:1.35rem}
+li{margin-bottom:.45rem}
+table{width:100%;border-collapse:collapse;font-family:var(--sans);font-size:14px;margin:.9rem 0 1.3rem;display:block;overflow-x:auto}
+th,td{text-align:left;padding:.55rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap}
+td code{background:none;border:none;padding:0}
+.callout{background:var(--surface-1);border-radius:10px;padding:1rem 1.2rem;margin:1.3rem 0;font-family:var(--sans);font-size:14.5px;line-height:1.6}
+.callout b{font-weight:600}
+.lede{font-family:var(--sans);font-size:14.5px;color:var(--text-secondary);line-height:1.6}
+.open{border-left:3px solid var(--warn);padding-left:1rem;margin:1.1rem 0}
+.open b{font-family:var(--sans);font-size:14px;display:block;margin-bottom:.2rem}
+.open p{font-family:var(--sans);font-size:14px;color:var(--text-secondary);margin:0 0 .35rem;line-height:1.55}
+.rec{font-family:var(--sans);font-size:13.5px;color:var(--ok)}
+.locked{font-family:var(--sans);font-size:14px;line-height:1.6}
+.locked li{margin-bottom:.35rem}
+hr{border:none;border-top:1px solid var(--rule);margin:2.6rem 0}
+.big{font-family:var(--sans);font-size:15px;background:var(--surface-1);border-radius:10px;padding:1rem 1.2rem;margin:1.2rem 0}
+</style>
+</head>
+<body>
+<div class="page">
+
+<p class="eyebrow">Session handover · SPWS Ranklist</p>
+<h1>Calendar barrel redesign — where we got to</h1>
+<p class="standfirst">A full design session produced an agreed, working prototype of a replacement calendar UI. This is the state to resume from, what is settled, and what is still open.</p>
+<div class="meta">
+  <span><b>Date</b> 8 August 2026, revised 9 August</span>
+  <span><b>Stage</b> Design agreed, not implemented</span>
+  <span><b>Deliverable</b> <code>doc/plans/kalendarz-barrel-2026-08-08.html</code></span>
+  <span><b>Branch</b> main, 23 unpushed commits</span>
+</div>
+
+<div class="big">
+<b>Read §00 first.</b> A second design session on <b>9 August</b> changed the card substantially and closed four of the seven open questions below. Where this handover and the plan disagree, <b>the plan wins</b> — it was revised, this file is a summary. The “settled” list in §02 is still valid but no longer complete; §00 carries the additions.
+</div>
+
+<h2><span class="num">00</span>What changed on 9 August</h2>
+<p class="lede">A review pass over §04 of the plan, then a rebuild of the event card. All of it is in the plan; this is the index.</p>
+<ul class="locked">
+<li><b>The card was rebuilt around what a fencer acts on.</b> Tournament count <b>removed</b> — filled on 103/103 events and useless to read. Added: entry fee <em>and</em> both weapon-tier fees with stored currency, registration deadline as <code>dd/mm/yyyy</code>, registration link, entry-list link. Weapons demoted to small pills at the bottom.</li>
+<li><b>Fee tiers are gated on weapon count.</b> A foil-only event has no two-weapon price; a populated <code>_2w</code> there is a data error, not something to render.</li>
+<li><b>The venue address replaced the <code>country · season</code> row</b>, with a copy-to-clipboard icon button. The clipboard gets the <em>full</em> address (venue, city, country) even though the card shows only a flag.</li>
+<li><b>Entry list is gated on <code>dt_start &gt; today</code>, not on the registration deadline.</b> This is a deliberate change from current behaviour — <code>registrationState()</code> must return two flags, not one <code>regOpen</code>, and <code>CalendarView.test.ts:580</code> and neighbours need <b>rewriting</b>, not porting.</li>
+<li><b><code>CalendarFilters.svelte</code> is not a file.</b> It was only ever a proposal; the scope segment goes inline in the orchestrator. The <code>PPW | +EVF</code> control <b>stays</b> and is governed per season by <code>show_evf_toggle_calendar</code> (“Pokaż przełącznik +EVF w Kalendarzu”). Off does not just hide the button — it forces the domestic scope.</li>
+<li><b>EN | PL localisation is real now</b>, including Polish three-form plurals. Found a live bug: <code>tournaments_count</code> is a flat string, so <q>2 turniejów</q> and <q>1 tournaments</q> are on screen in production today.</li>
+<li><b>The location rule: if <code>txt_location</code> holds anything, it appears.</b> Classification picks the line, never visibility. This fixed a real defect where 9 events with a location showed none.</li>
+<li><b>The CERT/PROD switch is temporary</b> — it retires when PROD moves off GitHub Pages to the WordPress CMS. Carry it unchanged; do <em>not</em> refactor or de-duplicate it.</li>
+<li><b>Also corrected in the plan:</b> the env footer and the time filter were unaccounted for; test triage is <b>53 tests across two files</b>, not 49 across one; <code>fetchPriorSeasonEvents</code> orders by <code>txt_code</code> so <code>calendarQuarters.ts</code> must sort itself; <code>isActiveSeason</code> dies with the strip; <code>CountryFlag</code> is blocked on country normalisation; the selected panel is 78/74px and 56px tall, and spells its month out in full.</li>
+</ul>
+
+<div class="open">
+<b>Open questions now closed</b>
+<p>Of the seven in §03: <b>3</b> (<code>arr_weapons</code> default) is superseded — fee tiers are now gated on the event's weapon count, which is the reconciliation that question was reaching for. The weapon-preference item in the plan's §09 is <b>moot</b>: there is no weapon filter. <b>Everything else remains open, including 5 (what the card opens on).</b></p>
+<p><em>Correcting an earlier draft of this section:</em> it claimed 5 was answered because the mock opens on next-upcoming. That is the mock's default, not a decision — the standing recommendation is still time-sensitive. 5 and 7 are the two that reach into Phase 1, and both land in <code>resolveAnchorQuarter()</code>.</p>
+</div>
+
+<div class="callout">
+<b>There is one plan, and it is the HTML.</b> An early Markdown draft (<code>~/.claude/plans/swirling-leaping-flask.md</code>) was <b>deleted on 9 August</b> after it twice sent a reader to conclusions the plan had already overturned — it still listed <code>CalendarFilters.svelte</code> as a file to create and the weapon-preference question as open. Every one of its eight sections was verified present in the plan before deleting. If a reference to it survives anywhere, it is stale: the file is gone deliberately.
+</div>
+
+<div class="big">
+<b>Start here.</b> Open <code>doc/plans/kalendarz-barrel-2026-08-08.html</code> in a browser. The live, interactive mock sits at the very top under <em>“This is what we are building”</em>, driven by <b>real CERT data — all 103 non-skeleton events across four seasons</b>. It is the acceptance criterion: the work is done when the real component matches it. Everything below it in that file is the development plan.
+</div>
+
+<h2><span class="num">01</span>What the design is</h2>
+<p>The calendar's month-grouped event list, the flat rolling-progress strip <em>and</em> the season dropdown are all removed. In their place: a rotating three-row <b>quarter barrel</b> that is the primary control, driving a <b>single full-detail event card</b> beneath it.</p>
+<p>The original complaint was that the progress strip encoded two variables in one visual channel — hue for event type, lightness of that same hue for completion — so neither read cleanly. The redesign gives each variable its own channel: hue for type, fill for completed, a ring for the next upcoming event.</p>
+
+<h2><span class="num">02</span>Settled — do not relitigate</h2>
+<p class="lede">Each of these was decided explicitly during the session, several after being tried and rejected in another form.</p>
+<ul class="locked">
+<li><b>Three-row drum.</b> Focused quarter centred, previous receded above at <code>rotateX(46deg)</code>, next below at <code>-46deg</code>. Rotation is <code>translateY</code> on the drum; facing angle is <code>rotateX</code> per row. The DOM never re-renders on rotate — only classes change.</li>
+<li><b>Detail tiers follow rotation.</b> Focused row shows day, month, code (and city on the selected panel). Receded rows drop to day + code at 38px.</li>
+<li><b>Engraved seams.</b> Quarter label (<code>4Q26</code>) at 11px muted on a hairline above each row, rotating with it. Season code (<code>25/26</code>) at the seam's right end on the focused row, and permanently on season-boundary seams, which take a 2px stronger rule.</li>
+<li><b>Continuous history, no season clamp.</b> The drum rolls back to the start of history. Crossing a boundary drives season state — the barrel owns it, which is why the dropdown could go.</li>
+<li><b>Whole row is the tap target.</b> Tapping a receded row rotates it to centre; tapping a panel on the focused row selects that event.</li>
+<li><b>Overlap, not shrink.</b> When a quarter's panels do not fit, they fan and overlap at full size rather than compressing. <code>z-index = 200 − |i − selected| × 2</code>, so the stack peaks on the selection: panels to its left expose their left edge, panels to its right expose their right edge. Positions are fixed at <code>i × S</code>; only <code>z-index</code> changes on select. Step <code>S = (available − W_selected) ÷ (n − 1)</code>, floor 13px.</li>
+<li><b>Selected panel widens to 78px</b> to carry the city, 48px when the event has no city. Uniform negative margins mean every panel after it shifts right automatically — no special-casing.</li>
+<li><b>Panels keep the date.</b> Day and month on every panel, always.</li>
+<li><b>EVF codes shortened on panels</b> to <code>EVF</code> + number (<code>PEW63e</code> → <code>EVF63</code>). Weapon suffix dropped — it bought nothing once the weapon filter went. Full code preserved on the card.</li>
+<li><b>No weapon filter.</b> Dropped entirely. The data is not to be compressed.</li>
+<li><b>One scope control</b>, centred below the header: <code>PPW | +EVF</code>.</li>
+<li><b>Header</b>: hamburger, SPWS wordmark, view title, <code>EN | PL</code> toggle.</li>
+<li><b>Results links are labelled by day, never by weapon.</b> One URL renders as <code>Wyniki</code>; several render as <code>Dzień 1</code>, <code>Dzień 2</code>. Two weapons on one day still read as that day. This follows ADR-040, which states the five URL slots are <em>“equal-status — no role labels, no per-slot enum, no primary pointer”</em>. An earlier per-weapon design was wrong and was removed.</li>
+<li><b>Optional fields render only when present.</b> Entry fee, invitation, deadline, venue, city — omitted entirely when empty. No “brak danych” placeholders.</li>
+<li><b>Status is colour-coded via existing code.</b> <code>getEventDisplayStatus()</code> in <code>frontend/src/lib/eventStatus.ts</code> already covers all eight lifecycle states plus derived awaiting-results. Reuse unchanged — zero new work.</li>
+<li><b>Location is always a city, never a venue.</b> Venue belongs in <code>txt_venue_address</code>. The mock never infers a city that is not literally in the string.</li>
+<li><b>Country normalisation is a one-time enrichment pass</b> writing ISO-3166 alpha-2 with human review of ambiguous cases — never a per-render web lookup.</li>
+<li><b>320px is the floor</b>, verified throughout.</li>
+</ul>
+
+<h2><span class="num">03</span>Open questions</h2>
+<p class="lede">Recommendations given, decisions not yet made.</p>
+
+<div class="open">
+<b>1. Day-label fallback for undated result URLs</b>
+<p>Engarde encodes the date in the path (<code>2025_09_20_pbt</code>), so those label themselves. FTL and 4Fence may not, and ADR-040 forbids inferring day from slot position since slots are compacted and non-semantic.</p>
+<p class="rec">Recommendation: fall back to bare numbering — <code>Wyniki 1</code>, <code>Wyniki 2</code>. Degrades honestly and fails visibly, signalling which platforms need a parser.</p>
+</div>
+
+<div class="open">
+<b>2. The Guildford triple — unfinished investigation</b>
+<p>Three CERT rows — <code>PEW63e</code> (10 Jan, 1 tournament), <code>PEW62efs</code> (10–11 Jan, 9), <code>PEW64s</code> (11 Jan, 2) — all carry the <b>identical</b> <code>url_event</code>: <code>fencingtimelive.com/tournaments/eventSchedule/E2A7B077F2824DD8A7F2E413B4211296</code>. One competition, 12 tournaments, split across three event rows. The next year's Guildford (<code>PEW6efs-2026-2027</code>) is correctly a single row with 12 tournaments. All three have <code>txt_name</code> echoing the code and <code>txt_location</code> null — machine-created without metadata. They sit in a 61–67 numbering block separate from that season's normal 1–9 series.</p>
+<p><b>The sizing query was never completed:</b> count how many events share a <code>url_event</code> with another event. Note the in-flight branches <code>codex/fix-evf-calendar-event-codes</code> and <code>codex/fix-evf-calendar-event-codes-updated</code> — this may already be known work.</p>
+</div>
+
+<div class="open">
+<b>3. <code>arr_weapons</code> — drop the default?</b>
+<p>The column already exists (<code>20260327000006_event_weapons.sql</code>) with <code>DEFAULT '{EPEE,FOIL,SABRE}'</code> and was never populated: 102 of 103 events sit on the default. So “all three” currently means both “genuinely all three” and “nobody set this”.</p>
+<p class="rec">Recommendation: drop the default, backfill from the lowercase code suffix, leave <code>NULL</code> where unknown, and add a reconciliation check flagging disagreement with ingested tournaments.</p>
+</div>
+
+<div class="open">
+<b>4. Location backfill scope</b>
+<p>45 PEW events have no location; 25 of those are 2023-24 and 2024-25, which the EVF calendar may no longer retain.</p>
+<p class="rec">Recommendation: backfill the current and previous season only (~12 events, all still scrapeable). Nobody is choosing whether to travel to a 2023 competition.</p>
+</div>
+
+<div class="open">
+<b>5. What the card opens on</b>
+<p>Next upcoming, most recent result, or time-sensitive.</p>
+<p class="rec">Recommendation: time-sensitive — the result for seven days after an event ends, then the next upcoming. The seven-day window already exists in the codebase for cancelled-event notices.</p>
+</div>
+
+<div class="open">
+<b>6. Scroll behaviour</b>
+<p>Barrel pinned to the top, or the whole page scrolls.</p>
+<p class="rec">Recommendation: scrolling. Pinning ~250px of drum on a 568px screen leaves under half the display for the card.</p>
+</div>
+
+<div class="open">
+<b>7. Past-season anchor</b>
+<p>Finished seasons have no next-upcoming event, so the drum loses its focal point and rows read flat.</p>
+<p class="rec">Recommendation: mark championships (<code>MPW</code>, <code>MŚW</code>, <code>MEW</code>) distinctly so past rows keep structure. Marking events the viewer competed in is better but impossible on the public embed.</p>
+</div>
+
+<h2><span class="num">04</span>Data findings from CERT</h2>
+<p class="lede">Pulled live from <code>vw_calendar</code> on 8 August 2026 via the deployed Pages site, which carries CERT credentials. 126 rows, 103 after excluding <code>CREATED</code> skeletons.</p>
+
+<table>
+<tr><th>Finding</th><th>Detail</th></tr>
+<tr><td>Location missing on PEW only</td><td>Domestic (PPW/GP/MPW) 22/22 = 100%. PEW 30/75 = 40%. By season: 30% → 54% → 76% → 68%, tracking the scraper gaining the field.</td></tr>
+<tr><td>Venue written into the city field</td><td><code>Sporthalle der Städtischen Berufsschule für Informationstechnik</code>, <code>POLIDEPORTIVO MUNICIPAL DE MORATALAZ</code>, <code>Savoy Terrace - Buda Castle</code>. Scraper defect.</td></tr>
+<tr><td>Country is free text, mixed languages</td><td><code>Polska</code>, <code>Germany</code>, <code>GRUZJA</code>, and both <code>Great Britain</code> and <code>United Kingdom</code> for the same country.</td></tr>
+<tr><td>City spelling and casing inconsistent</td><td><code>Guilford</code> vs <code>Guildford</code>; <code>TBILISI</code> in caps; <code>Warszawa-Łomianki</code> compound.</td></tr>
+<tr><td><code>arr_weapons</code> unusable</td><td>102/103 on the default. Real weapon lives in the lowercase code suffix: <code>PEW2es</code>, <code>PEW12s</code>.</td></tr>
+<tr><td>Optional detail largely absent</td><td>Fee 28/103 · venue 22/103 · deadline 5/103 · fee tiers 1/103. Tournaments and weapons 103/103.</td></tr>
+<tr><td>Dates and seasons disagree</td><td><code>PEW2e-2023-2024</code> dated 2022-01-08; <code>PEW8f-2025-2026</code> sits among 2024-25 events. Some quarters hold two seasons.</td></tr>
+</table>
+
+<h2><span class="num">05</span>Files and how to run</h2>
+<table>
+<tr><th>Path</th><th>State</th></tr>
+<tr><td><code>doc/plans/kalendarz-barrel-2026-08-08.html</code></td><td>New, untracked. Plan + live mock. ~48 KB.</td></tr>
+<tr><td><code>doc/plans/kalendarz-barrel-handover-2026-08-08.html</code></td><td>This file. New, untracked.</td></tr>
+<tr><td><s><code>~/.claude/plans/swirling-leaping-flask.md</code></s></td><td><b>Deleted 9 August.</b> Early Markdown draft, fully superseded. All eight of its sections were confirmed present in the HTML plan before removal.</td></tr>
+<tr><td>Frontend source</td><td><b>Untouched.</b> No implementation has begun.</td></tr>
+</table>
+<p>To view: start the <code>documentation</code> launch config (python http.server on 8100) and open <code>http://localhost:8100/doc/plans/kalendarz-barrel-2026-08-08.html</code>. Give the browser viewport at least 900px — a collapsed pane reports <code>innerWidth: 0</code> and every geometry measurement taken from it is meaningless.</p>
+<p>Repo state: rebase onto <code>origin/main</code> completed cleanly at session start (23 commits replayed, zero conflicts, worktree preserved). Those 23 commits remain unpushed. Three unrelated modified plan HTMLs were already dirty before this session and must be preserved.</p>
+
+<h2><span class="num">06</span>Next step</h2>
+<p><b>As of 9 August the design review is finished, both pre-start decisions are settled, and Phase 1 is the next move:</b> <code>frontend/src/lib/calendarQuarters.ts</code> with its tests, RED → GREEN. It now owns more than the original plan gave it — quarter bucketing, season boundaries, next-upcoming, the scope filter, <code>registrationState()</code> returning registration and entry-list flags <em>separately</em>, <code>countryCode()</code>, and the four-way type split. Only two open questions touch it (card opening state, past-season anchor) and both land in <code>resolveAnchorQuarter()</code>, which can be written last.</p>
+<p><b>The two decisions, settled 9 August — do not reopen them.</b> <b>Nearest-hub: dropped.</b> Phase 2 does not exist; there is no migration and no SQL in this work. <b>Entry-list rule change: accepted</b> — the link is gated on <code>dt_start &gt; today</code>, never on a cancelled event, decoupled from the registration cutoff. The plan's warning that this obliged rewriting existing tests was checked against all 49 and is <b>wrong</b>: no existing test pins the old rule, so it costs new tests rather than rewrites. §04 of the plan carries the evidence.</p>
+<p><b>Repo state at the close of that session.</b> Rebased onto <code>origin/main</code> — 23 commits replayed, zero conflicts, worktree preserved intact (4 pre-existing tracked modifications, 23 untracked files). Frontend source still <b>untouched</b>; no implementation has begun. The graphify graph is current at 7004 nodes.</p>
+<p class="lede">Superseded: the 8 August note said the user intended to keep brainstorming and that coding needed a fresh instruction. That review happened on 9 August and is complete.</p>
+<p>Before any implementation: the plan's own phases start with <code>frontend/src/lib/calendarQuarters.ts</code> and its tests, RED → GREEN. The 49 existing tests in <code>frontend/tests/CalendarView.test.ts</code> need explicit triage — most assert the list and strip being deleted, and each must be consciously moved or dropped, never silently removed.</p>
+
+</div>
+</body>
+</html>
