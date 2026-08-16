@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="Project Specification. SPWS Automated Ranklist System.md">
-<meta name="doc-source-sha256" content="95cf92cb5bd0bdbd8070495ea3a847e8d22a876b7fc836bbd5bd69835b4bd6a7">
+<meta name="doc-source-sha256" content="6b0bba4c4573821b66c4ac3ab56ea5b638d80635ca61431d7325d4f452d9990c">
 <title>Project Specification: SPWS Automated Ranklist System · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Project Specification: SPWS Automated Ranklist System</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>Project Specification. SPWS Automated Ranklist System.md</code></dd></div><div><dt>Length</dt><dd>1551 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>Project Specification. SPWS Automated Ranklist System.md</code></dd></div><div><dt>Length</dt><dd>1564 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#1-problem-statement">1. Problem Statement</a></li><li class="depth-2"><a href="#2-goal-vision">2. Goal &amp; Vision</a></li><li class="depth-2"><a href="#3-core-use-cases">3. Core Use Cases</a></li><li class="depth-3"><a href="#3-1-data-ingestion-scoring">3.1 Data Ingestion &amp; Scoring</a></li><li class="depth-3"><a href="#3-2-season-configuration-management">3.2 Season &amp; Configuration Management</a></li><li class="depth-3"><a href="#3-3-public-facing">3.3 Public-Facing</a></li><li class="depth-3"><a href="#3-4-data-corrections-maintenance">3.4 Data Corrections &amp; Maintenance</a></li><li class="depth-3"><a href="#3-5-scoring-configuration-workflow">3.5 Scoring Configuration Workflow</a></li><li class="depth-3"><a href="#3-6-mvp-ui-admin-workflow">3.6 MVP UI &amp; Admin Workflow</a></li><li class="depth-3"><a href="#3-7-automated-pipeline-operations">3.7 Automated Pipeline &amp; Operations</a></li><li class="depth-2"><a href="#4-solution-assumptions">4. Solution Assumptions</a></li><li class="depth-3"><a href="#business-operational-assumptions">Business &amp; Operational Assumptions</a></li><li class="depth-3"><a href="#target-platforms">Target Platforms</a></li><li class="depth-3"><a href="#technical-assumptions">Technical Assumptions</a></li><li class="depth-2"><a href="#5-high-level-architecture">5. High-Level Architecture</a></li><li class="depth-3"><a href="#5-1-architecture-decision-log">5.1 Architecture Decision Log</a></li><li class="depth-3"><a href="#5-2-event-registration-clean-roster-seeding-in-progress-phases-1-2-and-organizer-delivery-done-export-partial-scrape-back-wiring-pending">5.2 Event Registration &amp; Clean-Roster Seeding (in progress — Phases 1–2 and organizer delivery done; export partial; scrape-back wiring pending)</a></li><li class="depth-2"><a href="#6-implementation-phasing-solution-approach">6. Implementation Phasing &amp; Solution Approach</a></li><li class="depth-2"><a href="#7-future-enhancements">7. Future Enhancements</a></li><li class="depth-2"><a href="#8-detailed-scoring-mathematics">8. Detailed Scoring Mathematics</a></li><li class="depth-3"><a href="#8-1-per-tournament-score-components">8.1 Per-Tournament Score Components</a></li><li class="depth-4"><a href="#8-1-1-place-points-log-formula">8.1.1 Place Points (Log Formula)</a></li><li class="depth-4"><a href="#8-1-2-de-direct-elimination-round-bonus">8.1.2 DE (Direct Elimination) Round Bonus</a></li><li class="depth-4"><a href="#8-1-3-podium-bonus">8.1.3 Podium Bonus</a></li><li class="depth-3"><a href="#8-2-tournament-multipliers">8.2 Tournament Multipliers</a></li><li class="depth-3"><a href="#8-3-ranking-aggregation-rules">8.3 Ranking Aggregation Rules</a></li><li class="depth-4"><a href="#8-3-1-ppw-ranking-domestic-ranking-ranking-sheet">8.3.1 PPW Ranking (Domestic Ranking — &quot;Ranking&quot; sheet)</a></li><li class="depth-4"><a href="#8-3-2-kadra-ranking-national-team-selection-kadra-sheet">8.3.2 Kadra Ranking (National Team Selection — &quot;Kadra&quot; sheet)</a></li><li class="depth-3"><a href="#8-4-tournament-type-taxonomy">8.4 Tournament Type Taxonomy</a></li><li class="depth-3"><a href="#8-5-additional-implementation-requirements-from-excel-analysis">8.5 Additional Implementation Requirements (from Excel analysis)</a></li><li class="depth-3"><a href="#8-6-scoring-configuration-what-why-and-how">8.6 Scoring Configuration: What, Why, and How</a></li><li class="depth-4"><a href="#8-6-1-parameter-inventory">8.6.1 Parameter Inventory</a></li><li class="depth-4"><a href="#8-6-2-hybrid-configuration-approach-table-json-export-import">8.6.2 Hybrid Configuration Approach (Table + JSON Export/Import)</a></li><li class="depth-4"><a href="#8-6-3-export-import-sql-functions">8.6.3 Export/Import SQL Functions</a></li><li class="depth-4"><a href="#8-6-4-python-calibration-helpers">8.6.4 Python Calibration Helpers</a></li><li class="depth-4"><a href="#8-6-5-calibration-workflow-poc">8.6.5 Calibration Workflow (POC)</a></li><li class="depth-4"><a href="#8-6-6-per-season-ranking-rules-json-ranking-rules">8.6.6 Per-Season Ranking Rules (`json_ranking_rules`)</a></li><li class="depth-2"><a href="#9-database-schema-design">9. Database Schema Design</a></li><li class="depth-3"><a href="#9-0-full-database-overview">9.0 Full Database Overview</a></li><li class="depth-3"><a href="#9-1-naming-convention">9.1 Naming Convention</a></li><li class="depth-4"><a href="#artefact-prefixes">Artefact prefixes</a></li><li class="depth-4"><a href="#column-prefixes">Column prefixes</a></li><li class="depth-4"><a href="#9-1-1-enum-type-definitions">9.1.1 Enum Type Definitions</a></li><li class="depth-4"><a href="#9-1-1a-age-category-brackets-canonical">9.1.1a Age Category Brackets (Canonical)</a></li><li class="depth-4"><a href="#9-1-2-event-code-convention">9.1.2 Event Code Convention</a></li><li class="depth-4"><a href="#9-1-3-tournament-code-convention">9.1.3 Tournament Code Convention</a></li><li class="depth-3"><a href="#9-2-core-tables">9.2 Core Tables</a></li><li class="depth-3"><a href="#9-2-1-authentication-row-level-security">9.2.1 Authentication &amp; Row-Level Security</a></li><li class="depth-3"><a href="#9-3-season-scoring-configuration">9.3 Season &amp; Scoring Configuration</a></li><li class="depth-3"><a href="#9-4-sql-views-ranking-aggregation">9.4 SQL Views (Ranking Aggregation)</a></li><li class="depth-3"><a href="#9-5-scoring-workflow-calculate-once-store-forever">9.5 Scoring Workflow — Calculate Once, Store Forever</a></li><li class="depth-3"><a href="#9-5-1-ingestion-pipeline-error-handling-github-actions">9.5.1 Ingestion Pipeline Error Handling (GitHub Actions)</a></li><li class="depth-3"><a href="#9-5-2-scoring-engine-function">9.5.2 Scoring Engine Function</a></li><li class="depth-3"><a href="#9-6-design-rationale-identity-by-fk-not-by-name">9.6 Design Rationale — Identity by FK, not by Name</a></li><li class="depth-3"><a href="#9-7-event-tournament-lifecycle">9.7 Event &amp; Tournament Lifecycle</a></li><li class="depth-3"><a href="#9-8-superfive-pool-results">9.8 SuperFive Pool Results</a></li><li class="depth-3"><a href="#9-9-database-migration-seed-data-strategy">9.9 Database Migration &amp; Seed Data Strategy</a></li><li class="depth-2"><a href="#10-non-functional-requirements">10. Non-Functional Requirements</a></li><li class="depth-2"><a href="#11-internationalisation">11. Internationalisation</a></li><li class="depth-3"><a href="#11-1-overview">11.1 Overview</a></li><li class="depth-3"><a href="#11-2-architecture">11.2 Architecture</a></li><li class="depth-3"><a href="#11-3-locale-key-inventory-46-keys">11.3 Locale Key Inventory (46 keys)</a></li><li class="depth-3"><a href="#11-4-future-migration-path">11.4 Future Migration Path</a></li><li class="depth-2"><a href="#appendix-a-glossary">Appendix A — Glossary</a></li><li class="depth-2"><a href="#appendix-b-superfive-pool-results-phase-3">Appendix B — SuperFive Pool Results (Phase 3)</a></li><li class="depth-2"><a href="#appendix-c-architecture-decision-registry">Appendix C — Architecture Decision Registry</a></li><li class="depth-3"><a href="#architecture-decisions">Architecture Decisions</a></li><li class="depth-2"><a href="#appendix-d-test-baseline">Appendix D — Test Baseline</a></li></ol></nav>
@@ -497,33 +497,49 @@ These formulas are faithfully reproduced by the scoring engine (<code>fn_calc_to
 <p>The bonus per DE round won is a <strong>fixed value of 10 points</strong>, matching the SPWS Excel scoring parameter <code>Bonus za rundę = 10</code>:</p>
 <p>$$\text{DE_Bonus} = \text{DE_rounds} \times 10$$</p>
 <h4 id="8-1-3-podium-bonus">8.1.3 Podium Bonus</h4>
-<p>Only the top 3 finishers receive a podium bonus, scaled by the per-round bonus:</p>
+<p>Only the top 3 finishers receive a podium bonus. The bonus is <strong>not</strong> a fixed number of
+points: it scales with the size of the field, so that a podium in a large competition is
+worth more than the same podium in a small one.</p>
+<p>$$\text{PodiumBonus} = c \times 3 \times \sqrt[3]{N}$$</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
 <th>Place</th>
+<th>$c$</th>
 <th>Podium Bonus</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>1st</td>
-<td>$3 \times \text{bonus_per_round}$</td>
+<td>3</td>
+<td>$9 \times \sqrt[3]{N}$</td>
 </tr>
 <tr>
 <td>2nd</td>
-<td>$2 \times \text{bonus_per_round}$</td>
+<td>2</td>
+<td>$6 \times \sqrt[3]{N}$</td>
 </tr>
 <tr>
 <td>3rd</td>
-<td>$1 \times \text{bonus_per_round}$</td>
+<td>1</td>
+<td>$3 \times \sqrt[3]{N}$</td>
 </tr>
 <tr>
 <td>4th+</td>
 <td>0</td>
+<td>0</td>
 </tr>
 </tbody>
 </table></div>
+<p>The multipliers $c$ are the configurable parameters <code>int_podium_gold</code>, <code>int_podium_silver</code>
+and <code>int_podium_bronze</code> (§8.6.1); the $3 \times \sqrt[3]{N}$ term is fixed in the engine.</p>
+<blockquote>
+<p><strong>Source:</strong> the EVF scoring spreadsheet <code>points-calculation-vn2.xlsx</code> published alongside
+<em>EVF Ranking System v6</em> (2023-09-25) computes the bonus as <code>=3*N^(1/3)</code> and multiplies it
+by 3, 2 and 1 for the first three places. The implementation matches it exactly —
+see <code>supabase/migrations/20250305000002_jsonb_ranking_rules.sql:107</code>.</p>
+</blockquote>
 <h3 id="8-2-tournament-multipliers">8.2 Tournament Multipliers</h3>
 <p>Tournament types and their multipliers are defined in §8.4 Tournament Type Taxonomy.</p>
 <h3 id="8-3-ranking-aggregation-rules">8.3 Ranking Aggregation Rules</h3>
@@ -698,23 +714,23 @@ These formulas are faithfully reproduced by the scoring engine (<code>fn_calc_to
 <tr>
 <td>2</td>
 <td><code>int_podium_gold</code></td>
-<td>1st-place multiplier of bonus_per_round</td>
+<td>1st-place multiplier of the podium bonus</td>
 <td>3</td>
-<td>$3 \times \text{bonus_per_round}$ (§8.1.3)</td>
+<td>$3 \times 3\sqrt[3]{N}$ (§8.1.3)</td>
 </tr>
 <tr>
 <td>3</td>
 <td><code>int_podium_silver</code></td>
-<td>2nd-place multiplier</td>
+<td>2nd-place multiplier of the podium bonus</td>
 <td>2</td>
-<td>$2 \times \text{bonus_per_round}$ (§8.1.3)</td>
+<td>$2 \times 3\sqrt[3]{N}$ (§8.1.3)</td>
 </tr>
 <tr>
 <td>4</td>
 <td><code>int_podium_bronze</code></td>
-<td>3rd-place multiplier</td>
+<td>3rd-place multiplier of the podium bonus</td>
 <td>1</td>
-<td>$1 \times \text{bonus_per_round}$ (§8.1.3)</td>
+<td>$1 \times 3\sqrt[3]{N}$ (§8.1.3)</td>
 </tr>
 <tr>
 <td>5</td>
@@ -2836,6 +2852,11 @@ Season folder naming: <code>{start_year}_{end_year_short}</code> (e.g. <code>202
 <td><strong>Accepted</strong> (2026-07-23). <strong>Server-enforced authorization — deny-by-default grants and a standing posture gate</strong> — amends ADR-016, which recorded this exact bug class in March 2026 (&quot;callable by the <code>anon</code> role because PostgreSQL defaults to <code>GRANT EXECUTE TO PUBLIC</code>&quot;) and fixed it for the two functions then existing (<code>20260327000001</code>). <strong>The fix did not hold, and why is the point:</strong> <code>ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public</code> grants <code>anon</code>/<code>authenticated</code> everything on every NEW table, function and sequence, so from March onward each object the project created arrived world-writable — one at a time, silently, with no moment of carelessness for review to catch. Verified on CERT <strong>and</strong> PROD 2026-07-23: 6 tables RLS-off with anon holding full DML + TRUNCATE (an anon INSERT reached <code>23502</code>, a DATA error, not <code>42501</code>), anon write grants on <strong>all 16</strong> tables (TRUNCATE is unfiltered by RLS, defeating it outright on the 10 protected ones), owner-rights <code>vw_fencer_aliases</code> serving 365 fencer identities to anon on PROD (ADR-078/GDPR), <strong>13</strong> anon-EXECUTEable write RPCs incl. <code>fn_merge_fencers</code> (deletes a fencer) and <code>fn_refresh_active_season</code>, and a <code>dispatch-workflow</code> that never checked its caller — <code>verify_jwt=true</code> is satisfied by the public anon key that ships in the frontend bundle. Decision: pipeline/staging tables are service-role only (RLS, no policy — <code>service_role</code> bypasses RLS inherently); anon holds no write privilege on any table; <code>ALTER DEFAULT PRIVILEGES … REVOKE</code> on TABLES/FUNCTIONS/SEQUENCES kills the generator (zero blast radius — it affects only future objects); the anon-executable surface is a 19-name allowlist pinned as a set EQUALITY by pgTAP 52.7 (a deny-list would have caught none of the findings), deliberately retaining <code>fn_create_registration</code>/<code>fn_match_registration_fencer</code> as the ADR-079/FR-122 public self-registration path; the dispatcher authenticates its caller and requires <code>aal2</code>; and <code>scripts/check-security-posture.sh</code> verifies the posture against the LIVE database from inside release.yml's deploy jobs — not CI, whose build job a manual <code>workflow_dispatch</code> skips entirely — alerting to Telegram, because the Supabase advisory e-mail fired weekly from 6 May and went unread. Rejects a separate <code>pipeline</code> schema (the pipeline is a PostgREST client, so the schema must be exposed anyway and security falls back to grants), <code>aal2</code> on RLS write policies (the 8 admin RPCs are DEFINER and bypass RLS), a deny-list, revoking anon SELECT, and touching <code>supabase_admin</code>'s defaults (unreachable from the migration path; <code>postgres</code> cannot alter them on hosted Supabase). Defers a <code>tbl_admin</code> allowlist replacing bare <code>authenticated</code>, and <code>security_invoker</code> on the alias view.</td>
 <td>security ADR — <code>20260723000001_adr083_deny_by_default_grants.sql</code>, <code>52_security_posture.sql</code>, <code>check-security-posture.sh</code>, <code>dispatch-workflow/{index,authorize}.ts</code>, <code>release.yml</code></td>
 </tr>
+<tr>
+<td><a href="adr/084-points-calculator-temporary-static-page.html">ADR-084</a></td>
+<td><strong>Accepted</strong> (2026-08-15). <strong>Points calculator as a temporary static page — a one-off exception with an expiry condition</strong> — amends ADR-015 §1 (sidebar drawer: Ranklista + Kalendarz), which gains a third entry that is an external link rather than a view switch. The calculator demonstrates the PROPOSED scoring function (k = 10, p = 1.5, computed from the actual number of entries) before it becomes the rule in force, and the same file must stay directly uploadable to the SPWS WordPress site. Distributing it as a file failed in practice: messenger and iOS Files previews render it as bare HTML/CSS because they do not execute JavaScript, while the identical file served over HTTP to the same iPhone computes correctly (verified 2026-08-15 on two independent files). Decision: ship it at <code>frontend/public/kalkulator-punktow.html</code>, which Vite copies into <code>dist</code> unaided — no workflow step, no build-configuration entry — linked from the drawer by a relative <code>&lt;a href&gt;</code> carrying the active locale. <strong>Explicitly an exception, not a pattern:</strong> no other static page is to be published this way; further standalone tools need their own decision, the defaults being an in-app view or the <code>register.html</code> custom-element route (ADR-079/ADR-007). <strong>Expiry condition:</strong> when this method becomes the SPWS scoring in force for season 2026/2027, the page is removed and replaced by a calculator driven by the ranklist scoring engine; the copies under <code>frontend/public/</code> and <code>doc/tools/</code> and plan test 8.88 go with it, and this ADR is marked superseded. Rejects building it through <code>vite.config.ce.ts</code> (build and copy steps for a file that needs neither and is scheduled for deletion) and rewriting it now against the ranklist engine (the engine computes the scoring in force; wiring a proposal into it would change ranking results) — the latter recorded as the target state, not a rejection on merit. Accepts a bounded duplication of the scoring function, held by plan test 8.88 (published copy byte-identical to the documentation copy).</td>
+<td>frontend ADR — <code>frontend/public/kalkulator-punktow.html</code>, <code>Sidebar.svelte</code>, <code>tests/assets.test.ts</code>, RTM FR-59</td>
+</tr>
 </tbody>
 </table></div>
 </section>
@@ -2920,5 +2941,5 @@ PPW5 silently dropped 14 of 26 brackets at the FTL splitter (&quot;unparseable b
 <!-- Coverage Summary moved to doc/requirements-traceability-matrix.md in Phase 0.5 (2026-05-01). --></section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>95cf92cb5bd0bdbd8070495ea3a847e8d22a876b7fc836bbd5bd69835b4bd6a7</code></footer>
+<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>6b0bba4c4573821b66c4ac3ab56ea5b638d80635ca61431d7325d4f452d9990c</code></footer>
 </div></body></html>

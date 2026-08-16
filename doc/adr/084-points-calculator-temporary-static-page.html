@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="084-points-calculator-temporary-static-page.md">
+<meta name="adr-source-sha256" content="7dd18842a1a979cae7a687486d1c52b6088c36bdd2a4341148b15a4da91450b0">
+<title>ADR-084 · Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 084</p><h1>Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (signed off 2026-08-15)</dd></div><div><dt>Date</dt><dd class="">2026-08-15</dd></div><div><dt>Source</dt><dd class=""><code>084-points-calculator-temporary-static-page.md</code></dd></div><div><dt>Length</dt><dd class="">94 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (signed off 2026-08-15)
+<strong>Date:</strong> 2026-08-15
+<strong>Amends:</strong> <a href="015-m8-ui-design-decisions.html">ADR-015</a> §1 (App Navigation — Sidebar Drawer) — the drawer gains a third entry which is an external link rather than a view switch. §§2–9 are untouched.
+<strong>Relates to:</strong> <a href="011-artifact-release-pipeline.html">ADR-011</a> (frontend built once in CI and deployed to GitHub Pages — unchanged; the page rides the same artifact), <a href="079-event-self-registration-identity.html">ADR-079</a> and <a href="007-shadow-dom-deferred.html">ADR-007</a> (<code>register.html</code>, the existing standalone page, built through <code>vite.config.ce.ts</code> as a custom element — deliberately <em>not</em> the mechanism used here)
+<strong>Source:</strong> <code>doc/plans/kalkulator-w-menu-ranklisty-2026-08-15.html</code> §4</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-publication-mechanism">1 · Publication mechanism</a></li><li class="depth-3"><a href="#2-this-is-an-exception-not-a-pattern">2 · This is an exception, not a pattern</a></li><li class="depth-3"><a href="#3-expiry-condition">3 · Expiry condition</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The points calculator (<code>doc/tools/kalkulator-punktow-za-wynik-spws.html</code>) exists to show
+fencers and the board the <strong>proposed</strong> scoring function — fixed at <code>k = 10</code>, <code>p = 1.5</code>,
+computed from the actual number of entries — before it becomes the scoring rule in force.
+It is one self-contained HTML file: styles, script and the SPWS logo as a <code>data:</code> URI, with
+no external requests at all.</p>
+<p>Distributing it as a file failed in practice. Opened from a messenger attachment or from the
+iOS Files app it renders as bare HTML and CSS, because those previews do not execute
+JavaScript; the calculator does all of its arithmetic in the browser, so nothing appears.
+Verified on 2026-08-15 against two independent files and confirmed the other way round: served
+over HTTP to the same iPhone, the same file computes correctly.</p>
+<p>The tool therefore has to be reachable <strong>at an address</strong>. The ranklist frontend is already
+built to <code>frontend/dist</code> and published to GitHub Pages by <code>.github/workflows/release.yml</code>
+(jobs <code>build</code> → <code>deploy-pages</code>), so the address exists at no additional cost.</p>
+<p>The repository already carries one standalone page next to the application —
+<code>frontend/register.html</code> (RTM FR-130) — but it is produced from a separate Vite configuration
+(<code>vite.config.ce.ts</code>) and copied into <code>dist</code> by a workflow step, because it embeds a Svelte
+component compiled as a custom element. The calculator needs none of that.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-publication-mechanism">1 · Publication mechanism</h3>
+<p>The calculator ships as a static page at <code>frontend/public/kalkulator-punktow.html</code>. Vite copies
+<code>public/</code> into <code>dist/</code> on its own, so no workflow step and no build-configuration entry is
+required. The ranklist links to it from the navigation drawer with a plain relative <code>&lt;a href&gt;</code>,
+carrying the application's active locale as <code>?lang=pl</code> or <code>?lang=en</code>, opened in a new tab so the
+ranking view keeps its filters.</p>
+<h3 id="2-this-is-an-exception-not-a-pattern">2 · This is an exception, not a pattern</h3>
+<p><strong>No other static page is expected to be published this way.</strong> This decision covers one file with
+a known lifetime and establishes no rule for future tools. Any further standalone page requires
+its own decision; the default routes remain a view inside the application, or the mechanism used
+for <code>register.html</code>.</p>
+<h3 id="3-expiry-condition">3 · Expiry condition</h3>
+<p>When this scoring method is adopted as the SPWS scoring in force for the 2026/2027 season, the
+page is <strong>removed</strong> and replaced by a calculator driven by the <strong>ranklist scoring engine</strong> — the
+same engine that computes the ranking. Removed with it: the copy under <code>frontend/public/</code>, the
+copy under <code>doc/tools/</code>, and plan test 8.88 which keeps the two in step. This ADR is then marked
+superseded.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Build it through <code>vite.config.ce.ts</code>, as <code>register.html</code> is built.</strong> Rejected: it adds a
+build step and a workflow copy step for a file that needs neither, and which is scheduled for
+deletion. It would also split one hand-maintained file into an input and an output, while the
+same file must stay directly uploadable to the SPWS WordPress site.</li>
+<li><strong>Rewrite the calculator now as a Svelte view backed by the ranklist scoring engine.</strong>
+Rejected <em>for now</em>, and recorded as the target state in §3. The engine implements the scoring
+currently in force (EVF); the calculator demonstrates a formula that is still a proposal.
+Wiring the proposal into the engine before the board decides would change ranking results.</li>
+<li><strong>Host the calculator outside the repository.</strong> Rejected: the ranklist already has a
+publication path, and a separate host is one more thing to keep alive.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>Accepted duplication, bounded in time.</strong> The scoring function now exists in two
+implementations: the ranklist engine (<code>fn_calc_tournament_scores</code>, scoring in force) and this
+page (the proposal). The duplication ends with the page, under §3.</li>
+<li><strong>The file bypasses the build pipeline</strong>, so type checking and minification do not cover it.
+Correctness is held by plan test 8.88 — the published copy must be byte-identical to the copy
+under <code>doc/tools/</code> — and by the control values documented in the plan.</li>
+<li><strong>New files:</strong> <code>frontend/public/kalkulator-punktow.html</code>, <code>frontend/tests/assets.test.ts</code>.
+<strong>Changed:</strong> <code>frontend/src/components/Sidebar.svelte</code> (third entry; the drawer now declares the
+application font stack explicitly, because it renders outside the container that carried it and
+the entries were resolving to different fonts), <code>frontend/src/lib/locales/{pl,en}.json</code>
+(<code>nav_calculator</code>), RTM FR-59.</li>
+<li><strong>Tests:</strong> plan tests 8.84–8.88 added; no test removed.</li>
+<li><strong>Known divergence, deliberately not fixed:</strong> the approved mockup
+<code>doc/mockups/m8_app_shell.html</code> (ADR-015) shows a two-entry drawer. It is a record of what was
+approved in M8 and is left as it is; this ADR is the current statement.</li>
+<li><strong>Defect observed and not fixed here:</strong> the ranklist shows <code>[object Object]</code> instead of a
+readable message when it cannot reach the database. Pre-existing, unrelated to this change,
+worth its own fix.</li>
+<li><strong>Publication is public.</strong> GitHub Pages serves the page to anyone with the address. The file
+carries <code>noindex, nofollow</code> so search engines skip it, but the drawer entry makes it reachable
+by every ranklist visitor. This was the user's explicit decision on 2026-08-15, taken while the
+question of EVF Ranking System v6 §3.5 (formula requirements the proposed function does not
+satisfy) is still open.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="083-server-enforced-authorization.html">← ADR-083: Server-Enforced Authorization — Deny-by-Default Grants and a Standing Posture Gate</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>084-points-calculator-temporary-static-page.md</code> · source SHA-256 <code>7dd18842a1a979cae7a687486d1c52b6088c36bdd2a4341148b15a4da91450b0</code></footer>
+</div></body></html>
