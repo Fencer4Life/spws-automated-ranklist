@@ -25,7 +25,7 @@
       </button>
     </li>
     <li>
-      <!-- TYMCZASOWE, jednorazowy wyjątek (ADR-084). Kalkulator jest samodzielną
+      <!-- TYMCZASOWE, jednorazowy wyjątek (ADR-085). Kalkulator jest samodzielną
            stroną statyczną w frontend/public/, a nie widokiem aplikacji — stąd
            odnośnik zamiast przycisku. Gdy proponowana formuła stanie się
            obowiązującą punktacją SPWS, ta pozycja i strona znikają, a ich miejsce

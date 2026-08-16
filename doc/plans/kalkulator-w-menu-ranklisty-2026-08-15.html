@@ -61,7 +61,7 @@ strony kalkulatora publikowanej razem z aplikacją na GitHub Pages.</p>
   <li><a href="#po-co">Po co to robimy</a></li>
   <li><a href="#bramka">Wynik bramki planistycznej</a></li>
   <li><a href="#decyzje">Decyzje zamknięte i pytania otwarte</a></li>
-  <li><a href="#adr">Szkic ADR-084 — do podpisu</a></li>
+  <li><a href="#adr">Szkic ADR-085 — do podpisu</a></li>
   <li><a href="#testy">Testy akceptacyjne (RED przed GREEN)</a></li>
   <li><a href="#scenariusz">Przejście scenariusza użytkownika</a></li>
   <li><a href="#parytet">Parytet LOCAL / CERT / Pages</a></li>
@@ -74,7 +74,7 @@ strony kalkulatora publikowanej razem z aplikacją na GitHub Pages.</p>
 <h2 id="po-co">1 · Po co to robimy</h2>
 
 <p>Kalkulator punktów za wynik powstał jako samodzielny plik HTML
-(<code>doc/tools/kalkulator-punktow-za-wynik-spws.html</code>). Praktyka pokazała, że
+(<code>doc/tools/kalkulator-punktow-za-wynik-spws.v2.html</code>). Praktyka pokazała, że
 <b>plik przesłany jako załącznik nie działa na telefonie</b>: podglądy WhatsAppa, poczty
 i aplikacji Pliki na iOS otwierają HTML z wyłączonym JavaScriptem, a kalkulator liczy
 wyłącznie w przeglądarce. Sprawdzone na dwóch niezależnych plikach — ten sam skutek.</p>
@@ -127,8 +127,10 @@ publikowana tą drogą. Gdy proponowana formuła stanie się obowiązującą pun
 2026/2027, strona znika, a jej miejsce zajmuje kalkulator liczący silnikiem ranklisty.</li>
 <li>Pozycja w menu stoi <b>pod „Kalendarz”</b>, przed sekcją administracyjną.</li>
 <li>Etykieta: „Kalkulator punktów” / „Points calculator”, klucz <code>nav_calculator</code>.</li>
-<li>Stałe formuły <code>k = 10</code>, <code>p = 1,5</code>, liczenie od faktycznej liczby startujących —
-bez zmian wobec pliku, który już istnieje.</li>
+<li><b>Formuła zmieniona 16 sierpnia 2026</b>, już po napisaniu tego planu: zamiast własnej funkcji
+z pokrętłami <code>k</code> i <code>p</code> obowiązuje <code>f(N) = 10 · log₂N</code>, nie więcej niż 50,
+przy nietkniętym pozostałym wzorze EVF. Powód i rachunki — w ADR-085. Plan zostaje w brzmieniu
+sprzed tej zmiany jako zapis stanu z dnia podjęcia decyzji o pozycji w menu.</li>
 </ul>
 </div>
 
@@ -145,10 +147,10 @@ do czasu rozstrzygnięcia punktu 3.5 regulaminu EVF. <b>Ta zmiana to ustalenie �
 </ol>
 </div>
 
-<h2 id="adr">4 · Szkic ADR-084 — status: Proposed, do podpisu</h2>
+<h2 id="adr">4 · Szkic ADR-085 — status: Proposed, do podpisu</h2>
 
 <div class="card">
-<p><b>ADR-084: Kalkulator punktów jako tymczasowa strona statyczna — jednorazowy wyjątek
+<p><b>ADR-085: Kalkulator punktów jako tymczasowa strona statyczna — jednorazowy wyjątek
 z terminem ważności</b></p>
 
 <p><b>Kontekst.</b> Ranklista to aplikacja Svelte budowana Vite do <code>frontend/dist</code> i publikowana
@@ -222,9 +224,9 @@ kalkulator. Powielenie kończy się razem ze stroną, w momencie opisanym w waru
   <td>Kalkulator obsługuje oba języki i przyjmuje parametr <code>lang</code>. Użytkownik nie powinien
   przełączać języka drugi raz.</td></tr>
 <tr><td>8.88</td><td>Plik <code>frontend/public/kalkulator-punktow.html</code> istnieje i jest
-  bajt w bajt identyczny z <code>doc/tools/kalkulator-punktow-za-wynik-spws.html</code>.</td>
+  bajt w bajt identyczny z <code>doc/tools/kalkulator-punktow-za-wynik-spws.v2.html</code>.</td>
   <td>Pozycja w menu prowadząca do nieistniejącego pliku to zepsute menu. Test pilnuje też
-  rozjazdu obu kopii, wskazanego w konsekwencjach ADR-084.</td></tr>
+  rozjazdu obu kopii, wskazanego w konsekwencjach ADR-085.</td></tr>
 </tbody>
 </table>
 </div>
@@ -280,7 +282,7 @@ jednorazowym otwarciu działa bez połączenia. Nie dotyczy to ranklisty, która
 <tr><td><code>frontend/src/components/Sidebar.svelte</code></td><td>Trzecia pozycja jako odnośnik + styl dla <code>a.nav-item</code>.</td></tr>
 <tr><td><code>frontend/src/lib/locales/pl.json</code>, <code>en.json</code></td><td>Klucz <code>nav_calculator</code>.</td></tr>
 <tr><td><code>doc/requirements-traceability-matrix.html</code></td><td>FR-59: treść i zakres testów.</td></tr>
-<tr><td>specyfikacja, Appendix C</td><td>Wiersz rejestru ADR-084 (bramka 2 spójności — twardy fail bez niego).</td></tr>
+<tr><td>specyfikacja, Appendix C</td><td>Wiersz rejestru ADR-085 (bramka 2 spójności — twardy fail bez niego).</td></tr>
 <tr><td><code>doc/adr/084-*.md</code> + bliźniak HTML</td><td>Dopiero po Twoim podpisie szkicu.</td></tr>
 </tbody>
 </table>
@@ -303,7 +305,7 @@ jednorazowym otwarciu działa bez połączenia. Nie dotyczy to ranklisty, która
 <li><b>Canonical docs affected:</b> <code>doc/requirements-traceability-matrix.html</code> (FR-59);
   <code>doc/handbook/subsystems/</code> — strona opisująca powierzchnie frontendu, wskazana przez mapę
   dokumentacji przed implementacją; specyfikacja Appendix C (rejestr ADR)</li>
-<li><b>ADR impact:</b> new — ADR-084, status Proposed, czeka na podpis</li>
+<li><b>ADR impact:</b> new — ADR-085, status Proposed, czeka na podpis</li>
 <li><b>Operational impact:</b> none — workflow publikacji bez zmian</li>
 <li><b>Source-map / last-verified updated:</b> yes</li>
 <li><b>Validation:</b> <code>python scripts/check_docs.py --changed-from origin/main</code> — do uruchomienia po implementacji</li>
@@ -312,7 +314,7 @@ jednorazowym otwarciu działa bez połączenia. Nie dotyczy to ranklisty, która
 
 <footer>
 Plan SPWS · 15 sierpnia 2026 · worktree <code>codex/agent-worktree-operating-structure</code>.
-Wstrzymany na dwóch pytaniach z sekcji 3 i na podpisie szkicu ADR-084. Bez tego nie ruszam kodu.
+Wstrzymany na dwóch pytaniach z sekcji 3 i na podpisie szkicu ADR-085. Bez tego nie ruszam kodu.
 </footer>
 
 </div>

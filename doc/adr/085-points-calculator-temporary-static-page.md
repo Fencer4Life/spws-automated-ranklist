@@ -1,4 +1,4 @@
-# ADR-084: Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition
+# ADR-085: Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition
 
 **Status:** Accepted (signed off 2026-08-15)
 **Date:** 2026-08-15
