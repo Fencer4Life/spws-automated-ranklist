@@ -19,7 +19,9 @@
     eventCode = '',
     eventId = null as number | null,
     view = 'form' as 'form' | 'list',
-    payee = 'SPWS',
+    // Empty means "use lib/orgPayment.ts" — CalendarView passes no payment
+    // props at all, so this default is what the in-app modal actually shows.
+    payee = '',
     iban = '',
     onclose,
     onviewlist,
