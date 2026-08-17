@@ -81,8 +81,20 @@ jobs:
           # so RegistrationForm/EntryList render unstyled under the main build's
           # plain config. Inject creds into the same shared source file here;
           # both builds below read it.
-          sed -i 's|supabase-cert-url="[^"]*"|supabase-cert-url="${{ secrets.SUPABASE_CERT_URL }}"|' register.html
-          sed -i 's|supabase-cert-key="[^"]*"|supabase-cert-key="${{ secrets.SUPABASE_CERT_ANON_KEY }}"|' register.html
+          #
+          # PROD ONLY — deliberately no supabase-cert-* injection here. This is
+          # the public page a fencer opens from the calendar link, and
+          # RegistrationElement resolves its client as
+          #   (supabaseCertUrl || supabaseProdUrl)
+          # so a populated CERT pair silently wins and every real registration
+          # lands in CERT. index.html keeps both pairs (it has a runtime admin
+          # toggle); this page has none by design (ADR-079 §6), so it gets
+          # exactly one environment: PROD. Leaving the cert attributes at their
+          # committed LOCAL values is not an option either — the build's
+          # "no localhost in dist" guard would (correctly) fail — so the
+          # attributes are blanked instead.
+          sed -i 's|supabase-cert-url="[^"]*"|supabase-cert-url=""|' register.html
+          sed -i 's|supabase-cert-key="[^"]*"|supabase-cert-key=""|' register.html
           sed -i 's|supabase-prod-url="[^"]*"|supabase-prod-url="${{ secrets.SUPABASE_PROD_URL }}"|' register.html
           sed -i 's|supabase-prod-key="[^"]*"|supabase-prod-key="${{ secrets.SUPABASE_PROD_ANON_KEY }}"|' register.html
 

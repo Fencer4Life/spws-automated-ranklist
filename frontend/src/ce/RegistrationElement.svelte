@@ -12,7 +12,9 @@
     'supabase-prod-url': supabaseProdUrl = '',
     'supabase-prod-key': supabaseProdKey = '',
     event = '',
-    payee = 'SPWS',
+    // Empty means "use lib/orgPayment.ts" — see RegistrationForm. A 'SPWS'
+    // default here would override the full registered account name.
+    payee = '',
     iban = '',
     demo = false,
   }: {

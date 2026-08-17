@@ -44,14 +44,15 @@
       </label>
       <label class="reg-fld">
         <span class="reg-lbl">{t('reg_gender')}</span>
-        <select bind:value={gender}>
+        <select name="gender" bind:value={gender}>
+          <option value="" disabled>{t('reg_gender_choose')}</option>
           <option value="M">{t('reg_gender_m')}</option>
           <option value="F">{t('reg_gender_f')}</option>
         </select>
       </label>
       <label class="reg-fld">
         <span class="reg-lbl">{t('reg_birth_year')}</span>
-        <input name="birthYear" type="number" value={birthYear ?? ''} oninput={onBirthYearInput} />
+        <input name="birthYear" type="number" inputmode="numeric" value={birthYear ?? ''} oninput={onBirthYearInput} />
       </label>
     </div>
 
@@ -88,11 +89,13 @@
     <div class="reg-end">
       <button class="reg-btn reg-continue" disabled={!canContinue} onclick={submitIdentity}>{t('reg_continue')}</button>
     </div>
-  {:else if step === 'verify'}
-    <p class="reg-stepline">{t('reg_verify_step_label')}</p>
-    <div class="reg-notice">{t('reg_verify_notice')}</div>
-    <p class="reg-muted">{t('reg_verify_coming_soon')}</p>
   {:else if step === 'rodo'}
+    {#if isNewFencer}
+      <div class="reg-notice">{t('reg_new_fencer_notice')}</div>
+    {/if}
+    {#if duplicateWarning}
+      <div class="reg-notice">{t('reg_duplicate_warning')}</div>
+    {/if}
     <p class="reg-rodo-heading">{t('reg_rodo_title')}</p>
     <p class="reg-stepline">{t('reg_rodo_controller')}</p>
     <div class="reg-panel">
@@ -124,8 +127,14 @@
       <span>{t('reg_rodo_accept_label')}</span>
     </label>
     <p class="reg-muted">{t('reg_rodo_legitimate_note')}</p>
-    <div class="reg-end">
-      <button class="reg-btn reg-rodo-accept" class:reg-btn-inactive={!consentChecked} onclick={acceptRodo}>{t('reg_rodo_accept_button')}</button>
+    {#if submitError}
+      <div class="reg-error">{t('reg_submit_error')}</div>
+    {/if}
+    <div class="reg-end reg-end-split">
+      <button class="reg-back" onclick={backToIdentity}>&larr; {t('reg_back')}</button>
+      <button class="reg-btn reg-rodo-accept" class:reg-btn-inactive={!consentChecked} disabled={submitting} onclick={acceptRodo}>
+        {submitting ? t('reg_submitting') : t('reg_rodo_accept_button')}
+      </button>
     </div>
   {:else if step === 'payment'}
     <p class="reg-ok">{t('reg_payment_confirmed')}</p>
@@ -134,8 +143,8 @@
         <span class="reg-panel-title">{t('reg_payment_details_title')}</span>
         <button class="reg-cp" onclick={copyAll}>{copiedField === 'all' ? t('reg_copied') : t('reg_copy_all')}</button>
       </div>
-      <div class="reg-prow"><span class="reg-pk">{t('reg_payee_label')}</span><span class="reg-pv">{payee}</span><button class="reg-cp" onclick={() => copy('payee', payee)}>{copiedField === 'payee' ? t('reg_copied') : '⧉'}</button></div>
-      <div class="reg-prow"><span class="reg-pk">{t('reg_iban_label')}</span><span class="reg-pv">{iban}</span><button class="reg-cp" onclick={() => copy('iban', iban)}>{copiedField === 'iban' ? t('reg_copied') : '⧉'}</button></div>
+      <div class="reg-prow"><span class="reg-pk">{t('reg_payee_label')}</span><span class="reg-pv">{effectivePayee}</span><button class="reg-cp" onclick={() => copy('payee', effectivePayee)}>{copiedField === 'payee' ? t('reg_copied') : '⧉'}</button></div>
+      <div class="reg-prow"><span class="reg-pk">{t('reg_iban_label')}</span><span class="reg-pv">{effectiveIban}</span><button class="reg-cp" onclick={() => copy('iban', effectiveIban)}>{copiedField === 'iban' ? t('reg_copied') : '⧉'}</button></div>
       <div class="reg-prow"><span class="reg-pk">{t('reg_title_label')}</span><span class="reg-pv">{title}</span><button class="reg-cp" onclick={() => copy('title', title)}>{copiedField === 'title' ? t('reg_copied') : '⧉'}</button></div>
       <div class="reg-prow"><span class="reg-pk">{t('reg_amount_label')}</span><span class="reg-pv">{fee != null ? `${fee} PLN` : '—'}</span><button class="reg-cp" onclick={() => copy('amount', `${fee} PLN`)}>{copiedField === 'amount' ? t('reg_copied') : '⧉'}</button></div>
     </div>
@@ -151,15 +160,19 @@
 <script lang="ts">
   import { t } from '../lib/locale.svelte'
   import LangToggle from './LangToggle.svelte'
-  import { fetchEventForRegistration, matchRegistrationFencer, createRegistration } from '../lib/api'
+  import { fetchEventForRegistration, matchRegistrationFencer, createRegistration, fetchEntryList } from '../lib/api'
   import { birthYearToVcat } from '../lib/birthYearEstimate'
+  import { SPWS_PAYEE, SPWS_IBAN, WEAPON_PL } from '../lib/orgPayment'
   import type { RegistrationEventInfo, GenderType, WeaponType } from '../lib/types'
 
   const CONSENT_VERSION = 'v1.0'
 
   let {
     eventCode = '',
-    payee = 'SPWS',
+    // Empty (the default on every current call site — CalendarView passes no
+    // payment props at all) falls back to the shared association details, so
+    // the in-app modal shows the same account number as the standalone page.
+    payee = '',
     iban = '',
     onclose,
     onviewlist,
@@ -175,13 +188,16 @@
     onviewlist?: () => void
   } = $props()
 
-  type Step = 'loading' | 'not_found' | 'external' | 'expired' | 'closed' | 'identity' | 'verify' | 'rodo' | 'payment'
+  type Step = 'loading' | 'not_found' | 'external' | 'expired' | 'closed' | 'identity' | 'rodo' | 'payment'
   let step = $state<Step>('loading')
   let event = $state<RegistrationEventInfo | null>(null)
 
   let surname = $state('')
   let firstName = $state('')
-  let gender = $state<GenderType>('M')
+  // No default. A pre-set 'M' was silently recorded for every woman who did
+  // not touch the select, and that value feeds her sub-ranking category, the
+  // public entry list and the FTL seed file — so it is declared, not guessed.
+  let gender = $state<GenderType | ''>('')
   let birthYear = $state<number | null>(null)
   let weapons = $state<WeaponType[]>([])
   let club = $state('')
@@ -189,6 +205,14 @@
   let consentChecked = $state(false)
   let consentInvalid = $state(false)
   let copiedField = $state<string | null>(null)
+  // True when the exact (surname, first name, BY) lookup found nobody. The
+  // registration is still written, with id_fencer NULL — tbl_registration
+  // carries the full declaration on its own and the FTL seed exporter already
+  // handles unranked newcomers. tbl_fencer is never written (ADR-079 §1).
+  let isNewFencer = $state(false)
+  let submitting = $state(false)
+  let submitError = $state(false)
+  let duplicateWarning = $state(false)
 
   const seasonEndYear = $derived.by(() => {
     if (!event) return null
@@ -202,9 +226,29 @@
     if (weapons.length === 2) return event.num_entry_fee_2w
     return event.num_entry_fee_3w
   })
-  const canContinue = $derived(surname.trim() !== '' && firstName.trim() !== '' && birthYear != null && weapons.length > 0)
-  const title = $derived(event ? `${event.txt_code} ${surname.toUpperCase()} ${firstName.toUpperCase()}` : '')
+  const canContinue = $derived(
+    surname.trim() !== '' && firstName.trim() !== '' && birthYear != null && weapons.length > 0 && gender !== '',
+  )
+  // Transfer note. The association asks for "Imię, Nazwisko, broń, kategoria
+  // wiekowa" — first name FIRST, then weapons and the age category, which the
+  // previous format (code + surname + first name) carried none of. The event
+  // code is kept in front of it: several PPW rounds and a cup final share one
+  // account, and without it a statement line cannot be attributed to a
+  // competition.
+  const title = $derived.by(() => {
+    if (!event) return ''
+    const parts = [
+      event.txt_code,
+      firstName.toUpperCase(),
+      surname.toUpperCase(),
+      weapons.map((w) => WEAPON_PL[w] ?? w).join('+'),
+    ]
+    if (vcat) parts.push(vcat)
+    return parts.filter((p) => p !== '').join(' ')
+  })
   const entryListHref = $derived(`?event=${encodeURIComponent(eventCode)}&view=list`)
+  const effectivePayee = $derived(payee || SPWS_PAYEE)
+  const effectiveIban = $derived(iban || SPWS_IBAN)
 
   $effect(() => {
     const code = eventCode
@@ -259,9 +303,49 @@
 
   async function submitIdentity() {
     if (!canContinue) return
-    const id = await matchRegistrationFencer(surname, firstName, birthYear as number)
+    submitError = false
+    // A miss is no longer a dead end: it means "not in tbl_fencer yet", which
+    // is the normal state for a newcomer or for someone correcting a birth
+    // year we only ever estimated. Both continue to RODO and are written with
+    // id_fencer NULL; final identity matching happens at ingestion (ADR-079 §3).
+    let id: number | null = null
+    try {
+      id = await matchRegistrationFencer(surname, firstName, birthYear as number)
+    } catch {
+      // Treat a lookup failure as "no match" rather than blocking the entry.
+      // The declaration is what matters; the link is an optimisation.
+      id = null
+    }
     fencerId = id
-    step = id != null ? 'rodo' : 'verify'
+    isNewFencer = id == null
+    await checkForExistingEntry()
+    step = 'rodo'
+  }
+
+  // Soft duplicate guard. The hard one is a partial unique index on
+  // (id_event, surname, first name, BY) WHERE id_fencer IS NULL — Postgres
+  // treats NULLs as distinct, so the table's UNIQUE(id_event, id_fencer) does
+  // not constrain unmatched rows at all. That index needs a migration; this
+  // read catches the honest double-submit in the meantime and only warns.
+  async function checkForExistingEntry() {
+    duplicateWarning = false
+    if (!event) return
+    try {
+      const rows = await fetchEntryList(event.id_event)
+      const s = surname.trim().toLowerCase()
+      const f = firstName.trim().toLowerCase()
+      duplicateWarning = rows.some(
+        (r) => r.txt_surname.trim().toLowerCase() === s && r.txt_first_name.trim().toLowerCase() === f,
+      )
+    } catch {
+      // Best-effort only — never block a registration because the roster
+      // lookup failed.
+    }
+  }
+
+  async function backToIdentity() {
+    submitError = false
+    step = 'identity'
   }
 
   async function acceptRodo() {
@@ -269,18 +353,29 @@
       consentInvalid = true
       return
     }
-    if (!event) return
-    await createRegistration({
-      eventId: event.id_event,
-      surname,
-      firstName,
-      gender,
-      birthYear: birthYear as number,
-      weapons,
-      fencerId,
-      consentVersion: CONSENT_VERSION,
-    })
-    step = 'payment'
+    if (!event || submitting) return
+    submitting = true
+    submitError = false
+    try {
+      await createRegistration({
+        eventId: event.id_event,
+        surname,
+        firstName,
+        gender: gender as GenderType,
+        birthYear: birthYear as number,
+        weapons,
+        fencerId,
+        consentVersion: CONSENT_VERSION,
+      })
+      step = 'payment'
+    } catch {
+      // The RPC raises on a closed registration window (D10 guard), and the
+      // network can fail. Without this the fencer just sees a button that
+      // does nothing, with no way to tell a bug from a slow connection.
+      submitError = true
+    } finally {
+      submitting = false
+    }
   }
 
   async function copy(label: string, value: string) {
@@ -296,7 +391,7 @@
   }
 
   function copyAll() {
-    copy('all', `${payee}\n${iban}\n${title}\n${fee != null ? `${fee} PLN` : ''}`)
+    copy('all', `${effectivePayee}\n${effectiveIban}\n${title}\n${fee != null ? `${fee} PLN` : ''}`)
   }
 </script>
 
@@ -447,6 +542,33 @@
     display: flex;
     justify-content: flex-end;
     margin-top: 8px;
+  }
+  .reg-end-split {
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .reg-back {
+    background: none;
+    border: none;
+    color: #7fbadc;
+    font-family: inherit;
+    font-size: 0.9em;
+    cursor: pointer;
+    padding: 8px 2px;
+    min-height: 40px;
+  }
+  .reg-back:hover {
+    color: #fff;
+  }
+  .reg-error {
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.9em;
+    line-height: 1.55;
+    background: rgba(255, 92, 92, 0.14);
+    color: #ff9c9c;
+    margin-bottom: 14px;
   }
   .reg-btn {
     background: #00d4ff;
