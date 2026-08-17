@@ -148,7 +148,9 @@
       <div class="reg-prow"><span class="reg-pk">{t('reg_title_label')}</span><span class="reg-pv">{title}</span><button class="reg-cp" onclick={() => copy('title', title)}>{copiedField === 'title' ? t('reg_copied') : '⧉'}</button></div>
       <div class="reg-prow"><span class="reg-pk">{t('reg_amount_label')}</span><span class="reg-pv">{fee != null ? `${fee} PLN` : '—'}</span><button class="reg-cp" onclick={() => copy('amount', `${fee} PLN`)}>{copiedField === 'amount' ? t('reg_copied') : '⧉'}</button></div>
     </div>
-    <p class="reg-muted">{t('reg_payment_deadline_note')}</p>
+    <p class="reg-muted">
+      {paymentDeadline ? t('reg_payment_deadline_note', { date: paymentDeadline }) : t('reg_payment_deadline_note_generic')}
+    </p>
     {#if onviewlist}
       <button class="reg-entry-list-link" onclick={onviewlist}>{t('reg_entry_list_link')} &rarr;</button>
     {:else}
@@ -158,7 +160,7 @@
 </div>
 
 <script lang="ts">
-  import { t } from '../lib/locale.svelte'
+  import { t, getLocale } from '../lib/locale.svelte'
   import LangToggle from './LangToggle.svelte'
   import { fetchEventForRegistration, matchRegistrationFencer, createRegistration, fetchEntryList } from '../lib/api'
   import { birthYearToVcat } from '../lib/birthYearEstimate'
@@ -249,6 +251,23 @@
   const entryListHref = $derived(`?event=${encodeURIComponent(eventCode)}&view=list`)
   const effectivePayee = $derived(payee || SPWS_PAYEE)
   const effectiveIban = $derived(iban || SPWS_IBAN)
+
+  // The date the payment note quotes. Deliberately the SAME expression the
+  // D10 window guard in fn_create_registration enforces —
+  // COALESCE(dt_registration_deadline, dt_start) — so the fencer is told the
+  // date the system will actually stop accepting, not a separate hand-written
+  // rule that can drift away from it.
+  const paymentDeadline = $derived.by(() => {
+    const iso = event?.dt_registration_deadline ?? event?.dt_start
+    if (!iso) return null
+    const d = new Date(`${iso}T00:00:00`)
+    if (Number.isNaN(d.getTime())) return null
+    return d.toLocaleDateString(getLocale() === 'pl' ? 'pl-PL' : 'en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+  })
 
   $effect(() => {
     const code = eventCode

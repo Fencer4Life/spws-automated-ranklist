@@ -317,6 +317,44 @@ describe('RegistrationForm — RODO gate + payment (P2.5/P2.6)', () => {
   })
 })
 
+describe('RegistrationForm — payment deadline note', () => {
+  async function toPayment(container: HTMLElement, findByText: (m: string | RegExp) => Promise<HTMLElement>) {
+    mockMatch.mockResolvedValue(42)
+    mockCreate.mockResolvedValue(99)
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container)
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await findByText(/RODO/)
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+  }
+
+  // Quotes dt_registration_deadline — the same date COALESCE(deadline, start)
+  // that fn_create_registration's D10 guard enforces — rather than the old
+  // hand-written "12 hours before the event starts", which matched no actual
+  // rule in the system.
+  it('quotes the event registration deadline', async () => {
+    mockFetchEvent.mockResolvedValue({ ...BASE_EVENT, dt_registration_deadline: '2099-05-25' })
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+    await findByText(/25 maja 2099/)
+  })
+
+  it('falls back to dt_start when the event has no explicit deadline', async () => {
+    mockFetchEvent.mockResolvedValue({ ...BASE_EVENT, dt_registration_deadline: null, dt_start: '2099-06-01' })
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+    await findByText(/1 czerwca 2099/)
+  })
+
+  it('uses the generic wording when the event carries no dates at all', async () => {
+    mockFetchEvent.mockResolvedValue({ ...BASE_EVENT, dt_registration_deadline: null, dt_start: null, dt_end: null })
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+    await findByText(/przed terminem rejestracji/)
+  })
+})
+
 describe('RegistrationForm — write failure and back navigation', () => {
   async function toRodo(container: HTMLElement, findByText: (m: string | RegExp) => Promise<HTMLElement>) {
     mockFetchEvent.mockResolvedValue(BASE_EVENT)
