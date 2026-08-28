@@ -46,3 +46,22 @@
   .page-links { display: block; }
   .page-links a { display: block; margin: 12px 0; }
 }
+
+/* Screenshots. First introduced by the registration lifecycle page: a UI claim
+   is easier to trust when the reader can see the control being described.
+   Captured from LOCAL by a Playwright script, never hand-mocked. */
+figure.shot { margin: 22px 0; }
+figure.shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line, #d7dce4);
+  border-radius: 8px;
+}
+figure.shot figcaption {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted, #5a6472);
+}
+figure.shot figcaption b { color: inherit; }

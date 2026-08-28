@@ -1,0 +1,279 @@
+<meta charset="utf-8">
+<title>Naming and shaping the registration document</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">SPWS · documentation · plan · 28 August 2026</p>
+  <h1>Naming and shaping the registration document</h1>
+  <p class="dek">One page that follows a single registration from the fencer opening the link to the row being purged after ingestion — <b>including what happens when it goes wrong</b>, which is where today's three defects lived.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Plan — 1 decision below</span>
+    <span class="pill">new handbook page</span>
+    <span class="pill">no code change</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Decide this first</p>
+    <h2>The name</h2>
+    <p>House style across the handbook is plain, hyphenated noun phrases — <code>events-and-registration</code>, <code>end-to-end-flows</code>, <code>workflow-catalog</code>, <code>codebase-map</code>, <code>test-and-traceability</code>. Nothing evocative, nothing branded.</p>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Recommended — <code>doc/handbook/reference/registration-lifecycle.html</code></p>
+      <p>Title <b>“Registration lifecycle”</b>, <code>doc-id: HB-REF-REG-LIFECYCLE</code>. “Lifecycle” is not decoration here — it is literally the arc the page describes. A registration row is <b>born</b> at declaration, <b>matched</b> or not, <b>corrected</b>, <b>published</b> to the roster, <b>exported</b> to the organizer, <b>resolved</b> against a fencer at ingestion, and finally <b>purged</b>. ADR-079 calls the table ephemeral and purged after reconciliation; nothing currently documents that ending.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> The one thing against it</p>
+      <p><b>“Lifecycle” is already spoken for.</b> ADR-077 is <em>Event Lifecycle &amp; Season Skeletons</em>, and <code>tbl_event.enum_status</code> is the event lifecycle. A reader could reasonably expect this page to be about <code>CREATED → PLANNED → COMPLETED</code>. The alternative avoids that entirely and echoes your own words: <code>registration-end-to-end.html</code>, “Registration end to end”, <code>HB-REF-REG-E2E</code>.</p>
+    </div>
+
+    <p><b>Answer needed:</b> <code>registration-lifecycle</code> (richer, one collision) or <code>registration-end-to-end</code> (unambiguous, plainer)? I lean to the first — the collision is with a different noun (<em>event</em> lifecycle vs <em>registration</em> lifecycle) and the page earns the word by actually covering the purge.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Placement</p>
+    <h2>A reference page, deliberately not a second subsystem page</h2>
+    <p>Checked in <code>scripts/check_docs.py</code> rather than assumed: <code>doc-type: subsystem</code> <b>forces ten section ids</b> — purpose, boundaries, mental-model, current-flow, invariants, implementation-map, operations, tests, decisions, change-triggers. Other types are structurally free (<code>workflow-catalog.html</code> is <code>reference</code> and uses its own five).</p>
+    <p>That matters twice over. Forcing the skeleton would bend a <em>journey</em> into a <em>subsystem template</em>, and it would create a <b>second owner</b> for registration beside <code>subsystems/events-and-registration.html</code> — which CLAUDE.md forbids, since current-system facts belong in exactly one canonical place.</p>
+    <p>So the new page is a walkthrough that <b>derives from</b> the subsystem page and links to it. The subsystem page stays the owner of the invariants; this page owns the sequence.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Content</p>
+    <h2>The eleven stages, and the failures at each</h2>
+    <p>The organising idea: every stage states what happens on the happy path, then <b>what happens when it does not</b>. Three defects shipped this month because the code did something no document described — a form that validated with <code>.trim()</code> and submitted the raw string, two dedupe arbiters that could not see each other, and a page that silently wrote to CERT.</p>
+
+    <div class="op">
+      <span class="op-tag c">1</span><span class="set">Arriving</span>
+      <ul>
+        <li>Three entry points: the shared <code>register.html?event=CODE</code> link, the calendar card, the roster link. The card's “Rejestracja →” only opens the in-app modal while <code>bool_use_spws_registration</code> is true — otherwise it navigates to the deployed page.</li>
+        <li>Which environment each surface talks to, and why <code>register.html</code> carries the PROD pair only.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">2</span><span class="set">Gating before the form</span>
+      <ul>
+        <li>Registration disabled → external link. Past <code>dt_end</code> → expired. Past <code>COALESCE(dt_registration_deadline, dt_start)</code> → closed, with the roster still viewable (the ADR-084 decoupling).</li>
+        <li>Client-side gate mirrors a server guard; the server is the one that binds.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">3</span><span class="set">Declaring an identity</span>
+      <ul>
+        <li>What is collected, and — as important — <b>what is not validated</b>: no birth-year bounds, the V-category is display-only, so an implausible year passes straight through.</li>
+        <li>Normalisation at the boundary, and the duplicate warning that compares on name alone.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">4</span><span class="set">Matching</span>
+      <ul>
+        <li>Exact triple only; no fuzzy matching in the browser, by decision. A miss is <b>not</b> a dead end — it registers with no fencer link.</li>
+        <li>The deliberate “treat a failed lookup as no match” choice, and its consequence.</li>
+        <li>That the match RPC answers per birth year <b>before any write</b>, so the year is effectively public. Stated plainly, because several arguments elsewhere lean on it being private.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">5</span><span class="set">Consent</span>
+      <ul>
+        <li>What is stamped, what the presented text actually promises, and why the club field is a consent-version change rather than a string edit.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">6</span><span class="set">The write</span>
+      <ul>
+        <li>One constrained public path, why it runs with definer rights, and the registration-window guard.</li>
+        <li><b>Two arbiters and why a single insert cannot carry both</b> — the matched link, and the declared identity for the unmatched. Then twin absorption, and why promotion beats delete-and-insert (the consent stamp is evidence).</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">7</span><span class="set">Correcting</span>
+      <ul>
+        <li>Why the create path <em>cannot</em> fix a misspelled name or a mistyped year: both are the arbiter, so a change reads as a different entrant and inserts.</li>
+        <li>The short-lived handle, why it is not persisted, and how a returning fencer obtains a new one.</li>
+        <li>What a mistyped birth year does instead — a second entry the fencer cannot merge.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">8</span><span class="set">What the public sees</span>
+      <ul>
+        <li>The roster projection and its GDPR minimisation — no birth year, no club. And what <em>is</em> published: the row identifier and the age band, which is why the identifier cannot authorise anything.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">9</span><span class="set">What the organizer receives</span>
+      <ul>
+        <li>Seed generation from every declared registration, canonical naming, the category marker, the empty club field, delivery and its stamp.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">10</span><span class="set">After the competition</span>
+      <ul>
+        <li>Identity resolution at ingestion; the read-only invariant; the reconciliation rule where an estimated stored year yields to the declaration and a known one does not.</li>
+        <li>The purge — the part of the arc nothing currently documents.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag u">11</span><span class="set">Failure boundaries, as one table</span>
+      <ul>
+        <li>Closed window · wrong birth year · double submit · lookup blip · blocked storage · edit collision · impersonation. Each with the observed behaviour and where it is pinned by a test.</li>
+      </ul>
+    </div>
+
+    <p>Closing section: <b>known gaps</b>, named rather than implied — no rate limiting, no birth-year challenge, no audit trail on edits, club not carried, post-deadline entries. Each pointing at its ADR-079 open item so the page cannot quietly drift into claiming more than the system does.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Constraints the page must satisfy</p>
+    <h2>What the validator enforces</h2>
+    <ul>
+      <li>Five required meta tags — <code>doc-id</code>, <code>doc-status</code>, <code>doc-type</code>, <code>doc-owner</code>, <code>last-verified</code> — with a unique doc-id.</li>
+      <li>A <code>current</code> page <b>must</b> appear in <code>documentation-map.html</code>'s ownership JSON with <code>source_globs</code>, or <code>check_docs.py</code> fails.</li>
+      <li>Every internal link target <b>and anchor fragment</b> is resolved; a link to a heading that does not exist is an error. No links to Markdown, none to legacy narrative.</li>
+      <li>Present tense, current behaviour only. No implementation history — that is what <code>doc/plans/</code> holds.</li>
+    </ul>
+    <p>And one edit outside the new file: <b>reduce Flow 2 in <code>architecture/end-to-end-flows.html</code> to a pointer.</b> It is five bullets last verified 12 July, predating the unmatched path, the routing fix, trimming, twin absorption and the edit path. Left alone it will keep contradicting the new page.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Verification</p>
+    <h2>How this is checked</h2>
+    <ul>
+      <li><code>python scripts/check_docs.py</code> — meta, map registration, and every link and anchor.</li>
+      <li><code>bash scripts/check-coherence.sh</code> and <code>check-spec-sync.sh</code>; <code>render_docs.py --check</code> and <code>render_adrs.py --check</code> for the twins.</li>
+      <li><b>Source-verified while writing, not after:</b> every behavioural claim traced to the migration, RPC, component or test that implements it — the same discipline that found the three defects. Anything I cannot evidence goes in “known gaps” instead of the prose.</li>
+      <li><code>./scripts/refresh-graph.sh</code> before commit.</li>
+    </ul>
+    <p>No code change, no migration, no test change. Documentation only.</p>
+  </section>
+
+  <p class="foot">Blocked on the name in section 1 · the page replaces nothing, and takes ownership of sequence only — <code>subsystems/events-and-registration.html</code> remains the owner of registration invariants.</p>
+</div>

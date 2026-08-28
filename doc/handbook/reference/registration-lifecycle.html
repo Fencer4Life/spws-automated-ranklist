@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="doc-id" content="HB-REF-REG-LIFECYCLE">
+<meta name="doc-status" content="current">
+<meta name="doc-type" content="reference">
+<meta name="doc-owner" content="Events and registration">
+<meta name="last-verified" content="2026-08-28">
+<meta name="source-globs" content="frontend/src/components/Registration*; frontend/src/components/EntryList.svelte; frontend/src/ce/*Element.svelte; frontend/src/lib/editToken.ts; supabase/migrations/**registration*; python/pipeline/ftl_seed_export*.py">
+<meta name="review-triggers" content="Registration form steps, the public write or edit RPCs, the entry-list projection, the FTL seed population, or identity resolution of a registration at ingestion">
+<title>Registration lifecycle · SPWS Handbook</title>
+<link rel="stylesheet" href="../assets/handbook.css">
+</head>
+<body><div class="page">
+<header class="handbook-header">
+<nav class="breadcrumb"><a href="../index.html">Handbook</a><span>Reference</span></nav>
+<p class="eyebrow">Reference · Walkthrough</p>
+<h1>Registration lifecycle</h1>
+<p class="dek">One registration, followed from the administrator enabling it to the row being purged after results are ingested — with the failure at each stage, because that is where the behaviour is least obvious.</p>
+<div class="doc-meta"><span>Current</span><span>Events and registration</span><span>Verified 28 August 2026</span></div>
+</header>
+<main>
+
+<section id="purpose">
+<p class="kicker">Why this page exists</p>
+<h2>Purpose</h2>
+<p>The registration subsystem spans an admin form, a public page served from a different origin, two custom elements, three database functions, two dedupe arbiters, a seed exporter and the ingestion pipeline. Each part is documented where it lives. Nothing followed a single registration across all of them, and three defects reached production in August 2026 because the code did something no page described.</p>
+<p>This page owns the <b>sequence</b>. <a href="../subsystems/events-and-registration.html">Events and registration</a> remains the owner of the subsystem's invariants and implementation map; where the two disagree, that page wins on facts and this one is stale.</p>
+<p>Screenshots are captured from a local environment by script, never mocked, so a control shown here is a control that exists.</p>
+</section>
+
+<section id="enabling">
+<p class="kicker">Stage 1 · Administrator</p>
+<h2>Enabling registration on an event</h2>
+<p>Registration is per-event and off by default. An administrator opens the event in <b>Wydarzenia</b> and ticks <b>Włącz rejestrację SPWS dla tego wydarzenia</b>, which sets <code>bool_use_spws_registration</code>. That one flag decides whether the association collects entries for this competition or merely links to someone else's form.</p>
+
+<figure class="shot">
+<img src="../assets/registration/06-admin-event-edit.png" alt="Event editor showing the Rejestracja SPWS panel with the enable checkbox ticked, two- and three-weapon fees, the generated entry-list URL and the organizer e-mail field.">
+<figcaption>The <b>Rejestracja SPWS</b> panel in the event editor. The checkbox drives <code>bool_use_spws_registration</code>; the two fee fields drive the tiers the fencer is quoted; <b>URL listy zgłoszeń</b> is generated rather than typed; <b>E-mail organizatora</b> is where the seed bundle is sent.</figcaption>
+</figure>
+
+<div class="invariant">
+<p>Three separate fields gate what a visitor sees, and they are easy to confuse. <code>bool_use_spws_registration</code> decides whether we run the registration at all. <code>url_registration</code> decides whether a registration link appears on the calendar card. <code>url_entry_list</code> decides whether an entry-list link appears beside it. An event can have the flag on and no links, or links and the flag off — and the second combination sends visitors to the deployed public page instead of the in-app dialog.</p>
+</div>
+
+<p>Fees are quoted by weapon count: the base fee, then a two-weapon and a three-weapon tier. The fencer is never asked to compute anything — selecting weapons picks the tier.</p>
+</section>
+
+<section id="entry-points">
+<p class="kicker">Stage 2 · Arriving</p>
+<h2>How a fencer reaches the form</h2>
+<p>There are two doors. The calendar card carries both when the event is configured for them.</p>
+
+<figure class="shot">
+<img src="../assets/registration/05-calendar-card.png" alt="Calendar event card for PPW1-2026-2027 showing status, fee tiers, registration deadline and two buttons: Rejestracja and Lista zgłoszonych.">
+<figcaption>The event card. <b>Rejestracja →</b> and <b>Lista zgłoszonych →</b> are ordinary links with an <code>href</code> to the deployed page — but when <code>bool_use_spws_registration</code> is true their click handler cancels the navigation and opens the in-app dialog instead. With the flag off, the same link navigates away to production.</figcaption>
+</figure>
+
+<p>The second door is the shared link, <code>register.html?event=&lt;code&gt;</code>, which the association distributes directly. Appending <code>&amp;view=list</code> serves the public roster instead of the form; the page mounts a different custom element per view, so moving between them is a real navigation rather than a step change.</p>
+
+<div class="warning">
+<p>The registration link is <b>not</b> shown once the cutoff has passed, and the entry-list link is <b>not</b> shown once the event has started or been cancelled. These are independent: after the deadline the roster stays reachable while the form does not, which is deliberate — people still need to see who is entered.</p>
+</div>
+</section>
+
+<section id="declaring">
+<p class="kicker">Stage 3 · Declaring</p>
+<h2>Identity, and what is not checked</h2>
+<p>The first step collects surname, given name, gender, birth year and one to three weapons. The surname is uppercased as it is typed; the age category and the fee are computed live and shown back.</p>
+
+<figure class="shot">
+<img src="../assets/registration/01-identity.png" alt="Step one of the registration form, filled in for KOWALSKI Jan, born 1970, épée and sabre, showing computed category V2 and a 200 PLN two-weapon fee.">
+<figcaption>Step 1. Category <b>V2</b> and the <b>200 PLN</b> two-weapon fee are derived, not entered. The club field is collected for the organizer's convenience and, as its label says, is not stored.</figcaption>
+</figure>
+
+<div class="danger">
+<p><b>The birth year is not validated.</b> Continuing requires only that a number is present — there is no lower or upper bound, and the computed category is display-only, so a year that resolves to no veteran category at all still passes. Since the birth year is part of the dedupe key for an unlinked entrant, a mistyped year does not correct an earlier entry, it creates a second one. This is a known gap, not intended behaviour.</p>
+</div>
+
+<p>On continuing, the declared triple is looked up against the fencer master list. The match is <b>exact</b> — no fuzzy matching happens in the browser, by decision. A hit links the registration to that fencer; a miss is accepted and recorded with no link, which is the normal path for a newcomer and for anyone whose stored birth year was only ever an estimate.</p>
+
+<div class="invariant">
+<p>A failed lookup is deliberately treated as "no match" rather than as an error, so a network problem never blocks an entry. The cost is that a fencer who <em>is</em> on the master list can be recorded as unlinked when the lookup times out. Stage 5 absorbs that case rather than leaving two rows.</p>
+</div>
+</section>
+
+<section id="consent">
+<p class="kicker">Stage 4 · Consent</p>
+<h2>The privacy notice and what it commits us to</h2>
+
+<figure class="shot">
+<img src="../assets/registration/02-consent.png" alt="The RODO consent step listing what is processed and on what lawful basis, with a required acceptance checkbox.">
+<figcaption>Step 2. Each row states what is processed and why. The notice a fencer accepts is versioned, and the accepted version is stored with the timestamp — so the text can change without making it unclear what any given person agreed to.</figcaption>
+</figure>
+
+<p>Two commitments in this notice constrain the system rather than merely describing it. The e-mail address is a one-time check and is not retained. The club is used only for start files and is <b>not</b> stored. Carrying the club through to the seed file would therefore contradict the text a fencer has already accepted, which makes it a consent-version change rather than a code change — the reason it remains open.</p>
+</section>
+
+<section id="writing">
+<p class="kicker">Stage 5 · The write</p>
+<h2>How the entry list is built, and how entries are overwritten</h2>
+<p>There is exactly one public way to create a registration. Anonymous visitors hold no insert privilege on the table; the write happens inside a function that runs with its owner's rights, which is what lets the table stay closed while the page stays open.</p>
+
+<p>Before anything is written the registration window is re-checked <b>on the server</b>, against the registration deadline or, where none is set, the event start date. The form performs the same check, but the client check is a courtesy — a stale link cannot write past the cutoff because the database refuses it.</p>
+
+<h3>Two dedupe keys, not one</h3>
+<p>"The same person" means different things depending on whether we recognised them, so the write takes one of two paths:</p>
+<ul class="sequence">
+<li><b>Linked to a fencer</b> — the key is the pair (event, fencer). Submitting again updates that row.</li>
+<li><b>Not linked</b> — the key is the declared identity: event, surname, given name and birth year, compared case-insensitively and ignoring surrounding spaces. Submitting again updates that row.</li>
+</ul>
+<p>A single insert cannot carry two conflict targets, which is why the function branches rather than being written once. The consequence is the part worth remembering: <b>the declared name and birth year are the identity of an unlinked entry</b>. Changing either does not edit the entry, it describes a different person — so the create path inserts a second row and leaves the first standing.</p>
+
+<div class="invariant">
+<p>Because the two keys cannot see each other, one person could once hold a linked <em>and</em> an unlinked row for the same event, both reaching the public roster and the organizer's file. Each path now absorbs the other's twin before inserting. Where the unlinked row exists first it is <b>promoted</b> — given the fencer link in place — rather than deleted and recreated, so the original creation time and consent evidence survive. A later submission never resurrects a name the fencer has corrected away.</p>
+</div>
+
+<h3>What a repeat submission changes</h3>
+<p>Re-submitting the same identity updates the weapons, gender and the edit handle, and refreshes nothing else. Consent is not restamped, since consent was given at the first submission. For an unlinked entry the birth year is deliberately <b>not</b> updated: it is part of that entry's identity, so a different year is a different entrant rather than an edit.</p>
+
+<h3>Names are normalised at the boundary</h3>
+<p>Declared names are stripped of surrounding whitespace by the database on every write, whichever caller performs it — the public function, an administrator, or anything added later. The form also trims before submitting. The duplication is intentional: the form protects the common path, and the trigger covers callers that never pass through a form.</p>
+</section>
+
+<section id="paying">
+<p class="kicker">Stage 6 · Payment</p>
+<h2>What the fencer is left holding</h2>
+
+<figure class="shot">
+<img src="../assets/registration/03-payment.png" alt="The payment step showing recipient, IBAN, a generated transfer title and the amount, each with a copy button, plus Popraw dane and Lista zgłoszonych controls.">
+<figcaption>Step 3. The transfer title is generated — event code, name, weapons and category — so a bank statement line can be attributed to a competition without the fencer inventing a format. Every field copies with one tap.</figcaption>
+</figure>
+
+<p>The system displays transfer instructions and does <b>not</b> track whether the transfer arrives. There is no paid flag, and neither the roster nor the organizer's file is gated on payment; the organizer verifies it in person at check-in. A declared registration, not a payment, is what "entered" means here.</p>
+</section>
+
+<section id="correcting">
+<p class="kicker">Stage 7 · Correcting</p>
+<h2>Fixing a declaration that is already submitted</h2>
+<p>Because the declared name and birth year <em>are</em> the identity of an unlinked entry, the create path cannot repair a typo in either. Correcting them needs a write that addresses the row directly, by its identifier, consulting no key at all. That is a separate function, and it needs authorising.</p>
+
+<div class="danger">
+<p>The row identifier cannot authorise it: the public roster publishes that identifier. Authorisation is a random handle, generated by the browser, stored on the row and returned by no public projection.</p>
+</div>
+
+<p>The handle is <b>short-lived by design</b>. It lives in the page and is gone when the form closes. A fencer returning later re-enters the identity they declared, which lands on their existing row and issues a fresh handle — so re-submission rotates it, and that is the mechanism rather than a side effect. Persisting the handle in the browser was built and then removed: it tied the ability to correct to one browser on one device, which failed the ordinary case of registering on a phone and correcting on a laptop.</p>
+
+<p>The edit honours the same registration window, never changes the fencer link, never restamps consent, and refuses rather than merges when the corrected identity collides with another entry at the same event.</p>
+</section>
+
+<section id="published">
+<p class="kicker">Stage 8 · Published</p>
+<h2>What the public roster shows</h2>
+
+<figure class="shot">
+<img src="../assets/registration/04-entry-list.png" alt="The public entry list with five entries, per-weapon counts, search and filters, and a legend noting that birth year and club are not shown.">
+<figcaption>The roster, reached from inside the flow — hence <b>← Dane do przelewu</b>, which returns to the transfer details without losing them. Counts, search and filters are derived client-side from the same projection.</figcaption>
+</figure>
+
+<p>The roster is a deliberately narrow projection: surname, given name, gender, weapons and the age category. <b>Birth year and club are excluded</b>, which is why the page says so in plain language at the bottom. Every declared registration appears; there is no payment gate.</p>
+
+<div class="warning">
+<p>The projection publishes the row identifier and the age category. The category is a ten-year band, so it narrows the birth year considerably — and the match lookup answers per birth year <em>before</em> anything is written, which makes an exact year recoverable by an anonymous caller. Any reasoning that treats the birth year as private is therefore unsound. This is the single largest open gap.</p>
+</div>
+</section>
+
+<section id="organizer">
+<p class="kicker">Stage 9 · Handover</p>
+<h2>What the organizer receives</h2>
+<p>The organizer runs the competition on their own timing software, so the association sends a seed file rather than access. It is generated on demand from <b>every</b> declared registration at the moment of sending, never from a stored snapshot, so it cannot drift from the roster.</p>
+<p>Names are canonicalised on export — surname uppercased, given name in title case, both stripped — which is why padding in stored names never reached the file even before the database normalised it. Each entrant carries an age-category marker, and the seeding order interleaves the sub-rankings so that a single pool sheet is balanced across categories. The club field is emitted empty, per the consent text. A successful send is stamped on the event so it is visible that the organizer has been given the file.</p>
+</section>
+
+<section id="after">
+<p class="kicker">Stage 10 · After the competition</p>
+<h2>Resolution, and the end of the row</h2>
+<p>A registration never writes to the fencer master list. It records what somebody declared; it does not assert that the person exists. The link between the two is made at results ingestion, which is also where an unlinked entrant first becomes a fencer record.</p>
+<ul class="sequence">
+<li>Where the stored birth year was an <b>estimate</b>, the declaration wins and the stored value is corrected. Collecting exactly this is one reason unlinked registration is accepted at all.</li>
+<li>Where the stored birth year is <b>known</b> and the declaration disagrees, the conflict is held for review rather than applied. A namesake and a bad edit look identical at this point, and only one of them should change a record.</li>
+</ul>
+<p>Once results are ingested and reconciled, the registration has done its work and the row is purged. The ranking record is durable; the registration is not. That is the end of the lifecycle, and it is the reason nothing downstream may treat a registration as a lasting identity.</p>
+</section>
+
+<section id="failures">
+<p class="kicker">When it does not go to plan</p>
+<h2>Failure boundaries</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Situation</th><th>What happens</th></tr></thead>
+<tbody>
+<tr><td>Link opened after the cutoff</td><td>The form is replaced by a closed notice; the roster stays reachable. The server refuses the write independently, so a stale page cannot get past it.</td></tr>
+<tr><td>Link opened after the event ended</td><td>The whole page reports the event as finished; neither form nor roster is offered.</td></tr>
+<tr><td>Registration not enabled for the event</td><td>Only the organizer's external link is offered, so a shared link is always safe to send.</td></tr>
+<tr><td>Birth year mistyped</td><td>Accepted. It creates a <b>second</b> entry rather than editing the first, and the create path cannot merge them. Correcting it requires the edit path, or an administrator.</td></tr>
+<tr><td>Same entry submitted twice</td><td>Updated in place, latest submission wins. A soft warning is shown beforehand when a matching name is already on the roster.</td></tr>
+<tr><td>Identity lookup fails mid-flow</td><td>Treated as "no match" so the entry is never blocked; if the fencer already holds a linked row for the event, the write absorbs it rather than adding a twin.</td></tr>
+<tr><td>Correction collides with another entry</td><td>Refused with an error. Merging would destroy one of two real declarations.</td></tr>
+<tr><td>Fencer returns on another device</td><td>No handle, so no direct edit. Re-entering the declared identity lands on the existing row and issues a new handle.</td></tr>
+<tr><td>Somebody enters another person's name</td><td>Possible, and accepted as a bounded risk: nothing here proves identity. A fake entry has no effect on the ranking, which is results-based, and the organizer checks people in at the venue.</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="gaps">
+<p class="kicker">Known gaps</p>
+<h2>What this page is not claiming</h2>
+<p>These are open, recorded against the decision that owns them, and named here so the walkthrough cannot be read as describing a more complete system than exists.</p>
+<ul class="checklist">
+<li><b>No rate limiting anywhere.</b> The identity lookup answers per birth year, unthrottled, before any write. Any control resting on the birth year being unknown is currently worth nothing.</li>
+<li><b>The declared birth year is never challenged</b>, so a typo silently produces a second entry. The fix is to challenge only where the stored year is known rather than estimated — challenging an estimate would turn away exactly the people the system exists to learn from.</li>
+<li><b>Corrections leave no audit trail.</b> Revoking a handle is already possible for an administrator, but the previous value of a changed name is not recorded anywhere.</li>
+<li><b>The club is collected and discarded.</b> Carrying it to the seed file inverts the accepted consent text, so it is a consent-version change.</li>
+<li><b>Entries after the deadline are refused in the database.</b> Whether to accept late entries is a business decision, not a copy change.</li>
+</ul>
+</section>
+
+<section id="decisions">
+<p class="kicker">Rationale</p>
+<h2>Related decisions</h2>
+<ul>
+<li><a href="../../adr/079-event-self-registration-identity.html">ADR-079</a> — the identity model, the read-only invariant, impersonation posture, and the amendments covering unlinked registration, twin absorption and the edit path.</li>
+<li><a href="../../adr/078-gdpr-data-handling.html">ADR-078</a> — lawful bases, the data inventory, and the rights matrix including rectification.</li>
+<li><a href="../../adr/080-clean-roster-ftl-seeding.html">ADR-080</a> — the seed file format, category markers and seeding order.</li>
+<li><a href="../../adr/083-server-enforced-authorization.html">ADR-083</a> — why the public functions are the entire anonymous surface, and why that surface is an allowlist.</li>
+<li><a href="../subsystems/events-and-registration.html">Events and registration</a> — the owning subsystem page. <a href="../architecture/end-to-end-flows.html">End-to-end flows</a> places this journey among the others.</li>
+</ul>
+</section>
+
+</main>
+<footer class="freshness">Owner: Events and registration · Screenshots captured from a local environment on 28 August 2026; recapture them whenever a step, control or label on these screens changes.</footer>
+</div></body>
+</html>
