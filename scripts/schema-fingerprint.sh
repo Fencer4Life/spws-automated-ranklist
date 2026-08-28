@@ -18,9 +18,22 @@ SUPABASE_REF="${2:-}"
 # The SQL that computes the fingerprint — two sub-hashes combined.
 read -r -d '' FINGERPRINT_SQL << 'EOSQL' || true
 WITH func_hash AS (
+  -- Sort by (routine_name, routine_definition), not routine_name alone.
+  -- routine_name is NOT unique: information_schema.routines returns one row per
+  -- OVERLOAD, and this schema has overloaded functions (fn_ingest_evf_calendar
+  -- has two). Sorting by name alone leaves their relative order to physical row
+  -- order, so two environments with byte-identical schemas can produce different
+  -- fingerprints — exactly what halted the 2026-08-28 PROD release after the
+  -- migration had already applied cleanly.
+  --
+  -- The tiebreaker is deliberately the DEFINITION and not specific_name:
+  -- specific_name embeds the function's OID, which differs per database, so
+  -- ordering by it would make the fingerprint environment-specific and defeat
+  -- the entire comparison. The definition is already the thing being hashed, so
+  -- ordering by it is canonical everywhere.
   SELECT md5(string_agg(
     coalesce(routine_name,'') || '|' || coalesce(routine_definition,''),
-    E'\n' ORDER BY routine_name
+    E'\n' ORDER BY routine_name, routine_definition
   )) AS h
   FROM information_schema.routines
   WHERE routine_schema = 'public'
