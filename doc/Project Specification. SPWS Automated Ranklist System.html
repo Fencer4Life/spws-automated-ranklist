@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="Project Specification. SPWS Automated Ranklist System.md">
-<meta name="doc-source-sha256" content="f58351b30115a4829e197fa4580cc85a7b18bf2241e5913ffbd2b3bf7ca3b452">
+<meta name="doc-source-sha256" content="7bd9f3f4cba44d33a28d7b24b6d6957e3a1047283384be6e32f517718f2ef069">
 <title>Project Specification: SPWS Automated Ranklist System · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -2829,7 +2829,7 @@ Season folder naming: <code>{start_year}_{end_year_short}</code> (e.g. <code>202
 </tr>
 <tr>
 <td><a href="adr/079-event-self-registration-identity.html">ADR-079</a></td>
-<td><strong>Draft.</strong> Event self-registration &amp; identity resolution — <strong>read-only invariant on <code>tbl_fencer</code></strong> (form writes only ephemeral <code>tbl_registration</code>; reconciliation runs at ingestion, declared BY replaces estimation); Model B tuple gate (anonymous on exact Surname+Name+BY, else one-time email = friction not identity, no account); <strong>confirmed-BY-sacrosanct</strong> matrix; impersonation hardening via <strong>venue-level in-person payment check</strong> (not a software payment gate — corrected 2026-07-04, this system does not track payment completion) + results-based ranking; <code>tbl_registration</code> as rows not a JSON file (concurrency/RLS/GDPR). New <code>tbl_event</code> fields + entry-list.</td>
+<td><strong>Draft.</strong> Event self-registration &amp; identity resolution — <strong>read-only invariant on <code>tbl_fencer</code></strong> (form writes only ephemeral <code>tbl_registration</code>; reconciliation runs at ingestion, declared BY replaces estimation); Model B tuple gate (anonymous on exact Surname+Name+BY, else one-time email = friction not identity, no account); <strong>confirmed-BY-sacrosanct</strong> matrix; impersonation hardening via <strong>venue-level in-person payment check</strong> (not a software payment gate — corrected 2026-07-04, this system does not track payment completion) + results-based ranking; <code>tbl_registration</code> as rows not a JSON file (concurrency/RLS/GDPR). New <code>tbl_event</code> fields + entry-list. <strong>Amended 2026-08-17:</strong> the Model B email gate on non-exact paths is removed — an unmatched fencer registers with <code>id_fencer</code> NULL (the read-only invariant, BY matrix and impersonation defences are untouched; §4 already held email to be &quot;friction + accountability, never load-bearing for integrity&quot;); <code>register.html</code> receives PROD credentials only, correcting a §7(c) gap under which every public registration was written to CERT. Open: partial unique index for NULL-fencer duplicates, <code>txt_club</code> to the seed file (a <code>CONSENT_VERSION</code> bump), post-deadline acceptance.</td>
 <td>spec §5.2, ADR-078, ADR-080, ADR-056, ADR-030</td>
 </tr>
 <tr>
@@ -2946,5 +2946,5 @@ PPW5 silently dropped 14 of 26 brackets at the FTL splitter (&quot;unparseable b
 <!-- Coverage Summary moved to doc/requirements-traceability-matrix.md in Phase 0.5 (2026-05-01). --></section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>f58351b30115a4829e197fa4580cc85a7b18bf2241e5913ffbd2b3bf7ca3b452</code></footer>
+<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>7bd9f3f4cba44d33a28d7b24b6d6957e3a1047283384be6e32f517718f2ef069</code></footer>
 </div></body></html>
