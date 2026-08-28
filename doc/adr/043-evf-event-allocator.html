@@ -4,17 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="043-evf-event-allocator.md">
-<meta name="adr-source-sha256" content="63be559b6f68bb677d86de1454e26faa82e762a70c6c42933948da1b292e46c7">
+<meta name="adr-source-sha256" content="53c381a2ef815dd714caa04871e4b6378cc6af520d08643218649f66b8c4a7af">
 <title>ADR-043 · EVF Event Code Allocator + Classifier (Phase 2)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 043</p><h1>EVF Event Code Allocator + Classifier (Phase 2)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero)</dd></div><div><dt>Date</dt><dd class="">2026-04-26 <strong>Relates to:</strong> ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)</dd></div><div><dt>Source</dt><dd class=""><code>043-evf-event-allocator.md</code></dd></div><div><dt>Length</dt><dd class="">218 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero)</dd></div><div><dt>Date</dt><dd class="">2026-04-26 <strong>Relates to:</strong> ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher) <strong>Amended by:</strong> <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (an unestablished weapon set is skipped rather than fatal; a later cancellation may shift when nothing is anchored to its code).</dd></div><div><dt>Source</dt><dd class=""><code>043-evf-event-allocator.md</code></dd></div><div><dt>Length</dt><dd class="">219 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero)
 <strong>Date:</strong> 2026-04-26
-<strong>Relates to:</strong> ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)</p>
+<strong>Relates to:</strong> ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)
+<strong>Amended by:</strong> <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (an unestablished weapon set is skipped rather than fatal; a later cancellation may shift when nothing is anchored to its code).</p>
 </div>
 </header>
 <div class="layout">
@@ -232,5 +233,5 @@ and <a href="../../supabase/tests/56_evf_predecessor_event_fragment_repair.sql">
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="042-carryover-engine-dispatcher.html">← ADR-042: Per-season carry-over engine selection via dispatcher pattern</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="044-phase3-wizard.html">→ ADR-044: Phase 3 Admin UI + Season-Init Wizard (atomic transaction model)</a></nav>
-<footer class="foot">Generated from <code>043-evf-event-allocator.md</code> · source SHA-256 <code>63be559b6f68bb677d86de1454e26faa82e762a70c6c42933948da1b292e46c7</code></footer>
+<footer class="foot">Generated from <code>043-evf-event-allocator.md</code> · source SHA-256 <code>53c381a2ef815dd714caa04871e4b6378cc6af520d08643218649f66b8c4a7af</code></footer>
 </div></body></html>

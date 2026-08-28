@@ -14,6 +14,13 @@ Plan test IDs evf.1–evf.12:
   evf.10  enrich_event_details tolerates single detail-page failure
   evf.11  scrape_full_season_calendar raises RuntimeError on all-source failure
   evf.12  Integration: live EVF API reachable (skipped by default)
+  evf.13  parse_event_detail_html derives weapons (categories, then body text)
+  evf.14  repair_missing_weapons fills only weaponless events, tolerates failure
+  evf.15  An untagged EVF post no longer aborts the whole season scrape
+  evf.16  Invitation PDF is the last evidence rung; override map is final
+  evf.17  Unweaponed stubs are partitioned out, never fatal, never dropped
+  evf.18  A calendar failure no longer blocks results ingestion
+  evf.19  A pinned cancellation may shift when nothing is anchored to it
 """
 
 import json
@@ -1240,6 +1247,538 @@ class TestEvfEnrichment:
         assert any("broken" in rec.getMessage().lower() for rec in caplog.records)
 
 
+class TestDetailPageWeaponFallback:
+    """Tests evf.13-evf.15: weapons recovered from the event detail page.
+
+    The list page derives weapons solely from the post's ``cat_*`` taxonomy
+    classes.  A post published without those categories reaches
+    ``validate_season_calendar`` carrying no weapons and fail-closes the whole
+    season scrape -- observed live from 2026-08-19 on
+    'EVF Circuit - Tampere (FIN)' (calendar id 5379), whose detail page states
+    'EPEE + SABRE' in its body while carrying no category meta at all.
+    """
+
+    CATEGORY_PAGE = """
+    <div class="tribe-events-single">
+      <span class="tribe-events-event-categories tribe-events-meta-value">
+        Circuit , Epee , EVF , Ranking Event , Sabre
+      </span>
+      <div class="tribe-events-single-event-description tribe-events-content">
+        <p>Additional information in the invitation letter</p>
+      </div>
+    </div>
+    """
+
+    DESCRIPTION_ONLY_PAGE = """
+    <div class="tribe-events-single">
+      <div class="tribe-events-single-event-description tribe-events-content">
+        <p>EPEE + SABRE</p>
+      </div>
+    </div>
+    """
+
+    TIGHT_SEPARATOR_PAGE = """
+    <div class="tribe-events-single">
+      <div class="tribe-events-single-event-description tribe-events-content">
+        <p>EPEE +FOIL +SABRE</p>
+      </div>
+    </div>
+    """
+
+    SILENT_PAGE = """
+    <div class="tribe-events-single">
+      <div class="tribe-events-single-event-description tribe-events-content">
+        <p>Additional information in the invitation letter</p>
+      </div>
+    </div>
+    """
+
+    def test_weapons_from_category_meta(self):
+        """evf.13: the category taxonomy is read when the post carries it."""
+        from python.scrapers.evf_calendar import parse_event_detail_html
+
+        assert parse_event_detail_html(self.CATEGORY_PAGE)["weapons"] == ["EPEE", "SABRE"]
+
+    def test_weapons_from_description_when_no_categories(self):
+        """evf.13: the Tampere shape -- body text is the only weapon source."""
+        from python.scrapers.evf_calendar import parse_event_detail_html
+
+        assert parse_event_detail_html(self.DESCRIPTION_ONLY_PAGE)["weapons"] == [
+            "EPEE",
+            "SABRE",
+        ]
+
+    def test_weapons_from_description_without_separating_spaces(self):
+        """evf.13: 'EPEE +FOIL +SABRE' is written without spaces on some posts."""
+        from python.scrapers.evf_calendar import parse_event_detail_html
+
+        assert parse_event_detail_html(self.TIGHT_SEPARATOR_PAGE)["weapons"] == [
+            "EPEE",
+            "FOIL",
+            "SABRE",
+        ]
+
+    def test_weapons_empty_when_page_says_nothing(self):
+        """evf.13: silence stays silence -- never guess a weapon."""
+        from python.scrapers.evf_calendar import parse_event_detail_html
+
+        assert parse_event_detail_html(self.SILENT_PAGE)["weapons"] == []
+
+    def test_repair_fills_only_weaponless_events(self, monkeypatch):
+        """evf.14: tagged events are left alone and never re-fetched."""
+        from python.scrapers import evf_calendar
+
+        fetched: list[str] = []
+
+        def fake_get(url, **kwargs):
+            fetched.append(url)
+            resp = MagicMock()
+            resp.text = self.DESCRIPTION_ONLY_PAGE
+            resp.raise_for_status = MagicMock()
+            return resp
+
+        monkeypatch.setattr(evf_calendar.httpx, "get", fake_get)
+
+        events = [
+            {"name": "Tagged", "url": "https://evf.test/tagged", "weapons": ["FOIL"]},
+            {"name": "Tampere", "url": "https://evf.test/tampere", "weapons": []},
+        ]
+        evf_calendar.repair_missing_weapons(events, delay=0)
+
+        assert fetched == ["https://evf.test/tampere"], "only the weaponless event is fetched"
+        assert events[0]["weapons"] == ["FOIL"], "tagged event untouched"
+        assert events[1]["weapons"] == ["EPEE", "SABRE"], "weaponless event repaired"
+
+    def test_repair_tolerates_a_dead_detail_page(self, monkeypatch, caplog):
+        """evf.14: a 404 detail page leaves the entry for the override/guard."""
+        from python.scrapers import evf_calendar
+
+        def fake_get(url, **kwargs):
+            raise httpx.ConnectError("boom")
+
+        monkeypatch.setattr(evf_calendar.httpx, "get", fake_get)
+
+        events = [{"name": "Toronto", "url": "https://evf.test/toronto", "weapons": []}]
+        with caplog.at_level(logging.WARNING, logger="evf.calendar"):
+            evf_calendar.repair_missing_weapons(events, delay=0)
+
+        assert events[0]["weapons"] == [], "no weapons invented from a failed fetch"
+
+    def test_untagged_post_no_longer_fails_the_season_scrape(self, monkeypatch):
+        """evf.15: the live 2026-08-19 regression -- Tampere must not abort."""
+        from python.scrapers import evf_calendar
+
+        tampere = {
+            "name": "EVF Circuit - Tampere (FIN)",
+            "dt_start": "2027-01-23",
+            "dt_end": "2027-01-23",
+            "location": "",
+            "address": "",
+            "country": "",
+            "weapons": [],
+            "is_team": False,
+            "url": "https://www.veteransfencing.eu/event/evf-circuit-tampere-fin/",
+            "evf_slug": "evf-circuit-tampere-fin",
+            "evf_calendar_id": 5379,
+            "is_cancelled": False,
+        }
+
+        def fake_get(url, **kwargs):
+            resp = MagicMock()
+            resp.text = self.DESCRIPTION_ONLY_PAGE
+            resp.raise_for_status = MagicMock()
+            return resp
+
+        monkeypatch.setattr(evf_calendar.httpx, "get", fake_get)
+        monkeypatch.setattr(evf_calendar, "_fetch_html_list", lambda: [tampere])
+        monkeypatch.setattr(
+            evf_calendar,
+            "fetch_calendar_from_api",
+            lambda *a, **k: (_ for _ in ()).throw(RuntimeError("API not consulted in this test")),
+        )
+
+        snapshot = evf_calendar.scrape_full_season_calendar(
+            "2026-07-13", "2027-07-15", skip_details=True
+        )
+
+        assert [e["name"] for e in snapshot] == ["EVF Circuit - Tampere (FIN)"]
+        assert snapshot[0]["weapons"] == ["EPEE", "SABRE"]
+
+
+class TestInvitationPdfWeaponRung:
+    """Tests evf.16: the invitation PDF is the last evidence rung.
+
+    Some EVF posts carry no categories and a description that names no weapon
+    ("Two genders, three weapons, four..." -- Critérium de Paris 2026), while
+    the linked invitation letter states the programme explicitly.
+    """
+
+    SILENT_PAGE_WITH_PDF = """
+    <div class="tribe-events-single">
+      <div class="tribe-events-single-event-description tribe-events-content">
+        <p>Two genders, three weapons, four days.</p>
+        <a href="https://evf.test/invite.pdf">Invitation</a>
+      </div>
+    </div>
+    """
+
+    def test_weapons_from_text_is_whole_word_only(self):
+        """evf.16: prose cannot invent a weapon; real weapon words are found."""
+        from python.scrapers.evf_calendar import _weapons_from_text
+
+        assert _weapons_from_text("Two genders, three weapons, four days.") == []
+        assert _weapons_from_text("EPEE +FOIL +SABRE") == ["EPEE", "FOIL", "SABRE"]
+        assert _weapons_from_text("Programme: Epee (men) and Sabre (women)") == [
+            "EPEE",
+            "SABRE",
+        ]
+
+    def test_pdf_rung_used_when_detail_page_is_silent(self, monkeypatch):
+        """evf.16: fall through to the invitation PDF, and record its weapons."""
+        from python.scrapers import evf_calendar
+
+        def fake_get(url, **kwargs):
+            resp = MagicMock()
+            resp.raise_for_status = MagicMock()
+            resp.text = self.SILENT_PAGE_WITH_PDF
+            resp.content = b"%PDF-fake"
+            return resp
+
+        monkeypatch.setattr(evf_calendar.httpx, "get", fake_get)
+        monkeypatch.setattr(
+            evf_calendar, "_weapons_from_pdf_bytes", lambda b: ["EPEE", "FOIL", "SABRE"]
+        )
+
+        events = [{"name": "Criterium", "url": "https://evf.test/crit", "weapons": []}]
+        evf_calendar.repair_missing_weapons(events, delay=0)
+
+        assert events[0]["weapons"] == ["EPEE", "FOIL", "SABRE"]
+
+    def test_pdf_rung_skipped_when_html_already_answered(self, monkeypatch):
+        """evf.16: the PDF is a last resort, never fetched needlessly."""
+        from python.scrapers import evf_calendar
+
+        page = """
+        <div class="tribe-events-single">
+          <div class="tribe-events-single-event-description tribe-events-content">
+            <p>EPEE + SABRE</p>
+            <a href="https://evf.test/invite.pdf">Invitation</a>
+          </div>
+        </div>
+        """
+
+        def fake_get(url, **kwargs):
+            resp = MagicMock()
+            resp.raise_for_status = MagicMock()
+            resp.text = page
+            resp.content = b"%PDF-fake"
+            return resp
+
+        called = []
+        monkeypatch.setattr(evf_calendar.httpx, "get", fake_get)
+        monkeypatch.setattr(
+            evf_calendar,
+            "_weapons_from_pdf_bytes",
+            lambda b: called.append(b) or ["FOIL"],
+        )
+
+        events = [{"name": "Madrid", "url": "https://evf.test/madrid", "weapons": []}]
+        evf_calendar.repair_missing_weapons(events, delay=0)
+
+        assert events[0]["weapons"] == ["EPEE", "SABRE"]
+        assert called == [], "PDF must not be opened when the page already answered"
+
+    def test_override_map_is_the_final_rung(self, monkeypatch):
+        """evf.16: Toronto's page states nothing; the approved override applies."""
+        from python.scrapers import evf_calendar
+
+        def fake_get(url, **kwargs):
+            raise httpx.ConnectError("gone")
+
+        monkeypatch.setattr(evf_calendar.httpx, "get", fake_get)
+
+        events = [
+            {
+                "name": "International Veterans Cup - Toronto (CAN)",
+                "url": "https://evf.test/toronto",
+                "evf_calendar_id": 5070,
+                "weapons": [],
+            }
+        ]
+        evf_calendar.repair_missing_weapons(events, delay=0)
+
+        assert events[0]["weapons"] == ["EPEE", "FOIL", "SABRE"]
+
+
+class TestUnweaponedPartition:
+    """Tests evf.17: unannounced stubs are skipped, never fatal, never dropped.
+
+    ``validate_season_calendar`` keeps its strict contract -- it simply never
+    sees an entry whose weapons are still unknown.
+    """
+
+    def test_weaponless_entry_is_partitioned_out(self):
+        """evf.17: no weapons -> pending, not ready."""
+        from python.scrapers.evf_calendar import partition_unweaponed
+
+        ready, pending = partition_unweaponed(
+            [
+                {"name": "Tagged", "evf_calendar_id": 1, "weapons": ["FOIL"]},
+                {"name": "Stub", "evf_calendar_id": 2, "weapons": []},
+            ]
+        )
+
+        assert [e["name"] for e in ready] == ["Tagged"]
+        assert [e["name"] for e in pending] == ["Stub"]
+
+    def test_already_imported_event_is_never_skipped(self):
+        """evf.17: EVF un-tagging a live post is a regression, not a stub."""
+        from python.scrapers.evf_calendar import partition_unweaponed
+
+        ready, pending = partition_unweaponed(
+            [{"name": "Live event", "evf_calendar_id": 42, "weapons": []}],
+            known_calendar_ids={42},
+        )
+
+        assert [e["name"] for e in ready] == ["Live event"]
+        assert pending == []
+
+    def test_validate_still_fatal_on_identity_errors(self):
+        """evf.17: the skip must not swallow anything but unknown weapons."""
+        from python.scrapers.evf_calendar import (
+            CalendarIntegrityError,
+            validate_season_calendar,
+        )
+
+        with pytest.raises(CalendarIntegrityError, match="missing EVF calendar id"):
+            validate_season_calendar(
+                [
+                    {
+                        "name": "No id",
+                        "dt_start": "2026-09-12",
+                        "dt_end": "2026-09-13",
+                        "evf_calendar_id": None,
+                        "weapons": ["EPEE"],
+                    }
+                ],
+                "2026-07-13",
+                "2027-07-15",
+            )
+
+    def test_scrape_skips_stub_and_reports_it(self, monkeypatch):
+        """evf.17: an unresolvable stub leaves the season snapshot intact."""
+        from python.scrapers import evf_calendar
+
+        stub = {
+            "name": "EVF Circuit - Nowhere (XXX)",
+            "dt_start": "2027-01-23",
+            "dt_end": "2027-01-23",
+            "weapons": [],
+            "url": "https://evf.test/nowhere",
+            "evf_calendar_id": 9999,
+            "is_cancelled": False,
+        }
+        good = {
+            "name": "EVF Circuit - Madrid (ESP)",
+            "dt_start": "2026-10-31",
+            "dt_end": "2026-11-01",
+            "weapons": ["EPEE", "SABRE"],
+            "url": "https://evf.test/madrid",
+            "evf_calendar_id": 877,
+            "is_cancelled": False,
+        }
+
+        def fake_get(url, **kwargs):
+            raise httpx.ConnectError("gone")
+
+        monkeypatch.setattr(evf_calendar.httpx, "get", fake_get)
+        monkeypatch.setattr(evf_calendar, "_fetch_html_list", lambda: [stub, good])
+        monkeypatch.setattr(
+            evf_calendar,
+            "fetch_calendar_from_api",
+            lambda *a, **k: (_ for _ in ()).throw(RuntimeError("not consulted")),
+        )
+
+        pending: list[dict] = []
+        snapshot = evf_calendar.scrape_full_season_calendar(
+            "2026-07-13",
+            "2027-07-15",
+            skip_details=True,
+            pending_weapons=pending,
+        )
+
+        assert [e["name"] for e in snapshot] == ["EVF Circuit - Madrid (ESP)"]
+        assert [e["name"] for e in pending] == ["EVF Circuit - Nowhere (XXX)"]
+
+
+class TestCalendarFailureDoesNotBlockResults:
+    """Test evf.18: calendar and results ingestion are independent.
+
+    Calendar sync enters FUTURE events into the calendar.  Results sync is the
+    last-resort path for attaching results to an event that already happened.
+    A future event missing its weapons has no bearing on the latter, yet a
+    shared ``main()`` let one abort the other -- nine days of lost results
+    ingestion from 2026-08-19.
+    """
+
+    def _run_main(self, monkeypatch, calendar_exc):
+        from python.scrapers import evf_sync
+
+        calls: list[str] = []
+
+        def fake_calendar(*a, **k):
+            calls.append("calendar")
+            if calendar_exc:
+                raise calendar_exc
+            return []
+
+        def fake_results(*a, **k):
+            calls.append("results")
+
+        monkeypatch.setattr(evf_sync, "sync_calendar", fake_calendar)
+        monkeypatch.setattr(evf_sync, "sync_results", fake_results)
+        monkeypatch.setenv("SUPABASE_CERT_REF", "ref")
+        monkeypatch.setenv("SUPABASE_ACCESS_TOKEN", "tok")
+        monkeypatch.setattr("sys.argv", ["evf_sync", "--mode", "both"])
+        return calls, evf_sync
+
+    def test_results_still_run_when_calendar_fails(self, monkeypatch):
+        """evf.18: a calendar integrity error must not skip results."""
+        from python.scrapers.evf_calendar import CalendarIntegrityError
+
+        calls, evf_sync = self._run_main(
+            monkeypatch, CalendarIntegrityError("entry 'X' has missing weapons")
+        )
+
+        with pytest.raises(SystemExit) as exc:
+            evf_sync.main()
+
+        assert calls == ["calendar", "results"], "results must run after a calendar failure"
+        assert exc.value.code != 0, "the run must still fail loudly for CI"
+
+    def test_clean_run_exits_zero(self, monkeypatch):
+        """evf.18: nothing changes when the calendar is healthy."""
+        calls, evf_sync = self._run_main(monkeypatch, None)
+
+        evf_sync.main()
+
+        assert calls == ["calendar", "results"]
+
+
+class TestCancelledEventRenumbering:
+    """Tests evf.19: a pinned cancellation may shift when the sequence shifts.
+
+    PEW numbers are chronological position.  Inserting a newly-announced event
+    mid-season shifts every later event -- but a later cancellation was pinned
+    to its stored number, so the two rules collided and aborted the whole plan.
+    Observed live 2026-08-28: admitting 'EVF Circuit - Tampere (FIN)'
+    (23 Jan 2027) moved Stockholm from PEW11 to PEW12 while Stockholm was being
+    cancelled in the same scrape.
+
+    The part of the rule that matters is preserved: a later cancellation never
+    collapses to PEW0 and never frees its slot.  Only the shift is allowed, and
+    only while nothing is anchored to the old code -- the event is still in the
+    future and no one has registered.
+    """
+
+    FUTURE = "2099-03-13"
+    PAST = "2020-03-13"
+
+    def _events(self):
+        return [
+            {
+                "name": "Inserted",
+                "dt_start": "2099-01-23",
+                "evf_calendar_id": 10,
+                "weapons": ["EPEE", "SABRE"],
+                "is_cancelled": False,
+            },
+            {
+                "name": "Stockholm now cancelled",
+                "dt_start": self.FUTURE,
+                "evf_calendar_id": 20,
+                "weapons": ["EPEE", "FOIL"],
+                "is_cancelled": True,
+            },
+        ]
+
+    def _existing(self, **over):
+        row = {
+            "id_event": 200,
+            "id_evf_calendar_event": 20,
+            "txt_code": "PEW1ef-2026-2027",
+            "dt_start": self.FUTURE,
+            "num_registrations": 0,
+            "num_results": 0,
+        }
+        row.update(over)
+        return [row]
+
+    def test_future_unregistered_cancellation_renumbers(self):
+        """evf.19: nothing is anchored to the old code, so the shift is safe."""
+        from python.scrapers.evf_calendar import plan_calendar_codes
+
+        planned = plan_calendar_codes(self._events(), self._existing(), "SPWS-2026-2027")
+
+        assert [e["desired_code"] for e in planned] == [
+            "PEW1es-2026-2027",
+            "PEW2ef-2026-2027",
+        ], "the cancellation shifts down the sequence rather than aborting the plan"
+
+    def test_open_registration_still_refuses_the_shift(self):
+        """evf.19: someone has entered against the old code -- do not rename."""
+        from python.scrapers.evf_calendar import (
+            CalendarIntegrityError,
+            plan_calendar_codes,
+        )
+
+        with pytest.raises(CalendarIntegrityError, match="must retain PEW1"):
+            plan_calendar_codes(
+                self._events(), self._existing(num_registrations=3), "SPWS-2026-2027"
+            )
+
+    def test_event_with_results_still_refuses_the_shift(self):
+        """evf.19: results are anchored to the code via tournament codes."""
+        from python.scrapers.evf_calendar import (
+            CalendarIntegrityError,
+            plan_calendar_codes,
+        )
+
+        with pytest.raises(CalendarIntegrityError, match="must retain PEW1"):
+            plan_calendar_codes(
+                self._events(), self._existing(num_results=7), "SPWS-2026-2027"
+            )
+
+    def test_past_event_still_refuses_the_shift(self):
+        """evf.19: 'any FUTURE event' -- a past one is never silently renamed."""
+        from python.scrapers.evf_calendar import (
+            CalendarIntegrityError,
+            plan_calendar_codes,
+        )
+
+        events = self._events()
+        events[1]["dt_start"] = self.PAST
+        events[0]["dt_start"] = "2019-01-23"
+
+        with pytest.raises(CalendarIntegrityError, match="must retain PEW1"):
+            plan_calendar_codes(
+                events, self._existing(dt_start=self.PAST), "SPWS-2026-2027"
+            )
+
+    def test_unknown_anchoring_refuses_the_shift(self):
+        """evf.19: a roster row without the counts cannot prove it is safe."""
+        from python.scrapers.evf_calendar import (
+            CalendarIntegrityError,
+            plan_calendar_codes,
+        )
+
+        row = self._existing()[0]
+        del row["num_registrations"]
+
+        with pytest.raises(CalendarIntegrityError, match="must retain PEW1"):
+            plan_calendar_codes(self._events(), [row], "SPWS-2026-2027")
+
+
 class TestEvfScrapeFailureSurface:
     """Test evf.11: total failure raises RuntimeError."""
 
@@ -1383,7 +1922,7 @@ class TestEvfPhase2Allocator:
         def fake_telegram(bot_token, chat_id, msg):
             sent_msgs.append(msg)
 
-        def fake_scrape(start, end):
+        def fake_scrape(start, end, **kwargs):
             return scraped_events
 
         monkeypatch.setattr(evf_sync, "_management_query", fake_mgmt)
@@ -1636,7 +2175,7 @@ class TestEvfPhase2Allocator:
         monkeypatch.setattr(
             evf_sync,
             "scrape_full_season_calendar",
-            lambda *args: (_ for _ in ()).throw(RuntimeError("calendar unavailable")),
+            lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("calendar unavailable")),
         )
 
         with pytest.raises(RuntimeError, match="calendar unavailable"):
@@ -1758,7 +2297,7 @@ class TestEvfPhase2Allocator:
         def fake_telegram(bot_token, chat_id, msg):
             pass
 
-        def fake_scrape(start, end):
+        def fake_scrape(start, end, **kwargs):
             return scraped
 
         monkeypatch.setattr(evf_sync, "_management_query", fake_mgmt)

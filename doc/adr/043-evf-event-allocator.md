@@ -3,6 +3,7 @@
 **Status:** Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero)
 **Date:** 2026-04-26
 **Relates to:** ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)
+**Amended by:** [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (an unestablished weapon set is skipped rather than fatal; a later cancellation may shift when nothing is anchored to its code).
 
 ## Context
 

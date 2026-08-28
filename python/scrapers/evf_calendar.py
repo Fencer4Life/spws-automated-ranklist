@@ -48,6 +48,7 @@ import logging
 import re
 import unicodedata
 from datetime import date, datetime
+from io import BytesIO
 
 import httpx
 from bs4 import BeautifulSoup
@@ -73,6 +74,16 @@ LOCATION_MATCH_THRESHOLD = 70.0
 _CAMP_WORD_RE = re.compile(r"\bcamp\b", re.IGNORECASE)
 _PEW_NUMBER_RE = re.compile(r"^PEW(\d+)[efs]*-")
 _WEAPON_LETTERS = {"EPEE": "e", "FOIL": "f", "SABRE": "s"}
+
+# Detail-page weapon recovery.  The list page tags weapons only through the
+# post's cat_epee/cat_foil/cat_sabre taxonomy classes; a post published without
+# them arrives weaponless and fail-closes the season scrape.  The event's own
+# detail page carries the same fact twice over -- in the category meta, and in
+# the description line the organizers always open with ("EPEE + SABRE").
+# Whole-word matching only, so "Epee" in a category list and "EPEE +FOIL" in a
+# body written without spaces both read correctly while prose cannot invent a
+# weapon.
+_DETAIL_WEAPON_RE = re.compile(r"\b(EPEE|FOIL|SABRE)\b", re.IGNORECASE)
 
 # One-time historical fact from the approved 2026-2027 repair manifest: this
 # occurrence was already cancelled before its first authoritative import, but
@@ -110,6 +121,42 @@ def _weapon_suffix(event: dict) -> str:
         if str(weapon).upper() in _WEAPON_LETTERS
     }
     return "".join(sorted(letters))
+
+
+def _is_safe_to_renumber(existing_row: dict | None) -> bool:
+    """Whether an event's code may shift when the chronological sequence shifts.
+
+    A PEW number is chronological position, so a newly-announced mid-season
+    event moves every later event down one.  A later cancellation is pinned to
+    its stored number, and the two rules collide -- observed live on 2026-08-28
+    when admitting Tampere moved Stockholm from PEW11 to PEW12 in the same
+    scrape that cancelled it.
+
+    Renaming is safe only while nothing is anchored to the old code: the event
+    is still in the future and nobody has entered it.  Registration is the real
+    anchor -- a fencer who has entered holds a code we must not move under
+    them -- and results are anchored to it too, through the child tournament
+    codes the ingest RPC rebuilds from the event code.
+
+    A roster row that does not carry the counts cannot prove it is safe, so it
+    is refused: unknown is not the same as zero.
+    """
+    if not existing_row:
+        return False
+    if "num_registrations" not in existing_row or "num_results" not in existing_row:
+        return False
+    if int(existing_row.get("num_registrations") or 0) > 0:
+        return False
+    if int(existing_row.get("num_results") or 0) > 0:
+        return False
+
+    raw_start = existing_row.get("dt_start")
+    if not raw_start:
+        return False
+    try:
+        return datetime.strptime(str(raw_start)[:10], "%Y-%m-%d").date() > date.today()
+    except (TypeError, ValueError):
+        return False
 
 
 def plan_calendar_codes(events: list[dict], existing: list[dict], season_code: str) -> list[dict]:
@@ -161,9 +208,18 @@ def plan_calendar_codes(events: list[dict], existing: list[dict], season_code: s
     for number, event in enumerate(positive, start=1):
         prior_number = event.pop("_prior_number", None)
         if event.get("is_cancelled") and prior_number not in (None, number):
-            raise CalendarIntegrityError(
-                f"later cancellation {event.get('name')!r} must retain PEW{prior_number}, "
-                f"but chronological position is PEW{number}"
+            prior_row = existing_by_calendar_id.get(int(event["evf_calendar_id"]))
+            if not _is_safe_to_renumber(prior_row):
+                raise CalendarIntegrityError(
+                    f"later cancellation {event.get('name')!r} must retain PEW{prior_number}, "
+                    f"but chronological position is PEW{number}"
+                )
+            logger.info(
+                "Sequence shift: %r moves PEW%s -> PEW%s (future, no registrations, "
+                "no results — nothing is anchored to the old code)",
+                event.get("name"),
+                prior_number,
+                number,
             )
         event["desired_code"] = f"PEW{number}{_weapon_suffix(event)}-{season_suffix}"
 
@@ -669,7 +725,198 @@ def parse_event_detail_html(html: str) -> dict:
         "url_invitation": url_invitation,
         "url_registration": url_registration,
         "dt_registration_deadline": dt_registration_deadline,
+        "weapons": _weapons_from_detail_soup(soup, body),
     }
+
+
+def _weapons_from_text(text: str) -> list[str]:
+    """Canonical weapons named in a blob of text, or [] if it names none.
+
+    Whole-word matching only.  "EPEE +FOIL +SABRE" (written without spaces)
+    reads correctly, while prose such as "three weapons" cannot invent one.
+    """
+    return sorted({m.group(1).upper() for m in _DETAIL_WEAPON_RE.finditer(text or "")})
+
+
+def _weapons_from_pdf_bytes(pdf_bytes: bytes) -> list[str]:
+    """Weapons named in an invitation PDF, or [] if it is unreadable or silent.
+
+    Mirrors the tolerant extraction already used for Engarde result PDFs in
+    ``evf_results.parse_evf_result_pdf`` -- a malformed or image-only letter is
+    simply no evidence, never an error.
+    """
+    try:
+        import pypdf
+    except ImportError:  # pragma: no cover — pypdf is a declared dependency
+        return []
+
+    try:
+        reader = pypdf.PdfReader(BytesIO(pdf_bytes))
+    except Exception:
+        return []
+
+    parts: list[str] = []
+    for page in reader.pages:
+        try:
+            parts.append(page.extract_text() or "")
+        except Exception:
+            continue
+    return _weapons_from_text(" ".join(parts))
+
+
+def _weapons_from_detail_soup(soup, body) -> list[str]:
+    """Derive an event's weapons from its detail page, or [] if it says nothing.
+
+    Two sources, in order of authority.  The category meta is the same
+    taxonomy the list page renders as cat_* classes, so it agrees with the
+    primary path by construction.  The description line is the fallback for a
+    post published with no categories at all -- the only place such an event
+    states its weapons.  Silence returns [] so the caller's integrity guard
+    still fires rather than a weapon being guessed.
+    """
+    for node in (soup.select_one(".tribe-events-event-categories"), body):
+        if node is None:
+            continue
+        found = _weapons_from_text(node.get_text(" ", strip=True))
+        if found:
+            return found
+    return []
+
+
+def repair_missing_weapons(events: list[dict], delay: float = 0.5) -> list[dict]:
+    """Fill weapons from real evidence for entries the list page left blank.
+
+    The list page tags weapons only through the post's cat_epee/cat_foil/
+    cat_sabre taxonomy classes.  When a post is published without them, three
+    further sources are tried, in descending authority:
+
+      1. the detail page's category meta -- the same taxonomy, so it agrees
+         with the list page by construction;
+      2. the detail page's description line, which organizers open with
+         ("EPEE + SABRE").  This is the only source for a post carrying no
+         categories at all;
+      3. the linked invitation letter (PDF), for a post whose description names
+         no weapon ("Two genders, three weapons, four days");
+      4. ``_KNOWN_WEAPON_OVERRIDES`` -- approved manual evidence, last so that
+         real EVF data always wins over a hand-entered fact that may have gone
+         stale.
+
+    Only weaponless entries are fetched, so a fully tagged calendar costs no
+    requests at all.  Per-event failures are logged and swallowed; an entry
+    still weaponless afterwards is left for ``partition_unweaponed`` to skip.
+    """
+    import time
+
+    repaired = 0
+    pending = [evt for evt in events if not _weapon_suffix(evt)]
+
+    for i, evt in enumerate(pending):
+        weapons: list[str] = []
+        url = str(evt.get("url") or "")
+
+        if url:
+            if i > 0 and delay:
+                try:
+                    time.sleep(delay)
+                except Exception:
+                    pass
+            weapons, source = _weapons_from_detail_page(url, evt)
+        else:
+            source = ""
+
+        if not weapons:
+            calendar_id = evt.get("evf_calendar_id")
+            override = (
+                _KNOWN_WEAPON_OVERRIDES.get(int(calendar_id)) if calendar_id is not None else None
+            )
+            if override:
+                weapons, source = list(override), "approved override"
+
+        if weapons:
+            evt["weapons"] = weapons
+            repaired += 1
+            logger.info(
+                "Weapon repair: %r had no calendar categories; %s gives %s",
+                evt.get("name"),
+                source,
+                "+".join(weapons),
+            )
+        else:
+            logger.warning(
+                "Weapon repair: %r states no weapons anywhere (%s)",
+                evt.get("name"),
+                url or "no detail URL",
+            )
+
+    if pending:
+        logger.info("Weapon repair: %d/%d weaponless entries recovered", repaired, len(pending))
+    return events
+
+
+def _weapons_from_detail_page(url: str, evt: dict) -> tuple[list[str], str]:
+    """Detail-page rungs for one event: HTML first, then the invitation PDF."""
+    try:
+        resp = httpx.get(url, timeout=20, follow_redirects=True)
+        resp.raise_for_status()
+        parsed = parse_event_detail_html(resp.text)
+    except (httpx.HTTPError, ValueError, KeyError, IndexError) as exc:
+        logger.warning("Weapon repair: detail page fetch failed for %s: %s", url, exc)
+        return [], ""
+    except Exception as exc:  # pragma: no cover — defensive
+        logger.warning("Weapon repair: unexpected error for %s: %s", url, exc)
+        return [], ""
+
+    weapons = parsed.get("weapons") or []
+    if weapons:
+        return list(weapons), "detail page"
+
+    pdf_url = str(parsed.get("url_invitation") or evt.get("url_invitation") or "")
+    if not pdf_url.lower().endswith(".pdf"):
+        return [], ""
+
+    try:
+        pdf_resp = httpx.get(pdf_url, timeout=30, follow_redirects=True)
+        pdf_resp.raise_for_status()
+        weapons = _weapons_from_pdf_bytes(pdf_resp.content)
+    except (httpx.HTTPError, ValueError, KeyError, IndexError) as exc:
+        logger.warning("Weapon repair: invitation PDF failed for %s: %s", pdf_url, exc)
+        return [], ""
+    except Exception as exc:  # pragma: no cover — defensive
+        logger.warning("Weapon repair: unexpected PDF error for %s: %s", pdf_url, exc)
+        return [], ""
+
+    return (list(weapons), "invitation PDF") if weapons else ([], "")
+
+
+def partition_unweaponed(
+    events: list[dict], known_calendar_ids: set[int] | None = None
+) -> tuple[list[dict], list[dict]]:
+    """Split a scraped calendar into (ready, pending-weapons).
+
+    An entry whose weapons are still unknown after the evidence ladder is an
+    event EVF has not finished announcing.  To a fencer that is indistinguishable
+    from an event EVF has not posted at all, so it is held back rather than
+    imported with invented data -- and picked up automatically on a later run.
+
+    Holding it back keeps ``validate_season_calendar``'s contract intact: that
+    guard stays fatal on every identity and date error, it simply never sees an
+    unannounced stub.
+
+    An event already imported is never held back.  If EVF edits a live post and
+    its categories vanish, that is a regression, not a stub, and the existing
+    row must keep the weapons it already has.
+    """
+    known = known_calendar_ids or set()
+    ready: list[dict] = []
+    pending: list[dict] = []
+    for evt in events:
+        calendar_id = evt.get("evf_calendar_id")
+        already_imported = calendar_id is not None and int(calendar_id) in known
+        if _weapon_suffix(evt) or already_imported:
+            ready.append(evt)
+        else:
+            pending.append(evt)
+    return ready, pending
 
 
 def enrich_event_details(events: list[dict], delay: float = 0.5) -> list[dict]:
@@ -739,6 +986,8 @@ def scrape_full_season_calendar(
     *,
     client=None,
     skip_details: bool = False,
+    known_calendar_ids: set[int] | None = None,
+    pending_weapons: list[dict] | None = None,
 ) -> list[dict]:
     """Scrape EVF season calendar.
 
@@ -754,6 +1003,12 @@ def scrape_full_season_calendar(
             closed internally.
         skip_details: if True, skip per-event detail-page enrichment (useful
             in tests).
+        known_calendar_ids: EVF calendar ids already imported into CERT.  An
+            event in this set is never held back for unknown weapons -- losing
+            its categories upstream is a regression, not an unannounced stub.
+        pending_weapons: optional list which receives the entries held back
+            because their weapons are still unknown, so the caller can report
+            them.  The snapshot itself excludes them.
 
     Raises:
         RuntimeError: if both sources errored (HTML and API both threw).
@@ -821,7 +1076,22 @@ def scrape_full_season_calendar(
         )
         return []
 
-    filtered = validate_season_calendar(merged, season_start, season_end)
+    # Recover weapons for any entry the list page left untagged, then hold back
+    # whatever is still unknown -- BOTH before the integrity guard runs, which
+    # stays strict and must never see an unannounced stub.
+    repair_missing_weapons(merged)  # type: ignore[arg-type]
+    ready, pending = partition_unweaponed(merged, known_calendar_ids)  # type: ignore[arg-type]
+    if pending:
+        logger.warning(
+            "EVF calendar: holding back %d entr%s with unknown weapons: %s",
+            len(pending),
+            "y" if len(pending) == 1 else "ies",
+            ", ".join(repr(e.get("name")) for e in pending),
+        )
+    if pending_weapons is not None:
+        pending_weapons.extend(pending)
+
+    filtered = validate_season_calendar(ready, season_start, season_end)
     relevant = [
         e
         for e in filtered
