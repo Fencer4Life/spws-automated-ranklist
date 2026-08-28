@@ -97,6 +97,15 @@ A roster row that does not carry the counts is refused: **unknown is not zero**.
 fn_ingest_evf_calendar: later cancellation 3444 cannot move PEW11 to PEW12
 ```
 
+**Clearing the pin then exposed an ordering defect, not a rule.** Codes are chronological position, so one mid-season insertion shifts the whole tail — and the assignment loop walks in date order, so each shifted event momentarily wants a code its successor has not vacated, while the newly inserted event wants one held by the event it displaces. Both surfaced in run 33188636456 and locally:
+
+```
+fn_ingest_evf_calendar: unsafe occupied code PEW16efs-2026-2027
+duplicate key value violates unique constraint "idx_event_code"
+```
+
+ADR-043 already promises this reflow — "unscored rows may be reflowed transactionally if EVF inserts or reschedules an earlier entry" — but it had never been exercised, because no event had previously been inserted ahead of an existing one. Migration `20260828000006` lifts the staging the function already performs per-event for tournament codes (`__evfcal_<id>`) to a batch pre-pass over events: every calendar-owned event whose code this payload changes is parked on a placeholder first, so the loop only ever assigns into free codes. Scored events are excluded, so they keep their code and still trip the existing "refusing to renumber scored event" guard rather than being quietly parked.
+
 Migration `20260828000005` relaxes the server-side half through
 `fn_evf_event_code_is_movable(id_event)`, which encodes the same three conditions in SQL. It is reproduced from the **live** `pg_get_functiondef` output rather than from `20260807000001`, so the prior-link amendments in `20260808000001`/`2` are carried forward instead of reverted; only the cancellation guard differs.
 
