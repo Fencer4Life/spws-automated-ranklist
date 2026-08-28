@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handover — registration live, and three things that were quietly wrong</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:linear-gradient(90deg,var(--green) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:16px;line-height:1.62;min-height:100vh;overflow-x:hidden}
+.page{max-width:1080px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--green);padding:24px 26px 20px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(25px,5.4vw,35px);line-height:1.16;margin:9px 0 8px;letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(15px,2.7vw,17px);color:var(--muted);font-style:italic;margin:0 0 15px;max-width:72ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:10.5px;padding:3px 9px;border:1px solid var(--line);border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.good{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:15px 20px;margin:18px 22px 0}
+.toc ol{margin:0;padding-left:20px;columns:2;column-gap:28px;max-width:none}
+.toc li{margin-bottom:5px;font-size:14px}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:24px;font-weight:600;letter-spacing:-.01em;margin:40px 0 8px;padding-top:22px;border-top:1px solid var(--line);scroll-margin-top:12px}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:12px;color:var(--navy);display:block;letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:26px 0 8px;font-weight:600}
+ul,ol{margin:0 0 15px;padding-left:22px;max-width:82ch}
+li{margin-bottom:8px}
+p{max-width:84ch}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;border:1px solid var(--line);border-radius:3px}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.7;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;padding:14px 18px;overflow-x:auto;margin:0 0 18px;max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;padding:14px 18px;margin:16px 0 20px;font-size:15px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--navy);font-weight:600;display:block;margin-bottom:6px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.good-box{background:var(--card);border:2px solid var(--green);border-radius:6px;padding:18px 22px;margin:18px 0 22px;max-width:86ch}
+.good-box .lb{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);font-weight:700;display:block;margin-bottom:7px}
+.good-box h4{margin:0 0 8px;font-size:21px;color:var(--ink)}
+.good-box p:last-child{margin-bottom:0}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:20px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:12px;white-space:nowrap;color:var(--navy);font-weight:600}
+.st{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.s-grey{background:var(--grey-bg);color:var(--grey)}
+.q{border-left:3px solid var(--violet);padding:3px 0 3px 15px;margin:16px 0 20px;max-width:82ch}
+.q b{color:var(--violet);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:5px}
+footer{margin:44px 22px 0;padding-top:17px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){.hd,.body,footer,.toc{margin-left:10px;margin-right:10px}.body{padding-left:0;padding-right:0}h2{font-size:21px}.toc ol{columns:1}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · handover · 28 August 2026</div>
+  <h1>Registration is live and fourteen fencers have used it. Three things were quietly wrong; all three are fixed.</h1>
+  <p class="dek">PPW1-2026-2027 accepts entries, including from fencers who are not yet in the
+  database. Everything below was verified against the live environments, not inferred.</p>
+  <div class="chips">
+    <span class="chip good">14 real registrations on PROD</span>
+    <span class="chip good">release green end to end</span>
+    <span class="chip good">CERT = PROD = LOCAL</span>
+    <span class="chip warn">3 open items</span>
+  </div>
+</div>
+
+<div class="toc">
+<ol>
+  <li><a href="#s01">State of play</a></li>
+  <li><a href="#s02">What shipped</a></li>
+  <li><a href="#s03">The three defects worth remembering</a></li>
+  <li><a href="#s04">Open items</a></li>
+  <li><a href="#s05">Known noise — do not chase</a></li>
+  <li><a href="#s06">If you pick this up cold</a></li>
+</ol>
+</div>
+
+<div class="body">
+
+<h2 id="s01"><span class="num">01</span>State of play</h2>
+
+<div class="good-box">
+  <span class="lb">Live and working</span>
+  <h4>Fourteen fencers have registered for PPW1-2026-2027 through the public page.</h4>
+  <p>Entries span all three weapons and include multi-weapon entries. The roster is public at the
+  entry-list URL, and the payment panel shows the association's full registered name, IBAN and a
+  transfer note in the requested format.</p>
+  <p><b class="k">Registration:</b>
+  <code>https://fencer4life.github.io/spws-automated-ranklist/register.html?event=PPW1-2026-2027</code><br>
+  <b class="k">Entry list:</b> same URL with <code>&amp;view=list</code></p>
+</div>
+
+<p>Deadline <b class="k">20 September 2026</b>; event 26–27 September. All three environments carry
+schema fingerprint <code>7c1caf6f8de57708f1735bdf7b211522</code>.</p>
+
+<h2 id="s02"><span class="num">02</span>What shipped</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Commit</th><th>What</th></tr></thead>
+<tbody>
+<tr><td class="d">5c3e315</td><td>Wave 1 — PROD routing fix, unmatched fencers can register, IBAN + payee, gender no longer defaults to M, error surface, Back step, duplicate warning</td></tr>
+<tr><td class="d">98882ca</td><td>Payment note quotes the event's registration deadline</td></tr>
+<tr><td class="d">3ae2e27</td><td><code>cloud-sql.sh</code> + <code>cloud-db-ops</code> skill</td></tr>
+<tr><td class="d">970bfb5</td><td>ADR-079 amended — unmatched fencers register, <code>register.html</code> is PROD-only</td></tr>
+<tr><td class="d">efc0dca</td><td>ADR-078 amended — inventory listed processing that does not happen</td></tr>
+<tr><td class="d">64b50dc</td><td>Unmatched-registration dedupe (ADR-079 open item 1)</td></tr>
+<tr><td class="d">b7ca023</td><td><code>add-fencer</code> skill</td></tr>
+<tr><td class="d">ba4ff3a</td><td>Schema fingerprint made deterministic</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="s03"><span class="num">03</span>The three defects worth remembering</h2>
+
+<p>Each was invisible to the test suite and to inspection of the rendered page. All three were found
+only by comparing a live environment against what the code claimed.</p>
+
+<h3>1 · The public page wrote to CERT</h3>
+
+<p><code>RegistrationElement</code> resolves its client as <code>(certUrl || prodUrl)</code>, and
+<code>release.yml</code> injected <b>both</b> pairs into <code>register.html</code>. CERT silently
+won. Every registration through the shared link would have landed in the wrong database while the
+page looked perfectly healthy to the fencer.</p>
+
+<p><b class="k">Only caught by registering once for real and then querying both databases.</b> Now
+<code>register.html</code> receives the PROD pair only; <code>index.html</code> keeps both because it
+has a runtime admin toggle.</p>
+
+<h3>2 · Every non-exact match was refused</h3>
+
+<p>ADR-079's Model B routed non-exact matches through a magic-link email. Phases 4/5 were never
+built, so the form rendered a "coming soon" panel and <b>wrote nothing at all</b> — turning away
+every newcomer and everyone whose stored birth year was an ingestion estimate. That is the
+population the subsystem exists to collect birth years from.</p>
+
+<p>A miss now writes with <code>id_fencer</code> NULL. Nothing downstream needed changing:
+<code>tbl_registration</code> already carried the full declaration,
+<code>vw_registration_entry_list</code> does not join <code>tbl_fencer</code>, and the FTL exporter
+already typed <code>id_fencer: int | None</code>. Several of the fourteen live entries would have
+been refused under the old behaviour.</p>
+
+<h3>3 · The release gate was the only thing diverging</h3>
+
+<div class="call stop">
+  <span class="lb">The subtlest of the three</span>
+  <code>schema-fingerprint.sh</code> hashed <code>information_schema.routines</code> with
+  <code>ORDER BY routine_name</code>. That column is <b>not unique</b> — the view returns one row per
+  <b>overload</b>, and <code>fn_ingest_evf_calendar</code> has two with different bodies. With no
+  tiebreaker, their order fell back to physical row order, which differs per database. Two
+  environments with byte-identical schemas produced different fingerprints <b class="k">at
+  random</b>.
+  <br><br>
+  CERT passed and PROD failed on the same release, on a schema that was never out of sync. Diffing
+  all 297 routines showed the same name at the same md5, one line apart — and identical output once
+  sorted deterministically.
+</div>
+
+<p>Fixed by ordering on <code>(routine_name, routine_definition)</code>. The tiebreaker is
+deliberately <b>not</b> <code>specific_name</code>: that column embeds the function's OID, which
+differs per database, so ordering by it would have made the fingerprint environment-specific and
+defeated the comparison entirely — a worse bug wearing the same clothes.</p>
+
+<p><b class="k">Worth internalising:</b> the migration had already applied cleanly when this fired.
+A red <code>deploy-prod</code> does not mean PROD is broken — read which <i>step</i> failed before
+concluding anything.</p>
+
+<h2 id="s04"><span class="num">04</span>Open items</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Item</th><th>Detail</th><th>Cost</th></tr></thead>
+<tbody>
+<tr><td class="d">Club → seed file</td>
+  <td>ADR-079 open item 2. <code>ftl_seed_export.py</code> hardcodes <code>"Club": ""</code> and there is no <code>txt_club</code> on <code>tbl_registration</code>. <b>Inverts the current consent text</b> ("nie zapisujemy"), so it is a real <code>CONSENT_VERSION</code> bump to v1.1, not a string edit.</td>
+  <td><span class="st s-wip">migration + consent</span></td></tr>
+<tr><td class="d">Post-deadline entries</td>
+  <td>ADR-079 open item 3, deferred. The D10 guard is enforced in the <b>database</b>, so this is not a copy change. Recommendation on file: gate on <code>dt_start</code> instead of the deadline, mirroring what ADR-084 did for the entry list.</td>
+  <td><span class="st s-wip">migration</span></td></tr>
+<tr><td class="d">Untrimmed names</td>
+  <td><b>New, found during handover.</b> Two of the fourteen live rows carry trailing whitespace (<code>"Gary "</code>, <code>"KUCIĘBA "</code>). <code>trg_trim_fencer_names</code> exists on <code>tbl_fencer</code> but there is <b>no equivalent on <code>tbl_registration</code></b>. Dedupe is unaffected (the index normalises with <code>btrim</code>), but the raw value reaches the entry list and the FTL seed file.</td>
+  <td><span class="st s-ok">small migration</span></td></tr>
+<tr><td class="d">Stale shell export</td>
+  <td><code>SUPABASE_ACCESS_TOKEN</code> exported from a shell profile shadows <code>.env</code>. <code>cloud-sql.sh</code> is immune (it prefers <code>.env</code>); <code>apply-migrations.sh</code> and <code>schema-fingerprint.sh</code> are <b>not</b> — they read the environment only. Left untouched at the user's request.</td>
+  <td><span class="st s-ok">one line</span></td></tr>
+<tr><td class="d">Untracked migration</td>
+  <td><code>20260729000001_add_fencers_ciszewska_szumielewicz.sql</code> is uncommitted. Both fencers are <b>already on CERT and PROD</b>; only LOCAL lacks them. It is idempotent, so committing it is a no-op on both clouds. Until then it blocks <code>supabase migration up</code> locally, because it sorts before the last applied migration.</td>
+  <td><span class="st s-grey">user's call</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="s05"><span class="num">05</span>Known noise — do not chase</h2>
+
+<ul>
+  <li><b class="k">Telegram "SECURITY POSTURE REGRESSION on PROD".</b> Fired twice (17 and 28 Aug) without the posture check ever running — it is gated on <i>job-level</i> failure, so any earlier step failing sends it. Both were false. Worth re-gating on the posture step's own outcome.</li>
+  <li><b class="k"><code>19_phase3_wizard.sql</code> plans 25 assertions but runs 5.</b> Pre-existing, unrelated, suite still passes.</li>
+  <li><b class="k">CI failure on <code>efc0dca</code>.</b> <code>test_live_dartagnan_reachable</code> hits a live external site and timed out. Network flake on a docs-only commit.</li>
+  <li><b class="k">A second Release run queues itself</b> after each push (CI completion re-triggers it). Harmless, but it holds the concurrency lock — if a deploy seems stuck, look for a run parked on the <code>deploy-prod</code> gate.</li>
+</ul>
+
+<h2 id="s06"><span class="num">06</span>If you pick this up cold</h2>
+
+<ol>
+  <li>Read <a href="ppw1-registration-wave1-handover-2026-08-17.html">the Wave 1 handover</a> for what changed in the form, then <a href="../adr/079-event-self-registration-identity.html">ADR-079</a>'s 2026-08-17 amendment for why.</li>
+  <li>Before touching CERT or PROD, the <code>cloud-db-ops</code> skill applies. Its first rule exists because it was broken on 17 August: <b class="k">never write test data to a live environment until you have proven, in the same session, that you can delete it.</b> A test row sat on the public roster for hours because that was skipped.</li>
+  <li>Queries: <code>scripts/cloud-sql.sh &lt;cert|prod&gt; "SELECT …"</code>. Non-SELECT needs <code>CLOUD_SQL_CONFIRM=yes</code> and echoes the statement and target first.</li>
+  <li>An <code>HTTP 401</code> from the Management API is <b>not</b> proof of an expired token — check for a shadowing shell export first. That misdiagnosis cost most of an afternoon.</li>
+  <li>Adding a fencer by hand: the <code>add-fencer</code> skill. A shared given name and birth year is a <b>coincidence, not evidence</b> — ask once, record the answer, move on.</li>
+</ol>
+
+<div class="call good">
+  <span class="lb">The one habit that paid</span>
+  All three defects survived a green test suite and looked fine on screen. Each was caught by
+  performing the real action against the real environment and then querying the database directly.
+  On anything user-facing, budget for that step even when everything appears to work.
+</div>
+
+</div>
+
+<footer>
+Verified 28 August 2026 against live PROD and CERT via <code>scripts/cloud-sql.sh</code>, the
+deployed GitHub Pages bundle, and GitHub Actions run history. Release
+<code>33143519629</code> green end to end (build, deploy-pages, deploy-cert, deploy-prod). pgTAP
+773 assertions PASS; vitest 611; <code>svelte-check</code> 0 errors; <code>check_docs.py</code> and
+<code>render_adrs.py --check</code> clean. Companions:
+<a href="ppw1-registration-wave1-handover-2026-08-17.html">Wave 1 handover</a> ·
+<a href="ppw1-golive-scope-decisions-2026-08-17.html">scope decisions</a> ·
+<a href="registration-ui-current-state-2026-08-17.html">registration UI current state</a>.
+</footer>
+
+</div>
+</body>
+</html>
