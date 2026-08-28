@@ -89,9 +89,16 @@ fi
 # Write statements get a confirmation gate. Matching on the leading keyword is
 # deliberately crude — it is a speed bump against the wrong environment, not a
 # security boundary (the token can do anything regardless).
-FIRST_WORD="$(echo "$SQL" | tr -d '[:space:]' | cut -c1-6 | tr '[:lower:]' '[:upper:]')"
+# Take the first WORD, not the first six characters of the whitespace-stripped
+# statement — "WITH f AS (SELECT ..." collapses to "WITHfA" and never matches,
+# so read-only CTEs were being sent to the confirmation gate. Failing safe, but
+# wrong. Leading SQL comments are stripped first.
+FIRST_WORD="$(printf '%s' "$SQL" \
+  | sed -E 's@/\*([^*]|\*[^/])*\*/@ @g' \
+  | sed -E 's@--[^\n]*@ @g' \
+  | grep -oiE '[a-z]+' | head -1 | tr '[:lower:]' '[:upper:]')"
 case "$FIRST_WORD" in
-  SELECT|WITH|EXPLAI|SHOW)
+  SELECT|WITH|EXPLAIN|SHOW|TABLE|VALUES)
     ;;
   *)
     if [ "${CLOUD_SQL_CONFIRM:-}" != "yes" ]; then
