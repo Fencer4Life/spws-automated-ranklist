@@ -453,7 +453,7 @@ class TestPromoteCalendar:
             prod_query_calls.append(sql)
             if "bool_active = TRUE" in sql:
                 return [_active_season_row(5)]
-            if "SELECT id_event, txt_code FROM tbl_event" in sql:
+            if "FROM tbl_event WHERE id_season" in sql:
                 # PROD has nothing matching yet
                 return []
             if "FROM tbl_organizer WHERE txt_code IN" in sql:
@@ -515,7 +515,7 @@ class TestPromoteCalendar:
             prod_query_calls.append(sql)
             if "bool_active = TRUE" in sql:
                 return [_active_season_row(5)]
-            if "SELECT id_event, txt_code FROM tbl_event" in sql:
+            if "FROM tbl_event WHERE id_season" in sql:
                 return [{"id_event": 99, "txt_code": "PEW1-2025-2026"}]
             if "FROM tbl_organizer WHERE txt_code IN" in sql:
                 return [{"txt_code": "EVF", "id": 7}]
@@ -537,6 +537,82 @@ class TestPromoteCalendar:
         assert summary["created"] == 0
         assert summary["updated"] == 1
 
+    def test_calendar_renamed_event_updates_instead_of_recreating(self):
+        """prom.5b: a renamed event is matched by durable calendar identity.
+
+        A mid-season EVF insertion shifts every later event's PEW number, so the
+        SAME event arrives on PROD under a new txt_code. Keyed on code alone it
+        looks like "delete the old, create the new" -- and the create collides
+        with the row PROD still holds:
+
+            duplicate key value violates unique constraint idx_tbl_event_evf_slug
+            Key (id_season, txt_evf_slug)=(4, levi-open-fin) already exists
+
+        Observed live 2026-08-28 (run 33191199882). id_evf_calendar_event is the
+        durable identity ADR-043 says carries across to PROD, so a code change on
+        a matched row is an UPDATE, never a create plus a delete.
+        """
+        from python.pipeline.promote import promote_calendar
+
+        prod_query_calls: list[str] = []
+
+        def cert_query(sql: str):
+            if "bool_active = TRUE" in sql:
+                return [_active_season_row(3)]
+            return [
+                {
+                    "txt_code": "PEW8efs-2026-2027",  # was PEW7efs on PROD
+                    "txt_name": "Levi Open (FIN)",
+                    "enum_status": "PLANNED",
+                    "dt_start": "2027-01-30",
+                    "dt_end": "2027-01-30",
+                    "txt_location": "Levi",
+                    "txt_country": "FIN",
+                    "txt_venue_address": "",
+                    "url_event": None,
+                    "url_invitation": None,
+                    "url_registration": None,
+                    "dt_registration_deadline": None,
+                    "num_entry_fee": None,
+                    "txt_entry_fee_currency": "EUR",
+                    "weapons": ["EPEE", "FOIL", "SABRE"],
+                    "id_evf_event": None,
+                    "id_evf_calendar_event": 4855,
+                    "txt_evf_slug": "levi-open-fin",
+                    "organizer_code": "EVF",
+                    "prior_code": None,
+                },
+            ]
+
+        def prod_query(sql: str):
+            prod_query_calls.append(sql)
+            if "bool_active = TRUE" in sql:
+                return [_active_season_row(5)]
+            if "FROM tbl_event WHERE id_season" in sql:
+                # PROD still holds the event under its PREVIOUS code
+                return [
+                    {
+                        "id_event": 77,
+                        "txt_code": "PEW7efs-2026-2027",
+                        "id_evf_calendar_event": 4855,
+                    }
+                ]
+            if "FROM tbl_organizer WHERE txt_code IN" in sql:
+                return [{"txt_code": "EVF", "id": 9}]
+            if "FROM tbl_event WHERE txt_code IN" in sql:
+                return []
+            return [{"r": {"created": 0, "updated": 1, "deleted": 0, "delete_skipped": []}}]
+
+        summary = promote_calendar(
+            cert_query_fn=cert_query,
+            prod_query_fn=prod_query,
+            dry_run=True,
+        )
+
+        assert summary["new_codes"] == [], "a renamed event must not be re-created"
+        assert summary["deleted_codes"] == [], "the old code must not be deleted"
+        assert summary["updated_codes"] == [77], "matched by calendar identity, updated in place"
+
     def test_calendar_mode_deletes_orphaned_prod_events(self):
         """New: reconciler DELETEs (guarded server-side) events present on PROD
         but absent from CERT — the missing operation the old insert-or-refresh
@@ -554,7 +630,7 @@ class TestPromoteCalendar:
             prod_query_calls.append(sql)
             if "bool_active = TRUE" in sql:
                 return [_active_season_row(5)]
-            if "SELECT id_event, txt_code FROM tbl_event" in sql:
+            if "FROM tbl_event WHERE id_season" in sql:
                 return [{"id_event": 114, "txt_code": "PEW69-2026-2027"}]
             if "FROM tbl_organizer WHERE txt_code IN" in sql:
                 return []
@@ -586,7 +662,7 @@ class TestPromoteCalendar:
         def prod_query(sql: str):
             if "bool_active = TRUE" in sql:
                 return [_active_season_row(5)]
-            if "SELECT id_event, txt_code FROM tbl_event" in sql:
+            if "FROM tbl_event WHERE id_season" in sql:
                 return [{"id_event": 200, "txt_code": "PPW-COMPLETED-2025-2026"}]
             if "FROM tbl_organizer WHERE txt_code IN" in sql:
                 return []
@@ -656,7 +732,7 @@ class TestPromoteCalendar:
         def prod_query(sql: str):
             if "bool_active = TRUE" in sql:
                 return [_active_season_row(5)]
-            if "SELECT id_event, txt_code FROM tbl_event" in sql:
+            if "FROM tbl_event WHERE id_season" in sql:
                 return [{"id_event": 84, "txt_code": "MPW-2025-2026"}]
             if "FROM tbl_organizer WHERE txt_code IN" in sql:
                 return [{"txt_code": "SPWS", "id": 42}]
@@ -754,7 +830,7 @@ class TestPromoteCalendarMultiUrl:
             prod_query_calls.append(sql)
             if "bool_active = TRUE" in sql:
                 return [_active_season_row(5)]
-            if "SELECT id_event, txt_code FROM tbl_event" in sql:
+            if "FROM tbl_event WHERE id_season" in sql:
                 return [{"id_event": 99, "txt_code": "PEW1-2025-2026"}]
             if "FROM tbl_organizer WHERE txt_code IN" in sql:
                 return [{"txt_code": "EVF", "id": 7}]

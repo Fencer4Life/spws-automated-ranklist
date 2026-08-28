@@ -111,6 +111,19 @@ Staging then had to be made non-destructive: the cancellation rules read an even
 Migration `20260828000005` relaxes the server-side half through
 `fn_evf_event_code_is_movable(id_event)`, which encodes the same three conditions in SQL. It is reproduced from the **live** `pg_get_functiondef` output rather than from `20260807000001`, so the prior-link amendments in `20260808000001`/`2` are carried forward instead of reverted; only the cancellation guard differs.
 
+### 4b · CERT→PROD carries a rename as a rename
+
+Renumbering has to reach PROD, and the reconciler could not express it. It diffed purely on `txt_code`, so an event whose PEW number shifted read as "delete the old row, create a new one" — and the create collided with the row PROD still held (run 33191199882):
+
+```
+duplicate key value violates unique constraint "idx_tbl_event_evf_slug"
+Key (id_season, txt_evf_slug)=(4, levi-open-fin) already exists
+```
+
+ADR-043 already states the durable calendar identity carries across to PROD; the reconciler simply never used it. `promote_calendar` now matches on `id_evf_calendar_event` when the code has moved, so a renamed event is an UPDATE and is never proposed for deletion. Migration `20260828000008` supplies the SQL half: `fn_mirror_events_to_prod`'s UPDATE branch carries `txt_code` (it never did), and a staging pre-pass parks codes that are about to change, because cascading renames collide with each other on PROD for the same reason they did on CERT.
+
+**Known limitation, not fixed here.** The mirror does not touch tournaments — they are owned by `promote_event` — so a renamed PROD event temporarily carries child tournament codes built from its previous code, until its results are promoted.
+
 ### 5 · A calendar failure no longer blocks results ingestion
 
 Calendar sync enters *future* events into the calendar. Results sync is the last-resort path for attaching results to events that have already happened; the normal path is manual ingestion from the admin UI, and this pass scrapes only EVF-organised results.
