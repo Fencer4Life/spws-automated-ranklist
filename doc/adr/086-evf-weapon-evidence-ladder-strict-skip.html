@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="086-evf-weapon-evidence-ladder-strict-skip.md">
-<meta name="adr-source-sha256" content="0dc9f22f741df9694d8cca57200973a6623843574c216ea101470e9c700a2fa6">
+<meta name="adr-source-sha256" content="81ece0eafbf4422cac2a7b615b94dda3cdc1d6e94f881bc1a583225296029155">
 <title>ADR-086 · EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 086</p><h1>EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-08-28)</dd></div><div><dt>Date</dt><dd class="">2026-08-28</dd></div><div><dt>Source</dt><dd class=""><code>086-evf-weapon-evidence-ladder-strict-skip.md</code></dd></div><div><dt>Length</dt><dd class="">142 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-08-28)</dd></div><div><dt>Date</dt><dd class="">2026-08-28</dd></div><div><dt>Source</dt><dd class=""><code>086-evf-weapon-evidence-ladder-strict-skip.md</code></dd></div><div><dt>Length</dt><dd class="">151 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (2026-08-28)
 <strong>Date:</strong> 2026-08-28
 <strong>Resolved:</strong> Both open items closed on sign-off, 2026-08-28.
@@ -81,6 +81,11 @@ must retain PEW11, but chronological position is PEW12
 <p><strong>The guard exists in two places and both must agree.</strong> ADR-043 describes the RPC's own guards as the backstop for when the planner is bypassed, so <code>fn_ingest_evf_calendar_identity_v1</code> enforces the cancellation pin independently of the Python planner. Relaxing only the planner produced a plan the backstop then rejected — observed live on 2026-08-28 (run 33187122201), after the first fix had already cleared the weapons failure:</p>
 <pre><code>fn_ingest_evf_calendar: later cancellation 3444 cannot move PEW11 to PEW12
 </code></pre>
+<p><strong>Clearing the pin then exposed an ordering defect, not a rule.</strong> Codes are chronological position, so one mid-season insertion shifts the whole tail — and the assignment loop walks in date order, so each shifted event momentarily wants a code its successor has not vacated, while the newly inserted event wants one held by the event it displaces. Both surfaced in run 33188636456 and locally:</p>
+<pre><code>fn_ingest_evf_calendar: unsafe occupied code PEW16efs-2026-2027
+duplicate key value violates unique constraint &quot;idx_event_code&quot;
+</code></pre>
+<p>ADR-043 already promises this reflow — &quot;unscored rows may be reflowed transactionally if EVF inserts or reschedules an earlier entry&quot; — but it had never been exercised, because no event had previously been inserted ahead of an existing one. Migration <code>20260828000006</code> lifts the staging the function already performs per-event for tournament codes (<code>__evfcal_&lt;id&gt;</code>) to a batch pre-pass over events: every calendar-owned event whose code this payload changes is parked on a placeholder first, so the loop only ever assigns into free codes. Scored events are excluded, so they keep their code and still trip the existing &quot;refusing to renumber scored event&quot; guard rather than being quietly parked.</p>
 <p>Migration <code>20260828000005</code> relaxes the server-side half through
 <code>fn_evf_event_code_is_movable(id_event)</code>, which encodes the same three conditions in SQL. It is reproduced from the <strong>live</strong> <code>pg_get_functiondef</code> output rather than from <code>20260807000001</code>, so the prior-link amendments in <code>20260808000001</code>/<code>2</code> are carried forward instead of reverted; only the cancellation guard differs.</p>
 <h3 id="5-a-calendar-failure-no-longer-blocks-results-ingestion">5 · A calendar failure no longer blocks results ingestion</h3>
@@ -130,5 +135,5 @@ must retain PEW11, but chronological position is PEW12
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="085-points-calculator-temporary-static-page.html">← ADR-085: Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>0dc9f22f741df9694d8cca57200973a6623843574c216ea101470e9c700a2fa6</code></footer>
+<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>81ece0eafbf4422cac2a7b615b94dda3cdc1d6e94f881bc1a583225296029155</code></footer>
 </div></body></html>
