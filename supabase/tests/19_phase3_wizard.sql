@@ -17,6 +17,18 @@ BEGIN;
 -- guard. Targeted (not session_replication_role) so audit + status-
 -- transition triggers stay live.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
+-- NOTE on the "planned 25 tests but ran 5" line this file emits.
+-- It is a pgTAP/savepoint artifact, not a broken or skipped test. This file
+-- exercises the wizard through 15 ROLLBACK TO SAVEPOINT cycles, and pgTAP keeps
+-- its test counter in a table -- so each rollback discards the increments made
+-- inside that savepoint, while the "ok N" lines it already printed remain on
+-- stdout. All 25 assertions genuinely run and report: a failure still emits
+-- "not ok" and still fails the suite. Only the final tally is understated.
+-- plan(25) is kept deliberately: it declares the real intent, and the mismatch
+-- stays a warning. Switching to no_plan() makes it a hard parse error
+-- ("planned 5 but ran 25") and fails the whole run -- verified 2026-08-28.
+-- A genuine fix means asserting outside the savepoints, i.e. restructuring the
+-- file; out of scope here.
 SELECT plan(25);
 
 -- =========================================================================

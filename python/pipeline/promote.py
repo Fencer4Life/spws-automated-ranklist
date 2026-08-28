@@ -333,8 +333,9 @@ def _read_cert_promotable_events(query_fn, id_season: int) -> list[dict]:
         "e.url_event, e.url_event_2, e.url_event_3, e.url_event_4, e.url_event_5, "
         "e.url_invitation, e.url_registration, "
         "e.dt_registration_deadline::TEXT AS dt_registration_deadline, "
-        "e.num_entry_fee, "
+        "e.num_entry_fee, e.num_entry_fee_2w, e.num_entry_fee_3w, "
         "COALESCE(e.txt_entry_fee_currency,'') AS txt_entry_fee_currency, "
+        "e.url_entry_list, e.txt_organizer_email, e.bool_use_spws_registration, "
         "(SELECT COALESCE(ARRAY_AGG(w::TEXT), ARRAY[]::TEXT[]) "
         "   FROM UNNEST(e.arr_weapons) w) AS weapons, "
         "e.id_evf_event, e.id_evf_calendar_event, e.txt_evf_slug, "
@@ -370,7 +371,16 @@ def _build_create_payload(
         "url_registration": evt.get("url_registration") or "",
         "dt_registration_deadline": evt.get("dt_registration_deadline") or "",
         "num_entry_fee": "" if evt.get("num_entry_fee") is None else str(evt["num_entry_fee"]),
+        "num_entry_fee_2w": ""
+        if evt.get("num_entry_fee_2w") is None
+        else str(evt["num_entry_fee_2w"]),
+        "num_entry_fee_3w": ""
+        if evt.get("num_entry_fee_3w") is None
+        else str(evt["num_entry_fee_3w"]),
         "txt_entry_fee_currency": evt.get("txt_entry_fee_currency") or "",
+        "url_entry_list": evt.get("url_entry_list") or "",
+        "txt_organizer_email": evt.get("txt_organizer_email") or "",
+        "bool_use_spws_registration": evt.get("bool_use_spws_registration"),
         "arr_weapons": evt.get("weapons") or [],
         "id_prior_event": id_prior_event,
         "id_evf_event": evt.get("id_evf_event"),
@@ -379,7 +389,12 @@ def _build_create_payload(
     }
 
 
-def _build_update_payload(prod_id_event: int, evt: dict, id_organizer: int | None) -> dict:
+def _build_update_payload(
+    prod_id_event: int,
+    evt: dict,
+    id_organizer: int | None,
+    id_prior_event: int | None = None,
+) -> dict:
     """Shape the UPDATE branch's payload: identity fields overwrite, URL fields
     fill-blank-only on the SQL side (see fn_mirror_events_to_prod). Keys are
     always present (empty string when source is NULL/empty) so payload shape
@@ -409,7 +424,21 @@ def _build_update_payload(prod_id_event: int, evt: dict, id_organizer: int | Non
         "url_registration": evt.get("url_registration") or "",
         "dt_registration_deadline": evt.get("dt_registration_deadline") or "",
         "num_entry_fee": "" if evt.get("num_entry_fee") is None else str(evt["num_entry_fee"]),
+        "num_entry_fee_2w": ""
+        if evt.get("num_entry_fee_2w") is None
+        else str(evt["num_entry_fee_2w"]),
+        "num_entry_fee_3w": ""
+        if evt.get("num_entry_fee_3w") is None
+        else str(evt["num_entry_fee_3w"]),
         "txt_entry_fee_currency": evt.get("txt_entry_fee_currency") or "",
+        # Frozen on PROD until now: present in the CREATE branch but absent from
+        # the UPDATE, so an established row never received them again.
+        "txt_venue_address": evt.get("txt_venue_address") or "",
+        "id_prior_event": id_prior_event,
+        # Never reached PROD at all before.
+        "url_entry_list": evt.get("url_entry_list") or "",
+        "txt_organizer_email": evt.get("txt_organizer_email") or "",
+        "bool_use_spws_registration": evt.get("bool_use_spws_registration"),
     }
 
 
@@ -555,7 +584,7 @@ def promote_calendar(
         if prod_id is None:
             prod_id = prod_by_code.get(code)
         if prod_id is not None:
-            updates.append(_build_update_payload(prod_id, evt, id_organizer))
+            updates.append(_build_update_payload(prod_id, evt, id_organizer, id_prior_event))
         else:
             creates.append(
                 _build_create_payload(evt, prod_season["id_season"], id_organizer, id_prior_event)
