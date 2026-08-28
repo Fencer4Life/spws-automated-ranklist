@@ -72,6 +72,10 @@ describe('createRegistration (FR-122, sole public write path)', () => {
       p_id_fencer: null,
       p_email_hash: null,
       p_consent_version: null,
+      // Edit capability (2026-08-28). Null when the caller supplies none, and
+      // the server then leaves any token already on the row alone — an older
+      // cached bundle must not silently revoke a live edit capability.
+      p_edit_token: null,
     })
     expect(id).toBe(7)
   })

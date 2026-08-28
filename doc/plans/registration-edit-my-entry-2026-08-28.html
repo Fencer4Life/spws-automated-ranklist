@@ -1,0 +1,339 @@
+<meta charset="utf-8">
+<title>Correcting a typo no longer makes a second entry</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">SPWS · registration UI · built and verified · 28 August 2026</p>
+  <h1>Correcting a typo no longer makes a second entry</h1>
+  <p class="dek">Adding a forgotten weapon always worked. <b>Fixing a misspelled name did not</b> — it left the wrong entry on the public roster and added a second one beside it. Both defects are now fixed and the edit path is built.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Built and verified on LOCAL — not committed</span>
+    <span class="pill">3 migrations · pgTAP 773 &rarr; <b>804</b></span>
+    <span class="pill">vitest 616 &rarr; <b>625</b></span>
+    <span class="pill">svelte-check 0 errors</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Decide this first</p>
+    <h2>There is no edit path at all</h2>
+    <p>You asked for more back buttons so a fencer who spots a mistake on the roster can go back and correct it. The back button is the easy half. The hard half is that <b>there is no edit path at all</b> — the only public write is <code>fn_create_registration</code>, and for an unmatched fencer it decides "same person" by the declared name. Change the name and it is, by definition, a different person, so it inserts.</p>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> Proven on LOCAL, three calls in one transaction</p>
+      <p>Registered <code>KOWALKSI Adam</code> (typo) &rarr; row <b>18</b>. Re-submitted as <code>KOWALSKI Adam</code> &rarr; row <b>19</b>, <b>a second row</b>; row 18 survives, on the public roster and in the organizer's seed file. Re-submitted again adding a weapon &rarr; row <b>19</b> reused, <code>arr_weapons</code> updated to <code>{EPEE,SABRE}</code>.</p>
+    </div>
+
+    <div class="trace">
+typo_row=18  corrected_row=19  weapon_edit_row=19
+
+ 18 | KOWALKSI | Adam | {EPEE}          <span class="hit">&larr; orphan, still public</span>
+ 19 | KOWALSKI | Adam | {EPEE,SABRE}    <span class="hit">&larr; weapon edit did update in place</span></div>
+
+    <p>Same for birth year — it is part of the arbiter by design, and the migration says so. <b>Matched</b> fencers are unaffected: their arbiter is <code>UNIQUE(id_event, id_fencer)</code>, so a name correction updates in place. The exposure is exactly the <b>unmatched</b> population — newcomers typing their name into this system for the first time, which is the group the subsystem exists to collect data from.</p>
+
+    <p>So a back-to-identity button, shipped on its own, would not fix mistakes. It would make the duplicate easy to create instead of merely possible.</p>
+  </section>
+
+  <section>
+    <p class="kicker">"Keep only one entry, the latest"</p>
+    <h2>That already works — and it is already event-scoped</h2>
+    <p>Both halves of what you asked for are implemented. Re-registering with an existing <code>SURNAME · Name · BY</code> updates the row in place rather than adding one, and registrations for different events cannot touch each other because <code>id_event</code> is the first column of <b>both</b> arbiters. Run against LOCAL:</p>
+
+    <div class="trace">
+A: first=<span class="hit">21</span> second=<span class="hit">21</span>   same identity, same event, submitted twice
+B: other event=23      same identity, different event
+
+ 21 | PPW1-2026-2027 |     — | TESTOWY Jan | {FOIL,SABRE}   <span class="hit">&larr; one row, weapons updated to the latest</span>
+ 23 | MSW-2026-2027  |     — | TESTOWY Jan | {EPEE}         <span class="hit">&larr; untouched by the other event</span></div>
+
+    <p>So nothing needs building for that. But the same run exposed a hole the rule does not close.</p>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> One person, one event, two rows — matched and unmatched do not dedupe against each other</p>
+      <p>The two branches use different arbiters: <code>UNIQUE(id_event, id_fencer)</code> when matched, the partial index <code>… WHERE id_fencer IS NULL</code> when not. Nothing spans them. Register while unknown to the database, then get added to <code>tbl_fencer</code>, then register again — and the second submission takes the matched branch and <b>inserts</b>, leaving the first row standing.</p>
+    </div>
+
+    <div class="trace">
+C: matched re-reg=<span class="hit">24</span>   same person, same event, now known to tbl_fencer
+
+ 21 | PPW1-2026-2027 |     — | TESTOWY Jan | {FOIL,SABRE}   <span class="hit">&larr; the unmatched row survives</span>
+ 24 | PPW1-2026-2027 |   481 | TESTOWY Jan | {EPEE}         <span class="hit">&larr; and a matched one appears beside it</span></div>
+
+    <p>This is not hypothetical. Unmatched registration is now the normal path for newcomers, and a fencer's <code>tbl_fencer</code> row gets created during the very window in which registration is open — by result ingestion of an earlier event, or by an administrator adding them by hand. Both entries then reach the public roster and the organizer's seed file.</p>
+
+    <p>It is reachable from the other direction too, and by design rather than by accident: <code>submitIdentity()</code> deliberately treats a failed lookup as "no match" so a network blip never blocks an entry. A fencer who <em>is</em> in <code>tbl_fencer</code> but whose lookup times out is written unmatched, beside their own matched row.</p>
+
+    <p><b>The fix, if you want it:</b> before either branch inserts, absorb the twin from the other. Matched insert finds an unmatched row with the same declared identity for that event and <b>promotes</b> it — sets <code>id_fencer</code> on the existing row rather than creating a new one, preserving <code>ts_created</code> and the consent stamp. Where a matched row already exists, the unmatched twin is removed instead. One migration to <code>fn_create_registration</code>, plus pgTAP for both directions. It is independent of the edit-path decision below and could ship first.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Your question — and it kills option A</p>
+    <h2>"Will this still work a few days later?"</h2>
+    <p>No. You are right, and it is worse than a session timeout.</p>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> The token dies the instant you press &times;</p>
+      <p><code>RegistrationModal</code> is wrapped in <code>{#if open}</code>. Closing it does not hide the form, it <b>unmounts</b> it — every piece of component state goes with it, an edit token included. On the standalone page a reload does the same. So a token held in memory is gone in seconds, never mind days.</p>
+    </div>
+
+    <p>For a correction to work days later — plausibly on a different device from the one that registered — the capability has to outlive the browser session. That leaves three places to put it, and two of them do not survive contact with how this system is actually deployed:</p>
+
+    <div class="op">
+      <span class="op-tag d">✗</span><span class="set"><code>localStorage</code></span>
+      <ul>
+        <li>Survives reloads and days, but it is <b>origin-bound</b>. <code>register.html</code> is served from <code>fencer4life.github.io</code>; the calendar element is embedded in the WordPress CMS page. Different origins, separate stores — register through the modal, and the standalone page cannot see your token, or the reverse.</li>
+        <li><b>Device-bound</b> too: register on your phone, correct on your laptop, nothing is there. Private browsing and cleared site data lose it outright.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag d">✗</span><span class="set">E-mailed edit link</span>
+      <ul>
+        <li>Would work across devices and time — but it needs an address on file, and the consent text a fencer accepts today says e-mail is <em>„jednorazowa weryfikacja · nie przechowujemy"</em>. Keeping one to send an edit link inverts that, so it is a genuine <code>CONSENT_VERSION</code> bump, the same class of change as the club field.</li>
+        <li>The delivery infrastructure was never built either — ADR-079's Phases 4/5 are exactly the magic-link path that got skipped.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">D</span><span class="set">Re-identify on return — the revised recommendation</span>
+      <ul>
+        <li><b>Store nothing.</b> The fencer comes back whenever they like, on any device, and enters the identity they originally declared — the name <em>as they typed it</em> plus their birth year. The system finds that registration, shows the current declaration and lets them change any field, including the name, updating the row by primary key.</li>
+        <li>Survives the &times;, a closed tab, a new phone, and a week — because there is nothing to survive. The key is what the fencer knows.</li>
+        <li>Half of it already exists: <code>checkForExistingEntry()</code> already looks a fencer up on the roster and warns "someone with this name is already entered". It warns where it could offer to edit.</li>
+      </ul>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">i</span> Why the security objection is smaller than it looks</p>
+      <p>Gating on name + birth year is not a strong secret: the roster publishes the name, and <code>enum_age_category</code> narrows birth year to a ten-year band. But <b>the write path has no identity proof at all today</b> — <code>fn_create_registration</code> is anon-callable and nobody verifies that you are who you say you are, so anyone can already enter anyone under any name. An edit path gated this way does not widen that surface; a vandal has an easier route already, and the organizer checks identity in person at the venue.</p>
+      <p>This also retires option B: I proposed birth year as a shared secret without checking, and the published age category makes it roughly a one-in-ten guess. B is <b>worse than I wrote it</b> — it buys almost nothing over D while still needing a migration.</p>
+    </div>
+
+    <p>Correction to option A above: an <code>id_registration</code>-keyed RPC is not merely enumerable, it is <b>directly published</b> — <code>id_registration</code> is a column of <code>vw_registration_entry_list</code>. Any id-keyed update must carry a real secret, which is what makes A's token necessary and what makes A's storage problem unavoidable.</p>
+
+    <p><b>Answer needed:</b> D — re-identify on return, storing nothing — or C, ship only the safe fields now and leave name corrections to the organizer? I recommend <b>D</b>: it is the only option that answers the question you actually asked.</p>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Live-data consequence either way</p>
+      <p>PROD has 14 real entries. Whatever we choose, a fencer who has <em>already</em> registered under a misspelling cannot fix it themselves — their browser never kept an id or a token. Those are an organizer cleanup, not a UI feature.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Answered</p>
+    <h2>The close button — verified, not broken</h2>
+    <p>You asked what happens to it. In the calendar modal the roster now carries <b>both</b>, and they mean different things: <code>&larr; Dane do przelewu</code> returns to the transfer details, <code>&times;</code> dismisses the modal to the calendar. Both were driven in the real modal on LOCAL:</p>
+    <ul>
+      <li><b>Back</b> &rarr; payment step, modal stays open, and the panel still read <code>PPW1-2026-2027 PIOTR NOWAK SZPADA V2</code> / <code>120 PLN</code>.</li>
+      <li><b>&times;</b> &rarr; modal closed to the calendar, no navigation, URL unchanged.</li>
+    </ul>
+    <p>On the standalone <code>register.html</code> page there is no <code>&times;</code>, exactly as before — nothing to close to. A regression guard now pins that the two affordances coexist and that neither fires the other. That test passed the moment it was written: the pass-through was already correct, so it is a guard, not a fix.</p>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">i</span> Two things found while getting there</p>
+      <p><code>PPW1-2026-2027</code> is invisible on the LOCAL calendar because its status is <code>CREATED</code> — the admin-created visibility rule working, not a defect. And the calendar card's "Rejestracja &rarr;" is an <code>&lt;a&gt;</code> to the <b>PROD</b> GitHub Pages URL that only <code>preventDefault</code>s into the modal when <code>bool_use_spws_registration</code> is true. With that flag off, clicking it on LOCAL sends you to production.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">State of the branch</p>
+    <h2>What is built and what is waiting</h2>
+    <p>The roster return path from the previous plan is <b>built, verified and uncommitted</b>: form keeps its state, back returns to the transfer details, cold links unchanged, 616 vitest tests and svelte-check clean. Nothing in this document is built — it is waiting on the decision above.</p>
+    <p>LOCAL was restored after the experiment: all test registrations deleted, the event returned to <code>CREATED</code> with registration disabled. No CERT or PROD writes at any point.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Shipped</p>
+    <h2>What was built</h2>
+
+    <div class="op">
+      <span class="op-tag c">1</span><span class="set">migration 20260828000002 — absorb the twin</span>
+      <ul>
+        <li>Each write branch absorbs the other's row for the same declared identity before inserting. <b>Promotion</b>, not delete-and-insert: <code>ts_created</code> and the consent stamp are the RODO evidence, and consent was given at the first submission, so that row survives and merely gains its fencer link.</li>
+        <li>Where a matched row already exists for that fencer, the unmatched twin is the redundant one and is removed instead.</li>
+        <li>A repair step collapses any twins already present. <b>Both live environments were checked first and hold none</b>, so it is a no-op on CERT and PROD.</li>
+        <li>Ten pgTAP assertions cover both directions, consent survival, event independence, and that a namesake born in a different year still keeps their own row.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">2</span><span class="set">migration 20260828000003 — the edit capability</span>
+      <ul>
+        <li><code>uuid_edit_token</code> on <code>tbl_registration</code>. The <b>client</b> mints it and keeps it; the server only stores and compares. That direction is what lets <code>fn_create_registration</code> keep <code>RETURNS INT</code>, so a cached older bundle goes on working — simply without an edit capability.</li>
+        <li><code>fn_update_registration</code> updates by primary key, so no arbiter is consulted and the declared name and birth year <em>can</em> change. It refuses a wrong or missing token, honours the same D10 window, never touches <code>id_fencer</code> or the consent stamp, and raises rather than merging if the correction collides with another entry.</li>
+        <li><code>fn_get_registration</code> reads the declaration back under the same token, including the birth year the public view withholds — so the device stores only the id and the token, never personal data.</li>
+        <li>The old 9-argument signature is <b>dropped</b>, not left beside the new one. Two overloads of a single function is exactly what made the release fingerprint non-deterministic in <code>ba4ff3a</code>; verified afterwards that exactly one remains.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag u">3</span><span class="set">frontend</span>
+      <ul>
+        <li><code>lib/registrationStore.ts</code> keys the capability per event, so overlapping registrations cannot collide. Every access is wrapped: storage that throws, has no methods, or holds a corrupted entry costs the edit capability and never the registration.</li>
+        <li>A <b>Popraw dane</b> affordance on the payment step, and on return the form restores from the server and offers <b>Zapisz zmiany</b> instead of creating a second entry.</li>
+      </ul>
+    </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> The whole story, driven on the real page</p>
+      <p>Registered <code>KOWALKSI Adam</code> through <code>register.html</code> against LOCAL, pressed <b>Popraw dane</b>, corrected the surname and saved. The database then held <b>one row</b> — <code>KOWALSKI Adam</code>, consent intact — where the old path produced rows 18 and 19. Then the page was <b>fully reloaded</b>: the form came back prefilled with the corrected name <em>and birth year 1968</em>. The public roster does not expose birth year, so that could only have come through the token-gated read.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> The limit is unchanged and worth repeating</p>
+      <p>The capability is per browser and per site. A token minted on <code>register.html</code> is not visible to the CMS-embedded element, and a fencer who registered on their phone cannot self-edit from a laptop. Those cases — and the 14 entries already on PROD, whose browsers never held a token — remain an organizer cleanup. Option D (re-identify on return) is still the answer if you want it to work everywhere; it is not built.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">i</span> The security gate caught it, correctly</p>
+      <p>Adding an anon-callable function failed pgTAP 52.7 — ADR-083's deny-by-default allowlist. Both new functions were added to that allowlist <em>deliberately</em>, with the reasoning recorded there, rather than the assertion being loosened.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Revised — session-handle model</p>
+    <h2>Persistence removed, on your argument</h2>
+    <p>The <code>localStorage</code> layer is gone. The handle is minted by a successful submission, held in component state, and lost when the form unmounts. A returning fencer re-enters the tuple they declared, which upserts onto their row and mints a fresh one — so <b>re-submission rotates the handle</b>, which is the mechanism rather than a side effect.</p>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> The story that persistence was supposed to buy, working without it</p>
+      <p>On LOCAL through <code>register.html</code>: registered <code>KOWALKSI Adam</code>, then <b>fully reloaded the page</b> — no prefill, no restore, <code>localStorage.length === 0</code> — then re-entered the same tuple and corrected the surname. The database held <b>one row</b>, id 31, corrected, consent intact. Nothing was written to the device at any point.</p>
+    </div>
+
+    <p>Deleted: <code>registrationStore.ts</code> and its ten tests, the restore-on-load path, and <code>fn_get_registration</code> — which had no caller once the fencer retypes their declaration, and an anon-callable <code>SECURITY DEFINER</code> function with no caller is the surface ADR-083 exists to prevent. What replaced it is <code>editToken.ts</code>: generation only, four tests, no storage.</p>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Two things found while doing it</p>
+      <p><b>A posture script was out of sync.</b> ADR-083 records that <code>scripts/check-security-posture.sh</code> duplicates the pgTAP 52.7 allowlist and must be kept in step. It runs against the <em>live</em> database from inside the deploy jobs, so the new function would have failed the PROD posture check. Both lists now agree, verified by comparing them programmatically.</p>
+      <p><b>The graph could not see two files.</b> graphify skipped <code>…_registration_edit_token.sql</code> and <code>59_registration_edit_token.sql</code> as <em>sensitive</em> — purely because their names contain "token". They hold no secrets. Renamed to <code>…_edit_handle.sql</code>, which matches the language used throughout this work anyway, and both are now indexed.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">i</span> One gap left open, honestly</p>
+      <p>graphify's SQL extractor emits only a <b>file</b> node for the edit-handle migration, so <code>fn_update_registration</code> is not queryable by symbol name. Not the filename (renamed and retested), not <code>CREATE OR REPLACE</code> (tested), and it reproduces on the file in isolation — a limitation in the extractor, which I have not worked around by contorting the SQL. The file itself is indexed and the function is fully covered by pgTAP.</p>
+    </div>
+
+    <p>ADRs amended rather than added, since these stay inside existing decisions: <b>ADR-079</b> (the edit path, the session-handle model and its rejected alternative, twin absorption, name trimming, plus three new open items — the rate limit, the birth-year challenge, and an audit trail), <b>ADR-083</b> (the anon surface is now three functions), and <b>ADR-078</b> (Art. 16 rectification is now self-service before the event; the handle recorded as not personal data). <b>ADR-080</b> audited and clean — its "every declared registration" population rule is untouched.</p>
+  </section>
+
+  <p class="foot">Built and verified 28 August 2026 · clean-database replay, pgTAP <b>804 PASS</b> across 60 files · vitest 630 / 44 files · svelte-check 0 errors · postgrestools clean · coherence, spec-sync, check_docs, render_docs and render_adrs all pass · graph refreshed · <b>not committed</b>. Companions: <a href="registration-entry-list-return-2026-08-28.html">roster return plan</a> · <a href="../mockups/registration_entry_list_return.html">mock</a></p>
+</div>

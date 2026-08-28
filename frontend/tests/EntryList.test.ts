@@ -136,6 +136,54 @@ describe('EntryList — modal-embed close affordance', () => {
     expect(container.querySelector('button.el-close')).toBeNull()
   })
 
+  // Return path from the registration flow. The roster is reachable from the
+  // payment step, which is the only place the transfer data (payee, IBAN,
+  // title, amount) exists — so it must be possible to get back to it.
+  it('renders a back button and calls onback when provided (in-flow)', async () => {
+    mockFetchEntryList.mockResolvedValue(ROWS)
+    const onback = vi.fn()
+    const { container, findByText } = render(EntryList, { props: { eventId: 3, onback } })
+    await findByText('KOWALSKI Jan')
+    const backBtn = container.querySelector('button.el-back') as HTMLButtonElement
+    expect(backBtn).not.toBeNull()
+    await fireEvent.click(backBtn)
+    expect(onback).toHaveBeenCalled()
+  })
+
+  it('renders no back button without onback (cold ?view=list link)', async () => {
+    mockFetchEntryList.mockResolvedValue(ROWS)
+    const { container, findByText } = render(EntryList, { props: { eventId: 3 } })
+    await findByText('KOWALSKI Jan')
+    // Someone who opened the shared roster link, or the entry list straight
+    // from a calendar card, never passed through the form — there is nothing
+    // to go back to. Same conditional pattern as onclose.
+    expect(container.querySelector('button.el-back')).toBeNull()
+  })
+
+  // In the calendar modal the roster carries both: back goes to the step it
+  // was opened from (the transfer details), close dismisses the whole modal to
+  // the calendar. Different destinations, so both must be present and neither
+  // may fire the other.
+  it('renders back and close together in the modal, each firing only its own handler', async () => {
+    mockFetchEntryList.mockResolvedValue(ROWS)
+    const onback = vi.fn()
+    const onclose = vi.fn()
+    const { container, findByText } = render(EntryList, { props: { eventId: 3, onback, onclose } })
+    await findByText('KOWALSKI Jan')
+    const backBtn = container.querySelector('button.el-back') as HTMLButtonElement
+    const closeBtn = container.querySelector('button.el-close') as HTMLButtonElement
+    expect(backBtn).not.toBeNull()
+    expect(closeBtn).not.toBeNull()
+
+    await fireEvent.click(backBtn)
+    expect(onback).toHaveBeenCalledTimes(1)
+    expect(onclose).not.toHaveBeenCalled()
+
+    await fireEvent.click(closeBtn)
+    expect(onclose).toHaveBeenCalledTimes(1)
+    expect(onback).toHaveBeenCalledTimes(1)
+  })
+
   it('renders a close button and calls onclose when provided (modal-embed)', async () => {
     mockFetchEntryList.mockResolvedValue(ROWS)
     const onclose = vi.fn()

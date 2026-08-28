@@ -1,0 +1,409 @@
+<meta charset="utf-8">
+<title>How far to defend the roster</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">SPWS · registration security · brainstorm · 28 August 2026</p>
+  <h1>How far to defend the roster</h1>
+  <p class="dek">Most of this threat is <b>not new and already decided</b> — ADR-079 §4 accepted it in writing. My edit token added exactly one thing to it, and that one thing is the only real question here.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Brainstorm — 1 question at the end</span>
+    <span class="pill warn"><span class="dot"></span>session-token model chosen — not yet built</span>
+    <span class="pill">nothing built yet</span>
+    <span class="pill">seizure already closed</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">First, the part that is not mine</p>
+    <h2>The create path never had identity proof, and that was deliberate</h2>
+    <p><code>fn_create_registration</code> is anon-callable and nobody verifies that you are who you say you are. Anyone can enter anyone. That is not an oversight — <b>ADR-079 §4 reasoned it through and accepted it</b>, and its argument is worth quoting because it pre-empts half of what we might propose today:</p>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">§4</span> Impersonation hardening — the decision already on file</p>
+      <p>Email verification <b>does not stop</b> a foul player entering a victim's name. The real defences are: <b>(a)</b> the read-only invariant and confirmed-birth-year rule, so no ranking data is corrupted; <b>(b)</b> the <b>venue check</b> — the organizer verifies payment and can challenge an unfamiliar face in person, a physical control; <b>(c)</b> the ranking is <b>results-based</b>, so a fake entry that never fences has zero ranking effect, and the victim can spot it and ask for removal; <b>(d)</b> a salted-hash abuse log and rate limit. Closing: <em>"the same residual exposure every open amateur registration carries — minimised, detectable, reversible, not eliminated."</em></p>
+    </div>
+
+    <p>So the ADR's answer to "how far do we want to protect it" is already <b>not much further</b>. This matters: proposing email verification here would be re-litigating a decision, and the ADR explicitly says it would not even work.</p>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Two of those four defences do not actually exist</p>
+      <p>Checked, not assumed. <b>(d) is entirely unbuilt</b>: there is no rate limiting anywhere in the migrations or the frontend, and <code>txt_email_hash</code> is never populated — the form has the parameter plumbed through <code>api.ts</code> and passes <code>null</code> every time. Of <b>(c)</b>, the results-based half is real, but the <em>"Sprawdź zgłoszenie"</em> affordance the ADR leans on for victim self-detection was never built either. A victim can see the public roster, which is something, but there is no report path.</p>
+      <p>So the posture on file is somewhat better than the posture in the code. That is worth knowing whichever option you pick below.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Now the part that is mine</p>
+    <h2>What the edit token added — and what it did not</h2>
+    <p>I already closed the worst version of this. An earlier draft let a re-submission <b>rotate</b> the token, and on LOCAL a second caller seized row 22, locked the original registrant out, and renamed the entry. The migration now sets the token once at INSERT and never again — <b>first writer wins</b> — with two pgTAP assertions pinning that a re-submission can neither take the token nor rename through it.</p>
+
+    <p>What remains is narrow, and I want to state it plainly rather than let it hide:</p>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> An impersonator who registers <em>first</em> holds the capability for that entry</p>
+      <p>Suppose someone enters a victim's name and birth year before the victim does. The row now displays the victim's identity, and the attacker holds its token. When the real fencer later registers with the same details, they <b>upsert onto that same row</b> — and, under first-writer-wins, do not receive the token. The attacker can then rename that entry at any time, to anything.</p>
+      <p>Before the edit token existed, an attacker could <em>add</em> a bogus row — conspicuous, obviously extra — but could not <b>deface</b> the entry that carries the victim's name, because a rename through the create path inserts a separate row and leaves the original standing. That specific harm is new, and it is the only new one.</p>
+    </div>
+
+    <p>Everything else on the list was already true yesterday: creating a bogus entry, or overwriting an existing entry's weapons and gender by re-submitting the same name and birth year, are both pre-existing behaviours of the upsert that ADR-079 §4 covers.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Your question, answered</p>
+    <h2>No — the token does not die when the impersonator presses &times;</h2>
+    <p>That is the one thing in the chain that does not work the way you described, and it is not an accident: <b>you are the reason it does not.</b> When you asked whether a correction would still be possible a few days later, that killed the in-memory version of option A. The token is written to <code>localStorage</code>, not held in component state, precisely so it survives what you identified.</p>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> What actually survives &times;</p>
+      <p><code>localStorage</code> is not session storage. The impersonator's token outlives pressing &times;, closing the tab, quitting the browser, and rebooting the machine. It persists on their device until they clear that site's data. So the capability does not lapse on its own — not after the close button, not after a week.</p>
+    </div>
+
+    <p>The second half of your question is closer. The real fencer registering from their phone <b>does succeed</b> — in the sense that matters least. Their submission upserts onto the same row, so their weapons, gender and spelling are written and they appear correctly on the roster. What they do <em>not</em> get is the token, because first-writer-wins gives it to whoever inserted the row. So they end up correctly registered but unable to edit, while the impersonator remains able to.</p>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">i</span> Why no rule can tell the two of them apart</p>
+      <p>Worth being explicit, because it constrains every option below. To the database, the impersonator and the real fencer submit <b>identical</b> requests — the same declared name and birth year. There is no signal that favours the genuine person. So the choice is not "how do we give it to the right one", it is only "which failure do we prefer": first-writer-wins means nobody can take a capability away from its holder (and in the rare pre-emption case, the wrong person holds it); last-writer-wins would let the victim <em>recover</em> their entry, but at the price of letting anyone who knows a name and birth year seize any entry at any time. The second is far worse, because legitimate registrations vastly outnumber impersonations. First-writer-wins is the right call, and this is the price of it.</p>
+    </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> The recovery path already exists, and needs no new code</p>
+      <p>Verified rather than assumed: <code>authenticated</code> holds <code>UPDATE</code> on <code>tbl_registration</code> and the RLS policy is <code>FOR ALL</code>. So an admin can revoke an impersonator's capability outright with one statement — <code>SET uuid_edit_token = gen_random_uuid()</code> on that row — after which their stored token is inert and the entry can be handed back or corrected by hand.</p>
+      <p>This narrows what is actually missing. It was never the <em>ability</em> to revoke or repair. It is only that once a name has been overwritten, <b>the previous value is gone</b> and nobody can see that it changed. That is precisely, and only, what the audit trail in option B supplies.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">i</span> One thing that is genuinely safe</p>
+      <p>The attacker in this scenario has to have <b>registered first</b>. They cannot harvest tokens: <code>anon</code> carries a <code>SELECT</code> grant on <code>tbl_registration</code>, but RLS overrides it — checked as the <code>anon</code> role inside a transaction, the base table returns <b>zero rows</b> while the public view returns the entry. The token is never readable, and never reaches any public projection.</p>
+      <p>The window is bounded too: <code>fn_update_registration</code> enforces the same D10 deadline as the create path, so no entry can be altered after registration closes.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Your counter-proposal</p>
+    <h2>Kill the token at &times; and let re-entry mint a new one</h2>
+    <p>You are right, and the paragraph that confused you was making a narrower point than it sounded like. Let me answer the question directly: <b>almost nothing would be lost</b>, and one real thing would be gained.</p>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> The "days later" story still works — through a different door</p>
+      <p>Under your model the returning fencer does not need a stored token. They open the form, type the tuple <em>as they originally submitted it</em> — misspelling included — that upserts onto their existing row and mints a fresh token they now hold, and they correct the spelling from there. The requirement is met by <b>re-identification</b> rather than by persistence. That is option D from the earlier document, arriving through the create path instead of a new one.</p>
+    </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> And it deletes the limitation I flagged as the design's worst property</p>
+      <p>No <code>localStorage</code> means no per-origin and no per-device binding. Register on your phone, correct it from your laptop. Register through <code>register.html</code>, correct it through the CMS-embedded element. Private browsing, cleared site data, a new browser — all fine. <code>registrationStore.ts</code>, the restore-on-load path and its failure modes stop existing.</p>
+    </div>
+
+    <p>So: how are we better with what we have now? In exactly <b>one</b> way, and I should not dress it up as more.</p>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> The single thing that is lost: only the first registrant can rename</p>
+      <p>Rotating on re-submission means the tuple <em>is</em> the credential for renaming, not just for overwriting. Today a stranger who knows a fencer's name and birth year can already overwrite their gender and weapons — that is the pre-existing upsert, and ADR-079 §4 accepts it. What they cannot do is change the <b>name</b>, because a changed name inserts a separate row and leaves the original standing. Rotation hands them that.</p>
+    </div>
+
+    <p>How much is that property actually worth? It depends entirely on how hard the tuple is to guess, so I measured rather than assumed:</p>
+
+    <div class="trace">
+published by vw_registration_entry_list:
+  txt_surname, txt_first_name, enum_gender, arr_weapons, <span class="hit">enum_age_category</span>
+
+NOT published: int_birth_year
+but enum_age_category is a <span class="hit">10-year band</span>  &rarr;  exact birth year &asymp; 1 guess in 10
+rate limiting in the codebase: <span class="hit">none</span></div>
+
+    <p>So the secret protecting a rename is roughly <b>ten unthrottled requests</b> — for a club-mate, zero. That is not a security property worth trading a real usability property for. Which reframes the whole thing: the control that actually matters here was never the token model, it is the <b>rate limit ADR-079 §4 already promised and nobody built</b>.</p>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> One thing neither model fixes, so do not count on it</p>
+      <p>A defaced entry cannot be reclaimed by its owner under <em>either</em> design. Once the row is renamed it no longer matches the original tuple, so the victim re-registering creates a <b>fresh</b> row rather than recovering the old one, and the garbage row remains until an admin removes it. Proven earlier in this session: correcting <code>KOWALKSI</code> to <code>KOWALSKI</code> produced row 19 and left row 18 standing. Persistence buys nothing here either.</p>
+    </div>
+
+    <p><b>Revised recommendation.</b> Adopt your model — the token becomes a short-lived handle that a successful submission hands you, and the tuple is honestly acknowledged as the credential everywhere, which it already was. Pair it with the rate limit, because that is the control doing the real work once the token stops pretending to be an identity. Keep the audit trail from option B regardless: under either model a rename is the one edit that should leave a record.</p>
+    <p>The one thing I would keep from what is built: reading the declaration back after re-entry, so the fencer sees their current weapons and gender rather than retyping everything blind. That is <code>fn_get_registration</code>, which still earns its place.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Your question</p>
+    <h2>A wrong birth year does not stop you — it makes you a different person</h2>
+    <p><b>Yes, you proceed.</b> Nothing in the flow challenges the birth year. Read from the source rather than remembered:</p>
+
+    <div class="trace">
+canContinue = surname &ne; '' &amp;&amp; firstName &ne; '' &amp;&amp; <span class="hit">birthYear != null</span> &amp;&amp; weapons.length &gt; 0 &amp;&amp; gender &ne; ''
+
+&lt;input name="birthYear" type="number" ...&gt;   <span class="hit">no min, no max</span>
+vcat = birthYearToVcat(birthYear, seasonEndYear)  <span class="hit">display only — not in canContinue</span></div>
+
+    <p>So any non-null number gets you through. Type <code>2015</code> and the category chip shows <code>—</code> because no veteran band matches an eleven-year-old, and the Continue button stays enabled anyway. There is no lower bound, no upper bound, and no requirement that the year resolve to a category at all.</p>
+
+    <p>What happens next is the part that matters for whatever you are about to propose:</p>
+
+    <div class="op">
+      <span class="op-tag u">1</span><span class="set">the lookup misses</span>
+      <ul>
+        <li><code>fn_match_registration_fencer</code> is an <b>exact</b> triple match on surname, given name and birth year. A wrong year misses, so <code>isNewFencer</code> becomes true.</li>
+        <li>You are shown <em>"Nie znaleźliśmy Cię jeszcze w naszej bazie zawodników"</em> — a notice, not a gate. You continue to RODO and the entry is written with <code>id_fencer</code> NULL.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">2</span><span class="set">but the duplicate check still fires</span>
+      <ul>
+        <li><code>checkForExistingEntry()</code> compares against the public roster on <b>name only</b> — it does not look at the birth year at all. So a right name with a wrong year still warns you that someone of that name is already entered.</li>
+        <li>That warning is the only feedback distinguishing "you mistyped your year" from "you are genuinely new", and it is easy to read past.</li>
+      </ul>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> The consequence: a mistyped year silently creates a second entry</p>
+      <p>Birth year is part of the unmatched dedupe arbiter — deliberately, since a namesake born in a different year is a different entrant. So a fencer who typos their year does not overwrite their own entry, they <b>create a new one beside it</b>, exactly as a misspelled surname does. Both rows then sit on the public roster and in the organizer's seed file.</p>
+      <p>And the create path cannot repair it, for the same reason: correcting the year changes the arbiter, so it makes a third row rather than fixing the second. Only <code>fn_update_registration</code> can change a birth year in place.</p>
+    </div>
+
+    <p>Under the session-token model you have just chosen this stays consistent: to fix a mistyped year you re-enter the tuple <em>as you submitted it</em> — wrong year included — which upserts onto that row and hands you the token, and you correct the year from there. Same door as the misspelled name.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Your idea, examined</p>
+    <h2>Gate the write on a matching birth year</h2>
+    <p>It adds real value — but for a <b>different problem</b> than the one you are aiming it at. Taking the security claim first, because it does not survive contact with the code.</p>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> The birth year is already a free, silent oracle — today, before any write</p>
+      <p><code>fn_match_registration_fencer</code> is anon-callable and returns the fencer id on an exact triple and NULL otherwise. The form calls it at <b>Continue</b> — before RODO, before anything is written. So anyone can walk a candidate's birth years and read the answer off, leaving no row and no trace. Run as the <code>anon</code> role on LOCAL:</p>
+    </div>
+
+    <div class="trace">
+target: BURLIKOWSKI Bartosz (real BY 1972)
+
+probe BY=1970 -> NULL (no match)
+probe BY=1971 -> NULL (no match)
+probe BY=1972 -> <span class="hit">1</span>
+probe BY=1973 -> NULL (no match)
+probe BY=1974 -> NULL (no match)</div>
+
+    <p>Ten probes, no writes, no rate limit. An attacker does not need to guess the birth year <em>through</em> your gate — they look it up first and then walk through it. So as an anti-impersonation control the gate is theatre: it stops nobody who is trying, while stopping people who are merely mistaken.</p>
+
+    <p>Which is exactly why it is worth building — <b>for the mistaken</b>.</p>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> As a data-quality control it is the most valuable thing proposed so far</p>
+      <p>A mistyped birth year is the single most likely way a duplicate reaches the roster, far likelier than impersonation. And it is the nastiest kind, because the year is part of the dedupe arbiter: the fencer cannot fix it from the create path, both rows reach the organizer's seed file, and one person occupies two slots in a field with a cap. Catching it at the boundary removes that whole class.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> But "only write when the BY matches" would recreate the defect fixed on 17 August</p>
+      <p>Not every stored birth year is known — some are ingestion <em>estimates</em>, and those fencers are precisely the population this subsystem exists to collect real birth years from. Refusing their declaration because it disagrees with our guess turns them away for being right. That is the same shape as the defect where every non-exact match was refused, and it turned away every newcomer and everyone whose stored year was an estimate.</p>
+      <p>Measured on <b>PROD</b>, not assumed: <code>367</code> fencers, of whom <code>20</code> carry <code>bool_birth_year_estimated</code>. So a naive gate locks out about <b>5.5%</b> of the roster — and disproportionately the ones whose data we most want.</p>
+    </div>
+
+    <p>ADR-079 §3 already wrote the correct rule, it was simply never implemented at the form boundary:</p>
+
+    <div class="trace">
+Stored BY    | Declared − stored | Action
+-------------+-------------------+------------------------------------------
+<span class="hit">Estimated</span>    | any               | our guess; <span class="hit">declaration wins</span> → overwrite, mark confirmed
+<span class="hit">Confirmed</span>    | any discrepancy   | may be a namesake / bad edit → <span class="hit">quarantine, review</span></div>
+
+    <h2>What I would add</h2>
+
+    <div class="op">
+      <span class="op-tag c">1</span><span class="set">Gate only on a KNOWN birth year</span>
+      <ul>
+        <li>Challenge the declaration only where <code>bool_birth_year_estimated</code> is false. Where our record is a guess, the fencer's declaration wins and is written — the ADR's own rule, and the thing that keeps the 17 August fix intact.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">2</span><span class="set">Challenge, do not refuse</span>
+      <ul>
+        <li>A refusal with no way forward is how fencers get stranded. Show that the year does not match our record for that name and let them correct it — <b>or continue anyway</b>, because two people genuinely do share a name.</li>
+        <li>Do <b>not</b> display the stored year. The oracle already leaks it to anyone who asks; there is no reason to hand it to everyone who does not.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">3</span><span class="set">Match against every namesake, not one</span>
+      <ul>
+        <li>If <em>any</em> fencer with that name has a matching year, accept without comment. Only challenge when none do and all of them are known. Otherwise the second twin is permanently challenged for existing.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag u">4</span><span class="set">Close the oracle separately — or accept it explicitly</span>
+      <ul>
+        <li>Rate-limit <code>fn_match_registration_fencer</code>, or stop it answering per-year. Until then, birth year is public to anyone who asks, and any security argument resting on it is worth nothing.</li>
+        <li>This is ADR-079 §4's own unbuilt defence (d) resurfacing for the third time in this document. It is the one genuinely missing control.</li>
+      </ul>
+    </div>
+
+    <p><b>So: does it add value?</b> Yes — sell it as what it is. It removes the commonest cause of duplicate entries on the roster and in the seed file. It does not defend against impersonation, and building it as if it does would leave us feeling protected while the oracle sits open.</p>
+  </section>
+
+  <section>
+    <p class="kicker">The option space</p>
+    <h2>What we could do, and what each is worth</h2>
+
+    <div class="op">
+      <span class="op-tag c">A</span><span class="set">Accept it — it is inside the posture already agreed</span>
+      <ul>
+        <li>Defacing an entry is loud, not silent: the victim sees the roster, the organizer holds the physical check, and a defaced entry has zero ranking effect.</li>
+        <li>Cost: nothing. Risk: a defaced entry is currently <b>not reversible</b> — the previous name is simply gone, which sits awkwardly against the ADR's own "detectable, reversible" claim.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">B</span><span class="set">Make edits detectable and reversible — my recommendation</span>
+      <ul>
+        <li>Write every <code>fn_update_registration</code> call to <code>tbl_audit_log</code>, which already has exactly the right shape: <code>txt_table_name</code>, <code>id_row</code>, <code>txt_action</code>, <code>jsonb_old_values</code>, <code>jsonb_new_values</code>, <code>ts_created</code>. Several migrations write to it already, so this is reuse, not new machinery.</li>
+        <li>This does not <em>prevent</em> defacement. It restores the property ADR-079's risk acceptance actually rests on: an admin can see that a rename happened and put the original value back.</li>
+        <li>Cost: a few lines inside the existing function, plus pgTAP. No new surface, no schema beyond a log row.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag u">C</span><span class="set">Narrow what the token may change</span>
+      <ul>
+        <li>Let the token edit weapons, gender and birth year, but <b>not</b> the surname and given name. Defacement becomes impossible; so does fixing a misspelled name, which was the entire reason you asked for this.</li>
+        <li>A softer variant: allow a name change only within a short window of <code>ts_created</code>. Typos are noticed immediately; defacement is usually later. But it directly contradicts your "a few days later" requirement, so I would not.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag d">D</span><span class="set">Build the two defences the ADR claims but does not have</span>
+      <ul>
+        <li>Rate limiting, and a "Sprawdź zgłoszenie" report path. Both are real gaps, and both are worth doing <em>eventually</em> — but neither addresses this particular harm, and both are bigger than the thing we are discussing.</li>
+        <li>Worth logging as separate work rather than folding in here.</li>
+      </ul>
+    </div>
+
+    <p><b>Email verification is deliberately absent from this list.</b> ADR-079 §4 states it does not stop impersonation, and building it would cost the Resend infrastructure plus a <code>CONSENT_VERSION</code> bump, since the current text promises the address is not retained.</p>
+  </section>
+
+  <section>
+    <p class="kicker">The question</p>
+    <h2>How far do you want to go?</h2>
+    <p><b>Note:</b> the section above revises this. The options below were written assuming persistence was worth keeping; your counter-proposal makes a strong case that it is not, and that the rate limit matters more than the token model.</p>
+    <p>My recommendation is <b>B</b>, and only B: the marginal risk I introduced is small and inside the posture ADR-079 already accepted, but it currently breaks that ADR's "reversible" promise, and the audit log closes that for a few lines using a table we already have. A and B are both defensible. C protects the roster by removing the feature you asked for, which seems like the wrong trade.</p>
+    <p><b>Answer needed:</b> A (accept as-is), B (accept plus the audit trail), or C (narrow the token so names cannot be edited at all)? And separately — do you want D logged as follow-up work, or left alone?</p>
+  </section>
+
+  <p class="foot">Nothing in this document is built. The first-writer-wins fix and both migrations are done and verified — pgTAP 806 PASS — and remain uncommitted. Companion: <a href="registration-edit-my-entry-2026-08-28.html">the edit-capability record</a>.</p>
+</div>

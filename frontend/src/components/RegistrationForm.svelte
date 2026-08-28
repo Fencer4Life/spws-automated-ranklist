@@ -1,3 +1,23 @@
+{#if step === 'list' && event}
+  <!-- The roster REPLACES the card rather than nesting inside it: EntryList
+       renders its own full .el-card with its own header and LangToggle, so
+       nesting would stack two headers and two language toggles. Crucially
+       RegistrationForm itself is never unmounted, which is what keeps the
+       payment step's $derived transfer details alive.
+
+       The × means "leave this list" on both hosts, but the destination differs
+       because the hosts do. In the modal `onclose` dismisses the whole modal to
+       the calendar. Standalone there is no parent to dismiss to, so it falls
+       back to the same step the back button returns to — deliberately the same
+       action as back, because the corner × is what people reach for and its
+       absence read as a missing control rather than a considered omission. -->
+  <EntryList
+    eventId={event.id_event}
+    onback={backFromList}
+    backLabel={listReturnStep === 'payment' ? t('reg_back_to_payment') : t('reg_back')}
+    onclose={onclose ?? backFromList}
+  />
+{:else}
 <div class="reg-card">
   <div class="reg-top">
     <div class="reg-title-block">
@@ -25,13 +45,12 @@
   {:else if step === 'closed'}
     <p class="reg-muted">{t('reg_status_closed')}</p>
     <p class="reg-muted">{t('reg_status_closed_note')}</p>
-    {#if onviewlist}
-      <button class="reg-btn" onclick={onviewlist}>{t('reg_entry_list_link')} &rarr;</button>
-    {:else}
-      <a class="reg-btn" href={entryListHref}>{t('reg_entry_list_link')} &rarr;</a>
-    {/if}
+    <button class="reg-btn" onclick={openList}>{t('reg_entry_list_link')} &rarr;</button>
   {:else if step === 'identity'}
-    <p class="reg-stepline">{t('reg_step1_title')}</p>
+    <p class="reg-stepline">{isEditing ? t('reg_edit_title') : t('reg_step1_title')}</p>
+    {#if isEditing}
+      <p class="reg-edit-notice">{t('reg_edit_notice')}</p>
+    {/if}
 
     <div class="reg-grid2">
       <label class="reg-fld">
@@ -87,7 +106,7 @@
     <p class="reg-muted reg-by-note">{t('reg_by_visibility_note')}</p>
 
     <div class="reg-end">
-      <button class="reg-btn reg-continue" disabled={!canContinue} onclick={submitIdentity}>{t('reg_continue')}</button>
+      <button class="reg-btn reg-continue" disabled={!canContinue} onclick={submitIdentity}>{isEditing ? t('reg_save_changes') : t('reg_continue')}</button>
     </div>
   {:else if step === 'rodo'}
     {#if isNewFencer}
@@ -151,18 +170,26 @@
     <p class="reg-muted">
       {paymentDeadline ? t('reg_payment_deadline_note', { date: paymentDeadline }) : t('reg_payment_deadline_note_generic')}
     </p>
-    {#if onviewlist}
-      <button class="reg-entry-list-link" onclick={onviewlist}>{t('reg_entry_list_link')} &rarr;</button>
-    {:else}
-      <a class="reg-entry-list-link" href={entryListHref}>{t('reg_entry_list_link')} &rarr;</a>
-    {/if}
+    <div class="reg-payment-actions">
+      <button class="reg-btn reg-edit" onclick={editEntry}>{t('reg_edit')}</button>
+      <button class="reg-entry-list-link" onclick={openList}>{t('reg_entry_list_link')} &rarr;</button>
+    </div>
   {/if}
 </div>
+{/if}
 
 <script lang="ts">
   import { t, getLocale } from '../lib/locale.svelte'
   import LangToggle from './LangToggle.svelte'
-  import { fetchEventForRegistration, matchRegistrationFencer, createRegistration, fetchEntryList } from '../lib/api'
+  import EntryList from './EntryList.svelte'
+  import {
+    fetchEventForRegistration,
+    matchRegistrationFencer,
+    createRegistration,
+    updateRegistration,
+    fetchEntryList,
+  } from '../lib/api'
+  import { newEditToken } from '../lib/editToken'
   import { birthYearToVcat } from '../lib/birthYearEstimate'
   import { SPWS_PAYEE, SPWS_IBAN, WEAPON_PL } from '../lib/orgPayment'
   import type { RegistrationEventInfo, GenderType, WeaponType } from '../lib/types'
@@ -177,7 +204,6 @@
     payee = '',
     iban = '',
     onclose,
-    onviewlist,
   }: {
     eventCode?: string
     payee?: string
@@ -187,11 +213,22 @@
     // link through a view-switch callback instead of a page navigation.
     // Undefined on the standalone register.html page (nothing to close to).
     onclose?: () => void
-    onviewlist?: () => void
   } = $props()
 
-  type Step = 'loading' | 'not_found' | 'external' | 'expired' | 'closed' | 'identity' | 'rodo' | 'payment'
+  type Step = 'loading' | 'not_found' | 'external' | 'expired' | 'closed' | 'identity' | 'rodo' | 'payment' | 'list'
   let step = $state<Step>('loading')
+  // Where the roster was opened from. Not hardcoded to 'payment': the closed
+  // step carries the same affordance, and someone who arrived after the
+  // deadline never reached a payment screen — back must not invent one.
+  let listReturnStep = $state<Step>('payment')
+  // Edit handle for this row, held for as long as this component lives and no
+  // longer. Nothing is written to the device: localStorage bound the capability
+  // to one origin and one device, so a fencer who registered on a phone could
+  // not correct from a laptop. A returning fencer re-enters the tuple they
+  // declared, which upserts onto their row and mints a fresh handle.
+  let registrationId = $state<number | null>(null)
+  let editToken = $state<string | null>(null)
+  let isEditing = $state(false)
   let event = $state<RegistrationEventInfo | null>(null)
 
   let surname = $state('')
@@ -248,7 +285,6 @@
     if (vcat) parts.push(vcat)
     return parts.filter((p) => p !== '').join(' ')
   })
-  const entryListHref = $derived(`?event=${encodeURIComponent(eventCode)}&view=list`)
   const effectivePayee = $derived(payee || SPWS_PAYEE)
   const effectiveIban = $derived(iban || SPWS_IBAN)
 
@@ -323,6 +359,26 @@
   async function submitIdentity() {
     if (!canContinue) return
     submitError = false
+    // Editing goes through a different RPC. fn_create_registration dedupes an
+    // unmatched entrant BY the declared name and birth year, so re-submitting a
+    // corrected spelling there would insert a SECOND row instead of fixing the
+    // first. fn_update_registration writes by primary key, which is what makes
+    // the name correctable. Consent is not re-collected: it was given at
+    // submission and a typo fix is not a new consent event.
+    if (isEditing && registrationId != null && editToken) {
+      await saveEdit()
+      return
+    }
+    // Normalise the declared identity once, here, rather than at each consumer.
+    // canContinue already validates with .trim(), but the raw strings were what
+    // got submitted — two of the first fourteen live PROD entries were stored as
+    // "Gary " and "KUCIĘBA ". Trimming at this single funnel covers the match
+    // lookup, the duplicate check, the transfer note and the RPC payload alike.
+    // Not done in the input handler on purpose: that would stop the fencer from
+    // typing the space inside a compound name. trg_trim_registration_names
+    // closes the same gap in the database for callers that never see this form.
+    surname = surname.trim()
+    firstName = firstName.trim()
     // A miss is no longer a dead end: it means "not in tbl_fencer yet", which
     // is the normal state for a newcomer or for someone correcting a birth
     // year we only ever estimated. Both continue to RODO and are written with
@@ -362,6 +418,51 @@
     }
   }
 
+  // Return to the identity form to correct what was submitted. State is intact
+  // because nothing was unmounted, so the fields are already populated.
+  function editEntry() {
+    isEditing = true
+    step = 'identity'
+  }
+
+  // Opening the roster is a step change, not a navigation. It used to be an
+  // <a> to ?event=X&view=list, which made register.html mount spws-entry-list
+  // INSTEAD of spws-registration; the form ceased to exist and the transfer
+  // details — payee, IBAN, title, amount, all $derived from form state — were
+  // unrecoverable without registering again.
+  function openList() {
+    listReturnStep = step
+    step = 'list'
+  }
+
+  function backFromList() {
+    step = listReturnStep
+  }
+
+  async function saveEdit() {
+    if (submitting || registrationId == null || !editToken) return
+    submitting = true
+    submitError = false
+    try {
+      await updateRegistration({
+        idRegistration: registrationId,
+        editToken,
+        surname,
+        firstName,
+        gender: gender as GenderType,
+        birthYear: birthYear as number,
+        weapons,
+      })
+      step = 'payment'
+    } catch {
+      // The RPC raises on a closed window, on a stale token, and when the
+      // corrected identity collides with another entry at the same event.
+      submitError = true
+    } finally {
+      submitting = false
+    }
+  }
+
   async function backToIdentity() {
     submitError = false
     step = 'identity'
@@ -376,7 +477,8 @@
     submitting = true
     submitError = false
     try {
-      await createRegistration({
+      const token = editToken ?? newEditToken()
+      const id = await createRegistration({
         eventId: event.id_event,
         surname,
         firstName,
@@ -385,7 +487,10 @@
         weapons,
         fencerId,
         consentVersion: CONSENT_VERSION,
+        editToken: token,
       })
+      registrationId = id
+      editToken = token
       step = 'payment'
     } catch {
       // The RPC raises on a closed registration window (D10 guard), and the
@@ -736,14 +841,25 @@
     cursor: pointer;
     min-height: 36px;
   }
+  .reg-payment-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .reg-edit-notice {
+    color: #7fd8ff;
+    font-size: 0.85em;
+    margin: 0 0 12px;
+  }
   .reg-entry-list-link {
     display: inline-block;
     margin-top: 8px;
     color: #00d4ff;
     text-decoration: none;
     font-size: 0.9em;
-    /* button-variant reset (onviewlist/modal-embed) — visually identical to
-       the anchor used on the standalone page */
+    /* button reset — this was an <a> until the roster became an in-place step;
+       keeping the link's appearance so the affordance reads unchanged */
     background: none;
     border: none;
     font-family: inherit;

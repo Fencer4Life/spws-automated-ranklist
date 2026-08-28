@@ -1,9 +1,77 @@
 # ADR-079: Event Self-Registration & Identity Resolution
 
-**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but **no longer blocking registration** — see the 2026-08-17 amendment). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation. **Amended 2026-08-17:** unmatched fencers register with `id_fencer` NULL; `register.html` is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration `20260817000001`.
+**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but **no longer blocking registration** — see the 2026-08-17 amendment). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation. **Amended 2026-08-17:** unmatched fencers register with `id_fencer` NULL; `register.html` is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration `20260817000001`. **Amended 2026-08-28:** declared names are stored whitespace-normalised; the matched and unmatched branches absorb each other's twin; and a fencer may correct a submitted declaration through a new public edit path, `fn_update_registration`, authorised by a short-lived handle. Open items 2 (club) and 3 (post-deadline) remain open, joined by a rate limit for §4 defence (d).
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
 **Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §7 (decouples the entry-list gate from the registration cutoff).
+
+## Amendment (2026-08-28 — correcting a declaration; one row per entrant)
+
+Three defects found while PPW1-2026-2027 was live and taking real entries, and one new
+public path. §§1, 3, 5 (read-only invariant, BY reconciliation matrix, schema shape) still
+hold; §2's *write* semantics gain an edit path, and §4's threat assessment is confirmed
+rather than changed.
+
+### (a) Declared names are stored whitespace-normalised
+
+`tbl_fencer` has carried `trg_trim_fencer_names` since migration `20260503000004`.
+`tbl_registration` never got the equivalent, and the live form validated with
+`surname.trim()` while submitting the raw string — so two of the first fourteen PROD
+entries were stored as `"Gary "` and `"KUCIĘBA "`. Migration `20260828000001` adds
+`trg_trim_registration_names` and backfills. The form now normalises at its own boundary
+too, as `20260503000004` paired with the admin modal.
+
+The blast radius was narrower than first assumed and is recorded here so it is not
+re-derived: the FTL seed file was never affected, because
+`ftl_seed_export.to_canonical_name()` already strips on export, and dedupe was never
+affected, because its arbiter normalises with `upper(btrim(...))`. Only what we store and
+publish was wrong.
+
+### (b) One entrant holds one row per event, whichever branch writes it
+
+§5's `UNIQUE(id_event, id_fencer)` and the partial index added on 2026-08-17 arbitrate on
+**different** keys, and nothing spanned them — so one person could hold a matched *and* an
+unmatched row for the same event, both reaching the public roster and the organizer's seed
+file. Reachable in both directions, and by design rather than accident: an unmatched
+newcomer's `tbl_fencer` row is created while registration is still open, and the form
+deliberately treats a failed lookup as "no match" so a network blip never blocks an entry.
+
+Migration `20260828000002` makes each branch absorb the other's twin for the same declared
+identity before inserting. **Promotion is preferred over delete-and-insert** — `ts_created`
+and the consent stamp are the RODO evidence and consent was given at the first submission,
+so that row survives and merely gains its fencer link. Where a matched row already exists
+for that fencer, the redundant unmatched twin is removed instead. Both live environments
+were checked before shipping and held none.
+
+### (c) A fencer may correct a declaration they already submitted
+
+§2 gave `tbl_registration` a single public write path. That path dedupes an unmatched
+entrant **by the declared name and birth year**, so re-submitting a corrected spelling
+inserted a *second* row rather than fixing the first — demonstrated on LOCAL, where
+`KOWALKSI Adam` and `KOWALSKI Adam` ended up side by side. Adding a forgotten weapon always
+worked, because that leaves the arbiter untouched.
+
+Migration `20260828000003` adds `uuid_edit_token` and `fn_update_registration`, which
+updates **by primary key** and so can change the declared name and birth year. It enforces
+the same D10 window, never touches `id_fencer` (the link is re-derived at ingestion, §3),
+never restamps consent, and raises rather than merging when a correction collides with
+another entry at the same event. `id_registration` cannot authorise this on its own —
+`vw_registration_entry_list` publishes that column.
+
+**The handle is short-lived and deliberately not persisted.** It lives in the page's memory
+and is gone when the form unmounts; a returning fencer re-enters the tuple they declared,
+which upserts onto their row and mints a fresh handle. So re-submission **rotates** the
+handle, which is the mechanism rather than a side effect.
+
+The rejected alternative was persisting it in `localStorage`. That bought one property —
+only the row's first registrant could rename it — and cost a real one, because
+`localStorage` is per-origin and per-device: a fencer who registered on a phone could not
+correct from a laptop, and `register.html` on GitHub Pages and the CMS-embedded element
+cannot see each other's storage. The property it bought was also protecting a secret that
+is not secret: `fn_match_registration_fencer` is anon-callable and answers **per birth
+year, before any write**, so an exact birth year is recoverable in about ten silent probes
+(verified on LOCAL). §4's assessment is therefore unchanged — this widens no boundary that
+was closed — but its defence **(d)** is now a genuine gap, recorded below.
 
 ## Amendment (2026-08-17 — the unmatched fencer registers; register.html is PROD-only)
 
@@ -145,6 +213,34 @@ by registering once against the deployed URL and then querying **both** database
   the public roster — but the sentence is no longer exhaustive.
 - [ADR-016](016-supabase-auth-totp-mfa.md) — **clean.** Its email-confirmation setting governs
   admin accounts, not registration.
+
+4. **No rate limit anywhere, so §4's defence (d) does not exist.** §4 lists "the salted-hash
+   abuse log + rate limit" among the real defences against impersonation. Neither is built:
+   `txt_email_hash` is provisioned and always NULL (ADR-078 §1 records this), and there is no
+   throttling in any migration, RPC or edge function. This matters more than it did, because
+   `fn_match_registration_fencer` answers **per birth year before any write**, making an exact
+   birth year recoverable in roughly ten silent probes — so every argument in this ADR that
+   leans on the birth year being private is currently worth nothing. *Recommendation:* rate-limit
+   the match RPC, or stop it answering per-year. It is the one genuinely missing control, and it
+   is a precondition for the birth-year challenge in item 5.
+
+5. **The declared birth year is never challenged.** `canContinue` requires only a non-null
+   number — no bounds, and the computed V-category is display-only — so a mistyped year passes
+   straight through. Because the year is part of the unmatched dedupe arbiter (item 1), a typo
+   creates a **second** entry rather than editing the first, and both reach the roster and the
+   seed file. *Recommendation:* where a name matches a fencer whose stored year is **not**
+   `bool_birth_year_estimated`, challenge the mismatch — matching against every namesake, and
+   challenging rather than refusing, so the estimated-BY population this subsystem exists to
+   learn from is never turned away (the defect corrected on 2026-08-17). This is a data-quality
+   control, not a security one: see item 4 for why it cannot be the latter.
+
+6. **`fn_update_registration` leaves no record of what changed.** §4 accepts the residual
+   impersonation exposure on the grounds that it is "minimised, detectable, reversible". A
+   rename through the edit path is currently neither detectable nor reversible — the previous
+   value is simply gone. Revocation already works (admins hold `UPDATE` under a `FOR ALL`
+   policy, so regenerating `uuid_edit_token` makes any held handle inert), so only the record is
+   missing. *Recommendation:* write each edit to `tbl_audit_log`, which already carries
+   `jsonb_old_values`/`jsonb_new_values` and is written by several migrations.
 
 ## Amendment (2026-08-09 — the entry list outlives the registration window)
 

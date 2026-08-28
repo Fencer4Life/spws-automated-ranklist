@@ -4,7 +4,7 @@
       {#if view === 'list' && eventId != null}
         <EntryList eventId={eventId} {onclose} />
       {:else}
-        <RegistrationForm {eventCode} {payee} {iban} {onclose} {onviewlist} />
+        <RegistrationForm {eventCode} {payee} {iban} {onclose} />
       {/if}
     </div>
   </div>
@@ -18,13 +18,16 @@
     open = false,
     eventCode = '',
     eventId = null as number | null,
+    // Cold entry only — CalendarView.openEntryListModal opens the roster
+    // directly from a calendar card. The in-flow route no longer comes
+    // through here: RegistrationForm owns its own `list` step so the form
+    // is never unmounted and the payment details survive the round trip.
     view = 'form' as 'form' | 'list',
     // Empty means "use lib/orgPayment.ts" — CalendarView passes no payment
     // props at all, so this default is what the in-app modal actually shows.
     payee = '',
     iban = '',
     onclose,
-    onviewlist,
   }: {
     open?: boolean
     eventCode?: string
@@ -33,7 +36,6 @@
     payee?: string
     iban?: string
     onclose?: () => void
-    onviewlist?: () => void
   } = $props()
 </script>
 

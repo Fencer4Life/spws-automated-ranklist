@@ -9,9 +9,18 @@ vi.mock('../src/lib/api', () => ({
   fetchEventForRegistration: vi.fn(),
   matchRegistrationFencer: vi.fn(),
   createRegistration: vi.fn(),
+  updateRegistration: vi.fn(),
   fetchEntryList: vi.fn(),
 }))
-import { fetchEventForRegistration, matchRegistrationFencer, createRegistration, fetchEntryList } from '../src/lib/api'
+import {
+  fetchEventForRegistration,
+  matchRegistrationFencer,
+  createRegistration,
+  updateRegistration,
+  fetchEntryList,
+} from '../src/lib/api'
+vi.mock('../src/lib/editToken', () => ({ newEditToken: vi.fn() }))
+import { newEditToken } from '../src/lib/editToken'
 import RegistrationForm from '../src/components/RegistrationForm.svelte'
 import type { RegistrationEventInfo } from '../src/lib/types'
 
@@ -19,6 +28,8 @@ const mockFetchEvent = vi.mocked(fetchEventForRegistration)
 const mockMatch = vi.mocked(matchRegistrationFencer)
 const mockCreate = vi.mocked(createRegistration)
 const mockEntryList = vi.mocked(fetchEntryList)
+const mockUpdate = vi.mocked(updateRegistration)
+const mockNewToken = vi.mocked(newEditToken)
 
 const BASE_EVENT: RegistrationEventInfo = {
   id_event: 3,
@@ -41,6 +52,7 @@ beforeEach(() => {
   // Default: nobody already on the roster, so the soft duplicate guard stays
   // quiet unless a test opts into it.
   mockEntryList.mockResolvedValue([])
+  mockNewToken.mockReturnValue('tok-generated-0123456789abcdef')
   Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } })
 })
 
@@ -194,6 +206,30 @@ describe('RegistrationForm — routing after identity (P2.4, ADR-079 §2)', () =
     )
   })
 
+  it('trims padded names before the match lookup and the write', async () => {
+    // canContinue validated with .trim() but the RAW strings were submitted, so
+    // a trailing space typed by the fencer was persisted verbatim — two of the
+    // first fourteen live PROD entries were stored as "Gary " and "KUCIĘBA ".
+    // The database trigger trg_trim_registration_names covers callers that never
+    // touch this form; this pins the form boundary itself.
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(null)
+    mockCreate.mockResolvedValue(102)
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container, { surname: '  kowalski  ', firstName: '  Jan  ' })
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await waitFor(() => expect(mockMatch).toHaveBeenCalledWith('KOWALSKI', 'Jan', 1970))
+    await findByText(/RODO/)
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await waitFor(() =>
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ surname: 'KOWALSKI', firstName: 'Jan' }),
+      ),
+    )
+  })
+
   it('warns when someone with the same name is already on the entry list', async () => {
     mockFetchEvent.mockResolvedValue(BASE_EVENT)
     mockMatch.mockResolvedValue(null)
@@ -288,32 +324,98 @@ describe('RegistrationForm — RODO gate + payment (P2.5/P2.6)', () => {
     await findByText('120 PLN')
   })
 
-  it('the entry-list link on the payment screen points at ?event=<code>&view=list', async () => {
+  // The affordance no longer navigates anywhere. It used to be an <a> to
+  // ?event=X&view=list, which made register.html mount spws-entry-list INSTEAD
+  // of spws-registration — a full page load that destroyed the form and with
+  // it the only copy of the transfer data. register.html still honours that
+  // URL for cold visitors; the in-flow path just stopped using it.
+  it('the entry-list affordance is a button, not a navigation link', async () => {
     const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
     await toRodo(container, findByText)
     await fireEvent.click(container.querySelector('input[type="checkbox"].reg-rodo-checkbox') as HTMLInputElement)
     await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
     await findByText('PPW4-2025-2026 JAN KOWALSKI SZPADA V2')
-    const link = container.querySelector('a.reg-entry-list-link') as HTMLAnchorElement
-    expect(link.getAttribute('href')).toBe('?event=PPW4-2025-2026&view=list')
+    expect(container.querySelector('a.reg-entry-list-link')).toBeNull()
+    expect(container.querySelector('button.reg-entry-list-link')).not.toBeNull()
   })
 
-  // Modal-embed (calendar in-app modal) — the payment screen's entry-list
-  // affordance becomes a button calling onviewlist instead of navigating,
-  // when the form is hosted inside RegistrationModal rather than the
-  // standalone register.html page.
-  it('the entry-list affordance calls onviewlist instead of navigating when provided', async () => {
-    const onviewlist = vi.fn()
-    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026', onviewlist } })
+  // The regression this whole change exists for. Opening the roster used to
+  // unmount the form — a page load on register.html, an {:else} branch in
+  // RegistrationModal — and the payment details are $derived from form state,
+  // so they were unrecoverable without registering again.
+  it('opens the roster in place and comes back with the payment details intact', async () => {
+    mockEntryList.mockResolvedValue([
+      { id_registration: 7, id_event: 3, txt_surname: 'WHITLEY', txt_first_name: 'Gary', enum_gender: 'M', arr_weapons: ['EPEE'], enum_age_category: 'V3' },
+    ] as never)
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
     await toRodo(container, findByText)
     await fireEvent.click(container.querySelector('input[type="checkbox"].reg-rodo-checkbox') as HTMLInputElement)
     await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
     await findByText('PPW4-2025-2026 JAN KOWALSKI SZPADA V2')
-    expect(container.querySelector('a.reg-entry-list-link')).toBeNull()
-    const btn = container.querySelector('button.reg-entry-list-link') as HTMLButtonElement
-    expect(btn).not.toBeNull()
-    await fireEvent.click(btn)
-    expect(onviewlist).toHaveBeenCalled()
+
+    await fireEvent.click(container.querySelector('button.reg-entry-list-link') as HTMLButtonElement)
+    await findByText('WHITLEY Gary')
+
+    const back = container.querySelector('button.el-back') as HTMLButtonElement
+    expect(back).not.toBeNull()
+    await fireEvent.click(back)
+
+    // Not merely "the payment step is showing" — the derived transfer title and
+    // amount must still be populated. A back button that returned to a blank
+    // payment panel would satisfy a weaker assertion.
+    await findByText('PPW4-2025-2026 JAN KOWALSKI SZPADA V2')
+    await findByText('120 PLN')
+  })
+
+  it('the in-flow roster carries a close control even standalone, where no onclose is supplied', async () => {
+    // The × is the affordance people reach for in a card's corner. On the
+    // standalone page RegistrationForm receives no onclose (there is no parent
+    // to dismiss to), so the roster had a back button and no ×. Here it closes
+    // the list the same way back does — returning to the step it was opened
+    // from — rather than being absent.
+    mockEntryList.mockResolvedValue([
+      { id_registration: 7, id_event: 3, txt_surname: 'WHITLEY', txt_first_name: 'Gary', enum_gender: 'M', arr_weapons: ['EPEE'], enum_age_category: 'V3' },
+    ] as never)
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toRodo(container, findByText)
+    await fireEvent.click(container.querySelector('input[type="checkbox"].reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await findByText('PPW4-2025-2026 JAN KOWALSKI SZPADA V2')
+
+    await fireEvent.click(container.querySelector('button.reg-entry-list-link') as HTMLButtonElement)
+    await findByText('WHITLEY Gary')
+
+    const closeBtn = container.querySelector('button.el-close') as HTMLButtonElement
+    expect(closeBtn).not.toBeNull()
+    await fireEvent.click(closeBtn)
+
+    // Back on the payment step with the transfer details intact — closing the
+    // list must not discard what the fencer came back for.
+    await findByText('PPW4-2025-2026 JAN KOWALSKI SZPADA V2')
+    await findByText('120 PLN')
+  })
+
+  it('returns to the closed step, not payment, when the roster was opened from it', async () => {
+    mockFetchEvent.mockResolvedValue({
+      ...BASE_EVENT,
+      dt_registration_deadline: '2020-01-01',
+      dt_start: '2020-01-05',
+      dt_end: '2099-01-10',
+    })
+    mockEntryList.mockResolvedValue([
+      { id_registration: 7, id_event: 3, txt_surname: 'WHITLEY', txt_first_name: 'Gary', enum_gender: 'M', arr_weapons: ['EPEE'], enum_age_category: 'V3' },
+    ] as never)
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText(/Zapisy zamknięte/)
+
+    // The closed step styles the affordance as .reg-btn, not .reg-entry-list-link.
+    await fireEvent.click(container.querySelector('button.reg-btn') as HTMLButtonElement)
+    await findByText('WHITLEY Gary')
+    await fireEvent.click(container.querySelector('button.el-back') as HTMLButtonElement)
+
+    // Whoever arrives after the deadline never reached a payment screen, so
+    // back must not invent one.
+    await findByText(/Zapisy zamknięte/)
   })
 })
 
@@ -411,5 +513,99 @@ describe('RegistrationForm — modal-embed close affordance', () => {
     expect(closeBtn).not.toBeNull()
     await fireEvent.click(closeBtn)
     expect(onclose).toHaveBeenCalled()
+  })
+})
+
+// Edit capability (2026-08-28). The create path dedupes an unmatched entrant BY
+// the declared name and birth year, so re-submitting a corrected spelling
+// inserts a SECOND row rather than fixing the first — proven on LOCAL. Editing
+// therefore goes through a different RPC, authorised by a token the browser
+// generates and keeps, because id_registration is published by the entry list
+// and cannot authorise anything.
+describe('RegistrationForm — correcting a submitted declaration', () => {
+  async function toPayment(container: HTMLElement, findByText: (m: string | RegExp) => Promise<HTMLElement>) {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(null)
+    mockCreate.mockResolvedValue(101)
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container)
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await findByText(/RODO/)
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await findByText('PPW4-2025-2026 JAN KOWALSKI SZPADA V2')
+  }
+
+  it('mints a handle and sends it with the registration', async () => {
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ editToken: 'tok-generated-0123456789abcdef' }),
+    )
+  })
+
+  it('persists nothing — the handle lives only as long as the form does', async () => {
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+    // localStorage bound the capability to one origin and one device. A fencer
+    // returning later re-enters their declared tuple instead, which upserts onto
+    // their row and mints a fresh handle. Nothing may be written to the device.
+    const store = globalThis.localStorage as Storage | undefined
+    const wrote = store && typeof store.length === 'number' ? store.length : 0
+    expect(wrote).toBe(0)
+  })
+
+  it('offers an edit route from the payment step, prefilled with what was submitted', async () => {
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+
+    await fireEvent.click(container.querySelector('button.reg-edit') as HTMLButtonElement)
+    const surnameInput = container.querySelector('input[name="surname"]') as HTMLInputElement
+    expect(surnameInput).not.toBeNull()
+    expect(surnameInput.value).toBe('KOWALSKI')
+  })
+
+  it('saving a corrected surname calls updateRegistration, never createRegistration again', async () => {
+    mockUpdate.mockResolvedValue(101)
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+    expect(mockCreate).toHaveBeenCalledTimes(1)
+
+    await fireEvent.click(container.querySelector('button.reg-edit') as HTMLButtonElement)
+    const surnameInput = container.querySelector('input[name="surname"]') as HTMLInputElement
+    await fireEvent.input(surnameInput, { target: { value: 'kowalsky' } })
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+
+    await waitFor(() =>
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ idRegistration: 101, surname: 'KOWALSKY' }),
+      ),
+    )
+    // A second create would be the bug this whole change exists to prevent.
+    expect(mockCreate).toHaveBeenCalledTimes(1)
+  })
+
+  it('a fencer returning after the handle is gone re-enters the tuple and edits from there', async () => {
+    // No prefill and no restore: without persistence there is nothing on the
+    // device to restore from. Re-submitting the declared tuple upserts onto the
+    // same row and hands back a working handle, which is what makes the
+    // correction possible at all.
+    mockUpdate.mockResolvedValue(101)
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ editToken: 'tok-generated-0123456789abcdef' }),
+    )
+
+    await fireEvent.click(container.querySelector('button.reg-edit') as HTMLButtonElement)
+    await fireEvent.input(container.querySelector('input[name="surname"]') as HTMLInputElement, {
+      target: { value: 'poprawione' },
+    })
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await waitFor(() =>
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ editToken: 'tok-generated-0123456789abcdef', surname: 'POPRAWIONE' }),
+      ),
+    )
   })
 })

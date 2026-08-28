@@ -65,7 +65,9 @@ Blast radius on existing objects is **zero**: `ALTER DEFAULT PRIVILEGES` affects
 
 Nineteen functions remain `anon`-EXECUTEable, pinned by pgTAP 52.7 as a set **equality**. A deny-list was rejected: it would have caught none of these findings, because every offending object postdates any list that could have been written.
 
-The allowlist deliberately retains `fn_create_registration` and `fn_match_registration_fencer`. `register.html` is served to anonymous visitors and those two are the entire server surface of the ADR-079 / FR-122 self-registration flow; `fn_create_registration` is `SECURITY DEFINER` precisely so `anon` can register without holding INSERT on `tbl_registration`, asserted from the other side by pgTAP 49.13/49.14.
+The allowlist deliberately retains `fn_create_registration` and `fn_match_registration_fencer`. `register.html` is served to anonymous visitors and these are the entire server surface of the ADR-079 / FR-122 self-registration flow; `fn_create_registration` is `SECURITY DEFINER` precisely so `anon` can register without holding INSERT on `tbl_registration`, asserted from the other side by pgTAP 49.13/49.14.
+
+**Amended 2026-08-28:** that surface is now **three** functions. `fn_update_registration` (ADR-079 amendment 2026-08-28) is the edit half of the same public flow and is anon-callable for the same reason. It is not an unguarded write: every call must present the row's `uuid_edit_token`, which no public projection returns — `id_registration` cannot authorise it, because `vw_registration_entry_list` publishes that column. A read-back RPC drafted alongside it was **removed before shipping** once it had no caller, on this ADR's own principle: an anon-callable `SECURITY DEFINER` function with no caller is surface for nothing. Both allowlists were updated together — pgTAP 52.7 and `scripts/check-security-posture.sh`, which §*Consequences* already flags as duplicating it.
 
 ### 5. The dispatcher authenticates its caller and requires `aal2`
 

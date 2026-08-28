@@ -1,6 +1,6 @@
 # ADR-078: GDPR Data Handling & Data-Subject Rights
 
-**Status:** Proposed (consent capture — `ts_consent`/`txt_consent_version` stamped by `fn_create_registration` — and the RODO consent-gate step **implemented** 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) **Amended 2026-08-17:** §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected.
+**Status:** Proposed (consent capture — `ts_consent`/`txt_consent_version` stamped by `fn_create_registration` — and the RODO consent-gate step **implemented** 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) **Amended 2026-08-17:** §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected. **Amended 2026-08-28:** §1 gains the edit handle (not personal data); the Art. 16 rectification row now records self-service correction before the event, not only reconciliation at ingestion.
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-079, ADR-080
 
@@ -117,6 +117,7 @@ below.
 | Weapon + category selections | Register the fencer for the event | Contract 6(1)(b) | `tbl_registration` | Purged after results ingested + reconciled | **Collected** |
 | Email (only on non-exact match) | One-time verification (friction/accountability) | Legitimate interest 6(1)(f) | GoTrue auth (**not** `tbl_fencer`) | Transient; not persisted in domain tables | **Not collected** — Phases 4/5 unbuilt, and since 2026-08-17 a non-exact match registers without email (ADR-079 amendment a) |
 | Salted email **hash** + request timestamps | Abuse defence (repeat erase/register) | Legal claims 17(3)(e) | `tbl_registration` / abuse log | Minimal, bounded | **Not collected** — `txt_email_hash` exists and stays NULL |
+| Edit handle (random UUID) | Authorise a fencer to correct their own declaration (Art. 16) | Contract 6(1)(b) | `tbl_registration.uuid_edit_token` | Purged with the registration | **Not personal data** — random, unlinked to any person, never returned by a public projection |
 | Club (free text) | Intended for FTL seed files | — (transient) | **Never stored** | n/a | **Collected and immediately discarded** — the form field is never sent to the server, there is no `txt_club` column, and `ftl_seed_export.py` writes `"Club": ""`. Storing it is ADR-079 open item 2 and would require a consent-text change |
 
 Birth **date** is not collected (year-only suffices for the age category); full
@@ -139,7 +140,7 @@ free of contact PII (data protection by design, Art. 25).
 |---|---|---|
 | Information / transparency | 13–14 | Privacy notice shown at collection (form Step 1 link) + acceptance gate before payment |
 | Access | 15 | Self-service "Sprawdź zgłoszenie" (no login) + admin export |
-| Rectification | 16 | **The birth-year reconciliation flow *is* rectification** (ADR-079), applied at ingestion |
+| Rectification | 16 | **The birth-year reconciliation flow *is* rectification** (ADR-079), applied at ingestion. **Amended 2026-08-28:** also self-service and immediate — a fencer may correct their own declared name, gender, birth year and weapons before the event through `fn_update_registration`, so rectification no longer waits for results ingestion |
 | Erasure | 17 | Anonymise-and-keep (see §4) |
 | Restriction | 18 | Admin flag suspends processing pending dispute |
 | Portability | 20 | Registration record exportable (declared data) |

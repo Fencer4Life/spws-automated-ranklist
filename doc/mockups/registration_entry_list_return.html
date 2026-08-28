@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registration Mockup — Return from the Entry List</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#1a1a2e; color:#e0e0e0; padding:24px; line-height:1.5; }
+  h1 { text-align:center; color:#00d4ff; font-size:1.5em; margin-bottom:6px; }
+  .subtitle { text-align:center; color:#888; font-size:0.9em; max-width:720px; margin:0 auto 20px; }
+
+  .switcher { max-width:760px; margin:0 auto 22px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+  .switcher button { background:#0d1b2a; border:1px solid #1a4a8a; color:#9fc4dc; border-radius:999px; padding:7px 16px; cursor:pointer; font-size:0.84em; font-family:inherit; }
+  .switcher button.on { background:#00d4ff; color:#0d1b2a; border-color:#00d4ff; font-weight:600; }
+
+  .stage { max-width:760px; margin:0 auto; }
+  .card { background:#16213e; border:1px solid #0f3460; border-radius:12px; padding:22px; }
+
+  /* the new affordance */
+  .backrow { margin:-4px 0 14px; }
+  .back { display:inline-flex; align-items:center; gap:7px; background:transparent; border:1px solid #1a4a8a; color:#7fd8ff; border-radius:8px; padding:6px 13px; cursor:pointer; font-size:0.85em; font-family:inherit; }
+  .back:hover { border-color:#00d4ff; color:#00d4ff; background:rgba(0,212,255,0.06); }
+  .back .ar { font-size:1.05em; line-height:1; }
+  .isnew { position:relative; }
+  .isnew::after { content:"NEW"; position:absolute; top:-9px; right:-13px; font-size:0.56em; font-weight:700; letter-spacing:0.5px; background:#4ade80; color:#0d1b2a; padding:1px 5px; border-radius:4px; }
+
+  .top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:16px; }
+  .evt { font-weight:600; color:#fff; font-size:1.05em; }
+  .ok { color:#4ade80; font-size:0.82em; margin-top:3px; }
+  .status { display:inline-block; margin-top:5px; font-size:0.75em; padding:2px 10px; border-radius:12px; background:#0a3622; color:#4ade80; }
+  .lang { display:flex; gap:6px; }
+  .lang button { background:#0d1b2a; border:1px solid #1a4a8a; color:#e0e0e0; border-radius:8px; padding:4px 10px; cursor:pointer; font-size:0.9em; }
+  .lang button.on { background:#00d4ff; color:#0d1b2a; border-color:#00d4ff; font-weight:600; }
+  .chip { display:inline-flex; align-items:center; gap:6px; font-size:0.82em; padding:3px 10px; border-radius:999px; background:rgba(0,212,255,0.12); color:#7fd8ff; }
+
+  .panel { background:#0d1b2a; border:1px solid #1a4a8a; border-radius:10px; padding:6px 14px 14px; }
+  .phead { display:flex; justify-content:space-between; align-items:center; padding:10px 0 4px; }
+  .prow { display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid #1a2c4a; }
+  .pk { flex:none; width:100px; color:#7fbadc; font-size:0.8em; }
+  .pv { flex:1; font-family:'SF Mono',Menlo,Consolas,monospace; font-size:0.85em; word-break:break-all; color:#e6edf5; }
+  .cp { flex:none; display:inline-flex; align-items:center; gap:5px; font-size:0.78em; padding:5px 10px; border:1px solid #1a4a8a; border-radius:8px; background:#16213e; color:#9fc4dc; cursor:pointer; font-family:inherit; }
+  .cp:hover { border-color:#00d4ff; color:#00d4ff; }
+  .cp.done { color:#4ade80; border-color:#2f7d4f; }
+  .muted { color:#8894a8; font-size:0.78em; display:flex; gap:6px; margin-top:12px; }
+
+  .listlink { display:inline-flex; align-items:center; gap:7px; margin-top:16px; background:transparent; border:none; color:#7fd8ff; cursor:pointer; font-size:0.88em; font-family:inherit; padding:0; text-decoration:underline; text-underline-offset:3px; }
+  .listlink:hover { color:#00d4ff; }
+
+  .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px; }
+  .metric { background:#0d1b2a; border-radius:8px; padding:9px 12px; }
+  .metric .k { font-size:0.72em; color:#7fbadc; }
+  .metric .v { font-size:1.3em; font-weight:600; color:#fff; }
+  .filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .filters input, .filters select { background:#0d1b2a; border:1px solid #1a4a8a; color:#e0e0e0; padding:7px 10px; border-radius:8px; font-size:0.86em; font-family:inherit; }
+  .filters input { flex:1; min-width:150px; }
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; font-size:0.74em; color:#7fbadc; text-transform:uppercase; letter-spacing:0.5px; padding:8px; border-bottom:1px solid #1a4a8a; font-weight:600; }
+  td { padding:9px 8px; font-size:0.88em; border-bottom:1px solid #16273f; }
+  tr:hover td { background:#182844; }
+  .cat { font-size:0.78em; padding:2px 9px; border-radius:999px; background:rgba(0,212,255,0.12); color:#7fd8ff; }
+  .wpn { display:inline-block; width:22px; text-align:center; font-size:0.72em; padding:2px 0; border-radius:6px; margin-right:3px; font-weight:600; }
+  .w-E { background:rgba(96,196,89,0.18); color:#9fe08c; }
+  .w-F { background:rgba(0,212,255,0.16); color:#7fd8ff; }
+  .w-S { background:rgba(240,159,39,0.18); color:#f0b967; }
+
+  .note { max-width:760px; margin:18px auto 0; border-radius:10px; padding:13px 16px; font-size:0.85em; }
+  .note.good { background:rgba(74,222,128,0.08); border:1px solid #2f7d4f; color:#b7e8c8; }
+  .note.bad { background:rgba(248,113,113,0.08); border:1px solid #7d3a34; color:#f0bdb7; }
+  .note b { color:#fff; }
+  .trace { max-width:760px; margin:14px auto 0; font-size:0.78em; color:#8894a8; font-family:'SF Mono',Menlo,Consolas,monospace; background:#0d1b2a; border:1px solid #16273f; border-radius:8px; padding:10px 14px; }
+  .trace .hit { color:#4ade80; }
+</style>
+</head>
+<body>
+
+<h1>Powrót z listy zgłoszonych</h1>
+<p class="subtitle">Rekomendacja: lista otwiera się <b>w miejscu</b>, formularz nie jest odmontowywany, a przycisk „← Dane do przelewu” wraca do niezmienionego ekranu płatności. Kliknij — to działający obieg, nie zrzut ekranu.</p>
+
+<div class="switcher">
+  <button id="tabFlow" class="on">Z formularza (po rejestracji)</button>
+  <button id="tabCold">Zimny link &amp;view=list</button>
+</div>
+
+<div class="stage">
+
+  <!-- ============ PAYMENT ============ -->
+  <div class="card" id="viewPayment">
+    <div class="top">
+      <div>
+        <div class="evt">I Puchar Polski Weteranów — 2026/2027</div>
+        <div class="ok">✓ Zgłoszenie potwierdzone</div>
+      </div>
+      <div class="lang"><button class="on">🇵🇱 PL</button><button>🇬🇧 EN</button></div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      <span class="chip">Szpada · V2</span>
+      <span class="chip">Szabla · V2</span>
+    </div>
+
+    <div class="panel">
+      <div class="phead">
+        <span style="font-weight:600;font-size:0.92em;color:#fff">Dane do przelewu</span>
+        <button class="cp" data-copy="all"><span class="ic">⧉</span> <span class="lab">Kopiuj wszystko</span></button>
+      </div>
+      <div class="prow"><span class="pk">Odbiorca</span><span class="pv">Stowarzyszenie Polskich Weteranów Szermierki</span><button class="cp" data-copy="x"><span class="ic">⧉</span></button></div>
+      <div class="prow"><span class="pk">IBAN</span><span class="pv">PL00 0000 0000 0000 0000 0000 0000</span><button class="cp" data-copy="x"><span class="ic">⧉</span></button></div>
+      <div class="prow"><span class="pk">Tytuł</span><span class="pv">PPW1-2026-2027 JAN KOWALSKI SZPADA+SZABLA V2</span><button class="cp" data-copy="x"><span class="ic">⧉</span></button></div>
+      <div class="prow"><span class="pk">Kwota</span><span class="pv" style="font-weight:600;color:#fff">200 PLN</span><button class="cp" data-copy="x"><span class="ic">⧉</span></button></div>
+    </div>
+
+    <p class="muted"><span>🕓</span><span>Opłać do 20.09.2026.</span></p>
+
+    <button class="listlink" id="goList">Lista zgłoszonych →</button>
+  </div>
+
+  <!-- ============ ENTRY LIST ============ -->
+  <div class="card" id="viewList" style="display:none">
+    <div class="backrow" id="backRow">
+      <button class="back isnew" id="goBack"><span class="ar">←</span> Dane do przelewu</button>
+    </div>
+
+    <div class="top">
+      <div>
+        <div class="evt">I Puchar Polski Weteranów — 2026/2027</div>
+        <span class="status">● Zapisy otwarte · do 20.09.2026</span>
+      </div>
+      <div class="lang"><button class="on">🇵🇱 PL</button><button>🇬🇧 EN</button></div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="k">Zgłoszonych</div><div class="v">14</div></div>
+      <div class="metric"><div class="k">Szpada</div><div class="v">9</div></div>
+      <div class="metric"><div class="k">Floret</div><div class="v">3</div></div>
+      <div class="metric"><div class="k">Szabla</div><div class="v">5</div></div>
+    </div>
+
+    <div class="filters">
+      <input placeholder="Szukaj nazwiska…">
+      <select><option>Broń --</option></select>
+      <select><option>Kat. --</option></select>
+      <select><option>Płeć --</option></select>
+    </div>
+
+    <table>
+      <thead><tr><th>Zawodnik</th><th>Kat.</th><th>Broń</th></tr></thead>
+      <tbody>
+        <tr><td>KOWALSKI Jan</td><td><span class="cat">V2</span></td><td><span class="wpn w-E">E</span><span class="wpn w-S">S</span></td></tr>
+        <tr><td>WHITLEY Gary</td><td><span class="cat">V3</span></td><td><span class="wpn w-E">E</span></td></tr>
+        <tr><td>KUCIĘBA Piotr</td><td><span class="cat">V1</span></td><td><span class="wpn w-F">F</span><span class="wpn w-S">S</span></td></tr>
+        <tr><td>WIŚNIEWSKA Anna</td><td><span class="cat">V2</span></td><td><span class="wpn w-F">F</span></td></tr>
+      </tbody>
+    </table>
+
+    <p class="muted"><span>🔒</span><span>Bez roku urodzenia i bez klubu — minimalizacja RODO.</span></p>
+  </div>
+
+</div>
+
+<div class="note good" id="noteFlow">
+  <b>Co się zmienia.</b> Dziś ten link to pełne przeładowanie strony — <code>register.html</code> montuje <code>spws-entry-list</code> <b>zamiast</b> <code>spws-registration</code>, więc formularz przestaje istnieć i danych do przelewu nie da się odzyskać bez ponownej rejestracji. Po zmianie <code>RegistrationForm</code> ma krok <code>list</code> i nic się nie odmontowuje: IBAN, tytuł i kwota wracają dokładnie takie same.
+</div>
+
+<div class="note bad" id="noteCold" style="display:none">
+  <b>Zimne wejście — bez przycisku powrotu.</b> Ktoś, kto otworzył udostępniony link <code>?view=list</code> albo listę wprost z kalendarza, nie ma dokąd wracać — nie przeszedł przez formularz. Przycisk pojawia się tylko wtedy, gdy przekazano <code>onback</code>, dokładnie tak jak istniejące <code>onclose</code> steruje krzyżykiem. Udostępniany link działa bez zmian.
+</div>
+
+<div class="trace" id="trace">stan formularza: <span class="hit">zachowany</span> · krok: payment · odmontowań: 0</div>
+
+<script>
+var step='payment', unmounts=0, mode='flow';
+function render(){
+  document.getElementById('viewPayment').style.display = (step==='payment'?'block':'none');
+  document.getElementById('viewList').style.display    = (step==='list'?'block':'none');
+  document.getElementById('backRow').style.display     = (mode==='flow'?'block':'none');
+  document.getElementById('noteFlow').style.display    = (mode==='flow'?'block':'none');
+  document.getElementById('noteCold').style.display    = (mode==='flow'?'none':'block');
+  document.getElementById('trace').innerHTML =
+    'stan formularza: <span class="hit">zachowany</span> · krok: '+step+' · odmontowań: '+unmounts;
+}
+document.getElementById('goList').onclick=function(){ step='list'; render(); };
+document.getElementById('goBack').onclick=function(){ step='payment'; render(); };
+document.getElementById('tabFlow').onclick=function(){
+  mode='flow'; step='payment';
+  this.classList.add('on'); document.getElementById('tabCold').classList.remove('on'); render();
+};
+document.getElementById('tabCold').onclick=function(){
+  mode='cold'; step='list';
+  this.classList.add('on'); document.getElementById('tabFlow').classList.remove('on'); render();
+};
+document.querySelectorAll('.cp').forEach(function(b){
+  var ic=b.querySelector('.ic'), lab=b.querySelector('.lab');
+  b.onclick=function(){
+    b.classList.add('done'); if(ic) ic.textContent='✓'; if(lab) lab.textContent='Skopiowano';
+    setTimeout(function(){ b.classList.remove('done'); if(ic) ic.textContent='⧉'; if(lab) lab.textContent='Kopiuj wszystko'; },1300);
+  };
+});
+render();
+</script>
+</body>
+</html>
