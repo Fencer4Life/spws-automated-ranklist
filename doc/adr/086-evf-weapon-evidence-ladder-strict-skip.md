@@ -126,6 +126,20 @@ The match is **identity first, code only as fallback** for rows that have no cal
 
 **Known limitation, not fixed here.** The mirror does not touch tournaments — they are owned by `promote_event` — so a renamed PROD event temporarily carries child tournament codes built from its previous code, until its results are promoted.
 
+### 4c · PROD receives every event-level field, not only the ones it was created with
+
+An audit of `tbl_event`'s 41 columns against `fn_mirror_events_to_prod` found sixteen that never reached PROD on update. Three were CREATEd and then silently frozen — `txt_venue_address`, `id_prior_event`, `enum_status` — and five were carried by neither branch: `num_entry_fee_2w`, `num_entry_fee_3w`, `url_entry_list`, `txt_organizer_email`, `bool_use_spws_registration`.
+
+The visible symptom was `PPW1-2026-2027` holding `ITAKA ARENA, ul. Olejnika1, Opole` on CERT and `NULL` on PROD, reported as an unsynced divergence in every daily reconcile log; `num_entry_fee_2w` appeared there as an "UNMAPPED new column".
+
+Each field follows the policy of its siblings: `txt_venue_address` and `id_prior_event` overwrite when CERT states a value, as `txt_location` does; the fee tiers, entry list and organizer contact are fill-blank, as `num_entry_fee` and the `url_*` fields are, so an admin edit made on PROD stands; `bool_use_spws_registration` overwrites, being configuration CERT owns.
+
+**Three things stay excluded, because pushing CERT's value would destroy or falsify a PROD-owned fact:**
+
+- `enum_status` — `promote_event` advances it on PROD (`PLANNED → IN_PROGRESS → COMPLETED`, [promote.py:292](../../python/pipeline/promote.py)), so syncing CERT's value could regress a scored event.
+- `ts_ftl_sent` — stamped per environment by `ftl_feed_seed_send.py` (`--target cert|prod`); overwriting would falsify the record of a seed actually sent from PROD.
+- The ingestion provenance block (`txt_source_status`, `enum_parser_kind`, `dt_last_scraped`, `txt_source_url_used`, `txt_parity_notes`, `json_ingest_sources`, `json_source_overrides`) — CERT-side scrape diagnostics describing how CERT obtained the row, not facts about the event.
+
 ### 5 · A calendar failure no longer blocks results ingestion
 
 Calendar sync enters *future* events into the calendar. Results sync is the last-resort path for attaching results to events that have already happened; the normal path is manual ingestion from the admin UI, and this pass scrapes only EVF-organised results.
@@ -154,7 +168,6 @@ The two share no data dependency, so `sync_results` now runs even when `sync_cal
 ## Defects found and deliberately not fixed
 
 - **`arr_weapons` is untrustworthy system-wide.** 60 COMPLETED events claim all three weapons because of the column default, including epee-only and sabre-only events. Anything built on `arr_weapons` is building on sand. Fixing it (backfill from code suffixes, drop the default, or retire the column) needs its own decision and is out of scope here.
-- **`txt_venue_address` never propagates CERT→PROD on update.** It is present in the CREATE branch of `fn_mirror_events_to_prod` but absent from the UPDATE branch, so an existing PROD row can never receive it. Live evidence: `PPW1-2026-2027` carries `ITAKA ARENA, ul. Olejnika1, Opole` on CERT and `NULL` on PROD, reported as an unsynced divergence in every daily reconcile log. Belongs to ADR-081.
 - **Tampere's `dt_end` is wrong on the list page** (23 Jan; the detail page says 23–24 Jan) — the same stub-post shape that caused the weapons gap.
 - **`supabase/tests/19_phase3_wizard.sql` plans 25 assertions but runs 5.** Pre-existing and unrelated: verified to fail identically with this ADR's trigger dropped.
 

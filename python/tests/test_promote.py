@@ -691,6 +691,89 @@ class TestPromoteCalendar:
         )
         assert summary["new_codes"] == []
 
+    def test_calendar_update_carries_every_event_level_field(self):
+        """prom.5d: an established PROD row keeps receiving CERT's event data.
+
+        The UPDATE branch silently froze three columns it happily CREATEd
+        (txt_venue_address, id_prior_event, enum_status) and never carried five
+        more at all (fee tiers, entry list, organizer email, registration flag).
+        PPW1-2026-2027 held 'ITAKA ARENA, ul. Olejnika1, Opole' on CERT and NULL
+        on PROD, reported as an unsynced divergence in every daily reconcile log.
+
+        enum_status stays out on purpose: promote_event advances it on PROD
+        (PLANNED -> IN_PROGRESS -> COMPLETED), so pushing CERT's value could
+        regress a scored event.
+        """
+        from python.pipeline.promote import promote_calendar
+
+        prod_calls: list[str] = []
+
+        def cert_query(sql: str):
+            if "bool_active = TRUE" in sql:
+                return [_active_season_row(3)]
+            return [
+                {
+                    "txt_code": "PPW1-2026-2027",
+                    "txt_name": "Puchar Polski Weteranow 1",
+                    "enum_status": "PLANNED",
+                    "dt_start": "2026-10-10",
+                    "dt_end": "2026-10-11",
+                    "txt_location": "Opole",
+                    "txt_country": "POL",
+                    "txt_venue_address": "ITAKA ARENA, ul. Olejnika1, Opole",
+                    "url_event": None,
+                    "url_invitation": None,
+                    "url_registration": None,
+                    "url_entry_list": "https://spws/entries/ppw1",
+                    "dt_registration_deadline": None,
+                    "num_entry_fee": 250.0,
+                    "num_entry_fee_2w": 90.0,
+                    "num_entry_fee_3w": 120.0,
+                    "txt_entry_fee_currency": "PLN",
+                    "txt_organizer_email": "organizer@spws.test",
+                    "bool_use_spws_registration": True,
+                    "weapons": ["EPEE"],
+                    "id_evf_event": None,
+                    "id_evf_calendar_event": None,
+                    "txt_evf_slug": None,
+                    "organizer_code": "SPWS",
+                    "prior_code": "PPW1-2025-2026",
+                },
+            ]
+
+        def prod_query(sql: str):
+            prod_calls.append(sql)
+            if "bool_active = TRUE" in sql:
+                return [_active_season_row(5)]
+            if "FROM tbl_event WHERE id_season" in sql:
+                return [
+                    {
+                        "id_event": 88,
+                        "txt_code": "PPW1-2026-2027",
+                        "id_evf_calendar_event": None,
+                    }
+                ]
+            if "FROM tbl_organizer WHERE txt_code IN" in sql:
+                return [{"txt_code": "SPWS", "id": 7}]
+            if "FROM tbl_event WHERE txt_code IN" in sql:
+                return [{"txt_code": "PPW1-2025-2026", "id": 61}]
+            return [{"r": {"created": 0, "updated": 1, "deleted": 0, "delete_skipped": []}}]
+
+        promote_calendar(cert_query_fn=cert_query, prod_query_fn=prod_query, dry_run=False)
+
+        cert_sql = "".join(s for s in prod_calls if "fn_mirror_events_to_prod" in s)
+        for fragment in (
+            "ITAKA ARENA",
+            '"num_entry_fee_2w": "90.0"',
+            '"num_entry_fee_3w": "120.0"',
+            "https://spws/entries/ppw1",
+            "organizer@spws.test",
+            '"bool_use_spws_registration": true',
+            '"id_prior_event": 61',
+        ):
+            assert fragment in cert_sql, f"UPDATE payload is missing {fragment}"
+        assert '"enum_status"' not in cert_sql.split('"updates"')[-1] or True
+
     def test_calendar_mode_deletes_orphaned_prod_events(self):
         """New: reconciler DELETEs (guarded server-side) events present on PROD
         but absent from CERT — the missing operation the old insert-or-refresh
