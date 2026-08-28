@@ -1745,9 +1745,7 @@ class TestCancelledEventRenumbering:
         )
 
         with pytest.raises(CalendarIntegrityError, match="must retain PEW1"):
-            plan_calendar_codes(
-                self._events(), self._existing(num_results=7), "SPWS-2026-2027"
-            )
+            plan_calendar_codes(self._events(), self._existing(num_results=7), "SPWS-2026-2027")
 
     def test_past_event_still_refuses_the_shift(self):
         """evf.19: 'any FUTURE event' -- a past one is never silently renamed."""
@@ -1761,9 +1759,7 @@ class TestCancelledEventRenumbering:
         events[0]["dt_start"] = "2019-01-23"
 
         with pytest.raises(CalendarIntegrityError, match="must retain PEW1"):
-            plan_calendar_codes(
-                events, self._existing(dt_start=self.PAST), "SPWS-2026-2027"
-            )
+            plan_calendar_codes(events, self._existing(dt_start=self.PAST), "SPWS-2026-2027")
 
     def test_unknown_anchoring_refuses_the_shift(self):
         """evf.19: a roster row without the counts cannot prove it is safe."""
