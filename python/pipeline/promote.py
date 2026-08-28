@@ -387,6 +387,9 @@ def _build_update_payload(prod_id_event: int, evt: dict, id_organizer: int | Non
     """
     return {
         "id_event": prod_id_event,
+        # txt_code is part of the UPDATE because a mid-season insertion renumbers
+        # events: the row is identified by id_event here, and its code follows.
+        "txt_code": evt.get("txt_code") or "",
         "txt_name": evt.get("txt_name") or "",
         "dt_start": evt.get("dt_start") or "",
         "dt_end": evt.get("dt_end") or evt.get("dt_start") or "",
@@ -499,10 +502,28 @@ def promote_calendar(
     # Read the full promotable event set on both sides for the active season.
     cert_events = _read_cert_promotable_events(cert_query_fn, cert_season["id_season"])
     prod_existing = prod_query_fn(
-        f"SELECT id_event, txt_code FROM tbl_event WHERE id_season = {prod_season['id_season']}"
+        f"SELECT id_event, txt_code, id_evf_calendar_event FROM tbl_event "
+        f"WHERE id_season = {prod_season['id_season']}"
     )
     prod_by_code = {row["txt_code"]: row["id_event"] for row in prod_existing}
+    # Durable calendar identity, not just the code. A mid-season EVF insertion
+    # renumbers every later event, so the SAME event reaches PROD under a new
+    # txt_code -- and keyed on code alone that reads as "delete the old, create
+    # the new", whose create then collides with the row PROD still holds
+    # (idx_tbl_event_evf_slug, observed live 2026-08-28 run 33191199882).
+    # ADR-043: the durable identity carries across to PROD, so a code change on
+    # a matched row is a rename, applied as an UPDATE.
+    prod_by_calendar_id = {
+        int(row["id_evf_calendar_event"]): row["id_event"]
+        for row in prod_existing
+        if row.get("id_evf_calendar_event") is not None
+    }
     cert_codes = {evt["txt_code"] for evt in cert_events}
+    cert_calendar_ids = {
+        int(evt["id_evf_calendar_event"])
+        for evt in cert_events
+        if evt.get("id_evf_calendar_event") is not None
+    }
 
     # Resolve organizer + prior-event codes to PROD ids in bulk (by code,
     # never a raw cross-env id — reuses the same helper promote_season.py
@@ -521,15 +542,28 @@ def promote_calendar(
         prior_code: str | None = evt.get("prior_code")
         id_organizer = org_map.get(org_code) if org_code else None
         id_prior_event = prior_map.get(prior_code) if prior_code else None
-        if code in prod_by_code:
-            updates.append(_build_update_payload(prod_by_code[code], evt, id_organizer))
+        calendar_id = evt.get("id_evf_calendar_event")
+        prod_id = prod_by_code.get(code)
+        if prod_id is None and calendar_id is not None:
+            # Same event, new code: matched on identity rather than on the code.
+            prod_id = prod_by_calendar_id.get(int(calendar_id))
+        if prod_id is not None:
+            updates.append(_build_update_payload(prod_id, evt, id_organizer))
         else:
             creates.append(
                 _build_create_payload(evt, prod_season["id_season"], id_organizer, id_prior_event)
             )
 
+    # A PROD row is orphaned only when neither its code NOR its durable calendar
+    # identity appears in CERT. Without the identity arm, every renamed event
+    # would be proposed for deletion the moment its code changed.
+    matched_prod_ids = {
+        prod_by_calendar_id[cid] for cid in cert_calendar_ids if cid in prod_by_calendar_id
+    }
     deletes: list[int] = [
-        prod_id for code, prod_id in prod_by_code.items() if code not in cert_codes
+        prod_id
+        for code, prod_id in prod_by_code.items()
+        if code not in cert_codes and prod_id not in matched_prod_ids
     ]
 
     summary = {
