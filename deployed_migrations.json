@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-08-28T13:12:49Z",
-    "last_sha": "a7b7ca9bdcc24e20c24f77588b8acc97334050f1",
+    "last_updated": "2026-08-28T16:08:14Z",
+    "last_sha": "b8a6329bd2428b013f36549ae05aa4a80cdbe248",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -144,9 +144,11 @@
       "20260817000001_registration_unmatched_dedupe.sql",
       "20260828000001_registration_trim_trigger.sql",
       "20260828000002_registration_absorb_identity_twin.sql",
-      "20260828000003_registration_edit_handle.sql"
+      "20260828000003_registration_edit_handle.sql",
+      "20260828000004_evf_event_weapons_lifecycle_gate.sql",
+      "20260828000005_evf_cancellation_sequence_shift.sql"
     ],
-    "schema_fingerprint": "153c1bff3814891b533d80296a199086"
+    "schema_fingerprint": "c16b00505fd0195c0a68339d787c1ba0"
   },
   "prod": {
     "last_updated": "2026-08-28T13:13:38Z",
