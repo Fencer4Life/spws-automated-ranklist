@@ -154,8 +154,8 @@
     "schema_fingerprint": "494377dc99ef7f13739cb09e66cd9cb6"
   },
   "prod": {
-    "last_updated": "2026-08-28T16:41:44Z",
-    "last_sha": "63f48b83273e4efdfdc429cb33cda55fb5c990bc",
+    "last_updated": "2026-08-28T16:55:32Z",
+    "last_sha": "aea49191e7ae7b135c6b4b034dd25cdde3ddf6e3",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -302,8 +302,9 @@
       "20260828000004_evf_event_weapons_lifecycle_gate.sql",
       "20260828000005_evf_cancellation_sequence_shift.sql",
       "20260828000006_evf_reflow_occupied_code.sql",
-      "20260828000007_evf_reflow_preserve_prior_number.sql"
+      "20260828000007_evf_reflow_preserve_prior_number.sql",
+      "20260828000008_prod_mirror_rename.sql"
     ],
-    "schema_fingerprint": "ea211f2bcf2dfb7506c675d9866e0a72"
+    "schema_fingerprint": "494377dc99ef7f13739cb09e66cd9cb6"
   }
 }
