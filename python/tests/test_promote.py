@@ -613,6 +613,84 @@ class TestPromoteCalendar:
         assert summary["deleted_codes"] == [], "the old code must not be deleted"
         assert summary["updated_codes"] == [77], "matched by calendar identity, updated in place"
 
+    def test_calendar_identity_outranks_a_code_another_event_still_holds(self):
+        """prom.5c: mid-reflow, a code on PROD belongs to a DIFFERENT event.
+
+        After renumbering, CERT's Dublin carries PEW16efs -- the code PROD still
+        has on Toronto. Matching on the code first writes Dublin's fields, slug
+        included, onto Toronto's row:
+
+            duplicate key value violates unique constraint idx_tbl_event_evf_slug
+            Key (id_season, txt_evf_slug)=(4, evf-circuit-dublin-irl) exists
+
+        Observed live 2026-08-28 (run 33192281240). The durable calendar
+        identity outranks the code whenever an event has one.
+        """
+        from python.pipeline.promote import promote_calendar
+
+        def cert_query(sql: str):
+            if "bool_active = TRUE" in sql:
+                return [_active_season_row(3)]
+            return [
+                {
+                    "txt_code": "PEW16efs-2026-2027",  # PROD still has this on Toronto
+                    "txt_name": "EVF Circuit - Dublin (IRL)",
+                    "enum_status": "PLANNED",
+                    "dt_start": "2027-05-29",
+                    "dt_end": "2027-05-29",
+                    "txt_location": "Dublin",
+                    "txt_country": "IRL",
+                    "txt_venue_address": "",
+                    "url_event": None,
+                    "url_invitation": None,
+                    "url_registration": None,
+                    "dt_registration_deadline": None,
+                    "num_entry_fee": None,
+                    "txt_entry_fee_currency": "EUR",
+                    "weapons": ["EPEE", "FOIL", "SABRE"],
+                    "id_evf_event": None,
+                    "id_evf_calendar_event": 4594,
+                    "txt_evf_slug": "evf-circuit-dublin-irl",
+                    "organizer_code": "EVF",
+                    "prior_code": None,
+                },
+            ]
+
+        def prod_query(sql: str):
+            if "bool_active = TRUE" in sql:
+                return [_active_season_row(5)]
+            if "FROM tbl_event WHERE id_season" in sql:
+                return [
+                    # Dublin, still on its previous code
+                    {
+                        "id_event": 50,
+                        "txt_code": "PEW15efs-2026-2027",
+                        "id_evf_calendar_event": 4594,
+                    },
+                    # Toronto, currently holding the code Dublin now wants
+                    {
+                        "id_event": 51,
+                        "txt_code": "PEW16efs-2026-2027",
+                        "id_evf_calendar_event": 5070,
+                    },
+                ]
+            if "FROM tbl_organizer WHERE txt_code IN" in sql:
+                return [{"txt_code": "EVF", "id": 9}]
+            if "FROM tbl_event WHERE txt_code IN" in sql:
+                return []
+            return [{"r": {"created": 0, "updated": 1, "deleted": 0, "delete_skipped": []}}]
+
+        summary = promote_calendar(
+            cert_query_fn=cert_query,
+            prod_query_fn=prod_query,
+            dry_run=True,
+        )
+
+        assert summary["updated_codes"] == [50], (
+            "must update Dublin (id 50) by identity, never Toronto (id 51) by code"
+        )
+        assert summary["new_codes"] == []
+
     def test_calendar_mode_deletes_orphaned_prod_events(self):
         """New: reconciler DELETEs (guarded server-side) events present on PROD
         but absent from CERT — the missing operation the old insert-or-refresh

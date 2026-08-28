@@ -122,6 +122,8 @@ Key (id_season, txt_evf_slug)=(4, levi-open-fin) already exists
 
 ADR-043 already states the durable calendar identity carries across to PROD; the reconciler simply never used it. `promote_calendar` now matches on `id_evf_calendar_event` when the code has moved, so a renamed event is an UPDATE and is never proposed for deletion. Migration `20260828000008` supplies the SQL half: `fn_mirror_events_to_prod`'s UPDATE branch carries `txt_code` (it never did), and a staging pre-pass parks codes that are about to change, because cascading renames collide with each other on PROD for the same reason they did on CERT.
 
+The match is **identity first, code only as fallback** for rows that have no calendar identity (domestic `PPW`/`MSW` events). Code-first is actively wrong mid-reflow: after renumbering, CERT's Dublin carries the code PROD still has on Toronto, so matching on the code wrote Dublin's fields — slug included — onto Toronto's row and tripped the same unique index from the other direction (run 33192281240).
+
 **Known limitation, not fixed here.** The mirror does not touch tournaments — they are owned by `promote_event` — so a renamed PROD event temporarily carries child tournament codes built from its previous code, until its results are promoted.
 
 ### 5 · A calendar failure no longer blocks results ingestion

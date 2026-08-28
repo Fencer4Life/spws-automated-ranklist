@@ -543,10 +543,17 @@ def promote_calendar(
         id_organizer = org_map.get(org_code) if org_code else None
         id_prior_event = prior_map.get(prior_code) if prior_code else None
         calendar_id = evt.get("id_evf_calendar_event")
-        prod_id = prod_by_code.get(code)
-        if prod_id is None and calendar_id is not None:
-            # Same event, new code: matched on identity rather than on the code.
+        # Identity FIRST, code only as the fallback for rows that have no
+        # calendar identity (domestic PPW/MSW events). Code-first is actively
+        # wrong mid-reflow: after a renumbering CERT's Dublin carries the code
+        # PROD still has on Toronto, so matching on the code writes Dublin's
+        # fields -- including its slug -- onto Toronto's row and trips
+        # idx_tbl_event_evf_slug (live run 33192281240).
+        prod_id = None
+        if calendar_id is not None:
             prod_id = prod_by_calendar_id.get(int(calendar_id))
+        if prod_id is None:
+            prod_id = prod_by_code.get(code)
         if prod_id is not None:
             updates.append(_build_update_payload(prod_id, evt, id_organizer))
         else:
