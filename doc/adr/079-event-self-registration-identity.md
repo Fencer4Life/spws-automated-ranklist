@@ -4,6 +4,7 @@
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
 **Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §7 (decouples the entry-list gate from the registration cutoff).
+**Current behavior:** [Registration lifecycle](../handbook/reference/registration-lifecycle.html) — the handbook walkthrough of this decision as built, following one registration from the administrator enabling it to the row being purged after ingestion, with the failure at each stage and the screens as they appear. Read that for *what the system does*; read this ADR for *why it does it*.
 
 ## Amendment (2026-08-28 — correcting a declaration; one row per entrant)
 
