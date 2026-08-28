@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="078-gdpr-data-handling.md">
-<meta name="adr-source-sha256" content="732df6c3cd3c7dbe29299fbfc7ca6cfd763fb2faa1bee4b7cf7b2fe8b29edd0a">
+<meta name="adr-source-sha256" content="b84ef4ee6be8d286d1be59b39716f08ce3fe96149d5102157780826480171f92">
 <title>ADR-078 · GDPR Data Handling &amp; Data-Subject Rights</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 078</p><h1>GDPR Data Handling &amp; Data-Subject Rights</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (consent capture — <code>ts_consent</code>/<code>txt_consent_version</code> stamped by <code>fn_create_registration</code> — and the RODO consent-gate step <strong>implemented</strong> 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending)</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>078-gdpr-data-handling.md</code></dd></div><div><dt>Length</dt><dd class="">205 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Proposed (consent capture — <code>ts_consent</code>/<code>txt_consent_version</code> stamped by <code>fn_create_registration</code> — and the RODO consent-gate step <strong>implemented</strong> 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (consent capture — <code>ts_consent</code>/<code>txt_consent_version</code> stamped by <code>fn_create_registration</code> — and the RODO consent-gate step <strong>implemented</strong> 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) <strong>Amended 2026-08-17:</strong> §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected.</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>078-gdpr-data-handling.md</code></dd></div><div><dt>Length</dt><dd class="">269 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed (consent capture — <code>ts_consent</code>/<code>txt_consent_version</code> stamped by <code>fn_create_registration</code> — and the RODO consent-gate step <strong>implemented</strong> 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) <strong>Amended 2026-08-17:</strong> §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected.
 <strong>Date:</strong> 2026-07-04
 <strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-079, ADR-080</p>
 <blockquote>
@@ -28,8 +28,65 @@ the privacy notice (<em>informacja RODO</em>) and Record of Processing Activitie
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-personal-data-inventory">1. Personal-data inventory</a></li><li class="depth-3"><a href="#2-controller-processor">2. Controller / processor</a></li><li class="depth-3"><a href="#3-data-subject-rights-art-12-22">3. Data-subject rights (Art. 12–22)</a></li><li class="depth-3"><a href="#4-right-to-erasure-anonymise-and-keep-art-17">4. Right to erasure — anonymise-and-keep (Art. 17)</a></li><li class="depth-3"><a href="#5-abuse-defence-art-12-5-art-17-3-e">5. Abuse defence (Art. 12(5), Art. 17(3)(e))</a></li><li class="depth-3"><a href="#6-security-art-32">6. Security (Art. 32)</a></li><li class="depth-3"><a href="#7-records-of-processing-art-30-breach-art-33-34-consent-art-7">7. Records of processing (Art. 30), breach (Art. 33/34), consent (Art. 7)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
-  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-08-17-the-inventory-listed-processing-that-does-not-happen">Amendment (2026-08-17 — the inventory listed processing that does not happen)</a></li><li class="depth-3"><a href="#what-did-not-change">What did not change</a></li><li class="depth-3"><a href="#corpus-audit">Corpus audit</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-personal-data-inventory">1. Personal-data inventory</a></li><li class="depth-3"><a href="#2-controller-processor">2. Controller / processor</a></li><li class="depth-3"><a href="#3-data-subject-rights-art-12-22">3. Data-subject rights (Art. 12–22)</a></li><li class="depth-3"><a href="#4-right-to-erasure-anonymise-and-keep-art-17">4. Right to erasure — anonymise-and-keep (Art. 17)</a></li><li class="depth-3"><a href="#5-abuse-defence-art-12-5-art-17-3-e">5. Abuse defence (Art. 12(5), Art. 17(3)(e))</a></li><li class="depth-3"><a href="#6-security-art-32">6. Security (Art. 32)</a></li><li class="depth-3"><a href="#7-records-of-processing-art-30-breach-art-33-34-consent-art-7">7. Records of processing (Art. 30), breach (Art. 33/34), consent (Art. 7)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
+  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-17-the-inventory-listed-processing-that-does-not-happen">Amendment (2026-08-17 — the inventory listed processing that does not happen)</h2>
+<p>§1's personal-data inventory is the closest thing this project has to a Record of
+Processing Activities, and three of its six rows described data the system never
+collects. An inventory that over-declares is not a breach — nothing is processed
+beyond what is disclosed — but it is the wrong direction of error for a document
+whose stated purpose is to be <em>audit-legible</em>, and it would mislead the counsel
+review the Scope note asks for before go-live.</p>
+<p>The table now carries a <strong>Status</strong> column recording, per element, whether it is
+actually collected. Four corrections:</p>
+<p><strong>Payment reference + paid/unpaid status — row removed entirely.</strong> No such column
+exists in <code>tbl_registration</code>, and none is planned.
+<a href="079-event-self-registration-identity.html">ADR-079</a> §4 states plainly that the system
+&quot;does not track payment completion digitally&quot;, correcting an earlier draft that had
+proposed a paid-gate, and §5 spells out &quot;<strong>No payment-status column</strong>&quot;. This ADR's own
+§Context already said the same thing — <em>&quot;Payment is display-only bank transfer… SPWS
+never stores, processes, or transmits cardholder data&quot;</em> — so the row contradicted the
+document containing it. It appears to be a survival from the same superseded draft
+ADR-079 §4 corrected on 2026-07-04.</p>
+<p>Payment remains display-only: the association's IBAN and a transfer note are rendered
+for the fencer to pay from their own bank, and reconciliation is the treasurer reading
+a bank statement. Nothing about payment enters this system, so nothing about payment
+belongs in its processing inventory.</p>
+<p><strong>Email and the salted email hash — marked not collected.</strong> Phases 4/5 (magic-link
+delivery) were never built, and since the <a href="079-event-self-registration-identity.html">ADR-079</a>
+amendment of the same date a non-exact match registers <em>without</em> an email step. The
+<code>txt_email_hash</code> column exists and stays NULL. Both rows are retained rather than
+deleted, because the lawful-basis analysis is sound and will apply unchanged when
+Phases 4/5 ship — the entries are provisioned, not active.</p>
+<p><strong>Club — corrected.</strong> The row read &quot;Generate FTL seed files only … Discarded after
+seed generation&quot;, implying the value reaches the seed. It does not: the form field is
+never transmitted, there is no <code>txt_club</code> column, and <code>ftl_seed_export.py</code> writes
+<code>&quot;Club&quot;: &quot;&quot;</code> unconditionally. The value is discarded in the browser. The current
+consent text is accurate on this point — <em>&quot;Klub — tylko do plików startowych · nie
+zapisujemy&quot;</em> — but the inventory was not. Storing it is
+<a href="079-event-self-registration-identity.html">ADR-079</a> open item 2, and would require a
+<code>CONSENT_VERSION</code> bump rather than a silent schema addition; that decision is not taken
+here.</p>
+<h3 id="what-did-not-change">What did not change</h3>
+<p>The lawful-basis split, the Art. 12–22 rights matrix, anonymise-and-keep erasure (§4),
+the abuse-defence design (§5) and the security posture (§6) are untouched. This
+amendment corrects the <em>description</em> of what is processed; it changes no decision.</p>
+<p>The wider program in this ADR — DPA execution, published privacy notice, formal ROPA,
+counsel review — remains pending, and this correction does not advance it. If anything
+it is a reminder of why that review matters: the inventory drifted from the
+implementation within six weeks of being written, and nothing in the pipeline would
+have caught it.</p>
+<h3 id="corpus-audit">Corpus audit</h3>
+<ul>
+<li><a href="079-event-self-registration-identity.html">ADR-079</a> — <strong>relates, already consistent.</strong>
+§4 and §5 both state payment is not tracked; this amendment brings ADR-078 into line
+with them rather than the reverse.</li>
+<li><a href="080-clean-roster-ftl-seeding.html">ADR-080</a> — <strong>relates, already consistent.</strong> It seeds
+from &quot;<strong>declared</strong> registrations… no payment gate&quot; (§§ at lines 32, 105, 148), which
+only holds because no paid/unpaid state exists to gate on.</li>
+<li>No other ADR in the corpus mentions payment or paid status.</li>
+</ul>
+</section>
+<section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The Event Registration subsystem (ADR-079) has fencers <strong>self-declare</strong> personal
 data — surname, first name, gender, birth year, and (for non-exact matches) an
 email — so that the ranklist and the FTL seed carry clean, authoritative
@@ -64,6 +121,7 @@ below.</p>
 <th>Lawful basis (Art. 6)</th>
 <th>Storage</th>
 <th>Retention</th>
+<th>Status (2026-08-17)</th>
 </tr>
 </thead>
 <tbody>
@@ -73,6 +131,7 @@ below.</p>
 <td>Legitimate interest 6(1)(f)</td>
 <td><code>tbl_fencer</code> (durable), <code>tbl_registration</code> (ephemeral)</td>
 <td>Ranking record durable; registration purged post-ingest</td>
+<td><strong>Collected</strong></td>
 </tr>
 <tr>
 <td>Weapon + category selections</td>
@@ -80,6 +139,7 @@ below.</p>
 <td>Contract 6(1)(b)</td>
 <td><code>tbl_registration</code></td>
 <td>Purged after results ingested + reconciled</td>
+<td><strong>Collected</strong></td>
 </tr>
 <tr>
 <td>Email (only on non-exact match)</td>
@@ -87,6 +147,7 @@ below.</p>
 <td>Legitimate interest 6(1)(f)</td>
 <td>GoTrue auth (<strong>not</strong> <code>tbl_fencer</code>)</td>
 <td>Transient; not persisted in domain tables</td>
+<td><strong>Not collected</strong> — Phases 4/5 unbuilt, and since 2026-08-17 a non-exact match registers without email (ADR-079 amendment a)</td>
 </tr>
 <tr>
 <td>Salted email <strong>hash</strong> + request timestamps</td>
@@ -94,20 +155,15 @@ below.</p>
 <td>Legal claims 17(3)(e)</td>
 <td><code>tbl_registration</code> / abuse log</td>
 <td>Minimal, bounded</td>
+<td><strong>Not collected</strong> — <code>txt_email_hash</code> exists and stays NULL</td>
 </tr>
 <tr>
 <td>Club (free text)</td>
-<td>Generate FTL seed files only</td>
+<td>Intended for FTL seed files</td>
 <td>— (transient)</td>
 <td><strong>Never stored</strong></td>
-<td>Discarded after seed generation</td>
-</tr>
-<tr>
-<td>Payment reference + paid/unpaid status</td>
-<td>Reconcile the entry fee</td>
-<td>Contract 6(1)(b)</td>
-<td><code>tbl_registration</code></td>
-<td>Purged with the registration</td>
+<td>n/a</td>
+<td><strong>Collected and immediately discarded</strong> — the form field is never sent to the server, there is no <code>txt_club</code> column, and <code>ftl_seed_export.py</code> writes <code>&quot;Club&quot;: &quot;&quot;</code>. Storing it is ADR-079 open item 2 and would require a consent-text change</td>
 </tr>
 </tbody>
 </table></div>
@@ -289,5 +345,5 @@ erasure, retention, consent).</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="077-event-lifecycle-season-skeletons.html">← ADR-077: Event lifecycle, season-skeleton provisioning &amp; CERT→PROD calendar promotion</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="079-event-self-registration-identity.html">→ ADR-079: Event Self-Registration &amp; Identity Resolution</a></nav>
-<footer class="foot">Generated from <code>078-gdpr-data-handling.md</code> · source SHA-256 <code>732df6c3cd3c7dbe29299fbfc7ca6cfd763fb2faa1bee4b7cf7b2fe8b29edd0a</code></footer>
+<footer class="foot">Generated from <code>078-gdpr-data-handling.md</code> · source SHA-256 <code>b84ef4ee6be8d286d1be59b39716f08ce3fe96149d5102157780826480171f92</code></footer>
 </div></body></html>
