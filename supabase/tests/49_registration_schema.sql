@@ -9,7 +9,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(35);
+SELECT plan(40);
 
 -- 49.1 — tbl_registration exists
 SELECT has_table('tbl_registration', '49.1 tbl_registration exists');
@@ -300,6 +300,89 @@ SELECT is(
 SELECT is(
   has_function_privilege('service_role', 'fn_mark_ftl_sent(text)', 'EXECUTE'), TRUE,
   'FTLDEL-DB-02c: service_role can execute fn_mark_ftl_sent'
+);
+
+-- ---------------------------------------------------------------------------
+-- 49.28–49.31 — unmatched-registration dedupe (ADR-079 amendment 2026-08-17,
+-- open item 1). Until the unmatched path was opened on 2026-08-17 no row could
+-- carry a NULL id_fencer, so UNIQUE(id_event, id_fencer) never had to constrain
+-- one — Postgres treats NULLs as distinct. Now that newcomers register, the same
+-- person submitting twice must upsert rather than appear twice on the public
+-- roster and twice in the organizer's seed file.
+--
+-- The dedupe key is the declared identity, normalised the same way
+-- fn_match_registration_fencer normalises: upper(trim(...)).
+-- ---------------------------------------------------------------------------
+
+-- 49.28 — the partial unique index exists and is scoped to unmatched rows only
+SELECT is(
+  (SELECT count(*)::INT FROM pg_indexes
+     WHERE tablename = 'tbl_registration'
+       AND indexname = 'uq_registration_unmatched_identity'),
+  1,
+  '49.28 partial unique index uq_registration_unmatched_identity exists'
+);
+
+-- 49.29 — the SAME unmatched person registering twice upserts to one row, and
+-- the second submission's weapon set wins (proving update, not silent no-op)
+DO $reg_same_null_twice$
+DECLARE
+  v_event INT := (SELECT id_event FROM tbl_event WHERE txt_code = 'REG49EVT');
+BEGIN
+  PERFORM fn_create_registration(v_event, 'NOWICKA'::TEXT, 'Ewa'::TEXT, 'F'::enum_gender_type, 1979::SMALLINT, ARRAY['EPEE']::enum_weapon_type[], NULL::INT, NULL::TEXT);
+  PERFORM fn_create_registration(v_event, 'NOWICKA'::TEXT, 'Ewa'::TEXT, 'F'::enum_gender_type, 1979::SMALLINT, ARRAY['EPEE','SABRE']::enum_weapon_type[], NULL::INT, NULL::TEXT);
+END $reg_same_null_twice$;
+
+SELECT is(
+  (SELECT count(*)::INT FROM tbl_registration
+     WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'REG49EVT')
+       AND txt_surname = 'NOWICKA'),
+  1,
+  '49.29a the same unmatched fencer registering twice upserts (exactly 1 row)'
+);
+
+SELECT is(
+  (SELECT arr_weapons FROM tbl_registration
+     WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'REG49EVT')
+       AND txt_surname = 'NOWICKA'),
+  ARRAY['EPEE','SABRE']::enum_weapon_type[],
+  '49.29b the second submission updates the weapon set'
+);
+
+-- 49.30 — the dedupe normalises case and surrounding space, matching
+-- fn_match_registration_fencer. A fencer who types "ewa" the second time is the
+-- same entrant, not a new one.
+DO $reg_same_null_messy$
+DECLARE
+  v_event INT := (SELECT id_event FROM tbl_event WHERE txt_code = 'REG49EVT');
+BEGIN
+  PERFORM fn_create_registration(v_event, '  nowicka '::TEXT, 'ewa'::TEXT, 'F'::enum_gender_type, 1979::SMALLINT, ARRAY['FOIL']::enum_weapon_type[], NULL::INT, NULL::TEXT);
+END $reg_same_null_messy$;
+
+SELECT is(
+  (SELECT count(*)::INT FROM tbl_registration
+     WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'REG49EVT')
+       AND upper(trim(txt_surname)) = 'NOWICKA'),
+  1,
+  '49.30 case/whitespace variants of the same declared identity do not duplicate'
+);
+
+-- 49.31 — a different birth year is a different person, not a duplicate. The
+-- declared BY is part of the identity (ADR-079 §2), so a namesake born in a
+-- different year must still get their own row.
+DO $reg_namesake$
+DECLARE
+  v_event INT := (SELECT id_event FROM tbl_event WHERE txt_code = 'REG49EVT');
+BEGIN
+  PERFORM fn_create_registration(v_event, 'NOWICKA'::TEXT, 'Ewa'::TEXT, 'F'::enum_gender_type, 1988::SMALLINT, ARRAY['EPEE']::enum_weapon_type[], NULL::INT, NULL::TEXT);
+END $reg_namesake$;
+
+SELECT is(
+  (SELECT count(*)::INT FROM tbl_registration
+     WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'REG49EVT')
+       AND upper(trim(txt_surname)) = 'NOWICKA'),
+  2,
+  '49.31 a same-name namesake with a different birth year keeps their own row'
 );
 
 SELECT * FROM finish();
