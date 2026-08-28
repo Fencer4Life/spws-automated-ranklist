@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="086-evf-weapon-evidence-ladder-strict-skip.md">
+<meta name="adr-source-sha256" content="96a40b73fd208aab92fa2293ed75e64ad6419f97c7f86f2867703e32ee86f02f">
+<title>ADR-086 · EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 086</p><h1>EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-08-28)</dd></div><div><dt>Date</dt><dd class="">2026-08-28</dd></div><div><dt>Source</dt><dd class=""><code>086-evf-weapon-evidence-ladder-strict-skip.md</code></dd></div><div><dt>Length</dt><dd class="">132 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (2026-08-28)
+<strong>Date:</strong> 2026-08-28
+<strong>Resolved:</strong> Both open items closed on sign-off, 2026-08-28.
+<strong>Amends:</strong> <a href="043-evf-event-allocator.html">ADR-043</a> §Amendment (2026-08-07) — &quot;missing/unsupported weapon sets … are hard errors&quot; and &quot;A later cancellation keeps its positive code&quot;; <a href="046-pew-weapon-suffix.html">ADR-046</a> §Amendment (2026-08-07) — &quot;If no authoritative weapon set can be established, the entire calendar write fails before mutation&quot; and &quot;An event cancelled later keeps its previously assigned positive code&quot;
+<strong>Relates to:</strong> <a href="028-evf-calendar-results-import.html">ADR-028</a> (EVF calendar/results import), <a href="039-stale-event-gate.html">ADR-039</a> (stale-event gate), <a href="081-cert-prod-event-reconciler.html">ADR-081</a> (CERT→PROD reconciler carries the renames), <a href="036-prod-export-local-mirror.html">ADR-036</a> (monolithic seed dump loaded by <code>db reset</code>, after migrations)
+<strong>Source:</strong> <code>python/scrapers/evf_calendar.py</code>, <code>supabase/migrations/20260828000004_evf_event_weapons_lifecycle_gate.sql</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-weapons-are-established-by-an-evidence-ladder-never-by-a-guess">1 · Weapons are established by an evidence ladder, never by a guess</a></li><li class="depth-3"><a href="#2-an-entry-with-unknown-weapons-is-skipped-not-fatal">2 · An entry with unknown weapons is skipped, not fatal</a></li><li class="depth-3"><a href="#3-unknown-weapons-bar-an-evf-event-from-leaving-planned">3 · Unknown weapons bar an EVF event from leaving PLANNED</a></li><li class="depth-3"><a href="#4-a-pinned-cancellation-yields-to-the-reflow-rule-when-nothing-is-anchored-to-its-code">4 · A pinned cancellation yields to the reflow rule when nothing is anchored to its code</a></li><li class="depth-3"><a href="#5-a-calendar-failure-no-longer-blocks-results-ingestion">5 · A calendar failure no longer blocks results ingestion</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#defects-found-and-deliberately-not-fixed">Defects found and deliberately not fixed</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>On 2026-08-19 the <code>EVF Calendar + Results Sync</code> workflow began failing, and failed every scheduled run for nine days (last green 2026-08-18).</p>
+<p>EVF published <code>EVF Circuit – Tampere (FIN)</code> (calendar id <code>5379</code>, 23 Jan 2027) as a stub post carrying <strong>no weapon category tags</strong>. The list-page parser derives weapons solely from the <code>cat_epee</code> / <code>cat_foil</code> / <code>cat_sabre</code> taxonomy classes on the Tribe Events article, so the entry reached validation with an empty weapon set and hit ADR-043's hard error at <a href="../../python/scrapers/evf_calendar.py"><code>evf_calendar.py:1179</code></a>.</p>
+<p>Two consequences, both more damaging than the missing datum:</p>
+<ol>
+<li><strong>One untagged post in January 2027 aborted the entire season scrape</strong> — all 18 other events included.</li>
+<li><code>sync_calendar</code> re-raised, so <code>main()</code> never reached <code>sync_results</code>. <strong>Nine days of results ingestion were lost</strong> to an event five months in the future.</li>
+</ol>
+<p>The only recovery ADR-046 provided was &quot;a linked official organizer programme may supply the set&quot; — realised as <code>_KNOWN_WEAPON_OVERRIDES</code> at <a href="../../python/scrapers/evf_calendar.py"><code>evf_calendar.py:93</code></a>, a hand-maintained map holding exactly one entry (Toronto <code>5070</code>). Every future occurrence required a code change and a deploy.</p>
+<p>Evidence gathered against the live site on 2026-08-28:</p>
+<ul>
+<li>Tampere's <strong>detail page</strong> states <code>EPEE + SABRE</code> in its description while carrying no category meta at all.</li>
+<li>Four other events (Madrid, Lausanne, Łomianki, Guildford) carry category meta on the detail page that agrees with the list page by construction — it is the same taxonomy.</li>
+<li><code>Critérium de Paris 2026</code> (4–6 Jul 2026, past) states no weapon anywhere: its description reads &quot;Two genders, three weapons, four days&quot;, naming none.</li>
+<li>Toronto's detail page likewise states none, so its override still does real work.</li>
+</ul>
+<p>Two further facts constrain the fix:</p>
+<ul>
+<li><strong><code>arr_weapons</code> cannot express &quot;unknown&quot;.</strong> Its <code>DEFAULT</code> is <code>'{EPEE,FOIL,SABRE}'</code>, so omitting the column silently asserts all three. Measured on CERT: <strong>zero</strong> rows are <code>NULL</code>, and 86 of 96 sit on that default — including <strong>60 COMPLETED events</strong>, among them epee-only and sabre-only ones. This is why <code>weaponLetters()</code> in <a href="../../frontend/src/lib/calendarQuarters.ts"><code>frontend/src/lib/calendarQuarters.ts</code></a> reads weapons from the code suffix and returns <code>[]</code> for an unsuffixed code, &quot;rather than a guess&quot;.</li>
+<li><strong>The seed inserts 32+ unsuffixed <code>PEW</code> events already in <code>COMPLETED</code></strong> (<code>PEW11-2024-2025</code> Guildford, <code>PEW13-2023-2024</code>, <code>PEW68-2026-2027</code>, …). Migrations run <em>before</em> the ADR-036 seed dump, so any <code>CHECK</code> constraint on this shape would reject the seed on every <code>reset-dev.sh</code> and every CI run.</li>
+</ul>
+<p>Finally, fixing the weapons failure exposed the next domino. Admitting Tampere between Guildford (<code>PEW6</code>, 9 Jan) and Levi Open (<code>PEW7</code>, 30 Jan) shifts ten events down one, while Stockholm — cancelled by EVF in the <strong>same</strong> scrape — was pinned at <code>PEW11</code> by ADR-043's &quot;a later cancellation keeps its positive code&quot;. The two rules cannot both hold:</p>
+<pre><code>CalendarIntegrityError: later cancellation 'EVF Circuit – Stockholm (SWE) – Cancelled'
+must retain PEW11, but chronological position is PEW12
+</code></pre>
+<p>ADR-043 already contains the resolution in its own text — &quot;Unscored rows may be reflowed transactionally if EVF inserts or reschedules an earlier entry. If a reflow would rename a results-bearing row, ingestion aborts&quot; — but the cancellation pin was written as unconditional and contradicts it. This ADR resolves that internal inconsistency rather than reversing a decision.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-weapons-are-established-by-an-evidence-ladder-never-by-a-guess">1 · Weapons are established by an evidence ladder, never by a guess</h3>
+<p>Weapons for a calendar entry are derived from the first source that names one, in descending authority:</p>
+<ol>
+<li>the list page's <code>cat_*</code> taxonomy (unchanged, ADR-028);</li>
+<li>the detail page's <code>.tribe-events-event-categories</code> meta — the same taxonomy, so it agrees with (1) by construction;</li>
+<li>the detail page's description line, which organizers open with (<code>EPEE + SABRE</code>). This is the only source for a post carrying no categories at all;</li>
+<li>the linked <strong>invitation letter (PDF)</strong>, for a post whose description names no weapon;</li>
+<li><code>_KNOWN_WEAPON_OVERRIDES</code> — approved manual evidence, deliberately <strong>last</strong>, so that real EVF data always wins over a hand-entered fact that may have gone stale.</li>
+</ol>
+<p>Matching is whole-word only, so <code>EPEE +FOIL +SABRE</code> written without spaces reads correctly while prose such as &quot;three weapons&quot; cannot invent one. Silence returns an empty set; no rung ever guesses.</p>
+<p>Only weaponless entries are fetched, so a fully tagged calendar costs no additional requests. See <code>repair_missing_weapons</code> (<a href="../../python/scrapers/evf_calendar.py"><code>evf_calendar.py:786</code></a>), <code>_weapons_from_text</code> (<a href="../../python/scrapers/evf_calendar.py"><code>:732</code></a>) and <code>_weapons_from_pdf_bytes</code> (<a href="../../python/scrapers/evf_calendar.py"><code>:741</code></a>), which mirrors the tolerant extraction already used for Engarde result PDFs.</p>
+<h3 id="2-an-entry-with-unknown-weapons-is-skipped-not-fatal">2 · An entry with unknown weapons is skipped, not fatal</h3>
+<p><strong>This amends ADR-043 and ADR-046: an unestablished weapon set is no longer a hard error.</strong></p>
+<p>An event whose weapons cannot be established is one EVF has not finished announcing. To a fencer that is indistinguishable from an event EVF has not posted at all, so it is held back rather than imported with invented data, and picked up automatically on a later run once EVF tags it. The run stays green: this is normal operation, not a failure.</p>
+<p>The skip is implemented as a <strong>partition before validation</strong> (<code>partition_unweaponed</code>, <a href="../../python/scrapers/evf_calendar.py"><code>evf_calendar.py:891</code></a>), not as a softened guard. <code>validate_season_calendar</code> keeps its contract exactly as ADR-043 states it — missing or unparseable dates, missing or duplicate calendar IDs, boundary-spanning entries and a non-exact <code>{1..N}</code> positive plan all remain hard errors. It simply never sees an unannounced stub.</p>
+<p><strong>An event already imported is never held back.</strong> If EVF edits a live post and its categories vanish, that is a regression, not a stub, and the existing row keeps the weapons it has. The roster's calendar IDs are read before the scrape for this purpose (<code>_known_calendar_ids</code>, <a href="../../python/scrapers/evf_sync.py"><code>evf_sync.py:284</code></a>).</p>
+<p>ADR-046's rule that <strong>an empty suffix is not valid for a calendar-owned PEW row is preserved, not weakened</strong> — such a row is never written at all.</p>
+<h3 id="3-unknown-weapons-bar-an-evf-event-from-leaving-planned">3 · Unknown weapons bar an EVF event from leaving PLANNED</h3>
+<p>The database enforces the same rule independently of the scraper: an EVF event whose code carries no weapon letters may not transition out of <code>PLANNED</code>, so tournaments and results can never attach to an event whose weapons were never established.</p>
+<p>Keyed on the <code>txt_code</code> suffix, <strong>not</strong> <code>arr_weapons</code>, for the reason given in Context: a guard written against <code>arr_weapons</code> would pass for every row including the wrong ones — a guard that always passes, which is worse than none.</p>
+<p>Implemented as a <code>BEFORE UPDATE</code> trigger, <strong>not</strong> a <code>CHECK</code> constraint, because the rule is about the <em>transition</em> and because a <code>CHECK</code> would reject the ADR-036 seed dump. Historical rows are inserted already-<code>COMPLETED</code> and never transition, so they load untouched. Scoped to <code>^PEW[0-9]+-</code>; <code>PPW</code> and <code>MSW</code> codes legitimately carry no weapon letters.</p>
+<p>Accepted residual gap: a direct <code>INSERT</code> of a non-<code>PLANNED</code> unsuffixed PEW event is not blocked, because blocking it is precisely what breaks the seed. The scraper always creates <code>PLANNED</code>, so this reaches hand-written SQL only.</p>
+<h3 id="4-a-pinned-cancellation-yields-to-the-reflow-rule-when-nothing-is-anchored-to-its-code">4 · A pinned cancellation yields to the reflow rule when nothing is anchored to its code</h3>
+<p><strong>This amends ADR-043 and ADR-046: &quot;a later cancellation keeps its positive code&quot; becomes conditional.</strong></p>
+<p>A later cancellation may shift with the sequence when — and only when — the event is still in the future, has <strong>zero registrations</strong> and <strong>zero results</strong>. Otherwise the hard error stands.</p>
+<p>The part of the rule that carries the meaning is untouched: a later cancellation still never collapses to <code>PEW0</code> and never frees its slot. Only its position within the sequence may move, and only while nothing is anchored to the old code.</p>
+<p>This extends ADR-043's existing anchor set from <em>results</em> to <em>results and registrations</em>. Registration did not exist when ADR-043 was written; it is now the sharper anchor, because a fencer who has entered holds a code that must not move under them. Results remain anchored through the child tournament codes the ingest RPC rebuilds from the event code.</p>
+<p>A roster row that does not carry the counts is refused: <strong>unknown is not zero</strong>. See <code>_is_safe_to_renumber</code> (<a href="../../python/scrapers/evf_calendar.py"><code>evf_calendar.py:126</code></a>).</p>
+<h3 id="5-a-calendar-failure-no-longer-blocks-results-ingestion">5 · A calendar failure no longer blocks results ingestion</h3>
+<p>Calendar sync enters <em>future</em> events into the calendar. Results sync is the last-resort path for attaching results to events that have already happened; the normal path is manual ingestion from the admin UI, and this pass scrapes only EVF-organised results.</p>
+<p>The two share no data dependency, so <code>sync_results</code> now runs even when <code>sync_calendar</code> fails (<a href="../../python/scrapers/evf_sync.py"><code>evf_sync.py:1235</code></a>). The Telegram alert and the <code>FAILED</code> scrape-ledger row are unchanged, and the process still exits non-zero so CI stays red. The coupling was incidental — a shared <code>main()</code> — never a decision.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Presume a weapon (e.g. sabre) until EVF publishes the real set.</strong> Rejected. Weapon letters are welded into <code>txt_code</code>, the natural key the CERT→PROD reconciler diffs on (ADR-081) and the parent of every child tournament code. A guessed <code>PEW8s</code> corrected later to <code>PEW8es</code> makes <code>fn_ingest_evf_calendar</code> rename the event and rewrite its tournament codes, and can shunt an occupant into <code>EVFLEGACY</code> quarantine — debris already visible on PROD as <code>EVFLEGACY104-2026-2027</code>. Worse, it publishes a weapon list to fencers that we invented, and nothing inside the system distinguishes it from established fact.</li>
+<li><strong>Admit the event with an unsuffixed provisional code (<code>PEW8-2026-2027</code>) and no weapons.</strong> Rejected by the user in favour of the stricter skip. It would have held the chronological slot, but it puts a row in front of fencers for an event EVF has not finished announcing, and it requires the lifecycle gate (§3) to do load-bearing work rather than act as a backstop.</li>
+<li><strong>A <code>CHECK</code> constraint for §3 instead of a trigger.</strong> Rejected on evidence: the ADR-036 seed dump inserts 32+ unsuffixed <code>PEW</code> events already <code>COMPLETED</code>, and migrations run before it. <code>NOT VALID</code> does not help — it skips validation of pre-existing rows but still binds subsequent inserts.</li>
+<li><strong>A guard on <code>arr_weapons</code> for §3.</strong> Rejected: the column's default makes it unable to express &quot;unknown&quot;, so the guard would pass for all 96 CERT rows including the 60 COMPLETED ones whose weapon sets are wrong.</li>
+<li><strong>Allocate newly-inserted events the next free number instead of their chronological position.</strong> Rejected: it preserves every existing code but abandons the chronological ordering ADR-043's 2026-08-07 amendment was specifically written to establish.</li>
+<li><strong>Keep the pin and hold Tampere back indefinitely.</strong> Rejected: it makes an unrelated event's cancellation permanently block a legitimate new entry, and the events involved are all future, unregistered and result-less.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>New files.</strong> <code>supabase/migrations/20260828000004_evf_event_weapons_lifecycle_gate.sql</code> (<code>fn_guard_evf_event_weapons_known</code> + <code>trg_guard_evf_event_weapons_known</code>); <code>supabase/tests/60_evf_event_weapons_lifecycle_gate.sql</code> (7 assertions, including 60.6 pinning that a historical unsuffixed <code>COMPLETED</code> row remains updatable — the case a <code>CHECK</code> would have broken).</li>
+<li><strong>Test impact.</strong> <code>python/tests/test_evf_calendar.py</code> gains plan-test IDs evf.13–evf.19 (30 assertions). No existing ADR-pinned test is deleted; three test stubs were widened to accept <code>scrape_full_season_calendar</code>'s new keyword arguments.</li>
+<li><strong>Contract change.</strong> <code>scrape_full_season_calendar</code> gains <code>known_calendar_ids</code> and <code>pending_weapons</code>; the roster query in <code>sync_calendar</code> gains <code>num_registrations</code> and <code>num_results</code>. <code>parse_event_detail_html</code> returns an additional <code>weapons</code> key.</li>
+<li><strong>Operational surface.</strong> The Telegram digest gains <code>pending_weapons=&lt;n&gt;</code>, and the scrape ledger records the held-back names, calendar IDs and URLs. No new alert channel: a held-back entry is not an error.</li>
+<li><strong>First live effect.</strong> <code>EVF Circuit – Tampere (FIN)</code> enters as <code>PEW7es-2026-2027</code>, shifting Levi Open through Toronto down one, including Stockholm <code>PEW11ef</code> → <code>PEW12ef</code> under §4. All are future, unregistered and result-less. The CERT→PROD reconciler carries the renames (ADR-081).</li>
+<li><strong><code>Critérium de Paris 2026</code> remains held back</strong> — it states no weapons on any rung. It is outside the active season window, so it has no present effect.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="defects-found-and-deliberately-not-fixed">Defects found and deliberately not fixed</h2>
+<ul>
+<li><strong><code>arr_weapons</code> is untrustworthy system-wide.</strong> 60 COMPLETED events claim all three weapons because of the column default, including epee-only and sabre-only events. Anything built on <code>arr_weapons</code> is building on sand. Fixing it (backfill from code suffixes, drop the default, or retire the column) needs its own decision and is out of scope here.</li>
+<li><strong><code>txt_venue_address</code> never propagates CERT→PROD on update.</strong> It is present in the CREATE branch of <code>fn_mirror_events_to_prod</code> but absent from the UPDATE branch, so an existing PROD row can never receive it. Live evidence: <code>PPW1-2026-2027</code> carries <code>ITAKA ARENA, ul. Olejnika1, Opole</code> on CERT and <code>NULL</code> on PROD, reported as an unsynced divergence in every daily reconcile log. Belongs to ADR-081.</li>
+<li><strong>Tampere's <code>dt_end</code> is wrong on the list page</strong> (23 Jan; the detail page says 23–24 Jan) — the same stub-post shape that caused the weapons gap.</li>
+<li><strong><code>supabase/tests/19_phase3_wizard.sql</code> plans 25 assertions but runs 5.</strong> Pre-existing and unrelated: verified to fail identically with this ADR's trigger dropped.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<p>Both items below were resolved on sign-off, 2026-08-28. They are retained because each records a decision, not a pending question.</p>
+<ol>
+<li>
+<p><strong>The anchor set in §4 is accepted as written</strong> — future <em>and</em> zero registrations <em>and</em> zero results. The stated rule was &quot;you can renumber any future event … if registration has not started, there is nothing to be afraid of&quot;; results are retained in the set because they remain anchored to the code through the child tournament codes the ingest RPC rebuilds.</p>
+</li>
+<li>
+<p><strong><code>PEW9-2024-2025</code> on PROD is deleted.</strong> Executed 2026-08-28 after re-verifying every dependency live: <code>id_event = 54</code>, COMPLETED, 3 May 2025, with zero tournaments, registrations, ingest-history rows, recompute-queue rows, and nothing referencing it as a prior event — the emptiness that matters, because three of those foreign keys cascade. PROD went from 114 to 113 events with the active-season count unchanged at 42, and <strong>both CERT and PROD now hold zero unsuffixed <code>PEW</code> rows</strong>.</p>
+<p>This does <strong>not</strong> unlock tightening §3 from a trigger to a <code>CHECK</code> constraint. The blocker was never the PROD row: it is the ADR-036 seed dump, which inserts 32+ unsuffixed <code>PEW</code> events already <code>COMPLETED</code> and loads <em>after</em> migrations. The trigger remains the correct mechanism.</p>
+</li>
+</ol>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="085-points-calculator-temporary-static-page.html">← ADR-085: Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>96a40b73fd208aab92fa2293ed75e64ad6419f97c7f86f2867703e32ee86f02f</code></footer>
+</div></body></html>

@@ -3,6 +3,7 @@
 **Status:** Accepted (Phase 4 implemented 2026-04-27; amended 2026-08-08 — scored-fragment repair)
 **Date:** 2026-04-27 (amended 2026-06-25 and 2026-08-07)
 **Relates to:** ADR-043 (EVF event allocator — amended by this ADR), ADR-044 (Phase 3 wizard — adapts skeleton iteration)
+**Amended by:** [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (weapon evidence ladder; an unestablished weapon set holds the entry back instead of failing the calendar write; a later cancellation may renumber when future, unregistered and result-less).
 
 ## Context
 

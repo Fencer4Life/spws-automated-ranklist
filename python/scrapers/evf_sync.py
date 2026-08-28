@@ -15,7 +15,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 import time
+import traceback
 import uuid
 
 import httpx
@@ -279,6 +281,23 @@ def _heal_future_completed(
         )
 
 
+def _known_calendar_ids(ref: str, token: str, id_season: int) -> set[int]:
+    """EVF calendar ids already imported for this season.
+
+    Read BEFORE the scrape so ``partition_unweaponed`` can tell an unannounced
+    stub from a live event whose categories vanished upstream. Deliberately a
+    separate, cheap query rather than a reorder of the full roster fetch, whose
+    self-heal side effects must keep running after the scrape.
+    """
+    rows = _management_query(
+        ref,
+        token,
+        f"SELECT id_evf_calendar_event FROM tbl_event "
+        f"WHERE id_season = {id_season} AND id_evf_calendar_event IS NOT NULL",
+    )
+    return {int(r["id_evf_calendar_event"]) for r in rows if r.get("id_evf_calendar_event")}
+
+
 def sync_calendar(
     ref: str, token: str, bot_token: str, chat_id: str, dry_run: bool = False
 ) -> list[dict]:
@@ -295,8 +314,15 @@ def sync_calendar(
 
     print(f"Scraping EVF calendar for {season['txt_code']}...")
     run_id = uuid.uuid4()
+    known_ids = _known_calendar_ids(ref, token, season["id_season"])
+    pending_weapons: list[dict] = []
     try:
-        full_calendar = scrape_full_season_calendar(season["dt_start"], season["dt_end"])
+        full_calendar = scrape_full_season_calendar(
+            season["dt_start"],
+            season["dt_end"],
+            known_calendar_ids=known_ids,
+            pending_weapons=pending_weapons,
+        )
         # Defensive repeat of the parser-level rule: tests and alternate callers
         # can supply snapshots directly. CAMP rows never reach counts or writes.
         full_calendar = [event for event in full_calendar if not is_ignored_calendar_entry(event)]
@@ -323,6 +349,21 @@ def sync_calendar(
         if event.get("evf_calendar_id") is not None
     ]
 
+    pending_meta = [
+        {
+            "name": e.get("name"),
+            "evf_calendar_id": e.get("evf_calendar_id"),
+            "url": e.get("url"),
+        }
+        for e in pending_weapons
+    ]
+    if pending_meta:
+        print(
+            f"  Holding back {len(pending_meta)} entr"
+            f"{'y' if len(pending_meta) == 1 else 'ies'} with unknown weapons "
+            "(not an error — awaiting EVF announcement)"
+        )
+
     if not dry_run:
         _record_calendar_scrape(
             ref,
@@ -332,7 +373,7 @@ def sync_calendar(
             season_event_count,
             cancelled_count,
             "STARTED",
-            {"evf_calendar_ids": calendar_ids},
+            {"evf_calendar_ids": calendar_ids, "pending_weapons": pending_meta},
         )
 
     try:
@@ -344,6 +385,7 @@ def sync_calendar(
             season,
             full_calendar,
             dry_run,
+            pending_weapons_count=len(pending_meta),
         )
     except Exception as exc:
         if not dry_run:
@@ -355,7 +397,11 @@ def sync_calendar(
                 season_event_count,
                 cancelled_count,
                 "FAILED",
-                {"error": str(exc)[:1000], "evf_calendar_ids": calendar_ids},
+                {
+                    "error": str(exc)[:1000],
+                    "evf_calendar_ids": calendar_ids,
+                    "pending_weapons": pending_meta,
+                },
             )
         _telegram(bot_token, chat_id, f"<b>EVF Calendar FAILED</b>\n<pre>{str(exc)[:500]}</pre>")
         raise
@@ -369,7 +415,7 @@ def sync_calendar(
             season_event_count,
             cancelled_count,
             "SUCCEEDED",
-            {"evf_calendar_ids": calendar_ids},
+            {"evf_calendar_ids": calendar_ids, "pending_weapons": pending_meta},
         )
     return result
 
@@ -382,6 +428,7 @@ def _sync_calendar_snapshot(
     season: dict,
     full_calendar: list[dict],
     dry_run: bool,
+    pending_weapons_count: int = 0,
 ) -> list[dict]:
     """Apply one already-validated full-season EVF calendar snapshot."""
     season_event_count = len(full_calendar)
@@ -406,12 +453,23 @@ def _sync_calendar_snapshot(
     # guard, in-scope filter, and dedup). Includes the columns the new
     # ADR-039 algorithm requires: country, location, dt_end, enum_status,
     # plus url_event (the self-heal's primary date source).
+    # num_registrations / num_results carry what is ANCHORED to each event code.
+    # plan_calendar_codes needs them to decide whether a pinned cancellation may
+    # shift when a newly-announced event moves the chronological sequence: a
+    # fencer who has entered holds a code we must not move under them, and
+    # results are anchored through the child tournament codes. A row without
+    # these counts is treated as unsafe -- unknown is not the same as zero.
     roster_sql = (
-        f"SELECT id_event, txt_code, txt_name, "
-        f"dt_start::TEXT, dt_end::TEXT, "
-        f"txt_country, txt_location, enum_status::TEXT, url_event, "
-        f"id_evf_event, txt_evf_slug, id_evf_calendar_event "
-        f"FROM tbl_event WHERE id_season = {season['id_season']}"
+        f"SELECT e.id_event, e.txt_code, e.txt_name, "
+        f"e.dt_start::TEXT, e.dt_end::TEXT, "
+        f"e.txt_country, e.txt_location, e.enum_status::TEXT, e.url_event, "
+        f"e.id_evf_event, e.txt_evf_slug, e.id_evf_calendar_event, "
+        f"(SELECT COUNT(*) FROM tbl_registration r WHERE r.id_event = e.id_event) "
+        f"  AS num_registrations, "
+        f"(SELECT COUNT(*) FROM tbl_tournament t JOIN tbl_result res "
+        f"   ON res.id_tournament = t.id_tournament WHERE t.id_event = e.id_event) "
+        f"  AS num_results "
+        f"FROM tbl_event e WHERE e.id_season = {season['id_season']}"
     )
     existing = _management_query(ref, token, roster_sql)
 
@@ -529,7 +587,8 @@ def _sync_calendar_snapshot(
                 chat_id,
                 f"<b>EVF Calendar</b>\n"
                 f"created={created}, slot_reused={slot_reused}, "
-                f"prior_matched={prior_match}, alerts={len(alerts)}\n"
+                f"prior_matched={prior_match}, alerts={len(alerts)}, "
+                f"pending_weapons={pending_weapons_count}\n"
                 f"URL fields: inv={inv} reg={reg} deadline={dln}",
             )
 
@@ -1160,9 +1219,22 @@ def main() -> None:
         return
 
     cal_events = None
+    calendar_error: BaseException | None = None
 
     if args.mode in ("calendar", "both"):
-        cal_events = sync_calendar(ref, token, bot_token, chat_id, args.dry_run)
+        try:
+            cal_events = sync_calendar(ref, token, bot_token, chat_id, args.dry_run)
+        except Exception as exc:
+            # Calendar sync enters FUTURE events into the calendar; results sync
+            # is the last-resort path for attaching results to events that have
+            # already happened. They share no data dependency, so a calendar
+            # problem must not stop results ingestion -- on 2026-08-19 one
+            # untagged January-2027 post cost nine days of it. sync_calendar has
+            # already written the FAILED ledger row and sent its Telegram alert;
+            # remember the failure and still exit non-zero so CI stays red.
+            calendar_error = exc
+            print(f"ERROR: calendar sync failed: {exc}", file=sys.stderr)
+            traceback.print_exc()
 
     if args.mode in ("results", "both"):
         sync_results(
@@ -1175,6 +1247,9 @@ def main() -> None:
             args.dry_run,
             args.filter_stale,
         )
+
+    if calendar_error is not None:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
