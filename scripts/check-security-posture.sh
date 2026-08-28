@@ -35,7 +35,7 @@ fi
 
 # The anon-EXECUTEable allowlist. MUST stay in sync with assertion 52.7 in
 # supabase/tests/52_security_posture.sql — that file is the source of truth and
-# explains why each name is on it. Two of these are the ADR-079 / FR-122 public
+# explains why each name is on it. Three of these are the ADR-079 / FR-122 public
 # self-registration path (register.html is served to anonymous visitors); the
 # rest are the public ranking and calendar read surface.
 read -r -d '' ALLOWLIST <<'EOF' || true
@@ -43,7 +43,8 @@ read -r -d '' ALLOWLIST <<'EOF' || true
 'fn_create_registration','fn_effective_gender','fn_event_position',
 'fn_export_scoring_config','fn_fencer_scores_rolling',
 'fn_fencer_scores_rolling_event_code_matching','fn_fencer_scores_rolling_event_fk_matching',
-'fn_match_registration_fencer','fn_ranking_kadra','fn_ranking_kadra_event_code_matching',
+'fn_match_registration_fencer','fn_update_registration',
+'fn_ranking_kadra','fn_ranking_kadra_event_code_matching',
 'fn_ranking_kadra_event_fk_matching','fn_ranking_ppw','fn_ranking_ppw_event_code_matching',
 'fn_ranking_ppw_event_fk_matching','fn_season_summary','fn_vcat_violation_msg'
 EOF

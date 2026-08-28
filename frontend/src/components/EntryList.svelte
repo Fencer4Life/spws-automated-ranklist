@@ -1,4 +1,9 @@
 <div class="el-card">
+  {#if onback}
+    <div class="el-backrow">
+      <button class="el-back" onclick={onback}>&larr; {backLabel || t('reg_back')}</button>
+    </div>
+  {/if}
   <div class="el-top">
     <span class="el-title">{t('reg_entry_list_title')}</span>
     <div class="el-top-actions">
@@ -91,12 +96,24 @@
   let {
     eventId,
     onclose,
+    onback,
+    backLabel = '',
   }: {
     eventId: number
     // Modal-embed (RegistrationModal, opened from CalendarView) — when
     // provided, renders a close (×) affordance. Undefined on the standalone
     // register.html page (nothing to close to).
     onclose?: () => void
+    // In-flow (RegistrationForm's `list` step) — when provided, renders a back
+    // affordance. Undefined for a cold arrival: a shared ?view=list link, or
+    // the roster opened straight from a calendar card, never passed through
+    // the form, so there is nothing to go back to. Same conditional pattern as
+    // onclose above.
+    onback?: () => void
+    // The caller names the destination, because it differs: the payment step
+    // has the transfer details worth returning to, the closed step does not.
+    // Empty falls back to a plain "Back".
+    backLabel?: string
   } = $props()
 
   let rows = $state<RegistrationEntry[]>([])
@@ -134,6 +151,28 @@
 </script>
 
 <style>
+  .el-backrow {
+    margin-bottom: 12px;
+  }
+  .el-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: transparent;
+    border: 1px solid #1a4a8a;
+    color: #7fd8ff;
+    border-radius: 8px;
+    padding: 6px 13px;
+    cursor: pointer;
+    font-size: 0.85em;
+    font-family: inherit;
+  }
+  .el-back:hover {
+    border-color: #00d4ff;
+    color: #00d4ff;
+    background: rgba(0, 212, 255, 0.06);
+  }
+
   .el-card {
     max-width: 760px;
     margin: 0 auto;

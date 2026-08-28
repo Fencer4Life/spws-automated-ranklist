@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="078-gdpr-data-handling.md">
-<meta name="adr-source-sha256" content="b84ef4ee6be8d286d1be59b39716f08ce3fe96149d5102157780826480171f92">
+<meta name="adr-source-sha256" content="9f9e47de0cfc82634d72cbf0cbeec81cae7fc1b416632d3d292491664d4b3396">
 <title>ADR-078 · GDPR Data Handling &amp; Data-Subject Rights</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 078</p><h1>GDPR Data Handling &amp; Data-Subject Rights</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (consent capture — <code>ts_consent</code>/<code>txt_consent_version</code> stamped by <code>fn_create_registration</code> — and the RODO consent-gate step <strong>implemented</strong> 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) <strong>Amended 2026-08-17:</strong> §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected.</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>078-gdpr-data-handling.md</code></dd></div><div><dt>Length</dt><dd class="">269 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Proposed (consent capture — <code>ts_consent</code>/<code>txt_consent_version</code> stamped by <code>fn_create_registration</code> — and the RODO consent-gate step <strong>implemented</strong> 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) <strong>Amended 2026-08-17:</strong> §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected.
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (consent capture — <code>ts_consent</code>/<code>txt_consent_version</code> stamped by <code>fn_create_registration</code> — and the RODO consent-gate step <strong>implemented</strong> 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) <strong>Amended 2026-08-17:</strong> §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected. <strong>Amended 2026-08-28:</strong> §1 gains the edit handle (not personal data); the Art. 16 rectification row now records self-service correction before the event, not only reconciliation at ingestion.</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>078-gdpr-data-handling.md</code></dd></div><div><dt>Length</dt><dd class="">270 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed (consent capture — <code>ts_consent</code>/<code>txt_consent_version</code> stamped by <code>fn_create_registration</code> — and the RODO consent-gate step <strong>implemented</strong> 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) <strong>Amended 2026-08-17:</strong> §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected. <strong>Amended 2026-08-28:</strong> §1 gains the edit handle (not personal data); the Art. 16 rectification row now records self-service correction before the event, not only reconciliation at ingestion.
 <strong>Date:</strong> 2026-07-04
 <strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-079, ADR-080</p>
 <blockquote>
@@ -158,6 +158,14 @@ below.</p>
 <td><strong>Not collected</strong> — <code>txt_email_hash</code> exists and stays NULL</td>
 </tr>
 <tr>
+<td>Edit handle (random UUID)</td>
+<td>Authorise a fencer to correct their own declaration (Art. 16)</td>
+<td>Contract 6(1)(b)</td>
+<td><code>tbl_registration.uuid_edit_token</code></td>
+<td>Purged with the registration</td>
+<td><strong>Not personal data</strong> — random, unlinked to any person, never returned by a public projection</td>
+</tr>
+<tr>
 <td>Club (free text)</td>
 <td>Intended for FTL seed files</td>
 <td>— (transient)</td>
@@ -203,7 +211,7 @@ recorded in the ROPA.</li>
 <tr>
 <td>Rectification</td>
 <td>16</td>
-<td><strong>The birth-year reconciliation flow <em>is</em> rectification</strong> (ADR-079), applied at ingestion</td>
+<td><strong>The birth-year reconciliation flow <em>is</em> rectification</strong> (ADR-079), applied at ingestion. <strong>Amended 2026-08-28:</strong> also self-service and immediate — a fencer may correct their own declared name, gender, birth year and weapons before the event through <code>fn_update_registration</code>, so rectification no longer waits for results ingestion</td>
 </tr>
 <tr>
 <td>Erasure</td>
@@ -345,5 +353,5 @@ erasure, retention, consent).</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="077-event-lifecycle-season-skeletons.html">← ADR-077: Event lifecycle, season-skeleton provisioning &amp; CERT→PROD calendar promotion</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="079-event-self-registration-identity.html">→ ADR-079: Event Self-Registration &amp; Identity Resolution</a></nav>
-<footer class="foot">Generated from <code>078-gdpr-data-handling.md</code> · source SHA-256 <code>b84ef4ee6be8d286d1be59b39716f08ce3fe96149d5102157780826480171f92</code></footer>
+<footer class="foot">Generated from <code>078-gdpr-data-handling.md</code> · source SHA-256 <code>9f9e47de0cfc82634d72cbf0cbeec81cae7fc1b416632d3d292491664d4b3396</code></footer>
 </div></body></html>

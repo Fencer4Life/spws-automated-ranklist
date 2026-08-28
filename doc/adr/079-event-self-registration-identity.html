@@ -4,23 +4,79 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="079-event-self-registration-identity.md">
-<meta name="adr-source-sha256" content="eba90548af7ab93b0110e76dcda0d5a452794dda9c2dbd25f5a418f55e95c920">
+<meta name="adr-source-sha256" content="3c152a62e2871fa4d9bdeb44766021eeced081b94de7c70d258e3d8c4f4c1dcd">
 <title>ADR-079 · Event Self-Registration &amp; Identity Resolution</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 079</p><h1>Event Self-Registration &amp; Identity Resolution</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but <strong>no longer blocking registration</strong> — see the 2026-08-17 amendment). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation. <strong>Amended 2026-08-17:</strong> unmatched fencers register with <code>id_fencer</code> NULL; <code>register.html</code> is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration <code>20260817000001</code>.</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>079-event-self-registration-identity.md</code></dd></div><div><dt>Length</dt><dd class="">422 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but <strong>no longer blocking registration</strong> — see the 2026-08-17 amendment). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation. <strong>Amended 2026-08-17:</strong> unmatched fencers register with <code>id_fencer</code> NULL; <code>register.html</code> is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration <code>20260817000001</code>.
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but <strong>no longer blocking registration</strong> — see the 2026-08-17 amendment). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation. <strong>Amended 2026-08-17:</strong> unmatched fencers register with <code>id_fencer</code> NULL; <code>register.html</code> is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration <code>20260817000001</code>. <strong>Amended 2026-08-28:</strong> declared names are stored whitespace-normalised; the matched and unmatched branches absorb each other's twin; and a fencer may correct a submitted declaration through a new public edit path, <code>fn_update_registration</code>, authorised by a short-lived handle. Open items 2 (club) and 3 (post-deadline) remain open, joined by a rate limit for §4 defence (d).</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>079-event-self-registration-identity.md</code></dd></div><div><dt>Length</dt><dd class="">518 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but <strong>no longer blocking registration</strong> — see the 2026-08-17 amendment). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation. <strong>Amended 2026-08-17:</strong> unmatched fencers register with <code>id_fencer</code> NULL; <code>register.html</code> is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration <code>20260817000001</code>. <strong>Amended 2026-08-28:</strong> declared names are stored whitespace-normalised; the matched and unmatched branches absorb each other's twin; and a fencer may correct a submitted declaration through a new public edit path, <code>fn_update_registration</code>, authorised by a short-lived handle. Open items 2 (club) and 3 (post-deadline) remain open, joined by a rate limit for §4 defence (d).
 <strong>Date:</strong> 2026-07-04
 <strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
 <strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> §7 (decouples the entry-list gate from the registration cutoff).</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-08-17-the-unmatched-fencer-registers-register-html-is-prod-only">Amendment (2026-08-17 — the unmatched fencer registers; register.html is PROD-only)</a></li><li class="depth-3"><a href="#a-a-non-exact-match-no-longer-requires-email-it-registers">(a) A non-exact match no longer requires email — it registers</a></li><li class="depth-3"><a href="#b-register-html-receives-prod-credentials-only">(b) `register.html` receives PROD credentials only</a></li><li class="depth-3"><a href="#c-smaller-corrections-shipped-in-the-same-change">(c) Smaller corrections shipped in the same change</a></li><li class="depth-3"><a href="#open-items">Open items</a></li><li class="depth-3"><a href="#corpus-audit">Corpus audit</a></li><li class="depth-2"><a href="#amendment-2026-08-09-the-entry-list-outlives-the-registration-window">Amendment (2026-08-09 — the entry list outlives the registration window)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-core-invariant-registration-is-read-only-on-tbl-fencer">1. Core invariant — registration is READ-ONLY on `tbl_fencer`</a></li><li class="depth-3"><a href="#2-identity-model-model-b-email-as-one-time-verification-not-an-account">2. Identity model — Model B (email as one-time verification, not an account)</a></li><li class="depth-4"><a href="#implementation-note-form-side-routing-is-exact-only-no-python-bridge-2026-07-05">Implementation note — form-side routing is exact-only; no Python bridge (2026-07-05)</a></li><li class="depth-3"><a href="#3-by-reconciliation-matrix-runs-at-ingestion-not-the-form">3. BY reconciliation matrix (runs at INGESTION, not the form)</a></li><li class="depth-3"><a href="#4-impersonation-hardening">4. Impersonation hardening</a></li><li class="depth-3"><a href="#5-schema-phase-1">5. Schema (Phase 1)</a></li><li class="depth-3"><a href="#6-ui">6. UI</a></li><li class="depth-3"><a href="#7-amendment-2026-07-05-registration-url-auto-fill-in-app-modal-presentation">7. Amendment (2026-07-05) — registration URL auto-fill + in-app modal presentation</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
-  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-17-the-unmatched-fencer-registers-register-html-is-prod-only">Amendment (2026-08-17 — the unmatched fencer registers; register.html is PROD-only)</h2>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-08-28-correcting-a-declaration-one-row-per-entrant">Amendment (2026-08-28 — correcting a declaration; one row per entrant)</a></li><li class="depth-3"><a href="#a-declared-names-are-stored-whitespace-normalised">(a) Declared names are stored whitespace-normalised</a></li><li class="depth-3"><a href="#b-one-entrant-holds-one-row-per-event-whichever-branch-writes-it">(b) One entrant holds one row per event, whichever branch writes it</a></li><li class="depth-3"><a href="#c-a-fencer-may-correct-a-declaration-they-already-submitted">(c) A fencer may correct a declaration they already submitted</a></li><li class="depth-2"><a href="#amendment-2026-08-17-the-unmatched-fencer-registers-register-html-is-prod-only">Amendment (2026-08-17 — the unmatched fencer registers; register.html is PROD-only)</a></li><li class="depth-3"><a href="#a-a-non-exact-match-no-longer-requires-email-it-registers">(a) A non-exact match no longer requires email — it registers</a></li><li class="depth-3"><a href="#b-register-html-receives-prod-credentials-only">(b) `register.html` receives PROD credentials only</a></li><li class="depth-3"><a href="#c-smaller-corrections-shipped-in-the-same-change">(c) Smaller corrections shipped in the same change</a></li><li class="depth-3"><a href="#open-items">Open items</a></li><li class="depth-3"><a href="#corpus-audit">Corpus audit</a></li><li class="depth-2"><a href="#amendment-2026-08-09-the-entry-list-outlives-the-registration-window">Amendment (2026-08-09 — the entry list outlives the registration window)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-core-invariant-registration-is-read-only-on-tbl-fencer">1. Core invariant — registration is READ-ONLY on `tbl_fencer`</a></li><li class="depth-3"><a href="#2-identity-model-model-b-email-as-one-time-verification-not-an-account">2. Identity model — Model B (email as one-time verification, not an account)</a></li><li class="depth-4"><a href="#implementation-note-form-side-routing-is-exact-only-no-python-bridge-2026-07-05">Implementation note — form-side routing is exact-only; no Python bridge (2026-07-05)</a></li><li class="depth-3"><a href="#3-by-reconciliation-matrix-runs-at-ingestion-not-the-form">3. BY reconciliation matrix (runs at INGESTION, not the form)</a></li><li class="depth-3"><a href="#4-impersonation-hardening">4. Impersonation hardening</a></li><li class="depth-3"><a href="#5-schema-phase-1">5. Schema (Phase 1)</a></li><li class="depth-3"><a href="#6-ui">6. UI</a></li><li class="depth-3"><a href="#7-amendment-2026-07-05-registration-url-auto-fill-in-app-modal-presentation">7. Amendment (2026-07-05) — registration URL auto-fill + in-app modal presentation</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
+  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-28-correcting-a-declaration-one-row-per-entrant">Amendment (2026-08-28 — correcting a declaration; one row per entrant)</h2>
+<p>Three defects found while PPW1-2026-2027 was live and taking real entries, and one new
+public path. §§1, 3, 5 (read-only invariant, BY reconciliation matrix, schema shape) still
+hold; §2's <em>write</em> semantics gain an edit path, and §4's threat assessment is confirmed
+rather than changed.</p>
+<h3 id="a-declared-names-are-stored-whitespace-normalised">(a) Declared names are stored whitespace-normalised</h3>
+<p><code>tbl_fencer</code> has carried <code>trg_trim_fencer_names</code> since migration <code>20260503000004</code>.
+<code>tbl_registration</code> never got the equivalent, and the live form validated with
+<code>surname.trim()</code> while submitting the raw string — so two of the first fourteen PROD
+entries were stored as <code>&quot;Gary &quot;</code> and <code>&quot;KUCIĘBA &quot;</code>. Migration <code>20260828000001</code> adds
+<code>trg_trim_registration_names</code> and backfills. The form now normalises at its own boundary
+too, as <code>20260503000004</code> paired with the admin modal.</p>
+<p>The blast radius was narrower than first assumed and is recorded here so it is not
+re-derived: the FTL seed file was never affected, because
+<code>ftl_seed_export.to_canonical_name()</code> already strips on export, and dedupe was never
+affected, because its arbiter normalises with <code>upper(btrim(...))</code>. Only what we store and
+publish was wrong.</p>
+<h3 id="b-one-entrant-holds-one-row-per-event-whichever-branch-writes-it">(b) One entrant holds one row per event, whichever branch writes it</h3>
+<p>§5's <code>UNIQUE(id_event, id_fencer)</code> and the partial index added on 2026-08-17 arbitrate on
+<strong>different</strong> keys, and nothing spanned them — so one person could hold a matched <em>and</em> an
+unmatched row for the same event, both reaching the public roster and the organizer's seed
+file. Reachable in both directions, and by design rather than accident: an unmatched
+newcomer's <code>tbl_fencer</code> row is created while registration is still open, and the form
+deliberately treats a failed lookup as &quot;no match&quot; so a network blip never blocks an entry.</p>
+<p>Migration <code>20260828000002</code> makes each branch absorb the other's twin for the same declared
+identity before inserting. <strong>Promotion is preferred over delete-and-insert</strong> — <code>ts_created</code>
+and the consent stamp are the RODO evidence and consent was given at the first submission,
+so that row survives and merely gains its fencer link. Where a matched row already exists
+for that fencer, the redundant unmatched twin is removed instead. Both live environments
+were checked before shipping and held none.</p>
+<h3 id="c-a-fencer-may-correct-a-declaration-they-already-submitted">(c) A fencer may correct a declaration they already submitted</h3>
+<p>§2 gave <code>tbl_registration</code> a single public write path. That path dedupes an unmatched
+entrant <strong>by the declared name and birth year</strong>, so re-submitting a corrected spelling
+inserted a <em>second</em> row rather than fixing the first — demonstrated on LOCAL, where
+<code>KOWALKSI Adam</code> and <code>KOWALSKI Adam</code> ended up side by side. Adding a forgotten weapon always
+worked, because that leaves the arbiter untouched.</p>
+<p>Migration <code>20260828000003</code> adds <code>uuid_edit_token</code> and <code>fn_update_registration</code>, which
+updates <strong>by primary key</strong> and so can change the declared name and birth year. It enforces
+the same D10 window, never touches <code>id_fencer</code> (the link is re-derived at ingestion, §3),
+never restamps consent, and raises rather than merging when a correction collides with
+another entry at the same event. <code>id_registration</code> cannot authorise this on its own —
+<code>vw_registration_entry_list</code> publishes that column.</p>
+<p><strong>The handle is short-lived and deliberately not persisted.</strong> It lives in the page's memory
+and is gone when the form unmounts; a returning fencer re-enters the tuple they declared,
+which upserts onto their row and mints a fresh handle. So re-submission <strong>rotates</strong> the
+handle, which is the mechanism rather than a side effect.</p>
+<p>The rejected alternative was persisting it in <code>localStorage</code>. That bought one property —
+only the row's first registrant could rename it — and cost a real one, because
+<code>localStorage</code> is per-origin and per-device: a fencer who registered on a phone could not
+correct from a laptop, and <code>register.html</code> on GitHub Pages and the CMS-embedded element
+cannot see each other's storage. The property it bought was also protecting a secret that
+is not secret: <code>fn_match_registration_fencer</code> is anon-callable and answers <strong>per birth
+year, before any write</strong>, so an exact birth year is recoverable in about ten silent probes
+(verified on LOCAL). §4's assessment is therefore unchanged — this widens no boundary that
+was closed — but its defence <strong>(d)</strong> is now a genuine gap, recorded below.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-17-the-unmatched-fencer-registers-register-html-is-prod-only">Amendment (2026-08-17 — the unmatched fencer registers; register.html is PROD-only)</h2>
 <p>Two corrections, made while opening PPW1-2026-2027 for entry. §§1, 3, 5 (read-only
 invariant, BY reconciliation matrix, schema) are untouched; §2's <em>gating</em> changes and
 §7(c)'s credential injection was <strong>wrong in a way that silently misrouted every entry</strong>.</p>
@@ -148,6 +204,39 @@ the public roster — but the sentence is no longer exhaustive.</li>
 <li><a href="016-supabase-auth-totp-mfa.html">ADR-016</a> — <strong>clean.</strong> Its email-confirmation setting governs
 admin accounts, not registration.</li>
 </ul>
+<ol start="4">
+<li>
+<p><strong>No rate limit anywhere, so §4's defence (d) does not exist.</strong> §4 lists &quot;the salted-hash
+abuse log + rate limit&quot; among the real defences against impersonation. Neither is built:
+<code>txt_email_hash</code> is provisioned and always NULL (ADR-078 §1 records this), and there is no
+throttling in any migration, RPC or edge function. This matters more than it did, because
+<code>fn_match_registration_fencer</code> answers <strong>per birth year before any write</strong>, making an exact
+birth year recoverable in roughly ten silent probes — so every argument in this ADR that
+leans on the birth year being private is currently worth nothing. <em>Recommendation:</em> rate-limit
+the match RPC, or stop it answering per-year. It is the one genuinely missing control, and it
+is a precondition for the birth-year challenge in item 5.</p>
+</li>
+<li>
+<p><strong>The declared birth year is never challenged.</strong> <code>canContinue</code> requires only a non-null
+number — no bounds, and the computed V-category is display-only — so a mistyped year passes
+straight through. Because the year is part of the unmatched dedupe arbiter (item 1), a typo
+creates a <strong>second</strong> entry rather than editing the first, and both reach the roster and the
+seed file. <em>Recommendation:</em> where a name matches a fencer whose stored year is <strong>not</strong>
+<code>bool_birth_year_estimated</code>, challenge the mismatch — matching against every namesake, and
+challenging rather than refusing, so the estimated-BY population this subsystem exists to
+learn from is never turned away (the defect corrected on 2026-08-17). This is a data-quality
+control, not a security one: see item 4 for why it cannot be the latter.</p>
+</li>
+<li>
+<p><strong><code>fn_update_registration</code> leaves no record of what changed.</strong> §4 accepts the residual
+impersonation exposure on the grounds that it is &quot;minimised, detectable, reversible&quot;. A
+rename through the edit path is currently neither detectable nor reversible — the previous
+value is simply gone. Revocation already works (admins hold <code>UPDATE</code> under a <code>FOR ALL</code>
+policy, so regenerating <code>uuid_edit_token</code> makes any held handle inert), so only the record is
+missing. <em>Recommendation:</em> write each edit to <code>tbl_audit_log</code>, which already carries
+<code>jsonb_old_values</code>/<code>jsonb_new_values</code> and is written by several migrations.</p>
+</li>
+</ol>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-09-the-entry-list-outlives-the-registration-window">Amendment (2026-08-09 — the entry list outlives the registration window)</h2>
 <p>§7 gated the entry-list link on the same cutoff as the registration link, so both vanished together once the deadline passed. <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> <strong>decouples them</strong>: registration closes at <code>COALESCE(dt_registration_deadline, dt_start)</code>, but the entry list stays visible until the event <strong>starts</strong> (CQ.31, CQ.32, EC.22), and is never shown on a cancelled event (CQ.33).</p>
@@ -452,5 +541,5 @@ ADR-050/070–074 (ingestion pipeline).</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="078-gdpr-data-handling.html">← ADR-078: GDPR Data Handling &amp; Data-Subject Rights</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="080-clean-roster-ftl-seeding.html">→ ADR-080: Clean-Roster FTL Seeding</a></nav>
-<footer class="foot">Generated from <code>079-event-self-registration-identity.md</code> · source SHA-256 <code>eba90548af7ab93b0110e76dcda0d5a452794dda9c2dbd25f5a418f55e95c920</code></footer>
+<footer class="foot">Generated from <code>079-event-self-registration-identity.md</code> · source SHA-256 <code>3c152a62e2871fa4d9bdeb44766021eeced081b94de7c70d258e3d8c4f4c1dcd</code></footer>
 </div></body></html>

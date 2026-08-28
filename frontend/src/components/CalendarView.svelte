@@ -55,7 +55,6 @@
   eventCode={regModalEventCode}
   eventId={regModalEventId}
   view={regModalView}
-  onviewlist={() => { regModalView = 'list' }}
   onclose={() => { regModalOpen = false }}
 />
 

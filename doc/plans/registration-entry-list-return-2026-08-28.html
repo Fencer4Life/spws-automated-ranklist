@@ -1,0 +1,240 @@
+<meta charset="utf-8">
+<title>No way back from the entry list</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">SPWS · registration UI · plan · 28 August 2026</p>
+  <h1>No way back from the entry list</h1>
+  <p class="dek">A fencer who opens the roster before copying the IBAN loses the transfer data. It is not a missing button — <b>viewing the roster unmounts the form</b>, and the payment details are derived from live form state.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Built and verified on LOCAL — not committed</span>
+    <span class="pill">frontend only</span>
+    <span class="pill">vitest 612 → <b>615</b></span>
+    <span class="pill">svelte-check 0 errors</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Decided · built</p>
+    <h2>Back button only — no history manipulation</h2>
+    <p>Once the roster renders in place, the address bar keeps showing <code>?event=PPW1-2026-2027</code> while the fencer browses it, instead of <code>…&amp;view=list</code>. I can additionally push <code>?view=list</code> into history, which would make browser Back a second route home and keep the URL copyable while the roster is open.</p>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> My recommendation — back button only, no history manipulation</p>
+      <p><code>RegistrationElement</code> is a custom element destined for the <b>WordPress CMS page</b>. Pushing history from inside a component on a page it does not own is how a host's own navigation gets broken. The shareable roster link is unaffected either way, because <code>register.html?event=X&amp;view=list</code> stays exactly as it is for cold visitors.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">?</span> The alternative, if you want it</p>
+      <p>Add <code>history.pushState</code> on entering the roster and a <code>popstate</code> listener to return. Browser Back works, URL stays shareable mid-flow. Cost is a history listener living inside an embedded custom element.</p>
+    </div>
+
+    <p><b>Settled 28 August:</b> back button alone, approved against the mock. Built exactly as described below.</p>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Verified on the real page, not only in tests</p>
+      <p>Registered a fencer through <code>register.html</code> against LOCAL, reached the payment step, opened the roster from it, and came back. Payee, IBAN, the transfer title <code>PPW1-2026-2027 JAN KOWALSKI FLORET V2</code> and <code>120 PLN</code> were all still there, and the IBAN copy button still returned <b>Skopiowano</b>. The URL never changed and every request in the flow returned 200. The cold <code>?view=list</code> link renders the roster with <b>no</b> back button, as intended. Test data removed from LOCAL afterwards.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">i</span> One console 401, unrelated</p>
+      <p><code>fn_refresh_active_season</code> returns 401 to an anonymous caller on the admin app's own page — request #65, long before <code>register.html</code> loaded at #131. That is ADR-083 deny-by-default behaving correctly, not a defect introduced here.</p>
+    </div>
+    <p class="trace">Working mock of the recommendation (clickable round trip, plus the cold-link variant with no back button): <a href="../mockups/registration_entry_list_return.html">doc/mockups/registration_entry_list_return.html</a></p>
+  </section>
+
+  <section>
+    <p class="kicker">Why</p>
+    <h2>The roster destroys the form, in both paths</h2>
+    <p>The payment step is the only place the transfer data exists — payee, IBAN, the transfer title (<code>PPW1-2026-2027 JAN KOWALSKI SZPADA V2</code>) and the amount, each with a copy button. All of it is <code>$derived</code> from form state.</p>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">1 ×</span> Standalone <code>register.html</code> — a full page load</p>
+      <p>The affordance is <code>&lt;a href="?event=X&amp;view=list"&gt;</code>. That URL makes <code>register.html</code> mount <code>spws-entry-list</code> <em>instead of</em> <code>spws-registration</code> — a different custom element entirely. Browser Back re-mounts the form at the <b>identity</b> step, so the fencer must re-submit to see the IBAN again.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">2 ×</span> Calendar modal — the component is swapped out</p>
+      <p><code>onviewlist</code> sets <code>regModalView = 'list'</code>, and <code>RegistrationModal</code> renders <code>EntryList</code> in an <code>{:else}</code> branch that <b>unmounts</b> <code>RegistrationForm</code>. Only <code>onclose</code> exists, and it closes the whole modal back to the calendar.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">The change</p>
+    <h2>Stop unmounting the form</h2>
+    <p><code>RegistrationForm</code> gains a <code>list</code> step and owns the roster itself. Because it is never unmounted, <code>surname</code>, <code>firstName</code>, <code>weapons</code>, <code>fee</code> and <code>title</code> survive untouched and the payment step re-renders exactly as it was.</p>
+
+    <div class="op">
+      <span class="op-tag u">UI</span><span class="set">EntryList.svelte</span>
+      <ul>
+        <li>Optional <code>onback</code> prop, rendered in the existing <code>.el-top</code> header — the same conditional-affordance pattern already used for <code>onclose</code>.</li>
+        <li>Cold entry points pass no <code>onback</code> and are unchanged: a shared <code>?view=list</code> link and <code>CalendarView.openEntryListModal</code> have nothing to go back to.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag u">UI</span><span class="set">RegistrationForm.svelte</span>
+      <ul>
+        <li><code>list</code> added to the step union; the roster <b>replaces</b> the <code>.reg-card</code> rather than nesting inside it — <code>EntryList</code> renders its own full card with its own header and <code>LangToggle</code>, so nesting would stack two headers and two language toggles.</li>
+        <li><code>listReturnStep</code> holds where the fencer came from. The <code>closed</code> step carries the same affordance and must not land someone on a payment screen they never reached.</li>
+        <li><code>onclose</code> is passed through, so the modal's × still closes from the roster.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag d">DROP</span><span class="set">onviewlist</span>
+      <ul>
+        <li>Once the form owns the list step, both call sites exist only to route around the form. Removing it collapses two divergent behaviours — navigate away vs. swap the component out — into one that works identically in the standalone page and the modal.</li>
+        <li>Touches <code>RegistrationModal.svelte</code> and <code>CalendarView.svelte</code>. The modal's <code>view</code> prop stays: it still serves the cold entry-list entry point.</li>
+      </ul>
+    </div>
+
+    <p><code>register.html</code> is <b>not</b> changed — <code>?view=list</code> must keep working as the shared roster link. No database, migration or API change; <code>vw_registration_entry_list</code> and <code>fetchEntryList</code> are reused as they are.</p>
+  </section>
+
+  <section>
+    <p class="kicker">How it gets built</p>
+    <h2>Tests first, RED verified by reversion</h2>
+    <ol class="steps">
+      <li><b><code>EntryList.test.ts</code></b> — renders a back button and calls <code>onback</code> when provided; renders <b>no</b> back button when it is absent. Mirrors the existing <code>onclose</code> test.</li>
+      <li><b><code>RegistrationForm.test.ts</code></b> — from the payment step the affordance shows the roster <em>without unmounting the form</em>; back returns to payment with <b>the transfer title and amount still populated</b>. That last assertion is the one that encodes the actual bug — a back button returning to a blank payment panel would pass a weaker test.</li>
+      <li>The same round trip from the <code>closed</code> step returns to <code>closed</code>, not <code>payment</code>.</li>
+      <li>Two existing tests are replaced, not deleted quietly: the <code>onviewlist</code> test and the standalone <code>&lt;a href&gt;</code> assertion both pin behaviour being deliberately removed.</li>
+      <li><b>Only then</b> edit the components. RED was observed <em>before any component code existed</em> — 1 failure in <code>EntryList.test.ts</code>, 3 in <code>RegistrationForm.test.ts</code>, each failing because the button genuinely was not there — which is the stronger form of the proof, so no reversion pass was needed.</li>
+      <li>One RED was <b>my test's fault, not the code's</b>: the closed step styles its affordance <code>.reg-btn</code>, not <code>.reg-entry-list-link</code>. Selector corrected rather than the component bent to fit it.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">Evidence required before this is called done</p>
+    <h2>Verification</h2>
+    <ul>
+      <li><code>npx vitest run tests/EntryList.test.ts tests/RegistrationForm.test.ts</code> — RED, then GREEN.</li>
+      <li><code>npm test</code> — full suite, currently 612 passing.</li>
+      <li><code>npm run check</code> — svelte-check, 0 errors.</li>
+      <li>Drive the real page on the dev server: register a test entry against <b>LOCAL</b>, open the roster from the payment screen, click back, confirm the IBAN and transfer title are still there and still copyable. Screenshot both states.</li>
+      <li>No CERT or PROD writes. LOCAL only.</li>
+    </ul>
+    <p>Documentation coherence gate: <code>events-and-registration.html</code> current-flow prose and <code>last-verified</code>; FR-123 in the RTM gains the new Vitest IDs; then <code>check-coherence.sh</code>, <code>check-spec-sync.sh</code>, <code>check_docs.py</code>, <code>render_docs.py --check</code>, and <code>refresh-graph.sh</code> before any commit. <b>No ADR</b> — this restores intended behaviour inside ADR-079's existing model rather than deciding anything new.</p>
+  </section>
+
+  <p class="foot">Built and verified 28 August 2026 · vitest 615 passed / 43 files · svelte-check 0 errors, 14 pre-existing warnings, none in the touched files · coherence, spec-sync, check_docs, render_docs and render_adrs all clean · graph refreshed · <b>not committed</b>. 15 files changed in total, including the earlier name-trim work, which remains uncommitted and untouched by this change.</p>
+</div>

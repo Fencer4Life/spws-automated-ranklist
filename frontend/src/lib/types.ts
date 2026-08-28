@@ -380,6 +380,19 @@ export interface UpdateEventParams {
 export type MatchStatus = 'PENDING' | 'AUTO_MATCHED' | 'UNMATCHED' | 'APPROVED' | 'NEW_FENCER' | 'DISMISSED'
 
 // Phase 2 (ADR-079) — event self-registration.
+export interface UpdateRegistrationParams {
+  idRegistration: number
+  // The handle handed out by a successful submission. No public projection
+  // returns it — id_registration alone cannot authorise an edit, since
+  // vw_registration_entry_list publishes that column.
+  editToken: string
+  surname: string
+  firstName: string
+  gender: GenderType
+  birthYear: number
+  weapons: WeaponType[]
+}
+
 export interface CreateRegistrationParams {
   eventId: number
   surname: string
@@ -391,6 +404,10 @@ export interface CreateRegistrationParams {
   // salted abuse-log token for the verified path. Both default null.
   fencerId?: number | null
   emailHash?: string | null
+  // Client-generated edit handle, stored on the row. Re-submitting the declared
+  // tuple rotates it to the new caller — that is how a returning fencer obtains
+  // a usable handle. A caller omitting it never clears the stored one.
+  editToken?: string | null
   // RODO-accept version stamp (D5) — the write happens at RODO-accept, so this
   // is always passed by the real flow; optional here for legacy callers.
   consentVersion?: string | null

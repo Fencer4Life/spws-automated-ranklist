@@ -1,7 +1,7 @@
 <svelte:options customElement="spws-entry-list" />
 
 {#if resolvedEventId != null}
-  <EntryList eventId={resolvedEventId} />
+  <EntryList eventId={resolvedEventId} onclose={backToRegistration} />
 {:else if event}
   <p class="el-not-found">{t('reg_event_not_found')}</p>
 {/if}
@@ -28,6 +28,19 @@
   } = $props()
 
   let resolvedEventId = $state<number | null>(null)
+
+  // This page renders the roster with no registration form around it, so unlike
+  // the modal there is nothing to dismiss to — and unlike the in-flow roster
+  // (RegistrationForm's `list` step) there is no back button either, because a
+  // visitor who followed the shared link never passed through the form. That
+  // left the shared roster link a dead end.
+  //
+  // Closing here therefore means going to the registration form for the same
+  // event: the one place there is to go. It is a real navigation, not a step
+  // change, because register.html mounts a different custom element per view.
+  function backToRegistration() {
+    location.assign(`?event=${encodeURIComponent(event)}`)
+  }
 
   // initClient runs synchronously (module init), matching RegistrationElement
   // — see that file's comment for why this can't safely live in an $effect.

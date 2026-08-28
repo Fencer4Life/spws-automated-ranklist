@@ -148,11 +148,18 @@ SELECT set_eq(
     'fn_season_summary',
     'fn_vcat_violation_msg',
     -- ADR-079 / FR-122 public self-registration: register.html is served to
-    -- anonymous visitors and these two are its entire server surface.
+    -- anonymous visitors and these three are its entire server surface.
     -- fn_create_registration is SECURITY DEFINER precisely so that anon can
     -- write a registration without holding INSERT on tbl_registration
     -- (asserted from the other side by 49.13/49.14).
     'fn_create_registration',
+    -- fn_update_registration (2026-08-28) is the EDIT half of the same
+    -- surface, and is deliberately anon-callable for the same reason. It is
+    -- not an unguarded write: every call must present the row's
+    -- uuid_edit_token, which the client generated and which no public
+    -- projection returns. id_registration alone cannot authorise it — that
+    -- column IS published by vw_registration_entry_list.
+    'fn_update_registration',
     'fn_match_registration_fencer'
   ],
   '52.7: the anon-EXECUTEable function set equals the documented allowlist'

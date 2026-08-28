@@ -1,0 +1,217 @@
+<meta charset="utf-8">
+<title>The trailing space on the entry list</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">SPWS · registration · open item 1 · 28 August 2026</p>
+  <h1>The trailing space on the entry list</h1>
+  <p class="dek">Two of the fourteen live PROD entries were stored as <b>"Gary "</b> and <b>"KUCIĘBA "</b>. The form validated with <code>.trim()</code> and then submitted the raw string. Fixed at the form boundary <b>and</b> in the table, with the backfill riding along in the migration.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>done — verified LOCAL, not yet deployed</span>
+    <span class="pill">migration <code>20260828000001</code></span>
+    <span class="pill">pgTAP 773 → <b>780</b></span>
+    <span class="pill">vitest 611 → <b>612</b></span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">What was actually wrong</p>
+    <h2>Validate one value, submit another</h2>
+    <p><code>RegistrationForm.svelte</code> gated its Continue button on <code>surname.trim() !== ''</code>, then passed the untrimmed <code>surname</code> straight into the match lookup, the transfer note and the RPC payload. The trim was only ever used to decide the button was enabled — it never reached the data.</p>
+    <p><code>tbl_fencer</code> has carried <code>trg_trim_fencer_names</code> since May (migration <code>20260503000004</code>), added after the same class of defect stored <code>' Bartosz'</code>. <code>tbl_registration</code> never got the equivalent, so when the public form went live the identical bug reappeared on a table that anyone on the internet can write to.</p>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> The public roster carries the padding</p>
+      <p><code>vw_registration_entry_list</code> projects the names straight through and <code>EntryList.svelte</code> renders them raw. HTML collapses the whitespace visually, so the page looks correct — the stored and published value is not.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Correction to the handover</p>
+    <h2>The FTL seed file was never affected</h2>
+    <p>The 28 August handover lists the seed file as a casualty. It is not. <code>ftl_seed_export.to_canonical_name()</code> already calls <code>.strip()</code> on both names, and it is the only path a registration name takes into the XML — confirmed by reference search, not by reading around it. Dedupe was never affected either: <code>uq_registration_unmatched_identity</code> arbitrates on <code>upper(btrim(...))</code>.</p>
+    <p>So the blast radius is narrower than recorded: <b>what we store and publish</b>, not what we export or match on. The fix is still worth making — it is what puts all three in agreement instead of leaving two of them quietly compensating for the first.</p>
+  </section>
+
+  <section>
+    <p class="kicker">The change</p>
+    <h2>Both boundaries, same as the fencer precedent</h2>
+
+    <div class="op">
+      <span class="op-tag c">DB</span><span class="set">migration 20260828000001</span>
+      <ul>
+        <li><code>trg_trim_registration_names</code> — BEFORE INSERT OR UPDATE, <code>btrim</code>s both name columns for <b>every</b> caller. The table carries an admin <code>FOR ALL</code> RLS policy, so a PostgREST write never passes through the form at all; the trigger is the only thing that covers it.</li>
+        <li>Backfill scoped to rows that actually differ — a no-op on a clean environment, and re-running the migration cannot touch a clean row.</li>
+        <li>Safe against the unique index: its key is already <code>upper(btrim(...))</code>, so trimming leaves every key byte-identical and no collision can be introduced.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag u">UI</span><span class="set">RegistrationForm.svelte</span>
+      <ul>
+        <li>Normalise once in <code>submitIdentity()</code> rather than at each consumer — one funnel covers the match lookup, the duplicate check, the transfer note and the RPC payload.</li>
+        <li>Deliberately <b>not</b> in the input handler: that would stop a fencer typing the space inside a compound name.</li>
+      </ul>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">→</span> Why the trigger cannot change dedupe behaviour</p>
+      <p>In <code>INSERT … ON CONFLICT</code>, Postgres fires BEFORE INSERT row triggers <em>first</em>, then arbitrates on the modified tuple. A trigger that rewrites the arbiter's input is normally a hazard. Here it is inert, because <code>btrim</code> is idempotent against a <code>btrim</code>-normalised index key. Test 57.7 pins that rather than assuming it.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Evidence</p>
+    <h2>RED before GREEN, on both layers</h2>
+    <ol class="steps">
+      <li><b>pgTAP RED</b> — 7/7 failed, each showing the padded value stored verbatim, not a fixture error.</li>
+      <li><b>pgTAP GREEN</b> — 7/7 pass; full suite <b>780 assertions PASS</b> across 58 files.</li>
+      <li><b>Vitest RED proven by reversion</b> — the component fix was temporarily removed and the new test failed on the match-lookup argument, then restored. A test that passes both ways proves nothing.</li>
+      <li><b>Vitest GREEN</b> — 612 tests, 43 files. <code>npm run check</code>: 0 errors.</li>
+      <li><b>Clean-database replay</b> — <code>./scripts/reset-dev.sh</code>, so the migration applied <em>in sequence</em> rather than by hand; it is the last recorded migration and the full suite passes on the fresh schema.</li>
+      <li><b>Gates</b> — <code>postgrestools</code> clean on the migration; coherence, spec-sync, <code>check_docs.py</code>, <code>render_adrs.py --check</code>, <code>render_docs.py --check</code> all pass; graph refreshed.</li>
+    </ol>
+    <p>The pgTAP file emits the usual pgTAP-function findings under <code>postgrestools</code> — the pre-existing baseline shape, identical to <code>38_fencer_trim_trigger.sql</code>, because the extension is not installed in the running LOCAL database.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Documentation</p>
+    <h2>Coherence gate completed</h2>
+    <ul>
+      <li><code>doc/handbook/subsystems/events-and-registration.html</code> — new invariant, implementation-map row, tests sentence, re-verified 28 August.</li>
+      <li><code>doc/requirements-traceability-matrix.md</code> — FR-120 amended, test IDs 57.1–57.7 traced.</li>
+      <li>Specification Appendix D — pgTAP total 773 → 780.</li>
+    </ul>
+    <p><b>No ADR.</b> This mirrors an existing decision rather than making a new one, so the RTM cites the migration as a defect fix. An earlier draft of this row claimed an <em>"ADR-079 amendment 2026-08-28"</em> that does not exist; it was corrected before the gates were run.</p>
+  </section>
+
+  <section>
+    <p class="kicker">What happens on deploy</p>
+    <h2>Nothing to do by hand on the cloud</h2>
+    <p>The backfill is inside the migration, so CI repairs the two PROD rows and the one CERT row when it applies. No manual cloud write is needed, and none was made — schema changes flow through migrations so the environments converge and the fingerprint gate stays meaningful.</p>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Not committed</p>
+      <p>Nine files changed, all listed above. The ~9 unrelated worktree modifications are untouched. Pushing main still requires the integration checkout.</p>
+    </div>
+  </section>
+
+  <p class="foot">Verified 28 August 2026 · LOCAL after a full reset · live-row counts read from PROD and CERT through <code>scripts/cloud-sql.sh</code> (read-only, no writes) · open items 2–4 from the 28 August handover remain untouched.</p>
+</div>

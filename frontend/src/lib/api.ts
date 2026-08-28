@@ -25,6 +25,7 @@ import type {
   FencerWithAliases,
   MatchCandidate,
   CreateRegistrationParams,
+  UpdateRegistrationParams,
   RegistrationEntry,
   RegistrationEventInfo,
 } from './types'
@@ -433,11 +434,30 @@ export async function createRegistration(params: CreateRegistrationParams): Prom
     p_id_fencer: params.fencerId ?? null,
     p_email_hash: params.emailHash ?? null,
     p_consent_version: params.consentVersion ?? null,
+    p_edit_token: params.editToken ?? null,
   })
   if (error) throw error
   return data as number
 }
 
+// Correct a declaration already submitted (edit token, 2026-08-28). This is a
+// different RPC from createRegistration on purpose: the create path dedupes an
+// unmatched entrant BY the declared name and birth year, so changing either
+// there reads as a different person and inserts a second row. Updating by
+// primary key consults no arbiter, which is what makes a typo fixable.
+export async function updateRegistration(params: UpdateRegistrationParams): Promise<number> {
+  const { data, error } = await getClient().rpc('fn_update_registration', {
+    p_id_registration: params.idRegistration,
+    p_edit_token: params.editToken,
+    p_surname: params.surname,
+    p_first_name: params.firstName,
+    p_gender: params.gender,
+    p_birth_year: params.birthYear,
+    p_weapons: params.weapons,
+  })
+  if (error) throw error
+  return data as number
+}
 // Public roster (FR-123) — every declared registration for the event, no
 // payment gate, no birth year / club (the view enforces that projection).
 export async function fetchEntryList(eventId: number): Promise<RegistrationEntry[]> {
