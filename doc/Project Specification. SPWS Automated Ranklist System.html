@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="Project Specification. SPWS Automated Ranklist System.md">
-<meta name="doc-source-sha256" content="7bd9f3f4cba44d33a28d7b24b6d6957e3a1047283384be6e32f517718f2ef069">
+<meta name="doc-source-sha256" content="f831e0847741b8526de60bb35065c539128cc5fd60e22a31cf6ebf651ccdd53c">
 <title>Project Specification: SPWS Automated Ranklist System · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -2824,7 +2824,7 @@ Season folder naming: <code>{start_year}_{end_year_short}</code> (e.g. <code>202
 </tr>
 <tr>
 <td><a href="adr/078-gdpr-data-handling.html">ADR-078</a></td>
-<td><strong>Draft.</strong> GDPR data handling &amp; data-subject rights — controller (SPWS) / processor (Supabase, DPA + EU region); lawful-basis split (legitimate interest 6(1)(f) for the ranking / contract 6(1)(b) for the entry); Art. 12–22 rights matrix (rectification = the BY reconciliation flow); erasure by irreversible <strong>anonymise-and-keep</strong> (Recital 26, <em>not</em> reversible pseudonymisation) + small-field suppression escalation; abuse defence (Art. 12(5) refuse/charge repetitive + Art. 17(3)(e) salted-hash log); Art. 32 proportionate security (TLS + at-rest + RLS + MFA, no app-level field encryption); email in GoTrue not <code>tbl_fencer</code>; ROPA; consent-vs-acknowledgment framing; organizer as recipient; Polish UODO. PCI out of scope (display-only bank transfer). <strong>Elaborate legal document</strong> — hyperlinked article-level citations to the operative law (EUR-Lex / gdpr-info.eu / ISAP) + WP216 anonymisation guidance + a mermaid erasure flow.</td>
+<td><strong>Draft.</strong> GDPR data handling &amp; data-subject rights — controller (SPWS) / processor (Supabase, DPA + EU region); lawful-basis split (legitimate interest 6(1)(f) for the ranking / contract 6(1)(b) for the entry); Art. 12–22 rights matrix (rectification = the BY reconciliation flow); erasure by irreversible <strong>anonymise-and-keep</strong> (Recital 26, <em>not</em> reversible pseudonymisation) + small-field suppression escalation; abuse defence (Art. 12(5) refuse/charge repetitive + Art. 17(3)(e) salted-hash log); Art. 32 proportionate security (TLS + at-rest + RLS + MFA, no app-level field encryption); email in GoTrue not <code>tbl_fencer</code>; ROPA; consent-vs-acknowledgment framing; organizer as recipient; Polish UODO. PCI out of scope (display-only bank transfer). <strong>Elaborate legal document</strong> — hyperlinked article-level citations to the operative law (EUR-Lex / gdpr-info.eu / ISAP) + WP216 anonymisation guidance + a mermaid erasure flow. <strong>Amended 2026-08-17:</strong> §1 personal-data inventory corrected — the &quot;payment reference + paid/unpaid status&quot; row is <strong>removed</strong> (no such column exists; payment is display-only bank transfer, per this ADR's own Context and ADR-079 §§4–5), email and the salted email hash are marked provisioned-but-not-collected, and the club row is corrected to record that the value is discarded in the browser and never reaches the seed file. A Status column now states, per element, whether it is actually collected. No decision changed.</td>
 <td>spec §5.2, ADR-079, ADR-080</td>
 </tr>
 <tr>
@@ -2946,5 +2946,5 @@ PPW5 silently dropped 14 of 26 brackets at the FTL splitter (&quot;unparseable b
 <!-- Coverage Summary moved to doc/requirements-traceability-matrix.md in Phase 0.5 (2026-05-01). --></section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>7bd9f3f4cba44d33a28d7b24b6d6957e3a1047283384be6e32f517718f2ef069</code></footer>
+<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>f831e0847741b8526de60bb35065c539128cc5fd60e22a31cf6ebf651ccdd53c</code></footer>
 </div></body></html>

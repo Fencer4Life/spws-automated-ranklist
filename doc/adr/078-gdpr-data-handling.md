@@ -1,6 +1,6 @@
 # ADR-078: GDPR Data Handling & Data-Subject Rights
 
-**Status:** Proposed (consent capture — `ts_consent`/`txt_consent_version` stamped by `fn_create_registration` — and the RODO consent-gate step **implemented** 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending)
+**Status:** Proposed (consent capture — `ts_consent`/`txt_consent_version` stamped by `fn_create_registration` — and the RODO consent-gate step **implemented** 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) **Amended 2026-08-17:** §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected.
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-079, ADR-080
 
@@ -12,6 +12,71 @@
 > go-live SPWS should obtain a one-time review by Polish counsel or a Data
 > Protection Officer, execute the Supabase Data Processing Agreement, and publish
 > the privacy notice (*informacja RODO*) and Record of Processing Activities.
+## Amendment (2026-08-17 — the inventory listed processing that does not happen)
+
+§1's personal-data inventory is the closest thing this project has to a Record of
+Processing Activities, and three of its six rows described data the system never
+collects. An inventory that over-declares is not a breach — nothing is processed
+beyond what is disclosed — but it is the wrong direction of error for a document
+whose stated purpose is to be *audit-legible*, and it would mislead the counsel
+review the Scope note asks for before go-live.
+
+The table now carries a **Status** column recording, per element, whether it is
+actually collected. Four corrections:
+
+**Payment reference + paid/unpaid status — row removed entirely.** No such column
+exists in `tbl_registration`, and none is planned.
+[ADR-079](079-event-self-registration-identity.md) §4 states plainly that the system
+"does not track payment completion digitally", correcting an earlier draft that had
+proposed a paid-gate, and §5 spells out "**No payment-status column**". This ADR's own
+§Context already said the same thing — *"Payment is display-only bank transfer… SPWS
+never stores, processes, or transmits cardholder data"* — so the row contradicted the
+document containing it. It appears to be a survival from the same superseded draft
+ADR-079 §4 corrected on 2026-07-04.
+
+Payment remains display-only: the association's IBAN and a transfer note are rendered
+for the fencer to pay from their own bank, and reconciliation is the treasurer reading
+a bank statement. Nothing about payment enters this system, so nothing about payment
+belongs in its processing inventory.
+
+**Email and the salted email hash — marked not collected.** Phases 4/5 (magic-link
+delivery) were never built, and since the [ADR-079](079-event-self-registration-identity.md)
+amendment of the same date a non-exact match registers *without* an email step. The
+`txt_email_hash` column exists and stays NULL. Both rows are retained rather than
+deleted, because the lawful-basis analysis is sound and will apply unchanged when
+Phases 4/5 ship — the entries are provisioned, not active.
+
+**Club — corrected.** The row read "Generate FTL seed files only … Discarded after
+seed generation", implying the value reaches the seed. It does not: the form field is
+never transmitted, there is no `txt_club` column, and `ftl_seed_export.py` writes
+`"Club": ""` unconditionally. The value is discarded in the browser. The current
+consent text is accurate on this point — *"Klub — tylko do plików startowych · nie
+zapisujemy"* — but the inventory was not. Storing it is
+[ADR-079](079-event-self-registration-identity.md) open item 2, and would require a
+`CONSENT_VERSION` bump rather than a silent schema addition; that decision is not taken
+here.
+
+### What did not change
+
+The lawful-basis split, the Art. 12–22 rights matrix, anonymise-and-keep erasure (§4),
+the abuse-defence design (§5) and the security posture (§6) are untouched. This
+amendment corrects the *description* of what is processed; it changes no decision.
+
+The wider program in this ADR — DPA execution, published privacy notice, formal ROPA,
+counsel review — remains pending, and this correction does not advance it. If anything
+it is a reminder of why that review matters: the inventory drifted from the
+implementation within six weeks of being written, and nothing in the pipeline would
+have caught it.
+
+### Corpus audit
+
+- [ADR-079](079-event-self-registration-identity.md) — **relates, already consistent.**
+  §4 and §5 both state payment is not tracked; this amendment brings ADR-078 into line
+  with them rather than the reverse.
+- [ADR-080](080-clean-roster-ftl-seeding.md) — **relates, already consistent.** It seeds
+  from "**declared** registrations… no payment gate" (§§ at lines 32, 105, 148), which
+  only holds because no paid/unpaid state exists to gate on.
+- No other ADR in the corpus mentions payment or paid status.
 
 ## Context
 
@@ -46,14 +111,13 @@ below.
 
 ### 1. Personal-data inventory
 
-| Data element | Purpose | Lawful basis (Art. 6) | Storage | Retention |
-|---|---|---|---|---|
-| Surname, first name, gender, birth year | Ranking + age-category verification | Legitimate interest 6(1)(f) | `tbl_fencer` (durable), `tbl_registration` (ephemeral) | Ranking record durable; registration purged post-ingest |
-| Weapon + category selections | Register the fencer for the event | Contract 6(1)(b) | `tbl_registration` | Purged after results ingested + reconciled |
-| Email (only on non-exact match) | One-time verification (friction/accountability) | Legitimate interest 6(1)(f) | GoTrue auth (**not** `tbl_fencer`) | Transient; not persisted in domain tables |
-| Salted email **hash** + request timestamps | Abuse defence (repeat erase/register) | Legal claims 17(3)(e) | `tbl_registration` / abuse log | Minimal, bounded |
-| Club (free text) | Generate FTL seed files only | — (transient) | **Never stored** | Discarded after seed generation |
-| Payment reference + paid/unpaid status | Reconcile the entry fee | Contract 6(1)(b) | `tbl_registration` | Purged with the registration |
+| Data element | Purpose | Lawful basis (Art. 6) | Storage | Retention | Status (2026-08-17) |
+|---|---|---|---|---|---|
+| Surname, first name, gender, birth year | Ranking + age-category verification | Legitimate interest 6(1)(f) | `tbl_fencer` (durable), `tbl_registration` (ephemeral) | Ranking record durable; registration purged post-ingest | **Collected** |
+| Weapon + category selections | Register the fencer for the event | Contract 6(1)(b) | `tbl_registration` | Purged after results ingested + reconciled | **Collected** |
+| Email (only on non-exact match) | One-time verification (friction/accountability) | Legitimate interest 6(1)(f) | GoTrue auth (**not** `tbl_fencer`) | Transient; not persisted in domain tables | **Not collected** — Phases 4/5 unbuilt, and since 2026-08-17 a non-exact match registers without email (ADR-079 amendment a) |
+| Salted email **hash** + request timestamps | Abuse defence (repeat erase/register) | Legal claims 17(3)(e) | `tbl_registration` / abuse log | Minimal, bounded | **Not collected** — `txt_email_hash` exists and stays NULL |
+| Club (free text) | Intended for FTL seed files | — (transient) | **Never stored** | n/a | **Collected and immediately discarded** — the form field is never sent to the server, there is no `txt_club` column, and `ftl_seed_export.py` writes `"Club": ""`. Storing it is ADR-079 open item 2 and would require a consent-text change |
 
 Birth **date** is not collected (year-only suffices for the age category); full
 DOB is an optional field used *only* to disambiguate a same-name-same-year
