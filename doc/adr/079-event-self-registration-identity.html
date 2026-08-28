@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="079-event-self-registration-identity.md">
-<meta name="adr-source-sha256" content="a3ec824f422dace19905c2fec53d520c738f7fd3d68ffa45f9851f8d54fa6ef3">
+<meta name="adr-source-sha256" content="eba90548af7ab93b0110e76dcda0d5a452794dda9c2dbd25f5a418f55e95c920">
 <title>ADR-079 · Event Self-Registration &amp; Identity Resolution</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 079</p><h1>Event Self-Registration &amp; Identity Resolution</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but <strong>no longer blocking registration</strong> — see the 2026-08-17 amendment). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation. <strong>Amended 2026-08-17:</strong> unmatched fencers register with <code>id_fencer</code> NULL; <code>register.html</code> is PROD-only.</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>079-event-self-registration-identity.md</code></dd></div><div><dt>Length</dt><dd class="">413 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but <strong>no longer blocking registration</strong> — see the 2026-08-17 amendment). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation. <strong>Amended 2026-08-17:</strong> unmatched fencers register with <code>id_fencer</code> NULL; <code>register.html</code> is PROD-only.
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but <strong>no longer blocking registration</strong> — see the 2026-08-17 amendment). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation. <strong>Amended 2026-08-17:</strong> unmatched fencers register with <code>id_fencer</code> NULL; <code>register.html</code> is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration <code>20260817000001</code>.</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>079-event-self-registration-identity.md</code></dd></div><div><dt>Length</dt><dd class="">422 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but <strong>no longer blocking registration</strong> — see the 2026-08-17 amendment). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation. <strong>Amended 2026-08-17:</strong> unmatched fencers register with <code>id_fencer</code> NULL; <code>register.html</code> is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration <code>20260817000001</code>.
 <strong>Date:</strong> 2026-07-04
 <strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
 <strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> §7 (decouples the entry-list gate from the registration cutoff).</p>
@@ -99,14 +99,22 @@ corresponded to no rule in the system.</li>
 </ul>
 <h3 id="open-items">Open items</h3>
 <ol>
-<li><strong><code>UNIQUE(id_event, id_fencer)</code> does not constrain unmatched rows.</strong> Postgres treats NULLs
-as distinct, so the hole described in §5 is now <em>reachable</em> for the first time — before
-this amendment nothing could write a NULL-fencer row. A fencer who registers twice creates
-two rows and appears twice on the roster and in the seed file. <strong>Recommendation:</strong> a
-partial unique index on
-<code>(id_event, txt_surname, txt_first_name, int_birth_year) WHERE id_fencer IS NULL</code>, plus a
-branch in <code>fn_create_registration</code> — a single <code>INSERT</code> cannot carry two <code>ON CONFLICT</code>
-arbiters. Not yet decided.</li>
+<li><s><strong><code>UNIQUE(id_event, id_fencer)</code> does not constrain unmatched rows.</strong></s> <strong>Resolved
+2026-08-17</strong>, migration <code>20260817000001_registration_unmatched_dedupe.sql</code>. Postgres treats
+NULLs as distinct, so the hole described in §5 became <em>reachable</em> the moment unmatched rows
+could be written. It is now closed by a partial unique index
+<code>uq_registration_unmatched_identity</code> on
+<code>(id_event, upper(btrim(txt_surname)), upper(btrim(txt_first_name)), int_birth_year) WHERE id_fencer IS NULL</code>, with <code>fn_create_registration</code> branching on <code>p_id_fencer IS NULL</code>
+because a single <code>INSERT</code> cannot carry two <code>ON CONFLICT</code> arbiters. The key is normalised the
+way <code>fn_match_registration_fencer</code> normalises, so the matcher and the constraint agree on
+what &quot;the same person&quot; means, and birth year is part of it by design (§2) — a same-name
+namesake born in a different year keeps their own row. The unmatched branch deliberately
+does <strong>not</strong> update <code>int_birth_year</code>: it is part of the arbiter, so a different year is a
+different entrant rather than an edit. Pinned by pgTAP 49.28–49.31; 49.21 (distinct
+unmatched entrants never collide) passes unchanged, since it registers two <em>different</em>
+people. Existing duplicates are collapsed by the migration keeping the highest
+<code>id_registration</code> per identity — the most recent submission is the entrant's current
+intent, and is the row the upsert would have produced.</li>
 <li><strong>Club is collected and discarded.</strong> There is no <code>txt_club</code> column, and
 <code>ftl_seed_export.py</code> hardcodes <code>&quot;Club&quot;: &quot;&quot;</code>. The user has asked for it to reach the seed
 file. Note this <strong>inverts the current consent text</strong>, which states <em>&quot;Klub — tylko do plików
@@ -444,5 +452,5 @@ ADR-050/070–074 (ingestion pipeline).</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="078-gdpr-data-handling.html">← ADR-078: GDPR Data Handling &amp; Data-Subject Rights</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="080-clean-roster-ftl-seeding.html">→ ADR-080: Clean-Roster FTL Seeding</a></nav>
-<footer class="foot">Generated from <code>079-event-self-registration-identity.md</code> · source SHA-256 <code>a3ec824f422dace19905c2fec53d520c738f7fd3d68ffa45f9851f8d54fa6ef3</code></footer>
+<footer class="foot">Generated from <code>079-event-self-registration-identity.md</code> · source SHA-256 <code>eba90548af7ab93b0110e76dcda0d5a452794dda9c2dbd25f5a418f55e95c920</code></footer>
 </div></body></html>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="c74c3722ab97c4c694a90ce9d10c53d9e907e65e15b61804c366e288ccd91f83">
+<meta name="doc-source-sha256" content="59bef8030f16be1b18f70709122a637a2136821e35e6c3adc58872b196e46834">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -859,9 +859,9 @@
 </tr>
 <tr>
 <td>FR-120</td>
-<td><strong><code>tbl_registration</code></strong> (ephemeral, public self-registration record): <code>id_event</code>, nullable <code>id_fencer</code> (matched fencer, NULL until/unless resolved), declared <code>txt_surname</code>/<code>txt_first_name</code>/<code>enum_gender</code>/<code>int_birth_year</code>, <code>arr_weapons</code>, computed <code>txt_ftl_name</code> (canonical name + <code>(N)</code> marker), <code>ts_consent</code>/<code>txt_consent_version</code>, salted <code>txt_email_hash</code> (abuse log only, never the raw email), <code>ts_created</code>. <strong>No payment-status column</strong> — this system displays bank-transfer info but does not track whether it's paid; that's checked in person at the venue (corrected 2026-07-04). <code>UNIQUE(id_event, id_fencer)</code> enables anonymous-path upsert (NULLs distinct, so unmatched registrations never collide).</td>
-<td>ADR-079 §5</td>
-<td>49.1–49.6, 49.20–49.21 (pgTAP: table + columns + no-payment-column regression guard + upsert-not-duplicate + NULLs never collide)</td>
+<td><strong><code>tbl_registration</code></strong> (ephemeral, public self-registration record): <code>id_event</code>, nullable <code>id_fencer</code> (matched fencer, NULL until/unless resolved), declared <code>txt_surname</code>/<code>txt_first_name</code>/<code>enum_gender</code>/<code>int_birth_year</code>, <code>arr_weapons</code>, computed <code>txt_ftl_name</code> (canonical name + <code>(N)</code> marker), <code>ts_consent</code>/<code>txt_consent_version</code>, salted <code>txt_email_hash</code> (abuse log only, never the raw email), <code>ts_created</code>. <strong>No payment-status column</strong> — this system displays bank-transfer info but does not track whether it's paid; that's checked in person at the venue (corrected 2026-07-04). <code>UNIQUE(id_event, id_fencer)</code> dedupes the <strong>matched</strong> path. <strong>Amended 2026-08-17:</strong> because Postgres treats NULLs as distinct it never constrained unmatched rows — harmless while the form dead-ended every non-exact match, reachable the moment that path opened (ADR-079 amendment a). Migration <code>20260817000001</code> adds partial unique index <code>uq_registration_unmatched_identity</code> on <code>(id_event, upper(btrim(txt_surname)), upper(btrim(txt_first_name)), int_birth_year) WHERE id_fencer IS NULL</code> — the declared identity, normalised as <code>fn_match_registration_fencer</code> normalises. Birth year is part of the key by design: a same-name namesake born in a different year is a different entrant.</td>
+<td>ADR-079 §5 + amendment 2026-08-17</td>
+<td>49.1–49.6, 49.20–49.21, 49.28–49.31 (pgTAP: table + columns + no-payment-column regression guard + matched upsert-not-duplicate + distinct unmatched entrants never collide + index exists + same unmatched entrant upserts and its weapon set updates + case/whitespace variants dedupe + namesake with a different birth year keeps its own row)</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -1167,5 +1167,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>c74c3722ab97c4c694a90ce9d10c53d9e907e65e15b61804c366e288ccd91f83</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>59bef8030f16be1b18f70709122a637a2136821e35e6c3adc58872b196e46834</code></footer>
 </div></body></html>

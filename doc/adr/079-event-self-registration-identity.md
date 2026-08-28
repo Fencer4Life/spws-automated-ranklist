@@ -1,6 +1,6 @@
 # ADR-079: Event Self-Registration & Identity Resolution
 
-**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but **no longer blocking registration** — see the 2026-08-17 amendment). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation. **Amended 2026-08-17:** unmatched fencers register with `id_fencer` NULL; `register.html` is PROD-only.
+**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but **no longer blocking registration** — see the 2026-08-17 amendment). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation. **Amended 2026-08-17:** unmatched fencers register with `id_fencer` NULL; `register.html` is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration `20260817000001`.
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
 **Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §7 (decouples the entry-list gate from the registration cutoff).
@@ -99,14 +99,23 @@ by registering once against the deployed URL and then querying **both** database
 
 ### Open items
 
-1. **`UNIQUE(id_event, id_fencer)` does not constrain unmatched rows.** Postgres treats NULLs
-   as distinct, so the hole described in §5 is now *reachable* for the first time — before
-   this amendment nothing could write a NULL-fencer row. A fencer who registers twice creates
-   two rows and appears twice on the roster and in the seed file. **Recommendation:** a
-   partial unique index on
-   `(id_event, txt_surname, txt_first_name, int_birth_year) WHERE id_fencer IS NULL`, plus a
-   branch in `fn_create_registration` — a single `INSERT` cannot carry two `ON CONFLICT`
-   arbiters. Not yet decided.
+1. ~~**`UNIQUE(id_event, id_fencer)` does not constrain unmatched rows.**~~ **Resolved
+   2026-08-17**, migration `20260817000001_registration_unmatched_dedupe.sql`. Postgres treats
+   NULLs as distinct, so the hole described in §5 became *reachable* the moment unmatched rows
+   could be written. It is now closed by a partial unique index
+   `uq_registration_unmatched_identity` on
+   `(id_event, upper(btrim(txt_surname)), upper(btrim(txt_first_name)), int_birth_year)
+   WHERE id_fencer IS NULL`, with `fn_create_registration` branching on `p_id_fencer IS NULL`
+   because a single `INSERT` cannot carry two `ON CONFLICT` arbiters. The key is normalised the
+   way `fn_match_registration_fencer` normalises, so the matcher and the constraint agree on
+   what "the same person" means, and birth year is part of it by design (§2) — a same-name
+   namesake born in a different year keeps their own row. The unmatched branch deliberately
+   does **not** update `int_birth_year`: it is part of the arbiter, so a different year is a
+   different entrant rather than an edit. Pinned by pgTAP 49.28–49.31; 49.21 (distinct
+   unmatched entrants never collide) passes unchanged, since it registers two *different*
+   people. Existing duplicates are collapsed by the migration keeping the highest
+   `id_registration` per identity — the most recent submission is the entrant's current
+   intent, and is the row the upsert would have produced.
 2. **Club is collected and discarded.** There is no `txt_club` column, and
    `ftl_seed_export.py` hardcodes `"Club": ""`. The user has asked for it to reach the seed
    file. Note this **inverts the current consent text**, which states *"Klub — tylko do plików
