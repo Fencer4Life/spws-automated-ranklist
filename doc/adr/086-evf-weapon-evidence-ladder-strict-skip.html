@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="086-evf-weapon-evidence-ladder-strict-skip.md">
-<meta name="adr-source-sha256" content="96a40b73fd208aab92fa2293ed75e64ad6419f97c7f86f2867703e32ee86f02f">
+<meta name="adr-source-sha256" content="0dc9f22f741df9694d8cca57200973a6623843574c216ea101470e9c700a2fa6">
 <title>ADR-086 · EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 086</p><h1>EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-08-28)</dd></div><div><dt>Date</dt><dd class="">2026-08-28</dd></div><div><dt>Source</dt><dd class=""><code>086-evf-weapon-evidence-ladder-strict-skip.md</code></dd></div><div><dt>Length</dt><dd class="">132 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-08-28)</dd></div><div><dt>Date</dt><dd class="">2026-08-28</dd></div><div><dt>Source</dt><dd class=""><code>086-evf-weapon-evidence-ladder-strict-skip.md</code></dd></div><div><dt>Length</dt><dd class="">142 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (2026-08-28)
 <strong>Date:</strong> 2026-08-28
 <strong>Resolved:</strong> Both open items closed on sign-off, 2026-08-28.
@@ -78,6 +78,11 @@ must retain PEW11, but chronological position is PEW12
 <p>The part of the rule that carries the meaning is untouched: a later cancellation still never collapses to <code>PEW0</code> and never frees its slot. Only its position within the sequence may move, and only while nothing is anchored to the old code.</p>
 <p>This extends ADR-043's existing anchor set from <em>results</em> to <em>results and registrations</em>. Registration did not exist when ADR-043 was written; it is now the sharper anchor, because a fencer who has entered holds a code that must not move under them. Results remain anchored through the child tournament codes the ingest RPC rebuilds from the event code.</p>
 <p>A roster row that does not carry the counts is refused: <strong>unknown is not zero</strong>. See <code>_is_safe_to_renumber</code> (<a href="../../python/scrapers/evf_calendar.py"><code>evf_calendar.py:126</code></a>).</p>
+<p><strong>The guard exists in two places and both must agree.</strong> ADR-043 describes the RPC's own guards as the backstop for when the planner is bypassed, so <code>fn_ingest_evf_calendar_identity_v1</code> enforces the cancellation pin independently of the Python planner. Relaxing only the planner produced a plan the backstop then rejected — observed live on 2026-08-28 (run 33187122201), after the first fix had already cleared the weapons failure:</p>
+<pre><code>fn_ingest_evf_calendar: later cancellation 3444 cannot move PEW11 to PEW12
+</code></pre>
+<p>Migration <code>20260828000005</code> relaxes the server-side half through
+<code>fn_evf_event_code_is_movable(id_event)</code>, which encodes the same three conditions in SQL. It is reproduced from the <strong>live</strong> <code>pg_get_functiondef</code> output rather than from <code>20260807000001</code>, so the prior-link amendments in <code>20260808000001</code>/<code>2</code> are carried forward instead of reverted; only the cancellation guard differs.</p>
 <h3 id="5-a-calendar-failure-no-longer-blocks-results-ingestion">5 · A calendar failure no longer blocks results ingestion</h3>
 <p>Calendar sync enters <em>future</em> events into the calendar. Results sync is the last-resort path for attaching results to events that have already happened; the normal path is manual ingestion from the admin UI, and this pass scrapes only EVF-organised results.</p>
 <p>The two share no data dependency, so <code>sync_results</code> now runs even when <code>sync_calendar</code> fails (<a href="../../python/scrapers/evf_sync.py"><code>evf_sync.py:1235</code></a>). The Telegram alert and the <code>FAILED</code> scrape-ledger row are unchanged, and the process still exits non-zero so CI stays red. The coupling was incidental — a shared <code>main()</code> — never a decision.</p>
@@ -94,11 +99,12 @@ must retain PEW11, but chronological position is PEW12
 </section>
 <section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
 <ul>
-<li><strong>New files.</strong> <code>supabase/migrations/20260828000004_evf_event_weapons_lifecycle_gate.sql</code> (<code>fn_guard_evf_event_weapons_known</code> + <code>trg_guard_evf_event_weapons_known</code>); <code>supabase/tests/60_evf_event_weapons_lifecycle_gate.sql</code> (7 assertions, including 60.6 pinning that a historical unsuffixed <code>COMPLETED</code> row remains updatable — the case a <code>CHECK</code> would have broken).</li>
+<li><strong>New files.</strong> <code>supabase/migrations/20260828000005_evf_cancellation_sequence_shift.sql</code> (<code>fn_evf_event_code_is_movable</code> + the relaxed ingest RPC) and <code>supabase/tests/61_evf_cancellation_sequence_shift.sql</code> (7 assertions, pinning each arm of &quot;anchored&quot; separately — past, undated, registered, results-bearing and unknown are each refused on their own). <code>supabase/migrations/20260828000004_evf_event_weapons_lifecycle_gate.sql</code> (<code>fn_guard_evf_event_weapons_known</code> + <code>trg_guard_evf_event_weapons_known</code>); <code>supabase/tests/60_evf_event_weapons_lifecycle_gate.sql</code> (7 assertions, including 60.6 pinning that a historical unsuffixed <code>COMPLETED</code> row remains updatable — the case a <code>CHECK</code> would have broken).</li>
 <li><strong>Test impact.</strong> <code>python/tests/test_evf_calendar.py</code> gains plan-test IDs evf.13–evf.19 (30 assertions). No existing ADR-pinned test is deleted; three test stubs were widened to accept <code>scrape_full_season_calendar</code>'s new keyword arguments.</li>
 <li><strong>Contract change.</strong> <code>scrape_full_season_calendar</code> gains <code>known_calendar_ids</code> and <code>pending_weapons</code>; the roster query in <code>sync_calendar</code> gains <code>num_registrations</code> and <code>num_results</code>. <code>parse_event_detail_html</code> returns an additional <code>weapons</code> key.</li>
 <li><strong>Operational surface.</strong> The Telegram digest gains <code>pending_weapons=&lt;n&gt;</code>, and the scrape ledger records the held-back names, calendar IDs and URLs. No new alert channel: a held-back entry is not an error.</li>
 <li><strong>First live effect.</strong> <code>EVF Circuit – Tampere (FIN)</code> enters as <code>PEW7es-2026-2027</code>, shifting Levi Open through Toronto down one, including Stockholm <code>PEW11ef</code> → <code>PEW12ef</code> under §4. All are future, unregistered and result-less. The CERT→PROD reconciler carries the renames (ADR-081).</li>
+<li><strong>ADR-083 interaction.</strong> <code>fn_evf_event_code_is_movable</code> is an internal helper for a <code>SECURITY DEFINER</code> RPC, so it is <code>REVOKE</code>d from <code>PUBLIC</code> and <code>anon</code>. Postgres grants <code>EXECUTE</code> to <code>PUBLIC</code> on creation, which put it on the anon-executable surface until revoked — caught by <code>52_security_posture.sql</code> test 52.7, which is what that gate is for.</li>
 <li><strong><code>Critérium de Paris 2026</code> remains held back</strong> — it states no weapons on any rung. It is outside the active season window, so it has no present effect.</li>
 </ul>
 </section>
@@ -124,5 +130,5 @@ must retain PEW11, but chronological position is PEW12
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="085-points-calculator-temporary-static-page.html">← ADR-085: Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>96a40b73fd208aab92fa2293ed75e64ad6419f97c7f86f2867703e32ee86f02f</code></footer>
+<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>0dc9f22f741df9694d8cca57200973a6623843574c216ea101470e9c700a2fa6</code></footer>
 </div></body></html>

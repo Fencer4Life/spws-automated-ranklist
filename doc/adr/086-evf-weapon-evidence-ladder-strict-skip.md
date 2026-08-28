@@ -91,6 +91,15 @@ This extends ADR-043's existing anchor set from *results* to *results and regist
 
 A roster row that does not carry the counts is refused: **unknown is not zero**. See `_is_safe_to_renumber` ([`evf_calendar.py:126`](../../python/scrapers/evf_calendar.py)).
 
+**The guard exists in two places and both must agree.** ADR-043 describes the RPC's own guards as the backstop for when the planner is bypassed, so `fn_ingest_evf_calendar_identity_v1` enforces the cancellation pin independently of the Python planner. Relaxing only the planner produced a plan the backstop then rejected — observed live on 2026-08-28 (run 33187122201), after the first fix had already cleared the weapons failure:
+
+```
+fn_ingest_evf_calendar: later cancellation 3444 cannot move PEW11 to PEW12
+```
+
+Migration `20260828000005` relaxes the server-side half through
+`fn_evf_event_code_is_movable(id_event)`, which encodes the same three conditions in SQL. It is reproduced from the **live** `pg_get_functiondef` output rather than from `20260807000001`, so the prior-link amendments in `20260808000001`/`2` are carried forward instead of reverted; only the cancellation guard differs.
+
 ### 5 · A calendar failure no longer blocks results ingestion
 
 Calendar sync enters *future* events into the calendar. Results sync is the last-resort path for attaching results to events that have already happened; the normal path is manual ingestion from the admin UI, and this pass scrapes only EVF-organised results.
@@ -108,11 +117,12 @@ The two share no data dependency, so `sync_results` now runs even when `sync_cal
 
 ## Consequences
 
-- **New files.** `supabase/migrations/20260828000004_evf_event_weapons_lifecycle_gate.sql` (`fn_guard_evf_event_weapons_known` + `trg_guard_evf_event_weapons_known`); `supabase/tests/60_evf_event_weapons_lifecycle_gate.sql` (7 assertions, including 60.6 pinning that a historical unsuffixed `COMPLETED` row remains updatable — the case a `CHECK` would have broken).
+- **New files.** `supabase/migrations/20260828000005_evf_cancellation_sequence_shift.sql` (`fn_evf_event_code_is_movable` + the relaxed ingest RPC) and `supabase/tests/61_evf_cancellation_sequence_shift.sql` (7 assertions, pinning each arm of "anchored" separately — past, undated, registered, results-bearing and unknown are each refused on their own). `supabase/migrations/20260828000004_evf_event_weapons_lifecycle_gate.sql` (`fn_guard_evf_event_weapons_known` + `trg_guard_evf_event_weapons_known`); `supabase/tests/60_evf_event_weapons_lifecycle_gate.sql` (7 assertions, including 60.6 pinning that a historical unsuffixed `COMPLETED` row remains updatable — the case a `CHECK` would have broken).
 - **Test impact.** `python/tests/test_evf_calendar.py` gains plan-test IDs evf.13–evf.19 (30 assertions). No existing ADR-pinned test is deleted; three test stubs were widened to accept `scrape_full_season_calendar`'s new keyword arguments.
 - **Contract change.** `scrape_full_season_calendar` gains `known_calendar_ids` and `pending_weapons`; the roster query in `sync_calendar` gains `num_registrations` and `num_results`. `parse_event_detail_html` returns an additional `weapons` key.
 - **Operational surface.** The Telegram digest gains `pending_weapons=<n>`, and the scrape ledger records the held-back names, calendar IDs and URLs. No new alert channel: a held-back entry is not an error.
 - **First live effect.** `EVF Circuit – Tampere (FIN)` enters as `PEW7es-2026-2027`, shifting Levi Open through Toronto down one, including Stockholm `PEW11ef` → `PEW12ef` under §4. All are future, unregistered and result-less. The CERT→PROD reconciler carries the renames (ADR-081).
+- **ADR-083 interaction.** `fn_evf_event_code_is_movable` is an internal helper for a `SECURITY DEFINER` RPC, so it is `REVOKE`d from `PUBLIC` and `anon`. Postgres grants `EXECUTE` to `PUBLIC` on creation, which put it on the anon-executable surface until revoked — caught by `52_security_posture.sql` test 52.7, which is what that gate is for.
 - **`Critérium de Paris 2026` remains held back** — it states no weapons on any rung. It is outside the active season window, so it has no present effect.
 
 ## Defects found and deliberately not fixed
