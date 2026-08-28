@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="086-evf-weapon-evidence-ladder-strict-skip.md">
-<meta name="adr-source-sha256" content="81ece0eafbf4422cac2a7b615b94dda3cdc1d6e94f881bc1a583225296029155">
+<meta name="adr-source-sha256" content="78a745398a221b58b05fa69d714a00d18e0a19bfd12dfe7deea1bfa6f22341fd">
 <title>ADR-086 · EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 086</p><h1>EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-08-28)</dd></div><div><dt>Date</dt><dd class="">2026-08-28</dd></div><div><dt>Source</dt><dd class=""><code>086-evf-weapon-evidence-ladder-strict-skip.md</code></dd></div><div><dt>Length</dt><dd class="">151 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-08-28)</dd></div><div><dt>Date</dt><dd class="">2026-08-28</dd></div><div><dt>Source</dt><dd class=""><code>086-evf-weapon-evidence-ladder-strict-skip.md</code></dd></div><div><dt>Length</dt><dd class="">153 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (2026-08-28)
 <strong>Date:</strong> 2026-08-28
 <strong>Resolved:</strong> Both open items closed on sign-off, 2026-08-28.
@@ -86,6 +86,7 @@ must retain PEW11, but chronological position is PEW12
 duplicate key value violates unique constraint &quot;idx_event_code&quot;
 </code></pre>
 <p>ADR-043 already promises this reflow — &quot;unscored rows may be reflowed transactionally if EVF inserts or reschedules an earlier entry&quot; — but it had never been exercised, because no event had previously been inserted ahead of an existing one. Migration <code>20260828000006</code> lifts the staging the function already performs per-event for tournament codes (<code>__evfcal_&lt;id&gt;</code>) to a batch pre-pass over events: every calendar-owned event whose code this payload changes is parked on a placeholder first, so the loop only ever assigns into free codes. Scored events are excluded, so they keep their code and still trip the existing &quot;refusing to renumber scored event&quot; guard rather than being quietly parked.</p>
+<p>Staging then had to be made non-destructive: the cancellation rules read an event's prior PEW number out of its own <code>txt_code</code>, so parking that code reclassified a <em>later</em> cancellation as a <em>first-import</em> one and demanded <code>PEW0</code> (run 33190231601). Migration <code>20260828000007</code> snapshots every code in the season before the pre-pass parks anything and derives the prior number from that snapshot; the rename decision still reads the live code, because that is what must differ for the rename to happen.</p>
 <p>Migration <code>20260828000005</code> relaxes the server-side half through
 <code>fn_evf_event_code_is_movable(id_event)</code>, which encodes the same three conditions in SQL. It is reproduced from the <strong>live</strong> <code>pg_get_functiondef</code> output rather than from <code>20260807000001</code>, so the prior-link amendments in <code>20260808000001</code>/<code>2</code> are carried forward instead of reverted; only the cancellation guard differs.</p>
 <h3 id="5-a-calendar-failure-no-longer-blocks-results-ingestion">5 · A calendar failure no longer blocks results ingestion</h3>
@@ -135,5 +136,5 @@ duplicate key value violates unique constraint &quot;idx_event_code&quot;
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="085-points-calculator-temporary-static-page.html">← ADR-085: Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>81ece0eafbf4422cac2a7b615b94dda3cdc1d6e94f881bc1a583225296029155</code></footer>
+<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>78a745398a221b58b05fa69d714a00d18e0a19bfd12dfe7deea1bfa6f22341fd</code></footer>
 </div></body></html>

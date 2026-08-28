@@ -106,6 +106,8 @@ duplicate key value violates unique constraint "idx_event_code"
 
 ADR-043 already promises this reflow — "unscored rows may be reflowed transactionally if EVF inserts or reschedules an earlier entry" — but it had never been exercised, because no event had previously been inserted ahead of an existing one. Migration `20260828000006` lifts the staging the function already performs per-event for tournament codes (`__evfcal_<id>`) to a batch pre-pass over events: every calendar-owned event whose code this payload changes is parked on a placeholder first, so the loop only ever assigns into free codes. Scored events are excluded, so they keep their code and still trip the existing "refusing to renumber scored event" guard rather than being quietly parked.
 
+Staging then had to be made non-destructive: the cancellation rules read an event's prior PEW number out of its own `txt_code`, so parking that code reclassified a *later* cancellation as a *first-import* one and demanded `PEW0` (run 33190231601). Migration `20260828000007` snapshots every code in the season before the pre-pass parks anything and derives the prior number from that snapshot; the rename decision still reads the live code, because that is what must differ for the rename to happen.
+
 Migration `20260828000005` relaxes the server-side half through
 `fn_evf_event_code_is_movable(id_event)`, which encodes the same three conditions in SQL. It is reproduced from the **live** `pg_get_functiondef` output rather than from `20260807000001`, so the prior-link amendments in `20260808000001`/`2` are carried forward instead of reverted; only the cancellation guard differs.
 

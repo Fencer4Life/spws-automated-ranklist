@@ -15,7 +15,7 @@
 
 BEGIN;
 
-SELECT plan(4);
+SELECT plan(5);
 
 SELECT has_function(
   'fn_ingest_evf_calendar',
@@ -104,6 +104,41 @@ SELECT is(
   (SELECT count(*)::INT FROM tbl_event WHERE txt_code LIKE '\_\_evfcal\_evt\_%'),
   0,
   '62.4 — no event is left parked on a neutral staging code'
+);
+
+-- 62.5 — regression: parking a code must not reclassify a LATER cancellation
+--        as a first-import one. Gamma is cancelled in the same batch that
+--        shifts it, so it must keep a positive base (PEW4e) and not fall to
+--        PEW0 -- the exact mismatch that aborted run 33190231601.
+SELECT lives_ok(
+  $ing2$
+  DO $body2$
+  DECLARE
+    v_season INT;
+  BEGIN
+    SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-6200-6201';
+    PERFORM fn_ingest_evf_calendar(
+      jsonb_build_array(
+        jsonb_build_object('name','Alpha','dt_start','6200-10-01','dt_end','6200-10-01',
+          'weapons', jsonb_build_array('EPEE'), 'evf_calendar_id', 901,
+          'existing_id_event', (SELECT id_event FROM tbl_event WHERE id_evf_calendar_event=901),
+          'is_cancelled', false, 'desired_code','PEW1e-6200-6201'),
+        jsonb_build_object('name','Inserted','dt_start','6200-10-15','dt_end','6200-10-15',
+          'weapons', jsonb_build_array('EPEE'), 'evf_calendar_id', 904,
+          'is_cancelled', false, 'desired_code','PEW2e-6200-6201'),
+        jsonb_build_object('name','Beta','dt_start','6200-11-01','dt_end','6200-11-01',
+          'weapons', jsonb_build_array('EPEE'), 'evf_calendar_id', 902,
+          'existing_id_event', (SELECT id_event FROM tbl_event WHERE id_evf_calendar_event=902),
+          'is_cancelled', false, 'desired_code','PEW3e-6200-6201'),
+        jsonb_build_object('name','Gamma - Cancelled','dt_start','6200-12-01','dt_end','6200-12-01',
+          'weapons', jsonb_build_array('EPEE'), 'evf_calendar_id', 903,
+          'existing_id_event', (SELECT id_event FROM tbl_event WHERE id_evf_calendar_event=903),
+          'is_cancelled', true, 'desired_code','PEW4e-6200-6201')
+      ), v_season, 4);
+  END;
+  $body2$
+  $ing2$,
+  '62.5 — a later cancellation shifts with the sequence instead of falling to PEW0'
 );
 
 SELECT * FROM finish();
